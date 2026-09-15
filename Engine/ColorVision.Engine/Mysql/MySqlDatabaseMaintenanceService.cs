@@ -12,6 +12,13 @@ using System.Xml.Linq;
 
 namespace ColorVision.Database
 {
+    internal enum DatabaseResetPlan
+    {
+        ResetExisting,
+        InitializeMissing,
+        RejectMissingCrossDatabase
+    }
+
     /// <summary>
     /// ColorVision 数据库重置、SQL 恢复及服务 MySQL 配置同步的唯一实现。
     /// </summary>
@@ -56,19 +63,28 @@ namespace ColorVision.Database
             try
             {
                 logCallback?.Invoke($"数据库更新路径: {sourceDatabase} -> {targetDatabase}");
-                if (!string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase)
-                    && !CanConnectToDatabase(rootConfig, sourceDatabase, logCallback))
+                bool sourceDatabaseAvailable = DatabaseExists(rootConfig, sourceDatabase, logCallback);
+                DatabaseResetPlan resetPlan = ResolveDatabaseResetPlan(sourceDatabase, targetDatabase, sourceDatabaseAvailable);
+                if (resetPlan == DatabaseResetPlan.RejectMissingCrossDatabase)
                 {
                     logCallback?.Invoke($"跨版本更新的源数据库 {sourceDatabase} 不存在或无法连接，已停止更新");
                     return false;
                 }
 
-                string? preservedDataSql = await BackupPreservedDataAsync(
-                    sourceDatabase,
-                    rootConfig,
-                    mysqldumpPath,
-                    backupDirectory,
-                    logCallback).ConfigureAwait(false);
+                string? preservedDataSql = null;
+                if (resetPlan == DatabaseResetPlan.ResetExisting)
+                {
+                    preservedDataSql = await BackupPreservedDataAsync(
+                        sourceDatabase,
+                        rootConfig,
+                        mysqldumpPath,
+                        backupDirectory,
+                        logCallback).ConfigureAwait(false);
+                }
+                else
+                {
+                    logCallback?.Invoke($"源数据库 {sourceDatabase} 尚未创建，按新安装初始化目标数据库");
+                }
 
                 logCallback?.Invoke($"使用 root 执行数据库重置脚本: {fullSqlPath}");
                 await MySqlLocalServicesManager.ExecuteSqlFileCoreAsync(
@@ -81,6 +97,12 @@ namespace ColorVision.Database
                 {
                     logCallback?.Invoke($"安装版本没有创建预期目标数据库 {targetDatabase}，已停止资源数据回写");
                     return false;
+                }
+
+                if (resetPlan == DatabaseResetPlan.InitializeMissing)
+                {
+                    logCallback?.Invoke($"目标数据库 {targetDatabase} 初始化完成");
+                    return true;
                 }
 
                 if (string.IsNullOrWhiteSpace(preservedDataSql))
@@ -103,6 +125,19 @@ namespace ColorVision.Database
                 logCallback?.Invoke($"数据库重置失败: {ex.Message}");
                 return false;
             }
+        }
+
+        internal static DatabaseResetPlan ResolveDatabaseResetPlan(
+            string sourceDatabase,
+            string targetDatabase,
+            bool sourceDatabaseAvailable)
+        {
+            if (sourceDatabaseAvailable)
+                return DatabaseResetPlan.ResetExisting;
+
+            return string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase)
+                ? DatabaseResetPlan.InitializeMissing
+                : DatabaseResetPlan.RejectMissingCrossDatabase;
         }
 
         public static IReadOnlyList<string> SynchronizeInstalledServiceConfigs(MySqlConfig config, Action<string>? logCallback = null)
@@ -278,6 +313,26 @@ namespace ColorVision.Database
                 logCallback?.Invoke($"数据库 {databaseName} 连接验证失败: {ex.Message}");
                 return false;
             }
+        }
+
+        private static bool DatabaseExists(MySqlConfig rootConfig, string databaseName, Action<string>? logCallback)
+        {
+            MySqlConfig serverConfig = CloneConfig(rootConfig, string.Empty);
+            using SqlSugarClient database = new(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(serverConfig, 5),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+            DataTable result = database.Ado.GetDataTable(
+                "SELECT COUNT(*) AS database_count FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @database",
+                new SugarParameter("@database", databaseName));
+            bool exists = result.Rows.Count > 0
+                && Convert.ToInt32(result.Rows[0]["database_count"], CultureInfo.InvariantCulture) > 0;
+            logCallback?.Invoke(exists
+                ? $"源数据库 {databaseName} 已存在"
+                : $"源数据库 {databaseName} 尚未创建");
+            return exists;
         }
 
         private static MySqlConfig CloneConfig(MySqlConfig source, string database)

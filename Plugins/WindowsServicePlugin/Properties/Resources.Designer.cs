@@ -31,7 +31,7 @@ namespace WindowsServicePlugin.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-        
+
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -45,7 +45,7 @@ namespace WindowsServicePlugin.Properties {
                 return resourceMan;
             }
         }
-        
+
         /// <summary>
         ///   重写当前线程的 CurrentUICulture 属性，对
         ///   使用此强类型资源类的所有资源查找执行重写。
@@ -330,6 +330,24 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 所选组件已安装完成。 的本地化字符串。
+        /// </summary>
+        public static string InstallCompletedMessage {
+            get {
+                return ResourceManager.GetString("InstallCompletedMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装完成 的本地化字符串。
+        /// </summary>
+        public static string InstallCompletedTitle {
+            get {
+                return ResourceManager.GetString("InstallCompletedTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 安装组件 的本地化字符串。
         /// </summary>

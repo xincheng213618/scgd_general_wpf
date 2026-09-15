@@ -70,11 +70,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void SyncManagedServiceConfigs()
         {
-            MySqlSetting.Instance.MySqlConfig.Host = MySqlServiceConfig.Instance.Host;
-            MySqlSetting.Instance.MySqlConfig.Port = MySqlServiceConfig.Instance.Port;
-            MySqlSetting.Instance.MySqlConfig.UserName = MySqlServiceConfig.Instance.AppUser;
-            MySqlSetting.Instance.MySqlConfig.UserPwd = MySqlServiceConfig.Instance.AppPassword;
-            MySqlSetting.Instance.MySqlConfig.Database = MySqlServiceConfig.Instance.Database;
+            MySqlManager.ApplyDatabaseName(MySqlServiceConfig.Instance.Database);
 
             string baseLocation = ResolveManagedServiceInstallRoot() ?? Config.BaseLocation;
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))

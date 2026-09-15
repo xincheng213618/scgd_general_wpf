@@ -265,6 +265,12 @@ namespace WindowsServicePlugin.ServiceManager
 
                         SetProgress(100, "安装完成");
                         log.Info("安装完成！");
+                        Application.Current?.Dispatcher.Invoke(() =>
+                            MessageBox.Show(
+                                Properties.Resources.InstallCompletedMessage,
+                                Properties.Resources.InstallCompletedTitle,
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information));
                     }
                     catch (Exception ex)
                     {

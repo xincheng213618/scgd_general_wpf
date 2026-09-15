@@ -22,7 +22,7 @@ related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.wi
 | 工具窗口“加载备份”、备份项“还原” | 均进入 `RestoreAndRestartAsync`：SQL导入 → 服务配置同步 → 重启注册中心 | 不先自动备份/停写，不自动重启ColorVision，不代表全部服务健康 |
 | `MySqlLocalServicesManager.RestoreMysql` | 在管理器维护门内同步等待 SQL 导入，成功返回文件完整路径 | 不同步服务配置、不重启服务，没有桌面确认或进度协议 |
 | `MySqlDatabaseMaintenanceService.RestoreSqlFileAsync` | 直接委托 `ExecuteSqlFileCoreAsync`，可选择是否在mysql参数中指定库 | 自身不取得管理器维护门、不提权、不验证脚本的业务范围 |
-| `ResetDatabaseFromSqlFileAsync` | 保留源资源数据 → 执行安装SQL → 检查目标连接 → 回写资源 | 不推导目标版本、不保证完整迁移，也不同步配置或启停服务 |
+| `ResetDatabaseFromSqlFileAsync` | 检查源库是否存在；存在时保留源资源数据，同名源/目标都未创建时按新装初始化；然后执行安装SQL、检查目标连接并按需回写资源 | 不推导目标版本、不保证完整迁移，也不同步配置或启停服务；跨库更新缺少源库时拒绝执行 |
 
 桌面恢复使用当次 `MySqlSetting.Instance.MySqlConfig` 和 `Config.MysqlPath`，不自动切换root账号。重置使用调用者传入的 `rootConfig`，方法名和日志中的“root”不证明账号身份/权限已校验。安装插件如何构造配置和选择源/目标库，以插件专题为准。
 
@@ -62,8 +62,8 @@ SQL导入、配置写入和注册中心重启不在同一事务中。执行阶�
 `ResetDatabaseFromSqlFileAsync` 的顺序是：
 
 1. 拒绝空源/目标库名及不存在的脚本。`rootConfig` 空值、路径解析等发生在内部try之前，不能承诺所有错误都返回false。
-2. 跨库名时先测试源库连接；源库不可连接即返回false，不执行重置SQL。同库名没有这项独立预检，但资源表查询仍可能失败。
-3. 备份实际存在的资源表；此阶段抛出的异常阻止执行重置SQL，但前述依赖构建内部吞错不属于这项门禁。
+2. 使用不指定业务库的服务器连接查询 `INFORMATION_SCHEMA.SCHEMATA`，区分“源库不存在”和服务器/凭据连接失败。查询本身失败由外层捕获并返回false，不会被当成新装初始化。
+3. 源库存在时备份实际存在的资源表；同名源/目标库都未创建时跳过备份，按新安装继续执行脚本；跨库更新缺少源库时返回false，不执行重置SQL。备份阶段抛出的异常同样阻止执行重置SQL，但前述依赖构建内部吞错不属于这项门禁。
 4. 调用底层导入，`selectDatabase: false`，不把源库作为mysql的默认数据库参数；实际创建、删除或选库由脚本内容决定，并非helper自动替换脚本中的库名。
 5. 脚本执行后，对传入目标库执行连接/`SELECT 1` 检查。失败返回false，**不撤销已经执行的脚本**；检查通过只说明能连接，甚至不证明该库由本次脚本新建或schema正确。
 6. 有保留SQL时以 `selectDatabase: true` 回写目标库；没有则直接返回true。导入过程异常返回false，可能已有部分写入，没有整体事务、自动重试或回滚。

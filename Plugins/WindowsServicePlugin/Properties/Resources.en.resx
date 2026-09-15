@@ -255,6 +255,12 @@
   <data name="InstallLog" xml:space="preserve">
     <value>Install Log</value>
   </data>
+  <data name="InstallCompletedMessage" xml:space="preserve">
+    <value>The selected components were installed successfully.</value>
+  </data>
+  <data name="InstallCompletedTitle" xml:space="preserve">
+    <value>Installation Complete</value>
+  </data>
   <data name="InstallNow" xml:space="preserve">
     <value>Install Now</value>
   </data>
