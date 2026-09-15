@@ -36,8 +36,6 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
-                <CheckBox Content="使用本地相机" IsChecked="{Binding UseLocalCamera}" ToolTip="默认关闭。切换前请先关闭当前相机。" />
-                <TextBlock Margin="0,2,0,5" Text="{Binding CameraBackendHint}" TextWrapping="Wrap" />
                 <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3">
                     <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}" />
                     <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />

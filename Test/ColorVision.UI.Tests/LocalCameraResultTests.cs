@@ -5,11 +5,24 @@ using FlowEngineLib.Algorithm;
 using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices;
 using System.IO;
+using ColorVision.Engine.Media;
+using ColorVision.FileIO;
+using Newtonsoft.Json;
+using OpenCvSharp.WpfExtensions;
 
 namespace ColorVision.UI.Tests;
 
 public class LocalCameraResultTests
 {
+    [Fact]
+    public void MainPanelLocalCaptureDefaultsToSavingAndPersistsOptOut()
+    {
+        Assert.True(new DisplayCameraConfig().SaveLocalCaptureFiles);
+        Assert.True(JsonConvert.DeserializeObject<DisplayCameraConfig>("{\"UseLocalCamera\":true}")!.SaveLocalCaptureFiles);
+        var config = new DisplayCameraConfig { SaveLocalCaptureFiles = false };
+        Assert.False(JsonConvert.DeserializeObject<DisplayCameraConfig>(JsonConvert.SerializeObject(config))!.SaveLocalCaptureFiles);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -94,7 +107,35 @@ public class LocalCameraResultTests
             var preview = LocalCameraPreview.Create(frame);
             short[] pixels = new short[6];
             preview.Bitmap.CopyPixels(pixels, 6, 0);
-            Assert.Equal(new short[] { 10, 30, 20, 40, 60, 50 }, pixels);
+            // Packed BGR16 source becomes RGB48 for WPF; green stays in the middle.
+            Assert.Equal(new short[] { 30, 20, 10, 60, 50, 40 }, pixels);
+            Assert.Equal(new byte[] { 10, 0, 20, 0, 30, 0, 40, 0, 50, 0, 60, 0 }, lease.CopyRawToArray());
+        });
+    }
+
+    [Theory]
+    [InlineData(8, 1)]
+    [InlineData(8, 3)]
+    [InlineData(16, 1)]
+    [InlineData(16, 3)]
+    public void RawPreviewMatchesCvrawDecoderWithoutChangingSourceSamples(int bpp, int channels)
+    {
+        StaTest.Run(() =>
+        {
+            const int width = 3, height = 2;
+            int stride = width * channels * (bpp / 8);
+            byte[] raw = Enumerable.Range(0, stride * height).Select(i => (byte)(i * 7)).ToArray();
+            byte[] original = (byte[])raw.Clone();
+            using var file = new CVCIEFile { Cols = width, Rows = height, Channels = channels, Bpp = bpp, FileExtType = CVType.Raw, Data = raw };
+            using var mat = file.ToMat(showErrors: false);
+            var decoded = mat.ToWriteableBitmap();
+            var preview = LocalCameraPreview.CreateRawBitmap(raw, bpp, channels, width, height);
+            byte[] expected = new byte[raw.Length], actual = new byte[raw.Length];
+            decoded.CopyPixels(expected, stride, 0);
+            preview.CopyPixels(actual, stride, 0);
+            Assert.Equal(decoded.Format, preview.Format);
+            Assert.Equal(expected, actual);
+            Assert.Equal(original, raw);
         });
     }
 

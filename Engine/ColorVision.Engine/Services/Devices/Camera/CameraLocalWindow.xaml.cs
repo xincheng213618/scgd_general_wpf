@@ -935,7 +935,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             using LocalFlowFrameLease lease = frame.Acquire();
             byte[] rawData = lease.CopyRawToArray();
             byte[] cieData = lease.CopyCieToArray();
-            WriteableBitmap displayBitmap = CreateDisplayBitmap(rawData, lease.Metadata.SourceBpp, lease.Metadata.Channels, lease.Metadata.Width, lease.Metadata.Height);
+            WriteableBitmap displayBitmap = LocalCameraPreview.CreateRawBitmap(rawData, lease.Metadata.SourceBpp, lease.Metadata.Channels, lease.Metadata.Width, lease.Metadata.Height);
             displayBitmap.Freeze();
             return new LocalCaptureDisplayResult
             {
@@ -1010,56 +1010,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ImageView.OpenImage(writeableBitmap);
         }
-
-        private static unsafe WriteableBitmap CreateDisplayBitmap(byte[] data, int bpp, int channels, int width, int height)
-        {
-            var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
-
-            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, pixelFormat, null);
-            writeableBitmap.Lock();
-            if (bpp == 16 && channels == 3 && pixelFormat == PixelFormats.Rgb48)
-            {
-                fixed (byte* srcByte = data)
-                {
-                    byte* dstByte = (byte*)writeableBitmap.BackBuffer;
-
-                    int dstStride = writeableBitmap.BackBufferStride;
-
-                    for (int y = 0; y < height; y++)
-                    {
-                        ushort* src = (ushort*)(srcByte + y * dstStride);
-                        ushort* dst = (ushort*)(dstByte + y * dstStride);
-
-                        for (int x = 0; x < width; x++)
-                        {
-                            // src: G R B
-                            ushort b = src[x * 3 + 0];
-                            ushort r = src[x * 3 + 1];
-                            ushort g = src[x * 3 + 2];
-
-                            // dst: R G B
-                            dst[x * 3 + 0] =b;
-                            dst[x * 3 + 1] = g;
-                            dst[x * 3 + 2] = r;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Marshal.Copy(
-                    data,
-                    0,
-                    writeableBitmap.BackBuffer,
-                    Math.Min(data.Length, writeableBitmap.BackBufferStride * height)
-                );
-            }
-
-            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-            writeableBitmap.Unlock();
-            return writeableBitmap;
-        }
-
 
         private float[] GetCurrentExposureValues(int channelCount)
         {
