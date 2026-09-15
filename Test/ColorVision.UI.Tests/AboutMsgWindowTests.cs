@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -44,6 +45,10 @@ public sealed class AboutMsgWindowTests
                 bool expectedDark = expectedTheme == Theme.Dark;
 
                 first = CreateOffscreenWindow();
+                Assert.Equal(typeof(Window), typeof(AboutMsgWindow).BaseType);
+                Assert.Equal(ResizeMode.NoResize, first.ResizeMode);
+                Assert.Equal(WindowStyle.None, first.WindowStyle);
+                Assert.False(first.AllowsTransparency);
                 var firstScene = Assert.IsType<AboutArtScene>(first.FindName("SpectralScene"));
                 Assert.Equal(expectedDark, firstScene.IsDark);
                 first.Show();
@@ -65,7 +70,9 @@ public sealed class AboutMsgWindowTests
                 Assert.Equal(systemAppTheme, manager.AppsTheme);
                 Assert.Equal(applicationPalette, application.Resources.MergedDictionaries);
 
-                first.Close();
+                var closeButton = Assert.IsType<Button>(first.FindName("CloseButton"));
+                closeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, closeButton));
+                Assert.DoesNotContain(first, application.Windows.Cast<Window>());
                 first = null;
                 PumpDispatcher();
                 Assert.Equal(subscribersBefore, SubscriberCount(manager));
@@ -80,7 +87,11 @@ public sealed class AboutMsgWindowTests
                 Assert.Equal(initialSurface, Assert.IsType<SolidColorBrush>(reopened.Background).Color);
                 Assert.Equal(requestedTheme, manager.CurrentTheme);
                 Assert.Equal(expectedTheme, manager.CurrentUITheme);
-                reopened.Close();
+                var closeKey = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(reopened), Environment.TickCount, Key.Escape)
+                    { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                reopened.RaiseEvent(closeKey);
+                Assert.True(closeKey.Handled);
+                Assert.DoesNotContain(reopened, application.Windows.Cast<Window>());
                 reopened = null;
                 PumpDispatcher();
                 Assert.Equal(subscribersBefore, SubscriberCount(manager));
@@ -164,7 +175,9 @@ public sealed class AboutMsgWindowTests
             var version = Assert.IsType<TextBlock>(window.FindName("VersionLabel"));
             Assert.Equal(typeof(AboutMsgWindow).Assembly.GetName().Version?.ToString(), version.Text);
             Assert.False(window.AllowsTransparency);
-            Assert.False(window.IsBlurEnabled);
+            Assert.Equal(typeof(Window), typeof(AboutMsgWindow).BaseType);
+            Assert.Equal(ResizeMode.NoResize, window.ResizeMode);
+            Assert.Equal(WindowStyle.None, window.WindowStyle);
             Assert.Equal(1d, window.Opacity);
             Color surfaceBefore = Assert.IsType<SolidColorBrush>(window.Background).Color;
             Assert.Equal((byte)255, surfaceBefore.A);
@@ -188,6 +201,10 @@ public sealed class AboutMsgWindowTests
             Assert.Equal(resolvedTheme, publisher.CurrentUITheme);
             Assert.Equal(previousFormatCulture, CultureInfo.CurrentCulture);
             Assert.Equal(cultureName, CultureInfo.CurrentUICulture.Name);
+            var closeButton = Assert.IsType<Button>(window.FindName("CloseButton"));
+            closeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, closeButton));
+            PumpDispatcher();
+            Assert.DoesNotContain(window, application.Windows.Cast<Window>());
         }
         finally
         {

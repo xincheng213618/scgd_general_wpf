@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -56,7 +57,10 @@ public sealed class SpectrumAboutWindowTests
                                     Assert.Equal("Every wavelength. Infinite possibility.", ((TextBlock)window.FindName("HeadlineLabel")).Text);
                                     Assert.Equal("Close · Esc", ((Button)window.FindName("CloseButton")).ToolTip);
                                 }
-                                Assert.False(window.IsBlurEnabled);
+                                Assert.Equal(typeof(Window), typeof(SpectrumAboutWindow).BaseType);
+                                Assert.Equal(ResizeMode.NoResize, window.ResizeMode);
+                                Assert.Equal(WindowStyle.None, window.WindowStyle);
+                                Assert.False(window.AllowsTransparency);
                                 Color initialColor = ((SolidColorBrush)window.Background).Color;
                                 Assert.Equal(255, initialColor.A);
                                 ((Button)window.FindName("PaletteButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -65,6 +69,9 @@ public sealed class SpectrumAboutWindowTests
                                 Assert.Equal(theme, ThemeManager.Current.CurrentTheme);
                                 Assert.Equal(255, ((SolidColorBrush)window.Background).Color.A);
                                 if (!SystemParameters.HighContrast) Assert.NotEqual(initialColor, ((SolidColorBrush)window.Background).Color);
+                                ((Button)window.FindName("CloseButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                PumpDispatcher();
+                                Assert.DoesNotContain(window, app.Windows.Cast<Window>());
                             }
                             finally { window.Close(); PumpDispatcher(); }
 
@@ -74,6 +81,11 @@ public sealed class SpectrumAboutWindowTests
                                 reopened.Show();
                                 PumpDispatcher();
                                 Assert.Equal(theme == Theme.Dark, ((AboutArtScene)reopened.FindName("SpectralScene")).IsDark);
+                                var closeKey = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(reopened), Environment.TickCount, Key.Escape)
+                                    { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                                reopened.RaiseEvent(closeKey);
+                                Assert.True(closeKey.Handled);
+                                Assert.DoesNotContain(reopened, app.Windows.Cast<Window>());
                             }
                             finally { reopened.Close(); PumpDispatcher(); }
                         }

@@ -14,7 +14,7 @@ using System.Windows.Interop;
 
 namespace ColorVision.Themes.Tests;
 
-public class ThemeResourceTests
+public partial class ThemeResourceTests
 {
     private static readonly Lazy<Dispatcher> Dispatcher = new(() =>
     {

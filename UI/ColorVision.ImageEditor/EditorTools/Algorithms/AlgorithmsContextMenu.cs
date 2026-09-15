@@ -175,6 +175,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private RelayCommand CreateCommand(AlgorithmInteractiveCatalogEntry entry)
         {
             string compatibilityId = entry.Presentation.CompatibilityId;
+            if (DisplayMetrologyIds.All.Contains(entry.Descriptor.Id) && UsesSpecializedAdapter(entry.Descriptor))
+                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor),
+                    _ => CanExecuteDescriptor(entry.Descriptor));
             AlgorithmId id = entry.Descriptor.Id;
             if (!UsesSpecializedAdapter(entry.Descriptor))
                 return new RelayCommand(
@@ -218,7 +221,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             int plannedInputCount = UsesSpecializedAdapter(descriptor)
                 && descriptor.Id == StandardAlgorithmIds.ImageRegistration
                 ? 2
-                : 1;
+                : DisplayMetrologyIds.All.Contains(descriptor.Id) ? descriptor.MinimumInputCount : 1;
             return StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
                     descriptor,
                     plannedInputCount,

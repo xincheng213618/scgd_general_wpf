@@ -8,7 +8,7 @@ public sealed class DisPlayControlPanel : ScrollViewer, IDockPanelTitleActionPro
 {
     private static readonly IReadOnlyList<DockPanelTitleAction> Actions =
     [
-        new(DisPlayManager.CreateGroupCommand, "\uE710", "新建分组")
+        new(DisPlayManager.ManageControlsCommand, "\uE710", "管理设备控制")
     ];
 
     public DisPlayControlPanel()

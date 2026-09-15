@@ -31,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm Service => Device.DService;
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         private readonly Dictionary<Type, IDisplayAlgorithm> _algorithmDict = new();
         private readonly Dictionary<Type, UserControl> _algorithmViewDict = new();

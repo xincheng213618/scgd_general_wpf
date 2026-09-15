@@ -19,6 +19,8 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 
 身份和最低宿主要求读取 `manifest.json`，发布版本以 `Conoscope.csproj` 生成的 DLL `FileVersion` 为准。当前工程为 Windows/x64、`net10.0-windows` WPF，引用 Engine、ImageEditor 和 Solution；完整运行还依赖匹配的 ColorVision/cvColorVision 库、OpenCV 及所用功能的供应商运行库，不能只交付一个插件 DLL。`CVCommCore.*` / `MQTTMessageLib.*` 当前类型来源与旧独立程序集的兼容要求见 [cvColorVision 命名空间与程序集](../../engine-components/cvColorVision.md#命名空间与程序集)，不把历史 DLL 名称当作本项目固定输出。
 
+未打开文档时，主页显示紧凑的打开、型号和观察相机操作，工作区显示“打开数据文件”和“前往采集”入口，空文档标签栏不占位；采集、处理、分析和系统页仍可访问。打开文档后恢复主页的视图与导出分组，关闭最后一个文档后返回开始页。空工作区按整个停靠布局（包括浮动文档）判断，不以当前活动图像是否就绪判断，避免加载和切换时误回开始页。采集期间开始页入口暂时禁用并显示进度；切换工作区状态不改变用户手动折叠 Ribbon 的选择。
+
 这里有三种不同来源：
 
 | 来源 | 责任与前提 |

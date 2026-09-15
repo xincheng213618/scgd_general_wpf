@@ -1,5 +1,4 @@
 using ColorVision.Themes;
-using ColorVision.Themes.Controls;
 using Spectrum.Menus;
 using ColorVision.UI.Menus;
 using Spectrum.Help.Art;
@@ -26,7 +25,7 @@ public class MenuSpectrumAbout : SpectrumMenuIBase
     }
 }
 
-public partial class SpectrumAboutWindow : BaseWindow
+public partial class SpectrumAboutWindow : Window
 {
     private ThemeManager? _themePublisher;
     private bool _dark;
@@ -37,6 +36,7 @@ public partial class SpectrumAboutWindow : BaseWindow
         InitializeComponent();
         Icon = null;
         AboutWindowChrome.FitToWorkArea(this, 16);
+        Closing += (_, _) => Owner?.Activate();
 
         Assembly assembly = typeof(SpectrumAboutWindow).Assembly;
         VersionLabel.Text = assembly.GetName().Version?.ToString() ?? "—";
@@ -106,6 +106,12 @@ public partial class SpectrumAboutWindow : BaseWindow
     private void Window_Deactivated(object? sender, EventArgs e) => SpectralScene.MotionEnabled = false;
     private void Exhibition_MouseMove(object sender, MouseEventArgs e) => SpectralScene.TrackPointer(e.GetPosition(Exhibition));
     private void Exhibition_MouseLeave(object sender, MouseEventArgs e) => SpectralScene.TrackPointer(null);
+
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {

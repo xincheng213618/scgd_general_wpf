@@ -1,0 +1,119 @@
+---
+knowledge_id: "algorithms.display-metrology"
+knowledge_type: "topic"
+status: "current"
+summary: "本地显示图案计量：RGB套色、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
+aliases: ["RGB套色", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
+test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
+---
+
+# 显示图案计量
+
+显示计量提供六个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于图像右键 **算法 → 显示计量**，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
+
+当前输出是像素坐标和经指定指数解码的相对设备信号。它们不带亮度/色度标定、角度标定、客户 Recipe、产品 PASS/FAIL、Engine 历史结果落库或硬件扫描。没有现场图像时，可以用公开原理及已知真值的合成图验证计算。**合成测试不证明真实模组的检出率、重复性、绝对测量精度或标准符合性。**
+
+## 输入与操作
+
+1. 打开对应测试图像。先裁到完整图案或有效均匀显示区；算法不自动寻找显示边界，也不隐式应用 ROI。
+2. 在 **算法 → 显示计量** 中选择功能。参数编辑是事务式提交，取消不运行。
+3. 设置输入解码指数：线性信号为 `1`；仅在编码是已知幂函数时指定对应指数。普通照片、自动曝光、局部色调映射或显示拉伸不自动变成线性测量输入。
+4. 选择图案网格、检测阈值或扫描清单。双目模式将当前图像作为 `left`，再选择 `right`。
+5. 查看汇总和逐项有效状态。无效格以原因及空值输出，不能解释为零误差；全部无效时失败。
+
+支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；RGB 套色要求彩色输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
+
+单帧尺寸至少为 32×32，最多 8,388,608 像素；总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，候选连通域和累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
+
+## 功能与测量口径
+
+| 菜单 | 稳定 ID 后缀（前缀 `colorvision.display.`） | 输入与输出 |
+| --- | --- | --- |
+| RGB 图案套色 | `rgb-registration` | 单幅彩色图，每格一个亮目标；G 为参考，输出 R−G、B−G 的原图坐标差、距离和矢量叠图 |
+| 鬼影与杂散光评价 | `ghost-measurement` | 单图与显式主像矩形/背景；输出外部候选位置、面积、峰值比和积分比 |
+| 亮暗点 / 线缺陷 / Mura | `defects` | 均匀场；输出两种空间尺度上的缺陷候选、分析边界与区域框图 |
+| 左右眼对准与信号一致性 | `binocular-quality` | 两图；逐格原始视差、相似变换尺度/旋转/残差及各通道相对信号比 |
+| Eyebox 扫描评价 | `eyebox-scan` | 固定姿态下已知 XY 规则位置的多图；输出采样点覆盖率、相对信号和四角满足阈值的网格面积 |
+| 全视场斜边 SFR | `field-sfr` | 每格一条斜边；输出逐格 MTF 曲线、MTF50、边缘拟合质量及格点分布图 |
+
+### RGB 与双目几何
+
+图像按给定行列等分，每格至少 24×24 像素。目标定位用本格最小值作为背景、峰值跨度乘目标阈值提取四连通区域，再求背景扣除后的强度质心。像素中心原点在左上，x 向右、y 向下。主要目标面积至少 3 像素；存在强度积分超过最大目标 5% 的第二个合格目标时拒绝，目标触边时拒绝，低于最小信号跨度时拒绝。
+
+这适用于已知行列、每格一个完整亮点/亮十字/孤立亮图形；不提供自然图像匹配、任意点阵索引恢复或不同靶标形状间的对应保证。阈值截取质心会受光斑形状影响；每视场的像素位移要结合相机光学畸变及角度标定才能转成模块色差角。
+
+双目至少需要三个有效且非共线的对应目标。用最小二乘拟合左图到右图的相似变换，同时保留原始逐格位移与拟合残差；不把对齐后的零误差当作产品误差。旋转正值为图像坐标下的顺时针。当前不做稳健外点剔除，残差须结合格点表解释。只比较均匀白场时关闭“测量目标位置”；信号比仍要求相同采集条件，彩色图额外给出 B/G/R 各通道比值，不输出校准色差。
+
+### 鬼影与杂散光
+
+主像矩形用全图归一化坐标指定，外部区域不能为空。背景为用户提供的解码后相对信号，建议来自独立暗场或已知空白区域。逐像素扣背景并将负值截为零；主像出现满量程像素或主像无有效信号时拒绝。
+
+候选以 `RelativeThreshold × 主像区域峰值` 分割主像外信号。峰值比的分母是主像峰值，能量比的分母是主像矩形内积分；另外报告整个外部区域积分比与平均值比，两者有不同面积含义。候选形态区分连接泛光、细长光条和离散鬼影/杂散光，但不能仅凭一幅图确定光学成因；外部亮目标、相机自身杂散光和真实模组鬼影仍须通过测试图案及参考测量区分。
+
+### 屏体缺陷
+
+用 σ=2 像素的平滑图提取窄尺度残差，用配置背景尺度的高斯平滑图提取宽尺度残差：
+
+- 窄尺度 `原图−σ2平滑`：按面积识别亮/暗点候选，按长度与长宽比识别亮/暗线候选。
+- 宽尺度 `σ2平滑−背景平滑`：按面积识别 Mura 候选，排除细长区域。
+- 两种残差均分别处理正负极性，阈值为绝对下限与相对背景阈值中的较大值。
+
+排除宽度等于背景尺度的边界，并在结果中记录有效像素数；触及分析边界的候选标记为截断。背景尺度应大于待检异常尺度，过大范围的缓慢不均匀可能被背景模型吸收。输出的候选图是区域包围框图，不是像素分割真值；相邻缺陷可能合并，两尺度也可能对同一异常产生候选。面积单位是相机图像像素，不等于屏体物理像素或子像素数量。低灰阶检测需有合理噪声下限及相机坏点/暗场/平场校正。
+
+### Eyebox
+
+先在已知步距、相同 eye relief、相同姿态和曝光设置下采集规则 XY 网格。图像必须使用同一坐标方向和相同视场采样，算法不代替运动控制或瞳孔标定。提供清单：
+
+```json
+{
+  "schemaVersion": 1,
+  "parameters": {
+    "columns": 2,
+    "rows": 2,
+    "stepXMillimeters": 1,
+    "stepYMillimeters": 1,
+    "referenceIndex": 0
+  },
+  "frames": ["r0c0.png", "r0c1.png", "r1c0.png", "r1c1.png"]
+}
+```
+
+帧列表按行优先排列，路径相对清单目录；禁止重复文件或缺失位置。运行请求将它们命名为 `sample-0` 起的连续序列。参考位置坐标为零，x/y 坐标由行列与显式步距计算。必须选择可代表预期完整视场的参考图，参考帧中低于 `ReferenceSignalFloor` 的像素不属于本次有效测量域。
+
+每点用参考有效域内平均信号比和逐像素信号比覆盖率评价。一个网格仅在四个角的采样点均满足阈值时计入 `four_corner_accepted_mesh_area`。这个值是指定阈值下的采样网格面积，不是连续 Eyebox 边界、不证明未采样内部合格，也不会跨越中心空洞计算包围框面积。需要连续边界时应加密扫描或另行定义有验证依据的插值模型。
+
+### 全视场 SFR
+
+每格至少 40×32 像素（水平模式先转置），包含一条斜率绝对值 0.02..0.35 的独立斜边，边缘两侧需保留约 15 像素支撑。用行梯度质心拟合边线，将样本沿边法线投影到 4 倍过采样 ESF，中心差分为 LSF，再加 Hamming 窗计算 DFT 和差分响应修正。固定支撑为边缘两侧约 12 像素，输出到 0.5 cycles/pixel，步距为 1/128 cycles/pixel。
+
+结果中 `MTF50` 是 Nyquist 以内第一次下降穿过 0.5 的频率；未穿过时保留空值及原因，不伪造零或外推频率。多边缘、噪声过大、无斜率、低对比度、非直线和亚像素覆盖不足会拒绝该格。当前是有限图案范围的本地评价实现，不宣称 ISO 12233 符合性，不代替现有原生 SFR 的全部能力；无任意靶标自动寻边、扫描焦点控制、测量链去卷积或 cycles/degree 自动换算。
+
+## 公开依据与可复现数据
+
+本实现独立编写，公开资料用于原理和范围参考，没有复制商业 SDK 或将网络截图当作已标定测试数据：
+
+- [OpenCV 连通域与图像矩](https://docs.opencv.org/4.x/d3/dc0/group__imgproc__shape.html)：区域、面积及质心基础。
+- [FDA 近眼显示横向色差与眼点定位方法](https://cdrh-rst.fda.gov/head-mounted-display-eye-box-centering-using-transverse-chromatic-aberrations-0)：说明眼点位置对色差测量的影响；当前实现不包含该工具的完整定位程序。
+- [Radiant 近眼显示检测项目](https://www.radiantvisionsystems.com/industries/augmented-virtual-reality)：鬼影、均匀性与显示缺陷的应用范围。
+- [Gamma Scientific 近眼扫描测量](https://gamma-sci.com/products/ned-ar-vr-testing-collections/ned-lmd-e-series/)：Eyebox、视场、双目视差及其采集条件。
+- [Imatest 斜边计算验证](https://www.imatest.com/imaging/validating_slanted_edge/)与[斜边测量原理](https://www.quickmtf.com/slantededge.html)：ESF/LSF、MTF 及独立验证方法。
+
+在仓库根目录用 PowerShell 运行，无第三方 Python 包、网络访问或硬件动作：
+
+```powershell
+python Scripts/generate_display_metrology_samples.py
+```
+
+脚本写入 `artifacts/display-metrology/samples`：线性 16-bit 灰度 PNG、RGB 图、左右眼图、鬼影图、低灰阶缺陷图、斜边图、Eyebox 清单、真值 JSON、SHA-256 和操作说明。默认拒绝覆盖已有文件；只有明确指定 `--overwrite` 才替换这些生成文件。数据均为可控合成，不来自真实模组。
+
+独立公开输入可使用 Imatest 验证页面提供的 [Slanted edge verification patterns 图包](https://www.imatest.com/wp-content/uploads/2012/02/Slanted_edge_verification_patterns.zip)。这也是数字生成的验证图，不是模组现场照片。图包包含 2953×981 的不同模糊程度图像，可在右侧弱抗锯齿竖直斜边取原图矩形 `(2515,555,165,220)`，裁图后以 1 行 × 1 列、解码指数 1 运行 SFR。核对模糊增加时曲线下降及 MTF50 趋势；原始锐利图未在 Nyquist 以内穿越 0.5 时应保留空值。保留来源、下载包哈希、ROI、参数及完整曲线；这个检查不等于与厂商软件逐值一致或现场精度验收。
+
+## 验证
+
+```powershell
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~DisplayMetrologyTests|FullyQualifiedName~AlgorithmReleaseGateTests|FullyQualifiedName~ImageAlgorithmPlatformTests"
+```
+
+用例覆盖已知位移/旋转/倍率、不同位深、强度比、点线与 Mura 位置、Eyebox 空洞与网格面积、高斯理论 MTF50、无效样本、预算、取消、PNG 导入和结果窗口所有权。测试存在或文档构建成功不等于已经运行；本次执行结果以实际日志为准。现场仍需验证采集重复性、不同模组/背景/缺陷尺度、误报漏报、运动扫描标定以及完整量产结果交接。

@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         public DeviceSensor Device { get; set; }
         private MQTTSensor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplaySensor(DeviceSensor device)
         {

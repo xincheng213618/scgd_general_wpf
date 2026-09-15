@@ -122,6 +122,10 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 
 `Themes/Components/Dialog.xaml` 提供通用的 `CV.Button.Primary`、`CV.Button.Secondary`、`CV.Button.Text`、`CV.Tag.Border` 和 `CV.Card`。文字操作使用 `CV.Action.Foreground`，辅助说明使用不透明度 0.72 的 `CV.Text.Secondary`。悬停、按下、禁用等反馈仍由共享模板负责。
 
+`Controls/MessageBox.cs` 的 `MessageBox1.Show` 保留现有重载，由 `MessageBoxWindow` 统一呈现浅深主题消息。正文保持可选择、复制，使用透明底色；状态图标为矢量图形，确认/是与次要按钮有清晰层级，长文本按所在显示器工作区限制宽高并滚动，操作区始终留在正文外。`ShowAgain` 使用独立复选项行，返回“不再提示”的勾选值；传入 `true` 时直接跳过显示。
+
+普通调用在显式 owner 或应用的 Dispatcher 上显示。未传 owner 时优先使用活动窗口，再使用可见主窗口，否则屏幕居中；弹窗仅继承 owner 的 Topmost，不全局强制置顶。`defaultResult` 指定初始焦点及 Enter 默认按钮，无匹配项时使用第一个操作；它不会预先写入返回结果。按钮点击先写结果再关闭；Esc、标题栏关闭与 Alt+F4 对 OK 返回 OK，对 OKCancel/YesNoCancel 返回 Cancel，对 YesNo 返回 No，避免关闭被当作确认。`RightAlign`/`RtlReading` 由主题窗口处理；`ServiceNotification`/`DefaultDesktopOnly` 保留原生窗口语义并完整传递 options。`Test/ColorVision.Themes.Tests/MessageBoxTests.cs` 覆盖按钮结果、关闭/defaultResult 分离、后台线程调用、owner、选项、复选项及浅深主题长文本布局；真实多显示器混合 DPI 与屏幕阅读器仍需交互验收。
+
 检查更新窗口直接接入这套资源，“变更日志”“程序备份”“重新安装”保持主要操作文字层级。恢复、服务主机、应用与工具、RBAC 等现有消费者仍可通过 `Themes/UpdateDialogTheme.xaml` 使用旧 `UpdateDialog.*` 资源；旧文字按钮保留次要文字默认值。主程序的 `Update/UpdateDialogTheme.xaml` 继续是兼容入口。共享资源不引入更新、服务或权限业务依赖。
 
 `WindowKeyboardNavigation.Attach` 在首次呈现时设置指定焦点，Tab 在窗口内循环；未被子控件处理的无修饰 Esc 关闭窗口或调用自定义返回动作。搜索、下拉和上下文菜单可优先处理 Esc；窗口是否忙碌由调用方决定。

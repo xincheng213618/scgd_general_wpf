@@ -29,7 +29,7 @@ public sealed class HelpKeyboardNavigationTests
             {
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
                 IMenuItem[] entries = [new WindowsServicePlugin.ServiceManager.MenuServiceManager(), new WindowsServicePlugin.Menus.ServiceLog(),
-                    new Guidance.MenuNewUserGuide(), new ServiceHost.MenuServiceHostManager(),
+                    new Guidance.MenuNewUserGuide(), new global::ColorVision.ServiceHost.MenuServiceHostManager(),
                     new ColorVision.UI.Desktop.Feedback.MenuSendFeedback(), new ColorVision.UI.Desktop.Marketplace.MenuPluginManager(),
                     new ColorVision.SocketProtocol.MenuProjectManager(), new MenuCheckAndUpdateV1(),
                     new ColorVision.UI.LogImp.MenuLogWindow(), new NativeLogging.MenuNativeLog(), new AboutMsgExport()];

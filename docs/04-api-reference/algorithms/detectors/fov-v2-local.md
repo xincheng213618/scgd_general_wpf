@@ -25,7 +25,7 @@ related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results",
 cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 \]
 
-窗口只回填 `cameraDegrees`，不会修改 `FovDist`。所选传感器方向必须与 `FovDist` 代表的参考像素跨度一致；使用相机 ROI 或裁图时，应填写有效成像区域的传感器尺寸，而不是未经裁切的名义尺寸。
+输入变化后，窗口立即显示水平、垂直和对角 FOV，并根据“参考方向”显示将写回的 `cameraDegrees`；确认后只回填 `cameraDegrees`，不会修改 `FovDist`。传感器宽度和高度各保留一个：分别用于水平、垂直计算，并共同用于对角计算。所选传感器方向必须与 `FovDist` 代表的参考像素跨度一致；使用相机 ROI 或裁图时，应填写有效成像区域的传感器尺寸，而不是未经裁切的名义尺寸。
 
 两项参数都必须是大于零的有限数值，且 `cameraDegrees` 小于 `180` 度。参数虽然可调，但同一台相机的生产流程应使用已确认的配对值，不应用调参吸收发光区定位误差。
 
@@ -38,7 +38,7 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 1. 上游是 `FindLightArea` 或 `LightArea` 且已有四条有效角点明细时，节点直接使用 LT、RT、RB、LB 计算，保留原始四角，不再读取像素重定位。
 2. 上游只有图像时，节点对当前内存帧运行与本地发光区相同的 `RobustV2`，直接使用成功结果的四角；没有内存帧时再读取上游结果对应的图像文件。
 3. 两种输入使用相同的四角角度公式，不经过 `FovLuminanceBoundary`。
-4. 相机优先取上游图像记录的设备编码；旧发光区结果没有 `SourceMasterId` 时，会按其图像路径反查最近的图像记录。这个相机关联只用于追溯和 ImageView 落库，不改写节点中的两项 FOV 参数；普通图片没有相机服务也可以计算。
+4. 相机优先取上游图像记录的设备编码；旧发光区结果没有 `SourceMasterId` 时，会按其图像路径反查最近的图像记录。这个相机关联只用于流程结果追溯，不改写节点中的两项 FOV 参数。
 5. 成功后写入现有 FOV 2.0 结果并将本次主结果传给后续节点。
 
 发光区明细只有有效数据库角点，没有可用内存帧或图像文件时仍可计算。需要自行定位但没有图像、`RobustV2` 拒绝结果、角点不是四个、顺序无效或 FOV 参数无效时拒绝执行。`MinimumConfidence` 只约束自动运行的 `RobustV2`，不会用图像中的亮度再次筛选有效上游角点。
@@ -54,9 +54,9 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 
 FOV 标签圆的直径与当前结果文字字号一致；修改固定结果字号时圆和文字同步缩放，启用图层自动刷新时二者也随视图缩放保持一致。该规则只用于 FOV 结果标签，不改变普通测量圆的几何半径。
 
-新的 FOV 运行会清除上一组 FOV 叠图，打开新图也会清除旧结果。若当前图像能关联到已有测量批次，ImageView 同时写入相同的 FOV 2.0 数据库结果；普通磁盘图片仍可计算和绘制，但结果窗口会明确提示没有关联批次，因此未写数据库。
+ImageView 的 FOV 选项只包含 `FovDist`、`cameraDegrees` 和本地发光区定位的“最低可信度”。`RobustV2` 当前只向普通调用者开放最低可信度；矩形入口本身提供搜索区域。相机选择、流程批次和数据库结果不属于这个独立图像工具。
 
-ImageView 的计算与绘制不以数据库成功为前提：数据库保存或结果通知失败时仍保留本次有效叠图，并在结果窗口显示失败原因。流程节点继续使用严格结果链；持久化失败会使节点失败，不能把只有内存数值的运行交给后续节点。
+新的 FOV 运行会清除上一组 FOV 叠图，打开新图也会清除旧结果。ImageView 只计算、绘制并显示本次结果，不查询测量批次、不写数据库，也不发布流程结果。流程节点继续使用严格结果链；持久化失败会使节点失败，不能把只有内存数值的运行交给后续节点。
 
 ## 计算口径
 
@@ -93,13 +93,13 @@ D_Fov, H_Fov, V_FOV, clolorVisionH_Fov, clolorVisionV_Fov,
 leftDownToRightUp, leftUpToRightDown, message
 ```
 
-七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`BoundaryMode`（`UpstreamCorners` 或 `RobustV2`）及定位诊断保存在主记录参数中，便于追溯。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接，ImageView 无批次时不创建虚构批次。
+流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`BoundaryMode`（`UpstreamCorners` 或 `RobustV2`）及定位诊断保存在主记录参数中，便于追溯。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
 
 内存帧若直接来自普通图片且未经过校正或翻转，主记录 `ImgFile` 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 `CvRawFilePath` / `CvCieFilePath`；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。
 
 ## 验证边界
 
-托管专项测试验证上游角点不需像素且不受旧比例参数影响，并用已部署服务的样例四角验证精确角度换算至 `1e-6`；同时检查旧 JSON 字段、参数可见性、源图路径和 ImageView 叠图结构。原生集成测试以暗角渐变矩形验证几何边缘，并保留实验算法的失败特征对照。运行：
+托管专项测试验证上游角点不需像素且不受旧比例参数影响，并用已部署服务的样例四角验证精确角度换算至 `1e-6`；同时检查旧 JSON 字段、参数可见性、视场角计算结果可见性、ImageView 无相机/数据库耦合和叠图结构。原生集成测试以暗角渐变矩形验证几何边缘，并保留实验算法的失败特征对照。运行：
 
 ```powershell
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~FovCalculationTests"

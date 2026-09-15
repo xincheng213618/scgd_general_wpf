@@ -26,11 +26,14 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","eng
 | 发布状态 | 能力 |
 | --- | --- |
 | 当前默认启用 | 14 个既有像素算法；ROI 统计；图像剖面；图像比较；几何变换；图像配准；镜头畸变校正；成像校正 |
+| 当前默认启用（离线图案评价） | 显示计量六项：RGB 套色、鬼影与杂散光、屏体缺陷、双目几何与信号一致性、Eyebox 扫描汇总、全视场斜边 SFR；明确输入图案、信号口径、资源预算与无效结果，不承诺现场精度 |
 | 条件启用 | `RemoveMoire` 属于上述既有像素算法，但只有 `opencv_helper.dll` 可加载且包含 `M_RemoveMoire` export 时才显示和执行；依赖缺失时结构化拒绝 |
 | 暂缓发布（Experimental） | Blob / 连通域、轮廓提取、亚像素边缘、直线拟合、圆拟合、FFT / 频域分析、摩尔纹分析 |
 | 仅设计（Deferred） | ONNX / AI 推理；没有运行时、模型、Execution Provider、产品菜单或默认 Runner 能力 |
 
 暂缓项的 Descriptor 和实现不删除；重新启用必须分别闭环文档中记录的最坏情况资源上限、数值/测量正确性和生产规模测试，再从这一处默认 provider 注册门禁移除，不能在菜单、Batch、Flow 或其他 Runner 调用方单独开旁路。未完成的改进和验证不因文档整理而自动成为已发布能力。
+
+显示计量通过 `DisplayMetrologyCatalog` 与 `DisplayMetrologyProvider` 注册，不启用上述暂缓 provider。菜单复用统一分析会话的取消、换图失效、结果窗口和 overlay 生命周期；多图由专用适配器组织为左右眼对或显式扫描序列，不进入像素输出 Batch/Copilot 白名单。方法、操作、公开依据与合成样本见[显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md)。Flow capability 仍只表示 Runner/API 可调用，不表示已注册量产节点。
 
 ## 当前普通像素算法执行入口
 

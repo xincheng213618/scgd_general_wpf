@@ -20,6 +20,14 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Presentation/Ribbon/ConoscopeRibbonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="WorkspaceVisibilityConverter"/>
+            <Style x:Key="EmptyWorkspaceSurfaceStyle" TargetType="FrameworkElement">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
@@ -44,13 +52,33 @@
                 <TabItem Header="{x:Static properties:Resources.TabHome}">
                     <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                         <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
-                            <Border Style="{StaticResource RibbonGroupStyle}">
+                            <StackPanel Orientation="Horizontal" Margin="6,3" Style="{StaticResource EmptyWorkspaceSurfaceStyle}">
+                                <Button Click="OpenFile_Click" Style="{StaticResource RibbonPrimaryButtonStyle}" IsEnabled="{Binding IsEnabled, ElementName=StartPageActions}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Open}" Style="{StaticResource RibbonCompactVectorIconStyle}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonButtonCaptionStyle}"/>
+                                    </StackPanel>
+                                </Button>
+                                <ComboBox Width="140" Margin="12,0,8,0" Style="{StaticResource RibbonComboBoxStyle}"
+                                    ItemsSource="{Binding ItemsSource, ElementName=cbModelType}"
+                                    SelectedItem="{Binding SelectedItem, ElementName=cbModelType, Mode=TwoWay}"
+                                    AutomationProperties.Name="{x:Static properties:Resources.CurrentModel}"/>
+                                <Button Click="btnOpenObservationCamera_Click" Style="{StaticResource RibbonLargeButtonStyle}"
+                                    Visibility="{Binding Visibility, ElementName=btnOpenObservationCamera}"
+                                    ToolTip="{x:Static properties:Resources.TipOpenObservationCamera}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Camera}" Style="{StaticResource RibbonCompactVectorIconStyle}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.BtnObservationCamera}" Style="{StaticResource RibbonButtonCaptionStyle}"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <Border Style="{StaticResource RibbonGroupStyle}" Visibility="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource WorkspaceVisibilityConverter}}">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
-                                    <Button Click="OpenFile_Click" Style="{StaticResource RibbonTallPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenFile}">
+                                    <Button Click="OpenFile_Click" Style="{StaticResource RibbonTallPrimaryButtonStyle}" ToolTip="{x:Static properties:Resources.TipOpenFile}" IsEnabled="{Binding IsEnabled, ElementName=StartPageActions}">
                                         <StackPanel Orientation="Vertical">
                                             <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Open}" Style="{StaticResource RibbonVectorIconStyle}"/>
                                             <TextBlock Text="{x:Static properties:Resources.GroupOpen}" Style="{StaticResource RibbonTallCaptionStyle}"/>
@@ -59,7 +87,7 @@
                                     <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupData}" Style="{StaticResource RibbonGroupHeaderStyle}"/>
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource RibbonGroupStyle}">
+                            <Border Style="{StaticResource RibbonGroupStyle}" Visibility="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource WorkspaceVisibilityConverter}}">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*"/>
@@ -85,7 +113,8 @@
                                     <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.GroupModel}" Style="{StaticResource RibbonGroupHeaderStyle}"/>
                                 </Grid>
                             </Border>
-                            <StackPanel x:Name="bdActiveViewControls" Orientation="Horizontal" VerticalAlignment="Top">
+                            <StackPanel x:Name="bdActiveViewControls" Orientation="Horizontal" VerticalAlignment="Top"
+                                Visibility="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource WorkspaceVisibilityConverter}}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -171,7 +200,8 @@
                                     </Grid>
                                 </Border>
                             </StackPanel>
-                            <StackPanel x:Name="bdActiveViewExportControls" Orientation="Horizontal" VerticalAlignment="Top">
+                            <StackPanel x:Name="bdActiveViewExportControls" Orientation="Horizontal" VerticalAlignment="Top"
+                                Visibility="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource WorkspaceVisibilityConverter}}">
                                 <Border Style="{StaticResource RibbonGroupStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -253,7 +283,7 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
-                <TabItem Header="{x:Static properties:Resources.TabCapture}">
+                <TabItem x:Name="CaptureTab" Header="{x:Static properties:Resources.TabCapture}">
                     <ScrollViewer Style="{StaticResource RibbonTabScrollViewerStyle}">
                         <StackPanel Style="{StaticResource RibbonTabContentPanelStyle}">
                             <Border Style="{StaticResource RibbonGroupStyle}">
@@ -729,12 +759,34 @@
                 </TabItem>
             </TabControl>
         </Border>
+        <Grid x:Name="EmptyWorkspace" Grid.Row="1" Margin="24" Style="{StaticResource EmptyWorkspaceSurfaceStyle}">
+            <StackPanel Width="460" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Open}" Width="40" Height="40" Margin="0,0,0,16"
+                    HorizontalAlignment="Center" Foreground="{DynamicResource CV.Accent.Primary}"/>
+                <TextBlock Text="{x:Static properties:Resources.WorkspaceStartTitle}" FontSize="22" FontWeight="SemiBold"
+                    Foreground="{DynamicResource CV.Text.Primary}" HorizontalAlignment="Center"/>
+                <TextBlock Text="{x:Static properties:Resources.WorkspaceStartHint}" Margin="0,10,0,24" TextWrapping="Wrap"
+                    TextAlignment="Center" Foreground="{DynamicResource CV.Text.Secondary}"/>
+                <StackPanel x:Name="StartPageActions" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="{x:Static properties:Resources.WorkspaceOpenData}" Click="OpenFile_Click"
+                        Style="{StaticResource RibbonPrimaryButtonStyle}" Padding="18,8" Margin="0,0,12,0"/>
+                    <Button Content="{x:Static properties:Resources.WorkspaceGoToCapture}" Click="GoToCapture_Click"
+                        Style="{StaticResource RibbonLargeButtonStyle}" Padding="18,8" Margin="0"/>
+                </StackPanel>
+                <StackPanel Margin="0,20,0,0" Visibility="{Binding Visibility, ElementName=operationProgressStatusItem}">
+                    <ProgressBar IsIndeterminate="True" Width="200" Height="3" Foreground="{DynamicResource CV.Accent.Primary}"/>
+                    <TextBlock Text="{Binding Text, ElementName=tbOperationProgressText}" Margin="0,10,0,0"
+                        HorizontalAlignment="Center" Foreground="{DynamicResource CV.Text.Secondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
         <xcad:DockingManager x:Name="DockingManager"
             Grid.Row="1"
-            Margin="8,6,8,4"
+            Margin="0,2,0,0"
             Padding="0"
             Background="Transparent"
             BorderThickness="0"
+            Visibility="{Binding HasWorkspaceDocuments, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource WorkspaceVisibilityConverter}}"
             DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot>
                 <xcad:LayoutPanel Orientation="Horizontal">

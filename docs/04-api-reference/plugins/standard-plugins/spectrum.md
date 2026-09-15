@@ -3,9 +3,9 @@ knowledge_id: "plugins.spectrum"
 knowledge_type: "topic"
 status: "current"
 summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
-aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
-code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
+aliases: ["HoleMapping","孔位映射","编辑滤光轮配置","Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
+code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/PropertyEditor/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
 related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket","ui.documents","operations.main-window","ui.themes"]
 ---
 
@@ -33,9 +33,19 @@ Spectrum 使用与主程序相同的现代 AvalonDock 主题，资源与停靠�
 
 Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最大化和关闭按钮合并到同一行，不再向设置发现公开独立开关；旧配置中的 `UseCompactTitleBar` 字段不再影响窗口选择。系统、DWM 或窗口条件不满足时保留原生标题栏。Spectrum 以源码链接复用主程序的 `CompactTitleBarChrome` 与可见性保护逻辑，不加载主程序可执行程序集；全屏时暂停紧凑外观，退出全屏后恢复。
 
-左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
+左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。工作区外边距与主程序对齐，控制卡片使用紧凑间距；快门与滤色轮没有错误时折叠提示行，保留原有按钮尺寸和连接入口。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
 
 相对和绝对光谱的背景、坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。光谱色条与测量曲线配色保留。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
+
+## 滤光轮孔位映射
+
+在滤色轮设置的 PropertyGrid 中，`HoleMapping` 显示孔位数量，右侧 **编辑** 打开“编辑滤光轮配置”。窗口逐行编辑孔位索引和名称，支持添加、删除及滚动；Serial 和 BaudRate 仍使用各自原有属性编辑器。
+
+`FilterWheelHoleMappingPropertiesEditor` 通过属性上的 `PropertyEditorType` 接入。`FilterWheelHoleMappingEditSession` 打开时复制每行，**提交** 校验成功才替换该属性；取消、Esc 或关闭窗口均丢弃副本。新行取当前草稿中最小的未使用非负索引，默认五行之后为 5，删除后可复用空缺。提交拒绝非 Int32 整数和重复索引，但不限制空名称、同名孔位、空集合或已有整数范围。配置编辑不扩大硬件能力：当前 `FilterWheelController.SetPositionAsync` 仍只接受 0–4。
+
+每行的 `CalibrationGroupName` 不在此窗口展示，复制与提交时原样保留。该字段注释描述了自动切组用途，但当前 `SpectrometerManager.OnFilterWheelPositionChanged` 实际先按标定组的 `FilterWheelPosition` 查找，再按孔位的 ND 名称查找，并不调用 `GetCalibrationGroupName`。自动切组关联仍在“标定文件分组管理”维护，不能把此字段的保存误认为运行时已经使用它。
+
+`FilterWheelHoleMappingEditSessionTests` 覆盖隔离编辑、提交快照、添加/删除、索引校验和标定组保留；窗口按钮、主题和滚动需要 WPF 预览验收。
 
 ## 先查什么
 

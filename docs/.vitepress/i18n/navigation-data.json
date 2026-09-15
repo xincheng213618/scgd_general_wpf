@@ -1241,6 +1241,12 @@
             },
             {
               "text": {
+                "root": "显示图案计量"
+              },
+              "link": "/04-api-reference/algorithms/detectors/display-metrology"
+            },
+            {
+              "text": {
                 "root": "本地十字定位 FindCross"
               },
               "link": "/04-api-reference/algorithms/detectors/find-cross"
@@ -3764,6 +3770,12 @@
                 "root": "客户项目与对接示例入口"
               },
               "link": "/04-api-reference/projects/README"
+            },
+            {
+              "text": {
+                "root": "显示图案计量"
+              },
+              "link": "/04-api-reference/algorithms/detectors/display-metrology"
             },
             {
               "text": {

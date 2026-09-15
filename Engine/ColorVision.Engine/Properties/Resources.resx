@@ -1146,4 +1146,11 @@
   <data name="CommandAlgorithmPluginHint" xml:space="preserve"><value>上传服务端算法插件</value></data>
   <data name="CommandAlgorithmConfigHint" xml:space="preserve"><value>管理第三方算法配置</value></data>
   <data name="WindowServiceTitle" xml:space="preserve"><value>设备配置</value></data>
+  <data name="PhyCameraConfigurationSection" xml:space="preserve"><value>相机配置</value></data>
+  <data name="PhyCameraConfigurationHint" xml:space="preserve"><value>设置相机参数、配置文件与滤光轮</value></data>
+  <data name="PhyCameraCalibrationSection" xml:space="preserve"><value>校正管理</value></data>
+  <data name="PhyCameraCalibrationHint" xml:space="preserve"><value>管理校正文件、校正组与模板</value></data>
+  <data name="PhyCameraRecoverySection" xml:space="preserve"><value>备份与恢复</value></data>
+  <data name="PhyCameraRecoveryHint" xml:space="preserve"><value>保存还原点，或从已有还原点恢复</value></data>
+  <data name="PhyCameraResetHint" xml:space="preserve"><value>重置将清除当前相机的校正资源与模板</value></data>
 </root>

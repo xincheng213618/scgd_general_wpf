@@ -218,6 +218,49 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.display-metrology",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地显示图案计量：RGB套色、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
+      "aliases": [
+        "RGB套色",
+        "横向色差",
+        "Eyebox",
+        "眼盒",
+        "低灰阶Mura",
+        "显示计量",
+        "全视场清晰度",
+        "左右眼对准",
+        "DisplayMetrologyProvider",
+        "generate_display_metrology_samples"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
+        "Scripts/generate_display_metrology_samples.py"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
+      ],
+      "related": [
+        "algorithms.platform",
+        "algorithms.local-native-analysis",
+        "algorithms.fov-local"
+      ],
+      "code_scopes": [
+        "Scripts",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "显示图案计量",
+      "source": "docs/04-api-reference/algorithms/detectors/display-metrology.md",
+      "url": "/04-api-reference/algorithms/detectors/display-metrology",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.find-cross",
       "knowledge_type": "topic",
       "status": "current",
@@ -8591,6 +8634,9 @@
       "status": "current",
       "summary": "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。",
       "aliases": [
+        "HoleMapping",
+        "孔位映射",
+        "编辑滤光轮配置",
         "Spectrum 如何校准和发布",
         "光谱测量结果不一致",
         "Spectrum",
@@ -8621,6 +8667,7 @@
         "Plugins/Spectrum/SpectrometerManager.cs",
         "Plugins/Spectrum/Calibration",
         "Plugins/Spectrum/Configs",
+        "Plugins/Spectrum/PropertyEditor",
         "Plugins/Spectrum/Data",
         "Plugins/Spectrum/Models/ViewResultSpectrum.cs",
         "Plugins/Spectrum/SpectrumCsvExporter.cs",
@@ -8633,6 +8680,7 @@
       ],
       "test_paths": [
         "Test/Spectrum.Tests/Spectrum.Tests.csproj",
+        "Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs",
         "Test/Spectrum.Tests/ViewResultSpectrumTests.cs",
         "Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs",
         "Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs",

@@ -1,116 +1,96 @@
-﻿#pragma warning disable CS8625
+using System;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Themes.Controls
 {
-    //
-    // 摘要:
-    //     Displays a message box.
+    /// <summary>Displays a themed message box on the owner's or application's UI thread.</summary>
     public sealed class MessageBox1
     {
-        //icon 的部分建议移除，目前采用了已经淘汰的system.drawing.Common,如果放在其他地方，需要重置图像
-        //参考了一些代码，并不是显示上的最优解，这里可以做一些调整
-
-        private static MessageBoxResult Initialize(string messageBoxText, string caption = null, MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
+        private static MessageBoxResult Initialize(Window? owner, string messageBoxText, string? caption = null,
+            MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None,
+            MessageBoxResult defaultResult = MessageBoxResult.None, MessageBoxOptions options = MessageBoxOptions.None)
         {
+            const MessageBoxOptions supported = MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading |
+                MessageBoxOptions.ServiceNotification | MessageBoxOptions.DefaultDesktopOnly;
+            if ((options & ~supported) != 0)
+                throw new InvalidEnumArgumentException(nameof(options), (int)options, typeof(MessageBoxOptions));
+
             caption ??= Properties.Resources.MsgBox_Prompt;
-            MessageBoxResult MessageBoxResult = MessageBoxResult.None;
-            Application.Current.Dispatcher.Invoke(delegate
+            // Desktop/service flags require a native message box; pass every option through unchanged.
+            if ((options & (MessageBoxOptions.ServiceNotification | MessageBoxOptions.DefaultDesktopOnly)) != 0)
+                return owner == null
+                    ? System.Windows.MessageBox.Show(messageBoxText, caption, button, icon, defaultResult, options)
+                    : System.Windows.MessageBox.Show(owner, messageBoxText, caption, button, icon, defaultResult, options);
+
+            return Invoke(owner, () =>
             {
-                Controls.MessageBoxWindow messageBox1 = new Controls.MessageBoxWindow(messageBoxText, caption, button, icon, defaultResult);
-                messageBox1.Topmost = true;
-                messageBox1.ShowDialog();
-                MessageBoxResult = messageBox1.MessageBoxResult;
+                var dialog = CreateDialog(owner, messageBoxText, caption, button, icon, defaultResult);
+                if ((options & MessageBoxOptions.RtlReading) != 0) dialog.FlowDirection = FlowDirection.RightToLeft;
+                if ((options & MessageBoxOptions.RightAlign) != 0) dialog.messageBoxText.TextAlignment = TextAlignment.Right;
+                dialog.ShowDialog();
+                return dialog.MessageBoxResult;
             });
-            return MessageBoxResult;
         }
 
-        public static MessageBoxResult Show(string messageBoxText)
+        private static T Invoke<T>(Window? owner, Func<T> action)
         {
-            return Initialize(messageBoxText);
+            Dispatcher dispatcher = owner?.Dispatcher ?? Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            return dispatcher.CheckAccess() ? action() : dispatcher.Invoke(action);
         }
 
-        public static MessageBoxResult Show(string messageBoxText, string caption)
+        private static MessageBoxWindow CreateDialog(Window? owner, string messageBoxText, string caption,
+            MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult)
         {
-            return Initialize(messageBoxText, caption);
+            if (owner == null && Application.Current is { } app)
+            {
+                foreach (Window window in app.Windows)
+                {
+                    if (window.Dispatcher.CheckAccess() && window.IsVisible && window.IsActive)
+                    {
+                        owner = window;
+                        break;
+                    }
+                }
+                if (owner == null && app.MainWindow is { } main && main.Dispatcher.CheckAccess() && main.IsVisible)
+                    owner = main;
+            }
+
+            return new MessageBoxWindow(messageBoxText, caption, button, icon, defaultResult)
+            {
+                Owner = owner,
+                WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
+                Topmost = owner?.Topmost ?? false
+            };
         }
 
-        /// <summary>
-        /// 带有checkbox的显示
-        /// </summary>
+        /// <summary>Shows an optional reminder and returns the user's "don't show again" choice.</summary>
         public static bool ShowAgain(string messageBoxText, string caption, bool DontShowAgain)
         {
-            if (DontShowAgain) return DontShowAgain;
-            Application.Current.Dispatcher.Invoke(delegate
+            if (DontShowAgain) return true;
+            return Invoke(null, () =>
             {
-                Controls.MessageBoxWindow messageBox1 = new Controls.MessageBoxWindow(messageBoxText, caption);
-                messageBox1.Topmost = true;
-                messageBox1.Owner = Application.Current.MainWindow;
-                messageBox1.show_again.Visibility = Visibility.Visible;
-                messageBox1.ShowDialog();
-                DontShowAgain = messageBox1.DontShowAgain;
+                var dialog = CreateDialog(null, messageBoxText, caption ?? Properties.Resources.MsgBox_Prompt,
+                    MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None);
+                dialog.show_again.Visibility = Visibility.Visible;
+                dialog.ShowDialog();
+                return dialog.DontShowAgain;
             });
-            return DontShowAgain;
         }
 
-        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button)
-        {
-            return Initialize(messageBoxText, caption, button);
-        }
+        public static MessageBoxResult Show(string messageBoxText) => Initialize(null, messageBoxText);
+        public static MessageBoxResult Show(string messageBoxText, string caption) => Initialize(null, messageBoxText, caption);
+        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button) => Initialize(null, messageBoxText, caption, button);
+        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon) => Initialize(null, messageBoxText, caption, button, icon);
+        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult) => Initialize(null, messageBoxText, caption, button, icon, defaultResult);
+        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options) => Initialize(null, messageBoxText, caption, button, icon, defaultResult, options);
 
-        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
-        {
-            return Initialize(messageBoxText, caption, button, icon);
-        }
-
-        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult)
-        {
-            return Initialize(messageBoxText, caption, button, icon, defaultResult);
-        }
-
-        public static MessageBoxResult Show(string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options)
-        {
-            return MessageBox.Show(messageBoxText, caption, button, icon, defaultResult);
-        }
-
-        private static MessageBoxResult Initialize(Window? owner, string messageBoxText, string caption = null, MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None, MessageBoxResult defaultResult = MessageBoxResult.None)
-        {
-            caption ??= Properties.Resources.MsgBox_Prompt;
-            Controls.MessageBoxWindow messageBox1 = new Controls.MessageBoxWindow(messageBoxText, caption, button, icon, defaultResult);
-            messageBox1.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            messageBox1.Owner = owner;
-            messageBox1.ShowDialog();
-            return messageBox1.MessageBoxResult;
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText)
-        {
-            return Initialize(owner, messageBoxText);
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption)
-        {
-            return Initialize(owner, messageBoxText, caption);
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button)
-        {
-            return Initialize(owner, messageBoxText, caption, button);
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon)
-        {
-            return Initialize(owner, messageBoxText, caption, button, icon);
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult)
-        {
-            return Initialize(owner, messageBoxText, caption, button, icon, defaultResult);
-        }
-
-        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options)
-        {
-            return MessageBox.Show(owner, messageBoxText, caption, button, icon, defaultResult);
-        }
+        public static MessageBoxResult Show(Window? owner, string messageBoxText) => Initialize(owner, messageBoxText);
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption) => Initialize(owner, messageBoxText, caption);
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button) => Initialize(owner, messageBoxText, caption, button);
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon) => Initialize(owner, messageBoxText, caption, button, icon);
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult) => Initialize(owner, messageBoxText, caption, button, icon, defaultResult);
+        public static MessageBoxResult Show(Window? owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options) => Initialize(owner, messageBoxText, caption, button, icon, defaultResult, options);
     }
 }

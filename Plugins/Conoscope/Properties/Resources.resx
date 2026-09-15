@@ -1299,4 +1299,16 @@
   <data name="LoadingDocument" xml:space="preserve"><value>正在加载文档…</value></data>
   <data name="RetryDocumentLoad" xml:space="preserve"><value>重新加载</value></data>
   <data name="RetryDocumentLoadTip" xml:space="preserve"><value>按打开时的处理参数重新读取全部通道；曲线快照保留。</value></data>
+  <data name="WorkspaceStartTitle" xml:space="preserve">
+    <value>打开数据，开始分析</value>
+  </data>
+  <data name="WorkspaceStartHint" xml:space="preserve">
+    <value>打开 CVCIE 文件，或前往采集页获取测量数据。</value>
+  </data>
+  <data name="WorkspaceOpenData" xml:space="preserve">
+    <value>打开数据文件</value>
+  </data>
+  <data name="WorkspaceGoToCapture" xml:space="preserve">
+    <value>前往采集</value>
+  </data>
 </root>

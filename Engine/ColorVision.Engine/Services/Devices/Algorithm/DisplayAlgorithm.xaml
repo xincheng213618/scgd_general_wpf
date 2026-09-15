@@ -30,10 +30,10 @@
 
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
 
-            <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
+            <ToggleButton x:Name="DisplayHeaderToggle" Content="{Binding Config.Name}" FontSize="15" IsChecked="True" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
 
-        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow"  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Left"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}"  HorizontalAlignment="Left" />

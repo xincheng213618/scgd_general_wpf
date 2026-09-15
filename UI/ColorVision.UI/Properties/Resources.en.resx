@@ -116,7 +116,7 @@
     <value>E_xit</value>
   </data>
   <data name="Log" xml:space="preserve">
-    <value>_Log</value>
+    <value>Log</value>
   </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Automatically scroll to the bottom</value>
   </data>

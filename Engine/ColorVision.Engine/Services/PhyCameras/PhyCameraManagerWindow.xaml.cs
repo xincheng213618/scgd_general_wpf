@@ -166,6 +166,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private void ShowSelectedCameraDetails()
         {
             StackPanelShow.Children.Clear();
+            EmptyState.Visibility = CameraList.SelectedItem is PhyCamera ? Visibility.Collapsed : Visibility.Visible;
             if (CameraList.SelectedItem is PhyCamera phyCamera)
             {
                 StackPanelShow.Children.Add(phyCamera.GetDeviceInfo());

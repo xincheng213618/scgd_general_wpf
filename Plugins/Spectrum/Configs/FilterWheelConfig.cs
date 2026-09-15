@@ -55,6 +55,7 @@ namespace Spectrum.Configs
         private int _BaudRate = 9600;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        [PropertyEditorType(typeof(FilterWheelHoleMappingPropertiesEditor))]
         public ObservableCollection<FilterWheelHoleMap> HoleMapping
         {
             get => _HoleMapping;

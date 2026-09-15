@@ -63,6 +63,26 @@ namespace Conoscope
     {
         public static ConoscopeWindow? Instance { get; private set; }
 
+        private static readonly DependencyPropertyKey HasWorkspaceDocumentsPropertyKey = DependencyProperty.RegisterReadOnly(
+            nameof(HasWorkspaceDocuments), typeof(bool), typeof(ConoscopeWindow), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty HasWorkspaceDocumentsProperty = HasWorkspaceDocumentsPropertyKey.DependencyProperty;
+
+        public bool HasWorkspaceDocuments => (bool)GetValue(HasWorkspaceDocumentsProperty);
+
+        private void RefreshWorkspaceState()
+        {
+            // Include floating documents; a missing active image does not mean the workspace is empty.
+            SetValue(HasWorkspaceDocumentsPropertyKey, documentLayout.HasDocuments);
+            StartPageActions.IsEnabled = !isRunningOperation;
+        }
+
+        private void GoToCapture_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureTab.IsSelected = true;
+            ExpandRibbonCommands();
+        }
+
         private ThemeChangedHandler? themeChangedHandler;
         private ThemeManager? windowThemeManager;
         private readonly ConoscopeDocumentLayout documentLayout;
@@ -185,6 +205,7 @@ namespace Conoscope
 
         private void RefreshActiveViewUi()
         {
+            RefreshWorkspaceState();
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
             RefreshRibbonState(activeView);
@@ -590,6 +611,7 @@ namespace Conoscope
             });
 
             documentLayout.Add(layoutDocument);
+            RefreshWorkspaceState();
             if (activate)
             {
                 SelectDocument(layoutDocument);
@@ -749,6 +771,7 @@ namespace Conoscope
         private void SetOperationBusy(bool busy)
         {
             isRunningOperation = busy;
+            RefreshWorkspaceState();
             btnRunFlow.IsEnabled = !busy && GetSelectedFlowTemplate() != null;
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;

@@ -15,6 +15,7 @@ public sealed class ConoscopeDocumentLayoutTests
         {
             DockingManager manager = new();
             ConoscopeDocumentLayout layout = new(manager);
+            Assert.False(layout.HasDocuments);
             LayoutDocument first = new() { Content = new object(), Title = "First" };
             LayoutDocument moved = new() { Content = new object(), Title = "Moved" };
             layout.Add(first);
@@ -34,6 +35,7 @@ public sealed class ConoscopeDocumentLayoutTests
             Assert.Same(moved, splitPane.SelectedContent);
             Assert.True(moved.IsActive);
             Assert.Equal(3, layout.Documents.Count());
+            Assert.True(layout.HasDocuments);
 
             LayoutDocument added = new() { Content = new object(), Title = "Added after split" };
             layout.Add(added);
@@ -71,6 +73,8 @@ public sealed class ConoscopeDocumentLayoutTests
             layout.Add(added);
             Assert.Same(floatingPane, added.Parent);
             Assert.Same(floatingWindow, floatingPane.Parent.Parent);
+            manager.ActiveContent = null;
+            Assert.True(layout.HasDocuments);
         });
     }
 
@@ -96,6 +100,7 @@ public sealed class ConoscopeDocumentLayoutTests
             document.Close();
             Assert.Equal(0, content.DisposeCount);
             Assert.Equal(0, closedNotifications);
+            Assert.True(layout.HasDocuments);
             Assert.Same(document, layout.Find(content));
 
             document.Closing -= cancelClose;
@@ -104,6 +109,7 @@ public sealed class ConoscopeDocumentLayoutTests
             Assert.Equal(1, closedNotifications);
             Assert.Null(layout.Find(content));
             Assert.Empty(layout.Documents);
+            Assert.False(layout.HasDocuments);
         });
     }
 

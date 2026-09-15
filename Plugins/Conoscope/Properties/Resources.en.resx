@@ -1299,4 +1299,16 @@ Choose No to discard changes, or Cancel to return.</value>
   <data name="LoadingDocument" xml:space="preserve"><value>Loading document…</value></data>
   <data name="RetryDocumentLoad" xml:space="preserve"><value>Reload</value></data>
   <data name="RetryDocumentLoadTip" xml:space="preserve"><value>Reload all channels using the original processing options. Curve snapshots are retained.</value></data>
+  <data name="WorkspaceStartTitle" xml:space="preserve">
+    <value>Open data to start analyzing</value>
+  </data>
+  <data name="WorkspaceStartHint" xml:space="preserve">
+    <value>Open a CVCIE file, or go to Capture to acquire measurement data.</value>
+  </data>
+  <data name="WorkspaceOpenData" xml:space="preserve">
+    <value>Open data file</value>
+  </data>
+  <data name="WorkspaceGoToCapture" xml:space="preserve">
+    <value>Go to Capture</value>
+  </data>
 </root>

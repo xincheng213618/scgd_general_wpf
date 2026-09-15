@@ -102,9 +102,9 @@ public class DockContentRegistrationTests
             deferredContent.Materialize();
 
             DockPanelTitleAction action = Assert.Single(provider.TitleActions);
-            Assert.Same(DisPlayManager.CreateGroupCommand, action.Command);
+            Assert.Same(DisPlayManager.ManageControlsCommand, action.Command);
             Assert.Equal("\uE710", action.Glyph);
-            Assert.Equal("新建分组", action.ToolTip);
+            Assert.Equal("管理设备控制", action.ToolTip);
         });
     }
 

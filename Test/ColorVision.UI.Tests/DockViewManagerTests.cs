@@ -129,8 +129,10 @@ public class DockViewManagerTests
             ConfigHandler configHandler = ConfigHandler.GetInstance("ColorVisionUITests");
             bool originalAutoSave = configHandler.IsAutoSave;
             int originalIndex = DisPlayManagerConfig.Instance.LastSelectIndex;
+            string originalKey = DisPlayManagerConfig.Instance.LastSelectedControlKey;
             configHandler.IsAutoSave = false;
             DisPlayManagerConfig.Instance.LastSelectIndex = 1;
+            DisPlayManagerConfig.Instance.LastSelectedControlKey = string.Empty;
 
             DisPlayManager manager = DisPlayManager.GetInstance();
             try
@@ -157,6 +159,7 @@ public class DockViewManagerTests
             {
                 manager.IDisPlayControls.Clear();
                 DisPlayManagerConfig.Instance.LastSelectIndex = originalIndex;
+                DisPlayManagerConfig.Instance.LastSelectedControlKey = originalKey;
                 configHandler.IsAutoSave = originalAutoSave;
             }
         });
@@ -244,6 +247,71 @@ public class DockViewManagerTests
         });
     }
 
+    [Fact]
+    public void CentralState_MigratesLegacyNameThenSurvivesDisplayNameChange()
+    {
+        WithDisplayOrder((manager, config, controls) =>
+        {
+            var legacy = new TestDisplayControl("旧名称", "device-code", withHeader: true);
+            config.StoreIndex[legacy.DisPlayName] = 0;
+            config.PinnedControls.Add(legacy.DisPlayName);
+            config.ControlGroups[legacy.DisPlayName] = DisPlayManagerConfig.DefaultGroupId;
+            config.ControlExpandedStates[legacy.DisPlayName] = false;
+            config.LastSelectedControlKey = legacy.DisPlayName;
+
+            manager.ReplaceControls(new[] { legacy });
+
+            Assert.False(legacy.Header!.IsChecked);
+            Assert.False(config.ControlExpandedStates["device-code"]);
+            Assert.True(config.PinnedControls.Contains("device-code"));
+            Assert.Equal(0, config.StoreIndex["device-code"]);
+            Assert.Equal("device-code", config.LastSelectedControlKey);
+
+            var renamed = new TestDisplayControl("新名称", "device-code", withHeader: true);
+            manager.ReplaceControls(new[] { renamed });
+
+            Assert.False(renamed.Header!.IsChecked);
+            Assert.True(DisPlayManager.IsPinned(renamed));
+            Assert.Same(renamed, manager.SelectedControl);
+        });
+    }
+
+    [Fact]
+    public void VisibilityManagement_HidesOnlyPanelRowAndRestoresItsSavedOrder()
+    {
+        WithDisplayOrder((manager, config, controls) =>
+        {
+            manager.SelectControl(controls[1]);
+            manager.SetControlVisible(controls[1], false);
+
+            Assert.Equal(3, manager.IDisPlayControls.Count);
+            Assert.Equal(new[] { "A", "C" }, manager.StackPanel.Children.OfType<TestDisplayControl>().Select(control => control.DisPlayName));
+            Assert.Contains("B", config.HiddenControls);
+            Assert.Same(controls[0], manager.SelectedControl);
+
+            manager.SetControlVisible(controls[1], true);
+
+            Assert.Equal(new[] { "A", "B", "C" }, manager.StackPanel.Children.OfType<TestDisplayControl>().Select(control => control.DisPlayName));
+            Assert.DoesNotContain("B", config.HiddenControls);
+            Assert.Equal(1, config.StoreIndex["B"]);
+        });
+    }
+
+    [Fact]
+    public void ManagementWindow_KeepsHiddenControlsAvailableForRecovery()
+    {
+        WithDisplayOrder((manager, config, controls) =>
+        {
+            manager.SetControlVisible(controls[1], false);
+            var window = new DisplayControlManagerWindow(manager);
+            var grid = Assert.IsType<DataGrid>(window.FindName("ControlsDataGrid"));
+
+            Assert.Equal(3, window.Controls.Count);
+            Assert.False(Assert.Single(window.Controls, item => item.Name == "B").IsVisible);
+            Assert.Equal(new[] { "名称", "分组", "显示", "置顶", "展开", "顺序" }, grid.Columns.Select(column => column.Header));
+        });
+    }
+
     private static void WithDisplayOrder(Action<DisPlayManager, DisPlayManagerConfig, TestDisplayControl[]> test)
     {
         WpfTestHost.Invoke(() =>
@@ -256,7 +324,10 @@ public class DockViewManagerTests
             var groups = config.Groups;
             var controlGroups = config.ControlGroups;
             var pins = config.PinnedControls;
+            var hidden = config.HiddenControls;
+            var expanded = config.ControlExpandedStates;
             int selectedIndex = config.LastSelectIndex;
+            string selectedKey = config.LastSelectedControlKey;
             var manager = DisPlayManager.GetInstance();
             try
             {
@@ -265,7 +336,10 @@ public class DockViewManagerTests
                 config.Groups = new();
                 config.ControlGroups = new();
                 config.PinnedControls = new();
+                config.HiddenControls = new();
+                config.ControlExpandedStates = new();
                 config.LastSelectIndex = 0;
+                config.LastSelectedControlKey = string.Empty;
                 var controls = new[] { new TestDisplayControl("A"), new TestDisplayControl("B"), new TestDisplayControl("C") };
                 manager.Init(new Window(), new StackPanel());
                 manager.ReplaceControls(controls);
@@ -278,7 +352,10 @@ public class DockViewManagerTests
                 config.Groups = groups;
                 config.ControlGroups = controlGroups;
                 config.PinnedControls = pins;
+                config.HiddenControls = hidden;
+                config.ControlExpandedStates = expanded;
                 config.LastSelectIndex = selectedIndex;
+                config.LastSelectedControlKey = selectedKey;
                 configHandler.IsAutoSave = autoSave;
             }
         });
@@ -297,7 +374,7 @@ public class DockViewManagerTests
         manager.ShowAllViewsHandler = null;
     }
 
-    private sealed class TestDisplayControl(string displayName) : UserControl, IDisPlayControl
+    private sealed class TestDisplayControl : UserControl, IDisPlayControl
     {
         public event RoutedEventHandler? Selected;
         public event RoutedEventHandler? Unselected;
@@ -319,6 +396,28 @@ public class DockViewManagerTests
             }
         }
 
-        public string DisPlayName { get; } = displayName;
+        public string DisPlayName { get; }
+        public string PersistenceKey { get; }
+        public System.Windows.Controls.Primitives.ToggleButton? Header { get; }
+
+        public TestDisplayControl(
+            string displayName,
+            string? persistenceKey = null,
+            bool withHeader = false)
+        {
+            DisPlayName = displayName;
+            PersistenceKey = persistenceKey ?? displayName;
+            if (!withHeader)
+                return;
+
+            Header = new System.Windows.Controls.Primitives.ToggleButton
+            {
+                Name = "DisplayHeaderToggle",
+                IsChecked = true
+            };
+            NameScope.SetNameScope(this, new NameScope());
+            RegisterName(Header.Name, Header);
+            Content = Header;
+        }
     }
 }

@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.PropertyEditor
 {
@@ -35,19 +34,26 @@ namespace ColorVision.Engine.PropertyEditor
         private CameraFovReferenceDirection referenceDirection;
         private double currentCameraDegrees = 74.2;
         private double fovDist = 9410;
+        private double? horizontalFovDegrees;
+        private double? verticalFovDegrees;
+        private double? diagonalFovDegrees;
+        private double? selectedCameraDegrees;
+        private double? equivalentFocalLengthPixels;
 
         public CameraDegreesCalculatorOptions()
         {
+            Recalculate();
         }
 
         public CameraDegreesCalculatorOptions(double currentCameraDegrees, double fovDist)
         {
             this.currentCameraDegrees = currentCameraDegrees;
             this.fovDist = fovDist;
+            Recalculate();
         }
 
         [Category("输入")]
-        [DisplayName("传感器宽度 (mm)")]
+        [DisplayName("传感器有效宽度 (mm)")]
         [Description("传感器当前有效成像区域的水平尺寸；使用相机 ROI 或裁切时应填写有效尺寸。")]
         public double? SensorWidthMillimeters
         {
@@ -57,12 +63,12 @@ namespace ColorVision.Engine.PropertyEditor
                 if (sensorWidthMillimeters == value) return;
                 sensorWidthMillimeters = value;
                 OnPropertyChanged();
-                RaiseCalculatedProperties();
+                Recalculate();
             }
         }
 
         [Category("输入")]
-        [DisplayName("传感器高度 (mm)")]
+        [DisplayName("传感器有效高度 (mm)")]
         [Description("传感器当前有效成像区域的垂直尺寸；只计算水平 FOV 时可以不填。")]
         public double? SensorHeightMillimeters
         {
@@ -72,7 +78,7 @@ namespace ColorVision.Engine.PropertyEditor
                 if (sensorHeightMillimeters == value) return;
                 sensorHeightMillimeters = value;
                 OnPropertyChanged();
-                RaiseCalculatedProperties();
+                Recalculate();
             }
         }
 
@@ -87,8 +93,35 @@ namespace ColorVision.Engine.PropertyEditor
                 if (effectiveFocalLengthMillimeters == value) return;
                 effectiveFocalLengthMillimeters = value;
                 OnPropertyChanged();
-                RaiseCalculatedProperties();
+                Recalculate();
             }
+        }
+
+        [Category("计算结果")]
+        [DisplayName("水平 FOV (°)")]
+        [ReadOnly(true)]
+        public double? HorizontalFovDegrees
+        {
+            get => horizontalFovDegrees;
+            private set { if (horizontalFovDegrees == value) return; horizontalFovDegrees = value; OnPropertyChanged(); }
+        }
+
+        [Category("计算结果")]
+        [DisplayName("垂直 FOV (°)")]
+        [ReadOnly(true)]
+        public double? VerticalFovDegrees
+        {
+            get => verticalFovDegrees;
+            private set { if (verticalFovDegrees == value) return; verticalFovDegrees = value; OnPropertyChanged(); }
+        }
+
+        [Category("计算结果")]
+        [DisplayName("对角 FOV (°)")]
+        [ReadOnly(true)]
+        public double? DiagonalFovDegrees
+        {
+            get => diagonalFovDegrees;
+            private set { if (diagonalFovDegrees == value) return; diagonalFovDegrees = value; OnPropertyChanged(); }
         }
 
         [Category("应用")]
@@ -102,9 +135,27 @@ namespace ColorVision.Engine.PropertyEditor
                 if (referenceDirection == value) return;
                 referenceDirection = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SelectedCameraDegrees));
-                OnPropertyChanged(nameof(EquivalentFocalLengthPixels));
+                RecalculateApplicationValues();
             }
+        }
+
+        [Category("应用")]
+        [DisplayName("将写入 cameraDegrees (°)")]
+        [ReadOnly(true)]
+        public double? SelectedCameraDegrees
+        {
+            get => selectedCameraDegrees;
+            private set { if (selectedCameraDegrees == value) return; selectedCameraDegrees = value; OnPropertyChanged(); }
+        }
+
+        [Category("应用")]
+        [DisplayName("对应等效像素焦距 (px)")]
+        [Description("由当前 FovDist 与待写入角度换算，仅用于检查两项参数是否配套。")]
+        [ReadOnly(true)]
+        public double? EquivalentFocalLengthPixels
+        {
+            get => equivalentFocalLengthPixels;
+            private set { if (equivalentFocalLengthPixels == value) return; equivalentFocalLengthPixels = value; OnPropertyChanged(); }
         }
 
         [Category("当前参数")]
@@ -133,47 +184,9 @@ namespace ColorVision.Engine.PropertyEditor
                 if (fovDist == value) return;
                 fovDist = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(EquivalentFocalLengthPixels));
+                RecalculateApplicationValues();
             }
         }
-
-        [Category("计算结果")]
-        [DisplayName("水平 FOV (°)")]
-        [ReadOnly(true)]
-        public double? HorizontalFovDegrees => Calculate(SensorWidthMillimeters);
-
-        [Category("计算结果")]
-        [DisplayName("垂直 FOV (°)")]
-        [ReadOnly(true)]
-        public double? VerticalFovDegrees => Calculate(SensorHeightMillimeters);
-
-        [Category("计算结果")]
-        [DisplayName("对角 FOV (°)")]
-        [ReadOnly(true)]
-        public double? DiagonalFovDegrees => IsPositiveFinite(SensorWidthMillimeters) && IsPositiveFinite(SensorHeightMillimeters)
-            ? Calculate(Math.Sqrt(SensorWidthMillimeters!.Value * SensorWidthMillimeters.Value
-                + SensorHeightMillimeters!.Value * SensorHeightMillimeters.Value))
-            : null;
-
-        [Category("应用")]
-        [DisplayName("将写入 cameraDegrees (°)")]
-        [ReadOnly(true)]
-        public double? SelectedCameraDegrees => ReferenceDirection switch
-        {
-            CameraFovReferenceDirection.Horizontal => HorizontalFovDegrees,
-            CameraFovReferenceDirection.Vertical => VerticalFovDegrees,
-            CameraFovReferenceDirection.Diagonal => DiagonalFovDegrees,
-            _ => null
-        };
-
-        [Category("应用")]
-        [DisplayName("对应等效像素焦距 (px)")]
-        [Description("由当前 FovDist 与待写入角度换算，仅用于检查两项参数是否配套。")]
-        [ReadOnly(true)]
-        public double? EquivalentFocalLengthPixels => SelectedCameraDegrees is double degrees
-            && double.IsFinite(FovDist) && FovDist > 0
-            ? FovCalculator.EquivalentFocalLengthPixels(FovDist, degrees)
-            : null;
 
         public bool TryGetSelectedCameraDegrees(out double cameraDegrees, out string error)
         {
@@ -211,13 +224,30 @@ namespace ColorVision.Engine.PropertyEditor
         private static bool IsPositiveFinite(double? value) =>
             value.HasValue && double.IsFinite(value.Value) && value.Value > 0;
 
-        private void RaiseCalculatedProperties()
+        private void Recalculate()
         {
-            OnPropertyChanged(nameof(HorizontalFovDegrees));
-            OnPropertyChanged(nameof(VerticalFovDegrees));
-            OnPropertyChanged(nameof(DiagonalFovDegrees));
-            OnPropertyChanged(nameof(SelectedCameraDegrees));
-            OnPropertyChanged(nameof(EquivalentFocalLengthPixels));
+            HorizontalFovDegrees = Calculate(SensorWidthMillimeters);
+            VerticalFovDegrees = Calculate(SensorHeightMillimeters);
+            DiagonalFovDegrees = IsPositiveFinite(SensorWidthMillimeters) && IsPositiveFinite(SensorHeightMillimeters)
+                ? Calculate(Math.Sqrt(SensorWidthMillimeters!.Value * SensorWidthMillimeters.Value
+                    + SensorHeightMillimeters!.Value * SensorHeightMillimeters.Value))
+                : null;
+            RecalculateApplicationValues();
+        }
+
+        private void RecalculateApplicationValues()
+        {
+            SelectedCameraDegrees = ReferenceDirection switch
+            {
+                CameraFovReferenceDirection.Horizontal => HorizontalFovDegrees,
+                CameraFovReferenceDirection.Vertical => VerticalFovDegrees,
+                CameraFovReferenceDirection.Diagonal => DiagonalFovDegrees,
+                _ => null
+            };
+            EquivalentFocalLengthPixels = SelectedCameraDegrees is double degrees
+                && double.IsFinite(FovDist) && FovDist > 0
+                ? FovCalculator.EquivalentFocalLengthPixels(FovDist, degrees)
+                : null;
         }
     }
 
@@ -236,22 +266,13 @@ namespace ColorVision.Engine.PropertyEditor
             TextBox textBox = PropertyEditorHelper.CreateSmallTextBox(binding);
             textBox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
 
-            var glyph = new TextBlock
-            {
-                Text = "\uE70F",
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                FontSize = 14,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            glyph.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             var calculateButton = new Button
             {
-                Width = 24,
+                Width = 52,
                 Padding = new Thickness(2),
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(5, 0, 0, 0),
-                Content = glyph,
+                Content = "计算",
                 ToolTip = "根据传感器尺寸和镜头有效焦距计算 cameraDegrees"
             };
             AutomationProperties.SetName(calculateButton, "计算 cameraDegrees");
@@ -278,6 +299,11 @@ namespace ColorVision.Engine.PropertyEditor
                 Owner = owner,
                 WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner
             };
+            if (window.FindName("ConfirmButton") is Button confirmButton)
+            {
+                confirmButton.Content = "使用所选值";
+                AutomationProperties.SetName(confirmButton, "使用所选视场角");
+            }
             window.Submitted += (_, _) =>
             {
                 if (!options.TryGetSelectedCameraDegrees(out double result, out string error))

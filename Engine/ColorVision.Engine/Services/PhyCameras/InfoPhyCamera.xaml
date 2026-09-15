@@ -4,243 +4,204 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
-        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             mc:Ignorable="d"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             mc:Ignorable="d" UseLayoutRounding="True"
              d:DataContext="{d:DesignInstance local:PhyCamera}"
-             d:DesignHeight="400" d:DesignWidth="800">
+             d:DesignHeight="560" d:DesignWidth="620">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
             <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
             <local:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
 
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                 <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
             </Style>
-
-            <Style x:Key="HeaderTitleTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
-                <Setter Property="FontSize" Value="26"/>
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="TextAlignment" Value="Left"/>
-                <Setter Property="TextWrapping" Value="NoWrap"/>
-            </Style>
-
-            <Style x:Key="HeaderMetaTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource CopyableTextBoxStyle}">
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Opacity" Value="0.64"/>
-                <Setter Property="TextAlignment" Value="Left"/>
-                <Setter Property="Margin" Value="0,4,0,0"/>
-            </Style>
-
-            <Style x:Key="HeaderMetaTextStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Opacity" Value="0.64"/>
-                <Setter Property="Margin" Value="0,4,0,0"/>
-            </Style>
-
-            <Style x:Key="HeaderStatusTextStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="FontSize" Value="11"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Margin" Value="0,6,0,0"/>
-            </Style>
-
-            <Style x:Key="ConnectionStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-            </Style>
-
-            <Style x:Key="LicenseStatusTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="Foreground" Value="{Binding LicenseStatusBrush}"/>
-                <Setter Property="Margin" Value="6,6,0,0"/>
-            </Style>
-
-            <Style x:Key="HeaderLicenseMetaTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="FontWeight" Value="Normal"/>
-                <Setter Property="Opacity" Value="0.62"/>
-                <Setter Property="Margin" Value="8,5,0,0"/>
-            </Style>
-
-            <Style x:Key="HeaderLicenseDateTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Margin" Value="4,5,0,0"/>
-            </Style>
-
-            <Style x:Key="HeaderLicenseValueTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Margin" Value="8,5,0,0"/>
-            </Style>
-
             <Style x:Key="HeaderIconButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
-                <Setter Property="Width" Value="20"/>
+                <Setter Property="Width" Value="28"/>
+                <Setter Property="MinHeight" Value="28"/>
                 <Setter Property="Padding" Value="0"/>
-                <Setter Property="Margin" Value="6,-8,0,0"/>
+                <Setter Property="Margin" Value="4,0,0,0"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
                 <Setter Property="FontSize" Value="13"/>
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
             </Style>
-
-            <Style x:Key="HeaderLicenseActionTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource HeaderStatusTextStyle}">
-                <Setter Property="Margin" Value="0"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            </Style>
-
             <Style x:Key="CommandButtonTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="TextAlignment" Value="Center"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="FontWeight" Value="Medium"/>
             </Style>
-
-            <Style x:Key="CompactCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CommandActionButtonStyle}">
-                <Setter Property="MinWidth" Value="115"/>
-                <Setter Property="MinHeight" Value="36"/>
-                <Setter Property="Margin" Value="0,0,6,6"/>
-                <Setter Property="Padding" Value="10,6"/>
+            <Style x:Key="CameraCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CommandActionButtonStyle}">
+                <Setter Property="MinHeight" Value="38"/>
+                <Setter Property="Margin" Value="0,0,8,6"/>
+                <Setter Property="Padding" Value="8,7"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
             </Style>
-
-            <Style x:Key="WarningCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CompactCommandButtonStyle}">
-                <Setter Property="Foreground" Value="#FFB7791F"/>
-                <Setter Property="BorderBrush" Value="#FFB7791F"/>
-                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
-            </Style>
-
-            <Style x:Key="CompactDangerCommandButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DangerCommandButtonStyle}">
-                <Setter Property="MinWidth" Value="138"/>
-                <Setter Property="MinHeight" Value="40"/>
-                <Setter Property="Margin" Value="0,0,8,8"/>
-                <Setter Property="Padding" Value="12,8"/>
-            </Style>
-
-            <Style x:Key="ActionSectionTitleStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                <Setter Property="FontSize" Value="13"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style x:Key="CameraResetButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource CameraCommandButtonStyle}">
+                <Setter Property="MinWidth" Value="112"/>
                 <Setter Property="Margin" Value="0,0,0,6"/>
+                <Setter Property="Foreground" Value="#FFD92D20"/>
+                <Setter Property="BorderBrush" Value="#FFD92D20"/>
             </Style>
-
-            <Style x:Key="SectionDividerStyle" TargetType="{x:Type Border}">
-                <Setter Property="Height" Value="1"/>
-                <Setter Property="Margin" Value="0,2,0,8"/>
-                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
-                <Setter Property="Opacity" Value="0.45"/>
+            <Style x:Key="ActionSectionIconStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0,0,8,0"/>
             </Style>
-
-            <Style x:Key="PageDividerStyle" TargetType="{x:Type Border}">
-                <Setter Property="Height" Value="1"/>
-                <Setter Property="Margin" Value="0,18,0,22"/>
-                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
-                <Setter Property="Opacity" Value="0.5"/>
+            <Style x:Key="ActionSectionCardStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource ConsoleSurfaceStyle}">
+                <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+                <Setter Property="Padding" Value="12,10,4,4"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid>
-        <Border Style="{StaticResource PanelBorderStyle}"/>
-        <Grid Margin="28,24,28,24">
+    <Border Style="{StaticResource ConsoleSurfaceStyle}" Padding="16">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-
-            <StackPanel Grid.Row="0">
-                <TextBox Text="{Binding Code, Mode=OneWay}" Style="{StaticResource HeaderTitleTextBoxStyle}"/>
-
-                <StackPanel Orientation="Horizontal" Height="22" Margin="0,4,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SysResourceModel.Remark, Mode=OneWay, Converter={StaticResource StatusToTextConverter}}"
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding DeviceModeDisplayText}" FontSize="20" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
                                Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
-                               Style="{StaticResource ConnectionStatusTextStyle}"
-                               Margin="0"/>
-                    <TextBlock Text="·" Style="{StaticResource HeaderMetaTextStyle}" Opacity="0.45" Margin="7,0,0,0"/>
-                    <TextBlock Text="{Binding CameraInfoMetaText, Mode=OneWay}" Style="{StaticResource HeaderMetaTextStyle}" Margin="7,0,0,0"/>
-                </StackPanel>
+                               FontSize="12" FontWeight="SemiBold"/>
+                </Grid>
+                <TextBox Text="{Binding Code, Mode=OneWay}" Style="{StaticResource CopyableTextBoxStyle}"
+                         FontFamily="Consolas" FontSize="12" Opacity="0.7" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding CameraInfoMetaText, Mode=OneWay}" FontSize="11" Opacity="0.65"
+                           TextWrapping="Wrap" Margin="0,4,0,0"/>
 
-                <StackPanel Orientation="Horizontal"  Margin="0,8,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="{x:Static properties:Resources.Update}"
-                               Style="{StaticResource HeaderLicenseActionTextStyle}"
-                               ToolTip="{x:Static properties:Resources.ModifyLicense}">
-                        <TextBlock.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding UploadLicenseCommand}"/>
-                        </TextBlock.InputBindings>
-                    </TextBlock>
-                    <Button Style="{StaticResource HeaderIconButtonStyle}"
-                            Content="&#xE896;"
-                            Command="{Binding UploadLicenseNetCommand}"
-                            ToolTip="{x:Static properties:Resources.DownLicOnline}"/>
-                    <TextBlock Text="{Binding LicenseStatusBadgeText}" Style="{StaticResource LicenseStatusTextStyle}" Margin="12,0,0,0"/>
-                    <TextBlock Text="{Binding LicenseSummaryMetaText}"
-                               Style="{StaticResource HeaderLicenseValueTextStyle}"
-                               Margin="4,0,0,0"
-                               MaxWidth="520"
-                               TextTrimming="CharacterEllipsis"/>
-                    <Button Style="{StaticResource HeaderIconButtonStyle}"
-                            Content="&#xE8C8;"
-                            Command="{Binding CopyLicenseCommand}"
-                            ToolTip="{x:Static properties:Resources.CopyLicense}"/>
-                    <Button Style="{StaticResource HeaderIconButtonStyle}"
-                            Content="&#xEDE1;"
-                            Command="{Binding ExportLicenseCommand}"
-                            ToolTip="{x:Static properties:Resources.ExportLicense}"/>
-                </StackPanel>
+                <Border Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="10,6" Margin="0,10,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <WrapPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding LicenseStatusBadgeText}" Foreground="{Binding LicenseStatusBrush}"
+                                       FontSize="11" FontWeight="SemiBold" Margin="0,2,6,2"/>
+                            <TextBlock Text="{Binding LicenseSummaryMetaText}" FontSize="11" Opacity="0.7" Margin="0,2,0,2"/>
+                        </WrapPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource BaseActionButtonStyle}" Content="{x:Static properties:Resources.Update}"
+                                    Command="{Binding UploadLicenseCommand}" ToolTip="{x:Static properties:Resources.ModifyLicense}"
+                                    MinHeight="28" Padding="6,2" Margin="0" FontSize="11" Background="Transparent" BorderThickness="0"/>
+                            <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE896;"
+                                    Command="{Binding UploadLicenseNetCommand}" ToolTip="{x:Static properties:Resources.DownLicOnline}"/>
+                            <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE8C8;"
+                                    Command="{Binding CopyLicenseCommand}" ToolTip="{x:Static properties:Resources.CopyLicense}"/>
+                            <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xEDE1;"
+                                    Command="{Binding ExportLicenseCommand}" ToolTip="{x:Static properties:Resources.ExportLicense}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </StackPanel>
-
-            <Border Grid.Row="1" Style="{StaticResource PageDividerStyle}"/>
-
-            <Grid Grid.Row="2">
+            <Border Grid.Row="1" Height="1" Background="{DynamicResource ButtonBorderBrush}" Margin="0,14,0,14"/>
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False" Focusable="False" Padding="0,0,2,0">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding EditCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.EditFilterWheelConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
+                <Border Style="{StaticResource ActionSectionCardStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE713;" Style="{StaticResource ActionSectionIconStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.PhyCameraConfigurationSection}" Style="{StaticResource ConsoleSectionTitleStyle}"
+                                       ToolTip="{x:Static properties:Resources.PhyCameraConfigurationHint}"/>
+                        </StackPanel>
+                        <UniformGrid Columns="4" SizeChanged="ActionGrid_SizeChanged">
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding EditCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.ModifyConfiguration}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding PropertyEditorEditCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding OpenSettingDirectoryCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.ButtonOpenConfigFile}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding FilterWheelEditCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.EditFilterWheelConfig}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                        </UniformGrid>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.UploadCalibrationFiles}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CloneCalibrationTemplatesCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.CloneCalibrationTemplates}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
+                </Border>
+                <Border Style="{StaticResource ActionSectionCardStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE9E9;" Style="{StaticResource ActionSectionIconStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.PhyCameraCalibrationSection}" Style="{StaticResource ConsoleSectionTitleStyle}"
+                                       ToolTip="{x:Static properties:Resources.PhyCameraCalibrationHint}"/>
+                        </StackPanel>
+                        <UniformGrid Columns="4" SizeChanged="ActionGrid_SizeChanged">
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding UploadCalibrationCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.UploadCalibrationFiles}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding CloneCalibrationTemplatesCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.CloneCalibrationTemplates}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                        </UniformGrid>
                     </StackPanel>
-
-                    <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.CreateRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.LoadRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
-                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding ResetCommand}">
-                            <TextBlock Text="{x:Static properties:Resources.Reset}" Style="{StaticResource CommandButtonTextStyle}"/>
-                        </Button>
+                </Border>
+                <Border Style="{StaticResource ActionSectionCardStyle}" Margin="0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE81C;" Style="{StaticResource ActionSectionIconStyle}"/>
+                            <TextBlock Text="{x:Static properties:Resources.PhyCameraRecoverySection}" Style="{StaticResource ConsoleSectionTitleStyle}"
+                                       ToolTip="{x:Static properties:Resources.PhyCameraRecoveryHint}"/>
+                        </StackPanel>
+                        <UniformGrid Columns="4" SizeChanged="ActionGrid_SizeChanged">
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding CreatResotreCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.CreateRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                            <Button Style="{StaticResource CameraCommandButtonStyle}" Command="{Binding LoadResotreCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.LoadRestorePoint}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                        </UniformGrid>
+                        <Border Height="1" Background="{DynamicResource ButtonBorderBrush}" Margin="0,6,8,10"/>
+                        <Grid Margin="0,0,8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Static properties:Resources.PhyCameraResetHint}" FontSize="11" Opacity="0.65"
+                                       TextWrapping="Wrap" Margin="0,0,16,6" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Style="{StaticResource CameraResetButtonStyle}" Command="{Binding ResetCommand}">
+                                <TextBlock Text="{x:Static properties:Resources.Reset}" Style="{StaticResource CommandButtonTextStyle}"/>
+                            </Button>
+                        </Grid>
                     </StackPanel>
-
+                </Border>
                 </StackPanel>
-            </Grid>
+            </ScrollViewer>
         </Grid>
-    </Grid>
+    </Border>
 </UserControl>

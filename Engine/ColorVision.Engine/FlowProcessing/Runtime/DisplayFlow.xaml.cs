@@ -24,6 +24,7 @@ public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposa
     public ViewFlow View => FlowEngineManager.View;
     public FlowEngineManager FlowEngineManager { get; }
     public string DisPlayName => "Flow";
+    public string PersistenceKey => "Flow";
     public ImageSource Icon { get; set; }
 
     public event RoutedEventHandler? Selected;

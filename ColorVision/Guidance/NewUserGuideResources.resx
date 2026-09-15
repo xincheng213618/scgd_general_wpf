@@ -4,7 +4,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="MenuHeader" xml:space="preserve"><value>新手引导(_N)</value></data>
+  <data name="MenuHeader" xml:space="preserve"><value>新手引导(_T)</value></data>
   <data name="WelcomeTitle" xml:space="preserve"><value>欢迎使用 ColorVision</value></data>
   <data name="WelcomeDescription" xml:space="preserve"><value>用一分钟了解 ColorVision 的核心界面，快速找到设备、解决方案与工作区。</value></data>
   <data name="DismissWelcomeAction" xml:space="preserve"><value>稍后了解</value></data>

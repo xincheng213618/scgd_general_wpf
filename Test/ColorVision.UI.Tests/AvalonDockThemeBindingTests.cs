@@ -344,7 +344,7 @@ public class AvalonDockThemeBindingTests
             AnchorablePaneTitle title = Assert.Single(Descendants<AnchorablePaneTitle>(scene.Manager),
                 candidate => ReferenceEquals(candidate.Model, scene.SecondTool));
             Border caption = Part<Border>(title, "CaptionBorder");
-            Button action = Assert.Single(Descendants<Button>(title), button => button.Command == DisPlayManager.CreateGroupCommand);
+            Button action = Assert.Single(Descendants<Button>(title), button => button.Command == DisPlayManager.ManageControlsCommand);
             DropDownButton menu = Part<DropDownButton>(title, "MenuDropDownButton");
             TabItem secondTab = Assert.IsType<TabItem>(scene.ToolPaneControl.ItemContainerGenerator.ContainerFromItem(scene.SecondTool));
             TextBlock glyph = Assert.Single(Descendants<TextBlock>(action));
@@ -352,15 +352,15 @@ public class AvalonDockThemeBindingTests
             Assert.Equal("PanelTitleActionButton", action.Name);
             Assert.Equal(24, action.ActualWidth);
             Assert.Equal(24, action.ActualHeight);
-            Assert.Equal("新建分组", action.ToolTip);
+            Assert.Equal("管理设备控制", action.ToolTip);
             Assert.Equal("\uE710", glyph.Text);
             AssertInside(action, caption);
             Assert.True(action.TranslatePoint(new Point(), caption).X < menu.TranslatePoint(new Point(), caption).X);
-            Assert.DoesNotContain(Descendants<Button>(secondTab), button => button.Command == DisPlayManager.CreateGroupCommand);
+            Assert.DoesNotContain(Descendants<Button>(secondTab), button => button.Command == DisPlayManager.ManageControlsCommand);
 
             scene.Tool.IsSelected = true;
             Arrange(scene.Manager);
-            Assert.DoesNotContain(Descendants<Button>(scene.ToolTitle), button => button.Command == DisPlayManager.CreateGroupCommand);
+            Assert.DoesNotContain(Descendants<Button>(scene.ToolTitle), button => button.Command == DisPlayManager.ManageControlsCommand);
             Assert.DoesNotContain("BindingExpression path error", trace.Output);
         });
     }

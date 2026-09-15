@@ -330,6 +330,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 OutputFormatPolicy = "spectrum-and-heatmap=gray8-display; optional-filtered-luminance=gray32float",
                 ResultSemantics = AlgorithmResultSemantics.Analysis,
             }, "MoireAnalysis", "MoireSpectrumAnalysis", "MoireNotchAnalysis");
+            DisplayMetrologyCatalog.Register(catalog);
             return catalog;
         }
 

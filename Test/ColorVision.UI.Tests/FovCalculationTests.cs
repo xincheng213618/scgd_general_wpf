@@ -8,6 +8,7 @@ using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
+using ColorVision.UI;
 using Newtonsoft.Json.Linq;
 using FlowEngineLib.PropertyEditor;
 using System.ComponentModel;
@@ -95,6 +96,43 @@ public sealed class FovCalculationTests
     }
 
     [Fact]
+    public void CameraDegreesCalculatorExposesDistinctInputsAndLiveResults()
+    {
+        PropertyInfo[] properties = PropertyEditorHelper.GetEditableProperties(typeof(CameraDegreesCalculatorOptions));
+        string[] propertyNames = properties.Select(property => property.Name).ToArray();
+
+        Assert.Contains(nameof(CameraDegreesCalculatorOptions.HorizontalFovDegrees), propertyNames);
+        Assert.Contains(nameof(CameraDegreesCalculatorOptions.VerticalFovDegrees), propertyNames);
+        Assert.Contains(nameof(CameraDegreesCalculatorOptions.DiagonalFovDegrees), propertyNames);
+        Assert.Contains(nameof(CameraDegreesCalculatorOptions.SelectedCameraDegrees), propertyNames);
+        Assert.Equal("传感器有效宽度 (mm)", typeof(CameraDegreesCalculatorOptions)
+            .GetProperty(nameof(CameraDegreesCalculatorOptions.SensorWidthMillimeters))!
+            .GetCustomAttribute<DisplayNameAttribute>()!.DisplayName);
+        Assert.Equal("传感器有效高度 (mm)", typeof(CameraDegreesCalculatorOptions)
+            .GetProperty(nameof(CameraDegreesCalculatorOptions.SensorHeightMillimeters))!
+            .GetCustomAttribute<DisplayNameAttribute>()!.DisplayName);
+
+        CameraDegreesCalculatorOptions options = new(72, 9410)
+        {
+            SensorWidthMillimeters = 14,
+            SensorHeightMillimeters = 8,
+            EffectiveFocalLengthMillimeters = 14
+        };
+        Assert.NotNull(options.HorizontalFovDegrees);
+        Assert.NotNull(options.VerticalFovDegrees);
+        Assert.NotNull(options.DiagonalFovDegrees);
+        Assert.Equal(options.HorizontalFovDegrees, options.SelectedCameraDegrees);
+
+        PropertyEditSession session = PropertyEditSession.Create(options, PropertyEditorEditMode.Transactional);
+        CameraDegreesCalculatorOptions editable = Assert.IsType<CameraDegreesCalculatorOptions>(session.EditableObject);
+        editable.SensorWidthMillimeters = 16;
+        Assert.NotEqual(options.HorizontalFovDegrees, editable.HorizontalFovDegrees);
+        Assert.Equal(editable.HorizontalFovDegrees, editable.SelectedCameraDegrees);
+        session.Commit();
+        Assert.Equal(editable.HorizontalFovDegrees, options.HorizontalFovDegrees);
+    }
+
+    [Fact]
     public void LegacyJsonKeepsAllSevenHistoricalFieldsAndCasing()
     {
         FovMeasurement measurement = FovCalculator.Calculate(ServiceSampleCorners, 9410, 74.2);
@@ -159,7 +197,11 @@ public sealed class FovCalculationTests
         FovImageViewOptions options = new();
         Assert.Equal(9410, options.FovDist);
         Assert.Equal(74.2, options.CameraDegrees);
+        Assert.Equal(0.25, options.MinimumConfidence);
         Assert.Equal(0.5, options.LuminanceBoundaryRatio);
+        Assert.Null(typeof(FovImageViewOptions).GetProperty("CameraDeviceCode"));
+        PropertyInfo minimumConfidence = typeof(FovImageViewOptions).GetProperty(nameof(FovImageViewOptions.MinimumConfidence))!;
+        Assert.Equal(typeof(SliderPropertiesEditor), minimumConfidence.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
         Assert.False(TypeDescriptor.GetProperties(options)[nameof(options.LuminanceBoundaryRatio)]!.IsBrowsable);
         Assert.False(TypeDescriptor.GetProperties(typeof(LocalFovNode))[nameof(LocalFovNode.LuminanceBoundaryRatio)]!.IsBrowsable);
         PropertyEditorTypeAttribute? editor = typeof(FovImageViewOptions)
@@ -168,6 +210,22 @@ public sealed class FovCalculationTests
         Assert.Equal(typeof(CameraDegreesPropertiesEditor), editor?.EditorType);
         Assert.Equal(typeof(CameraDegreesPropertiesEditor), FlowNodePropertyEditorAttribute.Resolve(
             typeof(LocalFovNode), nameof(LocalFovNode.CameraDegrees)));
+    }
+
+    [Fact]
+    public void ImageViewResultMessageDoesNotMentionCameraBatchOrDatabase()
+    {
+        FovImageViewRunResult result = new()
+        {
+            Calculation = FovCalculator.CalculateFromCorners(ServiceSampleCorners, 9410, 74.2),
+            TotalTime = 18
+        };
+
+        string message = FovImageViewRunner.BuildResultMessage(result);
+
+        Assert.DoesNotContain("相机:", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("批次", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("数据库", message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -458,6 +516,7 @@ public sealed class FovCalculationTests
             TextBox textBox = Assert.Single(panel.Children.OfType<TextBox>());
             Assert.Equal(Dock.Right, DockPanel.GetDock(button));
             Assert.Equal("计算 cameraDegrees", System.Windows.Automation.AutomationProperties.GetName(button));
+            Assert.Equal("计算", button.Content);
             Assert.NotNull(textBox.GetBindingExpression(TextBox.TextProperty));
         });
     }

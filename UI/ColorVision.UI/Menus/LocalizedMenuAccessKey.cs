@@ -16,7 +16,16 @@ public static class LocalizedMenuAccessKey
         {
             if (requiresInput)
                 label += "...";
-            int index = label.IndexOf(normalizedAccessKey.ToString(), StringComparison.OrdinalIgnoreCase);
+            string accessKeyText = normalizedAccessKey.ToString();
+            int index = label.IndexOf(accessKeyText, StringComparison.OrdinalIgnoreCase);
+            for (int candidate = index; candidate >= 0; candidate = label.IndexOf(accessKeyText, candidate + 1, StringComparison.OrdinalIgnoreCase))
+            {
+                if (candidate == 0 || !char.IsLetterOrDigit(label[candidate - 1]))
+                {
+                    index = candidate;
+                    break;
+                }
+            }
             if (index >= 0)
                 return label.Insert(index, "_");
         }

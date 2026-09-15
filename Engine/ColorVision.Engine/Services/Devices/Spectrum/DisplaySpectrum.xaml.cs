@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public ViewSpectrum View { get => Device.View;}
 
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
         private bool _isInitialized;
 
         public DisplaySpectrum(DeviceSpectrum DeviceSpectrum)

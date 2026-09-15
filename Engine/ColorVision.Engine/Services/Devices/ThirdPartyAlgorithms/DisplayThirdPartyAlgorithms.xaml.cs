@@ -35,6 +35,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public ThirdPartyAlgorithmsView View { get => Device.View; }
 
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplayThirdPartyAlgorithms(DeviceThirdPartyAlgorithms device)
         {

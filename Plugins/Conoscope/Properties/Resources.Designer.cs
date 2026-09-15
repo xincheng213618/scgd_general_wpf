@@ -4721,6 +4721,42 @@ namespace Conoscope.Properties {
         }
 
         /// <summary>
+        ///   查找类似 前往采集 的本地化字符串。
+        /// </summary>
+        public static string WorkspaceGoToCapture {
+            get {
+                return ResourceManager.GetString("WorkspaceGoToCapture", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 打开数据文件 的本地化字符串。
+        /// </summary>
+        public static string WorkspaceOpenData {
+            get {
+                return ResourceManager.GetString("WorkspaceOpenData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 打开 CVCIE 文件，或前往采集页获取测量数据。 的本地化字符串。
+        /// </summary>
+        public static string WorkspaceStartHint {
+            get {
+                return ResourceManager.GetString("WorkspaceStartHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 打开数据，开始分析 的本地化字符串。
+        /// </summary>
+        public static string WorkspaceStartTitle {
+            get {
+                return ResourceManager.GetString("WorkspaceStartTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 XYZ 数据未加载 的本地化字符串。
         /// </summary>
         public static string XYZDataNotLoaded {

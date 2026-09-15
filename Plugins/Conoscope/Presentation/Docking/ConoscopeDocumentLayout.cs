@@ -17,6 +17,8 @@ namespace Conoscope.Presentation.Docking
 
         internal IEnumerable<LayoutDocument> Documents => manager.Layout.Descendents().OfType<LayoutDocument>();
 
+        internal bool HasDocuments => Documents.Any();
+
         internal LayoutDocument? ActiveDocument => Find(manager.ActiveContent)
             ?? Documents.FirstOrDefault(document => document.IsActive)
             ?? Documents.FirstOrDefault(document => document.IsSelected);

@@ -69,7 +69,17 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 `LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器会另行生成显示区；配置窗口在 `OnClosing()` 检测到变化时生成显示区，`OnClosed()` 负责上下文清理。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
 
-`ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题、排序和拖入分组的能力继续保留，但滚动内容底部不再创建“分组 / + 分组”页脚；主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，由它把 `DisPlayManager.CreateGroupCommand` 提供给上方停靠标题栏。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现该命令，也不会多出自己的标题按钮。`ReplaceControls` 不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
+`ReplaceControls` 清空并重新填充显示集合，恢复分组、顺序、置顶、隐藏和开合状态后，优先按稳定 `PersistenceKey` 恢复选中对象，旧配置才回退到 `LastSelectIndex`；索引越界或原对象已隐藏时选择第一个可见项。内置设备使用 `Config.Code` 作为稳定键，工作流程使用固定 `Flow` 键；第三方实现不提供该属性时仍回退到 `DisPlayName`。这只替换显示集合，不调用旧控件的 Dispose。
+
+显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题和标题拖动能力继续保留；滚动内容底部不再创建“分组 / + 分组”页脚。主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，标题栏的“+”由 `DisPlayManager.ManageControlsCommand` 打开统一管理窗口。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现标题命令，也不会多出自己的标题按钮。
+
+### 设备控制管理、隐藏与开合
+
+“设备控制管理”窗口统一管理分组的新建、重命名、删除和顺序，也可调整每个控制项的分组、顺序、置顶、展开和显示状态。隐藏只从左侧设备控制栏移除对应显示控件，不删除 `IDisPlayControl`，不停止设备服务、连接、详情页或流程执行；重新显示时保留原分组、基础顺序、置顶和开合状态。全部控制项都隐藏时管理窗口仍列出这些项，作为恢复入口。
+
+分组标题的“+”新建分组，每行的“…”或右键菜单提供重命名、上下移动和删除；默认分组不能移动或删除。右侧始终列出全部控制项，通过行内分组选择、显示开关、置顶和展开图标调整状态，行尾箭头调整所属分组内的基础顺序。行内操作直接作用于所在项，无需预先选中。
+
+`DisPlayManagerConfig.HiddenControls` 和 `ControlExpandedStates` 与 `StoreIndex`、`PinnedControls`、`ControlGroups` 一样按 `PersistenceKey` 保存。标题开合、分组开合和管理窗口变更经过短延迟合写入配置，窗口关闭时刷新尚未写入的变更。展开状态只由 `ControlExpandedStates` 管理，没有记录的控件默认展开；旧的 `DisPlayName` 排序、分组、置顶、隐藏、开合和选择键会在遇到同一控件时复制到稳定键，兼容现有统一面板配置。
 
 ### 设备行置顶与顺序
 
@@ -77,9 +87,9 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 置顶在所属分组内生效；未建立分组时就是整个设备列表的顶部。多项置顶保持原有相对顺序，可继续拖动调整，跨组拖动保留置顶状态。置顶不改变设备配置、连接或流程执行顺序。
 
-`DisPlayManagerConfig.PinnedControls` 按既有显示标识 `DisPlayName` 独立保存置顶状态，沿用应用配置保存周期；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。显示标识改变不会自动迁移旧偏好。置顶或拖动重排现有集合时保持当前选中对象，并同步 `LastSelectIndex`。
+`DisPlayManagerConfig.PinnedControls` 按稳定 `PersistenceKey` 独立保存置顶状态；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。置顶或拖动重排现有集合时保持当前选中对象，并同步索引和稳定选择键。
 
-`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
+`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、稳定键迁移、开合恢复、隐藏/重新显示、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
 
 ### 设备详情视图按需初始化
 

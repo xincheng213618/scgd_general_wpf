@@ -24,7 +24,7 @@ public sealed class ImageAlgorithmPlatformTests
     public void CatalogHasUniqueStableIdentitiesVersionsAndCompatibilityAliases()
     {
         AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        Assert.Equal(28, catalog.Descriptors.Count);
+        Assert.Equal(34, catalog.Descriptors.Count);
         Assert.Equal(catalog.Descriptors.Count, catalog.Descriptors.Select(item => item.Id).Distinct().Count());
         IReadOnlyDictionary<AlgorithmId, AlgorithmVersion> expectedVersions = new Dictionary<AlgorithmId, AlgorithmVersion>
         {
@@ -56,6 +56,12 @@ public sealed class ImageAlgorithmPlatformTests
             [StandardAlgorithmIds.ImagingCorrection] = new(1, 0, 0),
             [StandardAlgorithmIds.FrequencySpectrum] = new(1, 0, 0),
             [StandardAlgorithmIds.MoireAnalysis] = new(1, 0, 0),
+            [DisplayMetrologyIds.RgbRegistration] = new(1, 0, 0),
+            [DisplayMetrologyIds.Ghost] = new(1, 0, 0),
+            [DisplayMetrologyIds.Defects] = new(1, 0, 0),
+            [DisplayMetrologyIds.Binocular] = new(1, 0, 0),
+            [DisplayMetrologyIds.Eyebox] = new(1, 0, 0),
+            [DisplayMetrologyIds.FieldSfr] = new(1, 0, 0),
         };
         Assert.Equal(expectedVersions.Keys.OrderBy(id => id.Value), catalog.Descriptors.Select(item => item.Id).OrderBy(id => id.Value));
         Assert.All(catalog.Descriptors, descriptor => Assert.Equal(expectedVersions[descriptor.Id], descriptor.Version));
