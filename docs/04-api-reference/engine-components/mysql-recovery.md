@@ -2,10 +2,10 @@
 knowledge_id: "engine.mysql-recovery"
 knowledge_type: "topic"
 status: "current"
-summary: "MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。"
-aliases: ["MySQL数据库恢复", "加载SQL备份", "数据库重置", "资源迁移备份", "恢复失败但数据已改变", "恢复后重启", "Sensor字典ID重映射", "MySqlDatabaseMaintenanceService", "RestoreAndRestartAsync", "RestoreSqlFileAsync", "RestoreMysql", "ResetDatabaseFromSqlFileAsync", "SynchronizeInstalledServiceConfigs", "UpdateConfigFile", "MigrationBackupTableNames", "BuildMigrationDictionaryDependencyStatements", "SensorTemplateMigrationSqlBuilder", "MySqlRestoreProgressWindow"]
-code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs", "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs"]
+summary: "MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。"
+aliases: ["MySQL数据库恢复", "加载SQL备份", "数据库重置", "资源迁移备份", "恢复失败但数据已改变", "恢复后重启", "更新流程节点", "UpdateRestoredFlowNodes", "FlowNodeIdentityNormalizer", "Sensor字典ID重映射", "MySqlDatabaseMaintenanceService", "RestoreAndRestartAsync", "RestoreSqlFileAsync", "RestoreMysql", "ResetDatabaseFromSqlFileAsync", "SynchronizeInstalledServiceConfigs", "UpdateConfigFile", "MigrationBackupTableNames", "BuildMigrationDictionaryDependencyStatements", "SensorTemplateMigrationSqlBuilder", "MySqlRestoreProgressWindow"]
+code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Templates/Flow/FlowNodeIdentityNormalizer.cs", "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs", "UI/ColorVision.UI/ServiceHost/IColorVisionServiceHostClient.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs", "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"]
 related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.windows-service", "platform.service-host", "operations.data", "engine.template-design"]
 ---
 
@@ -19,24 +19,34 @@ related: ["engine.mysql-maintenance", "engine.database-maintenance", "plugins.wi
 
 | 入口 | 当前行为 | 不包含的保证 |
 | --- | --- | --- |
-| 工具窗口“加载备份”、备份项“还原” | 均进入 `RestoreAndRestartAsync`：SQL导入 → 服务配置同步 → 重启注册中心 | 不先自动备份/停写，不自动重启ColorVision，不代表全部服务健康 |
-| `MySqlLocalServicesManager.RestoreMysql` | 在管理器维护门内同步等待 SQL 导入，成功返回文件完整路径 | 不同步服务配置、不重启服务，没有桌面确认或进度协议 |
+| 工具窗口“加载备份”、备份项“还原” | 均进入 `RestoreAndRestartAsync`：SQL导入 → 更新流程节点 → 服务配置同步 → 重启注册中心 | 不先自动备份/停写，不自动重启ColorVision，不代表全部服务健康 |
+| 工具窗口“更新流程节点” | 在后台进入管理器维护门，仅更新当前库中的流程节点标识，显示数量和失败信息 | 不导入SQL、不同步配置、不重启服务；重新加载流程后使用新标识 |
+| `MySqlLocalServicesManager.RestoreMysql` | 在管理器维护门内同步等待 SQL 导入和流程节点更新，成功返回文件完整路径 | 不同步服务配置、不重启服务，没有桌面确认或进度协议 |
+| WindowsServicePlugin 的 `RestoreDatabase` | 业务账号导入SQL后调用共享的流程节点更新；后一步失败时日志区分SQL已经导入 | 不执行桌面的配置同步和服务重启编排 |
 | `MySqlDatabaseMaintenanceService.RestoreSqlFileAsync` | 直接委托 `ExecuteSqlFileCoreAsync`，可选择是否在mysql参数中指定库 | 自身不取得管理器维护门、不提权、不验证脚本的业务范围 |
 | `ResetDatabaseFromSqlFileAsync` | 检查源库是否存在；存在时保留源资源数据，同名源/目标都未创建时按新装初始化；然后执行安装SQL、检查目标连接并按需回写资源 | 不推导目标版本、不保证完整迁移，也不同步配置或启停服务；跨库更新缺少源库时拒绝执行 |
 
-桌面恢复使用当次 `MySqlSetting.Instance.MySqlConfig` 和 `Config.MysqlPath`，不自动切换root账号。重置使用调用者传入的 `rootConfig`，方法名和日志中的“root”不证明账号身份/权限已校验。安装插件如何构造配置和选择源/目标库，以插件专题为准。
+桌面恢复在开始时克隆 `MySqlSetting.Instance.MySqlConfig`，SQL导入、节点更新、配置同步共用该连接快照，mysql工具使用 `Config.MysqlPath`，不自动切换root账号。独立更新按钮也固定点击时的目标库。重置使用调用者传入的 `rootConfig`，方法名和日志中的“root”不证明账号身份/权限已校验。安装插件如何构造配置和选择源/目标库，以插件专题为准。
 
 ## 手动恢复的阶段与完成含义
 
-`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行 SQL，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有配置同步通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。请求等待超时不代表代理动作取消，见[本机权限代理](../../03-architecture/components/service-host.md)。恢复编排跟踪校验、SQL导入、配置同步和服务重启阶段：SQL尚未成功返回时显示“SQL 未完成导入，…失败”；SQL已成功返回而后续同步或重启失败时明确显示“SQL 已导入，但…失败”，不再把后者统称为加载备份失败。
+`RestoreAndRestartAsync` 首先非阻塞尝试进入进程内维护门，已有其它维护任务时提示并返回；同调用链允许嵌套。取得门后打开进度窗口，执行SQL、更新流程节点，然后同步配置；同步返回的文件数为0时抛错，提示“数据库已导入，但已停止服务重启”。只有节点更新和配置同步阶段通过才调用 ServiceHost 重启固定的 `RegistrationCenterService`（服务超时60秒、请求等待90秒）。请求等待超时不代表代理动作取消，见[本机权限代理](../../03-architecture/components/service-host.md)。恢复编排跟踪校验、SQL导入、节点更新、配置同步和服务重启阶段：SQL尚未成功返回时显示“SQL 未完成导入，…失败”；SQL已成功返回而后续阶段失败时明确显示“SQL 已导入，但…失败”。
 
 这个顺序没有导入前自动完整备份、停止采集/流程或停服务步骤，也没有额外“确认后再导入”的弹窗。管理器维护门只约束使用该门的进程内动作，不阻止其它 DAO、直接 SQL 或外部进程写入；门的机制与完整备份边界见[结果维护](./mysql-maintenance.md)。底层恢复和重置接口不会自动加入该门。
 
-进度窗口的库名是创建时显示值，导入及之后配置同步会读取当前设置，没有整链不可变目标快照。维护期间不能假定更改连接设置不影响后续阶段。进度百分比表示阶段，不是已导入行数或完成比例。
+进度窗口的库名来自本次恢复的连接快照。进度百分比表示阶段，不是已导入行数或完成比例。
 
-SQL导入、配置写入和注册中心重启不在同一事务中。执行阶段异常被捕获、记日志并将窗口标为失败，没有恢复原数据/配置的补偿；因此方法的 `Task` 正常完成也可能是忙碌拒绝或界面已报告失败，不能当成业务成功返回值。SQL已导入但配置/重启失败时，先核对最后完成阶段，不自行重跑可能破坏数据的脚本。
+SQL导入、节点更新、配置写入和注册中心重启不在同一事务中。执行阶段异常被捕获、记日志并将窗口标为失败，没有恢复原数据/配置的补偿；因此方法的 `Task` 正常完成也可能是忙碌拒绝或界面已报告失败，不能当成业务成功返回值。SQL已导入但后续阶段失败时，先核对最后完成阶段，不自行重跑可能破坏数据的脚本。
 
-运行中的 `MySqlRestoreProgressWindow` 拒绝关闭，没有取消令牌或取消按钮；它与“关窗不取消后台动作”的[数据库清理窗口](./database-maintenance.md)不同。执行结束后可关闭；只有成功时启用“重启ColorVision”，由用户点击启动新进程 `-r`，创建进程成功后才关闭当前应用。窗口显示成功表示导入、配置同步和注册中心重启响应通过，不验证全部业务服务、模板/结果语义或新应用就绪。
+运行中的 `MySqlRestoreProgressWindow` 拒绝关闭，没有取消令牌或取消按钮；它与“关窗不取消后台动作”的[数据库清理窗口](./database-maintenance.md)不同。执行结束后可关闭；只有成功时启用“重启ColorVision”，由用户点击启动新进程 `-r`，创建进程成功后才关闭当前应用。窗口显示成功表示导入、节点更新阶段、配置同步和注册中心重启响应通过，不验证全部业务服务、模板/结果语义或新应用就绪。
+
+## 流程节点标识更新
+
+`UpdateRestoredFlowNodes` 读取目标库 `t_scgd_sys_resource` 中 `type=101` 的流程资源，包括停用或软删除资源；仅更新 `txt_value` 中 STND v1 的模型名称与类型GUID，其它列、节点参数字节、画布位置及连接顺序保持原样。它沿用 `STNodeTypeRegistry` 的GUID、模型和唯一名称匹配规则，例如将旧 `FlowEngineLib.LVCameraNode` 写为 Engine 中的 `ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode`，不维护额外的迁移映射表。
+
+处理前校验Base64和STND封装。转换不实例化节点、不加载节点属性、不执行取图；已经是当前标识的数据直接保留原字符串，重复执行不会反复写库。未注册或名称有歧义的节点保留原标识，仍可更新同一流程内其它已匹配节点。无效流程保留原值并记录资源ID，空值跳过；缺少资源表时整步跳过。完成日志给出更新流程数、节点数以及未匹配节点和无效流程数，阶段完成不代表所有插件节点已可用。
+
+写回使用参数化SQL，并以资源ID、类型和原Base64值的二进制相等条件防止覆盖并发修改；冲突或数据库异常会中止并回滚本次节点更新事务（要求表引擎支持事务），不会撤销此前SQL导入。独立按钮复用这套实现，运行时禁用自身，结果显示在工具窗口，明细写入日志。它不会替换编辑器中已加载的流程；更新后需重新加载流程，原有保存并发检查仍有效。
 
 ## 重置前保留什么
 
@@ -66,7 +76,7 @@ SQL导入、配置写入和注册中心重启不在同一事务中。执行阶�
 3. 源库存在时备份实际存在的资源表；同名源/目标库都未创建时跳过备份，按新安装继续执行脚本；跨库更新缺少源库时返回false，不执行重置SQL。备份阶段抛出的异常同样阻止执行重置SQL，但前述依赖构建内部吞错不属于这项门禁。
 4. 调用底层导入，`selectDatabase: false`，不把源库作为mysql的默认数据库参数；实际创建、删除或选库由脚本内容决定，并非helper自动替换脚本中的库名。
 5. 脚本执行后，对传入目标库执行连接/`SELECT 1` 检查。失败返回false，**不撤销已经执行的脚本**；检查通过只说明能连接，甚至不证明该库由本次脚本新建或schema正确。
-6. 有保留SQL时以 `selectDatabase: true` 回写目标库；没有则直接返回true。导入过程异常返回false，可能已有部分写入，没有整体事务、自动重试或回滚。
+6. 有保留SQL时以 `selectDatabase: true` 回写目标库，再更新回写流程的节点标识；没有保留SQL或属于新安装初始化则直接返回true。导入或节点更新过程异常返回false，可能已有部分写入，没有整体事务、自动重试或回滚。
 
 `true` 表示这条代码路径的检查通过，不证明所有源数据、表关系、业务账号权限或模板可用。源与目标的主机/凭据由传入配置克隆，方法不支持通过两个独立连接配置声明跨服务器迁移。
 
@@ -85,5 +95,6 @@ SQL导入、配置写入和注册中心重启不在同一事务中。执行阶�
 - `MySqlBackupRestoreSafetyTests` 包括进程参数、维护门、入口源码检查、恢复阶段失败摘要及临时XML更新；返回路径用例实际只检查方法返回类型，阶段摘要用例也不执行真实恢复或服务重启。
 - `MySqlMigrationBackupTableTests` 检查九张保留表组合及其与结果清理表分离，不验证真库存在、导出内容或schema兼容。
 - `SensorTemplateMigrationTests` 对合成数据生成SQL，检查业务code推导、ID冲突重映射和健康命令保留的字符串；没有在MySQL中执行生成脚本。
+- `LvCameraNodeMigrationTests` 使用迁移前保存的BV/LV流程验证标识写回、参数与连线保留、重复执行不变，以及未知/歧义类型、插件不透明属性、损坏数据和禁止实例化节点；没有在MySQL中执行更新语句。
 
 现存这些测试不覆盖真实dump/import、缺依赖仍成功、配置缺键/部分写失败、并发切配置或服务重启失败后的恢复验收。

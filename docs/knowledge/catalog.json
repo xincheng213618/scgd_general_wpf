@@ -5061,7 +5061,7 @@
       "knowledge_id": "engine.mysql-recovery",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。",
+      "summary": "MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。",
       "aliases": [
         "MySQL数据库恢复",
         "加载SQL备份",
@@ -5069,6 +5069,9 @@
         "资源迁移备份",
         "恢复失败但数据已改变",
         "恢复后重启",
+        "更新流程节点",
+        "UpdateRestoredFlowNodes",
+        "FlowNodeIdentityNormalizer",
         "Sensor字典ID重映射",
         "MySqlDatabaseMaintenanceService",
         "RestoreAndRestartAsync",
@@ -5088,6 +5091,8 @@
         "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml",
         "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs",
         "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml",
+        "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/FlowNodeIdentityNormalizer.cs",
         "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs",
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
         "UI/ColorVision.Database/MySqlControl.cs",
@@ -5098,7 +5103,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
         "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs",
-        "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs"
+        "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"
       ],
       "related": [
         "engine.mysql-maintenance",

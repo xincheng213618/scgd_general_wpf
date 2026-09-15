@@ -29,6 +29,8 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 | `FlowKey` / 内容 hash | 稳定流程身份与加载基线，不以可重排模板 ID 代替身份 |
 | 本地 `.stn` | 独立文档的画布文件，不等于完整模板迁移包 |
 
+数据库恢复和数据库工具的“更新流程节点”按钮可将旧节点标识写回当前类型，不实例化节点或重写参数；处理范围及失败边界见[流程节点标识更新](./mysql-recovery.md#流程节点标识更新)。这会改变数据库内容hash，已打开流程需要重新加载模板，继续保存时仍受原有并发检查保护。
+
 ## 保存与并发边界
 
 `ViewFlow.TrySave` 校验画布并取得 STN 后，调用 `TemplateFlow.Save2DB`。数据库保存更新主表、明细和资源，失败回滚事务并抛出异常；调用方不能把错误吞掉后标记已保存。窗口保存传入自己的 `FlowTemplateSaveCondition`，按加载时内容 hash 判断并发冲突，不能借另一个窗口已更新的共享对象基线覆盖较新的内容。

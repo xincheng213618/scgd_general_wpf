@@ -577,10 +577,11 @@ namespace ColorVision.Database
                 return;
             }
 
+            MySqlConfig config = MySqlDatabaseMaintenanceService.CloneConfig(MySqlSetting.Instance.MySqlConfig, MySqlSetting.Instance.MySqlConfig.Database);
             MySqlRestoreProgressWindow? progressWindow = null;
             RunOnUi(() =>
             {
-                progressWindow = new MySqlRestoreProgressWindow(backupFile, MySqlSetting.Instance.MySqlConfig.Database)
+                progressWindow = new MySqlRestoreProgressWindow(backupFile, config.Database)
                 {
                     Owner = WindowHelpers.GetActiveWindow()
                 };
@@ -601,16 +602,22 @@ namespace ColorVision.Database
                 {
                     Report("校验备份", $"正在校验 SQL 文件：{backupFile}", 5);
                     currentStage = "导入数据库";
-                    Report("导入数据库", $"使用业务账号导入到数据库 {MySqlSetting.Instance.MySqlConfig.Database}", 15);
-                    await RestoreMysqlCoreAsync(backupFile).ConfigureAwait(false);
+                    Report("导入数据库", $"使用业务账号导入到数据库 {config.Database}", 15);
+                    await RestoreMysqlCoreAsync(backupFile, config).ConfigureAwait(false);
                     databaseImported = true;
                     Report("导入数据库", "SQL 数据导入完成", 65);
+
+                    currentStage = "更新流程节点";
+                    Report(currentStage, "将恢复的流程节点标识更新为当前版本", 67);
+                    await Task.Run(() => MySqlDatabaseMaintenanceService.UpdateRestoredFlowNodes(
+                        config,
+                        message => Report("更新流程节点", message, 70))).ConfigureAwait(false);
 
                     currentStage = "同步服务配置";
                     Report("同步服务配置", "同步注册中心、x64 主服务和 dev 主服务的 MySql.config", 72);
                     IReadOnlyList<string> synchronizedFiles = await Task.Run(() =>
                         MySqlDatabaseMaintenanceService.SynchronizeInstalledServiceConfigs(
-                            MySqlSetting.Instance.MySqlConfig,
+                            config,
                             message => Report("同步服务配置", message, 78))).ConfigureAwait(false);
                     if (synchronizedFiles.Count == 0)
                         throw new InvalidOperationException("未找到任何已安装服务的 MySql.config，数据库已导入，但已停止服务重启。");
@@ -626,7 +633,7 @@ namespace ColorVision.Database
                         throw new InvalidOperationException($"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed} {response.Message}");
 
                     Report("重启服务", response.Message, 96);
-                    progressWindow?.Complete(true, "SQL 恢复、服务配置同步及注册中心重启均已完成。可检查上方详情，然后重启 ColorVision。 ");
+                    progressWindow?.Complete(true, "SQL 恢复、流程节点更新、服务配置同步及注册中心重启均已完成。可检查上方详情，然后重启 ColorVision。 ");
                 }
                 catch (Exception ex)
                 {
@@ -1357,14 +1364,17 @@ namespace ColorVision.Database
 
         private static string RestoreMysqlCore(string backupFile)
         {
-            return RestoreMysqlCoreAsync(backupFile).GetAwaiter().GetResult();
+            MySqlConfig config = MySqlDatabaseMaintenanceService.CloneConfig(MySqlSetting.Instance.MySqlConfig, MySqlSetting.Instance.MySqlConfig.Database);
+            string restoredFile = RestoreMysqlCoreAsync(backupFile, config).GetAwaiter().GetResult();
+            MySqlDatabaseMaintenanceService.UpdateRestoredFlowNodes(config, message => log.Info(message));
+            return restoredFile;
         }
 
-        private static Task<string> RestoreMysqlCoreAsync(string backupFile)
+        private static Task<string> RestoreMysqlCoreAsync(string backupFile, MySqlConfig config)
         {
             return MySqlDatabaseMaintenanceService.RestoreSqlFileAsync(
                 backupFile,
-                MySqlSetting.Instance.MySqlConfig,
+                config,
                 Config.MysqlPath,
                 selectDatabase: true);
         }

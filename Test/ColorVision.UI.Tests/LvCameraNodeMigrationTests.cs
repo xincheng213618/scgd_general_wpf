@@ -105,6 +105,107 @@ public sealed class LvCameraNodeMigrationTests
     public static class First { public sealed class DuplicatedNode : STNode { } }
     public static class Second { public sealed class DuplicatedNode : STNode { } }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("FlowEngineLib.dll|LVCameraNode")]
+    [InlineData("OlderEngine.dll|Older.Namespace.LVCameraNode")]
+    public void RestoreNormalizationPreservesGraphAndIsIdempotent(string? legacyModel) => StaTest.Run(() =>
+    {
+        string original = Convert.ToBase64String(ReadLegacyCanvas(legacyModel));
+        string normalized = FlowNodeIdentityNormalizer.Normalize(original, out int changed, out int unresolved);
+        Assert.Equal(2, changed);
+        Assert.Equal(0, unresolved);
+        using var container = new CVNodeContainer();
+        container.LoadCanvas(Convert.FromBase64String(normalized));
+        AssertGraph(container.Nodes.Cast<STNode>().ToArray());
+
+        var before = ReadRawCanvas(original);
+        var after = ReadRawCanvas(normalized);
+        Assert.Equal(before.View, after.View);
+        Assert.Equal(before.Connections, after.Connections);
+        for (int i = 0; i < before.Nodes.Length; i++)
+        {
+            Assert.Equal(Properties(before.Nodes[i]), Properties(after.Nodes[i]));
+            using var header = new BinaryReader(new MemoryStream(after.Nodes[i]));
+            Assert.Equal(STNodeTypeRegistry.GetModelByType(typeof(LVCameraNode)), Encoding.UTF8.GetString(header.ReadBytes(header.ReadByte())));
+            Assert.Equal(typeof(LVCameraNode).GUID.ToString(), Encoding.UTF8.GetString(header.ReadBytes(header.ReadByte())));
+        }
+        Assert.Same(normalized, FlowNodeIdentityNormalizer.Normalize(normalized, out changed, out unresolved));
+        Assert.Equal(0, changed);
+        Assert.Equal(0, unresolved);
+    });
+
+    [Theory]
+    [InlineData("Unknown.dll|MissingCameraNode")]
+    [InlineData("Old.dll|Old.Namespace.DuplicatedNode")]
+    public void RestoreNormalizationPreservesUnavailableOrAmbiguousTypes(string model)
+    {
+        string original = Convert.ToBase64String(ReadLegacyCanvas(model));
+        Assert.Same(original, FlowNodeIdentityNormalizer.Normalize(original, out int changed, out int unresolved));
+        Assert.Equal(0, changed);
+        Assert.Equal(2, unresolved);
+    }
+
+    [Fact]
+    public void RestoreNormalizationUpdatesKnownNodesAlongsideOpaquePluginData()
+    {
+        var legacy = ReadRawCanvas(LegacyCanvas);
+        var unknown = ReadRawCanvas(Convert.ToBase64String(ReadLegacyCanvas("Plugin.dll|UnavailableNode")));
+        byte[] opaque = unknown.Nodes[0].Concat(new byte[] { 3, 0, 0, 0, 102, 111, 111, 4, 0, 0, 0, 0, 255, 0, 128 }).ToArray();
+        using var output = new MemoryStream();
+        STNodeCanvasWriter.WriteRaw(output, [legacy.Nodes[0], opaque], legacy.Connections, 21, -13, 1.25f);
+
+        string normalized = FlowNodeIdentityNormalizer.Normalize(Convert.ToBase64String(output.ToArray()), out int changed, out int unresolved);
+        Assert.Equal(1, changed);
+        Assert.Equal(1, unresolved);
+        var after = ReadRawCanvas(normalized);
+        Assert.Equal(opaque, after.Nodes[1]);
+        Assert.Equal(Properties(legacy.Nodes[0]), Properties(after.Nodes[0]));
+        Assert.Equal(legacy.Connections, after.Connections);
+        Assert.Equal(new float[] { 21, -13, 1.25f }, after.View);
+    }
+
+    [Fact]
+    public void RestoreNormalizationDoesNotConstructNodes()
+    {
+        var legacy = ReadLegacyCanvas("Old.dll|ConstructorMustNotRunNode");
+        string normalized = FlowNodeIdentityNormalizer.Normalize(Convert.ToBase64String(legacy), out int changed, out int unresolved);
+        Assert.Equal(2, changed);
+        Assert.Equal(0, unresolved);
+        Assert.All(ReadRawCanvas(normalized).Nodes, node => Assert.Contains(nameof(ConstructorMustNotRunNode), Encoding.UTF8.GetString(node)));
+    }
+
+    public sealed class ConstructorMustNotRunNode : STNode
+    {
+        public ConstructorMustNotRunNode() => throw new InvalidOperationException("Migration must never construct nodes.");
+    }
+
+    [Fact]
+    public void RestoreNormalizationRejectsCorruptDataBeforeWriting()
+    {
+        Assert.Throws<FormatException>(() => FlowNodeIdentityNormalizer.Normalize("not base64!", out _, out _));
+        byte[] corrupt = Convert.FromBase64String(LegacyCanvas);
+        corrupt[^8] ^= 1;
+        Assert.Throws<InvalidDataException>(() => FlowNodeIdentityNormalizer.Normalize(Convert.ToBase64String(corrupt), out _, out _));
+    }
+
+    private static byte[] Properties(byte[] node)
+    {
+        int guidOffset = 1 + node[0];
+        return node[(guidOffset + 1 + node[guidOffset])..];
+    }
+
+    private static (float[] View, byte[][] Nodes, long[] Connections) ReadRawCanvas(string data)
+    {
+        using var reader = new BinaryReader(new MemoryStream(FlowPackageStnValidator.ValidateAndDecompress(Convert.FromBase64String(data))));
+        float[] view = [reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()];
+        int count = reader.ReadInt32();
+        byte[][] nodes = Enumerable.Range(0, count).Select(_ => reader.ReadBytes(reader.ReadInt32())).ToArray();
+        int connectionCount = reader.ReadInt32();
+        long[] connections = Enumerable.Range(0, connectionCount).Select(_ => reader.ReadInt64()).ToArray();
+        return (view, nodes, connections);
+    }
+
     private static byte[] ReadLegacyCanvas(string? model)
     {
         byte[] canvas = Convert.FromBase64String(LegacyCanvas);

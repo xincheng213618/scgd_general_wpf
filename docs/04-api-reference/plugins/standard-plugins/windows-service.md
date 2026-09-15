@@ -86,7 +86,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 窗口只有在所选安装阶段及必需服务安装/启动汇总均通过后才将进度设为“安装完成”并显示完成弹窗；任一必需服务失败会显示安装失败及失败服务列表。该结果仍只覆盖编排收到的返回值，还须分别核对服务状态、版本、配置及数据库结果；日志、progress=100、完成弹窗或某次ServiceHost成功均不替代整条安装验收。
 
-插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 本身也只是业务账号SQL导入包装，不是该桌面恢复流程。
+插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
 
 ## 备份和恢复不等于自动回滚
 

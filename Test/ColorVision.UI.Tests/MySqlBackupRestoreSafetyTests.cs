@@ -69,6 +69,7 @@ public sealed class MySqlBackupRestoreSafetyTests
 
     [Theory]
     [InlineData(false, "导入数据库", "SQL 未完成导入，导入数据库失败")]
+    [InlineData(true, "更新流程节点", "SQL 已导入，但更新流程节点失败")]
     [InlineData(true, "同步服务配置", "SQL 已导入，但同步服务配置失败")]
     [InlineData(true, "重启注册中心服务", "SQL 已导入，但重启注册中心服务失败")]
     public void RestoreFailureSummaryDistinguishesCompletedSqlImport(

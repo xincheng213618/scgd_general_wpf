@@ -244,6 +244,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool RestoreDatabase(string filePath, Action<string> logCallback)
         {
+            bool databaseImported = false;
             try
             {
                 MySqlConfig businessConfig = CreateMySqlConfig(Config.AppUser, Config.AppPassword, Config.Database);
@@ -252,12 +253,15 @@ namespace WindowsServicePlugin.ServiceManager
                     businessConfig,
                     ResolveMysqlClientPath(),
                     selectDatabase: true).GetAwaiter().GetResult();
+                databaseImported = true;
+                logCallback("SQL 数据导入完成，正在更新流程节点");
+                MySqlDatabaseMaintenanceService.UpdateRestoredFlowNodes(businessConfig, logCallback);
                 logCallback("数据库恢复完成");
                 return true;
             }
             catch (Exception ex)
             {
-                logCallback($"数据库恢复失败: {ex.Message}");
+                logCallback($"{(databaseImported ? "SQL 已导入，但流程节点更新失败" : "数据库恢复失败")}: {ex.Message}");
                 return false;
             }
         }
