@@ -83,6 +83,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);
             CameraBackend.Changed += CameraBackend_Changed;
+            DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
             _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
             this.SetIconResource("DrawingImageCamera");
 
@@ -104,6 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
+            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
@@ -140,6 +142,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cameraLocalWindow.Owner = owner;
             }
             cameraLocalWindow.Show();
+        }
+
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandDisplayConfigHint")]
+        public RelayCommand EditDisplayConfigCommand { get; }
+
+        private void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         [CommandDisplay("CameraLog", CategoryOrder = 3)]
@@ -491,6 +508,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             AttachPhyCamera(null);
 
             CameraBackend.Changed -= CameraBackend_Changed;
+            DisplayConfig.PropertyChanged -= DisplayConfig_BackendPreferenceChanged;
             lock (previewSync) pendingPreview = null;
             LocalCalibrationCacheManager.Dispose();
             LocalCameraSession.Dispose();

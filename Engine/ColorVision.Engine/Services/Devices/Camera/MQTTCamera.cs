@@ -235,7 +235,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
-            if (Device.RoutesLocally) return Device.OpenLocalCamera(CameraID, TakeImageMode, ImageBpp);
+            if (Device.CameraBackend.OpensLocally) return Device.OpenLocalCamera(CameraID, TakeImageMode, ImageBpp);
             MsgSend msg = new()
             {
                 EventName = "Open",

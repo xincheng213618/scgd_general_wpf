@@ -17,22 +17,22 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 | 入口 | 执行方式与结果 |
 | --- | --- |
-| 相机控制面板的“打开”“取图” | 默认通过服务命令取图；勾选“使用本地相机”后转入共享本地会话，直接预览内存图并保存结果记录 |
+| 相机控制面板的“打开”“取图” | 显示配置决定下次打开的后端；取图跟随当前实际打开的会话，本地取图直接预览内存图，默认保存图像和结果记录 |
 | 设备右键菜单 `Local`，或本地相机节点的“相机管理” | 打开 `CameraLocalWindow` 本地相机管理；在本进程连接、测量，并直接显示内存图像 |
 | 相机控制面板的“视频模式” | `DisplayCamera` 用独立句柄打开 Live/8-bit 相机，显示连续回调帧 |
 | 流程节点“本地相机取图” | `LocalCameraNode` 取得本地测量帧，保存结果主记录，再交给流程下游 |
 | 相机属性 → 校准与校正 → 用户校正 | 带入当前相机，选择最近拍摄图像、导入文件或取图后进行单点 / RGBW 修正；见[用户校正](./calibration.md#四色校正采集) |
 | 设备结果视图 | `ViewCamera` 展示结果记录；最新本地结果优先使用独立内存快照，其它记录按 `FileUrl` 打开文件 |
 
-主面板“使用本地相机”持久化在本机 `DisplayCameraConfig.UseLocalCamera`，默认关闭，不更改服务端的自动打开设置。开启后，打开、关闭、自动曝光、主面板/POI/定时取图均由 `DeviceCamera` 调用 `LocalCameraSession` 和 `LocalCameraCaptureService`；保留 `MsgRecord` 的成功/失败通知，但不发布 MQTT 相机指令。未打开时取图可按设备配置自动连接；已打开会话直接复用。
+在相机属性的“采集与显示 → 显示配置”中编辑“使用本地相机”。该软开关持久化在本机 `DisplayCameraConfig.UseLocalCamera`，默认关闭，只决定下次打开的后端，不更改服务端自动打开设置。可以在已打开、取图或关闭过程中修改，当前连接、取图、自动曝光和关闭仍跟随实际会话；须先关闭当前连接，再打开才应用新偏好。主面板不显示此开关或后端说明文字。服务不可用且未观察到占用时，选择本地后仍提供“打开”入口，但不会把逻辑设备状态改成已打开。
 
-切换模式前应关闭当前相机并等待命令完成。服务已打开或正在操作时，本地打开被拒绝；曾观察到服务占用后，即使服务离线/未知也不视为已释放，须收到 `Closed`。启动时尚未观察到服务占用可尝试本地打开，最终仍以原生 SDK 的独占打开结果为准。若本地模式启动时服务已自动打开，可取消开关回到服务模式关闭，再启用本地模式。应用内同 CameraCode/CameraID 的其它逻辑相机以及独立视频也参与占用检查；外部进程的并发打开仍依赖 SDK 独占保护。
+本地会话通过 `DeviceCamera` 调用 `LocalCameraSession` 和 `LocalCameraCaptureService`，保留 `MsgRecord` 成功/失败通知，不发布 MQTT 相机指令。主面板取图和自动曝光要求会话已打开，不通过取图应用新偏好或隐式重连；流程节点的 `AutoConnect` 是独立的显式本地入口。服务已打开或正在操作时，不能再创建本地会话；曾观察到服务占用后，即使服务离线/未知也不视为已释放，须收到 `Closed`。可先选好本地偏好，再用“关闭”关闭当前服务会话，随后重新打开。启动时尚未观察到服务占用可尝试本地打开，最终仍以原生 SDK 的独占打开结果为准。应用内同 CameraCode/CameraID 的其它逻辑相机以及独立视频也参与打开前的占用检查；外部进程的并发打开仍依赖 SDK 独占保护。
 
-本地会话与原始服务状态分别保存；`DService.DeviceStatus` 提供实际后端的有效状态，心跳只更新服务侧状态，不能把已打开的本地相机覆盖成离线。即使开关关闭，通过 Local 窗口/节点显式打开的会话也取得当前设备的本地归属，主面板可关闭该会话，关闭后恢复默认服务路由。检测到两端冲突时禁止继续本地采集，但仍允许关闭本地会话。
+本地会话与原始服务状态分别保存；`DService.DeviceStatus` 在本地实际打开后显示本地状态，覆盖逻辑相机自身状态。服务心跳只更新服务侧记录，不能把本地会话覆盖成离线或阻止该会话取图；修改偏好也不改变当前状态或路由。即使开关关闭，通过 Local 窗口/节点显式打开的会话也取得当前设备的本地归属，主面板可取图、自动曝光并关闭该会话。关闭后恢复逻辑服务状态，下次打开重新读取偏好。
 
 本地自动曝光沿用原生 `CM_GetAutoExpTime`，回填曝光、饱和度和显示配置；取图自动曝光在生成帧元数据之前完成。自动曝光下拉框在本地模式仅选择是否启用原生曝光，不应用服务 V1/V2 模板参数。`IsAutoExpWithND=true` 和非空 HDR 模板会明确报不支持；ND 手动控制、对焦、电机操作在主面板本地模式下禁用。校正模板仍由校正组覆盖增益，资源按模板文件引用解析，不要求服务校准设备在线。
 
-本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。`UsingFileCaching` 决定是否按本地文件规则保存图像，主面板同时遵循 `IsCVCIEFileSave`（关闭时仅写 RAW，内存 CIE 仍可使用）；关闭文件保存仍预览内存图并写数据库。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
+本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况，按本地文件规则保存 CVRAW；同时遵循 `IsCVCIEFileSave`（关闭时仅写 RAW，内存 CIE 仍可使用）。关闭文件保存仍预览内存图并写数据库。此选项仅用于主面板/POI/定时本地取图，本地管理窗口和流程节点使用各自的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
 
 相机卡片和结果详情的登记、首次显示、首结果及提前释放边界见[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)。
 
@@ -125,7 +125,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | CSV 导出 | 先选择一条记录；只导出该记录。保存对话框确认后代码会追加 `.csv`，文件名无需再次填写此后缀 |
 | 清空列表或删除选中行 | 只移除当前视图集合中的行，不删除数据库记录或图像文件 |
 
-最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，旧的无文件记录无法重新打开。预览复制不会改变流程帧或保存文件的方向；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，旧的无文件记录无法重新打开。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 有记录但无图时，先检查选中行、`FileUrl` 和文件加载；出现其它相机记录时，核对是否执行过全表查询。设备右键菜单 `CameraLog` 从配置的主服务目录查找最新相机日志，可结合命令终态及错误消息定位远程失败。
 
@@ -141,7 +141,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 - `DeviceCameraAssociationTests` 覆盖关联/解绑对象不改许可证中设备 ID 的断言；不覆盖 `Save()`、数据库写入和服务重启。
 - `CameraViewLifecycleTests` 覆盖结果列表解绑的幂等性、事件/绑定清理；不证明完整视频或硬件生命周期。
-- `LocalCameraSessionTests` 覆盖物理配置 JSON 的 14 个字段映射及全帧零 ROI。`LocalCameraOwnershipTests` 用原生替身检查复用、失败状态、参数冲突及关闭后重开；`CameraBackendRoutingTests` 覆盖模式默认值、占用和服务心跳隔离；`LocalCameraResultTests` 覆盖独立预览副本、方向、非对齐行、结果文件字段和曝光回填。它们不打开真实硬件、不写实际业务数据库。
+- `LocalCameraSessionTests` 覆盖物理配置 JSON 的 14 个字段映射及全帧零 ROI。`LocalCameraOwnershipTests` 用原生替身检查复用、失败状态、参数冲突及关闭后重开；`CameraBackendRoutingTests` 覆盖软开关、当前会话路由、占用和服务心跳隔离；`LocalCameraResultTests` 覆盖默认保存及关闭保存、独立预览副本、方向、非对齐行、与 CVRAW 解码像素的一致性、结果文件字段和曝光回填。它们不打开真实硬件、不写实际业务数据库。
 - `LocalFlowNodePortTests.LocalFrameLivesAcrossNodeCopiesAndEndsWithFlow` 检查节点副本共享帧及流程结束后不能再 Acquire；该用例在结束前已释放租约。`LocalFrameMirrorTests` 检查 RAW/CIE 各自的方向、校正准备及幂等翻转，不覆盖异步预览与校正并发。
 - `VideoProcessorResilienceTests` 覆盖对焦与十字参考线后台处理异常后继续运行；`ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageStreamPresentationTests` 检查冻结源、有界等待帧、过期拒绝和失败原图回退。它们不调用真实相机或 native 伪彩 DLL；实际 FlipX/FlipY、缩放和指标位置仍需按输入与设备验证。
 - 已授权设备环境中的远程完成消息、校准资源、超时结果归属、句柄互斥和文件显示仍需现场验收；源码核对与文档构建不能替代这些证据。

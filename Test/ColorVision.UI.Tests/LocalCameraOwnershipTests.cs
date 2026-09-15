@@ -35,6 +35,7 @@ public class LocalCameraOwnershipTests
             return await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
         Assert.Equal(MsgRecordState.Success, await Execute(() => mqtt.Open("camera", TakeImageMode.Measure_Normal, 16)));
+        backend.SetPreference(false);
         Assert.Equal(MsgRecordState.Success, await Execute(() => mqtt.Open("camera", TakeImageMode.Measure_Normal, 16)));
         Assert.Equal(1, native.Opens);
         Assert.Equal(MsgRecordState.Success, await Execute(mqtt.Close));
@@ -47,6 +48,7 @@ public class LocalCameraOwnershipTests
     {
         var native = new FakeNative();
         var state = new CameraBackendState(true);
+        state.ObserveService(DeviceStatusType.Closed);
         using var session = new LocalCameraSession(native, state);
         Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
         Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera", TakeImageMode.Measure_Normal, 16));
@@ -84,7 +86,9 @@ public class LocalCameraOwnershipTests
         session.Open("camera", TakeImageMode.Measure_Normal, 16);
         Assert.Throws<InvalidOperationException>(() => session.Close(true));
         Assert.True(state.LocalOwned);
-        Assert.Throws<InvalidOperationException>(() => state.SetPreference(false));
+        state.SetPreference(false);
+        Assert.True(state.RoutesLocally);
+        Assert.Equal(DeviceStatusType.Opened, state.Status);
         native.FailClose = false;
     }
 

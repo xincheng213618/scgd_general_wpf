@@ -16,8 +16,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private int localCommands;
         private int serviceCommands;
 
-        public bool RoutesLocally => PreferLocal || LocalOwned;
-        public DeviceStatusType Status => LocalOwned || PreferLocal ? localStatus : ServiceStatus;
+        public bool RoutesLocally => LocalOwned;
+        public bool OpensLocally => LocalOwned || (!ServiceMayOwnCamera && PreferLocal);
+        public DeviceStatusType Status => LocalOwned ? localStatus : ServiceStatus;
 
         public CameraBackendState(bool preferLocal) => PreferLocal = preferLocal;
 
@@ -26,8 +27,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (OwnershipSync)
             {
                 if (PreferLocal == value) return;
-                if (LocalOwned || VideoOwned || (value && ServiceMayOwnCamera) || localCommands != 0 || serviceCommands != 0)
-                    throw new InvalidOperationException("请先关闭当前相机并等待操作完成，再切换本地/服务模式；服务占用须收到已关闭状态确认。");
                 PreferLocal = value;
             }
             Changed?.Invoke(this, EventArgs.Empty);
@@ -63,8 +62,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (OwnershipSync)
             {
-                if (ServiceMayOwnCamera || serviceCommands != 0)
-                    throw new InvalidOperationException("服务相机正在占用或操作尚未完成。请在服务模式关闭相机，确认已关闭后再使用本地相机。");
+                // An already-open native session remains authoritative even if a logical service heartbeat is stale.
+                if (!LocalOwned && (ServiceMayOwnCamera || serviceCommands != 0))
+                    throw new InvalidOperationException("服务相机正在占用或操作尚未完成。请先关闭当前相机，确认已关闭后再使用本地相机。");
                 if (VideoOwned) throw new InvalidOperationException("请先关闭主面板的本地视频。");
             }
         }

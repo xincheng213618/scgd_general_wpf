@@ -1,7 +1,8 @@
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Realtime;
 using FlowEngineLib.Algorithm;
+using OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 using System;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -21,19 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             using LocalFlowFrameLease lease = frame.Acquire();
             LocalFrameMetadata metadata = lease.Metadata;
             byte[] raw = lease.CopyRawToArray();
-            int stride = checked(metadata.Width * metadata.Channels * (metadata.SourceBpp / 8));
-            if (metadata.SourceBpp is not (8 or 16) || metadata.Channels is not (1 or 3)
-                || raw.Length != checked(stride * metadata.Height))
-                throw new InvalidOperationException("本地预览的 RAW 图像格式或长度无效。");
-            // Preserve the existing local window's 0/2/1 channel mapping; use packed source rows.
-            if (metadata.Channels == 3 && metadata.SourceBpp == 16)
-                for (int i = 0; i < raw.Length; i += 6)
-                {
-                    (raw[i + 2], raw[i + 4]) = (raw[i + 4], raw[i + 2]);
-                    (raw[i + 3], raw[i + 5]) = (raw[i + 5], raw[i + 3]);
-                }
-            BitmapSource bitmap = BitmapSource.Create(metadata.Width, metadata.Height, 96, 96,
-                RealtimeFramePresenter.GetPixelFormat(metadata.Channels, metadata.SourceBpp), null, raw, stride);
+            BitmapSource bitmap = CreateRawBitmap(raw, metadata.SourceBpp, metadata.Channels, metadata.Width, metadata.Height);
             if (!frame.IsRawFlipApplied && metadata.FlipMode != CVImageFlipMode.None)
             {
                 LocalFrameMirrorService.ValidateFlipMode(metadata.FlipMode);
@@ -43,6 +32,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             bitmap.Freeze();
             return new LocalCameraPreview { Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata, Exposure = (float[])metadata.Exposure.Clone() };
+        }
+
+        internal static WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)
+        {
+            MatType matType = (bpp, channels) switch
+            {
+                (8, 1) => MatType.CV_8UC1,
+                (8, 3) => MatType.CV_8UC3,
+                (16, 1) => MatType.CV_16UC1,
+                (16, 3) => MatType.CV_16UC3,
+                _ => throw new InvalidOperationException("本地预览的 RAW 图像格式无效。")
+            };
+            int stride = checked(width * channels * (bpp / 8));
+            if (width <= 0 || height <= 0 || raw.Length != checked(stride * height))
+                throw new InvalidOperationException("本地预览的 RAW 图像格式或长度无效。");
+            // Use the CVRAW decoder's BGR-to-WPF conversion, including BGR16 -> Rgb48.
+            // The converter owns the display copy; neither source samples nor their order are changed.
+            using Mat mat = Mat.FromPixelData(height, width, matType, raw, stride);
+            return mat.ToWriteableBitmap();
         }
 
         public void Show(ImageView view)

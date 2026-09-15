@@ -78,13 +78,13 @@ View 未加载、不可见、已释放或关闭自动刷新时应按明确策略
 
 默认 Raw 或 Off、FullCie 是否进入首版仍未定。模式名称不是已经存在的配置项。
 
-### RAW 转换不能原样复用现有实现
+### RAW 转换与源像素一致性
 
-`CameraLocalWindow.CaptureAndPrepareDisplay` 当前把 RAW/CIE 复制为托管数组，用 CreateDisplayBitmap 生成并 Freeze 位图，在后台完成这些独立数据后释放流程帧，再把结果交给 UI。ShowImageInView 负责重置 opener、工具、图层和属性，随后打开位图；像素转换并不在 ShowImageInView 中。
+`CameraLocalWindow.CaptureAndPrepareDisplay` 当前把 RAW/CIE 复制为托管数组，用 `LocalCameraPreview.CreateRawBitmap` 生成并 Freeze 位图，在后台完成这些独立数据后释放流程帧，再把结果交给 UI。ShowImageInView 负责重置 opener、工具、图层和属性，随后打开位图；像素转换并不在 ShowImageInView 中。
 
-当前映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48，但 GetPixelFormat 本身没有严格拒绝其它组合。三通道 16-bit 分支实际把三个源分量按 `0,2,1` 写入目标，不能只依据旁边 RGB/GRB 注释推断颜色正确。当前 `LocalCameraPreview` 保留该分量映射，并用紧凑源 stride 构建位图，已有奇数宽度多行验证；实机颜色仍需核对。
+当前主面板与本地管理窗口共用 RAW 位图 helper，映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48。helper 拒绝其它组合和长度不匹配，使用紧凑源 stride 和 CVRAW 解码链相同的 OpenCV 位图转换；16 位三通道 BGR 在显示副本中转为 RGB48，不交换第 2、3 通道，不修改源分量顺序或数值。`LocalCameraResultTests` 对照 CVRAW 解码链检查位图格式和像素，并覆盖奇数宽度多行；实机颜色仍需核对。
 
-CreateDisplayBitmap 用目标 BackBufferStride 计算该分支的源行偏移；其它格式直接连续 Marshal.Copy，没有逐行处理目标 padding。紧凑 RAW 行字节数与 WPF stride 不同时会造成错行，指针分支还可能越过源数组。后续 Presenter 必须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例，不能把该方法直接抽取为“已验证转换器”。
+后续指针 Presenter 仍须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例。当前 helper 复制托管数组的行为不能证明零拷贝指针寿命、并发读写或硬件通道含义正确；不要在新显示路径中重新加入没有采集协议依据的颜色转换。
 
 RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原 RAW 不一定与 POI 坐标同向；无校正帧还可能延迟翻转。预览要选择对应方向的显示副本并明确坐标映射，不为显示提前改写下游还需使用的传感器数据。
 

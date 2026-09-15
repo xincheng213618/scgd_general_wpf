@@ -87,13 +87,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCameraCaptureRequest request = new()
             {
                 Device = this, CameraParameters = parameters, Calibration = calibration,
-                IsAutoExposure = autoExposure.Id != -1, SaveFiles = Config.UsingFileCaching,
+                IsAutoExposure = autoExposure.Id != -1, SaveFiles = DisplayConfig.SaveLocalCaptureFiles,
                 SaveCieFile = Config.IsCVCIEFileSave, FlipMode = DisplayConfig.FlipMode
             };
             return RunLocalCommand("GetData", () =>
             {
                 if (hdr.Id != -1) throw new NotSupportedException("本地取图尚不支持服务 HDR 模板，请选择空 HDR 模板。");
-                EnsureLocalMeasurementConnected(autoConnect: true);
+                EnsureLocalMeasurementConnected(autoConnect: false);
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
                 using LocalFlowFrame frame = capture.Frame;
                 MeasureResultImgModel? model = null;

@@ -46,8 +46,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DisplayCameraConfig : IDisplayConfigBase
     {
-        [Browsable(false)]
-        public bool UseLocalCamera { get; set; }
+        [Category("AcquisitionDisplay"), DisplayName("使用本地相机")]
+        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光和关闭始终使用当前已打开的相机。本地自动曝光使用原生参数，不应用服务曝光模板。")]
+        public bool UseLocalCamera
+        {
+            get => _useLocalCamera;
+            set { if (_useLocalCamera == value) return; _useLocalCamera = value; OnPropertyChanged(); }
+        }
+        private bool _useLocalCamera;
+
+        [Category("AcquisitionDisplay"), DisplayName("本地取图保存文件")]
+        [Description("默认开启。主面板本地取图保存 CVRAW；存在校正数据且启用 CIE 保存时，同时保存 CVCIE。关闭后仍显示图像并保存结果记录。")]
+        public bool SaveLocalCaptureFiles { get; set; } = true;
 
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
@@ -902,6 +912,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 default:
                     break;
             }
+            // Offer local opening while the remote service is unavailable without changing its displayed status.
+            if (!Device.CameraBackend.LocalOwned && !Device.CameraBackend.VideoOwned && Device.CameraBackend.OpensLocally
+                && e is DeviceStatusType.UnInit or DeviceStatusType.OffLine or DeviceStatusType.Unknown or DeviceStatusType.Unauthorized)
+                SetVisibility(ButtonOpen, Visibility.Visible);
         }
 
         public event RoutedEventHandler Selected;

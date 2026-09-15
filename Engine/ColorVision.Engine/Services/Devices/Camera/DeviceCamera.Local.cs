@@ -50,36 +50,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
             catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览转换失败；采集与持久化结果不受影响。", ex); }
         }
 
-        [Category("DeviceConnection"), DisplayName("使用本地相机")]
-        [Description("默认关闭。开启后主面板使用共享本地会话；切换前须关闭当前相机。")]
-        public bool UseLocalCamera
+        private void DisplayConfig_BackendPreferenceChanged(object? sender, PropertyChangedEventArgs e)
         {
-            get => CameraBackend.PreferLocal;
-            set
-            {
-                try
-                {
-                    CameraBackend.SetPreference(value);
-                    DisplayConfig.UseLocalCamera = value;
-                    backendError = null;
-                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-                }
-                catch (Exception ex) { backendError = ex.Message; }
-                CameraBackend_Changed(this, EventArgs.Empty);
-            }
+            if (IsDisposed || e.PropertyName != nameof(DisplayCameraConfig.UseLocalCamera)) return;
+            CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         [Browsable(false)]
         public bool RoutesLocally => CameraBackend.RoutesLocally;
         [Browsable(false)]
         public bool ServiceControlsEnabled => !RoutesLocally && !CameraBackend.VideoOwned;
-        private string? backendError;
-        [Browsable(false)]
-        public string CameraBackendHint => backendError ?? (RoutesLocally
-            ? CameraBackend.ServiceMayOwnCamera
-                ? "本地模式：服务仍占用相机，请切回服务模式关闭后重试。"
-                : $"本地相机：{CameraBackend.Status}。自动曝光使用原生参数；不应用服务曝光模板、ND 自动切换或 HDR。"
-            : CameraBackend.VideoOwned ? "本地视频已占用相机，请先关闭视频。" : $"服务相机：{CameraBackend.ServiceStatus}");
 
         private void CameraBackend_Changed(object? sender, EventArgs e)
         {
@@ -88,16 +69,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (IsDisposed) return;
                 DService.RefreshBackendStatus();
-                OnPropertyChanged(nameof(UseLocalCamera));
                 OnPropertyChanged(nameof(RoutesLocally));
                 OnPropertyChanged(nameof(ServiceControlsEnabled));
-                OnPropertyChanged(nameof(CameraBackendHint));
             });
         }
 
         internal void EnsureLocalCameraAvailable()
         {
             CameraBackend.EnsureLocalAvailable();
+            if (CameraBackend.LocalOwned) return;
             foreach (var other in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
             {
                 if (ReferenceEquals(other, this)) continue;
