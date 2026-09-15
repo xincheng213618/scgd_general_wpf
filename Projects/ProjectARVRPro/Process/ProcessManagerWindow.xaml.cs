@@ -560,7 +560,7 @@ namespace ProjectARVRPro.Process
                     {
                         MessageBox.Show(
                             this,
-                            "Recipe 已修改，但保存 ProcessGroups.json 失败。请检查磁盘空间和文件权限后重试。",
+                            $"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。",
                             "ColorVision",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);

@@ -41,8 +41,8 @@ KB 状态栏的 Socket 配置与 Modbus 不是两条等效检测入口。当前 
 
 | 项目 | 组织方式与配置 | 需要区分的字段或范围 |
 | --- | --- | --- |
-| ARVRPro | `ProcessGroup`、`ProcessMeta`、`ProcessGroups.json`、`PictureSwitchConfig` | 流程组、步骤处理类型、Recipe 与切图设置共同决定执行；迁移和实例配置见[流程与 Recipe](./project-arvr-pro-processes.md) |
-| LUX | `ProcessGroup`、`ProcessMeta`、`ProcessGroups.json`，另有 Recipe/Fix 配置 | `Name` 是显示名，`SocketCode` 匹配命令，`FlowTemplate` 绑定 Flow 模板；同一处理类型的 Recipe/Fix 共享，不能套用 ARVRPro 的实例配置方式 |
+| ARVRPro | `ProcessGroup`、`ProcessMeta`、`ProjectARVRProProcessGroups.json`、`PictureSwitchConfig` | 流程组、步骤处理类型、Recipe 与切图设置共同决定执行；迁移和实例配置见[流程与 Recipe](./project-arvr-pro-processes.md) |
+| LUX | `ProcessGroup`、`ProcessMeta`、`ProjectLUXProcessGroups.json`，另有 Recipe/Fix 配置 | `Name` 是显示名，`SocketCode` 匹配命令，`FlowTemplate` 绑定 Flow 模板；同一处理类型的 Recipe/Fix 共享，不能套用 ARVRPro 的实例配置方式 |
 | KB | 当前 Flow 模板与按模板名选择的 `RecipeManager` / `KBRecipeConfig` | 模板名、POI 键名/宽度、KB 结果键名和 Recipe 快照需对应；不使用 ARVRPro/LUX 的流程组模型 |
 
 普通 LUX 命令先按 `SocketCode` 查找步骤，再根据 `FlowTemplate` 查找模板。仅修改显示名称不会修改这两个绑定；重复命令码、缺失绑定和模板重命名分别按 [LUX 流程配置](./project-lux.md)排查。

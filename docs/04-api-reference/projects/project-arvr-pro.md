@@ -26,7 +26,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | CSV 或 Socket 字段不对 | `UseLegacyARVROutput`、标准 CSV、Legacy 输出、客户 XLSX |
 | AOI 流程卡住 | 主 Socket、`SocketRelay`、`AOITestSwitchImageComplete` |
 | Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
-| 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProcessGroups.json` 和 Recipe 配置 |
+| 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProjectARVRProProcessGroups.json` 和 Recipe 配置；升级时核对旧共享文件迁移日志 |
 
 ## 项目边界和版本
 

@@ -7,7 +7,7 @@ ColorVision 的显示设备光学检测项目包，运行时加载 `ProjectLUX.d
 - Windows x64 / .NET 10 WPF；需要兼容的 ColorVision 宿主、`ColorVision.Engine` 及其 Flow、通信、图像与数据库组件。
 - 项目独立版本读取 `ProjectLUX.csproj` 的 `VersionPrefix`，宿主最低要求读取随包 manifest 的 `requires`；项目版本不随主程序版本自动变化。
 - 运行前准备现场 Flow 模板、设备服务、Engine MySQL 数据、Recipe 限值与 Fix 修正。Recipe/Fix 按类型共享，不按每个流程步骤独立保存。
-- 流程、Recipe、Fix 和生产摘要默认位于 `%APPDATA%\ColorVision\Config\`，本地结果库为 `ProjectLUX.db`。具体文件名和保存边界见项目主题。
+- 流程配置默认保存为 `%APPDATA%\ColorVision\Config\ProjectLUXProcessGroups.json`，Recipe、Fix、生产摘要及 `ProjectLUX.db` 位于同一目录。首次升级仅在能确认旧共享 `ProcessGroups.json` 属于 LUX 时复制迁移，原文件保留。
 - 外部对接使用 Socket 的 **Text** 模式，默认监听 `0.0.0.0:6666`；必须显式启用服务并核对当前活动组的 `SocketCode` 映射。命令可能触发真实设备，按现场授权范围操作。
 
 ## 查找功能说明
