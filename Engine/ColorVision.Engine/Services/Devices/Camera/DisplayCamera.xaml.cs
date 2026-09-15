@@ -46,6 +46,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DisplayCameraConfig : IDisplayConfigBase
     {
+        [Browsable(false)]
+        public bool UseLocalCamera { get; set; }
+
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
@@ -917,7 +920,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
-                var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                MsgRecord msgRecord;
+                try { msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp); }
+                catch (InvalidOperationException ex)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                    return;
+                }
                 ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                 {
                     if (state == MsgRecordState.Success)
@@ -940,6 +949,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void GetData_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.RoutesLocally)
+            {
+                MsgRecord? local = TakePhoto();
+                if (local == null) return;
+                EnsureTimedButtonOperations();
+                Device.SetMsgRecordChanged(local);
+                ServicesHelper.SendTimedCommand(this, TakePhotoButton, local, onTerminalStateChanged: (record, state) =>
+                {
+                    if (state == MsgRecordState.Fail) MessageBox1.Show(Application.Current.GetActiveWindow(), record.MsgReturn.Message, "ColorVision");
+                });
+                return;
+            }
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
@@ -1181,7 +1202,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (param.Id != -1)
                 {
-                    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                    if (!Device.RoutesLocally && Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
                     {
                         MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CalibrationServiceRequiredForTemplate, "ColorVision");
                         return null;
@@ -1215,7 +1236,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord? GetData()
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
-            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
+            if (!Device.RoutesLocally && ComboxCalibrationTemplate.SelectedValue is not CalibrationParam) return null;
+            CalibrationParam param = ComboxCalibrationTemplate.SelectedValue as CalibrationParam ?? new CalibrationParam { Id = -1, Name = "Empty" };
 
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
@@ -1229,6 +1251,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.RoutesLocally)
+            {
+                MsgRecord local = Device.AutoExposeLocally();
+                local.MsgRecordStateChanged += (_, state) =>
+                {
+                    if (state == MsgRecordState.Fail) MessageBox1.Show(Application.Current.GetActiveWindow(), local.MsgReturn.Message, "ColorVision");
+                };
+                ServicesHelper.SendCommand(sender, local);
+                return;
+            }
             if (sender is Button button)
             {
                 if (ComboxAutoExpTimeParamTemplate.SelectedValue is ParamBase param && param.Id != -1)
@@ -1271,6 +1303,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             cvCameraCSLib.CM_Close(m_hCamHandle);
                         }
 
+                        if (m_hCamHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+                            return (false, "本地视频关闭失败，相机仍被占用。");
+                        Device.CameraBackend.EndVideo();
                         return (true, string.Empty);
                     }
                     catch (Exception ex)
@@ -1408,9 +1443,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         return;
                     }
 
-                    ButtonOpen.Visibility = Visibility.Visible;
-                    ButtonClose.Visibility = Visibility.Collapsed;
-                    StackPanelOpen.Visibility = Visibility.Collapsed;
+                    if (state != MsgRecordState.Success)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn?.Message ?? "相机关闭失败。", "ColorVision");
+                        return;
+                    }
+                    DService_DeviceStatusChanged(this, DService.DeviceStatus);
                 });
             }
         }
@@ -1629,6 +1667,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.RoutesLocally) return;
             if (IsDisposed || sender is not Button button) return;
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
@@ -1654,6 +1693,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (!IsDisposed)
                     {
                         localVideoCloseScope?.Complete(false);
+                        operations.RefreshIdleState(LocalVideoButton);
+                        Device.DisplayConfig.IsLocalVideoOpen = !closeSucceeded;
                         operations.RefreshIdleState(LocalVideoButton);
                         OpenButton.Visibility = closeSucceeded ? Visibility.Visible : Visibility.Collapsed;
                     }
@@ -1722,8 +1763,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             lock (_localVideoHandleSync)
             {
                 if (IsDisposed) return (false, string.Empty);
-                return OpenLocalVideoInternalCore();
+                try
+                {
+                    lock (CameraBackendState.OwnershipSync)
+                    {
+                        Device.EnsureLocalCameraAvailable();
+                        Device.CameraBackend.BeginLocalOpen(video: true);
+                    }
+                    var result = OpenLocalVideoInternalCore();
+                    if (!result.isSuccess) ReleaseFailedLocalVideo();
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    ReleaseFailedLocalVideo();
+                    return (false, ex.Message);
+                }
             }
+        }
+
+        private void ReleaseFailedLocalVideo()
+        {
+            if (m_hCamHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+            {
+                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+            }
+            if (m_hCamHandle == IntPtr.Zero || !cvCameraCSLib.CM_IsOpen(m_hCamHandle)) Device.CameraBackend.EndVideo();
+            else Dispatcher.BeginInvoke(() => Device.DisplayConfig.IsLocalVideoOpen = true);
         }
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternalCore()

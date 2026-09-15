@@ -36,6 +36,8 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
+                <CheckBox Content="使用本地相机" IsChecked="{Binding UseLocalCamera}" ToolTip="默认关闭。切换前请先关闭当前相机。" />
+                <TextBlock Margin="0,2,0,5" Text="{Binding CameraBackendHint}" TextWrapping="Wrap" />
                 <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3">
                     <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}" />
                     <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
@@ -207,14 +209,14 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsNDPort, Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2" IsEnabled="{Binding ServiceControlsEnabled}" Visibility="{Binding Config.CFW.IsNDPort, Converter={StaticResource bool2VisibilityConverter}}">
                         <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
                         <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
                         <TextBlock Text="NDPort" />
                         <TextBox Margin="5,0" BorderThickness="0,0,0,1" Text="{Binding Config.NDPort}" />
                     </DockPanel>
 
-                    <StackPanel Margin="2" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel Margin="2" IsEnabled="{Binding ServiceControlsEnabled}" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel>
                             <Button Click="AutoFocus_Click" Content="{x:Static properties:Resources.AutoFocus}" DockPanel.Dock="Right" />
                             <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
@@ -260,7 +262,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel x:Name="LocalVideo" Margin="0,0,0,3">
+                <StackPanel x:Name="LocalVideo" Margin="0,0,0,3" IsEnabled="{Binding RoutesLocally, Converter={StaticResource inverseBooleanConverter}}">
                     <DockPanel Margin="0,0,0,3">
                         <Button Width="21" Height="21" Margin="5,0,0,0" Padding="2" HorizontalAlignment="Left" Command="{Binding EditRealtimeCameraConfigCommand}" DockPanel.Dock="Right">
                             <Button.Triggers>

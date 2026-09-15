@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return LoadBitmap(fullPath, exposureOverride, gainOverride);
         }
 
-        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode, bool includeRaw = true)
+        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode, bool includeRaw = true, bool includeCie = true)
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 generatedRawPath = rawPath;
             }
 
-            if (lease.HasCie)
+            if (includeCie && lease.HasCie)
             {
                 string ciePath = Path.Combine(directory, stem + ".cvcie");
                 if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvCie))

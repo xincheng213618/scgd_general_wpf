@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         string RelativePath,
         string FullPath);
 
-    public class DeviceCamera : DeviceService<ConfigCamera>
+    public partial class DeviceCamera : DeviceService<ConfigCamera>
     {
         public PhyCamera? PhyCamera { get => _PhyCamera; set => AttachPhyCamera(value); }
         private PhyCamera? _PhyCamera;
@@ -78,9 +78,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            CameraBackend = new CameraBackendState(DisplayConfig.UseLocalCamera);
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);
+            CameraBackend.Changed += CameraBackend_Changed;
             _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
             this.SetIconResource("DrawingImageCamera");
 
@@ -488,6 +490,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             AttachPhyCamera(null);
 
+            CameraBackend.Changed -= CameraBackend_Changed;
+            lock (previewSync) pendingPreview = null;
             LocalCalibrationCacheManager.Dispose();
             LocalCameraSession.Dispose();
             DService?.Dispose();

@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
         public bool SaveFiles { get; init; }
+        public bool SaveCieFile { get; init; } = true;
     }
 
     internal sealed class LocalCameraCaptureResult
@@ -65,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             LocalFrameMirrorService.ValidateFlipMode(request.FlipMode);
             DeviceCamera device = request.Device;
-            if (device.Config.TakeImageMode == TakeImageMode.Live)
+            if (device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
             {
                 throw new InvalidOperationException("本地取图结点不能使用 Live 模式，请先在本地相机窗口中以测量模式连接相机。");
             }
@@ -76,6 +77,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             CameraRunParam cameraParameters = request.CameraParameters ?? BuildDefaultCameraParameters(device);
+            if (!float.IsFinite(cameraParameters.Gain) || cameraParameters.Gain < 0 || cameraParameters.AvgCount < 1)
+                throw new InvalidOperationException("增益必须为非负有限值，平均次数至少为 1。");
+            foreach (float exposure in GetExposureValues(device, cameraParameters, device.Config.IsExpThree ? 3 : 1))
+                if (!float.IsFinite(exposure) || exposure <= 0) throw new InvalidOperationException("曝光时间必须为大于 0 的有限值。");
             LocalFlowFrame? frame = null;
             Stopwatch stopwatch = Stopwatch.StartNew();
             int captureTimeMs = 0;
@@ -86,7 +91,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 _ = cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain);
                 if (!device.Config.IsExpThree) _ = cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime);
 
-                string captureJson = BuildRawCaptureJson(device, cameraParameters, request.IsAutoExposure);
+                if (request.IsAutoExposure) LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters);
+                string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 if (cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels) == 0
                     || width == 0 || height == 0 || sourceBpp == 0 || channels == 0)
@@ -126,8 +132,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
                     uint destinationBpp = 32;
-                    // CM_GetFrame is retained for its CFW, averaging and auto-exposure
-                    // acquisition pipeline. BuildRawCaptureJson deliberately supplies no
+                    // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
+                    // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
                     int captureResult = cvCameraCSLib.CM_GetFrame(
                         cameraHandle,
@@ -164,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
-                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code);
+                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code, includeCie: request.SaveCieFile);
                     saveStopwatch.Stop();
                     saveTimeMs = ToMilliseconds(saveStopwatch.ElapsedMilliseconds);
                 }
@@ -279,7 +285,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static int ToMilliseconds(long value)
             => checked((int)Math.Min(value, int.MaxValue));
 
-        private static InvalidOperationException CreateNativeException(string prefix, int errorCode)
+        internal static InvalidOperationException CreateNativeException(string prefix, int errorCode)
         {
             string message = string.Empty;
             cvCameraCSLib.CM_GetErrorMessage(errorCode, ref message);
