@@ -3424,6 +3424,21 @@
         },
         {
           "text": {
+            "root": "Projects/ProjectARVRPro.SemiAuto"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744152565250726f2e53656d694175746f",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "ProjectARVRPro SemiAuto"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-semi-auto"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "Projects/ProjectKB"
           },
           "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744b42",
@@ -3803,6 +3818,12 @@
                 "root": "ProjectARVRPro.IntegrationDemo"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
+            },
+            {
+              "text": {
+                "root": "ProjectARVRPro SemiAuto"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-semi-auto"
             }
           ]
         },
