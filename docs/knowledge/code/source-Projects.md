@@ -59,6 +59,11 @@ next: false
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
   比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
 
+## Projects/ProjectARVRPro.SemiAuto {#module-50726f6a656374732f50726f6a6563744152565250726f2e53656d694175746f}
+
+- [ProjectARVRPro SemiAuto](../../04-api-reference/projects/project-arvr-pro-semi-auto.md) — `projects.arvr-pro-semi-auto`
+  独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。
+
 ## Projects/ProjectKB {#module-50726f6a656374732f50726f6a6563744b42}
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`

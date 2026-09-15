@@ -49,6 +49,9 @@ next: false
 - [ProjectARVRPro.IntegrationDemo](../../04-api-reference/projects/project-arvr-pro-integration-demo.md) — `projects.arvr-pro-demo`
   独立 net48 ARVRPro TCP/JSON Demo 的公开字段、ACK 与最终完成判据、切图自动确认、逐条消息超时及 JSON/CSV 导出；正常退出不代表最终 SN 和明确 PASS 已核验。
 
+- [ProjectARVRPro SemiAuto](../../04-api-reference/projects/project-arvr-pro-semi-auto.md) — `projects.arvr-pro-semi-auto`
+  独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。
+
 ## Scripts/tests {#module-536372697074732f7465737473}
 
 - [测试与验证](../../02-developer-guide/testing.md) — `delivery.testing`

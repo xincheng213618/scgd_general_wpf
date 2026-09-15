@@ -9026,6 +9026,7 @@
         "ProcessWithRecipeBase",
         "ResultParserMetas",
         "ResultProcessResolver",
+        "ProjectARVRProProcessGroups.json",
         "ProcessGroups.json",
         "MTFH07",
         "MTFV07",
@@ -9120,6 +9121,44 @@
       "title": "ARVRPro TCP 通讯协议",
       "source": "docs/04-api-reference/projects/project-arvr-pro-protocol.md",
       "url": "/04-api-reference/projects/project-arvr-pro-protocol",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.arvr-pro-semi-auto",
+      "knowledge_type": "reference",
+      "status": "current",
+      "summary": "独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。",
+      "aliases": [
+        "ProjectARVRPro.SemiAuto",
+        "ARVR 半自动软件",
+        "GECS 半自动",
+        "SemiAutomaticWorkflow",
+        "semi-auto-profile.json",
+        "GecsPacketCodec",
+        "GecsClient"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro.SemiAuto",
+        "Scripts/publish_project_arvrpro_semi_auto.py",
+        "Scripts/publish_project_arvrpro_semi_auto.bat"
+      ],
+      "test_paths": [
+        "Test/ProjectARVRPro.SemiAuto.Tests"
+      ],
+      "related": [
+        "projects.arvr-pro-demo",
+        "projects.arvr-pro",
+        "projects.arvr-pro-protocol",
+        "projects.index"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro.SemiAuto",
+        "Scripts"
+      ],
+      "domain": "projects",
+      "title": "ProjectARVRPro SemiAuto",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-semi-auto.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-semi-auto",
       "searchable": true
     },
     {
@@ -9280,6 +9319,8 @@
         "ProjectLUX",
         "LUXWindow",
         "ProcessMeta.SocketCode",
+        "ProjectLUXProcessGroups.json",
+        "ProcessGroups.json",
         "ARVRRecipe.json",
         "ProjectARVRProFixConfig.json",
         "ProjectLUXSummary.json",
@@ -9305,6 +9346,7 @@
       ],
       "test_paths": [
         "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj",
+        "Test/ProjectLUX.Tests/ProcessManagerPersistenceTests.cs",
         "Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"
       ],
       "related": [
