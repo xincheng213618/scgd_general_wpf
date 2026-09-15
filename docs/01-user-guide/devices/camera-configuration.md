@@ -47,7 +47,11 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 `ConfigCamera.IsExpThree` 的条件是 `TakeImageMode != Live && CameraMode == CV_MODE`；`IsChannelThree` 则只检查 `Channel == Three`。三通道图像不自动意味着发送三份曝光，Live 模式也不走这一三曝光分支。
 
-远程手动采集根据 `IsExpThree` 发送显示端 `[ExpTimeR, ExpTimeG, ExpTimeB]` 或 `[ExpTime]`，并读取所选校准、自动曝光、HDR 模板。自动曝光返回还可更新显示曝光/饱和度和 `Config.NDPort`，因此这些值可能被成功响应改写。
+远程手动采集根据 `IsExpThree` 发送显示端 `[ExpTimeR, ExpTimeG, ExpTimeB]` 或 `[ExpTime]`，并读取所选校准、自动曝光、HDR 模板。选择有效校准模板后，面板会立即把增益同步为该模板引用的校正组增益并禁止编辑，与远程服务端的覆盖顺序保持一致；选择 `Empty` 后恢复增益编辑。自动曝光返回还可更新显示曝光/饱和度和 `Config.NDPort`，因此这些值可能被成功响应改写。
+
+流程属性面板中的直接增益相机节点（包括 CV、L/BV 和“本地相机取图”）使用同一规则：选择校准模板后同步并锁定校正组增益，清除模板后恢复编辑。节点下拉框不增加 `Empty` 项，使用已有的清除按钮移除选择。节点切换相机设备时会按新设备重新解析；本地节点执行时还会再次使用校正组增益，保证未打开属性面板的旧流程也不会把旧增益用于取图。
+
+本地相机管理同样会同步并锁定校正组增益，同步后的 `DisplayConfig.Gain` 会用于本地 `CM_SetGain` 和取图元数据。如果窗口由“本地相机取图”节点打开，该增益也会同步回节点参数。
 
 `CameraRunParam.SetAllExposure(value)` 同时写四个曝光字段；`LocalCameraNode.BuildCameraParameters()` 用它构造节点参数，并拒绝非有限/非正曝光、非有限/负增益以及小于 1 的平均次数。这是该节点的检查，不能扩展成所有配置入口都有同样数值校验。改参数模板、显示面板和节点字段是三件不同的事。
 

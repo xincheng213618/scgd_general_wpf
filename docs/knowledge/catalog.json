@@ -4429,7 +4429,7 @@
       "knowledge_id": "engine.camera-preview-plan",
       "knowledge_type": "decision",
       "status": "planned",
-      "summary": "待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。",
+      "summary": "设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。",
       "aliases": [
         "本地相机内存预览设计",
         "不保存文件能在设备视图预览吗",
@@ -6513,8 +6513,10 @@
       "knowledge_id": "operations.camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。",
+      "summary": "本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。",
       "aliases": [
+        "使用本地相机",
+        "本地相机优先",
         "相机拍图",
         "相机服务",
         "手动采集成功流程失败",
@@ -6551,6 +6553,13 @@
         "CameraRealtimeFramePipeline"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraNative.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraAutoExposure.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraPreview.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraResultService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs",
@@ -6578,6 +6587,10 @@
         "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
+        "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraResultTests.cs",
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
         "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
@@ -11881,9 +11894,13 @@
         "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "ColorVision/App.xaml.cs",
-        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"
+        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs",
+        "ColorVision/Wizards/CameraDriverWizardStep.cs",
+        "ColorVision/ToolPlugins/CameraDriver",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"
@@ -11897,7 +11914,9 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/ToolPlugins",
         "ColorVision/Wizards",
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.Common",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"

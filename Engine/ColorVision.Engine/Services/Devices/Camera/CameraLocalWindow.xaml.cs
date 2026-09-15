@@ -80,11 +80,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ApplyNodeSettingsToWindow();
             InitializeComponent();
             DataContext = Device;
+            Device.CameraBackend.Changed += Backend_Changed;
             if (_sourceNode != null)
             {
                 Device.DisplayConfig.PropertyChanged += CaptureSettings_PropertyChanged;
                 Device.Config.PropertyChanged += CaptureSettings_PropertyChanged;
             }
+        }
+
+        private void Backend_Changed(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_disposed) return;
+                bool connected = Device.CameraBackend.LocalOwned;
+                if (!connected) _localRealtimePipeline.Stop(resetRealtime: true);
+                UpdateConnectionState(connected);
+            });
         }
 
         private void CaptureSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -720,6 +732,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void cb_CM_TYPE_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (Device.CameraBackend.LocalOwned) return;
             if (m_hCamHandle == IntPtr.Zero) return;
             m_eCameraMdl = (CameraModel)cb_CM_TYPE.SelectedIndex;
             Device.Config.CameraModel = m_eCameraMdl;
@@ -728,6 +741,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void cb_CM_ID_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (Device.CameraBackend.LocalOwned) return;
             if (_isInitializingCameraIdSelection)
             {
                 return;
@@ -782,63 +796,74 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.Config.Channel = GetSelectedChannelCount() == 3 ? ImageChannel.Three : ImageChannel.One;
         }
 
-        private void btn_Connect_Click(object sender, RoutedEventArgs e)
+        private async void btn_Connect_Click(object sender, RoutedEventArgs e)
         {
-            string cameraId = GetSelectedCameraId();
-            if (string.IsNullOrEmpty(cameraId))
+            if (_isCapturing) return;
+            _isCapturing = true;
+            UpdateConnectionState(_isConnected);
+            try
             {
-                MessageBox.Show(Properties.Resources.NoCameraId);
-                return;
-            }
+                string cameraId = GetSelectedCameraId();
+                if (string.IsNullOrEmpty(cameraId))
+                {
+                    MessageBox.Show(Properties.Resources.NoCameraId);
+                    return;
+                }
 
-            if (Device.LocalCameraSession.IsOpen)
-            {
-                AttachLiveCallback();
-                UpdateConnectionState(true);
-                return;
-            }
+                if (Device.LocalCameraSession.IsOpen)
+                {
+                    AttachLiveCallback();
+                    UpdateConnectionState(true);
+                    return;
+                }
 
-            int nErr = Device.LocalCameraSession.Open(cameraId, m_etakeImageMode, m_nBppIndex == 0 ? 8 : 16);
-            if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
-            {
-                string szMsg = "";
-                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                MessageBox.Show(szMsg);
-                btn_Connect.IsEnabled = true;
-                return;
-            }
+                int nErr = await Task.Run(() => Device.LocalCameraSession.Open(cameraId, m_etakeImageMode, m_nBppIndex == 0 ? 8 : 16));
+                if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
+                {
+                    string szMsg = "";
+                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                    MessageBox.Show(szMsg);
+                    btn_Connect.IsEnabled = true;
+                    return;
+                }
 
-            if (m_etakeImageMode != TakeImageMode.Live)
-            {
-                string sn = cvCameraCSLib.CM_GetSN(m_hCamHandle);
-                string mode = cvCameraCSLib.CM_GetDeviceMode(m_hCamHandle);
-                this.Title = "Model: COLOR VISION " + mode;
+                if (m_etakeImageMode != TakeImageMode.Live)
+                {
+                    string sn = cvCameraCSLib.CM_GetSN(m_hCamHandle);
+                    string mode = cvCameraCSLib.CM_GetDeviceMode(m_hCamHandle);
+                    this.Title = "Model: COLOR VISION " + mode;
 
-                ApplyCurrentCameraSettings();
-                UpdateCurrentConfigFromUi(cameraId);
-                SaveLocalPreferences();
-                UpdateConnectionState(true);
+                    ApplyCurrentCameraSettings();
+                    UpdateCurrentConfigFromUi(cameraId);
+                    SaveLocalPreferences();
+                    UpdateConnectionState(true);
+                }
+                else
+                {
+                    ApplyCurrentCameraSettings();
+                    UpdateCurrentConfigFromUi(cameraId);
+                    SaveLocalPreferences();
+                    AttachLiveCallback();
+                    UpdateConnectionState(true);
+                }
             }
-            else
-            {
-                ApplyCurrentCameraSettings();
-                UpdateCurrentConfigFromUi(cameraId);
-                SaveLocalPreferences();
-                AttachLiveCallback();
-                UpdateConnectionState(true);
-            }
+            catch (Exception ex) { MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+            finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
         }
 
-        private void btn_close_Click(object sender, RoutedEventArgs e)
+        private async void btn_close_Click(object sender, RoutedEventArgs e)
         {
-            if (m_etakeImageMode == TakeImageMode.Live)
+            if (_isCapturing) return;
+            _isCapturing = true;
+            UpdateConnectionState(_isConnected);
+            try
             {
                 _localRealtimePipeline.Stop(resetRealtime: true);
+                await Task.Run(() => Device.LocalCameraSession.Close(unregisterCallback: true));
+                SaveLocalPreferences();
             }
-            Device.LocalCameraSession.Close(m_etakeImageMode == TakeImageMode.Live);
-
-            UpdateConnectionState(false);
-            SaveLocalPreferences();
+            catch (Exception ex) { MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+            finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
         }
 
         UInt32 src_w = 0, src_h = 0;
@@ -1154,32 +1179,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private void btn_CalAutoExp_Click(object sender, RoutedEventArgs e)
+        private async void btn_CalAutoExp_Click(object sender, RoutedEventArgs e)
         {
-            btn_CalAutoExp.IsEnabled = false;
-            float[] autoExp = new float[3];
-            float[] Saturat = new float[3];
-
-            if (btn_Connect.IsEnabled == false)
+            if (_isCapturing) return;
+            _isCapturing = true;
+            UpdateConnectionState(_isConnected);
+            try
             {
-                if (cvCameraCSLib.CM_GetAutoExpTime(m_hCamHandle, autoExp, Saturat) == cvErrorDefine.CV_ERR_SUCCESS)
+                CameraRunParam parameters = BuildLocalCameraParameters();
+                await Task.Run(() => Device.LocalCameraSession.UseOpened(handle =>
                 {
-                    if (Device.Config.IsExpThree)
-                    {
-                        Device.DisplayConfig.ExpTimeR = autoExp[0];
-                        Device.DisplayConfig.ExpTimeG = autoExp[1];
-                        Device.DisplayConfig.ExpTimeB = autoExp[2];
-                    }
-                    else
-                    {
-                        Device.DisplayConfig.ExpTime = autoExp[0];
-                    }
-
-                    SaveDisplayConfig();
-                }
+                    LocalCameraAutoExposure.Measure(Device, handle, parameters);
+                    return true;
+                }));
             }
-
-            btn_CalAutoExp.IsEnabled = true;
+            catch (Exception ex) { MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+            finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
         }
 
         private void btn_SetExp_Click(object sender, RoutedEventArgs e)
@@ -1222,6 +1237,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            IEnumerable<GroupResource> groups = Device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>();
+            CalibrationGroupGainResolver.Synchronize(Device.DisplayConfig, ComboxCalibrationTemplate.SelectedValue as CalibrationParam, groups);
             Device.DisplayConfig.CalibrationTemplateIndex = ComboxCalibrationTemplate.SelectedIndex;
             UpdateNodeSettingsFromWindow();
             SaveDisplayConfig();
@@ -1328,6 +1345,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _disposed = true;
+            Device.CameraBackend.Changed -= Backend_Changed;
             Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
             Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;
             _localRealtimePipeline.Dispose();

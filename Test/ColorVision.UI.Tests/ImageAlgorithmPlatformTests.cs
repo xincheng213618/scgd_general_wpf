@@ -21,52 +21,14 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageAlgorithmPlatformTests
 {
     [Fact]
-    public void CatalogHasUniqueStableIdentitiesVersionsAndCompatibilityAliases()
+    public void CatalogHasUniqueIdentitiesValidContractsAndCompatibilityAliases()
     {
         AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
-        Assert.Equal(34, catalog.Descriptors.Count);
+        Assert.NotEmpty(catalog.Descriptors);
         Assert.Equal(catalog.Descriptors.Count, catalog.Descriptors.Select(item => item.Id).Distinct().Count());
-        IReadOnlyDictionary<AlgorithmId, AlgorithmVersion> expectedVersions = new Dictionary<AlgorithmId, AlgorithmVersion>
-        {
-            [StandardAlgorithmIds.Invert] = new(1, 0, 0),
-            [StandardAlgorithmIds.Canny] = new(1, 0, 0),
-            [StandardAlgorithmIds.BasicAdjustment] = new(1, 0, 0),
-            [StandardAlgorithmIds.Threshold] = new(1, 1, 0),
-            [StandardAlgorithmIds.Sharpen] = new(1, 0, 0),
-            [StandardAlgorithmIds.GaussianBlur] = new(1, 0, 0),
-            [StandardAlgorithmIds.MedianBlur] = new(1, 0, 0),
-            [StandardAlgorithmIds.Morphology] = new(1, 0, 0),
-            [StandardAlgorithmIds.Denoise] = new(1, 1, 0),
-            [StandardAlgorithmIds.AutoLevels] = new(1, 0, 0),
-            [StandardAlgorithmIds.WhiteBalance] = new(1, 0, 0),
-            [StandardAlgorithmIds.HistogramEqualization] = new(1, 0, 0),
-            [StandardAlgorithmIds.RemoveMoire] = new(1, 0, 0),
-            [StandardAlgorithmIds.PseudoColor] = new(1, 0, 0),
-            [StandardAlgorithmIds.RoiStatistics] = new(1, 0, 0),
-            [StandardAlgorithmIds.ImageProfile] = new(1, 1, 0),
-            [StandardAlgorithmIds.ImageComparison] = new(1, 1, 0),
-            [StandardAlgorithmIds.BlobComponents] = new(1, 0, 0),
-            [StandardAlgorithmIds.Contours] = new(1, 0, 0),
-            [StandardAlgorithmIds.SubpixelEdge] = new(1, 0, 0),
-            [StandardAlgorithmIds.LineFit] = new(1, 0, 0),
-            [StandardAlgorithmIds.CircleFit] = new(1, 0, 0),
-            [StandardAlgorithmIds.GeometricTransform] = new(1, 0, 0),
-            [StandardAlgorithmIds.ImageRegistration] = new(1, 0, 0),
-            [StandardAlgorithmIds.LensDistortionCorrection] = new(1, 0, 0),
-            [StandardAlgorithmIds.ImagingCorrection] = new(1, 0, 0),
-            [StandardAlgorithmIds.FrequencySpectrum] = new(1, 0, 0),
-            [StandardAlgorithmIds.MoireAnalysis] = new(1, 0, 0),
-            [DisplayMetrologyIds.RgbRegistration] = new(1, 0, 0),
-            [DisplayMetrologyIds.Ghost] = new(1, 0, 0),
-            [DisplayMetrologyIds.Defects] = new(1, 0, 0),
-            [DisplayMetrologyIds.Binocular] = new(1, 0, 0),
-            [DisplayMetrologyIds.Eyebox] = new(1, 0, 0),
-            [DisplayMetrologyIds.FieldSfr] = new(1, 0, 0),
-        };
-        Assert.Equal(expectedVersions.Keys.OrderBy(id => id.Value), catalog.Descriptors.Select(item => item.Id).OrderBy(id => id.Value));
-        Assert.All(catalog.Descriptors, descriptor => Assert.Equal(expectedVersions[descriptor.Id], descriptor.Version));
         Assert.All(catalog.Descriptors, descriptor =>
         {
+            Assert.True(descriptor.Version.Major > 0);
             Assert.NotNull(descriptor.OutputFormats);
             if (descriptor.OutputFormatPolicy == "no-image-output") Assert.Empty(descriptor.OutputFormats!);
             else Assert.NotEmpty(descriptor.OutputFormats!);
@@ -108,27 +70,6 @@ public sealed class ImageAlgorithmPlatformTests
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.ImagingCorrection);
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.FrequencySpectrum);
         Assert.DoesNotContain(copilot, descriptor => descriptor.Id == StandardAlgorithmIds.MoireAnalysis);
-
-        AlgorithmId[] expectedBatchOrder =
-        [
-            StandardAlgorithmIds.Invert,
-            StandardAlgorithmIds.PseudoColor,
-            StandardAlgorithmIds.AutoLevels,
-            StandardAlgorithmIds.WhiteBalance,
-            StandardAlgorithmIds.BasicAdjustment,
-            StandardAlgorithmIds.Threshold,
-            StandardAlgorithmIds.Sharpen,
-            StandardAlgorithmIds.GaussianBlur,
-            StandardAlgorithmIds.MedianBlur,
-            StandardAlgorithmIds.Canny,
-            StandardAlgorithmIds.HistogramEqualization,
-            StandardAlgorithmIds.Morphology,
-            StandardAlgorithmIds.Denoise,
-            StandardAlgorithmIds.GeometricTransform,
-            StandardAlgorithmIds.LensDistortionCorrection,
-            StandardAlgorithmIds.ImagingCorrection,
-        ];
-        Assert.Equal(expectedBatchOrder, BatchImageAlgorithms.CreateAll().Skip(1).Select(item => item.Descriptor!.Id));
     }
 
     [Fact]

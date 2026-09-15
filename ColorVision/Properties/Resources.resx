@@ -877,4 +877,80 @@
   <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>安装包缺失</value></data>
   <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>将安装</value></data>
   <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>已跳过</value></data>
+  <data name="CameraDriverWizardHeader" xml:space="preserve">
+    <value>相机驱动</value>
+  </data>
+  <data name="CameraDriverWizardIntro" xml:space="preserve">
+    <value>本机通过 USB 连接 ColorVision（QHY）相机时需要此驱动。打开驱动管理可检测、下载安装或重新安装；仅远程使用时可直接点击“下一步”跳过。</value>
+  </data>
+  <data name="CameraDriverWizardChecking" xml:space="preserve">
+    <value>正在检测相机驱动安装状态。</value>
+  </data>
+  <data name="CameraDriverWizardUnknown" xml:space="preserve">
+    <value>暂时无法确认驱动安装状态，请重新检测。</value>
+  </data>
+  <data name="CameraDriverWizardInstalledFormat" xml:space="preserve">
+    <value>已检测到相机驱动，版本 {0}。如相机无法识别，仍可重新安装。</value>
+  </data>
+  <data name="CameraDriverWizardMissing" xml:space="preserve">
+    <value>未检测到完整的 ColorVision 相机驱动。</value>
+  </data>
+  <data name="CameraDriverWizardIncomplete" xml:space="preserve">
+    <value>检测到部分安装信息，但驱动文件或系统登记不完整，可重新下载安装修复。</value>
+  </data>
+  <data name="CameraDriverWizardWorking" xml:space="preserve">
+    <value>正在校验下载文件或等待驱动安装完成，请按照安装窗口的提示操作。</value>
+  </data>
+  <data name="CameraDriverWizardRecheckAction" xml:space="preserve">
+    <value>重新检测</value>
+  </data>
+  <data name="CameraDriverWizardManageAction" xml:space="preserve">
+    <value>驱动安装与修复</value>
+  </data>
+  <data name="CameraDriverWizardInstallAction" xml:space="preserve">
+    <value>下载并安装</value>
+  </data>
+  <data name="CameraDriverWizardReinstallAction" xml:space="preserve">
+    <value>下载并重新安装</value>
+  </data>
+  <data name="CameraDriverWizardInstallHint" xml:space="preserve">
+    <value>安装或重新安装前，请先断开相机 USB。将下载 240301 版完整驱动安装包；安装完成后接回相机，并在主程序中验证采集。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadPage" xml:space="preserve">
+    <value>查看驱动下载目录</value>
+  </data>
+  <data name="CameraDriverWizardVersionDetailsFormat" xml:space="preserve">
+    <value>系统登记：{0}
+启动驱动：{1}    通信驱动：{2}</value>
+  </data>
+  <data name="CameraDriverWizardDownloading" xml:space="preserve">
+    <value>正在通过下载管理器获取驱动。关闭本窗口会取消后续安装；下载任务可在下载管理器中处理。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadFailed" xml:space="preserve">
+    <value>下载未完成，请在下载管理器中检查或重试。</value>
+  </data>
+  <data name="CameraDriverWizardUnexpectedPath" xml:space="preserve">
+    <value>下载文件路径与所选驱动不一致，请重试。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadUnavailable" xml:space="preserve">
+    <value>下载服务不可用，请检查下载管理器后重试。</value>
+  </data>
+  <data name="CameraDriverWizardErrorFormat" xml:space="preserve">
+    <value>相机驱动检测或安装失败：{0}</value>
+  </data>
+  <data name="CameraDriverWizardExitCodeFormat" xml:space="preserve">
+    <value>驱动安装未完成（退出代码 {0}），请检查安装窗口的结果后重试。</value>
+  </data>
+  <data name="CameraDriverWizardInstallIncomplete" xml:space="preserve">
+    <value>安装程序已退出，但尚未检测到完整驱动。请按安装程序提示处理后重新检测。</value>
+  </data>
+  <data name="CameraDriverWizardInstalledResult" xml:space="preserve">
+    <value>安装程序已完成，已检测到驱动。请接回相机，在主程序中验证识别与采集。</value>
+  </data>
+  <data name="CameraDriverWizardCancelled" xml:space="preserve">
+    <value>已取消管理员授权，驱动安装未启动。</value>
+  </data>
+  <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
+    <value>安装程序提示需要重启 Windows。请保存工作并自行重启，再接回相机和重新检测。</value>
+  </data>
 </root>

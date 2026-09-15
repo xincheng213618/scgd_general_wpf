@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
@@ -35,6 +36,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
         private bool _initializationStarted;
+        private LocalCameraPreview? localPreview;
+        private int localPreviewResultId = -1;
+        private bool updatingLocalSelection;
         private bool _isInitialized;
         internal bool IsContentInitialized => _isInitialized;
 
@@ -129,7 +133,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (IsDisposed || arg.DeviceCode != Device.Config.Code) return;
+            if (IsDisposed || Device.RoutesLocally || arg.DeviceCode != Device.Config.Code) return;
 
             if (arg.Code == 102)
             {
@@ -199,10 +203,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || updatingLocalSelection) return;
 
             if (listView1.SelectedItem is ViewResultImage result)
-                OpenImage(result.FileUrl);
+            {
+                if (localPreview != null && result.Id == localPreviewResultId) localPreview.Show(ImageView);
+                else OpenImage(result.FileUrl);
+            }
             else
                 ImageView.Clear();
         }
@@ -249,11 +256,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
+        internal void ShowLocalResult(MeasureResultImgModel? model, LocalCameraPreview preview, bool forceDisplay)
+        {
+            if (IsDisposed) return;
+            EnsureInitialized();
+            localPreview = preview;
+            localPreviewResultId = model?.Id ?? -1;
+            updatingLocalSelection = true;
+            try
+            {
+                if (model != null)
+                {
+                    ShowResult(model);
+                    if (forceDisplay || Config.AutoRefreshView)
+                        listView1.SelectedItem = ViewResults.First(item => item.Id == model.Id);
+                }
+            }
+            finally { updatingLocalSelection = false; }
+            if (forceDisplay || Config.AutoRefreshView)
+            {
+                preview.Show(ImageView);
+                ImageView.UpdateZoomAndScale();
+            }
+        }
+
         public void ShowResult(MeasureResultImgModel model)
         {
             if (IsDisposed) return;
             EnsureInitialized();
 
+            if (ViewResults.Any(item => item.Id == model.Id)) return;
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);
@@ -261,7 +293,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ViewResults.Add(result);
 
 
-            if (Config.AutoRefreshView)
+            // A delayed persisted notification for an older capture must not replace the latest snapshot.
+            if (Config.AutoRefreshView && model.Id >= localPreviewResultId)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
@@ -345,6 +378,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             if (listView1 != null)
                 DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
+            localPreview = null;
             ImageView?.Dispose();
             DataContext = null;
             GC.SuppressFinalize(this);

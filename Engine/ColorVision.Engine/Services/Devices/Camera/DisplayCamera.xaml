@@ -36,6 +36,8 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
+                <CheckBox Content="使用本地相机" IsChecked="{Binding UseLocalCamera}" ToolTip="默认关闭。切换前请先关闭当前相机。" />
+                <TextBlock Margin="0,2,0,5" Text="{Binding CameraBackendHint}" TextWrapping="Wrap" />
                 <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3">
                     <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}" />
                     <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
@@ -60,7 +62,7 @@
                 </DockPanel>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel>
-                        <DockPanel Margin="0,0,0,3">
+                        <DockPanel Margin="0,0,0,3" IsEnabled="{Binding DisplayConfig.IsGainControlledByCalibrationGroup, Converter={StaticResource inverseBooleanConverter}}" ToolTip="{Binding DisplayConfig.GainSourceHint}" ToolTipService.ShowOnDisabled="True">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Gain}" />
                             <TextBox MinWidth="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />
                             <hc:PreviewSlider IsSnapToTickEnabled="True" LargeChange="10" Maximum="{Binding PhyCamera.Config.CameraParameterLimit.GainMax, FallbackValue=100, TargetNullValue=100}" Minimum="{Binding PhyCamera.Config.CameraParameterLimit.GainMin, FallbackValue=0, TargetNullValue=0}" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.Gain}" />
@@ -199,7 +201,7 @@
                                                 </Button.Triggers>
                                             </Button>
                                         </Grid>
-                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxCalibrationTemplate" DisplayMemberPath="Key" SelectedIndex="{Binding CalibrationTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
+                                        <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxCalibrationTemplate" DisplayMemberPath="Key" SelectedIndex="{Binding CalibrationTemplateIndex}" SelectedValuePath="Value" SelectionChanged="ComboxCalibrationTemplate_SelectionChanged" Style="{StaticResource ComboBox.Small}" />
                                     </DockPanel>
                                 </StackPanel>
                                 <Button x:Name="TakePhotoButton" Grid.Column="1" Click="GetData_Click" Content="{x:Static properties:Resources.Capture}" FontSize="15" FontWeight="Bold" />
@@ -207,14 +209,14 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsNDPort, Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2" IsEnabled="{Binding ServiceControlsEnabled}" Visibility="{Binding Config.CFW.IsNDPort, Converter={StaticResource bool2VisibilityConverter}}">
                         <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
                         <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
                         <TextBlock Text="NDPort" />
                         <TextBox Margin="5,0" BorderThickness="0,0,0,1" Text="{Binding Config.NDPort}" />
                     </DockPanel>
 
-                    <StackPanel Margin="2" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel Margin="2" IsEnabled="{Binding ServiceControlsEnabled}" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel>
                             <Button Click="AutoFocus_Click" Content="{x:Static properties:Resources.AutoFocus}" DockPanel.Dock="Right" />
                             <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
@@ -260,7 +262,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel x:Name="LocalVideo" Margin="0,0,0,3">
+                <StackPanel x:Name="LocalVideo" Margin="0,0,0,3" IsEnabled="{Binding RoutesLocally, Converter={StaticResource inverseBooleanConverter}}">
                     <DockPanel Margin="0,0,0,3">
                         <Button Width="21" Height="21" Margin="5,0,0,0" Padding="2" HorizontalAlignment="Left" Command="{Binding EditRealtimeCameraConfigCommand}" DockPanel.Dock="Right">
                             <Button.Triggers>

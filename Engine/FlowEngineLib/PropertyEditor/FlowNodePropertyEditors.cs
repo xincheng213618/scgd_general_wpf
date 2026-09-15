@@ -78,6 +78,7 @@ public sealed class FlowNodePropertyEditorSelector : IPropertyEditor
 }
 
 public sealed class FlowDeviceNameEditor : FlowPropertyEditorProxy { }
+public sealed class FlowCameraCalibrationGainEditor : FlowPropertyEditorProxy { }
 public sealed class FlowCalibrationTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowAutoExposureTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowCameraRunTemplateEditor : FlowPropertyEditorProxy { }

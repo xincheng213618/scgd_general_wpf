@@ -12,14 +12,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// </summary>
     internal sealed class LocalCameraSession : IDisposable
     {
-        private readonly DeviceCamera device;
+        private readonly ILocalCameraNative native;
+        private readonly CameraBackendState backend;
+        private readonly Action ensureAvailable;
+        private string? openedCameraId;
+        private int openedBpp;
+        public TakeImageMode OpenedMode { get; private set; }
         private IntPtr handle;
         private string? loadedCalibrationJson;
         private bool disposed;
 
         public LocalCameraSession(DeviceCamera device)
         {
-            this.device = device;
+            native = new LocalCameraNative(device);
+            backend = device.CameraBackend;
+            ensureAvailable = device.EnsureLocalCameraAvailable;
+        }
+
+        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, Action? ensureAvailable = null)
+        {
+            this.native = native;
+            this.backend = backend;
+            this.ensureAvailable = ensureAvailable ?? backend.EnsureLocalAvailable;
         }
 
         internal object SyncRoot { get; } = new();
@@ -41,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 lock (SyncRoot)
                 {
-                    return handle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(handle);
+                    return handle != IntPtr.Zero && native.IsOpen(handle);
                 }
             }
         }
@@ -53,15 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (handle != IntPtr.Zero) return handle;
 
-                IntPtr manager = cvCameraCSLib.CM_CreatCameraManagerV1(device.Config.CameraModel, device.Config.CameraMode, "cfg\\sys.cfg");
-                if (manager == IntPtr.Zero) throw new InvalidOperationException($"创建本地相机管理器失败：{device.Code}");
-                if (cvCameraCSLib.CM_InitXYZ(manager) == 0)
-                {
-                    _ = cvCameraCSLib.ReleaseCameraManager(manager);
-                    throw new InvalidOperationException($"初始化本地相机 CIE 上下文失败：{device.Code}");
-                }
-
-                handle = manager;
+                handle = native.Initialize();
                 return handle;
             }
         }
@@ -70,18 +76,39 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                IntPtr manager = EnsureInitialized();
-                if (cvCameraCSLib.CM_IsOpen(manager)) return cvErrorDefine.CV_ERR_SUCCESS;
-
-                cvCameraCSLib.CM_SetCameraID(manager, cameraId);
-                _ = cvCameraCSLib.CM_SetTakeImageMode(manager, takeImageMode);
-                _ = cvCameraCSLib.CM_SetImageBpp(manager, imageBpp);
-                PhyCameraCfg? cameraConfig = device.PhyCamera?.Config?.CameraCfg;
-                if (cameraConfig != null && !cvCameraCSLib.UpdateCfgJson(manager, ConfigType.Cfg_Camera, BuildCameraConfigurationJson(cameraConfig)))
+                ObjectDisposedException.ThrowIf(disposed, this);
+                ensureAvailable();
+                if (IsOpen)
                 {
-                    return cvErrorDefine.CV_ERR_UNKNOWN;
+                    if (openedCameraId != cameraId || OpenedMode != takeImageMode || openedBpp != imageBpp)
+                        throw new InvalidOperationException("本地会话已使用其它打开参数连接，请先关闭相机再修改 Camera ID、模式或位深。");
+                    return cvErrorDefine.CV_ERR_SUCCESS;
                 }
-                return cvCameraCSLib.CM_Open(manager);
+                ArgumentException.ThrowIfNullOrWhiteSpace(cameraId);
+                lock (CameraBackendState.OwnershipSync)
+                {
+                    ensureAvailable();
+                    backend.BeginLocalOpen();
+                }
+                try
+                {
+                    IntPtr manager = EnsureInitialized();
+                    int result = native.Open(manager, cameraId, takeImageMode, imageBpp);
+                    if (result == cvErrorDefine.CV_ERR_SUCCESS && !native.IsOpen(manager))
+                        throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
+                    if (native.IsOpen(manager))
+                    {
+                        openedCameraId = cameraId;
+                        OpenedMode = takeImageMode;
+                        openedBpp = imageBpp;
+                        loadedCalibrationJson = null;
+                    }
+                    return result;
+                }
+                finally
+                {
+                    RefreshStatus();
+                }
             }
         }
 
@@ -114,9 +141,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (handle == IntPtr.Zero || !cvCameraCSLib.CM_IsOpen(handle)) return;
-                if (unregisterCallback) cvCameraCSLib.CM_UnregisterCallBack(handle);
-                cvCameraCSLib.CM_Close(handle);
+                try
+                {
+                    if (handle == IntPtr.Zero || !native.IsOpen(handle)) return;
+                    if (unregisterCallback) native.DetachCallback(handle);
+                    native.Close(handle);
+                    if (native.IsOpen(handle)) throw new InvalidOperationException("本地相机关闭失败，会话仍然打开。");
+                    loadedCalibrationJson = null;
+                }
+                finally { RefreshStatus(); }
             }
         }
 
@@ -124,9 +157,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             lock (SyncRoot)
             {
-                if (handle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(handle))
+                if (handle != IntPtr.Zero && native.IsOpen(handle))
                 {
-                    cvCameraCSLib.CM_UnregisterCallBack(handle);
+                    native.DetachCallback(handle);
                 }
             }
         }
@@ -137,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                if (handle == IntPtr.Zero || !cvCameraCSLib.CM_IsOpen(handle))
+                if (handle == IntPtr.Zero || !native.IsOpen(handle))
                 {
                     return false;
                 }
@@ -145,7 +178,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     return true;
                 }
-                if (!cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Calibration, json))
+                if (!native.UpdateCalibration(handle, json))
                 {
                     return false;
                 }
@@ -161,12 +194,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (SyncRoot)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                if (handle == IntPtr.Zero || !cvCameraCSLib.CM_IsOpen(handle))
+                if (handle == IntPtr.Zero || !native.IsOpen(handle))
                 {
-                    throw new InvalidOperationException($"本地相机尚未打开：{device.Code}。请先在本地相机窗口中连接相机。");
+                    backend.SetLocalStatus(DeviceStatusType.Closed);
+                    throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 }
-                return operation(handle);
+                ensureAvailable();
+                try { return operation(handle); }
+                finally { RefreshStatus(); }
             }
+        }
+
+        private void RefreshStatus()
+        {
+            backend.SetLocalStatus(IsOpen
+                ? (OpenedMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened)
+                : DeviceStatusType.Closed);
         }
 
         public void Dispose()
@@ -179,17 +222,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 try
                 {
-                    if (cvCameraCSLib.CM_IsOpen(handle))
+                    if (native.IsOpen(handle))
                     {
-                        cvCameraCSLib.CM_UnregisterCallBack(handle);
-                        cvCameraCSLib.CM_Close(handle);
+                        native.DetachCallback(handle);
+                        native.Close(handle);
                     }
-                    _ = cvCameraCSLib.CM_UnInitXYZ(handle);
-                    _ = cvCameraCSLib.ReleaseCameraManager(handle);
+                    native.Release(handle);
                 }
                 finally
                 {
                     handle = IntPtr.Zero;
+                    backend.SetLocalStatus(DeviceStatusType.Closed);
                 }
             }
         }

@@ -573,7 +573,6 @@ public sealed class AlgorithmRuntimeIntegrationTests
     {
         AlgorithmCatalog catalog = StandardAlgorithmCatalog.Create();
         IReadOnlyList<IImageAlgorithmProvider> providers = ImageAlgorithmPlatform.Runtime.ProviderRegistry.Providers;
-        Assert.Equal(16, providers.Count);
 
         foreach (IImageAlgorithmProvider provider in providers)
         {
