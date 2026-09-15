@@ -3,9 +3,9 @@ knowledge_id: "flow.editor"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 ST WPF 节点画布、端口、类型目录及 STN 兼容边界。"
-aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","EnableWindowResizeDiagnostics","BeginResizeDiagnosticCapture","STNodeTypeRegistry","CVNodeContainer"]
-code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNode.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"]
+aliases: ["Flow画布加载后节点丢失","ST.Library.UI","STNodeEditor","EnableWindowResizeDiagnostics","BeginResizeDiagnosticCapture","STNodeTypeRegistry","CVNodeContainer","SerializationModel"]
+code_paths: ["Engine/ST.Library.UI/README.md","Engine/ST.Library.UI/ST.Library.UI.csproj","Engine/ST.Library.UI/NodeEditor/STNode.cs","Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeSerializationModelAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs","Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs","Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs","Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs","Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"]
 related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-window"]
 ---
 
@@ -44,6 +44,8 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 已有节点仍使用 `System.Drawing` 的 `OnDrawNode(...)` 协议绘制，编辑器把结果
 呈现到 WPF 位图，因此不需要重写现有业务节点，也不会改变 `.stn`、`.cvflow`
 的序列化格式。
+
+节点跨程序集移动而仍需由旧端加载时，可以在该节点的 `STNodeSerializationModelAttribute` 显式声明原 `程序集文件名|完整类型名`。注册、画布保存及流程标识更新共用 `STNodeTypeRegistry.GetModelByType`；未声明或空白时仍使用实际运行时模型。声明只作用于该类型，派生节点不继承保存标识，避免注册冲突。该特性独立于菜单分类的 `STNodeAttribute`，没有菜单入口的旧节点也可保留保存标识，不会因此出现在新建目录。它只稳定流程数据中的模型名称，不改变 CLR 程序集身份或提供二进制类型转发；属性和端口仍须满足旧端契约。
 
 默认端口文字采用紧凑显示：只有节点存在两个或更多可见输入端口时才绘制输入名称；
 单输入节点不绘制输入名称，输出名称无论端口数量都不绘制。端口圆点、连接命中区、

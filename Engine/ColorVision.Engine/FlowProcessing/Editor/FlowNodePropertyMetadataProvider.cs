@@ -1,7 +1,6 @@
 using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
-using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using ST.Library.UI;
 using System;
@@ -68,11 +67,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public Type? GetEditorType(PropertyInfo propertyInfo)
         {
             if (CameraCalibrationGainPropertiesEditor.IsSupported(propertyInfo))
-                return typeof(FlowCameraCalibrationGainEditor);
-
-            var nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
-            if (nodeType != null && FlowNodePropertyEditorAttribute.Resolve(nodeType, propertyInfo.Name) != null)
-                return typeof(FlowNodePropertyEditorSelector);
+                return typeof(CameraCalibrationGainPropertiesEditor);
 
             return null;
         }

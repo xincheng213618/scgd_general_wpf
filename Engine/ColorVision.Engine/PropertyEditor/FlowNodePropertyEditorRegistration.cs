@@ -1,29 +1,10 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
-using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.DataLoad;
-using ColorVision.Engine.Templates.ImageCropping;
-using ColorVision.Engine.Templates.Jsons.AutoExpTime;
-using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.ImageROI;
-using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.Jsons.LedCheck2;
-using ColorVision.Engine.Templates.Jsons.OLEDAOI;
-using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.BuildPoi;
-using ColorVision.Engine.Templates.POI.POIFilters;
-using ColorVision.Engine.Templates.POI.POIGenCali;
-using ColorVision.Engine.Templates.POI.POIOutput;
-using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using FlowEngineLib;
@@ -60,36 +41,9 @@ namespace ColorVision.Engine.PropertyEditor
                 return;
 
             FlowPropertyEditorRegistry.Register<FlowDeviceNameEditor>((property, obj) => new DeviceNameEditor().GenProperties(property, obj));
-            FlowPropertyEditorRegistry.Register<FlowCameraCalibrationGainEditor>(CameraCalibrationGainPropertiesEditor.Create);
-            FlowPropertyEditorRegistry.Register<FlowCalibrationTemplateEditor>((property, obj) => CreateTemplateEditor(
-                property,
-                obj,
-                () => CreateCalibrationTemplate(obj),
-                nameof(CVCommonNode.DeviceCode),
-                hasDirectTemplateEditor: true));
-            FlowPropertyEditorRegistry.Register<FlowAutoExposureTemplateEditor>((property, obj) => CreateMultiTemplateEditor(property, obj, new TemplateAutoExpTimeV2(), new TemplateAutoExpTime()));
-            FlowPropertyEditorRegistry.Register<FlowCameraRunTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateCameraRunParam()));
-            FlowPropertyEditorRegistry.Register<FlowAutoFocusTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateAutoFocus()));
-            FlowPropertyEditorRegistry.Register<FlowPoiTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoi()));
-            FlowPropertyEditorRegistry.Register<FlowBuildPoiTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateBuildPoi()));
-            FlowPropertyEditorRegistry.Register<FlowPoiFilterTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiFilterParam()));
-            FlowPropertyEditorRegistry.Register<FlowPoiReviseTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiReviseParam()));
-            FlowPropertyEditorRegistry.Register<FlowPoiOutputTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiOutputParam()));
-            FlowPropertyEditorRegistry.Register<FlowPoiGenCaliTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiGenCalParam()));
-            FlowPropertyEditorRegistry.Register<FlowSmuTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateSMUParam()));
-            FlowPropertyEditorRegistry.Register<FlowSmuRangeEditor>(CreateSmuRangeEditor);
-            FlowPropertyEditorRegistry.Register<FlowSensorTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, CreateSensorTemplate(obj)));
-            FlowPropertyEditorRegistry.Register<FlowDataLoadTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateDataLoad()));
-            FlowPropertyEditorRegistry.Register<FlowBlackMuraJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateBlackMura()));
-            FlowPropertyEditorRegistry.Register<FlowImageRoiJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateImageROI()));
-            FlowPropertyEditorRegistry.Register<FlowPoiAnalysisJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiAnalysis()));
-            FlowPropertyEditorRegistry.Register<FlowImageCroppingTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateImageCropping()));
-            FlowPropertyEditorRegistry.Register<FlowLedCheck2JsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateLedCheck2()));
-            FlowPropertyEditorRegistry.Register<FlowOledAoiJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateOLEDAOI()));
-            FlowPropertyEditorRegistry.Register<FlowKbJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateKB()));
         }
 
-        private static DockPanel CreateSmuRangeEditor(PropertyInfo property, object obj)
+        internal static DockPanel CreateSmuRangeEditor(PropertyInfo property, object obj)
         {
             bool isSourceRange = string.Equals(property.Name, nameof(SMUFromCSVNode.SrcRng), StringComparison.OrdinalIgnoreCase);
             bool isLimitRange = string.Equals(property.Name, nameof(SMUFromCSVNode.LmtRng), StringComparison.OrdinalIgnoreCase);
@@ -123,7 +77,7 @@ namespace ColorVision.Engine.PropertyEditor
                 double[] ranges = useVoltageRanges ? Keithley2600VoltageRanges : Keithley2600CurrentRangesMilliampere;
 
                 combo.ItemsSource = ranges.Select(SmuRangeValueConverter.Format).ToArray();
-                combo.ToolTip = useVoltageRanges ? "电压量程（V）" : "电流量程（mA）";
+                combo.ToolTip = EngineLocalization.Get(useVoltageRanges ? "电压量程（V）" : "电流量程（mA）");
                 combo.GetBindingExpression(ComboBox.TextProperty)?.UpdateTarget();
             }
 
@@ -163,7 +117,7 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        private static DockPanel CreateTemplateEditor(PropertyInfo property, object obj, ITemplate? template)
+        internal static DockPanel CreateTemplateEditor(PropertyInfo property, object obj, ITemplate? template)
         {
             if (template == null)
                 return new TextboxPropertiesEditor().GenProperties(property, obj);
@@ -171,7 +125,7 @@ namespace ColorVision.Engine.PropertyEditor
             return CreateTemplateEditor(property, obj, () => template, null, HasDirectTemplateEditor(template));
         }
 
-        private static DockPanel CreateTemplateEditor(
+        internal static DockPanel CreateTemplateEditor(
             PropertyInfo property,
             object obj,
             Func<ITemplate?> templateFactory,
@@ -321,7 +275,7 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        private static DockPanel CreateMultiTemplateEditor(PropertyInfo property, object obj, params ITemplate[] templates)
+        internal static DockPanel CreateMultiTemplateEditor(PropertyInfo property, object obj, params ITemplate[] templates)
         {
             if (templates.Length == 0)
                 return new TextboxPropertiesEditor().GenProperties(property, obj);
@@ -500,7 +454,7 @@ namespace ColorVision.Engine.PropertyEditor
             return selectedIndex >= 0 ? selectedIndex : 0;
         }
 
-        private static TemplateCalibrationParam? CreateCalibrationTemplate(object obj)
+        internal static TemplateCalibrationParam? CreateCalibrationTemplate(object obj)
         {
             string deviceCode = GetStringProperty(obj, nameof(CVCommonNode.DeviceCode));
             if (string.IsNullOrWhiteSpace(deviceCode))
@@ -519,7 +473,7 @@ namespace ColorVision.Engine.PropertyEditor
             return camera?.PhyCamera == null ? null : new TemplateCalibrationParam(camera.PhyCamera);
         }
 
-        private static TemplateSensor CreateSensorTemplate(object obj)
+        internal static TemplateSensor CreateSensorTemplate(object obj)
         {
             string deviceCode = GetStringProperty(obj, nameof(CVCommonNode.DeviceCode));
             string? category = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode)?.Config?.Category;

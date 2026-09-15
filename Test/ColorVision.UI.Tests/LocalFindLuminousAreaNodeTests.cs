@@ -1,3 +1,6 @@
+using System.Reflection;
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -8,7 +11,6 @@ using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Text;
@@ -36,8 +38,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         Assert.Equal(LocalFindLuminousAreaNode.DefaultMinimumConfidence, node.MinimumConfidence);
         Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("BufferLen"));
         Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("OIndex"));
-        Assert.Equal(typeof(FlowPoiTemplateEditor), FlowNodePropertyEditorAttribute.Resolve(
-            typeof(LocalFindLuminousAreaNode), nameof(LocalFindLuminousAreaNode.SavePOITempName)));
+        Assert.Equal(typeof(PoiTemplatePropertiesEditor), typeof(LocalFindLuminousAreaNode).GetProperty(nameof(LocalFindLuminousAreaNode.SavePOITempName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
     [Fact]

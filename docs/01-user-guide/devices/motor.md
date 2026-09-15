@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。"
 aliases: ["电机不动","回原点","返回原点","获取位置","调整光圈","位置没有刷新","绝对相对移动","DeviceMotor","MQTTMotor","GetPosition","MoveDiaphragm","DwTimeOut"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs","Engine/FlowEngineLib/MotorNode.cs","Engine/FlowEngineLib/CamMotorNode.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Motor/DeviceMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/ConfigMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/MQTTMotor.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Motor/DisplayMotor.xaml","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs","Engine/FlowEngineLib/MotorNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CamMotorNode.cs"]
 test_paths: []
 related: ["engine.devices","operations.device-configuration","engine.mqtt","flow.session"]
 ---

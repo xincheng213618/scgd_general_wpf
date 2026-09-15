@@ -1,5 +1,5 @@
 using ColorVision.Common.MVVM;
-using FlowEngineLib.PropertyEditor;
+using ColorVision.Engine.PropertyEditor;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Globalization;
@@ -44,7 +44,7 @@ namespace ProjectARVRPro.Process
         private float _exposureTimeMs = DefaultExposureTimeMs;
 
         [DisplayName("校正模板")]
-        [PropertyEditorType(typeof(FlowCalibrationTemplateEditor))]
+        [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibrationTemplateName { get => _calibrationTemplateName; set => SetString(ref _calibrationTemplateName, value); }
         private string _calibrationTemplateName = string.Empty;
 

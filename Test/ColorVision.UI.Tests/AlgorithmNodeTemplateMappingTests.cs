@@ -1,5 +1,7 @@
+using System.Reflection;
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
-using FlowEngineLib.PropertyEditor;
 
 namespace ColorVision.UI.Tests;
 
@@ -9,7 +11,7 @@ public class AlgorithmNodeTemplateMappingTests
     public void ArvrPoiTemplateUsesInlinePoiTemplateEditor()
     {
         Assert.Equal(
-            typeof(FlowPoiTemplateEditor),
-            FlowNodePropertyEditorAttribute.Resolve(typeof(AlgorithmARVRNode), nameof(AlgorithmARVRNode.POITempName)));
+            typeof(PoiTemplatePropertiesEditor),
+            typeof(AlgorithmARVRNode).GetProperty(nameof(AlgorithmARVRNode.POITempName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 }

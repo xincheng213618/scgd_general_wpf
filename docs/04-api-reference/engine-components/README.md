@@ -24,7 +24,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | Flow 保存、导入或节点关联参数不正确 | [Flow 模板持久化](./template-flow-chain.md) | `TemplateFlow`、`FlowParam`、`FlowPackageHelper` |
 | 流程未启动、停止后仍处理结果或结束信号不一致 | [Flow 会话与最终化](../../01-user-guide/workflow/execution.md) | `FlowExecutionSession`、`FlowRunFinalizer`；对象责任见 [Flow 架构](../../03-architecture/components/engine/flow-engine.md) |
 | 本地运行记录未完成、进程中断恢复或 Incident 处置 | [Flow 运行诊断](./flow-diagnostics.md) | `FlowExecutionJournal`、`FlowExecutionJournalScope`、`FlowIncidentService`；与业务结果和续跑分开 |
-| 新节点放哪里、哪些配置用 PropertyGrid | [Flow 节点入口](../flow_nodes_summary.md)、[节点扩展](../extensions/flow-node.md)、[PropertyGrid 契约](../ui-components/property-grid.md) | `STNode`、`FlowNodePropertyEditorAttribute`、`FlowPropertyEditorRegistry` |
+| 新节点放哪里、哪些配置用 PropertyGrid | [Flow 节点入口](../flow_nodes_summary.md)、[节点扩展](../extensions/flow-node.md)、[PropertyGrid 契约](../ui-components/property-grid.md) | `STNode`、`PropertyEditorTypeAttribute`、`FlowPropertyEditorRegistry` |
 | 结果没有 handler、图像缺失、overlay 残留 | [结果交接链](./result-handoff-chain.md) | `ResultHandleRegistry`、`AlgorithmOverlayManager` |
 | 客户判定或 CSV/MES/Socket 字段不正确 | [项目知识入口](../projects/README.md)、[Socket 协议](../ui-components/ColorVision.SocketProtocol.md) | `Projects/` 的 `Process/Recipe/Fix` 与具体协议消费方 |
 | 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与业务查询、SQLite 工具分开 |

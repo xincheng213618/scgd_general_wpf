@@ -22,9 +22,12 @@ public sealed class LvCameraNodeMigrationTests
     [InlineData("FlowEngineLib.dll|LVCameraNode")]
     [InlineData("OlderEngine.dll|Older.Namespace.LVCameraNode")]
     [InlineData("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode")]
+    [InlineData("ColorVision.Engine.dll|FlowEngineLib.LVCameraNode")]
     public void LegacyCanvasLoadsAndRoundTripsThroughEditorRuntimeAndCompiler(string? legacyModel) => StaTest.Run(() =>
     {
-        Assert.Same(typeof(CVCameraNode).Assembly, typeof(LVCameraNode).Assembly);
+        Assert.Same(typeof(DeviceCamera).Assembly, typeof(LVCameraNode).Assembly);
+        Assert.Null(typeof(FlowEngineLib.Base.CVBaseServerNode).Assembly.GetType("FlowEngineLib.LVCameraNode"));
+        Assert.Equal("FlowEngineLib.LVCameraNode", typeof(LVCameraNode).FullName);
         Assert.Null(typeof(DeviceCamera).Assembly.GetType("ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode"));
         byte[] canvas = ReadLegacyCanvas(legacyModel);
         byte[] original = canvas.ToArray();
@@ -105,16 +108,30 @@ public sealed class LvCameraNodeMigrationTests
     public static class First { public sealed class DuplicatedNode : STNode { } }
     public static class Second { public sealed class DuplicatedNode : STNode { } }
 
+    [Fact]
+    public void StableSavedModelDoesNotOverrideDerivedNodeIdentity()
+    {
+        Assert.Equal("FlowEngineLib.dll|FlowEngineLib.LVCameraNode", STNodeTypeRegistry.GetModelByType(typeof(LVCameraNode)));
+        Assert.Equal($"{typeof(DerivedLvNode).Module.Name}|{typeof(DerivedLvNode).FullName}",
+            STNodeTypeRegistry.GetModelByType(typeof(DerivedLvNode)));
+        Assert.True(STNodeTypeRegistry.TryGetNodeType("00000000-0000-0000-0000-000000000001",
+            "FlowEngineLib.dll|FlowEngineLib.LVCameraNode", out Type resolved));
+        Assert.Equal(typeof(LVCameraNode), resolved);
+    }
+
+    public sealed class DerivedLvNode : LVCameraNode { }
+
     [Theory]
     [InlineData(null)]
     [InlineData("FlowEngineLib.dll|LVCameraNode")]
     [InlineData("OlderEngine.dll|Older.Namespace.LVCameraNode")]
     [InlineData("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode")]
+    [InlineData("ColorVision.Engine.dll|FlowEngineLib.LVCameraNode")]
     public void RestoreNormalizationPreservesGraphAndIsIdempotent(string? legacyModel) => StaTest.Run(() =>
     {
         string original = Convert.ToBase64String(ReadLegacyCanvas(legacyModel));
         string normalized = FlowNodeIdentityNormalizer.Normalize(original, out int changed, out int unresolved);
-        Assert.Equal(legacyModel == null ? 0 : 2, changed);
+        Assert.Equal(2, changed);
         Assert.Equal(0, unresolved);
         using var container = new CVNodeContainer();
         container.LoadCanvas(Convert.FromBase64String(normalized));

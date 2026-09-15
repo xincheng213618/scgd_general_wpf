@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。"
 aliases: ["图像裁剪四点保存在哪里","TemplateImageCropping","ImageCroppingDisplayAlgorithmConfig","OLEDImageCroppingNode"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ImageCropping/AlgorithmImageCropping.cs","Engine/ColorVision.Engine/Templates/ImageCropping/ViewHandleImageCropping.cs","Engine/FlowEngineLib/Node/OLED/OLEDImageCroppingNode.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ImageCropping/AlgorithmImageCropping.cs","Engine/ColorVision.Engine/Templates/ImageCropping/ViewHandleImageCropping.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/OLEDImageCroppingNode.cs"]
 test_paths: []
 related: ["algorithms.index","algorithms.roi-routes","engine.results"]
 ---

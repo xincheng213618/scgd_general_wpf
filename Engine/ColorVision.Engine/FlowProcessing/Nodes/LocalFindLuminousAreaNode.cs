@@ -1,3 +1,4 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
@@ -6,7 +7,6 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -204,7 +204,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "发光区定位")]
-    [FlowNodePropertyEditorAttribute(nameof(SavePOITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalFindLuminousAreaNode : LocalFlowNodeBase
     {
         internal const double DefaultMinimumConfidence = 0.25;
@@ -232,6 +231,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地发光区定位")]
         [STNodeProperty("POI保存模板", "可选；定位成功后按旧发光区服务契约更新一个 Rect/LTRect 或四个 PolygonFour 模板明细", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string SavePOITempName
         {
             get => savePoiTempName;

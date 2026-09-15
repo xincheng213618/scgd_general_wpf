@@ -10,7 +10,6 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.UI;
 using Newtonsoft.Json.Linq;
-using FlowEngineLib.PropertyEditor;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -208,8 +207,7 @@ public sealed class FovCalculationTests
             .GetProperty(nameof(FovImageViewOptions.CameraDegrees))!
             .GetCustomAttribute<PropertyEditorTypeAttribute>();
         Assert.Equal(typeof(CameraDegreesPropertiesEditor), editor?.EditorType);
-        Assert.Equal(typeof(CameraDegreesPropertiesEditor), FlowNodePropertyEditorAttribute.Resolve(
-            typeof(LocalFovNode), nameof(LocalFovNode.CameraDegrees)));
+        Assert.Equal(typeof(CameraDegreesPropertiesEditor), typeof(LocalFovNode).GetProperty(nameof(LocalFovNode.CameraDegrees))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
     [Fact]

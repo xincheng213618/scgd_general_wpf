@@ -186,7 +186,9 @@ public static class STNodeTypeRegistry
 
 	public static string GetModelByType(Type type)
 	{
-		return $"{type.Module.Name}|{type.FullName}";
+		// Do not inherit a base node's saved identity into distinct derived/plugin nodes.
+		string model = type.GetCustomAttribute<STNodeSerializationModelAttribute>(inherit: false)?.Model;
+		return string.IsNullOrWhiteSpace(model) ? $"{type.Module.Name}|{type.FullName}" : model;
 	}
 
 	private static bool TryGetNodeTypeByLegacySuffix(string model, out Type type)

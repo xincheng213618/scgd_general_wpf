@@ -2573,6 +2573,12 @@
             },
             {
               "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
+            {
+              "text": {
                 "root": "PropertyGrid 属性编辑契约"
               },
               "link": "/04-api-reference/ui-components/property-grid"
@@ -2861,12 +2867,6 @@
             },
             {
               "text": {
-                "root": "ImageCropping 图像裁剪模板"
-              },
-              "link": "/04-api-reference/algorithms/templates/image-cropping-template"
-            },
-            {
-              "text": {
                 "root": "Matching 模板匹配"
               },
               "link": "/04-api-reference/algorithms/templates/matching-template"
@@ -2900,6 +2900,12 @@
                 "root": "SMU 参数、结果与输出关闭"
               },
               "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
             },
             {
               "text": {
@@ -2952,6 +2958,12 @@
           "link": "/knowledge/code/source-Engine#module-456e67696e652f53542e4c6962726172792e5549",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
             {
               "text": {
                 "root": "配置 ARVRPro 流程、解析映射与 Recipe"

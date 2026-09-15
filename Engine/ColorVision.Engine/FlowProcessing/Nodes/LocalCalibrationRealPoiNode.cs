@@ -1,3 +1,4 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -7,7 +8,6 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
@@ -121,8 +121,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "校正+实时 POI")]
-    [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
@@ -142,6 +140,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("实时 POI")]
         [STNodeProperty("POI 模板", "校正后直接在 CIE 内存上计算的 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Browsable(false)]

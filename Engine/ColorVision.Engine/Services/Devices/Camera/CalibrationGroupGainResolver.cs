@@ -43,6 +43,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return true;
         }
 
-        internal static string CreateHint(string groupName, float gain) => $"增益由校正组“{groupName}”固定为 {gain:0.##}";
+        internal static string CreateHint(string groupName, float gain) => EngineLocalization.Format($"增益由校正组“{groupName}”固定为 {gain:0.##}");
     }
 }

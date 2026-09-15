@@ -1,3 +1,4 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -11,7 +12,6 @@ using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -47,7 +47,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         Usage = "Flow_LocalCamera_Usage",
         Processing = "Flow_LocalCamera_Processing",
         Notes = "Flow_LocalCamera_Notes")]
-    [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     public sealed class LocalCameraNode : LocalFlowNodeBase
     {
         private const int CameraMasterResultType = 100;
@@ -74,6 +73,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地相机")]
         [STNodeProperty("校正模板", "取图时使用的校正模板；为空时只输出 CVRAW", true)]
+        [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibTempName { get => _CalibTempName; set { _CalibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地相机")]

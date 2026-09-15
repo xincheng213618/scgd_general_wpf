@@ -9324,6 +9324,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 POI模板(ReMapping) 的本地化字符串。
+        /// </summary>
+        public static string POI模板_ReMapping_ {
+            get {
+                return ResourceManager.GetString("POI模板(ReMapping)", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 POI模板名称 的本地化字符串。
+        /// </summary>
+        public static string POI模板名称 {
+            get {
+                return ResourceManager.GetString("POI模板名称", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 折线 的本地化字符串。
         /// </summary>
         public static string Polyline {
@@ -13868,6 +13886,69 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowStartNodeNotFound_RunFailed {
             get {
                 return ResourceManager.GetString("WorkflowStartNodeNotFound_RunFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 亚像素模板 的本地化字符串。
+        /// </summary>
+        public static string 亚像素模板 {
+            get {
+                return ResourceManager.GetString("亚像素模板", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 参数模板名称 的本地化字符串。
+        /// </summary>
+        public static string 参数模板名称 {
+            get {
+                return ResourceManager.GetString("参数模板名称", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 启用ND滤轮(自动曝光) 的本地化字符串。
+        /// </summary>
+        public static string 启用ND滤轮_自动曝光_ {
+            get {
+                return ResourceManager.GetString("启用ND滤轮(自动曝光)", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 图像裁剪2 的本地化字符串。
+        /// </summary>
+        public static string 图像裁剪2 {
+            get {
+                return ResourceManager.GetString("图像裁剪2", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 布点ROI(区域) 的本地化字符串。
+        /// </summary>
+        public static string 布点ROI_区域_ {
+            get {
+                return ResourceManager.GetString("布点ROI(区域)", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 数据加载 的本地化字符串。
+        /// </summary>
+        public static string 数据加载 {
+            get {
+                return ResourceManager.GetString("数据加载", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 自动曝光模板 的本地化字符串。
+        /// </summary>
+        public static string 自动曝光模板 {
+            get {
+                return ResourceManager.GetString("自动曝光模板", resourceCulture);
             }
         }
     }

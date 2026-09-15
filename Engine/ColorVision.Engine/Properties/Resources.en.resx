@@ -5068,4 +5068,16 @@ Please close camera or other programs using this serial port, or check device co
   <data name="PhyCameraRecoverySection" xml:space="preserve"><value>Backup and restore</value></data>
   <data name="PhyCameraRecoveryHint" xml:space="preserve"><value>Save a restore point or load an existing one</value></data>
   <data name="PhyCameraResetHint" xml:space="preserve"><value>Reset clears this camera’s calibration resources and templates</value></data>
+  <data name="POI模板(ReMapping)" xml:space="preserve"><value>POI Template (ReMapping)</value></data>
+  <data name="POI模板名称" xml:space="preserve"><value>POI template name</value></data>
+  <data name="亚像素模板" xml:space="preserve"><value>Subpixel Template</value></data>
+  <data name="参数模板名称" xml:space="preserve"><value>Parameter template name</value></data>
+  <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>Enable ND Filter Wheel (Auto Exposure)</value></data>
+  <data name="图像裁剪2" xml:space="preserve"><value>Image Cropping 2</value></data>
+  <data name="布点ROI(区域)" xml:space="preserve"><value>Point Placement ROI (Region)</value></data>
+  <data name="数据加载" xml:space="preserve"><value>Data Loading</value></data>
+  <data name="自动曝光模板" xml:space="preserve"><value>Auto Exposure Template</value></data>
+  <data name="电压量程（V）" xml:space="preserve"><value>Voltage Range (V)</value></data>
+  <data name="电流量程（mA）" xml:space="preserve"><value>Current Range (mA)</value></data>
+  <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>Gain is fixed at {1:0.##} by calibration group “{0}”</value></data>
 </root>

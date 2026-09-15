@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.PropertyEditor
 {
-    internal static class CameraCalibrationGainPropertiesEditor
+    public sealed class CameraCalibrationGainPropertiesEditor : IPropertyEditor
     {
         private const string GainPropertyName = "Gain";
         private const string CalibrationPropertyName = "CaliTempName";
@@ -29,11 +28,11 @@ namespace ColorVision.Engine.PropertyEditor
                 && property.PropertyType == typeof(float)
                 && property.CanWrite
                 && calibrationProperty != null
-                && FlowNodePropertyEditorAttribute.Resolve(nodeType, calibrationProperty.Name) == typeof(FlowCalibrationTemplateEditor)
+                && calibrationProperty.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType == typeof(CalibrationTemplatePropertiesEditor)
                 && nodeType.GetProperty(nameof(CVCommonNode.DeviceCode))?.PropertyType == typeof(string);
         }
 
-        internal static DockPanel Create(PropertyInfo property, object obj)
+        public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             DockPanel panel = new TextboxPropertiesEditor().GenProperties(property, obj);
             ToolTipService.SetShowOnDisabled(panel, true);

@@ -1153,4 +1153,16 @@
   <data name="PhyCameraRecoverySection" xml:space="preserve"><value>备份与恢复</value></data>
   <data name="PhyCameraRecoveryHint" xml:space="preserve"><value>保存还原点，或从已有还原点恢复</value></data>
   <data name="PhyCameraResetHint" xml:space="preserve"><value>重置将清除当前相机的校正资源与模板</value></data>
+  <data name="POI模板(ReMapping)" xml:space="preserve"><value>POI模板(ReMapping)</value></data>
+  <data name="POI模板名称" xml:space="preserve"><value>POI模板名称</value></data>
+  <data name="亚像素模板" xml:space="preserve"><value>亚像素模板</value></data>
+  <data name="参数模板名称" xml:space="preserve"><value>参数模板名称</value></data>
+  <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>启用ND滤轮(自动曝光)</value></data>
+  <data name="图像裁剪2" xml:space="preserve"><value>图像裁剪2</value></data>
+  <data name="布点ROI(区域)" xml:space="preserve"><value>布点ROI(区域)</value></data>
+  <data name="数据加载" xml:space="preserve"><value>数据加载</value></data>
+  <data name="自动曝光模板" xml:space="preserve"><value>自动曝光模板</value></data>
+  <data name="电压量程（V）" xml:space="preserve"><value>电压量程（V）</value></data>
+  <data name="电流量程（mA）" xml:space="preserve"><value>电流量程（mA）</value></data>
+  <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>增益由校正组“{0}”固定为 {1:0.##}</value></data>
 </root>

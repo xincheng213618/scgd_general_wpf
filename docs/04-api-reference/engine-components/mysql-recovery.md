@@ -42,7 +42,7 @@ SQL导入、节点更新、配置写入和注册中心重启不在同一事务�
 
 ## 流程节点标识更新
 
-`UpdateRestoredFlowNodes` 读取目标库 `t_scgd_sys_resource` 中 `type=101` 的流程资源，包括停用或软删除资源；仅更新 `txt_value` 中 STND v1 的模型名称与类型GUID，其它列、节点参数字节、画布位置及连接顺序保持原样。它沿用 `STNodeTypeRegistry` 的GUID、模型和唯一名称匹配规则，不维护额外的迁移映射表。L/BV 节点的兼容身份固定为 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode`；曾保存为 `ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode` 的流程会写回这一原版服务可识别的身份，已经正确的旧流程保持不变。
+`UpdateRestoredFlowNodes` 读取目标库 `t_scgd_sys_resource` 中 `type=101` 的流程资源，包括停用或软删除资源；仅更新 `txt_value` 中 STND v1 的模型名称与类型GUID，其它列、节点参数字节、画布位置及连接顺序保持原样。它沿用 `STNodeTypeRegistry` 的GUID、模型和唯一名称匹配规则，不维护额外的迁移映射表。L/BV 实现在 Engine 内，兼容模型仍固定为 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode`；曾保存为 Engine 模型的流程会写回这一旧端可识别的模型。GUID 更新为当前类型值，旧端可继续按完整模型匹配；模型和 GUID 均已一致时保持不变，重复执行不再更新。
 
 处理前校验Base64和STND封装。转换不实例化节点、不加载节点属性、不执行取图；已经是当前标识的数据直接保留原字符串，重复执行不会反复写库。未注册或名称有歧义的节点保留原标识，仍可更新同一流程内其它已匹配节点。无效流程保留原值并记录资源ID，空值跳过；缺少资源表时整步跳过。完成日志给出更新流程数、节点数以及未匹配节点和无效流程数，阶段完成不代表所有插件节点已可用。
 

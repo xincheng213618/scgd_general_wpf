@@ -10,7 +10,6 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
@@ -336,7 +335,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "FOV计算")]
-    [FlowNodePropertyEditor(nameof(CameraDegrees), typeof(CameraDegreesPropertiesEditor))]
     public sealed class LocalFovNode : LocalFlowNodeBase
     {
         internal const int CalculationFailureResultCode = -1;
@@ -355,6 +353,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("FOV")]
         [STNodeProperty("cameraDegrees", "相机镜头有效像素范围对应的标定角度，默认 74.2。", true)]
+        [PropertyEditorType(typeof(CameraDegreesPropertiesEditor))]
         public double CameraDegrees
         {
             get => cameraDegrees;

@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PreProcess;
-using ColorVision.Engine.PropertyEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -40,7 +39,6 @@ namespace ProjectARVRPro.Process
         public ProcessManagerWindow()
         {
             InitializeComponent();
-            FlowNodePropertyEditorRegistration.EnsureRegistered();
             this.ApplyCaption();
             Closing += Window_Closing;
         }

@@ -7,7 +7,7 @@ namespace FlowEngineLib.Node.Algorithm;
 
 public class AlgDataLoadNode2 : CVBaseServerNode
 {
-	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgDataLoadNode));
+	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgDataLoadNode2));
 
 	private string _DataDeviceCode;
 

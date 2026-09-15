@@ -1,9 +1,9 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
@@ -24,7 +24,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "POI")]
-    [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
         private string _POITempName = string.Empty;
@@ -33,6 +32,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地 POI")]
         [STNodeProperty("POI 模板", "要计算的 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => _POITempName; set { _POITempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Browsable(false)]

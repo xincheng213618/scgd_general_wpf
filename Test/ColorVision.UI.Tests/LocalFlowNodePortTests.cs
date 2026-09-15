@@ -1,3 +1,6 @@
+using System.Reflection;
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -6,7 +9,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using FlowEngineLib.Node.POI;
 using System;
 using System.Linq;
@@ -68,9 +70,7 @@ public class LocalFlowNodePortTests
         Assert.Null(typeof(LocalBuildPoiByTemplateNode).GetProperty("ImgFileName"));
         Assert.Equal("POI_W_AUTO", remappingNode.LayoutROITemplateName);
         Assert.Equal("POI_W_AUTO", parameterNode.LayoutROITemplateName);
-        Assert.Equal(typeof(FlowBuildPoiTemplateEditor), FlowNodePropertyEditorAttribute.Resolve(
-            typeof(LocalBuildPoiByTemplateNode),
-            nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName)));
+        Assert.Equal(typeof(BuildPoiTemplatePropertiesEditor), typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
     [Fact]

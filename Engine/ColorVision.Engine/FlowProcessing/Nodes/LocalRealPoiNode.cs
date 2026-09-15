@@ -1,3 +1,4 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -8,7 +9,6 @@ using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -160,7 +160,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "实时 POI")]
-    [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
@@ -173,6 +172,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("实时 POI")]
         [STNodeProperty("POI 模板", "IN_POI 没有布点结果时使用的备用 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Browsable(false)]

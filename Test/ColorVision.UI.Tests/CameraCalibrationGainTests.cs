@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -5,7 +6,6 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using FlowEngineLib;
-using FlowEngineLib.PropertyEditor;
 using System.Reflection;
 
 namespace ColorVision.UI.Tests;
@@ -65,7 +65,7 @@ public sealed class CameraCalibrationGainTests
         PropertyInfo? gainProperty = nodeType.GetProperty("Gain");
 
         Assert.NotNull(gainProperty);
-        Assert.Equal(typeof(FlowCameraCalibrationGainEditor), FlowNodePropertyMetadataProvider.Instance.GetEditorType(gainProperty));
+        Assert.Equal(typeof(CameraCalibrationGainPropertiesEditor), FlowNodePropertyMetadataProvider.Instance.GetEditorType(gainProperty));
     }
 
     [Theory]

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 #pragma warning disable CA1707
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Templates;
@@ -5,7 +6,6 @@ using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
-using FlowEngineLib.PropertyEditor;
 using HandyControl.Interactivity;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -95,7 +95,7 @@ public class NodeConfiguratorBindingTests
                 };
                 PropertyInfo property = typeof(LocalBuildPoiByTemplateNode)
                     .GetProperty(nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName))!;
-                DockPanel editor = new FlowBuildPoiTemplateEditor().GenProperties(property, localBuildPoiNode);
+                DockPanel editor = new BuildPoiTemplatePropertiesEditor().GenProperties(property, localBuildPoiNode);
                 var combo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(editor));
 
                 Assert.Equal(buildPoiTemplateName, ((TemplateBase)combo.SelectedItem).Key);
@@ -112,13 +112,13 @@ public class NodeConfiguratorBindingTests
             };
             smuNode.Create();
 
-            Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUNode), nameof(SMUNode.SrcRng)));
-            Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUFromCSVNode), nameof(SMUFromCSVNode.LmtRng)));
+            Assert.Equal(typeof(SmuRangePropertiesEditor), typeof(SMUNode).GetProperty(nameof(SMUNode.SrcRng))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
+            Assert.Equal(typeof(SmuRangePropertiesEditor), typeof(SMUFromCSVNode).GetProperty(nameof(SMUFromCSVNode.LmtRng))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
 
             PropertyInfo sourceRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.SrcRng))!;
             PropertyInfo limitRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.LmtRng))!;
-            var sourceRangeEditor = new FlowSmuRangeEditor().GenProperties(sourceRangeProperty, smuNode);
-            var limitRangeEditor = new FlowSmuRangeEditor().GenProperties(limitRangeProperty, smuNode);
+            var sourceRangeEditor = new SmuRangePropertiesEditor().GenProperties(sourceRangeProperty, smuNode);
+            var limitRangeEditor = new SmuRangePropertiesEditor().GenProperties(limitRangeProperty, smuNode);
             var sourceRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(sourceRangeEditor));
             var limitRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(limitRangeEditor));
 

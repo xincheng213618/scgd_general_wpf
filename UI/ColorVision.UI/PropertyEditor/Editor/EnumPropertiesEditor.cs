@@ -18,11 +18,12 @@ namespace System.ComponentModel
 
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             var enumType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            var enumResources = PropertyEditorHelper.GetResourceManager(enumType);
             var values = Enum.GetValues(enumType)
                 .Cast<Enum>()
                 .Select(value => new KeyValuePair<object?, string>(
                     value,
-                    GetDisplayText(rm, value)))
+                    GetDisplayText(rm, enumResources, value)))
                 .ToList();
             if (Nullable.GetUnderlyingType(property.PropertyType) != null)
             {
@@ -47,20 +48,30 @@ namespace System.ComponentModel
             return dockPanel;
         }
 
-        private static string GetDisplayText(ResourceManager? resourceManager, Enum value)
+        private static string GetDisplayText(ResourceManager? resourceManager, ResourceManager? enumResources, Enum value)
+        {
+            // The edited object and its enum can belong to different assemblies.
+            // Keep host overrides first, then use the enum owner's translations.
+            string name = value.ToString();
+            string? localized = TryGetString(resourceManager, name) ?? TryGetString(enumResources, name);
+            if (localized != null) return localized;
+
+            string description = value.ToDescription();
+            return TryGetString(resourceManager, description) ?? TryGetString(enumResources, description) ?? description;
+        }
+
+        private static string? TryGetString(ResourceManager? resourceManager, string key)
         {
             try
             {
-                // Existing enum-name translations take priority, including translations identical to the key.
-                string? localizedName = resourceManager?.GetString(value.ToString(), CultureInfo.CurrentUICulture);
-                if (localizedName != null) return localizedName;
+                return resourceManager?.GetString(key, CultureInfo.CurrentUICulture);
             }
             catch
             {
                 // Match the property editor's existing resource lookup fallback.
             }
 
-            return PropertyEditorHelper.GetLocalizedString(resourceManager, value.ToDescription());
+            return null;
         }
     }
 }

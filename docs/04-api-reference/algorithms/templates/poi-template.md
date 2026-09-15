@@ -103,7 +103,7 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 | 运行取值 | `AlgorithmImp/AlgorithmPOI.cs` |
 | 生成点集 | `BuildPoi/AlgorithmBuildPoi.cs` |
 | 过滤/修正/输出/标定 | `POIFilters/`、`POIRevise/`、`POIOutput/`、`POIGenCali/` |
-| Flow 节点选择 | `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` |
+| Flow 节点选择 | `Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs`、`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` |
 
 ## 验证入口与缺口
 

@@ -1,3 +1,4 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -7,7 +8,6 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -88,6 +88,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地校正")]
         [STNodeProperty("校正模板", "对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传", true)]
+        [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibTempName { get => calibTempName; set { calibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地校正")]
@@ -356,7 +357,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     }
 
     [STNode("Flow_CustomNodes", "校正")]
-    [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
         public LocalCalibrationNode() : base("校正", "LocalCalibration", "Calibration")

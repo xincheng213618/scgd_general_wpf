@@ -90,7 +90,7 @@ JSON、POI、Flow 可覆写上述方法。尤其 JSON 的“设为默认”与 F
 
 参数属于设备时保持设备的资源关联；属于客户判定、报表或 MES 格式时放回项目包，不因为有模板窗口就移入通用层。算法适配器如何把模板名称/ID、POI 等写入 `CVTemplateParam`，应追实际 `Algorithm*` 请求实现，而不是由模板基类推定已经接入。
 
-Flow 常规属性通过 `FlowNodePropertyEditorAttribute` / `PropertyEditorTypeAttribute` 和 Engine 注册桥接入；只有类型级、多模板或动态选择器才使用 `FlowProcessing/Editor/NodeConfiguration/`。选择、缓存与验证归[PropertyGrid 契约](../../../04-api-reference/ui-components/property-grid.md)。历史结果 DAO/`ViewHandle*`、中立算法 overlay 和项目结果分别遵守[结果展示边界](../../../04-api-reference/engine-components/result-handoff-chain.md)，不属于模板保存的完成条件。
+Flow 常规属性通过 属性上的 `PropertyEditorTypeAttribute` 选择编辑器；公共设备字段保留 Engine 注册桥接；只有类型级、多模板或动态选择器才使用 `FlowProcessing/Editor/NodeConfiguration/`。选择、缓存与验证归[PropertyGrid 契约](../../../04-api-reference/ui-components/property-grid.md)。历史结果 DAO/`ViewHandle*`、中立算法 overlay 和项目结果分别遵守[结果展示边界](../../../04-api-reference/engine-components/result-handoff-chain.md)，不属于模板保存的完成条件。
 
 ## 验证入口与缺口
 

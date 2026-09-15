@@ -40,7 +40,7 @@
         "Engine/ColorVision.Engine/Templates/Jsons/FindCross",
         "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs",
-        "Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs",
         "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs",
@@ -186,7 +186,7 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs",
         "Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs",
-        "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgDataLoadNode.cs",
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs",
         "Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs",
         "Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs",
@@ -195,7 +195,7 @@
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Base/CVMQTTRequest.cs",
         "Engine/FlowEngineLib/CVTemplateParam.cs",
-        "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
         "Engine/ColorVision.Engine/Templates/ModelBase.cs"
       ],
@@ -746,7 +746,7 @@
         "Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs",
         "Engine/ColorVision.Engine/Templates/ImageCropping/AlgorithmImageCropping.cs",
         "Engine/ColorVision.Engine/Templates/ImageCropping/ViewHandleImageCropping.cs",
-        "Engine/FlowEngineLib/Node/OLED/OLEDImageCroppingNode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/OLEDImageCroppingNode.cs"
       ],
       "test_paths": [],
       "related": [
@@ -755,8 +755,7 @@
         "engine.results"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/ColorVision.Engine"
       ],
       "domain": "algorithms",
       "title": "ImageCropping 图像裁剪模板",
@@ -5748,12 +5747,12 @@
         "找不到图像转换或校准模板",
         "AlgDataConvertNode",
         "Calibration2InNode",
-        "FlowCalibrationTemplateEditor"
+        "CalibrationTemplatePropertiesEditor"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs",
-        "Engine/FlowEngineLib/Algorithm/CalibrationNode.cs",
-        "Engine/FlowEngineLib/Node/OLED/Calibration2InNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/Calibration2InNode.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
@@ -5863,12 +5862,16 @@
         "EnableWindowResizeDiagnostics",
         "BeginResizeDiagnosticCapture",
         "STNodeTypeRegistry",
-        "CVNodeContainer"
+        "CVNodeContainer",
+        "SerializationModel"
       ],
       "code_paths": [
         "Engine/ST.Library.UI/README.md",
         "Engine/ST.Library.UI/ST.Library.UI.csproj",
         "Engine/ST.Library.UI/NodeEditor/STNode.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeSerializationModelAttribute.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs",
@@ -5876,10 +5879,12 @@
         "Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -5962,7 +5967,7 @@
         "Flow有哪些节点在哪里定义",
         "NodeType",
         "STNode",
-        "FlowNodePropertyEditorAttribute"
+        "PropertyEditorTypeAttribute"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/Node",
@@ -6015,9 +6020,11 @@
         "Engine/FlowEngineLib/Start/BaseStartNode.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
@@ -6045,6 +6052,9 @@
       "status": "current",
       "summary": "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。",
       "aliases": [
+        "上游DLL更新",
+        "反编译比对",
+        "只提供DLL",
         "节点类型映射",
         "跨程序集节点名称匹配",
         "流程节点结束为什么业务还没完成",
@@ -6085,6 +6095,7 @@
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
@@ -6569,7 +6580,7 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
-        "Engine/FlowEngineLib/LVCameraNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/LVCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
@@ -7310,7 +7321,7 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs",
         "Engine/FlowEngineLib/MotorNode.cs",
-        "Engine/FlowEngineLib/CamMotorNode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CamMotorNode.cs"
       ],
       "test_paths": [],
       "related": [
@@ -7435,7 +7446,7 @@
         "Engine/ColorVision.Engine/Services/Devices/SMU/SMUParam.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SMUResultModel.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SmuScanModel.cs",
-        "Engine/FlowEngineLib/SMUNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU/SMUNode.cs",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
         "Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"
       ],
@@ -10784,6 +10795,12 @@
         "卫星资源"
       ],
       "code_paths": [
+        "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs",
+        "Engine/ST.Library.UI/Lang.cs",
+        "Engine/FlowEngineLib/FlowEngineLocalization.cs",
+        "Engine/ColorVision.Engine/EngineLocalization.cs",
+        "Engine/ColorVision.Engine/Properties/Resources.en.resx",
+        "Engine/ColorVision.Engine/Properties/Resources.zh-Hant.resx",
         "UI/ColorVision.UI/Languages",
         "UI/ColorVision.UI/Properties/Resources.resx",
         "UI/ColorVision.UI/Properties/Resources.en.resx",
@@ -10812,6 +10829,9 @@
       "code_scopes": [
         "ColorVision",
         "ColorVision/Copilot",
+        "Engine/ColorVision.Engine",
+        "Engine/FlowEngineLib",
+        "Engine/ST.Library.UI",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"
       ],
@@ -10997,7 +11017,7 @@
         "PropertyEditorWindow",
         "FlowPropertyEditorRegistry",
         "FlowNodePropertyEditorRegistration",
-        "FlowNodePropertyEditorAttribute",
+        "FlowTemplatePropertiesEditors",
         "取消修改",
         "关闭回滚",
         "枚举下拉显示英文",
@@ -11019,17 +11039,22 @@
         "UI/ColorVision.Common/Utilities/EnumUtils.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs",
         "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs",
+        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
+        "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
         "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/CommandPanelTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"
       ],
