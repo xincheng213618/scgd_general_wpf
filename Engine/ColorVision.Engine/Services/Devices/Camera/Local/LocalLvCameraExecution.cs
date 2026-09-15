@@ -1,3 +1,4 @@
+#pragma warning disable CA2255
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -5,6 +6,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
@@ -19,7 +21,7 @@ internal sealed class LocalLvCameraServices : ILocalLvCameraServices
 {
     public LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
     {
-        request.Device.EnsureLocalMeasurementConnected(autoConnect: false);
+        request.Device.EnsureLocalMeasurementConnected(autoConnect: true);
         return LocalCameraCaptureService.Capture(request);
     }
 
@@ -46,7 +48,10 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     private bool disposed;
     private bool commandReleased;
 
-    internal static FlowLocalExecution? Create(CVMQTTRequest request)
+    [ModuleInitializer]
+    internal static void Register() => LVCameraNode.LocalExecutionFactory = Create;
+
+    private static FlowLocalExecution? Create(CVMQTTRequest request)
     {
         DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
             .FirstOrDefault(camera => string.Equals(camera.Code, request.DeviceCode, StringComparison.Ordinal));
@@ -55,8 +60,8 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
 
     internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalLvCameraServices services)
     {
-        if (device == null || !device.RoutesLocally) return null;
-        // Select by the current owner once; a subsequent preference change cannot send this request to MQTT.
+        if (device == null || !device.CameraBackend.OpensLocally) return null;
+        // Reuse the current owner, or select the next-open preference when closed; keep this request on that backend.
         return new LocalLvCameraExecution(device, request, services);
     }
 

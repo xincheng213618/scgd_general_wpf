@@ -60,7 +60,7 @@ related: ["flow.architecture","flow.editor","flow.workspace","flow.templates","f
 
 画布保存类型 GUID 和 `程序集文件名|类型名称`。加载先匹配 GUID 和原模型标识，再尝试同程序集的短类型名；仍找不到时，先按已加载类型的完整名称、再按短名称跨程序集查找。名称必须唯一，重名时拒绝猜测。编辑器、运行容器和中立流程编译器共用 `STNodeTypeRegistry` 的名称回退，不需要逐节点映射表，也不改写输入文件。正常保存使用新类型标识，节点实例 ID、属性和连线沿用原内容。
 
-普通 BV/LV 节点由 `ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode` 实现，旧画布中的 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode` 和 `FlowEngineLib.dll|LVCameraNode` 通过名称回退加载。FlowEngineLib 不再定义该具体节点；直接引用旧 CLR 类型的项目包（包括旧版 ARVRPro）需随宿主重新编译，画布名称回退不提供已编译程序集的二进制兼容。
+普通 BV/LV 节点保留 `FlowEngineLib.LVCameraNode` 类型及 `FlowEngineLib.dll|FlowEngineLib.LVCameraNode` 保存标识，兼容原版服务和直接引用该类型的项目包。Engine 通过 `LocalExecutionFactory` 注册本地相机转发；未注册宿主或未选中本地路径时保留原服务请求。曾保存为 `ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode` 的画布可在新宿主中按名称回退加载，再保存或通过数据库工具“更新流程节点”写回服务可识别的标识；旧服务自身不具备这项反向兼容。直接引用临时 Engine CLR 类型的项目包仍需重新编译。
 
 `LvCameraNodeMigrationTests` 使用移动前节点保存的双节点画布，检查编辑器、运行容器、编译往返、名称映射及参数/连线保留；不代表已验证所有现场流程。
 

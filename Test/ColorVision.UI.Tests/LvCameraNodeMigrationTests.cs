@@ -1,5 +1,4 @@
 using ColorVision.Engine.FlowProcessing.Compilation;
-using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
 using FlowEngineLib;
@@ -22,10 +21,11 @@ public sealed class LvCameraNodeMigrationTests
     [InlineData("FlowEngineLib.dll|FlowEngineLib.LVCameraNode")]
     [InlineData("FlowEngineLib.dll|LVCameraNode")]
     [InlineData("OlderEngine.dll|Older.Namespace.LVCameraNode")]
+    [InlineData("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode")]
     public void LegacyCanvasLoadsAndRoundTripsThroughEditorRuntimeAndCompiler(string? legacyModel) => StaTest.Run(() =>
     {
-        Assert.Same(typeof(DeviceCamera).Assembly, typeof(LVCameraNode).Assembly);
-        Assert.Null(typeof(CVCameraNode).Assembly.GetType("FlowEngineLib.LVCameraNode"));
+        Assert.Same(typeof(CVCameraNode).Assembly, typeof(LVCameraNode).Assembly);
+        Assert.Null(typeof(DeviceCamera).Assembly.GetType("ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode"));
         byte[] canvas = ReadLegacyCanvas(legacyModel);
         byte[] original = canvas.ToArray();
         using var container = new CVNodeContainer();
@@ -47,7 +47,7 @@ public sealed class LvCameraNodeMigrationTests
         byte[] saved = container.GetCanvasData();
         NeutralCanvas resaved = StnV1NeutralCodec.Decode(saved, new());
         Assert.All(resaved.Nodes, node => Assert.Equal(
-            "ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode", node.ModelKey));
+            "FlowEngineLib.dll|FlowEngineLib.LVCameraNode", node.ModelKey));
         Assert.Equal(decoded.Nodes.Select(node => node.NodeId), resaved.Nodes.Select(node => node.NodeId));
         container.LoadCanvas(saved);
         AssertGraph(container.Nodes.Cast<STNode>().ToArray());
@@ -109,11 +109,12 @@ public sealed class LvCameraNodeMigrationTests
     [InlineData(null)]
     [InlineData("FlowEngineLib.dll|LVCameraNode")]
     [InlineData("OlderEngine.dll|Older.Namespace.LVCameraNode")]
+    [InlineData("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode")]
     public void RestoreNormalizationPreservesGraphAndIsIdempotent(string? legacyModel) => StaTest.Run(() =>
     {
         string original = Convert.ToBase64String(ReadLegacyCanvas(legacyModel));
         string normalized = FlowNodeIdentityNormalizer.Normalize(original, out int changed, out int unresolved);
-        Assert.Equal(2, changed);
+        Assert.Equal(legacyModel == null ? 0 : 2, changed);
         Assert.Equal(0, unresolved);
         using var container = new CVNodeContainer();
         container.LoadCanvas(Convert.FromBase64String(normalized));
@@ -149,7 +150,7 @@ public sealed class LvCameraNodeMigrationTests
     [Fact]
     public void RestoreNormalizationUpdatesKnownNodesAlongsideOpaquePluginData()
     {
-        var legacy = ReadRawCanvas(LegacyCanvas);
+        var legacy = ReadRawCanvas(Convert.ToBase64String(ReadLegacyCanvas("ColorVision.Engine.dll|ColorVision.Engine.FlowProcessing.Nodes.LVCameraNode")));
         var unknown = ReadRawCanvas(Convert.ToBase64String(ReadLegacyCanvas("Plugin.dll|UnavailableNode")));
         byte[] opaque = unknown.Nodes[0].Concat(new byte[] { 3, 0, 0, 0, 102, 111, 111, 4, 0, 0, 0, 0, 255, 0, 128 }).ToArray();
         using var output = new MemoryStream();

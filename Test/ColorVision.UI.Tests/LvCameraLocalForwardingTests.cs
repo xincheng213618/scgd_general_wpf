@@ -1,5 +1,4 @@
 using ColorVision.Engine;
-using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -78,6 +77,31 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Empty(scope.Services.Requests);
     });
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClosedCameraUsesNextOpenPreferenceForLvCapture(bool preferLocal) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: false, preferLocal: preferLocal);
+        scope.Backend.ObserveService(DeviceStatusType.Closed);
+        using var graph = new Graph(scope.CreateNode());
+        graph.Start.OnPublish = message => Respond(graph.Nodes[0], JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!);
+
+        Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
+        if (preferLocal)
+        {
+            await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(0, graph.Start.PublishCount);
+            Assert.Single(scope.Services.Requests);
+            Assert.Single(scope.Services.Saved);
+        }
+        else
+        {
+            Assert.Equal(1, graph.Start.PublishCount);
+            Assert.Empty(scope.Services.Requests);
+        }
+    });
+
     [Fact]
     public void CvNodeRemainsOnServiceEvenWhenLocalCameraIsOpen() => Run(async () =>
     {
@@ -89,12 +113,33 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Empty(scope.Services.Requests);
     });
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LocalCaptureOrPersistenceFailureDoesNotFallBackToMqtt(bool failSave) => Run(async () =>
+    [Fact]
+    public void WithoutLocalHostFactoryLvKeepsOriginalServiceRequest() => Run(async () =>
     {
-        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        using var scope = new CaptureScope(localOpen: false, preferLocal: true);
+        LVCameraNode.LocalExecutionFactory = null!;
+        using var graph = new Graph(new LVCameraNode());
+        graph.Start.OnPublish = message =>
+        {
+            var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
+            var data = (JObject)request.Data;
+            Assert.Equal("missing-poi", data["POIParam"]!["POI"]!["Name"]);
+            Assert.Equal(42, data["ExpTime"]![0]);
+            Respond(graph.Nodes[0], request);
+        };
+        Assert.Equal(StatusTypeEnum.Completed, (await graph.StartAsync()).Status);
+        Assert.Equal(1, graph.Start.PublishCount);
+        Assert.Empty(scope.Services.Requests);
+    });
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void LocalCaptureOrPersistenceFailureDoesNotFallBackToMqtt(bool localOpen, bool failSave) => Run(async () =>
+    {
+        using var scope = new CaptureScope(localOpen: localOpen, preferLocal: true);
         scope.Services.FailCapture = !failSave;
         scope.Services.FailSave = failSave;
         using var graph = new Graph(scope.CreateNode());
@@ -164,10 +209,9 @@ public sealed class LvCameraLocalForwardingTests
 
     private static void Run(Func<Task> test) => StaTest.Run(() => test().GetAwaiter().GetResult());
 
-    private sealed class TestLvNode(CaptureScope scope, bool immediateTimeout) : LVCameraNode
+    private sealed class TestLvNode(bool immediateTimeout) : LVCameraNode
     {
         protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
-        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request);
     }
 
     private sealed class InspectEndNode : CVEndNode
@@ -231,6 +275,7 @@ public sealed class LvCameraLocalForwardingTests
     private sealed class CaptureScope : IDisposable
     {
         private readonly IConfigService previousConfig = ConfigService.Instance;
+        private readonly Func<CVMQTTRequest, FlowLocalExecution> previousFactory = LVCameraNode.LocalExecutionFactory;
         private readonly int expectedExecutions;
         private int disposedExecutions;
         public DeviceCamera Camera { get; }
@@ -248,9 +293,10 @@ public sealed class LvCameraLocalForwardingTests
             Backend = new CameraBackendState(preferLocal);
             if (localOpen) { Backend.BeginLocalOpen(); Backend.SetLocalStatus(DeviceStatusType.Opened); }
             typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(Camera, Backend);
+            LVCameraNode.LocalExecutionFactory = request => CreateExecution(request)!;
         }
 
-        public LVCameraNode CreateNode(bool immediateTimeout = false) => new TestLvNode(this, immediateTimeout);
+        public LVCameraNode CreateNode(bool immediateTimeout = false) => new TestLvNode(immediateTimeout);
 
         public FlowLocalExecution? CreateExecution(CVMQTTRequest request)
         {
@@ -265,6 +311,7 @@ public sealed class LvCameraLocalForwardingTests
         public void Dispose()
         {
             Services.Release.TrySetResult();
+            LVCameraNode.LocalExecutionFactory = previousFactory;
             ConfigService.SetInstance(previousConfig);
         }
     }

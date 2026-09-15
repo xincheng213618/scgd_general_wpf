@@ -6569,7 +6569,7 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LVCameraNode.cs",
+        "Engine/FlowEngineLib/LVCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
