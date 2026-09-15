@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -148,7 +147,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = capture.Frame;
             try
             {
-                MeasureResultImgModel persistedResult = SaveMasterResult(action, frame, capture, cameraParameters, calibration);
+                MeasureResultImgModel persistedResult = LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp);
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
@@ -210,17 +209,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (string.IsNullOrWhiteSpace(CalibTempName)) return null;
             return device.PhyCamera?.CalibrationParams.FirstOrDefault(item => string.Equals(item.Key, CalibTempName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到校正模板：{CalibTempName}");
-        }
-
-        private MeasureResultImgModel SaveMasterResult(CVStartCFC action, LocalFlowFrame frame, LocalCameraCaptureResult capture, CameraRunParam? cameraParameters, CalibrationParam? calibration)
-        {
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-            MeasureResultImgModel model = LocalCameraResultService.CreateModel(batch.Id, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp);
-            int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
-            if (masterId <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
-            model.Id = masterId;
-            return model;
         }
 
         private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

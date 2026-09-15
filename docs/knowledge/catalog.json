@@ -5992,6 +5992,8 @@
       "status": "current",
       "summary": "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。",
       "aliases": [
+        "FlowLocalExecution",
+        "CreateLocalExecution",
         "如何新增Flow节点",
         "CVCommonNode",
         "CVBaseServerNode",
@@ -6001,6 +6003,7 @@
         "CVEndNode"
       ],
       "code_paths": [
+        "Engine/FlowEngineLib/Base/FlowLocalExecution.cs",
         "Engine/FlowEngineLib/Base/CVCommonNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Start/BaseStartNode.cs",
@@ -6009,6 +6012,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"
@@ -6515,6 +6519,8 @@
       "status": "current",
       "summary": "本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。",
       "aliases": [
+        "BV/LV本地转发",
+        "LVCameraNode",
         "使用本地相机",
         "本地相机优先",
         "相机拍图",
@@ -6553,6 +6559,8 @@
         "CameraRealtimeFramePipeline"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
+        "Engine/FlowEngineLib/LVCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
@@ -6587,6 +6595,7 @@
         "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
         "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs",

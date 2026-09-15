@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _useLocalCamera;
 
         [Category("AcquisitionDisplay"), DisplayName("本地取图保存文件")]
-        [Description("默认开启。主面板本地取图保存 CVRAW；存在校正数据且启用 CIE 保存时，同时保存 CVCIE。关闭后仍显示图像并保存结果记录。")]
+        [Description("默认开启。主面板本地取图及 L/BV 节点本地转发保存 CVRAW；存在校正数据且启用 CIE 保存时，同时保存 CVCIE。关闭后仍显示图像并保存结果记录。")]
         public bool SaveLocalCaptureFiles { get; set; } = true;
 
         public double TakePictureDelay { get; set; }
