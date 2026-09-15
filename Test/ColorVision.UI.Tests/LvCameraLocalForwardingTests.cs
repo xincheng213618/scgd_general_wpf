@@ -1,4 +1,5 @@
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -22,8 +23,8 @@ public sealed class LvCameraLocalForwardingTests
     [Fact]
     public void ConsecutiveLvNodesUseCurrentLocalSessionAndKeepFlowResults() => Run(async () =>
     {
-        using var scope = new CaptureScope(localOpen: true, preferLocal: false);
-        using var graph = new Graph(new LVCameraNode(), new LVCameraNode());
+        using var scope = new CaptureScope(localOpen: true, preferLocal: false, expectedExecutions: 2);
+        using var graph = new Graph(scope.CreateNode(), scope.CreateNode());
         graph.End.Inspect = action =>
         {
             Assert.True(action.TryAcquireCurrentFrame(out var lease));
@@ -61,7 +62,7 @@ public sealed class LvCameraLocalForwardingTests
     {
         using var scope = new CaptureScope(localOpen: false, preferLocal: true);
         scope.Backend.ObserveService(DeviceStatusType.Opened);
-        using var graph = new Graph(new LVCameraNode());
+        using var graph = new Graph(scope.CreateNode());
         graph.Start.OnPublish = message =>
         {
             var request = JsonConvert.DeserializeObject<CVMQTTRequest>(message.Message)!;
@@ -96,7 +97,7 @@ public sealed class LvCameraLocalForwardingTests
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Services.FailCapture = !failSave;
         scope.Services.FailSave = failSave;
-        using var graph = new Graph(new LVCameraNode());
+        using var graph = new Graph(scope.CreateNode());
         Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
         await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(0, graph.Start.PublishCount);
@@ -112,7 +113,7 @@ public sealed class LvCameraLocalForwardingTests
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Services.BlockCapture = true;
-        using var graph = new Graph(new LVCameraNode());
+        using var graph = new Graph(scope.CreateNode());
         Task<FlowEngineEventArgs> completion = graph.StartAsync();
         await scope.Services.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         // Changing the next-open preference does not change this in-flight request.
@@ -132,7 +133,7 @@ public sealed class LvCameraLocalForwardingTests
     public void ExpiredLocalCommandCannotPublishAResult() => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
-        using var graph = new Graph(new ImmediateTimeoutLvNode());
+        using var graph = new Graph(scope.CreateNode(immediateTimeout: true));
         Assert.Equal(StatusTypeEnum.OverTime, (await graph.StartAsync()).Status);
         await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(0, graph.Start.PublishCount);
@@ -145,7 +146,7 @@ public sealed class LvCameraLocalForwardingTests
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Camera.DisplayConfig.SaveLocalCaptureFiles = false;
-        using var graph = new Graph(new LVCameraNode());
+        using var graph = new Graph(scope.CreateNode());
         ((LVCameraNode)graph.Nodes[0]).CaliTempName = "missing-calibration";
         Assert.Equal(StatusTypeEnum.Failed, (await graph.StartAsync()).Status);
         Assert.Equal(0, graph.Start.PublishCount);
@@ -163,9 +164,10 @@ public sealed class LvCameraLocalForwardingTests
 
     private static void Run(Func<Task> test) => StaTest.Run(() => test().GetAwaiter().GetResult());
 
-    private sealed class ImmediateTimeoutLvNode : LVCameraNode
+    private sealed class TestLvNode(CaptureScope scope, bool immediateTimeout) : LVCameraNode
     {
-        protected override int GetMaxDelay() => 0;
+        protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
+        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request);
     }
 
     private sealed class InspectEndNode : CVEndNode
@@ -229,14 +231,16 @@ public sealed class LvCameraLocalForwardingTests
     private sealed class CaptureScope : IDisposable
     {
         private readonly IConfigService previousConfig = ConfigService.Instance;
-        private readonly Func<CVMQTTRequest, FlowLocalExecution> previousFactory = LVCameraNode.LocalExecutionFactory;
+        private readonly int expectedExecutions;
+        private int disposedExecutions;
         public DeviceCamera Camera { get; }
         public CameraBackendState Backend { get; }
         public FakeServices Services { get; } = new();
         public TaskCompletionSource Disposed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public CaptureScope(bool localOpen, bool preferLocal)
+        public CaptureScope(bool localOpen, bool preferLocal, int expectedExecutions = 1)
         {
+            this.expectedExecutions = expectedExecutions;
             ConfigService.SetInstance(new ConfigHandler());
             Camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
             Camera.Config = new() { Code = "lv-test", IsCVCIEFileSave = false };
@@ -244,26 +248,32 @@ public sealed class LvCameraLocalForwardingTests
             Backend = new CameraBackendState(preferLocal);
             if (localOpen) { Backend.BeginLocalOpen(); Backend.SetLocalStatus(DeviceStatusType.Opened); }
             typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(Camera, Backend);
-            LVCameraNode.LocalExecutionFactory = request =>
+        }
+
+        public LVCameraNode CreateNode(bool immediateTimeout = false) => new TestLvNode(this, immediateTimeout);
+
+        public FlowLocalExecution? CreateExecution(CVMQTTRequest request)
+        {
+            FlowLocalExecution? execution = LocalLvCameraExecution.CreateForDevice(Camera, request, Services);
+            return execution == null ? null : new TrackedExecution(execution, () =>
             {
-                FlowLocalExecution? execution = LocalLvCameraExecution.CreateForDevice(Camera, request, Services);
-                return execution == null ? null! : new TrackedExecution(execution, Disposed);
-            };
+                if (System.Threading.Interlocked.Increment(ref disposedExecutions) == expectedExecutions)
+                    Disposed.TrySetResult();
+            });
         }
 
         public void Dispose()
         {
             Services.Release.TrySetResult();
-            LVCameraNode.LocalExecutionFactory = previousFactory;
             ConfigService.SetInstance(previousConfig);
         }
     }
 
-    private sealed class TrackedExecution(FlowLocalExecution inner, TaskCompletionSource disposed) : FlowLocalExecution
+    private sealed class TrackedExecution(FlowLocalExecution inner, Action disposed) : FlowLocalExecution
     {
         public override void Execute() => inner.Execute();
         public override object Complete(CVStartCFC action) => inner.Complete(action);
-        public override void Dispose() { inner.Dispose(); disposed.TrySetResult(); }
+        public override void Dispose() { inner.Dispose(); disposed(); }
     }
 
     private sealed class FakeServices : ILocalLvCameraServices

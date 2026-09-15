@@ -1,8 +1,9 @@
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using FlowEngineLib;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
-using System;
 
-namespace FlowEngineLib;
+namespace ColorVision.Engine.FlowProcessing.Nodes;
 
 [STNode("/02 相机")]
 [FlowNodeDocumentation(
@@ -16,13 +17,10 @@ namespace FlowEngineLib;
 [FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(BaseCameraNode.POIReviseTempName), typeof(FlowEngineLib.PropertyEditor.FlowPoiReviseTemplateEditor))]
 public class LVCameraNode : BaseCameraNode
 {
-	// The host supplies native camera work without an Engine dependency in FlowEngineLib.
-	public static Func<CVMQTTRequest, FlowLocalExecution> LocalExecutionFactory { get; set; }
+	protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request)
+		=> LocalLvCameraExecution.Create(request);
 
-	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request)
-		=> LocalExecutionFactory?.Invoke(request);
-
-	protected string _GlobalVariableName;
+	protected string _GlobalVariableName = string.Empty;
 
 	public LVCameraNode()
 		: base("L/BV相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
@@ -31,6 +29,6 @@ public class LVCameraNode : BaseCameraNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new LVCameraData(_FlipMode, enableFocus: false, 0, 0f, _AvgCount, _Gain, new float[1] { _ExpTime }, _CaliTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, _GlobalVariableName);
+		return new CameraData(_FlipMode, enableFocus: false, 0, 0f, _AvgCount, _Gain, new float[1] { _ExpTime }, _CaliTempName, _POITempName, _POIFilterTempName, _POIReviseTempName, _GlobalVariableName);
 	}
 }

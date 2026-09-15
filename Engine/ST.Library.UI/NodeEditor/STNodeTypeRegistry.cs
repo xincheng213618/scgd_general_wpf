@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace ST.Library.UI.NodeEditor;
 
-internal static class STNodeTypeRegistry
+public static class STNodeTypeRegistry
 {
 	private const int InitializationNotStarted = 0;
 	private const int InitializationInProgress = 1;
@@ -204,13 +204,22 @@ internal static class STNodeTypeRegistry
 		}
 		string legacyTypeName = model.Substring(moduleSeparator + 1);
 		int typeNameSeparator = Math.Max(legacyTypeName.LastIndexOf('.'), legacyTypeName.LastIndexOf('+'));
-		if (typeNameSeparator < 0 || typeNameSeparator >= legacyTypeName.Length - 1)
+		if (typeNameSeparator >= legacyTypeName.Length - 1)
 		{
 			return false;
 		}
 
-		string currentModel = string.Concat(model.AsSpan(0, moduleSeparator + 1), legacyTypeName.AsSpan(typeNameSeparator + 1));
-		return ModelTypes.TryGetValue(currentModel, out type);
+		string shortName = legacyTypeName.Substring(typeNameSeparator + 1);
+		string currentModel = string.Concat(model.AsSpan(0, moduleSeparator + 1), shortName);
+		if (ModelTypes.TryGetValue(currentModel, out type)) return true;
+
+		// A moved node may have a different assembly and namespace. Never pick
+		// an arbitrary node when more than one loaded type has the same name.
+		Type[] matches = NodeTypes.Where(candidate => candidate.FullName == legacyTypeName).Take(2).ToArray();
+		if (matches.Length == 0)
+			matches = NodeTypes.Where(candidate => candidate.Name == shortName).Take(2).ToArray();
+		type = matches.Length == 1 ? matches[0] : null;
+		return type != null;
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)

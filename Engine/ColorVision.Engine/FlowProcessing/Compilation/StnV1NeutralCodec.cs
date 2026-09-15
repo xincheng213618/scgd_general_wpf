@@ -449,6 +449,8 @@ internal static class StnV1NeutralCodec
                 modelKey,
                 StringComparison.Ordinal));
         if (resolved == null)
+            STNodeTypeRegistry.TryGetNodeType(typeKey, modelKey, out resolved);
+        if (resolved == null)
         {
             throw new FlowCompilationException(
                 FlowCompilationError.UnknownNodeType,

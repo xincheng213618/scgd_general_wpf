@@ -6039,6 +6039,8 @@
       "status": "current",
       "summary": "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。",
       "aliases": [
+        "节点类型映射",
+        "跨程序集节点名称匹配",
         "流程节点结束为什么业务还没完成",
         "FlowEngineLib",
         "FlowEngineAPI",
@@ -6077,6 +6079,7 @@
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"
@@ -6560,7 +6563,7 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
-        "Engine/FlowEngineLib/LVCameraNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LVCameraNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",

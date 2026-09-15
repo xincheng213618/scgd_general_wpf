@@ -39,7 +39,7 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 
 ### 宿主接管服务节点的本地执行
 
-`CVBaseServerNode.CreateLocalExecution(CVMQTTRequest)` 默认返回 `null`，保留 MQTT 路径。指定节点可返回宿主实现的 `FlowLocalExecution`；选择阶段抛异常时按本次命令失败处理，不回退到 MQTT。当前只有普通 `LVCameraNode` 通过宿主注册的工厂使用此入口，实际设备选择和原生相机调用留在 Engine；FlowEngineLib 不引用 Engine。
+`CVBaseServerNode.CreateLocalExecution(CVMQTTRequest)` 默认返回 `null`，保留 MQTT 路径。指定节点可返回宿主实现的 `FlowLocalExecution`；选择阶段抛异常时按本次命令失败处理，不回退到 MQTT。普通 `LVCameraNode` 位于 `ColorVision.Engine.FlowProcessing.Nodes`，直接重写此入口并调用相机服务，无需静态工厂注册；FlowEngineLib 保留通用执行机制，不引用 Engine。
 
 - `Execute()` 在后台准备结果；此阶段不交接流程帧或写流程结果记录。
 - `Complete(CVStartCFC)` 仅在响应成功领取原命令完成权后调用，负责落库、资源交接和生成普通响应数据。原消息 ID、超时、暂停响应缓存、失败策略和节点完成事件继续由基类管理。

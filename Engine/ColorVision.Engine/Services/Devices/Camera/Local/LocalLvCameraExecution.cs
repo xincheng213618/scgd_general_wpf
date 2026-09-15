@@ -1,4 +1,3 @@
-#pragma warning disable CA2255
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -6,7 +5,6 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
@@ -48,10 +46,7 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     private bool disposed;
     private bool commandReleased;
 
-    [ModuleInitializer]
-    internal static void Register() => LVCameraNode.LocalExecutionFactory = Create;
-
-    private static FlowLocalExecution? Create(CVMQTTRequest request)
+    internal static FlowLocalExecution? Create(CVMQTTRequest request)
     {
         DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
             .FirstOrDefault(camera => string.Equals(camera.Code, request.DeviceCode, StringComparison.Ordinal));
