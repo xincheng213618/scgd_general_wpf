@@ -172,7 +172,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         calibration.Name,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height));
+                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height),
+                        ResolveZeroExposureFallback(action, sourceFrame));
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
@@ -290,6 +291,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         private protected virtual string SourceImageFilePath => string.Empty;
+
+        private protected virtual float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame) => null;
 
         private protected DeviceCamera ResolveDevice(string frameDeviceCode)
         {

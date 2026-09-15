@@ -97,6 +97,8 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs` 消费流程当前内存帧，或从输入结果/文件路径加载帧；不会读取手动显示的 `UseLocalCalibration` 来决定后端。可复用的 CIE 帧可以直接沿流程传递，RAW 帧按模板校正，所以手动文件入口“不含 RAW 的 CVCIE 报错”不能扩展为整个 Flow 都不支持 CIE。
 
+只有“校正+实时 POI”节点兼容外部 CVRAW 把文件头曝光写成全 0 的情况：它按 `IN_IMG` 的结果 ID 读取 `MeasureResultImgModel.Params`，从根级 `ExpTime`（旧相机结果）或 `Exposure`（本地校正结果）恢复全部为有限正数的曝光值。有效文件头始终优先；文件头不是全 0、数据库记录不存在、JSON 无效或记录曝光仍非正时继续按原校正校验报错。普通“校正”节点及手动文件校正不启用该回退，避免把不匹配记录的曝光套到其他输入。
+
 该节点 `SaveFiles` 默认关闭：内存帧可继续传递不等于已生成结果文件。它的 `SaveCalibrationResult` 需要流程批次，并要求结果保存返回正数 ID，否则抛错；关闭 `SaveFiles` 不会跳过数据库保存。它不采用手动本地服务的“可跳过 MySQL 保存”策略。文件保存、完成通知与整体流程终态须分别核对，参见[Flow 执行会话](../workflow/execution.md)。
 
 ## 证据与验证缺口

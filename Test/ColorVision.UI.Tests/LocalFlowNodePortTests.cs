@@ -256,6 +256,37 @@ public class LocalFlowNodePortTests
     }
 
     [Fact]
+    public void LocalCalibrationRealPoiReadsExposureFromLegacyImageResultParams()
+    {
+        float[]? singleExposure = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Gain\":10,\"ExpTime\":[700]}");
+        float[]? threeExposures = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Gain\":10,\"ExpTime\":[716.67,716.67,716.67]}");
+
+        Assert.Equal(new float[] { 700 }, singleExposure);
+        Assert.Equal(new float[] { 716.67f, 716.67f, 716.67f }, threeExposures);
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiReadsExposureFromLocalCalibrationResultParams()
+    {
+        float[]? exposure = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Exposure\":[8,16,32]}");
+
+        Assert.Equal(new float[] { 8, 16, 32 }, exposure);
+    }
+
+    [Theory]
+    [InlineData("{\"ExpTime\":[0,0,0]}")]
+    [InlineData("{\"ExpTime\":[10,-1,30]}")]
+    [InlineData("{\"Other\":[10,20,30]}")]
+    [InlineData("not-json")]
+    public void LocalCalibrationRealPoiRejectsInvalidDatabaseExposure(string parameters)
+    {
+        Assert.Null(LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(parameters));
+    }
+
+    [Fact]
     public void LocalCalibrationRealPoiRoiCoordinatesUseTemporaryOffsetCopy()
     {
         PoiParam source = new() { Id = 12, Name = "Global" };

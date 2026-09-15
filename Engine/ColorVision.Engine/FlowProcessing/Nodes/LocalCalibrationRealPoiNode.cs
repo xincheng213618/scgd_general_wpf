@@ -1,3 +1,4 @@
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -8,10 +9,14 @@ using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using ServicePoiPointTypes = FlowEngineLib.Node.POI.POIPointTypes;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
@@ -198,6 +203,45 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         private protected override string SourceImageFilePath => ImageFilePath;
+
+        private protected override float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame)
+        {
+            if (sourceFrame.Metadata.Exposure.Length == 0 || sourceFrame.Metadata.Exposure.Any(value => value != 0)) return null;
+            if (!TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _) || imageMasterId <= 0) return null;
+
+            MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(imageMasterId);
+            return ReadExposureFromImageResultParams(imageResult?.Params);
+        }
+
+        internal static float[]? ReadExposureFromImageResultParams(string? parameters)
+        {
+            if (string.IsNullOrWhiteSpace(parameters)) return null;
+            try
+            {
+                if (JToken.Parse(parameters) is not JObject root) return null;
+                JToken? exposureToken = root.GetValue("ExpTime", StringComparison.OrdinalIgnoreCase)
+                    ?? root.GetValue("Exposure", StringComparison.OrdinalIgnoreCase);
+                if (exposureToken == null) return null;
+
+                IEnumerable<JToken> values = exposureToken is JArray array ? array.Children() : new[] { exposureToken };
+                List<float> exposure = new();
+                foreach (JToken valueToken in values)
+                {
+                    if (!float.TryParse(valueToken.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                        || !float.IsFinite(value)
+                        || value <= 0)
+                    {
+                        return null;
+                    }
+                    exposure.Add(value);
+                }
+                return exposure.Count == 0 ? null : exposure.ToArray();
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {

@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength), metadata);
         }
 
-        internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration)
+        internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration, float[]? exposure = null)
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
             storage.ResizeCieBuffer(cieLength);
@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 CieBpp = source.CieBpp,
                 Channels = source.Channels,
                 Gain = source.Gain,
-                Exposure = source.Exposure,
+                Exposure = exposure ?? source.Exposure,
                 DeviceCode = source.DeviceCode,
                 SourceFilePath = source.SourceFilePath,
                 CalibrationTemplate = calibrationTemplate,
