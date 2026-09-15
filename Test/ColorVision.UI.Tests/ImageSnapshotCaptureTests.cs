@@ -1,6 +1,8 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Output;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -9,6 +11,23 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ImageSnapshotCaptureTests
 {
+    [Fact]
+    public async Task SnapshotStaWorkerReusesOneStaThreadAcrossConcurrentRequests()
+    {
+        ConcurrentBag<int> threadIds = [];
+        ConcurrentBag<ApartmentState> apartmentStates = [];
+
+        await Task.WhenAll(Enumerable.Range(0, 32).Select(_ =>
+            SnapshotStaWorker.RunAsync(() =>
+            {
+                threadIds.Add(Environment.CurrentManagedThreadId);
+                apartmentStates.Add(Thread.CurrentThread.GetApartmentState());
+            }, CancellationToken.None)));
+
+        Assert.Single(threadIds.Distinct());
+        Assert.All(apartmentStates, state => Assert.Equal(ApartmentState.STA, state));
+    }
+
     [Fact]
     public async Task DetachedCapturesKeepTheirPixelsAcrossSourceMutationAndBufferRelease()
     {

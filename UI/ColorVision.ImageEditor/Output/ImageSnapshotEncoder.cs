@@ -192,7 +192,7 @@ namespace ColorVision.ImageEditor.Output
                     throw new ArgumentException("Rendered and source image exports must use different file paths.", nameof(options));
                 }
 
-                await RunOnSnapshotStaThreadAsync(
+                await SnapshotStaWorker.RunAsync(
                     () => RenderAndSaveSnapshotExports(snapshot, options, cancellationToken),
                     cancellationToken).ConfigureAwait(false);
             }
@@ -313,39 +313,5 @@ namespace ColorVision.ImageEditor.Output
                 Math.Max(1, (int)Math.Round(snapshot.PixelHeight / (double)normalizedDivisor, MidpointRounding.AwayFromZero)));
         }
 
-        private static Task RunOnSnapshotStaThreadAsync(
-            Action action,
-            CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-
-            TaskCompletionSource<object?> completion = new(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            Thread thread = new(() =>
-            {
-                try
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    action();
-                    completion.TrySetResult(null);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    completion.TrySetCanceled(cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    completion.TrySetException(ex);
-                }
-            })
-            {
-                IsBackground = true,
-                Name = "ColorVision Image Snapshot Renderer",
-            };
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            return completion.Task;
-        }
     }
 }
