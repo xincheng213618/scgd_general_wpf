@@ -15,15 +15,15 @@ related: ["delivery.backend", "delivery.backend-auth"]
 
 本页的启停、重置、撤销、删除和策略修改会改变数据库或配置，不是只读诊断，也不构成执行授权。数据库/配置路径及启动前提见[Backend组成](./README.md)。
 
-## 两种管理员与真实默认值
+## 账号角色与真实默认值
 
 | 身份或配置 | 当前契约 |
 | --- | --- |
 | 配置管理员 | 来自 `upload_auth`；登录时不创建数据库用户，也不给Session设置 `user_id` / `auth_version` / `login_session_id` |
-| 数据库账号 | 只支持 `admin`、`user` 两种角色，来源为 `self_registered`、`administrator_created` 或迁移的 `legacy`；不是旧的admin/operator/viewer模型 |
+| 数据库账号 | 支持 `admin`、`developer`、`user` 三种角色，来源为 `self_registered`、`administrator_created` 或迁移的 `legacy` |
 | 默认注册策略 | `config_loader.DEFAULT_CONFIG` 与示例配置的 `public_registration_enabled` 均为 `true`；正常加载合并后的默认配置允许公开注册 |
 | fail-closed检查 | `account_settings.is_public_registration_enabled` 收到缺失字段或非JSON布尔值时返回false；这不等于正常应用默认关闭注册 |
-| 初始角色授权 | 首次建立权限目录时，`user` 和 `admin` 均获全部已定义功能权限；普通账号不是默认只读身份。后续可缩减 `user` 的权限 |
+| 初始角色授权 | `admin` 固定全部权限；`developer` 默认仅有 `admin:access` 与 `feedback:read`；`user` 保留既有角色权限，但反馈始终按本人 owner 范围读取且不保留旧的 `feedback:read` / `feedback:manage` grant |
 
 配置管理员用户名忽略大小写地保留，公开注册和后台创建不能占用它。旧数据库若有同名shadow记录，管理响应标记 `is_config_admin`，不能通过用户管理编辑、启停、改角色、重置密码、强制改密、强制下线或删除；新的浏览器登录以当前配置凭据为准，不退回shadow密码。
 
@@ -37,7 +37,7 @@ related: ["delivery.backend", "delivery.backend-auth"]
 | `POST /api/auth/register` | 只创建 `user`，成功后建立当前登录Session，返回 `201`；策略关闭为 `403` |
 | `GET /api/admin/settings/accounts` | 读取实际注册策略，要求 `settings:manage` |
 | `PUT /api/admin/settings/accounts` | 请求体必须且只能含布尔 `public_registration_enabled`；持久化配置后更新进程内配置，不影响既有账号或后台创建账号 |
-| `POST /api/admin/users` | 创建 `admin` 或 `user`，来源为 `administrator_created`，设置 `must_change_password=true`，要求 `users:manage` |
+| `POST /api/admin/users` | 创建 `admin`、`developer` 或 `user`，来源为 `administrator_created`，设置 `must_change_password=true`，要求 `users:manage` |
 
 账号名为3–32个ASCII字母、数字、下划线、点或连字符，用户名重复忽略大小写。新数据库密码按Python字符串长度要求15–128个Unicode字符，允许空格和口令短语，不要求字符种类组合。该校验覆盖注册、后台创建/重置和自助改密；已有短密码hash和配置管理员凭据不会因此被迁移或自动拒绝。自助改密还检查当前密码，并拒绝新旧密码完全相同。
 
@@ -49,11 +49,11 @@ related: ["delivery.backend", "delivery.backend-auth"]
 
 ## 角色授权与权限修改
 
-`GET /api/admin/permissions` 和 `PUT /api/admin/roles/<role>/permissions` 要求 `permissions:manage`。矩阵含权限名称/分类、角色成员总数与活跃数据库账号数、权限列表和revision；配置管理员不是数据库成员计数的一部分。`admin` 权限固定不能编辑，只有 `user` 可整体替换权限集合，不支持任意新建角色。
+`GET /api/admin/permissions` 和 `PUT /api/admin/roles/<role>/permissions` 要求 `permissions:manage`。矩阵含权限名称/分类、角色成员总数与活跃数据库账号数、权限列表和revision；配置管理员不是数据库成员计数的一部分。`admin` 权限固定不能编辑，`user` 与 `developer` 可整体替换权限集合，不支持任意新建角色。选择 `feedback:manage` 时服务端同时加入 `feedback:read`。
 
 PUT必须给字符串数组 `permissions`，可给由64个小写十六进制字符组成的SHA-256格式 `expected_revision`。传入旧revision会在事务内返回 `409 permission_revision_conflict`；不传则没有这一乐观并发前置条件。非法权限为 `400`，修改admin为 `409`，未知角色为 `404`。成功响应含增加/移除权限、受影响活跃账号数和新revision，并写审计。
 
-普通Session每次授权读取live角色矩阵，因此移除权限后不必重新登录就会被对应接口拒绝；`can_access_admin` 只表示后台入口能力，不保证每个操作都获准。更改某人的角色与更改角色权限是不同操作：前者撤销该人的会话，后者影响该角色的所有账号而不要求全体下线。初始化不会恢复已删除的既有user授权，但新加入目录的权限会同时授予admin/user；不能把一次缩权当成未来新增权限永远默认拒绝。
+普通Session每次授权读取live角色矩阵，因此移除权限后不必重新登录就会被对应接口拒绝；`can_access_admin` 只表示后台入口能力，不保证每个操作都获准。更改某人的角色与更改角色权限是不同操作：前者撤销该人的会话，后者影响该角色的所有账号而不要求全体下线。新权限默认授予哪些角色由权限目录定义；反馈权限采用最小授权，不能再假设新权限总会同时授予 admin/user。
 
 角色permission和API key可申请scope不是同一目录，`admin:*` 也不是user角色中必须持有的普通权限。端点的真实要求及凭据差异见[认证与scope](./authentication.md#端点permission不等于api-key可申请scope)。
 
@@ -68,7 +68,7 @@ PUT必须给字符串数组 `permissions`，可给由64个小写十六进制字�
 | `GET /api/account/sessions` | 当前数据库账号的未撤销Session、IP、User-Agent、时间与 `is_current`；不提供其它账号的列表 |
 | `GET /api/account/activity` | 当前账号的隐私限定活动时间线；limit默认8、范围1–50，offset范围0–100000 |
 
-用户分页查询的 `q` 最多100字符；role为admin/user，status为active/inactive，origin为三种账号来源，password_state为pending/ready，recovery_state为pending/none。排序只允许username、display_name、email、role、account_origin、is_active、active_session_count、created_at、last_login_at、password_recovery_requested_at；方向asc/desc，默认desc，limit默认20且1–100，offset非负。不是接受任意SQL排序表达式。
+用户分页查询的 `q` 最多100字符；role为admin/developer/user，status为active/inactive，origin为三种账号来源，password_state为pending/ready，recovery_state为pending/none。排序只允许username、display_name、email、role、account_origin、is_active、active_session_count、created_at、last_login_at、password_recovery_requested_at；方向asc/desc，默认desc，limit默认20且1–100，offset非负。不是接受任意SQL排序表达式。
 
 活动和Session读接口不等于零写入：Session列表会把旧auth_version记录标记撤销，正常Session校验也可能更新活动信息；待处理恢复查询会推进过期状态。此处的“活跃Session数”是数据库未撤销且版本匹配的记录，不证明浏览器仍在线。
 

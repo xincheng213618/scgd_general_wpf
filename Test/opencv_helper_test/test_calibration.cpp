@@ -1022,10 +1022,12 @@ void runSyntheticCoverage()
     const auto colorShift = directory.path / "color_shift.json";
     const auto colorDiff = directory.path / "color_diff.json";
     const auto angleShift = directory.path / "angle_shift.json";
+    const auto fractionalAngleShift = directory.path / "angle_shift_fractional.json";
     writeText(distortion, R"({"alpha":0.0,"cameraMatrix":[1.0,0.0,1.5,0.0,1.0,1.5,0.0,0.0,1.0],"distCoeffs":[0.0,0.0,0.0,0.0,0.0],"h":4,"w":4,"useFisheye":false})");
     writeText(colorShift, R"({"fillOffset":false,"offset":[{"X":0,"Y":0},{"X":0,"Y":0},{"X":0,"Y":0}]})");
     writeText(colorDiff, R"({"CalibDis":1.0,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0.0,0.0],"ColRowCoeffs_GR":[0.0,0.0],"ColorDiffCoeffs_GB":[0.0],"ColorDiffCoeffs_GR":[0.0],"MeasDis":1.0,"h":4,"w":4})");
     writeText(angleShift, R"({"optical_center_x":2,"optical_center_y":2,"interpolate_ratio":1.0,"coefficient_order":0,"target_row":5,"target_col":5,"coeff_r":[0.0],"coeff_g":[0.0],"coeff_b":[0.0],"rowColShift":[0.0,0.0]})");
+    writeText(fractionalAngleShift, R"({"optical_center_x":2.5,"optical_center_y":2.5,"interpolate_ratio":1.0,"coefficient_order":0,"target_row":5,"target_col":5,"coeff_r":[2.0],"coeff_g":[2.0],"coeff_b":[2.0],"rowColShift":[0.0,0.0]})");
 
     std::vector<std::uint16_t> geometricPixels(4 * 4 * 3);
     for (std::size_t index = 0; index < geometricPixels.size(); ++index) geometricPixels[index] = static_cast<std::uint16_t>(index + 1);
@@ -1232,6 +1234,24 @@ void runSyntheticCoverage()
     if (anglePixels[(2 * 5 + 2) * 3] != 100
         || !std::all_of(anglePixels.begin(), anglePixels.end(), [](auto value) { return value == 0 || value == 100; })) {
         throw std::runtime_error("AngleShift synthetic output is invalid");
+    }
+
+    std::vector<std::uint16_t> fractionalAnglePixels(5 * 5 * 3);
+    for (std::size_t index = 0; index < fractionalAnglePixels.size(); ++index) {
+        fractionalAnglePixels[index] = static_cast<std::uint16_t>(index + 1);
+    }
+    const std::vector<std::uint16_t> fractionalAngleSourcePixels = fractionalAnglePixels;
+    std::vector<std::uint8_t> fractionalAngleRaw(fractionalAnglePixels.size() * sizeof(std::uint16_t));
+    std::memcpy(fractionalAngleRaw.data(), fractionalAnglePixels.data(), fractionalAngleRaw.size());
+    runOne(15, fractionalAngleShift, 5, 5, 16, 3, fractionalAngleRaw);
+    std::memcpy(fractionalAnglePixels.data(), fractionalAngleRaw.data(), fractionalAngleRaw.size());
+    const std::size_t centerPixel = static_cast<std::size_t>(2 * 5 + 2) * 3;
+    const std::size_t expectedSourcePixel = static_cast<std::size_t>(3 * 5 + 3) * 3;
+    if (!std::equal(
+            fractionalAnglePixels.begin() + centerPixel,
+            fractionalAnglePixels.begin() + centerPixel + 3,
+            fractionalAngleSourcePixels.begin() + expectedSourcePixel)) {
+        throw std::runtime_error("AngleShift fractional optical center was truncated");
     }
 }
 

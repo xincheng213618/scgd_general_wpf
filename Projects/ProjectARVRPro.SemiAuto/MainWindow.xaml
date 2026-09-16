@@ -241,10 +241,11 @@
                                     </Border>
                                 </Grid>
                                 <WrapPanel Grid.Row="2">
-                                    <Button Content="连接" Click="ConnectOnlyButton_Click" Margin="0,0,8,0" />
-                                    <Button Content="初始化" Click="ConnectInitButton_Click" Margin="0,0,8,0" />
-                                    <Button Content="运行全部" Click="ConnectRunAllButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
-                                    <Button Content="断开" Click="DisconnectButton_Click" />
+                                    <Button x:Name="ArvrConnectButton" Content="连接" Click="ConnectOnlyButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrInitButton" Content="初始化" Click="ConnectInitButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrRunAllButton" Content="内部运行全部" Click="ConnectRunAllButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="PgIntegratedRunButton" Content="PG 联动运行" Click="PgIntegratedRunButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrDisconnectButton" Content="断开" Click="DisconnectButton_Click" />
                                 </WrapPanel>
                             </Grid>
                         </Border>
@@ -269,8 +270,8 @@
                                     </Border>
                                 </Grid>
                                 <WrapPanel Grid.Row="2">
-                                    <Button Content="连接 PG" Click="ConnectPgButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
-                                    <Button Content="断开" Click="DisconnectPgButton_Click" />
+                                    <Button x:Name="PgConnectButton" Content="连接 PG" Click="ConnectPgButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+                                    <Button x:Name="PgDisconnectButton" Content="断开" Click="DisconnectPgButton_Click" />
                                 </WrapPanel>
                             </Grid>
                         </Border>
@@ -293,6 +294,7 @@
                                     <TextBlock x:Name="PendingPgActionTextBlock" Text="无待处理请求" Margin="0,5,16,0" TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <CheckBox x:Name="ManagePgPowerCheckBox" Content="自动电源" IsChecked="True" VerticalAlignment="Center" Margin="0,0,16,0" />
                                     <CheckBox x:Name="AutoExecutePgCheckBox" Content="自动执行" VerticalAlignment="Center" Margin="0,0,16,0" />
                                     <CheckBox x:Name="AutoConfirmAfterPgCheckBox" Content="成功后确认" IsChecked="True" VerticalAlignment="Center" />
                                 </StackPanel>
@@ -300,7 +302,9 @@
                             <WrapPanel Grid.Row="2">
                                 <Button x:Name="ExecutePgAndConfirmButton" Content="执行并确认" Click="ExecutePgAndConfirmButton_Click" Style="{StaticResource PrimaryButtonStyle}" IsEnabled="False" Margin="0,0,8,0" />
                                 <Button x:Name="ExecutePgOnlyButton" Content="仅执行 PG" Click="ExecutePgOnlyButton_Click" IsEnabled="False" Margin="0,0,8,0" />
-                                <Button x:Name="ConfirmPendingArvrButton" Content="仅确认 ARVR" Click="ConfirmPendingArvrButton_Click" IsEnabled="False" />
+                                <Button x:Name="ConfirmPendingArvrButton" Content="仅确认 ARVR" Click="ConfirmPendingArvrButton_Click" IsEnabled="False" Margin="0,0,20,0" />
+                                <Button x:Name="PauseIntegratedRunButton" Content="暂停" Click="PauseIntegratedRunButton_Click" IsEnabled="False" Margin="0,0,8,0" />
+                                <Button x:Name="CancelIntegratedRunButton" Content="取消" Click="CancelIntegratedRunButton_Click" IsEnabled="False" />
                             </WrapPanel>
                         </Grid>
                     </Border>
@@ -311,7 +315,14 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock Text="通信日志" Style="{StaticResource SectionTitleStyle}" Margin="16,12,16,10" />
+                            <Grid Margin="16,8,12,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="通信日志" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Content="清除" Click="ClearLogButton_Click" Padding="14,5" />
+                            </Grid>
                             <TextBox x:Name="LogTextBox" Grid.Row="1" Style="{StaticResource ReadOnlyValueTextBox}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0,1,0,0" TextWrapping="Wrap" />
                         </Grid>
                     </Border>

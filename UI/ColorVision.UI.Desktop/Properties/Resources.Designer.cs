@@ -898,6 +898,33 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清理所有支持清理的来源；与打包勾选无关，执行前需确认。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackCleanupSourcesHint {
+            get {
+                return ResourceManager.GetString("FeedbackCleanupSourcesHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 选择项目… 的本地化字符串。
+        /// </summary>
+        public static string FeedbackConfigureDiagnostics {
+            get {
+                return ResourceManager.GetString("FeedbackConfigureDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 勾选要随反馈打包的项目，关闭窗口后保留选择。时间范围在主窗口统一设置。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackDiagnosticSelectionHint {
+            get {
+                return ResourceManager.GetString("FeedbackDiagnosticSelectionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 发送时会自动打包所选项目；也可先打包，离线复制。 的本地化字符串。
         /// </summary>
         public static string FeedbackDiagnosticsHint {
@@ -961,6 +988,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 没有匹配的诊断项目 的本地化字符串。
+        /// </summary>
+        public static string FeedbackNoMatchingDiagnostics {
+            get {
+                return ResourceManager.GetString("FeedbackNoMatchingDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 诊断包已加入附件。修改诊断选项后，请移除旧包并重新打包。 的本地化字符串。
         /// </summary>
         public static string FeedbackPackageReadyHint {
@@ -997,6 +1033,42 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 恢复默认选择 的本地化字符串。
+        /// </summary>
+        public static string FeedbackRestoreDefaults {
+            get {
+                return ResourceManager.GetString("FeedbackRestoreDefaults", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 搜索项目名称或说明 的本地化字符串。
+        /// </summary>
+        public static string FeedbackSearchDiagnostics {
+            get {
+                return ResourceManager.GetString("FeedbackSearchDiagnostics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部选中 的本地化字符串。
+        /// </summary>
+        public static string FeedbackSelectAll {
+            get {
+                return ResourceManager.GetString("FeedbackSelectAll", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全部取消 的本地化字符串。
+        /// </summary>
+        public static string FeedbackSelectNone {
+            get {
+                return ResourceManager.GetString("FeedbackSelectNone", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 反馈已发送成功，感谢您的反馈！ 的本地化字符串。
         /// </summary>
         public static string FeedbackSent {
@@ -1005,6 +1077,15 @@ namespace ColorVision.UI.Desktop.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 统一应用于支持时间范围的日志和数据库；配置快照等项目保持各自的收集规则。 的本地化字符串。
+        /// </summary>
+        public static string FeedbackSharedLogRangeHint {
+            get {
+                return ResourceManager.GetString("FeedbackSharedLogRangeHint", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 文件已删除 的本地化字符串。
         /// </summary>

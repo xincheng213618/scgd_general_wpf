@@ -89,6 +89,27 @@ public class SemiAutomaticWorkflowTests
         Assert.Null(profile.FindMapping("SwitchPG", "4"));
     }
 
+    [Fact]
+    public async Task PowerSequenceSendsPowerOnWithSerialNumberThenPowerOff()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        Task server = RunPowerServerAsync(listener, "SN-E2E-POWER");
+        using var client = new GecsClient();
+        var workflow = new SemiAutomaticWorkflow(client);
+        IntegrationProfile profile = CreateProfile(port);
+
+        GecsCommandResult powerOn = await workflow.SetPowerAsync(profile, true, "SN-E2E-POWER");
+        GecsCommandResult powerOff = await workflow.SetPowerAsync(profile, false, string.Empty);
+
+        await server;
+        Assert.True(powerOn.IsSuccess);
+        Assert.True(powerOff.IsSuccess);
+        Assert.Contains("POWER,ON,SN-E2E-POWER,END,OK", powerOn.ResponseText);
+        Assert.Contains("POWER,OFF,END,OK", powerOff.ResponseText);
+    }
+
     private static IntegrationProfile CreateProfile(int port)
     {
         return new IntegrationProfile
@@ -125,9 +146,24 @@ public class SemiAutomaticWorkflowTests
         events.Enqueue("pg-command-received");
 
         await WriteFrameAsync(stream, "PG,01,PATTERN,processing ...");
-        string finalResponse = fail ? "PG,01,PATTERN,INDEX,END,NG,E101" : "PG,01,PATTERN,INDEX,END,OK";
+        string finalResponse = expectedCommand + (fail ? ",END,NG,E101" : ",END,OK");
         await WriteFrameAsync(stream, finalResponse);
         events.Enqueue(fail ? "pg-failure-sent" : "pg-success-sent");
+    }
+
+    private static async Task RunPowerServerAsync(TcpListener listener, string serialNumber)
+    {
+        using TcpClient serverClient = await listener.AcceptTcpClientAsync();
+        using NetworkStream stream = serverClient.GetStream();
+        var reader = new GecsFrameReader(stream);
+
+        GecsFrame powerOn = await reader.ReadFrameAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("PG,01,POWER,ON," + serialNumber, powerOn.MessageText);
+        await WriteFrameAsync(stream, "PG,01,POWER,ON," + serialNumber + ",END,OK");
+
+        GecsFrame powerOff = await reader.ReadFrameAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("PG,01,POWER,OFF", powerOff.MessageText);
+        await WriteFrameAsync(stream, "PG,01,POWER,OFF,END,OK");
     }
 
     private static async Task WriteFrameAsync(NetworkStream stream, string text)

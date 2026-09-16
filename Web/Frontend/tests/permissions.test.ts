@@ -47,6 +47,16 @@ test('existing administrators retain full access independently of the role matri
   }, '/admin/cache'), false)
 })
 
+test('read-only developers can open feedback without status-management permission', () => {
+  const developer = {
+    authenticated: true,
+    role: 'developer',
+    permissions: ['admin:access', 'feedback:read'],
+  }
+  assert.equal(canOpenAdminRoute(developer, '/admin/feedback'), true)
+  assert.equal(hasPermission(developer, 'feedback:manage'), false)
+})
+
 test('dashboard capabilities expose only data the current role may request', () => {
   assert.deepEqual(getAdminDashboardCapabilities({
     authenticated: true,

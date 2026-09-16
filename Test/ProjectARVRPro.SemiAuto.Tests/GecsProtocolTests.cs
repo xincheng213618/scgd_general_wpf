@@ -5,16 +5,16 @@ namespace ProjectARVRPro.SemiAuto.Tests;
 
 public class GecsProtocolTests
 {
-    [Fact]
-    public void BuildPacketUsesExcelFramingAndAsciiLength()
+    [Theory]
+    [InlineData("PG,01,POWER,ON", "000E")]
+    [InlineData("PG,01,PATTERN,NEXT", "0012")]
+    public void BuildPacketUsesExcelFramingAndAsciiLength(string message, string expectedLengthHex)
     {
-        const string message = "PG,01,POWER,ON";
-
         byte[] packet = GecsPacketCodec.BuildPacket(message, 0xFF);
 
         Assert.Equal(0x02, packet[0]);
         Assert.Equal(0xFF, packet[1]);
-        Assert.Equal(message.Length.ToString("X4"), Encoding.ASCII.GetString(packet, 2, 4));
+        Assert.Equal(expectedLengthHex, Encoding.ASCII.GetString(packet, 2, 4));
         Assert.Equal(message, Encoding.ASCII.GetString(packet, 6, message.Length));
         Assert.Equal(0x03, packet[^1]);
     }

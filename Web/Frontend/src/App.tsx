@@ -23,6 +23,7 @@ const documentTitles: Record<string, string> = {
   '/transfer': '文件中转 - ColorVision',
   '/login': '登录 / 注册 - ColorVision',
   '/account': '个人中心 - ColorVision',
+  '/feedback': '我的反馈 - ColorVision',
   '/admin': '管理控制台 - ColorVision',
   '/admin/publish': '发布中心 - ColorVision',
   '/admin/files': '文件管理 - ColorVision',
@@ -298,6 +299,7 @@ function App() {
               <Route path="browse/*" element={<BrowsePage />} />
               <Route path="transfer" element={<TransferPage session={session} />} />
               <Route path="account" element={<AccountPage session={session} onSessionChanged={refreshSession} />} />
+              <Route path="feedback" element={<FeedbackPage session={session} />} />
               <Route path="transfer/share/:token" element={<TransferSharePage />} />
             </Route>
             <Route
@@ -316,7 +318,7 @@ function App() {
               <Route path="jobs" element={<JobsPage session={session} />} />
               <Route path="deployments" element={<DeploymentHistoryPage />} />
               <Route path="operations/hosts" element={<OperationsPage />} />
-              <Route path="feedback" element={<FeedbackPage />} />
+              <Route path="feedback" element={<FeedbackPage session={session} />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="login-security" element={<LoginSecurityPage />} />
               <Route path="permissions" element={<PermissionsPage onPermissionsChanged={refreshSession} />} />

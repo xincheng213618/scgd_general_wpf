@@ -35,6 +35,7 @@ const menuItems: Array<{ key: string; icon: ReactNode; label: string; href?: str
   { key: '/tools', icon: <ToolOutlined aria-hidden />, label: '工具下载' },
   { key: 'docs', icon: <BookOutlined aria-hidden />, label: '文档中心', href: docsUrl },
   { key: '/transfer', icon: <InboxOutlined aria-hidden />, label: '文件中转' },
+  { key: '/feedback', icon: <SafetyCertificateOutlined aria-hidden />, label: '我的反馈' },
   { key: '/browse', icon: <FolderOpenOutlined aria-hidden />, label: '文件浏览' },
 ]
 

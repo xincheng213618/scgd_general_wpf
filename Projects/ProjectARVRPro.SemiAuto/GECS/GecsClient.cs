@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -72,13 +74,15 @@ namespace ProjectARVRPro.SemiAuto.GECS
                         throw new EndOfStreamException("PG 在返回命令结果前关闭了连接。 ");
 
                     string response = frame.MessageText ?? string.Empty;
-                    WriteLog("Received [Network=" + frame.NetworkNumber.ToString(CultureInfo.InvariantCulture) + "]: " + response);
                     if (string.Equals(response, "ALIVE", StringComparison.OrdinalIgnoreCase))
                         continue;
+
+                    WriteFrameLog("Received", response, frame.NetworkNumber);
                     if (response.IndexOf("processing", StringComparison.OrdinalIgnoreCase) >= 0)
                         continue;
                     if (response.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) || response.IndexOf(",END,NG", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
+                        WriteLog("Result [NG]: " + response);
                         return new GecsCommandResult
                         {
                             IsSuccess = false,
@@ -87,12 +91,13 @@ namespace ProjectARVRPro.SemiAuto.GECS
                         };
                     }
 
-                    if (!string.IsNullOrWhiteSpace(successContains) && response.IndexOf(successContains, StringComparison.OrdinalIgnoreCase) < 0)
+                    if (!MatchesSuccessResponse(commandText, response, successContains))
                     {
                         WriteLog("Ignored unmatched response; waiting for: " + successContains);
                         continue;
                     }
 
+                    WriteLog("Result [OK]: " + response);
                     return new GecsCommandResult { IsSuccess = true, ResponseText = response };
                 }
             }
@@ -108,6 +113,51 @@ namespace ProjectARVRPro.SemiAuto.GECS
             }
         }
 
+        private static bool MatchesSuccessResponse(string commandText, string response, string successContains)
+        {
+            if (string.IsNullOrWhiteSpace(successContains))
+                return true;
+            if (response.IndexOf(successContains, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            string[] responseFields = SplitFields(response);
+            string[] expectedFields = SplitFields(successContains);
+            string[] commandFields = SplitFields(commandText);
+            if (expectedFields.Length < 2 || commandFields.Length == 0 || commandFields.Length > responseFields.Length)
+                return false;
+
+            for (int index = 0; index < commandFields.Length; index++)
+            {
+                if (!string.Equals(commandFields[index], responseFields[index], StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            int expectedIndex = 0;
+            for (int responseIndex = 0; responseIndex < responseFields.Length && expectedIndex < expectedFields.Length; responseIndex++)
+            {
+                if (string.Equals(responseFields[responseIndex], expectedFields[expectedIndex], StringComparison.OrdinalIgnoreCase))
+                    expectedIndex++;
+            }
+            return expectedIndex == expectedFields.Length;
+        }
+
+        private static string[] SplitFields(string value)
+        {
+            var fields = new List<string>();
+            foreach (string field in (value ?? string.Empty).Split(','))
+            {
+                string trimmed = field.Trim();
+                if (trimmed.Length > 0)
+                    fields.Add(trimmed);
+            }
+            return fields.ToArray();
+        }
+
+        public void LogCommandPreview(string commandText, byte networkNumber)
+        {
+            WriteFrameLog("Prepared (not sent)", commandText, networkNumber);
+        }
+
         public async Task<bool> TrySendHeartbeatAsync(byte networkNumber)
         {
             if (!_commandGate.Wait(0))
@@ -117,7 +167,7 @@ namespace ProjectARVRPro.SemiAuto.GECS
             {
                 if (!IsConnected)
                     return false;
-                await WritePacketAsync("ALIVE", networkNumber);
+                await WritePacketAsync("ALIVE", networkNumber, false);
                 return true;
             }
             catch (Exception ex)
@@ -160,13 +210,26 @@ namespace ProjectARVRPro.SemiAuto.GECS
             _commandGate.Dispose();
         }
 
-        private async Task WritePacketAsync(string messageText, byte networkNumber)
+        private async Task WritePacketAsync(string messageText, byte networkNumber, bool writeLog = true)
         {
             EnsureConnected();
             byte[] packet = GecsPacketCodec.BuildPacket(messageText, networkNumber);
             await _stream.WriteAsync(packet, 0, packet.Length);
             await _stream.FlushAsync();
-            WriteLog("Sent [Network=" + networkNumber.ToString(CultureInfo.InvariantCulture) + "]: " + messageText);
+            if (writeLog)
+                WriteFrameLog("Sent", messageText, networkNumber, packet);
+        }
+
+        private void WriteFrameLog(string direction, string messageText, byte networkNumber, byte[] packet = null)
+        {
+            byte[] frameBytes = packet ?? GecsPacketCodec.BuildPacket(messageText, networkNumber);
+            string lengthHex = Encoding.ASCII.GetString(frameBytes, 2, 4);
+            int messageLength = frameBytes.Length - 7;
+            WriteLog(direction + " [Network=" + networkNumber.ToString(CultureInfo.InvariantCulture) +
+                     "/0x" + networkNumber.ToString("X2", CultureInfo.InvariantCulture) +
+                     ", Length=" + lengthHex + " (" + messageLength.ToString(CultureInfo.InvariantCulture) +
+                     " bytes), Packet=" + frameBytes.Length.ToString(CultureInfo.InvariantCulture) + " bytes]: " + messageText);
+            WriteLog(direction + " HEX: " + BitConverter.ToString(frameBytes).Replace("-", " "));
         }
 
         private void EnsureConnected()

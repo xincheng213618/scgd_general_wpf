@@ -18,13 +18,14 @@ import {
   Row,
   Segmented,
   Space,
+  Spin,
   Statistic,
   Tag,
   Typography,
 } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import {
-  feedbackAttachmentUrl,
+  downloadFeedbackAttachment,
   getFeedbackDetail,
   getFeedbackInbox,
   updateFeedbackStatus,
@@ -36,14 +37,18 @@ import type {
   FeedbackItem,
   FeedbackStatus,
 } from '../types/admin'
+import type { AuthSession } from '../types/site'
 import {
   feedbackAgeInfo,
+  feedbackBeijingTime,
+  feedbackDateRangeUtc,
   feedbackStatusAction,
   feedbackStatusColors,
   feedbackStatusLabels,
   nextFeedbackStatus,
 } from '../utils/feedback'
 import { humanSize, shortDate } from '../utils/format'
+import { Navigate } from 'react-router-dom'
 
 const columnsBase: ProColumns<FeedbackItem>[] = [
   {
@@ -56,7 +61,7 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
     ),
   },
   {
-    title: '提交与等待',
+    title: '接收时间与等待',
     dataIndex: 'created_at',
     width: 180,
     search: false,
@@ -64,7 +69,7 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
       const age = feedbackAgeInfo(record.status, record.created_at)
       return (
         <Space direction="vertical" size={2}>
-          <Typography.Text>{shortDate(record.created_at)}</Typography.Text>
+          <Typography.Text>{feedbackBeijingTime(record.created_at)}</Typography.Text>
           <Tag color={age.color}>{age.label}</Tag>
         </Space>
       )
@@ -75,14 +80,32 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
     dataIndex: 'user_name',
     width: 150,
     search: false,
-    renderText: (value: string) => value || '未提供',
+    render: (_, record) => (
+      <Space direction="vertical" size={2}>
+        <Typography.Text>{record.owner_username || record.user_name || '未提供'}</Typography.Text>
+        {record.ownership === 'legacy_unbound' && <Tag color="default">历史未绑定</Tag>}
+      </Space>
+    ),
+  },
+  {
+    title: '机器',
+    dataIndex: 'machine',
+    width: 170,
+    fieldProps: { placeholder: '机器名' },
+    render: (_, record) => record.machine_name || '未知机器',
   },
   {
     title: '版本',
     dataIndex: 'app_version',
     width: 130,
-    search: false,
-    renderText: (value: string) => value || '-',
+    fieldProps: { placeholder: '版本号' },
+    render: (_, record) => record.app_version || '-',
+  },
+  {
+    title: '接收日期（北京时间）',
+    dataIndex: 'receivedRange',
+    valueType: 'dateRange',
+    hideInTable: true,
   },
   {
     title: '内容',
@@ -114,7 +137,7 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
   },
 ]
 
-export function FeedbackPage() {
+export function FeedbackPage({ session }: { session: AuthSession | null }) {
   const { message } = App.useApp()
   const actionRef = useRef<ActionType>(null)
   const detailRequestRef = useRef<AbortController | null>(null)
@@ -132,6 +155,8 @@ export function FeedbackPage() {
   const [detailError, setDetailError] = useState('')
   const [detailLoading, setDetailLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [downloading, setDownloading] = useState('')
+  const [accessScope, setAccessScope] = useState<'own' | 'all'>('own')
 
   const openDetail = async (feedbackId: string) => {
     detailRequestRef.current?.abort()
@@ -166,6 +191,9 @@ export function FeedbackPage() {
     }
   }
 
+  if (session === null) return <Spin tip="正在验证登录状态…" />
+  if (!session.authenticated) return <Navigate to="/login?next=/feedback" replace />
+
   const columns: ProColumns<FeedbackItem>[] = [
     ...columnsBase,
     {
@@ -175,7 +203,7 @@ export function FeedbackPage() {
       fixed: 'right',
       render: (_, record) => (
         <Button type="link" onClick={() => void openDetail(record.feedback_id)}>
-          {record.status === 'resolved' ? '查看' : '处理'}
+          {record.status === 'resolved' || accessScope === 'own' ? '查看' : '处理'}
         </Button>
       ),
     },
@@ -221,8 +249,12 @@ export function FeedbackPage() {
             pageSize: params.pageSize,
             status: params.inboxStatus as FeedbackInboxFilter,
             query: params.query as string | undefined,
+            machine: params.machine as string | undefined,
+            appVersion: params.app_version as string | undefined,
+            ...feedbackDateRangeUtc(params.receivedRange),
           })
           setSummary(result.summary)
+          setAccessScope(result.access.scope)
           return { data: result.items, success: true, total: result.total }
         }}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
@@ -230,7 +262,7 @@ export function FeedbackPage() {
         cardBordered
         headerTitle={(
           <Space wrap>
-            <Typography.Text strong>反馈收件箱</Typography.Text>
+            <Typography.Text strong>{accessScope === 'own' ? '我的反馈' : '反馈收件箱'}</Typography.Text>
             <Segmented<FeedbackInboxFilter>
               size="small"
               value={statusFilter}
@@ -247,7 +279,9 @@ export function FeedbackPage() {
         )}
         toolBarRender={() => [
           <Typography.Text type="secondary" key="attachments">诊断附件 {summary.attachment_count} 个 · {humanSize(summary.attachment_bytes)}</Typography.Text>,
-          <Typography.Text type="secondary" key="privacy">详情和附件仅对管理员开放，下载会写入审计日志</Typography.Text>,
+          <Typography.Text type="secondary" key="privacy">
+            {accessScope === 'own' ? '仅显示当前账号提交的反馈' : '已授权查看全部反馈'}；附件下载会写入审计日志
+          </Typography.Text>,
         ]}
         scroll={{ x: 1150 }}
       />
@@ -262,7 +296,7 @@ export function FeedbackPage() {
           setDetailLoading(false)
         }}
         loading={detailLoading}
-        extra={detail && (
+        extra={detail?.access.can_manage && (
           <Space>
             {detail.status === 'resolved' && <Button onClick={() => void changeStatus('in_progress')} loading={updating}>重新打开</Button>}
             {nextStatus && (
@@ -286,8 +320,12 @@ export function FeedbackPage() {
             )}
             <Descriptions bordered size="small" column={1}>
               <Descriptions.Item label="状态"><Tag color={feedbackStatusColors[detail.status]}>{feedbackStatusLabels[detail.status]}</Tag></Descriptions.Item>
-              <Descriptions.Item label="提交时间">{shortDate(detail.created_at)}</Descriptions.Item>
+              <Descriptions.Item label="服务端接收时间（北京时间）">{feedbackBeijingTime(detail.created_at)}</Descriptions.Item>
               <Descriptions.Item label="提交者">{detail.user_name || '未提供'}</Descriptions.Item>
+              <Descriptions.Item label="账号归属">
+                {detail.owner_username || (detail.ownership === 'legacy_unbound' ? '历史未绑定' : '未提供')}
+              </Descriptions.Item>
+              <Descriptions.Item label="机器">{detail.machine_name || '未知机器'}</Descriptions.Item>
               <Descriptions.Item label="应用版本">{detail.app_version || '未提供'}</Descriptions.Item>
               <Descriptions.Item label="机器信息">{detail.machine_info || '未提供'}</Descriptions.Item>
               <Descriptions.Item label="客户端标识">{detail.client_ip || '未提供'}</Descriptions.Item>
@@ -308,7 +346,17 @@ export function FeedbackPage() {
                         key="download"
                         type="link"
                         icon={<DownloadOutlined />}
-                        href={feedbackAttachmentUrl(detail.feedback_id, attachment.name)}
+                        loading={downloading === attachment.name}
+                        onClick={async () => {
+                          setDownloading(attachment.name)
+                          try {
+                            await downloadFeedbackAttachment(detail.feedback_id, attachment.name)
+                          } catch (error) {
+                            message.error(error instanceof Error ? error.message : '附件下载失败')
+                          } finally {
+                            setDownloading('')
+                          }
+                        }}
                       >
                         下载
                       </Button>,
@@ -316,7 +364,7 @@ export function FeedbackPage() {
                   >
                     <List.Item.Meta
                       title={attachment.name}
-                      description={`${humanSize(attachment.size_bytes)} · ${shortDate(attachment.modified_at)}`}
+                      description={`${humanSize(attachment.size_bytes)} · ${shortDate(attachment.modified_at)}${attachment.sha256 ? ` · SHA-256 ${attachment.sha256.slice(0, 12)}…` : ''}`}
                     />
                   </List.Item>
                 )}

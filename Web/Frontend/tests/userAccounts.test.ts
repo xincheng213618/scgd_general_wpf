@@ -27,8 +27,9 @@ import {
 } from '../src/utils/userAccounts.ts'
 
 test('account role controls expose only supported backend roles', () => {
-  assert.deepEqual(USER_ROLE_OPTIONS.map((option) => option.value), ['user', 'admin'])
+  assert.deepEqual(USER_ROLE_OPTIONS.map((option) => option.value), ['user', 'developer', 'admin'])
   assert.equal(userRoleLabel('admin'), '管理员')
+  assert.equal(userRoleLabel('developer'), '研发只读')
   assert.equal(userRoleLabel('user'), '普通用户')
   assert.equal(oppositeUserRole('admin'), 'user')
   assert.equal(oppositeUserRole('user'), 'admin')

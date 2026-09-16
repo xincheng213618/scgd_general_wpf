@@ -9,8 +9,11 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -137,6 +140,7 @@ namespace ColorVision.UI.Desktop.Feedback
         private readonly ObservableCollection<AttachmentItem> _attachments = new();
         private readonly ObservableCollection<CollectorItem> _collectorItems = new();
         private bool _placeholderActive = true;
+        private DateTimeOffset? _diagnosticsCollectedAtUtc;
 
         public FeedbackWindow()
             : this(null, null)
@@ -198,7 +202,7 @@ namespace ColorVision.UI.Desktop.Feedback
         private void Window_Initialized(object sender, EventArgs e)
         {
             AttachmentsList.ItemsSource = _attachments;
-            CollectorsList.ItemsSource = _collectorItems;
+            DiagnosticsPanel.DataContext = _collectorItems;
             _attachments.CollectionChanged += (_, _) => UpdateDiagnosticSummary();
 
             // Discover all IFeedbackLogCollector implementations and show them in the list
@@ -222,7 +226,39 @@ namespace ColorVision.UI.Desktop.Feedback
                 log.Debug($"Failed to discover collectors: {ex.Message}");
             }
 
+            LogRangeComboBox.ItemsSource = new[] { 1, 3, 7, 14, 30 }
+                .Select(days => new FeedbackLogRangeOption(days, string.Format(Properties.Resources.FeedbackRecentDays, days)))
+                .ToArray();
+            LogRangeComboBox.SelectedValue = 7;
+            SetInputEnabled(true);
             UpdateDiagnosticSummary();
+        }
+
+        private void ConfigureDiagnostics_Click(object sender, RoutedEventArgs e)
+        {
+            new FeedbackDiagnosticsWindow(_collectorItems) { Owner = this }.ShowDialog();
+        }
+
+        private void LogRange_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LogRangeComboBox.SelectedValue is int days)
+            {
+                foreach (CollectorItem item in _collectorItems)
+                    item.SelectedDays = days;
+            }
+        }
+
+        private void OpenLogFolders_Click(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu { PlacementTarget = OpenLogFoldersButton };
+            foreach (CollectorItem item in _collectorItems.Where(item => item.Collector is IFeedbackLogTimeRangeCollector))
+            {
+                var entry = new MenuItem { Header = item.Name, Tag = item, IsEnabled = item.CanOpenLogDirectory };
+                entry.Click += OpenLogFolder_Click;
+                menu.Items.Add(entry);
+            }
+            OpenLogFoldersButton.ContextMenu = menu;
+            menu.IsOpen = true;
         }
 
         private void UpdateDiagnosticSummary()
@@ -368,7 +404,7 @@ namespace ColorVision.UI.Desktop.Feedback
             }
 
             if (manageButtonState)
-                PackLogsButton.IsEnabled = false;
+                SetInputEnabled(false);
 
             try
             {
@@ -388,6 +424,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
                 var attachment = new AttachmentItem { FilePath = result.ZipPath };
                 _attachments.Add(attachment);
+                _diagnosticsCollectedAtUtc = result.CollectedAtUtc;
                 AttachmentsList.SelectedItem = attachment;
                 AttachmentsList.ScrollIntoView(attachment);
                 StatusText.Text = string.Format(Properties.Resources.LogsPackaged, Path.GetFileName(result.ZipPath));
@@ -402,7 +439,7 @@ namespace ColorVision.UI.Desktop.Feedback
             finally
             {
                 if (manageButtonState)
-                    PackLogsButton.IsEnabled = true;
+                    SetInputEnabled(true);
             }
         }
 
@@ -448,7 +485,7 @@ namespace ColorVision.UI.Desktop.Feedback
             }
 
             CleanupCollectedFiles(collectedFiles);
-            return new LogPackageResult(zipPath, totalFiles);
+            return new LogPackageResult(zipPath, totalFiles, DateTimeOffset.UtcNow);
         }
 
         private static string NormalizeZipEntryPath(string entryPath, string fallbackFileName)
@@ -550,13 +587,58 @@ namespace ColorVision.UI.Desktop.Feedback
             {
                 string baseUrl = MarketplaceConfig.ServiceBaseUrl;
 
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+                var loginDialog = new FeedbackAccountLoginDialog { Owner = this };
+                if (loginDialog.ShowDialog() != true)
+                {
+                    StatusText.Text = string.Empty;
+                    return;
+                }
+
+                using var handler = new HttpClientHandler { CookieContainer = new CookieContainer() };
+                using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(10) };
+                if (!loginDialog.SubmitAnonymously)
+                {
+                    using var loginContent = new StringContent(
+                        JsonSerializer.Serialize(new
+                        {
+                            username = loginDialog.Username,
+                            password = loginDialog.Password,
+                        }),
+                        Encoding.UTF8,
+                        "application/json");
+                    using var loginResponse = await httpClient.PostAsync($"{baseUrl}/api/auth/login", loginContent);
+                    string loginBody = await loginResponse.Content.ReadAsStringAsync();
+                    if (!loginResponse.IsSuccessStatusCode)
+                    {
+                        StatusText.Text = "Web 账号登录失败，请检查账号状态或凭据。";
+                        log.Warn($"Feedback account login failed: {loginResponse.StatusCode}");
+                        return;
+                    }
+                    using JsonDocument loginDocument = JsonDocument.Parse(loginBody);
+                    JsonElement loginRoot = loginDocument.RootElement;
+                    if (loginRoot.TryGetProperty("must_change_password", out JsonElement mustChangePassword)
+                        && mustChangePassword.ValueKind == JsonValueKind.True)
+                    {
+                        StatusText.Text = "请先在网站完成密码修改，再提交反馈。";
+                        return;
+                    }
+                    if (loginRoot.TryGetProperty("csrf_token", out JsonElement csrfToken)
+                        && csrfToken.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(csrfToken.GetString()))
+                    {
+                        httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-CSRF-Token", csrfToken.GetString());
+                    }
+                }
                 using var form = new MultipartFormDataContent();
 
                 form.Add(new StringContent(message), "message");
                 form.Add(new StringContent(Environment.UserName), "userName");
+                form.Add(new StringContent(Environment.MachineName), "machineName");
                 form.Add(new StringContent(typeof(FeedbackWindow).Assembly.GetName().Version?.ToString() ?? ""), "appVersion");
                 form.Add(new StringContent($"{Environment.MachineName} / {Environment.OSVersion}"), "machineInfo");
+                form.Add(new StringContent(DateTimeOffset.UtcNow.ToString("O")), "clientSubmittedAt");
+                if (_diagnosticsCollectedAtUtc is DateTimeOffset collectedAt)
+                    form.Add(new StringContent(collectedAt.ToString("O")), "diagnosticsCollectedAt");
 
                 foreach (var attachment in _attachments)
                 {
@@ -613,7 +695,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
         private void OpenLogFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button { Tag: CollectorItem { Collector: IFeedbackLogTimeRangeCollector collector } }
+            if (sender is MenuItem { Tag: CollectorItem { Collector: IFeedbackLogTimeRangeCollector collector } }
                 && Directory.Exists(collector.LogDirectory))
             {
                 PlatformHelper.OpenFolder(collector.LogDirectory);
@@ -631,10 +713,12 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             SendButton.IsEnabled = isEnabled;
             PackLogsButton.IsEnabled = isEnabled;
-            ClearDiagnosticsButton.IsEnabled = isEnabled;
+            ClearDiagnosticsButton.IsEnabled = isEnabled && _collectorItems.Any(item => item.Collector is IFeedbackDiagnosticCleanupSource);
             AddFileButton.IsEnabled = isEnabled;
             AddScreenshotButton.IsEnabled = isEnabled;
-            CollectorsList.IsEnabled = isEnabled;
+            ConfigureDiagnosticsButton.IsEnabled = isEnabled;
+            LogRangeComboBox.IsEnabled = isEnabled && _collectorItems.Any(item => item.Collector is IFeedbackLogTimeRangeCollector);
+            OpenLogFoldersButton.IsEnabled = LogRangeComboBox.IsEnabled;
             AttachmentsList.IsEnabled = isEnabled;
         }
 
@@ -657,6 +741,6 @@ namespace ColorVision.UI.Desktop.Feedback
             this.Close();
         }
 
-        private readonly record struct LogPackageResult(string ZipPath, int TotalFiles);
+        private readonly record struct LogPackageResult(string ZipPath, int TotalFiles, DateTimeOffset CollectedAtUtc);
     }
 }

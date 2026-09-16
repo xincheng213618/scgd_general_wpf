@@ -282,6 +282,10 @@ export function getFeedbackInbox(params: {
   pageSize?: number
   status?: FeedbackInboxFilter
   query?: string
+  machine?: string
+  appVersion?: string
+  createdFrom?: string
+  createdTo?: string
 }) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
@@ -289,14 +293,18 @@ export function getFeedbackInbox(params: {
     limit: String(pageSize),
     offset: String((current - 1) * pageSize),
   })
-  if (params.status) search.set('status', params.status)
+  if (params.status && params.status !== 'all') search.set('status', params.status)
   if (params.query) search.set('query', params.query)
-  return getJson<FeedbackInboxResponse>(`/api/admin/feedback?${search.toString()}`)
+  if (params.machine) search.set('machine', params.machine)
+  if (params.appVersion) search.set('app_version', params.appVersion)
+  if (params.createdFrom) search.set('created_from', params.createdFrom)
+  if (params.createdTo) search.set('created_to', params.createdTo)
+  return getJson<FeedbackInboxResponse>(`/api/feedback?${search.toString()}`)
 }
 
 export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
   return getJson<FeedbackDetail>(
-    `/api/admin/feedback/${encodeURIComponent(feedbackId)}`,
+    `/api/feedback/${encodeURIComponent(feedbackId)}`,
     signal,
   )
 }
@@ -309,7 +317,33 @@ export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus)
 }
 
 export function feedbackAttachmentUrl(feedbackId: string, filename: string) {
-  return `/api/admin/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
+  return `/api/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
+}
+
+export async function downloadFeedbackAttachment(feedbackId: string, filename: string) {
+  const response = await fetch(feedbackAttachmentUrl(feedbackId, filename), {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/octet-stream', 'X-ColorVision-Web': '1' },
+  })
+  if (!response.ok) {
+    const payload = (response.headers.get('content-type') || '').includes('application/json')
+      ? await response.json()
+      : await response.text()
+    const detail = typeof payload === 'object' && payload && 'error' in payload
+      ? String((payload as { error?: unknown }).error)
+      : `下载失败 (${response.status})`
+    throw new Error(detail)
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  try {
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${feedbackId}__${filename}`
+    anchor.click()
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 export function createUserAccount(payload: CreateUserPayload) {

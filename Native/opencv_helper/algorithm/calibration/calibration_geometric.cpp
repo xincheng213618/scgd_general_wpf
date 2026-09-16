@@ -1195,8 +1195,8 @@ public:
 
     bool load(const json& root, std::string& error)
     {
-        if (!readInt(root, "optical_center_x", opticalCenterX_, error)
-            || !readInt(root, "optical_center_y", opticalCenterY_, error)
+        if (!readDouble(root, "optical_center_x", opticalCenterX_, error)
+            || !readDouble(root, "optical_center_y", opticalCenterY_, error)
             || !readDouble(root, "interpolate_ratio", interpolationRatio_, error)
             || !readInt(root, "coefficient_order", coefficientOrder_, error)
             || !readInt(root, "target_row", targetRows_, error)
@@ -1442,8 +1442,8 @@ private:
         });
     }
 
-    int opticalCenterX_ = 0;
-    int opticalCenterY_ = 0;
+    double opticalCenterX_ = 0.0;
+    double opticalCenterY_ = 0.0;
     double interpolationRatio_ = 0.0;
     int coefficientOrder_ = 0;
     int targetRows_ = 0;

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   feedbackAgeInfo,
+  feedbackBeijingTime,
+  feedbackDateRangeUtc,
   feedbackStatusAction,
   feedbackStatusLabels,
   nextFeedbackStatus,
@@ -43,4 +45,17 @@ test('feedback age highlights unresolved backlog without mislabeling resolved it
     { label: '已解决', color: 'green' },
   )
   assert.deepEqual(feedbackAgeInfo('new', 'unknown', now), { label: '等待时间未知' })
+})
+
+test('feedback date filters use Beijing calendar-day boundaries across UTC dates', () => {
+  assert.deepEqual(feedbackDateRangeUtc(['2026-09-16', '2026-09-16']), {
+    createdFrom: '2026-09-15T16:00:00.000Z',
+    createdTo: '2026-09-16T16:00:00.000Z',
+  })
+  assert.deepEqual(feedbackDateRangeUtc(undefined), {})
+})
+
+test('feedback receive time is rendered explicitly in Beijing time', () => {
+  assert.equal(feedbackBeijingTime('2026-09-15T16:01:02Z'), '2026-09-16 00:01:02 BJT')
+  assert.equal(feedbackBeijingTime('unknown'), '-')
 })
