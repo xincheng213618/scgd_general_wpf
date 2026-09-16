@@ -562,7 +562,7 @@ namespace ColorVision.UI.Desktop.Feedback
                 {
                     if (File.Exists(attachment.FilePath))
                     {
-                        var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(attachment.FilePath));
+                        var fileContent = new StreamContent(File.OpenRead(attachment.FilePath));
                         form.Add(fileContent, "files", attachment.FileName);
                     }
                 }

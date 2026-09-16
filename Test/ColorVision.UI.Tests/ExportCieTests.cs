@@ -87,7 +87,7 @@ public sealed class ExportCieTests
 
             VExportCIE.SaveToTifOrThrow(viewModel);
 
-            string exportedPath = Path.Combine(outputPath, "compressedSrc.tiff");
+            string exportedPath = Path.Combine(outputPath, "compressed.tiff");
             Assert.True(File.Exists(exportedPath));
             Assert.True(new FileInfo(exportedPath).Length < sourceData.Length);
             using Mat exported = Cv2.ImRead(exportedPath, ImreadModes.Unchanged);
@@ -195,7 +195,7 @@ public sealed class ExportCieTests
 
             VExportCIE.SaveToTifOrThrow(viewModel);
 
-            string exportedPath = Path.Combine(root, "preservedSrc" + extension);
+            string exportedPath = Path.Combine(root, "preserved" + extension);
             using Mat exported = Cv2.ImRead(exportedPath, ImreadModes.Unchanged);
             Assert.Equal(MatType.CV_16U, exported.Depth());
             Assert.Equal(3, exported.Channels());
@@ -226,7 +226,7 @@ public sealed class ExportCieTests
             var viewModel = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = root,
-                Name = "channels",
+                Name = "channels.v1",
                 ExportImageFormat = ImageFormat.Tiff,
                 IsExportSrc = false,
                 IsExportChannelX = false,
@@ -236,10 +236,9 @@ public sealed class ExportCieTests
 
             VExportCIE.SaveToTifOrThrow(viewModel);
 
-            string yPath = Path.Combine(root, "channels_Y.tiff");
+            string yPath = Path.Combine(root, "channels.v1.tiff");
             Assert.True(File.Exists(yPath));
-            Assert.False(File.Exists(Path.Combine(root, "channels_X.tiff")));
-            Assert.False(File.Exists(Path.Combine(root, "channels_Z.tiff")));
+            Assert.Single(Directory.EnumerateFiles(root, "*.tiff"));
             using Mat exported = Cv2.ImRead(yPath, ImreadModes.Unchanged);
             Assert.Equal(MatType.CV_32F, exported.Depth());
             Assert.Equal(1, exported.Channels());
@@ -247,6 +246,45 @@ public sealed class ExportCieTests
             float[] actual = new float[rows * cols];
             Marshal.Copy(exported.Data, actual, 0, actual.Length);
             Assert.Equal(sourceValues.Skip(rows * cols).Take(rows * cols), actual);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CvcieExportPreservesEverySuffixWhenTheNameContainsDots()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-cvcie-suffix-{Guid.NewGuid():N}");
+        string rawPath = Path.Combine(root, "source.cvraw");
+        string ciePath = Path.Combine(root, "sample.cvcie");
+        Directory.CreateDirectory(root);
+        try
+        {
+            WritePatternedRawFixture(rawPath, rows: 2, cols: 3, channels: 3);
+            WriteCieFixture(ciePath, rows: 2, cols: 3, channels: 3, srcFileName: Path.GetFileName(rawPath));
+            var viewModel = new VExportCIE(ciePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root,
+                Name = "measurement.v1",
+                IsExportSrc = true,
+                IsExportChannelX = true,
+                IsExportChannelY = true,
+                IsExportChannelZ = true,
+            };
+
+            VExportCIE.SaveToTifOrThrow(viewModel);
+
+            string[] expectedFiles =
+            [
+                "measurement.v1_Src.tiff",
+                "measurement.v1_X.tiff",
+                "measurement.v1_Y.tiff",
+                "measurement.v1_Z.tiff",
+            ];
+            Assert.All(expectedFiles, fileName => Assert.True(File.Exists(Path.Combine(root, fileName)), fileName));
+            Assert.Equal(expectedFiles.Order(), Directory.EnumerateFiles(root, "*.tiff").Select(Path.GetFileName).Order());
         }
         finally
         {
@@ -278,7 +316,7 @@ public sealed class ExportCieTests
             Assert.True(viewModel.IsCanExportSrc);
             VExportCIE.SaveToTifOrThrow(viewModel);
 
-            using Mat exported = Cv2.ImRead(Path.Combine(root, "associated_Src.tiff"), ImreadModes.Unchanged);
+            using Mat exported = Cv2.ImRead(Path.Combine(root, "associated.tiff"), ImreadModes.Unchanged);
             Assert.Equal(MatType.CV_16U, exported.Depth());
             Assert.Equal(3, exported.Channels());
             Assert.True(exported.IsContinuous());
@@ -311,7 +349,7 @@ public sealed class ExportCieTests
             Assert.Equal(100, viewModel.JpegQuality);
             VExportCIE.SaveToTifOrThrow(viewModel);
 
-            using Mat exported = Cv2.ImRead(Path.Combine(root, "jpegSrc.jpg"), ImreadModes.Unchanged);
+            using Mat exported = Cv2.ImRead(Path.Combine(root, "jpeg.jpg"), ImreadModes.Unchanged);
             Assert.Equal(MatType.CV_8U, exported.Depth());
             Assert.Equal(3, exported.Channels());
             Assert.Equal(5, exported.Rows);

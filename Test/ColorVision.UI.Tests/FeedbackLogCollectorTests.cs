@@ -23,7 +23,7 @@ namespace ColorVision.UI.Tests
             }
             """);
 
-            JObject snapshot = ConfigurationSnapshotCollector.CreateRedactedSnapshot(source);
+            JToken snapshot = FeedbackConfigurationSnapshot.CreateRedactedSnapshot(source);
 
             Assert.True(snapshot["MainWindowConfig"]!.Value<bool>("HasShownNewUserGuide"));
             Assert.True(snapshot["ColorVision.MainWindowConfig"]!.Value<bool>("HasShownNewUserGuide"));

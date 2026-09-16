@@ -13,6 +13,8 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 `Projects/ProjectARVRPro/` 是当前主力 AR/VR 专业测试项目包，运行时以 `ProjectARVRPro.dll` 加载。维护时优先看流程组、Socket 自动化、切图、Recipe 和输出格式。
 
+排查整组取图、切图和流程耗时时，可从反馈窗口收集本地运行数据库。项目加载后自动提供默认选中的“ARVRPro 测试与阶段耗时记录”，按 `ViewResultManager.SqliteDbPath` 读取结果库，默认最近 7 天，保留阶段时间、关联整组结果与完整压缩 JSON；同时默认收集“ARVRPro 流程配置”，按 `ProcessManager.GroupPersistFilePath` 读取当前已保存的 `ProjectARVRProProcessGroups.json`，经脱敏后保留流程组、切图等待、相机覆盖参数与 Recipe，不受 7 天限制。与流程节点、MQTT 及 Socket 记录的打包、时间筛选和失败说明统一见[反馈诊断](../ui-components/ColorVision.UI.Desktop.md)。导出不会触发检测或修改源数据库、源配置；现场性能结论仍需基于实际记录分析。
+
 ## 按任务查找
 
 | 现场问题 | 第一检查点 |

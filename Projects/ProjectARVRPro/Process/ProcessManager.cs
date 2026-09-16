@@ -31,7 +31,7 @@ namespace ProjectARVRPro.Process
         private static string PersistDirectory => ViewResultManager.DirectoryPath;
         private static string LegacyPersistFilePath => Path.Combine(PersistDirectory, LegacyPersistFileName);
         private static string LegacyGroupPersistFilePath => Path.Combine(PersistDirectory, LegacyGroupPersistFileName);
-        private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
+        internal static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
         private static JsonSerializerSettings ExportJsonSerializerSettings => new()
         {
             TypeNameHandling = TypeNameHandling.All,

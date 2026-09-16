@@ -119,7 +119,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         private const string PersistFileName = "PreProcessConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
-        private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
+        internal static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
 
         private static PreProcessManager _instance;
         private static readonly object _locker = new();
