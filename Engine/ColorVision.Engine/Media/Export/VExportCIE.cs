@@ -260,11 +260,28 @@ namespace ColorVision.Engine.Media
                     ? CVType.Src
                     : CVType.CIE;
 
+            string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
+                ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
+                : null;
+            int selectedImageCount = cvcie.FileExtType switch
+            {
+                CVType.Raw or CVType.Src => export.IsExportSrc ? 1 : 0,
+                CVType.CIE =>
+                    (export.IsExportSrc && associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath) ? 1 : 0) +
+                    (cvcie.Channels == 1 && export.IsExportChannelY ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelX ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelY ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
+                _ => 0,
+            };
+            bool includeImageSuffix = selectedImageCount > 1;
+
             Mat src;
             int exportedCount = 0;
             void SaveImage(Mat image, string suffix)
             {
-                SaveTo(export, image, Path.Combine(savePath, name + suffix));
+                string outputFileName = name + (includeImageSuffix ? suffix : string.Empty) + GetFileExtension(export.ExportImageFormat);
+                SaveTo(export, image, Path.Combine(savePath, outputFileName));
                 exportedCount++;
             }
 
@@ -296,7 +313,6 @@ namespace ColorVision.Engine.Media
 
                     if (export.IsExportSrc)
                     {
-                        string? associatedSourcePath = ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName);
                         if (associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath))
                         {
                             if (CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))

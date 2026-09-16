@@ -41,7 +41,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
 
         private const string PersistFileName = "PostProcessConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
-        private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
+        internal static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
 
         private static PostProcessManager _instance;
         private static readonly object _locker = new();

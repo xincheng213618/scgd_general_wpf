@@ -1,5 +1,6 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.UI;
 using cvColorVision;
@@ -22,6 +23,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
         {
             if (IsDisposed || Application.Current == null) return;
+            // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
+            if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
             try
             {

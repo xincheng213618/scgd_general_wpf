@@ -60,7 +60,15 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 
-默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。它保留 `MainWindowConfig` 等诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；原始配置文件不直接进入反馈包。
+默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。“流程前后处理配置”同时收集 `PreProcessConfig.json`、`PostProcessConfig.json`；加载 ProjectARVRPro 后，“ARVRPro 流程配置”按项目实际配置目录收集 `ProjectARVRProProcessGroups.json`，保留流程组、切图等待、相机覆盖参数与 Recipe。配置始终采集当前已保存文件，不受日志天数或文件修改时间限制，也不扫描历史备份、其他项目、认证文件或整个配置目录。
+
+配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。回归入口为 `Test/ColorVision.UI.Tests/FeedbackConfigurationSnapshotTests.cs` 和项目反馈收集器测试。
+
+本地运行数据库通过同一 `IFeedbackLogCollector` 发现链加入诊断项，默认勾选、最近 7 天，可分别选择 1／3／7／14／30 天。“流程与节点耗时记录”导出 `FlowNodeRecords.db`，“Socket 通信记录”导出 `SocketMessages.db`，“MQTT 服务通信记录”导出 `MsgRecords.db` 中按发送、接收、创建或更新时间命中的请求、响应和超时状态，保留完整正文；加载 ProjectARVRPro 后还会出现“ARVRPro 测试与阶段耗时记录”，导出 `ProjectARVRPro.db`。路径来自各模块当前配置，不依赖固定安装目录；收集器不会初始化业务管理器或迁移源数据库。
+
+数据库按记录自身的本地时间／UTC 字段筛选，保留关联运行、节点、事件、异常、模板快照和结果，因此部分关联记录可以早于所选起始时间。输出是反馈 ZIP 的 `Database/` 下可直接查询的独立 SQLite 文件，保留原字段、ID、索引及完整压缩正文，不跟随结果中的图片路径收集图片。源库以只读模式在单个读取事务中访问，包含读取快照时 WAL 中已提交的数据；不同数据库之间不提供统一事务快照，尚未落库的写入队列不属于导出范围。
+
+每个数据库附带同名 `.export.json`，记录所选时间范围（含时区）、各表条数、缺失表和失败原因。旧库缺少新诊断表时仍导出可用表并标为 `partial`；无法识别时间字段或数据库不可读时只附错误说明，不回退为全库收集。导出逻辑与模块筛选分别位于 `UI/ColorVision.Database/SqliteFeedbackCollector.cs` 和各模块的反馈收集器；回归入口为 `Test/ColorVision.UI.Tests/SqliteFeedbackCollectorTests.cs`、`Test/ProjectARVRPro.Tests/ProjectARVRProFeedbackCollectorTests.cs`。打包与发送沿用反馈窗口入口，附件上传按流读取；离线时仍可选中压缩包并打开所在目录。
 
 “清理历史文件”先要求用户确认，再调用实现 `IFeedbackDiagnosticCleanupSource` 的诊断来源。应用和服务日志保留各活动目录中最新的文件，其他来源只返回点击清理前已经存在的历史文件；删除失败的占用或无权限文件会计入跳过数量。清理仅删除来源明确声明的文件，不删除目录、配置、数据库、反馈附件或已经打包的 ZIP；共享的 WER Dump 目录中也只匹配当前 ColorVision 进程命名的 `.dmp`。
 
