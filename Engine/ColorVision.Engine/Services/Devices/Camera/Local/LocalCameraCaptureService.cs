@@ -233,6 +233,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 posBurst = 0,
                 autoExpFlag = isAutoExposure
             };
+            // Keep packed color RAW in the SDK; null selects legacy split/merge
+            // even when there are no calibration items. Other camera modes retain their existing path.
+            if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
+                param.calibrationlist = new List<CalibrationItem>();
             IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels = GetChannelConfigs(device, channelCount);
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
