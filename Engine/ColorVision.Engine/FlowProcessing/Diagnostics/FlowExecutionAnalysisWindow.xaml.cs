@@ -19,6 +19,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     public partial class FlowExecutionAnalysisWindow : Window
     {
         private const long SlowNodeThresholdMs = 30000;
+        private readonly FlowAnalysisDataSource _dataSource;
         private readonly MeasureBatchModel? _initialBatch;
         private readonly int? _initialBatchId;
         private readonly string? _initialSerialNumber;
@@ -43,6 +44,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public FlowExecutionAnalysisWindow(MeasureBatchModel batch)
             : this(batch, null, null, null, null, null, null)
+        {
+        }
+
+        public FlowExecutionAnalysisWindow(string databasePath, string sourceLabel, int batchId, string serialNumber)
+            : this(null, batchId, serialNumber, null, null, null, null, new FlowAnalysisDataSource(databasePath ?? throw new ArgumentNullException(nameof(databasePath)), sourceLabel))
         {
         }
 
@@ -93,8 +99,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string? initialNodeId,
             string? initialNodeName,
             FlowIdentity? initialFlowIdentity,
-            Func<FlowNodeRecord, bool>? focusFlowNode)
+            Func<FlowNodeRecord, bool>? focusFlowNode,
+            FlowAnalysisDataSource? dataSource = null)
         {
+            _dataSource = dataSource ?? new FlowAnalysisDataSource();
             _initialBatch = batch;
             _initialBatchId = batchId;
             _initialSerialNumber = serialNumber;
@@ -103,6 +111,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _initialFlowIdentity = initialFlowIdentity;
             _focusFlowNode = focusFlowNode;
             InitializeComponent();
+            ClearAllRecordsButton.Visibility = _dataSource.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
             this.ApplyCaption();
         }
 
@@ -139,11 +148,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private InitialRunSelection ResolveInitialRun()
         {
-            FlowNodeRecordDataBaseHelper.FlushPendingWrites(TimeSpan.FromSeconds(5));
+            _dataSource.FlushPendingWrites(TimeSpan.FromSeconds(5));
 
             FlowNodeRecord? requestedNodeRecord = null;
             if (!string.IsNullOrWhiteSpace(_initialNodeId))
-                requestedNodeRecord = FlowNodeRecordDataBaseHelper.GetLastByNodeId(_initialNodeId);
+                requestedNodeRecord = _dataSource.GetLastByNodeId(_initialNodeId);
 
             if (_initialBatch?.Id > 0)
             {
@@ -169,7 +178,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (_initialFlowIdentity is FlowIdentity flowIdentity)
             {
                 IReadOnlyList<FlowRunNavigationItem> runs = LoadFlowRunOrder(
-                    FlowNodeRecordDataBaseHelper.GetFlowRuns(flowIdentity));
+                    _dataSource.GetFlowRuns(flowIdentity));
                 FlowRunNavigationItem latestRun = runs.Count > 0
                     ? runs[^1]
                     : default;
@@ -182,7 +191,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             FlowNodeRecord? runRecord =
-                requestedNodeRecord ?? FlowNodeRecordDataBaseHelper.GetLatestRecord();
+                requestedNodeRecord ?? _dataSource.GetLatestRecord();
             return runRecord == null
                 ? new InitialRunSelection(null, string.Empty, null)
                 : new InitialRunSelection(
@@ -213,20 +222,20 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 var result = await Task.Run(() =>
                 {
-                    bool flushed = FlowNodeRecordDataBaseHelper.FlushPendingWrites(TimeSpan.FromSeconds(5));
+                    bool flushed = _dataSource.FlushPendingWrites(TimeSpan.FromSeconds(5));
                     List<FlowNodeRecord> records =
-                        FlowNodeRecordDataBaseHelper.GetByRun(batchId, serialNumber);
+                        _dataSource.GetByRun(batchId, serialNumber);
                     List<FlowNodeMessage> messages =
-                        FlowNodeRecordDataBaseHelper.GetMessagesByRun(batchId, serialNumber);
+                        _dataSource.GetMessagesByRun(batchId, serialNumber);
                     List<int> recentBatchIds =
-                        FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(500);
+                        _dataSource.GetDistinctBatchIds(500);
                     List<FlowNodeRecord> recentRecords =
-                        FlowNodeRecordDataBaseHelper.GetByBatchIds(recentBatchIds);
+                        _dataSource.GetByBatchIds(recentBatchIds);
                     FlowRunRecord? run =
-                        FlowNodeRecordDataBaseHelper.GetFlowRun(batchId, serialNumber);
+                        _dataSource.GetFlowRun(batchId, serialNumber);
                     List<FlowExecutionEvent> events = run == null
                         ? new List<FlowExecutionEvent>()
-                        : FlowNodeRecordDataBaseHelper.GetExecutionEvents(run.Id);
+                        : _dataSource.GetExecutionEvents(run.Id);
                     if (string.IsNullOrWhiteSpace(serialNumber))
                     {
                         records = records
@@ -242,7 +251,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             : records.FirstOrDefault()?.SerialNumber);
                     IReadOnlyList<FlowRunNavigationItem> sameFlowRuns =
                         LoadFlowRunOrder(
-                            FlowNodeRecordDataBaseHelper.GetSameFlowRuns(
+                            _dataSource.GetSameFlowRuns(
                                 effectiveSerialNumber));
                     IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
                         recentRecords
@@ -279,8 +288,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     result.Records,
                     result.Messages,
                     result.Events,
-                    DateTime.Now,
-                    SlowNodeThresholdMs);
+                    _dataSource.IsReadOnly ? result.Records.Select(record => record.EndTime ?? record.StartTime).DefaultIfEmpty(DateTime.MinValue).Max() : DateTime.Now,
+                    SlowNodeThresholdMs,
+                    _dataSource);
 
                 _allRuns = result.AllRuns;
                 _currentAllRunIndex = FindCurrentRunIndex(
@@ -620,6 +630,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async void ClearCurrentFlowRecords()
         {
+            if (_dataSource.IsReadOnly) return;
             if (_session == null || _isClearingAnalysisRecords)
                 return;
 
@@ -659,6 +670,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async void ClearCurrentNodeRecords(FlowNodeRecord record)
         {
+            if (_dataSource.IsReadOnly) return;
             if (_isClearingAnalysisRecords)
                 return;
             if (string.IsNullOrWhiteSpace(record.NodeId))
@@ -696,6 +708,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async void ClearAllRecordsButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_dataSource.IsReadOnly) return;
             if (_isClearingAnalysisRecords)
                 return;
 
@@ -914,14 +927,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : EngineLocalization.Get("没有下次相同流程执行");
         }
 
-        private static IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
+        private IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
             List<FlowRunRecord> flowRuns)
         {
             if (flowRuns.Count == 0)
                 return Array.Empty<FlowRunNavigationItem>();
 
             List<FlowNodeRecord> nodeRecords =
-                FlowNodeRecordDataBaseHelper.GetBySerialNumbers(
+                _dataSource.GetBySerialNumbers(
                     flowRuns.Select(run => run.SerialNumber ?? string.Empty));
             return BuildSameFlowRunOrder(flowRuns, nodeRecords);
         }
@@ -1042,7 +1055,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             HeaderTitleText.Text = EngineLocalization.Get(title);
             BreadcrumbText.Text = EngineLocalization.Get(breadcrumb);
-            HeaderSubtitleText.Text = subtitle;
+            HeaderSubtitleText.Text = _dataSource.IsReadOnly ? $"{_dataSource.Label} · 只读 · {subtitle}" : subtitle;
         }
 
         private static string BuildRunSubtitle(FlowExecutionAnalysisSession session)

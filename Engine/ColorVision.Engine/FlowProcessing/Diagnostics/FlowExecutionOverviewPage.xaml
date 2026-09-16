@@ -130,7 +130,7 @@
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         VerticalAlignment="Center">
-                <Button Content="{engine:EngineLang Key='清理当前流程'}"
+                <Button x:Name="ClearCurrentFlowButton" Content="{engine:EngineLang Key='清理当前流程'}"
                         ToolTip="{engine:EngineLang Key='清空当前流程所含节点的全部本地分析历史'}"
                         Padding="12,5"
                         Margin="0,0,8,0"
@@ -247,6 +247,7 @@
 
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding NodeName, Mode=OneWay}"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding DetailText, Mode=OneWay}"
@@ -264,12 +265,13 @@
 
                                         <TextBlock Grid.Column="2"
                                                    Text="{Binding DurationText, Mode=OneWay}"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
                                                    HorizontalAlignment="Right"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"/>
 
                                         <StackPanel Grid.Column="3" HorizontalAlignment="Right">
-                                            <TextBlock Text="{Binding ShareText, Mode=OneWay}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding ShareText, Mode=OneWay}" Foreground="{DynamicResource GlobalTextBrush}" HorizontalAlignment="Right"/>
                                             <TextBlock Text="{engine:EngineLang Key='占比'}"
                                                        HorizontalAlignment="Right"
                                                        FontSize="10"

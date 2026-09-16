@@ -117,7 +117,7 @@
                         Padding="10,5"
                         Margin="0,0,6,0"
                         Click="LocateFlowNodeButton_Click"/>
-                <Button Content="{engine:EngineLang Key='清理当前节点'}"
+                <Button x:Name="ClearCurrentNodeButton" Content="{engine:EngineLang Key='清理当前节点'}"
                         ToolTip="{engine:EngineLang Key='清空该节点的全部本地分析历史与消息'}"
                         Padding="10,5"
                         Margin="0,0,6,0"

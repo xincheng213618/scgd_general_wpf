@@ -47,6 +47,54 @@ public class LocalCameraResultTests
         }
     }
 
+    [Fact]
+    public void StreamedRawSaveMatchesLegacyCvrawBytes()
+    {
+        string parent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ColorVisionCameraTests"));
+        string root = Path.Combine(parent, Guid.NewGuid().ToString("N"));
+        string legacyFile = Path.Combine(root, "legacy.cvraw");
+        byte[] pixels = [1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0];
+        float[] exposure = [1.25f, 2.5f, 3.75f];
+        try
+        {
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2,
+                Height = 1,
+                Channels = 3,
+                SourceBpp = 16,
+                Gain = 4.5f,
+                Exposure = exposure,
+                PrimaryBufferKind = LocalFrameBufferKind.CvRaw,
+            }, pixels.Length, 0);
+            using (var lease = frame.Acquire())
+                Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length);
+
+            LocalFrameFileService.SaveCapture(frame, root, "camera", includeCie: false);
+            using var legacy = new CVCIEFile
+            {
+                Version = 1,
+                FileExtType = CVType.Raw,
+                Rows = 1,
+                Cols = 2,
+                Bpp = 16,
+                Channels = 3,
+                Gain = 4.5f,
+                Exp = exposure,
+                SrcFileName = string.Empty,
+                Data = pixels,
+            };
+            Assert.True(CVFileUtil.WriteCVRaw(legacyFile, legacy));
+
+            Assert.Equal(File.ReadAllBytes(legacyFile), File.ReadAllBytes(frame.CvRawFilePath));
+        }
+        finally
+        {
+            Assert.StartsWith(parent + Path.DirectorySeparatorChar, Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase);
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -174,6 +176,13 @@ namespace ColorVision.ImageEditor.Output
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             ArgumentNullException.ThrowIfNull(options);
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch queueStopwatch = Stopwatch.StartNew();
+            TimeSpan materializeElapsed = TimeSpan.Zero;
+            TimeSpan renderElapsed = TimeSpan.Zero;
+            TimeSpan encodeWriteElapsed = TimeSpan.Zero;
+            string outcome = "Completed";
+            SnapshotEncodeWorker.Reservation? encodeReservation = null;
             try
             {
                 bool saveRendered = !string.IsNullOrWhiteSpace(options.RenderedFileName);
@@ -192,39 +201,115 @@ namespace ColorVision.ImageEditor.Output
                     throw new ArgumentException("Rendered and source image exports must use different file paths.", nameof(options));
                 }
 
-                await SnapshotStaWorker.RunAsync(
-                    () => RenderAndSaveSnapshotExports(snapshot, options, cancellationToken),
+                encodeReservation = await SnapshotEncodeWorker.ReserveAsync(cancellationToken).ConfigureAwait(false);
+                PreparedSnapshot prepared = await SnapshotStaWorker.RunAsync(
+                    () => PrepareSnapshotExports(
+                        snapshot,
+                        options,
+                        queueStopwatch,
+                        ref materializeElapsed,
+                        ref renderElapsed,
+                        cancellationToken),
                     cancellationToken).ConfigureAwait(false);
+                Stopwatch encodeWriteStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    await encodeReservation.RunAsync(
+                        () => SavePreparedSnapshotExports(prepared, options, cancellationToken),
+                        cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    encodeWriteStopwatch.Stop();
+                    encodeWriteElapsed = encodeWriteStopwatch.Elapsed;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                outcome = "Canceled";
+                throw;
+            }
+            catch
+            {
+                outcome = "Failed";
+                throw;
             }
             finally
             {
+                queueStopwatch.Stop();
+                totalStopwatch.Stop();
+                encodeReservation?.Dispose();
                 snapshot.Dispose();
+                LogExportTiming(
+                    options.DiagnosticContext,
+                    outcome,
+                    queueStopwatch.Elapsed,
+                    materializeElapsed,
+                    renderElapsed,
+                    encodeWriteElapsed,
+                    totalStopwatch.Elapsed);
             }
         }
 
-        private static void RenderAndSaveSnapshotExports(
+        private static PreparedSnapshot PrepareSnapshotExports(
             ImageViewSnapshot snapshot,
+            ImageViewSnapshotExportOptions options,
+            Stopwatch queueStopwatch,
+            ref TimeSpan materializeElapsed,
+            ref TimeSpan renderElapsed,
+            CancellationToken cancellationToken)
+        {
+            queueStopwatch.Stop();
+            cancellationToken.ThrowIfCancellationRequested();
+            Stopwatch materializeStopwatch = Stopwatch.StartNew();
+            BitmapSource? source;
+            try
+            {
+                source = MaterializeSnapshotSource(snapshot);
+            }
+            finally
+            {
+                materializeStopwatch.Stop();
+                materializeElapsed = materializeStopwatch.Elapsed;
+            }
+
+            BitmapSource? rendered = null;
+            if (!string.IsNullOrWhiteSpace(options.RenderedFileName))
+            {
+                Stopwatch renderStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
+                    rendered = RenderSnapshot(snapshot, scene, options.RenderedOptions, cancellationToken);
+                }
+                finally
+                {
+                    renderStopwatch.Stop();
+                    renderElapsed = renderStopwatch.Elapsed;
+                }
+            }
+
+            return new PreparedSnapshot(
+                rendered,
+                string.IsNullOrWhiteSpace(options.SourceFileName) ? null : source);
+        }
+
+        private static void SavePreparedSnapshotExports(
+            PreparedSnapshot prepared,
             ImageViewSnapshotExportOptions options,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            BitmapSource? source = MaterializeSnapshotSource(snapshot);
-
             if (!string.IsNullOrWhiteSpace(options.RenderedFileName))
             {
-                DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
-                RenderAndSaveSnapshot(
-                    snapshot,
-                    scene,
-                    options.RenderedFileName,
-                    options.RenderedOptions,
-                    cancellationToken);
+                BitmapSource rendered = prepared.Rendered
+                    ?? throw new InvalidOperationException("The rendered snapshot was not prepared.");
+                SaveSnapshot(rendered, options.RenderedFileName, options.RenderedOptions, cancellationToken);
             }
 
             if (!string.IsNullOrWhiteSpace(options.SourceFileName))
             {
-                if (source == null)
-                    throw new InvalidOperationException("This snapshot does not contain original source pixels.");
+                BitmapSource source = prepared.Source
+                    ?? throw new InvalidOperationException("The source snapshot was not prepared.");
                 SaveSourceSnapshot(source, options.SourceFileName, options.SourceOptions, cancellationToken);
             }
         }
@@ -263,10 +348,9 @@ namespace ColorVision.ImageEditor.Output
             return composedScene;
         }
 
-        private static void RenderAndSaveSnapshot(
+        private static RenderTargetBitmap RenderSnapshot(
             ImageViewSnapshot snapshot,
             DrawingGroup scene,
-            string fileName,
             ImageViewSnapshotSaveOptions options,
             CancellationToken cancellationToken)
         {
@@ -297,7 +381,8 @@ namespace ColorVision.ImageEditor.Output
                 PixelFormats.Pbgra32);
             renderedBitmap.Render(visual);
             cancellationToken.ThrowIfCancellationRequested();
-            SaveSnapshot(renderedBitmap, fileName, options, cancellationToken);
+            renderedBitmap.Freeze();
+            return renderedBitmap;
         }
 
         private static (int Width, int Height) GetSnapshotOutputSize(
@@ -312,6 +397,33 @@ namespace ColorVision.ImageEditor.Output
                 Math.Max(1, (int)Math.Round(snapshot.PixelWidth / (double)normalizedDivisor, MidpointRounding.AwayFromZero)),
                 Math.Max(1, (int)Math.Round(snapshot.PixelHeight / (double)normalizedDivisor, MidpointRounding.AwayFromZero)));
         }
+
+        private static void LogExportTiming(
+            string? diagnosticContext,
+            string outcome,
+            TimeSpan queue,
+            TimeSpan materialize,
+            TimeSpan render,
+            TimeSpan encodeWrite,
+            TimeSpan total)
+        {
+            string context = string.IsNullOrWhiteSpace(diagnosticContext)
+                ? "Task=ImageSnapshotExport"
+                : diagnosticContext.Trim();
+            log.Info(string.Format(
+                CultureInfo.InvariantCulture,
+                "ImageSnapshotExportTiming {0} Status={1} QueueMs={2:F3} MaterializeMs={3:F3} RenderMs={4:F3} EncodeWriteMs={5:F3} TotalMs={6:F3} EncodeConcurrency={7}",
+                context,
+                outcome,
+                queue.TotalMilliseconds,
+                materialize.TotalMilliseconds,
+                render.TotalMilliseconds,
+                encodeWrite.TotalMilliseconds,
+                total.TotalMilliseconds,
+                SnapshotEncodeWorker.MaxConcurrency));
+        }
+
+        private sealed record PreparedSnapshot(BitmapSource? Rendered, BitmapSource? Source);
 
     }
 }

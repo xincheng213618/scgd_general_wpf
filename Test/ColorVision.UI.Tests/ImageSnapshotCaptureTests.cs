@@ -29,6 +29,35 @@ public sealed class ImageSnapshotCaptureTests
     }
 
     [Fact]
+    public async Task SnapshotEncodeWorkerUsesBoundedMtaConcurrency()
+    {
+        int active = 0;
+        int maximumActive = 0;
+        ConcurrentBag<ApartmentState> apartmentStates = [];
+
+        await Task.WhenAll(Enumerable.Range(0, 12).Select(async _ =>
+        {
+            using SnapshotEncodeWorker.Reservation reservation =
+                await SnapshotEncodeWorker.ReserveAsync(CancellationToken.None);
+            await reservation.RunAsync(() =>
+            {
+                apartmentStates.Add(Thread.CurrentThread.GetApartmentState());
+                int current = Interlocked.Increment(ref active);
+                int observed;
+                while ((observed = Volatile.Read(ref maximumActive)) < current
+                    && Interlocked.CompareExchange(ref maximumActive, current, observed) != observed)
+                {
+                }
+                Thread.Sleep(20);
+                Interlocked.Decrement(ref active);
+            }, CancellationToken.None);
+        }));
+
+        Assert.InRange(maximumActive, 1, SnapshotEncodeWorker.MaxConcurrency);
+        Assert.All(apartmentStates, state => Assert.NotEqual(ApartmentState.STA, state));
+    }
+
+    [Fact]
     public async Task DetachedCapturesKeepTheirPixelsAcrossSourceMutationAndBufferRelease()
     {
         string firstPath = Path.Combine(Path.GetTempPath(), $"ColorVision-Snapshot-{Guid.NewGuid():N}.png");

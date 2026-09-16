@@ -35,7 +35,7 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 
 左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。工作区外边距与主程序对齐，控制卡片使用紧凑间距；快门与滤色轮没有错误时折叠提示行，保留原有按钮尺寸和连接入口。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
 
-相对和绝对光谱的背景、坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。光谱色条与测量曲线配色保留。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
+相对和绝对光谱使用纯白或近黑背景，坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。单条结果把 380–780 nm 可见范围按波长颜色填充到曲线与零基线之间，并叠加与背景反差明确的轮廓线；可见范围以外仍保留测量曲线但不伪造显示色。多结果比较保持折线显示，避免彩色填充相互遮挡。颜色只用于帮助识别波段，不改变相对/绝对光谱数值和后续计算。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
 
 ## 滤光轮孔位映射
 
@@ -149,7 +149,7 @@ dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
 
-`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查字段、采样网格、格式和调用时快照。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
+`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumPlotFillTests` 覆盖填充取值、可见波段裁剪、边界插值和异常样本；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查字段、采样网格、格式和调用时快照。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
 
 ## 双通道发布（需明确发布授权）
 

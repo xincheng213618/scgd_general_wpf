@@ -63,11 +63,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 // Copy the runtime orientation exactly. Deferred/non-primary RAW stays
                 // canonical; materializing its pending mirror only in the file would
                 // lose orientation metadata and break spatial calibration after reload.
-                byte[] rawData = FlowNodeTiming.Run("CopyRawBuffer", () => lease.CopyRawToArray());
-                CVCIEFile rawFile = BuildFileInfo(lease, CVType.Raw, rawData, string.Empty, lease.Metadata.SourceBpp);
+                CVCIEFile rawFile = BuildFileInfo(
+                    lease,
+                    CVType.Raw,
+                    Array.Empty<byte>(),
+                    string.Empty,
+                    lease.Metadata.SourceBpp);
                 FlowNodeTiming.Run("WriteRawFile", () =>
                 {
-                    if (!CVFileUtil.WriteCVRaw(rawPath, rawFile)) throw new IOException($"保存 CVRAW 失败：{rawPath}");
+                    if (!CVFileUtil.WriteCVRaw(
+                        rawPath,
+                        rawFile,
+                        lease.RawLength,
+                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength)))
+                    {
+                        throw new IOException($"保存 CVRAW 失败：{rawPath}");
+                    }
                 });
                 frame.CvRawFilePath = rawPath;
                 generatedRawPath = rawPath;
@@ -282,6 +293,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Marshal.Copy(buffer, 0, IntPtr.Add(destination, offset), read);
                 offset += read;
             }
+        }
+
+        private static unsafe void WriteUnmanagedBuffer(Stream stream, IntPtr source, int length)
+        {
+            if (source == IntPtr.Zero || length <= 0)
+                throw new ArgumentException("The source image buffer is empty.", nameof(source));
+
+            // FileStream consumes this span synchronously. SaveCapture keeps the frame
+            // lease alive for the entire call, so the backing pointer cannot be freed
+            // before the payload is completely written.
+            stream.Write(new ReadOnlySpan<byte>(source.ToPointer(), length));
         }
     }
 }

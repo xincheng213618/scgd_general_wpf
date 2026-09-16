@@ -428,7 +428,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 FlowNodeMessagePayloads payloads = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetMessagePayloads(message.Id));
+                    () => _session.DataSource.GetMessagePayloads(message.Id));
                 if (!ReferenceEquals(MessageListView.SelectedItem, message))
                     return;
 

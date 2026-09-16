@@ -2380,7 +2380,12 @@ namespace ProjectARVRPro
                 exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
-                    ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression));
+                    ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
+                    ProjectImageExportService.BuildDiagnosticContext(
+                        result.SN,
+                        result.Id,
+                        result.BatchId,
+                        result.Model));
 
                 exportStopwatch = Stopwatch.StartNew();
                 ImageViewSnapshot ownedSnapshot = snapshot;

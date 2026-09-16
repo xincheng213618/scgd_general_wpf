@@ -1009,7 +1009,6 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Bottom.Max = 780;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
-            AddSpectrumColorBar(wpfplot1);
         }
 
         private void EnsureAbsoluteSpectrumPlotInitialized()
@@ -1033,7 +1032,6 @@ namespace Spectrum
             wpfplot2.Plot.Axes.Bottom.Max = 780;
             wpfplot2.Plot.Axes.Left.Min = -0.05;
             wpfplot2.Plot.Axes.Left.Max = 1;
-            AddSpectrumColorBar(wpfplot2);
             absoluteSpectrumPlotInitialized = true;
         }
 
@@ -1610,6 +1608,7 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Left.Max = 1;
 
             Scatter selectedPlot = selectedResult.ScatterPlot;
+            ClearSpectrumFill(wpfplot1);
             if (MulComparison)
             {
                 if (LastMulSelectComparsion != null)
@@ -1629,11 +1628,12 @@ namespace Spectrum
             else
             {
                 wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                selectedPlot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                wpfplot1.Plot.Remove(selectedPlot);
+                AddSpectrumFill(wpfplot1, selectedResult.SpectralDatas, useAbsoluteSpectrum: false);
+                selectedPlot.Color = spectrumCurveColor;
                 selectedPlot.LineWidth = 1;
                 selectedPlot.MarkerSize = 1;
-                if (!wpfplot1.Plot.PlottableList.Contains(selectedPlot))
-                    wpfplot1.Plot.PlottableList.Add(selectedPlot);
+                wpfplot1.Plot.PlottableList.Add(selectedPlot);
                 LastMulSelectComparsion = selectedPlot;
             }
 
@@ -1652,6 +1652,7 @@ namespace Spectrum
             wpfplot2.Plot.Axes.Left.Max = double.NaN;
 
             Scatter selectedPlot = selectedResult.AbsoluteScatterPlot;
+            ClearSpectrumFill(wpfplot2);
             if (MulComparison)
             {
                 if (LastMulSelectComparsion != null)
@@ -1671,11 +1672,12 @@ namespace Spectrum
             else
             {
                 wpfplot2.Plot.Remove(LastMulSelectComparsion);
-                selectedPlot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                wpfplot2.Plot.Remove(selectedPlot);
+                AddSpectrumFill(wpfplot2, selectedResult.SpectralDatas, useAbsoluteSpectrum: true);
+                selectedPlot.Color = spectrumCurveColor;
                 selectedPlot.LineWidth = 1;
                 selectedPlot.MarkerSize = 1;
-                if (!wpfplot2.Plot.PlottableList.Contains(selectedPlot))
-                    wpfplot2.Plot.PlottableList.Add(selectedPlot);
+                wpfplot2.Plot.PlottableList.Add(selectedPlot);
                 LastMulSelectComparsion = selectedPlot;
             }
 
@@ -1754,28 +1756,37 @@ namespace Spectrum
         private static void ClearSpectrumSeries(ScottPlot.WPF.WpfPlot plotControl)
         {
             var dataPlots = plotControl.Plot.PlottableList
-                .Where(plot => plot is Scatter or Marker)
+                .Where(plot => plot is Scatter or Marker or Polygon)
                 .ToArray();
             foreach (var plot in dataPlots)
                 plotControl.Plot.Remove(plot);
         }
 
-        /// <summary>
-        /// Adds a visible spectrum rainbow color bar to the bottom of the chart.
-        /// Uses ScottPlot Rectangle annotations for each wavelength step.
-        /// </summary>
-        private void AddSpectrumColorBar(ScottPlot.WPF.WpfPlot plotControl)
+        private static void ClearSpectrumFill(ScottPlot.WPF.WpfPlot plotControl)
         {
-            // Add colored rectangles from 380 to 780 nm
-            for (int wl = 380; wl < 780; wl += 2)
-            {
-                var color = WavelengthToColor.Convert(wl);
-                var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
+            Polygon[] fills = plotControl.Plot.PlottableList.OfType<Polygon>().ToArray();
+            foreach (Polygon fill in fills)
+                plotControl.Plot.Remove(fill);
+        }
 
-                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.01, -0.06);
-                rect.FillColor = scottColor;
-                rect.LineColor = scottColor;
-                rect.LineWidth = 0;
+        private static void AddSpectrumFill(
+            ScottPlot.WPF.WpfPlot plotControl,
+            IReadOnlyList<SpectralData> samples,
+            bool useAbsoluteSpectrum)
+        {
+            foreach (SpectrumFillSegment segment in SpectrumPlotFill.CreateSegments(samples, useAbsoluteSpectrum))
+            {
+                ScottPlot.Color fillColor = new(segment.Color.R, segment.Color.G, segment.Color.B, 220);
+                Polygon fill = plotControl.Plot.Add.Polygon([
+                    new Coordinates(segment.StartWavelength, 0),
+                    new Coordinates(segment.StartWavelength, segment.StartValue),
+                    new Coordinates(segment.EndWavelength, segment.EndValue),
+                    new Coordinates(segment.EndWavelength, 0),
+                ]);
+                fill.FillColor = fillColor;
+                fill.LineColor = fillColor;
+                fill.LineWidth = 0;
+                fill.MarkerSize = 0;
             }
         }
 

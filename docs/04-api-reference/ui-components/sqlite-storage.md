@@ -3,15 +3,15 @@ knowledge_id: "ui.sqlite-storage"
 knowledge_type: "topic"
 status: "current"
 summary: "Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。"
-aliases: ["SQLite文本压缩", "gzip正文", "明文迁移", "数据库压缩", "数据库文件大小", "消息库维护", "备份恢复", "停止写入", "VACUUM", "WAL", "quick_check", "GzipTextPayloadCodec", "SqliteGzipTextPayloadStore", "SqliteGzipTextMigration", "SqliteFileMaintenance", "SocketMessagePayloadStorage", "SocketMessagesSqliteCleanupProvider", "FlowNodeMessagePayloadStorage", "FlowDiagnosticsSqliteCleanupProvider"]
-code_paths: ["UI/ColorVision.Database/GzipTextPayloadCodec.cs", "UI/ColorVision.Database/SqliteGzipTextPayloadStore.cs", "UI/ColorVision.Database/SqliteGzipTextMigration.cs", "UI/ColorVision.Database/SqliteFileMaintenance.cs", "UI/ColorVision.SocketProtocol/SocketMessagePayloadStorage.cs", "Engine/ColorVision.Engine/Mysql/SocketMessagesSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeMessagePayloadStorage.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/LegacyFlowNodeMessagePayloadMigration.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsMaintenanceGate.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SqliteGzipTextMigrationTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/FlowNodeMessageStorageTests.cs", "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs"]
+aliases: ["ReadOnlySqliteDatabase","现场SQLite只读","SQLite文本压缩", "gzip正文", "明文迁移", "数据库压缩", "数据库文件大小", "消息库维护", "备份恢复", "停止写入", "VACUUM", "WAL", "quick_check", "GzipTextPayloadCodec", "SqliteGzipTextPayloadStore", "SqliteGzipTextMigration", "SqliteFileMaintenance", "SocketMessagePayloadStorage", "SocketMessagesSqliteCleanupProvider", "FlowNodeMessagePayloadStorage", "FlowDiagnosticsSqliteCleanupProvider"]
+code_paths: ["UI/ColorVision.Database/ReadOnlySqliteDatabase.cs","UI/ColorVision.Database/GzipTextPayloadCodec.cs", "UI/ColorVision.Database/SqliteGzipTextPayloadStore.cs", "UI/ColorVision.Database/SqliteGzipTextMigration.cs", "UI/ColorVision.Database/SqliteFileMaintenance.cs", "UI/ColorVision.SocketProtocol/SocketMessagePayloadStorage.cs", "Engine/ColorVision.Engine/Mysql/SocketMessagesSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeMessagePayloadStorage.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/LegacyFlowNodeMessagePayloadMigration.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsSqliteCleanupProvider.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowDiagnosticsMaintenanceGate.cs", "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs","Test/ColorVision.UI.Tests/SqliteGzipTextMigrationTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/FlowNodeMessageStorageTests.cs", "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs"]
 related: ["ui.database", "ui.database-query", "engine.database-maintenance", "ui.socket-protocol", "operations.data", "flow.session"]
 ---
 
 # SQLite 正文存储、迁移与文件维护
 
-`UI/ColorVision.Database` 的四个工具负责压缩正文和 SQLite 文件操作，不拥有 Socket 服务或 Flow 执行生命周期。正常读写、旧 TEXT 迁移、完整数据库备份、释放文件空间是不同操作；有 gzip 列不等于旧数据已经迁移，迁移异常也不等于全库未改。
+`UI/ColorVision.Database` 的基础工具负责压缩正文和 SQLite 文件操作，不拥有 Socket 服务或 Flow 执行生命周期。正常读写、旧 TEXT 迁移、完整数据库备份、释放文件空间是不同操作；有 gzip 列不等于旧数据已经迁移，迁移异常也不等于全库未改。
 
 本页解释代码契约，不授权执行迁移、清理、复制用户数据库或启动业务。真实维护须先确认数据所有者、目标文件、停写和连接释放条件、可用空间及恢复方案。数据库位置见[数据所有者](../../01-user-guide/data-management/README.md)，整表删除入口另见[通用查询](./database-query.md)。
 
@@ -36,6 +36,8 @@ related: ["ui.database", "ui.database-query", "engine.database-maintenance", "ui
 表名和列名只允许 ASCII 字母、数字、下划线，并用双引号包围；值通过参数传递。存在的列仍需由 schema owner 保证类型：读取对非 `byte[]` 的值使用 `as byte[]`，不能宣称所有错误列类型都会明确报错。调用方现有事务可以包含 `Save`，但工具不会自动把实体插入、正文更新和其它库写入合成一个事务。
 
 Socket 正常 `Load` 和 Flow 的 `LoadPayloads` 都只读压缩列；实体列表不负责加载完整正文。混有旧 TEXT 的库需要显式迁移，不能承诺正常读取时明文与 gzip 自动混读或双写。业务层按 ID 取全文与发送/显示的责任见 [Socket 消息记录](./ColorVision.SocketProtocol.md)。
+
+现场资料的 `ReadOnlySqliteDatabase` 是独立读取路径：以 SQLite `Mode=ReadOnly` 和 `query_only` 打开指定现有文件，不迁移、不创建数据库、不执行应用初始化。它按实际表结构将缺失的可选实体列投影为 NULL，由调用方声明必要列；正文按单条 ID 读取，优先 gzip，兼容旧 TEXT。该兼容行为只用于离线诊断，不改变正常运行库的迁移要求；需要多次查询共享快照时使用延迟只读事务，不能使用默认申请写锁的 SQLite 事务。
 
 ## 旧 TEXT 迁移：可重跑，但不是全库原子操作
 

@@ -5779,6 +5779,8 @@
       "status": "current",
       "summary": "Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。",
       "aliases": [
+        "离线节点分析",
+        "FlowAnalysisDataSource",
         "流程运行诊断",
         "流程 Incident 管理",
         "复制稳定标识",
@@ -5809,6 +5811,7 @@
         "FlowNodeTiming"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowAnalysisDataSource.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs",
@@ -8967,6 +8970,9 @@
       "status": "current",
       "summary": "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。",
       "aliases": [
+        "现场数据库离线查看",
+        "打开现场数据",
+        "ArvrOfflineDataSource",
         "ARVR 历史原图删了还能看结果吗",
         "保存结果图会不会重复画标记",
         "ProjectARVRPro",
@@ -8979,6 +8985,7 @@
         "ARVR 项目"
       ],
       "code_paths": [
+        "Projects/ProjectARVRPro/Offline",
         "Projects/ProjectARVRPro/ARVRWindow.xaml",
         "Projects/ProjectARVRPro/TestResultViewWindow.xaml",
         "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml",
@@ -8999,6 +9006,7 @@
         "Projects/ProjectARVRPro/ProjectARVRProConfig.cs"
       ],
       "test_paths": [
+        "Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs",
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
         "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs",
         "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs",
@@ -11569,6 +11577,8 @@
       "status": "current",
       "summary": "Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。",
       "aliases": [
+        "ReadOnlySqliteDatabase",
+        "现场SQLite只读",
         "SQLite文本压缩",
         "gzip正文",
         "明文迁移",
@@ -11590,6 +11600,7 @@
         "FlowDiagnosticsSqliteCleanupProvider"
       ],
       "code_paths": [
+        "UI/ColorVision.Database/ReadOnlySqliteDatabase.cs",
         "UI/ColorVision.Database/GzipTextPayloadCodec.cs",
         "UI/ColorVision.Database/SqliteGzipTextPayloadStore.cs",
         "UI/ColorVision.Database/SqliteGzipTextMigration.cs",
@@ -11604,6 +11615,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs"
       ],
       "test_paths": [
+        "Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs",
         "Test/ColorVision.UI.Tests/SqliteGzipTextMigrationTests.cs",
         "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowNodeMessageStorageTests.cs",

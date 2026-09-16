@@ -23,6 +23,21 @@ namespace ColorVision.ImageEditor.Output
             await operation.Task.ConfigureAwait(false);
         }
 
+        internal static async Task<TResult> RunAsync<TResult>(
+            Func<TResult> action,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Dispatcher dispatcher = await DispatcherTask.ConfigureAwait(false);
+            DispatcherOperation<TResult> operation = dispatcher.InvokeAsync(
+                action,
+                DispatcherPriority.Normal,
+                cancellationToken);
+            return await operation.Task.ConfigureAwait(false);
+        }
+
         private static Task<Dispatcher> StartDispatcher()
         {
             TaskCompletionSource<Dispatcher> completion = new(

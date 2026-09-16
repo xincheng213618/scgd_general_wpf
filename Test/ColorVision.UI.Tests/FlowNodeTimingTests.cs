@@ -37,6 +37,7 @@ public class FlowNodeTimingTests
             var stages = timing.Finish().Stages;
             Assert.Equal("Completed", Assert.Single(stages, stage => stage.Name == "WriteRawFile").Status);
             Assert.Equal("Completed", Assert.Single(stages, stage => stage.Name == "ReadImageBuffer").Status);
+            Assert.DoesNotContain(stages, stage => stage.Name == "CopyRawBuffer");
             Assert.DoesNotContain(stages, stage => stage.Name == "CopyImageBuffer");
         }
         finally

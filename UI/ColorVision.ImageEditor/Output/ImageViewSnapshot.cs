@@ -47,6 +47,7 @@ namespace ColorVision.ImageEditor
         public ImageViewSnapshotSaveOptions RenderedOptions { get; init; } = ImageViewSnapshotSaveOptions.Default;
         public string? SourceFileName { get; init; }
         public ImageViewSourceSaveOptions SourceOptions { get; init; } = ImageViewSourceSaveOptions.Default;
+        public string? DiagnosticContext { get; init; }
     }
 
     /// <summary>

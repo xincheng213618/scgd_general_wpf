@@ -25,9 +25,12 @@ namespace ProjectARVRPro
         private const int FlowPageSize = 1000;
         private const int SuggestionDisplayLimit = 20;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
-        private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
-        private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
-        private readonly ResultStatisticsWindowState _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
+        private readonly ViewResultManager? _viewResultManager;
+        private readonly ResultStatisticsDataStore _statisticsStore;
+        private readonly ResultStatisticsWindowState _windowState;
+        private readonly Offline.ArvrOfflineDataSource? _offlineSource;
+        private bool _openingOffline;
+        private bool _closed;
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
         private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
         private string[] _snSuggestions = [];
@@ -58,9 +61,34 @@ namespace ProjectARVRPro
         private string _flowStatus = string.Empty;
         private string _flowNameIndexStatus = string.Empty;
 
-        public CycleTimeStatisticsWindow()
+        public CycleTimeStatisticsWindow() : this(null) { }
+
+        public CycleTimeStatisticsWindow(Offline.ArvrOfflineDataSource? offlineSource)
         {
+            _offlineSource = offlineSource;
+            if (offlineSource == null)
+            {
+                _viewResultManager = ViewResultManager.GetInstance();
+                _statisticsStore = ResultStatisticsDataStore.Instance;
+                _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
+            }
+            else
+            {
+                _statisticsStore = offlineSource.Statistics;
+                _windowState = new ResultStatisticsWindowState
+                {
+                    HomeAnchorDate = offlineSource.LatestDate, RecordAnchorDate = offlineSource.LatestDate,
+                    FlowAnchorDate = offlineSource.LatestDate, SelectedTabIndex = 1,
+                };
+            }
             InitializeComponent();
+            if (offlineSource != null)
+            {
+                Title = $"结果统计 · {offlineSource.Label} · 只读";
+                DataSourceText.Text = offlineSource.Description;
+                DataSourceText.ToolTip = $"来源：{offlineSource.SourcePath}\n读取副本：{offlineSource.DirectoryPath}\n各数据库是独立快照；图片未随记录自动导入。";
+                OfflineMessagesButton.Visibility = Visibility.Visible;
+            }
             RestoreSearchState();
             RecordDataGrid.ItemsSource = _recordRows;
             FlowDataGrid.ItemsSource = _flowRows;
@@ -78,6 +106,45 @@ namespace ProjectARVRPro
 
         private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
         private FlowExecutionRecordRow? SelectedFlowRow => FlowDataGrid.SelectedItem as FlowExecutionRecordRow;
+
+        private async void OpenOfflineData_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog { Title = "打开现场数据", Filter = "反馈包或 ARVRPro 数据库|*.zip;*.db|所有文件|*.*", CheckFileExists = true };
+            if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FileName);
+        }
+
+        private async void OpenOfflineFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog { Title = "选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹" };
+            if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FolderName);
+        }
+
+        private async Task OpenOfflineAsync(string path)
+        {
+            if (_openingOffline || _closed) return;
+            _openingOffline = true;
+            string previous = DataSourceText.Text;
+            DataSourceText.Text = "正在准备现场只读副本…";
+            try
+            {
+                Offline.ArvrOfflineDataSource source = await Task.Run(() => Offline.ArvrOfflineDataSource.Open(path));
+                if (_closed) return;
+                new CycleTimeStatisticsWindow(source) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            }
+            catch (Exception ex) { if (!_closed) MessageBox.Show(this, $"打开现场数据失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+            finally { DataSourceText.Text = previous; _openingOffline = false; }
+        }
+
+        private void OfflineMessages_Click(object sender, RoutedEventArgs e)
+        {
+            if (_offlineSource == null) return;
+            if (SelectedRecordRow is not ResultStatisticsRecordRow row)
+            {
+                MessageBox.Show(this, "请先在测试记录中选择一轮测试。", "现场消息");
+                return;
+            }
+            new Offline.OfflineMessagesWindow(_offlineSource, row) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -1207,7 +1274,7 @@ namespace ProjectARVRPro
                     return;
                 }
 
-                bool useLegacy = _viewResultManager.Config.UseLegacyARVROutput;
+                bool useLegacy = _viewResultManager?.Config.UseLegacyARVROutput ?? false;
                 ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (useLegacy && result == null)
                 {
@@ -1392,10 +1459,10 @@ namespace ProjectARVRPro
 
             var openFolderCommand = new RelayCommand(
                 _ => OpenFolderAndSelectFile(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
+                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
             var batchHistoryCommand = new RelayCommand(
                 _ => OpenBatchDataHistory(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var flowExecutionAnalysisCommand = new RelayCommand(
                 _ => OpenFlowExecutionAnalysis(),
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
@@ -1427,12 +1494,14 @@ namespace ProjectARVRPro
 
         private void OpenFolderAndSelectFile()
         {
+            if (_offlineSource != null) return;
             if (DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrWhiteSpace(item.FileName))
                 PlatformHelper.OpenFolderAndSelectFile(item.FileName);
         }
 
         private void OpenBatchDataHistory()
         {
+            if (_offlineSource != null) return;
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
@@ -1448,8 +1517,23 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private void OpenFlowExecutionAnalysis()
+        private async void OpenFlowExecutionAnalysis()
         {
+            if (_offlineSource != null)
+            {
+                if (DetailList.SelectedItem is not ProjectARVRReuslt result) return;
+                try
+                {
+                    string serial = await Task.Run(() => _offlineSource.ResolveFlowSerialNumber(result));
+                    if (_closed) return;
+                    new FlowExecutionAnalysisWindow(_offlineSource.FlowDatabasePath!, _offlineSource.Label, result.BatchId, serial)
+                    {
+                        Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    }.Show();
+                }
+                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, "现场节点分析", MessageBoxButton.OK, MessageBoxImage.Information); }
+                return;
+            }
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
@@ -1466,6 +1550,7 @@ namespace ProjectARVRPro
 
         private MeasureBatchModel? GetSelectedMeasureBatch()
         {
+            if (_offlineSource != null) return null;
             if (DetailList.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
                 return null;
 
@@ -1499,6 +1584,7 @@ namespace ProjectARVRPro
 
         protected override void OnClosed(EventArgs e)
         {
+            _closed = true;
             _windowLoaded = false;
             CaptureSearchState();
             ++_homeLoadVersion;

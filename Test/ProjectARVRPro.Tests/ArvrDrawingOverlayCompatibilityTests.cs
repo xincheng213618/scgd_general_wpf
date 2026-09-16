@@ -388,7 +388,7 @@ public sealed class ArvrDrawingOverlayCompatibilityTests
         }
     }
 
-    private static void RunOnStaThread(Action action)
+    internal static void RunOnStaThread(Action action)
     {
         Dispatcher dispatcher = WpfDispatcher.Value;
         if (dispatcher.CheckAccess())

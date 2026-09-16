@@ -34,6 +34,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             CanLocate = canLocate;
 
             InitializeComponent();
+            ClearCurrentFlowButton.Visibility = _session.DataSource.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
             DurationListBox.ItemsSource = _session.DurationItems;
             PopulateHeader();
             PopulateSummary();
