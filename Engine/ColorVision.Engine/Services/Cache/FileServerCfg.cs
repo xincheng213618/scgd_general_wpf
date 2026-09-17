@@ -23,13 +23,13 @@ namespace ColorVision.Engine.Cache
         /// <summary>
         /// 端口地址
         /// </summary>
-        [LocalizedDisplayName(nameof(Resources.PortAddress))]
+        [Browsable(false), LocalizedDisplayName(nameof(Resources.PortAddress))]
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; OnPropertyChanged(); } }
         private string _Endpoint = "127.0.0.1";
         /// <summary>
         /// 端口范围
         /// </summary>
-        [LocalizedDisplayName(nameof(Resources.PortRange))]
+        [Browsable(false), LocalizedDisplayName(nameof(Resources.PortRange))]
         public string PortRange { get => _PortRange; set { _PortRange = value; OnPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600;  return string.Format("{0}-{1}", fromPort, fromPort + 5);  }))();
 

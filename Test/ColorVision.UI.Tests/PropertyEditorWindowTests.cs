@@ -15,6 +15,37 @@ namespace ColorVision.UI.Tests;
 public sealed class PropertyEditorWindowTests
 {
     [Fact]
+    public void FileServerCfg_HidesLegacyTransportFieldsButKeepsThemSerializable()
+    {
+        Type configType = typeof(ColorVision.Engine.Cache.FileServerCfg);
+        string[] editableProperties = PropertyEditorHelper.GetEditableProperties(configType).Select(property => property.Name).ToArray();
+
+        Assert.Contains(nameof(ColorVision.Engine.Cache.FileServerCfg.DataBasePath), editableProperties);
+        Assert.Contains(nameof(ColorVision.Engine.Cache.FileServerCfg.SaveDays), editableProperties);
+        Assert.DoesNotContain(nameof(ColorVision.Engine.Cache.FileServerCfg.Endpoint), editableProperties);
+        Assert.DoesNotContain(nameof(ColorVision.Engine.Cache.FileServerCfg.PortRange), editableProperties);
+
+        string json = Newtonsoft.Json.JsonConvert.SerializeObject(new ColorVision.Engine.Cache.FileServerCfg());
+        Assert.Contains("\"Endpoint\":", json, StringComparison.Ordinal);
+        Assert.Contains("\"PortRange\":", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PhysicalCameraFileService_HidesLocalTransportFieldsButKeepsThemSerializable()
+    {
+        Type configType = typeof(ColorVision.Engine.Services.PhyCameras.Configs.FileSeviceConfig);
+        string[] editableProperties = PropertyEditorHelper.GetEditableProperties(configType).Select(property => property.Name).ToArray();
+
+        Assert.Contains(nameof(ColorVision.Engine.Services.PhyCameras.Configs.FileSeviceConfig.FileBasePath), editableProperties);
+        Assert.DoesNotContain(nameof(ColorVision.Engine.Services.PhyCameras.Configs.FileSeviceConfig.Endpoint), editableProperties);
+        Assert.DoesNotContain(nameof(ColorVision.Engine.Services.PhyCameras.Configs.FileSeviceConfig.PortRange), editableProperties);
+
+        string json = Newtonsoft.Json.JsonConvert.SerializeObject(new ColorVision.Engine.Services.PhyCameras.Configs.FileSeviceConfig());
+        Assert.Contains("\"Endpoint\":\"127.0.0.1\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"PortRange\":", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Title_UsesEditResourceAndTypeNameWhenNoDisplayNameExists()
     {
         WpfTestHost.Invoke(() =>

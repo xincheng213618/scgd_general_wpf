@@ -6911,9 +6911,12 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
-        "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs"
+        "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs"
+      ],
       "related": [
         "engine.devices",
         "operations.device-configuration",

@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。"
 aliases: ["文件服务器", "FileServer", "DeviceFileServer", "ConfigFileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/FileServer", "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs"]
-test_paths: []
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/FileServer", "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs"]
 related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data", "delivery.file-transfer"]
 ---
 
@@ -42,6 +42,8 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 
 `ConfigFileServer` 本身不实现 `IFileServerCfg`；基类 `UpdateFilecfgCommand` 的可执行条件正是这个接口，不能因设备名含 FileServer 就推断它提供“文件保存路径”编辑入口。实际数据保存、保留或清理行为应沿配置的消费方核对，见[数据管理](../data-management/README.md)。
 
+`FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。当前部署按本机文件路径运行，校正资源体积也不适合通过旧文件服务共享，因此属性编辑器以及第三方算法的手写编辑窗口不再显示这两个字段。但属性仍保留默认值并参与 JSON 序列化；不要用 `JsonIgnore` 或直接删除字段代替界面隐藏，否则旧服务收到缺失的 `Endpoint` 后可能无法完成设备初始化。物理相机的 `FileSeviceConfig` 是另一套配置，其本机部署默认值仍按 `FileBasePath`、`Endpoint = 127.0.0.1` 与 `PortRange` 序列化下发；界面只显示文件路径，不显示两个旧传输字段。
+
 配置导出会写入所选本地 `.config` 文件；导入读取 JSON 后复制进当前配置并调用 `Save()`，因此还可能请求远端重启。只读诊断不执行导入、导出或真实上传来试探权限。
 
 ## 消息、失败与生命周期缺口
@@ -52,7 +54,7 @@ DService 使用通用 `MQTTServiceBase`，本类没有安装文件专属 `MsgRet
 
 ## 验证入口与未覆盖范围
 
-本页 `test_paths` 为空：未声明专用的 FileServer 工厂过滤、配置应用、文件协议或生命周期自动化覆盖。排查首先只读核对：
+现有 UI 自动化覆盖 `FileServerCfg` 与物理相机 `FileSeviceConfig` 的旧传输字段不进入属性编辑器、但仍参与 JSON 序列化；FileServer 工厂过滤、配置应用、文件协议或生命周期仍没有专用自动化覆盖。排查首先只读核对：
 
 - 默认类型树过滤、数据库资源的类型/父子关系及真正的实例创建入口。
 - 当前 `ConfigFileServer` 与设备资源中的代码、主题、Endpoint 和路径是否对应目标服务。

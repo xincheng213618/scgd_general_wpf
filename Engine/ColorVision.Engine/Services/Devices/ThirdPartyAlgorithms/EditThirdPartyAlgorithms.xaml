@@ -43,14 +43,6 @@
                             <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <TextBlock  Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
-                            <TextBox  x:Name="TextBox_Endpoint" Text="{Binding FileServerCfg.Endpoint}"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="{x:Static properties:Resources.PortRange}" Width="120"/>
-                            <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
                             <TextBlock Text="{x:Static properties:Resources.RetentionDays}" Width="120"/>
                             <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
                         </DockPanel>
