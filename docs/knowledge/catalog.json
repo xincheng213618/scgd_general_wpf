@@ -5419,7 +5419,8 @@
         "ColorVision/StartWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"
+        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs",
+        "Test/ColorVision.UI.Tests/RCConnectionWaiterTests.cs"
       ],
       "related": [
         "engine.index",

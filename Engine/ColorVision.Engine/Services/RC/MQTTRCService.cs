@@ -123,14 +123,22 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private DateTime TokenReceivedTime = DateTime.MinValue;
         private readonly object _registLock = new object();
+        private readonly object _reconnectLock = new object();
         private readonly PendingServiceUpdateBuffer _pendingServiceUpdates = new();
         private DateTime LastRegistTime = DateTime.MinValue;
         private static readonly TimeSpan AutoRegistInterval = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan RegistrationResponseTimeout = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan ReconnectRegistrationDelay = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan MaxServerSilence = TimeSpan.FromSeconds(10);
+        private const int KeepAliveDueTimeMilliseconds = 1000;
+        private const int KeepAlivePeriodMilliseconds = 2000;
+        private CancellationTokenSource? _reconnectRegistrationCancellation;
+        private int _disposed;
 
         public event EventHandler RCServiceConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); RCServiceConnectChanged?.Invoke(this, EventArgs.Empty); } }
-        private bool _IsConnect ;
+        public bool IsConnect => Volatile.Read(ref _isConnect) != 0;
+        private int _isConnect;
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
 
@@ -145,15 +153,74 @@ namespace ColorVision.Engine.Services.RC
             ServiceName = Guid.NewGuid().ToString();
             MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-            MQTTControl.MQTTConnectChanged += (s,e) =>
+            MQTTControl.MQTTConnectChanged += MQTTControl_MQTTConnectChanged;
+            Timer = new Timer(e => KeepLive(), null, KeepAliveDueTimeMilliseconds, KeepAlivePeriodMilliseconds);
+        }
+
+        private void MQTTControl_MQTTConnectChanged(object? sender, EventArgs e)
+        {
+            if (!MQTTControl.IsConnect)
             {
-                Task.Run(async () =>
+                CancelScheduledReRegistration();
+                SetDisconnectedState();
+                return;
+            }
+
+            ScheduleReRegistration();
+        }
+
+        private void ScheduleReRegistration()
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
+            CancellationTokenSource cancellation = new();
+            CancellationTokenSource? previous;
+            lock (_reconnectLock)
+            {
+                previous = _reconnectRegistrationCancellation;
+                _reconnectRegistrationCancellation = cancellation;
+            }
+
+            previous?.Cancel();
+            _ = ReRegisterAfterConnectionAsync(cancellation);
+        }
+
+        private async Task ReRegisterAfterConnectionAsync(CancellationTokenSource cancellation)
+        {
+            try
+            {
+                await Task.Delay(ReconnectRegistrationDelay, cancellation.Token);
+                if (MQTTControl.IsConnect && Volatile.Read(ref _disposed) == 0)
+                    ReRegist();
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                lock (_reconnectLock)
                 {
-                    await Task.Delay(1000);
-                    GetInstance().ReRegist();
-                });
-            };
-            Timer = new Timer(e=> KeepLive(),null,1000,2000);
+                    if (ReferenceEquals(_reconnectRegistrationCancellation, cancellation))
+                        _reconnectRegistrationCancellation = null;
+                }
+                cancellation.Dispose();
+            }
+        }
+
+        private void CancelScheduledReRegistration()
+        {
+            CancellationTokenSource? cancellation;
+            lock (_reconnectLock)
+            {
+                cancellation = _reconnectRegistrationCancellation;
+                _reconnectRegistrationCancellation = null;
+            }
+            cancellation?.Cancel();
         }
 
         public void LoadCfg()
@@ -176,6 +243,9 @@ namespace ColorVision.Engine.Services.RC
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
+            if (Volatile.Read(ref _disposed) != 0)
+                return Task.CompletedTask;
+
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 LastAliveTime = DateTime.Now;
@@ -203,11 +273,7 @@ namespace ColorVision.Engine.Services.RC
                             {
                                 SetToken(req.Data.Token);
 
-                                // 在UI线程上更新IsConnect属性(如果需要触发UI更新)
-                                Application.Current?.Dispatcher.BeginInvoke(() =>
-                                {
-                                    IsConnect = true;
-                                });
+                                SetConnectionState(true);
 
                                 // 读取TryTestRegist是线程安全的(volatile)
                                 QueryServices();
@@ -463,25 +529,38 @@ namespace ColorVision.Engine.Services.RC
         private void SetDisconnectedState()
         {
             SetToken(null);
-
-            // 在UI线程更新IsConnect
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                IsConnect = false;
-            });
-            
+            SetConnectionState(false);
             ServiceTokens.Clear();
         }
+
+        private void SetConnectionState(bool isConnected)
+        {
+            int value = isConnected ? 1 : 0;
+            if (Interlocked.Exchange(ref _isConnect, value) == value)
+                return;
+
+            void NotifyChanged()
+            {
+                OnPropertyChanged(nameof(IsConnect));
+                RCServiceConnectChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+                dispatcher.BeginInvoke(NotifyChanged);
+            else
+                NotifyChanged();
+        }
+
+        private Task<bool> WaitForConnectionAsync() => RCConnectionWaiter.WaitAsync(
+            () => IsConnect,
+            handler => RCServiceConnectChanged += handler,
+            handler => RCServiceConnectChanged -= handler,
+            RegistrationResponseTimeout);
+
         public async Task <bool> Connect()
         {
             Regist();
-            for (int i = 0; i < 20; i++)
-            {
-                await Task.Delay(10);
-                if (IsConnect)
-                    return true;
-            }
-            return false;
+            return await WaitForConnectionAsync();
         }
 
         public void QueryServices()
@@ -504,8 +583,11 @@ namespace ColorVision.Engine.Services.RC
         private DateTime LastAliveTime = DateTime.MinValue;
         public void KeepLive()
         {
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
             TimeSpan sp = DateTime.Now - LastAliveTime;
-            if (sp.TotalMilliseconds > 10000)
+            if (sp > MaxServerSilence)
             {
                 RequestRegist();
                 return;
@@ -518,7 +600,7 @@ namespace ColorVision.Engine.Services.RC
 
             List<DeviceHeartbeat> deviceStatues = new();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
-            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, token.AccessToken, (int)(2000 * 1.5f)));
+            string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, token.AccessToken, KeepAlivePeriodMilliseconds * 3 / 2));
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
             QueryServiceStatus();
         }
@@ -562,24 +644,11 @@ namespace ColorVision.Engine.Services.RC
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
             
-            // 在UI线程更新IsConnect
-            await Application.Current?.Dispatcher.InvokeAsync(() =>
-            {
-                IsConnect = false;
-            });
+            SetConnectionState(false);
             
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
-            
-            for (int i = 0; i < 30; i++)
-            {
-                await Task.Delay(10);
-                if (IsConnect)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return await WaitForConnectionAsync();
         }
 
         public void Archived(string sn)
@@ -598,7 +667,13 @@ namespace ColorVision.Engine.Services.RC
 
         public override void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             Timer?.Dispose();
+            CancelScheduledReRegistration();
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
+            MQTTControl.MQTTConnectChanged -= MQTTControl_MQTTConnectChanged;
             base.Dispose();
             GC.SuppressFinalize(this);
         }

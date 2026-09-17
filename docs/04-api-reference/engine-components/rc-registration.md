@@ -5,7 +5,7 @@ status: "current"
 summary: "RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。"
 aliases: ["注册中心", "RC连接", "RC服务列表", "服务目录同步", "远端设备删除", "终端移除", "服务状态快照", "状态新鲜度", "启动早到消息", "RC测试连接", "RC设置", "注册中心连接配置", "新建配置文件", "复制配置文件", "NodeToken", "AccessToken", "RCName", "AppId", "AppSecret", "RC重复注册", "RC释放", "CVServiceType", "注册令牌", "MqttRCService", "PendingServiceUpdateBuffer", "RCServiceConnect", "RCSetting", "TryGetUsableToken", "ServiceTokensUpdated", "LiveTime", "LastAliveTime"]
 code_paths: ["Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/RC/PendingServiceUpdateBuffer.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConnect.xaml", "Engine/ColorVision.Engine/Services/RC/RCSetting.cs", "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs", "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs", "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs", "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs", "Engine/cvColorVision/MQTTMessageLib/MQTTRCServiceTypeConst.cs", "Engine/cvColorVision/MQTTMessageLib/Util/EnumTool.cs", "Engine/ColorVision.Engine/Services/Type/TypeService.cs", "Engine/ColorVision.Engine/MQTT/MQTTControl.cs", "Engine/ColorVision.Engine/Services/ServiceInitializer.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "ColorVision/StartWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs", "Test/ColorVision.UI.Tests/RCConnectionWaiterTests.cs"]
 related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-configuration", "operations.camera", "ui.configuration", "platform.runtime", "plugins.windows-service"]
 ---
 
@@ -34,9 +34,9 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 `ReRegist()` 先 `LoadCfg()` 再 `Regist()`。`LoadCfg` 从当前配置重算 RC 主题，更新 `RCFileUpload` 的主题并调用 `SubscribeCache`；没有在这里撤销旧订阅。直接改配置字段不自动执行这一过程。
 
-允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，并向 Dispatcher 排队更新 `IsConnect=false`，随后发起发布。`Regist()` 是强制请求；`RequestRegist()` 才检查三秒间隔。该限制不覆盖所有自动入口：保活超时和令牌刷新走 `RequestRegist`，`Event_NotRegist` 回包直接调用 `Regist`；每次 `MQTTConnectChanged` 还会排队一个延迟一秒的 `ReRegist`，不检查连接值，也不合并已排队任务。返回 true 只表示走到发起发布，不等待注册中心接受；底层 `MQTTControl.PublishAsyncClient` 在客户端为空或未连接时可以直接返回。
+允许本次注册时，`RegistCore` 清空节点 Token、`ServiceTokens`，立即更新内部 `IsConnect=false` 并在需要时将界面通知投递到 Dispatcher，随后发起发布。`Regist()` 是强制请求；`RequestRegist()` 才检查三秒间隔。该限制不覆盖所有自动入口：保活超时和令牌刷新走 `RequestRegist`，`Event_NotRegist` 回包直接调用 `Regist`。MQTT 断开时会取消排队中的重注册并清 RC 连接状态；只有 MQTT 已连接时才延迟一秒 `ReRegist`，重复连接通知会覆盖前一个等待。返回 true 只表示走到发起发布，不等待注册中心接受；底层 `MQTTControl.PublishAsyncClient` 在客户端为空或未连接时可以直接返回。
 
-收到当前 `SubscribeTopic` 上的 `Event_Startup` 且 `Data.Token` 非空后，回调记录 Token 和本地接收时间，排队置 `IsConnect=true`，再查询服务。此处理器没有把 Startup 与某个正在等待的注册/测试请求 ID 关联，也不检查 Token 内 `AccessToken` 是否为空；Token 对象存在不是凭据校验通过。`Connect()` 发起注册后最多循环 20 次、每次延迟 10ms，只观察共享连接标志，不等待服务树、设备初始化或采集完成。
+收到当前 `SubscribeTopic` 上的 `Event_Startup` 且 `Data.Token` 非空后，回调记录 Token 和本地接收时间，置 `IsConnect=true` 并将界面通知投递到 Dispatcher，再查询服务。此处理器没有把 Startup 与某个正在等待的注册/测试请求 ID 关联，也不检查 Token 内 `AccessToken` 是否为空；Token 对象存在不是凭据校验通过。`Connect()` 发起注册后通过连接状态事件等待，最多三秒；它不再以 10ms 轮询，但仍只观察共享连接标志，不等待服务树、设备初始化或采集完成。
 
 查询、心跳及受令牌保护的重启入口另走 `TryGetUsableToken()`：
 
@@ -49,7 +49,7 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 ### 对象释放与延迟回调
 
-构造单例就会装载主题、追加 MQTT 事件并启动保活定时器。`MqttRCService.Dispose()` 释放该定时器并调用基类清理，但没有解除自身的 `MqttClient_ApplicationMessageReceivedAsync` 或匿名 `MQTTConnectChanged` 订阅，也没有取消已经排队的重注册任务、清空静态单例或设置禁止后续调用的标志。基类只解除自己的 `Processing` 回调。因此 Dispose 不能作为“RC 已彻底停止”的保证，后续 MQTT 事件仍可能处理回包或发起重注册；此处是源码中的生命周期缺口，不是已完成的关闭验收。
+构造单例就会装载主题、追加 MQTT 事件并启动保活定时器。`MqttRCService.Dispose()` 会幂等地释放定时器、取消排队中的延迟重注册、解除自身的 MQTT 消息与连接事件，再调用基类解除 `Processing` 回调。它仍不会清空静态单例，也不取消已经进入的注册发布或最多三秒的连接等待；因此释放后的单例不支持重新启动，Dispose 也不是远端已注销或设备状态已清理的证据。
 
 ## 启动早到消息：两槽覆盖，不是可靠队列
 
@@ -118,7 +118,7 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 列表另有两个实现缺口：`ListViewRCBorder.PreviewKeyUp` 没有判断按键，只要事件到达且存在选中项就删除它；`ManipulationBoundaryFeedback` 处理器会新增默认配置并选中。取消不会撤销这些列表变更。确定按钮和 `Closed` 各移除一次当前对象，若列表本来就含同一引用，可能删除两处引用；不能将该列表当作独立、可靠的历史配置备份。
 
-`TryRegist` 从传入配置取注册目标主题和凭据，却继续携带运行单例当前的 `NodeName` / `SubscribeTopic`，不调用 `LoadCfg`。更换 RCName 时，注册目标与回复主题可能不是一套已同步配置。它先等待发送调用返回，再最多循环 30 次、每次延迟 10ms；这些轮询间隔不是包含发布和 Dispatcher 等待的总超时。成功判据仅为观察到共享 `IsConnect=true`；没有本次请求 ID/候选配置关联，也没有隔离正常回包、自动重注册或并发测试。
+`TryRegist` 从传入配置取注册目标主题和凭据，却继续携带运行单例当前的 `NodeName` / `SubscribeTopic`，不调用 `LoadCfg`。更换 RCName 时，注册目标与回复主题可能不是一套已同步配置。它先等待发送调用返回，再通过连接状态事件等待最多三秒；成功判据仍仅为观察到共享 `IsConnect=true`，没有本次请求 ID/候选配置关联，也没有隔离正常回包、自动重注册或并发测试。
 
 因此成功不能证明候选凭据与这次回包唯一对应、全部主题已切换或设备就绪；失败也不能证明稍后没有成功回包。正常回调仍可更新 Token、服务列表、设备主题与订阅。关闭窗口不取消后台任务，不补偿已经发出的注册及其后续效果。取消后如果要恢复运行连接，应在获得明确授权后核对配置和活动主题，而不是声称关窗已经恢复。
 
@@ -128,7 +128,7 @@ related: ["engine.index", "engine.devices", "engine.mqtt", "operations.device-co
 
 先区分失败在哪一层：broker、RC 注册、节点 Token、服务目录/服务 Token、本地资源匹配、设备状态还是具体命令。只读调查可检查已有脱敏日志和这些源码入口；不要以“刷新一下”为由重注册、重载资源、安装服务或触发设备。
 
-`PendingServiceUpdateBufferTests.cs` 目前验证取出两份并清空、更新列表只保留最新且不丢另一槽，断言保留相同对象引用。它不覆盖目录删除与本地匹配、部分应用和通知中断、Dispatcher 异常传播、状态新鲜度，也不覆盖真实 RC、完整启动、并发时序、异常回放、连接测试关联、窗口取消、列表键盘/触摸事件、Dispose 后回调或主题切换。本页引用测试不表示已经运行。
+`PendingServiceUpdateBufferTests.cs` 目前验证取出两份并清空、更新列表只保留最新且不丢另一槽，断言保留相同对象引用；`RCConnectionWaiterTests.cs` 验证连接事件完成、取消与解除订阅。它们不覆盖目录删除与本地匹配、部分应用和通知中断、Dispatcher 异常传播、状态新鲜度，也不覆盖真实 RC、完整启动、并发 Startup、连接测试关联、窗口取消、列表键盘/触摸事件、Dispose 后真实 MQTT 回调或主题切换。本页引用测试不表示已经运行。
 
 后续获得相应授权的隔离验证应覆盖：状态先到/列表先到、多次覆盖、管理器已存在但树不匹配、远端移除设备/终端后的本地残留、中途应用异常与通知缺失、不同入口的异常传播、旧状态保留、令牌刷新、迟到和并发 Startup、换 RCName、取消与标题栏关闭、订阅残留、显式保存与重启。真实 broker/设备和 Windows 服务另外验收。
 
