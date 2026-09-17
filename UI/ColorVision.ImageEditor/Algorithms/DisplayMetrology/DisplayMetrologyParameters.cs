@@ -55,17 +55,20 @@ public sealed class RgbRegistrationParameters : DisplayGridParameters
 
 public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
 {
-    [Category("十字检测"), DisplayName("前景阈值比例"), Description("相对每格背景到峰值的阈值，用于提取 R/G/B 十字边缘。")]
+    [Category("十字检测"), DisplayName("前景阈值比例"), Description("全图候选及各独立臂截面相对背景到峰值的阈值。")]
     public double TargetThreshold { get; set; } = 0.5;
 
-    [Category("十字检测"), DisplayName("最小十字跨度比例"), Description("水平臂和垂直臂在所属网格中至少覆盖的比例。")]
+    [Category("十字检测"), DisplayName("最小十字跨度比例"), Description("十字候选宽高在自动目标 ROI 中至少覆盖的比例。")]
     public double MinimumArmSpanFraction { get; set; } = 0.35;
 
-    [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列投影确定十字水平带和垂直带的边缘。")]
+    [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列强度投影检查唯一窄轴带；最终边缘由独立臂截面测量。")]
     public double AxisBandThreshold { get; set; } = 0.5;
 
-    [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("三通道对应水平/垂直边缘的最大极差；请按产品规格设置。")]
-    public double MaximumEdgeSeparationPixels { get; set; } = 1;
+    [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂有效截面至少占采样截面的比例；属于检测参数，不是产品合格阈值。")]
+    public double MinimumArmCoverage { get; set; } = 0.5;
+
+    [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("三通道对应水平/垂直边缘的最大极差；留空只测量，指定产品规格后才给出 OK/NG。")]
+    public double? MaximumEdgeSeparationPixels { get; set; }
 
     public RgbCrossRegistrationParameters()
     {
@@ -81,7 +84,8 @@ public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
         Range(result, nameof(TargetThreshold), TargetThreshold, 0.1, 0.9);
         Range(result, nameof(MinimumArmSpanFraction), MinimumArmSpanFraction, 0.1, 0.9);
         Range(result, nameof(AxisBandThreshold), AxisBandThreshold, 0.1, 0.9);
-        Range(result, nameof(MaximumEdgeSeparationPixels), MaximumEdgeSeparationPixels, 0, 1000);
+        Range(result, nameof(MinimumArmCoverage), MinimumArmCoverage, 0.1, 1);
+        if (MaximumEdgeSeparationPixels is double limit) Range(result, nameof(MaximumEdgeSeparationPixels), limit, 0, 1000);
         return result;
     }
 }

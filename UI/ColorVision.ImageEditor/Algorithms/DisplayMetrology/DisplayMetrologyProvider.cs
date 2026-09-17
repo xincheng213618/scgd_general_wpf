@@ -14,6 +14,7 @@ namespace ColorVision.ImageEditor.Algorithms;
 public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
 {
     public const int MaximumFramePixels = 8_388_608;
+    public const int MaximumRgbCrossPixels = 67_108_864;
     public const long MaximumTotalPixels = 33_554_432;
     private const int MaximumComponents = 2048;
     public AlgorithmProviderMetadata Metadata { get; } = new("colorvision.display-metrology.cpu", "ColorVision Display Metrology",
@@ -41,11 +42,13 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             var p = (DisplayMetrologyParameters)context.Parameters;
             if (!p.Validate().IsValid) throw new MeasurementException("invalid_parameters", "参数未通过校验。");
             var first = context.Inputs[0].Image;
+            int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
+            long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
             if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32
-                || (long)i.Image.Width * i.Image.Height > MaximumFramePixels)
-                || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > MaximumTotalPixels
+                || (long)i.Image.Width * i.Image.Height > frameBudget)
+                || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > totalBudget
                 || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024)
-                throw new MeasurementException("image_budget_exceeded", "图像最小为 32×32，单帧最多 8,388,608 像素，总计最多 33,554,432 像素 / 512 MiB。");
+                throw new MeasurementException("image_budget_exceeded", $"图像最小为 32×32，单帧最多 {frameBudget} 像素，总计最多 {totalBudget} 像素 / 512 MiB。");
             if (context.Invocation.Roi != null) throw new MeasurementException("roi_unsupported", "请先裁到完整测试图案；本算法不隐式裁剪 ROI。");
             if (context.Inputs.Any(i => i.Image.Width != first.Width || i.Image.Height != first.Height || i.Image.Format != first.Format))
                 throw new MeasurementException("input_mismatch", "多帧必须具有相同尺寸和格式，不自动缩放或对齐。");

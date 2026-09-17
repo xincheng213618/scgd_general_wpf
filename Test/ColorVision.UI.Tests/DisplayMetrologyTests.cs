@@ -12,7 +12,7 @@ using ColorVision.ImageEditor;
 
 namespace ColorVision.UI.Tests;
 
-public sealed class DisplayMetrologyTests
+public sealed partial class DisplayMetrologyTests
 {
     [Fact]
     public void CatalogIsExecutableAnalysisOnlyAndDoesNotJoinImageTransformBatch()
