@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
-        public virtual int HeartbeatTime { get; set; }
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;

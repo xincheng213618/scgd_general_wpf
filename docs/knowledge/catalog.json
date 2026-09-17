@@ -6820,7 +6820,9 @@
         "Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowServiceConfigurationTests.cs"
+      ],
       "related": [
         "engine.devices",
         "engine.mqtt",
