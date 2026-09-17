@@ -5604,7 +5604,7 @@
       "knowledge_id": "engine.spectrum-device",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。",
+      "summary": "主程序物理光谱仪 SN 与许可证管理、全连接方式搜索、设备配置和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。",
       "aliases": [
         "光谱仪搜不到",
         "光谱仪连接方式",
@@ -5617,15 +5617,21 @@
         "SpectrumDeviceDiscovery",
         "CMvSpectra",
         "Gaolitong",
-        "光谱仪配置分类"
+        "光谱仪配置分类",
+        "物理光谱仪管理",
+        "PhySpectrumManager",
+        "SpectrumLicenseUpdateService",
+        "光谱仪联网更新许可证"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Spectrum",
+        "Engine/ColorVision.Engine/Services/PhySpectrums",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"
       ],
       "test_paths": [
         "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs",
-        "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs"
+        "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs",
+        "Test/Spectrum.Tests/PhySpectrumManagerTests.cs"
       ],
       "related": [
         "engine.devices",

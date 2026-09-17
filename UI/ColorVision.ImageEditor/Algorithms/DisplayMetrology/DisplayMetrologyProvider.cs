@@ -19,7 +19,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
     private const int MaximumComponents = 2048;
     public AlgorithmProviderMetadata Metadata { get; } = new("colorvision.display-metrology.cpu", "ColorVision Display Metrology",
         AlgorithmProviderKind.Cpu, AlgorithmExecutionPlane.Local, 150,
-        DisplayMetrologyCatalog.Capabilities | AlgorithmHostCapabilities.MultiInput,
+        DisplayMetrologyCatalog.Capabilities | AlgorithmHostCapabilities.MultiInput | AlgorithmHostCapabilities.Roi,
         Enum.GetValues<AlgorithmImageFormat>().ToHashSet(), "1.0.0");
 
     public bool CanExecuteDescriptor(AlgorithmDescriptor descriptor, out string? reason)
@@ -49,7 +49,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
                 || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > totalBudget
                 || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024)
                 throw new MeasurementException("image_budget_exceeded", $"图像最小为 32×32，单帧最多 {frameBudget} 像素，总计最多 {totalBudget} 像素 / 512 MiB。");
-            if (context.Invocation.Roi != null) throw new MeasurementException("roi_unsupported", "请先裁到完整测试图案；本算法不隐式裁剪 ROI。");
+            if (context.Invocation.Roi != null && context.Descriptor.Id != DisplayMetrologyIds.RgbCrossRegistration) throw new MeasurementException("roi_unsupported", "请先裁到完整测试图案；本算法不隐式裁剪 ROI。");
             if (context.Inputs.Any(i => i.Image.Width != first.Width || i.Image.Height != first.Height || i.Image.Format != first.Format))
                 throw new MeasurementException("input_mismatch", "多帧必须具有相同尺寸和格式，不自动缩放或对齐。");
             if (context.Inputs.Count > 1 && (context.Inputs.Any(i => string.IsNullOrWhiteSpace(i.ColorSpace))

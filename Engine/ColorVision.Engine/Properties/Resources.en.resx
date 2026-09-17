@@ -5081,8 +5081,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="电流量程（mA）" xml:space="preserve"><value>Current Range (mA)</value></data>
   <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>Gain is fixed at {1:0.##} by calibration group “{0}”</value></data>
   <data name="PhysicalSpectrumManager" xml:space="preserve"><value>Physical spectrometer manager</value></data>
-  <data name="SpectrumRegistered" xml:space="preserve"><value>Registered</value></data>
-  <data name="SpectrumUnregistered" xml:space="preserve"><value>Not registered</value></data>
   <data name="SpectrumDiscovered" xml:space="preserve"><value>Discovered</value></data>
   <data name="SpectrumNotDiscovered" xml:space="preserve"><value>Not confirmed online</value></data>
   <data name="SpectrumDatabaseRequired" xml:space="preserve"><value>Connect to the database, then refresh.</value></data>
@@ -5090,24 +5088,17 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumLicenseTypeConflict" xml:space="preserve"><value>This SN has a license of another type. The existing record was preserved.</value></data>
   <data name="SpectrumLicenseSerialMismatch" xml:space="preserve"><value>The license must contain exactly one {0}.lic. Check the selected SN.</value></data>
   <data name="SpectrumInvalidLicense" xml:space="preserve"><value>Invalid license content: model or expiry date cannot be read.</value></data>
-  <data name="SpectrumManagerHint" xml:space="preserve"><value>Discovery does not establish a connection. Registration and license updates do not change device SN settings or restart services.</value></data>
-  <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} serials · {1} discovered · {2} licenses need attention</value></data>
+  <data name="SpectrumManagerHint" xml:space="preserve"><value>Manage spectrometer serials and licenses</value></data>
+  <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} spectrometers / {1} discovered</value></data>
   <data name="SpectrumWorking" xml:space="preserve"><value>Working…</value></data>
-  <data name="SpectrumUpdateLicense" xml:space="preserve"><value>Update license online</value></data>
-  <data name="SpectrumUpdateAllLicenses" xml:space="preserve"><value>Update all licenses online</value></data>
-  <data name="SpectrumUpdateSummary" xml:space="preserve"><value>License update complete: {0} succeeded, {1} failed. Select a device to see its result.</value></data>
-  <data name="SpectrumScanComplete" xml:space="preserve"><value>Discovered {0} spectrometers; {1} queries failed. See scan details. Register new devices from their details.</value></data>
+  <data name="SpectrumScanComplete" xml:space="preserve"><value>Discovered {0} spectrometers; {1} queries failed.</value></data>
   <data name="SpectrumImportLicense" xml:space="preserve"><value>Import local license</value></data>
   <data name="SpectrumScanOnline" xml:space="preserve"><value>Scan spectrometers</value></data>
-  <data name="SpectrumScanPort" xml:space="preserve"><value>COM port</value></data>
-  <data name="SpectrumScanPortHint" xml:space="preserve"><value>0: USB only. Above 0: also query this COM port without changing device settings.</value></data>
   <data name="SpectrumSerialList" xml:space="preserve"><value>Spectrometers</value></data>
   <data name="SpectrumSearchSerial" xml:space="preserve"><value>Search SN or model</value></data>
-  <data name="SpectrumAddSerial" xml:space="preserve"><value>Register a serial number</value></data>
-  <data name="SpectrumRegister" xml:space="preserve"><value>Register</value></data>
-  <data name="SpectrumEmptySelection" xml:space="preserve"><value>Select a spectrometer, scan, or register a serial number.</value></data>
-  <data name="SpectrumLicenseSection" xml:space="preserve"><value>License</value></data>
-  <data name="SpectrumLicenseExpiry" xml:space="preserve"><value>Expiry date</value></data>
-  <data name="SpectrumLicenseCustomer" xml:space="preserve"><value>Licensed to</value></data>
+  <data name="SpectrumEmptySelection" xml:space="preserve"><value>Select a spectrometer, scan, or import a license.</value></data>
   <data name="SpectrumDiscoveryDetails" xml:space="preserve"><value>Scan details</value></data>
+  <data name="SpectrumTools" xml:space="preserve"><value>Spectrometer tools</value></data>
+  <data name="SpectrumCorrectionDevice" xml:space="preserve"><value>Select the device for correction</value></data>
+  <data name="SpectrumCorrectionNeedsDevice" xml:space="preserve"><value>First assign this SN to a spectrometer in device configuration.</value></data>
 </root>

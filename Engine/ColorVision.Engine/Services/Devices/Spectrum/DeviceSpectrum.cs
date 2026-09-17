@@ -153,18 +153,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Description("SpectrumManagerHint")]
         public RelayCommand OpenPhysicalSpectrumManagerCommand { get; set; }
 
-        [CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
+        [CommandDisplay("RefreshDeviceList", Order = 2, CategoryOrder = 0)]
         [Category("DeviceConnection")]
         [Description("SpectrumRefreshHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("SpectrumDriverTool", Order = 2, CategoryOrder = 0)]
+        [CommandDisplay("SpectrumDriverTool", Order = 3, CategoryOrder = 0)]
         [Category("DeviceConnection")]
         [Description("SpectrumDriverToolHint")]
         public RelayCommand OpenSpectrumDriverToolCommand { get; set; }
 
-        [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 4)]
-        [Category("MaintenanceDiagnostics")]
+        [CommandDisplay("UploadLic", Order = 1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("SpectrumLicenseHint")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
@@ -1166,7 +1166,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return Convert.ToHexString(SHA256.HashData(stream)).Equals(SpectrumDriverToolSha256, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static void OpenSpectrumDriverTool()
+        internal static void OpenSpectrumDriverTool()
         {
             Window? owner = Application.Current.GetActiveWindow();
             string title = GetSpectrumDriverToolText("SpectrumDriverTool", "光谱仪驱动工具");
@@ -1267,12 +1267,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 var license = await new SpectrumLicenseUpdateService().DownloadAsync(sn);
                 await Task.Run(() => PhySpectrumStore.SaveLicense(license));
-                await Application.Current.Dispatcher.InvokeAsync(() => MessageBox.Show(Application.Current.GetActiveWindow(), $"{sn} · {Properties.Resources.UpdataSucess}", Properties.Resources.PhysicalSpectrumManager));
+                log.Info($"Spectrum license updated: {sn}");
             }
             catch (Exception ex)
             {
                 log.Error($"Spectrum license update failed: {sn}", ex);
-                await Application.Current.Dispatcher.InvokeAsync(() => MessageBox.Show(Application.Current.GetActiveWindow(), $"{sn} · {ex.Message}", Properties.Resources.PhysicalSpectrumManager));
             }
         }
         public  LicenseModel CameraLicenseModel { get; set; }

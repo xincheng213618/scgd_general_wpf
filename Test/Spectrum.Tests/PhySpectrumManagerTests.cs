@@ -1,4 +1,6 @@
 using ColorVision.Engine;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.Types;
@@ -6,12 +8,37 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Spectrum.Tests;
 
 public sealed class PhySpectrumManagerTests
 {
+    [Fact]
+    public void CorrectionTargetsFollowSerialWithoutFallingBackToAnotherDevice()
+    {
+        var first = StubSpectrum("SN-01");
+        var second = StubSpectrum("sn-01");
+        var other = StubSpectrum("SN-02");
+        var unbound = StubSpectrum(string.Empty);
+        var devices = new[] { first, second, other, unbound };
+        Assert.Equal(new[] { first, second }, PhySpectrumManager.MatchCorrectionDevices(devices, " SN-01 "));
+        Assert.Same(other, Assert.Single(PhySpectrumManager.MatchCorrectionDevices(devices, "SN-02")));
+        Assert.Empty(PhySpectrumManager.MatchCorrectionDevices(devices, "MISSING"));
+        Assert.Empty(PhySpectrumManager.MatchCorrectionDevices(devices, string.Empty));
+        first.Config.SN = "REBOUND";
+        Assert.Same(second, Assert.Single(PhySpectrumManager.MatchCorrectionDevices(devices, "SN-01")));
+    }
+
+    private static DeviceSpectrum StubSpectrum(string serial)
+    {
+        // Bypass runtime service construction: this test only exercises routing over existing configurations.
+        var device = (DeviceSpectrum)RuntimeHelpers.GetUninitializedObject(typeof(DeviceSpectrum));
+        device.Config = new ConfigSpectrum { SN = serial };
+        return device;
+    }
+
     private static string LicenseValue(string expiry = "2000000000") => Convert.ToBase64String(Encoding.UTF8.GetBytes(
         $$"""{"device_mode":"SP-TEST","expiry_date":"{{expiry}}","licensee":"Test customer"}"""));
 
@@ -118,6 +145,37 @@ public sealed class PhySpectrumManagerTests
         var license = await new SpectrumLicenseUpdateService(client).DownloadAsync(" SN-01 ");
         Assert.Contains("\"macSn\":\"SN-01\"", requestBody);
         Assert.Equal("SN-01", license.MacAddress);
+    }
+
+    [Fact]
+    public void ToolbarImportReadsAllSerialsWithoutRequiringASelection()
+    {
+        string file = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".zip");
+        try
+        {
+            using var archive = Archive(("SN-01.lic", LicenseValue()), ("nested/SN-02.lic", LicenseValue()));
+            File.WriteAllBytes(file, archive.ToArray());
+            var licenses = SpectrumLicenseUpdateService.ReadFiles(new[] { file });
+            Assert.Equal(new[] { "SN-01", "SN-02" }, licenses.Select(l => l.MacAddress));
+            Assert.All(licenses, license => Assert.Equal(1, license.LiceType));
+        }
+        finally { File.Delete(file); }
+    }
+
+    [Fact]
+    public void ToolbarImportRejectsDuplicateSerialsAcrossFiles()
+    {
+        string first = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".zip");
+        string second = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".zip");
+        try
+        {
+            using var archive = Archive(("SN-01.lic", LicenseValue()));
+            using var duplicate = Archive(("sn-01.lic", LicenseValue()));
+            File.WriteAllBytes(first, archive.ToArray());
+            File.WriteAllBytes(second, duplicate.ToArray());
+            Assert.Throws<InvalidDataException>(() => SpectrumLicenseUpdateService.ReadFiles(new[] { first, second }));
+        }
+        finally { File.Delete(first); File.Delete(second); }
     }
 
     private static MemoryStream Archive(params (string Name, string Value)[] files)

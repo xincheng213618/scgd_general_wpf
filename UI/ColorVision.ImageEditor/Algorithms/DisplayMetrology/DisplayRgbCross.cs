@@ -31,24 +31,24 @@ public sealed partial class DisplayMetrologyProvider
     // Pool every source pixel, preserving thin colored arms. This union is for location only;
     // all edge measurements below read independent channels at source resolution.
     private static (float[][] Channels, int Width, int Height, int Step) CrossLocatorImage(
-        AlgorithmImageBuffer input, double exponent, CancellationToken token)
+        AlgorithmImageBuffer input, Rect search, double exponent, CancellationToken token)
     {
-        int step = Math.Max(1, (Math.Max(input.Width, input.Height) + 1599) / 1600);
-        int width = (input.Width + step - 1) / step, height = (input.Height + step - 1) / step;
+        int step = Math.Max(1, (Math.Max(search.Width, search.Height) + 1599) / 1600);
+        int width = (search.Width + step - 1) / step, height = (search.Height + step - 1) / step;
         float[][] channels = [new float[width * height], new float[width * height], new float[width * height]];
         int count = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
         ReadOnlySpan<byte> data = input.Data.Span;
-        for (int y = 0; y < input.Height; y++)
+        for (int y = 0; y < search.Height; y++)
         {
             token.ThrowIfCancellationRequested();
-            for (int x = 0; x < input.Width; x++)
+            for (int x = 0; x < search.Width; x++)
             {
-                int offset = y * input.Stride + x * count * bytes;
+                int offset = (search.Y + y) * input.Stride + (search.X + x) * count * bytes;
                 for (int c = 0; c < count; c++)
                 {
                     double value = CrossSample(data, offset + c * bytes, bytes);
                     if (!double.IsFinite(value) || value < 0 || value > 1)
-                        throw new MeasurementException("invalid_signal", $"像素 ({x},{y}) 通道 {c} 不在有限 [0,1] 范围内。");
+                        throw new MeasurementException("invalid_signal", $"像素 ({search.X + x},{search.Y + y}) 通道 {c} 不在有限 [0,1] 范围内。");
                     if (c == 3 && value != 1) throw new MeasurementException("transparent_input", "显示计量要求不透明图像。");
                     if (c < 3)
                     {
@@ -66,8 +66,9 @@ public sealed partial class DisplayMetrologyProvider
         : BitConverter.Int32BitsToSingle(System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4)));
 
     private static CrossSlot[] LocateCrossArray(float[][] channels, int width, int height, int step,
-        int sourceWidth, int sourceHeight, RgbCrossRegistrationParameters p, CancellationToken token, out int candidateCount)
+        Rect search, RgbCrossRegistrationParameters p, CancellationToken token, out int candidateCount)
     {
+        int sourceWidth = search.Width, sourceHeight = search.Height;
         var signal = new float[width * height];
         for (int i = 0; i < signal.Length; i++) signal[i] = Math.Max(channels[0][i], Math.Max(channels[1][i], channels[2][i]));
         double minimum = signal.Min(), contrast = signal.Max() - minimum;
@@ -117,6 +118,9 @@ public sealed partial class DisplayMetrologyProvider
                 Rect roi = new(left, top, right - left, bottom - top);
                 string reason = candidates.Any(other => other != evidence && roi.IntersectsWith(other)) ? "target_roi_overlap" : "";
                 if ((long)roi.Width * roi.Height > MaximumFramePixels) reason = "target_roi_budget_exceeded";
+                if (evidence.X == 0 || evidence.Y == 0 || evidence.Right >= sourceWidth || evidence.Bottom >= sourceHeight) reason = "cross_clipped";
+                roi.X += search.X; roi.Y += search.Y;
+                evidence.X += search.X; evidence.Y += search.Y;
                 slots[r * 3 + c] = new(roi, evidence, reason);
             }
         return slots;
@@ -229,6 +233,22 @@ public sealed partial class DisplayMetrologyProvider
         return (maximum > 0 && runs == 1, first, last, runs);
     }
 
+    internal static Rect ResolveCrossSearchRegion(AlgorithmRoi? roi, AlgorithmImageBuffer input)
+    {
+        if (roi == null) return new Rect(0, 0, input.Width, input.Height);
+        if (roi is not RectangleAlgorithmRoi rectangle || !rectangle.Validate().IsValid)
+            throw new MeasurementException("rectangle_roi_required", "九点十字仅支持有效的矩形搜索区域。");
+        AlgorithmPoint start = AlgorithmCoordinates.ToPixel(new(rectangle.X, rectangle.Y), rectangle.CoordinateSpace, input.DpiX, input.DpiY);
+        AlgorithmPoint end = AlgorithmCoordinates.ToPixel(new(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height), rectangle.CoordinateSpace, input.DpiX, input.DpiY);
+        if (start.X < 0 || start.Y < 0 || end.X > input.Width || end.Y > input.Height || !double.IsFinite(end.X) || !double.IsFinite(end.Y))
+            throw new MeasurementException("roi_out_of_bounds", "搜索区域必须完全位于原图内，不自动裁切。");
+        int left = (int)Math.Floor(start.X), top = (int)Math.Floor(start.Y);
+        int right = (int)Math.Ceiling(end.X), bottom = (int)Math.Ceiling(end.Y);
+        if (right - left < 32 || bottom - top < 32)
+            throw new MeasurementException("roi_too_small", "九点十字搜索区域至少为 32×32 像素。");
+        return new Rect(left, top, right - left, bottom - top);
+    }
+
     private static void MeasureRgbCross(
         AlgorithmExecutionContext context,
         RgbCrossRegistrationParameters parameters,
@@ -239,9 +259,10 @@ public sealed partial class DisplayMetrologyProvider
         string[] channelNames = ["R", "G", "B"];
         int[] channelIndexes = [2, 1, 0];
         string[] channelColors = ["#FFFF4040", "#FF40D060", "#FF4090FF"];
-        var locator = CrossLocatorImage(input, parameters.DecodeExponent, token);
+        Rect search = ResolveCrossSearchRegion(context.Invocation.Roi, input);
+        var locator = CrossLocatorImage(input, search, parameters.DecodeExponent, token);
         float[][] signals = locator.Channels;
-        CrossSlot[] slots = LocateCrossArray(signals, locator.Width, locator.Height, locator.Step, input.Width, input.Height, parameters, token, out int candidateCount);
+        CrossSlot[] slots = LocateCrossArray(signals, locator.Width, locator.Height, locator.Step, search, parameters, token, out int candidateCount);
         for (int channel = 0; channel < signals.Length; channel++)
         {
             artifacts.Add(new AlgorithmImageArtifact(
@@ -254,6 +275,8 @@ public sealed partial class DisplayMetrologyProvider
                     ["source"] = "decoded-relative-device-signal",
                     ["decodeExponent"] = parameters.DecodeExponent.ToString("R", CultureInfo.InvariantCulture),
                     ["quantization"] = "8-bit max-pool locator preview; measurements use source-resolution decoded signal",
+                    ["sourceOriginX"] = search.X.ToString(CultureInfo.InvariantCulture),
+                    ["sourceOriginY"] = search.Y.ToString(CultureInfo.InvariantCulture),
                     ["sourcePixelsPerPreviewPixel"] = locator.Step.ToString(CultureInfo.InvariantCulture),
                 }));
         }
@@ -363,6 +386,7 @@ public sealed partial class DisplayMetrologyProvider
             ("passed_crosses", passedCount, "count"),
             ("failed_crosses", failedCount, "count"),
             ("candidate_count", candidateCount, "count"),
+            ("searched_pixels", (long)search.Width * search.Height, "pixels"),
             ("threshold_configured", parameters.MaximumEdgeSeparationPixels.HasValue ? 1 : 0, "boolean"));
         if (validEdgeSeparations.Count > 0)
             Metrics(artifacts,

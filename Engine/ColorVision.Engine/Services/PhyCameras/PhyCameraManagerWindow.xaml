@@ -31,7 +31,7 @@
                 <Setter Property="MinHeight" Value="36"/>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Padding" Value="12,6"/>
-                <Setter Property="Margin" Value="8,0,0,0"/>
+                <Setter Property="Margin" Value="8,3,0,3"/>
                 <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
             </Style>
@@ -103,8 +103,8 @@
         </Grid.RowDefinitions>
         <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                 <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}" FontSize="20" FontWeight="SemiBold"/>
@@ -117,11 +117,11 @@
                     <Run Text="{x:Static properties:Resources.Online}"/>
                 </TextBlock>
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <Button Style="{StaticResource ManagerToolbarButtonStyle}" Command="{Binding SearchCameraCommand}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,8,0"/>
-                        <TextBlock Text="{x:Static properties:Resources.ButtonScanOnlineCameras}"/>
+                        <TextBlock Text="{x:Static properties:Resources.Scan}"/>
                     </StackPanel>
                 </Button>
                 <Button Style="{StaticResource ManagerPrimaryButtonStyle}" Command="{Binding CreateCommand}">
@@ -142,12 +142,11 @@
                         </Border>
                     </StackPanel>
                 </Button>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
                 <Button Style="{StaticResource ManagerToolbarButtonStyle}" Click="ToolbarMenuButton_Click">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
-                            <MenuItem Header="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
-                            <Separator/>
                             <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
                             <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
                         </ContextMenu>
@@ -157,7 +156,7 @@
                         <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="8,0,0,0" FontSize="11"/>
                     </StackPanel>
                 </Button>
-            </StackPanel>
+            </WrapPanel>
         </Grid>
 
         <Grid Grid.Row="1">

@@ -1,4 +1,4 @@
-using ColorVision.Core;
+﻿using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -76,6 +76,7 @@ public sealed class LocalFindCrossNodeTests
         original.Create();
         original.ImageFilePath = @"C:\images\cross.cvraw";
         original.ParameterJson = "{\"ExpectedAngleDegrees\":1.5,\"AngleToleranceDegrees\":8}";
+        original.SearchRegionPoiTemplate = "发光区";
         original.SearchRegion = new Int32Rect(2888, 1920, 3751, 2655);
         original.ResultDirectory = @"D:\results\cross";
         Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
@@ -87,6 +88,7 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal(original.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(original.ParameterJson, restored.ParameterJson);
         Assert.Equal(original.SearchRegion, restored.SearchRegion);
+        Assert.Equal(original.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);
         Assert.Equal(original.ResultDirectory, restored.ResultDirectory);
     }
 
@@ -492,6 +494,8 @@ public sealed class LocalFindCrossNodeTests
 
     private sealed class FakeNodeServices : ILocalFindCrossNodeServices
     {
+        public Func<string, Int32Rect> LoadSearchRegionTemplateHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected POI lookup");
+        public Int32Rect LoadSearchRegionTemplate(string templateName) => LoadSearchRegionTemplateHandler(templateName);
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("File loading was not configured.");
         public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Image-result loading was not configured.");
         public Func<HImage, RoiRect, string, LocalFindCrossDetection> DetectHandler { get; init; } = (_, _, _) => throw new InvalidOperationException("Detection was not configured.");

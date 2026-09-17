@@ -1,4 +1,4 @@
-using ColorVision.Core;
+﻿using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Editor;
@@ -46,6 +46,7 @@ public sealed class LocalGridDistortionNodeTests
         node.BrightTarget = false;
         node.MinimumContrast = 0.04;
         node.ImageFilePath = @"C:\images\dots.cvraw";
+        node.SearchRegionPoiTemplate = "发光区";
         node.SearchRegion = new Int32Rect(10, 20, 400, 300);
         node.ResultDirectory = @"C:\results\distortion";
         node.TvFormula = GridTvFormula.Half;
@@ -60,6 +61,7 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(node.MinimumContrast, restored.MinimumContrast);
         Assert.Equal(node.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(node.SearchRegion, restored.SearchRegion);
+        Assert.Equal(node.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);
         Assert.Equal(node.ResultDirectory, restored.ResultDirectory);
         Assert.Equal(node.TvFormula, restored.TvFormula);
         Assert.Equal(node.Point9Formula, restored.Point9Formula);
@@ -562,6 +564,8 @@ public sealed class LocalGridDistortionNodeTests
 
     private sealed class FakeServices : ILocalGridDistortionNodeServices
     {
+        public Func<string, Int32Rect> LoadSearchRegionTemplateHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected POI lookup");
+        public Int32Rect LoadSearchRegionTemplate(string templateName) => LoadSearchRegionTemplateHandler(templateName);
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected file load");
         public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected image result lookup");
         public Func<HImage, RoiRect, GridDistortionOptions, GridDistortionResult> DetectHandler { get; init; } = (_, _, _) => CreateDetection();

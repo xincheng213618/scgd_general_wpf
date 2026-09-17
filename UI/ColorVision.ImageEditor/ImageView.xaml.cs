@@ -1089,6 +1089,7 @@ namespace ColorVision.ImageEditor
             EditorContext?.DrawEditorContext.MouseInfoProvider.Dispose();
             EditorContext?.CompactInspectorPresenter?.Dispose();
             EditorContext?.DrawEditorContext.DrawingVisualLists?.Clear();
+            _channels.Dispose();
             _session.Dispose();
             Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
             Loaded -= ImageView_Loaded;

@@ -1,9 +1,11 @@
-using ColorVision.Engine.FlowProcessing.Diagnostics;
+﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
@@ -65,6 +67,7 @@ internal sealed record LocalGridDistortionPublishRequest
 
 internal interface ILocalGridDistortionNodeServices
 {
+    Int32Rect LoadSearchRegionTemplate(string templateName);
     LocalFlowFrame LoadFrame(string filePath);
     MeasureResultImgModel? GetImageResult(int masterId);
     GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options);
@@ -75,6 +78,8 @@ internal interface ILocalGridDistortionNodeServices
 internal sealed class LocalGridDistortionNodeServices : ILocalGridDistortionNodeServices
 {
     public static LocalGridDistortionNodeServices Instance { get; } = new();
+    public Int32Rect LoadSearchRegionTemplate(string templateName) => LocalPoiSearchRegionResolver.Load(templateName);
+
     public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
     public MeasureResultImgModel? GetImageResult(int masterId) => MeasureImgResultDao.Instance.GetById(masterId);
     public GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options) => GridDistortionNative.Run(image, roi, options);
@@ -261,6 +266,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private string imageFilePath = string.Empty;
     private string resultDirectory = string.Empty;
     private Int32Rect searchRegion = Int32Rect.Empty;
+    private string searchRegionPoiTemplate = string.Empty;
     private int expectedRows = 3;
     private int expectedCols = 3;
     private bool brightTarget = true;
@@ -285,6 +291,15 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     [Category("本地点阵畸变")]
     [STNodeProperty("亮点模式", "默认勾选：亮点、暗背景（发光屏幕）；取消勾选：暗点、亮背景（反射图卡）。两种模式共用几何与畸变计算口径。", true)]
     public bool BrightTarget { get => brightTarget; set { brightTarget = value; OnPropertyChanged(); } }
+
+    [Category("本地点阵畸变")]
+    [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
+    [STNodeProperty("搜索区域关注点", "可选；选择寻找发光区写入的 POI 模板，每次运行读取最新矩形或四角点外接矩形。填写后优先于固定搜索区域；模板无效或越界时停止。留空保持原搜索区域行为。", true)]
+    public string SearchRegionPoiTemplate
+    {
+        get => searchRegionPoiTemplate;
+        set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); }
+    }
 
     [Category("本地点阵畸变")]
     [STNodeProperty("搜索区域", "ROI（X,Y,Width,Height）；0,0,0,0 表示整图。点坐标始终使用整图坐标。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
@@ -329,6 +344,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         GridDistortionOptions options = new() { ExpectedRows = ExpectedRows, ExpectedCols = ExpectedCols, BrightTarget = BrightTarget, MinimumContrast = MinimumContrast };
         if (!options.TryValidate(out string optionsError)) throw new InvalidOperationException(optionsError);
         Int32Rect configuredRegion = SearchRegion;
+        string configuredTemplate = SearchRegionPoiTemplate.Trim();
         string configuredImageFile = ImageFilePath;
         string configuredDirectory = ResultDirectory;
         GridTvFormula selectedTvFormula = TvFormula;
@@ -345,7 +361,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             using LocalFlowFrameLease lease = frame.Acquire();
             if (!lease.IsFlipApplied)
                 throw new InvalidOperationException("当前图像的方向变换尚未完成，无法计算点阵畸变。");
-            RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(configuredRegion, lease.Metadata.Width, lease.Metadata.Height);
+            RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate), lease.Metadata.Width, lease.Metadata.Height);
             HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
             Stopwatch stopwatch = Stopwatch.StartNew();
             GridDistortionResult detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, options));
@@ -359,6 +375,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                 SourceMasterId = lease.MasterId,
                 FrameId = lease.FrameId.ToString("N"),
                 ImageFilePath = imageFile,
+                SearchRegionPoiTemplate = configuredTemplate,
                 SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                 Options = options,
                 OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString(), PublishOpticalEstimate = selectedPublishOptical },
@@ -432,7 +449,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
-        ImageFilePath, SearchRegion, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
+        ImageFilePath, SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
         TvFormula, Point9Formula, PublishOpticalEstimate, Algorithm = "GridDistortionV2"
     });
 

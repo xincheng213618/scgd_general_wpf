@@ -60,9 +60,12 @@ public sealed class ImageEditorRealSampleTests(ITestOutputHelper output)
                         await fixture.SelectLayerAsync(layer);
                         selected = WpfTestHost.Invoke(() => fixture.CaptureCurrent());
                         Assert.Equal(layer.Id, selected.LayerId);
-                        // CVRawOpen reloads the selected baseline before rendering RGB channels.
-                        // The ordinary bitmap controller has a separate display-only contract.
-                        Assert.True(selected.Revision > initial.Revision);
+                        // RGB channel selection is display-only; derived CIE layers replace the
+                        // document source because they represent a different underlying plane.
+                        if (layer.SourceChannelIndex.HasValue)
+                            Assert.Equal(initial.Revision, selected.Revision);
+                        else
+                            Assert.True(selected.Revision > initial.Revision);
                         Assert.Equal(initial.Pixels.Sha256, HashLease(initial.Lease, initial.Pixels.Stride));
                         Assert.Equal(selected.Pixels.Sha256, HashLease(selected.Lease, selected.Pixels.Stride));
                         if (layer.Id is "cie-x" or "cie-y" or "cie-z")

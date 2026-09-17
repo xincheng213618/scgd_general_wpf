@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
@@ -127,6 +127,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 .OrderBy(group => group.Order)
                 .ThenBy(group => group.Id, StringComparer.Ordinal))
             {
+                if (items.Any(item => string.Equals(item.GuidId, group.Id, StringComparison.OrdinalIgnoreCase))) continue;
                 items.Add(new MenuItemMetadata
                 {
                     OwnerGuid = "Algorithms",
@@ -176,7 +177,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             string compatibilityId = entry.Presentation.CompatibilityId;
             if (DisplayMetrologyIds.All.Contains(entry.Descriptor.Id) && UsesSpecializedAdapter(entry.Descriptor))
-                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor),
+                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor,
+                    selectRectangle: entry.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration && compatibilityId == entry.Descriptor.Id.Value),
                     _ => CanExecuteDescriptor(entry.Descriptor));
             AlgorithmId id = entry.Descriptor.Id;
             if (!UsesSpecializedAdapter(entry.Descriptor))

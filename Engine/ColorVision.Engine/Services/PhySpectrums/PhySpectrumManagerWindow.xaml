@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         Title="{x:Static properties:Resources.PhysicalSpectrumManager}"
-        Width="1020" Height="740" MinWidth="880" MinHeight="660"
+        Width="970" Height="680" MinWidth="900" MinHeight="600"
         Background="{DynamicResource GlobalBorderBrush}" SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Window.Resources>
         <ResourceDictionary>
@@ -14,6 +14,19 @@
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="HeaderIconButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseActionButtonStyle}">
+                <Setter Property="Width" Value="28"/>
+                <Setter Property="MinHeight" Value="28"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="4,0,0,0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
             </Style>
             <Style x:Key="SpectrumListItem" TargetType="ListBoxItem">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -31,9 +44,7 @@
                                 <ContentPresenter/>
                             </Border>
                             <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger>
                                 <Trigger Property="IsSelected" Value="True">
                                     <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
                                     <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
@@ -46,47 +57,41 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <StackPanel Margin="0,0,0,16">
-            <TextBlock Text="{x:Static properties:Resources.PhysicalSpectrumManager}" FontSize="23" FontWeight="SemiBold"/>
-            <TextBlock Text="{Binding SummaryText}" Margin="0,7,0,0" Opacity="0.65"/>
-        </StackPanel>
-        <Border Grid.Row="1" Style="{StaticResource ConsoleSurfaceStyle}" Padding="12" Margin="0,0,0,14">
-            <WrapPanel>
-                <Button Content="{x:Static properties:Resources.SpectrumScanOnline}" Command="{Binding ScanCommand}" Style="{StaticResource PrimaryToolbarButtonStyle}"/>
-                <TextBlock Text="{x:Static properties:Resources.SpectrumScanPort}" Margin="4,0,8,6"/>
-                <TextBox Text="{Binding ComPort, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}" Width="48" VerticalContentAlignment="Center" Margin="0,0,12,6" ToolTip="{x:Static properties:Resources.SpectrumScanPortHint}"/>
-                <Button Content="{x:Static properties:Resources.SpectrumUpdateAllLicenses}" Command="{Binding UpdateAllCommand}" Style="{StaticResource ToolbarButtonStyle}"/>
-                <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}" Style="{StaticResource ToolbarButtonStyle}"/>
-            </WrapPanel>
-        </Border>
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="310" MinWidth="270"/>
-                <ColumnDefinition Width="14"/>
-                <ColumnDefinition Width="*" MinWidth="390"/>
-            </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,18">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{x:Static properties:Resources.PhysicalSpectrumManager}" FontSize="23" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding SummaryText}" Margin="0,7,0,0" Opacity="0.65"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Command="{Binding ScanCommand}" Style="{StaticResource ToolbarButtonStyle}" Padding="12,6" MinHeight="36" Margin="8,0,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,8,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.Scan}"/>
+                </StackPanel>
+            </Button>
+            <Button Content="{x:Static properties:Resources.Import}" Command="{Binding ImportAllCommand}" Style="{StaticResource ToolbarButtonStyle}" Padding="12,6" MinHeight="36" Margin="8,0,0,0"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="280" MinWidth="250"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*" MinWidth="400"/></Grid.ColumnDefinitions>
             <Border Style="{StaticResource ConsoleSurfaceStyle}" Padding="14">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="{x:Static properties:Resources.SpectrumSerialList}" Style="{StaticResource ConsoleSectionTitleStyle}"/>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <DockPanel>
+                        <Border DockPanel.Dock="Right" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="10" Padding="7,2">
+                            <TextBlock Text="{Binding Spectrums.Count}" FontSize="11" Opacity="0.65"/>
+                        </Border>
+                        <TextBlock Text="{x:Static properties:Resources.SpectrumSerialList}" Style="{StaticResource ConsoleSectionTitleStyle}"/>
+                    </DockPanel>
                     <StackPanel Grid.Row="1" Margin="0,10,0,12">
                         <TextBlock Text="{x:Static properties:Resources.SpectrumSearchSerial}" FontSize="11" Opacity="0.65" Margin="0,0,0,5"/>
                         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" VerticalContentAlignment="Center"/>
                     </StackPanel>
                     <ListBox Grid.Row="2" ItemsSource="{Binding FilteredSpectrums}" SelectedItem="{Binding SelectedSpectrum}"
-                             Foreground="{DynamicResource GlobalTextBrush}" Background="Transparent" BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             ItemContainerStyle="{StaticResource SpectrumListItem}">
+                             Foreground="{DynamicResource GlobalTextBrush}" Background="Transparent" BorderThickness="0" Padding="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource SpectrumListItem}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -94,80 +99,83 @@
                                         <TextBlock DockPanel.Dock="Right" Text="{Binding DiscoveryText}" FontSize="10" Opacity="0.65" Margin="8,0,0,0"/>
                                         <TextBlock Text="{Binding DisplayModel}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     </DockPanel>
-                                    <TextBlock Text="{Binding SN}" FontFamily="Consolas" FontSize="12" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding SN}"/>
-                                    <DockPanel Margin="0,7,0,0">
-                                        <TextBlock DockPanel.Dock="Right" Text="{Binding RegistrationText}" FontSize="10" Opacity="0.6"/>
-                                        <TextBlock Text="{Binding LicenseStatus}" Foreground="{Binding LicenseBrush}" FontSize="11"/>
-                                    </DockPanel>
+                                    <TextBlock Text="{Binding SN}" FontFamily="Consolas" FontSize="11" Margin="0,7,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding SN}"/>
+                                    <TextBlock Text="{Binding LicenseStatus}" Foreground="{Binding LicenseBrush}" FontSize="11" Margin="0,7,0,0"/>
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <StackPanel Grid.Row="3" Margin="0,12,0,0">
-                        <TextBlock Text="{x:Static properties:Resources.SpectrumAddSerial}" FontSize="11" Opacity="0.65" Margin="0,0,0,6"/>
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.SpectrumRegister}" Command="{Binding AddCommand}" Style="{StaticResource BaseActionButtonStyle}" Margin="6,0,0,0"/>
-                            <TextBox Text="{Binding NewSerial, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
-                        </DockPanel>
-                    </StackPanel>
                 </Grid>
             </Border>
-            <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
-            <Border Grid.Column="2" Style="{StaticResource ConsoleSurfaceStyle}" Padding="20">
+            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+            <Border Grid.Column="2" Style="{StaticResource ConsoleSurfaceStyle}" Padding="16">
                 <Grid>
-                    <TextBlock Text="{x:Static properties:Resources.SpectrumEmptySelection}" HorizontalAlignment="Center" TextWrapping="Wrap">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.SpectrumEmptySelection}" HorizontalAlignment="Center" TextWrapping="Wrap">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                                 <Setter Property="VerticalAlignment" Value="Center"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
-                                </Style.Triggers>
+                                <Style.Triggers><DataTrigger Binding="{Binding HasSelection}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding HasSelection, Converter={StaticResource BoolVisibility}}">
-                        <StackPanel>
-                            <TextBlock Text="{Binding SelectedSpectrum.DisplayModel}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                            <TextBox Text="{Binding SelectedSpectrum.SN, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="15" Margin="0,8,0,12"/>
-                            <WrapPanel Margin="0,0,0,12">
-                                <TextBlock Text="{Binding SelectedSpectrum.DiscoveryText}" Margin="0,0,14,6"/>
-                                <TextBlock Text="{Binding SelectedSpectrum.RegistrationText}" Opacity="0.65" Margin="0,0,14,6"/>
-                                <Button Content="{x:Static properties:Resources.SpectrumRegister}" Command="{Binding RegisterCommand}" Style="{StaticResource BaseActionButtonStyle}"/>
-                            </WrapPanel>
-                            <TextBlock Text="{Binding SelectedSpectrum.DiscoverySource}" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,14"/>
-                            <Border Style="{StaticResource SectionPanelStyle}" Padding="16">
-                                <StackPanel>
-                                    <TextBlock Text="{x:Static properties:Resources.SpectrumLicenseSection}" Style="{StaticResource ConsoleSectionTitleStyle}"/>
-                                    <TextBlock Text="{Binding SelectedSpectrum.LicenseStatus}" Foreground="{Binding SelectedSpectrum.LicenseBrush}" FontSize="18" FontWeight="SemiBold" Margin="0,12,0,12"/>
-                                    <Grid Margin="0,0,0,18">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="{x:Static properties:Resources.SpectrumLicenseExpiry}" Style="{StaticResource LabelTextStyle}"/>
-                                            <TextBlock Text="{Binding SelectedSpectrum.ExpiryText}" Style="{StaticResource ValueTextStyle}"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="{x:Static properties:Resources.SpectrumLicenseCustomer}" Style="{StaticResource LabelTextStyle}"/>
-                                            <TextBlock Text="{Binding SelectedSpectrum.Customer}" Style="{StaticResource ValueTextStyle}" TextWrapping="Wrap"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    <WrapPanel>
-                                        <Button Content="{x:Static properties:Resources.SpectrumUpdateLicense}" Command="{Binding UpdateCommand}" Style="{StaticResource PrimaryToolbarButtonStyle}"/>
-                                        <Button Content="{x:Static properties:Resources.SpectrumImportLicense}" Command="{Binding ImportCommand}" Style="{StaticResource ToolbarButtonStyle}"/>
-                                    </WrapPanel>
+                    <StackPanel Visibility="{Binding HasSelection, Converter={StaticResource BoolVisibility}}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding SelectedSpectrum.DiscoveryText}" FontSize="12" Opacity="0.65" Margin="12,0,0,0"/>
+                            <TextBlock Text="{Binding SelectedSpectrum.DisplayModel}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
+                        <TextBox Text="{Binding SelectedSpectrum.SN, Mode=OneWay}" Style="{StaticResource CopyableTextBoxStyle}"
+                                 FontFamily="Consolas" FontSize="12" Opacity="0.7" Margin="0,4,0,0"/>
+                        <TextBlock Text="{Binding SelectedSpectrum.DiscoverySource}" FontSize="11" Opacity="0.65" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        <Border Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6" Padding="10,6" Margin="0,10,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <WrapPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding SelectedSpectrum.LicenseBadgeText}" Foreground="{Binding SelectedSpectrum.LicenseBrush}" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,2,6,2"/>
+                                    <TextBlock Text="{Binding SelectedSpectrum.LicenseDateRange}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,2,0,2"/>
+                                </WrapPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource BaseActionButtonStyle}" Content="{x:Static properties:Resources.Update}"
+                                            Command="{Binding ImportCommand}" ToolTip="{x:Static properties:Resources.ModifyLicense}"
+                                            MinHeight="28" Padding="6,2" Margin="0" FontSize="11" Background="Transparent" BorderThickness="0"/>
+                                    <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE896;" Command="{Binding UpdateCommand}" ToolTip="{x:Static properties:Resources.DownLicOnline}"/>
+                                    <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xE8C8;" Command="{Binding CopyLicenseCommand}" ToolTip="{x:Static properties:Resources.CopyLicense}"/>
+                                    <Button Style="{StaticResource HeaderIconButtonStyle}" Content="&#xEDE1;" Command="{Binding ExportLicenseCommand}" ToolTip="{x:Static properties:Resources.ExportLicense}"/>
                                 </StackPanel>
-                            </Border>
-                            <TextBox Text="{Binding SelectedSpectrum.OperationResult, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent" MaxHeight="120" VerticalScrollBarVisibility="Auto"/>
-                            <TextBlock Text="{x:Static properties:Resources.SpectrumManagerHint}" Opacity="0.6" TextWrapping="Wrap" Margin="0,14,0,0" FontSize="11"/>
+                            </Grid>
+                        </Border>
+                        <Border Height="1" Background="{DynamicResource ButtonBorderBrush}" Margin="0,14,0,14"/>
+                    </StackPanel>
+                    <Border Grid.Row="1" Style="{StaticResource ConsoleSurfaceStyle}" Padding="12" Margin="0,4,0,0">
+                        <StackPanel>
+                            <TextBlock Text="{x:Static properties:Resources.SpectrumTools}" Style="{StaticResource ConsoleSectionTitleStyle}" Margin="0,0,0,10"/>
+                            <StackPanel Visibility="{Binding HasMultipleCorrectionDevices, Converter={StaticResource BoolVisibility}}" Margin="0,0,0,10">
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumCorrectionDevice}" FontSize="11" Opacity="0.65" Margin="0,0,0,5"/>
+                                <ComboBox ItemsSource="{Binding CorrectionDevices}" SelectedItem="{Binding SelectedCorrectionDevice}" MinHeight="30" HorizontalContentAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock TextTrimming="CharacterEllipsis"><Run Text="{Binding Config.Name}"/><Run Text=" · "/><Run Text="{Binding Config.Code}"/></TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                            <WrapPanel>
+                                <Button Content="{x:Static properties:Resources.SpectrumDriverTool}" Command="{Binding OpenDriverToolCommand}" Style="{StaticResource ToolbarButtonStyle}"/>
+                                <Button Content="{x:Static properties:Resources.SpectrumCorrection}" Command="{Binding OpenCorrectionCommand}" Style="{StaticResource ToolbarButtonStyle}"
+                                        ToolTip="{Binding CorrectionHint}" ToolTipService.ShowOnDisabled="True"/>
+                                <Button Content="{x:Static properties:Resources.SpectrumLog}" Command="{Binding OpenLogCommand}" Style="{StaticResource ToolbarButtonStyle}"/>
+                            </WrapPanel>
                         </StackPanel>
-                    </ScrollViewer>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>
-        <StackPanel Grid.Row="3" Margin="0,12,0,0">
-            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,6" Visibility="{Binding IsBusy, Converter={StaticResource BoolVisibility}}"/>
-            <TextBox Text="{Binding StatusText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="60" VerticalScrollBarVisibility="Auto" Background="Transparent" BorderThickness="0"/>
+        <StackPanel Grid.Row="2" Margin="0,8,0,0">
+            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,6" Visibility="{Binding ShowProgress, Converter={StaticResource BoolVisibility}}"/>
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" MaxHeight="60"/>
             <Expander Header="{x:Static properties:Resources.SpectrumDiscoveryDetails}" Margin="0,5,0,0">
+                <Expander.Style><Style TargetType="Expander"><Style.Triggers><DataTrigger Binding="{Binding DiscoveryDetails}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Expander.Style>
                 <TextBox Text="{Binding DiscoveryDetails, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="120" VerticalScrollBarVisibility="Auto"/>
             </Expander>
         </StackPanel>

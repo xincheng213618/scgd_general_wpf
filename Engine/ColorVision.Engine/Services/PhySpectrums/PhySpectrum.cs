@@ -13,11 +13,8 @@ namespace ColorVision.Engine.Services.PhySpectrums
         public string DiscoverySource { get; init; } = string.Empty;
         public bool IsDiscovered => DiscoverySource.Length > 0;
         public bool IsRegistered => ResourceId.HasValue;
-        public string RegistrationText => IsRegistered ? Properties.Resources.SpectrumRegistered : Properties.Resources.SpectrumUnregistered;
         public string DiscoveryText => IsDiscovered ? Properties.Resources.SpectrumDiscovered : Properties.Resources.SpectrumNotDiscovered;
         public string DisplayModel => string.IsNullOrWhiteSpace(License?.Model) ? Properties.Resources.Spectrometer : License.Model;
-        public string Customer => License?.CusTomerName ?? "—";
-        public string ExpiryText => License?.ExpiryDate?.ToString("yyyy-MM-dd") ?? "—";
         public bool NeedsAttention => License == null || string.IsNullOrWhiteSpace(License.LicenseValue) || License.ExpiryDate == null || License.ExpiryDate <= DateTime.Now.AddDays(30);
         public string LicenseStatus => License == null || string.IsNullOrWhiteSpace(License.LicenseValue)
             ? Properties.Resources.LicenseStatusUnlicensed
@@ -25,8 +22,12 @@ namespace ColorVision.Engine.Services.PhySpectrums
             : License.ExpiryDate <= DateTime.Now ? Properties.Resources.LicenseStatusExpired
             : NeedsAttention ? Properties.Resources.LicenseStatusExpiringSoon : Properties.Resources.LicenseStatusValid;
         public Brush LicenseBrush => NeedsAttention ? Brushes.DarkOrange : Brushes.SeaGreen;
-
-        public string OperationResult { get => operationResult; set { operationResult = value; OnPropertyChanged(); } }
-        private string operationResult = string.Empty;
+        public string LicenseBadgeText => License?.ExpiryDate is DateTime expiry && !string.IsNullOrWhiteSpace(License.LicenseValue)
+            ? expiry <= DateTime.Now ? string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiry:yyyy-MM-dd}")
+                : NeedsAttention ? string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiry:yyyy-MM-dd}") : Properties.Resources.LicenseBadgeValid
+            : LicenseStatus;
+        public string LicenseDateRange => License?.ExpiryDate is DateTime expiry
+            ? License.CreateDate is DateTime start ? $"· {start:yyyy-MM-dd} - {expiry:yyyy-MM-dd}" : $"· {expiry:yyyy-MM-dd}"
+            : string.Empty;
     }
 }

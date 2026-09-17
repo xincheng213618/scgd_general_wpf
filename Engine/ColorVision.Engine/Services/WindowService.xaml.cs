@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.PhySpectrums;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
@@ -193,6 +195,13 @@ namespace ColorVision.Engine.Services
         private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
         {
             new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void ButtonPhySpectrumManager_Click(object sender, RoutedEventArgs e)
+        {
+            var device = TreeView1.SelectedItem as DeviceSpectrum;
+            int port = device != null && int.TryParse(device.Config.ComPort, out int parsed) ? parsed : 0;
+            new PhySpectrumManagerWindow(device?.Config.SN, port) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void ButtonArchiveManager_Click(object sender, RoutedEventArgs e)

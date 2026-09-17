@@ -1,9 +1,11 @@
-using ColorVision.Engine.FlowProcessing.Diagnostics;
+﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
@@ -89,6 +91,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal interface ILocalFindCrossNodeServices
     {
+        Int32Rect LoadSearchRegionTemplate(string templateName);
         LocalFlowFrame LoadFrame(string filePath);
         MeasureResultImgModel? GetImageResult(int masterId);
         LocalFindCrossDetection Detect(HImage image, RoiRect roi, string parameterJson);
@@ -109,6 +112,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private LocalFindCrossNodeServices()
         {
         }
+
+        public Int32Rect LoadSearchRegionTemplate(string templateName) => LocalPoiSearchRegionResolver.Load(templateName);
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
@@ -447,6 +452,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private string parameterJson = DefaultParameterJson;
         private string resultDirectory = string.Empty;
         private Int32Rect searchRegion = Int32Rect.Empty;
+        private string searchRegionPoiTemplate = string.Empty;
         private readonly ILocalFindCrossNodeServices services;
 
         [Category("本地十字定位")]
@@ -475,7 +481,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         [Category("本地十字定位")]
-        [STNodeProperty("搜索区域", "可选 ROI（X,Y,Width,Height）；默认 0,0,0,0 为通用整幅图像模式。现场 G0941 复现需设为 2888,1920,3751,2655", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
+        [STNodeProperty("搜索区域关注点", "可选；选择寻找发光区写入的 POI 模板，每次运行读取最新矩形或四角点外接矩形。填写后优先于固定搜索区域；模板无效或越界时停止。留空保持原搜索区域行为。", true)]
+        public string SearchRegionPoiTemplate
+        {
+            get => searchRegionPoiTemplate;
+            set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        [Category("本地十字定位")]
+        [STNodeProperty("搜索区域", "固定像素 ROI（X,Y,Width,Height）；未选择搜索区域关注点时使用，0,0,0,0 表示整幅图像。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
         public Int32Rect SearchRegion
         {
             get => searchRegion;
@@ -515,6 +530,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         internal LocalFindCrossNodeResultData ExecuteSynchronously(CVStartCFC action)
         {
+            string configuredTemplate = SearchRegionPoiTemplate.Trim();
+            Int32Rect configuredRegion = SearchRegion;
             ArgumentNullException.ThrowIfNull(action);
             if (string.IsNullOrWhiteSpace(ParameterJson))
                 throw new InvalidOperationException("FindCross 算法参数 JSON 不能为空。");
@@ -528,7 +545,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 if (!lease.IsFlipApplied)
                     throw new InvalidOperationException("当前图像的方向变换尚未完成，无法生成可供后续映射使用的十字中心结果。");
 
-                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(SearchRegion, lease.Metadata.Width, lease.Metadata.Height);
+                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate), lease.Metadata.Width, lease.Metadata.Height);
                 HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalFindCrossDetection detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, ParameterJson));
@@ -555,7 +572,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             SourceMasterId = lease.MasterId,
                             FrameId = lease.FrameId.ToString("N"),
                             ImageFilePath = imageFile,
-                            SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
+                            SearchRegionPoiTemplate = configuredTemplate,
+                    SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                             ParameterJson,
                             Success = false,
                             detection.FailureReason,
@@ -592,6 +610,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SourceMasterId = lease.MasterId,
                     FrameId = lease.FrameId.ToString("N"),
                     ImageFilePath = imageFile,
+                    SearchRegionPoiTemplate = configuredTemplate,
                     SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                     ParameterJson,
                     Result = result,
@@ -677,6 +696,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 ImageFilePath,
                 SearchRegion,
+                SearchRegionPoiTemplate,
                 ParameterJson,
                 ResultDirectory,
                 Algorithm = "LocalFindCross"

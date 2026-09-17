@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Media
         private static readonly ILog Log = LogManager.GetLogger(typeof(CvRawLayerController));
         private readonly ImageView _imageView;
         private readonly string _filePath;
+        private readonly bool _isCie;
         private readonly CVCIEFile? _liveXyz;
         private readonly WriteableBitmap? _liveSource;
         private ImageLayerDescriptor _lastSuccessfulLayer;
@@ -30,11 +31,12 @@ namespace ColorVision.Engine.Media
         private readonly record struct FileStamp(long Length, DateTime LastWriteTime);
         private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap);
 
-        private CvRawLayerController(ImageView imageView, string filePath, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
+        private CvRawLayerController(ImageView imageView, string filePath, bool isCie, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
             CVCIEFile? liveXyz = null, WriteableBitmap? liveSource = null)
         {
             _imageView = imageView;
             _filePath = filePath;
+            _isCie = isCie;
             Layers = layers;
             DefaultLayer = layers.FirstOrDefault(layer => layer.Id == displayedLayerId) ?? layers[0];
             _lastSuccessfulLayer = DefaultLayer;
@@ -52,12 +54,12 @@ namespace ColorVision.Engine.Media
 
         public static CvRawLayerController Create(ImageView imageView, string filePath, bool isCie, int channelCount, int bpp, bool hasRgbLayers, string displayedLayerId)
         {
-            return new CvRawLayerController(imageView, filePath, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId);
+            return new CvRawLayerController(imageView, filePath, isCie, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId);
         }
 
         public static IImageLayerController CreateLive(ImageView imageView, CVCIEFile xyz, WriteableBitmap source, string displayedLayerId)
         {
-            return new CvRawLayerController(imageView, string.Empty, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
+            return new CvRawLayerController(imageView, string.Empty, true, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
         }
 
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
@@ -160,6 +162,16 @@ namespace ColorVision.Engine.Media
             double white = config.ReferenceWhiteLuminance;
             try
             {
+                // A CVRAW RGB selection is a display choice, not a new document source.
+                // Keep the already loaded composite in place so channel changes neither
+                // reread the file nor publish a colored intermediate frame.
+                if (!_isCie && (layer.Id == "composite" || layer.SourceChannelIndex.HasValue))
+                {
+                    _imageView.ExtractChannel(layer.SourceChannelIndex ?? -1);
+                    _lastSuccessfulLayer = layer;
+                    return;
+                }
+
                 FileStamp stamp = GetFileStamp();
                 DisplayCache? cache = layer.Id == "cie-srgb" ? _srgbCache : _channelCache;
                 WriteableBitmap bitmap;

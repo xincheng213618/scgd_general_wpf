@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -48,6 +49,31 @@ namespace ColorVision.Engine.Services.PhySpectrums
             if (!string.Equals(Path.GetFileNameWithoutExtension(filePath), sn, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException(string.Format(Properties.Resources.SpectrumLicenseSerialMismatch, sn));
             return ParseLicense(File.ReadAllText(filePath), sn);
+        }
+
+        internal static IReadOnlyList<LicenseModel> ReadFiles(IEnumerable<string> filePaths)
+        {
+            var licenses = new List<LicenseModel>();
+            foreach (string filePath in filePaths)
+            {
+                if (string.Equals(Path.GetExtension(filePath), ".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var archive = ZipFile.OpenRead(filePath);
+                    var entries = archive.Entries.Where(e => string.Equals(Path.GetExtension(e.Name), ".lic", StringComparison.OrdinalIgnoreCase)).ToArray();
+                    if (entries.Length == 0) throw new InvalidDataException(Properties.Resources.SpectrumInvalidLicense);
+                    foreach (var entry in entries)
+                    {
+                        string sn = PhySpectrumStore.NormalizeSerial(Path.GetFileNameWithoutExtension(entry.Name));
+                        using var reader = new StreamReader(entry.Open(), Encoding.UTF8);
+                        licenses.Add(ParseLicense(reader.ReadToEnd(), sn));
+                    }
+                }
+                else
+                    licenses.Add(ReadFile(filePath, PhySpectrumStore.NormalizeSerial(Path.GetFileNameWithoutExtension(filePath))));
+            }
+            var duplicate = licenses.GroupBy(l => l.MacAddress, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
+            if (duplicate != null) throw new InvalidDataException(string.Format(Properties.Resources.SpectrumLicenseSerialMismatch, duplicate.Key));
+            return licenses;
         }
 
         internal static LicenseModel ReadArchive(Stream stream, string sn)

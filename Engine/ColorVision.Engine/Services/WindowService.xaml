@@ -116,19 +116,26 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <DockPanel Margin="0,0,0,16">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+        <Grid Margin="0,0,0,16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE722;"/>
                         <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}"/>
                     </StackPanel>
                 </Button>
+                <Button Style="{StaticResource NavButton}" Click="ButtonPhySpectrumManager_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE9D9;"/>
+                        <TextBlock Text="{x:Static properties:Resources.PhysicalSpectrumManager}"/>
+                    </StackPanel>
+                </Button>
                 <Button Style="{StaticResource NavButton}" Click="ButtonArchiveManager_Click" Content="{x:Static properties:Resources.Archive}" Margin="0"/>
-            </StackPanel>
+            </WrapPanel>
             <TextBlock Text="{x:Static properties:Resources.WindowServiceTitle}" FontSize="22" FontWeight="SemiBold"
-                       Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
-        </DockPanel>
+                       Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+        </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="240" MinWidth="190"/>

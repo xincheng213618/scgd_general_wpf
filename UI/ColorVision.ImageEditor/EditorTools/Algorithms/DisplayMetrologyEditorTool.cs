@@ -46,7 +46,8 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
         return manifest;
     }
 
-    public async Task ExecuteAsync(AlgorithmDescriptor descriptor)
+    public async Task ExecuteAsync(AlgorithmDescriptor descriptor, bool selectRectangle = false,
+        RectangleAlgorithmRoi? roi = null, ImageSelectionScope? expectedScope = null)
     {
         var owner = AlgorithmAnalysisWindowOwner.Capture();
         var inputs = new List<AlgorithmInput>();
@@ -80,13 +81,22 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             }
             if (parameters is EyeboxScanParameters scan && paths.Length != scan.Columns * scan.Rows)
                 throw new InvalidDataException("编辑后的扫描行列数与清单文件数不一致。");
+            if (selectRectangle)
+            {
+                if (draw == null) throw new InvalidOperationException("当前窗口不支持矩形框选。");
+                SelectResult? selection = await new TransientRoiSelectionSession(draw, SelectShapeType.Rectangle).Start();
+                if (selection == null) return;
+                roi = new RectangleAlgorithmRoi(selection.Rect.X, selection.Rect.Y, selection.Rect.Width, selection.Rect.Height)
+                    { CoordinateSpace = AlgorithmCoordinateSpace.Dip };
+                expectedScope = selection.SourceScope;
+            }
             Guid document = image.DocumentInstanceId;
-            var source = ImageAlgorithmInputFactory.Acquire(image, descriptor.Id == DisplayMetrologyIds.Binocular ? "left" : "source");
+            var source = ImageAlgorithmInputFactory.Acquire(image, expectedScope, descriptor.Id == DisplayMetrologyIds.Binocular ? "left" : "source");
             inputs.Add(source);
             if (!long.TryParse(source.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long revision))
                 throw new InvalidDataException("无法取得当前图像版本。");
             if (descriptor.Id == DisplayMetrologyIds.Eyebox) { source.Image.Dispose(); inputs.Clear(); }
-            invocation = AlgorithmInvocation.Create(descriptor.Id, parameters);
+            invocation = AlgorithmInvocation.Create(descriptor.Id, parameters, roi);
             cancellation = ImageAlgorithmAnalysisSession.Begin(image, document, revision, Guid.NewGuid(), invocation.InvocationId);
             progress = new ImageAlgorithmProgressWindow(descriptor.Name, cancellation);
             if (!owner.TryAssign(progress)) return;
@@ -105,7 +115,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             {
                 Invocation = invocation, Inputs = inputs,
                 RequiredCapabilities = AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local
-                    | (inputs.Count > 1 ? AlgorithmHostCapabilities.MultiInput : 0),
+                    | (inputs.Count > 1 ? AlgorithmHostCapabilities.MultiInput : 0) | (roi != null ? AlgorithmHostCapabilities.Roi : 0),
                 Progress = new Progress<AlgorithmProgress>(value => progress.Report(value)),
             }, cancellation.Token);
             progress.Complete();
@@ -244,4 +254,27 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "eyebox-scan" => "Eyebox 采样点", "field-sfr" => "视场清晰度", "sfr-curves" => "SFR 曲线数据",
         _ => name,
     };
+}
+
+/// <summary>Run directly inside a drawn rectangle without changing or cropping the source document.</summary>
+public sealed class RgbCrossRectangleContextMenu(ImageProcessingContext image, DrawEditorContext draw) : IDVContextMenu, IAlgorithmCatalogBoundMenu
+{
+    public AlgorithmId AlgorithmId => DisplayMetrologyIds.RgbCrossRegistration;
+    public bool RequiresRoi => true;
+    public Type ContextType => typeof(IRectangle);
+
+    public IEnumerable<MenuItem> GetContextMenuItems(object obj)
+    {
+        if (obj is not IRectangle rectangle || !image.AlgorithmRuntime.Catalog.TryResolve(AlgorithmId, out var descriptor) || descriptor == null) return [];
+        MenuItem item = new() { Header = "九点十字 RGB 分离..." };
+        item.Click += async (_, _) =>
+        {
+            ImageSelectionScope? scope = TransientRoiSelectionSession.CaptureSourceScope(image);
+            if (scope == null) return;
+            Rect rect = rectangle.Rect;
+            await new DisplayMetrologyEditorTool(image, draw).ExecuteAsync(descriptor,
+                roi: new RectangleAlgorithmRoi(rect.X, rect.Y, rect.Width, rect.Height) { CoordinateSpace = AlgorithmCoordinateSpace.Dip }, expectedScope: scope);
+        };
+        return [item];
+    }
 }

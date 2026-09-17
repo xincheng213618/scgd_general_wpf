@@ -2,10 +2,10 @@
 knowledge_id: "engine.spectrum-device"
 knowledge_type: "topic"
 status: "current"
-summary: "主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。"
-aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
-test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs"]
+summary: "主程序物理光谱仪 SN 与许可证管理、全连接方式搜索、设备配置和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。"
+aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
+test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
 ---
 
@@ -25,25 +25,31 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 许可证窗口的 **获取光谱仪许可** 使用同一搜索逻辑，对三种方式查询 USB，不再为读取 SN 打开和关闭设备。**刷新设备列表** 使用服务端 `CM_GetAllSnID` 刷新资源，和本机搜索是不同操作；该操作不再隐式下载许可证，联网更新由物理光谱仪管理中的独立按钮执行。
 
-**物理光谱仪管理** 可从工具菜单、设备属性页的“设备与连接”或光谱仪 SN 属性旁的“编辑”打开。窗口沿用物理相机的列表与详情卡片样式，提供按 SN / 型号查询、扫描在线光谱仪、登记 SN、联网更新当前 / 全部许可证及导入当前 SN 的本地许可证。它不提供相机的配置、校正或备份属性。
+**物理光谱仪管理** 可从工具菜单、设备配置窗口顶部、设备属性页的“设备与连接”或光谱仪 SN 属性旁的“编辑”打开。顶部保留“扫描”和“导入”，左侧按 SN / 型号查询；右侧沿用物理相机的型号、SN 与紧凑许可证横条。横条内“更新”导入当前 SN 的本地许可证，下载图标后台联网更新，另提供复制和导出。它不提供相机的配置或备份属性，也不单列批量联网更新或手动登记按钮。
+
+许可证横条下方的“光谱仪工具”额外提供驱动工具、光谱校正和光谱仪日志，原设备页入口继续保留。驱动和日志可在尚未选择 SN 时打开，复用原有工具校验、确认及日志定位逻辑。光谱校正仅匹配已经载入且 `Config.SN` 与当前物理 SN 一致的设备；只有一个时直接使用，多个时先选择目标，没有匹配设备时禁用并通过工具提示说明绑定要求。执行前重新核对关联，复用该设备原有校正命令、测量门禁及文件应用逻辑，不创建或自动绑定逻辑设备。
 
 清单合并未删除的 `ServiceTypes.PhySpectrums = 103` 资源、`lic_type=1` 的既有许可证和逻辑光谱仪配置中的 SN，忽略大小写并去重；读取清单不做数据库迁移。旧许可证即使没有物理资源也继续可见。登记只创建 SN 资源，不生成相机配置、不修改逻辑设备 SN。SN 下拉复用同一清单及卡片样式，关闭管理窗口后刷新，原有 `ConfigSpectrum.SN` 保存格式及手动输入保持兼容。
 
-扫描默认查询全部驱动的 USB；从设备打开时带入该设备的串口，工具菜单默认串口为 0，也可在窗口输入串口号。扫描结果进入当前窗口清单，选择新设备后点击“登记”保存；未登记的扫描结果仅在当前窗口保留。“本次发现”仅表示此轮查询发现，“未确认在线”不表示离线；某项驱动失败不隐藏其它查询结果，详情区保留逐项错误。扫描不下载许可证、不打开设备连接。
+扫描默认查询全部驱动的 USB；从设备打开时带入该设备的串口，工具菜单默认串口为 0。发现的 SN 去重后登记到物理光谱仪资源并刷新清单。“本次发现”仅表示此轮查询发现，“未确认在线”不表示离线；某项驱动失败不隐藏其它查询结果，详情区保留逐项错误。扫描不下载许可证、不打开设备连接。
 
-联网更新按 SN 逐台调用现有许可证下载接口，检查 HTTP 状态及 JSON / 文本错误，直接读取 ZIP 中唯一匹配的 `<SN>.lic`，不使用服务端文件名落盘或解压路径。许可证沿用 Base64 JSON 格式，读取型号、客户和到期日期后才保存 `lic_type=1` 记录；更新保留原许可证 ID 及关联，遇到相同 SN 的其它类型许可证时拒绝覆盖。当前格式没有独立 SN 字段，身份匹配依赖 LIC 文件名；这里不代替驱动加载时的签名校验。失败显示 SN、HTTP 状态（适用时）和服务端错误，批量失败逐项记录并继续其余 SN。更新后立即刷新显示，不自动重启服务或使运行中的驱动重新加载许可。本地导入同样只接受当前 SN 对应的 LIC 或 ZIP。
+联网更新按当前 SN 调用现有许可证下载接口，检查 HTTP 状态及 JSON / 文本错误，直接读取 ZIP 中唯一匹配的 `<SN>.lic`，不使用服务端文件名落盘或解压路径。许可证沿用 Base64 JSON 格式，读取型号、客户和到期日期后才保存 `lic_type=1` 记录；更新保留原许可证 ID 及关联，遇到相同 SN 的其它类型许可证时拒绝覆盖。当前格式没有独立 SN 字段，身份匹配依赖 LIC 文件名；这里不代替驱动加载时的签名校验。联网更新静默执行，不显示进度、成功或失败提示，详细错误只写日志；成功后刷新许可证状态，不自动重启服务或使运行中的驱动重新加载许可。
+
+顶部“导入”无需预选设备，支持多个 LIC / ZIP，并按文件名将各个 SN 的许可证加入清单；全部文件内容验证通过后再逐条保存，重复 SN 拒绝导入。横条“更新”只接受当前 SN 对应的 LIC 或 ZIP。本地导入失败在窗口底部显示原因；复制、导出和联网更新不会弹出完成提示。
 
 ## 配置入口
 
 | 分类 | 操作 |
 | --- | --- |
-| 设备与连接 | 修改配置、物理光谱仪管理、搜索光谱仪、刷新设备列表、光谱仪驱动工具 |
+| 设备与连接 | 修改配置、物理光谱仪管理、搜索光谱仪、上传许可证、刷新设备列表、光谱仪驱动工具 |
 | 校准与校正 | 标定分组管理、应用当前分组、光谱校正、自适应校零、校零设置、SP100 暗电流设置 |
 | 采集与显示 | 编辑显示配置 |
 | 数据与日志 | 文件保存位置、光谱仪日志 |
-| 服务与维护 | 重启服务、上传许可证、重置、删除 |
+| 服务与维护 | 重启服务、重置、删除 |
 
 属性页与其他设备共用 [GenCommand 自动生成机制](../ui-components/property-grid.md#命令属性页自动生成)，通过 `CommandDisplay`、`Category` 和 `Description` 元数据定义入口，不单独维护光谱仪布局或刷新数字角标。入口复用原有命令及权限检查；重置和删除保留原有确认。分类之间使用细分隔线，紧凑操作项随可用宽度换列，窄窗口可纵向滚动；色彩和交互状态跟随更新窗口的浅色、深色主题。
+
+“上传许可证”与“搜索光谱仪”相邻，搜索完成后可在同一区域直接上传；两项操作仍由用户分别触发，不因发现 SN 而自动导入许可证。设备配置窗口顶部的物理光谱仪入口，在当前选中光谱仪设备时带入其 SN 与串口，否则打开全体 SN 清单。
 
 **光谱仪驱动工具** 打开随主程序交付的 Zadig，仅用于现场手动安装或替换 GCS 光谱仪 USB 驱动。打开前会校验工具文件的 SHA-256 并再次提示设备选择风险；工具缺失或被替换时拒绝运行。进入 Zadig 后依次启用 **Options → List All Devices**，只选择 `GCS Spectrameter`，将目标驱动选为 `libusb-win32`，再点击 **Replace Driver**。不要选择键盘、鼠标、接收器、摄像头或 USB Hub。该入口不会自动识别、选择或替换驱动，最终设备选择与管理员提权仍由现场人员确认。
 
@@ -65,4 +71,4 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 `SpectrumDeviceDiscoveryTests` 注入模拟查询，覆盖全部类型、USB/串口组合、单驱动失败后继续、原生返回码和序列号解析。测试不加载供应商驱动，也不能替代现场真机搜索与连接验收。
 
-`Test/Spectrum.Tests/PhySpectrumManagerTests.cs` 验证旧数据清单合并、资源与许可证类型隔离、SN 去重、ZIP 目标匹配、无效许可证拒绝及模拟 HTTP 成功 / 错误响应。测试不连接真实数据库、不访问许可证服务器；实际登记、许可证入库、驱动加载及设备扫描仍需现场验收。
+`Test/Spectrum.Tests/PhySpectrumManagerTests.cs` 验证旧数据清单合并、资源与许可证类型隔离、SN 去重、ZIP 目标匹配、无效许可证拒绝、模拟 HTTP 成功 / 错误响应，以及校正设备按 SN 匹配、重新绑定和拒绝回退到其它设备。测试不连接真实数据库、不访问许可证服务器；实际登记、许可证入库、驱动加载及设备扫描仍需现场验收。

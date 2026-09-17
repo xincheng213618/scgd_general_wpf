@@ -122,7 +122,7 @@ next: false
   算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
 
 - [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
-  主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。
+  主程序物理光谱仪 SN 与许可证管理、全连接方式搜索、设备配置和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。
 
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
