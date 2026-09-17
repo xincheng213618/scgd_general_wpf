@@ -48,7 +48,12 @@ export const USER_ROLE_OPTIONS: Array<{
   {
     label: '普通用户',
     value: 'user',
-    description: '当前默认拥有与管理员相同的功能权限，可在权限管理中调整',
+    description: '可登录个人中心，并且只能查看归属于自己的反馈',
+  },
+  {
+    label: '研发只读',
+    value: 'developer',
+    description: '默认可查看全部反馈与诊断附件，但不能修改处理状态',
   },
   {
     label: '管理员',
@@ -58,7 +63,9 @@ export const USER_ROLE_OPTIONS: Array<{
 ]
 
 export function userRoleLabel(role: UserRole): string {
-  return role === 'admin' ? '管理员' : '普通用户'
+  if (role === 'admin') return '管理员'
+  if (role === 'developer') return '研发只读'
+  return '普通用户'
 }
 
 export function oppositeUserRole(role: UserRole): UserRole {

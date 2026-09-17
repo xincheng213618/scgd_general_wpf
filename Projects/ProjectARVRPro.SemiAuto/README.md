@@ -28,12 +28,32 @@ dotnet run --project Projects/ProjectARVRPro.SemiAuto
 
 ## 半自动流程
 
+运行页的“PG 联动运行”是现场完整入口，执行顺序固定为：
+
+```text
+GECS POWER ON（携带 SN）
+  -> 连接 ARVR 并发送 ProjectARVRInit
+  -> ARVR SwitchPG
+  -> EventName + ARVRTestType 匹配配置并发送 GECS 切图指令
+  -> GECS END,OK 后发送 SwitchPGCompleted
+  -> 重复切图，直到 ProjectARVRResult
+  -> GECS POWER OFF
+```
+
+“内部运行全部”只发送 ARVR 原有的 `RunAll`，保留用于内部流程调试，不负责外部 GECS PG 切图。联动运行不依赖“自动执行”和“成功后确认”复选框，它会固定执行 PG 并仅在 PG 成功后确认 ARVR。
+
+“暂停”在安全边界生效：已经发送的 PG 指令会完成，下一条 `SwitchPG` 会保持待处理，点击“继续”后再切图并确认。“取消”不再发送下一条确认，在当前 PG 指令或 ARVR 测试到达下一切图/最终结果边界后下电并断开。通信日志右上角“清除”只清空界面日志。
+
+手动/可选自动流程仍可使用：
+
 ```text
 ARVR SwitchPG
   -> EventName + ARVRTestType 匹配配置
+  -> 首张图前 GECS POWER ON（携带 SN）
   -> 操作员点击“执行并确认”或启用自动执行
   -> GECS PG 返回 processing / END,OK / END,NG / ERROR
   -> 仅 END,OK 且成功匹配时确认 ARVR
+  -> 收到最终 ProjectARVRResult 后 GECS POWER OFF
 ```
 
 无映射、`END,NG`、`ERROR`、非法帧、断线、超时或 ARVR 确认发送失败时，不推进 ARVR 流程。
@@ -54,6 +74,7 @@ ARVR SwitchPG
 | `HeartbeatSeconds` | `ALIVE` 心跳间隔，0 表示禁用 |
 | `AutoExecuteMappedPgCommand` | 收到请求后自动执行启用的映射 |
 | `ConfirmArvrAfterPgSuccess` | PG 成功后自动确认 ARVR |
+| `ManagePgPowerForRun` | 首次切图前自动开电、最终结果或异常结束后自动关电 |
 | `Mappings` | `EventName + ARVRTestType` 到 GECS 指令模板的映射 |
 
 指令模板支持 `{channel}`、`{testType}`、`{sn}`。`ARVRTestType` 必须按现场活动流程组核对；`*` 表示该事件的通配映射。
@@ -75,7 +96,9 @@ STX(0x02) + Network Number(1 byte) + Message Length(4 byte HEX-ASCII)
 + Message Text(ASCII) + ETX(0x03)
 ```
 
-`processing` 会继续等待最终结果；`,END,NG` 和 `ERROR` 直接判为失败；成功回包还必须包含映射中的 `SuccessContains`。
+`processing` 会继续等待最终结果；`,END,NG` 和 `ERROR` 直接判为失败。成功回包优先按 `SuccessContains` 连续文本匹配；为兼容现场回包中的图片编号，也支持逗号字段按顺序匹配，但回包开头必须与实际发送的 PG 指令一致。例如配置 `,PATTERN,INDEX,END,OK` 可以匹配 `PG,01,PATTERN,INDEX,1,END,OK`，但不会误收图片编号 2 的回包。
+
+收到映射请求时，日志先以 `Prepared (not sent)` 显示变量展开后的命令、Network、4 位 HEX 长度、正文/整帧字节数和完整 HEX；真正执行后再以 `Sent` 记录实际发送帧，以 `Received` 记录原始回包，并用 `Result [OK]` / `Result [NG]` 显示最终判定。`ALIVE` 仍按配置发送并参与读帧，但正常收发不写日志；只有心跳失败保留错误日志。
 
 ## 结果
 
@@ -97,4 +120,4 @@ cmd.exe /d /c Scripts\publish_project_arvrpro_semi_auto.bat --validate-only
 2. 核对活动流程组中的 `ARVRTestType`。
 3. 填写并单独验证 GECS 指令及成功回包特征。
 4. 启用对应映射。
-5. 先使用“执行并确认”完成一轮半自动验收，再决定是否开启自动执行。
+5. 先使用“执行并确认”逐项核对，再使用“PG 联动运行”完成整轮现场验收。

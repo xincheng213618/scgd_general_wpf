@@ -612,6 +612,9 @@ next: false
 - [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
   Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
 
+- [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
+  反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
+
 - [Backend Operations 中继与只读概览](../../02-developer-guide/backend/operations-relay.md) — `delivery.backend-operations`
   Backend Operations 的接口、身份与任务回执；区分在线、排队和执行完成，并说明加密快照的下载、消费与过期清理。
 

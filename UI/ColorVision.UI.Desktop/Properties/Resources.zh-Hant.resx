@@ -755,4 +755,31 @@
   <data name="MarketplaceShortcuts" xml:space="preserve"><value>捷徑</value></data>
   <data name="MarketplacePluginSettings" xml:space="preserve"><value>外掛設定</value></data>
   <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此外掛沒有可直接開啟的功能或設定。</value></data>
+  <data name="FeedbackConfigureDiagnostics" xml:space="preserve">
+    <value>選擇項目…</value>
+  </data>
+  <data name="FeedbackSharedLogRangeHint" xml:space="preserve">
+    <value>統一套用於支援時間範圍的日誌和資料庫；設定快照等項目保留各自的收集規則。</value>
+  </data>
+  <data name="FeedbackCleanupSourcesHint" xml:space="preserve">
+    <value>清理所有支援清理的來源；與打包勾選無關，執行前需確認。</value>
+  </data>
+  <data name="FeedbackDiagnosticSelectionHint" xml:space="preserve">
+    <value>勾選要隨意見反應打包的項目，關閉視窗後保留選擇。時間範圍在主視窗統一設定。</value>
+  </data>
+  <data name="FeedbackSearchDiagnostics" xml:space="preserve">
+    <value>搜尋項目名稱或說明</value>
+  </data>
+  <data name="FeedbackSelectAll" xml:space="preserve">
+    <value>全部選取</value>
+  </data>
+  <data name="FeedbackSelectNone" xml:space="preserve">
+    <value>全部取消</value>
+  </data>
+  <data name="FeedbackRestoreDefaults" xml:space="preserve">
+    <value>恢復預設選擇</value>
+  </data>
+  <data name="FeedbackNoMatchingDiagnostics" xml:space="preserve">
+    <value>沒有相符的診斷項目</value>
+  </data>
 </root>

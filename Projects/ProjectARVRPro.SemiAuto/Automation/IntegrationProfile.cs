@@ -28,6 +28,8 @@ namespace ProjectARVRPro.SemiAuto.Automation
 
         public bool ConfirmArvrAfterPgSuccess { get; set; } = true;
 
+        public bool ManagePgPowerForRun { get; set; } = true;
+
         public List<PgActionMapping> Mappings { get; set; } = new List<PgActionMapping>();
 
         public PgActionMapping FindMapping(string eventName, string arvrTestType)

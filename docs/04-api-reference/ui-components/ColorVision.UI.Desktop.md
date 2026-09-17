@@ -54,17 +54,21 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 市场链 | `MarketplaceWindow` -> `MarketplaceClient` -> Markdown/WebView2 -> 下载/安装服务 |
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
-| 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 |
+| 反馈收集链 | `FeedbackWindow` -> 可选 Web 账号一次性登录 -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> `/api/feedback` |
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
+反馈主窗口固定显示诊断项摘要、日志范围、打开来源目录、清理历史文件和打包入口，附件区滚动不会带走这些操作。“选择项目”打开独立的紧凑列表，支持按名称或说明搜索、全部选中／取消和恢复默认选择；这些批量操作作用于全部项目，不受搜索过滤影响，关闭或按 Esc 保留选择。范围统一应用于实现 `IFeedbackLogTimeRangeCollector` 的日志和数据库来源，目录菜单也仅列出该接口提供的目录，不支持的来源保持自己的收集规则。清理与打包勾选独立，仅交给实现 `IFeedbackDiagnosticCleanupSource` 的来源；无对应能力时禁用入口。打包期间禁止修改诊断选项或启动清理，避免修改正在使用的收集器。
+
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
+
+发送时可输入 Web 反馈账号，也可明确选择匿名提交。账号密码只用于本次 Web Session，不落配置或日志；服务端从已验证 Session 取得稳定账号 ID，不能用本地 RBAC、Windows 用户名或机器名代替。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
 
 默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。“流程前后处理配置”同时收集 `PreProcessConfig.json`、`PostProcessConfig.json`；加载 ProjectARVRPro 后，“ARVRPro 流程配置”按项目实际配置目录收集 `ProjectARVRProProcessGroups.json`，保留流程组、切图等待、相机覆盖参数与 Recipe。配置始终采集当前已保存文件，不受日志天数或文件修改时间限制，也不扫描历史备份、其他项目、认证文件或整个配置目录。
 
 配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。回归入口为 `Test/ColorVision.UI.Tests/FeedbackConfigurationSnapshotTests.cs` 和项目反馈收集器测试。
 
-本地运行数据库通过同一 `IFeedbackLogCollector` 发现链加入诊断项，默认勾选、最近 7 天，可分别选择 1／3／7／14／30 天。“流程与节点耗时记录”导出 `FlowNodeRecords.db`，“Socket 通信记录”导出 `SocketMessages.db`，“MQTT 服务通信记录”导出 `MsgRecords.db` 中按发送、接收、创建或更新时间命中的请求、响应和超时状态，保留完整正文；加载 ProjectARVRPro 后还会出现“ARVRPro 测试与阶段耗时记录”，导出 `ProjectARVRPro.db`。路径来自各模块当前配置，不依赖固定安装目录；收集器不会初始化业务管理器或迁移源数据库。
+本地运行数据库通过同一 `IFeedbackLogCollector` 发现链加入诊断项，默认勾选、最近 7 天，在主窗口统一选择 1／3／7／14／30 天。“流程与节点耗时记录”导出 `FlowNodeRecords.db`，“Socket 通信记录”导出 `SocketMessages.db`，“MQTT 服务通信记录”导出 `MsgRecords.db` 中按发送、接收、创建或更新时间命中的请求、响应和超时状态，保留完整正文；加载 ProjectARVRPro 后还会出现“ARVRPro 测试与阶段耗时记录”，导出 `ProjectARVRPro.db`。路径来自各模块当前配置，不依赖固定安装目录；收集器不会初始化业务管理器或迁移源数据库。
 
 数据库按记录自身的本地时间／UTC 字段筛选，保留关联运行、节点、事件、异常、模板快照和结果，因此部分关联记录可以早于所选起始时间。输出是反馈 ZIP 的 `Database/` 下可直接查询的独立 SQLite 文件，保留原字段、ID、索引及完整压缩正文，不跟随结果中的图片路径收集图片。源库以只读模式在单个读取事务中访问，包含读取快照时 WAL 中已提交的数据；不同数据库之间不提供统一事务快照，尚未落库的写入队列不属于导出范围。
 

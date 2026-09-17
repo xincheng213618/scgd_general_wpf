@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import threading
 import uuid
@@ -18,6 +19,15 @@ _STATE_NAME = ".admin.json"
 _MAX_JSON_BYTES = 1024 * 1024
 _MAX_QUERY_LENGTH = 200
 _write_lock = threading.Lock()
+
+
+def _is_internal_name(filename: str) -> bool:
+    normalized = filename.casefold()
+    return (
+        normalized in {_METADATA_NAME, _STATE_NAME}
+        or normalized.startswith(".feedback.json.")
+        or normalized.startswith(".admin.")
+    )
 
 
 def _utc_iso(timestamp: float) -> str:
@@ -79,14 +89,22 @@ def _safe_feedback_directory(storage: Path, feedback_id: str) -> Path:
     return directory
 
 
-def _attachments(directory: Path) -> list[dict[str, Any]]:
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _attachments(directory: Path, *, include_hashes: bool = False) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     try:
         children = list(directory.iterdir())
     except OSError:
         return items
     for child in children:
-        if child.name in {_METADATA_NAME, _STATE_NAME} or child.is_symlink():
+        if _is_internal_name(child.name) or child.is_symlink():
             continue
         try:
             if not child.is_file() or child.resolve(strict=True).parent != directory.resolve(strict=True):
@@ -94,11 +112,17 @@ def _attachments(directory: Path) -> list[dict[str, Any]]:
             stat = child.stat()
         except OSError:
             continue
-        items.append({
+        item = {
             "name": child.name,
             "size_bytes": stat.st_size,
             "modified_at": _utc_iso(stat.st_mtime),
-        })
+        }
+        if include_hashes:
+            try:
+                item["sha256"] = _sha256(child)
+            except OSError:
+                continue
+        items.append(item)
     return sorted(items, key=lambda item: item["name"].casefold())
 
 
@@ -117,15 +141,30 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
         fallback_created_at = _utc_iso(directory.stat().st_mtime)
     except OSError:
         fallback_created_at = datetime.now(timezone.utc).isoformat()
-    created_at = _bounded_text(metadata.get("createdAt"), 100) or fallback_created_at
+    created_at = (
+        _bounded_text(metadata.get("serverReceivedAt"), 100)
+        or _bounded_text(metadata.get("createdAt"), 100)
+        or fallback_created_at
+    )
     message = _bounded_text(metadata.get("message"))
-    attachments = _attachments(directory)
+    attachments = _attachments(directory, include_hashes=include_details)
+    owner_user_id = metadata.get("ownerUserId")
+    if not isinstance(owner_user_id, int) or isinstance(owner_user_id, bool) or owner_user_id <= 0:
+        owner_user_id = None
+    machine_name = _bounded_text(metadata.get("machineName"), 255)
+    if not machine_name:
+        legacy_machine_info = _bounded_text(metadata.get("machineInfo"))
+        machine_name = legacy_machine_info.split(" / ", 1)[0].strip() if " / " in legacy_machine_info else ""
     record: dict[str, Any] = {
         "feedback_id": directory.name,
         "status": status,
         "created_at": created_at,
         "updated_at": _bounded_text(state.get("updatedAt"), 100) or None,
         "user_name": _bounded_text(metadata.get("userName")),
+        "owner_user_id": owner_user_id,
+        "owner_username": _bounded_text(metadata.get("ownerUsername"), 128),
+        "ownership": "account" if owner_user_id is not None else "legacy_unbound",
+        "machine_name": machine_name,
         "app_version": _bounded_text(metadata.get("appVersion")),
         "message_preview": message[:160],
         "attachment_count": len(attachments),
@@ -138,6 +177,8 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
             "message": message,
             "machine_info": _bounded_text(metadata.get("machineInfo")),
             "client_ip": _bounded_text(metadata.get("clientIp"), 200),
+            "client_submitted_at": _bounded_text(metadata.get("clientSubmittedAt"), 100) or None,
+            "diagnostics_collected_at": _bounded_text(metadata.get("diagnosticsCollectedAt"), 100) or None,
             "attachments": attachments,
         })
     return record
@@ -167,6 +208,11 @@ def query_feedback(
     query: str | None = None,
     limit: int = 20,
     offset: int = 0,
+    owner_user_id: int | None = None,
+    machine: str | None = None,
+    app_version: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
 ) -> dict[str, Any]:
     if status and status not in FEEDBACK_FILTERS:
         raise ValueError("status must be open, new, in_progress, or resolved")
@@ -178,7 +224,42 @@ def query_feedback(
     if offset < 0:
         raise ValueError("offset must be non-negative")
 
+    normalized_machine = (machine or "").strip()
+    normalized_version = (app_version or "").strip()
+    if len(normalized_machine) > _MAX_QUERY_LENGTH:
+        raise ValueError(f"machine must not exceed {_MAX_QUERY_LENGTH} characters")
+    if len(normalized_version) > _MAX_QUERY_LENGTH:
+        raise ValueError(f"app_version must not exceed {_MAX_QUERY_LENGTH} characters")
+    from_timestamp = _parse_timestamp(created_from) if created_from else None
+    to_timestamp = _parse_timestamp(created_to) if created_to else None
+    if created_from and from_timestamp is None:
+        raise ValueError("created_from must be an ISO 8601 timestamp")
+    if created_to and to_timestamp is None:
+        raise ValueError("created_to must be an ISO 8601 timestamp")
+    if from_timestamp and to_timestamp and from_timestamp >= to_timestamp:
+        raise ValueError("created_from must be earlier than created_to")
+
     records = _all_feedback(storage)
+    if owner_user_id is not None:
+        records = [item for item in records if item["owner_user_id"] == owner_user_id]
+    if normalized_machine:
+        needle = normalized_machine.casefold()
+        records = [item for item in records if needle in item["machine_name"].casefold()]
+    if normalized_version:
+        needle = normalized_version.casefold()
+        records = [item for item in records if needle in item["app_version"].casefold()]
+    if from_timestamp or to_timestamp:
+        filtered_by_time = []
+        for item in records:
+            timestamp = _parse_timestamp(item["created_at"])
+            if timestamp is None:
+                continue
+            if from_timestamp and timestamp < from_timestamp:
+                continue
+            if to_timestamp and timestamp >= to_timestamp:
+                continue
+            filtered_by_time.append(item)
+        records = filtered_by_time
     open_timestamps = [
         timestamp
         for item in records
@@ -223,18 +304,36 @@ def query_feedback(
     }
 
 
-def get_feedback_detail(storage: Path, feedback_id: str) -> dict[str, Any]:
+def get_feedback_detail(
+    storage: Path,
+    feedback_id: str,
+    *,
+    owner_user_id: int | None = None,
+) -> dict[str, Any]:
     directory = _safe_feedback_directory(storage, feedback_id)
-    return _record_from_directory(directory, include_details=True)
+    detail = _record_from_directory(directory, include_details=True)
+    if owner_user_id is not None and detail["owner_user_id"] != owner_user_id:
+        raise FileNotFoundError("Feedback not found")
+    return detail
 
 
-def resolve_feedback_attachment(storage: Path, feedback_id: str, filename: str) -> Path:
+def resolve_feedback_attachment(
+    storage: Path,
+    feedback_id: str,
+    filename: str,
+    *,
+    owner_user_id: int | None = None,
+) -> Path:
     directory = _safe_feedback_directory(storage, feedback_id)
+    if owner_user_id is not None:
+        record = _record_from_directory(directory, include_details=False)
+        if record["owner_user_id"] != owner_user_id:
+            raise FileNotFoundError("Attachment not found")
     if (
         not isinstance(filename, str)
         or not filename
         or Path(filename).name != filename
-        or filename in {_METADATA_NAME, _STATE_NAME}
+        or _is_internal_name(filename)
     ):
         raise FileNotFoundError("Attachment not found")
     target = directory / filename
@@ -266,7 +365,7 @@ def update_feedback_status(storage: Path, feedback_id: str, status: str) -> dict
         return {"changed": False, "before": before, **get_feedback_detail(storage, feedback_id)}
 
     state_path = directory / _STATE_NAME
-    temporary_path = directory / f".{_STATE_NAME}.{uuid.uuid4().hex}.tmp"
+    temporary_path = directory / f"{_STATE_NAME}.{uuid.uuid4().hex}.tmp"
     state = {
         "status": status,
         "updatedAt": datetime.now(timezone.utc).isoformat(),

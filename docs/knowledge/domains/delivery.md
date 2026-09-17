@@ -38,8 +38,8 @@ next: false
 - [Backend Copilot配置管理与敏感配置交付](../../02-developer-guide/backend/copilot-sync.md) — `delivery.backend-copilot-sync`
   Backend Copilot配置管理、AES-GCM密钥存储与全量同步；版本HMAC不是独立设备身份，nonce不去重，成功读取会交付provider秘密。
 
-- [Backend反馈提交、处理状态与附件访问](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
-  Backend公开反馈提交、文件目录收件箱、状态sidecar和受控附件响应；上传与管理校验不同，201、resolved及下载审计各有完成边界。
+- [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
+  反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
 
 - [Backend内置任务、执行记录与恢复](../../02-developer-guide/backend/jobs.md) — `delivery.backend-jobs`
   Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。

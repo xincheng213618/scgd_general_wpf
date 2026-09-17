@@ -55,3 +55,29 @@ export function feedbackAgeInfo(
     color,
   }
 }
+
+export function feedbackDateRangeUtc(value: unknown): { createdFrom?: string, createdTo?: string } {
+  if (!Array.isArray(value) || value.length !== 2) return {}
+  const calendarDate = (item: unknown) => {
+    if (item && typeof item === 'object' && 'format' in item && typeof item.format === 'function') {
+      return item.format('YYYY-MM-DD')
+    }
+    return String(item || '').slice(0, 10)
+  }
+  const start = calendarDate(value[0])
+  const end = calendarDate(value[1])
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return {}
+  const from = new Date(`${start}T00:00:00+08:00`)
+  const through = new Date(`${end}T00:00:00+08:00`)
+  if (!Number.isFinite(from.getTime()) || !Number.isFinite(through.getTime())) return {}
+  return {
+    createdFrom: from.toISOString(),
+    createdTo: new Date(through.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+  }
+}
+
+export function feedbackBeijingTime(value: string): string {
+  const instant = Date.parse(value)
+  if (!Number.isFinite(instant)) return '-'
+  return `${new Date(instant + 8 * HOUR_MS).toISOString().slice(0, 19).replace('T', ' ')} BJT`
+}

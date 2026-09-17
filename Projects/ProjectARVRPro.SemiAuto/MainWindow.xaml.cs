@@ -34,6 +34,12 @@ namespace ProjectARVRPro.SemiAuto
         private PendingArvrAction _pendingArvrAction;
         private DateTime _nextHeartbeatUtc = DateTime.MaxValue;
         private int _pgActionRunning;
+        private bool _pgPowerOnForCurrentRun;
+        private bool _integratedRunActive;
+        private bool _integratedRunStarting;
+        private bool _integratedRunPaused;
+        private bool _integratedRunCancellationRequested;
+        private long _arvrConnectionGeneration;
 
         public MainWindow()
         {
@@ -48,6 +54,7 @@ namespace ProjectARVRPro.SemiAuto
             SetPgConnectionState(false);
             SetPendingControls(null);
             SetWorkflowStatus("待机", false);
+            UpdateIntegratedRunControls();
             _gecsClient.Log += message => AppendLog("PG " + message);
             _heartbeatTimer.Tick += HeartbeatTimer_Tick;
             _heartbeatTimer.Start();
@@ -77,6 +84,57 @@ namespace ProjectARVRPro.SemiAuto
         private async void ConnectRunAllButton_Click(object sender, RoutedEventArgs e)
         {
             await ConnectAsync("runall");
+        }
+
+        private async void PgIntegratedRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            await StartIntegratedRunAsync();
+        }
+
+        private async void PauseIntegratedRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_integratedRunActive || _integratedRunCancellationRequested)
+                return;
+
+            _integratedRunPaused = !_integratedRunPaused;
+            UpdateIntegratedRunControls();
+            if (_integratedRunPaused)
+            {
+                SetWorkflowStatus(_pgActionRunning == 0 ? "已暂停" : "暂停中", false);
+                AppendLog(_pgActionRunning == 0
+                    ? "PG 联动已暂停；恢复后再处理下一条待确认的切图请求。"
+                    : "已请求暂停；当前 PG 指令会安全完成，暂停从下一条切图请求生效。");
+                return;
+            }
+
+            AppendLog("PG 联动已继续。");
+            PendingArvrAction pending = _pendingArvrAction;
+            if (pending != null && !pending.IsConfirmed && Interlocked.CompareExchange(ref _pgActionRunning, 0, 0) == 0)
+            {
+                if (pending.Mapping == null)
+                {
+                    await StopIntegratedRunAsync("当前切图请求没有启用的 PG 映射", false);
+                    return;
+                }
+
+                bool succeeded = await ExecutePendingPgActionAsync(true);
+                if (!succeeded && _integratedRunActive)
+                    await StopIntegratedRunAsync("PG 联动执行失败", false);
+            }
+            else
+            {
+                SetWorkflowStatus("PG 联动运行", true);
+            }
+        }
+
+        private async void CancelIntegratedRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            await RequestIntegratedCancellationAsync("用户取消");
+        }
+
+        private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogTextBox.Clear();
         }
 
         private async void SendCommandButton_Click(object sender, RoutedEventArgs e)
@@ -121,8 +179,15 @@ namespace ProjectARVRPro.SemiAuto
             await ConnectPgAsync();
         }
 
-        private void DisconnectPgButton_Click(object sender, RoutedEventArgs e)
+        private async void DisconnectPgButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_integratedRunActive)
+            {
+                await RequestIntegratedCancellationAsync("用户断开 PG");
+                return;
+            }
+
+            await PowerOffPgAsync("断开 PG");
             _gecsClient.Disconnect();
             _nextHeartbeatUtc = DateTime.MaxValue;
             SetPgConnectionState(false);
@@ -225,8 +290,15 @@ namespace ProjectARVRPro.SemiAuto
             }
         }
 
-        private void DisconnectButton_Click(object sender, RoutedEventArgs e)
+        private async void DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_integratedRunActive)
+            {
+                await RequestIntegratedCancellationAsync("用户断开");
+                return;
+            }
+
+            await PowerOffPgAsync("断开 ARVR");
             Disconnect();
             AppendLog("Disconnected.");
         }
@@ -259,14 +331,100 @@ namespace ProjectARVRPro.SemiAuto
             }
         }
 
-        private async Task ConnectAsync(string mode)
+        private async Task StartIntegratedRunAsync()
         {
+            if (_integratedRunActive)
+                return;
+            if (Interlocked.CompareExchange(ref _pgActionRunning, 0, 0) != 0)
+            {
+                SetWorkflowStatus("PG 指令执行中", false);
+                AppendLog("当前 PG 指令尚未结束，不能启动新的 PG 联动运行。");
+                return;
+            }
+
+            Disconnect();
+            _integratedRunActive = true;
+            _integratedRunStarting = true;
+            _integratedRunPaused = false;
+            _integratedRunCancellationRequested = false;
+            _pendingArvrAction = null;
+            SetPendingControls(null);
+            UpdateIntegratedRunControls();
+            SetWorkflowStatus("准备 PG 联动", true);
+            AppendLog("PG 联动运行开始：PG 上电 -> 初始化 ARVR -> 按请求切图并确认 -> 最终结果后 PG 下电。");
+
             try
             {
+                if (!await PowerOffPgAsync("开始新的 PG 联动运行"))
+                {
+                    await StopIntegratedRunAsync("启动前 PG 下电失败", false);
+                    return;
+                }
+
+                if (_integratedRunCancellationRequested)
+                {
+                    await CompleteIntegratedCancellationAsync("用户取消");
+                    return;
+                }
+
+                IntegrationProfile profile = CreateProfileFromUi();
+                if (!_gecsClient.IsConnectedTo(profile.PgHost, profile.PgPort) && !await ConnectPgAsync())
+                {
+                    await StopIntegratedRunAsync("PG 连接失败", false);
+                    return;
+                }
+
+                SetWorkflowStatus("PG 上电中", true);
+                if (!await EnsurePgPowerOnAsync(profile, GetSerialNumber()))
+                {
+                    await StopIntegratedRunAsync("PG 上电失败", false);
+                    return;
+                }
+
+                if (_integratedRunCancellationRequested)
+                {
+                    await CompleteIntegratedCancellationAsync("用户取消");
+                    return;
+                }
+
+                SetWorkflowStatus("初始化 ARVR", true);
+                await OpenConnectionAsync();
+                if (_integratedRunCancellationRequested)
+                {
+                    await CompleteIntegratedCancellationAsync("用户取消");
+                    return;
+                }
+
+                await SendEventAsync("ProjectARVRInit");
+                _integratedRunStarting = false;
+                SetWorkflowStatus("PG 联动运行", true);
+                AppendLog("ARVR 初始化请求已发送，等待 SwitchPG 切图请求。");
+                StartReceiveLoop();
+            }
+            catch (Exception ex)
+            {
+                AppendLog("PG 联动启动失败: " + ex.Message);
+                await StopIntegratedRunAsync("PG 联动启动失败", false);
+                MessageBox.Show(this, ex.Message, "PG 联动启动失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private async Task ConnectAsync(string mode)
+        {
+            if (_integratedRunActive)
+            {
+                AppendLog("PG 联动运行期间不能启动其他 ARVR 运行。");
+                return;
+            }
+
+            try
+            {
+                if (!await PowerOffPgAsync("开始新的 ARVR 运行"))
+                    return;
                 await OpenConnectionAsync();
                 if (!string.IsNullOrEmpty(mode))
                     await SendEventAsync(mode == "runall" ? "RunAll" : "ProjectARVRInit");
-                _ = ReceiveLoopAsync();
+                StartReceiveLoop();
             }
             catch (Exception ex)
             {
@@ -291,16 +449,29 @@ namespace ProjectARVRPro.SemiAuto
             AppendLog("Connected " + host + ":" + port.ToString(CultureInfo.InvariantCulture));
         }
 
-        private async Task ReceiveLoopAsync()
+        private void StartReceiveLoop()
+        {
+            JsonStreamMessageReader reader = _messageReader;
+            if (reader == null)
+                return;
+
+            long connectionGeneration = Interlocked.Read(ref _arvrConnectionGeneration);
+            _ = ReceiveLoopAsync(connectionGeneration, reader);
+        }
+
+        private async Task ReceiveLoopAsync(long connectionGeneration, JsonStreamMessageReader reader)
         {
             int maxMessages = GetMaxMessages();
             TimeSpan timeout = TimeSpan.FromSeconds(GetTimeoutSeconds());
+            bool powerOffAttempted = false;
 
             try
             {
-                for (int messageIndex = 0; messageIndex < maxMessages && _messageReader != null; messageIndex++)
+                for (int messageIndex = 0; messageIndex < maxMessages && IsCurrentArvrConnection(connectionGeneration); messageIndex++)
                 {
-                    string json = await _messageReader.ReadMessageAsync(timeout);
+                    string json = await reader.ReadMessageAsync(timeout);
+                    if (!IsCurrentArvrConnection(connectionGeneration))
+                        break;
                     if (json == null)
                     {
                         _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Connection closed by server.")));
@@ -314,42 +485,76 @@ namespace ProjectARVRPro.SemiAuto
 
                     if (eventName == "ProjectARVRResult")
                     {
-                        _ = Dispatcher.BeginInvoke(new Action(() => SetWorkflowStatus("已完成", true)));
+                        bool wasIntegratedRun = _integratedRunActive;
+                        powerOffAttempted = true;
+                        bool powerOffSucceeded = await PowerOffPgAsync("ARVR 已返回最终结果");
+                        if (wasIntegratedRun)
+                        {
+                            if (_integratedRunCancellationRequested)
+                                AppendLog("ARVR 已在取消生效前返回最终结果，按正常完成收尾。");
+                            FinishIntegratedRunState();
+                        }
+                        _ = Dispatcher.BeginInvoke(new Action(() => SetWorkflowStatus(powerOffSucceeded ? "已完成" : "结束，关电失败", powerOffSucceeded)));
                         _ = Dispatcher.BeginInvoke(new Action(() => LoadReceivedJson(json)));
                         break;
                     }
 
                     if (eventName == "SwitchPG")
                     {
+                        bool handledByIntegratedRun = _integratedRunActive;
                         await HandleArvrSwitchRequestAsync(root, "SwitchPG", "SwitchPGCompleted");
-                        if (GetCheckBoxValue(AutoSwitchPgCheckBox) && !GetCheckBoxValue(AutoExecutePgCheckBox))
+                        if (!handledByIntegratedRun && GetCheckBoxValue(AutoSwitchPgCheckBox) && !GetCheckBoxValue(AutoExecutePgCheckBox))
                             await ConfirmPendingArvrAsync();
                         continue;
                     }
 
                     if (eventName == "AoiSwitchPG")
                     {
+                        bool handledByIntegratedRun = _integratedRunActive;
                         await HandleArvrSwitchRequestAsync(root, "AoiSwitchPG", "AOITestSwitchImageComplete");
-                        if (GetCheckBoxValue(AutoAoiCheckBox) && !GetCheckBoxValue(AutoExecutePgCheckBox))
+                        if (!handledByIntegratedRun && GetCheckBoxValue(AutoAoiCheckBox) && !GetCheckBoxValue(AutoExecutePgCheckBox))
                             await ConfirmPendingArvrAsync();
                     }
                 }
             }
             catch (TimeoutException ex)
             {
-                _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive timeout: " + ex.Message)));
+                if (IsCurrentArvrConnection(connectionGeneration))
+                    _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive timeout: " + ex.Message)));
             }
             catch (ObjectDisposedException)
             {
             }
             catch (IOException ex)
             {
-                _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive stopped: " + ex.Message)));
+                if (IsCurrentArvrConnection(connectionGeneration))
+                    _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive stopped: " + ex.Message)));
             }
             catch (Exception ex)
             {
-                _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive failed: " + ex.Message)));
+                if (IsCurrentArvrConnection(connectionGeneration))
+                    _ = Dispatcher.BeginInvoke(new Action(() => AppendLog("Receive failed: " + ex.Message)));
             }
+            finally
+            {
+                if (IsCurrentArvrConnection(connectionGeneration))
+                {
+                    if (!powerOffAttempted && _pgPowerOnForCurrentRun)
+                        await PowerOffPgAsync("ARVR 接收已结束");
+                    if (_integratedRunActive && IsCurrentArvrConnection(connectionGeneration))
+                    {
+                        bool wasCancelled = _integratedRunCancellationRequested;
+                        Disconnect();
+                        FinishIntegratedRunState();
+                        SetWorkflowStatus(wasCancelled ? "已取消" : "联动已停止", false);
+                    }
+                }
+            }
+        }
+
+        private bool IsCurrentArvrConnection(long connectionGeneration)
+        {
+            return connectionGeneration == Interlocked.Read(ref _arvrConnectionGeneration);
         }
 
         private async Task HandleArvrSwitchRequestAsync(Dictionary<string, object> root, string eventName, string replyEventName)
@@ -363,8 +568,37 @@ namespace ProjectARVRPro.SemiAuto
             SetWorkflowStatus(pending.Mapping == null ? "未配置映射" : "待执行", pending.Mapping != null);
             string mappingText = pending.Mapping == null
                 ? "未找到启用映射"
-                : pending.Mapping.Name + " / " + pending.Mapping.CommandTemplate;
+                : pending.Mapping.Name + " / " + pending.CommandText;
             AppendLog("ARVR requested " + eventName + ", ARVRTestType=" + pending.ArvrTestType + ", " + mappingText);
+            if (pending.Mapping != null)
+                _gecsClient.LogCommandPreview(pending.CommandText, pending.NetworkNumber);
+
+            if (_integratedRunActive)
+            {
+                if (_integratedRunCancellationRequested)
+                {
+                    await CompleteIntegratedCancellationAsync("已到达 ARVR 切图边界");
+                    return;
+                }
+
+                if (_integratedRunPaused)
+                {
+                    SetWorkflowStatus("已暂停", false);
+                    AppendLog("PG 联动已停在当前切图请求；点击“继续”后再发送 PG 指令和 ARVR 确认。");
+                    return;
+                }
+
+                if (pending.Mapping == null)
+                {
+                    await StopIntegratedRunAsync("当前切图请求没有启用的 PG 映射", false);
+                    return;
+                }
+
+                bool succeeded = await ExecutePendingPgActionAsync(true);
+                if (!succeeded && _integratedRunActive)
+                    await StopIntegratedRunAsync("PG 联动执行失败", false);
+                return;
+            }
 
             if (GetCheckBoxValue(AutoExecutePgCheckBox))
             {
@@ -389,6 +623,7 @@ namespace ProjectARVRPro.SemiAuto
 
             IntegrationProfile profile = CreateProfileFromUi();
             PgActionMapping mapping = profile.FindMapping(eventName, testType);
+            string commandText = mapping == null ? string.Empty : profile.ExpandCommand(mapping, testType, serialNumber);
             var pending = new PendingArvrAction
             {
                 Root = root,
@@ -397,21 +632,23 @@ namespace ProjectARVRPro.SemiAuto
                 ArvrTestType = testType,
                 SerialNumber = serialNumber,
                 Key = ArvrClient.BuildMessageKey(root, eventName),
-                Mapping = mapping == null ? null : mapping.Clone()
+                Mapping = mapping == null ? null : mapping.Clone(),
+                CommandText = commandText,
+                NetworkNumber = checked((byte)profile.NetworkNumber)
             };
 
             PendingPgActionTextBlock.Text = mapping == null
                 ? eventName + " / TestType=" + DisplayValue(testType) + " / 未找到启用映射"
-                : eventName + " / TestType=" + DisplayValue(testType) + " / " + mapping.Name + " / " + profile.ExpandCommand(mapping, testType, serialNumber);
+                : eventName + " / TestType=" + DisplayValue(testType) + " / " + mapping.Name + " / " + commandText;
             return pending;
         }
 
-        private async Task ExecutePendingPgActionAsync(bool confirmOnSuccess)
+        private async Task<bool> ExecutePendingPgActionAsync(bool confirmOnSuccess)
         {
             if (Interlocked.Exchange(ref _pgActionRunning, 1) != 0)
             {
                 AppendLog("PG action is already running.");
-                return;
+                return false;
             }
 
             try
@@ -426,8 +663,8 @@ namespace ProjectARVRPro.SemiAuto
                 {
                     AppendLog("PG command already succeeded for this ARVR request; command will not be repeated.");
                     if (confirmOnSuccess)
-                        await ConfirmPendingArvrAsync();
-                    return;
+                        return await ConfirmPendingArvrAsync();
+                    return true;
                 }
 
                 IntegrationProfile profile = Dispatcher.CheckAccess()
@@ -435,7 +672,14 @@ namespace ProjectARVRPro.SemiAuto
                     : (IntegrationProfile)Dispatcher.Invoke(new Func<IntegrationProfile>(CreateProfileFromUi));
                 string command = profile.ExpandCommand(pending.Mapping, pending.ArvrTestType, pending.SerialNumber);
                 if (!_gecsClient.IsConnected && !await ConnectPgAsync())
-                    return;
+                    return false;
+
+                if (profile.ManagePgPowerForRun && !await EnsurePgPowerOnAsync(profile, pending.SerialNumber))
+                {
+                    SetWorkflowStatus("开电失败", false);
+                    AppendLog("PG POWER ON failed; pattern command and ARVR confirmation were not sent.");
+                    return false;
+                }
 
                 SetWorkflowStatus("执行中", true);
                 AppendLog("Executing mapped PG command: " + command);
@@ -445,21 +689,31 @@ namespace ProjectARVRPro.SemiAuto
                     pending.ArvrTestType,
                     pending.SerialNumber,
                     confirmOnSuccess,
-                    ConfirmPendingArvrAsync,
+                    ConfirmPendingArvrForWorkflowAsync,
                     () => _executedPgMessages.Add(pending.Key));
                 if (!result.PgSucceeded)
                 {
                     SetWorkflowStatus("PG 失败", false);
                     SetPgConnectionState(_gecsClient.IsConnected);
                     AppendLog("PG mapping failed; ARVR was not confirmed. " + result.ErrorMessage);
-                    return;
+                    await PowerOffPgAsync("PG 切图失败");
+                    return false;
                 }
 
                 AppendLog("PG mapping succeeded: " + result.PgResponseText);
+                if (_integratedRunActive && _integratedRunCancellationRequested)
+                {
+                    AppendLog("取消已生效：PG 指令已安全结束，未向 ARVR 发送本次切图确认。");
+                    await CompleteIntegratedCancellationAsync("用户取消");
+                    return false;
+                }
+
                 if (!result.ArvrConfirmed && !string.IsNullOrWhiteSpace(result.ErrorMessage))
                 {
                     SetWorkflowStatus("确认失败", false);
                     AppendLog("PG succeeded, but ARVR confirmation failed: " + result.ErrorMessage);
+                    await PowerOffPgAsync("ARVR 确认失败");
+                    return false;
                 }
                 else if (!confirmOnSuccess)
                 {
@@ -468,12 +722,14 @@ namespace ProjectARVRPro.SemiAuto
                 }
                 else
                     SetWorkflowStatus("已确认", true);
+                return true;
             }
             catch (Exception ex)
             {
                 AppendLog("PG action failed; ARVR was not confirmed. " + ex.Message);
                 if (Dispatcher.CheckAccess())
                     MessageBox.Show(this, ex.Message, "PG 联动失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
             finally
             {
@@ -491,8 +747,16 @@ namespace ProjectARVRPro.SemiAuto
             }
 
             bool confirmed = await SendConfirmOnceAsync(pending.Root, pending.EventName, pending.ReplyEventName, pending.Key);
+            pending.IsConfirmed = confirmed;
             SetWorkflowStatus(confirmed ? "已确认" : "确认失败", confirmed);
             return confirmed;
+        }
+
+        private Task<bool> ConfirmPendingArvrForWorkflowAsync()
+        {
+            if (_integratedRunActive && _integratedRunCancellationRequested)
+                return Task.FromResult(false);
+            return ConfirmPendingArvrAsync();
         }
 
         private async Task<bool> ConnectPgAsync()
@@ -517,6 +781,102 @@ namespace ProjectARVRPro.SemiAuto
                     MessageBox.Show(this, ex.Message, "PG 连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
+        }
+
+        private async Task<bool> EnsurePgPowerOnAsync(IntegrationProfile profile, string serialNumber)
+        {
+            if (_pgPowerOnForCurrentRun)
+                return true;
+
+            AppendLog("PG power sequence: sending POWER ON before the first pattern.");
+            GecsCommandResult result = await _semiAutomaticWorkflow.SetPowerAsync(profile, true, serialNumber);
+            SetPgConnectionState(_gecsClient.IsConnected);
+            if (!result.IsSuccess)
+            {
+                AppendLog("PG POWER ON failed: " + result.ErrorMessage);
+                return false;
+            }
+
+            _pgPowerOnForCurrentRun = true;
+            AppendLog("PG POWER ON succeeded: " + result.ResponseText);
+            return true;
+        }
+
+        private async Task<bool> PowerOffPgAsync(string reason)
+        {
+            if (!_pgPowerOnForCurrentRun)
+                return true;
+
+            try
+            {
+                IntegrationProfile profile = Dispatcher.CheckAccess()
+                    ? CreateProfileFromUi()
+                    : (IntegrationProfile)Dispatcher.Invoke(new Func<IntegrationProfile>(CreateProfileFromUi));
+                AppendLog("PG power sequence: sending POWER OFF (" + reason + ").");
+                GecsCommandResult result = await _semiAutomaticWorkflow.SetPowerAsync(profile, false, string.Empty);
+                SetPgConnectionState(_gecsClient.IsConnected);
+                if (!result.IsSuccess)
+                {
+                    AppendLog("PG POWER OFF failed: " + result.ErrorMessage);
+                    return false;
+                }
+
+                _pgPowerOnForCurrentRun = false;
+                AppendLog("PG POWER OFF succeeded: " + result.ResponseText);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppendLog("PG POWER OFF failed: " + ex.Message);
+                return false;
+            }
+        }
+
+        private async Task RequestIntegratedCancellationAsync(string reason)
+        {
+            if (!_integratedRunActive || _integratedRunCancellationRequested)
+                return;
+
+            _integratedRunCancellationRequested = true;
+            _integratedRunPaused = false;
+            UpdateIntegratedRunControls();
+            SetWorkflowStatus("取消中", false);
+            AppendLog("已请求取消 PG 联动；不会再发送下一条切图确认。当前指令如已发送，会等待其安全结束后下电。");
+
+            PendingArvrAction pending = _pendingArvrAction;
+            bool commandIsRunning = Interlocked.CompareExchange(ref _pgActionRunning, 0, 0) != 0;
+            bool arvrFlowIsRunning = pending != null && pending.IsConfirmed;
+            if (!_integratedRunStarting && !commandIsRunning && !arvrFlowIsRunning)
+                await CompleteIntegratedCancellationAsync(reason);
+        }
+
+        private Task CompleteIntegratedCancellationAsync(string reason)
+        {
+            return StopIntegratedRunAsync(reason, true);
+        }
+
+        private async Task StopIntegratedRunAsync(string reason, bool cancelled)
+        {
+            if (!_integratedRunActive)
+                return;
+
+            bool powerOffSucceeded = await PowerOffPgAsync(reason);
+            Disconnect();
+            FinishIntegratedRunState();
+            string status = cancelled ? "已取消" : "联动已停止";
+            SetWorkflowStatus(powerOffSucceeded ? status : status + "，关电失败", false);
+            AppendLog((cancelled ? "PG 联动已取消：" : "PG 联动已停止：") + reason + (powerOffSucceeded ? "。" : "；PG 下电失败，请现场确认。"));
+        }
+
+        private void FinishIntegratedRunState()
+        {
+            _integratedRunActive = false;
+            _integratedRunStarting = false;
+            _integratedRunPaused = false;
+            _integratedRunCancellationRequested = false;
+            _pendingArvrAction = null;
+            SetPendingControls(null);
+            UpdateIntegratedRunControls();
         }
 
         private async void HeartbeatTimer_Tick(object sender, EventArgs e)
@@ -604,6 +964,7 @@ namespace ProjectARVRPro.SemiAuto
             PgHeartbeatTextBox.Text = profile.HeartbeatSeconds.ToString(CultureInfo.InvariantCulture);
             AutoExecutePgCheckBox.IsChecked = profile.AutoExecuteMappedPgCommand;
             AutoConfirmAfterPgCheckBox.IsChecked = profile.ConfirmArvrAfterPgSuccess;
+            ManagePgPowerCheckBox.IsChecked = profile.ManagePgPowerForRun;
             _pgMappings.Clear();
             foreach (PgActionMapping mapping in profile.Mappings ?? new List<PgActionMapping>())
                 _pgMappings.Add(mapping);
@@ -625,6 +986,7 @@ namespace ProjectARVRPro.SemiAuto
                 HeartbeatSeconds = ParseNonNegativeInt(PgHeartbeatTextBox.Text, "心跳间隔"),
                 AutoExecuteMappedPgCommand = AutoExecutePgCheckBox.IsChecked == true,
                 ConfirmArvrAfterPgSuccess = AutoConfirmAfterPgCheckBox.IsChecked == true,
+                ManagePgPowerForRun = ManagePgPowerCheckBox.IsChecked == true,
                 Mappings = _pgMappings.Select(mapping => mapping.Clone()).ToList()
             };
             profile.Validate();
@@ -683,18 +1045,45 @@ namespace ProjectARVRPro.SemiAuto
                 : string.Equals(text, "待机", StringComparison.Ordinal) ? GetStatusBrush(false) : (Brush)FindResource("WarningBrush");
         }
 
+        private void UpdateIntegratedRunControls()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(new Action(UpdateIntegratedRunControls));
+                return;
+            }
+            if (PgIntegratedRunButton == null)
+                return;
+
+            bool active = _integratedRunActive;
+            PgIntegratedRunButton.IsEnabled = !active;
+            PauseIntegratedRunButton.IsEnabled = active && !_integratedRunCancellationRequested && !_integratedRunStarting;
+            PauseIntegratedRunButton.Content = _integratedRunPaused ? "继续" : "暂停";
+            CancelIntegratedRunButton.IsEnabled = active && !_integratedRunCancellationRequested;
+            ArvrConnectButton.IsEnabled = !active;
+            ArvrInitButton.IsEnabled = !active;
+            ArvrRunAllButton.IsEnabled = !active;
+            PgConnectButton.IsEnabled = !active;
+            PgDisconnectButton.IsEnabled = !active;
+            ManagePgPowerCheckBox.IsEnabled = !active;
+            AutoExecutePgCheckBox.IsEnabled = !active;
+            AutoConfirmAfterPgCheckBox.IsEnabled = !active;
+            SetPendingControls(_pendingArvrAction);
+        }
+
         private void SetPendingControls(PendingArvrAction pending)
         {
             if (PendingPgActionTextBlock == null)
                 return;
 
             bool hasPending = pending != null;
-            bool canExecute = hasPending && pending.Mapping != null;
+            bool manualActionsEnabled = !_integratedRunActive;
+            bool canExecute = manualActionsEnabled && hasPending && pending.Mapping != null;
             if (!hasPending)
                 PendingPgActionTextBlock.Text = "无待处理请求";
             ExecutePgAndConfirmButton.IsEnabled = canExecute;
             ExecutePgOnlyButton.IsEnabled = canExecute;
-            ConfirmPendingArvrButton.IsEnabled = hasPending;
+            ConfirmPendingArvrButton.IsEnabled = manualActionsEnabled && hasPending;
         }
 
         private Brush GetStatusBrush(bool connected)
@@ -745,6 +1134,7 @@ namespace ProjectARVRPro.SemiAuto
 
         private void Disconnect()
         {
+            Interlocked.Increment(ref _arvrConnectionGeneration);
             try
             {
                 if (_networkStream != null)
@@ -965,6 +1355,12 @@ namespace ProjectARVRPro.SemiAuto
             public string Key { get; set; }
 
             public PgActionMapping Mapping { get; set; }
+
+            public string CommandText { get; set; }
+
+            public byte NetworkNumber { get; set; }
+
+            public bool IsConfirmed { get; set; }
         }
     }
 }

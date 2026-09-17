@@ -9,6 +9,7 @@
   "HeartbeatSeconds": 5,
   "AutoExecuteMappedPgCommand": false,
   "ConfirmArvrAfterPgSuccess": true,
+  "ManagePgPowerForRun": true,
   "Mappings": [
     {
       "Enabled": false,

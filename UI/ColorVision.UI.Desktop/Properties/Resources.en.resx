@@ -844,4 +844,31 @@
   <data name="MarketplaceShortcuts" xml:space="preserve"><value>Shortcuts</value></data>
   <data name="MarketplacePluginSettings" xml:space="preserve"><value>Plugin settings</value></data>
   <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>This plugin has no features or settings to open directly.</value></data>
+  <data name="FeedbackConfigureDiagnostics" xml:space="preserve">
+    <value>Choose items…</value>
+  </data>
+  <data name="FeedbackSharedLogRangeHint" xml:space="preserve">
+    <value>Applies to logs and databases that support a time range. Other sources keep their own collection rules.</value>
+  </data>
+  <data name="FeedbackCleanupSourcesHint" xml:space="preserve">
+    <value>Clean all sources that support cleanup, independently of package selection. Confirmation is required.</value>
+  </data>
+  <data name="FeedbackDiagnosticSelectionHint" xml:space="preserve">
+    <value>Choose what to include in the feedback package. Changes are kept when you close this window. Set the shared time range in the main window.</value>
+  </data>
+  <data name="FeedbackSearchDiagnostics" xml:space="preserve">
+    <value>Search item names or descriptions</value>
+  </data>
+  <data name="FeedbackSelectAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="FeedbackSelectNone" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="FeedbackRestoreDefaults" xml:space="preserve">
+    <value>Restore default selection</value>
+  </data>
+  <data name="FeedbackNoMatchingDiagnostics" xml:space="preserve">
+    <value>No matching diagnostic items</value>
+  </data>
 </root>

@@ -585,6 +585,7 @@ export interface FeedbackAttachment {
   name: string
   size_bytes: number
   modified_at: string
+  sha256?: string
 }
 
 export interface FeedbackItem {
@@ -593,6 +594,10 @@ export interface FeedbackItem {
   created_at: string
   updated_at: string | null
   user_name: string
+  owner_user_id: number | null
+  owner_username: string
+  ownership: 'account' | 'legacy_unbound'
+  machine_name: string
   app_version: string
   message_preview: string
   attachment_count: number
@@ -606,6 +611,14 @@ export interface FeedbackDetail extends FeedbackItem {
   machine_info: string
   client_ip: string
   attachments: FeedbackAttachment[]
+  client_submitted_at: string | null
+  diagnostics_collected_at: string | null
+  access: FeedbackAccess
+}
+
+export interface FeedbackAccess {
+  scope: 'own' | 'all'
+  can_manage: boolean
 }
 
 export interface FeedbackInboxResponse {
@@ -622,6 +635,7 @@ export interface FeedbackInboxResponse {
     invalid_state: number
     oldest_open_at: string | null
   }
+  access: FeedbackAccess
 }
 
 export interface RetentionSettingsValues {
@@ -662,7 +676,7 @@ export interface AccountSettingsUpdateResponse extends AccountSettingsResponse {
   changed: Array<keyof AccountSettingsValues>
 }
 
-export type UserRole = 'admin' | 'user'
+export type UserRole = 'admin' | 'developer' | 'user'
 export type UserAccountOrigin = 'self_registered' | 'administrator_created' | 'legacy'
 export type UserAccountStatus = 'active' | 'inactive'
 export type UserPasswordState = 'pending' | 'ready'
@@ -778,6 +792,7 @@ export interface UserAccountSummary {
   active: number
   inactive: number
   admins: number
+  developers: number
   users: number
   self_registered: number
   administrator_created: number

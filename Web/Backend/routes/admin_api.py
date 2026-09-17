@@ -17,8 +17,8 @@ Per-endpoint scope requirements:
   - GET  /audit-log           → audit:read
   - GET  /deployments         → deployments:read
   - GET  /operations/overview → operations:manage
-  - GET  /feedback            → feedback:manage
-  - GET  /feedback/*          → feedback:manage
+  - GET  /feedback            → feedback:read
+  - GET  /feedback/*          → feedback:read
   - PUT  /feedback/*/status   → feedback:manage
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
@@ -91,9 +91,9 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "audit_log": ["audit:read"],
     "deployment_history": ["deployments:read"],
     "operations_overview": ["operations:manage"],
-    "feedback_inbox": ["feedback:manage"],
-    "feedback_detail": ["feedback:manage"],
-    "feedback_attachment": ["feedback:manage"],
+    "feedback_inbox": ["feedback:read"],
+    "feedback_detail": ["feedback:read"],
+    "feedback_attachment": ["feedback:read"],
     "update_feedback_status": ["feedback:manage"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
@@ -1136,8 +1136,8 @@ def list_users():
     sort_order = str(request.args.get("sort_order") or "").strip()
     if len(query) > 100:
         return jsonify({"error": "q must be at most 100 characters"}), 400
-    if role not in {"", "admin", "user"}:
-        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if role not in {"", "admin", "developer", "user"}:
+        return jsonify({"error": "role must be 'admin', 'developer', or 'user'"}), 400
     if status not in {"", "active", "inactive"}:
         return jsonify({"error": "status must be 'active' or 'inactive'"}), 400
     if account_origin not in {

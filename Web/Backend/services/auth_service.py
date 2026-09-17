@@ -31,7 +31,7 @@ MIN_PASSWORD_LENGTH = 15
 MAX_PASSWORD_LENGTH = 128
 MAX_DISPLAY_NAME_LENGTH = 64
 MAX_EMAIL_LENGTH = 254
-VALID_USER_ROLES = frozenset({"admin", "user"})
+VALID_USER_ROLES = frozenset({"admin", "developer", "user"})
 VALID_ACCOUNT_ORIGINS = frozenset({
     "self_registered",
     "administrator_created",
@@ -566,6 +566,7 @@ def query_users(
                    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active,
                    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive,
                    SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) AS admins,
+                   SUM(CASE WHEN role = 'developer' THEN 1 ELSE 0 END) AS developers,
                    SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END) AS users,
                    SUM(CASE WHEN account_origin = 'self_registered' THEN 1 ELSE 0 END)
                        AS self_registered,
@@ -591,6 +592,7 @@ def query_users(
                 "active": int(summary["active"] or 0),
                 "inactive": int(summary["inactive"] or 0),
                 "admins": int(summary["admins"] or 0),
+                "developers": int(summary["developers"] or 0),
                 "users": int(summary["users"] or 0),
                 "self_registered": int(summary["self_registered"] or 0),
                 "administrator_created": int(summary["administrator_created"] or 0),

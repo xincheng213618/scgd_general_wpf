@@ -100,8 +100,10 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     from services.auth_policy import AuthPolicy
 
     base_dir = Path(__file__).resolve().parent
-    config = load_config()
-    storage = Path(config["storage_path"])
+    override_config = runtime_overrides.config() if runtime_overrides else None
+    config = override_config if override_config is not None else load_config()
+    override_storage = runtime_overrides.storage() if runtime_overrides else None
+    storage = Path(override_storage) if override_storage is not None else Path(config["storage_path"])
 
     app = Flask(__name__, static_folder=None)
     app.secret_key = config["secret_key"]
@@ -112,7 +114,8 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     # public API responses without adding browser compatibility.
     app.json.ensure_ascii = False
 
-    db_path = base_dir / "marketplace.db"
+    override_db_path = runtime_overrides.db_path() if runtime_overrides else None
+    db_path = Path(override_db_path) if override_db_path is not None else base_dir / "marketplace.db"
     runtime = RuntimeState(config=config, storage=storage, db_path=db_path)
 
     def active_config() -> dict[str, Any]:

@@ -182,7 +182,7 @@ namespace ColorVision.ImageEditor.Realtime
             {
                 if (!_context.Dispatcher.HasShutdownStarted)
                 {
-                    DispatcherOperation operation = _context.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(RenderLatestFrame));
+                    DispatcherOperation operation = _context.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(RenderLatestFrame));
                     if (operation.Status != DispatcherOperationStatus.Aborted) return true;
                 }
             }

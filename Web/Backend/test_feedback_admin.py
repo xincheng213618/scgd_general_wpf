@@ -80,9 +80,12 @@ class FeedbackAdminTests(unittest.TestCase):
 
     def test_detail_and_attachment_reject_traversal_and_internal_files(self):
         directory = self._create_feedback()
+        (directory / ".feedback.json.abcd.tmp").write_bytes(b"metadata temp")
+        (directory / ".admin.json.abcd.tmp").write_bytes(b"state temp")
         detail = get_feedback_detail(self.storage, directory.name)
         self.assertEqual(detail["message"], "startup problem")
         self.assertEqual(detail["attachments"][0]["name"], "report.zip")
+        self.assertEqual(detail["attachments"][0]["sha256"], "5a695eea5b00a31f8aef7dbb89c8f798fab371246ac1549afe84b16420707b99")
         self.assertEqual(
             resolve_feedback_attachment(self.storage, directory.name, "report.zip"),
             directory / "report.zip",
@@ -93,6 +96,8 @@ class FeedbackAdminTests(unittest.TestCase):
             (directory.name, "../feedback.json"),
             (directory.name, "feedback.json"),
             (directory.name, ".admin.json"),
+            (directory.name, ".feedback.json.abcd.tmp"),
+            (directory.name, ".admin.json.abcd.tmp"),
         ):
             with self.subTest(feedback_id=feedback_id, filename=filename), self.assertRaises(FileNotFoundError):
                 resolve_feedback_attachment(self.storage, feedback_id, filename)
@@ -122,6 +127,48 @@ class FeedbackAdminTests(unittest.TestCase):
         self.assertFalse((directory / ".admin.json").exists())
         self.assertEqual(list(directory.glob(".*.tmp")), [])
         self.assertEqual(get_feedback_detail(self.storage, directory.name)["status"], "new")
+
+    def test_owner_scope_filters_before_summary_search_and_pagination(self):
+        own = self._create_feedback("20260916_BJT_PC1_own", "2026-09-16T06:00:00+00:00")
+        other = self._create_feedback("20260916_BJT_PC2_other", "2026-09-16T07:00:00+00:00")
+        own_metadata = json.loads((own / "feedback.json").read_text("utf-8"))
+        own_metadata.update({"ownerUserId": 11, "ownerUsername": "alice", "machineName": "PC-1"})
+        (own / "feedback.json").write_text(json.dumps(own_metadata), encoding="utf-8")
+        other_metadata = json.loads((other / "feedback.json").read_text("utf-8"))
+        other_metadata.update({"ownerUserId": 22, "ownerUsername": "bob", "machineName": "PC-2"})
+        (other / "feedback.json").write_text(json.dumps(other_metadata), encoding="utf-8")
+
+        result = query_feedback(self.storage, owner_user_id=11, query="bob", limit=1, offset=0)
+
+        self.assertEqual(result["total"], 0)
+        self.assertEqual(result["summary"]["records"], 1)
+        self.assertEqual(result["summary"]["attachment_count"], 1)
+        with self.assertRaises(FileNotFoundError):
+            get_feedback_detail(self.storage, other.name, owner_user_id=11)
+        with self.assertRaises(FileNotFoundError):
+            resolve_feedback_attachment(self.storage, other.name, "report.zip", owner_user_id=11)
+
+    def test_legacy_unbound_machine_and_time_filters_remain_admin_visible(self):
+        legacy = self._create_feedback("legacy-feedback", "2026-09-15T16:30:00+00:00")
+        metadata = json.loads((legacy / "feedback.json").read_text("utf-8"))
+        metadata["machineInfo"] = "ARVR-LEGACY / Windows 10"
+        metadata["appVersion"] = "1.4.14.71"
+        (legacy / "feedback.json").write_text(json.dumps(metadata), encoding="utf-8")
+
+        result = query_feedback(
+            self.storage,
+            machine="legacy",
+            app_version="14.71",
+            created_from="2026-09-15T16:00:00+00:00",
+            created_to="2026-09-15T17:00:00+00:00",
+            limit=20,
+            offset=0,
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["items"][0]["machine_name"], "ARVR-LEGACY")
+        self.assertEqual(result["items"][0]["ownership"], "legacy_unbound")
+        self.assertEqual(query_feedback(self.storage, owner_user_id=11, limit=20, offset=0)["total"], 0)
 
 
 if __name__ == "__main__":

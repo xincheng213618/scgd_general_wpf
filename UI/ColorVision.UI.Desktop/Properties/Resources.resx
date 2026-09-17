@@ -892,4 +892,31 @@
   <data name="MarketplaceShortcuts" xml:space="preserve"><value>快捷方式</value></data>
   <data name="MarketplacePluginSettings" xml:space="preserve"><value>插件设置</value></data>
   <data name="MarketplaceNoPluginActions" xml:space="preserve"><value>此插件没有可直接打开的功能或设置。</value></data>
+  <data name="FeedbackConfigureDiagnostics" xml:space="preserve">
+    <value>选择项目…</value>
+  </data>
+  <data name="FeedbackSharedLogRangeHint" xml:space="preserve">
+    <value>统一应用于支持时间范围的日志和数据库；配置快照等项目保持各自的收集规则。</value>
+  </data>
+  <data name="FeedbackCleanupSourcesHint" xml:space="preserve">
+    <value>清理所有支持清理的来源；与打包勾选无关，执行前需确认。</value>
+  </data>
+  <data name="FeedbackDiagnosticSelectionHint" xml:space="preserve">
+    <value>勾选要随反馈打包的项目，关闭窗口后保留选择。时间范围在主窗口统一设置。</value>
+  </data>
+  <data name="FeedbackSearchDiagnostics" xml:space="preserve">
+    <value>搜索项目名称或说明</value>
+  </data>
+  <data name="FeedbackSelectAll" xml:space="preserve">
+    <value>全部选中</value>
+  </data>
+  <data name="FeedbackSelectNone" xml:space="preserve">
+    <value>全部取消</value>
+  </data>
+  <data name="FeedbackRestoreDefaults" xml:space="preserve">
+    <value>恢复默认选择</value>
+  </data>
+  <data name="FeedbackNoMatchingDiagnostics" xml:space="preserve">
+    <value>没有匹配的诊断项目</value>
+  </data>
 </root>

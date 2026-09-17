@@ -2105,6 +2105,12 @@
             },
             {
               "text": {
+                "root": "反馈归属、查询与诊断附件下载"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
                 "root": "Backend Operations 中继与只读概览"
               },
               "link": "/02-developer-guide/backend/operations-relay"
@@ -3608,7 +3614,7 @@
             },
             {
               "text": {
-                "root": "Backend反馈提交、处理状态与附件访问"
+                "root": "反馈归属、查询与诊断附件下载"
               },
               "link": "/02-developer-guide/backend/feedback"
             },
@@ -3713,7 +3719,7 @@
             },
             {
               "text": {
-                "root": "Backend反馈提交、处理状态与附件访问"
+                "root": "反馈归属、查询与诊断附件下载"
               },
               "link": "/02-developer-guide/backend/feedback"
             },
@@ -3800,6 +3806,12 @@
                 "root": "显示图案计量"
               },
               "link": "/04-api-reference/algorithms/detectors/display-metrology"
+            },
+            {
+              "text": {
+                "root": "反馈归属、查询与诊断附件下载"
+              },
+              "link": "/02-developer-guide/backend/feedback"
             },
             {
               "text": {
