@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
@@ -14,6 +15,27 @@ namespace ColorVision.UI.Tests;
 
 public sealed class PropertyEditorWindowTests
 {
+    [Display(Name = "Annotated configuration")]
+    private sealed class AnnotatedConfig
+    {
+        [Display(Name = "Annotated value", Description = "Searchable annotation", GroupName = "Query options")]
+        public string Value { get; set; } = "Value";
+    }
+
+    [Fact]
+    public void DisplayAnnotation_ControlsTitleCategoryAndSearch()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var fixture = new WindowFixture(new AnnotatedConfig());
+            Assert.Equal($"{Resources.Edit} Annotated configuration", fixture.Window.Title);
+            Assert.Equal("Query options", Assert.Single(fixture.Window.TreeNodes).Header);
+            fixture.Search.Text = "Searchable annotation";
+            Assert.Equal(Visibility.Visible, Assert.Single(fixture.RootBorders).Visibility);
+            Assert.Equal(Visibility.Collapsed, fixture.EmptyState.Visibility);
+        });
+    }
+
     [Fact]
     public void FileServerCfg_HidesLegacyTransportFieldsButKeepsThemSerializable()
     {

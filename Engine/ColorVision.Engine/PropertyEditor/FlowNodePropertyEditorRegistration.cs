@@ -456,7 +456,7 @@ namespace ColorVision.Engine.PropertyEditor
 
         internal static TemplateCalibrationParam? CreateCalibrationTemplate(object obj)
         {
-            string deviceCode = GetStringProperty(obj, nameof(CVCommonNode.DeviceCode));
+            string deviceCode = GetStringProperty(obj, nameof(IFlowDeviceNode.DeviceCode));
             if (string.IsNullOrWhiteSpace(deviceCode))
                 return null;
 
@@ -475,7 +475,7 @@ namespace ColorVision.Engine.PropertyEditor
 
         internal static TemplateSensor CreateSensorTemplate(object obj)
         {
-            string deviceCode = GetStringProperty(obj, nameof(CVCommonNode.DeviceCode));
+            string deviceCode = GetStringProperty(obj, nameof(IFlowDeviceNode.DeviceCode));
             string? category = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode)?.Config?.Category;
             if (string.IsNullOrWhiteSpace(category))
                 category = TemplateSensor.Params.Keys.FirstOrDefault() ?? "Sensor.Default";

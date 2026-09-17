@@ -13,7 +13,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Start;
 
-public abstract class BaseStartNode : CVCommonNode, IDisposable
+public abstract class BaseStartNode : CVDeviceNode, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 

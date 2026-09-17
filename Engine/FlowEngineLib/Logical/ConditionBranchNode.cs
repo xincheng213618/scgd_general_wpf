@@ -27,7 +27,7 @@ public enum FlowConditionOperator
 }
 
 [STNode("/01 运算", "根据流程状态或 Data 字段自动选择 TRUE/FALSE 路径")]
-public sealed class ConditionBranchNode : CVCommonNode
+public sealed class ConditionBranchNode : CVDeviceNode
 {
 	private FlowConditionSource conditionSource;
 	private StatusTypeEnum expectedStatus;

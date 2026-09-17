@@ -1,5 +1,5 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.NativeMethods;
+using ColorVision.Core;
 using ColorVision.Solution.Explorer;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -38,10 +38,7 @@ namespace ColorVision.Solution.Fusion
 
         private static void OpenFusion(DirectoryInfo directory)
         {
-            var imageFiles = directory.EnumerateFiles()
-                .Where(file => ImageResourceFileTypes.IsFusionCompatible(file.Extension))
-                .OrderBy(file => file.Name, Comparer<string>.Create(Shlwapi.CompareLogical))
-                .Select(file => file.FullName);
+            var imageFiles = FileFusion.GetFolderFiles(directory.FullName);
             new FusionWindow(imageFiles)
             {
                 Owner = Application.Current.GetActiveWindow(),

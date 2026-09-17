@@ -48,7 +48,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         Usage = "Flow_LocalCamera_Usage",
         Processing = "Flow_LocalCamera_Processing",
         Notes = "Flow_LocalCamera_Notes")]
-    public sealed class LocalCameraNode : LocalFlowNodeBase
+    public sealed class LocalCameraNode : LocalDeviceFlowNodeBase
     {
         private const int CameraMasterResultType = 100;
         private string _CalibTempName = string.Empty;

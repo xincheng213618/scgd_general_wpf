@@ -37,6 +37,8 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 
 回查找不到主记录时跳过并记日志，没有自动重试；加载成功后通过 Dispatcher 排队插入列表，执行前仍检查视图/设备是否已释放。相同 MasterId 的重复通知没有去重。通知到达、数据库可读、列表插入和选中展示不是一个事务；本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
 
+纯本地算法和文件节点不绑定设备：结果主表的设备代码为空，通知使用 `ResultRoutes.LocalFlow`（`local-flow`），保留 `SerialNumber`、`NodeId`、`ZIndex` 和主结果引用。设备视图不接收这类通知；从流程批次结果或普通历史查询加载时仍使用同一套 DAO 和 handler。相机、校正及服务节点继续采用各自的设备路由，不能把纯算法结果自动归给第一个配置设备。
+
 通过齿轮打开 **算法视图配置**，区分以下选项：
 
 | 配置 | 默认值与作用 |

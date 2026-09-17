@@ -458,7 +458,7 @@ public sealed class LocalGridDistortionNodeTests
     {
         LocalGridDistortionPersistenceRequest request = new()
         {
-            Action = new CVStartCFC("contract"), DeviceCode = "ALG-1", Parameters = new { Algorithm = "GridDistortionV2" },
+            Action = new CVStartCFC("contract"), Parameters = new { Algorithm = "GridDistortionV2" },
             ImageFilePath = @"C:\dots.cvraw", ZIndex = 7, TotalTime = 18, Result = CreateDetection()
         };
         AlgResultMasterModel master = LocalGridDistortionResultPersistence.CreateMasterModel(request, 17);

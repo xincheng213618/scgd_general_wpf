@@ -2,8 +2,8 @@
 knowledge_id: "algorithms.display-metrology"
 knowledge_type: "topic"
 status: "current"
-summary: "本地显示图案计量：RGB套色、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
-aliases: ["RGB套色", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
+summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
+aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
 test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
@@ -11,9 +11,9 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 
 # 显示图案计量
 
-显示计量提供六个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于图像右键 **算法 → 显示计量**，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
+显示计量提供七个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于图像右键 **算法 → 显示计量**，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
 
-当前输出是像素坐标和经指定指数解码的相对设备信号。它们不带亮度/色度标定、角度标定、客户 Recipe、产品 PASS/FAIL、Engine 历史结果落库或硬件扫描。没有现场图像时，可以用公开原理及已知真值的合成图验证计算。**合成测试不证明真实模组的检出率、重复性、绝对测量精度或标准符合性。**
+当前输出是像素坐标和经指定指数解码的相对设备信号。它们不带亮度/色度标定、角度标定、客户 Recipe、Engine 历史结果落库或硬件扫描。九点十字的 OK/NG 只是相对用户输入像素阈值的本次分析判定，不等于客户 Recipe 或量产结果。没有现场图像时，可以用公开原理及已知真值的合成图验证计算。**合成测试不证明真实模组的检出率、重复性、绝对测量精度或标准符合性。**
 
 ## 输入与操作
 
@@ -23,7 +23,7 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 4. 选择图案网格、检测阈值或扫描清单。双目模式将当前图像作为 `left`，再选择 `right`。
 5. 查看汇总和逐项有效状态。无效格以原因及空值输出，不能解释为零误差；全部无效时失败。
 
-支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；RGB 套色要求彩色输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
+支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；两种 RGB 几何功能都要求彩色输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
 
 单帧尺寸至少为 32×32，最多 8,388,608 像素；总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，候选连通域和累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
 
@@ -32,6 +32,7 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 | 菜单 | 稳定 ID 后缀（前缀 `colorvision.display.`） | 输入与输出 |
 | --- | --- | --- |
 | RGB 图案套色 | `rgb-registration` | 单幅彩色图，每格一个亮目标；G 为参考，输出 R−G、B−G 的原图坐标差、距离和矢量叠图 |
+| 九点十字 RGB 分离 | `rgb-cross-registration` | 3×3 单色十字图；输出 R/G/B 通道预览、水平/垂直轴带边缘、通道偏移、九点 OK/NG 和整图阈值结果 |
 | 鬼影与杂散光评价 | `ghost-measurement` | 单图与显式主像矩形/背景；输出外部候选位置、面积、峰值比和积分比 |
 | 亮暗点 / 线缺陷 / Mura | `defects` | 均匀场；输出两种空间尺度上的缺陷候选、分析边界与区域框图 |
 | 左右眼对准与信号一致性 | `binocular-quality` | 两图；逐格原始视差、相似变换尺度/旋转/残差及各通道相对信号比 |
@@ -43,6 +44,10 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 图像按给定行列等分，每格至少 24×24 像素。目标定位用本格最小值作为背景、峰值跨度乘目标阈值提取四连通区域，再求背景扣除后的强度质心。像素中心原点在左上，x 向右、y 向下。主要目标面积至少 3 像素；存在强度积分超过最大目标 5% 的第二个合格目标时拒绝，目标触边时拒绝，低于最小信号跨度时拒绝。
 
 这适用于已知行列、每格一个完整亮点/亮十字/孤立亮图形；不提供自然图像匹配、任意点阵索引恢复或不同靶标形状间的对应保证。阈值截取质心会受光斑形状影响；每视场的像素位移要结合相机光学畸变及角度标定才能转成模块色差角。
+
+九点十字模式固定使用 3×3 网格。每个通道在本格内以背景到峰值的比例阈值提取四连通主区域；行投影定位水平臂轴带，列投影定位垂直臂轴带。对应轴线、左/右边缘和上/下边缘都以原图像素坐标输出；判定量是 R/G/B 三通道对应边缘的最大极差。边缘最大极差小于或等于“允许的最大边缘分离”时该点为 OK；任意点 NG 或无效时总体为 NG。十字缺失、触边、存在强度超过主区域 5% 的第二目标，或水平/垂直臂跨度不足时标记无效，不将缺测值当作零偏移。
+
+R/G/B 图像 artifact 是指定解码指数后的 8-bit 查看/导出预览；边缘计算使用未量化的浮点解码信号。当前不支持双色图卡、任意布局自动索引或 px 到角度的自动换算；不能以合成样本代替相机/镜头自身色差基线和现场误报漏报验收。
 
 双目至少需要三个有效且非共线的对应目标。用最小二乘拟合左图到右图的相似变换，同时保留原始逐格位移与拟合残差；不把对齐后的零误差当作产品误差。旋转正值为图像坐标下的顺时针。当前不做稳健外点剔除，残差须结合格点表解释。只比较均匀白场时关闭“测量目标位置”；信号比仍要求相同采集条件，彩色图额外给出 B/G/R 各通道比值，不输出校准色差。
 

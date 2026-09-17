@@ -39,7 +39,7 @@ related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fus
 
 `ImageCompute.UseCuda` 的初始值来自 CUDA 驱动初始化与设备数量检查，上层配置可以覆盖它。这不是纯常量读取，也不校验 `opencv_cuda.dll` 的所有算法入口或本次输入。`Fusion` 根据该值直接选择 `OpenCVCuda.CM_Fusion` 或 `OpenCVMediaHelper.M_Fusion`；GPU 调用失败后没有自动 CPU 重试。
 
-Auto/CPU/GPU 的窗口入口、输入数量限制、取消、计时、显示与保存统一见[景深融合](./image-fusion.md)。需要 CPU 模式时在调用前明确选择，不能把异常后的回退当作已有保障。
+窗口和本地流程节点使用 `FileFusion` 公共文件执行器，提供输入预检、进程内串行调度、取消后的结果丢弃和冻结位图输出；Auto 对 2–4 张输入选择 CPU，强制 GPU 拒绝少于五张输入。旧 `ImageCompute.Fusion` 是保留的低层兼容入口，不提供这些门禁。完整输入限制、计时、显示与保存见[景深融合](./image-fusion.md)；GPU 失败后不会自动重试 CPU。
 
 ## 原生日志初始化
 

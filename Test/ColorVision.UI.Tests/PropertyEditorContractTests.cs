@@ -1,6 +1,7 @@
 using ColorVision.UI.LogImp;
 using log4net.Core;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +13,32 @@ namespace ColorVision.UI.Tests;
 
 public class PropertyEditorContractTests
 {
+    private sealed class DisplayMetadataConfig
+    {
+        [Display(Name = "Visible name", Description = "Visible description", GroupName = "Visible group")]
+        public string Value { get; set; } = "Value";
+
+        [DisplayName("Legacy name"), Description("Legacy description")]
+        [Display(Name = "New name", Description = "New description")]
+        public string Legacy { get; set; } = "Legacy";
+
+        [Display(Name = "MissingResource", ResourceType = typeof(DisplayMetadataConfig))]
+        public string InvalidResource { get; set; } = "Still editable";
+    }
+
+    [Fact]
+    public void DisplayMetadata_ProvidesLabelsAndDescriptionsWithoutOverridingLegacyAttributes()
+    {
+        var value = typeof(DisplayMetadataConfig).GetProperty(nameof(DisplayMetadataConfig.Value))!;
+        var legacy = typeof(DisplayMetadataConfig).GetProperty(nameof(DisplayMetadataConfig.Legacy))!;
+        var invalid = typeof(DisplayMetadataConfig).GetProperty(nameof(DisplayMetadataConfig.InvalidResource))!;
+        Assert.Equal("Visible name", PropertyEditorHelper.GetDisplayName(null, value));
+        Assert.Equal("Visible description", PropertyEditorHelper.GetDescription(null, value));
+        Assert.Equal("Legacy name", PropertyEditorHelper.GetDisplayName(null, legacy));
+        Assert.Equal("Legacy description", PropertyEditorHelper.GetDescription(null, legacy));
+        Assert.Equal("InvalidResource", PropertyEditorHelper.GetDisplayName(null, invalid));
+    }
+
     private sealed class TestConfig
     {
         [PropertyEditorType(typeof(ThrowingEditor), UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]

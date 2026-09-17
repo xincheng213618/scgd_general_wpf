@@ -176,15 +176,19 @@ public sealed class FlowEngineManager : ViewModelBase
     {
         var frame = new Frame();
         frame.Navigate(new MeasureBatchManagerPage(frame));
-        new Window
+        var window = new Window
         {
-            Title = Properties.Resources.Inquire,
+            Title = EngineLocalization.Get("流程结果管理"),
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Height = 720,
             Width = 1280,
+            MinWidth = 1050,
+            MinHeight = 640,
             Content = frame,
-        }.Show();
+        };
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
+        window.Show();
     }
 
     private void EditSelectedFlowTemplate()

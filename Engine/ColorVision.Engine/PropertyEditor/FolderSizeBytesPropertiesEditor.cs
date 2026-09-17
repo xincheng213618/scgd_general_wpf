@@ -49,12 +49,14 @@ namespace ColorVision.Engine.PropertyEditor
             };
             editorPanel.Children.Add(textBox);
 
-            editorPanel.Children.Add(new TextBlock
+            var unitText = new TextBlock
             {
                 Text = "GB",
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 10, 0)
-            });
+            };
+            unitText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+            editorPanel.Children.Add(unitText);
 
             foreach (var presetGb in PresetsGb)
             {

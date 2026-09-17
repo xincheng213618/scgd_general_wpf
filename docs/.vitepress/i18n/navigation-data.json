@@ -1325,6 +1325,12 @@
             },
             {
               "text": {
+                "root": "CIE 色度与样品分析"
+              },
+              "link": "/04-api-reference/ui-components/cie-analysis"
+            },
+            {
+              "text": {
                 "root": "UI 运行时扩展发现与排查"
               },
               "link": "/04-api-reference/ui-components/ui-runtime-handoff"
@@ -2561,6 +2567,12 @@
             },
             {
               "text": {
+                "root": "CIE 色度与样品分析"
+              },
+              "link": "/04-api-reference/ui-components/cie-analysis"
+            },
+            {
+              "text": {
                 "root": "通用查询、条件会话与整表操作"
               },
               "link": "/04-api-reference/ui-components/database-query"
@@ -2570,6 +2582,12 @@
                 "root": "ColorVision.ImageEditor：打开、绘制与输出"
               },
               "link": "/04-api-reference/ui-components/ColorVision.ImageEditor"
+            },
+            {
+              "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
             },
             {
               "text": {

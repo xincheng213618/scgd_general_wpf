@@ -53,6 +53,39 @@ public sealed class RgbRegistrationParameters : DisplayGridParameters
     }
 }
 
+public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
+{
+    [Category("十字检测"), DisplayName("前景阈值比例"), Description("相对每格背景到峰值的阈值，用于提取 R/G/B 十字边缘。")]
+    public double TargetThreshold { get; set; } = 0.5;
+
+    [Category("十字检测"), DisplayName("最小十字跨度比例"), Description("水平臂和垂直臂在所属网格中至少覆盖的比例。")]
+    public double MinimumArmSpanFraction { get; set; } = 0.35;
+
+    [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列投影确定十字水平带和垂直带的边缘。")]
+    public double AxisBandThreshold { get; set; } = 0.5;
+
+    [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("三通道对应水平/垂直边缘的最大极差；请按产品规格设置。")]
+    public double MaximumEdgeSeparationPixels { get; set; } = 1;
+
+    public RgbCrossRegistrationParameters()
+    {
+        Columns = 3;
+        Rows = 3;
+    }
+
+    public override AlgorithmValidationResult Validate()
+    {
+        var result = base.Validate();
+        if (Columns != 3 || Rows != 3)
+            result.Add("Grid", "nine_point_grid_required", "九点十字 RGB 分离固定使用 3×3 网格。");
+        Range(result, nameof(TargetThreshold), TargetThreshold, 0.1, 0.9);
+        Range(result, nameof(MinimumArmSpanFraction), MinimumArmSpanFraction, 0.1, 0.9);
+        Range(result, nameof(AxisBandThreshold), AxisBandThreshold, 0.1, 0.9);
+        Range(result, nameof(MaximumEdgeSeparationPixels), MaximumEdgeSeparationPixels, 0, 1000);
+        return result;
+    }
+}
+
 public sealed class BinocularQualityParameters : DisplayGridParameters
 {
     [Category("测量"), DisplayName("测量目标位置"), Description("启用时每格须有一个亮目标；关闭后可比较左右均匀场的分区相对信号。两图须使用相同采集条件及坐标方向。")]

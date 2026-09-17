@@ -12,7 +12,7 @@ public enum ManualBranchPath
 }
 
 [STNode("/01 运算", "在 A/B 两条执行路径之间手动切换")]
-public sealed class ManualBranchNode : CVCommonNode
+public sealed class ManualBranchNode : CVDeviceNode
 {
 	private ManualBranchPath selectedPath;
 	private STNodeOption input = STNodeOption.Empty;

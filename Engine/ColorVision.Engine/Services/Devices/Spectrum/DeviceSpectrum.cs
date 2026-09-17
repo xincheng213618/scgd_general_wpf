@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -33,8 +34,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -149,6 +148,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
 
+        [CommandDisplay("PhysicalSpectrumManager", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumManagerHint")]
+        public RelayCommand OpenPhysicalSpectrumManagerCommand { get; set; }
+
         [CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
         [Category("DeviceConnection")]
         [Description("SpectrumRefreshHint")]
@@ -238,6 +242,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            OpenPhysicalSpectrumManagerCommand = new RelayCommand(_ => new PhySpectrumManagerWindow(Config.SN, int.TryParse(Config.ComPort, out int port) ? port : 0)
+                { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenSpectrumDriverToolCommand = new RelayCommand(a => OpenSpectrumDriverTool());
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
 
@@ -1257,46 +1263,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public async Task UploadLicenseNet(string sn)
         {
-            // 设置请求的URL和数据
-            string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
-            var postData = new { macSn = sn };
-            string DirLicense = $"{Environments.DirAppData}\\Licenses";
-            if (!Directory.Exists(DirLicense))
-                Directory.CreateDirectory(DirLicense);
-
-            string fileName = $"{DirLicense}\\{sn}-license.zip";
-
-            using (HttpClient client = new HttpClient())
+            try
             {
-                try
-                {
-                    // 发送POST请求
-                    HttpResponseMessage response = await client.PostAsJsonAsync(url, postData);
-                    // 检查响应状态码
-                    response.EnsureSuccessStatusCode();
-
-                    // 确保返回的是一个文件而不是JSON
-                    if (response.Content.Headers.ContentType?.MediaType == "application/json")
-                    {
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                    }
-                    // 获取文件名
-                    fileName = "license.zip"; // 默认文件名
-                    if (response.Content.Headers.ContentDisposition != null)
-                    {
-                        fileName = response.Content.Headers.ContentDisposition.FileName?.Trim('"');
-                    }
-                    fileName = $"{DirLicense}\\{fileName}";
-                    using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        await response.Content.CopyToAsync(fs);
-                    }
-                    SetLicense(fileName);
-                }
-                catch 
-                {
-
-                }
+                var license = await new SpectrumLicenseUpdateService().DownloadAsync(sn);
+                await Task.Run(() => PhySpectrumStore.SaveLicense(license));
+                await Application.Current.Dispatcher.InvokeAsync(() => MessageBox.Show(Application.Current.GetActiveWindow(), $"{sn} · {Properties.Resources.UpdataSucess}", Properties.Resources.PhysicalSpectrumManager));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Spectrum license update failed: {sn}", ex);
+                await Application.Current.Dispatcher.InvokeAsync(() => MessageBox.Show(Application.Current.GetActiveWindow(), $"{sn} · {ex.Message}", Properties.Resources.PhysicalSpectrumManager));
             }
         }
         public  LicenseModel CameraLicenseModel { get; set; }
@@ -1366,7 +1342,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
                     {
                         strings.Add(item.Code);
-                        Task.Run(() => UploadLicenseNet(item.Code));
                     }
                     string result = string.Join(",", strings);
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AllSpectrumDeviceInfo + Environment.NewLine + result);

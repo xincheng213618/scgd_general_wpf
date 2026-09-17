@@ -35,7 +35,7 @@ public class FlowNodeExecutionRecorderTests
             updatedMessages.Add,
             _ => true,
             _ => { });
-        var node = new CVCommonNode("Algorithm", "AlgorithmType", "AlgorithmNode", "Device");
+        var node = new CVDeviceNode("Algorithm", "AlgorithmType", "AlgorithmNode", "Device");
 
         recorder.AttachNodes([node]);
         recorder.StartRun(24586, "run-001");
@@ -93,8 +93,8 @@ public class FlowNodeExecutionRecorderTests
             updatedMessages.Add,
             _ => true,
             _ => { });
-        var oldNode = new CVCommonNode("Old", "Type", "Old", "Device");
-        var activeNode = new CVCommonNode("Active", "Type", "Active", "Device");
+        var oldNode = new CVDeviceNode("Old", "Type", "Old", "Device");
+        var activeNode = new CVDeviceNode("Active", "Type", "Active", "Device");
 
         recorder.AttachNodes([oldNode]);
         recorder.AttachNodes([activeNode]);

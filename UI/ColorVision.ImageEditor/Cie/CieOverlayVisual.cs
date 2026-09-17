@@ -1,4 +1,4 @@
-#pragma warning disable CA1861
+﻿#pragma warning disable CA1861
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,6 +11,7 @@ namespace ColorVision.ImageEditor.Cie
     public sealed class CieOverlayVisual : DrawingVisual
     {
         private static readonly double[] GuideDashArray = { 4.0, 3.0 };
+        private readonly List<Rect> _labelBounds = new();
 
         public void Render(
             CieDiagramProfile profile,
@@ -24,6 +25,7 @@ namespace ColorVision.ImageEditor.Cie
             CieMarker? selectedMarker)
         {
             using DrawingContext dc = RenderOpen();
+            _labelBounds.Clear();
 
             if (canvasSize.Width <= 0 || canvasSize.Height <= 0 || bitmapPixelSize.Width <= 0 || bitmapPixelSize.Height <= 0)
             {
@@ -42,7 +44,8 @@ namespace ColorVision.ImageEditor.Cie
             {
                 DrawDaylightReference(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip);
             }
-            DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, markers, false);
+            DrawMarkers(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip,
+                markers.Where(m => selectedMarker == null || m.Name != selectedMarker.Name || m.Chromaticity != selectedMarker.Chromaticity).ToArray(), false);
 
             if (selectedMarker != null)
             {
@@ -50,7 +53,7 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawGamuts(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieGamut> gamuts)
+        private void DrawGamuts(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieGamut> gamuts)
         {
             foreach (CieGamut gamut in gamuts)
             {
@@ -83,7 +86,7 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawMarkers(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieMarker> markers, bool emphasize)
+        private void DrawMarkers(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, IReadOnlyList<CieMarker> markers, bool emphasize)
         {
             foreach (CieMarker marker in markers)
             {
@@ -91,11 +94,11 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawCctReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
+        private void DrawCctReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
         {
-            int[] temperatures = { 1500, 2000, 2500, 3000, 4000, 6000, 10000 };
+            int[] temperatures = { 2000, 3000, 4000, 6500, 10000 };
             List<Point> locus = new();
-            for (int temperature = 1500; temperature <= 25000; temperature += 100)
+            for (int temperature = 1667; temperature <= 25000; temperature += 100)
             {
                 CieChromaticity xy = CieColorConverter.CctToApproximatePlanckianXy(temperature);
                 Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, xy);
@@ -125,7 +128,7 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawDaylightReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
+        private void DrawDaylightReference(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip)
         {
             List<Point> locus = new();
             for (int temperature = 4000; temperature <= 25000; temperature += 250)
@@ -163,38 +166,42 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawCctTick(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, int temperature)
+        private void DrawCctTick(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, int temperature)
         {
             CieChromaticity centerXy = CieColorConverter.CctToApproximatePlanckianXy(temperature);
-            CieChromaticity beforeXy = CieColorConverter.CctToApproximatePlanckianXy(Math.Max(1500, temperature - 100));
+            CieChromaticity beforeXy = CieColorConverter.CctToApproximatePlanckianXy(Math.Max(1667, temperature - 100));
             CieChromaticity afterXy = CieColorConverter.CctToApproximatePlanckianXy(Math.Min(25000, temperature + 100));
 
             Point center = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, centerXy);
-            Point before = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, beforeXy);
-            Point after = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, afterXy);
+            CieChromaticity centerUv = CieColorConverter.XyToCie1960uv(centerXy);
+            CieChromaticity beforeUv = CieColorConverter.XyToCie1960uv(beforeXy);
+            CieChromaticity afterUv = CieColorConverter.XyToCie1960uv(afterXy);
+            Vector uvTangent = new(afterUv.X - beforeUv.X, afterUv.Y - beforeUv.Y);
+            if (uvTangent.Length <= 0) return;
+            uvTangent.Normalize();
+            Vector uvNormal = new(-uvTangent.Y * 0.007, uvTangent.X * 0.007);
+            Point before = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, CieColorConverter.Uv1960ToXy(new(centerUv.X - uvNormal.X, centerUv.Y - uvNormal.Y)));
+            Point after = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, CieColorConverter.Uv1960ToXy(new(centerUv.X + uvNormal.X, centerUv.Y + uvNormal.Y)));
             if (!IsFinite(center) || !IsFinite(before) || !IsFinite(after))
             {
                 return;
             }
 
-            Vector tangent = after - before;
-            if (tangent.Length <= 0)
+            Vector normal = after - before;
+            if (normal.Length <= 0)
             {
                 return;
             }
 
-            tangent.Normalize();
-            Vector normal = new(-tangent.Y, tangent.X);
-            double halfLength = 25 * scale;
-            Point p1 = center - normal * halfLength;
-            Point p2 = center + normal * halfLength;
-            dc.DrawLine(new Pen(Brushes.Black, 1.2 * scale), p1, p2);
+            double halfLength = normal.Length / 2;
+            normal.Normalize();
+            dc.DrawLine(new Pen(Brushes.Black, 1.2 * scale), before, after);
 
             Vector labelOffset = temperature <= 2000 ? new Vector(12 * scale, -4 * scale) : normal * (halfLength + 6 * scale);
             DrawText(dc, temperature.ToString(CultureInfo.InvariantCulture), center + labelOffset, Brushes.Black, 11 * scale, scale, pixelsPerDip);
         }
 
-        private static void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker)
+        private void DrawSelection(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker)
         {
             Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
             if (!IsFinite(point))
@@ -220,7 +227,7 @@ namespace ColorVision.ImageEditor.Cie
             DrawMarker(dc, profile, canvasSize, bitmapPixelSize, scale, pixelsPerDip, marker, true);
         }
 
-        private static void DrawMarker(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, bool emphasize)
+        private void DrawMarker(DrawingContext dc, CieDiagramProfile profile, Size canvasSize, Size bitmapPixelSize, double scale, double pixelsPerDip, CieMarker marker, bool emphasize)
         {
             Point point = ToCanvasPoint(profile, canvasSize, bitmapPixelSize, marker.Chromaticity);
             if (!IsFinite(point))
@@ -242,7 +249,7 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static void DrawText(DrawingContext dc, string text, Point point, Brush brush, double fontSize, double scale, double pixelsPerDip)
+        private void DrawText(DrawingContext dc, string text, Point point, Brush brush, double fontSize, double scale, double pixelsPerDip)
         {
             FormattedText formattedText = new(
                 text,
@@ -252,8 +259,20 @@ namespace ColorVision.ImageEditor.Cie
                 Math.Max(8 * scale, fontSize),
                 brush,
                 pixelsPerDip);
+            formattedText.MaxTextWidth = 170 * scale;
+            formattedText.MaxLineCount = 1;
+            formattedText.Trimming = TextTrimming.CharacterEllipsis;
 
             Rect background = new(point, new Size(formattedText.Width + 6 * scale, formattedText.Height + 2 * scale));
+            Point original = point;
+            for (int attempt = 0; attempt < 12 && _labelBounds.Any(r => r.IntersectsWith(background)); attempt++)
+            {
+                double offset = (attempt / 2 + 1) * (background.Height + 3 * scale) * (attempt % 2 == 0 ? -1 : 1);
+                point = original + new Vector(0, offset);
+                background.Location = point;
+            }
+            _labelBounds.Add(background);
+            if (point != original) dc.DrawLine(new Pen(brush, 0.6 * scale), original, point + new Vector(0, background.Height / 2));
             dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(185, 255, 255, 255)), null, background, 2 * scale, 2 * scale);
             dc.DrawText(formattedText, point + new Vector(3 * scale, 1 * scale));
         }

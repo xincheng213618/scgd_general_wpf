@@ -82,7 +82,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    public abstract class LocalCalibrationNodeBase : LocalFlowNodeBase
+    public abstract class LocalCalibrationNodeBase : LocalDeviceFlowNodeBase
     {
         private string calibTempName = string.Empty;
         private bool saveFiles;

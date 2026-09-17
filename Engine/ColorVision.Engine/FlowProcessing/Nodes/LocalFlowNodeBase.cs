@@ -1,9 +1,6 @@
-using ColorVision.Engine.Services;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
-using ColorVision.Engine.Services.Devices;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI;
@@ -11,8 +8,6 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Linq;
@@ -94,21 +89,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private STNodeOption flowOutputOption = null!;
         protected string OperatorCode { get; }
 
-        [Display(Order = -200)]
-        [PropertyEditorType(typeof(FlowDeviceNameEditor))]
-        [STNodeProperty("设备代码", "设备代码", false, false)]
-        public new string DeviceCode
-        {
-            get => base.DeviceCode;
-            set
-            {
-                base.DeviceCode = value;
-                OnPropertyChanged();
-            }
-        }
-
         protected LocalFlowNodeBase(string title, string nodeType, string operatorName, params string[] inputNames)
-            : base(title, nodeType, $"LOCAL.{nodeType}", $"LOCAL.{nodeType}")
+            : base(title, nodeType, $"LOCAL.{nodeType}")
         {
             OperatorCode = operatorName;
             this.inputNames = inputNames.Length == 0 ? new[] { "IN" } : inputNames.ToArray();
@@ -148,16 +130,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 flowInputOptions[index] = input;
             }
             flowOutputOption = OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
-        }
-
-        protected void SelectFirstAvailableDevice<TDevice>() where TDevice : DeviceService
-        {
-            DeviceCode = GetFirstAvailableDeviceCode<TDevice>();
-        }
-
-        protected static string GetFirstAvailableDeviceCode<TDevice>() where TDevice : DeviceService
-        {
-            return ServiceManager.Current?.DeviceServices.OfType<TDevice>().FirstOrDefault()?.Code ?? string.Empty;
         }
 
         protected static string CompactValueOrDash(string? value) =>
@@ -217,15 +189,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 m_sf.Trimming = trimming;
                 graphics.Restore(state);
             }
-        }
-
-        protected string ResolveAvailableDeviceCode<TDevice>() where TDevice : DeviceService
-        {
-            TDevice[] devices = ServiceManager.Current?.DeviceServices.OfType<TDevice>().ToArray() ?? Array.Empty<TDevice>();
-            if (devices.Length == 0) return DeviceCode;
-            return devices.Any(device => string.Equals(device.Code, DeviceCode, StringComparison.Ordinal))
-                ? DeviceCode
-                : devices[0].Code;
         }
 
         private void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -359,7 +322,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected virtual string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber });
         }
 
         private void ExecuteCore(CVTransAction transaction)
@@ -369,6 +332,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             try
             {
                 LocalNodeExecutionResult result = FlowNodeTiming.Run("ExecuteLocal", () => ExecuteLocal(transaction.trans_action));
+                if (transaction.trans_action.RuntimeResources.IsDisposed) return;
                 CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, OperatorCode, result.Data);
                 transaction.trans_action.AddResult(GetLocalNodeName(), response, transaction.startTime);
                 TransferEnd(transaction, response, 0, timing);
@@ -376,6 +340,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             catch (Exception ex)
             {
                 CVStartCFC action = transaction.trans_action;
+                if (action.RuntimeResources.IsDisposed) return;
                 action.Failed(ex.Message, GetLocalNodeName(), transaction.startTime, NodeID);
                 CVServerResponse response = new(action.SerialNumber, ActionStatusEnum.Failed, ex.Message, OperatorCode, null);
                 TransferEnd(transaction, response, -1, timing);

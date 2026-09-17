@@ -2,7 +2,6 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -76,7 +75,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public required CVStartCFC Action { get; init; }
         public required string Algorithm { get; init; }
         public string? ImageFilePath { get; init; }
-        public required string DeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
         public int ResultCode { get; init; }
@@ -90,7 +88,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed class LocalFindLuminousAreaPublishRequest
     {
-        public required string DeviceCode { get; init; }
         public required string OperatorCode { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
@@ -141,7 +138,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     null,
                     request.Algorithm,
                     request.ImageFilePath,
-                    request.DeviceCode,
+                    string.Empty,
                     request.ZIndex,
                     request.TotalTime,
                     request.Parameters,
@@ -154,7 +151,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 null,
                 request.Algorithm,
                 request.ImageFilePath,
-                request.DeviceCode,
+                string.Empty,
                 request.ZIndex,
                 request.TotalTime,
                 request.Parameters,
@@ -165,9 +162,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             ArgumentNullException.ThrowIfNull(request);
             ResultMessageBus.Default.PublishPersisted(
-                ResultRoutes.Algorithm,
+                ResultRoutes.LocalFlow,
                 ResultKinds.Algorithm,
-                request.DeviceCode,
+                string.Empty,
                 request.OperatorCode,
                 request.SerialNumber,
                 request.NodeId,
@@ -275,7 +272,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             : base("发光区定位", "LocalFindLuminousAreaV2", "FindLightArea")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override string GetCompactSummaryValue() => $"{MinimumConfidence:0.###}";
@@ -304,7 +300,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LuminousAreaDetectionResult detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, MinimumConfidence));
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 LocalLuminousAreaCorner[] corners;
                 try
                 {
@@ -317,7 +312,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         Action = action,
                         Algorithm = detection.Algorithm,
                         ImageFilePath = imageFile,
-                        DeviceCode = algorithmDeviceCode,
                         ZIndex = ZIndex,
                         TotalTime = totalTime,
                         ResultCode = DetectionFailureResultCode,
@@ -350,7 +344,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     }));
                     FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindLuminousAreaPublishRequest
                     {
-                        DeviceCode = algorithmDeviceCode,
                         OperatorCode = OperatorCode,
                         SerialNumber = action.SerialNumber,
                         NodeId = NodeID,
@@ -369,7 +362,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     Action = action,
                     Algorithm = detection.Algorithm,
                     ImageFilePath = imageFile,
-                    DeviceCode = algorithmDeviceCode,
                     ZIndex = ZIndex,
                     TotalTime = totalTime,
                     Parameters = new
@@ -418,7 +410,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.FindLightArea);
                 FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindLuminousAreaPublishRequest
                 {
-                    DeviceCode = algorithmDeviceCode,
                     OperatorCode = OperatorCode,
                     SerialNumber = action.SerialNumber,
                     NodeId = NodeID,

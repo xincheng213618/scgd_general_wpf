@@ -11,7 +11,9 @@ using ColorVision.Engine;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.POI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace ColorVision.UI.Tests;
@@ -73,13 +75,63 @@ public class LocalFlowNodePortTests
         Assert.Equal(typeof(BuildPoiTemplatePropertiesEditor), typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
-    [Fact]
-    public void LocalBuildPoiNodesHideDeviceCode()
+    [Theory]
+    [InlineData(typeof(LocalFindCrossNode))]
+    [InlineData(typeof(LocalGridDistortionNode))]
+    [InlineData(typeof(LocalFovNode))]
+    [InlineData(typeof(LocalFindLuminousAreaNode))]
+    [InlineData(typeof(LocalBuildPoiNode))]
+    [InlineData(typeof(LocalBuildPoiByTemplateNode))]
+    [InlineData(typeof(LocalPoiNode))]
+    [InlineData(typeof(LocalRealPoiNode))]
+    [InlineData(typeof(LocalImageNode))]
+    [InlineData(typeof(TestMessageBoxNode))]
+    [InlineData(typeof(LocalFileFusionNode))]
+    public void LocalCalculationAndFileNodesHaveNoDeviceCodeAndDiscardLegacyValue(Type nodeType)
     {
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
-            typeof(LocalBuildPoiNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
-            typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
+        Assert.Null(nodeType.GetProperty(nameof(IFlowDeviceNode.DeviceCode)));
+        Assert.False(typeof(IFlowDeviceNode).IsAssignableFrom(nodeType));
+
+        var node = (LocalFlowNodeBase)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [nameof(IFlowDeviceNode.DeviceCode)] = Encoding.UTF8.GetBytes("LEGACY-DEVICE-1")
+        });
+
+        Assert.DoesNotContain("DeviceCode", Encoding.UTF8.GetString(node.GetSaveData()));
+        Assert.DoesNotContain("LEGACY-DEVICE-1", Encoding.UTF8.GetString(node.GetSaveData()));
+        var buildPayload = typeof(LocalFlowNodeBase).GetMethod("BuildRunPayload", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        string payload = (string)buildPayload.Invoke(node, [new CVStartCFC("pure-node")])!;
+        Assert.Null(Newtonsoft.Json.Linq.JObject.Parse(payload)["DeviceCode"]);
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalCameraNode))]
+    [InlineData(typeof(LocalCalibrationNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    [InlineData(typeof(CVBaseServerNode))]
+    public void ResourceAndRemoteNodesKeepDeviceCodeVisible(Type nodeType)
+    {
+        Assert.True(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
+            nodeType.GetProperty(nameof(IFlowDeviceNode.DeviceCode))!));
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalCameraNode))]
+    [InlineData(typeof(LocalCalibrationNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    public void LocalResourceNodesKeepSerializedDeviceSelection(Type nodeType)
+    {
+        var node = (LocalDeviceFlowNodeBase)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [nameof(IFlowDeviceNode.DeviceCode)] = Encoding.UTF8.GetBytes("CAMERA-1")
+        });
+        Assert.Equal("CAMERA-1", node.DeviceCode);
+        Assert.Contains("DeviceCode", Encoding.UTF8.GetString(node.GetSaveData()));
+        Assert.Contains("CAMERA-1", Encoding.UTF8.GetString(node.GetSaveData()));
     }
 
     [Theory]

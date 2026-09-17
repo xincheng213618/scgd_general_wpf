@@ -70,7 +70,7 @@ public class FlowExecutionNodeResolutionTests
 
     private static CVCommonNode CreateNode(string title, string nodeName)
     {
-        return new CVCommonNode(title, "SVR", nodeName, string.Empty)
+        return new CVDeviceNode(title, "SVR", nodeName, string.Empty)
         {
             Title = title
         };

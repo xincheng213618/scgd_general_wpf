@@ -44,7 +44,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid Background="White" ClipToBounds="True">
+        <Grid Background="Transparent" ClipToBounds="True">
             <cie:CieDiagramView x:Name="CieDiagram">
                 <cie:CieDiagramView.Style>
                     <Style TargetType="cie:CieDiagramView">
@@ -59,9 +59,12 @@
             </cie:CieDiagramView>
             <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12">
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="−" Click="ButtonZoomOut_Click" ToolTip="{x:Static properties:Resources.ZoomOut}" AutomationProperties.Name="{x:Static properties:Resources.ZoomOut}" />
-                    <Button Content="+" Click="ButtonZoomIn_Click" ToolTip="{x:Static properties:Resources.ZoomIn}" AutomationProperties.Name="{x:Static properties:Resources.ZoomIn}" />
-                    <Button Content="{x:Static properties:Resources.Cie_Fit}" Click="ButtonFit_Click" />
+                    <ComboBox x:Name="GamutPlane" Width="120" SelectedIndex="0" SelectionChanged="GamutPlane_Changed" ToolTip="面积计算平面">
+                        <ComboBoxItem Content="1931 xy" /><ComboBoxItem Content="1976 u′v′" />
+                    </ComboBox>
+                    <Button Style="{StaticResource CieZoomOutButton}" Click="ButtonZoomOut_Click" />
+                    <Button Style="{StaticResource CieZoomInButton}" Click="ButtonZoomIn_Click" />
+                    <Button Style="{StaticResource CieFitButton}" Click="ButtonFit_Click" />
                     <ToggleButton x:Name="ShowParameters" Content="{x:Static properties:Resources.Cie_Parameters}" IsChecked="True" Style="{StaticResource CieToggle}" />
                 </StackPanel>
             </Border>
@@ -152,10 +155,12 @@
                 <DataGrid x:Name="ResultGrid" Margin="0,8,0,0" MaxHeight="170" MinHeight="64"
                           AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                           HeadersVisibility="Column" RowHeaderWidth="0" RowHeight="28"
-                          SelectionMode="Single" BorderThickness="0" GridLinesVisibility="Horizontal">
+                          SelectionMode="Single" SelectionChanged="ResultGrid_SelectionChanged" BorderThickness="0" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="标准色域" Binding="{Binding StandardName}" Width="*" MinWidth="100" />
                         <DataGridTextColumn Header="面积比(%)" Binding="{Binding CoverageDisplay}" Width="130" />
+                        <DataGridTextColumn Header="覆盖率(%)" Binding="{Binding ActualCoverageDisplay}" Width="110" />
+                        <DataGridTextColumn Header="交集面积" Binding="{Binding IntersectionDisplay}" Width="110" />
                         <DataGridTextColumn Header="样品面积" Binding="{Binding SampleAreaDisplay}" Width="130" />
                         <DataGridTextColumn Header="标准面积" Binding="{Binding StandardAreaDisplay}" Width="130" />
                     </DataGrid.Columns>

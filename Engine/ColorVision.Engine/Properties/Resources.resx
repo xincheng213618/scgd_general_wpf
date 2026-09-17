@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:schema id="root">
@@ -1052,7 +1052,7 @@
   <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>采集与显示</value></data>
   <data name="SpectrumSearchDevices" xml:space="preserve"><value>搜索光谱仪</value></data>
   <data name="SpectrumSearchHint" xml:space="preserve"><value>遍历所有支持的连接方式</value></data>
-  <data name="SpectrumRefreshHint" xml:space="preserve"><value>刷新服务端设备与许可证</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>刷新服务端设备序列号清单</value></data>
   <data name="SpectrumDriverTool" xml:space="preserve"><value>光谱仪驱动工具</value></data>
   <data name="SpectrumDriverToolHint" xml:space="preserve"><value>打开 Zadig 配置 GCS 光谱仪的 libusb-win32 驱动</value></data>
   <data name="SpectrumDriverToolWarning" xml:space="preserve"><value>请仅选择 GCS Spectrameter，并确认目标驱动为 libusb-win32。&#xA;&#xA;不要选择键盘、鼠标、接收器、摄像头或 USB Hub。是否继续打开驱动工具？</value></data>
@@ -1165,4 +1165,34 @@
   <data name="电压量程（V）" xml:space="preserve"><value>电压量程（V）</value></data>
   <data name="电流量程（mA）" xml:space="preserve"><value>电流量程（mA）</value></data>
   <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>增益由校正组“{0}”固定为 {1:0.##}</value></data>
+  <data name="PhysicalSpectrumManager" xml:space="preserve"><value>物理光谱仪管理</value></data>
+  <data name="SpectrumRegistered" xml:space="preserve"><value>已登记</value></data>
+  <data name="SpectrumUnregistered" xml:space="preserve"><value>未登记</value></data>
+  <data name="SpectrumDiscovered" xml:space="preserve"><value>本次发现</value></data>
+  <data name="SpectrumNotDiscovered" xml:space="preserve"><value>未确认在线</value></data>
+  <data name="SpectrumDatabaseRequired" xml:space="preserve"><value>数据库未连接，请连接后刷新。</value></data>
+  <data name="SpectrumInvalidSerial" xml:space="preserve"><value>请输入有效的序列号（1–255 个字符，不包含路径或控制字符）。</value></data>
+  <data name="SpectrumLicenseTypeConflict" xml:space="preserve"><value>该 SN 已有关联的其他类型许可证，未覆盖原记录。</value></data>
+  <data name="SpectrumLicenseSerialMismatch" xml:space="preserve"><value>许可证必须包含唯一的 {0}.lic，请核对所选 SN。</value></data>
+  <data name="SpectrumInvalidLicense" xml:space="preserve"><value>许可证内容无效，型号或到期日期无法读取。</value></data>
+  <data name="SpectrumManagerHint" xml:space="preserve"><value>扫描仅查询设备，不代表连接成功。登记与许可证更新不会修改逻辑设备的 SN 或自动重启服务。</value></data>
+  <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} 个序列号 · 本次发现 {1} 台 · {2} 个许可证需处理</value></data>
+  <data name="SpectrumWorking" xml:space="preserve"><value>正在处理…</value></data>
+  <data name="SpectrumUpdateLicense" xml:space="preserve"><value>联网更新许可证</value></data>
+  <data name="SpectrumUpdateAllLicenses" xml:space="preserve"><value>联网更新全部许可证</value></data>
+  <data name="SpectrumUpdateSummary" xml:space="preserve"><value>许可证更新完成：成功 {0}，失败 {1}。选择列表项查看结果。</value></data>
+  <data name="SpectrumScanComplete" xml:space="preserve"><value>本次发现 {0} 台光谱仪，{1} 项查询失败。详情见扫描结果；新设备可点击“登记”。</value></data>
+  <data name="SpectrumImportLicense" xml:space="preserve"><value>导入本地许可证</value></data>
+  <data name="SpectrumScanOnline" xml:space="preserve"><value>扫描在线光谱仪</value></data>
+  <data name="SpectrumScanPort" xml:space="preserve"><value>串口</value></data>
+  <data name="SpectrumScanPortHint" xml:space="preserve"><value>0：仅 USB；大于 0：同时查询此 COM 串口（不更改设备配置）。</value></data>
+  <data name="SpectrumSerialList" xml:space="preserve"><value>光谱仪清单</value></data>
+  <data name="SpectrumSearchSerial" xml:space="preserve"><value>按 SN 或型号查询</value></data>
+  <data name="SpectrumAddSerial" xml:space="preserve"><value>手动登记序列号</value></data>
+  <data name="SpectrumRegister" xml:space="preserve"><value>登记</value></data>
+  <data name="SpectrumEmptySelection" xml:space="preserve"><value>请选择光谱仪，或扫描 / 登记序列号。</value></data>
+  <data name="SpectrumLicenseSection" xml:space="preserve"><value>许可证</value></data>
+  <data name="SpectrumLicenseExpiry" xml:space="preserve"><value>到期日期</value></data>
+  <data name="SpectrumLicenseCustomer" xml:space="preserve"><value>授权客户</value></data>
+  <data name="SpectrumDiscoveryDetails" xml:space="preserve"><value>扫描结果详情</value></data>
 </root>

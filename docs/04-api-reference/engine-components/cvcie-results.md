@@ -2,11 +2,11 @@
 knowledge_id: "engine.cvcie-results"
 knowledge_type: "topic"
 status: "current"
-summary: "ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。"
-aliases: ["CVCIE计算负值", "CVCIEShowConfig", "WindowCVCIE", "启用非正值替换", "ClampNonPositiveValues", "MinimumValue", "0.0001", "POI负值", "CVCIE最小值", "CVCIE色温", "CVCIE主波长", "XYZ重算", "结果数值替换", "NormalizeXyz", "CalculateColorMetrics", "椭圆POI", "多边形POI", "自由套索", "旋转区域", "DecimalPlaces", "回显字段勾选", "CvcieTemplatePropertiesEditor"]
-code_paths: ["Engine/ColorVision.Engine/Media/CvcieTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateDraft.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateWindow.xaml", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs", "Test/ColorVision.UI.Tests/CvcieRegionTests.cs", "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
-related: ["engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api", "engine.results", "ui.property-grid", "ui.configuration"]
+summary: "ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。"
+aliases: ["CVCIE计算负值", "CVCIEShowConfig", "WindowCVCIE", "启用非正值替换", "ClampNonPositiveValues", "MinimumValue", "0.0001", "POI负值", "CVCIE最小值", "CVCIE色温", "CVCIE主波长", "XYZ重算", "结果数值替换", "NormalizeXyz", "CalculateColorMetrics", "色彩中心", "D65 RMS", "ColorCenterRmsToD65", "椭圆POI", "多边形POI", "自由套索", "旋转区域", "DecimalPlaces", "回显字段勾选", "CvcieTemplatePropertiesEditor"]
+code_paths: ["Engine/ColorVision.Engine/Media/CvcieTemplatePropertiesEditor.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateDraft.cs", "Engine/ColorVision.Engine/Media/CvcieTemplateWindow.xaml", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Draw/ClosedPixelRegion.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml.cs", "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ChromaticityCenterMetrics.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/CIEStatistics.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs", "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ChromaticityCenterMetricsTests.cs", "Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs", "Test/ColorVision.UI.Tests/CvcieRegionTests.cs", "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
+related: ["ui.cie-analysis", "engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api", "engine.results", "ui.property-grid", "ui.configuration"]
 ---
 
 # CVCIE POI 结果数值
@@ -19,9 +19,27 @@ related: ["engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api",
 - `ClosedPixelRegion` 输出图内的扫描行区间。椭圆使用严格内部像素；多边形按奇偶规则填充，边采用半开区间，支持凹多边形及套索。超出图像的部分裁掉；未闭合的多边形、无有效像素的区域会报错，不产生本批新结果。
 - 新区域先对选中像素的 XYZ（单通道为 Y）求平均，再交给既有原生 POI 公式计算色度。传统圆和未旋转矩形仍走原有采样路径，保留边界取整约定；新区域不改变原生 ABI。
 - 鼠标信息探针和 CIE 图探针共享 `CvcieMouseProbeOptions.CreateMeasurementPoint`，支持点、圆、矩形、椭圆；椭圆使用区域宽度和高度，不提供多边形探针。
-- 结果表和统计默认 `F3`，工具栏可选择 0–9 位小数；列按内容适配，悬停查看完整值。亮度摘要横向排列，均匀性和中心色度可展开查看。仅改变显示，不修改计算值或 CSV 格式。表格单元格和统计数值使用只读文本框，可拖选部分文字后按 Ctrl+C，也可在文本框内按 Ctrl+A 选择完整数值。选中一行或多行后可用 **复制选中行** 复制带表头的制表符文本，遵循可见列顺序与显示精度，便于粘贴到 Excel；列表本身获得焦点时 Ctrl+C / Ctrl+A 仍用于复制行 / 全选行。右键统计数值可复制选中文字、完整数值或全部统计。
+- 结果表和统计默认 `F3`，工具栏可选择 0–9 位小数；列按内容适配，悬停查看完整值。亮度摘要横向排列，均匀性、色彩中心 · D65 和中心色度可展开查看。显示精度只影响窗口显示，不修改底层计算值或 CSV 数值格式。表格单元格和统计数值使用只读文本框，可拖选部分文字后按 Ctrl+C，也可在文本框内按 Ctrl+A 选择完整数值。选中一行或多行后可用 **复制选中行** 复制带表头的制表符文本，遵循可见列顺序与显示精度，便于粘贴到 Excel；列表本身获得焦点时 Ctrl+C / Ctrl+A 仍用于复制行 / 全选行。右键统计数值可复制选中文字、完整数值或全部统计。
 - 本次测量回显居中并替代图形名称，名称本身保留。默认标记使用 `X Y Z x y u′ v′ CCT λd` 简写，可通过显示模板调整；结果表保留 CIE 标准名称及说明。移动、缩放、旋转或改变闭合状态时清除本次测量文字，重新计算后更新，手工消息不因此被清除。
-- 自定义节点与 `EditPoiParam` 模板仍只保存传统圆、矩形参数，忽略旋转与多边形；在 ImageView 中直接计算不受该模板格式限制。CSV 的字段、顺序及数值格式保持原约定；显示精度不参与导出。
+- 自定义节点与 `EditPoiParam` 模板仍只保存传统圆、矩形参数，忽略旋转与多边形；在 ImageView 中直接计算不受该模板格式限制。CSV 原有明细列及已有统计行保持原顺序和数值格式，新 D65 指标作为统计行追加；显示精度不参与导出。
+
+### 色彩中心与 D65 RMS
+
+`Color Uniformity(Δuv)` 保留原有含义：它是所有 POI 两两之间最大的 CIE 1976 Δu′v′。新增的 **相对 D65 RMS Δu′v′** 对有限 POI 等权计算：
+
+\[
+\Delta u'v'_{RMS,D65}=\sqrt{\frac{1}{N}\sum_i[(u'_i-u'_{D65})^2+(v'_i-v'_{D65})^2]}
+\]
+
+D65 使用 `u′=0.1978294495`、`v′=0.4683321682`。窗口同时显示平均 `u′/v′`、平均色度到 D65 的距离和相对平均色度的空间 RMS，并满足 `RMS² = 平均色度偏差² + 空间 RMS²`。NaN/无穷的 `u′/v′` 不进入总数，但会计入“无效样本”；CSV 同步输出这些指标与样本数。
+
+这里的 `N` 是当前结果列表中的有效 POI 数，不是 CVCIE 整幅图的每个像素。若产品规范明确要求 `M×N` 像素级指标，必须另行明确 ROI、低亮度排除和无效 XYZ 规则；不能把 POI 结果标成整图像素结果。
+
+## 在 CIE 查看与分析
+
+POI 结果窗口只保留测量表、统计、显示设置及既有导出，不再嵌入“所选 POI · 色彩分析”面板。**显示到 CIE 图** 打开统一 CIE 窗口并联动所选点；有效的非负 XYZ 作为绝对亮度传入，仅有可显示色坐标的点仍按仅 xy 查看，不替换原始负值。需要样品色差、波长或纯度时，在 CIE 的 **样品与色差** 页点击 **加入色度图当前点** 创建快照；参考白与计算条件也统一在 CIE 内设置。关闭 POI 结果窗口清除当前点，已记录的 CIE 样品保留，详见 [CIE 色度与样品分析](../ui-components/cie-analysis.md)。
+
+这条查看链不写回 `PoiResultCIExyuvData`，不修改原表格、复制行、数据库 Value、原生 CCT / Wave 或既有 CSV。派生指标只在 CIE 中展示；仅有 XYZ 无法恢复光谱、显色指数或光谱标定参数。
 
 ## 编辑图形回显内容
 
@@ -84,6 +102,7 @@ related: ["engine.file-io", "algorithms.poi-routes", "engine.opencv-helper-api",
 | 测试 | 断言范围 |
 | --- | --- |
 | `CvcieResultValueTests` | 旧 JSON 默认值、非法设置、配置快照、已有对象不刷新、替换后色值重算、未变化 XYZ 保留衍生值；色值重算用例会调用 native |
+| `ChromaticityCenterMetricsTests` | D65 对称样本、白点偏差/空间 RMS 分解、无效样本计数，以及原有最大 Δu′v′ 语义保留 |
 | `PoiMeasurementServiceTests` | 点/圆/矩形的负 XYZ 保留、单通道 Y、常规路径保留既有替换行为与已释放缓冲拒绝；需要匹配的 native DLL |
 
 这些测试不覆盖真实窗口的完整操作、配置落盘后重启、旧 DLL 组合或全部非有限数边界。源码规则、已有测试断言和实际设备/样本验收需分别核对。

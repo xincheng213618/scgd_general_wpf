@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace FlowEngineLib.Base;
 
-public class CVBaseServerNode : CVCommonNode
+public class CVBaseServerNode : CVDeviceNode
 {
 	private sealed class IgnoreErrorsExecutionState
 	{

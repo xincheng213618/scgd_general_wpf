@@ -138,7 +138,25 @@ namespace ColorVision.Engine.Services.Devices
             return dockPanel;
         }
 
-        private static DataTemplate CreateCameraSnItemTemplate()
+        public static DataTemplate CreateCameraSnItemTemplate()
+        {
+            return CreateDeviceSnItemTemplate(
+                "DeviceModeDisplayText",
+                "Code",
+                "SysResourceModel.Remark",
+                "LicenseExpiryColor",
+                new StatusToTextConverter(),
+                new StatusToColorConverter());
+        }
+
+        public static DataTemplate CreateDeviceSnItemTemplate(
+            string deviceNamePath,
+            string serialNumberPath,
+            string statusPath,
+            string deviceNameForegroundPath,
+            IValueConverter? statusTextConverter = null,
+            IValueConverter? statusForegroundConverter = null,
+            string? statusForegroundPath = null)
         {
             DataTemplate itemTemplate = new DataTemplate();
 
@@ -149,16 +167,23 @@ namespace ColorVision.Engine.Services.Devices
             FrameworkElementFactory header = new FrameworkElementFactory(typeof(DockPanel));
             header.SetValue(DockPanel.LastChildFillProperty, true);
 
-            FrameworkElementFactory statusBlock = CreateStatusTextBlock();
+            FrameworkElementFactory statusBlock = CreateTextBlock(statusPath, 12, FontWeights.SemiBold, 1.0);
             statusBlock.SetValue(DockPanel.DockProperty, Dock.Right);
+            statusBlock.SetValue(FrameworkElement.MarginProperty, new Thickness(8, 0, 0, 0));
+
+            Binding statusTextBinding = new Binding(statusPath) { Converter = statusTextConverter };
+            statusBlock.SetBinding(TextBlock.TextProperty, statusTextBinding);
+
+            Binding statusColorBinding = new Binding(statusForegroundPath ?? statusPath) { Converter = statusForegroundConverter };
+            statusBlock.SetBinding(TextBlock.ForegroundProperty, statusColorBinding);
             header.AppendChild(statusBlock);
 
-            FrameworkElementFactory deviceSnBlock = CreateTextBlock("DeviceModeDisplayText", 13, FontWeights.SemiBold, 1.0);
-            deviceSnBlock.SetBinding(TextBlock.ForegroundProperty, new Binding("LicenseExpiryColor"));
+            FrameworkElementFactory deviceSnBlock = CreateTextBlock(deviceNamePath, 13, FontWeights.SemiBold, 1.0);
+            deviceSnBlock.SetBinding(TextBlock.ForegroundProperty, new Binding(deviceNameForegroundPath));
             header.AppendChild(deviceSnBlock);
             root.AppendChild(header);
 
-            FrameworkElementFactory codeBlock = CreateTextBlock("Code", 12, FontWeights.Normal, 0.72);
+            FrameworkElementFactory codeBlock = CreateTextBlock(serialNumberPath, 12, FontWeights.Normal, 0.72);
             codeBlock.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 2, 0, 0));
             root.AppendChild(codeBlock);
 
@@ -166,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices
             return itemTemplate;
         }
 
-        private static Style CreateCameraSnItemContainerStyle(DataTemplate itemTemplate)
+        public static Style CreateCameraSnItemContainerStyle(DataTemplate itemTemplate)
         {
             Style style = new Style(typeof(ComboBoxItem));
             style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
@@ -188,19 +213,6 @@ namespace ColorVision.Engine.Services.Devices
             return textBlock;
         }
 
-        private static FrameworkElementFactory CreateStatusTextBlock()
-        {
-            FrameworkElementFactory statusBlock = CreateTextBlock("SysResourceModel.Remark", 12, FontWeights.SemiBold, 1.0);
-            statusBlock.SetValue(FrameworkElement.MarginProperty, new Thickness(8, 0, 0, 0));
-
-            Binding textBinding = new Binding("SysResourceModel.Remark") { Converter = new StatusToTextConverter() };
-            statusBlock.SetBinding(TextBlock.TextProperty, textBinding);
-
-            Binding colorBinding = new Binding("SysResourceModel.Remark") { Converter = new StatusToColorConverter() };
-            statusBlock.SetBinding(TextBlock.ForegroundProperty, colorBinding);
-
-            return statusBlock;
-        }
     }
 
 }

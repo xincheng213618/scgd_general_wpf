@@ -221,9 +221,12 @@
       "knowledge_id": "algorithms.display-metrology",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地显示图案计量：RGB套色、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
+      "summary": "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
       "aliases": [
         "RGB套色",
+        "RGB分通道",
+        "九点十字",
+        "RGB分离",
         "横向色差",
         "Eyebox",
         "眼盒",
@@ -4529,7 +4532,7 @@
       "knowledge_id": "engine.cvcie-results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。",
+      "summary": "ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。",
       "aliases": [
         "CVCIE计算负值",
         "CVCIEShowConfig",
@@ -4546,6 +4549,9 @@
         "结果数值替换",
         "NormalizeXyz",
         "CalculateColorMetrics",
+        "色彩中心",
+        "D65 RMS",
+        "ColorCenterRmsToD65",
         "椭圆POI",
         "多边形POI",
         "自由套索",
@@ -4564,18 +4570,22 @@
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ChromaticityCenterMetrics.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/CIEStatistics.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ChromaticityCenterMetricsTests.cs",
         "Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs",
         "Test/ColorVision.UI.Tests/CvcieRegionTests.cs",
         "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
         "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
       ],
       "related": [
+        "ui.cie-analysis",
         "engine.file-io",
         "algorithms.poi-routes",
         "engine.opencv-helper-api",
@@ -9591,6 +9601,48 @@
       "searchable": true
     },
     {
+      "knowledge_id": "ui.cie-analysis",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。",
+      "aliases": [
+        "色度分析",
+        "色度分析工作台",
+        "CIE 色度图",
+        "色差计算",
+        "色域覆盖率",
+        "CIEDE2000",
+        "JNCD",
+        "CieSampleAnalysisView",
+        "CieAnalysisMath",
+        "CieGamutGeometry",
+        "WindowCIE",
+        "ManualColorGamutView"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Cie",
+        "Engine/ColorVision.Engine/Media/CvcieDiagramEditorTool.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/CieAnalysisTests.cs",
+        "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs",
+        "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"
+      ],
+      "related": [
+        "ui.image-editor",
+        "engine.cvcie-results"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "ui",
+      "title": "CIE 色度与样品分析",
+      "source": "docs/04-api-reference/ui-components/cie-analysis.md",
+      "url": "/04-api-reference/ui-components/cie-analysis",
+      "searchable": true
+    },
+    {
       "knowledge_id": "ui.common",
       "knowledge_type": "topic",
       "status": "current",
@@ -10639,7 +10691,7 @@
       "knowledge_id": "ui.image-fusion",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。",
+      "summary": "景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。",
       "aliases": [
         "景深融合",
         "执行融合",
@@ -10654,9 +10706,16 @@
         "M_Fusion",
         "CM_Fusion",
         "CM_Fusion_Async",
-        "融合耗时"
+        "融合耗时",
+        "FileFusion",
+        "LocalFileFusionNode",
+        "流程景深融合",
+        "有序文件列表"
       ],
       "code_paths": [
+        "UI/ColorVision.Core/FileFusion.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFileFusionNode.cs",
+        "Engine/ColorVision.Engine/Services/Images/FileFusion/FileFusionServices.cs",
         "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml",
         "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml.cs",
         "UI/ColorVision.ImageTools/Fusion/FusionFolderMenuContribution.cs",
@@ -10673,6 +10732,8 @@
         "Native/opencv_cuda/cudamath.h"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/FileFusionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFileFusionNodeTests.cs",
         "Test/opencv_helper_test/test_find_luminous_area.cpp",
         "Test/opencv_helper_test/test_cuda_fusion.cpp"
       ],
@@ -10684,6 +10745,7 @@
         "engine.native-integration"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_cuda",
         "Native/opencv_helper",

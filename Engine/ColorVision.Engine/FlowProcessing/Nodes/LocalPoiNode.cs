@@ -1,5 +1,4 @@
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
@@ -43,7 +42,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public LocalPoiNode() : base("POI", "POI", "Calculate")
         {
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override string GetCompactSummaryValue() => CompactValueOrDash(POITempName);
@@ -65,14 +63,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                     action,
                     resultType,
                     poi.Id,
                     poi.Name,
                     currentFrame.CvCieFilePath,
-                    algorithmDeviceCode,
+                    null,
                     ZIndex,
                     totalTime,
                     new
@@ -89,7 +86,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
                     action.Data["LocalPoiCount"] = result.Points.Count;
                     action.MasterValue(null, masterId, (int)resultType);
-                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
+                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
                     return new LocalNodeExecutionResult
                     {
                         Data = new LocalPoiNodeResultData

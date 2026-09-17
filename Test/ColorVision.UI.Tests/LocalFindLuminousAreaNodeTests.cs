@@ -43,12 +43,9 @@ public sealed class LocalFindLuminousAreaNodeTests
     }
 
     [Fact]
-    public void LocalOnlyDeviceCodeIsHiddenFromUserConfiguration()
+    public void LocalAlgorithmHasNoDeviceCode()
     {
-        var deviceCode = typeof(LocalFindLuminousAreaNode).GetProperty(nameof(LocalFindLuminousAreaNode.DeviceCode));
-
-        Assert.NotNull(deviceCode);
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(deviceCode!));
+        Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("DeviceCode"));
     }
 
     [Fact]

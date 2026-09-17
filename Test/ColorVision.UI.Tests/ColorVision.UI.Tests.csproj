@@ -39,6 +39,7 @@
     <None Include="$(VSTestTestAdapterPath)\*.dll" CopyToOutputDirectory="PreserveNewest" Visible="False" />
     <None Update="TestData\Scheduler\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="TestData\Flow\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestData\Cie\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

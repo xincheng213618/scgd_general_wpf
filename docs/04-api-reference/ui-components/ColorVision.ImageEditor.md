@@ -112,6 +112,8 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 统一算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。[本地 Native 分析](../algorithms/local-native-analysis.md)等直接入口不自动受这套门禁控制。工具构造、刷新与临时 ROI 见[编辑器上下文](./image-editor-context.md)。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
 
+CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，多样品、色差、色域覆盖与导出契约见 [CIE 色度与样品分析](./cie-analysis.md)。选中样品可直接设为色域 R、G 或 B；实测 XYZ、RGB 推算和仅色坐标分别处理。
+
 ## 视频模式
 
 `VideoOpen` 声明 MP4、AVI、MKV、MOV、WMV、FLV、WEBM；原生打开失败会返回，后缀命中不是编解码保证。打开成功读取首帧，不自动播放。`VideoOpen` 负责文件元数据、播放控件和图像接入，`VideoPlaybackSession` 负责原生句柄、回调帧寿命、播放状态与独立音轨；`IVideoPlaybackBackend`、`IVideoAudioTrack` 提供有界验证接缝，不要求打开器持有 native 生命周期细节。

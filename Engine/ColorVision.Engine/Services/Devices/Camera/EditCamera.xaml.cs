@@ -52,7 +52,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.ItemsSource = PhyCameras;
 
             CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraCode);
-            CameraPhyID.DisplayMemberPath = "Code";
+            TextSearch.SetTextPath(CameraPhyID, nameof(PhyCamera.Code));
+            CameraPhyID.ItemTemplate = TextSNPropertiesEditor.CreateCameraSnItemTemplate();
+            CameraPhyID.ItemContainerStyle = TextSNPropertiesEditor.CreateCameraSnItemContainerStyle(CameraPhyID.ItemTemplate);
 
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
@@ -77,9 +79,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public void UpdateConfig()
         {
-            if (CameraPhyID.SelectedIndex > -1)
+            if (CameraPhyID.SelectedItem is PhyCamera phyCamera)
             {
-                var phyCamera = PhyCameras[CameraPhyID.SelectedIndex];
                 phyCamera.Config.ApplyTo(EditConfig, includeCameraId: false, includeCameraType: false);
             }
         }

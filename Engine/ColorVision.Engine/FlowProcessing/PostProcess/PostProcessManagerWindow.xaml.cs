@@ -1,5 +1,6 @@
 #pragma warning disable CS8622,CS8625
 using ColorVision.UI;
+using ColorVision.Themes;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -75,6 +76,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public PostProcessManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             Closing += Window_Closing;
         }
 
@@ -137,7 +139,6 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 PropertyPanel.Children.Add(new TextBlock 
                 { 
                     Text = EngineLocalization.Get("请选择一个处理项查看配置"),
-                    Foreground = System.Windows.Media.Brushes.Gray,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 20, 0, 0)
                 });
@@ -180,13 +181,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         {
             var border = new Border
             {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(10),
                 Margin = new Thickness(0, 0, 0, 10)
             };
 
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
             var stack = new StackPanel();
             border.Child = stack;
 
@@ -230,13 +231,13 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         {
             var border = new Border
             {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(10),
                 Margin = new Thickness(0, 0, 0, 10)
             };
 
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
             var stack = new StackPanel();
             border.Child = stack;
 
@@ -249,7 +250,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             });
 
             // Generate property editor controls
-            var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
+            var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config, showCategoryHeader: false);
             
             // Subscribe to config changes to persist (with proper cleanup)
             if (config is INotifyPropertyChanged notifyConfig)

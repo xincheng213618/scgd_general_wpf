@@ -1,10 +1,9 @@
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.Results;
@@ -35,6 +34,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         public static FovCameraCalibration Resolve(string? preferredCameraDeviceCode)
         {
+            if (string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
+                return new FovCameraCalibration { CameraDeviceCode = string.Empty };
+
             DeviceCamera[] deviceCameras = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>().ToArray()
                 ?? Array.Empty<DeviceCamera>();
             if (!string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
@@ -47,8 +49,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     string.Equals(camera.Config.CameraCode, preferredCameraDeviceCode, StringComparison.OrdinalIgnoreCase));
                 if (selected != null) return FromDevice(selected);
             }
-
-            if (deviceCameras.Length == 1) return FromDevice(deviceCameras[0]);
 
             var physicalCameras = PhyCameraManager.GetInstance().PhyCameras.ToArray();
             if (!string.IsNullOrWhiteSpace(preferredCameraDeviceCode))
@@ -64,15 +64,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     };
                 }
             }
-            if (deviceCameras.Length == 0 && physicalCameras.Length == 1)
-            {
-                return new FovCameraCalibration
-                {
-                    CameraDeviceCode = physicalCameras[0].Code,
-                    PhysicalCameraCode = physicalCameras[0].Code
-                };
-            }
-
             return new FovCameraCalibration
             {
                 CameraDeviceCode = preferredCameraDeviceCode?.Trim() ?? string.Empty
@@ -116,7 +107,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         public int BatchId { get; init; }
         public string? ImageFilePath { get; init; }
-        public required string AlgorithmDeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
         public int ResultCode { get; init; }
@@ -133,7 +123,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed record LocalFovPublishRequest
     {
-        public required string DeviceCode { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
         public int ZIndex { get; init; }
@@ -205,7 +194,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 coarseCorners: coarseCorners);
         public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => LocalFovResultPersistence.Save(request);
         public void Publish(LocalFovPublishRequest request) => ResultMessageBus.Default.PublishPersisted(
-            ResultRoutes.Algorithm, ResultKinds.Algorithm, request.DeviceCode, "FOV", request.SerialNumber,
+            ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "FOV", request.SerialNumber,
             request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.FOV);
     }
 
@@ -273,7 +262,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 BatchId = request.BatchId,
                 Zindex = request.ZIndex,
                 Params = JsonConvert.SerializeObject(request.Parameters),
-                DeviceCode = string.IsNullOrWhiteSpace(request.AlgorithmDeviceCode) ? null : request.AlgorithmDeviceCode,
+                DeviceCode = null,
                 ResultCode = request.ResultCode,
                 Result = request.ResultDescription,
                 TotalTime = request.TotalTime,
@@ -378,7 +367,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             : base("FOV计算", "LocalFOV", "FOV")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override string GetCompactSummaryValue() => $"{FovDist:0.##}";
@@ -429,7 +417,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 double selectedFovDist = configuredFovDist;
                 MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                     ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int zIndex = ZIndex;
                 string nodeId = NodeID;
 
@@ -455,7 +442,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         BatchId = batch.Id,
                         ImageFilePath = imageFile,
-                        AlgorithmDeviceCode = algorithmDeviceCode,
                         ZIndex = zIndex,
                         TotalTime = failedTime,
                         ResultCode = CalculationFailureResultCode,
@@ -464,7 +450,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     }));
                     FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                     {
-                        DeviceCode = algorithmDeviceCode,
                         SerialNumber = action.SerialNumber,
                         NodeId = nodeId,
                         ZIndex = zIndex,
@@ -480,7 +465,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     BatchId = batch.Id,
                     ImageFilePath = imageFile,
-                    AlgorithmDeviceCode = algorithmDeviceCode,
                     ZIndex = zIndex,
                     TotalTime = totalTime,
                     Parameters = parameters,
@@ -500,7 +484,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.FOV);
                 FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFovPublishRequest
                 {
-                    DeviceCode = algorithmDeviceCode,
                     SerialNumber = action.SerialNumber,
                     NodeId = nodeId,
                     ZIndex = zIndex,

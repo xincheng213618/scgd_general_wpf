@@ -9,6 +9,26 @@ namespace ColorVision.UI.Tests;
 public sealed class ComboBoxItemBindingTests
 {
     [Theory]
+    [InlineData("ComboBoxItemBaseStyle")]
+    [InlineData("ComboBoxItem.Small")]
+    public void DetachedDeclaredItems_UseFallbackAlignmentWithoutAncestorFailures(string styleKey)
+    {
+        WpfTestHost.Invoke(() => WithThemeResources(() =>
+        {
+            using var trace = new BindingTrace();
+            var item = new ComboBoxItem
+            {
+                Content = "Detached item",
+                Style = (Style)Application.Current.FindResource(styleKey),
+            };
+
+            Assert.Equal(HorizontalAlignment.Left, item.HorizontalContentAlignment);
+            Assert.Equal(VerticalAlignment.Center, item.VerticalContentAlignment);
+            trace.AssertNoAlignmentFailures();
+        }));
+    }
+
+    [Theory]
     [InlineData(null, false)]
     [InlineData(null, true)]
     [InlineData("ComboBox.Small", false)]

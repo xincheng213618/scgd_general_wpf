@@ -1,7 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
@@ -64,7 +63,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         public required CVStartCFC Action { get; init; }
         public string? ImageFilePath { get; init; }
-        public required string DeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
         public int ResultCode { get; init; }
@@ -82,7 +80,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed class LocalFindCrossPublishRequest
     {
-        public required string DeviceCode { get; init; }
         public required string OperatorCode { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
@@ -188,9 +185,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             ArgumentNullException.ThrowIfNull(request);
             ResultMessageBus.Default.PublishPersisted(
-                ResultRoutes.Algorithm,
+                ResultRoutes.LocalFlow,
                 ResultKinds.Algorithm,
-                request.DeviceCode,
+                string.Empty,
                 request.OperatorCode,
                 request.SerialNumber,
                 request.NodeId,
@@ -312,7 +309,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 BatchId = batchId,
                 Zindex = request.ZIndex,
                 Params = JsonConvert.SerializeObject(request.Parameters),
-                DeviceCode = NullIfWhiteSpace(request.DeviceCode),
+                DeviceCode = null,
                 ResultCode = request.ResultCode,
                 Result = request.ResultDescription,
                 TotalTime = request.TotalTime,
@@ -509,7 +506,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             : base("十字定位", "LocalFindCross", "FindCross")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override string GetCompactSummaryValue() => FormatCompactRegion(SearchRegion);
@@ -538,7 +534,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFindCrossDetection detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, ParameterJson));
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 LocalFindCrossNodeItem result;
                 try
                 {
@@ -550,7 +545,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         Action = action,
                         ImageFilePath = imageFile,
-                        DeviceCode = algorithmDeviceCode,
                         ZIndex = ZIndex,
                         TotalTime = totalTime,
                         ResultCode = DetectionFailureResultCode,
@@ -584,7 +578,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         throw new InvalidOperationException("本地 FindCross 失败持久化返回了无效主表 ID。");
                     FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindCrossPublishRequest
                     {
-                        DeviceCode = algorithmDeviceCode,
                         OperatorCode = OperatorCode,
                         SerialNumber = action.SerialNumber,
                         NodeId = NodeID,
@@ -620,7 +613,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     Action = action,
                     ImageFilePath = imageFile,
-                    DeviceCode = algorithmDeviceCode,
                     ZIndex = ZIndex,
                     TotalTime = totalTime,
                     Parameters = parameters,
@@ -652,7 +644,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.FindCross);
                 FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindCrossPublishRequest
                 {
-                    DeviceCode = algorithmDeviceCode,
                     OperatorCode = OperatorCode,
                     SerialNumber = action.SerialNumber,
                     NodeId = NodeID,

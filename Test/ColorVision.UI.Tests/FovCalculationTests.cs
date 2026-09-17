@@ -154,7 +154,6 @@ public sealed class FovCalculationTests
         {
             BatchId = 27,
             ImageFilePath = @"C:\Samples\fov.cvraw",
-            AlgorithmDeviceCode = "Algorithm1",
             ZIndex = 3,
             TotalTime = 18,
             Parameters = new { cameraDegrees = 74.2 }
@@ -168,7 +167,7 @@ public sealed class FovCalculationTests
         Assert.Equal("2.0", master.version);
         Assert.Equal(27, master.BatchId);
         Assert.Equal(3, master.Zindex);
-        Assert.Equal("Algorithm1", master.DeviceCode);
+        Assert.Null(master.DeviceCode);
         Assert.Equal(45, detail.PId);
         Assert.Equal(@"C:\Results\fov.json", resultFile.ResultFileName);
     }

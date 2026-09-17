@@ -4,9 +4,8 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Workspace;
 using Microsoft.Win32;
-using Newtonsoft.Json;
+using System.Threading;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -33,6 +32,9 @@ namespace ColorVision.Solution.Fusion
 
     public partial class FusionWindow : Window
     {
+        private CancellationTokenSource? execution;
+        private bool closed;
+
         public ObservableCollection<string> FilePaths { get; } = new();
         public ObservableCollection<TimingRecord> TimingRecords { get; } = new();
 
@@ -43,6 +45,7 @@ namespace ColorVision.Solution.Fusion
             TimingListView.ItemsSource = TimingRecords;
             FilePaths.CollectionChanged += (s, e) => UpdateExecuteButton();
             UpdateCudaStatus();
+            Closed += (_, _) => { closed = true; execution?.Cancel(); };
         }
 
         public FusionWindow(IEnumerable<string> files) : this()
@@ -62,7 +65,7 @@ namespace ColorVision.Solution.Fusion
 
         private void UpdateExecuteButton()
         {
-            ButtonExecute.IsEnabled = FilePaths.Count >= 2;
+            ButtonExecute.IsEnabled = execution == null && !closed && FilePaths.Count >= 2;
         }
 
         private void AddFiles_Click(object sender, RoutedEventArgs e)
@@ -138,129 +141,53 @@ namespace ColorVision.Solution.Fusion
             TimingRecords.Clear();
         }
 
-        private static string ModeDisplayName(FusionMode mode) => mode switch
-        {
-            FusionMode.CPU      => "CPU (OpenCV)",
-            FusionMode.GPU      => "GPU (CUDA)",
-            FusionMode.GPUAsync => "GPU Async (CUDA)",
-            _                   => ImageCompute.UseCuda ? "自动→GPU" : "自动→CPU",
-        };
-
         private async void Execute_Click(object sender, RoutedEventArgs e)
         {
-            if (FilePaths.Count < 2)
-            {
-                MessageBox.Show(Properties.Resources.Sol_Fusion_SelectMin2, Properties.Resources.Sol_Fusion_Hint, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var mode = (FusionMode)ComboBoxMode.SelectedIndex;
-
-            // Validate files exist
-            foreach (var file in FilePaths)
-            {
-                if (!File.Exists(file))
-                {
-                    MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_FileNotExist, file), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            ButtonExecute.IsEnabled = false;
+            if (execution != null || closed) return;
+            using var cancellation = new CancellationTokenSource();
+            execution = cancellation;
+            FileInputGroup.IsEnabled = false;
+            ComboBoxMode.IsEnabled = false;
+            UpdateExecuteButton();
             StatusText.Text = Properties.Resources.Sol_Fusion_Executing;
-
             try
             {
-                string fusionJson = JsonConvert.SerializeObject(FilePaths.ToArray());
-                int imageCount = FilePaths.Count;
-
-                HImage hImage = default;
-                long loadMs = 0, fusionMs = 0, convertMs = 0;
-
-                var swTotal = Stopwatch.StartNew();
-
-                int result = await Task.Run(() =>
-                {
-                    // Measure file loading separately (pre-warm)
-                    var swLoad = Stopwatch.StartNew();
-                    // Reading files is done inside the native call; we measure the whole native call
-                    // then subtract convert time to estimate fusion time
-                    swLoad.Stop();
-                    loadMs = swLoad.ElapsedMilliseconds;
-
-                    var swFusion = Stopwatch.StartNew();
-                    int r = mode switch
-                    {
-                        FusionMode.CPU      => OpenCVMediaHelper.M_Fusion(fusionJson, out hImage),
-                        FusionMode.GPU      => OpenCVCuda.CM_Fusion(fusionJson, out hImage),
-                        FusionMode.GPUAsync => OpenCVCuda.CM_Fusion_Async(fusionJson, out hImage),
-                        _                   => ImageCompute.Fusion(fusionJson, out hImage),
-                    };
-                    swFusion.Stop();
-                    fusionMs = swFusion.ElapsedMilliseconds;
-                    return r;
-                });
-
-                if (result != 0)
-                {
-                    hImage.Dispose();
-                    StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Failed, result);
-                    MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_CalcFailed, result), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                StatusText.Text = Properties.Resources.Sol_Fusion_Converting;
-
-                var swConvert = Stopwatch.StartNew();
-                WriteableBitmap bitmap;
-                try
-                {
-                    bitmap = hImage.ToWriteableBitmap();
-                }
-                finally
-                {
-                    hImage.Dispose();
-                }
-                swConvert.Stop();
-                convertMs = swConvert.ElapsedMilliseconds;
-
-                swTotal.Stop();
-                long totalMs = swTotal.ElapsedMilliseconds;
-
-                // Add timing record
+                FileFusionResult result = await FileFusion.Default.ExecuteAsync(FilePaths, (FileFusionMode)ComboBoxMode.SelectedIndex, cancellation.Token);
+                if (closed || cancellation.IsCancellationRequested) return;
                 TimingRecords.Add(new TimingRecord
                 {
-                    Mode       = ModeDisplayName(mode),
-                    LoadMs     = loadMs,
-                    FusionMs   = fusionMs,
-                    ConvertMs  = convertMs,
-                    TotalMs    = totalMs,
-                    ImageCount = imageCount,
+                    Mode = result.ActualMode.ToString(),
+                    LoadMs = result.ValidationMs,
+                    FusionMs = result.NativeMs,
+                    ConvertMs = result.ConvertMs,
+                    TotalMs = result.TotalMs,
+                    ImageCount = result.Files.Count,
                 });
-                // Auto-scroll to latest
                 TimingListView.ScrollIntoView(TimingRecords[^1]);
-
-                StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Done, $"{fusionMs} ms");
-
-                ShowResultInImageEditor(bitmap);
+                StatusText.Text = string.Format(Properties.Resources.Sol_Fusion_Done, $"{result.NativeMs} ms");
+                ShowResultInImageEditor(result.Image);
             }
-            catch (DllNotFoundException ex)
-            {
-                StatusText.Text = Properties.Resources.Sol_Fusion_MissingLib;
-                MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_MissingRuntime, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                StatusText.Text = Properties.Resources.Sol_Fusion_Error;
-                MessageBox.Show(string.Format(Properties.Resources.Sol_Fusion_ProcessError, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!closed)
+                {
+                    StatusText.Text = Properties.Resources.Sol_Fusion_Error;
+                    MessageBox.Show(this, ex.Message, Properties.Resources.Sol_Fusion_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             finally
             {
-                ButtonExecute.IsEnabled = FilePaths.Count >= 2;
+                execution = null;
+                if (!closed)
+                {
+                    FileInputGroup.IsEnabled = true;
+                    ComboBoxMode.IsEnabled = true;
+                    UpdateExecuteButton();
+                }
             }
         }
-
-        private void ShowResultInImageEditor(WriteableBitmap bitmap)
+        private void ShowResultInImageEditor(BitmapSource bitmap)
         {
             string title = string.Format(Properties.Resources.Sol_Fusion_Result, DateTime.Now.ToString("HH:mm:ss"));
             string guidId = Guid.NewGuid().ToString();
@@ -268,7 +195,7 @@ namespace ColorVision.Solution.Fusion
             if (WorkspaceManager.LayoutDocumentPane != null)
             {
                 ImageView imageView = new ImageView();
-                imageView.OpenImage(bitmap);
+                imageView.OpenImage(new WriteableBitmap(bitmap));
 
                 LayoutDocument layoutDocument = new LayoutDocument()
                 {
@@ -279,10 +206,9 @@ namespace ColorVision.Solution.Fusion
                 WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
                 WorkspaceManager.LayoutDocumentPane.SelectedContentIndex =
                     WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
-                layoutDocument.Closing += async (s, e) =>
+                layoutDocument.Closed += (s, e) =>
                 {
                     imageView.Clear();
-                    await Task.Delay(10);
                     imageView.Dispose();
                 };
             }
@@ -290,7 +216,7 @@ namespace ColorVision.Solution.Fusion
             {
                 // Fallback: open in a new window
                 ImageView imageView = new ImageView();
-                imageView.OpenImage(bitmap);
+                imageView.OpenImage(new WriteableBitmap(bitmap));
                 Window window = new Window
                 {
                     Title = title,
@@ -300,10 +226,9 @@ namespace ColorVision.Solution.Fusion
                     Owner = Application.Current.MainWindow,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
-                window.Closing += async (s, e) =>
+                window.Closed += (s, e) =>
                 {
                     imageView.Clear();
-                    await Task.Delay(10);
                     imageView.Dispose();
                 };
                 window.Show();

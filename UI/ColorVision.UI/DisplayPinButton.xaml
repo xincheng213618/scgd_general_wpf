@@ -3,13 +3,13 @@
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:properties="clr-namespace:ColorVision.UI.Properties"
               Width="24" Height="24" Margin="2,0" VerticalAlignment="Center"
-              Click="Pin_Click" Loaded="Pin_Loaded"
-              AutomationProperties.Name="{Binding ToolTip, RelativeSource={RelativeSource Self}}">
+              Click="Pin_Click" Loaded="Pin_Loaded">
     <ToggleButton.Style>
         <Style TargetType="ToggleButton">
             <Setter Property="Opacity" Value="0"/>
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="ToolTip" Value="{x:Static properties:Resources.DisplayPin}"/>
+            <Setter Property="AutomationProperties.Name" Value="{x:Static properties:Resources.DisplayPin}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
@@ -48,6 +48,7 @@
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Opacity" Value="1"/>
                     <Setter Property="ToolTip" Value="{x:Static properties:Resources.DisplayUnpin}"/>
+                    <Setter Property="AutomationProperties.Name" Value="{x:Static properties:Resources.DisplayUnpin}"/>
                 </Trigger>
                 <Trigger Property="IsKeyboardFocused" Value="True">
                     <Setter Property="Opacity" Value="1"/>

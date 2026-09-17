@@ -1,7 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
@@ -36,7 +35,6 @@ internal sealed record LocalGridDistortionNodeResultData
 internal sealed record LocalGridDistortionPersistenceRequest
 {
     public required CVStartCFC Action { get; init; }
-    public required string DeviceCode { get; init; }
     public string? ImageFilePath { get; init; }
     public int ZIndex { get; init; }
     public int TotalTime { get; init; }
@@ -59,7 +57,6 @@ internal sealed record LocalGridDistortionPersistenceResult
 
 internal sealed record LocalGridDistortionPublishRequest
 {
-    public required string DeviceCode { get; init; }
     public required string SerialNumber { get; init; }
     public required string NodeId { get; init; }
     public int ZIndex { get; init; }
@@ -83,7 +80,7 @@ internal sealed class LocalGridDistortionNodeServices : ILocalGridDistortionNode
     public GridDistortionResult Detect(HImage image, RoiRect roi, GridDistortionOptions options) => GridDistortionNative.Run(image, roi, options);
     public LocalGridDistortionPersistenceResult Persist(LocalGridDistortionPersistenceRequest request) => LocalGridDistortionResultPersistence.Save(request);
     public void Publish(LocalGridDistortionPublishRequest request) => ResultMessageBus.Default.PublishPersisted(
-        ResultRoutes.Algorithm, ResultKinds.Algorithm, request.DeviceCode, "Distortion", request.SerialNumber,
+        ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, "Distortion", request.SerialNumber,
         request.NodeId, request.ZIndex, request.MasterId, (int)ViewResultAlgType.Distortion);
 }
 
@@ -203,7 +200,7 @@ internal static class LocalGridDistortionResultPersistence
             BatchId = batchId,
             Zindex = request.ZIndex,
             Params = JsonConvert.SerializeObject(request.Parameters),
-            DeviceCode = string.IsNullOrWhiteSpace(request.DeviceCode) ? null : request.DeviceCode,
+            DeviceCode = null,
             ResultCode = request.ResultCode,
             Result = request.ResultDescription,
             TotalTime = request.TotalTime,
@@ -319,7 +316,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         : base("点阵畸变", "LocalGridDistortion", "Distortion")
     {
         this.services = services ?? throw new ArgumentNullException(nameof(services));
-        SelectFirstAvailableDevice<DeviceAlgorithm>();
     }
 
     protected override string GetCompactSummaryValue() => $"{ExpectedRows}×{ExpectedCols}";
@@ -341,7 +337,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         if (!Enum.IsDefined(selectedTvFormula) || !Enum.IsDefined(selectedPoint9Formula)) throw new InvalidOperationException("畸变输出口径无效。");
         int zIndex = ZIndex;
         string nodeId = NodeID;
-        string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
         LocalFlowFrame? ownedFrame = null;
         LocalFlowFrame frame = ResolveFrame(action, configuredImageFile, out ownedFrame, out string? imageFile);
         bool loadedFromFile = ownedFrame != null;
@@ -380,7 +375,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             });
             LocalGridDistortionPersistenceRequest request = new()
             {
-                Action = action, DeviceCode = algorithmDeviceCode, ImageFilePath = imageFile, ZIndex = zIndex,
+                Action = action, ImageFilePath = imageFile, ZIndex = zIndex,
                 TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory,
                 TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula, PublishOpticalEstimate = selectedPublishOptical
             };
@@ -397,7 +392,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                     ResultCode = DetectionFailureResultCode, ResultDescription = validationException.Message
                 }));
                 if (failed.MasterId <= 0) throw new InvalidOperationException("点阵畸变失败持久化返回了无效主表 ID。");
-                FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId }));
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = failed.MasterId }));
                 throw new InvalidOperationException(validationException.Message, validationException);
             }
 
@@ -424,7 +419,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = selectedPoint9.KeystoneHorizontalPercent;
             action.Data["LocalGridDistortionKeystoneVerticalPercent"] = selectedPoint9.KeystoneVerticalPercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
-            FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { DeviceCode = algorithmDeviceCode, SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
+            FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
             return new()
             {
                 MasterId = persisted.MasterId, SourceMasterId = lease.MasterId, FrameId = lease.FrameId.ToString("N"),

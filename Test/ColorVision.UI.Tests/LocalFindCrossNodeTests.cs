@@ -348,7 +348,6 @@ public sealed class LocalFindCrossNodeTests
         LocalFindCrossPersistenceRequest request = new()
         {
             Action = action,
-            DeviceCode = "ALG-1",
             ImageFilePath = @"H:\ColorVision\Transfer\G0941\source.cvraw",
             ZIndex = 4,
             TotalTime = 18,
@@ -384,7 +383,6 @@ public sealed class LocalFindCrossNodeTests
         LocalFindCrossPersistenceRequest request = new()
         {
             Action = action,
-            DeviceCode = "ALG-1",
             ZIndex = 5,
             TotalTime = 21,
             ResultCode = LocalFindCrossNode.DetectionFailureResultCode,

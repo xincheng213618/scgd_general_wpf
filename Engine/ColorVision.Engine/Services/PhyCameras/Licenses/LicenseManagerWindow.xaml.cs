@@ -351,6 +351,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public string? MacAddress => Model.MacAddress;
         public string LiceTypeString => Model.LiceType == 0 ? Properties.Resources.LicenseTypeCamera : Model.LiceType == 1 ? Properties.Resources.LicenseTypeSpectrometer : Properties.Resources.LicenseTypeUnknown;
         public string? Model1 => this.Model.Model;
+        public string DisplayModel => string.IsNullOrWhiteSpace(Model1) ? Properties.Resources.Spectrometer : Model1!;
         public string? CusTomerName => this.Model.CusTomerName;
         public DateTime? ExpiryDate => this.Model.ExpiryDate;
         public DateTime? CreateDate => this.Model.CreateDate;

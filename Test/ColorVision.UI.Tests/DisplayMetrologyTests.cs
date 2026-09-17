@@ -64,6 +64,54 @@ public sealed class DisplayMetrologyTests
     }
 
     [Fact]
+    public async Task NinePointRgbCrossReportsChannelAxesEdgesAndThresholdResult()
+    {
+        using var image = Image(192, 192, (x, y, channel) => Cross(x, y,
+            channel == 2 ? 2 : channel == 0 ? -3 : 0,
+            channel == 2 ? -1 : channel == 0 ? 2 : 0), AlgorithmImageFormat.Bgr96Float);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration,
+            new RgbCrossRegistrationParameters { MaximumEdgeSeparationPixels = 4 }, image);
+
+        Success(result);
+        var table = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!;
+        Assert.Equal(9, table.Rows.Count);
+        foreach (var row in table.Rows)
+        {
+            Assert.True(row["valid"].GetBoolean());
+            Assert.Equal("NG", row["result"].GetString());
+            Assert.InRange(row["rMinusG_dx_px"].GetDouble(), 1.99, 2.01);
+            Assert.InRange(row["rMinusG_dy_px"].GetDouble(), -1.01, -0.99);
+            Assert.InRange(row["bMinusG_dx_px"].GetDouble(), -3.01, -2.99);
+            Assert.InRange(row["bMinusG_dy_px"].GetDouble(), 1.99, 2.01);
+            Assert.Equal(5, row["maximumEdgeSeparation_px"].GetDouble(), 6);
+        }
+        Assert.Equal(5, Metric(result, "maximum_cross_axis_separation"), 6);
+        Assert.Equal(5, Metric(result, "maximum_cross_edge_separation"), 6);
+        Assert.Equal(0, Metric(result, "overall_threshold_result"));
+        Assert.Equal(new[] { "R", "G", "B" }, result.Artifacts.OfType<AlgorithmImageArtifact>()
+            .Select(artifact => artifact.Metadata!["channel"]).ToArray());
+    }
+
+    [Fact]
+    public async Task CrossArmSeparationIsDetectedWhenOuterCrossBoundsRemainEqual()
+    {
+        using var image = Image(192, 192, (x, y, channel) => SplitHorizontalArmCross(x, y,
+            channel == 2 ? -2 : channel == 0 ? 3 : 0), AlgorithmImageFormat.Bgr24);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration,
+            new RgbCrossRegistrationParameters { MaximumEdgeSeparationPixels = 5 }, image);
+
+        Success(result);
+        foreach (var row in result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows)
+        {
+            Assert.Equal("OK", row["result"].GetString());
+            Assert.Equal(0, row["verticalAxisXSpread_px"].GetDouble(), 6);
+            Assert.Equal(5, row["horizontalAxisYSpread_px"].GetDouble(), 6);
+            Assert.Equal(5, row["maximumEdgeSeparation_px"].GetDouble(), 6);
+        }
+        Assert.Equal(1, Metric(result, "overall_threshold_result"));
+    }
+
+    [Fact]
     public async Task BinocularPreservesMeasuredTranslationAndReportsSignalRatio()
     {
         using var left = Image(192, 192, (x, y, _) => Dot(x, y, 0, 0));
@@ -396,6 +444,23 @@ public sealed class DisplayMetrologyTests
     {
         double u = x % 64 - 31.5 - dx, v = y % 64 - 31.5 - dy;
         return 0.02 + 0.7 * Math.Exp(-(u * u + v * v) / 32);
+    }
+
+    private static double Cross(double x, double y, double dx, double dy)
+    {
+        double u = x % 64 - 31.5 - dx;
+        double v = y % 64 - 31.5 - dy;
+        bool foreground = Math.Abs(u) <= 1.5 && Math.Abs(v) <= 18.5 || Math.Abs(v) <= 1.5 && Math.Abs(u) <= 18.5;
+        return foreground ? 0.8 : 0.02;
+    }
+
+    private static double SplitHorizontalArmCross(double x, double y, double horizontalDy)
+    {
+        double u = x % 64 - 31.5;
+        double v = y % 64 - 31.5;
+        bool vertical = Math.Abs(u) <= 1.5 && Math.Abs(v) <= 18.5;
+        bool horizontal = Math.Abs(v - horizontalDy) <= 1.5 && Math.Abs(u) <= 18.5;
+        return vertical || horizontal ? 0.8 : 0.02;
     }
 
     private static AlgorithmImageBuffer Image(int width, int height, Func<int, int, int, double> pixel, AlgorithmImageFormat format = AlgorithmImageFormat.Gray32Float)

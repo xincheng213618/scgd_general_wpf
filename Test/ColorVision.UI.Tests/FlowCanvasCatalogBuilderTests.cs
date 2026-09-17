@@ -318,7 +318,7 @@ public sealed class FlowCanvasCatalogGuardHub : STNodeInHub
         => throw new InvalidOperationException("Catalog indexing must not connect live options.");
 }
 
-public sealed class FlowCanvasCatalogTestNode : CVCommonNode
+public sealed class FlowCanvasCatalogTestNode : CVDeviceNode
 {
     public FlowCanvasCatalogTestNode()
         : base(

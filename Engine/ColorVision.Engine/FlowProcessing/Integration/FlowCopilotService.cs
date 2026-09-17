@@ -181,7 +181,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                         Title = node?.Title ?? type.Name,
                         Description = attribute.DisplayDescription ?? string.Empty,
                         NodeType = node is CVCommonNode commonNode ? commonNode.NodeType ?? string.Empty : string.Empty,
-                        DefaultDeviceCode = node is CVCommonNode commonNode1 ? commonNode1.DeviceCode ?? string.Empty : string.Empty,
+                        DefaultDeviceCode = node is IFlowDeviceNode commonNode1 ? commonNode1.DeviceCode ?? string.Empty : string.Empty,
                         Properties = BuildNodePropertySchemas(type),
                     });
                 }
@@ -537,7 +537,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 Title = node.Title ?? string.Empty,
                 NodeName = node is CVCommonNode commonNode ? commonNode.NodeName ?? string.Empty : string.Empty,
                 NodeType = node is CVCommonNode commonNode1 ? commonNode1.NodeType ?? string.Empty : runtimeType.Name,
-                DeviceCode = node is CVCommonNode commonNode2 ? commonNode2.DeviceCode ?? string.Empty : string.Empty,
+                DeviceCode = node is IFlowDeviceNode commonNode2 ? commonNode2.DeviceCode ?? string.Empty : string.Empty,
                 NodeId = node is CVCommonNode commonNode3 ? commonNode3.NodeID ?? instanceId : instanceId,
                 Position = $"Left={node.Left}, Top={node.Top}, Width={node.Width}, Height={node.Height}",
                 Left = node.Left,

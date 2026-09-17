@@ -5,6 +5,7 @@ using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
+using ColorVision.Themes;
 using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -82,6 +83,7 @@ namespace ProjectARVRPro
                 };
             }
             InitializeComponent();
+            this.ApplyCaption();
             if (offlineSource != null)
             {
                 Title = $"结果统计 · {offlineSource.Label} · 只读";

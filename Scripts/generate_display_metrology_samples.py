@@ -35,9 +35,16 @@ def dot(x, y, dx=0, dy=0):
     return 0.02 + 0.7 * math.exp(-(u*u + v*v) / 32)
 
 
+def cross(x, y, dx=0, dy=0):
+    u, v = x % 64 - 31.5 - dx, y % 64 - 31.5 - dy
+    foreground = (abs(u) <= 1.5 and abs(v) <= 18.5) or (abs(v) <= 1.5 and abs(u) <= 18.5)
+    return 0.8 if foreground else 0.02
+
+
 def fixtures():
     files = {}
     files["rgb_registration.png"] = png(192, 192, lambda x, y: [dot(x, y, 2, -1), dot(x, y), dot(x, y, -3, 1)], True)
+    files["rgb_cross_9point.png"] = png(192, 192, lambda x, y: [cross(x, y, 2, -1), cross(x, y), cross(x, y, -3, 2)], True)
     files["binocular_left.png"] = png(192, 192, dot)
     files["binocular_right.png"] = png(192, 192, lambda x, y: dot(x, y, 3, -2) * 0.8)
     files["ghost_10_percent.png"] = png(128, 128, lambda x, y: 0.02 + (0.8 if 55 <= x < 65 and 55 <= y < 65 else 0)
@@ -69,6 +76,7 @@ def fixtures():
     truth = {
         "source": "procedural synthetic data; not field images", "signalEncoding": "linear", "decodeExponent": 1,
         "rgb_registration.png": {"grid": [3, 3], "R-G_px": [2, -1], "B-G_px": [-3, 1]},
+        "rgb_cross_9point.png": {"grid": [3, 3], "R-G_px": [2, -1], "B-G_px": [-3, 2], "maximumRgbEdgeSeparation_px": 5},
         "binocular_right.png": {"left": "binocular_left.png", "displacement_px": [3, -2], "signalRatio": 0.8},
         "ghost_10_percent.png": {"background": 0.02, "ghostPeakOverPrimary": 0.1, "ghostEnergyOverPrimary": 0.1},
         "microdisplay_low_gray.png": {"brightPoint": [65, 65], "darkPoint": [90, 65], "brightLine": [110, 80, 1, 65], "darkMuraCenter": [175, 175]},
@@ -91,6 +99,7 @@ def fixtures():
 | 图像 | 功能 | 参数或预期 |
 | --- | --- | --- |
 | rgb_registration.png | RGB 图案套色 | R−G=(2,−1) px，B−G=(−3,1) px |
+| rgb_cross_9point.png | 九点十字 RGB 分离 | R−G=(2,−1) px，B−G=(−3,2) px；最大边缘分离 5 px |
 | binocular_left.png | 左右眼对准与信号一致性 | 选择 binocular_right.png；位移 (3,−2) px，信号比 0.8 |
 | ghost_10_percent.png | 鬼影与杂散光评价 | 背景设为 0.02；主像与鬼影强度比 0.1 |
 | microdisplay_low_gray.png | 亮暗点 / 线缺陷 / Mura | 包含亮点、暗点、竖线和暗 Mura |

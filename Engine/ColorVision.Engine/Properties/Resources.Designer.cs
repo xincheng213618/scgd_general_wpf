@@ -9108,6 +9108,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 物理光谱仪管理 的本地化字符串。
+        /// </summary>
+        public static string PhysicalSpectrumManager {
+            get {
+                return ResourceManager.GetString("PhysicalSpectrumManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 像素位数 的本地化字符串。
         /// </summary>
         public static string PixelBits {
@@ -9331,7 +9340,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("POI模板(ReMapping)", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 POI模板名称 的本地化字符串。
         /// </summary>
@@ -9340,7 +9349,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("POI模板名称", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 折线 的本地化字符串。
         /// </summary>
@@ -11707,6 +11716,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 手动登记序列号 的本地化字符串。
+        /// </summary>
+        public static string SpectrumAddSerial {
+            get {
+                return ResourceManager.GetString("SpectrumAddSerial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载标定文件并重启服务 的本地化字符串。
         /// </summary>
         public static string SpectrumApplyGroupHint {
@@ -12013,11 +12031,38 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据库未连接，请连接后刷新。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumDatabaseRequired {
+            get {
+                return ResourceManager.GetString("SpectrumDatabaseRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 设备与连接 的本地化字符串。
         /// </summary>
         public static string SpectrumDeviceConnection {
             get {
                 return ResourceManager.GetString("SpectrumDeviceConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本次发现 的本地化字符串。
+        /// </summary>
+        public static string SpectrumDiscovered {
+            get {
+                return ResourceManager.GetString("SpectrumDiscovered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扫描结果详情 的本地化字符串。
+        /// </summary>
+        public static string SpectrumDiscoveryDetails {
+            get {
+                return ResourceManager.GetString("SpectrumDiscoveryDetails", resourceCulture);
             }
         }
         
@@ -12108,6 +12153,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 请选择光谱仪，或扫描 / 登记序列号。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEmptySelection {
+            get {
+                return ResourceManager.GetString("SpectrumEmptySelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 结束波长 (nm) 的本地化字符串。
         /// </summary>
         public static string SpectrumEndWavelength {
@@ -12153,6 +12207,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 导入本地许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumImportLicense {
+            get {
+                return ResourceManager.GetString("SpectrumImportLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 积分时间 (ms) 的本地化字符串。
         /// </summary>
         public static string SpectrumIntegrationTime {
@@ -12162,11 +12225,74 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 许可证内容无效，型号或到期日期无法读取。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumInvalidLicense {
+            get {
+                return ResourceManager.GetString("SpectrumInvalidLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入有效的序列号（1–255 个字符，不包含路径或控制字符）。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumInvalidSerial {
+            get {
+                return ResourceManager.GetString("SpectrumInvalidSerial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 授权客户 的本地化字符串。
+        /// </summary>
+        public static string SpectrumLicenseCustomer {
+            get {
+                return ResourceManager.GetString("SpectrumLicenseCustomer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 到期日期 的本地化字符串。
+        /// </summary>
+        public static string SpectrumLicenseExpiry {
+            get {
+                return ResourceManager.GetString("SpectrumLicenseExpiry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入本地许可证文件 的本地化字符串。
         /// </summary>
         public static string SpectrumLicenseHint {
             get {
                 return ResourceManager.GetString("SpectrumLicenseHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumLicenseSection {
+            get {
+                return ResourceManager.GetString("SpectrumLicenseSection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证必须包含唯一的 {0}.lic，请核对所选 SN。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumLicenseSerialMismatch {
+            get {
+                return ResourceManager.GetString("SpectrumLicenseSerialMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 该 SN 已有关联的其他类型许可证，未覆盖原记录。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumLicenseTypeConflict {
+            get {
+                return ResourceManager.GetString("SpectrumLicenseTypeConflict", resourceCulture);
             }
         }
         
@@ -12185,6 +12311,24 @@ namespace ColorVision.Engine.Properties {
         public static string SpectrumLogHint {
             get {
                 return ResourceManager.GetString("SpectrumLogHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扫描仅查询设备，不代表连接成功。登记与许可证更新不会修改逻辑设备的 SN 或自动重启服务。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumManagerHint {
+            get {
+                return ResourceManager.GetString("SpectrumManagerHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 个序列号 · 本次发现 {1} 台 · {2} 个许可证需处理 的本地化字符串。
+        /// </summary>
+        public static string SpectrumManagerSummary {
+            get {
+                return ResourceManager.GetString("SpectrumManagerSummary", resourceCulture);
             }
         }
         
@@ -12288,6 +12432,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未确认在线 的本地化字符串。
+        /// </summary>
+        public static string SpectrumNotDiscovered {
+            get {
+                return ResourceManager.GetString("SpectrumNotDiscovered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开快门指令 的本地化字符串。
         /// </summary>
         public static string SpectrumOpenShutter {
@@ -12297,11 +12450,65 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 刷新服务端设备与许可证 的本地化字符串。
+        ///   查找类似 刷新服务端设备序列号清单 的本地化字符串。
         /// </summary>
         public static string SpectrumRefreshHint {
             get {
                 return ResourceManager.GetString("SpectrumRefreshHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 登记 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRegister {
+            get {
+                return ResourceManager.GetString("SpectrumRegister", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已登记 的本地化字符串。
+        /// </summary>
+        public static string SpectrumRegistered {
+            get {
+                return ResourceManager.GetString("SpectrumRegistered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本次发现 {0} 台光谱仪，{1} 项查询失败。详情见扫描结果；新设备可点击“登记”。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumScanComplete {
+            get {
+                return ResourceManager.GetString("SpectrumScanComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 扫描在线光谱仪 的本地化字符串。
+        /// </summary>
+        public static string SpectrumScanOnline {
+            get {
+                return ResourceManager.GetString("SpectrumScanOnline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 串口 的本地化字符串。
+        /// </summary>
+        public static string SpectrumScanPort {
+            get {
+                return ResourceManager.GetString("SpectrumScanPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 0：仅 USB；大于 0：同时查询此 COM 串口（不更改设备配置）。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumScanPortHint {
+            get {
+                return ResourceManager.GetString("SpectrumScanPortHint", resourceCulture);
             }
         }
         
@@ -12320,6 +12527,24 @@ namespace ColorVision.Engine.Properties {
         public static string SpectrumSearchHint {
             get {
                 return ResourceManager.GetString("SpectrumSearchHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按 SN 或型号查询 的本地化字符串。
+        /// </summary>
+        public static string SpectrumSearchSerial {
+            get {
+                return ResourceManager.GetString("SpectrumSearchSerial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 光谱仪清单 的本地化字符串。
+        /// </summary>
+        public static string SpectrumSerialList {
+            get {
+                return ResourceManager.GetString("SpectrumSerialList", resourceCulture);
             }
         }
         
@@ -12414,6 +12639,42 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未登记 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUnregistered {
+            get {
+                return ResourceManager.GetString("SpectrumUnregistered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 联网更新全部许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUpdateAllLicenses {
+            get {
+                return ResourceManager.GetString("SpectrumUpdateAllLicenses", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 联网更新许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUpdateLicense {
+            get {
+                return ResourceManager.GetString("SpectrumUpdateLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证更新完成：成功 {0}，失败 {1}。选择列表项查看结果。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumUpdateSummary {
+            get {
+                return ResourceManager.GetString("SpectrumUpdateSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 使用快门 的本地化字符串。
         /// </summary>
         public static string SpectrumUseShutter {
@@ -12428,6 +12689,15 @@ namespace ColorVision.Engine.Properties {
         public static string SpectrumVoltage {
             get {
                 return ResourceManager.GetString("SpectrumVoltage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在处理… 的本地化字符串。
+        /// </summary>
+        public static string SpectrumWorking {
+            get {
+                return ResourceManager.GetString("SpectrumWorking", resourceCulture);
             }
         }
         
@@ -13888,7 +14158,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowStartNodeNotFound_RunFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 亚像素模板 的本地化字符串。
         /// </summary>
@@ -13897,7 +14167,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("亚像素模板", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 参数模板名称 的本地化字符串。
         /// </summary>
@@ -13906,7 +14176,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("参数模板名称", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 启用ND滤轮(自动曝光) 的本地化字符串。
         /// </summary>
@@ -13915,7 +14185,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("启用ND滤轮(自动曝光)", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 图像裁剪2 的本地化字符串。
         /// </summary>
@@ -13924,7 +14194,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("图像裁剪2", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 布点ROI(区域) 的本地化字符串。
         /// </summary>
@@ -13933,7 +14203,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("布点ROI(区域)", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 数据加载 的本地化字符串。
         /// </summary>
@@ -13942,7 +14212,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("数据加载", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 自动曝光模板 的本地化字符串。
         /// </summary>

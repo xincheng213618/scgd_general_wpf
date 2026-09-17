@@ -5,7 +5,7 @@
         xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
         Title="{x:Static properties:Resources.Cie_Title}"
         Width="860" Height="680" MinWidth="720" MinHeight="520"
-        Background="White" UseLayoutRounding="True"
+        Background="{Binding Background, ElementName=CieView}" UseLayoutRounding="True"
         Icon="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.ico"
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -35,22 +35,22 @@
             </Style>
         </ResourceDictionary>
     </Window.Resources>
-    <TabControl x:Name="CieTabs" Style="{StaticResource CieWorkspaceTabs}">
+    <TabControl x:Name="CieTabs" SelectionChanged="CieTabs_SelectionChanged" Style="{StaticResource CieWorkspaceTabs}">
         <TabItem Header="{x:Static properties:Resources.Cie_Chromaticity}">
-            <Grid Background="White" ClipToBounds="True">
+            <Grid Background="{Binding Background, ElementName=CieView}" ClipToBounds="True">
                 <cie:CieDiagramView x:Name="CieView">
                     <cie:CieDiagramView.Style>
                         <Style TargetType="cie:CieDiagramView">
-                            <Setter Property="Margin" Value="8,58,8,44" />
+                            <Setter Property="Margin" Value="8,58,8,58" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsChecked, ElementName=ShowDisplayOptions}" Value="True">
-                                    <Setter Property="Margin" Value="8,58,306,44" />
+                                    <Setter Property="Margin" Value="8,58,306,58" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </cie:CieDiagramView.Style>
                 </cie:CieDiagramView>
-                <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Panel.ZIndex="10">
+                <Border x:Name="DiagramToolbar" Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Panel.ZIndex="10">
                     <StackPanel Orientation="Horizontal">
                         <ComboBox x:Name="ComboBoxDiagram" Width="144" MinHeight="30" Margin="0,0,4,0"
                                   ToolTip="{x:Static properties:Resources.Cie_CoordinateSystem}"
@@ -59,9 +59,12 @@
                             <ComboBoxItem Content="CIE 1960 uv" />
                             <ComboBoxItem Content="CIE 1976 u′v′" />
                         </ComboBox>
-                        <Button Content="−" Style="{StaticResource CieAction}" Click="ButtonZoomOut_Click" ToolTip="{x:Static properties:Resources.ZoomOut}" AutomationProperties.Name="{x:Static properties:Resources.ZoomOut}" />
-                        <Button Content="+" Style="{StaticResource CieAction}" Click="ButtonZoomIn_Click" ToolTip="{x:Static properties:Resources.ZoomIn}" AutomationProperties.Name="{x:Static properties:Resources.ZoomIn}" />
-                        <Button Content="{x:Static properties:Resources.Cie_Fit}" Style="{StaticResource CieAction}" Click="ButtonFit_Click" />
+                        <ComboBox x:Name="ReferenceWhitePreset" Width="82" MinHeight="30" Margin="0,0,4,0"
+                                  DisplayMemberPath="Name" ToolTip="计算参考白（默认 D65）" AutomationProperties.Name="计算参考白"
+                                  SelectionChanged="ReferenceWhitePreset_Changed" />
+                        <Button Style="{StaticResource CieZoomOutButton}" Click="ButtonZoomOut_Click" />
+                        <Button Style="{StaticResource CieZoomInButton}" Click="ButtonZoomIn_Click" />
+                        <Button Style="{StaticResource CieFitButton}" Click="ButtonFit_Click" />
                         <ToggleButton x:Name="ShowDisplayOptions" Content="{x:Static properties:Resources.Cie_DisplayOptions}" Style="{StaticResource CieToggle}" />
                     </StackPanel>
                 </Border>
@@ -70,6 +73,19 @@
                     <Border x:Name="DisplayOptionsPanel" Style="{StaticResource CieFloatingCard}" Padding="14">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel>
+                                <GroupBox Header="计算参考白" Style="{StaticResource PanelGroupBox}">
+                                    <StackPanel>
+                                        <UniformGrid Columns="2">
+                                            <StackPanel Margin="0,0,4,0"><TextBlock Text="白点 x" /><TextBox x:Name="ReferenceWhiteX" MinHeight="28" AutomationProperties.Name="计算参考白 x" /></StackPanel>
+                                            <StackPanel><TextBlock Text="白点 y" /><TextBox x:Name="ReferenceWhiteY" MinHeight="28" AutomationProperties.Name="计算参考白 y" /></StackPanel>
+                                        </UniformGrid>
+                                        <TextBlock Text="参考白亮度 Yn（cd/m²）" Margin="0,6,0,2" />
+                                        <TextBox x:Name="ReferenceWhiteLuminance" MinHeight="28" AutomationProperties.Name="计算参考白亮度" />
+                                        <Button x:Name="ApplyReferenceWhite" Content="应用参考白" Style="{StaticResource PanelButton}" HorizontalAlignment="Left" Margin="0,6,0,4" Click="ApplyReferenceWhite_Click" />
+                                        <TextBlock x:Name="ReferenceWhiteStatus" TextWrapping="Wrap" FontSize="11" Opacity="0.7" />
+                                        <TextBlock Text="仅用于本窗口。相对样品参考白 Y=100；下方白点勾选只控制图层显示。" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </GroupBox>
                                 <GroupBox Header="{x:Static properties:Resources.Cie_DisplayPresets}" Style="{StaticResource PanelGroupBox}">
                                     <UniformGrid Columns="2">
                                         <Button Content="{x:Static properties:Resources.Cie_Display}"
@@ -218,7 +234,7 @@
                         </ScrollViewer>
                     </Border>
                 </Grid>
-                <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Padding="8,5" MaxWidth="370">
+                <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12,12,12,62" Padding="8,5" MaxWidth="430">
                     <Expander x:Name="SelectedPointDetails">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
@@ -226,21 +242,36 @@
                                 <TextBlock x:Name="TextBlockSelectedXy" Style="{StaticResource ReadoutText}" Text="xy: --" />
                             </StackPanel>
                         </Expander.Header>
-                        <StackPanel Margin="24,5,0,0">
+                        <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="24,5,8,0">
                             <TextBlock x:Name="TextBlockSelectedUv1960" Style="{StaticResource ReadoutText}" Text="uv: --" />
                             <TextBlock x:Name="TextBlockSelectedUv1976" Style="{StaticResource ReadoutText}" Text="CIE 1976 u′v′: --" />
                             <TextBlock x:Name="TextBlockSelectedCct" Style="{StaticResource ReadoutText}" Text="CCT: --" />
+                            <TextBlock x:Name="TextBlockSelectedWavelength" Style="{StaticResource ReadoutText}" Text="主 / 补波长: --" />
+                            <TextBlock x:Name="TextBlockSelectedPurity" Style="{StaticResource ReadoutText}" Text="激发纯度: --" />
+                            <TextBlock x:Name="TextBlockSelectedWhiteDistance" Style="{StaticResource ReadoutText}" Text="距 D65 Δu′v′: --" />
+                            <StackPanel x:Name="SelectedColorValues" Visibility="Collapsed" Margin="0,6,0,0">
+                                <TextBlock x:Name="TextBlockSelectedXyz" Style="{StaticResource ReadoutText}" TextWrapping="Wrap" />
+                                <TextBlock x:Name="TextBlockSelectedLab" Style="{StaticResource ReadoutText}" TextWrapping="Wrap" />
+                                <TextBlock x:Name="TextBlockSelectedLuv" Style="{StaticResource ReadoutText}" TextWrapping="Wrap" />
+                                <TextBlock x:Name="TextBlockSelectedChroma" Style="{StaticResource ReadoutText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock x:Name="TextBlockSelectedConditions" FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{DynamicResource GlobalTextBrush}" />
                         </StackPanel>
+                        </ScrollViewer>
                     </Expander>
                 </Border>
-                <TextBlock x:Name="TextBlockCursor" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                           Margin="390,0,14,18" MaxWidth="580" FontFamily="Consolas" FontSize="11"
-                           Foreground="#60656D" TextTrimming="CharacterEllipsis"
+                <TextBlock x:Name="TextBlockCursor" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                           Margin="12,0,14,10" FontFamily="Consolas" FontSize="11" TextAlignment="Right" TextWrapping="Wrap"
+                           Foreground="{DynamicResource GlobalTextBrush}"
                            ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
             </Grid>
         </TabItem>
         <TabItem Header="{x:Static properties:Resources.Cie_GamutCalculation}">
-            <cie:ManualColorGamutView />
+            <cie:ManualColorGamutView x:Name="GamutView" />
+        </TabItem>
+        <TabItem x:Name="SampleAnalysisTab" Header="样品与色差">
+            <cie:CieSampleAnalysisView x:Name="SampleAnalysis" />
         </TabItem>
     </TabControl>
 </Window>

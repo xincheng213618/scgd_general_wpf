@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:hc="https://handyorg.github.io/handycontrol">
+                    xmlns:hc="https://handyorg.github.io/handycontrol"
+                    xmlns:themes="clr-namespace:ColorVision.Themes">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Integrations/HandyControl.xaml" />
     </ResourceDictionary.MergedDictionaries>
@@ -8,12 +9,7 @@
     <Style x:Key="ComboBoxItemBaseStyle" TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource CV.HandyControl.ComboBoxItem}">
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Style.Triggers>
-            <Trigger Property="IsVisible" Value="True">
-                <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-                <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="themes:ComboBoxItemAlignment.SyncWithOwner" Value="True"/>
     </Style>
 
     <Style x:Key="ComboBoxItem.Small" TargetType="{x:Type ComboBoxItem}" BasedOn="{StaticResource ComboBoxItemBaseStyle}">

@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/01 运算")]
-public class LoopNode : CVCommonNode
+public class LoopNode : CVDeviceNode
 {
 	private STNodeOption m_in_start;
 

@@ -8,6 +8,7 @@ namespace ColorVision.Engine.Services.Results
 {
     public static class ResultRoutes
     {
+        public const string LocalFlow = "local-flow";
         public const string Camera = "camera";
         public const string Calibration = "calibration";
         public const string Algorithm = "algorithm";

@@ -858,39 +858,29 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             UpdateNavigationButtons();
             UpdateHeader("流程执行分析", "空状态", description);
 
-            AnalysisFrame.Content = new Page
+            var titleText = new TextBlock
             {
-                Background = System.Windows.Media.Brushes.Transparent,
-                Content = new Border
+                Text = title, FontSize = 22, FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            titleText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            var descriptionText = new TextBlock
+            {
+                Text = description, Margin = new Thickness(0, 10, 0, 0),
+                TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center
+            };
+            descriptionText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+            var border = new Border
+            {
+                Padding = new Thickness(24), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
+                Child = new StackPanel
                 {
-                    Padding = new Thickness(24),
-                    BorderThickness = new Thickness(1),
-                    BorderBrush = TryFindResource("ButtonBorderBrush") as System.Windows.Media.Brush,
-                    CornerRadius = new CornerRadius(8),
-                    Child = new StackPanel
-                    {
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        Children =
-                        {
-                            new TextBlock
-                            {
-                                Text = title,
-                                FontSize = 22,
-                                FontWeight = FontWeights.SemiBold,
-                                HorizontalAlignment = HorizontalAlignment.Center
-                            },
-                            new TextBlock
-                            {
-                                Text = description,
-                                Margin = new Thickness(0, 10, 0, 0),
-                                TextWrapping = TextWrapping.Wrap,
-                                HorizontalAlignment = HorizontalAlignment.Center
-                            }
-                        }
-                    }
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                    Children = { titleText, descriptionText }
                 }
             };
+            border.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
+            AnalysisFrame.Content = new Page { Background = System.Windows.Media.Brushes.Transparent, Content = border };
         }
 
         private void SetLoading(bool isLoading)

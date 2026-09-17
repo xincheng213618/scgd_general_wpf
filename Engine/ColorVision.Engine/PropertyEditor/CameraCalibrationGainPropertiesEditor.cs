@@ -29,7 +29,7 @@ namespace ColorVision.Engine.PropertyEditor
                 && property.CanWrite
                 && calibrationProperty != null
                 && calibrationProperty.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType == typeof(CalibrationTemplatePropertiesEditor)
-                && nodeType.GetProperty(nameof(CVCommonNode.DeviceCode))?.PropertyType == typeof(string);
+                && nodeType.GetProperty(nameof(IFlowDeviceNode.DeviceCode))?.PropertyType == typeof(string);
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -66,7 +66,7 @@ namespace ColorVision.Engine.PropertyEditor
                     if (string.IsNullOrEmpty(args.PropertyName)
                         || args.PropertyName == GainPropertyName
                         || args.PropertyName == calibrationProperty?.Name
-                        || args.PropertyName == nameof(CVCommonNode.DeviceCode))
+                        || args.PropertyName == nameof(IFlowDeviceNode.DeviceCode))
                     {
                         Refresh();
                     }
@@ -113,7 +113,7 @@ namespace ColorVision.Engine.PropertyEditor
         {
             hint = string.Empty;
             string calibrationTemplateName = calibrationProperty?.GetValue(obj)?.ToString() ?? string.Empty;
-            string deviceCode = obj.GetType().GetProperty(nameof(CVCommonNode.DeviceCode))?.GetValue(obj)?.ToString() ?? string.Empty;
+            string deviceCode = obj.GetType().GetProperty(nameof(IFlowDeviceNode.DeviceCode))?.GetValue(obj)?.ToString() ?? string.Empty;
             DeviceCamera? device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>()
                 .FirstOrDefault(camera => string.Equals(camera.Code, deviceCode, StringComparison.Ordinal));
             if (!CalibrationGroupGainResolver.TryResolve(device, calibrationTemplateName, out float gain, out string groupName))

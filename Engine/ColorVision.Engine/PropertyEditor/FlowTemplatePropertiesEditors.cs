@@ -26,7 +26,7 @@ namespace ColorVision.Engine.PropertyEditor;
 public sealed class CalibrationTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(
-        property, obj, () => FlowNodePropertyEditorRegistration.CreateCalibrationTemplate(obj), nameof(CVCommonNode.DeviceCode), hasDirectTemplateEditor: true);
+        property, obj, () => FlowNodePropertyEditorRegistration.CreateCalibrationTemplate(obj), nameof(IFlowDeviceNode.DeviceCode), hasDirectTemplateEditor: true);
 }
 
 public sealed class PoiTemplatePropertiesEditor : IPropertyEditor

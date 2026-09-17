@@ -8,7 +8,7 @@ namespace FlowEngineLib.End;
 
 [STNode("/00 全局")]
 [Obsolete("Deprecated V5 end node retained for loading existing flows.")]
-public class CVEndV5Node : CVCommonNode
+public class CVEndV5Node : CVDeviceNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVEndNode));
 

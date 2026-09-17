@@ -154,7 +154,11 @@ namespace ColorVision.Engine.Media
             PopulateStatisticsPanel();
             CVCIEShowConfig config = (CVCIEShowConfig)DataContext;
             config.PropertyChanged += DisplayConfigChanged;
-            Closed += (_, _) => config.PropertyChanged -= DisplayConfigChanged;
+            Closed += (_, _) =>
+            {
+                config.PropertyChanged -= DisplayConfigChanged;
+                cieWindow?.SetSelectedMarker(null);
+            };
             ResultCount.Text = $"{listViewSide.Items.Count} 个区域";
         }
 
@@ -247,6 +251,7 @@ namespace ColorVision.Engine.Media
                 var s = CIExyuvStats;
                 AddStatisticsGroup("亮度", false, ("中心", s.CenterLuminance, "cd/m²"), ("平均", s.AverageLuminance, "cd/m²"), ("最大", s.MaxLuminance, "cd/m²"), ("最小", s.MinLuminance, "cd/m²"));
                 AddStatisticsGroup("均匀性", true, ("Min/Max", s.UniformityMinDivMax, "%"), ("(Max−Min)/Avg", s.UniformityDiffDivAvg, "%"), ("(Max−Min)/Max", s.UniformityDiffDivMax, "%"), ("1−(Max−Avg)/Avg", s.Uniformity, "%"), ("标准差", s.StandardDeviation, ""), ("标准差/平均", s.StandardDeviationPercent, "%"), ("色度差 Δu′v′", s.ColorUniformityDeltaUv, ""), ("色度差 Δx", s.ColorUniformityDeltaX, ""), ("色度差 Δy", s.ColorUniformityDeltaY, ""));
+                AddStatisticsGroup("色彩中心 · D65", true, ("平均 u′", s.AverageUPrime, ""), ("平均 v′", s.AverageVPrime, ""), ("相对 D65 RMS Δu′v′", s.ColorCenterRmsToD65, ""), ("平均色度到 D65", s.ColorCenterDistanceToD65, ""), ("空间 RMS Δu′v′", s.ChromaticitySpatialRms, ""), ("有效样本", s.ChromaticitySampleCount, ""), ("无效样本", s.InvalidChromaticitySampleCount, ""));
                 AddStatisticsGroup("中心色度", true, ("CIE 1931 x", s.CenterX, ""), ("CIE 1931 y", s.CenterY, ""), ("CIE 1976 u′", s.CenterU, ""), ("CIE 1976 v′", s.CenterV, ""), ("相关色温 CCT", s.CenterCCT, "K"), ("主波长 λd", s.CenterWave, "nm"), ("波长差 Δλd", s.DeltaWave, "nm"));
             }
             else if (CIEYStats != null)
@@ -347,6 +352,7 @@ namespace ColorVision.Engine.Media
             cieWindow!.SetMarkers(markers);
             cieWindow.SetSelectedMarker(null);
             UpdateCieSelectionFromList();
+            cieWindow.ShowChromaticity();
             cieWindow.FitDiagram();
             cieWindow.Show();
             cieWindow.Activate();
@@ -366,8 +372,7 @@ namespace ColorVision.Engine.Media
 
             cieWindow = new WindowCIE
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
             };
             cieWindow.Closed += (_, _) => cieWindow = null;
         }
@@ -385,7 +390,11 @@ namespace ColorVision.Engine.Media
                 return;
             }
 
-            cieWindow.SetSelectedMarker(new CieMarker(string.Empty, marker.Chromaticity, marker.Color));
+            if (double.IsFinite(selectedItem.X) && double.IsFinite(selectedItem.Y) && double.IsFinite(selectedItem.Z) &&
+                selectedItem.X >= 0 && selectedItem.Y >= 0 && selectedItem.Z >= 0)
+                cieWindow.ChangeSelect(new CieXyz(selectedItem.X, selectedItem.Y, selectedItem.Z), selectedItem.Name ?? "POI", "CVCIE 区域测量 XYZ");
+            else
+                cieWindow.SetSelectedMarker(new CieMarker(string.Empty, marker.Chromaticity, marker.Color));
         }
 
         private IReadOnlyList<CieMarker> BuildCieMarkers()

@@ -54,6 +54,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
                 throw new MeasurementException("color_space_mismatch", "多帧必须明确使用相同的信号编码。");
 
             if (context.Descriptor.Id == DisplayMetrologyIds.RgbRegistration) MeasureRgb(context, (RgbRegistrationParameters)p, artifacts, cancellationToken);
+            else if (context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration) MeasureRgbCross(context, (RgbCrossRegistrationParameters)p, artifacts, cancellationToken);
             else if (context.Descriptor.Id == DisplayMetrologyIds.Binocular) MeasureBinocular(context, (BinocularQualityParameters)p, artifacts, cancellationToken);
             else if (context.Descriptor.Id == DisplayMetrologyIds.Eyebox) MeasureEyebox(context, (EyeboxScanParameters)p, artifacts, cancellationToken);
             else

@@ -636,8 +636,8 @@ namespace ColorVision.UI
                     {
                         var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
                         string category = metadataProvider?.IsPropertyManaged(prop) == true
-                            ? metadataProvider.GetCategory(prop) ?? categoryAttr?.Category ?? type.Name
-                            : categoryAttr?.Category ?? type.Name;
+                            ? metadataProvider.GetCategory(prop) ?? categoryAttr?.Category ?? GetDisplayMetadata(prop, display => display.GetGroupName()) ?? type.Name
+                            : categoryAttr?.Category ?? GetDisplayMetadata(prop, display => display.GetGroupName()) ?? type.Name;
 
                         if (!categoryGroups.TryGetValue(category, out var list))
                         {
@@ -839,6 +839,18 @@ namespace ColorVision.UI
 
         // Helpers
 
+        internal static string? GetDisplayMetadata(MemberInfo member, Func<DisplayAttribute, string?> selector)
+        {
+            var display = member.GetCustomAttribute<DisplayAttribute>();
+            if (display == null) return null;
+            try { return selector(display); }
+            catch (InvalidOperationException ex)
+            {
+                Log.Warn($"Invalid display resource on '{member.DeclaringType?.FullName}.{member.Name}'; using legacy metadata.", ex);
+                return null;
+            }
+        }
+
         public static string GetDisplayName(ResourceManager? rm, PropertyInfo prop, string? overrideName = null)
         {
             var displayNameAttr = prop.GetCustomAttribute<DisplayNameAttribute>();
@@ -846,7 +858,7 @@ namespace ColorVision.UI
             var metadataName = metadataProvider?.IsPropertyManaged(prop) == true
                 ? metadataProvider.GetDisplayName(prop)
                 : null;
-            var raw = overrideName ?? metadataName ?? displayNameAttr?.DisplayName ?? prop.Name;
+            var raw = overrideName ?? metadataName ?? displayNameAttr?.DisplayName ?? GetDisplayMetadata(prop, display => display.GetName()) ?? prop.Name;
             return GetLocalizedString(rm, raw);
         }
 
@@ -856,7 +868,7 @@ namespace ColorVision.UI
             var metadataDescription = metadataProvider?.IsPropertyManaged(prop) == true
                 ? metadataProvider.GetDescription(prop)
                 : null;
-            var raw = metadataDescription ?? prop.GetCustomAttribute<DescriptionAttribute>()?.Description;
+            var raw = metadataDescription ?? prop.GetCustomAttribute<DescriptionAttribute>()?.Description ?? GetDisplayMetadata(prop, display => display.GetDescription());
 
             return GetLocalizedString(rm, raw);
         }

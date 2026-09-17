@@ -38,7 +38,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Template" Value="{StaticResource ActionTemplate}" />
-            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}" />
+            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}, TargetNullValue=操作, FallbackValue=操作}" />
         </Style>
         <Style x:Key="StateToggle" TargetType="ToggleButton">
             <Setter Property="Width" Value="28" />

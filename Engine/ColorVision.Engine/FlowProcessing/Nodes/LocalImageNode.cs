@@ -1,7 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 #pragma warning disable CA1861
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
@@ -55,7 +54,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             : base(Properties.Resources.Engine_PG_LocalImage, "Camera", "GetData")
         {
             _ImageFileUrl = string.Empty;
-            SelectFirstAvailableDevice<DeviceCamera>();
         }
 
         protected override string GetCompactSummaryValue() => CompactValueOrDash(Path.GetFileName(ImageFileUrl));
@@ -89,7 +87,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFlowFrame currentFrame = frame;
                 frame = null;
                 action.MasterValue(null, masterId, LocalImageMasterResultType);
-                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
+                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalImageResultData
@@ -129,7 +127,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ResultCode = DefaultResultCode,
                 Result = DefaultResult,
                 TotalTime = LocalImageTotalTime,
-                DeviceCode = DeviceCode,
+                DeviceCode = null,
                 CreateDate = DateTime.Now
             };
         }
@@ -233,7 +231,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new
             {
                 ServiceName = NodeName,
-                DeviceCode,
                 EventName = OperatorCode,
                 action.SerialNumber,
                 FileUrl = ResolveFileUrl()

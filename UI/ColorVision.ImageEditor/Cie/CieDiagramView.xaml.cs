@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -10,15 +9,25 @@ using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Cie
 {
+    public sealed record CieDiagramSegment(CieChromaticity Start, CieChromaticity End, Color Color, bool Dashed = false);
+
     public partial class CieDiagramView : System.Windows.Controls.UserControl
     {
+        private static readonly DependencyProperty ThemeBackgroundProperty = DependencyProperty.Register(
+            "ThemeBackground", typeof(Brush), typeof(CieDiagramView),
+            new FrameworkPropertyMetadata(Brushes.White, (d, _) => ((CieDiagramView)d).RefreshTheme()));
+        private bool _dark;
         private readonly CieOverlayVisual _overlayVisual = new();
+        private readonly DrawingVisual _segmentVisual = new();
+        private readonly List<CieDiagramSegment> _segments = new();
         private readonly List<CieGamut> _gamuts = new();
         private readonly List<CieMarker> _markers = new();
         private readonly List<CieMarker> _referenceMarkers = new();
         private CieDiagramProfile _profile = CieDiagramProfiles.Cie1931xy;
         private BitmapSource? _background;
         private CieMarker? _selectedMarker;
+        private CieChromaticity _cursorXy = CieChromaticity.Empty;
+        public CieChromaticity ReferenceWhite { get; private set; } = CieIlluminants.D65.Chromaticity;
         private bool _showCctReference = true;
         private bool _showDaylightReference = true;
         private bool _autoFit = true;
@@ -28,6 +37,8 @@ namespace ColorVision.ImageEditor.Cie
         public CieDiagramView()
         {
             InitializeComponent();
+            SetResourceReference(ThemeBackgroundProperty, "GlobalBackground");
+            RefreshTheme();
 
             Loaded += CieDiagramView_Loaded;
             Unloaded += CieDiagramView_Unloaded;
@@ -35,12 +46,28 @@ namespace ColorVision.ImageEditor.Cie
             DiagramCanvas.SizeChanged += DiagramCanvas_SizeChanged;
             DiagramCanvas.MouseLeave += DiagramCanvas_MouseLeave;
             DiagramCanvas.MouseMove += DiagramCanvas_MouseMove;
+            DiagramCanvas.MouseLeftButtonDown += (_, e) =>
+            {
+                if (e.ClickCount != 2) return;
+                CieChromaticity xy = GetChromaticityAt(e.GetPosition(DiagramCanvas));
+                if (xy.IsFinite) { PointPicked?.Invoke(this, xy); e.Handled = true; }
+            };
             ZoomBox.ContentMatrixChanged += ZoomBox_ContentMatrixChanged;
 
             SetDiagram(CieDiagramKind.Cie1931xy);
         }
 
         public event EventHandler<string>? CursorTextChanged;
+        public event EventHandler<CieChromaticity>? PointPicked;
+
+        public void SetReferenceWhite(CieChromaticity white)
+        {
+            if (!white.IsFinite || white.X <= 0 || white.Y <= 0 || white.X + white.Y >= 1)
+                throw new ArgumentException("参考白色坐标必须满足 x > 0、y > 0、x + y < 1。");
+            if (ReferenceWhite == white) return;
+            ReferenceWhite = white;
+            if (_cursorXy.IsFinite) CursorTextChanged?.Invoke(this, new CiePointReadout(_cursorXy, white).CursorText);
+        }
 
         public CieDiagramKind DiagramKind => _profile.Kind;
 
@@ -51,6 +78,23 @@ namespace ColorVision.ImageEditor.Cie
         public IReadOnlyList<CieMarker> Markers => _markers;
 
         public IReadOnlyList<CieMarker> ReferenceMarkers => _referenceMarkers;
+
+        public void SetSegments(IEnumerable<CieDiagramSegment> segments)
+        {
+            _segments.Clear();
+            _segments.AddRange(segments);
+            RenderOverlay();
+        }
+
+        public CieChromaticity GetChromaticityAt(Point canvasPoint)
+        {
+            if (_background == null || DiagramCanvas.ActualWidth <= 0 || DiagramCanvas.ActualHeight <= 0)
+                return CieChromaticity.Empty;
+            Point pixel = new(canvasPoint.X / DiagramCanvas.ActualWidth * _background.PixelWidth,
+                canvasPoint.Y / DiagramCanvas.ActualHeight * _background.PixelHeight);
+            CieChromaticity point = _profile.ImagePixelToDiagramPoint(pixel);
+            return _profile.ContainsDiagramPoint(point) ? _profile.FromDiagramPoint(point) : CieChromaticity.Empty;
+        }
 
         public bool ShowCctReference
         {
@@ -85,7 +129,7 @@ namespace ColorVision.ImageEditor.Cie
         public void SetDiagram(CieDiagramKind kind)
         {
             _profile = CieDiagramProfiles.Get(kind);
-            _background = LoadBackground(_profile);
+            _background = LoadBackground(_profile, _dark);
             DiagramCanvas.Source = _background;
             EnsureOverlayVisual();
             RenderOverlay();
@@ -206,6 +250,7 @@ namespace ColorVision.ImageEditor.Cie
 
         private void CieDiagramView_Loaded(object sender, RoutedEventArgs e)
         {
+            RefreshTheme();
             EnsureOverlayVisual();
             QueueFit();
             RenderOverlay();
@@ -219,6 +264,7 @@ namespace ColorVision.ImageEditor.Cie
 
         private void DiagramCanvas_MouseLeave(object sender, MouseEventArgs e)
         {
+            _cursorXy = CieChromaticity.Empty;
             CursorTextChanged?.Invoke(this, string.Empty);
         }
 
@@ -235,6 +281,7 @@ namespace ColorVision.ImageEditor.Cie
 
         private void EnsureOverlayVisual()
         {
+            if (!DiagramCanvas.ContainsVisual(_segmentVisual)) DiagramCanvas.AddVisual(_segmentVisual);
             if (!DiagramCanvas.ContainsVisual(_overlayVisual))
             {
                 DiagramCanvas.AddVisual(_overlayVisual);
@@ -244,6 +291,25 @@ namespace ColorVision.ImageEditor.Cie
         private void RenderOverlay()
         {
             EnsureOverlayVisual();
+            using (DrawingContext dc = _segmentVisual.RenderOpen())
+            {
+                if (_background != null)
+                {
+                    Point Transform(CieChromaticity xy)
+                    {
+                        Point p = _profile.ToImagePixel(xy);
+                        return new(p.X * DiagramCanvas.ActualWidth / _background.PixelWidth, p.Y * DiagramCanvas.ActualHeight / _background.PixelHeight);
+                    }
+                    foreach (CieDiagramSegment segment in _segments)
+                    {
+                        Point a = Transform(segment.Start), b = Transform(segment.End);
+                        if (!double.IsFinite(a.X) || !double.IsFinite(a.Y) || !double.IsFinite(b.X) || !double.IsFinite(b.Y)) continue;
+                        Pen pen = new(new SolidColorBrush(segment.Color), 1.8 * GetLayoutScale());
+                        if (segment.Dashed) pen.DashStyle = DashStyles.Dash;
+                        dc.DrawLine(pen, a, b);
+                    }
+                }
+            }
 
             Size canvasSize = new(DiagramCanvas.ActualWidth, DiagramCanvas.ActualHeight);
             Size bitmapPixelSize = _background == null
@@ -268,48 +334,30 @@ namespace ColorVision.ImageEditor.Cie
             return double.IsNaN(zoom) || double.IsInfinity(zoom) || zoom <= 0 ? 1 : 1 / zoom;
         }
 
-        private string GetCursorText(Point canvasPoint)
+        internal string GetCursorText(Point canvasPoint)
         {
-            if (_background == null || DiagramCanvas.ActualWidth <= 0 || DiagramCanvas.ActualHeight <= 0)
-            {
-                return string.Empty;
-            }
-
-            Point imagePixel = new(
-                canvasPoint.X / DiagramCanvas.ActualWidth * _background.PixelWidth,
-                canvasPoint.Y / DiagramCanvas.ActualHeight * _background.PixelHeight);
-
-            CieChromaticity diagramPoint = _profile.ImagePixelToDiagramPoint(imagePixel);
-            if (!_profile.ContainsDiagramPoint(diagramPoint))
-            {
-                return string.Empty;
-            }
-
-            CieChromaticity xy = _profile.FromDiagramPoint(diagramPoint);
-            if (!xy.IsFinite)
-            {
-                return string.Empty;
-            }
-
-            CieChromaticity uv1960 = CieColorConverter.XyToCie1960uv(xy);
-            CieChromaticity uv1976 = CieColorConverter.XyToCie1976uv(xy);
-            CieCctResult cct = CieColorConverter.EstimateCctAndDuv(xy);
-            string cctText = cct.IsFinite && Math.Abs(cct.Duv) <= 0.08
-                ? string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"    CCT~{cct.TemperatureKelvin:F0}K  Duv={cct.Duv:+0.0000;-0.0000;0.0000}")
-                : string.Empty;
-
-            return string.Create(
-                CultureInfo.InvariantCulture,
-                $"x={xy.X:F4}  y={xy.Y:F4}    u={uv1960.X:F4}  v={uv1960.Y:F4}    u'={uv1976.X:F4}  v'={uv1976.Y:F4}{cctText}");
+            _cursorXy = GetChromaticityAt(canvasPoint);
+            return _cursorXy.IsFinite ? new CiePointReadout(_cursorXy, ReferenceWhite).CursorText : string.Empty;
         }
 
-        private static BitmapSource LoadBackground(CieDiagramProfile profile)
+        private void RefreshTheme()
+        {
+            if (DiagramCanvas == null) return;
+            Color color = (GetValue(ThemeBackgroundProperty) as SolidColorBrush)?.Color ?? Colors.White;
+            bool dark = 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B < 128;
+            Background = dark ? Brushes.Black : Brushes.White;
+            if (_background != null && _dark == dark) return;
+            _dark = dark;
+            _background = LoadBackground(_profile, dark);
+            DiagramCanvas.Source = _background;
+            RenderOverlay();
+        }
+
+        private static BitmapSource LoadBackground(CieDiagramProfile profile, bool dark)
         {
             if (string.IsNullOrWhiteSpace(profile.BackgroundUri))
             {
-                return CieBackgroundCache.Get(profile);
+                return CieBackgroundCache.Get(profile, dark);
             }
 
             return LoadBitmap(profile.BackgroundUri);

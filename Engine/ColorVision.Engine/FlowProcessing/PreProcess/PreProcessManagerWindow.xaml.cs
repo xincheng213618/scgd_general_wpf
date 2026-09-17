@@ -1,5 +1,6 @@
 #pragma warning disable CS8603,CS8622
 using ColorVision.UI;
+using ColorVision.Themes;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -103,6 +104,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         public PreProcessManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             Loaded += Window_Loaded;
             Closing += Window_Closing;
         }
@@ -174,7 +176,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
             AddSectionHeader(stack, Properties.Resources.Parameter);
 
-            var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
+            var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config, showCategoryHeader: false);
             stack.Children.Add(configPanel);
             PropertyPanel.Children.Add(border);
         }

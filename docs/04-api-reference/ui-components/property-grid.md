@@ -92,6 +92,8 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 
 ## 实例、绑定与可见性
 
+通用属性面板和属性编辑窗口在未指定旧 `DisplayName`、`Description`、`Category` 时，分别读取 `DisplayAttribute` 的名称、说明和分组，并支持其 `ResourceType` 本地化；显式名称覆盖与元数据 Provider 仍优先。窗口标题也支持类级 `Display.Name`。旧标注优先级保持不变，资源声明无效时记录警告并退回原有字段名/类型名，避免整个属性页无法打开。这与 `SettingsPropertyPresenter` 优先使用 `Display` 的既有规则不同。
+
 - `PropertyEditorRegistry.GetOrCreate` 复用编辑器实例。不要把某个窗口、属性对象或生成的 `DockPanel` 保存到编辑器实例字段；本次调用的状态应放在新建控件、局部变量或适当释放的订阅中。
 - `CreateTwoWayBinding(obj, property)` 默认逐属性变化回写，启用异常与数据错误验证；属性标注可以指定 `UpdateSourceTrigger`。只读属性或 `[ReadOnly(true)]` 使用单向绑定，生成控件也按只读元数据禁用。
 - 标题、类别、描述优先用 `DisplayName`、`Category`、`Description` 和现有资源解析；显示条件用 `PropertyVisibility`，永久隐藏用 `Browsable(false)`。
