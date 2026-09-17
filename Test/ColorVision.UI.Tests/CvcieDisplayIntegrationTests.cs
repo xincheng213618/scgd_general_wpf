@@ -83,7 +83,7 @@ public sealed class CvcieDisplayIntegrationTests
     }
 
     [Fact]
-    public async Task CvRawRgbSelectionPublishesOnlyTheGrayPreviewWithoutReplacingTheSource()
+    public async Task CvRawRgbSelectionKeepsChannelTransitionsGrayWithoutReplacingTheSource()
     {
         using DisplayFixture fixture = new(CvcieDisplayMode.Source);
         fixture.WriteCie(true, Red(), Green());
@@ -122,9 +122,48 @@ public sealed class CvcieDisplayIntegrationTests
             Assert.Equal(originalRevision, fixture.View.Document.Revision);
             Assert.Same(originalSource, fixture.View.Document.Source);
             Assert.Equal(originalCompletionCount, fixture.CompletionCount);
-            Assert.Single(channelTransitions);
+            Assert.NotEmpty(channelTransitions);
             BitmapSource gray = Assert.IsAssignableFrom<BitmapSource>(fixture.View.Presentation.DisplaySource);
             Assert.Equal(PixelFormats.Gray8, gray.Format);
+        });
+
+        ImageSource redPreview = WpfTestHost.Invoke(() => fixture.View.Presentation.DisplaySource!);
+        List<ImageSource?> nextChannelTransitions = [];
+        TaskCompletionSource nextChannelDisplayed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler nextChannelChanged = (_, _) =>
+        {
+            ImageSource? display = fixture.View.Presentation.DisplaySource;
+            nextChannelTransitions.Add(display);
+            if (!ReferenceEquals(display, redPreview) && ReferenceEquals(display, fixture.View.FunctionImage))
+                nextChannelDisplayed.TrySetResult();
+        };
+        WpfTestHost.Invoke(() =>
+        {
+            sourceProperty.AddValueChanged(fixture.View.ImageShow, nextChannelChanged);
+            fixture.SelectLayer("green");
+        });
+        try
+        {
+            await nextChannelDisplayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => sourceProperty.RemoveValueChanged(fixture.View.ImageShow, nextChannelChanged));
+        }
+
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(originalRevision, fixture.View.Document.Revision);
+            Assert.Same(originalSource, fixture.View.Document.Source);
+            Assert.Equal(originalCompletionCount, fixture.CompletionCount);
+            Assert.NotEmpty(nextChannelTransitions);
+            Assert.DoesNotContain(nextChannelTransitions, source => ReferenceEquals(source, originalSource));
+            Assert.All(nextChannelTransitions, source =>
+            {
+                BitmapSource transition = Assert.IsAssignableFrom<BitmapSource>(source);
+                Assert.Equal(PixelFormats.Gray8, transition.Format);
+            });
+            Assert.NotSame(redPreview, fixture.View.Presentation.DisplaySource);
         });
 
         List<ImageSource?> compositeTransitions = [];
@@ -155,7 +194,8 @@ public sealed class CvcieDisplayIntegrationTests
             Assert.Equal(originalRevision, fixture.View.Document.Revision);
             Assert.Same(originalSource, fixture.View.Document.Source);
             Assert.Equal(originalCompletionCount, fixture.CompletionCount);
-            Assert.Single(compositeTransitions);
+            Assert.NotEmpty(compositeTransitions);
+            Assert.All(compositeTransitions, source => Assert.Same(originalSource, source));
             Assert.Same(originalSource, fixture.View.Presentation.DisplaySource);
         });
     }

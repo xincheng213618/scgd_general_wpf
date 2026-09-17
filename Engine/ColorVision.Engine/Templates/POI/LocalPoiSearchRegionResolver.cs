@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿using ColorVision.Core;
+using ColorVision.Database;
 using ColorVision.ImageEditor;
 using SqlSugar;
 using System;

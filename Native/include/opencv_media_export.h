@@ -227,6 +227,22 @@ struct MCalibrationExecutionOptionsV1 {
 
 static_assert(sizeof(MCalibrationExecutionOptionsV1) == 56, "Calibration options ABI layout changed");
 
+struct MRawColorTransformV1 {
+    std::uint32_t structSize;
+    std::int32_t calibrationType;
+    std::int32_t channels;
+    std::int32_t kind; // 0: matrix, 1: one-color factors, 2: luminance factor
+    std::int32_t interleavedBgr;
+    std::uint32_t reserved;
+    double coefficients[9];
+};
+static_assert(sizeof(MRawColorTransformV1) == 96, "RAW color transform ABI changed");
+
+// Snapshot the actual immutable item held by this context, without reopening its file.
+// Serialize this with execution on the same context and use the execution's options.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetColorTransformV1(
+    void* context, const MCalibrationExecutionOptionsV1* options, MRawColorTransformV1* transform);
+
 enum MCalibrationCacheEntryFlagsV1 : std::uint32_t {
     M_CALIBRATION_CACHE_ENTRY_LOADING = 1U,
     M_CALIBRATION_CACHE_ENTRY_READY = 2U,
@@ -419,6 +435,23 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalculatePoiBatchV2(
     std::uint32_t requestCount,
     const MPoiOptionsV2* options,
     MPoiResultV1* results);
+
+// RAW replay: no ownership transfer, 8/16-bit input, float output; buffers must not overlap.
+// channel == -1 writes all planes, otherwise writes just the selected plane.
+extern "C" COLORVISIONCORE_API int __cdecl M_TransformRawColorV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    std::int32_t channel, float* output, std::uint64_t outputFloats);
+extern "C" COLORVISIONCORE_API int __cdecl M_CalculateRawPoiBatchV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    const MPoiRequestV1* requests, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* results);
+struct MRawPixelRunV1 { std::int32_t y, startX, endX; }; // end exclusive, exact region coverage
+static_assert(sizeof(MRawPixelRunV1) == 12, "RAW pixel run ABI changed");
+extern "C" COLORVISIONCORE_API int __cdecl M_CalculateRawRegionV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    const MRawPixelRunV1* runs, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* result);
 
 // Synchronous logging callback. message is a borrowed, null-terminated UTF-8
 // string that is valid only for the duration of the callback. The callback must

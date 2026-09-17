@@ -523,7 +523,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             this.services = services ?? throw new ArgumentNullException(nameof(services));
         }
 
-        protected override string GetCompactSummaryValue() => FormatCompactRegion(SearchRegion);
+        protected override string GetCompactSummaryValue() => string.IsNullOrWhiteSpace(SearchRegionPoiTemplate)
+            ? FormatCompactRegion(SearchRegion) : $"POI: {SearchRegionPoiTemplate.Trim()}";
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) =>
             new() { Data = ExecuteSynchronously(action) };
@@ -573,7 +574,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             FrameId = lease.FrameId.ToString("N"),
                             ImageFilePath = imageFile,
                             SearchRegionPoiTemplate = configuredTemplate,
-                    SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
+                            SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                             ParameterJson,
                             Success = false,
                             detection.FailureReason,

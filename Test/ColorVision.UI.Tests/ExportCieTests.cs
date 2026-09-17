@@ -1,5 +1,7 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
 using OpenCvSharp;
 using System.Collections.Specialized;
@@ -9,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Tests;
@@ -131,6 +134,51 @@ public sealed class ExportCieTests
             Assert.True(cie.IsExportChannelX);
             Assert.True(cie.IsExportChannelY);
             Assert.True(cie.IsExportChannelZ);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TiffExportEmbedsAndDisplaysColorVisionParameters()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-metadata-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(root, "sample.cvraw");
+        Directory.CreateDirectory(root);
+        try
+        {
+            WriteRawFixture(sourcePath, rows: 2, cols: 3, channels: 3);
+            var viewModel = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = root,
+                Name = "metadata",
+                ExportImageFormat = ImageFormat.Tiff,
+            };
+
+            VExportCIE.SaveToTifOrThrow(viewModel);
+
+            ColorVisionTiffParameters parameters = ReadTiffParameters(Path.Combine(root, "metadata.tiff"));
+            Assert.Equal(ColorVisionTiffParameters.CurrentSchema, parameters.Schema);
+            Assert.Equal("CVRAW", parameters.SourceType);
+            Assert.Equal("Src", parameters.ExportedChannel);
+            Assert.Equal("sample.cvraw", parameters.InputFileName);
+            Assert.Null(parameters.AssociatedSourceFileName);
+            Assert.Equal((uint)1, parameters.FileVersion);
+            Assert.Equal(2, parameters.Rows);
+            Assert.Equal(3, parameters.Cols);
+            Assert.Equal(16, parameters.Bpp);
+            Assert.Equal(3, parameters.SourceChannels);
+            Assert.Equal(1, parameters.Gain);
+            Assert.Equal([1f, 1f, 1f], parameters.Exposure);
+
+            ImageViewConfig config = new();
+            Opentif.ApplyColorVisionMetadata(config, parameters);
+            Assert.Equal("CVRAW", config.GetProperties<string>(ImageViewPropertyKeys.ColorVisionSourceType));
+            Assert.Equal("Src", config.GetProperties<string>(ImageViewPropertyKeys.ColorVisionExportedChannel));
+            Assert.Equal(1f, config.GetProperties<float>(ImageViewPropertyKeys.ColorVisionGain));
+            Assert.Equal([1f, 1f, 1f], config.GetProperties<float[]>(ImageViewPropertyKeys.ColorVisionExposure));
         }
         finally
         {
@@ -285,6 +333,17 @@ public sealed class ExportCieTests
             ];
             Assert.All(expectedFiles, fileName => Assert.True(File.Exists(Path.Combine(root, fileName)), fileName));
             Assert.Equal(expectedFiles.Order(), Directory.EnumerateFiles(root, "*.tiff").Select(Path.GetFileName).Order());
+
+            ColorVisionTiffParameters sourceParameters = ReadTiffParameters(Path.Combine(root, "measurement.v1_Src.tiff"));
+            Assert.Equal("CVRAW", sourceParameters.SourceType);
+            Assert.Equal("Src", sourceParameters.ExportedChannel);
+            Assert.Equal("source.cvraw", sourceParameters.InputFileName);
+
+            ColorVisionTiffParameters xParameters = ReadTiffParameters(Path.Combine(root, "measurement.v1_X.tiff"));
+            Assert.Equal("CVCIE", xParameters.SourceType);
+            Assert.Equal("X", xParameters.ExportedChannel);
+            Assert.Equal("sample.cvcie", xParameters.InputFileName);
+            Assert.Equal("source.cvraw", xParameters.AssociatedSourceFileName);
         }
         finally
         {
@@ -482,6 +541,18 @@ public sealed class ExportCieTests
         application.Resources["SecondaryTextBrush"] = Brushes.DimGray;
         application.Resources["PrimaryBrush"] = Brushes.DodgerBlue;
         application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
+    }
+
+    private static ColorVisionTiffParameters ReadTiffParameters(string filePath)
+    {
+        return WpfTestHost.Invoke(() =>
+        {
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            TiffBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            BitmapMetadata metadata = Assert.IsType<BitmapMetadata>(Assert.Single(decoder.Frames).Metadata);
+            Assert.True(ColorVisionTiffParameters.TryRead(metadata, out ColorVisionTiffParameters? parameters));
+            return Assert.IsType<ColorVisionTiffParameters>(parameters);
+        });
     }
 
     private sealed class MemoryMruPathStore(IEnumerable<MruPathEntry> entries) : IMruPathStore

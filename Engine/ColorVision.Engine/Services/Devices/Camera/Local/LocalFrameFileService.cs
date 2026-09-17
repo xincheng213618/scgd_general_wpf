@@ -81,6 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     }
                 });
                 frame.CvRawFilePath = rawPath;
+                frame.ColorCalibration?.Save(rawPath, canReplay: true);
                 generatedRawPath = rawPath;
             }
 
@@ -103,6 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (!CVFileUtil.WriteCVCIE(ciePath, cieFile)) throw new IOException($"保存 CVCIE 失败：{ciePath}");
                 });
                 frame.CvCieFilePath = ciePath;
+                frame.ColorCalibration?.Save(ciePath, canReplay: true);
             }
             saveStage?.Complete();
         }

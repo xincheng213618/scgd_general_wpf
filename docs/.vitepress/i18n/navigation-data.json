@@ -1295,6 +1295,12 @@
             },
             {
               "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
+            },
+            {
+              "text": {
                 "root": "CVCIE POI 结果数值"
               },
               "link": "/04-api-reference/engine-components/cvcie-results"
@@ -3140,6 +3146,12 @@
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
             },
             {
               "text": {

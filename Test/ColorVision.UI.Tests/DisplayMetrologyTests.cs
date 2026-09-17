@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
 using System.Buffers.Binary;
@@ -387,6 +387,9 @@ public sealed partial class DisplayMetrologyTests
                 var menu = new AlgorithmsContextMenu(view.EditorContext.ProcessingContext);
                 var entries = menu.GetContextMenuItems();
                 foreach (var id in DisplayMetrologyIds.All) Assert.Contains(entries, e => e.GuidId == id.Value);
+                Assert.Single(entries.Where(e => e.GuidId == "AlgorithmsCall"));
+                Assert.All(entries.Where(e => e.GuidId.StartsWith(DisplayMetrologyIds.RgbCrossRegistration.Value, StringComparison.Ordinal)),
+                    entry => Assert.Equal("AlgorithmsCall", entry.OwnerGuid));
                 using var window = new DisplayMetrologyResultWindow(result, "显示计量结果测试", view.EditorContext.ProcessingContext, null);
                 window.Show();
                 Assert.NotNull(window.Content);

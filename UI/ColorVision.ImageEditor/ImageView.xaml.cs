@@ -731,6 +731,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            _channels.CancelPending();
             ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
@@ -941,6 +942,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            _channels.CancelPending();
             if (!_session.TryReplaceSource(imageSource, enableEditorImageServices, () => _isLayerSelectorEnabled = enableEditorImageServices))
             {
                 PixelFormat unsupportedFormat = ((WriteableBitmap)imageSource).Format;

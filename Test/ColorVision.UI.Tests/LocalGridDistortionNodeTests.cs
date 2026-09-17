@@ -25,6 +25,64 @@ namespace ColorVision.UI.Tests;
 public sealed class LocalGridDistortionNodeTests
 {
     [Fact]
+    public void PoiSearchRegionOverridesFixedBoundsAndReloadsEveryRun()
+    {
+        CVStartCFC action = CreateAction();
+        int reads = 0;
+        FakeServices services = new()
+        {
+            LoadSearchRegionTemplateHandler = name =>
+            {
+                Assert.Equal("发光区", name);
+                return new Int32Rect(5 + reads++, 6, 40, 30);
+            },
+            DetectHandler = (_, roi, _) =>
+            {
+                Assert.Equal(4 + reads, roi.X);
+                Assert.Equal(6, roi.Y);
+                Assert.Equal(40, roi.Width);
+                Assert.Equal(30, roi.Height);
+                return CreateDetection();
+            },
+            PersistHandler = request =>
+            {
+                JObject audit = JObject.FromObject(request.Parameters);
+                Assert.Equal("发光区", audit.Value<string>("SearchRegionPoiTemplate"));
+                Assert.Equal(4 + reads, audit["SearchRegion"]!.Value<int>("X"));
+                return new() { MasterId = 73, ResultFilePath = @"C:\result.json" };
+            }
+        };
+        LocalGridDistortionNode node = new(services) { SearchRegion = new Int32Rect(100, 100, 10, 10), SearchRegionPoiTemplate = " 发光区 " };
+        try
+        {
+            node.ExecuteSynchronously(action);
+            node.ExecuteSynchronously(action);
+            Assert.Equal(2, reads);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvalidPoiSearchRegionStopsBeforeDetection(bool outOfBounds)
+    {
+        CVStartCFC action = CreateAction();
+        FakeServices services = new()
+        {
+            LoadSearchRegionTemplateHandler = _ => outOfBounds ? new Int32Rect(50, 40, 40, 30) : throw new InvalidOperationException("找不到搜索区域关注点模板")
+        };
+        LocalGridDistortionNode node = new(services) { SearchRegionPoiTemplate = "错误模板" };
+        try
+        {
+            Assert.ThrowsAny<Exception>(() => node.ExecuteSynchronously(action));
+            Assert.Equal(0, services.DetectCount);
+            Assert.Equal(0, services.PersistCount);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Fact]
     public void TypedConfigurationRoundTripsAndNodeHasOneImageInput()
     {
         LocalGridDistortionNode node = new();

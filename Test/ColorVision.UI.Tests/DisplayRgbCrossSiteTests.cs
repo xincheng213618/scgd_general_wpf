@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Algorithms;
 using OpenCvSharp;
@@ -42,10 +42,21 @@ public sealed partial class DisplayMetrologyTests
             Assert.Equal((long)raw.Cols * raw.Rows * 6, raw.Data.LongLength);
             using var input = new AlgorithmImageBuffer(raw.Cols, raw.Rows, raw.Cols * 6, AlgorithmImageFormat.Bgr48, raw.Data);
             var parameters = new RgbCrossRegistrationParameters();
+            string? regionText = Environment.GetEnvironmentVariable("COLORVISION_RGB_CROSS_ROI");
+            RectangleAlgorithmRoi? searchRegion = null;
+            if (!string.IsNullOrWhiteSpace(regionText))
+            {
+                int[] region = regionText.Split(',').Select(int.Parse).ToArray();
+                Assert.Equal(4, region.Length);
+                searchRegion = new(region[0], region[1], region[2], region[3]);
+            }
             var clock = Stopwatch.StartNew();
-            using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, parameters, input);
+            using var result = searchRegion == null ? await Run(DisplayMetrologyIds.RgbCrossRegistration, parameters, input) : await RunCrossWithRoi(input, searchRegion);
             clock.Stop();
             Success(result);
+            RgbCrossMeasurementExporter.Export(result, Path.Combine(directory, "measurement.json"));
+            File.WriteAllBytes(Path.Combine(directory, "input.bgr"), raw.Data);
+
             var table = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!;
             var metrics = result.Artifacts.OfType<AlgorithmMeasurementArtifact>().SelectMany(a => a.Measurements).ToArray();
             string after = Hash(path);
@@ -53,7 +64,7 @@ public sealed partial class DisplayMetrologyTests
             {
                 source = path, sha256Before = before, sha256After = after,
                 raw.Version, width = raw.Cols, height = raw.Rows, raw.Channels, raw.Bpp, exposure = raw.Exp,
-                elapsedMilliseconds = clock.Elapsed.TotalMilliseconds, parameters,
+                elapsedMilliseconds = clock.Elapsed.TotalMilliseconds, parameters, searchRegion,
                 measurementMethod = "source-resolution per-arm profile threshold crossings; median across common sample intervals",
                 acceptanceBoundary = "Unlabelled field image: no accuracy, repeatability, detection-rate or product pass/fail ground truth. Saturated profiles can bias threshold edges.",
                 metrics, points = table.Rows,
@@ -88,6 +99,8 @@ public sealed partial class DisplayMetrologyTests
             using var overview = new Mat();
             Cv2.Merge(channelMats.AsEnumerable().Reverse().ToArray(), overview);
             double step = double.Parse(previews[0].Metadata!["sourcePixelsPerPreviewPixel"], CultureInfo.InvariantCulture);
+            int originX = int.Parse(previews[0].Metadata!["sourceOriginX"], CultureInfo.InvariantCulture);
+            int originY = int.Parse(previews[0].Metadata!["sourceOriginY"], CultureInfo.InvariantCulture);
             using var source = Mat.FromPixelData(raw.Rows, raw.Cols, MatType.CV_16UC3, raw.Data);
             using var montage = new Mat(3 * 400, 3 * 800, MatType.CV_8UC3, Scalar.Black);
             var geometries = result.Artifacts.OfType<AlgorithmGeometryArtifact>().SelectMany(a => a.Geometries).ToArray();
@@ -97,8 +110,8 @@ public sealed partial class DisplayMetrologyTests
                 int width = row["roiWidth_px"].GetInt32(), height = row["roiHeight_px"].GetInt32();
                 if (width == 0 || height == 0) continue;
                 string point = row["point"].GetString()!;
-                Cv2.Rectangle(overview, new Rect((int)(x / step), (int)(y / step), Math.Max(1, (int)(width / step)), Math.Max(1, (int)(height / step))), Scalar.White);
-                Cv2.PutText(overview, point, new Point((int)(x / step), (int)(y / step) - 3), HersheyFonts.HersheySimplex, 0.5, Scalar.White);
+                Cv2.Rectangle(overview, new Rect((int)((x - originX) / step), (int)((y - originY) / step), Math.Max(1, (int)(width / step)), Math.Max(1, (int)(height / step))), Scalar.White);
+                Cv2.PutText(overview, point, new Point((int)((x - originX) / step), (int)((y - originY) / step) - 3), HersheyFonts.HersheySimplex, 0.5, Scalar.White);
                 using var crop = new Mat(source, new Rect(x, y, width, height));
                 using var original = new Mat(); crop.ConvertTo(original, MatType.CV_8UC3, 1.0 / 257);
                 using var annotated = original.Clone();

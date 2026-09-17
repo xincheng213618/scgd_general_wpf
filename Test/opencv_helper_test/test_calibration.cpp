@@ -1727,6 +1727,46 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
     }
 }
 
+static void runRawColorApiCoverage()
+{
+    static_assert(sizeof(MRawColorTransformV1) == 96);
+    static_assert(sizeof(MRawPixelRunV1) == 12);
+    MRawColorTransformV1 transform{};
+    transform.structSize = sizeof(transform);
+    transform.channels = 3;
+    transform.interleavedBgr = 1;
+    transform.coefficients[0] = 1;
+    transform.coefficients[4] = 2;
+    transform.coefficients[8] = 3;
+    const std::array<std::uint16_t, 6> raw{ 1, 2, 3, 4, 5, 6 };
+    std::array<float, 6> xyz{};
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, -1, xyz.data(), xyz.size()) != M_POI_OK
+        || xyz != std::array<float, 6>{ 3, 6, 4, 10, 3, 12 })
+        throw std::runtime_error("RAW transform planar XYZ mismatch");
+    std::array<float, 2> y{};
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, 1, y.data(), y.size()) != M_POI_OK
+        || y != std::array<float, 2>{ 4, 10 })
+        throw std::runtime_error("RAW transform selected channel mismatch");
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw) - 1, &transform, -1, xyz.data(), xyz.size()) != M_POI_INVALID_ARGUMENT
+        || M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, -1, xyz.data(), xyz.size() - 1) != M_POI_INVALID_ARGUMENT
+        || M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, 3, y.data(), y.size()) != M_POI_INVALID_ARGUMENT)
+        throw std::runtime_error("RAW transform did not reject invalid buffers/channel");
+    MPoiOptionsV2 options{};
+    options.structSize = sizeof(options);
+    MPoiRequestV1 request{ 0, 1, 0, 1, 1 };
+    MPoiResultV1 point{};
+    if (M_CalculateRawPoiBatchV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &request, 1, &options, &point) != M_POI_OK
+        || point.X != 6 || point.Y != 10 || point.Z != 12)
+        throw std::runtime_error("RAW point calculation mismatch");
+    MRawPixelRunV1 run{ 0, 0, 2 };
+    if (M_CalculateRawRegionV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &run, 1, &options, &point) != M_POI_OK
+        || point.X != 4.5f || point.Y != 7 || point.Z != 7.5f)
+        throw std::runtime_error("RAW region calculation mismatch");
+    run.endX = 3;
+    if (M_CalculateRawRegionV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &run, 1, &options, &point) != M_POI_INVALID_ARGUMENT)
+        throw std::runtime_error("RAW region did not reject out-of-bounds run");
+}
+
 bool RunCalibrationApiSmokeTests()
 {
     try {
@@ -1757,6 +1797,7 @@ bool RunCalibrationApiSmokeTests()
         requireResult(M_CalibrationClear(context.get()), context.get(), "M_CalibrationClear");
         runSyntheticCoverage();
         runPoiV2SyntheticCoverage();
+        runRawColorApiCoverage();
         std::array<wchar_t, 32768> baselinePath{};
         const DWORD baselinePathLength = GetEnvironmentVariableW(
             L"COLORVISION_POI_BATCH_BASELINE_DLL", baselinePath.data(), static_cast<DWORD>(baselinePath.size()));

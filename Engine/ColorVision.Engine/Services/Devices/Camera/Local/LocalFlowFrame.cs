@@ -54,6 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public int MasterId { get; set; } = -1;
         public string CvRawFilePath { get; set; } = string.Empty;
         public string CvCieFilePath { get; set; } = string.Empty;
+        internal ColorCalibrationSnapshot? ColorCalibration { get; set; }
         public bool HasRaw => storage.RawLength > 0;
         public bool HasCie => storage.CieLength > 0;
         public bool IsRawFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
@@ -95,6 +96,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 IsMirrorReady = true
             };
             CvCieFilePath = string.Empty;
+            ColorCalibration = null;
             if (hasBasicCalibration) CvRawFilePath = string.Empty;
         }
 

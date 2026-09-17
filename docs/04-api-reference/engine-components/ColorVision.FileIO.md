@@ -2,10 +2,10 @@
 knowledge_id: "engine.file-io"
 knowledge_type: "topic"
 status: "current"
-summary: "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。"
-aliases: ["用户校正", "LumFourColorRecentImages", "CVCIE文件为什么打不开", "ColorVision.FileIO", "CVFileUtil", "CVCIEFile", "ReadCIEFileChannel", "ReadCVCIE", "WriteCIEFile", "NDPort", "内嵌XYZ通道", "CVCIE关联源文件", "CVCIE版本写回", "文件写入失败原文件", "CVCIE真彩显示", "三刺激值转sRGB", "CvcieSrgbRenderer", "CvcieDisplayConfig", "CVRawManualCieCalculator", "LumFourColorCalibrationWorkflowWindow", "四色校正采集", "校正文件异常", "替换当前文件并重启服务", "校正文件备份"]
-code_paths: ["Engine/ColorVision.FileIO/CVFileUtil.cs", "Engine/ColorVision.FileIO/CVCIEFile.cs", "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj", "Engine/ColorVision.FileIO/README.md", "Engine/ColorVision.Engine/Media/MediaHelper.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs", "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionCalculator.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorDataChecks.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationReplacement.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationFile.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorMeasurementClipboard.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorRecentImages.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs", "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs", "Plugins/Conoscope/ConoscopeDocument.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ExportCieTests.cs", "Test/Conoscope.Tests/CvcieChannelReaderTests.cs", "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplayIntegrationTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs", "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs", "Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs", "Test/ColorVision.UI.Tests/LumFourColorFileCompatibilityTests.cs", "Test/ColorVision.UI.Tests/LumFourColorReplacementTests.cs", "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs", "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"]
+summary: "CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。"
+aliases: ["CVFileMetadata", "RAW色度参数", "动态参数覆盖", "HasCieMeasurements", "用户校正", "LumFourColorRecentImages", "CVCIE文件为什么打不开", "ColorVision.FileIO", "CVFileUtil", "CVCIEFile", "ReadCIEFileChannel", "ReadCVCIE", "WriteCIEFile", "NDPort", "内嵌XYZ通道", "CVCIE关联源文件", "CVCIE版本写回", "文件写入失败原文件", "CVCIE真彩显示", "三刺激值转sRGB", "CvcieSrgbRenderer", "CvcieDisplayConfig", "CVRawManualCieCalculator", "LumFourColorCalibrationWorkflowWindow", "四色校正采集", "校正文件异常", "替换当前文件并重启服务", "校正文件备份"]
+code_paths: ["Engine/ColorVision.FileIO/CVFileMetadata.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/ColorCalibrationSnapshot.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "Engine/ColorVision.Engine/Services/POI/RawColorMeasurementSource.cs", "Native/opencv_helper/algorithm/calibration/calibration_raw_color.cpp", "Engine/ColorVision.FileIO/CVFileUtil.cs", "Engine/ColorVision.FileIO/CVCIEFile.cs", "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj", "Engine/ColorVision.FileIO/README.md", "Engine/ColorVision.Engine/Media/MediaHelper.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs", "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieCalculator.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionCalculator.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCorrectionWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorDataChecks.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationReplacement.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationFile.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorMeasurementClipboard.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorSpectrumSelectionWindow.xaml.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorRecentImages.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs", "Engine/ColorVision.Engine/Media/CVRawManualCieWindow.xaml.cs", "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs", "Plugins/Conoscope/ConoscopeDocument.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CVFileMetadataTests.cs", "Test/ColorVision.UI.Tests/RawColorCalibrationTests.cs", "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs", "Test/opencv_helper_test/test_calibration.cpp", "Test/ColorVision.UI.Tests/ExportCieTests.cs", "Test/Conoscope.Tests/CvcieChannelReaderTests.cs", "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplayIntegrationTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs", "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs", "Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs", "Test/ColorVision.UI.Tests/LumFourColorFileCompatibilityTests.cs", "Test/ColorVision.UI.Tests/LumFourColorReplacementTests.cs", "Test/ColorVision.UI.Tests/CvFilePixelSafetyTests.cs", "Test/ColorVision.UI.Tests/CvcieFloatChannelRendererTests.cs"]
 related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.conoscope", "delivery.index", "engine.cv-image-export"]
 ---
 
@@ -24,6 +24,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 | 从三刺激值显示真彩、设置亮度基准或切回原图 | `CvcieSrgbRenderer`、`CvRawLayerController` 与下文的 Engine 真彩显示契约 |
 | 校正文件异常、手动生成的 XYZ 含无效值 | `CVRawManualCieCalculator` 的输入/结果校验；有限但错误的标定仍需业务校准证据 |
 | 只想读内嵌 Y，避免加载全部 XYZ | `ReadCIEFileChannel(path, 1, ...)`，不是通用打开或旧的全量切片接口 |
+| RAW 不另存 CVCIE，但要保留当时的色度参数和测量能力 | `CVFileMetadata`、`ColorCalibrationSnapshot`、`RawColorMeasurementSource`；见下文的动态参数契约 |
 | 大小写改名后类型变了 | 路径 header 使用大小写敏感的完整路径 `Contains`；不同便捷入口推断方式不一致 |
 | 写入返回 true，但再次读取失败 | 写入不验证完整格式；尤其检查 Version=3 的 `NDPort` 缺失和零长 Data |
 | 写失败后旧文件丢失或残缺 | 路径 writer 直接 `FileMode.Create`，没有临时文件替换或回滚 |
@@ -95,6 +96,26 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 [Conoscope](../plugins/standard-plugins/conoscope.md) 使用新的直接通道入口，并额外要求 32 位浮点、至少三通道、Data 恰好是一个平面；Y-first 和其后的 XYZ 就绪属于 Conoscope 文档生命周期，不属于 FileIO。
 
+## RAW/CVCIE 动态参数与按需色度测量
+
+`CVFileMetadata` 在 header 声明的像素 payload 后保存可选参数区，不修改版本号、像素长度、像素字节或文件扩展名。旧版全量读取和单平面读取仍按原 payload 长度工作。FileIO 只存储 `kind → (version, bytes)`，不依赖 JSON、WPF 或 Native；色度参数的 JSON 结构由 Engine 的 `ColorCalibrationSnapshot` 管理。
+
+参数区由若干 UTF-8 key、记录版本和长度限定的 byte 值组成，末尾是 64 字节 footer：`CVMD0001` 魔数、容器版本、记录数量、像素结束偏移、参数正文长度与正文 SHA-256。正文上限 64 MiB。`SetProperty` 替换同 key 的当前值，保留其他 key 和未知记录版本，然后截断旧尾部；反复校正不积累历史。未知尾部、未知容器版本、校验失败或布局不一致会拒绝覆盖，避免擦除无法理解的数据。
+
+写入规则如下：
+
+- **只在实际色度/亮度校正成功后更新** `colorvision.calibration.color`；普通打开、查看通道、POI、仅基本校正都不写参数。
+- 本地校正与手动 RAW 校正保存实际执行的系数、曝光、布局、模板和时间。Native 路径从已加载的校正上下文提取参数，不在计算完成后重新读可能已改变的 `.dat`。
+- 对已有对应 CVRAW，无论保存图像开关是否启用都更新当前参数。保存图像时，新 RAW 和 CVCIE 各带同一快照；没有落盘 RAW 的纯内存采集只能先随帧保留参数，不能凭空修改一个不存在的文件。
+- 基本校正已经改变 RAW 像素时，新保存的校正后 RAW 可以重放色度矩阵；原始传感器 RAW 仅记录该快照并标记 `CanReplay=false`，避免在未经过相同基本校正的像素上套矩阵。恢复完整基本校正链不属于此参数版本。
+- 只读或被占用的 RAW 会报告写入失败。参数更新使用排他文件句柄、`Flush(true)` 和遇到写异常时的尽力回滚；不承诺进程崩溃或断电原子性。校验失败后打开器保留 RAW 显示并禁用这组色度能力，不修改像素来“修复”参数。
+
+可重放参数使 RAW 获得 `HasCieMeasurements` 能力，但 `IsCVCIE` 仍为 false，文件身份和原图保持 RAW。支持光标实时数据、CIE 图、POI 及 X/Y/Z 灰度通道；单通道亮度文件只有 Y。此路径不提供 XYZ→sRGB 全彩图层。真正的 CVCIE 保持原有全彩功能。
+
+小 POI 按实际区域逐像素生成 float XYZ 后累计，保留现有矩形边界、圆形严格内点及封闭区域行段语义，不用抽稀点阵近似测量。通道显示只生成一个 float 平面，缓存最近显示结果。累计测量覆盖达到半幅且完整 XYZ 不超过 1 GiB、运行时总可用内存的 1/8 和托管数组上限时，才缓存完整 XYZ；低内存设备继续按需扫描。已有手动计算的完整 XYZ 直接复用。仍要求完整缓冲区的兼容调用会显式生成完整 XYZ。
+
+重放速度取决于图幅、区域数量、CPU、缓存和存储；不保证与直接读取 CVCIE 等速。比较时分别测量读取、单通道计算、显示归一化、区域计算和文件参数更新，不把热文件缓存结果当作冷盘或实际相机吞吐。
+
 ## 写入不是验证，也不是原子提交
 
 `WriteCIEFile(path, CVCIEFile)` 直接以 `FileMode.Create` / `FileShare.None` 打开目标，已有文件会先被截断。随后异常返回 false **不恢复原文件**；也不自动创建父目录、临时文件或备份。`WriteCVRaw` / `WriteCVCIE` 只是这个 writer 的包装，不增加扩展名、版本或尺寸检查。
@@ -147,7 +168,7 @@ Engine 的显示原图加载入口是 `CvRawLayerController.LoadSourceFile`。�
 
 `CVRawManualCieCalculator` 只处理手动计算路径的 8/16 位三通道 CVRAW，不是所有相机或外部算法生成 CIE 的统一验证器。导入四色校正文件时，要求增益、曝光和 a…i 矩阵字段存在、能解析且为有限数值；导入失败只记录日志、结束当前导入对话框，保留原始 CVRAW，不以默认矩阵继续提交。
 
-计算前检查 RAW 正尺寸、完整且恰好等长的 payload、有限矩阵系数、有限配置曝光/增益。已有的“有限且非正配置值表示使用源文件曝光/增益”规则保留，但实际选用的源值必须是正有限数；配置曝光还必须能表示为正 float。每个输出 XYZ 转为 float 时再次检查，拒绝非有限结果及 32 位浮点溢出。失败不会接入新的 CIE 测量结果；打开器记录日志并恢复原始 CVRAW，回退也失败则保留当前图像。此路径计算的是内存结果，不因此增加 CIE 文件写入。
+计算前检查 RAW 正尺寸、完整且恰好等长的 payload、有限矩阵系数、有限配置曝光/增益。已有的“有限且非正配置值表示使用源文件曝光/增益”规则保留，但实际选用的源值必须是正有限数；配置曝光还必须能表示为正 float。每个输出 XYZ 转为 float 时再次检查，拒绝非有限结果及 32 位浮点溢出。成功后先更新该 RAW 的当前参数，再接入测量并复用已计算的 XYZ；不因此增加 CIE 文件写入。失败会显示原因并保留原 RAW，已有有效参数仍可在回退时加载。
 
 这些校验只能发现格式、缺失、非有限和数值溢出问题。**全部数值有限但设备不匹配、矩阵系数填错或标定本身失准的 XYZ，无法仅凭标准 XYZ→sRGB 转换可靠识别。** 真彩预览可能仍然偏色；也不能用负数或超出 sRGB 色域作为坏校正的通用判断。校正正确性仍需相应设备、校正文件来源及已知参考测量的验证，不由显示转换自动修复。
 
@@ -187,6 +208,10 @@ Engine 的显示原图加载入口是 `CvRawLayerController.LoadSourceFile`。�
 普通图像输出的窗口操作、命令行参数、通道命名与覆盖规则见 [CVRAW / CVCIE 图像导出](./cv-image-export.md)。文件解析成功不代表导出得到所需的完整通道集合。
 
 ## 验证入口与明确缺口
+
+- `CVFileMetadataTests`：v1/v2/v3 读取兼容、像素字节不变、参数替换与收缩、未知记录保留、损坏尾部拒绝覆盖，以及只读/占用失败。
+- `RawColorCalibrationTests` 与 Native `--calibration-smoke`：已加载参数快照、8/16 位及两种布局、亮度/单色/四色/多色重放与原校正输出逐字节一致、POI/封闭区域及完整缓存对照、仅成功校正写回和 RAW/CVCIE 快照匹配。
+- `CalibratedRawDisplayTests`：RAW 身份、色度能力、无 sRGB 图层、X/Y/Z 与原图切换，打开和切换不写文件。这些测试不代替真实屏幕、远程校正服务或采集硬件验收。
 
 - `Test/Conoscope.Tests/CvcieChannelReaderTests.cs`：合成 v1/v2 文件、只取指定平面但保留 header 元数据、越界索引返回 false。fixture 填入未创建的关联文件名仍可读目标平面，但没有验证存在可读源图时是否访问它；“不跟随”的完整结论来自源码。可选真实样本仅在设置 `CONOSCOPE_REAL_SAMPLE` 时读取，未设置时直接返回，不证明真实样本通过。
 - `Test/ColorVision.UI.Tests/ExportCieTests.cs`：消费方的 RAW 位深、选定浮点通道、关联源图和导出策略；不是 FileIO 全版本解析认证。

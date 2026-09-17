@@ -162,6 +162,9 @@
     <ClCompile Include="algorithm\calibration\calibration_color.cpp">
       <Filter>算法\Calibration</Filter>
     </ClCompile>
+    <ClCompile Include="algorithm\calibration\calibration_raw_color.cpp">
+      <Filter>算法\Calibration</Filter>
+    </ClCompile>
     <ClCompile Include="algorithm\calibration\calibration_context.cpp">
       <Filter>算法\Calibration</Filter>
     </ClCompile>

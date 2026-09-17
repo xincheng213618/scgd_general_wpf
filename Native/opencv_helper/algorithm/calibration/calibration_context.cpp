@@ -328,6 +328,10 @@ public:
 
     [[nodiscard]] CalibrationType type() const noexcept override { return implementation_->type(); }
     [[nodiscard]] bool isColorTransform() const noexcept override { return implementation_->isColorTransform(); }
+    [[nodiscard]] bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const override
+    {
+        return implementation_->colorTransform(options, transform);
+    }
     [[nodiscard]] bool requiresDistinctOutput() const noexcept override
     {
         return implementation_->requiresDistinctOutput();
@@ -1222,6 +1226,18 @@ std::size_t CalibrationContext::itemCount() const
 {
     std::scoped_lock lock(mutex_);
     return items_.size();
+}
+
+bool CalibrationContext::colorTransform(const ExecutionOptions& options, ColorTransform& transform) const
+{
+    std::scoped_lock lock(mutex_);
+    const CalibrationItem* color = nullptr;
+    for (const auto& item : items_) {
+        if (!item->isColorTransform()) continue;
+        if (color != nullptr) return false;
+        color = item.get();
+    }
+    return color != nullptr && color->colorTransform(options, transform);
 }
 
 } // namespace cvcore::calibration

@@ -96,7 +96,7 @@ namespace ProjectARVRPro.Process
 
             if (typeName.StartsWith("Distortion", StringComparison.Ordinal)
                 || typeName.StartsWith("OpticCenter", StringComparison.Ordinal)
-                || typeName == "FieldOfViewProcess")
+                || typeName == "FieldOfViewProcess" || typeName == "RgbCrossProcess")
             {
                 return GeometrySubcategory;
             }
@@ -161,6 +161,7 @@ namespace ProjectARVRPro.Process
             "MTFHVDynamicProcess" => ("动态 MTF-HV（特殊图案）", "解析HV特殊图案的动态测量区域；它不是横条纹与竖条纹流程的合并。", "HV特殊图案 · 动态区域 · 双向特征 · 独立Key"),
             "MTFHV048Process" => ("MTF-HV 048（特殊图案）", "解析048测试点位方案的HV特殊图案结果。", "HV特殊图案 · 048点位 · 阈值判定 · 区域叠加"),
             "MTFHV058Process" => ("MTF-HV 058（特殊图案）", "解析058测试点位方案的HV特殊图案结果。", "HV特殊图案 · 058点位 · 阈值判定 · 区域叠加"),
+            "RgbCrossProcess" => ("九点十字 RGB 分离", "读取十字测量 JSON，绘制 RGB 边缘；默认只测量，可由本项目配置分离判定。", "九点十字 · JSON 解析 · RGB 边缘叠加 · 可选判定"),
             "OpticCenterProcess" => ("光学中心", "解析固定点位光学中心结果，用于中心偏移及位置评价。", "中心定位 · 偏移评价 · 阈值判定 · 文本结果"),
             "OpticCenterDynamicProcess" => ("动态光学中心", "解析动态点位光学中心结果，适配运行时变化的中心定位流程。", "动态点位 · 中心定位 · 偏移评价 · 文本结果"),
             "PoiDynamicProcess" => ("动态 POI", "解析动态 POI 测量结果，用于运行时生成点位的亮色度展示。", "动态点位 · POI 解析 · 图形叠加 · 文本结果"),

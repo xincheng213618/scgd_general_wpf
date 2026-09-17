@@ -29,6 +29,21 @@ namespace ColorVision.Core
         private const string LibPath = "opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalibrationGetColorTransformV1(IntPtr context, in CalibrationExecutionOptionsV1 options, ref RawColorTransformV1 transform);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_TransformRawColorV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, int channel, IntPtr output, ulong outputFloats);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalculateRawPoiBatchV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, [In] PoiRequestV1[] requests, uint count, in PoiOptionsV2 options, [Out] PoiResultV1[] results);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalculateRawRegionV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, [In] RawPixelRunV1[] runs, uint count, in PoiOptionsV2 options, out PoiResultV1 result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalSFRMultiChannel(
         HImage img,
         double del,

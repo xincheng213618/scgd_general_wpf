@@ -289,6 +289,50 @@
         "jsonPath": "$.mathMaskRect",
         "aiHint": "Add user-facing description, unit, valid range, enum meaning, and UI grouping/order if known. Keep the JSON key and runtime default compatible."
       }
+    },
+    "rgbCross": {
+      "type": "object",
+      "title": "九点十字 RGB 测量",
+      "description": "九点节点专用参数段；保留单十字原参数。合格阈值由 ARVRPro 或接入方配置。",
+      "additionalProperties": false,
+      "properties": {
+        "minimumContrast": {
+          "type": "number",
+          "default": 0.02,
+          "minimum": 1e-06,
+          "maximum": 1
+        },
+        "targetThreshold": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 0.9
+        },
+        "minimumArmSpanFraction": {
+          "type": "number",
+          "default": 0.35,
+          "minimum": 0.1,
+          "maximum": 0.9
+        },
+        "axisBandThreshold": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 0.9
+        },
+        "minimumArmCoverage": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 1
+        },
+        "decodeExponent": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.1,
+          "maximum": 5
+        }
+      }
     }
   },
   "x-colorvision": {

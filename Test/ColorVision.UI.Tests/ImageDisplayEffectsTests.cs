@@ -91,11 +91,31 @@ public sealed class ImageDisplayEffectsTests
         finally { WpfTestHost.Invoke(fixture.Dispose); }
     }
 
+    [Fact]
+    public void AutoRangeDefersFrameAcquisitionUntilPseudoColorIsEnabled()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using EffectsFixture fixture = new() { Initialized = true };
+
+            fixture.State.IsAutoSetRange = true;
+            fixture.Context.DisplayEffects.ConfigureForImage();
+
+            Assert.Equal(0, fixture.AcquireCount);
+
+            fixture.State.IsEnabled = true;
+
+            Assert.Equal(1, fixture.AcquireCount);
+        });
+    }
+
     private sealed class EffectsFixture : IDisposable
     {
         internal ImageSource? Source { get; set; }
         internal int SelectedChannel { get; set; }
         internal bool OwnerDisposed { get; set; }
+        internal bool Initialized { get; set; }
+        internal int AcquireCount { get; private set; }
         internal ImageProcessingContext Context { get; }
         internal PseudoColorState State => Context.DisplayEffects.PseudoColor;
 
@@ -105,11 +125,15 @@ public sealed class ImageDisplayEffectsTests
             Context = new ImageProcessingContext(new ImageViewConfig(), new DrawCanvas(), Dispatcher.CurrentDispatcher,
                 new ImageProcessingContextBinding
                 {
-                    IsInitialized = () => false,
+                    IsInitialized = () => Initialized,
                     GetDocumentInstanceId = () => documentId,
                     IsDisposed = () => OwnerDisposed,
                     GetImageRevision = () => 1,
-                    AcquireImageFrame = () => null,
+                    AcquireImageFrame = () =>
+                    {
+                        AcquireCount++;
+                        return null;
+                    },
                     IsCurrentImageRevision = revision => !OwnerDisposed && revision == 1,
                     NotifySourcePixelsChanged = () => { },
                     CommitSourcePixels = value => Source = value,

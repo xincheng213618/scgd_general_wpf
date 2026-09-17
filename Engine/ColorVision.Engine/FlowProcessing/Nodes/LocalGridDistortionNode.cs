@@ -302,7 +302,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     }
 
     [Category("本地点阵畸变")]
-    [STNodeProperty("搜索区域", "ROI（X,Y,Width,Height）；0,0,0,0 表示整图。点坐标始终使用整图坐标。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
+    [STNodeProperty("搜索区域", "固定像素 ROI（X,Y,Width,Height）；未选择搜索区域关注点时使用，0,0,0,0 表示整图。点坐标始终使用整图坐标。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
     public Int32Rect SearchRegion { get => searchRegion; set { searchRegion = value; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]

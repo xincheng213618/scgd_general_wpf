@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -48,6 +48,7 @@ internal static class DisplayMetrologyCatalog
             "离线图案评价；输出像素坐标与相对信号，不附带客户 Recipe、量产合格判定或绝对光度标定。", parameters.GetType(),
             new AlgorithmParameterSchema(1, fields, AlgorithmJson.ToElement(parameters)), formats,
             Capabilities | (id == DisplayMetrologyIds.RgbCrossRegistration ? AlgorithmHostCapabilities.Roi : AlgorithmHostCapabilities.None) | (maximum > 1 ? AlgorithmHostCapabilities.MultiInput : 0), minimum, maximum,
+            SupportsRectangleRoi: id == DisplayMetrologyIds.RgbCrossRegistration,
             OutputFormats: new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Gray8 }, OutputFormatPolicy: "analysis-only; masks=gray8")
         {
             ResultSemantics = AlgorithmResultSemantics.Analysis,

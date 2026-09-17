@@ -1,0 +1,562 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:colorvision:rgb-cross-measurement:1.0.0",
+  "title": "Proposed external RGB cross measurement contract (draft; not implemented)",
+  "type": "object",
+  "properties": {
+    "schemaId": {
+      "const": "colorvision.rgb-cross-measurement"
+    },
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "capabilityProfile": {
+      "const": "rgb-cross.measurement.v1"
+    },
+    "algorithm": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "const": "colorvision.display.rgb-cross-registration"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "imageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 32
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 32
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Fa-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "imageId",
+        "width",
+        "height",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "coordinates": {
+      "type": "object",
+      "properties": {
+        "space": {
+          "const": "source-image"
+        },
+        "unit": {
+          "const": "px"
+        },
+        "origin": {
+          "const": "top-left"
+        },
+        "pixelCenters": {
+          "const": "integer"
+        },
+        "axes": {
+          "const": "x-right-y-down"
+        }
+      },
+      "required": [
+        "space",
+        "unit",
+        "origin",
+        "pixelCenters",
+        "axes"
+      ],
+      "additionalProperties": false
+    },
+    "searchRegion": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/rectangle"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELLED"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "status",
+        "reasonCodes"
+      ],
+      "additionalProperties": false
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/point"
+      },
+      "maxItems": 9
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "validPointCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "invalidPointCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "maximumEdgeSeparationPx": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "validPointCount",
+        "invalidPointCount",
+        "complete",
+        "maximumEdgeSeparationPx"
+      ],
+      "additionalProperties": false
+    },
+    "measurementId": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "schemaId",
+    "schemaVersion",
+    "capabilityProfile",
+    "measurementId",
+    "algorithm",
+    "source",
+    "coordinates",
+    "searchRegion",
+    "execution",
+    "points",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "rectangle": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "channel": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "VALID",
+            "INVALID"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "horizontalArm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rectangle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verticalArm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rectangle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reasonCodes",
+        "horizontalArm",
+        "verticalArm"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "VALID"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "horizontalArm": {
+                "$ref": "#/$defs/rectangle"
+              },
+              "verticalArm": {
+                "$ref": "#/$defs/rectangle"
+              },
+              "reasonCodes": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "horizontalArm": {
+                "type": "null"
+              },
+              "verticalArm": {
+                "type": "null"
+              },
+              "reasonCodes": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "enum": [
+            "P1",
+            "P2",
+            "P3",
+            "P4",
+            "P5",
+            "P6",
+            "P7",
+            "P8",
+            "P9"
+          ]
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "status": {
+          "enum": [
+            "VALID",
+            "INVALID"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "region": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rectangle"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channels": {
+          "type": "object",
+          "properties": {
+            "R": {
+              "$ref": "#/$defs/channel"
+            },
+            "G": {
+              "$ref": "#/$defs/channel"
+            },
+            "B": {
+              "$ref": "#/$defs/channel"
+            }
+          },
+          "required": [
+            "R",
+            "G",
+            "B"
+          ],
+          "additionalProperties": false
+        },
+        "separation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/separation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "row",
+        "column",
+        "status",
+        "reasonCodes",
+        "warnings",
+        "region",
+        "channels",
+        "separation"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "VALID"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "region": {
+                "$ref": "#/$defs/rectangle"
+              },
+              "separation": {
+                "$ref": "#/$defs/separation"
+              },
+              "reasonCodes": {
+                "maxItems": 0
+              },
+              "channels": {
+                "properties": {
+                  "R": {
+                    "properties": {
+                      "status": {
+                        "const": "VALID"
+                      }
+                    }
+                  },
+                  "G": {
+                    "properties": {
+                      "status": {
+                        "const": "VALID"
+                      }
+                    }
+                  },
+                  "B": {
+                    "properties": {
+                      "status": {
+                        "const": "VALID"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "separation": {
+                "type": "null"
+              },
+              "reasonCodes": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "separation": {
+      "type": "object",
+      "properties": {
+        "leftEdgeSpreadPx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rightEdgeSpreadPx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "topEdgeSpreadPx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bottomEdgeSpreadPx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximumEdgeSeparationPx": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "leftEdgeSpreadPx",
+        "rightEdgeSpreadPx",
+        "topEdgeSpreadPx",
+        "bottomEdgeSpreadPx",
+        "maximumEdgeSeparationPx"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "status": {
+                "const": "SUCCEEDED"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "points": {
+            "minItems": 9
+          },
+          "execution": {
+            "properties": {
+              "reasonCodes": {
+                "maxItems": 0
+              }
+            }
+          },
+          "searchRegion": {
+            "$ref": "#/$defs/rectangle"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "points": {
+            "maxItems": 0
+          },
+          "execution": {
+            "properties": {
+              "reasonCodes": {
+                "minItems": 1
+              }
+            }
+          },
+          "summary": {
+            "properties": {
+              "validPointCount": {
+                "const": 0
+              },
+              "invalidPointCount": {
+                "const": 0
+              },
+              "complete": {
+                "const": false
+              },
+              "maximumEdgeSeparationPx": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

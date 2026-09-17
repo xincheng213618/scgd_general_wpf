@@ -1,9 +1,11 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Core;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -64,9 +66,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : frame.Metadata.Exposure;
             float[] normalizedExposure = plan.GeneratesCie ? NormalizeExposure(effectiveExposure) : Array.Empty<float>();
             frame.PrepareForCalibration(calibrationTemplate, plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
+            RawColorTransformV1? colorTransform;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
-                cacheManager.Execute(
+                colorTransform = cacheManager.Execute(
                     new LocalCalibrationLayout(
                         lease.Metadata.Width,
                         lease.Metadata.Height,
@@ -83,6 +86,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 }
             }
             FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
+            if (colorTransform.HasValue)
+            {
+                ColorCalibrationSnapshot snapshot = ColorCalibrationSnapshot.Create(colorTransform.Value,
+                    frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, normalizedExposure, calibrationTemplate);
+                frame.ColorCalibration = snapshot;
+                string rawPath = frame.CvRawFilePath;
+                bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
+                if (!canReplay) rawPath = frame.Metadata.SourceFilePath;
+                if (!string.IsNullOrWhiteSpace(rawPath) && File.Exists(rawPath)
+                    && string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
+                    FlowNodeTiming.Run("SaveColorParameters", () => snapshot.Save(rawPath, canReplay));
+            }
             calibrationStage?.Complete();
         }
 

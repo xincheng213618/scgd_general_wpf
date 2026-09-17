@@ -123,3 +123,8 @@ public sealed class KbTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateKB());
 }
+
+public sealed class FindCrossTemplatePropertiesEditor : IPropertyEditor
+{
+    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new ColorVision.Engine.Templates.Jsons.FindCross.TemplateFindCross());
+}

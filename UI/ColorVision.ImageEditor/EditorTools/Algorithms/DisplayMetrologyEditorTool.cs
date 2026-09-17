@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -47,7 +47,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
     }
 
     public async Task ExecuteAsync(AlgorithmDescriptor descriptor, bool selectRectangle = false,
-        RectangleAlgorithmRoi? roi = null, ImageSelectionScope? expectedScope = null)
+        Rect? rectangleDip = null, ImageSelectionScope? expectedScope = null)
     {
         var owner = AlgorithmAnalysisWindowOwner.Capture();
         var inputs = new List<AlgorithmInput>();
@@ -86,8 +86,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
                 if (draw == null) throw new InvalidOperationException("当前窗口不支持矩形框选。");
                 SelectResult? selection = await new TransientRoiSelectionSession(draw, SelectShapeType.Rectangle).Start();
                 if (selection == null) return;
-                roi = new RectangleAlgorithmRoi(selection.Rect.X, selection.Rect.Y, selection.Rect.Width, selection.Rect.Height)
-                    { CoordinateSpace = AlgorithmCoordinateSpace.Dip };
+                rectangleDip = selection.Rect;
                 expectedScope = selection.SourceScope;
             }
             Guid document = image.DocumentInstanceId;
@@ -96,6 +95,8 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             if (!long.TryParse(source.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long revision))
                 throw new InvalidDataException("无法取得当前图像版本。");
             if (descriptor.Id == DisplayMetrologyIds.Eyebox) { source.Image.Dispose(); inputs.Clear(); }
+            RectangleAlgorithmRoi? roi = rectangleDip is Rect selected
+                ? new(selected.X * source.Image.DpiX / 96, selected.Y * source.Image.DpiY / 96, selected.Width * source.Image.DpiX / 96, selected.Height * source.Image.DpiY / 96) : null;
             invocation = AlgorithmInvocation.Create(descriptor.Id, parameters, roi);
             cancellation = ImageAlgorithmAnalysisSession.Begin(image, document, revision, Guid.NewGuid(), invocation.InvocationId);
             progress = new ImageAlgorithmProgressWindow(descriptor.Name, cancellation);
@@ -184,6 +185,19 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
             _presentation = DefaultAlgorithmAnalysisResultPresenter.CreatePresentation(result, title);
             var content = (DockPanel)DefaultAlgorithmAnalysisResultPresenter.CreateContent(_presentation);
             content.Background = SystemColors.WindowBrush;
+            if (result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration)
+            {
+                var export = new Button { Content = "导出九点 JSON", Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
+                export.Click += (_, _) =>
+                {
+                    var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "JSON|*.json", FileName = $"RgbCross_{result.InvocationId:N}.json", OverwritePrompt = false };
+                    if (dialog.ShowDialog(this) != true) return;
+                    try { RgbCrossMeasurementExporter.Export(result, dialog.FileName); }
+                    catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出九点 JSON"); }
+                };
+                DockPanel.SetDock(export, Dock.Top); content.Children.Insert(0, export);
+            }
+
             var tabs = content.Children.OfType<TabControl>().Single();
             var summary = new DataTable();
             summary.Columns.Add("指标"); summary.Columns.Add("数值"); summary.Columns.Add("单位");
@@ -273,7 +287,7 @@ public sealed class RgbCrossRectangleContextMenu(ImageProcessingContext image, D
             if (scope == null) return;
             Rect rect = rectangle.Rect;
             await new DisplayMetrologyEditorTool(image, draw).ExecuteAsync(descriptor,
-                roi: new RectangleAlgorithmRoi(rect.X, rect.Y, rect.Width, rect.Height) { CoordinateSpace = AlgorithmCoordinateSpace.Dip }, expectedScope: scope);
+                rectangleDip: rect, expectedScope: scope);
         };
         return [item];
     }

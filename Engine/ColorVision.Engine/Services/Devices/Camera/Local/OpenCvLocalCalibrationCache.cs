@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
 
-        public void Execute(
+        public RawColorTransformV1? Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
@@ -56,6 +56,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
             computeStage?.Complete();
+            if (!cachedContext.Files.Any(file => IsColorCalibration(file.CalibrationType))) return null;
+            RawColorTransformV1 transform = RawColorTransformV1.Create();
+            int snapshotResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(cachedContext.Context, in options, ref transform);
+            if (snapshotResult != OpenCVCalibration.CalibrationOk)
+                throw CreateNativeException("读取已执行的色度校正参数失败", snapshotResult, cachedContext.Context);
+            return transform;
         }
 
         internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)

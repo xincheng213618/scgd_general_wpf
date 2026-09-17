@@ -3,8 +3,8 @@ knowledge_id: "engine.cv-image-export"
 knowledge_type: "topic"
 status: "current"
 summary: "CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。"
-aliases: ["CVRAW转TIFF", "CVCIE导出", "ColorVision命令行导出", "Python批量转换CVRAW", "导出返回0但没有文件", "CVRawFileExporter", "VExportCIE", "ExportCVCIE", "SaveToTif"]
-code_paths: ["Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
+aliases: ["CVRAW转TIFF", "CVCIE导出", "TIFF参数元数据", "ColorVision命令行导出", "Python批量转换CVRAW", "导出返回0但没有文件", "CVRawFileExporter", "VExportCIE", "ExportCVCIE", "SaveToTif"]
+code_paths: ["Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs", "Engine/ColorVision.Engine/Media/FileCVCIE.cs", "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs", "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml", "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs", "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs", "UI/ColorVision.ImageEditor/Tif/Opentif.cs", "UI/ColorVision.UI/FileProcessorFactory.cs", "UI/ColorVision.UI/Shell/ArgumentParser.cs", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion"]
 test_paths: ["Test/ColorVision.UI.Tests/ExportCieTests.cs"]
 related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.skills"]
 ---
@@ -23,6 +23,12 @@ related: ["engine.file-io", "ui.image-editor", "algorithms.platform", "copilot.s
 4. 点击导出。工作在后台执行，期间表单和按钮禁用；成功提示后关闭窗口，异常提示后保留窗口。进度条不表示通道完成比例。
 
 名称默认取源文件主干，可在窗口中修改。目录可新建，最近导出位置通过 `recent-image-export-locations.json` 保存。导出会直接写目标文件，没有同名覆盖确认或整组回滚；需要保留已有文件时选择新的空目录。
+
+## TIFF 中的 ColorVision 参数
+
+TIFF 输出在标准 `ImageDescription`（Tag 270）中保存 `ColorVision.CVImage/1` JSON，不重新编码已经由 OpenCV 写出的像素。参数包含源类型、实际导出的 `Src` / `X` / `Y` / `Z` 通道、输入及关联文件名、CV 文件版本、行列数、位深、源通道数、NDPort、增益和各源通道曝光值；文件名只保存末级名称，不写本机完整路径。CVCIE 的 `Src` 图使用关联 CVRAW 自己的文件头参数，X/Y/Z 使用 CVCIE 文件头参数。
+
+再次用 ColorVision 打开这类 TIFF 时，解析成功的字段显示在图像信息的“图像元数据”分组中，键名以 `ColorVision.` 开头。普通第三方 TIFF、旧版 ColorVision TIFF、缺少 Tag 270、schema 不匹配或 JSON 损坏时只跳过 ColorVision 参数，不影响像素打开。PNG/JPEG 导出不包含这组 TIFF 参数；当前文件头也不包含算法模板或设备配置，因此这些上层参数不会被推断写入。
 
 ## 命令行导出
 

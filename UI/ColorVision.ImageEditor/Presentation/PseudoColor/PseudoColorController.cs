@@ -63,7 +63,14 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
                 _state.SliderValueEnd = 255;
             }
 
-            TryApplyAutoRange();
+            if (IsEnabledCore())
+            {
+                TryApplyAutoRange();
+            }
+            else
+            {
+                ResetSliderRange();
+            }
         }
 
         public void RefreshPreview()
@@ -162,7 +169,7 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
 
         public void OnAutoSetRangeChanged()
         {
-            if (!_owner.IsInitialized)
+            if (!_owner.IsInitialized || !IsEnabledCore())
             {
                 return;
             }
@@ -172,6 +179,10 @@ namespace ColorVision.ImageEditor.Presentation.PseudoColor
 
         public void OnPseudoToggleChanged()
         {
+            if (IsEnabledCore())
+            {
+                TryApplyAutoRange();
+            }
             RequestRender();
         }
 

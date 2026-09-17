@@ -26,6 +26,7 @@ public:
     void recordError(std::string message);
     [[nodiscard]] std::string lastError() const;
     [[nodiscard]] std::size_t itemCount() const;
+    bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const;
 
 private:
     mutable std::mutex mutex_;

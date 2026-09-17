@@ -396,7 +396,11 @@ public sealed partial class DisplayMetrologyProvider
         if (parameters.MaximumEdgeSeparationPixels is double limit)
             Metrics(artifacts, ("configured_edge_separation_limit", limit, "px"), ("overall_threshold_result", overallPass ? 1 : 0, "1=OK;0=NG"));
         artifacts.Add(new AlgorithmGeometryArtifact("rgb-cross-regions", AlgorithmCoordinateSpace.Pixel, shapes));
-        artifacts.Add(new AlgorithmOverlayArtifact("rgb-cross-measurements", AlgorithmOverlayLifetime.Transient, overlayItems));
+        artifacts.Add(new AlgorithmOverlayArtifact("rgb-cross-measurements", AlgorithmOverlayLifetime.Persistent, overlayItems));
+        artifacts.Add(new AlgorithmStructuredDataArtifact("rgb-cross-measurement", RgbCrossMeasurementExporter.SchemaId,
+            RgbCrossMeasurementExporter.Create(context.Invocation.InvocationId, context.Descriptor.Version.ToString(),
+                context.Inputs[0].SourceRevision ?? context.Invocation.InvocationId.ToString(), input.Width, input.Height,
+                search, artifacts)));
     }
 
     private static void AddCrossOverlay(

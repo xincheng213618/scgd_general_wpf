@@ -4488,6 +4488,7 @@
       "aliases": [
         "CVRAW转TIFF",
         "CVCIE导出",
+        "TIFF参数元数据",
         "ColorVision命令行导出",
         "Python批量转换CVRAW",
         "导出返回0但没有文件",
@@ -4500,8 +4501,11 @@
         "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs",
         "Engine/ColorVision.Engine/Media/FileCVCIE.cs",
         "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs",
+        "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs",
         "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs",
+        "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs",
+        "UI/ColorVision.ImageEditor/Tif/Opentif.cs",
         "UI/ColorVision.UI/FileProcessorFactory.cs",
         "UI/ColorVision.UI/Shell/ArgumentParser.cs",
         "ColorVision/App.xaml.cs",
@@ -4520,6 +4524,7 @@
         "ColorVision",
         "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor",
         "UI/ColorVision.UI"
       ],
       "domain": "engine",
@@ -4785,8 +4790,12 @@
       "knowledge_id": "engine.file-io",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。",
+      "summary": "CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。",
       "aliases": [
+        "CVFileMetadata",
+        "RAW色度参数",
+        "动态参数覆盖",
+        "HasCieMeasurements",
         "用户校正",
         "LumFourColorRecentImages",
         "CVCIE文件为什么打不开",
@@ -4813,6 +4822,11 @@
         "校正文件备份"
       ],
       "code_paths": [
+        "Engine/ColorVision.FileIO/CVFileMetadata.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/ColorCalibrationSnapshot.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
+        "Engine/ColorVision.Engine/Services/POI/RawColorMeasurementSource.cs",
+        "Native/opencv_helper/algorithm/calibration/calibration_raw_color.cpp",
         "Engine/ColorVision.FileIO/CVFileUtil.cs",
         "Engine/ColorVision.FileIO/CVCIEFile.cs",
         "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",
@@ -4844,6 +4858,10 @@
         "Plugins/Conoscope/ConoscopeDocument.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CVFileMetadataTests.cs",
+        "Test/ColorVision.UI.Tests/RawColorCalibrationTests.cs",
+        "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
+        "Test/opencv_helper_test/test_calibration.cpp",
         "Test/ColorVision.UI.Tests/ExportCieTests.cs",
         "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
         "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs",
@@ -4868,6 +4886,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/ColorVision.FileIO",
+        "Native/opencv_helper",
         "Plugins/Conoscope",
         "UI/ColorVision.ImageEditor"
       ],

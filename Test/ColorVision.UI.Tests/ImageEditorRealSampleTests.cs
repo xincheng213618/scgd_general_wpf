@@ -5,7 +5,9 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -123,6 +125,139 @@ public sealed class ImageEditorRealSampleTests(ITestOutputHelper output)
         }
 
         File.WriteAllText(Path.Combine(outputDirectory, "sample-results.json"), JsonSerializer.Serialize(reports, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    [ImageEditorSamplesFact]
+    [Trait("Category", "LocalImageSamples")]
+    public async Task CvRawChannelSwitchesKeepTheLoadedSourceAndReportTimings()
+    {
+        string[] samples = Environment.GetEnvironmentVariable(SamplesEnvironmentVariable)!
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(Path.GetFullPath)
+            .Where(path => string.Equals(Path.GetExtension(path), ".cvraw", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        Assert.NotEmpty(samples);
+
+        foreach (string sample in samples)
+        {
+            Assert.True(File.Exists(sample), $"Sample does not exist: {sample}");
+            using SampleView fixture = new();
+            ColorVision.ImageEditor.EditorTools.PseudoColor.PseudoColorDefaultConfig.Current.IsAutoSetRangeByDefault = true;
+            double processBaselineMiB = CollectPrivateMemoryMiB();
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            await fixture.OpenAsync(sample);
+            stopwatch.Stop();
+            double openMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+            double openedPrivateMemoryMiB = CollectPrivateMemoryMiB();
+            Assert.False(WpfTestHost.Invoke(() => HasNativeFrameCache(fixture.View)));
+
+            (ImageSource Source, long Revision, ImageLayerDescriptor[] Layers) baseline = WpfTestHost.Invoke(() =>
+                (fixture.View.Document.Source!, fixture.View.Document.Revision,
+                    fixture.View.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>().ToArray()));
+            ImageLayerDescriptor[] rgbLayers = baseline.Layers.Where(layer => layer.SourceChannelIndex.HasValue).ToArray();
+            Assert.Equal(new[] { "red", "green", "blue" }, rgbLayers.Select(layer => layer.Id).ToArray());
+            ImageLayerDescriptor composite = Assert.Single(baseline.Layers, layer => layer.Id == "composite");
+            PixelFormat expectedChannelFormat = WpfTestHost.Invoke(() =>
+            {
+                BitmapSource sourceBitmap = Assert.IsAssignableFrom<BitmapSource>(baseline.Source);
+                return sourceBitmap.Format.BitsPerPixel / 3 == 16 ? PixelFormats.Gray16 : PixelFormats.Gray8;
+            });
+
+            int reloadCount = 0;
+            EventHandler<ImageViewImageSourceLoadedEventArgs> loaded = (_, _) => Interlocked.Increment(ref reloadCount);
+            WpfTestHost.Invoke(() => fixture.View.ImageSourceLoaded += loaded);
+            List<object> channelTimings = [];
+            try
+            {
+                foreach (ImageLayerDescriptor layer in rgbLayers)
+                {
+                    stopwatch.Restart();
+                    await fixture.SelectLayerAsync(layer);
+                    stopwatch.Stop();
+                    double elapsedMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+                    WpfTestHost.Invoke(() =>
+                    {
+                        Assert.Equal(baseline.Revision, fixture.View.Document.Revision);
+                        Assert.Same(baseline.Source, fixture.View.Document.Source);
+                        Assert.Equal(layer.Id, fixture.View.SelectedLayer?.Id);
+                        Assert.NotSame(baseline.Source, fixture.View.Presentation.DisplaySource);
+                        BitmapSource channel = Assert.IsAssignableFrom<BitmapSource>(fixture.View.Presentation.DisplaySource);
+                        Assert.Equal(expectedChannelFormat, channel.Format);
+                    });
+                    channelTimings.Add(new { layer.Id, Milliseconds = Math.Round(elapsedMilliseconds, 3) });
+                }
+                Assert.True(WpfTestHost.Invoke(() => HasNativeFrameCache(fixture.View)));
+                double switchedPrivateMemoryMiB = CollectPrivateMemoryMiB();
+
+                stopwatch.Restart();
+                await fixture.View.Dispatcher.InvokeAsync(() => fixture.View.ComboBoxLayers.SelectedItem = composite);
+                stopwatch.Stop();
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Equal(baseline.Revision, fixture.View.Document.Revision);
+                    Assert.Same(baseline.Source, fixture.View.Document.Source);
+                    Assert.Same(baseline.Source, fixture.View.Presentation.DisplaySource);
+                    Assert.Null(fixture.View.FunctionImage);
+                });
+
+                Assert.Equal(0, Volatile.Read(ref reloadCount));
+                long sourceRevision = baseline.Revision;
+                double compositeMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+                await fixture.View.Dispatcher.InvokeAsync(fixture.View.Clear);
+                WpfTestHost.Invoke(() =>
+                {
+                    Assert.Null(fixture.View.Document.Source);
+                    Assert.Null(fixture.View.Presentation.DisplaySource);
+                    Assert.Null(fixture.View.FunctionImage);
+                    Assert.False(HasNativeFrameCache(fixture.View));
+                });
+                baseline = default;
+                rgbLayers = null!;
+                composite = null!;
+                double clearedPrivateMemoryMiB = CollectPrivateMemoryMiB();
+                output.WriteLine(JsonSerializer.Serialize(new
+                {
+                    Sample = sample,
+                    FileMiB = Math.Round(new FileInfo(sample).Length / 1024d / 1024d, 3),
+                    OpenMilliseconds = Math.Round(openMilliseconds, 3),
+                    Channels = channelTimings,
+                    CompositeMilliseconds = Math.Round(compositeMilliseconds, 3),
+                    SourceRevision = sourceRevision,
+                    ReloadCount = reloadCount,
+                    PrivateMemoryMiB = new
+                    {
+                        Baseline = processBaselineMiB,
+                        Opened = openedPrivateMemoryMiB,
+                        OpenIncrement = Math.Round(openedPrivateMemoryMiB - processBaselineMiB, 3),
+                        Switched = switchedPrivateMemoryMiB,
+                        SwitchIncrement = Math.Round(switchedPrivateMemoryMiB - openedPrivateMemoryMiB, 3),
+                        Cleared = clearedPrivateMemoryMiB,
+                        RetainedAfterClear = Math.Round(clearedPrivateMemoryMiB - processBaselineMiB, 3),
+                    },
+                }));
+            }
+            finally
+            {
+                WpfTestHost.Invoke(() => fixture.View.ImageSourceLoaded -= loaded);
+            }
+        }
+    }
+
+    private static bool HasNativeFrameCache(ImageView view)
+    {
+        FieldInfo field = view.Document.GetType().GetField("_cachedSource", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        return field.GetValue(view.Document) != null;
+    }
+
+    private static double CollectPrivateMemoryMiB()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        using Process process = Process.GetCurrentProcess();
+        process.Refresh();
+        return Math.Round(process.PrivateMemorySize64 / 1024d / 1024d, 3);
     }
 
     private static async Task ExportAndCompareAsync(Capture capture, string outputPath)
