@@ -1,4 +1,4 @@
-using ColorVision.Engine.FlowProcessing.Diagnostics;
+﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -27,6 +27,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ["本地校正+实时 POI"] = "校正+实时 POI",
             ["本地相机取图"] = "相机取图",
             ["本地十字定位"] = "十字定位",
+            ["九点十字 RGB 分离"] = "十字 RGB 分离",
             ["本地发光区定位(V2)"] = "发光区定位",
             ["本地FOV计算(V2)"] = "FOV计算",
             ["本地点阵畸变(V2)"] = "点阵畸变",

@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ public static class RgbCrossMeasurementExporter
     public const string SchemaVersion = "1.0.0";
 
     internal static JsonElement Create(Guid id, string version, string imageId, int width, int height,
-        Rect search, IEnumerable<AlgorithmArtifact> artifacts)
+        Rect search, int rows, int columns, IEnumerable<AlgorithmArtifact> artifacts)
     {
         var table = artifacts.OfType<AlgorithmTableArtifact>().Single(a => a.Name == "RGB-cross-separation");
         var shapes = artifacts.OfType<AlgorithmGeometryArtifact>().Single(a => a.Name == "rgb-cross-regions").Geometries.ToDictionary(g => g.Id);
@@ -58,9 +58,9 @@ public static class RgbCrossMeasurementExporter
                 ["channels"] = channels, ["separation"] = separation
             });
         }
-        return JsonSerializer.SerializeToElement(new JsonObject
+        var output = new JsonObject
         {
-            ["schemaId"] = SchemaId, ["schemaVersion"] = SchemaVersion, ["capabilityProfile"] = "rgb-cross.measurement.v1",
+            ["schemaId"] = SchemaId, ["schemaVersion"] = rows == 3 && columns == 3 ? SchemaVersion : "1.1.0", ["capabilityProfile"] = "rgb-cross.measurement.v1",
             ["measurementId"] = id.ToString(),
             ["algorithm"] = new JsonObject { ["id"] = DisplayMetrologyIds.RgbCrossRegistration.ToString(), ["version"] = version },
             ["source"] = new JsonObject { ["imageId"] = imageId, ["width"] = width, ["height"] = height, ["sha256"] = null },
@@ -68,13 +68,15 @@ public static class RgbCrossMeasurementExporter
             ["searchRegion"] = Box(search.X, search.Y, search.Width, search.Height),
             ["execution"] = new JsonObject { ["status"] = "SUCCEEDED", ["reasonCodes"] = new JsonArray() },
             ["points"] = points,
-            ["summary"] = new JsonObject { ["validPointCount"] = maxima.Count, ["invalidPointCount"] = 9 - maxima.Count, ["complete"] = maxima.Count == 9, ["maximumEdgeSeparationPx"] = maxima.Count == 0 ? null : maxima.Max() }
-        });
+            ["summary"] = new JsonObject { ["validPointCount"] = maxima.Count, ["invalidPointCount"] = rows * columns - maxima.Count, ["complete"] = maxima.Count == rows * columns, ["maximumEdgeSeparationPx"] = maxima.Count == 0 ? null : maxima.Max() }
+        };
+        if (rows != 3 || columns != 3) output["grid"] = new JsonObject { ["rows"] = rows, ["columns"] = columns };
+        return JsonSerializer.SerializeToElement(output);
     }
 
     public static void Export(AlgorithmResult result, string path)
     {
-        if (result.Status != AlgorithmResultStatus.Succeeded) throw new InvalidOperationException("不能导出未完成的九点测量。");
+        if (result.Status != AlgorithmResultStatus.Succeeded) throw new InvalidOperationException("不能导出未完成的十字测量。");
         var data = result.Artifacts.OfType<AlgorithmStructuredDataArtifact>().Single(a => a.Schema == SchemaId).Data;
         Write(data, path);
     }

@@ -1,4 +1,4 @@
-#include "rgb_cross.h"
+﻿#include "rgb_cross.h"
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -71,6 +71,15 @@ int main(int argc, char **argv)
             for (auto &p : result["points"])
                 Check(std::abs(p["separation"]["maximumEdgeSeparationPx"].get<double>() - 2) < 1e-9, "known shift");
             Check(run({50, 50, 300, 300})["points"] == result["points"], "ROI global coordinates");
+            Options singleOptions; singleOptions.rows = 1; singleOptions.columns = 1;
+            auto single = Measure(image, {50,50,100,100}, singleOptions, NewId(), "single");
+            Check(single["points"].size() == 1 && single["summary"]["complete"] == true && single["grid"]["rows"] == 1, "single layout");
+            Check(single["points"][0]["channels"] == result["points"][0]["channels"], "single ROI global coordinates");
+            auto wrongLayout = Measure(image, {}, singleOptions, NewId(), "too-many");
+            Check(wrongLayout["summary"]["complete"] == false && wrongLayout["points"].size() == 1, "extra crosses rejected");
+            Options rectangleOptions; rectangleOptions.rows = 2; rectangleOptions.columns = 3;
+            auto rectangle = Measure(image, {50,50,300,200}, rectangleOptions, NewId(), "2x3");
+            Check(rectangle["points"].size() == 6 && rectangle["summary"]["complete"] == true, "rectangular layout");
             std::vector<std::uint8_t> bytes8(400 * 400 * 3), bytes32(400 * 400 * 12);
             for (std::size_t i = 0; i < bytes8.size(); i++)
             {
@@ -85,6 +94,21 @@ int main(int argc, char **argv)
             Check(Measure({bytes32.data(), bytes32.size(), 4800, 400, 400, 32, 3}, {}, {}, NewId(),
                           "float")["summary"]["maximumEdgeSeparationPx"] == 2,
                   "float shift");
+            for (bool connected : {true, false})
+            {
+                data = Synthetic(400);
+                for (int y = 87; y <= 91; y++)
+                    for (int x = 101; x <= 103; x++)
+                    {
+                        unsigned value = x == 102 ? (connected ? 26000 : 500) : 39000;
+                        auto at = (static_cast<std::size_t>(y) * 400 + x) * 6;
+                        data[at] = value & 255; data[at + 1] = value >> 8;
+                    }
+                image.data = data.data();
+                auto shoulders = run();
+                Check((shoulders["points"][0]["status"] == "VALID") == connected, "connected shoulder versus dark gap");
+                if (!connected) Check(shoulders["points"][0]["separation"].is_null(), "dark gap cannot become zero");
+            }
             data = Synthetic(400, true);
             image.data = data.data();
             auto invalid = run();
@@ -127,8 +151,8 @@ int main(int argc, char **argv)
                 std::ofstream file(argv[2]);
                 file << result.dump(2);
             }
-            std::cout << "PASS: 9 native checks (16-bit shift, ROI, 8-bit, float32, missing channel, black image, ROI "
-                         "bounds, buffer, options)\n";
+            std::cout << "PASS: 15 native checks (16-bit shift, ROI, 8-bit, float32, missing channel, black image, ROI "
+                         "bounds, buffer, options, connected shoulder, dark gap, single layout, single ROI, extra crosses, rectangular layout)\n";
             return 0;
         }
         if (argc != 9 && argc != 13)

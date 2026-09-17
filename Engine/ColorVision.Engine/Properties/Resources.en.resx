@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -5101,4 +5101,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumTools" xml:space="preserve"><value>Spectrometer tools</value></data>
   <data name="SpectrumCorrectionDevice" xml:space="preserve"><value>Select the device for correction</value></data>
   <data name="SpectrumCorrectionNeedsDevice" xml:space="preserve"><value>First assign this SN to a spectrometer in device configuration.</value></data>
+  <data name="SpectrumEditorTitle" xml:space="preserve"><value>Edit spectrometer configuration</value></data>
+  <data name="SpectrumEditorLicenseHint" xml:space="preserve"><value>Licenses match the SN above. Uploads are saved immediately and are not undone when configuration editing is canceled.</value></data>
+  <data name="SpectrumEditorUpload" xml:space="preserve"><value>Upload license</value></data>
+  <data name="SpectrumEditorManage" xml:space="preserve"><value>Manage licenses</value></data>
+  <data name="SpectrumEditorSerial" xml:space="preserve"><value>Serial connection</value></data>
+  <data name="SpectrumEditorConnectionHint" xml:space="preserve"><value>Use USB / the default connection unless your device requires a serial port. Enable serial connection to select its port and baud rate.</value></data>
+  <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>Select a valid port (COM1–COM256), or turn off serial connection to use the default connection.</value></data>
+  <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>Baud rate must be greater than zero.</value></data>
+  <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>View discovery details</value></data>
 </root>

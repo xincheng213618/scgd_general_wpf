@@ -29,7 +29,7 @@ internal static class DisplayMetrologyCatalog
     internal static void Register(AlgorithmCatalog catalog)
     {
         Add(catalog, DisplayMetrologyIds.RgbRegistration, "RGB 图案套色", new RgbRegistrationParameters(), 1, 1, 1);
-        Add(catalog, DisplayMetrologyIds.RgbCrossRegistration, "九点十字 RGB 分离", new RgbCrossRegistrationParameters(), 1, 1, 2);
+        Add(catalog, DisplayMetrologyIds.RgbCrossRegistration, "十字 RGB 分离", new RgbCrossRegistrationParameters(), 1, 1, 2);
         Add(catalog, DisplayMetrologyIds.Ghost, "鬼影与杂散光评价", new GhostMeasurementParameters(), 1, 1, 3);
         Add(catalog, DisplayMetrologyIds.Defects, "亮暗点 / 线缺陷 / Mura", new DisplayDefectParameters(), 1, 1, 4);
         Add(catalog, DisplayMetrologyIds.Binocular, "左右眼对准与信号一致性", new BinocularQualityParameters(), 2, 2, 5);
@@ -44,7 +44,7 @@ internal static class DisplayMetrologyCatalog
             Description: p.GetCustomAttribute<DescriptionAttribute>()?.Description ?? p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName)).ToArray();
         bool requiresColor = id == DisplayMetrologyIds.RgbRegistration || id == DisplayMetrologyIds.RgbCrossRegistration;
         var formats = Enum.GetValues<AlgorithmImageFormat>().Where(f => !requiresColor || f.Channels() >= 3).ToHashSet();
-        catalog.Register(new AlgorithmDescriptor(id, id == DisplayMetrologyIds.RgbCrossRegistration ? new AlgorithmVersion(1, 2, 0) : new AlgorithmVersion(1, 0, 0), name, "显示计量",
+        catalog.Register(new AlgorithmDescriptor(id, id == DisplayMetrologyIds.RgbCrossRegistration ? new AlgorithmVersion(1, 4, 0) : new AlgorithmVersion(1, 0, 0), name, "显示计量",
             "离线图案评价；输出像素坐标与相对信号，不附带客户 Recipe、量产合格判定或绝对光度标定。", parameters.GetType(),
             new AlgorithmParameterSchema(1, fields, AlgorithmJson.ToElement(parameters)), formats,
             Capabilities | (id == DisplayMetrologyIds.RgbCrossRegistration ? AlgorithmHostCapabilities.Roi : AlgorithmHostCapabilities.None) | (maximum > 1 ? AlgorithmHostCapabilities.MultiInput : 0), minimum, maximum,
@@ -53,9 +53,7 @@ internal static class DisplayMetrologyCatalog
         {
             ResultSemantics = AlgorithmResultSemantics.Analysis,
             Presentation = new AlgorithmPresentationMetadata(InteractiveEntries: id == DisplayMetrologyIds.RgbCrossRegistration
-                ? [new AlgorithmInteractivePresentation(id.Value, order, name + "（框选矩形）...")
-                    { Group = new AlgorithmInteractiveGroupPresentation("AlgorithmsCall", 104, "算法调用", "Algorithm_AlgorithmCalls") },
-                   new AlgorithmInteractivePresentation(id.Value + ".whole-image", order + 1, name + "（全图）...")
+                ? [new AlgorithmInteractivePresentation(id.Value, order, name + "...")
                     { Group = new AlgorithmInteractiveGroupPresentation("AlgorithmsCall", 104, "算法调用", "Algorithm_AlgorithmCalls") }]
                 : [new AlgorithmInteractivePresentation(id.Value, order, name)
                     { Group = new AlgorithmInteractiveGroupPresentation("DisplayMetrology", 45, "显示计量") }]),

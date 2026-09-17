@@ -64,7 +64,7 @@ public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
     [Category("十字检测"), DisplayName("轴带支持阈值"), Description("相对最强行/列强度投影检查唯一窄轴带；最终边缘由独立臂截面测量。")]
     public double AxisBandThreshold { get; set; } = 0.5;
 
-    [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂有效截面至少占采样截面的比例；属于检测参数，不是产品合格阈值。")]
+    [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂有效截面至少占采样截面的比例。")]
     public double MinimumArmCoverage { get; set; } = 0.5;
 
     [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("三通道对应水平/垂直边缘的最大极差；留空只测量，指定产品规格后才给出 OK/NG。")]
@@ -79,8 +79,6 @@ public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
     public override AlgorithmValidationResult Validate()
     {
         var result = base.Validate();
-        if (Columns != 3 || Rows != 3)
-            result.Add("Grid", "nine_point_grid_required", "九点十字 RGB 分离固定使用 3×3 网格。");
         Range(result, nameof(TargetThreshold), TargetThreshold, 0.1, 0.9);
         Range(result, nameof(MinimumArmSpanFraction), MinimumArmSpanFraction, 0.1, 0.9);
         Range(result, nameof(AxisBandThreshold), AxisBandThreshold, 0.1, 0.9);

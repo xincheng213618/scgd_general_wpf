@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -73,7 +73,7 @@ public sealed partial class DisplayMetrologyProvider
         for (int i = 0; i < signal.Length; i++) signal[i] = Math.Max(channels[0][i], Math.Max(channels[1][i], channels[2][i]));
         double minimum = signal.Min(), contrast = signal.Max() - minimum;
         candidateCount = 0;
-        CrossSlot[] Reject(string reason) => Enumerable.Range(0, 9).Select(_ => new CrossSlot(default, default, reason)).ToArray();
+        CrossSlot[] Reject(string reason) => Enumerable.Range(0, p.Rows * p.Columns).Select(_ => new CrossSlot(default, default, reason)).ToArray();
         if (contrast < p.MinimumContrast) return Reject("low_contrast");
         var mask = new byte[signal.Length];
         for (int i = 0; i < signal.Length; i++) if (signal[i] >= minimum + contrast * p.TargetThreshold) mask[i] = 255;
@@ -83,8 +83,8 @@ public sealed partial class DisplayMetrologyProvider
                 Math.Min(c.Bounds.Height * step, sourceHeight - c.Bounds.Y * step))).ToArray();
         candidateCount = candidates.Length;
         if (candidates.Length == 0) return Reject("cross_missing");
-        // An axis-aligned array must have three disjoint row envelopes and three disjoint
-        // column envelopes. Overlapping/diagonal layouts do not get arbitrary sorted labels.
+        // An axis-aligned array must have the configured number of disjoint row
+        // and column envelopes. Overlapping/diagonal layouts do not get arbitrary sorted labels.
         List<List<Rect>> Group(bool horizontal)
         {
             var groups = new List<List<Rect>>();
@@ -99,16 +99,16 @@ public sealed partial class DisplayMetrologyProvider
             return groups;
         }
         var rows = Group(false); var columns = Group(true);
-        if (rows.Count != 3 || columns.Count != 3)
-            return Reject(candidates.Length > 9 ? "duplicate_or_extra_candidates" : candidates.Length < 9 ? "missing_array_structure" : "array_order_ambiguous");
-        var slots = new CrossSlot[9];
-        for (int r = 0; r < 3; r++)
-            for (int c = 0; c < 3; c++)
+        if (rows.Count != p.Rows || columns.Count != p.Columns)
+            return Reject(candidates.Length > p.Rows * p.Columns ? "duplicate_or_extra_candidates" : candidates.Length < p.Rows * p.Columns ? "missing_array_structure" : "array_order_ambiguous");
+        var slots = new CrossSlot[p.Rows * p.Columns];
+        for (int r = 0; r < p.Rows; r++)
+            for (int c = 0; c < p.Columns; c++)
             {
                 Rect[] matches = rows[r].Intersect(columns[c]).ToArray();
                 if (matches.Length != 1)
                 {
-                    slots[r * 3 + c] = new(default, default, matches.Length == 0 ? "cross_missing" : "duplicate_crosses");
+                    slots[r * p.Columns + c] = new(default, default, matches.Length == 0 ? "cross_missing" : "duplicate_crosses");
                     continue;
                 }
                 Rect evidence = matches[0];
@@ -121,7 +121,7 @@ public sealed partial class DisplayMetrologyProvider
                 if (evidence.X == 0 || evidence.Y == 0 || evidence.Right >= sourceWidth || evidence.Bottom >= sourceHeight) reason = "cross_clipped";
                 roi.X += search.X; roi.Y += search.Y;
                 evidence.X += search.X; evidence.Y += search.Y;
-                slots[r * 3 + c] = new(roi, evidence, reason);
+                slots[r * p.Columns + c] = new(roi, evidence, reason);
             }
         return slots;
     }
@@ -191,14 +191,14 @@ public sealed partial class DisplayMetrologyProvider
                         ("status", status), ("thresholdRunCount", runs), ("firstEdge_px", first), ("lastEdge_px", last)));
                     double low = profile.Min(), high = profile.Max();
                     if (high - low < p.MinimumContrast) { Diagnostic("low_contrast", 0); continue; }
-                    var band = FindAxisBand(profile.Select(v => v - low).ToArray(), p.TargetThreshold);
+                    var band = FindArmBand(profile.Select(v => v - low).ToArray(), p.TargetThreshold);
                     if (!band.Valid) { Diagnostic("ambiguous_arm_edges", band.RunCount); ambiguous++; continue; }
                     if (band.First == 0 || band.Last == transverseLength - 1) return (false, "cross_clipped", 0, 0, 0, rejected);
                     if (band.Last - band.First >= transverseLength / 2) return (false, "not_a_cross", 0, 0, 0, rejected);
                     double level = low + (high - low) * p.TargetThreshold;
                     double first = band.First - 1 + (level - profile[band.First - 1]) / (profile[band.First] - profile[band.First - 1]);
                     double last = band.Last + (profile[band.Last] - level) / (profile[band.Last] - profile[band.Last + 1]);
-                    Diagnostic("valid", 1, first + (alongHorizontal ? roi.Y : roi.X), last + (alongHorizontal ? roi.Y : roi.X));
+                    Diagnostic(band.RunCount > 1 ? "valid_connected_shoulder" : "valid", band.RunCount, first + (alongHorizontal ? roi.Y : roi.X), last + (alongHorizontal ? roi.Y : roi.X));
                     firstEdges.Add(first); lastEdges.Add(last); count++;
                 }
                 rejected += attempted - count;
@@ -233,11 +233,26 @@ public sealed partial class DisplayMetrologyProvider
         return (maximum > 0 && runs == 1, first, last, runs);
     }
 
+    // Edge measurement stays at the requested threshold. Hysteresis only decides
+    // whether multiple crossings belong to one luminous arm: its envelope must stay
+    // connected at half that threshold. A dark-separated secondary lobe is rejected.
+    private static (bool Valid, int First, int Last, int RunCount) FindArmBand(double[] scores, double thresholdFraction)
+    {
+        var band = FindAxisBand(scores, thresholdFraction);
+        if (band.Valid || band.RunCount < 2) return band;
+        double threshold = scores.Max() * thresholdFraction;
+        int first = Array.FindIndex(scores, value => value >= threshold);
+        int last = Array.FindLastIndex(scores, value => value >= threshold);
+        for (int i = first; i <= last; i++)
+            if (scores[i] < threshold * 0.5) return band;
+        return (true, first, last, band.RunCount);
+    }
+
     internal static Rect ResolveCrossSearchRegion(AlgorithmRoi? roi, AlgorithmImageBuffer input)
     {
         if (roi == null) return new Rect(0, 0, input.Width, input.Height);
         if (roi is not RectangleAlgorithmRoi rectangle || !rectangle.Validate().IsValid)
-            throw new MeasurementException("rectangle_roi_required", "九点十字仅支持有效的矩形搜索区域。");
+            throw new MeasurementException("rectangle_roi_required", "十字仅支持有效的矩形搜索区域。");
         AlgorithmPoint start = AlgorithmCoordinates.ToPixel(new(rectangle.X, rectangle.Y), rectangle.CoordinateSpace, input.DpiX, input.DpiY);
         AlgorithmPoint end = AlgorithmCoordinates.ToPixel(new(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height), rectangle.CoordinateSpace, input.DpiX, input.DpiY);
         if (start.X < 0 || start.Y < 0 || end.X > input.Width || end.Y > input.Height || !double.IsFinite(end.X) || !double.IsFinite(end.Y))
@@ -245,7 +260,7 @@ public sealed partial class DisplayMetrologyProvider
         int left = (int)Math.Floor(start.X), top = (int)Math.Floor(start.Y);
         int right = (int)Math.Ceiling(end.X), bottom = (int)Math.Ceiling(end.Y);
         if (right - left < 32 || bottom - top < 32)
-            throw new MeasurementException("roi_too_small", "九点十字搜索区域至少为 32×32 像素。");
+            throw new MeasurementException("roi_too_small", "十字搜索区域至少为 32×32 像素。");
         return new Rect(left, top, right - left, bottom - top);
     }
 
@@ -329,14 +344,14 @@ public sealed partial class DisplayMetrologyProvider
             {
                 shapes.Add(Box(cellId, bounds));
                 string color = !valid ? "#FFFFA500" : !parameters.MaximumEdgeSeparationPixels.HasValue ? "#FF00BFFF" : passed ? "#FF36E36E" : "#FFFF3030";
-                overlayItems.Add(new AlgorithmOverlayItem(cellId, new AlgorithmOverlayStyle(color, null, 1.5, $"P{index + 1} {result}")));
+                overlayItems.Add(new AlgorithmOverlayItem(cellId, new AlgorithmOverlayStyle(color, null, 1.5, $"P{index + 1} {maximumEdgeSeparation?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px")));
             }
 
             CrossTarget red = targets[0];
             CrossTarget green = targets[1];
             CrossTarget blue = targets[2];
             rows.Add(Row(
-                ("point", $"P{index + 1}"), ("row", index / 3 + 1), ("column", index % 3 + 1),
+                ("point", $"P{index + 1}"), ("row", index / parameters.Columns + 1), ("column", index % parameters.Columns + 1),
                 ("valid", valid), ("reason", reason), ("result", result),
                 ("warning", targets.Any(t => t.SaturatedSamples > 0) ? "saturated_samples_threshold_edges_may_be_biased" : ""),
                 ("rHorizontalCoverage", red.HorizontalCoverage), ("rVerticalCoverage", red.VerticalCoverage),
@@ -400,7 +415,7 @@ public sealed partial class DisplayMetrologyProvider
         artifacts.Add(new AlgorithmStructuredDataArtifact("rgb-cross-measurement", RgbCrossMeasurementExporter.SchemaId,
             RgbCrossMeasurementExporter.Create(context.Invocation.InvocationId, context.Descriptor.Version.ToString(),
                 context.Inputs[0].SourceRevision ?? context.Invocation.InvocationId.ToString(), input.Width, input.Height,
-                search, artifacts)));
+                search, parameters.Rows, parameters.Columns, artifacts)));
     }
 
     private static void AddCrossOverlay(

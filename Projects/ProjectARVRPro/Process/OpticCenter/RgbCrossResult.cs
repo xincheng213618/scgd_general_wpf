@@ -1,4 +1,5 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using ProjectARVRPro.Recipe;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
 using System.IO;
@@ -16,11 +17,15 @@ public sealed class RgbCrossPoint
     public RgbCrossRectangle? Region { get; set; }
     public List<RgbCrossChannel> Channels { get; set; } = [];
     public double? MaximumEdgeSeparation { get; set; }
+    public double? JudgedEdgeSeparation { get; set; }
     public string Judgment { get; set; } = "MEASURED";
 }
 
 public sealed class RgbCrossViewResult
 {
+    public int GridRows { get; set; } = 3;
+    public int GridColumns { get; set; } = 3;
+    public string ExportName { get; set; } = "RgbCross";
     public int? SourceMasterId { get; set; }
     public string MeasurementId { get; set; } = "";
     public string AlgorithmVersion { get; set; } = "";
@@ -31,7 +36,7 @@ public sealed class RgbCrossViewResult
     public string JsonFile { get; set; } = "";
     public string JsonSha256 { get; set; } = "";
     public string SourceImageFile { get; set; } = "";
-    public double? AppliedLimit { get; set; }
+    public RecipeBase? AppliedRecipe { get; set; }
     public string Status { get; set; } = "MEASURED";
     public string Error { get; set; } = "";
     public List<RgbCrossPoint> Points { get; set; } = [];
@@ -55,9 +60,9 @@ internal static class RgbCrossResultParser
         Dictionary<string, RgbCrossRectangle> geometry = new(StringComparer.Ordinal);
         if (portable)
         {
-            Require(Text(root, "schemaId") == "colorvision.rgb-cross-measurement" && Text(root, "schemaVersion") == "1.0.0", "不支持的十字测量协议版本。");
+            Require(Text(root, "schemaId") == "colorvision.rgb-cross-measurement" && (Text(root, "schemaVersion") is "1.0.0" or "1.1.0"), "不支持的十字测量协议版本。");
             Require(Text(root, "capabilityProfile") == "rgb-cross.measurement.v1", "不支持的测量能力类型。");
-            Require(Text(root["algorithm"]!, "id") == AlgorithmId, "不是九点十字 RGB 结果。");
+            Require(Text(root["algorithm"]!, "id") == AlgorithmId, "不是十字 RGB 结果。");
             Require(Text(root["execution"]!, "status") == "SUCCEEDED", "算法未成功完成。");
             JToken coords = root["coordinates"] ?? throw new InvalidDataException("缺少坐标约定。");
             Require(Text(coords, "space") == "source-image" && Text(coords, "unit") == "px" && Text(coords, "origin") == "top-left" && Text(coords, "pixelCenters") == "integer" && Text(coords, "axes") == "x-right-y-down", "只支持原图像素坐标。");
@@ -70,17 +75,27 @@ internal static class RgbCrossResultParser
             Require(Inside(search, new(0, 0, result.ImageWidth.Value, result.ImageHeight.Value)), "搜索区域超出原图。");
             result.SourceSha256 = root["source"]?["sha256"]?.Value<string>();
             if (result.SourceSha256 != null) Require(result.SourceSha256.Length == 64 && result.SourceSha256.All(Uri.IsHexDigit), "原图 SHA-256 无效。");
+            ReadGrid(root, result, Text(root, "schemaVersion") == "1.1.0");
             rows = Array(root, "points");
         }
         else
         {
-            Require(Text(root, "algorithmId") == AlgorithmId, "不是九点十字 RGB 导出结果。");
+            Require(Text(root, "algorithmId") == AlgorithmId, "不是十字 RGB 导出结果。");
             result.AlgorithmVersion = Text(root, "algorithmVersion");
-            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0", "不支持的九点十字算法版本。");
+            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0" or "1.3.0" or "1.4.0", "不支持的十字算法版本。");
             Require(Text(root, "status") == "Succeeded", "算法未成功完成。");
             result.MeasurementId = Text(root, "invocationId");
             JArray artifacts = Array(root, "artifacts");
-            var table = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "table" && a["name"]?.Value<string>() == "RGB-cross-separation") ?? throw new InvalidDataException("缺少九点测量表。");
+            if (result.AlgorithmVersion == "1.4.0")
+            {
+                var payload = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "structuredData" && a["name"]?.Value<string>() == "rgb-cross-measurement")?["data"] as JObject
+                    ?? throw new InvalidDataException("缺少十字结构化测量结果。");
+                Require(payload["schemaId"]?.Value<string>() == "colorvision.rgb-cross-measurement", "缺少十字测量协议。");
+                var parsed = Parse(payload.ToString(Formatting.None));
+                Require(parsed.AlgorithmVersion == result.AlgorithmVersion && parsed.MeasurementId == result.MeasurementId, "结构化结果与执行标识不一致。");
+                return parsed;
+            }
+            var table = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "table" && a["name"]?.Value<string>() == "RGB-cross-separation") ?? throw new InvalidDataException("缺少十字测量表。");
             rows = Array(table, "rows");
             var shapes = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "geometry" && a["name"]?.Value<string>() == "rgb-cross-regions") ?? throw new InvalidDataException("缺少 RGB 边缘几何。");
             Require(Text(shapes, "coordinateSpace") == "pixel", "只支持原图像素坐标。");
@@ -92,11 +107,12 @@ internal static class RgbCrossResultParser
                 Require(geometry.TryAdd(Text(item, "id"), Rectangle(x, y, Number(points[1], "x") - x, Number(points[1], "y") - y)), "重复几何 ID。");
             }
         }
-        Require(rows.Count == 9, "九点结果必须包含 P1–P9；缺失点应保留 INVALID 占位。");
+        int expectedCount = result.GridRows * result.GridColumns;
+        Require(rows.Count == expectedCount, "点位数量与配置布局不一致；缺失点应保留 INVALID 占位。");
         for (int i = 0; i < rows.Count; i++)
         {
             JToken row = rows[i]; string id = Text(row, portable ? "id" : "point");
-            Require(id == $"P{i + 1}" && Integer(row, "row") == i / 3 + 1 && Integer(row, "column") == i % 3 + 1, "九点编号或行列顺序无效。");
+            Require(id == $"P{i + 1}" && Integer(row, "row") == i / result.GridColumns + 1 && Integer(row, "column") == i % result.GridColumns + 1, "十字编号或行列顺序无效。");
             bool valid;
             if (portable) { string status = Text(row, "status"); Require(status is "VALID" or "INVALID", "未知点位状态。"); valid = status == "VALID"; }
             else { Require(row["valid"]?.Type == JTokenType.Boolean, "缺少有效状态。"); valid = row["valid"]!.Value<bool>(); }
@@ -149,8 +165,8 @@ internal static class RgbCrossResultParser
         {
             JToken summary = root["summary"] ?? throw new InvalidDataException("缺少汇总。");
             int count = result.Points.Count(p => p.Valid);
-            Require(Integer(summary, "validPointCount") == count && Integer(summary, "invalidPointCount") == 9 - count, "汇总计数与点位不一致。");
-            Require(summary["complete"]?.Type == JTokenType.Boolean && summary["complete"]!.Value<bool>() == (count == 9), "汇总完整性与点位不一致。");
+            Require(Integer(summary, "validPointCount") == count && Integer(summary, "invalidPointCount") == expectedCount - count, "汇总计数与点位不一致。");
+            Require(summary["complete"]?.Type == JTokenType.Boolean && summary["complete"]!.Value<bool>() == (count == expectedCount), "汇总完整性与点位不一致。");
             if (count == 0) Require(summary["maximumEdgeSeparationPx"]?.Type == JTokenType.Null, "无有效点时汇总值必须为空。");
             else Require(Math.Abs(Number(summary, "maximumEdgeSeparationPx") - result.Points.Where(p => p.Valid).Max(p => p.MaximumEdgeSeparation!.Value)) <= 1e-6, "汇总分离与点位不一致。");
         }
@@ -165,11 +181,12 @@ internal static class RgbCrossResultParser
         var result = new RgbCrossViewResult { ImageWidth = width, ImageHeight = height };
         var bounds = new RgbCrossRectangle(0, 0, width, height);
         JArray points = Array(root, "points");
-        Require(points.Count == 9, "九点结果必须包含 1–9，无效点也需保留。");
+        ReadGrid(root, result, false);
+        Require(points.Count == result.GridRows * result.GridColumns, "点位数量与配置布局不一致，无效点也需保留。");
         for (int i = 0; i < points.Count; i++)
         {
             var row = points[i];
-            Require(Integer(row, "id") == i + 1, "点号必须按 1–9 排列。");
+            Require(Integer(row, "id") == i + 1, "点号必须从 1 开始连续排列。");
             var point = new RgbCrossPoint { Id = $"P{i + 1}" };
             foreach (string channel in new[] { "R", "G", "B" })
             {
@@ -213,12 +230,32 @@ internal static class RgbCrossResultParser
         return result;
     }
 
-    internal static void Evaluate(RgbCrossViewResult result, double? limit)
+    internal static void Evaluate(RgbCrossViewResult result, RecipeBase? recipe)
     {
-        Require(!limit.HasValue || double.IsFinite(limit.Value) && limit.Value >= 0, "判定上限必须是非负有限像素值。");
-        result.AppliedLimit = limit;
-        foreach (var p in result.Points) p.Judgment = !p.Valid ? "INVALID" : !limit.HasValue ? "MEASURED" : p.MaximumEdgeSeparation <= limit ? "PASS" : "FAIL";
-        result.Status = result.Points.Count != 9 || result.Points.Any(p => !p.Valid) ? "INVALID" : !limit.HasValue ? "MEASURED" : result.Points.All(p => p.Judgment == "PASS") ? "PASS" : "FAIL";
+        if (recipe != null)
+        {
+            Require(new[] { recipe.Min, recipe.Max, recipe.Fix, recipe.B }.All(double.IsFinite), "Recipe 的上下限、K、B 必须为有限数值。");
+            Require(recipe.Min == 0 || recipe.Max == 0 || recipe.Min <= recipe.Max, "Recipe 下限不能高于上限。");
+        }
+        result.AppliedRecipe = recipe == null ? null : new RecipeBase(recipe.Min, recipe.Max, recipe.Fix, recipe.B);
+        foreach (var p in result.Points)
+        {
+            p.JudgedEdgeSeparation = p.Valid && recipe != null ? recipe.Apply(p.MaximumEdgeSeparation!.Value) : null;
+            Require(!p.JudgedEdgeSeparation.HasValue || double.IsFinite(p.JudgedEdgeSeparation.Value), "K/B 修正后的分离值超出有限数值范围。");
+            p.Judgment = !p.Valid ? "INVALID" : recipe == null ? "MEASURED" :
+                new ObjectiveTestItem { Value = p.JudgedEdgeSeparation!.Value, LowLimit = recipe.Min, UpLimit = recipe.Max }.TestResult ? "PASS" : "FAIL";
+        }
+        result.Status = result.Points.Count != result.GridRows * result.GridColumns || result.Points.Any(p => !p.Valid) ? "INVALID" : recipe == null ? "MEASURED" : result.Points.All(p => p.Judgment == "PASS") ? "PASS" : "FAIL";
+    }
+
+    private static void ReadGrid(JObject root, RgbCrossViewResult result, bool required)
+    {
+        if (root["grid"] == null) { Require(!required, "缺少十字布局 grid。"); return; }
+        JToken grid = root["grid"]!;
+        result.GridRows = Integer(grid, "rows"); result.GridColumns = Integer(grid, "columns");
+        Require(result.GridRows is >= 1 and <= 16 && result.GridColumns is >= 1 and <= 16, "十字行列数必须为 1 到 16。");
+        if (root["schemaVersion"]?.Value<string>() == "1.0.0")
+            Require(result.GridRows == 3 && result.GridColumns == 3, "1.0.0 协议仅用于 3×3，其他布局使用 1.1.0。");
     }
 
     private static double Spread(IEnumerable<double> values) => values.Max() - values.Min();

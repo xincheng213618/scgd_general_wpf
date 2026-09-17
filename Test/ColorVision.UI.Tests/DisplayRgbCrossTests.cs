@@ -14,6 +14,55 @@ public sealed partial class DisplayMetrologyTests
             RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
         });
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 3)]
+    [InlineData(3, 2)]
+    [InlineData(3, 3)]
+    public async Task RgbCrossMeasuresConfiguredGridAndExportsExpectedCount(int rowCount, int columnCount)
+    {
+        using var image = Image(400, 400, (x, y, channel) =>
+        {
+            for (int r = 0; r < rowCount; r++) for (int c = 0; c < columnCount; c++)
+            {
+                int dx = x - (60 + c * 80 + channel - 1), dy = y - (60 + r * 80);
+                if (Math.Abs(dx) <= 1 && Math.Abs(dy) <= 16 || Math.Abs(dy) <= 1 && Math.Abs(dx) <= 16) return 0.8;
+            }
+            return 0.01;
+        }, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters { Rows = rowCount, Columns = columnCount }, image);
+        Success(result);
+        Assert.Equal(rowCount * columnCount, Metric(result, "valid_crosses"));
+        var data = result.Artifacts.OfType<AlgorithmStructuredDataArtifact>().Single(a => a.Schema == RgbCrossMeasurementExporter.SchemaId).Data;
+        Assert.True(data.GetProperty("summary").GetProperty("complete").GetBoolean());
+        Assert.Equal(rowCount * columnCount, data.GetProperty("points").GetArrayLength());
+        Assert.Equal(rowCount == 3 && columnCount == 3 ? "1.0.0" : "1.1.0", data.GetProperty("schemaVersion").GetString());
+        for (int i = 0; i < rowCount * columnCount; i++)
+        {
+            var point = data.GetProperty("points")[i];
+            Assert.Equal(i / columnCount + 1, point.GetProperty("row").GetInt32());
+            Assert.Equal(i % columnCount + 1, point.GetProperty("column").GetInt32());
+            Assert.Equal(2, point.GetProperty("separation").GetProperty("maximumEdgeSeparationPx").GetDouble(), 6);
+        }
+        if (rowCount == 1)
+        {
+            using var expectedNine = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
+            Success(expectedNine); Assert.Equal(9, Metric(expectedNine, "invalid_crosses"));
+        }
+        if (rowCount == 3 && columnCount == 3)
+        {
+            using var single = await ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
+            {
+                Invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters { Rows = 1, Columns = 1 }, new RectangleAlgorithmRoi(30, 30, 60, 60)),
+                Inputs = [new AlgorithmInput { Name = "source", Image = image, Ownership = AlgorithmInputOwnership.Borrowed, ColorSpace = "linear-device-values" }],
+                RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi
+            });
+            Success(single); Assert.Equal(1, Metric(single, "valid_crosses"));
+            var point = single.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows.Single();
+            Assert.Equal(60, point["gVerticalAxisX_px"].GetDouble(), 6);
+        }
+    }
+
     [Fact]
     public async Task RgbCrossSearchRectangleIgnoresExternalTargetsAndKeepsGlobalCoordinates()
     {
@@ -58,7 +107,7 @@ public sealed partial class DisplayMetrologyTests
     {
         Assert.True(ImageAlgorithmPlatform.Catalog.TryResolve(DisplayMetrologyIds.RgbCrossRegistration, out var descriptor));
         Assert.True(descriptor!.Capabilities.HasFlag(AlgorithmHostCapabilities.Roi));
-        Assert.Equal(2, descriptor.Presentation!.InteractiveEntries!.Count);
+        Assert.Single(descriptor.Presentation!.InteractiveEntries!);
         Assert.All(descriptor.Presentation.InteractiveEntries, entry => Assert.Equal("AlgorithmsCall", entry.Group!.Id));
     }
 
@@ -195,6 +244,33 @@ public sealed partial class DisplayMetrologyTests
             Assert.InRange(first["bVerticalCoverage"].GetDouble(), 0.5, 0.99);
         }
     }
+    [Theory]
+    [InlineData(0.40, true)]
+    [InlineData(0.01, false)]
+    public async Task RgbCrossMeasuresConnectedShoulderButRejectsDarkSeparatedLobe(double valley, bool valid)
+    {
+        using var image = Image(400, 340, (x, y, c) =>
+        {
+            if (c == 0 && y >= 47 && y <= 51)
+            {
+                if (x == 63) return valley;
+                if (x == 62 || x == 64) return 0.6;
+            }
+            return ArrayCross(x, y, c, 60, 60);
+        }, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
+        Success(result);
+        var first = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows[0];
+        Assert.Equal(valid, first["valid"].GetBoolean());
+        if (!valid) { Assert.Equal(JsonValueKind.Null, first["maximumEdgeSeparation_px"].ValueKind); return; }
+        Assert.True(first["maximumEdgeSeparation_px"].GetDouble() > 0);
+        var profiles = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-profile-quality")!.Rows;
+        var shoulder = Assert.Single(profiles.Where(p => p["point"].GetString() == "P1" && p["channel"].GetString() == "B" && p["arm"].GetString() == "vertical" && p["samplePosition_px"].GetInt32() == 48));
+        Assert.Equal("valid_connected_shoulder", shoulder["status"].GetString());
+        Assert.Equal(2, shoulder["thresholdRunCount"].GetInt32());
+        Assert.InRange(shoulder["lastEdge_px"].GetDouble(), 64.32, 64.34);
+    }
+
     [Fact]
     public async Task RgbCrossWindowCloseRetainsOverlayUntilUserClear()
     {

@@ -1,3 +1,4 @@
+﻿using ProjectARVRPro.Recipe;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
@@ -25,16 +26,72 @@ public sealed class RgbCrossProcessTests
     }
     private static JObject Box(double x, double y, double w, double h) => new() { ["x"] = x, ["y"] = y, ["width"] = w, ["height"] = h };
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 3)]
+    public void ExtendedLayoutParsesEvaluatesAndRendersEveryPoint(int rowCount, int columnCount)
+    {
+        var json = Measurement();
+        json["schemaVersion"] = "1.1.0";
+        json["grid"] = new JObject { ["rows"] = rowCount, ["columns"] = columnCount };
+        var points = (JArray)json["points"]!;
+        while (points.Count > rowCount * columnCount) points.RemoveAt(points.Count - 1);
+        for (int i = 0; i < points.Count; i++) { points[i]["row"] = i / columnCount + 1; points[i]["column"] = i % columnCount + 1; }
+        json["summary"]!["validPointCount"] = points.Count;
+        var parsed = RgbCrossResultParser.Parse(json.ToString());
+        Assert.Equal(rowCount, parsed.GridRows); Assert.Equal(columnCount, parsed.GridColumns);
+        RgbCrossResultParser.Evaluate(parsed, new RecipeBase(0, 2)); Assert.Equal("PASS", parsed.Status);
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            using var view = new ImageView();
+            new RgbCrossProcess().Render(new IProcessExecutionContext { ImageView = view, Result = new() { ViewResultJson = JsonConvert.SerializeObject(parsed) } });
+            Assert.Equal(points.Count, view.ImageShow.Visuals.OfType<DVRectangleText>().Count());
+        });
+        var wrapped = new JObject { ["algorithmId"] = RgbCrossResultParser.AlgorithmId, ["algorithmVersion"] = "1.4.0", ["invocationId"] = json["measurementId"], ["status"] = "Succeeded",
+            ["artifacts"] = new JArray(new JObject { ["kind"] = "structuredData", ["name"] = "rgb-cross-measurement", ["data"] = json.DeepClone() }) };
+        wrapped["artifacts"]![0]!["data"]!["algorithm"]!["version"] = "1.4.0";
+        Assert.Equal(points.Count, RgbCrossResultParser.Parse(wrapped.ToString()).Points.Count);
+        json.Remove("grid"); Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Parse(json.ToString()));
+        json["schemaVersion"] = "1.0.0"; Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Parse(json.ToString()));
+    }
+
     [Fact]
-    public void MeasurementAndJudgmentAreSeparateAndZeroIsARealLimit()
+    public void MeasurementAndRecipeJudgmentAreSeparateAndZeroDisablesBound()
     {
         var result = RgbCrossResultParser.Parse(Measurement().ToString());
-        Assert.Equal("MEASURED", result.Status); Assert.Null(result.AppliedLimit);
-        RgbCrossResultParser.Evaluate(result, 1.5); Assert.Equal("PASS", result.Status);
-        RgbCrossResultParser.Evaluate(result, 1.4); Assert.Equal("FAIL", result.Status);
-        RgbCrossResultParser.Evaluate(result, 0); Assert.Equal("FAIL", result.Status);
+        Assert.Equal("MEASURED", result.Status); Assert.Null(result.AppliedRecipe);
+        RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 1.5)); Assert.Equal("PASS", result.Status);
+        RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 1.4)); Assert.Equal("FAIL", result.Status);
+        RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 0)); Assert.Equal("PASS", result.Status);
         RgbCrossResultParser.Evaluate(result, null); Assert.Equal("MEASURED", result.Status);
         Assert.All(result.Points, p => Assert.Equal(1.5, p.MaximumEdgeSeparation));
+    }
+
+    [Fact]
+    public void RecipeCorrectionUsesExistingBoundsAndSnapshotsWithoutChangingRawMeasurement()
+    {
+        var result = RgbCrossResultParser.Parse(Measurement().ToString());
+        var recipe = new RecipeBase(3, 4, 2, 0.5);
+        RgbCrossResultParser.Evaluate(result, recipe);
+        Assert.Equal("PASS", result.Status);
+        Assert.All(result.Points, p => { Assert.Equal(1.5, p.MaximumEdgeSeparation); Assert.Equal(3.5, p.JudgedEdgeSeparation); });
+        recipe.Max = 3;
+        Assert.Equal(4, result.AppliedRecipe!.Max);
+        RgbCrossResultParser.Evaluate(result, recipe);
+        Assert.Equal("FAIL", result.Status);
+        RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 0));
+        Assert.Equal("PASS", result.Status);
+        RgbCrossResultParser.Evaluate(result, null);
+        Assert.Null(result.AppliedRecipe); Assert.All(result.Points, p => Assert.Null(p.JudgedEdgeSeparation));
+    }
+
+    [Fact]
+    public void InvalidRecipeCannotBecomePassingJudgment()
+    {
+        var result = RgbCrossResultParser.Parse(Measurement().ToString());
+        Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Evaluate(result, new RecipeBase(4, 3)));
+        Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 3, double.NaN)));
+        Assert.Throws<InvalidDataException>(() => RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 3, double.MaxValue, double.MaxValue)));
     }
 
     [Theory]
@@ -64,7 +121,7 @@ public sealed class RgbCrossProcessTests
         json["summary"]!["validPointCount"] = 8; json["summary"]!["invalidPointCount"] = 1; json["summary"]!["complete"] = false;
         p["status"] = "INVALID"; p["reasonCodes"] = new JArray("B:ambiguous_arm_edges"); p["separation"] = null;
         p["channels"]!["B"] = new JObject { ["status"] = "INVALID", ["horizontalArm"] = null, ["verticalArm"] = null };
-        var result = RgbCrossResultParser.Parse(json.ToString()); RgbCrossResultParser.Evaluate(result, 2);
+        var result = RgbCrossResultParser.Parse(json.ToString()); RgbCrossResultParser.Evaluate(result, new RecipeBase(0, 2));
         Assert.Equal("INVALID", result.Status); Assert.Null(result.Points[5].MaximumEdgeSeparation); Assert.Equal(2, result.Points[5].Channels.Count);
     }
 
@@ -93,14 +150,14 @@ public sealed class RgbCrossProcessTests
         try
         {
             await File.WriteAllTextAsync(path, Measurement().ToString());
-            var ctx = new IProcessExecutionContext { Result = new() { Result = true }, ObjectiveTestResult = new() };
-            var process = new RgbCrossProcess(); process.Config.ResultJsonFile = path;
+            var ctx = new IProcessExecutionContext { Batch = new() { Id = 5 }, Result = new() { Result = true }, ObjectiveTestResult = new() };
+            var process = new RgbCrossProcess(new BatchResults(path));
             Assert.True(await process.Execute(ctx)); Assert.All(process.GetObjectiveCsvRows(ctx.Result), row => Assert.Equal("MEASURED", row.TestResult));
-            process.Config.RecipeConfig.EnableJudgment = true; process.Config.RecipeConfig.MaximumEdgeSeparationPixels = 1;
+            process.Config.RecipeConfig.EnableJudgment = true; process.Config.RecipeConfig.EdgeSeparation = new RecipeBase(0, 1);
             Assert.All(process.GetObjectiveCsvRows(ctx.Result), row => Assert.Equal("MEASURED", row.TestResult));
             Assert.True(await process.Execute(ctx)); Assert.False(ctx.Result.Result); Assert.All(process.GetObjectiveCsvRows(ctx.Result), row => Assert.Equal("FAIL", row.TestResult));
-            process.Config.RecipeConfig.MaximumEdgeSeparationPixels = null;
-            Assert.False(await process.Execute(ctx)); Assert.Equal("DATA_ERROR", Assert.Single(process.GetObjectiveCsvRows(ctx.Result)).TestResult);
+            process.Config.RecipeConfig.EdgeSeparation = null!;
+            Assert.False(await process.Execute(ctx)); Assert.Equal("DATA_ERROR", Assert.Single(process.GetObjectiveCsvRows(ctx.Result)).TestResult); Assert.Equal("DATA_ERROR", ctx.ObjectiveTestResult.DynamicRgbCrossResults["RgbCross"].Status);
         }
         finally { File.Delete(path); }
     }
@@ -116,6 +173,10 @@ public sealed class RgbCrossProcessTests
             var baseline = view.ImageShow.Visuals.ToArray();
             var process = new RgbCrossProcess(); process.Render(context);
             Assert.Equal(baseline.Length + 63, view.ImageShow.Visuals.Count());
+            var labels = view.ImageShow.Visuals.OfType<DVRectangleText>().ToArray();
+            Assert.Equal(9, labels.Length);
+            Assert.Equal("P1 1.500 px", labels[0].Attribute.Msg);
+            Assert.All(labels, label => { Assert.DoesNotContain("PASS", label.Attribute.Msg); Assert.DoesNotContain("FAIL", label.Attribute.Msg); Assert.DoesNotContain("MEASURED", label.Attribute.Msg); });
             Assert.Contains(view.ImageShow.Visuals.OfType<DVRectangle>(), r => r.Rect.X == 99 && r.Rect.Y == 85);
             process.Config.DrawRgbEdges = false; process.Render(context); Assert.Equal(baseline.Length + 9, view.ImageShow.Visuals.Count());
             process.Config.DrawPointLabels = false; process.Render(context); Assert.Equal(baseline, view.ImageShow.Visuals.ToArray());
@@ -175,22 +236,23 @@ public sealed class RgbCrossProcessTests
     {
         Assert.Equal(ProcessTypeCatalog.GetSubcategory(typeof(OpticCenterProcess)), ProcessTypeCatalog.GetSubcategory(typeof(RgbCrossProcess)));
         Assert.Equal(typeof(OpticCenterProcess).Namespace, typeof(RgbCrossProcess).Namespace);
-        var p = new RgbCrossProcess(); p.Config.ResultJsonFile = @"C:\results\{BatchId}.json"; p.Config.RecipeConfig.EnableJudgment = true; p.Config.RecipeConfig.MaximumEdgeSeparationPixels = 2;
+        var p = new RgbCrossProcess(); p.Config.Name = "Nine_Red"; p.Config.RecipeConfig.EnableJudgment = true; p.Config.RecipeConfig.EdgeSeparation = new RecipeBase(0, 2);
         var restored = new RgbCrossProcess(); restored.SetProcessConfig(JsonConvert.SerializeObject(p.Config));
-        Assert.Equal(p.Config.ResultJsonFile, restored.Config.ResultJsonFile); Assert.Equal(2, restored.Config.RecipeConfig.MaximumEdgeSeparationPixels);
-        Assert.EndsWith("123.json", RgbCrossProcess.ResolvePath(p.Config.ResultJsonFile, 123));
+        Assert.Equal(p.Config.Name, restored.Config.Name); Assert.Equal(2, restored.Config.RecipeConfig.EdgeSeparation.Max);
+        Assert.Null(typeof(RgbCrossProcessConfig).GetProperty("ResultJsonFile"));
+        Assert.Null(typeof(RgbCrossProcessConfig).GetProperty("FindCrossTemplateName"));
+        Assert.Null(typeof(RgbCrossProcessConfig).GetProperty("SourceImageFile"));
     }
     [Fact]
-    public void BatchSelectorUsesFindCrossVersionTemplateAndExactDetail()
+    public void BatchSelectorUsesFindCrossVersionAndExactDetail()
     {
         var old = new ColorVision.Engine.AlgResultMasterModel { Id = 1, BatchId = 5, ImgFileType = ColorVision.Engine.ViewResultAlgType.FindCross, version = "1.0" };
         var nine = new ColorVision.Engine.AlgResultMasterModel { Id = 2, BatchId = 5, TName = "Nine", ImgFileType = ColorVision.Engine.ViewResultAlgType.FindCross, version = "2.0", ResultCode = 0 };
         List<ColorVision.Engine.Templates.Jsons.DetailCommonModel> Details(int id) => [new() { PId = id, ResultJson = JsonConvert.SerializeObject(new ColorVision.Engine.Templates.Jsons.ResultFile { ResultFileName = @"C:\Results\nine.json" }) }];
-        var input = RgbCrossBatchResults.Select([old,nine],5,"",Details); Assert.Equal(2,input.MasterId);
-        Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine],6,"",Details));
-        Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine],5,"other",Details));
-        Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine,nine],5,"",Details));
-        nine.ResultCode=-1;Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine],5,"",Details));
+        var input = RgbCrossBatchResults.Select([old,nine],5,Details); Assert.Equal(2,input.MasterId);
+        Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine],6,Details));
+        Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine,nine],5,Details));
+        nine.ResultCode=-1;Assert.Throws<InvalidDataException>(() => RgbCrossBatchResults.Select([nine],5,Details));
     }
 
     [Fact]
@@ -206,12 +268,26 @@ public sealed class RgbCrossProcessTests
             var snapshot = JsonConvert.DeserializeObject<RgbCrossViewResult>(ctx.Result.ViewResultJson)!;
             Assert.Equal(42,snapshot.SourceMasterId);Assert.Equal(path,snapshot.JsonFile);Assert.Equal("MEASURED",snapshot.Status);
             Assert.Equal(9,process.GetObjectiveCsvRows(ctx.Result).Count());
+            Assert.Equal("MEASURED", ctx.ObjectiveTestResult.DynamicRgbCrossResults["RgbCross"].Status);
+            process.Config.Name = "Nine_Red";
+            Assert.True(await process.Execute(ctx));
+            Assert.Equal(2, ctx.ObjectiveTestResult.DynamicRgbCrossResults.Count);
+            Assert.Equal(9, ctx.ObjectiveTestResult.DynamicRgbCrossResults["Nine_Red"].Points.Count);
+            var exported = JsonConvert.DeserializeObject<ObjectiveTestResult>(JsonConvert.SerializeObject(ctx.ObjectiveTestResult))!;
+            Assert.Equal(9, exported.DynamicRgbCrossResults["Nine_Red"].Points.Count);
+            var metrics = ObjectiveTestResultMetricCollector.Collect(exported);
+            Assert.Equal("1.5", Assert.Single(metrics, m => m.Header == "Nine_Red_P1_MaximumEdgeSeparation").Value);
+            exported.DynamicRgbCrossResults["Nine_Red"].Points[0].Valid = false;
+            exported.DynamicRgbCrossResults["Nine_Red"].Points[0].MaximumEdgeSeparation = null;
+            Assert.Equal("", Assert.Single(ObjectiveTestResultMetricCollector.Collect(exported), m => m.Header == "Nine_Red_P1_MaximumEdgeSeparation").Value);
+            process.Config.Name = "Changed";
+            Assert.All(process.GetObjectiveCsvRows(ctx.Result), row => Assert.Equal("Nine_Red", row.TestScreen));
         }
         finally { File.Delete(path); }
     }
     private sealed class BatchResults(string path) : IRgbCrossBatchResults
     {
-        public RgbCrossBatchInput Resolve(int batchId,string templateName) { Assert.Equal(5,batchId);return new(path,"",42); }
+        public RgbCrossBatchInput Resolve(int batchId) { Assert.Equal(5,batchId);return new(path,"",42); }
     }
 
     private static JObject CompactMeasurement()
@@ -246,7 +322,7 @@ public sealed class RgbCrossProcessTests
         if (!string.IsNullOrWhiteSpace(sample))
         {
             parsed = RgbCrossResultParser.Parse(File.ReadAllText(sample));
-            Assert.Equal(7, parsed.Points.Count(p => p.Valid)); Assert.Equal("INVALID", parsed.Status);
+            Assert.Equal(9, parsed.Points.Count(p => p.Valid)); Assert.Equal("MEASURED", parsed.Status);
         }
     }
 

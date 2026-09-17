@@ -1,4 +1,4 @@
-﻿using ColorVision.Algorithms;
+using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -46,7 +46,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
         return manifest;
     }
 
-    public async Task ExecuteAsync(AlgorithmDescriptor descriptor, bool selectRectangle = false,
+    public async Task ExecuteAsync(AlgorithmDescriptor descriptor,
         Rect? rectangleDip = null, ImageSelectionScope? expectedScope = null)
     {
         var owner = AlgorithmAnalysisWindowOwner.Capture();
@@ -67,11 +67,21 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
                 ScanManifest manifest = ReadManifest(dialog.FileName);
                 parameters = manifest.Parameters; paths = manifest.Frames;
             }
-            bool submitted = false;
-            var editor = new PropertyEditorWindow(parameters, PropertyEditorEditMode.Transactional) { Title = descriptor.Name, Owner = owner.Current };
-            editor.Submitted += (_, _) => submitted = true;
-            editor.ShowDialog();
-            if (!submitted) return;
+            if (parameters is RgbCrossRegistrationParameters rgbCross)
+            {
+                var editor = new RgbCrossConfigurationWindow(RgbCrossConfigurationDraft.SerializeParameters(rgbCross, includeJudgment: true), includeJudgment: true)
+                    { Owner = owner.Current, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                if (editor.ShowDialog() != true) return;
+                parameters = editor.ResultParameters!;
+            }
+            else
+            {
+                bool submitted = false;
+                var editor = new PropertyEditorWindow(parameters, PropertyEditorEditMode.Transactional) { Title = descriptor.Name, Owner = owner.Current };
+                editor.Submitted += (_, _) => submitted = true;
+                editor.ShowDialog();
+                if (!submitted) return;
+            }
             if (!parameters.Validate().IsValid) throw new InvalidDataException(string.Join("; ", parameters.Validate().Issues.Select(i => i.Message)));
             if (descriptor.Id == DisplayMetrologyIds.Binocular)
             {
@@ -81,14 +91,6 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             }
             if (parameters is EyeboxScanParameters scan && paths.Length != scan.Columns * scan.Rows)
                 throw new InvalidDataException("编辑后的扫描行列数与清单文件数不一致。");
-            if (selectRectangle)
-            {
-                if (draw == null) throw new InvalidOperationException("当前窗口不支持矩形框选。");
-                SelectResult? selection = await new TransientRoiSelectionSession(draw, SelectShapeType.Rectangle).Start();
-                if (selection == null) return;
-                rectangleDip = selection.Rect;
-                expectedScope = selection.SourceScope;
-            }
             Guid document = image.DocumentInstanceId;
             var source = ImageAlgorithmInputFactory.Acquire(image, expectedScope, descriptor.Id == DisplayMetrologyIds.Binocular ? "left" : "source");
             inputs.Add(source);
@@ -187,13 +189,13 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
             content.Background = SystemColors.WindowBrush;
             if (result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration)
             {
-                var export = new Button { Content = "导出九点 JSON", Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
+                var export = new Button { Content = "导出十字 JSON", Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
                 export.Click += (_, _) =>
                 {
                     var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "JSON|*.json", FileName = $"RgbCross_{result.InvocationId:N}.json", OverwritePrompt = false };
                     if (dialog.ShowDialog(this) != true) return;
                     try { RgbCrossMeasurementExporter.Export(result, dialog.FileName); }
-                    catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出九点 JSON"); }
+                    catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出十字 JSON"); }
                 };
                 DockPanel.SetDock(export, Dock.Top); content.Children.Insert(0, export);
             }
@@ -250,7 +252,7 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "passed_crosses" => "OK 十字数", "failed_crosses" => "NG 十字数",
         "maximum_cross_axis_separation" => "十字轴线最大 RGB 分离", "maximum_cross_edge_separation" => "十字边缘最大 RGB 分离",
         "rms_cross_edge_separation" => "十字边缘分离均方根", "configured_edge_separation_limit" => "配置的边缘分离上限",
-        "overall_threshold_result" => "九点总体判定（1=OK，0=NG）",
+        "overall_threshold_result" => "十字总体判定（1=OK，0=NG）",
         "valid_alignment_cells" => "有效对准分区", "invalid_alignment_cells" => "无效对准分区",
         "mean_horizontal_disparity" => "平均水平视差", "mean_vertical_disparity" => "平均垂直视差",
         "right_over_left_scale" => "右眼 / 左眼倍率", "right_rotation_clockwise" => "右眼相对旋转（顺时针）",
@@ -262,7 +264,7 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "sampled_span_x" => "X 扫描跨度", "sampled_span_y" => "Y 扫描跨度",
         "valid_edge_cells" => "有效斜边分区", "invalid_edge_cells" => "无效斜边分区",
         "mtf50_crossing_cells" => "测得 MTF50 的分区", "minimum_field_mtf50" => "视场最小 MTF50",
-        "maximum_field_mtf50" => "视场最大 MTF50", "RGB-displacement" => "RGB 位移明细", "RGB-cross-separation" => "九点十字 RGB 分离明细",
+        "maximum_field_mtf50" => "视场最大 MTF50", "RGB-displacement" => "RGB 位移明细", "RGB-cross-separation" => "十字 RGB 分离明细",
         "binocular-field" => "左右眼分区明细", "binocular-channel-consistency" => "左右眼颜色通道",
         "defect-candidates" => "缺陷候选明细", "stray-light-candidates" => "杂散光候选明细",
         "eyebox-scan" => "Eyebox 采样点", "field-sfr" => "视场清晰度", "sfr-curves" => "SFR 曲线数据",
@@ -280,7 +282,7 @@ public sealed class RgbCrossRectangleContextMenu(ImageProcessingContext image, D
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if (obj is not IRectangle rectangle || !image.AlgorithmRuntime.Catalog.TryResolve(AlgorithmId, out var descriptor) || descriptor == null) return [];
-        MenuItem item = new() { Header = "九点十字 RGB 分离..." };
+        MenuItem item = new() { Header = "十字 RGB 分离..." };
         item.Click += async (_, _) =>
         {
             ImageSelectionScope? scope = TransientRoiSelectionSession.CaptureSourceScope(image);

@@ -1,4 +1,4 @@
-#include "rgb_cross.h"
+﻿#include "rgb_cross.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -62,7 +62,7 @@ struct Slot
     Rect region, evidence;
     std::string reason;
 };
-std::array<Slot, 9> Locate(const Image &image, Rect search, const Options &p)
+std::vector<Slot> Locate(const Image &image, Rect search, const Options &p)
 {
     int step = std::max(1, (std::max(search.width, search.height) + 1599) / 1600);
     int w = (search.width + step - 1) / step, h = (search.height + step - 1) / step;
@@ -77,8 +77,8 @@ std::array<Slot, 9> Locate(const Image &image, Rect search, const Options &p)
             }
     auto extrema = std::minmax_element(signal.begin(), signal.end());
     double low = *extrema.first, contrast = *extrema.second - low;
-    auto reject = [](std::string reason) {
-        std::array<Slot, 9> a{};
+    auto reject = [&p](std::string reason) {
+        std::vector<Slot> a(p.rows * p.columns);
         for (auto &s : a)
             s.reason = reason;
         return a;
@@ -150,19 +150,19 @@ std::array<Slot, 9> Locate(const Image &image, Rect search, const Options &p)
         return groups;
     };
     auto rows = group(false), cols = group(true);
-    if (rows.size() != 3 || cols.size() != 3)
-        return reject(candidates.size() > 9   ? "duplicate_or_extra_candidates"
-                      : candidates.size() < 9 ? "missing_array_structure"
+    if (rows.size() != p.rows || cols.size() != p.columns)
+        return reject(candidates.size() > p.rows * p.columns   ? "duplicate_or_extra_candidates"
+                      : candidates.size() < p.rows * p.columns ? "missing_array_structure"
                                               : "array_order_ambiguous");
-    std::array<Slot, 9> slots{};
-    for (int r = 0; r < 3; r++)
-        for (int c = 0; c < 3; c++)
+    std::vector<Slot> slots(p.rows * p.columns);
+    for (int r = 0; r < p.rows; r++)
+        for (int c = 0; c < p.columns; c++)
         {
             std::vector<int> matches;
             for (int i : rows[r])
                 if (std::find(cols[c].begin(), cols[c].end(), i) != cols[c].end())
                     matches.push_back(i);
-            auto &slot = slots[r * 3 + c];
+            auto &slot = slots[r * p.columns + c];
             if (matches.size() != 1)
             {
                 slot.reason = matches.empty() ? "cross_missing" : "duplicate_crosses";
@@ -209,6 +209,21 @@ Band FindBand(const std::vector<double> &scores, double fraction)
             runs++;
     return {maximum > 0 && runs == 1, first, last};
 }
+// Hysteresis classifies connected shoulders; interpolate the outer envelope at
+// the original measurement threshold, without smoothing or lowering that threshold.
+Band FindArmBand(const std::vector<double> &scores, double fraction)
+{
+    auto band = FindBand(scores, fraction);
+    if (band.valid) return band;
+    double threshold = *std::max_element(scores.begin(), scores.end()) * fraction;
+    if (threshold <= 0) return band;
+    int first = 0, last = static_cast<int>(scores.size()) - 1;
+    while (scores[first] < threshold) first++;
+    while (scores[last] < threshold) last--;
+    for (int i = first; i <= last; i++)
+        if (scores[i] < threshold * 0.5) return band;
+    return {true, first, last};
+}
 double Median(std::vector<double> values)
 {
     std::sort(values.begin(), values.end());
@@ -224,7 +239,7 @@ struct Target
 };
 Target Detect(const Image &image, int channel, Slot slot, const Options &p)
 {
-    auto reject = [](std::string reason) {
+    auto reject = [&p](std::string reason) {
         Target t;
         t.reason = reason;
         return t;
@@ -292,7 +307,7 @@ Target Detect(const Image &image, int channel, Slot slot, const Options &p)
                     continue;
                 for (int t = 0; t < transverse; t++)
                     scores[t] = profile[t] - low;
-                auto band = FindBand(scores, p.targetThreshold);
+                auto band = FindArmBand(scores, p.targetThreshold);
                 if (!band.valid)
                 {
                     ambiguous++;
@@ -343,6 +358,7 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
                 static_cast<std::int64_t>(search.y) + search.height <= image.height,
             "invalid_roi");
     auto range = [](double v, double lo, double hi) { return std::isfinite(v) && v >= lo && v <= hi; };
+    Require(p.rows >= 1 && p.rows <= 16 && p.columns >= 1 && p.columns <= 16, "invalid_grid");
     Require(range(p.minimumContrast, .000001, 1) && range(p.targetThreshold, .1, .9) &&
                 range(p.axisBandThreshold, .1, .9) && range(p.minimumArmSpanFraction, .1, .9) &&
                 range(p.minimumArmCoverage, .1, 1) && range(p.decodeExponent, .1, 5),
@@ -352,7 +368,7 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
     json points = json::array();
     int validCount = 0;
     double maximum = 0;
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < p.rows * p.columns; i++)
     {
         std::array<Target, 3> targets{Detect(image, 2, slots[i], p), Detect(image, 1, slots[i], p),
                                       Detect(image, 0, slots[i], p)};
@@ -398,8 +414,8 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
                           {"maximumEdgeSeparationPx", m}};
         }
         points.push_back({{"id", "P" + std::to_string(i + 1)},
-                          {"row", i / 3 + 1},
-                          {"column", i % 3 + 1},
+                          {"row", i / p.columns + 1},
+                          {"column", i % p.columns + 1},
                           {"status", valid ? "VALID" : "INVALID"},
                           {"reasonCodes", reasons},
                           {"warnings", warnings},
@@ -407,11 +423,11 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
                           {"channels", channels},
                           {"separation", separation}});
     }
-    return {{"schemaId", "colorvision.rgb-cross-measurement"},
-            {"schemaVersion", "1.0.0"},
+    json output = {{"schemaId", "colorvision.rgb-cross-measurement"},
+            {"schemaVersion", p.rows == 3 && p.columns == 3 ? "1.0.0" : "1.1.0"},
             {"capabilityProfile", "rgb-cross.measurement.v1"},
             {"measurementId", measurementId},
-            {"algorithm", {{"id", "colorvision.display.rgb-cross-registration"}, {"version", "1.2.0"}}},
+            {"algorithm", {{"id", "colorvision.display.rgb-cross-registration"}, {"version", "1.4.0"}}},
             {"source", {{"imageId", imageId}, {"width", image.width}, {"height", image.height}, {"sha256", nullptr}}},
             {"coordinates",
              {{"space", "source-image"},
@@ -424,8 +440,10 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
             {"points", points},
             {"summary",
              {{"validPointCount", validCount},
-              {"invalidPointCount", 9 - validCount},
-              {"complete", validCount == 9},
+              {"invalidPointCount", p.rows * p.columns - validCount},
+              {"complete", validCount == p.rows * p.columns},
               {"maximumEdgeSeparationPx", validCount > 0 ? json(maximum) : json(nullptr)}}}};
+    if (p.rows != 3 || p.columns != 3) output["grid"] = {{"rows", p.rows}, {"columns", p.columns}};
+    return output;
 }
 } // namespace cvnative::rgb_cross

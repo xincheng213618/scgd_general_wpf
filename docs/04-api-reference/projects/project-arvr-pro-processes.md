@@ -88,17 +88,21 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 
 `White51Process` 不需要中心点解析 Key；它按结果类型读取 FOV 和四个发光区角点。**绘制FOV** 默认开启，直接使用已保存的 H/V/D 结果绘制四边形、中轴与对角线，不重新运行 FOV 或发光区算法；关闭时只绘制发光区边界。
 
-九点十字 RGB 分离使用独立的 `RgbCrossProcess`，与原十字定位/光学中心放在同一个“光学与几何”分类。**Process > 输入 > 结果JSON文件** 留空时，按当前批次读取 `FindCross=63`、`version=2.0` 主记录，再由公共明细的 `ResultFileName` 找到 JSON。可填写“FindCross 模板名称”限定 `TName`；零条、多条、失败状态或不完整明细均报错，不扫描目录或回退到旧批次。原单十字解析跳过 2.0 九点记录。显式填写 JSON 路径用于离线复核，支持 `{BatchId}`；对应原图优先使用显式绑定，否则使用该主记录的 `ImgFile`。
+十字 RGB 分离使用独立的 `RgbCrossProcess`，与原十字定位/光学中心放在同一个“光学与几何”分类。执行时按当前批次读取唯一 `FindCross=63`、`version=2.0` 主记录，再由公共明细的 `ResultFileName` 找到 JSON，原图取该记录的 `ImgFile`。没有手填 JSON、模板名称筛选或原图覆盖入口。零条、多条、失败状态或不完整明细均报错，不扫描目录或回退到旧批次；原单十字解析跳过 2.0 九点记录。
 
-该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出九点 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
+Process 的“导出名称”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTestResult.DynamicRgbCrossResults` 字典的 Key。不同画面配置不同名称，可并存十字测量、几何与判定状态；相同名称本次执行替换对应项，失败时写入 DATA_ERROR，避免残留旧成功结果。导出名称存入当前结果快照，修改配置不重命名历史导出。使用单独类型的字典保留空测量和 MEASURED/INVALID 状态，不把未判定数据压成普通布尔 PASS。
 
-独立实现方也可使用精简 JSON：根字段 `width/height/points`，九点 `id=1..9`，各点 `R/G/B` 通道含 `horizontal/vertical` 的 `[x,y,width,height]` 矩形，`separation` 为最大对应边缘差。无效通道为 `null`，点位分离为 `null` 且必须给出 `reason`。此格式不要求提供宿主项目、数据库或算法实现元数据；解析后沿用相同几何校验、判定和渲染，保留原格式兼容。
+该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` / `1.3.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。算法 `1.4.0` 的通用导出读取其中的结构化测量结果，并核对执行标识；3×3 生产 JSON 继续使用 `1.0.0`，其他布局使用 `1.1.0`，必须提供 `grid.rows/columns`。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
 
-JSON 文件限制为 32 MiB；解析检查九点编号、行列、有效性、有限数值、RGB 几何及分离值一致性。v1 还检查原图尺寸、搜索区和汇总计数。有效几何均为原图像素坐标，绘制每通道横臂和竖臂框，可分别关闭 RGB 边缘或点号数值；原图尺寸不匹配或坐标越界时跳过叠图。v1 没有指定原图时可按保存的尺寸用空白底图显示，旧通用 JSON 不含尺寸时必须指定原图。指定文件代表用户显式绑定来源，若 JSON 有 SHA-256，执行解析时校验原图文件摘要。
+独立实现方也可使用精简 JSON：根字段 `width/height/points`，默认九点 `id=1..9`，其他布局需增加 `grid: {rows, columns}` 并连续编号到全部点数，各点 `R/G/B` 通道含 `horizontal/vertical` 的 `[x,y,width,height]` 矩形，`separation` 为最大对应边缘差。无效通道为 `null`，点位分离为 `null` 且必须给出 `reason`。此格式不要求提供宿主项目、数据库或算法实现元数据；解析后沿用相同几何校验、判定和渲染，保留原格式兼容。
 
-**Recipe > 在本项目判定** 默认关闭，输出 `MEASURED`（已测量、未判定）；此设置是业务配置，不是对外授权开关。开启时必须填写非负有限的“最大边缘分离上限(px)”，零也是有效上限；九点均有效且最大对应边缘跨度都不超过上限才为 `PASS`，超限为 `FAIL`，存在无效点为 `INVALID`。解析失败为 `DATA_ERROR`。原 JSON 中的 OK/NG 不会被当成本项目判定，测量值不被 Recipe 改写。关闭判定不改变已有总结果，CSV 和文本明确保留 MEASURED；无效数据会使项目结果失败，不用零代替缺失值。
+JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号、行列、有效性、有限数值、RGB 几何及分离值一致性。v1 还检查原图尺寸、搜索区和汇总计数。有效几何均为原图像素坐标，绘制每通道横臂和竖臂框，可分别关闭 RGB 边缘或点号数值；原图尺寸不匹配或坐标越界时跳过叠图。v1 没有指定原图时可按保存的尺寸用空白底图显示，旧通用 JSON 不含尺寸时数据库记录必须关联原图。原图由同批次数据库记录绑定；若 JSON 有 SHA-256，执行解析时校验原图文件摘要。
 
-历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的阈值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。`RgbCrossProcessTests` 覆盖真实算法导出到解析的衔接、无效数据拒绝、可选判定、CSV 状态和 WPF 图元替换；节点和批次选择的自动测试使用数据库替身；此验证不替代现场真实数据库、原图身份和客户许可验收。
+**Recipe > 在本项目判定** 默认关闭，输出 `MEASURED`（已测量、未判定）；此设置是业务配置，不是对外授权开关。开启时使用与其他项目相同的 `RecipeBase` 编辑器：下限、上限、K、B。各点分别按 `原值 × K + B` 后调用 `ObjectiveTestItem` 的上下限规则；某侧限值为 0 表示该侧不限，边界包含等于。上下限与 K/B 必须有限，两侧都非零时下限不得高于上限。配置的全部点位均有效且修正值满足范围才为 `PASS`，超限为 `FAIL`，存在无效点为 `INVALID`。解析失败为 `DATA_ERROR`。旧单上限配置不迁移，使用者重新配置 `EdgeSeparation`。原始测量保留在 `MaximumEdgeSeparation`，修正值另存 `JudgedEdgeSeparation`，不得修改输入 JSON 或通道几何。关闭判定不改变已有总结果，CSV 和文本明确保留 MEASURED；无效数据会使项目结果失败，不用零代替缺失值。
+
+绘图标签仅显示点号与 px 数值，例如 `P1 4.408 px`，无有效数值时为 `P6 — px`；不附带 PASS/FAIL/INVALID。右侧结果区显示总状态、各点用于判定的 px 数值和状态，必要时显示拒绝原因；不显示判定公式、上下限说明、重复的原始值或饱和诊断警告。保存的数据和判定逻辑不受显示精简影响。
+
+历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的 Recipe 副本、修正值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。`RgbCrossProcessTests` 覆盖真实算法导出到解析的衔接、无效数据拒绝、可选判定、CSV 状态和 WPF 图元替换；节点和批次选择的自动测试使用数据库替身；此验证不替代现场真实数据库、原图身份和客户许可验收。
 
 ## 选择处理类型
 
@@ -115,7 +119,7 @@ JSON 文件限制为 32 MiB；解析检查九点编号、行列、有效性、�
 | 棋盘格 | `ChessboardProcess` / `ChessboardDynamicProcess` | 固定或动态点位的棋盘格对比度 |
 | 畸变 | `DistortionProcess` / `DistortionDynamicProcess` | 固定或动态点位的几何结果 |
 | 光学中心 | `OpticCenterProcess` / `OpticCenterDynamicProcess` | 固定或动态点位的中心结果 |
-| 九点十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
+| 十字 RGB 分离 | `RgbCrossProcess`，`OpticCenter/` | 与原十字/光学中心同属“光学与几何”；读取 JSON、绘制 RGB 边缘，可选在本项目判定 |
 | 动态 POI | `PoiDynamicProcess`，`POI/` | 运行时点位的亮色度解析与显示 |
 | 通用 MTF | `MTFProcess`，`MTF/` | 通用 MTF 结果解析 |
 | HV 特殊图案 | `MTFHVProcess` / `MTFHV048Process` / `MTFHV058Process` | 分别对应 0368、048、058 点位方案 |

@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:schema id="root">
@@ -3227,4 +3227,13 @@
   <data name="SpectrumTools" xml:space="preserve"><value>光譜儀工具</value></data>
   <data name="SpectrumCorrectionDevice" xml:space="preserve"><value>選擇用於校正的光譜儀裝置</value></data>
   <data name="SpectrumCorrectionNeedsDevice" xml:space="preserve"><value>請先在裝置設定中將此 SN 關聯至光譜儀裝置。</value></data>
+  <data name="SpectrumEditorTitle" xml:space="preserve"><value>編輯光譜儀配置</value></data>
+  <data name="SpectrumEditorLicenseHint" xml:space="preserve"><value>授權依上方 SN 配對。上傳後立即儲存；取消設定編輯不會撤銷授權匯入。</value></data>
+  <data name="SpectrumEditorUpload" xml:space="preserve"><value>上傳授權</value></data>
+  <data name="SpectrumEditorManage" xml:space="preserve"><value>管理授權</value></data>
+  <data name="SpectrumEditorSerial" xml:space="preserve"><value>序列埠連線</value></data>
+  <data name="SpectrumEditorConnectionHint" xml:space="preserve"><value>預設使用 USB / 預設連線。僅使用序列埠裝置時開啟「序列埠連線」，並選擇連接埠及鮑率。</value></data>
+  <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>請選擇有效序列埠 COM1–COM256；使用預設連線時請關閉「序列埠連線」。</value></data>
+  <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>鮑率必須大於 0。</value></data>
+  <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>檢視搜尋詳情</value></data>
 </root>

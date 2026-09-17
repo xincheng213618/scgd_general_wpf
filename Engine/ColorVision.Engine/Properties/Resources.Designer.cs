@@ -12162,6 +12162,87 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 默认使用 USB / 默认连接。仅使用串口设备时开启“串口连接”，并选择端口和波特率。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorConnectionHint {
+            get {
+                return ResourceManager.GetString("SpectrumEditorConnectionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 波特率必须大于 0。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorInvalidBaud {
+            get {
+                return ResourceManager.GetString("SpectrumEditorInvalidBaud", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择有效串口 COM1–COM256；使用默认连接时请关闭“串口连接”。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorInvalidPort {
+            get {
+                return ResourceManager.GetString("SpectrumEditorInvalidPort", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 许可证按上方 SN 匹配。上传后立即保存；取消配置编辑不会撤销许可证导入。 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorLicenseHint {
+            get {
+                return ResourceManager.GetString("SpectrumEditorLicenseHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 管理许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorManage {
+            get {
+                return ResourceManager.GetString("SpectrumEditorManage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 查看搜索详情 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorSearchDetails {
+            get {
+                return ResourceManager.GetString("SpectrumEditorSearchDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 串口连接 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorSerial {
+            get {
+                return ResourceManager.GetString("SpectrumEditorSerial", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 编辑光谱仪配置 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorTitle {
+            get {
+                return ResourceManager.GetString("SpectrumEditorTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 上传许可证 的本地化字符串。
+        /// </summary>
+        public static string SpectrumEditorUpload {
+            get {
+                return ResourceManager.GetString("SpectrumEditorUpload", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 请选择光谱仪，或扫描 / 导入许可证。 的本地化字符串。
         /// </summary>
         public static string SpectrumEmptySelection {

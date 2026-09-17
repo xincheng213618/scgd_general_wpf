@@ -469,7 +469,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         [Category("本地十字定位")]
-        [STNodeProperty("算法参数(JSON)", "生产参数只需名义角度、最大允许旋转偏差和光学校准；极性、阈值、臂长、可信度、处理尺寸及旋转算法均由内部鲁棒配置管理。省略 stdCenter 时以整幅图像中心作为光学基准。", true)]
+        [PropertyEditorType(typeof(LocalFindCrossConfigurationEditor))]
+        [STNodeProperty("算法参数", "生产参数只需名义角度、最大允许旋转偏差和光学校准；极性、阈值、臂长、可信度、处理尺寸及旋转算法均由内部鲁棒配置管理。省略 stdCenter 时以整幅图像中心作为光学基准。", true)]
         public string ParameterJson
         {
             get => parameterJson;
@@ -480,16 +481,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        [Category("本地十字定位")]
+        [Category("搜索区域")]
         [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         [STNodeProperty("搜索区域关注点", "可选；选择寻找发光区写入的 POI 模板，每次运行读取最新矩形或四角点外接矩形。填写后优先于固定搜索区域；模板无效或越界时停止。留空保持原搜索区域行为。", true)]
         public string SearchRegionPoiTemplate
         {
             get => searchRegionPoiTemplate;
-            set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); }
+            set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); OnPropertyChanged(nameof(HasSearchRegionPoi)); }
         }
 
-        [Category("本地十字定位")]
+        [Browsable(false)] public bool HasSearchRegionPoi => !string.IsNullOrWhiteSpace(SearchRegionPoiTemplate);
+        [PropertyVisibility(nameof(HasSearchRegionPoi), true)]
+        [Category("搜索区域")]
         [STNodeProperty("搜索区域", "固定像素 ROI（X,Y,Width,Height）；未选择搜索区域关注点时使用，0,0,0,0 表示整幅图像。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
         public Int32Rect SearchRegion
         {
@@ -502,6 +505,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         [Category("本地十字定位")]
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         [STNodeProperty("结果目录", "可选；留空时保存到当前用户 LocalAppData 下的 ColorVision\\Results\\FindCross", true)]
         public string ResultDirectory
         {

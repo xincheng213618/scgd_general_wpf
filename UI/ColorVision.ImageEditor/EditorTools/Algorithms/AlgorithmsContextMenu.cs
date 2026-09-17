@@ -177,8 +177,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             string compatibilityId = entry.Presentation.CompatibilityId;
             if (DisplayMetrologyIds.All.Contains(entry.Descriptor.Id) && UsesSpecializedAdapter(entry.Descriptor))
-                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor,
-                    selectRectangle: entry.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration && compatibilityId == entry.Descriptor.Id.Value),
+                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor),
                     _ => CanExecuteDescriptor(entry.Descriptor));
             AlgorithmId id = entry.Descriptor.Id;
             if (!UsesSpecializedAdapter(entry.Descriptor))

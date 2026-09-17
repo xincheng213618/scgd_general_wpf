@@ -1,3 +1,4 @@
+﻿using ColorVision.ImageEditor.EditorTools.Algorithms;
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.Database;
@@ -5,6 +6,7 @@ using ColorVision.Engine.FlowProcessing.Algorithms;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI;
@@ -23,13 +25,12 @@ using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-internal sealed record LocalRgbCrossTemplate(int Id, string Name, RgbCrossRegistrationParameters Parameters);
-internal sealed record LocalRgbCrossSaveRequest(CVStartCFC Action, LocalRgbCrossTemplate Template, JsonElement Measurement,
+internal sealed record LocalRgbCrossSaveRequest(CVStartCFC Action, JsonElement Measurement,
     string? ImageFile, string Directory, int ZIndex, int TotalTime, object Audit);
 internal sealed record LocalRgbCrossSavedResult(int MasterId, string ResultFilePath);
 internal interface ILocalRgbCrossNodeServices
 {
-    LocalRgbCrossTemplate LoadTemplate(string name);
+    string ResolveResultDirectory(string configuredDirectory);
     Int32Rect LoadSearchRegionTemplate(string name);
     LocalFlowFrame LoadFrame(string path);
     MeasureResultImgModel? GetImageResult(int id);
@@ -40,28 +41,7 @@ internal interface ILocalRgbCrossNodeServices
 
 internal sealed class LocalRgbCrossNodeServices : ILocalRgbCrossNodeServices
 {
-    public LocalRgbCrossTemplate LoadTemplate(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return new(0, "LocalRgbCross", new());
-        using var db = MySqlControl.CreateDbClient();
-        var values = db.Queryable<ModMasterModel>().Where(m => m.Pid == 45 && m.Name == name && !m.IsDelete && m.TenantId == 0).ToList();
-        if (values.Count != 1 || !values[0].IsEnable) throw new InvalidOperationException("FindCross 模板不存在、重名或已停用。");
-        var model = values[0];
-        return new(model.Id, model.Name!, ParseParameters(model.JsonVal ?? ""));
-    }
-
-    internal static RgbCrossRegistrationParameters ParseParameters(string json)
-    {
-        using var doc = JsonDocument.Parse(json);
-        if (!doc.RootElement.TryGetProperty("rgbCross", out var section))
-            throw new InvalidOperationException("所选 FindCross 模板缺少 rgbCross 参数段；旧单十字参数不能隐式套用九点算法。");
-        var options = new JsonSerializerOptions(AlgorithmJson.Options) { UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow };
-        var parameters = System.Text.Json.JsonSerializer.Deserialize<RgbCrossRegistrationParameters>(section, options)
-            ?? throw new InvalidOperationException("rgbCross 参数为空。");
-        if (parameters.MaximumEdgeSeparationPixels != null) throw new InvalidOperationException("Flow 测量模板不配置合格阈值；请在 ARVRPro 或接入方判定。");
-        if (!parameters.Validate().IsValid) throw new InvalidOperationException("rgbCross 参数校验失败。");
-        return parameters;
-    }
+    public string ResolveResultDirectory(string configuredDirectory) => LocalAlgorithmResultDirectory.Resolve(configuredDirectory);
     public Int32Rect LoadSearchRegionTemplate(string name) => LocalPoiSearchRegionResolver.Load(name);
     public LocalFlowFrame LoadFrame(string path) => LocalFrameFileService.Load(path);
     public MeasureResultImgModel? GetImageResult(int id) => MeasureImgResultDao.Instance.GetById(id);
@@ -76,7 +56,7 @@ internal static class LocalRgbCrossResultPersistence
     internal const string ResultVersion = "2.0";
     internal static AlgResultMasterModel CreateMaster(LocalRgbCrossSaveRequest request, int batchId) => new()
     {
-        TId = request.Template.Id > 0 ? request.Template.Id : null, TName = request.Template.Name,
+        TId = null, TName = "LocalRgbCross",
         ImgFileType = ViewResultAlgType.FindCross, version = ResultVersion, BatchId = batchId, Zindex = request.ZIndex,
         ImgFile = request.ImageFile, Params = JsonConvert.SerializeObject(request.Audit), ResultCode = 0,
         Result = request.Measurement.GetProperty("summary").GetProperty("complete").GetBoolean() ? "MEASURED" : "INVALID",
@@ -86,9 +66,8 @@ internal static class LocalRgbCrossResultPersistence
     internal static LocalRgbCrossSavedResult Save(LocalRgbCrossSaveRequest request)
     {
         var batch = BatchResultMasterDao.Instance.GetByNameOrCode(request.Action.SerialNumber)
-            ?? throw new InvalidOperationException("找不到九点十字流程批次。");
-        string directory = string.IsNullOrWhiteSpace(request.Directory)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "Results", "FindCross") : Path.GetFullPath(request.Directory);
+            ?? throw new InvalidOperationException("找不到十字流程批次。");
+        string directory = Path.GetFullPath(request.Directory);
         string file = Path.Combine(directory, $"RgbCross_{batch.Id}_{Guid.NewGuid():N}.json");
         RgbCrossMeasurementExporter.Write(request.Measurement, file);
         try
@@ -99,42 +78,47 @@ internal static class LocalRgbCrossResultPersistence
         catch (Exception error)
         {
             try { File.Delete(file); }
-            catch (Exception cleanup) { throw new AggregateException("九点结果入库失败，清理结果文件也失败。", error, cleanup); }
+            catch (Exception cleanup) { throw new AggregateException("十字结果入库失败，清理结果文件也失败。", error, cleanup); }
             throw;
         }
     }
 }
 
-[STNode("Flow_CustomNodes", "九点十字 RGB 分离")]
+[STNode("Flow_CustomNodes", "十字 RGB 分离")]
 public sealed class LocalRgbCrossNode : LocalFlowNodeBase
 {
     private readonly ILocalRgbCrossNodeServices services;
-    private string templateName = "", searchTemplate = "", imageFilePath = "", resultDirectory = "";
+    private string searchTemplate = "", imageFilePath = "", resultDirectory = "";
+    private string parameterJson = "{}";
     private Int32Rect searchRegion = Int32Rect.Empty;
 
-    [Category("九点十字"), PropertyEditorType(typeof(FindCrossTemplatePropertiesEditor))]
-    [STNodeProperty("FindCross 模板", "复用十字模板，读取 rgbCross 参数段。留空使用九点默认测量参数；旧参数不会隐式转换。", true)]
-    public string TemplateName { get => templateName; set { templateName = value ?? ""; OnPropertyChanged(); } }
-    [Category("九点十字"), PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
+    [Category("十字"), PropertyEditorType(typeof(LocalRgbCrossConfigurationEditor))]
+    [STNodeProperty("算法参数", "独立的十字检测配置，不使用 FindCross 算法模板。", true)]
+    public string ParameterJson { get => parameterJson; set { parameterJson = value ?? "{}"; OnPropertyChanged(); } }
+
+    [Category("搜索区域"), PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
     [STNodeProperty("搜索区域关注点", "寻找发光区写入的 POI 模板，每次运行读取最新区域，优先于固定搜索区域。", true)]
-    public string SearchRegionPoiTemplate { get => searchTemplate; set { searchTemplate = value ?? ""; OnPropertyChanged(); } }
-    [Category("九点十字")]
+    public string SearchRegionPoiTemplate { get => searchTemplate; set { searchTemplate = value ?? ""; OnPropertyChanged(); OnPropertyChanged(nameof(HasSearchRegionPoi)); } }
+    [Browsable(false)] public bool HasSearchRegionPoi => !string.IsNullOrWhiteSpace(SearchRegionPoiTemplate);
+    [PropertyVisibility(nameof(HasSearchRegionPoi), true)]
+    [Category("搜索区域")]
     [STNodeProperty("搜索区域", "固定像素 ROI；0,0,0,0 使用整图。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
     public Int32Rect SearchRegion { get => searchRegion; set { searchRegion = value; OnPropertyChanged(); } }
-    [Category("九点十字"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+    [Category("十字"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
     [STNodeProperty("图像文件", "可选后备输入；优先上游内存帧，其次此文件，再从 IN 图像结果读取。", true)]
     public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? ""; OnPropertyChanged(); } }
-    [Category("九点十字")]
-    [STNodeProperty("结果目录", "留空保存到 LocalAppData 下 ColorVision\\Results\\FindCross；数据库明细记录文件路径。", true)]
+    [Category("十字"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+    [STNodeProperty("结果目录", "留空使用算法服务的数据基础路径/服务标识/Data/当天日期；填写则覆盖默认目录。", true)]
     public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? ""; OnPropertyChanged(); } }
 
     public LocalRgbCrossNode() : this(new LocalRgbCrossNodeServices()) { }
-    internal LocalRgbCrossNode(ILocalRgbCrossNodeServices services) : base("九点十字 RGB 分离", "LocalRgbCross", "FindCross") => this.services = services;
+    internal LocalRgbCrossNode(ILocalRgbCrossNodeServices services) : base("十字 RGB 分离", "LocalRgbCross", "FindCross") => this.services = services;
     protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) => new() { Data = ExecuteSynchronously(action) };
     internal LocalRgbCrossSavedResult ExecuteSynchronously(CVStartCFC action)
     {
-        var selectedTemplate = services.LoadTemplate(TemplateName.Trim());
-        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = ResultDirectory, file = ImageFilePath, nodeId = NodeID;
+        if (!RgbCrossConfigurationDraft.TryCreate(ParameterJson, out var configuration, out string error)
+            || !configuration!.TryGetParameters(out var parameters, out error)) throw new InvalidOperationException(error);
+        string poiTemplate = SearchRegionPoiTemplate.Trim(), directory = services.ResolveResultDirectory(ResultDirectory), file = ImageFilePath, nodeId = NodeID;
         Int32Rect region = SearchRegion; int zIndex = ZIndex;
         LocalFlowFrame? ownedFrame = null;
         LocalFlowFrame frame = ResolveFrame(action, file, out ownedFrame, out string? imageFile);
@@ -143,18 +127,18 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
             using var lease = frame.Acquire();
             if (!lease.IsFlipApplied) throw new InvalidOperationException("当前图像方向变换尚未完成。");
             var roi = LocalFindLuminousAreaNode.ResolveRoi(poiTemplate.Length == 0 ? region : services.LoadSearchRegionTemplate(poiTemplate), lease.Metadata.Width, lease.Metadata.Height);
-            var invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RgbCrossRegistration, selectedTemplate.Parameters,
+            var invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RgbCrossRegistration, parameters,
                 roi.Width == 0 ? null : new RectangleAlgorithmRoi(roi.X, roi.Y, roi.Width, roi.Height));
             var timer = Stopwatch.StartNew();
             using AlgorithmResult result = FlowNodeTiming.Run("Algorithm", () => services.Detect(lease, invocation));
             if (result.Status != AlgorithmResultStatus.Succeeded) throw new InvalidOperationException(string.Join(";", result.Failures.Select(f => f.Code + ":" + f.Message)));
             JsonElement measurement = result.Artifacts.OfType<AlgorithmStructuredDataArtifact>().Single(a => a.Schema == RgbCrossMeasurementExporter.SchemaId).Data;
             // The file association is taken only from the frame actually measured, never another batch image.
-            var request = new LocalRgbCrossSaveRequest(action, selectedTemplate, measurement, imageFile, directory, zIndex,
+            var request = new LocalRgbCrossSaveRequest(action, measurement, imageFile, directory, zIndex,
                 (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), new { Algorithm = DisplayMetrologyIds.RgbCrossRegistration.ToString(), FrameId = lease.FrameId,
-                    SourceMasterId = lease.MasterId, SearchRegionPoiTemplate = poiTemplate, SearchRegion = roi, Parameters = selectedTemplate.Parameters, JsonSchema = RgbCrossMeasurementExporter.SchemaId });
+                    SourceMasterId = lease.MasterId, SearchRegionPoiTemplate = poiTemplate, SearchRegion = roi, Parameters = parameters, JsonSchema = RgbCrossMeasurementExporter.SchemaId });
             LocalRgbCrossSavedResult saved = FlowNodeTiming.Run("PersistResult", () => services.Save(request));
-            if (saved.MasterId <= 0 || string.IsNullOrWhiteSpace(saved.ResultFilePath)) throw new InvalidOperationException("九点结果持久化返回无效记录。");
+            if (saved.MasterId <= 0 || string.IsNullOrWhiteSpace(saved.ResultFilePath)) throw new InvalidOperationException("十字结果持久化返回无效记录。");
             if (ownedFrame != null) { action.SetCurrentFrame(ownedFrame); ownedFrame = null; }
             action.Data["LocalRgbCrossResultFile"] = saved.ResultFilePath;
             action.Data["LocalRgbCrossMeasurement"] = measurement.Clone();
@@ -164,7 +148,7 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
         }
         finally { ownedFrame?.Dispose(); }
     }
-    protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = "FindCross", action.SerialNumber, TemplateName, SearchRegionPoiTemplate, SearchRegion, ImageFilePath, ResultDirectory });
+    protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = "FindCross", action.SerialNumber, ParameterJson, SearchRegionPoiTemplate, SearchRegion, ImageFilePath, ResultDirectory });
     private LocalFlowFrame ResolveFrame(CVStartCFC action, string configuredFile, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null;
@@ -198,7 +182,7 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
         ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
         {
             if (string.IsNullOrWhiteSpace(fallbackFile) || !File.Exists(fallbackFile))
-                throw new FileNotFoundException("九点十字图像文件不存在。", fallbackFile);
+                throw new FileNotFoundException("十字图像文件不存在。", fallbackFile);
             return services.LoadFrame(fallbackFile);
         });
         if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;

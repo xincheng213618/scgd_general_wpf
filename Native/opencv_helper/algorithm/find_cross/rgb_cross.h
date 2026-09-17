@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <cstddef>
 #include <cstdint>
 #include <nlohmann/json.hpp>
@@ -20,6 +20,7 @@ struct Options
 {
     double minimumContrast = .02, targetThreshold = .5, minimumArmSpanFraction = .35;
     double axisBandThreshold = .5, minimumArmCoverage = .5, decodeExponent = 1;
+    int rows = 3, columns = 3;
 };
 // Neutral measurement only. No database, WPF, product limits or permission decisions.
 // Throws invalid_argument/runtime_error for execution failures; undetectable points remain INVALID.

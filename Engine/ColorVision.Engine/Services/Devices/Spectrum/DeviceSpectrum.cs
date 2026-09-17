@@ -218,24 +218,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             EditCommand = new RelayCommand(a =>
             {
-                PropertyEditorWindow window = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional);
+                EditSpectrum window = new EditSpectrum(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.Submitted +=(s,e)=>
+                if (window.ShowDialog() == true)
                 {
-                    //2026.01.21 增加逻辑，如果切换了ND模式，则清空对应的绑定信息
-                    if (Config.NDConfig.IsBingNDDevice)
-                    {
-                        Config.NDConfig.SzComName = string.Empty;
-                    }
-                    else
-                    {
-                        Config.NDConfig.NDBindDeviceCode = string.Empty;
-                    }
-
                     Save();
-                };
-                window.ShowDialog();
+                }
 
             }, a => AccessControl.Check(PermissionMode.Administrator));
 

@@ -292,16 +292,18 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     [STNodeProperty("亮点模式", "默认勾选：亮点、暗背景（发光屏幕）；取消勾选：暗点、亮背景（反射图卡）。两种模式共用几何与畸变计算口径。", true)]
     public bool BrightTarget { get => brightTarget; set { brightTarget = value; OnPropertyChanged(); } }
 
-    [Category("本地点阵畸变")]
+    [Category("搜索区域")]
     [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
     [STNodeProperty("搜索区域关注点", "可选；选择寻找发光区写入的 POI 模板，每次运行读取最新矩形或四角点外接矩形。填写后优先于固定搜索区域；模板无效或越界时停止。留空保持原搜索区域行为。", true)]
     public string SearchRegionPoiTemplate
     {
         get => searchRegionPoiTemplate;
-        set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); }
+        set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); OnPropertyChanged(nameof(HasSearchRegionPoi)); }
     }
 
-    [Category("本地点阵畸变")]
+    [Browsable(false)] public bool HasSearchRegionPoi => !string.IsNullOrWhiteSpace(SearchRegionPoiTemplate);
+    [PropertyVisibility(nameof(HasSearchRegionPoi), true)]
+    [Category("搜索区域")]
     [STNodeProperty("搜索区域", "固定像素 ROI（X,Y,Width,Height）；未选择搜索区域关注点时使用，0,0,0,0 表示整图。点坐标始终使用整图坐标。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
     public Int32Rect SearchRegion { get => searchRegion; set { searchRegion = value; OnPropertyChanged(); } }
 
@@ -322,6 +324,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     public bool PublishOpticalEstimate { get => publishOpticalEstimate; set { publishOpticalEstimate = value; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]
+    [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
     [STNodeProperty("结果目录", "可选；留空保存到当前用户 LocalAppData 下 ColorVision\\Results\\GridDistortion。", true)]
     public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? string.Empty; OnPropertyChanged(); } }
 

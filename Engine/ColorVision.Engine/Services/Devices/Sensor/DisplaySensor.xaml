@@ -36,8 +36,8 @@
                 <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="OffLine" />
                 <StackPanel x:Name="StackPanelContent">
-                    <Button x:Name="ButtonOpen" Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
-                    <Button x:Name="ButtonClose" Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
+                    <Button x:Name="ButtonOpen" HorizontalAlignment="Left" Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
+                    <Button x:Name="ButtonClose" HorizontalAlignment="Left" Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
                     <Grid Margin="0,0,0,5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -51,31 +51,8 @@
                         </Grid>
                         <Button Grid.Column="2" Margin="5,0,0,0" Click="SendTemp_Click" Content="{x:Static properties:Resources.ExecteTemplate}" />
                     </Grid>
-                    <TextBlock Margin="0,0,0,5" Text="{x:Static properties:Resources.DebugMode}" />
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}" />
-                            <CheckBox x:Name="IsAddNewLine" Margin="5,0,0,0" Content="{x:Static properties:Resources.AddNewLine}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Width="60" Text="{x:Static properties:Resources.SendCmd}" />
-                            <TextBox x:Name="TextBoxSendCommand" Width="200" Height="40" Style="{StaticResource TextBox.Small}" Text="" TextWrapping="Wrap" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Width="60" Text="{x:Static properties:Resources.RevCmd}" />
-                            <TextBox x:Name="TextBoxResCommand" Width="200" Height="40" Style="{StaticResource TextBox.Small}" Text="" TextWrapping="Wrap" />
-                        </DockPanel>
-                        <Button Padding="10,5" HorizontalAlignment="Right" Click="SendCommand_Click" Content="{x:Static properties:Resources.Send}" DockPanel.Dock="Right" />
-                    </StackPanel>
-
-
-
                 </StackPanel>
-
-
             </StackPanel>
-
         </Border>
     </StackPanel>
-
 </UserControl>
