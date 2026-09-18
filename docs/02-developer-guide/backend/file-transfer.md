@@ -2,11 +2,11 @@
 knowledge_id: "delivery.file-transfer"
 knowledge_type: "topic"
 status: "current"
-summary: "Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。"
-aliases: ["文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期", "TransferPanel", "uploadTransferFile", "取消上传", "重试失败项", "服务器确认中", "colorvision.transfer.client-id"]
-code_paths: ["Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Frontend/src/pages/TransferPage.tsx", "Web/Frontend/src/pages/TransferSharePage.tsx", "Web/Frontend/src/components/TransferPanel.tsx", "Web/Frontend/src/services/transferUpload.ts", "Web/Frontend/src/services/transferShares.ts", "Web/Frontend/src/utils/transferAccess.ts"]
-test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts"]
-related: ["delivery.backend", "operations.file-server", "operations.exports"]
+summary: "Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。"
+aliases: ["云盘", "CloudDriveWindow", "TransferClient", "文件夹分享", "二维码分享", "文件中转", "Transfer", "file:transfer", "Upload-Offset", "X-Transfer-Client", "stream_transfer_upload", "create_or_resume_transfer_upload", "get_or_create_transfer_share", "断点续传", "匿名上传", "文件分享过期", "TransferPanel", "uploadTransferFile", "取消上传", "重试失败项", "服务器确认中", "colorvision.transfer.client-id"]
+code_paths: ["UI/ColorVision.Rbac/CloudDrive", "Web/Backend/routes/transfer.py", "Web/Backend/transfer_files.py", "Web/Backend/app_setup.py", "Web/Backend/config_loader.py", "Web/Backend/services/auth_policy.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/scheduler.py", "Web/Backend/services/artifact_delivery.py", "Web/Backend/routes/artifact_delivery.py", "Web/Frontend/src/pages/TransferPage.tsx", "Web/Frontend/src/pages/TransferSharePage.tsx", "Web/Frontend/src/components/TransferPanel.tsx", "Web/Frontend/src/services/transferUpload.ts", "Web/Frontend/src/services/transferShares.ts", "Web/Frontend/src/utils/transferAccess.ts"]
+test_paths: ["Web/Backend/test_transfer_files.py", "Web/Backend/test_auth_policy.py", "Web/Frontend/tests/transferAccess.test.ts", "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"]
+related: ["delivery.backend", "operations.file-server", "operations.exports", "platform.rbac"]
 ---
 
 # 文件中转、覆盖与公开分享
@@ -14,6 +14,20 @@ related: ["delivery.backend", "operations.file-server", "operations.exports"]
 Web 的“文件中转”（`/transfer`）用于多文件上传、断点续传和链接分享。上传由 `TransferPanel` / `transferUpload.ts` 调用 Backend 中转 API，`transfer_files.py` 管理文件、会话和分享记录。它不解析或发布插件包，也不刷新插件市场索引。文件列表和直接下载需要授权；分享链接则允许持有者公开访问。
 
 配置与数据库、启动副作用见[Backend 组成](./README.md)。本页的上传、覆盖、删除和配置说明不是执行这些动作的授权。
+
+## 桌面用户中心云盘
+
+用户中心的“云盘”入口打开独立非模态窗口，不要求本地 RBAC 或 Web 账号。选择多个文件、文件夹或拖入路径后，点击“开始 / 继续上传”；文件夹先在本机打包为 ZIP，保留内部目录和空目录，拒绝目录链接/符号链接以免带入所选目录之外的数据。打包使用快照文件，已开始续传的压缩包丢失时需重新添加文件夹，不能拿变化后的目录继续旧会话。
+
+`UI/ColorVision.Rbac/CloudDrive/` 复用本页的匿名断点协议，服务器地址来自 `MarketplaceConfig.ServiceBaseUrl`。客户端不发送账号凭据或浏览器 Cookie，使用持久化 UUID 维持匿名会话；服务器必须显式启用 `anonymous_transfer_upload_enabled`。启动上传前读取 `/api/auth/session` 的匿名开关和大小上限，超限项目显示失败原因。原文件不会因打包或上传被改写；上传名称附加随机标识以避免匿名同名冲突和覆盖他人文件。
+
+桌面记录和客户端 UUID 保存于 `%LocalAppData%/ColorVision/CloudDrive/transfers.json`，打包快照保存于其 `Packages/` 子目录。每次服务器确认会话/offset 后原子保存记录；关闭窗口暂停，重新打开或重启软件后点击继续恢复。“后台上传”隐藏窗口并继续队列，可从用户中心再次打开。读取记录失败不会悄悄生成新身份覆盖旧断点。每次开始/恢复读取文件完整 SHA-256，原内容改变时拒绝续传；服务端仍不重算该哈希，不能把指纹当作服务端内容验收。
+
+分块失败或最终响应丢失时先查询原会话；仅按服务器确认位置继续，同一位置连续三次暂时失败后保留记录并提示手动重试。服务端会话已过期/不存在时使用新随机名称重建上传。只有服务器 `complete=true` 且返回分享地址，才显示“上传完成”、复制链接和二维码；发送到 100% 不代表已完成。分享二维码与文本链接指向同一公开下载网页，可供其他电脑和手机直接下载，正常匿名分享 24 小时后过期。
+
+队列仅展示本机记录，不提供全站文件列表。“移除本机记录”同时清理该项自己生成的 ZIP，不删除服务器文件、不撤销已发出的链接；上传完成回执成功保存后也清理该项 ZIP。用户源文件不参与此清理。匿名 UUID 和分享链接都是持有者能力，不是账号权限或永久网盘存储。
+
+`Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs` 覆盖持久化身份及断点恢复、最终响应丢失、offset 冲突、源文件变化、零字节上传、文件夹 ZIP 和损坏记录保护。真实 NAS、反向代理、大文件容量和跨电脑下载需要另外使用合成数据验证，不能用单元测试替代。
 
 ## 使用网页中转文件
 

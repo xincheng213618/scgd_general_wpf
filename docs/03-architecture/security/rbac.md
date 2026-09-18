@@ -120,6 +120,8 @@ RBAC 当前实现集中在独立项目 `UI/ColorVision.Rbac/`，并由 `ColorVis
 
 ## 用户中心统计：本机使用与业务库计数
 
+用户中心允许未登录时打开，账户操作仍走原有登录及权限边界；“云盘”入口不要求账号，打开后关闭模态用户中心并显示独立非模态窗口，便于后台上传时继续使用主程序。云盘复用远程匿名文件中转，与本地 RBAC 身份分离，上传、续传、二维码和过期规则见[文件中转](../../02-developer-guide/backend/file-transfer.md)。
+
 这部分不是身份认证审计，也不是当前用户的个人执行历史。`UserCenterStatisticsService.QueryAsync` 没有用户 ID 筛选，查询当前配置业务数据库的 `t_scgd_measure_batch`；不要根据“用户中心”标题把结果归属到登录用户。
 
 - `ApplicationUsageTracker.StartSession` 在主程序通过单实例处理后记录一次启动并请求保存配置；正常退出的 `StopSession` 将本次时长累计到 `RbacManagerConfig`。崩溃、强制结束或保存失败不保证时长落盘。“本次运行”优先取当前进程时长，失败时回退到追踪器起点；总时长为已累计值加当前运行时长。

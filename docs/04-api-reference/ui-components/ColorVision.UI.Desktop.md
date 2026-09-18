@@ -54,7 +54,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 | 市场链 | `MarketplaceWindow` -> `MarketplaceClient` -> Markdown/WebView2 -> 下载/安装服务 |
 | 下载链 | `DownloadWindow` -> `Aria2cDownloadManager` -> `aria2c.exe` / RPC daemon |
 | 崩溃诊断链 | `SettingWindow` -> `CrashDumpSettingsProvider` -> 通用属性编辑器 -> `ColorVisionServiceHost` / WER LocalDumps / `DumpHelper` |
-| 反馈收集链 | `FeedbackWindow` -> 可选 Web 账号一次性登录 -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> `/api/feedback` |
+| 反馈收集链 | `FeedbackWindow` -> `IFeedbackLogCollector` -> 应用日志、系统信息、脱敏配置快照、Dump、Windows 事件日志 -> 匿名 `/api/feedback` |
 | 菜单管理链 | [MenuItemManagerWindow → 草稿 → CommitEditingSnapshot → 运行时覆盖/重建 → 尝试保存](./menus.md) |
 | DLL 诊断链 | `ViewDllVersionsWindow` |
 
@@ -62,7 +62,7 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 
-发送时可输入 Web 反馈账号，也可明确选择匿名提交。账号密码只用于本次 Web Session，不落配置或日志；服务端从已验证 Session 取得稳定账号 ID，不能用本地 RBAC、Windows 用户名或机器名代替。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
+桌面反馈窗口不再要求输入 Web 账号密码，点击“发送反馈”后直接匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
 
 默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。“流程前后处理配置”同时收集 `PreProcessConfig.json`、`PostProcessConfig.json`；加载 ProjectARVRPro 后，“ARVRPro 流程配置”按项目实际配置目录收集 `ProjectARVRProProcessGroups.json`，保留流程组、切图等待、相机覆盖参数与 Recipe。配置始终采集当前已保存文件，不受日志天数或文件修改时间限制，也不扫描历史备份、其他项目、认证文件或整个配置目录。
 

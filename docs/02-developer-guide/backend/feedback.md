@@ -19,7 +19,7 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-account
 
 提交使用 multipart form。匿名旧客户端仍可提交；已登录数据库账号提交时，Backend 只使用已验证 Session 中的稳定 `user_id` 写入 `ownerUserId` / `ownerUsername`。客户端表单里的同名字段被忽略，`userName`、`machineName`、`machineInfo`、版本和客户端时间均是诊断信息，不是授权依据。
 
-桌面反馈窗口可选择 Web 账号登录后提交，也可明确选择匿名提交。Web 密码只用于本次 `/api/auth/login`，不写 URL、日志或桌面配置；Session cookie 随本次 `HttpClient` 生命周期结束。ColorVision 本地 RBAC 用户、Windows 用户名、机器名与 Web 账号不是同一身份，不能据此自动认领。
+桌面反馈窗口直接匿名提交，不再弹出 Web 账号密码对话框。Backend 仍兼容其他已登录客户端的 Session 归属，但 ColorVision 本地 RBAC 用户、Windows 用户名和机器名与 Web 账号不是同一身份，不能据此自动认领。
 
 | 字段 | 契约 |
 | --- | --- |

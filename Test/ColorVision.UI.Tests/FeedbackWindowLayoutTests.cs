@@ -1,6 +1,7 @@
 using ColorVision.UI.Desktop.Feedback;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -32,6 +33,16 @@ public sealed class FeedbackWindowLayoutTests
 
             Assert.True(Element<Button>(window, "SendButton").IsDefault);
         });
+    }
+
+    [Fact]
+    public void SendingFeedbackSubmitsDirectlyWithoutAnAccountPrompt()
+    {
+        string source = File.ReadAllText(FindFeedbackWindowSource());
+
+        Assert.DoesNotContain("FeedbackAccountLoginDialog", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/auth/login", source, StringComparison.Ordinal);
+        Assert.Contains("/api/feedback", source, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -286,6 +297,19 @@ public sealed class FeedbackWindowLayoutTests
 
     private static void FlushBindings(FeedbackWindow window)
         => window.Dispatcher.Invoke(static () => { }, DispatcherPriority.DataBind);
+
+    private static string FindFeedbackWindowSource([CallerFilePath] string testSourcePath = "")
+    {
+        string testDirectory = Path.GetDirectoryName(testSourcePath)!;
+        return Path.GetFullPath(Path.Combine(
+            testDirectory,
+            "..",
+            "..",
+            "UI",
+            "ColorVision.UI.Desktop",
+            "Feedback",
+            "FeedbackWindow.xaml.cs"));
+    }
 
     private class BasicCollector : IFeedbackLogCollector
     {

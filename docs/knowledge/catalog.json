@@ -3675,8 +3675,13 @@
       "knowledge_id": "delivery.file-transfer",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。",
+      "summary": "Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。",
       "aliases": [
+        "云盘",
+        "CloudDriveWindow",
+        "TransferClient",
+        "文件夹分享",
+        "二维码分享",
         "文件中转",
         "Transfer",
         "file:transfer",
@@ -3696,6 +3701,7 @@
         "colorvision.transfer.client-id"
       ],
       "code_paths": [
+        "UI/ColorVision.Rbac/CloudDrive",
         "Web/Backend/routes/transfer.py",
         "Web/Backend/transfer_files.py",
         "Web/Backend/app_setup.py",
@@ -3715,14 +3721,17 @@
       "test_paths": [
         "Web/Backend/test_transfer_files.py",
         "Web/Backend/test_auth_policy.py",
-        "Web/Frontend/tests/transferAccess.test.ts"
+        "Web/Frontend/tests/transferAccess.test.ts",
+        "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"
       ],
       "related": [
         "delivery.backend",
         "operations.file-server",
-        "operations.exports"
+        "operations.exports",
+        "platform.rbac"
       ],
       "code_scopes": [
+        "UI/ColorVision.Rbac",
         "Web/Backend",
         "Web/Frontend"
       ],

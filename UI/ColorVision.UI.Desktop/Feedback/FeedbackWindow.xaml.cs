@@ -9,11 +9,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
-using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -587,48 +584,7 @@ namespace ColorVision.UI.Desktop.Feedback
             {
                 string baseUrl = MarketplaceConfig.ServiceBaseUrl;
 
-                var loginDialog = new FeedbackAccountLoginDialog { Owner = this };
-                if (loginDialog.ShowDialog() != true)
-                {
-                    StatusText.Text = string.Empty;
-                    return;
-                }
-
-                using var handler = new HttpClientHandler { CookieContainer = new CookieContainer() };
-                using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(10) };
-                if (!loginDialog.SubmitAnonymously)
-                {
-                    using var loginContent = new StringContent(
-                        JsonSerializer.Serialize(new
-                        {
-                            username = loginDialog.Username,
-                            password = loginDialog.Password,
-                        }),
-                        Encoding.UTF8,
-                        "application/json");
-                    using var loginResponse = await httpClient.PostAsync($"{baseUrl}/api/auth/login", loginContent);
-                    string loginBody = await loginResponse.Content.ReadAsStringAsync();
-                    if (!loginResponse.IsSuccessStatusCode)
-                    {
-                        StatusText.Text = "Web 账号登录失败，请检查账号状态或凭据。";
-                        log.Warn($"Feedback account login failed: {loginResponse.StatusCode}");
-                        return;
-                    }
-                    using JsonDocument loginDocument = JsonDocument.Parse(loginBody);
-                    JsonElement loginRoot = loginDocument.RootElement;
-                    if (loginRoot.TryGetProperty("must_change_password", out JsonElement mustChangePassword)
-                        && mustChangePassword.ValueKind == JsonValueKind.True)
-                    {
-                        StatusText.Text = "请先在网站完成密码修改，再提交反馈。";
-                        return;
-                    }
-                    if (loginRoot.TryGetProperty("csrf_token", out JsonElement csrfToken)
-                        && csrfToken.ValueKind == JsonValueKind.String
-                        && !string.IsNullOrWhiteSpace(csrfToken.GetString()))
-                    {
-                        httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-CSRF-Token", csrfToken.GetString());
-                    }
-                }
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
                 using var form = new MultipartFormDataContent();
 
                 form.Add(new StringContent(message), "message");

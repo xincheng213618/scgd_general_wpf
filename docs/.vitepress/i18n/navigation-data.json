@@ -1541,6 +1541,12 @@
           "items": [
             {
               "text": {
+                "root": "文件中转、覆盖与公开分享"
+              },
+              "link": "/02-developer-guide/backend/file-transfer"
+            },
+            {
+              "text": {
                 "root": "RBAC：登录缓存、会话与权限边界"
               },
               "link": "/03-architecture/security/rbac"

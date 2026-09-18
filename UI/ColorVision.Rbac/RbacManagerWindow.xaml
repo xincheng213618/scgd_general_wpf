@@ -86,6 +86,12 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Click="OpenCloudDrive_Click" Style="{StaticResource UpdateDialogPrimaryButtonStyle}" Margin="0,0,8,0" ToolTip="无需账号，上传文件并通过链接或二维码分享">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="云盘"/>
+                            </StackPanel>
+                        </Button>
                         <Button Command="{Binding LoginCommand}"
                                 Style="{StaticResource UpdateDialogPrimaryButtonStyle}"
                                 Margin="0,0,8,0"

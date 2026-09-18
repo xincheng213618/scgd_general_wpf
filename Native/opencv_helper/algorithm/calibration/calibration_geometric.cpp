@@ -1274,9 +1274,17 @@ public:
         }
 
         try {
+            // Integer enlargement keeps the cubic phase unchanged when the
+            // source origin moves by whole pixels. The vendored IPP 16-bit
+            // resize has matching rounding for these scales; other backends,
+            // bit depths and fractional scales retain the full-frame path.
+            const bool allowTiles = raw.bitsPerChannel == 16 && cv::ipp::useIPP()
+                && interpolationRatio_ >= 2.0 && interpolationRatio_ <= 4.0
+                && interpolationRatio_ == std::floor(interpolationRatio_);
             if (!ensureMaps(
                     static_cast<int>(raw.width),
                     static_cast<int>(raw.height),
+                    allowTiles,
                     error)) {
                 return false;
             }
@@ -1286,6 +1294,11 @@ public:
                 static_cast<int>(raw.width),
                 imageType(raw),
                 raw.data);
+
+            if (!tiles_.empty()) {
+                renderTiles(source, destination);
+                return true;
+            }
 
             // Resizing the interleaved image is channel-independent and gives
             // the same cubic samples as the legacy split/resize path while
@@ -1328,9 +1341,15 @@ private:
 
     using IndexEntry = cv::Vec<std::int32_t, 3>;
 
-    bool ensureMaps(int inputColumns, int inputRows, std::string& error)
+    struct ResizeTile {
+        cv::Rect source;
+        cv::Rect output;
+    };
+
+    bool ensureMaps(int inputColumns, int inputRows, bool allowTiles, std::string& error)
     {
         if (inputColumns_ == inputColumns && inputRows_ == inputRows
+            && mapsAllowTiles_ == allowTiles
             && !sourceIndices_.empty()) {
             return true;
         }
@@ -1357,6 +1376,10 @@ private:
 
         const double opticalColumn = opticalCenterX_ * interpolationRatio_;
         const double opticalRow = opticalCenterY_ * interpolationRatio_;
+        inputColumns_ = inputRows_ = -1;
+        tiles_.clear();
+        tileScratch_.clear();
+        resized_.release();
         sourceIndices_.create(targetRows_, targetColumns_, CV_32SC3);
 
         cv::parallel_for_(cv::Range(0, targetRows_), [&](const cv::Range& range) {
@@ -1384,9 +1407,133 @@ private:
             }
         });
 
+        if (allowTiles) {
+            prepareTiles(inputColumns, inputRows);
+        }
         inputColumns_ = inputColumns;
         inputRows_ = inputRows;
+        mapsAllowTiles_ = allowTiles;
         return true;
+    }
+
+    void prepareTiles(int inputColumns, int inputRows)
+    {
+        constexpr int tileSize = 128;
+        const int scale = static_cast<int>(interpolationRatio_);
+        const int columns = (targetColumns_ + tileSize - 1) / tileSize;
+        const int rows = (targetRows_ + tileSize - 1) / tileSize;
+        std::vector<ResizeTile> tiles(static_cast<std::size_t>(columns) * rows);
+        cv::parallel_for_(cv::Range(0, static_cast<int>(tiles.size())), [&](const cv::Range& range) {
+            for (int index = range.start; index < range.end; ++index) {
+                auto& tile = tiles[index];
+                const int x = index % columns * tileSize;
+                const int y = index / columns * tileSize;
+                tile.output = cv::Rect(x, y, (std::min)(tileSize, targetColumns_ - x), (std::min)(tileSize, targetRows_ - y));
+                int left = resizedColumns_, top = resizedRows_, right = -1, bottom = -1;
+                for (int row = y; row < y + tile.output.height; ++row) {
+                    const auto* indices = sourceIndices_.ptr<IndexEntry>(row);
+                    for (int column = x; column < x + tile.output.width; ++column) {
+                        for (int channel = 0; channel < 3; ++channel) {
+                            const int pixel = indices[column][channel];
+                            if (pixel < 0) continue;
+                            const int sourceColumn = pixel % resizedColumns_;
+                            const int sourceRow = pixel / resizedColumns_;
+                            left = (std::min)(left, sourceColumn);
+                            right = (std::max)(right, sourceColumn);
+                            top = (std::min)(top, sourceRow);
+                            bottom = (std::max)(bottom, sourceRow);
+                        }
+                    }
+                }
+                if (right >= 0) {
+                    // Include the entire four-tap cubic footprint. Only true
+                    // image edges may use OpenCV's replicated border pixels.
+                    const int sourceX = (std::max)(0, left / scale - 2);
+                    const int sourceY = (std::max)(0, top / scale - 2);
+                    tile.source = cv::Rect(sourceX, sourceY,
+                        (std::min)(inputColumns, right / scale + 3) - sourceX,
+                        (std::min)(inputRows, bottom / scale + 3) - sourceY);
+                }
+            }
+        });
+
+        cv::Size scratchSize;
+        std::uint64_t totalPixels = 0;
+        for (const auto& tile : tiles) {
+            scratchSize.width = (std::max)(scratchSize.width, tile.source.width * scale);
+            scratchSize.height = (std::max)(scratchSize.height, tile.source.height * scale);
+            totalPixels += static_cast<std::uint64_t>(tile.source.width) * tile.source.height * scale * scale;
+        }
+        // Extreme/nonlocal maps can make a tile span nearly the whole input.
+        // Keep the original path when tiling would increase work or require
+        // large per-worker intermediates. Do not mutate global indices yet.
+        const auto scratchPixels = static_cast<std::uint64_t>(scratchSize.width) * scratchSize.height;
+        if (scratchPixels > 1024 * 1024
+            || totalPixels >= static_cast<std::uint64_t>(resizedColumns_) * resizedRows_) {
+            return;
+        }
+
+        cv::parallel_for_(cv::Range(0, static_cast<int>(tiles.size())), [&](const cv::Range& range) {
+            for (int index = range.start; index < range.end; ++index) {
+                const auto& tile = tiles[index];
+                for (int row = tile.output.y; row < tile.output.y + tile.output.height; ++row) {
+                    auto* indices = sourceIndices_.ptr<IndexEntry>(row);
+                    for (int column = tile.output.x; column < tile.output.x + tile.output.width; ++column) {
+                        for (int channel = 0; channel < 3; ++channel) {
+                            int& pixel = indices[column][channel];
+                            if (pixel >= 0) {
+                                pixel = (pixel / resizedColumns_ - tile.source.y * scale) * scratchSize.width
+                                    + pixel % resizedColumns_ - tile.source.x * scale;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        tileScratchSize_ = scratchSize;
+        tiles_ = std::move(tiles);
+    }
+
+    void renderTiles(const cv::Mat& source, const ImageView& output)
+    {
+        cv::Mat destination(targetRows_, targetColumns_, source.type(), output.data);
+        if (tileScratchSize_.empty()) {
+            destination.setTo(0);
+            return;
+        }
+        constexpr std::size_t scratchBudgetBytes = 64 * 1024 * 1024;
+        const std::size_t workerBytes = static_cast<std::size_t>(tileScratchSize_.area()) * source.elemSize();
+        const int workers = (std::min)({ (std::max)(1, cv::getNumThreads()),
+            static_cast<int>(tiles_.size()), static_cast<int>(scratchBudgetBytes / workerBytes) });
+        tileScratch_.resize(workers);
+        const int scale = static_cast<int>(interpolationRatio_);
+        cv::parallel_for_(cv::Range(0, workers), [&](const cv::Range& range) {
+            for (int worker = range.start; worker < range.end; ++worker) {
+                auto& buffer = tileScratch_[worker];
+                buffer.create(tileScratchSize_, source.type());
+                const auto* samples = buffer.ptr<std::uint16_t>();
+                for (std::size_t index = worker; index < tiles_.size(); index += workers) {
+                    const auto& tile = tiles_[index];
+                    if (tile.source.empty()) {
+                        destination(tile.output).setTo(0);
+                        continue;
+                    }
+                    cv::Mat resized = buffer(cv::Rect(0, 0, tile.source.width * scale, tile.source.height * scale));
+                    cv::resize(source(tile.source), resized, resized.size(), 0.0, 0.0, cv::INTER_CUBIC);
+                    for (int row = tile.output.y; row < tile.output.y + tile.output.height; ++row) {
+                        const auto* indices = sourceIndices_.ptr<IndexEntry>(row);
+                        auto* values = destination.ptr<std::uint16_t>(row);
+                        for (int column = tile.output.x; column < tile.output.x + tile.output.width; ++column) {
+                            for (int channel = 0; channel < 3; ++channel) {
+                                const int pixel = indices[column][channel];
+                                values[column * 3 + channel] = pixel < 0 ? 0
+                                    : samples[static_cast<std::size_t>(pixel) * 3 + channel];
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     std::int32_t correctedIndex(
@@ -1457,6 +1604,10 @@ private:
     int inputRows_ = -1;
     int resizedColumns_ = 0;
     int resizedRows_ = 0;
+    bool mapsAllowTiles_ = false;
+    std::vector<ResizeTile> tiles_;
+    cv::Size tileScratchSize_;
+    std::vector<cv::Mat> tileScratch_;
     cv::Mat sourceIndices_;
     cv::Mat resized_;
     cv::Mat fallbackScratch_;

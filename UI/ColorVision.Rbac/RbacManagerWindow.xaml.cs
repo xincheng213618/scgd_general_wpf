@@ -146,17 +146,6 @@ namespace ColorVision.Rbac
         {
             DataContext = this;
 
-            if (!Manager.IsUserLoggedIn())
-            {
-                var loginWindow = CreateLoginWindow();
-                bool? loginResult = loginWindow.ShowDialog();
-                if (loginResult != true || !Manager.IsUserLoggedIn())
-                {
-                    Loaded += (_, _) => Close();
-                    return;
-                }
-            }
-
             SetupPropertyChangeListener();
             Loaded += Window_Loaded;
             Closed += Window_Closed;
@@ -172,6 +161,20 @@ namespace ColorVision.Rbac
         }
 
         private void Window_Closed(object? sender, EventArgs e) => Dispose();
+
+        private void OpenCloudDrive_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                CloudDrive.CloudDriveWindow.ShowCloudDrive();
+                // Release the modal user center so uploads can continue while using the application.
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "云盘", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
 
         public void Dispose()
         {

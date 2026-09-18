@@ -7,8 +7,6 @@ from unittest import mock
 from Scripts import build_update
 
 from Scripts.build_update import (
-    NATIVE_REPAIR_PATHS,
-    NATIVE_REPAIR_BASELINE,
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
     create_full_zip,
     find_incremental_baseline,
@@ -17,34 +15,45 @@ from Scripts.build_update import (
 )
 
 
-class NativeRepairDeliveryTests(unittest.TestCase):
-    def test_unchanged_dependencies_are_included_to_repair_81_clients(self):
+class NativeRuntimeDeliveryTests(unittest.TestCase):
+    def test_native_dependencies_follow_content_diff_for_old_and_new_baselines(self):
+        native_paths = (
+            'runtimes/win-x64/native/OpenCvSharpExtern.dll',
+            'runtimes/win-x64/native/opencv_videoio_ffmpeg4130_64.dll',
+            'runtimes/win-x64/native/opencv_videoio_ffmpeg4140_64.dll',
+        )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             runtime = root / "runtime"
-            baseline = root / NATIVE_REPAIR_BASELINE
+            baseline = root / "ColorVision-[1.4.14.1].zip"
             expected = {}
             with zipfile.ZipFile(baseline, "w") as z:
-                for relative in NATIVE_REPAIR_PATHS:
+                for relative in native_paths:
                     data = relative.encode()
                     path = runtime / relative
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_bytes(data)
                     z.writestr(relative, data)
                     expected[relative] = hashlib.sha256(data).hexdigest()
-            package = root / "repair.cvx"
+            package = root / "incremental.cvx"
+            for name in ("ColorVision-[1.4.14.1].zip", "ColorVision-[1.4.15.1].zip"):
+                with self.subTest(baseline=name):
+                    candidate = root / name
+                    if candidate != baseline:
+                        candidate.write_bytes(baseline.read_bytes())
+                    make_incremental_zip(candidate, runtime, package, native_hashes=expected)
+                    with zipfile.ZipFile(package) as z:
+                        self.assertEqual(z.namelist(), [])
+
+            # Changed native libraries must still be delivered; do not blacklist these DLLs.
+            changed = native_paths[0]
+            content = b'updated native runtime'
+            (runtime / changed).write_bytes(content)
+            expected[changed] = hashlib.sha256(content).hexdigest()
             make_incremental_zip(baseline, runtime, package, native_hashes=expected)
             with zipfile.ZipFile(package) as z:
-                self.assertEqual(set(z.namelist()), set(NATIVE_REPAIR_PATHS))
-            # A new healthy baseline no longer needs the .81 repair payload.
-            healthy = root / "ColorVision-[1.4.15.1].zip"
-            healthy.write_bytes(baseline.read_bytes())
-            make_incremental_zip(healthy, runtime, package, native_hashes=expected)
-            with zipfile.ZipFile(package) as z:
-                self.assertEqual(z.namelist(), [])
-            (runtime / NATIVE_REPAIR_PATHS[0]).unlink()
-            with self.assertRaisesRegex(FileNotFoundError, "repair file"):
-                make_incremental_zip(baseline, runtime, package, native_hashes=expected)
+                self.assertEqual(z.namelist(), [changed])
+                self.assertEqual(z.read(changed), content)
 
     def test_runtime_corruption_stops_before_packaging_or_upload(self):
         with mock.patch.object(build_update, "get_file_version", return_value="1.4.14.82"), \

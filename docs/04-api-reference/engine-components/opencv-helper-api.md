@@ -187,6 +187,8 @@ Geometric transforms that cannot safely run in place share one context-owned
 RAW-sized work buffer and ping-pong through it. Consecutive Distortion and
 ColorDiff therefore require no intermediate full-frame copy.
 
+`AngleShift` 保留整数/小数光心、各通道多项式、整数采样坐标及越界补零规则。16-bit 三通道输入在 IPP 启用且 `interpolate_ratio` 为 2、3、4 时，可缓存分块区域与局部采样坐标，只对需要的区域执行同一套 `INTER_CUBIC`；裁剪区域包含完整插值邻域，不把分块边缘当作图像边缘。复用的分块图像缓冲总计不超过 64 MiB（不含坐标表和 RAW 工作缓冲）。8-bit、其他倍率、IPP 关闭，或分块会增加处理量/需要过大区域时，保留完整图像放大路径；执行上下文切换这些条件时重建对应坐标，不改进程全局线程或 IPP 设置。`Test/opencv_helper_test/test_calibration.cpp` 的校准 smoke 覆盖随机/极值图、边缘、光心小数、后端与位深切换，并要求与完整放大参考逐字节一致。
+
 `M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write
 corrected RAW, planar CIE, or both without first copying the source in managed
 code. When a template ends in a luminance/color transform, `correctedRawData`

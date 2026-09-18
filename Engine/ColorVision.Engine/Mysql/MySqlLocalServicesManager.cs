@@ -156,6 +156,7 @@ namespace ColorVision.Database
         private static readonly string[] CandidateTimeColumns = { "create_time", "create_date", "add_time" };
         private static MySqlLocalServicesManager _instance;
         private static readonly object _locker = new();
+        private static readonly object MySqlPathDiscoveryLock = new();
         public static MySqlLocalServicesManager GetInstance()
         {
             if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
@@ -270,7 +271,7 @@ namespace ColorVision.Database
         {
             try
             {
-                bool result = FindMySQLPath("MySQL") || FindMySQLPath("MySQL57") || FindMySQLPath("MySQL80");
+                bool result = RefreshMySqlToolPathsFromServices();
                 if (!result)
                 {
                     log.Info("找不到本地的mysql 服务");
@@ -657,52 +658,91 @@ namespace ColorVision.Database
                 : $"SQL 未完成导入，{currentStage}失败";
         }
 
-        bool FindMySQLPath(string serviceName)
+        private static bool RefreshMySqlToolPathsFromServices()
+        {
+            lock (MySqlPathDiscoveryLock)
+            {
+                bool found = false;
+                foreach (string configuredPath in new[] { Config.ImagePath, Config.MysqldPath }
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    found |= TryConfigureMySqlToolPaths(Config, configuredPath);
+                    if (File.Exists(Config.MysqlPath) && File.Exists(Config.MysqldumpPath))
+                        return true;
+                }
+
+                foreach (string serviceName in new[] { Config.ServiceName, "MySQL", "MySQL57", "MySQL80" }
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    found |= FindMySQLPath(serviceName);
+                    if (File.Exists(Config.MysqlPath) && File.Exists(Config.MysqldumpPath))
+                        break;
+                }
+                return found;
+            }
+        }
+
+        private static bool FindMySQLPath(string serviceName)
         {
             using (RegistryKey key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}"))
             {
                 if (key != null)
                 {
-                    Config.ServiceName = serviceName;
                     object imagePath = key.GetValue("ImagePath");
-                    if (imagePath is string str)
+                    if (imagePath is string str && TryConfigureMySqlToolPaths(Config, str))
                     {
-                        Config.ImagePath = str;
-                        Config.MysqldPath = ExtractExePath(Config.ImagePath);
-                        if (File.Exists(Config.MysqldPath))
-                        {
-                            DirectoryInfo directory = Directory.GetParent(Config.MysqldPath);
-
-                            string mysqlPath = Path.Combine(directory.FullName, "mysql.exe");
-                            if (File.Exists(mysqlPath))
-                            {
-                                Config.MysqlPath = mysqlPath;
-                            }
-                            string mysqldumpPath = Path.Combine(directory.FullName, "mysqldump.exe");
-                            if (File.Exists(mysqldumpPath))
-                            {
-                                Config.MysqldumpPath = mysqldumpPath;
-                            }
-                            return true;
-                        }
+                        Config.ServiceName = serviceName;
+                        return true;
                     }
                 }
             }
             return false;
         }
 
-        string ExtractExePath(string imagePath)
+        internal static bool TryConfigureMySqlToolPaths(MySqlLocalConfig config, string imagePath)
         {
-            // 切分字符串并提取路径
-            var parts = imagePath.Split(' ');
-            foreach (var part in parts)
+            ArgumentNullException.ThrowIfNull(config);
+            if (string.IsNullOrWhiteSpace(imagePath))
+                return false;
+
+            string? mysqldPath = ExtractExePath(imagePath);
+            if (string.IsNullOrWhiteSpace(mysqldPath) || !File.Exists(mysqldPath))
+                return false;
+
+            config.ImagePath = imagePath;
+            config.MysqldPath = mysqldPath;
+            string? directory = Path.GetDirectoryName(mysqldPath);
+            if (string.IsNullOrWhiteSpace(directory))
+                return false;
+
+            string mysqlPath = Path.Combine(directory, "mysql.exe");
+            if (File.Exists(mysqlPath))
+                config.MysqlPath = mysqlPath;
+
+            string mysqldumpPath = Path.Combine(directory, "mysqldump.exe");
+            if (File.Exists(mysqldumpPath))
+                config.MysqldumpPath = mysqldumpPath;
+
+            return true;
+        }
+
+        private static string? ExtractExePath(string imagePath)
+        {
+            string value = imagePath.Trim();
+            if (value.Length == 0)
+                return null;
+
+            if (value[0] == '"')
             {
-                if (part.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    return part;
-                }
+                int closingQuote = value.IndexOf('"', 1);
+                if (closingQuote > 1)
+                    return value[1..closingQuote];
             }
-            return null;
+
+            int executableEnd = value.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            return executableEnd >= 0 ? value[..(executableEnd + 4)].Trim('"') : null;
         }
 
         private List<MySqlCleanupTableInfo> LoadCleanupTableInfos()
@@ -1084,6 +1124,7 @@ namespace ColorVision.Database
 
         internal static string CreateFeedbackResourceBackup()
         {
+            RefreshMySqlToolPathsFromServices();
             return RunDatabaseMaintenance(() => CreateMySqlBackupFile(
                 Path.GetTempPath(),
                 "ColorVisionResources",

@@ -42,7 +42,7 @@ Scripts\release.bat
 
 发布前会按 SHA-256 校验 OpenCV 原生运行库：OpenCvSharp 的源文件由主程序 `project.assets.json` 中实际解析的 NuGet 版本定位，本地 OpenCV 由 `packages/OpenCV.Release.x64.props` 定位。安装器构建前自动修复输出副本，复制后再次校验；缺少源文件、复制失败或校验不符会停止发布。增量打包前只读复查，包内包含的原生库还会在上传前再次校验，文件大小和修改时间相同不能代替内容一致性。
 
-以 `ColorVision-[1.4.14.1].zip` 为基准的更新包会继续携带正确的 `OpenCvSharpExtern.dll`、`opencv_videoio_ffmpeg4130_64.dll` 和 `opencv_videoio_ffmpeg4140_64.dll`，覆盖曾安装 `1.4.14.81` 异常副本的客户端。即使它们与基准相同也不能省略，否则后续升级无法修复旧安装。进入下一版本系列时，首个跨系列更新仍携带修复文件；改用已校验的新系列基准后恢复普通差分。该修复载荷约增加 53 MB，不表示依赖升级。
+OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相同的 DLL 不进入增量包；新增或内容变化的 DLL 正常进入增量包。文件完整性校验只保证内容正确，不会强制把未变化的库加入更新包，也不因历史版本异常增加额外修复载荷。
 
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。运行时 `Config/` 和窗口尺寸诊断使用的根目录 `window-resize-diagnostics.mode`、`window-resize-traces/` 属于本机产物，不进入主程序全量 ZIP 或增量 CVX；诊断文件也不进入插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
 

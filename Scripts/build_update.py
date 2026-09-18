@@ -34,14 +34,6 @@ FULL_RELEASE_ZIP_RE = re.compile(
     r'^ColorVision-\[(\d+)\.(\d+)\.(\d+)\.(\d+)]\.zip$',
     re.IGNORECASE,
 )
-# .81 shipped damaged copies. Keep repairing clients while their update chain uses this
-# baseline, including the first rollup of the next build; a healthy new baseline retires it.
-NATIVE_REPAIR_BASELINE = 'ColorVision-[1.4.14.1].zip'
-NATIVE_REPAIR_PATHS = (
-    'runtimes/win-x64/native/OpenCvSharpExtern.dll',
-    'runtimes/win-x64/native/opencv_videoio_ffmpeg4130_64.dll',
-    'runtimes/win-x64/native/opencv_videoio_ffmpeg4140_64.dll',
-)
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
 # ----------------------
@@ -285,13 +277,6 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip, *, native_ha
             old_file = old_files_dict.get(rel_path)
             if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
                 files_to_zip[rel_path] = new_file
-
-        if os.path.basename(old_zip).casefold() == NATIVE_REPAIR_BASELINE.casefold():
-            for relative in NATIVE_REPAIR_PATHS:
-                rel_path = os.path.normpath(relative)
-                if rel_path not in new_files_dict:
-                    raise FileNotFoundError(f"Required client repair file is missing: {relative}")
-                files_to_zip[rel_path] = new_files_dict[rel_path]
 
         service_host_prefix = f'ServiceHost{os.sep}'.lower()
         operations_watchdog_prefix = f'OperationsWatchdog{os.sep}'.lower()

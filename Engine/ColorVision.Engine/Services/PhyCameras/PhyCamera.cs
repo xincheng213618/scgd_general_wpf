@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 window.ShowDialog();
             });
 
-            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
+            UploadLicenseNetCommand = new RelayCommand(a => _ = UploadLicenseNet());
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
             CreatResotreCommand = new RelayCommand(a => CreateRestore(), a => !_calibrationUploadRunner.IsRunning);
             LoadResotreCommand = new RelayCommand(a => LoadResotre(), a => !_calibrationUploadRunner.IsRunning);
@@ -380,7 +380,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         await response.Content.CopyToAsync(fs);
                     }
-                    SetLicense(fileName);
+                    await InvokeOnApplicationDispatcherAsync(() => SetLicense(fileName));
                 }
                 catch (Exception ex)
                 {
@@ -388,6 +388,16 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }
 
+        }
+
+        internal static async Task<T> InvokeOnApplicationDispatcherAsync<T>(Func<T> action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null || dispatcher.CheckAccess())
+                return action();
+
+            return await dispatcher.InvokeAsync(action);
         }
 
         private void CalibrationTemplateOpen(object sender)
