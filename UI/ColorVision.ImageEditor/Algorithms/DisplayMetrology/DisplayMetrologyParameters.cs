@@ -55,7 +55,7 @@ public sealed class RgbRegistrationParameters : DisplayGridParameters
 
 public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
 {
-    [Category("十字检测"), DisplayName("前景阈值比例"), Description("全图候选及各独立臂截面相对背景到峰值的阈值。")]
+    [Category("十字检测"), DisplayName("前景阈值比例"), Description("每个十字及各独立臂截面相对自身背景到峰值的阈值。")]
     public double TargetThreshold { get; set; } = 0.5;
 
     [Category("十字检测"), DisplayName("最小十字跨度比例"), Description("十字候选宽高在自动目标 ROI 中至少覆盖的比例。")]
@@ -67,7 +67,7 @@ public sealed class RgbCrossRegistrationParameters : DisplayGridParameters
     [Category("十字检测"), DisplayName("最小臂截面覆盖率"), Description("每条半臂有效截面至少占采样截面的比例。")]
     public double MinimumArmCoverage { get; set; } = 0.5;
 
-    [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("三通道对应水平/垂直边缘的最大极差；留空只测量，指定产品规格后才给出 OK/NG。")]
+    [Category("分离判定"), DisplayName("允许的最大边缘分离 (px)"), Description("以 G 为基准，分别检查 R-G、B-G 对应边缘的最大绝对偏移；留空只测量，指定产品规格后才给出 OK/NG。")]
     public double? MaximumEdgeSeparationPixels { get; set; }
 
     public RgbCrossRegistrationParameters()

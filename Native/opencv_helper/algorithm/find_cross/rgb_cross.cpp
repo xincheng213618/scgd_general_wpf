@@ -75,8 +75,11 @@ std::vector<Slot> Locate(const Image &image, Rect search, const Options &p)
                 if (c < 3)
                     signal[(y / step) * w + x / step] = std::max(signal[(y / step) * w + x / step], v);
             }
-    auto extrema = std::minmax_element(signal.begin(), signal.end());
-    double low = *extrema.first, contrast = *extrema.second - low;
+    auto ordered=signal; std::sort(ordered.begin(),ordered.end());
+    double low=ordered[ordered.size()/2], contrast=ordered.back()-low;
+    for(auto &value:ordered) value=static_cast<float>(std::abs(value-low));
+    std::sort(ordered.begin(),ordered.end());
+    double locatorFloor=low+std::max(p.minimumContrast,6.0*ordered[ordered.size()/2]);
     auto reject = [&p](std::string reason) {
         std::vector<Slot> a(p.rows * p.columns);
         for (auto &s : a)
@@ -87,7 +90,7 @@ std::vector<Slot> Locate(const Image &image, Rect search, const Options &p)
         return reject("low_contrast");
     std::vector<unsigned char> mask(w * h);
     for (int i = 0; i < w * h; i++)
-        mask[i] = signal[i] >= low + contrast * p.targetThreshold;
+        mask[i] = signal[i] >= locatorFloor;
     std::vector<Rect> candidates;
     std::vector<int> queue(w * h);
     int components = 0;
@@ -123,10 +126,26 @@ std::vector<Slot> Locate(const Image &image, Rect search, const Options &p)
             if (y + 1 < h)
                 visit(at + w);
         }
-        if (tail >= 5 && maxx - minx + 1 >= 3 && maxy - miny + 1 >= 3)
-            candidates.push_back({minx * step, miny * step,
-                                  std::min((maxx - minx + 1) * step, search.width - minx * step),
-                                  std::min((maxy - miny + 1) * step, search.height - miny * step)});
+        if (tail < 5 || maxx - minx + 1 < 3 || maxy - miny + 1 < 3) continue;
+        // Locate each connected luminous footprint relative to its own brightness.
+        std::vector<double> rowScores(maxy-miny+1), columnScores(maxx-minx+1);
+        double peak = low;
+        for (int y=miny; y<=maxy; ++y) for (int x=minx; x<=maxx; ++x)
+        {
+            double value=signal[y*w+x]; peak=std::max(peak,value);
+            rowScores[y-miny]+=value-low; columnScores[x-minx]+=value-low;
+        }
+        double rowLevel=*std::max_element(rowScores.begin(),rowScores.end())*p.axisBandThreshold;
+        double columnLevel=*std::max_element(columnScores.begin(),columnScores.end())*p.axisBandThreshold;
+        auto broadRows=std::count_if(rowScores.begin(),rowScores.end(),[&](double v){return v>=rowLevel;});
+        auto broadColumns=std::count_if(columnScores.begin(),columnScores.end(),[&](double v){return v>=columnLevel;});
+        if (broadRows >= rowScores.size()/2.0 && broadColumns >= columnScores.size()/2.0) continue;
+        double level=low+(peak-low)*p.targetThreshold;
+        int left=maxx+1,top=maxy+1,right=minx,bottom=miny;
+        for (int y=miny; y<=maxy; ++y) for (int x=minx; x<=maxx; ++x)
+            if(signal[y*w+x]>=level) {left=std::min(left,x);top=std::min(top,y);right=std::max(right,x+1);bottom=std::max(bottom,y+1);}
+        if(right-left<3 || bottom-top<3) continue;
+        candidates.push_back({left*step,top*step,std::min((right-left)*step,search.width-left*step),std::min((bottom-top)*step,search.height-top*step)});
     }
     if (candidates.empty())
         return reject("cross_missing");
@@ -257,7 +276,8 @@ Target Detect(const Image &image, int channel, Slot slot, const Options &p)
             saturated |= v >= 1;
         }
     auto extrema = std::minmax_element(values.begin(), values.end());
-    double minimum = *extrema.first;
+    auto background = values; std::sort(background.begin(), background.end());
+    double minimum = background[background.size() / 2];
     if (*extrema.second - minimum < p.minimumContrast)
         return reject("low_contrast");
     std::vector<double> rows(roi.height), cols(roi.width);
@@ -302,8 +322,11 @@ Target Detect(const Image &image, int channel, Slot slot, const Options &p)
                 for (int t = 0; t < transverse; t++)
                     profile[t] = horizontal ? values[t * roi.width + pos] : values[pos * roi.width + t];
                 auto mm = std::minmax_element(profile.begin(), profile.end());
-                double low = *mm.first, high = *mm.second;
-                if (high - low < p.minimumContrast)
+                double low = Median(profile), high = *mm.second;
+                std::vector<double> deviations; deviations.reserve(profile.size());
+                for (double value : profile) deviations.push_back(std::abs(value - low));
+                double quantum = image.bits == 8 ? 1.0 / 255 : image.bits == 16 ? 1.0 / 65535 : 1e-6;
+                if (high - low < std::max(6 * Median(deviations), 2 * quantum))
                     continue;
                 for (int t = 0; t < transverse; t++)
                     scores[t] = profile[t] - low;
@@ -413,6 +436,17 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
                           {"bottomEdgeSpreadPx", bottom},
                           {"maximumEdgeSeparationPx", m}};
         }
+        auto compareGreen = [&](const Target& t) {
+            bool pairValid=t.valid && targets[1].valid;
+            double left=t.left-targets[1].left, right=t.right-targets[1].right,
+                   top=t.top-targets[1].top, bottom=t.bottom-targets[1].bottom;
+            return json{{"status",pairValid ? "VALID":"INVALID"},
+                {"leftEdgeOffsetPx",pairValid ? json(left):json(nullptr)},
+                {"rightEdgeOffsetPx",pairValid ? json(right):json(nullptr)},
+                {"topEdgeOffsetPx",pairValid ? json(top):json(nullptr)},
+                {"bottomEdgeOffsetPx",pairValid ? json(bottom):json(nullptr)},
+                {"maximumAbsoluteEdgeOffsetPx",pairValid ? json(std::max({std::abs(left),std::abs(right),std::abs(top),std::abs(bottom)})):json(nullptr)}};
+        };
         points.push_back({{"id", "P" + std::to_string(i + 1)},
                           {"row", i / p.columns + 1},
                           {"column", i % p.columns + 1},
@@ -421,13 +455,14 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
                           {"warnings", warnings},
                           {"region", slots[i].region.width > 0 ? Box(slots[i].region) : json(nullptr)},
                           {"channels", channels},
-                          {"separation", separation}});
+                          {"separation", separation},
+                          {"comparisons", {{"R-G",compareGreen(targets[0])},{"B-G",compareGreen(targets[2])}}}});
     }
     json output = {{"schemaId", "colorvision.rgb-cross-measurement"},
-            {"schemaVersion", p.rows == 3 && p.columns == 3 ? "1.0.0" : "1.1.0"},
+            {"schemaVersion", "1.2.0"}, {"referenceChannel", "G"},
             {"capabilityProfile", "rgb-cross.measurement.v1"},
             {"measurementId", measurementId},
-            {"algorithm", {{"id", "colorvision.display.rgb-cross-registration"}, {"version", "1.4.0"}}},
+            {"algorithm", {{"id", "colorvision.display.rgb-cross-registration"}, {"version", "1.5.0"}}},
             {"source", {{"imageId", imageId}, {"width", image.width}, {"height", image.height}, {"sha256", nullptr}}},
             {"coordinates",
              {{"space", "source-image"},
@@ -443,7 +478,7 @@ json Measure(const Image &image, Rectangle search, const Options &p, const std::
               {"invalidPointCount", p.rows * p.columns - validCount},
               {"complete", validCount == p.rows * p.columns},
               {"maximumEdgeSeparationPx", validCount > 0 ? json(maximum) : json(nullptr)}}}};
-    if (p.rows != 3 || p.columns != 3) output["grid"] = {{"rows", p.rows}, {"columns", p.columns}};
+    output["grid"] = {{"rows", p.rows}, {"columns", p.columns}};
     return output;
 }
 } // namespace cvnative::rgb_cross

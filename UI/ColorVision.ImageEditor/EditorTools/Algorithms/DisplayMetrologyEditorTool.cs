@@ -250,6 +250,7 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "maximum_color_displacement" => "最大套色偏移", "rms_color_displacement" => "套色偏移均方根",
         "valid_crosses" => "有效十字数", "invalid_crosses" => "无效十字数",
         "passed_crosses" => "OK 十字数", "failed_crosses" => "NG 十字数",
+        "maximum_r_to_g_edge_offset" => "R-G 最大边缘分离", "maximum_b_to_g_edge_offset" => "B-G 最大边缘分离",
         "maximum_cross_axis_separation" => "十字轴线最大 RGB 分离", "maximum_cross_edge_separation" => "十字边缘最大 RGB 分离",
         "rms_cross_edge_separation" => "十字边缘分离均方根", "configured_edge_separation_limit" => "配置的边缘分离上限",
         "overall_threshold_result" => "十字总体判定（1=OK，0=NG）",

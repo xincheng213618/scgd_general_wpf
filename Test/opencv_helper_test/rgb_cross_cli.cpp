@@ -71,6 +71,20 @@ int main(int argc, char **argv)
             for (auto &p : result["points"])
                 Check(std::abs(p["separation"]["maximumEdgeSeparationPx"].get<double>() - 2) < 1e-9, "known shift");
             Check(run({50, 50, 300, 300})["points"] == result["points"], "ROI global coordinates");
+            for (const auto &point : result["points"])
+            {
+                Check(std::abs(point["comparisons"]["R-G"]["maximumAbsoluteEdgeOffsetPx"].get<double>() - 1) < 1e-9, "red versus green");
+                Check(std::abs(point["comparisons"]["B-G"]["leftEdgeOffsetPx"].get<double>() + 1) < 1e-9, "blue signed offset");
+            }
+            auto uneven = data;
+            for(int y=0;y<400;y++) for(int x=0;x<400;x++) for(int c=0;c<3;c++)
+            {
+                auto at=(y*400+x)*6+c*2; unsigned v=data[at]+(static_cast<unsigned>(data[at+1])<<8);
+                double gain=y<150?1:y<250?.5:.25;
+                unsigned changed=static_cast<unsigned>(3000+v*gain); uneven[at]=changed&255;uneven[at+1]=changed>>8;
+            }
+            auto adapted=Measure({uneven.data(),uneven.size(),2400,400,400,16,3},{},{},NewId(),"uneven");
+            Check(adapted["summary"]["validPointCount"]==9,"uneven illumination automatic location");
             Options singleOptions; singleOptions.rows = 1; singleOptions.columns = 1;
             auto single = Measure(image, {50,50,100,100}, singleOptions, NewId(), "single");
             Check(single["points"].size() == 1 && single["summary"]["complete"] == true && single["grid"]["rows"] == 1, "single layout");
@@ -151,8 +165,8 @@ int main(int argc, char **argv)
                 std::ofstream file(argv[2]);
                 file << result.dump(2);
             }
-            std::cout << "PASS: 15 native checks (16-bit shift, ROI, 8-bit, float32, missing channel, black image, ROI "
-                         "bounds, buffer, options, connected shoulder, dark gap, single layout, single ROI, extra crosses, rectangular layout)\n";
+            std::cout << "PASS: 18 native checks (16-bit shift, ROI, 8-bit, float32, missing channel, black image, ROI "
+                         "bounds, buffer, options, connected shoulder, dark gap, single layout, single ROI, extra crosses, rectangular layout, green reference, signed blue offset, uneven illumination)\n";
             return 0;
         }
         if (argc != 9 && argc != 13)

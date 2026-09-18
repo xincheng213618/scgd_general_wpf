@@ -14,7 +14,7 @@ namespace ColorVision.ImageEditor.Algorithms;
 public static class RgbCrossMeasurementExporter
 {
     public const string SchemaId = "colorvision.rgb-cross-measurement";
-    public const string SchemaVersion = "1.0.0";
+    public const string SchemaVersion = "1.2.0";
 
     internal static JsonElement Create(Guid id, string version, string imageId, int width, int height,
         Rect search, int rows, int columns, IEnumerable<AlgorithmArtifact> artifacts)
@@ -55,12 +55,13 @@ public static class RgbCrossMeasurementExporter
                 ["status"] = valid ? "VALID" : "INVALID", ["reasonCodes"] = JsonSerializer.SerializeToNode(reasons),
                 ["warnings"] = JsonSerializer.SerializeToNode(Split(row["warning"].GetString())),
                 ["region"] = row["roiWidth_px"].GetDouble() > 0 ? Box(row["roiX_px"].GetDouble(), row["roiY_px"].GetDouble(), row["roiWidth_px"].GetDouble(), row["roiHeight_px"].GetDouble()) : null,
-                ["channels"] = channels, ["separation"] = separation
+                ["channels"] = channels, ["separation"] = separation,
+                ["comparisons"] = new JsonObject { ["R-G"] = Pair(row, "r"), ["B-G"] = Pair(row, "b") }
             });
         }
         var output = new JsonObject
         {
-            ["schemaId"] = SchemaId, ["schemaVersion"] = rows == 3 && columns == 3 ? SchemaVersion : "1.1.0", ["capabilityProfile"] = "rgb-cross.measurement.v1",
+            ["schemaId"] = SchemaId, ["schemaVersion"] = SchemaVersion, ["referenceChannel"] = "G", ["capabilityProfile"] = "rgb-cross.measurement.v1",
             ["measurementId"] = id.ToString(),
             ["algorithm"] = new JsonObject { ["id"] = DisplayMetrologyIds.RgbCrossRegistration.ToString(), ["version"] = version },
             ["source"] = new JsonObject { ["imageId"] = imageId, ["width"] = width, ["height"] = height, ["sha256"] = null },
@@ -70,8 +71,24 @@ public static class RgbCrossMeasurementExporter
             ["points"] = points,
             ["summary"] = new JsonObject { ["validPointCount"] = maxima.Count, ["invalidPointCount"] = rows * columns - maxima.Count, ["complete"] = maxima.Count == rows * columns, ["maximumEdgeSeparationPx"] = maxima.Count == 0 ? null : maxima.Max() }
         };
-        if (rows != 3 || columns != 3) output["grid"] = new JsonObject { ["rows"] = rows, ["columns"] = columns };
+        output["grid"] = new JsonObject { ["rows"] = rows, ["columns"] = columns };
         return JsonSerializer.SerializeToElement(output);
+    }
+
+    private static JsonObject Pair(IReadOnlyDictionary<string, JsonElement> row, string channel)
+    {
+        string[] edges = ["Left", "Right", "Top", "Bottom"];
+        bool valid = edges.All(edge => row[channel + edge + "_px"].ValueKind == JsonValueKind.Number && row["g" + edge + "_px"].ValueKind == JsonValueKind.Number);
+        var result = new JsonObject { ["status"] = valid ? "VALID" : "INVALID" };
+        double maximum = 0;
+        foreach (string edge in edges)
+        {
+            double? offset = valid ? row[channel + edge + "_px"].GetDouble() - row["g" + edge + "_px"].GetDouble() : null;
+            result[char.ToLowerInvariant(edge[0]) + edge[1..] + "EdgeOffsetPx"] = offset;
+            if (offset.HasValue) maximum = Math.Max(maximum, Math.Abs(offset.Value));
+        }
+        result["maximumAbsoluteEdgeOffsetPx"] = valid ? maximum : null;
+        return result;
     }
 
     public static void Export(AlgorithmResult result, string path)

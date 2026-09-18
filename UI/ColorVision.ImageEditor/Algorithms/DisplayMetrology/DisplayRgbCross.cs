@@ -71,16 +71,50 @@ public sealed partial class DisplayMetrologyProvider
         int sourceWidth = search.Width, sourceHeight = search.Height;
         var signal = new float[width * height];
         for (int i = 0; i < signal.Length; i++) signal[i] = Math.Max(channels[0][i], Math.Max(channels[1][i], channels[2][i]));
-        double minimum = signal.Min(), contrast = signal.Max() - minimum;
+        var ordered = (float[])signal.Clone(); Array.Sort(ordered);
+        double minimum = ordered[ordered.Length / 2], contrast = ordered[^1] - minimum;
+        // Median/MAD tolerate sparse highlights and hot pixels without a manual noise setting.
+        for (int i = 0; i < ordered.Length; i++) ordered[i] = (float)Math.Abs(ordered[i] - minimum);
+        Array.Sort(ordered);
+        double locatorFloor = minimum + Math.Max(p.MinimumContrast, 6 * ordered[ordered.Length / 2]);
         candidateCount = 0;
         CrossSlot[] Reject(string reason) => Enumerable.Range(0, p.Rows * p.Columns).Select(_ => new CrossSlot(default, default, reason)).ToArray();
         if (contrast < p.MinimumContrast) return Reject("low_contrast");
+        // Separate location from edge measurement: discover each luminous footprint at
+        // the configured signal floor, then use that footprint's own peak. A bright
+        // row must not remove dimmer rows or split their arms into separate targets.
         var mask = new byte[signal.Length];
-        for (int i = 0; i < signal.Length; i++) if (signal[i] >= minimum + contrast * p.TargetThreshold) mask[i] = 255;
-        Rect[] candidates = Components(mask, signal, width, height, token).Where(c => c.Area >= 5 && c.Bounds.Width >= 3 && c.Bounds.Height >= 3)
-            .Select(c => new Rect(c.Bounds.X * step, c.Bounds.Y * step,
-                Math.Min(c.Bounds.Width * step, sourceWidth - c.Bounds.X * step),
-                Math.Min(c.Bounds.Height * step, sourceHeight - c.Bounds.Y * step))).ToArray();
+        for (int i = 0; i < signal.Length; i++) if (signal[i] >= locatorFloor) mask[i] = 255;
+        var located = new List<Rect>();
+        foreach (var component in Components(mask, signal, width, height, token).Where(c => c.Area >= 5 && c.Bounds.Width >= 3 && c.Bounds.Height >= 3))
+        {
+            Rect footprint = component.Bounds;
+            var rowScores = new double[footprint.Height]; var columnScores = new double[footprint.Width];
+            double peak = minimum;
+            for (int y = footprint.Y; y < footprint.Bottom; y++)
+                for (int x = footprint.X; x < footprint.Right; x++)
+                {
+                    double value = signal[y * width + x]; peak = Math.Max(peak, value);
+                    rowScores[y - footprint.Y] += value - minimum; columnScores[x - footprint.X] += value - minimum;
+                }
+            // Compact filled noise spots have no narrow horizontal or vertical arm.
+            // Retain ambiguous cross-shaped candidates for the detailed validity check.
+            double rowLevel = rowScores.Max() * p.AxisBandThreshold, columnLevel = columnScores.Max() * p.AxisBandThreshold;
+            int broadRows = rowScores.Count(v => v >= rowLevel);
+            int broadColumns = columnScores.Count(v => v >= columnLevel);
+            if (broadRows >= footprint.Height / 2.0 && broadColumns >= footprint.Width / 2.0) continue;
+            double level = minimum + (peak - minimum) * p.TargetThreshold;
+            int left = footprint.Right, top = footprint.Bottom, right = footprint.X, bottom = footprint.Y;
+            for (int y = footprint.Y; y < footprint.Bottom; y++)
+                for (int x = footprint.X; x < footprint.Right; x++)
+                    if (signal[y * width + x] >= level)
+                    { left = Math.Min(left, x); top = Math.Min(top, y); right = Math.Max(right, x + 1); bottom = Math.Max(bottom, y + 1); }
+            if (right - left < 3 || bottom - top < 3) continue;
+            located.Add(new Rect(left * step, top * step,
+                Math.Min((right - left) * step, sourceWidth - left * step),
+                Math.Min((bottom - top) * step, sourceHeight - top * step)));
+        }
+        Rect[] candidates = located.ToArray();
         candidateCount = candidates.Length;
         if (candidates.Length == 0) return Reject("cross_missing");
         // An axis-aligned array must have the configured number of disjoint row
@@ -146,7 +180,9 @@ public sealed partial class DisplayMetrologyProvider
             }
         }
         int saturatedSamples = values.Count(value => value >= 1);
-        double minimum = values.Min();
+        // Sparse dark noise must not become the background level of an entire ROI.
+        var background = (float[])values.Clone(); Array.Sort(background);
+        double minimum = background[background.Length / 2];
         if (values.Max() - minimum < p.MinimumContrast) return new(false, "low_contrast");
         var rows = new double[roi.Height]; var columns = new double[roi.Width];
         for (int y = 0; y < roi.Height; y++)
@@ -189,8 +225,12 @@ public sealed partial class DisplayMetrologyProvider
                         ("point", $"P{pointIndex + 1}"), ("channel", channelName), ("arm", alongHorizontal ? "horizontal" : "vertical"),
                         ("side", side == 0 ? "negative" : "positive"), ("samplePosition_px", position + (alongHorizontal ? roi.X : roi.Y)),
                         ("status", status), ("thresholdRunCount", runs), ("firstEdge_px", first), ("lastEdge_px", last)));
-                    double low = profile.Min(), high = profile.Max();
-                    if (high - low < p.MinimumContrast) { Diagnostic("low_contrast", 0); continue; }
+                    double low = Median(profile.ToList()), high = profile.Max();
+                    // The target already passed MinimumContrast. Dim outer arms are judged
+                    // against their local noise, not the brighter crossing at the centre.
+                    double noise = Median(profile.Select(v => Math.Abs(v - low)).ToList());
+                    double quantum = bytes == 1 ? 1.0 / 255 : bytes == 2 ? 1.0 / 65535 : 1e-6;
+                    if (high - low < Math.Max(6 * noise, 2 * quantum)) { Diagnostic("low_contrast", 0); continue; }
                     var band = FindArmBand(profile.Select(v => v - low).ToArray(), p.TargetThreshold);
                     if (!band.Valid) { Diagnostic("ambiguous_arm_edges", band.RunCount); ambiguous++; continue; }
                     if (band.First == 0 || band.Last == transverseLength - 1) return (false, "cross_clipped", 0, 0, 0, rejected);
@@ -302,6 +342,8 @@ public sealed partial class DisplayMetrologyProvider
         var overlayItems = new List<AlgorithmOverlayItem>();
         var validEdgeSeparations = new List<double>();
         var validAxisSeparations = new List<double>();
+        var redGreenSeparations = new List<double>();
+        var blueGreenSeparations = new List<double>();
         int passedCount = 0;
         int invalidCount = 0;
 
@@ -322,7 +364,14 @@ public sealed partial class DisplayMetrologyProvider
             double? bottomEdgeSpread = valid ? Spread(targets.Select(target => target.HorizontalBottom)) : null;
             double? maximumAxisSeparation = valid ? Math.Max(verticalAxisXSpread!.Value, horizontalAxisYSpread!.Value) : null;
             double? maximumEdgeSeparation = valid ? new[] { leftEdgeSpread!.Value, rightEdgeSpread!.Value, topEdgeSpread!.Value, bottomEdgeSpread!.Value }.Max() : null;
-            bool passed = valid && parameters.MaximumEdgeSeparationPixels.HasValue && maximumEdgeSeparation!.Value <= parameters.MaximumEdgeSeparationPixels.Value;
+            double? PairMaximum(CrossTarget target) => target.Valid && targets[1].Valid
+                ? new[] { Math.Abs(target.VerticalLeft - targets[1].VerticalLeft), Math.Abs(target.VerticalRight - targets[1].VerticalRight),
+                    Math.Abs(target.HorizontalTop - targets[1].HorizontalTop), Math.Abs(target.HorizontalBottom - targets[1].HorizontalBottom) }.Max() : null;
+            double? redGreen = PairMaximum(targets[0]), blueGreen = PairMaximum(targets[2]);
+            if (redGreen.HasValue) redGreenSeparations.Add(redGreen.Value);
+            if (blueGreen.HasValue) blueGreenSeparations.Add(blueGreen.Value);
+            bool passed = valid && parameters.MaximumEdgeSeparationPixels.HasValue
+                && redGreen!.Value <= parameters.MaximumEdgeSeparationPixels.Value && blueGreen!.Value <= parameters.MaximumEdgeSeparationPixels.Value;
 
             for (int channel = 0; channel < targets.Length; channel++)
                 if (targets[channel].Valid) AddCrossOverlay(index, channelNames[channel], channelColors[channel], targets[channel], shapes, overlayItems);
@@ -344,7 +393,7 @@ public sealed partial class DisplayMetrologyProvider
             {
                 shapes.Add(Box(cellId, bounds));
                 string color = !valid ? "#FFFFA500" : !parameters.MaximumEdgeSeparationPixels.HasValue ? "#FF00BFFF" : passed ? "#FF36E36E" : "#FFFF3030";
-                overlayItems.Add(new AlgorithmOverlayItem(cellId, new AlgorithmOverlayStyle(color, null, 1.5, $"P{index + 1} {maximumEdgeSeparation?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px")));
+                overlayItems.Add(new AlgorithmOverlayItem(cellId, new AlgorithmOverlayStyle(color, null, 1.5, $"P{index + 1} R-G {redGreen?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px\nB-G {blueGreen?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px")));
             }
 
             CrossTarget red = targets[0];
@@ -353,6 +402,7 @@ public sealed partial class DisplayMetrologyProvider
             rows.Add(Row(
                 ("point", $"P{index + 1}"), ("row", index / parameters.Columns + 1), ("column", index % parameters.Columns + 1),
                 ("valid", valid), ("reason", reason), ("result", result),
+                ("rToGMaximumEdge_px", redGreen), ("bToGMaximumEdge_px", blueGreen),
                 ("warning", targets.Any(t => t.SaturatedSamples > 0) ? "saturated_samples_threshold_edges_may_be_biased" : ""),
                 ("rHorizontalCoverage", red.HorizontalCoverage), ("rVerticalCoverage", red.VerticalCoverage),
                 ("gHorizontalCoverage", green.HorizontalCoverage), ("gVerticalCoverage", green.VerticalCoverage),
@@ -385,7 +435,7 @@ public sealed partial class DisplayMetrologyProvider
         bool overallPass = invalidCount == 0 && failedCount == 0 && validEdgeSeparations.Count == parameters.Columns * parameters.Rows;
         Table(artifacts, "RGB-cross-separation",
         [
-            "point", "row", "column", "valid", "reason", "result", "warning",
+            "point", "row", "column", "valid", "reason", "result", "warning", "rToGMaximumEdge_px", "bToGMaximumEdge_px",
             "rHorizontalCoverage", "rVerticalCoverage", "gHorizontalCoverage", "gVerticalCoverage", "bHorizontalCoverage", "bVerticalCoverage",
             "rRejectedProfiles", "gRejectedProfiles", "bRejectedProfiles", "rSaturatedSamples", "gSaturatedSamples", "bSaturatedSamples",
             "roiX_px", "roiY_px", "roiWidth_px", "roiHeight_px",
@@ -408,6 +458,8 @@ public sealed partial class DisplayMetrologyProvider
                 ("maximum_cross_axis_separation", validAxisSeparations.Max(), "px"),
                 ("maximum_cross_edge_separation", validEdgeSeparations.Max(), "px"),
                 ("rms_cross_edge_separation", Math.Sqrt(validEdgeSeparations.Average(value => value * value)), "px"));
+        if (redGreenSeparations.Count > 0) Metrics(artifacts, ("maximum_r_to_g_edge_offset", redGreenSeparations.Max(), "px"));
+        if (blueGreenSeparations.Count > 0) Metrics(artifacts, ("maximum_b_to_g_edge_offset", blueGreenSeparations.Max(), "px"));
         if (parameters.MaximumEdgeSeparationPixels is double limit)
             Metrics(artifacts, ("configured_edge_separation_limit", limit, "px"), ("overall_threshold_result", overallPass ? 1 : 0, "1=OK;0=NG"));
         artifacts.Add(new AlgorithmGeometryArtifact("rgb-cross-regions", AlgorithmCoordinateSpace.Pixel, shapes));
@@ -438,7 +490,7 @@ public sealed partial class DisplayMetrologyProvider
             new(target.VerticalLeft, target.Bounds.Y),
             new(target.VerticalRight, target.Bounds.Bottom),
         ]));
-        overlayItems.Add(new AlgorithmOverlayItem(horizontalId, new AlgorithmOverlayStyle(color, null, 1.25, $"P{index + 1} {channel}")));
+        overlayItems.Add(new AlgorithmOverlayItem(horizontalId, new AlgorithmOverlayStyle(color, null, 1.25)));
         overlayItems.Add(new AlgorithmOverlayItem(verticalId, new AlgorithmOverlayStyle(color, null, 1.25)));
     }
 

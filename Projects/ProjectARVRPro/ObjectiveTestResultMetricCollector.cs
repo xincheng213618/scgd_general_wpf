@@ -1,4 +1,5 @@
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
@@ -76,8 +77,12 @@ namespace ProjectARVRPro
                 foreach (var pair in result.DynamicRgbCrossResults)
                     if (pair.Value != null)
                         foreach (var point in pair.Value.Points)
-                            AddMetric(pair.Key, point.Id + "_MaximumEdgeSeparation",
-                                point.Valid ? (point.JudgedEdgeSeparation ?? point.MaximumEdgeSeparation)?.ToString("R", CultureInfo.InvariantCulture) ?? "" : "", metrics, keys);
+                        {
+                            if (point.Comparisons.Count == 0) RgbCrossResultParser.PopulateComparisons(point);
+                            foreach (var comparison in point.Comparisons)
+                                AddMetric(pair.Key, point.Id + "_" + comparison.Key,
+                                    (comparison.Value.JudgedValue ?? comparison.Value.Value)?.ToString("R", CultureInfo.InvariantCulture) ?? "", metrics, keys);
+                        }
 
             return metrics;
         }

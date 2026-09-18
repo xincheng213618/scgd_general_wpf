@@ -36,7 +36,7 @@ public sealed partial class DisplayMetrologyTests
         var data = result.Artifacts.OfType<AlgorithmStructuredDataArtifact>().Single(a => a.Schema == RgbCrossMeasurementExporter.SchemaId).Data;
         Assert.True(data.GetProperty("summary").GetProperty("complete").GetBoolean());
         Assert.Equal(rowCount * columnCount, data.GetProperty("points").GetArrayLength());
-        Assert.Equal(rowCount == 3 && columnCount == 3 ? "1.0.0" : "1.1.0", data.GetProperty("schemaVersion").GetString());
+        Assert.Equal("1.2.0", data.GetProperty("schemaVersion").GetString());
         for (int i = 0; i < rowCount * columnCount; i++)
         {
             var point = data.GetProperty("points")[i];
@@ -60,6 +60,69 @@ public sealed partial class DisplayMetrologyTests
             Success(single); Assert.Equal(1, Metric(single, "valid_crosses"));
             var point = single.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows.Single();
             Assert.Equal(60, point["gVerticalAxisX_px"].GetDouble(), 6);
+        }
+    }
+
+    [Theory]
+    [InlineData(1.0, 0.01, 0.0)]
+    [InlineData(0.25, 0.01, 0.0)]
+    [InlineData(0.5, 0.12, 0.005)]
+    [InlineData(1.0, 0.06, 0.02)]
+    [InlineData(0.3, 0.02, 0.003)]
+    public async Task RgbCrossAdaptsUnevenIlluminationAndBackgroundWithoutRetuning(double exposure, double background, double noise)
+    {
+        using var image = Image(800, 600, (x, y, channel) =>
+        {
+            int shift = channel == 2 ? 2 : channel == 0 ? -3 : 0;
+            double cross = ArrayCross(x - shift, y, channel, 300, 180) > 0.1 ? 0.8 : 0;
+            double brightness = y < 210 ? 1 : y < 275 ? 0.5 : 0.25;
+            uint hash = unchecked((uint)(x * 73856093 ^ y * 19349663 ^ channel * 83492791));
+            double perturbation = ((hash % 1009) / 1008d - 0.5) * 2 * noise;
+            return Math.Clamp(background + 0.01 * x / 800 + cross * exposure * brightness + perturbation, 0, 1);
+        }, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
+        Success(result); Assert.Equal(9, Metric(result, "valid_crosses"));
+        foreach (var row in result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows)
+        {
+            // With these finite noise amplitudes, edge medians must stay within a quarter source pixel of the known shifts.
+            Assert.InRange(row["rToGMaximumEdge_px"].GetDouble(), 1.75, 2.25);
+            Assert.InRange(row["bToGMaximumEdge_px"].GetDouble(), 2.75, 3.25);
+        }
+    }
+
+    [Fact]
+    public async Task RgbCrossMeasuresDimOuterArmsUsingTheirOwnNoiseFloor()
+    {
+        using var image = Image(800, 600, (x, y, c) =>
+        {
+            int shift = c == 2 ? 2 : c == 0 ? -3 : 0;
+            int dx = x - shift - 300, dy = y - 180;
+            double signal = ArrayCross(x - shift, y, c, 300, 180) > 0.1 ? 0.3 : 0;
+            // Blue intersections are visible, but their outer arms are below 2% full scale.
+            if (c == 0 && signal > 0 && (Math.Abs(dx - Math.Round(dx / 64d) * 64) > 6 || Math.Abs(dy - Math.Round(dy / 64d) * 64) > 6)) signal = 0.015;
+            uint hash = unchecked((uint)(x * 73856093 ^ y * 19349663 ^ c * 83492791));
+            return 0.02 + signal + ((hash % 1009) / 1008d - 0.5) * 0.002;
+        }, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
+        Success(result); Assert.Equal(9, Metric(result, "valid_crosses"));
+        foreach (var row in result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows)
+            Assert.InRange(row["bToGMaximumEdge_px"].GetDouble(), 2.8, 3.2);
+    }
+
+    [Fact]
+    public async Task RgbCrossUsesGreenReferenceForEachPairAndOptionalJudgment()
+    {
+        using var image = Image(800,600,(x,y,c) => ArrayCross(x-(c==2?2:c==0?-3:0),y,c,300,180),AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration,new RgbCrossRegistrationParameters { MaximumEdgeSeparationPixels = 3.1 },image);
+        Success(result); Assert.Equal(9, Metric(result,"passed_crosses"));
+        var data = result.GetArtifact<AlgorithmStructuredDataArtifact>("rgb-cross-measurement")!.Data;
+        Assert.Equal("G",data.GetProperty("referenceChannel").GetString());
+        foreach(var point in data.GetProperty("points").EnumerateArray())
+        {
+            var red=point.GetProperty("comparisons").GetProperty("R-G"); var blue=point.GetProperty("comparisons").GetProperty("B-G");
+            Assert.Equal(2,red.GetProperty("maximumAbsoluteEdgeOffsetPx").GetDouble(),6);
+            Assert.Equal(-3,blue.GetProperty("leftEdgeOffsetPx").GetDouble(),6);
+            Assert.Equal(3,blue.GetProperty("maximumAbsoluteEdgeOffsetPx").GetDouble(),6);
         }
     }
 

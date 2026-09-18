@@ -92,15 +92,15 @@ Flow 执行、项目解析和最终判定分别有状态。`IProcess.Execute` �
 
 Process 的“导出名称”默认 `RgbCross`，用于 CSV 分组和 `ObjectiveTestResult.DynamicRgbCrossResults` 字典的 Key。不同画面配置不同名称，可并存十字测量、几何与判定状态；相同名称本次执行替换对应项，失败时写入 DATA_ERROR，避免残留旧成功结果。导出名称存入当前结果快照，修改配置不重命名历史导出。使用单独类型的字典保留空测量和 MEASURED/INVALID 状态，不把未判定数据压成普通布尔 PASS。
 
-该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` / `1.3.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。算法 `1.4.0` 的通用导出读取其中的结构化测量结果，并核对执行标识；3×3 生产 JSON 继续使用 `1.0.0`，其他布局使用 `1.1.0`，必须提供 `grid.rows/columns`。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
+该类型接受算法 ID 为 `colorvision.display.rgb-cross-registration`、算法版本 `1.1.0` / `1.2.0` / `1.3.0` 的通用 artifact JSON，读取 `RGB-cross-separation` 与 `rgb-cross-regions`。现场验证脚本的 `measurements.json` 不属于该格式。生产节点与 ImageView 的“导出十字 JSON”使用 `colorvision.rgb-cross-measurement` v1 对接格式，只输出测量、绘图数据与有效性；通用导出保持兼容。算法 `1.4.0` / `1.5.0` 的通用导出读取其中的结构化测量结果，并核对执行标识；新生产 JSON 使用 `1.2.0`，必须提供 `grid.rows/columns`、`referenceChannel: "G"` 和每点 `comparisons.R-G/B-G`；四条带符号的对应边缘偏移及其绝对最大值须与通道几何一致。继续接受原 3×3 `1.0.0` 和可变布局 `1.1.0`，旧结果从通道几何推导 R-G、B-G，不把三通道极差当成任一通道对。结果快照保存布局，判定按配置点数检查完整性。客户判定授权由交付/宿主承担，不由 JSON 的 `capabilityProfile` 字符串授予权限。
 
 独立实现方也可使用精简 JSON：根字段 `width/height/points`，默认九点 `id=1..9`，其他布局需增加 `grid: {rows, columns}` 并连续编号到全部点数，各点 `R/G/B` 通道含 `horizontal/vertical` 的 `[x,y,width,height]` 矩形，`separation` 为最大对应边缘差。无效通道为 `null`，点位分离为 `null` 且必须给出 `reason`。此格式不要求提供宿主项目、数据库或算法实现元数据；解析后沿用相同几何校验、判定和渲染，保留原格式兼容。
 
 JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号、行列、有效性、有限数值、RGB 几何及分离值一致性。v1 还检查原图尺寸、搜索区和汇总计数。有效几何均为原图像素坐标，绘制每通道横臂和竖臂框，可分别关闭 RGB 边缘或点号数值；原图尺寸不匹配或坐标越界时跳过叠图。v1 没有指定原图时可按保存的尺寸用空白底图显示，旧通用 JSON 不含尺寸时数据库记录必须关联原图。原图由同批次数据库记录绑定；若 JSON 有 SHA-256，执行解析时校验原图文件摘要。
 
-**Recipe > 在本项目判定** 默认关闭，输出 `MEASURED`（已测量、未判定）；此设置是业务配置，不是对外授权开关。开启时使用与其他项目相同的 `RecipeBase` 编辑器：下限、上限、K、B。各点分别按 `原值 × K + B` 后调用 `ObjectiveTestItem` 的上下限规则；某侧限值为 0 表示该侧不限，边界包含等于。上下限与 K/B 必须有限，两侧都非零时下限不得高于上限。配置的全部点位均有效且修正值满足范围才为 `PASS`，超限为 `FAIL`，存在无效点为 `INVALID`。解析失败为 `DATA_ERROR`。旧单上限配置不迁移，使用者重新配置 `EdgeSeparation`。原始测量保留在 `MaximumEdgeSeparation`，修正值另存 `JudgedEdgeSeparation`，不得修改输入 JSON 或通道几何。关闭判定不改变已有总结果，CSV 和文本明确保留 MEASURED；无效数据会使项目结果失败，不用零代替缺失值。
+**Recipe > 在本项目判定** 默认关闭，运行消息为 `Completed`，结果文本显示“完成”；快照保留 `MEASURED`/`INVALID` 测量有效性；此设置是业务配置，不是对外授权开关。开启时使用与其他项目相同的 `RecipeBase` 编辑器：下限、上限、K、B。各点的 R-G、B-G 两个最大绝对边缘偏移分别按 `原值 × K + B` 后调用 `ObjectiveTestItem` 的上下限规则；某侧限值为 0 表示该侧不限，边界包含等于。上下限与 K/B 必须有限，两侧都非零时下限不得高于上限。配置的全部点位均有效且修正值满足范围才为 `PASS`，超限为 `FAIL`，存在无效点为 `INVALID`。解析失败为 `DATA_ERROR`。旧单上限配置不迁移，使用者重新配置 `EdgeSeparation`。R-G、B-G 原始值与修正值分别保存在 `Comparisons` 字典的 `Value` / `JudgedValue`，旧三通道极差保留在 `MaximumEdgeSeparation`，不得修改输入 JSON 或通道几何。关闭判定不改变已有总结果，包含部分无效测量也完成执行并保留空值；开启判定时无效点才导致项目判定失败。文件/解析错误始终失败，不把错误显示成完成，不用零代替缺失值。CSV 每点输出 `Pn_R-G`、`Pn_B-G` 两行；动态指标导出使用同样的两组键，并保留各自状态。
 
-绘图标签仅显示点号与 px 数值，例如 `P1 4.408 px`，无有效数值时为 `P6 — px`；不附带 PASS/FAIL/INVALID。右侧结果区显示总状态、各点用于判定的 px 数值和状态，必要时显示拒绝原因；不显示判定公式、上下限说明、重复的原始值或饱和诊断警告。保存的数据和判定逻辑不受显示精简影响。
+绘图标签仅显示点号与 px 数值，例如 `P1 R-G 2.100 px  B-G 3.200 px`，缺失通道对显示 `— px`；不附带 PASS/FAIL/INVALID。右侧结果区显示完成或判定状态以及每点 R-G、B-G 两组 px 数值；仅开启判定时显示逐点判定状态；不显示判定公式、上下限说明、重复的原始值或饱和诊断警告。保存的数据和判定逻辑不受显示精简影响。
 
 历史 `ViewResultJson` 保存来源主记录 ID、原测量、JSON 摘要、原图绑定、本次使用的 Recipe 副本、修正值和逐点状态，回看/导出读取快照。当前显示开关可控制叠图，修改 Recipe 不会静默重新判定历史数据。`RgbCrossProcessTests` 覆盖真实算法导出到解析的衔接、无效数据拒绝、可选判定、CSV 状态和 WPF 图元替换；节点和批次选择的自动测试使用数据库替身；此验证不替代现场真实数据库、原图身份和客户许可验收。
 

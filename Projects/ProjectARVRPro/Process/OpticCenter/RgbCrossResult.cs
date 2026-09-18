@@ -8,6 +8,12 @@ namespace ProjectARVRPro.Process.OpticCenter;
 
 public sealed record RgbCrossRectangle(double X, double Y, double Width, double Height);
 public sealed record RgbCrossChannel(string Name, RgbCrossRectangle Horizontal, RgbCrossRectangle Vertical);
+public sealed class RgbCrossComparison
+{
+    public double? Value { get; set; }
+    public double? JudgedValue { get; set; }
+    public string Judgment { get; set; } = "MEASURED";
+}
 public sealed class RgbCrossPoint
 {
     public string Id { get; set; } = "";
@@ -16,6 +22,7 @@ public sealed class RgbCrossPoint
     public string Warning { get; set; } = "";
     public RgbCrossRectangle? Region { get; set; }
     public List<RgbCrossChannel> Channels { get; set; } = [];
+    public Dictionary<string, RgbCrossComparison> Comparisons { get; set; } = [];
     public double? MaximumEdgeSeparation { get; set; }
     public double? JudgedEdgeSeparation { get; set; }
     public string Judgment { get; set; } = "MEASURED";
@@ -60,7 +67,7 @@ internal static class RgbCrossResultParser
         Dictionary<string, RgbCrossRectangle> geometry = new(StringComparer.Ordinal);
         if (portable)
         {
-            Require(Text(root, "schemaId") == "colorvision.rgb-cross-measurement" && (Text(root, "schemaVersion") is "1.0.0" or "1.1.0"), "不支持的十字测量协议版本。");
+            Require(Text(root, "schemaId") == "colorvision.rgb-cross-measurement" && (Text(root, "schemaVersion") is "1.0.0" or "1.1.0" or "1.2.0"), "不支持的十字测量协议版本。");
             Require(Text(root, "capabilityProfile") == "rgb-cross.measurement.v1", "不支持的测量能力类型。");
             Require(Text(root["algorithm"]!, "id") == AlgorithmId, "不是十字 RGB 结果。");
             Require(Text(root["execution"]!, "status") == "SUCCEEDED", "算法未成功完成。");
@@ -75,18 +82,19 @@ internal static class RgbCrossResultParser
             Require(Inside(search, new(0, 0, result.ImageWidth.Value, result.ImageHeight.Value)), "搜索区域超出原图。");
             result.SourceSha256 = root["source"]?["sha256"]?.Value<string>();
             if (result.SourceSha256 != null) Require(result.SourceSha256.Length == 64 && result.SourceSha256.All(Uri.IsHexDigit), "原图 SHA-256 无效。");
-            ReadGrid(root, result, Text(root, "schemaVersion") == "1.1.0");
+            ReadGrid(root, result, Text(root, "schemaVersion") != "1.0.0");
+            if (Text(root, "schemaVersion") == "1.2.0") Require(Text(root, "referenceChannel") == "G", "仅支持 G 基准。");
             rows = Array(root, "points");
         }
         else
         {
             Require(Text(root, "algorithmId") == AlgorithmId, "不是十字 RGB 导出结果。");
             result.AlgorithmVersion = Text(root, "algorithmVersion");
-            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0" or "1.3.0" or "1.4.0", "不支持的十字算法版本。");
+            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0" or "1.3.0" or "1.4.0" or "1.5.0", "不支持的十字算法版本。");
             Require(Text(root, "status") == "Succeeded", "算法未成功完成。");
             result.MeasurementId = Text(root, "invocationId");
             JArray artifacts = Array(root, "artifacts");
-            if (result.AlgorithmVersion == "1.4.0")
+            if (result.AlgorithmVersion is "1.4.0" or "1.5.0")
             {
                 var payload = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "structuredData" && a["name"]?.Value<string>() == "rgb-cross-measurement")?["data"] as JObject
                     ?? throw new InvalidDataException("缺少十字结构化测量结果。");
@@ -159,6 +167,8 @@ internal static class RgbCrossResultParser
                 if (search != null) Require(Inside(point.Region, search), "点位超出搜索区域。");
                 foreach (var c in point.Channels) Require(Inside(c.Horizontal, point.Region) && Inside(c.Vertical, point.Region), "通道框超出点位区域。");
             }
+            PopulateComparisons(point);
+            if (portable && Text(root, "schemaVersion") == "1.2.0") ValidateComparisons(row, point);
             result.Points.Add(point);
         }
         if (portable)
@@ -240,12 +250,48 @@ internal static class RgbCrossResultParser
         result.AppliedRecipe = recipe == null ? null : new RecipeBase(recipe.Min, recipe.Max, recipe.Fix, recipe.B);
         foreach (var p in result.Points)
         {
-            p.JudgedEdgeSeparation = p.Valid && recipe != null ? recipe.Apply(p.MaximumEdgeSeparation!.Value) : null;
-            Require(!p.JudgedEdgeSeparation.HasValue || double.IsFinite(p.JudgedEdgeSeparation.Value), "K/B 修正后的分离值超出有限数值范围。");
-            p.Judgment = !p.Valid ? "INVALID" : recipe == null ? "MEASURED" :
-                new ObjectiveTestItem { Value = p.JudgedEdgeSeparation!.Value, LowLimit = recipe.Min, UpLimit = recipe.Max }.TestResult ? "PASS" : "FAIL";
+            PopulateComparisons(p);
+            foreach (var comparison in p.Comparisons.Values)
+            {
+                comparison.JudgedValue = comparison.Value.HasValue && recipe != null ? recipe.Apply(comparison.Value.Value) : null;
+                Require(!comparison.JudgedValue.HasValue || double.IsFinite(comparison.JudgedValue.Value), "K/B 修正后的分离值超出有限数值范围。");
+                comparison.Judgment = !comparison.Value.HasValue ? "INVALID" : recipe == null ? "MEASURED" :
+                    new ObjectiveTestItem { Value = comparison.JudgedValue!.Value, LowLimit = recipe.Min, UpLimit = recipe.Max }.TestResult ? "PASS" : "FAIL";
+            }
+            p.JudgedEdgeSeparation = null; // Legacy aggregate retained as raw data only.
+            p.Judgment = !p.Valid ? "INVALID" : recipe == null ? "MEASURED" : p.Comparisons.Values.All(c => c.Judgment == "PASS") ? "PASS" : "FAIL";
         }
         result.Status = result.Points.Count != result.GridRows * result.GridColumns || result.Points.Any(p => !p.Valid) ? "INVALID" : recipe == null ? "MEASURED" : result.Points.All(p => p.Judgment == "PASS") ? "PASS" : "FAIL";
+    }
+
+    private static double[] Offsets(RgbCrossChannel channel, RgbCrossChannel green) =>
+        [channel.Vertical.X - green.Vertical.X, channel.Vertical.X + channel.Vertical.Width - green.Vertical.X - green.Vertical.Width,
+         channel.Horizontal.Y - green.Horizontal.Y, channel.Horizontal.Y + channel.Horizontal.Height - green.Horizontal.Y - green.Horizontal.Height];
+
+    internal static void PopulateComparisons(RgbCrossPoint point)
+    {
+        var green = point.Channels.SingleOrDefault(c => c.Name == "G");
+        foreach (string channel in new[] { "R", "B" })
+        {
+            var value = point.Channels.SingleOrDefault(c => c.Name == channel);
+            if (!point.Comparisons.TryGetValue(channel + "-G", out var comparison))
+                point.Comparisons[channel + "-G"] = comparison = new();
+            comparison.Value = green != null && value != null ? Offsets(value, green).Select(Math.Abs).Max() : null;
+        }
+    }
+
+    private static void ValidateComparisons(JToken row, RgbCrossPoint point)
+    {
+        foreach (string channel in new[] { "R", "B" })
+        {
+            var data = row["comparisons"]?[channel + "-G"] ?? throw new InvalidDataException("缺少 G 基准通道测量。");
+            double? value = point.Comparisons[channel + "-G"].Value;
+            Require(Text(data, "status") == (value.HasValue ? "VALID" : "INVALID"), "G 基准状态与通道几何不一致。");
+            string[] names = ["leftEdgeOffsetPx", "rightEdgeOffsetPx", "topEdgeOffsetPx", "bottomEdgeOffsetPx", "maximumAbsoluteEdgeOffsetPx"];
+            if (!value.HasValue) { foreach (string name in names) Require(data[name]?.Type == JTokenType.Null, "无效通道对必须使用 null。"); continue; }
+            double[] expected = [.. Offsets(point.Channels.Single(c => c.Name == channel), point.Channels.Single(c => c.Name == "G")), value.Value];
+            for (int i = 0; i < names.Length; i++) Require(Math.Abs(Number(data, names[i]) - expected[i]) <= 1e-6 * Math.Max(1, Math.Abs(expected[i])), "G 基准测量与对应边缘不一致。");
+        }
     }
 
     private static void ReadGrid(JObject root, RgbCrossViewResult result, bool required)

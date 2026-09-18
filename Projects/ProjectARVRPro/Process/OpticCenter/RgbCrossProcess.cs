@@ -24,7 +24,7 @@ public sealed class RgbCrossRecipeConfig : ViewModelBase, IRecipeConfig
     private bool enableJudgment;
 
     [Category("十字 RGB 分离"), DisplayName("最大边缘分离 (px)")]
-    [Description("各点分别按原值 × K + B 后判定；下限或上限为 0 时不限制该侧，与其他 Recipe 一致。无效点不能通过。")]
+    [Description("各点 R–G、B–G 分别按原值 × K + B 后判定；下限或上限为 0 时不限制该侧，与其他 Recipe 一致。无效点不能通过。")]
     [PropertyEditorType(typeof(RecipeBasePropertiesEditor))]
     public RecipeBase EdgeSeparation { get => edgeSeparation; set { edgeSeparation = value; OnPropertyChanged(); } }
     private RecipeBase edgeSeparation = new(0, 0);
@@ -92,8 +92,8 @@ public sealed class RgbCrossProcess : ProcessWithRecipeBase<RgbCrossProcessConfi
             RgbCrossResultParser.Evaluate(result, judgment);
             ctx.Result.FileName = imagePath.Length == 0 ? null : imagePath;
             ctx.Result.ImageWidth = result.ImageWidth; ctx.Result.ImageHeight = result.ImageHeight;
-            ctx.Result.Msg = result.Status == "MEASURED" ? "十字 RGB 已测量，未判定" : $"十字 RGB：{result.Status}";
-            if (result.Status is "INVALID" or "FAIL") { ctx.Result.Result = false; ctx.ObjectiveTestResult.TotalResult = false; }
+            ctx.Result.Msg = "Completed";
+            if (judgment != null && (result.Status is "INVALID" or "FAIL")) { ctx.Result.Result = false; ctx.ObjectiveTestResult.TotalResult = false; }
             ctx.Result.ViewResultJson = JsonConvert.SerializeObject(result);
             ctx.ObjectiveTestResult.DynamicRgbCrossResults[outputName] = result;
             return true;
@@ -138,22 +138,34 @@ public sealed class RgbCrossProcess : ProcessWithRecipeBase<RgbCrossProcessConfi
             if (Config.DrawPointLabels && p.Region is RgbCrossRectangle region)
             {
                 Brush color = !p.Valid ? Brushes.Orange : p.Judgment == "FAIL" ? Brushes.Red : p.Judgment == "PASS" ? Brushes.LimeGreen : Brushes.DeepSkyBlue;
-                string value = (p.JudgedEdgeSeparation ?? p.MaximumEdgeSeparation)?.ToString("F3", CultureInfo.InvariantCulture) ?? "—";
-                Add(new DVRectangleText(new RectangleTextProperties { Rect = ToRect(region), Brush = Brushes.Transparent, Pen = new Pen(color, 1), Msg = $"{p.Id} {value} px" }));
+                string value = PairText(p, "\n");
+                Add(new DVRectangleText(new RectangleTextProperties { Rect = ToRect(region), Brush = Brushes.Transparent, Pen = new Pen(color, 1), Msg = $"{p.Id} {value}" }));
             }
         }
         void Add(DrawingVisual visual) { ctx.ImageView.AddVisual(visual); previous.Add(visual); }
     }
 
     private static Rect ToRect(RgbCrossRectangle r) => new(r.X, r.Y, r.Width, r.Height);
-    private static RgbCrossViewResult? ReadSaved(ProjectARVRReuslt result) => string.IsNullOrWhiteSpace(result.ViewResultJson) ? null : JsonConvert.DeserializeObject<RgbCrossViewResult>(result.ViewResultJson);
+    private static RgbCrossViewResult? ReadSaved(ProjectARVRReuslt result)
+    {
+        var saved = string.IsNullOrWhiteSpace(result.ViewResultJson) ? null : JsonConvert.DeserializeObject<RgbCrossViewResult>(result.ViewResultJson);
+        if (saved != null) foreach (var point in saved.Points) RgbCrossResultParser.PopulateComparisons(point);
+        return saved;
+    }
+    private static string PairText(RgbCrossPoint point, string separator = "  ") => string.Join(separator, new[] { "R-G", "B-G" }.Select(key =>
+        $"{key} {(point.Comparisons[key].JudgedValue ?? point.Comparisons[key].Value)?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px"));
 
     public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result)
     {
         var saved = ReadSaved(result);
         if (saved == null) return [];
         if (saved.Status == "DATA_ERROR") return [new(saved.ExportName, "DataError", saved.Error, "", "", "", "", "DATA_ERROR")];
-        return saved.Points.Select(p => new ObjectiveTestCsvRow(saved.ExportName, p.Id + "_MaximumEdgeSeparation", (p.JudgedEdgeSeparation ?? p.MaximumEdgeSeparation)?.ToString("F3", CultureInfo.InvariantCulture) ?? "", (p.JudgedEdgeSeparation ?? p.MaximumEdgeSeparation)?.ToString("R", CultureInfo.InvariantCulture) ?? "", "px", saved.AppliedRecipe?.Min.ToString("R", CultureInfo.InvariantCulture) ?? "", saved.AppliedRecipe?.Max.ToString("R", CultureInfo.InvariantCulture) ?? "", p.Judgment)).ToArray();
+        return saved.Points.SelectMany(p => new[] { "R-G", "B-G" }.Select(key =>
+        {
+            var c = p.Comparisons[key]; var value = c.JudgedValue ?? c.Value;
+            return new ObjectiveTestCsvRow(saved.ExportName, p.Id + "_" + key, value?.ToString("F3", CultureInfo.InvariantCulture) ?? "", value?.ToString("R", CultureInfo.InvariantCulture) ?? "", "px",
+                saved.AppliedRecipe?.Min.ToString("R", CultureInfo.InvariantCulture) ?? "", saved.AppliedRecipe?.Max.ToString("R", CultureInfo.InvariantCulture) ?? "", c.Judgment);
+        })).ToArray();
     }
 
     public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)
@@ -162,10 +174,9 @@ public sealed class RgbCrossProcess : ProcessWithRecipeBase<RgbCrossProcessConfi
         var text = new StringBuilder("十字 RGB 分离\n");
         if (result != null)
         {
-            text.AppendLine(result.Status == "MEASURED" ? "已测量，未判定" : result.Status);
-            if (result.Status == "INVALID") text.AppendLine("存在测量无效点，无法完成全部点判定；无效值不是 0。");
+            text.AppendLine(result.Status == "DATA_ERROR" ? "数据读取失败" : result.AppliedRecipe == null ? "完成" : result.Status);
             if (result.Error.Length > 0) text.AppendLine(result.Error);
-            foreach (var p in result.Points) text.AppendLine($"{p.Id}: {(p.JudgedEdgeSeparation ?? p.MaximumEdgeSeparation)?.ToString("F3", CultureInfo.InvariantCulture) ?? "—"} px  {p.Judgment}{(string.IsNullOrWhiteSpace(p.Reason) ? "" : "  " + p.Reason)}");
+            foreach (var p in result.Points) text.AppendLine($"{p.Id}: {PairText(p)}{(result.AppliedRecipe == null ? "" : "  " + p.Judgment)}");
         }
         AppendPlainText(paragraph, text.ToString(), foreground, fontSize);
     }

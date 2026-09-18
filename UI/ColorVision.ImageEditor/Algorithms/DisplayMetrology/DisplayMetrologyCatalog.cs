@@ -44,7 +44,7 @@ internal static class DisplayMetrologyCatalog
             Description: p.GetCustomAttribute<DescriptionAttribute>()?.Description ?? p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName)).ToArray();
         bool requiresColor = id == DisplayMetrologyIds.RgbRegistration || id == DisplayMetrologyIds.RgbCrossRegistration;
         var formats = Enum.GetValues<AlgorithmImageFormat>().Where(f => !requiresColor || f.Channels() >= 3).ToHashSet();
-        catalog.Register(new AlgorithmDescriptor(id, id == DisplayMetrologyIds.RgbCrossRegistration ? new AlgorithmVersion(1, 4, 0) : new AlgorithmVersion(1, 0, 0), name, "显示计量",
+        catalog.Register(new AlgorithmDescriptor(id, id == DisplayMetrologyIds.RgbCrossRegistration ? new AlgorithmVersion(1, 5, 0) : new AlgorithmVersion(1, 0, 0), name, "显示计量",
             "离线图案评价；输出像素坐标与相对信号，不附带客户 Recipe、量产合格判定或绝对光度标定。", parameters.GetType(),
             new AlgorithmParameterSchema(1, fields, AlgorithmJson.ToElement(parameters)), formats,
             Capabilities | (id == DisplayMetrologyIds.RgbCrossRegistration ? AlgorithmHostCapabilities.Roi : AlgorithmHostCapabilities.None) | (maximum > 1 ? AlgorithmHostCapabilities.MultiInput : 0), minimum, maximum,
