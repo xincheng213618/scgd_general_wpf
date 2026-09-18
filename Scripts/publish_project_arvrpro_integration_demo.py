@@ -114,6 +114,7 @@ def validate_zip(zip_path: Path, expected_root: str) -> None:
         f"{expected_root}/CHANGELOG.md",
         f"{expected_root}/Samples/project-arvr-result.json",
         f"{expected_root}/Contracts/ObjectiveTestResult.cs",
+        f"{expected_root}/Contracts/Process/OpticCenter/RgbCrossViewResult.cs",
     }
     missing = sorted(required - names)
     if missing:

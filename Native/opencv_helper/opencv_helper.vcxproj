@@ -268,13 +268,17 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="algorithm\sfr\sfr_bmw4.cpp" />
-    <ClCompile Include="algorithm\sfr\sfr_slanted.cpp" />
+    <ClCompile Include="algorithm\sfr\sfr_slanted.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
     <ClCompile Include="algorithm\surface_defect\surface_defect.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="exports\calibration_export.cpp" />
     <ClCompile Include="exports\poi_export.cpp" />
     <ClCompile Include="exports\p2_export.cpp" />
-    <ClCompile Include="exports\sfr_export.cpp" />
+    <ClCompile Include="exports\sfr_export.cpp">
+      <FloatingPointModel>Precise</FloatingPointModel>
+    </ClCompile>
     <ClCompile Include="native_log.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 - 2026-09-18
+
+- 同步最新十字 RGB 分离公开结果模型，补充 `DynamicRgbCrossResults`、G 基准 `R-G` / `B-G` 对比及样例。
+
 ## 1.0.0 - 2026-08-19
 
 - 首次提供可独立运行的 .NET Framework 4.8 WPF 对接 Demo。

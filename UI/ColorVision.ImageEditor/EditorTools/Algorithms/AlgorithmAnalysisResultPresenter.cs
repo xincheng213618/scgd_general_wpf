@@ -306,7 +306,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 1 => PixelFormats.Gray8,
                 3 => PixelFormats.Bgr24,
                 4 => PixelFormats.Bgra32,
-                _ => throw new ArgumentOutOfRangeException(nameof(Format)),
+                _ => throw new InvalidOperationException($"不支持的算法图像格式：{Format}。"),
             };
             WriteableBitmap bitmap = new(targetWidth, targetHeight, _dpiX, _dpiY, pixelFormat, null);
             bitmap.WritePixels(new Int32Rect(0, 0, targetWidth, targetHeight), target, targetStride, 0);
@@ -327,7 +327,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 AlgorithmImageFormat.Bgra32 => PixelFormats.Bgra32,
                 AlgorithmImageFormat.Bgr48 => PixelFormats.Rgb48,
                 AlgorithmImageFormat.Bgra64 => PixelFormats.Rgba64,
-                _ => throw new ArgumentOutOfRangeException(nameof(Format)),
+                _ => throw new InvalidOperationException($"不支持的算法图像格式：{Format}。"),
             };
             byte[] source;
             if (Format is AlgorithmImageFormat.Bgr48 or AlgorithmImageFormat.Bgra64)

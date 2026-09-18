@@ -547,7 +547,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
                 inner.Write(buffer[start..]);
             }
-            protected override void Dispose(bool disposing) { }
+            protected override void Dispose(bool disposing) => base.Dispose(disposing);
         }
     }
 }

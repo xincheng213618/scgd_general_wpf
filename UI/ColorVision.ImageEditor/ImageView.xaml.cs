@@ -952,6 +952,7 @@ namespace ColorVision.ImageEditor
 
             if (configureDefaultLayerController)
             {
+                EditorContext.ProcessingContext.ProfileMeasurementSources = null;
                 SetLayerController(BitmapImageLayerController.CreateForCurrentImage(this));
             }
             else

@@ -187,6 +187,11 @@ namespace ProjectARVRPro.Process.W255
                     }
                 }
 
+                if (!TryPopulateColorCenterRmsToD65(testResult, recipeConfig, testResult.ViewPoixyuvDatas))
+                    log?.Warn("W255色彩中心指标计算失败：没有有效的u'v' POI数据。");
+                else
+                    ctx.Result.Result &= testResult.ColorCenterRmsToD65.TestResult;
+
                 if (calculateUniformityFromCorrectedPoi)
                 {
                     var calculation = LuminanceChromaticityUniformityCalculator.Calculate(testResult.ViewPoixyuvDatas);
@@ -231,6 +236,20 @@ namespace ProjectARVRPro.Process.W255
             testResult.ColorUniformity.Value = value;
             testResult.ColorUniformity.TestValue = value.ToString("F5");
             ctx.Result.Result &= testResult.ColorUniformity.TestResult;
+        }
+
+        internal static bool TryPopulateColorCenterRmsToD65(W255TestResult testResult, W255RecipeConfig recipeConfig, IEnumerable<PoiResultCIExyuvData> points)
+        {
+            ChromaticityCenterMetrics calculation = ChromaticityCenterCalculator.Calculate(points.Select(point => (point.u, point.v)));
+            if (!calculation.IsValid)
+                return false;
+
+            double value = recipeConfig.ColorCenterRmsToD65.Apply(calculation.RmsToReference);
+            testResult.ColorCenterRmsToD65.LowLimit = recipeConfig.ColorCenterRmsToD65.Min;
+            testResult.ColorCenterRmsToD65.UpLimit = recipeConfig.ColorCenterRmsToD65.Max;
+            testResult.ColorCenterRmsToD65.Value = value;
+            testResult.ColorCenterRmsToD65.TestValue = value.ToString("F5");
+            return true;
         }
 
         public override IReadOnlyList<ObjectiveTestCsvRow> GetObjectiveCsvRows(ProjectARVRReuslt result) =>
@@ -289,6 +308,7 @@ namespace ProjectARVRPro.Process.W255
 
             outtext += $"Luminance_uniformity:{testResult.LuminanceUniformity.TestValue} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{testResult.ColorUniformity.TestValue} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"ColorCenterRmsToD65:{testResult.ColorCenterRmsToD65.TestValue} LowLimit:{testResult.ColorCenterRmsToD65.LowLimit} UpLimit:{testResult.ColorCenterRmsToD65.UpLimit},Rsult{(testResult.ColorCenterRmsToD65.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"CenterCorrelatedColorTemperature:{testResult.CenterCorrelatedColorTemperature.TestValue} LowLimit:{testResult.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{testResult.CenterCorrelatedColorTemperature.UpLimit},Rsult{(testResult.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";

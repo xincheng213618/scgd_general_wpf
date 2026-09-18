@@ -55,7 +55,7 @@ namespace ColorVision.Copilot
 
                     foreach (var header in RequestIdHeaders)
                     {
-                        if (!headers.TryGetValue(header, out var value))
+                        if (!headers.TryGetValue(header, out var value) || string.IsNullOrEmpty(value))
                             continue;
 
                         // Remove the complete credential before normalization can truncate a long header.

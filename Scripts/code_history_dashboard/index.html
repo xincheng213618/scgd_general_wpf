@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ColorVision · 代码洞察</title>
+<style>/* DASHBOARD_STYLE */</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand"><span class="brand-mark">CV</span><div>ColorVision<small>代码洞察</small></div></div>
+  <nav aria-label="统计视图">
+    <button class="nav-item active" data-view="overview"><span>01</span> 总览</button>
+    <button class="nav-item" data-view="projects"><span>02</span> 项目规模</button>
+    <button class="nav-item" data-view="activity"><span>03</span> 提交节奏</button>
+    <button class="nav-item" data-view="methods"><span>04</span> 统计口径</button>
+  </nav>
+  <div class="sidebar-bottom"><span class="status-dot"></span> 本地离线报告<p id="sidebar-info"></p><button id="theme-toggle" class="quiet">切换深浅主题</button></div>
+</aside>
+<main>
+  <header class="topbar"><div><h1 id="view-title">代码概览</h1><p id="view-subtitle"></p></div><div class="header-actions"><span id="branch" class="tag"></span><button id="export" class="button">导出当前数据 CSV</button></div></header>
+  <div id="content" aria-live="polite"></div>
+  <footer><span>ColorVision · 代码洞察</span><span id="generated"></span></footer>
+</main>
+<noscript>请启用 JavaScript 查看交互统计。完整数据保存在同目录的 artifact.json。</noscript>
+<div id="viz-tooltip" class="viz-tooltip" role="tooltip" hidden></div>
+<script id="dashboard-data" type="application/json">DASHBOARD_DATA</script>
+<script>/* DASHBOARD_SCRIPT */</script>
+</body>
+</html>

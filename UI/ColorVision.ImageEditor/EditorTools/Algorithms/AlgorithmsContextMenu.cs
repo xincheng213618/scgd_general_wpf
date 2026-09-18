@@ -105,7 +105,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     GuidId = "SFR",
                     Order = 1,
                     Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SfrMtfAnalysis,
-                    Command = new RelayCommand(_ => new SFREditorTool(imageContext).Execute()),
+                    Command = new RelayCommand(_ => new SFREditorTool(imageContext, _drawContext).Execute()),
                 },
                 new()
                 {

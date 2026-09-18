@@ -351,6 +351,8 @@ namespace ColorVision.Engine.Media
             imageView.Config.FilePath = filePath;
 
             int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
+            imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase)
+                ? CvcieProfileSource.CreateOptions(filePath, meta.Channels) : null;
             if (index <= 0)
             {
                 return null;
@@ -889,17 +891,18 @@ namespace ColorVision.Engine.Media
                         }
                         else if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
                         {
-                            if (!mat!.MatUpdateWriteableBitmap(writeableBitmap))
+                            OpenCvSharp.Mat sourceMat = mat!;
+                            if (!sourceMat.MatUpdateWriteableBitmap(writeableBitmap))
                             {
-                                WriteableBitmap replacement = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
+                                WriteableBitmap replacement = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(sourceMat);
                                 context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
                                 context.ImageView.UpdateZoomAndScale();
                             }
                             else
                             {
-                                int displayChannels = mat.Channels();
-                                int displayDepth = checked((int)mat.ElemSize1() * 8);
-                                int displayStride = checked(mat.Cols * displayChannels * (displayDepth / 8));
+                                int displayChannels = sourceMat.Channels();
+                                int displayDepth = checked((int)sourceMat.ElemSize1() * 8);
+                                int displayStride = checked(sourceMat.Cols * displayChannels * (displayDepth / 8));
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(CVRawOpen), "当前显示位图像素格式");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, displayChannels, nameof(CVRawOpen), "当前显示位图通道数");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, displayDepth, nameof(CVRawOpen), "当前显示位图位深");
@@ -909,6 +912,8 @@ namespace ColorVision.Engine.Media
                                 // Publish the reused source before revision callbacks observe the update.
                                 context.ProcessingContext.Presentation.Publish(writeableBitmap, context.FunctionImage);
                                 context.CommitSourcePixels(writeableBitmap);
+                                context.ProcessingContext.ProfileMeasurementSources = string.Equals(Path.GetExtension(requestedFilePath), ".cvcie", StringComparison.OrdinalIgnoreCase)
+                                    ? CvcieProfileSource.CreateOptions(requestedFilePath, cVCIEFile.Channels) : null;
                                 context.ImageView.NotifyImageSourceLoaded();
                             }
                         }

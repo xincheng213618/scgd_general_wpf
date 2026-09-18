@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Media
                 MagnigifierType.Circle => new(x, y, diameter, diameter, PoiMeasurementShape.Circle),
                 MagnigifierType.Rect => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Rect),
                 MagnigifierType.Ellipse => new(x, y, RectWidth, RectHeight, PoiMeasurementShape.Ellipse),
-                _ => throw new ArgumentOutOfRangeException(nameof(MagnigifierType))
+                _ => throw new InvalidOperationException($"不支持的取样形状：{MagnigifierType}。")
             };
         }
 

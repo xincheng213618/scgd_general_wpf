@@ -245,7 +245,7 @@ next: false
   ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
+  灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。
 
 - [成像校正：参考图、执行与结果保存](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
   成像校正的参考图、固定阶段、参数/preset、执行并提交、mask与PNG/CSV/JSON保存；明确Alpha裁剪、无效样本、精确复制和批量只保存主图的边界。

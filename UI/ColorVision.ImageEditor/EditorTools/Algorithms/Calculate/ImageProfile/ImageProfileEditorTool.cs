@@ -72,21 +72,34 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             PolylineAlgorithmRoi roi,
             ImageProfileParameters parameters,
             ImageSelectionScope? expectedScope = null,
-            AlgorithmAnalysisWindowOwner? windowOwner = null)
+            AlgorithmAnalysisWindowOwner? windowOwner = null,
+            int selectedSource = 0)
         {
             windowOwner ??= AlgorithmAnalysisWindowOwner.Capture();
             AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, roi);
             Guid documentId = image.DocumentInstanceId;
-            AlgorithmInput input;
-            try { input = ImageAlgorithmInputFactory.Acquire(image, expectedScope); }
+            IReadOnlyList<ImageProfileSourceOption>? sourceChoices = image.ProfileMeasurementSources;
+            ImageProfileSourceOption[] sources = sourceChoices?.ToArray() ?? [];
+            AlgorithmInput? input = null;
+            ImageSelectionScope scope;
+            long sourceRevision;
+            ImageProfileSourceOption? measurementSource;
+            try
+            {
+                scope = expectedScope ?? TransientRoiSelectionSession.CaptureSourceScope(image)
+                    ?? throw new InvalidOperationException("The image has no source scope.");
+                if (!TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
+                    throw new InvalidOperationException("The image changed. Select the profile again.");
+                if (selectedSource < 0 || selectedSource > sources.Length)
+                    throw new ArgumentOutOfRangeException(nameof(selectedSource));
+                measurementSource = selectedSource < sources.Length ? sources[selectedSource] : null;
+                if (measurementSource == null) input = ImageAlgorithmInputFactory.Acquire(image, scope);
+                sourceRevision = scope.SourceRevision;
+            }
             catch (Exception exception)
             {
+                input?.Image.Dispose();
                 AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
-            {
-                input.Image.Dispose();
                 return;
             }
 
@@ -108,7 +121,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             {
                 Exception? ignored = null;
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => progressWindow?.Complete(), ref ignored);
-                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => input?.Image.Dispose(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -118,10 +131,19 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             try
             {
                 Progress<AlgorithmProgress> progress = new(value => progressWindow.Report(value));
-                result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
+                if (measurementSource != null)
+                {
+                    ImageProfileAlgorithmProvider provider = new();
+                    result = await image.AlgorithmRuntime.Scheduler.ScheduleAsync(provider.Metadata, token =>
+                    {
+                        using IImageProfileMeasurementSource source = measurementSource.Open(token);
+                        return ValueTask.FromResult(provider.ExecuteMeasurement(invocation, parameters, source, scope, token, progress));
+                    }, cancellation.Token);
+                }
+                else result = await image.AlgorithmRuntime.Runner.RunAsync(new AlgorithmRunRequest
                 {
                     Invocation = invocation,
-                    Inputs = [input],
+                    Inputs = [input!],
                     RequiredCapabilities = AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Roi,
                     Progress = progress,
                 }, cancellation.Token);
@@ -129,9 +151,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             catch (Exception exception)
             {
                 Exception? ignored = null;
-                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
+                AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => input?.Image.Dispose(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
-                if (!progressWindow.WasCancelled)
+                if (!progressWindow.WasCancelled && !cancellation.IsCancellationRequested)
                     AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -143,6 +165,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             }
 
             if (result.Status == AlgorithmResultStatus.Cancelled || progressWindow.WasCancelled
+                || !ReferenceEquals(sourceChoices, image.ProfileMeasurementSources)
                 || !ImageAlgorithmAnalysisSession.IsCurrent(image, documentId, sourceRevision, invocation.InvocationId))
             {
                 result.Dispose();
@@ -166,7 +189,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             bool shown = AlgorithmAnalysisResultWindowTransaction.TryShow(
                 result,
                 windowOwner,
-                value => new ImageProfileResultWindow(value, image, draw),
+                value =>
+                {
+                    ImageProfileResultWindow window = new(value, image, draw);
+                    if (sources.Length > 0)
+                        window.ConfigureSources(sources.Select(source => source.Name).Append("当前显示图像").ToArray(), selectedSource,
+                            index => _ = ExecuteAsync(roi, parameters, scope, windowOwner, index));
+                    return window;
+                },
                 window => ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, window),
                 () => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId),
                 previous,

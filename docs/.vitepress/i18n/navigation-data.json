@@ -1463,6 +1463,12 @@
             },
             {
               "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
+            },
+            {
+              "text": {
                 "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
@@ -3902,6 +3908,21 @@
                 "root": "ProjectARVRPro SemiAuto"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-semi-auto"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Scripts/code_history_dashboard"
+          },
+          "link": "/knowledge/code/source-Scripts#module-536372697074732f636f64655f686973746f72795f64617368626f617264",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "代码行数与 Git 历史统计"
+              },
+              "link": "/02-developer-guide/scripts/code-statistics"
             }
           ]
         },

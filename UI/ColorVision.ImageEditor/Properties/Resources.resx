@@ -503,7 +503,7 @@
     <value>错误</value>
   </data>
   <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
-    <value>SFR/MTF 分析</value>
+    <value>框选斜边测清晰度（SFR/MTF）...</value>
   </data>
   <data name="Histogram_Title" xml:space="preserve">
     <value>直方图 (Histogram)</value>

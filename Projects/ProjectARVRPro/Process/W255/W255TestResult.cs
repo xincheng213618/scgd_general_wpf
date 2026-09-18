@@ -39,6 +39,11 @@ namespace ProjectARVRPro.Process.W255
         /// </summary>
         public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(Δu'v'max)" };
 
+        /// <summary>
+        /// 有效POI相对D65的均方根色度距离
+        /// </summary>
+        public ObjectiveTestItem ColorCenterRmsToD65 { get; set; } = new ObjectiveTestItem() { Name = "Color_Center_RMS_To_D65(Δu'v')" };
+
         public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem() { Name = "Center_Correlated_Color_Temperature", Unit = "K" };
 
         /// <summary>

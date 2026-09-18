@@ -35,6 +35,11 @@ enum class StitchingErrorCode {
 };
 
 extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
+
+// Versioned diagnostic SFR. Positive UTF-8 byte count (including NUL) on success;
+// negative transport/config error. Per-channel measurement validity is in JSON.
+// Strict ROI, cycles/input-pixel units. Release result using FreeResult.
+extern "C" COLORVISIONCORE_API int M_AnalyzeSfrV2(HImage img, RoiRect roi, const char* config, char** result);
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);

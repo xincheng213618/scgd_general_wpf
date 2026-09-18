@@ -128,11 +128,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            if (SelectedGroup != null)
-                _device.Config.ActiveCalibrationGroupName = SelectedGroup.GroupName;
-
             bool ndServiceChanged = !string.Equals(_initialBindDeviceCode, _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty, StringComparison.Ordinal);
-            if (!_device.ApplyActiveCalibrationGroup(true))
+            bool groupChanged = SelectedGroup != null && _device.ApplyCalibrationGroup(SelectedGroup, true);
+            if (!groupChanged)
             {
                 if (ndServiceChanged)
                     _device.Save();

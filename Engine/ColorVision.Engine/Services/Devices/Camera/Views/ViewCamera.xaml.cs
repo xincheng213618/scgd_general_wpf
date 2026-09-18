@@ -355,13 +355,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
 
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.Invoke(DisposeCore);
-                return;
-            }
-
-            DisposeCore();
+            if (!Dispatcher.CheckAccess()) Dispatcher.Invoke(DisposeCore);
+            else DisposeCore();
+            GC.SuppressFinalize(this);
         }
 
         private void DisposeCore()
@@ -381,7 +377,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             localPreview = null;
             ImageView?.Dispose();
             DataContext = null;
-            GC.SuppressFinalize(this);
         }
     }
 }

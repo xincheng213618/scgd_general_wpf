@@ -501,7 +501,7 @@ namespace ColorVision
                     {
                         replacement ??= await Task.Run(Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement, cancellationToken);
                         targetCount = replacement.ProcessIds.Count;
-                        await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken));
+                        await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken), cancellationToken);
                         cancellationToken.ThrowIfCancellationRequested();
                         // Mutex ownership must stay on the startup UI thread.
                         if (!TryAcquireSingleInstanceMutex())

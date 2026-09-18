@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Templates.Flow.Search
                             entry.DeviceCode,
                             entry.ServiceCode,
                             entry.Tags,
-                        }.Where(value =>
+                        }.OfType<string>().Where(value =>
                             !string.IsNullOrWhiteSpace(value)).ToArray(),
                     Command = new RelayCommand(_ =>
                     {

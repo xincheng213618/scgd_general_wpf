@@ -2,10 +2,10 @@
 knowledge_id: "algorithms.image-profile"
 knowledge_type: "reference"
 status: "current"
-summary: "灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。"
-aliases: ["灰度与颜色剖面", "水平剖面", "垂直剖面", "任意折线剖面", "切面图", "截面图", "剖面采样参数", "剖面导出", "剖面采样数据", "剖面曲线", "ImageProfile", "LineProfile", "SectionalDrawing", "ImageProfileAlgorithmProvider", "ImageProfileParameters", "ImageProfileEditorTool", "ImageProfileResultWindow", "ProfileDataExtractor", "ProfileData", "ProfileChartWindow", "ImageProfileInterpolation", "ImageProfileBoundaryMode", "SampleSpacingPixels", "IncludeLuminance", "IncludeAlpha", "ImageProfileParameters.MaximumSamples", "ImageProfileParameters.ClosePath", "ImageProfileParameters.BoundaryMode", "ImageProfileParameters.Interpolation", "profile_path_required", "profile_path_degenerate", "profile_path_point_limit_exceeded", "profile_sample_limit_exceeded", "profile_execution_sample_budget_exceeded", "profile_result_budget_exceeded", "profile_sample_out_of_bounds", "profile_no_samples"]
-code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs", "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
+summary: "灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。"
+aliases: ["CIE Y", "CIE Yxy", "CIE x/y", "原始亮度剖面", "灰度与颜色剖面", "水平剖面", "垂直剖面", "任意折线剖面", "切面图", "截面图", "剖面采样参数", "剖面导出", "剖面采样数据", "剖面曲线", "ImageProfile", "LineProfile", "SectionalDrawing", "ImageProfileAlgorithmProvider", "ImageProfileParameters", "ImageProfileEditorTool", "ImageProfileResultWindow", "ProfileDataExtractor", "ProfileData", "ProfileChartWindow", "ImageProfileInterpolation", "ImageProfileBoundaryMode", "SampleSpacingPixels", "IncludeLuminance", "IncludeAlpha", "ImageProfileParameters.MaximumSamples", "ImageProfileParameters.ClosePath", "ImageProfileParameters.BoundaryMode", "ImageProfileParameters.Interpolation", "profile_path_required", "profile_path_degenerate", "profile_path_point_limit_exceeded", "profile_sample_limit_exceeded", "profile_execution_sample_budget_exceeded", "profile_result_budget_exceeded", "profile_sample_out_of_bounds", "profile_no_samples"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs", "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CvcieProfileTests.cs", "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs", "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
 related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics", "algorithms.image-comparison"]
 ---
 
@@ -13,7 +13,7 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
 
 灰度与颜色剖面沿一条路径读取图像通道值，显示亮度变化，并输出每个采样点的位置、距离和数值状态。它支持水平、垂直和分段折线路径；矩形只用于定位水平/垂直线，不计算矩形区域平均值。区域统计见 [ROI 统计](./roi-statistics-v1.md)，两图差异见[图像比较](./image-comparison-v1.md)。
 
-稳定算法 ID 为 `colorvision.analysis.image-profile`，算法版本 `1.1.0`、参数 schema 为 1。Catalog 别名包括 `ImageProfile`、`LineProfile`、`ProfileDataExtractor`、`SectionalDrawing`。Provider 只接收一张图和 `PolylineAlgorithmRoi`，输出结构化结果，不生成图像 artifact。
+稳定算法 ID 为 `colorvision.analysis.image-profile`，算法版本 `1.2.0`、参数 schema 为 1。Catalog 别名包括 `ImageProfile`、`LineProfile`、`ProfileDataExtractor`、`SectionalDrawing`。常规 Provider 接收一张图和 `PolylineAlgorithmRoi`；交互 CVCIE 入口通过测量数据源适配器复用相同采样核心。两者输出结构化结果，不生成图像 artifact。
 
 ## 在 ImageView 中取得剖面
 
@@ -27,7 +27,7 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
    | 垂直剖面 | 拖出矩形后松开，以矩形中心的 X 坐标采样整幅图的 `y=0..高-1`，不受矩形上下边界限制 |
    | 任意折线剖面 | 逐次单击添加点，按 Enter/Space 或右键尝试结束，Esc 取消；最终是否闭合由 `ClosePath` 决定 |
 
-4. 等待分析完成；进度窗口可以取消。结果窗口显示曲线、样本表和路径长度，图像上出现本次路径 overlay。分析不修改原图；关闭结果窗口会释放结果并移除该临时 overlay。
+4. 等待分析完成；进度窗口可以取消。结果窗口显示曲线、统计摘要、样本表和路径长度，图像上出现本次路径 overlay。分析不修改原图；关闭结果窗口会释放结果并移除该临时 overlay。
 
 水平/垂直中心坐标可落在亚像素位置，读数由插值参数决定。矩形选择器要求显示坐标的宽和高都大于 1 DIP，过小选择会等待重新绘制。
 
@@ -36,6 +36,30 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
 已有直线和多边形图元的“切面图”（资源键 `SectionalDrawing`，也常称截面图）进入同一参数窗口；直线默认不闭合，多边形按 `IsComple` 初始化闭合选项。工厂创建时注入当前图像/绘图上下文，旧构造方式的区别见兼容接口小节。
 
 选择与执行通过图像 document/revision 绑定；切图、原图 revision 改变或新分析会按[平台 session 规则](./image-algorithm-platform-v1.md#m0-执行与所有权规则)失效旧请求，不能把旧路径直接用于新图。
+
+## CVCIE 亮度与色度剖面
+
+工具栏和菜单保留同一个剖面入口，打开 CVCIE 时默认读取文件内原始 **CIE Y**，不读取显示位图，也不使用经过 MinMax 归一化的 Gray8 数值。普通图片和 CVRAW（包括已计算 CIE 的 CVRAW）继续采样当前显示图像。
+
+CVCIE 结果窗口的数据源提供：
+
+| 数据源 | 曲线、统计与导出含义 |
+| --- | --- |
+| CIE Y（默认） | 原始 Y；XYZ 文件取索引 1，单通道文件取索引 0 |
+| CIE x/y | 小写色度坐标 `x=X/(X+Y+Z)`、`y=Y/(X+Y+Z)`，无量纲 |
+| CIE Yxy | 原始 Y 和色度 x/y；曲线左轴 Y、右轴 x/y，避免亮度量级压平色度 |
+| CIE XYZ | 诊断用原始三刺激值 X/Y/Z，不与小写 x/y 混淆 |
+| 当前显示图像 | 当前位图 Gray 或 B/G/R/Rec.601 Luminance，受当前显示转换影响 |
+
+单通道文件只提供 Y 和当前显示图像，不推算缺失的色度。切换数据源沿用本次路径与采样参数并重新计算结果；旧结果会关闭，失败或取消不展示伪造的新结果。修改源像素、替换为普通位图或清空文件上下文后，不继续沿用原文件的测量坐标；需重新打开 CVCIE 恢复测量源。仅切换该文件的原生显示图层保留测量源，但会使正在执行的旧 revision 请求过期。
+
+双线性采样先对原始 XYZ 分别插值，再计算 x/y；不是先生成色度图再插值。分母为零、XYZ 非有限或求和溢出时，色度值为 null、Status 为 NaN，有限 Y 仍可保留。每条曲线的均值/总体标准差对该曲线全部有限采样点计算；色度均值不是“先求 XYZ 均值再换算色度”。
+
+文件头没有可靠的单位声明，因此 Y/XYZ 的单位留空，不写为 `cd/m²` 或 `DN`；不能单凭 CVCIE 扩展名声称其 Y 已经是经标定的物理亮度 Lv。x/y 单位为 `1`（无量纲）。窗口标题、图例、统计、采样表及完整 CSV/JSON 均用 `CIE Y`、`CIE x`、`CIE y` 等明确区分。32-bit float 提升到 double 参与计算，64-bit double 不降为 float；不归一化、不夹紧负数。
+
+`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 在工作线程持有只读文件映射，按采样位置读取原始平面，不复制整幅 Y/XYZ 数组或显示帧；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。打开时记录的文件长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。
+
+测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。`CvcieProfileTests` 覆盖版本、32/64 位、Yxy 插值顺序、统计/导出、无效值、取消/释放及上下文失效。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
 
 ## 读懂曲线与样本表
 
@@ -53,14 +77,14 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
 
 窗口的表格和每条曲线最多预览 **2000 行/点**，超出时按行序均匀选取并保留首尾。摘要中的“采样点”是完整返回数，“界面预览”是显示数。预览不是峰值保留算法，可能漏掉窄尖峰或无效值所在行；被预览到的非有限值显示为曲线间断。检查完整数据时使用导出，不能把平滑预览当作所有采样点都正常的证据。
 
-样本表的数字按 `G10` 显示，空数值单元格配合 Status 读取。Measurement 中的各曲线有限/无效数量、最小值、最大值、均值来自完整返回结果，不从预览点重新计算。
+样本表和统计摘要的数字按 `G17` 显示，空数值单元格配合 Status 读取。“统计摘要”和 Measurement 中的各曲线有限/无效数量、最小值、最大值、均值及总体标准差来自完整返回结果，不从预览点重新计算。均值是有限采样点的算术平均；总体标准差按 `sqrt(sum((x-mean)^2)/N)` 计算。NaN 和正负 Infinity 只计入无效数量，不参与统计。
 
 ### 导出完整数据
 
 点击“导出 JSON”或“导出 CSV”，选择新文件名。导出期间两个导出按钮禁用，并显示进度及“取消导出”；关闭结果窗口也会请求取消。
 
 - **JSON** 保存算法 ID/版本、状态、诊断及全部五类结果 artifact，包括完整采样表、几何和参数来源。
-- **CSV** 是四个文件。选择 `profile.csv` 时，主文件保存 Measurement，`profile_image-profile-samples.csv` 保存全部采样行，另有 `profile_image-profile-geometry.csv` 和 `profile_image-profile-provenance.csv`。最后一个文件的 `DataJson` 列保存来源信息。
+- **CSV** 是四个文件。选择 `profile.csv` 时，主文件保存 Measurement，包括各通道均值和总体标准差；`profile_image-profile-samples.csv` 保存全部采样行，另有 `profile_image-profile-geometry.csv` 和 `profile_image-profile-provenance.csv`。最后一个文件的 `DataJson` 列保存来源信息。
 
 统一导出使用 UTF-8 BOM，默认拒绝覆盖主文件或任何伴随目标。`AlgorithmResultExporter` 先写临时文件再提交；CSV 逐文件提交并在失败时尝试清理本次新建文件，不能保证异常清理始终成功。提交阶段不再检查取消，所以取消或关闭窗口不保证撤销已经提交的文件；以返回结果及实际文件内容核对是否完整。遇到“导出失败”时检查目标目录权限、已存在的同名/伴随文件，再选用新名称。
 
@@ -131,7 +155,7 @@ schema 1 继续接受 MaximumSamples=1000000，保留持久参数兼容；合法
 
 | artifact | 内容 |
 | --- | --- |
-| Measurement `image-profile` | 返回/请求/跳过/钳制数、像素/mm 路径长度、预计结果字节数，以及各曲线统计 |
+| Measurement `image-profile` | 返回/请求/跳过/钳制数、像素/mm 路径长度、预计结果字节数，以及各曲线的有效/无效数量、最小值、最大值、均值和总体标准差 |
 | Table `image-profile-samples` | 全部返回行，字段见样本表说明 |
 | Geometry `image-profile-geometry` | Pixel Polyline；ClosePath=true 时为 Polygon |
 | Overlay `image-profile-overlay` | transient 路径显示 |
@@ -155,6 +179,6 @@ ImageView、Batch 与本地 Flow adapter 复用同一 Provider，但参数、格
 
 ## 验证范围
 
-`ImageProfileV1Tests` 检查采样/插值、分段与端点、DPI/物理坐标、颜色和非有限值、三种边界模式、预算、取消/释放、图表/overlay、3001 行有界预览及 2501 行完整 CSV，并用合成输入比较 Batch/Flow 结果。`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
+`ImageProfileV1Tests` 检查采样/插值、分段与端点、DPI/物理坐标、颜色和非有限值、均值与总体标准差、三种边界模式、预算、取消/释放、图表/overlay、3001 行有界预览及 2501 行完整 CSV，并用合成输入比较 Batch/Flow 结果。`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
 
 `TransientRoiSelectionSessionTests` 明确测试两点、共线和自交多边形被拒绝；这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

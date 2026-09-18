@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using log4net;
 using System;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -73,8 +74,109 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (!_isInitialized)
                 return;
 
-            if (ComboBoxCalibrationGroups.SelectedItem is SpectrumCalibrationGroup group)
-                Device.ApplyCalibrationGroup(group, true);
+            if (ComboBoxCalibrationGroups.SelectedItem is not SpectrumCalibrationGroup group
+                || !Device.CalibrationGroupChangeGuard.TryBeginUserSwitch())
+            {
+                return;
+            }
+
+            if (group.NDHoleIndex < 0)
+            {
+                try
+                {
+                    Device.ApplyCalibrationGroup(group, true);
+                }
+                finally
+                {
+                    Device.CalibrationGroupChangeGuard.CompleteUserSwitch();
+                }
+                return;
+            }
+
+            int previousPort = Device.DisplayConfig.PortNum;
+            ComboBoxCalibrationGroups.IsEnabled = false;
+
+            MsgRecord? msgRecord;
+            string? error;
+            try
+            {
+                if (!Device.TrySetNDPortForCalibrationGroup(group.NDHoleIndex, out msgRecord, out error) || msgRecord == null)
+                {
+                    CompleteCalibrationGroupSwitch(group, previousPort, null, error ?? "无法发送 ND 切换指令。");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Failed to send the ND port command for a spectrum calibration group.", ex);
+                CompleteCalibrationGroupSwitch(group, previousPort, null, ex.Message);
+                return;
+            }
+
+            int completed = 0;
+            EventHandler<MsgRecordState>? stateChanged = null;
+            stateChanged = (_, state) =>
+            {
+                if (state != MsgRecordState.Success && state != MsgRecordState.Fail && state != MsgRecordState.Timeout)
+                    return;
+
+                if (Interlocked.Exchange(ref completed, 1) != 0)
+                    return;
+
+                msgRecord.MsgRecordStateChanged -= stateChanged;
+                string? failure = state == MsgRecordState.Success ? null : GetNDPortSwitchFailure(msgRecord, state);
+                CompleteCalibrationGroupSwitch(group, previousPort, state, failure);
+            };
+
+            msgRecord.MsgRecordStateChanged += stateChanged;
+            stateChanged(msgRecord, msgRecord.MsgRecordState);
+        }
+
+        private void CompleteCalibrationGroupSwitch(SpectrumCalibrationGroup group, int previousPort, MsgRecordState? state, string? failure)
+        {
+            void Complete()
+            {
+                try
+                {
+                    if (state == MsgRecordState.Success)
+                    {
+                        Device.DisplayConfig.PortNum = group.NDHoleIndex;
+                        RefreshNDHoleMappings();
+                        Device.ApplyCalibrationGroup(group, true);
+                    }
+                    else
+                    {
+                        Device.DisplayConfig.PortNum = previousPort;
+                        ComboBoxCalibrationGroups.SelectedValue = Device.Config.ActiveCalibrationGroupName;
+                        MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"切换标定分组对应的 ND 失败：{failure}",
+                            "ColorVision",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                }
+                finally
+                {
+                    ComboBoxCalibrationGroups.IsEnabled = true;
+                    Device.CalibrationGroupChangeGuard.CompleteUserSwitch();
+                }
+            }
+
+            if (Dispatcher.CheckAccess())
+                Complete();
+            else
+                Dispatcher.Invoke(Complete);
+        }
+
+        private static string GetNDPortSwitchFailure(MsgRecord msgRecord, MsgRecordState state)
+        {
+            if (state == MsgRecordState.Timeout)
+                return "指令超时。";
+
+            return string.IsNullOrWhiteSpace(msgRecord.MsgReturn?.Message)
+                ? "设备未返回具体错误信息。"
+                : msgRecord.MsgReturn.Message;
         }
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)

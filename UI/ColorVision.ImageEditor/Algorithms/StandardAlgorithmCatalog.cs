@@ -138,7 +138,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 OutputFormats = new HashSet<AlgorithmImageFormat>(),
                 OutputFormatPolicy = "no-image-output",
                 ResultSemantics = AlgorithmResultSemantics.Analysis,
-                Version = new AlgorithmVersion(1, 1, 0),
+                Version = new AlgorithmVersion(1, 2, 0),
             }, "ImageProfile", "LineProfile", "ProfileDataExtractor", "SectionalDrawing");
             catalog.Register(Descriptor(
                 StandardAlgorithmIds.ImageComparison,

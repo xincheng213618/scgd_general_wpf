@@ -493,6 +493,10 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        public void Dispose() => Close();
+        public void Dispose()
+        {
+            Close();
+            GC.SuppressFinalize(this);
+        }
     }
 }

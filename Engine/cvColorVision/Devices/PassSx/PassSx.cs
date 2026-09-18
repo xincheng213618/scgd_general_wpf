@@ -21,6 +21,7 @@ namespace cvColorVision
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
         // 打开
+#pragma warning disable CA2101 // cvCamera.dll 的既有 ABI 明确使用 ANSI char*。
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_OpenNetDevice", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int OpenNetDevice([MarshalAs(UnmanagedType.Bool)] bool bNet, [MarshalAs(UnmanagedType.LPStr)] string devName, Pss_Type nType);
 
@@ -34,6 +35,7 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_GetIDN", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int GetIDN(int nDevID, StringBuilder pszIdn, ref int strLen);
+#pragma warning restore CA2101
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "cvPss_Sx_SetSourceV", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int SetSourceV(int nDevID, [MarshalAs(UnmanagedType.I1)] bool isSourceV);

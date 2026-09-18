@@ -277,7 +277,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 SFR/MTF 分析 的本地化字符串。
+        ///   查找类似 框选斜边测清晰度（SFR/MTF）... 的本地化字符串。
         /// </summary>
         public static string Algorithm_SfrMtfAnalysis {
             get {

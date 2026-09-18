@@ -196,6 +196,9 @@
   <data name="Select" xml:space="preserve">
     <value>选择</value>
   </data>
+  <data name="SelectInFolder" xml:space="preserve">
+    <value>选中</value>
+  </data>
   <data name="InstallOptions" xml:space="preserve">
     <value>安装选项</value>
   </data>

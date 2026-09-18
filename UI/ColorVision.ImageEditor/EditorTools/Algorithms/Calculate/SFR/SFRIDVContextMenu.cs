@@ -6,285 +6,80 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
+namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
+
+public sealed class SFREditorTool(ImageProcessingContext image, DrawEditorContext? draw = null)
 {
+    public void Execute() => _ = ExecuteAsync();
 
-    public class SFREditorTool
+    private async Task ExecuteAsync()
     {
-        private readonly ImageProcessingContext _image;
-
-        public SFREditorTool(ImageProcessingContext image)
+        try
         {
-            _image = image;
+            if (draw == null) { SfrAnalysisRunner.Run(image, new RoiRect()); return; }
+            var selection = await new TransientRoiSelectionSession(draw, SelectShapeType.Rectangle).Start();
+            if (selection?.SourceScope is not { } scope || !TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope)) return;
+            RoiRect roi = SfrAnalysisRunner.PixelRoi(selection.Rect, scope);
+            if (roi.Width > 0 && roi.Height > 0) SfrAnalysisRunner.Run(image, roi);
         }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "斜边清晰度", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+}
 
-        public void Execute()
-        {
-            SfrAnalysisRunner.Run(_image, new RoiRect());
-        }
+internal static class SfrAnalysisRunner
+{
+    public static RoiRect PixelRoi(Rect rect, ImageSelectionScope scope)
+    {
+        int left = Math.Clamp((int)Math.Floor(rect.Left * scope.DpiX / 96), 0, scope.PixelWidth);
+        int top = Math.Clamp((int)Math.Floor(rect.Top * scope.DpiY / 96), 0, scope.PixelHeight);
+        int right = Math.Clamp((int)Math.Ceiling(rect.Right * scope.DpiX / 96), 0, scope.PixelWidth);
+        int bottom = Math.Clamp((int)Math.Ceiling(rect.Bottom * scope.DpiY / 96), 0, scope.PixelHeight);
+        return new(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
 
-    internal static class SfrAnalysisRunner
+    public static void Run(ImageProcessingContext context, RoiRect requested)
     {
-        private const int MaxLength = 1024;
-
-        private readonly struct SfrMetrics
+        ImageFrameLease? lease = context.AcquireImageFrame();
+        if (lease == null) return;
+        try
         {
-            public SfrMetrics(double mtf10Norm, double mtf50Norm, double mtf10CyPix, double mtf50CyPix)
-            {
-                Mtf10Norm = mtf10Norm;
-                Mtf50Norm = mtf50Norm;
-                Mtf10CyPix = mtf10CyPix;
-                Mtf50CyPix = mtf50CyPix;
-            }
-
-            public double Mtf10Norm { get; }
-            public double Mtf50Norm { get; }
-            public double Mtf10CyPix { get; }
-            public double Mtf50CyPix { get; }
-        }
-
-        private sealed class SfrCalculationResult
-        {
-            public int ReturnCode { get; init; }
-            public int ChannelCount { get; init; }
-            public double[] Frequency { get; init; } = Array.Empty<double>();
-            public double[] SfrR { get; init; } = Array.Empty<double>();
-            public double[] SfrG { get; init; } = Array.Empty<double>();
-            public double[] SfrB { get; init; } = Array.Empty<double>();
-            public double[] SfrL { get; init; } = Array.Empty<double>();
-            public SfrMetrics MetricsR { get; init; }
-            public SfrMetrics MetricsG { get; init; }
-            public SfrMetrics MetricsB { get; init; }
-            public SfrMetrics MetricsL { get; init; }
-
-            public bool IsSuccess => ReturnCode == 0 && Frequency.Length > 0 && SfrL.Length > 0;
-
-            public static SfrCalculationResult Failure(int returnCode)
-            {
-                return new SfrCalculationResult { ReturnCode = returnCode };
-            }
-        }
-
-        public static void Run(ImageProcessingContext imageContext, RoiRect requestedRoi)
-        {
-            ImageFrameLease? lease = imageContext.AcquireImageFrame();
-            if (lease == null) return;
-
             HImage image = lease.Image;
-            if (!TryNormalizeRoi(requestedRoi, image, out RoiRect roi))
-            {
-                lease.Dispose();
-                return;
-            }
-
-            long revision = lease.Revision;
-            _ = Task.Run(() =>
-            {
-                try
-                {
-                    SfrCalculationResult result;
-                    using (lease)
-                    {
-                        result = Calculate(lease.Image, roi);
-                    }
-
-                    imageContext.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (!imageContext.IsCurrentImageRevision(revision)) return;
-
-                        ShowResult(result);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    lease.Dispose();
-                    imageContext.Dispatcher.BeginInvoke(() =>
-                    {
-                        if (!imageContext.IsCurrentImageRevision(revision)) return;
-
-                        MessageBox.Show($"SFR 计算异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    });
-                }
-            });
+            bool full = requested.X == 0 && requested.Y == 0 && requested.Width == 0 && requested.Height == 0;
+            RoiRect roi = full ? new(0, 0, image.cols, image.rows) : requested;
+            if (roi.Width <= 0 || roi.Height <= 0 || roi.X < 0 || roi.Y < 0 || roi.Width > image.cols || roi.Height > image.rows
+                || roi.X > image.cols - roi.Width || roi.Y > image.rows - roi.Height)
+                throw new ArgumentException("请选择图像内的一条完整斜边。");
+            if ((long)roi.Width * roi.Height > 16_000_000 || roi.Width > 8192 || roi.Height > 8192)
+                throw new ArgumentException("测量区域过大。请在主图框选一条斜边，在矩形右键菜单选择“斜边清晰度（SFR/MTF）”。");
+            var window = new SfrSimplePlotWindow(lease, roi, context.DocumentInstanceId) { Owner = Application.Current.GetActiveWindow() };
+            window.Show();
         }
-
-        private static bool TryNormalizeRoi(RoiRect requestedRoi, HImage image, out RoiRect roi)
+        catch (Exception ex)
         {
-            int x = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.X) : 0;
-            int y = requestedRoi.Width > 0 && requestedRoi.Height > 0 ? Math.Max(0, requestedRoi.Y) : 0;
-            int right = requestedRoi.Width > 0 && requestedRoi.Height > 0
-                ? Math.Min(image.cols, requestedRoi.X + requestedRoi.Width)
-                : image.cols;
-            int bottom = requestedRoi.Width > 0 && requestedRoi.Height > 0
-                ? Math.Min(image.rows, requestedRoi.Y + requestedRoi.Height)
-                : image.rows;
-            int width = right - x;
-            int height = bottom - y;
-            roi = width > 0 && height > 0 ? new RoiRect(x, y, width, height) : new RoiRect();
-            return width > 0 && height > 0;
-        }
-
-        private static SfrCalculationResult Calculate(HImage image, RoiRect roi)
-        {
-            double[] freq = new double[MaxLength];
-            double[] sfrR = new double[MaxLength];
-            double[] sfrG = new double[MaxLength];
-            double[] sfrB = new double[MaxLength];
-            double[] sfrL = new double[MaxLength];
-
-            int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
-                image, 1.0, roi,
-                freq, sfrR, sfrG, sfrB, sfrL,
-                MaxLength,
-                out int outLen,
-                out int channelCount,
-                out double mtf10R, out double mtf50R, out double mtf10cR, out double mtf50cR,
-                out double mtf10G, out double mtf50G, out double mtf10cG, out double mtf50cG,
-                out double mtf10B, out double mtf50B, out double mtf10cB, out double mtf50cB,
-                out double mtf10L, out double mtf50L, out double mtf10cL, out double mtf50cL);
-
-            if (ret != 0 || outLen <= 0)
-            {
-                return SfrCalculationResult.Failure(ret);
-            }
-
-            outLen = Math.Min(outLen, MaxLength);
-            bool hasRgb = channelCount == 4;
-
-            return new SfrCalculationResult
-            {
-                ReturnCode = ret,
-                ChannelCount = channelCount,
-                Frequency = CopyPrefix(freq, outLen),
-                SfrR = hasRgb ? CopyPrefix(sfrR, outLen) : Array.Empty<double>(),
-                SfrG = hasRgb ? CopyPrefix(sfrG, outLen) : Array.Empty<double>(),
-                SfrB = hasRgb ? CopyPrefix(sfrB, outLen) : Array.Empty<double>(),
-                SfrL = CopyPrefix(sfrL, outLen),
-                MetricsR = new SfrMetrics(mtf10R, mtf50R, mtf10cR, mtf50cR),
-                MetricsG = new SfrMetrics(mtf10G, mtf50G, mtf10cG, mtf50cG),
-                MetricsB = new SfrMetrics(mtf10B, mtf50B, mtf10cB, mtf50cB),
-                MetricsL = new SfrMetrics(mtf10L, mtf50L, mtf10cL, mtf50cL)
-            };
-        }
-
-        private static double[] CopyPrefix(double[] values, int length)
-        {
-            double[] copy = new double[length];
-            Array.Copy(values, copy, length);
-            return copy;
-        }
-
-        private static void ShowResult(SfrCalculationResult result)
-        {
-            if (!result.IsSuccess)
-            {
-                MessageBox.Show($"SFR 计算失败，返回码: {result.ReturnCode}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var plotWindow = new SfrSimplePlotWindow();
-            if (result.ChannelCount == 4)
-            {
-                plotWindow.SetMultiChannelData(
-                    result.Frequency,
-                    result.SfrR,
-                    result.SfrG,
-                    result.SfrB,
-                    result.SfrL,
-                    result.MetricsR.Mtf10Norm, result.MetricsR.Mtf50Norm, result.MetricsR.Mtf10CyPix, result.MetricsR.Mtf50CyPix,
-                    result.MetricsG.Mtf10Norm, result.MetricsG.Mtf50Norm, result.MetricsG.Mtf10CyPix, result.MetricsG.Mtf50CyPix,
-                    result.MetricsB.Mtf10Norm, result.MetricsB.Mtf50Norm, result.MetricsB.Mtf10CyPix, result.MetricsB.Mtf50CyPix,
-                    result.MetricsL.Mtf10Norm, result.MetricsL.Mtf50Norm, result.MetricsL.Mtf10CyPix, result.MetricsL.Mtf50CyPix);
-            }
-            else
-            {
-                plotWindow.SetData(
-                    result.Frequency,
-                    result.SfrL,
-                    result.MetricsL.Mtf10Norm,
-                    result.MetricsL.Mtf50Norm,
-                    result.MetricsL.Mtf10CyPix,
-                    result.MetricsL.Mtf50CyPix,
-                    "L");
-            }
-
-            plotWindow.Owner = Application.Current.GetActiveWindow();
-            plotWindow.Show();
+            lease.Dispose();
+            MessageBox.Show(ex.Message, "斜边清晰度", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+}
 
-    /// <summary>
-    /// DVRectangle 右键菜单：执行裁剪操作
-    /// 模仿 DVLineDVContextMenu 的结构。
-    /// </summary>
-    public class SFRIDVContextMenu : IDVContextMenu
+public sealed class SFRIDVContextMenu : IDVContextMenu
+{
+    private readonly ImageProcessingContext _image;
+    public SFRIDVContextMenu(ImageProcessingContext imageContext, ImageViewConfig config) => _image = imageContext;
+    public Type ContextType => typeof(IRectangle);
+
+    public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
-        private readonly ImageProcessingContext _imageContext;
-        private readonly ImageViewConfig _config;
-
-        public SFRIDVContextMenu(ImageProcessingContext imageContext, ImageViewConfig config)
+        if (obj is not IRectangle rectangle) return [];
+        var item = new MenuItem { Header = "斜边清晰度（SFR/MTF）..." };
+        item.Click += (_, _) =>
         {
-            _imageContext = imageContext;
-            _config = config;
-        }
-
-        public Type ContextType => typeof(IRectangle);
-
-        public IEnumerable<MenuItem> GetContextMenuItems(object obj)
-        {
-            List<MenuItem> menuItems = new();
-            if (obj is not IRectangle dvRectangle) return menuItems;
-
-            using ImageFrameLease? lease = _imageContext.AcquireImageFrame();
-            if (lease == null) return menuItems;
-            HImage hImage = lease.Image;
-
-            double DpiX = _config.GetProperties<double>("DpiX");
-            double DpiY = _config.GetProperties<double>("DpiY");
-
-            double DpiScaleX  = DpiX / 96.0;
-            double DpiScaleY = DpiY / 96.0; // 每毫米多少像素
-
-            // 图像尺寸
-            int imgWidth = hImage.cols;
-            int imgHeight = hImage.rows;
-
-            // 用户绘制的矩形
-            int x = (int)Math.Round(dvRectangle.Rect.X * DpiScaleX);
-            int y = (int)Math.Round(dvRectangle.Rect.Y * DpiScaleY);
-            int w = (int)Math.Round(dvRectangle.Rect.Width * DpiScaleX);
-            int h = (int)Math.Round(dvRectangle.Rect.Height * DpiScaleY);
-
-            // 先保证宽高为正
-            if (w <= 0 || h <= 0)
-            {
-                return menuItems;
-            }
-
-            // 与图像交集：裁剪到 [0, imgWidth/Height)
-            int x2 = x + w;
-            int y2 = y + h;
-
-            int roiX = Math.Max(0, x);
-            int roiY = Math.Max(0, y);
-            int roiX2 = Math.Min(imgWidth, x2);
-            int roiY2 = Math.Min(imgHeight, y2);
-
-            int roiW = roiX2 - roiX;
-            int roiH = roiY2 - roiY;
-
-            // 如果没有交集或太小，则直接提示
-            if (roiW <= 0 || roiH <= 0)
-            {
-                return menuItems;
-            }
-
-            var cropSave = new MenuItem { Header = "SFR/MTF 分析" };
-            cropSave.Click += (s, e) => SfrAnalysisRunner.Run(_imageContext, new RoiRect(roiX, roiY, roiW, roiH));
-            menuItems.Add(cropSave);
-            return menuItems;
-        }
+            ImageSelectionScope? scope = TransientRoiSelectionSession.CaptureSourceScope(_image);
+            if (scope == null) return;
+            RoiRect roi = SfrAnalysisRunner.PixelRoi(rectangle.Rect, scope);
+            if (roi.Width > 0 && roi.Height > 0) SfrAnalysisRunner.Run(_image, roi);
+        };
+        return [item];
     }
 }
 

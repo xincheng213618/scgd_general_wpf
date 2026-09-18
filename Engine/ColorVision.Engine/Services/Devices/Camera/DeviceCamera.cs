@@ -514,6 +514,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCameraSession.Dispose();
             DService?.Dispose();
             base.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

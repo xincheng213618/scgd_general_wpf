@@ -510,7 +510,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
         }
-        public EventHandler Loaded { get; set; }
+        public EventHandler? Loaded { get; set; }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
 

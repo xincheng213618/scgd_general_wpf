@@ -288,7 +288,7 @@ next: false
   图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
+  灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。
 
 - [图像配准 V1](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
   ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。
@@ -310,6 +310,9 @@ next: false
 
 - [亚像素边缘 V1](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
+
+- [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。

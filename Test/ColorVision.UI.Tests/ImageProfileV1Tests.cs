@@ -136,6 +136,8 @@ public sealed class ImageProfileV1Tests
         Assert.Equal(new double[] { 0, 1, 2 }, Values(table, "DistancePixels"));
         Assert.Equal(3, Measurement(result, "profile.sample_count"));
         Assert.Equal(2, Measurement(result, "profile.path_length_pixels"));
+        Assert.Equal(20, Measurement(result, "channel.mean", channel: 0), 12);
+        Assert.Equal(Math.Sqrt(200.0 / 3), Measurement(result, "channel.stddev.population", channel: 0), 12);
         Assert.Equal(original, input.Data.ToArray());
         Assert.Equal(AlgorithmGeometryKind.Polyline, Assert.Single(result.GetArtifact<AlgorithmGeometryArtifact>()!.Geometries).Kind);
     }
@@ -423,10 +425,13 @@ public sealed class ImageProfileV1Tests
             {
                 ImageProfileResultWindow window = new(result, imageView.EditorContext.ProcessingContext, imageView.EditorContext.DrawEditorContext);
                 DataGrid grid = Assert.IsType<DataGrid>(window.FindName("SamplesGrid"));
+                DataGrid statistics = Assert.IsType<DataGrid>(window.FindName("StatisticsGrid"));
                 TextBlock summary = Assert.IsType<TextBlock>(window.FindName("SummaryText"));
                 Assert.InRange(grid.Items.Count, 2, 2_000);
+                Assert.Single(statistics.Items);
                 Assert.Contains("3,001", summary.Text, StringComparison.Ordinal);
                 Assert.Contains("2,000", summary.Text, StringComparison.Ordinal);
+                Assert.Contains("总体标准差", summary.Text, StringComparison.Ordinal);
                 window.Close();
             });
         }
@@ -455,8 +460,10 @@ public sealed class ImageProfileV1Tests
                 result,
                 Path.Combine(directory, "profile.csv"),
                 cancellationToken: CancellationToken.None);
+            string measurementsPath = Assert.Single(outputs, path => Path.GetFileName(path).Equals("profile.csv", StringComparison.Ordinal));
             string samplesPath = Assert.Single(outputs, path => Path.GetFileName(path).Contains("image-profile-samples", StringComparison.Ordinal));
 
+            Assert.Contains("channel.stddev.population", File.ReadAllText(measurementsPath), StringComparison.Ordinal);
             Assert.Equal(samples + 1, File.ReadLines(samplesPath).Count());
         }
         finally

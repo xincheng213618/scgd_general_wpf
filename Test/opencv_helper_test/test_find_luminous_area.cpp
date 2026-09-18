@@ -3566,8 +3566,17 @@ void testWithRealImage(const std::string& imagePath)
     }
 }
 
+bool RunSfrAnalysisTests();
+
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--sfr-only") {
+        const bool diagnostics = RunSfrAnalysisTests();
+        const bool legacy = smokeSfrOutputsClearOnFailure() && smokeSfrCalculatesSyntheticSlantedEdge()
+            && smokeSfrMatchesSfrmat5MonoFixture() && smokeSfrMatchesSfrmat5ColorFixture() && smokeSfrBmw4In1SyntheticTarget();
+        std::cout << "SFR legacy compatibility: " << (legacy ? "PASS" : "FAIL") << std::endl;
+        return diagnostics && legacy ? 0 : 1;
+    }
     if (argc == 2 && std::string(argv[1]) == "--grid-distortion-v2") {
         return RunGridDistortionV2Tests() ? 0 : 1;
     }

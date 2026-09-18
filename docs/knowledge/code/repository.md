@@ -50,7 +50,7 @@ next: false
   Pattern 图卡、用户默认值、模板文件管理，以及内置图片投影的预览和全屏切换；区分当前参数、已生成图片和实际投影。
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
-  统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。
+  统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
 - [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
   opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。

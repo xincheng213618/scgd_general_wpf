@@ -92,6 +92,9 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand SelectMySqlZipCommand { get; }
         public RelayCommand SelectMqttInstallerCommand { get; }
         public RelayCommand SelectVc2013InstallerCommand { get; }
+        public RelayCommand SelectServicePackageInFolderCommand { get; }
+        public RelayCommand SelectMySqlPackageInFolderCommand { get; }
+        public RelayCommand SelectMqttInstallerInFolderCommand { get; }
         public RelayCommand BackupNowCommand { get; }
         public RelayCommand RestoreBackupCommand { get; }
         public RelayCommand BackupServiceNowCommand { get; }
@@ -113,6 +116,9 @@ namespace WindowsServicePlugin.ServiceManager
             SelectMySqlZipCommand = new RelayCommand(a => SelectMySqlZip());
             SelectMqttInstallerCommand = new RelayCommand(a => SelectMqttInstaller());
             SelectVc2013InstallerCommand = new RelayCommand(a => SelectVc2013Installer());
+            SelectServicePackageInFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(ServicePackagePath));
+            SelectMySqlPackageInFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(MySqlPackagePath));
+            SelectMqttInstallerInFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(MqttInstallerPath));
             BackupNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupNow()), a => !IsBusy);
             RestoreBackupCommand = new RelayCommand(a => _ = Task.Run(() => DoRestoreBackup()), a => !IsBusy);
             BackupServiceNowCommand = new RelayCommand(a => _ = Task.Run(() => DoBackupServiceNow()), a => !IsBusy);

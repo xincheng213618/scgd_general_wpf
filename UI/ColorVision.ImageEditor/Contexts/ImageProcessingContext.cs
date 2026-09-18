@@ -44,6 +44,7 @@ namespace ColorVision.ImageEditor
         {
             ArgumentNullException.ThrowIfNull(algorithmRuntime);
             Config = config;
+            config.Cleared += (_, _) => ProfileMeasurementSources = null;
             ImageShow = imageShow;
             Dispatcher = dispatcher;
             _binding = binding;
@@ -58,6 +59,9 @@ namespace ColorVision.ImageEditor
         public ImageDisplayEffects DisplayEffects { get; }
 
         public ImageStreamPresentation StreamPresentation { get; }
+
+        /// <summary>Opener-supplied factory captured on the UI thread; invoked in the profile worker.</summary>
+        public IReadOnlyList<ImageProfileSourceOption>? ProfileMeasurementSources { get; set; }
 
         public ImageViewConfig Config { get; }
 
@@ -189,7 +193,12 @@ namespace ColorVision.ImageEditor
             => _operations.TryCancelAlgorithmPreview(claim, cancellationPublication);
 
         internal void InvalidateForDocumentMutation(ImageDocumentMutationKind mutationKind, long previousRevision, long currentRevision)
-            => _operations.InvalidateForDocumentMutation(mutationKind, previousRevision, currentRevision);
+        {
+            // Pixel edits can change coordinates even when the dimensions stay the same.
+            if (mutationKind is ImageDocumentMutationKind.SourcePixelsChanged or ImageDocumentMutationKind.ImageCleared)
+                ProfileMeasurementSources = null;
+            _operations.InvalidateForDocumentMutation(mutationKind, previousRevision, currentRevision);
+        }
 
         internal void NotifyDocumentScopeChanged() => DocumentScopeChanged?.Invoke(this, EventArgs.Empty);
 

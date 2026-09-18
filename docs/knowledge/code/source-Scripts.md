@@ -38,7 +38,7 @@ next: false
   光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
-  统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。
+  统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。
@@ -57,6 +57,11 @@ next: false
 
 - [ProjectARVRPro SemiAuto](../../04-api-reference/projects/project-arvr-pro-semi-auto.md) — `projects.arvr-pro-semi-auto`
   独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。
+
+## Scripts/code\_history\_dashboard {#module-536372697074732f636f64655f686973746f72795f64617368626f617264}
+
+- [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
+  统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
 ## Scripts/tests {#module-536372697074732f7465737473}
 

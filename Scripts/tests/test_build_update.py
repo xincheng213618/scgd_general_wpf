@@ -1,15 +1,74 @@
 import tempfile
+import hashlib
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
+from Scripts import build_update
 
 from Scripts.build_update import (
+    NATIVE_REPAIR_PATHS,
+    NATIVE_REPAIR_BASELINE,
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
     create_full_zip,
     find_incremental_baseline,
     make_incremental_zip,
     validate_service_host_runtime,
 )
+
+
+class NativeRepairDeliveryTests(unittest.TestCase):
+    def test_unchanged_dependencies_are_included_to_repair_81_clients(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / "runtime"
+            baseline = root / NATIVE_REPAIR_BASELINE
+            expected = {}
+            with zipfile.ZipFile(baseline, "w") as z:
+                for relative in NATIVE_REPAIR_PATHS:
+                    data = relative.encode()
+                    path = runtime / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(data)
+                    z.writestr(relative, data)
+                    expected[relative] = hashlib.sha256(data).hexdigest()
+            package = root / "repair.cvx"
+            make_incremental_zip(baseline, runtime, package, native_hashes=expected)
+            with zipfile.ZipFile(package) as z:
+                self.assertEqual(set(z.namelist()), set(NATIVE_REPAIR_PATHS))
+            # A new healthy baseline no longer needs the .81 repair payload.
+            healthy = root / "ColorVision-[1.4.15.1].zip"
+            healthy.write_bytes(baseline.read_bytes())
+            make_incremental_zip(healthy, runtime, package, native_hashes=expected)
+            with zipfile.ZipFile(package) as z:
+                self.assertEqual(z.namelist(), [])
+            (runtime / NATIVE_REPAIR_PATHS[0]).unlink()
+            with self.assertRaisesRegex(FileNotFoundError, "repair file"):
+                make_incremental_zip(baseline, runtime, package, native_hashes=expected)
+
+    def test_runtime_corruption_stops_before_packaging_or_upload(self):
+        with mock.patch.object(build_update, "get_file_version", return_value="1.4.14.82"), \
+             mock.patch.object(build_update, "validate_service_host_runtime"), \
+             mock.patch.object(build_update, "validate_operations_watchdog_runtime"), \
+             mock.patch.object(build_update, "ensure_native_runtime_integrity", side_effect=ValueError("bad native")), \
+             mock.patch.object(build_update, "make_incremental_zip") as pack, \
+             mock.patch.object(build_update, "upload_file") as upload:
+            self.assertEqual(build_update.main(), 1)
+        pack.assert_not_called()
+        upload.assert_not_called()
+
+    def test_packaged_content_failure_stops_upload(self):
+        with mock.patch.object(build_update, "get_file_version", return_value="1.4.14.82"), \
+             mock.patch.object(build_update, "validate_service_host_runtime"), \
+             mock.patch.object(build_update, "validate_operations_watchdog_runtime"), \
+             mock.patch.object(build_update, "ensure_native_runtime_integrity", return_value={"native.dll": "hash"}), \
+             mock.patch.object(build_update, "create_directory_if_not_exists"), \
+             mock.patch.object(build_update, "find_incremental_baseline", return_value="base.zip"), \
+             mock.patch.object(build_update, "make_incremental_zip", side_effect=ValueError("bad archive")) as pack, \
+             mock.patch.object(build_update, "upload_file") as upload:
+            self.assertEqual(build_update.main(), 1)
+        self.assertEqual(pack.call_args.kwargs["native_hashes"], {"native.dll": "hash"})
+        upload.assert_not_called()
 
 
 class IncrementalBaselineTests(unittest.TestCase):

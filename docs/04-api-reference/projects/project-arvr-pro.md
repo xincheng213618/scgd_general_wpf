@@ -83,6 +83,8 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 结果输出由 `ViewResultManager.Config` 控制，覆盖 SQLite、标准 CSV、Legacy CSV、客户 XLSX 和 Socket `ProjectARVRResult.Data`。`UseLegacyARVROutput` 会影响 CSV 和 Socket `Data`，改字段前先确认客户解析程序使用新版还是旧版。
 
+W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。新指标对 W255 已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认范围为 `0–0.02`，并参与 W255 PASS/FAIL 判定；旧配置没有该字段时使用此默认值。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
+
 ## 历史结果图回退与持久化
 
 历史记录的原始图像不在原路径时，不应立即判定“无法查看结果”。`Projects/ProjectARVRPro/ResultImagePresentation.cs` 中 `ResultImageFileCandidates.GetExisting` 按下列顺序收集存在且去重的路径，`OpenFirstAsync` 在解码失败、超时或未得到图像时继续尝试下一候选；取消仍中止当前请求。

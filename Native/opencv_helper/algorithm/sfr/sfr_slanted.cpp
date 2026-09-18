@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <limits>
 
 namespace cvcore {
 namespace sfr {
@@ -28,6 +29,8 @@ struct SfrSignalWorkspace {
     std::vector<double> lsf;
     std::vector<double> mtf;
     cv::Mat fft;
+    double binCoverage = 0.0;
+    double esfOrigin = 0.0;
 };
 
 double fir2fixValue(int index, int n, int m)
@@ -487,6 +490,17 @@ bool computeEsf(const cv::Mat& mat,
     }
 
     int start = 1 + static_cast<int>(std::round(0.5 * del));
+    // Count original samples before the legacy empty-bin interpolation.
+    int supported = 0, occupied = 0;
+    for (int i = 0; i < nn; ++i) {
+        const double distance = (start + i - 1 + offset) / static_cast<double>(nbin) - fitme[0];
+        if (std::abs(distance) <= 12.0) {
+            ++supported;
+            if (bins[start + i].count > 0.0) ++occupied;
+        }
+    }
+    workspace.binCoverage = supported > 0 ? occupied / static_cast<double>(supported) : 0.0;
+    workspace.esfOrigin = (start - 1 + offset) / static_cast<double>(nbin) - fitme[0];
     for (int i = start; i < start + nn && i < bwidth; ++i) {
         if (bins[i].count == 0.0) {
             int i1 = std::max(start, i - 1);
@@ -884,6 +898,138 @@ SFRMultiChannelResult calculateSlantedEdgeSFRMultiChannel(const cv::Mat& imgIn,
     }
 
     return result;
+}
+
+std::vector<SfrChannelAnalysis> analyzeSlantedEdge(const cv::Mat& image, const SfrAnalysisOptions& options)
+{
+    if (image.empty() || (image.channels() != 1 && image.channels() != 3 && image.channels() != 4))
+        throw std::invalid_argument("Expected gray, BGR or BGRA pixels.");
+    if (image.depth() != CV_8U && image.depth() != CV_16U && image.depth() != CV_32F && image.depth() != CV_64F)
+        throw std::invalid_argument("Expected unsigned 8/16 bit or float pixels.");
+    if (image.total() > 16'000'000 || image.cols > 8192 || image.rows > 8192)
+        throw std::invalid_argument("ROI exceeds the analysis budget; select a single edge ROI.");
+    if (options.encoding != "unknown" && options.encoding != "linear" && options.encoding != "srgb" && options.encoding != "power")
+        throw std::invalid_argument("Unsupported input encoding.");
+    const double white = options.whiteLevel == 0.0 ? (image.depth() == CV_8U ? 255.0 : image.depth() == CV_16U ? 65535.0 : 1.0) : options.whiteLevel;
+    if (!std::isfinite(white) || !std::isfinite(options.blackLevel) || white <= options.blackLevel ||
+        !isPositiveFinite(options.decodeExponent) || options.decodeExponent > 5.0 ||
+        !isPositiveFinite(options.minimumContrast) || options.minimumContrast > 1.0 ||
+        !isPositiveFinite(options.minimumSnr) || options.minimumSnr > 1000.0 ||
+        !isPositiveFinite(options.maximumFitRms) || options.maximumFitRms > 5.0)
+        throw std::invalid_argument("Invalid SFR analysis parameters.");
+
+    std::vector<cv::Mat> inputChannels;
+    cv::split(image, inputChannels);
+    std::vector<cv::Mat> decoded;
+    std::vector<double> clipping;
+    const int channelCount = image.channels() == 1 ? 1 : 3;
+    for (int c = 0; c < channelCount; ++c) {
+        cv::Mat1d signal;
+        inputChannels[c].convertTo(signal, CV_64F);
+        size_t clipped = 0;
+        for (int y = 0; y < signal.rows; ++y) for (int x = 0; x < signal.cols; ++x) {
+            double& value = signal(y, x);
+            if (!std::isfinite(value)) throw std::invalid_argument("Input contains non-finite pixels.");
+            value = (value - options.blackLevel) / (white - options.blackLevel);
+            if (value < -1e-8 || value > 1.0 + 1e-8)
+                throw std::invalid_argument("Pixels exceed the configured black/white levels.");
+            if (value <= 0.0 || value >= 1.0) ++clipped;
+            value = std::clamp(value, 0.0, 1.0);
+            if (options.encoding == "power") value = std::pow(value, options.decodeExponent);
+            else if (options.encoding == "srgb") value = value <= 0.04045 ? value / 12.92 : std::pow((value + 0.055) / 1.055, 2.4);
+        }
+        decoded.push_back(signal);
+        clipping.push_back(clipped / static_cast<double>(signal.total()));
+    }
+    cv::Mat1d luminance = channelCount == 1 ? decoded[0] : 0.072 * decoded[0] + 0.715 * decoded[1] + 0.213 * decoded[2];
+    const bool rotated = orientEdgeVertical(luminance).rotated;
+    std::vector<SfrChannelAnalysis> output;
+    const std::vector<std::string> names = channelCount == 1 ? std::vector<std::string>{"L"} : std::vector<std::string>{"L", "R", "G", "B"};
+    for (const auto& name : names) {
+        SfrChannelAnalysis result;
+        result.channel = name;
+        result.rotated = rotated;
+        const int index = name == "R" ? 2 : name == "G" ? 1 : 0;
+        cv::Mat1d signal = applyOrientation(name == "L" ? luminance : decoded[index], rotated);
+        result.clippedFraction = name == "L" ? *std::max_element(clipping.begin(), clipping.end()) : clipping[index];
+        auto reject = [&](const char* reason) { result.reason = reason; output.push_back(std::move(result)); };
+        if (signal.cols < 40 || signal.rows < 32) { reject("roi_too_small"); continue; }
+        cv::Scalar leftMean, leftStd, rightMean, rightStd;
+        cv::meanStdDev(signal.colRange(0, 4), leftMean, leftStd);
+        cv::meanStdDev(signal.colRange(signal.cols - 4, signal.cols), rightMean, rightStd);
+        const double span = rightMean[0] - leftMean[0];
+        result.contrast = std::abs(span);
+        result.noise = std::sqrt((leftStd[0] * leftStd[0] + rightStd[0] * rightStd[0]) / 2.0);
+        result.snr = result.contrast / std::max(result.noise, 1e-12);
+        result.plateausAvailable = true;
+        if (result.contrast < options.minimumContrast) { reject("low_contrast_or_no_edge"); continue; }
+        if (result.snr < options.minimumSnr) { reject("textured_or_noisy_plateaus"); continue; }
+        double variation = 0;
+        for (int y = 0; y < signal.rows; ++y) for (int x = 1; x < signal.cols - 1; ++x)
+            variation += std::abs(signal(y, x + 1) - signal(y, x - 1)) / 2.0;
+        variation /= signal.rows * result.contrast;
+        if (variation > 2.0) { reject("multiple_or_noisy_edges"); continue; }
+
+        // Straight-edge model: reject curvature/texture instead of fitting away the evidence.
+        SlantedEdgeFitWorkspace fitWorkspace(signal.rows, signal.cols, 1);
+        SlantedEdgeModel model = fitSlantedEdgeModel(signal, -1.0, false, fitWorkspace);
+        if (!model.valid) { reject("edge_fit_failed"); continue; }
+        result.edgeSlope = model.edgeSlope;
+        result.edgeIntercept = model.fit[0];
+        result.angleDegrees = std::atan(model.edgeSlope) * 180.0 / PI;
+        double squared = 0.0;
+        bool support = true;
+        for (int y = 0; y < signal.rows; ++y) {
+            const double center = polyvalScalar(y, model.fit);
+            squared += std::pow(fitWorkspace.loc[y] - center, 2);
+            support = support && center >= 12.0 && center <= signal.cols - 13.0;
+        }
+        result.fitRms = std::sqrt(squared / signal.rows);
+        result.fitAvailable = true;
+        if (!support) { reject("insufficient_edge_support"); continue; }
+        if (std::abs(result.angleDegrees) < 1.0 || std::abs(result.angleDegrees) > 15.0) { reject("edge_angle_out_of_range"); continue; }
+        if (result.fitRms > options.maximumFitRms) { reject("edge_fit_residual_too_large"); continue; }
+        SfrSignalWorkspace workspace;
+        result.curve = calculateFromModel(signal, model, 1.0, 4, model.edgeSlope, workspace);
+        result.binCoverage = workspace.binCoverage;
+        result.samplingAvailable = true;
+        if (result.binCoverage < 0.95) { reject("insufficient_subpixel_coverage"); continue; }
+        if (!result.curve.isValid() || result.curve.sfr.front() < 0.99 ||
+            !std::all_of(result.curve.sfr.begin(), result.curve.sfr.end(), [](double v) { return std::isfinite(v); })) {
+            reject("invalid_lsf_dc"); continue;
+        }
+        // Legacy metrics are capped; the diagnostic contract only reports actual crossings <= Nyquist.
+        auto crossing = [&](double threshold) {
+            for (size_t i = 1; i < result.curve.freq.size(); ++i) {
+                const double a = result.curve.sfr[i - 1], b = result.curve.sfr[i];
+                if (a >= threshold && b <= threshold && a != b) {
+                    const double f = result.curve.freq[i - 1] + (threshold - a) * (result.curve.freq[i] - result.curve.freq[i - 1]) / (b - a);
+                    if (f <= 0.5) return f;
+                    break;
+                }
+            }
+            return std::numeric_limits<double>::quiet_NaN();
+        };
+        result.curve.mtf50_cypix = crossing(0.5);
+        result.curve.mtf10_cypix = crossing(0.1);
+        result.curve.mtf50_norm = result.curve.mtf50_cypix / 0.5;
+        result.curve.mtf10_norm = result.curve.mtf10_cypix / 0.5;
+        const double step = std::cos(std::atan(model.edgeSlope)) / 4.0;
+        for (size_t i = 0; i < workspace.esf.size(); ++i) {
+            result.edgePositions.push_back((workspace.esfOrigin * 4.0 + i) * step);
+            result.esf.push_back((workspace.esf[i] - leftMean[0]) / span);
+            result.lsfPositions.push_back((static_cast<double>(i) - std::round((workspace.lsf.size() + 1) / 2.0) + 1.0) * step);
+            // The legacy derivative is reversed, with spacing omitted. Restore derivative per input pixel.
+            result.lsf.push_back(-workspace.lsf[i] / (span * step));
+        }
+        if (options.encoding == "unknown") result.warnings.push_back("unknown_input_encoding");
+        if (result.clippedFraction > 0.01) result.warnings.push_back("clipped_pixels");
+        if (options.displayTarget) result.warnings.push_back("display_target_measurement_chain");
+        result.valid = true;
+        result.reason = "ok";
+        output.push_back(std::move(result));
+    }
+    return output;
 }
 
 } // namespace sfr

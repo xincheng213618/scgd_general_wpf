@@ -8,6 +8,35 @@ dotnet_diagnostic.CS8002.severity = none
 dotnet_diagnostic.CA2201.severity = none
 dotnet_diagnostic.NU5104.severity = none
 dotnet_diagnostic.NU1701.severity = none
+
+# 这些规则仍保留为 IDE 建议，但不再污染命令行构建。
+# ColorVision 的旧协议、原生 ABI、序列化 DTO 和插件 API 不能按分析器建议批量改名或收窄可见性。
+dotnet_diagnostic.CA1001.severity = suggestion
+dotnet_diagnostic.CA1051.severity = suggestion
+dotnet_diagnostic.CA1068.severity = suggestion
+dotnet_diagnostic.CA1304.severity = suggestion
+dotnet_diagnostic.CA1310.severity = suggestion
+dotnet_diagnostic.CA1401.severity = suggestion
+dotnet_diagnostic.CA1510.severity = suggestion
+dotnet_diagnostic.CA1512.severity = suggestion
+dotnet_diagnostic.CA1513.severity = suggestion
+dotnet_diagnostic.CA1707.severity = suggestion
+dotnet_diagnostic.CA1708.severity = suggestion
+dotnet_diagnostic.CA1711.severity = suggestion
+dotnet_diagnostic.CA1725.severity = suggestion
+dotnet_diagnostic.CA1805.severity = suggestion
+dotnet_diagnostic.CA1822.severity = suggestion
+dotnet_diagnostic.CA1826.severity = suggestion
+dotnet_diagnostic.CA1838.severity = suggestion
+dotnet_diagnostic.CA1850.severity = suggestion
+dotnet_diagnostic.CA1852.severity = suggestion
+dotnet_diagnostic.CA1859.severity = suggestion
+dotnet_diagnostic.CA1861.severity = suggestion
+dotnet_diagnostic.CA1863.severity = suggestion
+dotnet_diagnostic.CA1869.severity = suggestion
+dotnet_diagnostic.CA1870.severity = suggestion
+dotnet_diagnostic.CA2249.severity = suggestion
+dotnet_diagnostic.CA2263.severity = suggestion
  
 
 [*.cs]

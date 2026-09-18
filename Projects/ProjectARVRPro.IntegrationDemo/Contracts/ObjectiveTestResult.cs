@@ -105,6 +105,11 @@ namespace ProjectARVRPro
         public Dictionary<string, ScreenDefectsData> DynamicScreenDefectResults { get; set; } = new Dictionary<string, ScreenDefectsData>();
 
         /// <summary>
+        /// 十字 RGB 分离结果。Key 为流程配置的输出名称；Value 保留 RGB 边缘、G 基准通道对比和可选判定。
+        /// </summary>
+        public Dictionary<string, RgbCrossViewResult> DynamicRgbCrossResults { get; set; } = new Dictionary<string, RgbCrossViewResult>();
+
+        /// <summary>
         /// 总体测试结果。true 表示整机或当前流程判定通过。
         /// </summary>
         public bool TotalResult

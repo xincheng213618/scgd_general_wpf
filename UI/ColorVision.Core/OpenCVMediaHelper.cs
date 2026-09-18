@@ -73,6 +73,9 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_DetectGhosts(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
 
+        [DllImport("opencv_helper.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int M_AnalyzeSfrV2(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
 

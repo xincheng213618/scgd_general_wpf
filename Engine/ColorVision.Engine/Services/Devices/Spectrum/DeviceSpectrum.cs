@@ -126,6 +126,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private readonly SemaphoreSlim calibrationRestartGate = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim correctionExecutionGate = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim correctionMeasurementGate = new SemaphoreSlim(1, 1);
+        internal SpectrumCalibrationGroupChangeGuard CalibrationGroupChangeGuard { get; } = new SpectrumCalibrationGroupChangeGuard();
         private CancellationTokenSource? calibrationRestartCts;
         private int spectrumContinuousMeasurementLease;
         private int spectrumContinuousStatusObserved;
@@ -1022,6 +1023,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().FirstOrDefault(a => a.Code == deviceCode);
         }
 
+        internal bool TrySetNDPortForCalibrationGroup(int holeIndex, out MsgRecord? msgRecord, out string? error)
+        {
+            msgRecord = null;
+            error = null;
+
+            if (Config.NDConfig.IsBingNDDevice)
+            {
+                DeviceCfwPort? cfwPort = GetBoundCfwPort();
+                if (cfwPort == null)
+                {
+                    string deviceCode = Config.NDConfig.NDBindDeviceCode;
+                    error = string.IsNullOrWhiteSpace(deviceCode)
+                        ? "当前光谱仪未绑定 ND 滤光轮服务。"
+                        : $"绑定的 ND 滤光轮服务 {deviceCode} 未加载。";
+                    return false;
+                }
+
+                msgRecord = cfwPort.DService.SetPort(holeIndex);
+                return true;
+            }
+
+            DisplayConfig.PortNum = holeIndex;
+            msgRecord = DService.SetPort();
+            return true;
+        }
+
         public void OpenCalibrationGroupWindow()
         {
             Config.EnsureCalibrationGroups();
@@ -1050,6 +1077,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             if (group == null)
                 return false;
+
+            using IDisposable applyScope = CalibrationGroupChangeGuard.EnterApply();
 
             bool changed = !string.Equals(Config.ActiveCalibrationGroupName, group.GroupName, StringComparison.Ordinal)
                 || !string.Equals(Config.WavelengthFile, group.WavelengthFile, StringComparison.Ordinal)
@@ -1131,7 +1160,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
             IsDiscoveringSpectrometers = true;
             GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
-            int.TryParse(Config.ComPort, out int port);
+            int port = int.TryParse(Config.ComPort, out int configuredPort) ? configuredPort : 0;
             try
             {
                 var results = await Task.Run(() => SpectrumDeviceDiscovery.Discover(port, Spectrometer.CM_Emission_GetAllSN));

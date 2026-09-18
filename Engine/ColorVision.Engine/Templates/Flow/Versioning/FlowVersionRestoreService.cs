@@ -63,11 +63,13 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
         {
             ArgumentNullException.ThrowIfNull(request);
             FlowParam flowParam = request.FlowParam
-                ?? throw new ArgumentNullException(
-                    nameof(request.FlowParam));
+                ?? throw new ArgumentException(
+                    "恢复请求缺少流程参数。",
+                    nameof(request));
             FlowRevision revision = request.Revision
-                ?? throw new ArgumentNullException(
-                    nameof(request.Revision));
+                ?? throw new ArgumentException(
+                    "恢复请求缺少目标版本。",
+                    nameof(request));
             if (string.IsNullOrWhiteSpace(flowParam.FlowKey))
             {
                 return FlowVersionRestoreResult.Failure(

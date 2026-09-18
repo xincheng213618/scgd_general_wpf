@@ -700,6 +700,15 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 选中 的本地化字符串。
+        /// </summary>
+        public static string SelectInFolder {
+            get {
+                return ResourceManager.GetString("SelectInFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 选择 MQTT 安装程序 的本地化字符串。
         /// </summary>
         public static string SelectMqttInstallerDialog {

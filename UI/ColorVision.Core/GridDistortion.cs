@@ -217,8 +217,10 @@ namespace ColorVision.Core
     {
         internal delegate int NativeJsonCall(out IntPtr result);
 
+#pragma warning disable CA2101 // opencv_helper.dll 的该入口按契约接收 UTF-8 char*。
         [DllImport("opencv_helper.dll", EntryPoint = "M_CalDistortionGridV2", CallingConvention = CallingConvention.Cdecl)]
         private static extern int Detect(HImage image, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+#pragma warning restore CA2101
 
         public static GridDistortionResult Run(HImage image, RoiRect roi, GridDistortionOptions options)
         {

@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from count_code_lines import Count, count_text, is_skipped, language_for
+from code_history_analysis import collect_worktree, history_analysis, write_dashboard
 
 
 GRAIN_LABELS = ("日", "周", "月", "半年", "年")
@@ -107,7 +108,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--builder",
         type=Path,
-        help="path to deliver_portable_artifact.mjs (auto-detected by default)",
+        help="optional legacy deliver_portable_artifact.mjs; default uses the bundled offline dashboard",
     )
     parser.add_argument(
         "--exclude-generated",
@@ -1027,6 +1028,7 @@ def scale_jump_rows(
 def productivity_summary(weekly_rows: Sequence[dict[str, object]]) -> dict[str, object]:
     complete = [row for row in weekly_rows if row["week_status"] == "完整周"]
     latest = complete[-8:] or complete
+    recent_week = complete[-1] if complete else None
     baseline = complete[: min(26, len(complete))]
 
     def total(rows: Sequence[dict[str, object]], field: str) -> int:
@@ -1041,6 +1043,12 @@ def productivity_summary(weekly_rows: Sequence[dict[str, object]]) -> dict[str, 
         "latest_complete_weeks": len(latest),
         "latest_week_start": latest[0]["week_start"] if latest else "",
         "latest_week_end": latest[-1]["week_end"] if latest else "",
+        "recent_week_start": recent_week["week_start"] if recent_week else "",
+        "recent_week_end": recent_week["week_end"] if recent_week else "",
+        "recent_week_churn": int(recent_week["churn"]) if recent_week else 0,
+        "recent_week_net_growth": int(recent_week["net_growth"]) if recent_week else 0,
+        "recent_week_daily_churn": round(int(recent_week["churn"]) / 7, 1) if recent_week else 0,
+        "recent_week_commits": int(recent_week["commits"]) if recent_week else 0,
         "latest_weekly_churn": round(latest_churn / len(latest), 1) if latest else 0,
         "latest_daily_churn": round(latest_churn / (len(latest) * 7), 1) if latest else 0,
         "latest_daily_net": round(latest_net / (len(latest) * 7), 1) if latest else 0,
@@ -1367,6 +1375,7 @@ def source_spec(
                 "净增长": "新增行减删除行；它表示规模变化，不等同于开发工作量。",
                 "改写/重构估算": "2 × min(新增, 删除)，表示周期内可成对理解的替换量；是规模估算，不是语义级重构判定。",
                 "自然日均变更": "周期变更量除以实际覆盖的自然天数。",
+                "最近1周变更": "最近一个完整自然周（周一至周日）的新增行加删除行；净增长仍按新增减删除单列。",
                 "8周稳健趋势": "最近 8 个完整自然周的每周变更量中位数，再除以 7；用于降低单次导入、格式化或重构峰值影响。",
                 "自然变化点": "连续 8 周窗口的中位变更量相对前一窗口至少变化 1.6 倍，并对相邻候选点去重。",
                 "提交类型": "根据提交标题关键词自动分类，仅用于回顾主题。",
@@ -1415,6 +1424,20 @@ def build_artifact(
             "metrics": [
                 {"label": "近 8 周周均变更", "field": "latest_weekly_churn", "format": "compact"},
                 {"label": "自然日均变更", "field": "latest_daily_churn", "format": "number"},
+            ],
+        },
+        {
+            "id": "recent_week_card",
+            "description": (
+                "最近一个完整自然周"
+                f"（{productivity['recent_week_start']} 至 {productivity['recent_week_end']}）"
+                "的新增与删除之和；净增长为新增减删除。"
+            ),
+            "dataset": "summary",
+            "sourceId": "git_history",
+            "metrics": [
+                {"label": "最近 1 周变更", "field": "recent_week_churn", "format": "compact"},
+                {"label": "净增长", "field": "recent_week_net_growth", "format": "compact"},
             ],
         },
         {
@@ -1632,6 +1655,8 @@ def build_artifact(
             "body": (
                 f"## 项目代码历史\n\n分支 **{branch}**，统计范围 **{summary['first_date']} 至 {summary['last_date']}**。"
                 f"当前精确代码 / 内容行 **{int(summary['head_code_lines']):,}**，物理文本行 **{int(summary['head_total_lines']):,}**。"
+                f"最近一个完整周变更 **{int(productivity['recent_week_churn']):,} 行**，"
+                f"净增长 **{int(productivity['recent_week_net_growth']):,} 行**；"
                 f"最近 {int(productivity['latest_complete_weeks'])} 个完整周周均变更 **{float(productivity['latest_weekly_churn']):,.0f} 行**，"
                 f"自然日均 **{float(productivity['latest_daily_churn']):,.0f} 行**，"
                 f"8 周中位趋势为 **{float(productivity['latest_median_daily_churn']):,.0f} 行 / 天**，约为早期稳健水平的 **{float(productivity['pace_ratio']):.2f} 倍**。"
@@ -1780,6 +1805,19 @@ def package_html(builder: Path, artifact: Path, output: Path, verify: bool) -> N
     run_base_builder(node, builder, artifact, output)
 
 
+def package_dashboard(
+    explicit_builder: Path | None,
+    artifact: Path,
+    output: Path,
+    verify: bool,
+) -> None:
+    if explicit_builder is None and not verify:
+        write_dashboard(artifact, output)
+    else:
+        # Legacy requests never fall back to the bundled renderer.
+        package_html(find_builder(explicit_builder), artifact, output, verify)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     repo = args.repo.resolve()
@@ -1851,6 +1889,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.exclude_generated,
         )
 
+        print("Scanning current worktree projects and files...")
+        worktree = collect_worktree(repo, args.exclude_generated,
+                                    (args.output, args.artifact, args.cache, args.share_card))
+        print(f"Worktree: {worktree['total']['files']:,} files, {worktree['project_count']:,} project directories, "
+              f"{worktree['total']['code']:,} code/content lines.")
+        artifact["analysis"] = {
+            "worktree": worktree,
+            "history": history_analysis(nodes, weekly_rows, args.ref, generated_at,
+                                         str(run_git(repo, ("rev-parse", "--abbrev-ref", args.ref))).strip()),
+            "summary": artifact["snapshot"]["datasets"]["summary"][0],
+            "periods": periods,
+            "change_points": change_points,
+            "scale_jumps": scale_jumps,
+        }
+
         artifact_path = args.artifact.resolve()
         output_path = args.output.resolve()
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1867,8 +1920,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         generate_share_card(share_path, summary, productivity, weekly_rows, change_points)
         print(f"Share card: {share_path}")
         if not args.no_build:
-            builder = find_builder(args.builder)
-            package_html(builder, artifact_path, output_path, args.verify)
+            package_dashboard(
+                args.builder,
+                artifact_path,
+                output_path,
+                args.verify,
+            )
             print(f"Dashboard: {output_path}")
             if args.open:
                 if os.name == "nt":

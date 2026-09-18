@@ -250,7 +250,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         internal static AlgResultMasterModel CreateMasterModel(LocalFovPersistenceRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (request.BatchId <= 0) throw new ArgumentOutOfRangeException(nameof(request.BatchId));
+            if (request.BatchId <= 0) throw new ArgumentOutOfRangeException(nameof(request), request.BatchId, "BatchId 必须大于 0。");
             ArgumentException.ThrowIfNullOrWhiteSpace(request.ResultDescription);
             return new AlgResultMasterModel
             {

@@ -517,7 +517,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                 throw new InvalidOperationException($"IN 不是图像结果：MasterId={masterId}，ResultType={masterResultType}。");
             MeasureResultImgModel input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId)) ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
             sourceMasterId = masterId;
-            string[] candidates = new[] { input.FileUrl, input.RawFile }.Where(value => !string.IsNullOrWhiteSpace(value))
+            string[] candidates = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => Path.GetFullPath(value.Trim())).ToArray();
             fallbackFile = candidates.FirstOrDefault(File.Exists) ?? candidates.FirstOrDefault();
         }

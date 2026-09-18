@@ -47,7 +47,7 @@
                         <ComboBox x:Name="ComboBoxCalibrationGroups"
                                   DisplayMemberPath="GroupName"
                                   ItemsSource="{Binding Config.CalibrationGroups}"
-                                  SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=OneWay}"
                                   SelectedValuePath="GroupName"
                                   SelectionChanged="CalibrationGroup_SelectionChanged"
                                   Style="{StaticResource ComboBox.Small}" Height="22" />

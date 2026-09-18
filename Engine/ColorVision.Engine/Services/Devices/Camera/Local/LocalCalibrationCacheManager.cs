@@ -308,7 +308,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     colorSnapshotContexts.Add(file.CacheKey, snapshotContext);
                     snapshotContext = IntPtr.Zero;
                 }
-                finally { if (snapshotContext != IntPtr.Zero) OpenCVCalibration.M_CalibrationDestroy(snapshotContext); }
+                finally { if (snapshotContext != IntPtr.Zero) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext); }
             }
             loadedFiles.Add(file.CacheKey, file);
         }
@@ -456,7 +456,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             if (contextToken == IntPtr.Zero)
             {
-                foreach (IntPtr snapshotContext in colorSnapshotContexts.Values) OpenCVCalibration.M_CalibrationDestroy(snapshotContext);
+                foreach (IntPtr snapshotContext in colorSnapshotContexts.Values) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext);
                 colorSnapshotContexts.Clear();
             }
             if (releaseError != null) throw releaseError;

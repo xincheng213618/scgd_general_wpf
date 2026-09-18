@@ -49,6 +49,67 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
     }
 
     [Fact]
+    public void W255CalculatesColorCenterRmsToD65DirectlyFromPoiValues()
+    {
+        const double deltaU = 0.006;
+        const double deltaV = 0.008;
+        var testResult = new W255TestResult();
+        var recipeConfig = new W255RecipeConfig();
+        var points = new List<PoiResultCIExyuvData>
+        {
+            new() { u = ChromaticityCenterCalculator.D65UPrime - deltaU, v = ChromaticityCenterCalculator.D65VPrime - deltaV },
+            new() { u = ChromaticityCenterCalculator.D65UPrime + deltaU, v = ChromaticityCenterCalculator.D65VPrime + deltaV }
+        };
+
+        bool success = White255Process.TryPopulateColorCenterRmsToD65(testResult, recipeConfig, points);
+
+        Assert.True(success);
+        Assert.Equal(0.01, testResult.ColorCenterRmsToD65.Value, 12);
+        Assert.Equal("0.01000", testResult.ColorCenterRmsToD65.TestValue);
+        Assert.Equal("Color_Center_RMS_To_D65(Δu'v')", testResult.ColorCenterRmsToD65.Name);
+        Assert.Equal(0, testResult.ColorCenterRmsToD65.LowLimit);
+        Assert.Equal(0.02, testResult.ColorCenterRmsToD65.UpLimit);
+        Assert.True(testResult.ColorCenterRmsToD65.TestResult);
+    }
+
+    [Fact]
+    public void ExistingW255ResultJsonInitializesColorCenterMetric()
+    {
+        var result = JsonConvert.DeserializeObject<W255TestResult>("{\"ColorUniformity\":{\"Value\":0.012}}");
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.ColorCenterRmsToD65);
+        Assert.Equal("Color_Center_RMS_To_D65(Δu'v')", result.ColorCenterRmsToD65.Name);
+
+        var config = JsonConvert.DeserializeObject<W255ProcessConfig>("{\"RecipeConfig\":{\"ColorUniformity\":{\"Min\":0,\"Max\":0.03}}}");
+        Assert.NotNull(config);
+        Assert.NotNull(config.RecipeConfig.ColorCenterRmsToD65);
+        Assert.Equal(0.02, config.RecipeConfig.ColorCenterRmsToD65.Max);
+    }
+
+    [Fact]
+    public void W255ColorCenterMetricAppliesRecipeCorrectionAndLimits()
+    {
+        var testResult = new W255TestResult();
+        var recipeConfig = new W255RecipeConfig
+        {
+            ColorCenterRmsToD65 = new RecipeBase(0, 0.02, 2, 0.001)
+        };
+        var points = new List<PoiResultCIExyuvData>
+        {
+            new() { u = ChromaticityCenterCalculator.D65UPrime + 0.006, v = ChromaticityCenterCalculator.D65VPrime + 0.008 }
+        };
+
+        bool success = White255Process.TryPopulateColorCenterRmsToD65(testResult, recipeConfig, points);
+
+        Assert.True(success);
+        Assert.Equal(0.021, testResult.ColorCenterRmsToD65.Value, 12);
+        Assert.Equal(0, testResult.ColorCenterRmsToD65.LowLimit);
+        Assert.Equal(0.02, testResult.ColorCenterRmsToD65.UpLimit);
+        Assert.False(testResult.ColorCenterRmsToD65.TestResult);
+    }
+
+    [Fact]
     public void ExistingProcessJsonKeepsTemplateModeAndOriginalResultNames()
     {
         var w255 = JsonConvert.DeserializeObject<W255ProcessConfig>("{\"Key_Center\":\"P_5\",\"SaveCsv\":false}");

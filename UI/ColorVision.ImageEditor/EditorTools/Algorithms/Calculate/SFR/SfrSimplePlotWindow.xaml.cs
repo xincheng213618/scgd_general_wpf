@@ -1,233 +1,301 @@
-#pragma warning disable CA1805,CA1854
+using ColorVision.Core;
+using ColorVision.Themes;
+using ColorVision.UI;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Themes;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
-namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
+namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
+
+public partial class SfrSimplePlotWindow : Window
 {
-    public partial class SfrSimplePlotWindow : Window
+    private readonly ImageFrameLease _lease;
+    private readonly RoiRect _roi;
+    private readonly Guid _documentId;
+    private readonly DateTimeOffset _capturedAt = DateTimeOffset.Now;
+    private readonly int _sourceWidth;
+    private readonly int _sourceHeight;
+    private readonly int _sourceDepth;
+    private SfrAnalysisOptions _options = new();
+    private SfrAnalysisOptions? _measuredOptions;
+    private SfrAnalysisResult? _result;
+    private bool _busy;
+    private bool _closed;
+    private double _frequency = 0.25;
+    private double _threshold = 0.5;
+
+    public SfrSimplePlotWindow(ImageFrameLease lease, RoiRect roi, Guid documentId)
     {
-        private double _mtf10Norm;
-        private double _mtf50Norm;
-        private double _mtf10CyPix;
-        private double _mtf50CyPix;
-        
-        private bool _isMultiChannel = false;
-        private double _mtf10NormR, _mtf50NormR, _mtf10CyPixR, _mtf50CyPixR;
-        private double _mtf10NormG, _mtf50NormG, _mtf10CyPixG, _mtf50CyPixG;
-        private double _mtf10NormB, _mtf50NormB, _mtf10CyPixB, _mtf50CyPixB;
-        private double _mtf10NormL, _mtf50NormL, _mtf10CyPixL, _mtf50CyPixL;
-
-        public SfrSimplePlotWindow()
+        _lease = lease;
+        _roi = roi;
+        _documentId = documentId;
+        HImage image = lease.Image;
+        _sourceWidth = image.cols;
+        _sourceHeight = image.rows;
+        _sourceDepth = image.depth;
+        InitializeComponent();
+        this.ApplyCaption();
+        Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width - 24));
+        Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height - 24));
+        SourceText.Text = $"ROI ({roi.X}, {roi.Y}) · {roi.Width} × {roi.Height} px · 输入 {image.depth} bit · 快照 {_capturedAt:HH:mm:ss}";
+        RoiText.Text = "一条完整斜边，两侧保留均匀平台。橙色线为 L 通道拟合位置。";
+        RoiImage.Source = CreatePreview(image, roi, _options);
+        RoiCanvas.Width = RoiImage.Width = roi.Width;
+        RoiCanvas.Height = RoiImage.Height = roi.Height;
+        FitLine.StrokeThickness = Math.Max(1, Math.Max(roi.Width, roi.Height) / 160.0);
+        Plot.CursorReadout += text => PlotHelp.Text = text;
+        Loaded += async (_, _) => { if (_result == null) await AnalyzeAsync(); };
+        Closed += (_, _) =>
         {
-            InitializeComponent();
-            this.ApplyCaption();
+            _closed = true;
+            if (!_busy) _lease.Dispose();
+        };
+    }
+
+    private async Task AnalyzeAsync()
+    {
+        if (_busy || _closed) return;
+        _busy = true;
+        _result = null;
+        Plot.Clear();
+        PlotHelp.Text = string.Empty;
+        MetricsGrid.ItemsSource = null;
+        QualityGrid.ItemsSource = null;
+        SamplesGrid.ItemsSource = null;
+        FitLine.Visibility = Visibility.Collapsed;
+        AnalyzeButton.IsEnabled = SettingsButton.IsEnabled = ExportCsvButton.IsEnabled = ExportJsonButton.IsEnabled = false;
+        StatusText.Text = "正在分析固定图像快照...";
+        try
+        {
+            SfrAnalysisOptions options = _options with { };
+            _result = await Task.Run(() => SfrAnalyzer.Analyze(_lease.Image, _roi, options));
+            if (_closed) return;
+            _measuredOptions = options;
+            int valid = _result.Channels.Count(c => c.Valid);
+            var warnings = _result.Channels.SelectMany(c => c.Warnings).Distinct().Select(Explain);
+            StatusText.Text = $"可计算通道 {valid}/{_result.Channels.Count}；{(valid == 0 ? "当前 ROI 不适合单斜边测量，请查看状态与质量诊断。" : "质量检查通过不等于产品达标。")}";
+            string warningText = string.Join("；", warnings);
+            if (warningText.Length > 0) StatusText.Text += "\n" + warningText;
+            ShowR.Visibility = ShowG.Visibility = ShowB.Visibility = _result.Channels.Count == 1 ? Visibility.Collapsed : Visibility.Visible;
+            QualityGrid.ItemsSource = _result.Channels.Select(c => new QualityRow(c.Channel,
+                Format(c.PlateausAvailable ? c.Contrast : null), Format(c.PlateausAvailable ? c.Noise : null),
+                c.PlateausAvailable ? c.Snr.ToString("G4", CultureInfo.CurrentCulture) : "—",
+                Format(c.FitAvailable ? c.AngleDegrees : null), Format(c.FitAvailable ? c.FitRms : null),
+                Format(c.SamplingAvailable ? c.BinCoverage : null, true), Format(c.ClippedFraction, true))).ToArray();
+            SamplesGrid.ItemsSource = _result.Channels.Where(c => c.Valid).SelectMany(c => c.Frequencies.Select((f, i) => new SampleRow(c.Channel, f, c.Mtf[i]))).ToArray();
+            RenderMetrics();
+            RenderPlot();
+            DrawFit();
+            ExportCsvButton.IsEnabled = ExportJsonButton.IsEnabled = true;
         }
-
-        public void SetData(double[] frequencies, double[] sfrValues, 
-            double mtf10Norm, double mtf50Norm, double mtf10CyPix, double mtf50CyPix,
-            string label = "SFR")
+        catch (Exception ex)
         {
-            _isMultiChannel = false;
-            Plot.SetData(frequencies, sfrValues, label);
-            
-            _mtf10Norm = mtf10Norm;
-            _mtf50Norm = mtf50Norm;
-            _mtf10CyPix = mtf10CyPix;
-            _mtf50CyPix = mtf50CyPix;
-            
-            TxtMtf50Norm.Text = $"{mtf50Norm:F5}";
-            TxtMtf50CyPix.Text = $"{mtf50CyPix:F5}";
-            TxtMtf10Norm.Text = $"{mtf10Norm:F5}";
-            TxtMtf10CyPix.Text = $"{mtf10CyPix:F5}";
+            if (!_closed) StatusText.Text = ex.Message;
         }
-
-        public void SetMultiChannelData(double[] frequencies,
-            double[] sfrR, double[] sfrG, double[] sfrB, double[] sfrL,
-            double mtf10R, double mtf50R, double mtf10cR, double mtf50cR,
-            double mtf10G, double mtf50G, double mtf10cG, double mtf50cG,
-            double mtf10B, double mtf50B, double mtf10cB, double mtf50cB,
-            double mtf10L, double mtf50L, double mtf10cL, double mtf50cL)
+        finally
         {
-            _isMultiChannel = true;
-            Plot.SetMultiChannelData(frequencies, sfrR, sfrG, sfrB, sfrL);
-            
-            _mtf10NormR = mtf10R; _mtf50NormR = mtf50R; _mtf10CyPixR = mtf10cR; _mtf50CyPixR = mtf50cR;
-            _mtf10NormG = mtf10G; _mtf50NormG = mtf50G; _mtf10CyPixG = mtf10cG; _mtf50CyPixG = mtf50cG;
-            _mtf10NormB = mtf10B; _mtf50NormB = mtf50B; _mtf10CyPixB = mtf10cB; _mtf50CyPixB = mtf50cB;
-            _mtf10NormL = mtf10L; _mtf50NormL = mtf50L; _mtf10CyPixL = mtf10cL; _mtf50CyPixL = mtf50cL;
-            
-            // Display L channel by default (most important)
-            _mtf10Norm = mtf10L;
-            _mtf50Norm = mtf50L;
-            _mtf10CyPix = mtf10cL;
-            _mtf50CyPix = mtf50cL;
-            
-            // Show all channel values
-            TxtMtf50Norm.Text = $"L:{mtf50L:F4} R:{mtf50R:F4} G:{mtf50G:F4} B:{mtf50B:F4}";
-            TxtMtf50CyPix.Text = $"L:{mtf50cL:F4} R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4}";
-            TxtMtf10Norm.Text = $"L:{mtf10L:F4} R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4}";
-            TxtMtf10CyPix.Text = $"L:{mtf10cL:F4} R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} ";
-            
-            // Show channel-related controls for multi-channel mode
-            PnlQueryChannel.Visibility = Visibility.Visible;
-            PnlChannelVisibility.Visibility = Visibility.Visible;
+            _busy = false;
+            if (_closed) _lease.Dispose();
+            else AnalyzeButton.IsEnabled = SettingsButton.IsEnabled = true;
         }
+    }
 
-        private void ChkChannel_Changed(object sender, RoutedEventArgs e)
+    private void DrawFit()
+    {
+        var c = _result?.Channels.FirstOrDefault(c => c.Channel == "L" && c.Valid);
+        if (c == null) return;
+        double height = c.Rotated ? _roi.Width : _roi.Height;
+        double x0 = c.EdgeIntercept, x1 = c.EdgeIntercept + c.EdgeSlope * (height - 1);
+        if (c.Rotated)
         {
-            if (!_isMultiChannel) return;
-            
-            Plot.SetChannelVisibility(
-                ChkShowR.IsChecked == true,
-                ChkShowG.IsChecked == true,
-                ChkShowB.IsChecked == true,
-                ChkShowL.IsChecked == true);
+            FitLine.X1 = _roi.Width - 1; FitLine.Y1 = x0;
+            FitLine.X2 = 0; FitLine.Y2 = x1;
         }
+        else { FitLine.X1 = x0; FitLine.Y1 = 0; FitLine.X2 = x1; FitLine.Y2 = height - 1; }
+        FitLine.Visibility = Visibility.Visible;
+        RoiText.Text = $"测量方向：{(c.Rotated ? "垂直" : "水平")}；边缘偏离{(c.Rotated ? "水平" : "竖直")} {c.AngleDegrees:F2}°。\n输入编码：{_measuredOptions?.InputEncoding}；未自动平滑或重采样测量像素。";
+    }
 
-        private void CmbQueryChannel_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void RenderMetrics()
+    {
+        if (_result == null) return;
+        MetricsGrid.ItemsSource = _result.Channels.Select(c => new MetricRow(
+            c.Channel, Format(c.Valid ? c.Mtf50 : null), Format(c.Valid ? c.Mtf10 : null),
+            Format(c.Valid ? SfrCurveQueries.AtFrequency(c.Frequencies, c.Mtf, _frequency) : null, true),
+            Format(c.Valid ? SfrCurveQueries.AtFrequency(c.Frequencies, c.Mtf, 0.5) : null, true),
+            Format(c.Valid ? SfrCurveQueries.Crossing(c.Frequencies, c.Mtf, _threshold) : null), ChannelState(c))).ToArray();
+        AtFrequencyColumn.Header = $"MTF @ {_frequency:G3}";
+        AtThresholdColumn.Header = $"频率 @ {_threshold:P0}";
+    }
+
+    private void RenderPlot()
+    {
+        if (_result == null || Plot == null || ShowL == null) return;
+        var channels = new HashSet<string>();
+        if (ShowL.IsChecked == true) channels.Add("L");
+        if (ShowR.IsChecked == true) channels.Add("R");
+        if (ShowG.IsChecked == true) channels.Add("G");
+        if (ShowB.IsChecked == true) channels.Add("B");
+        Plot.ShowResult(_result, ViewSelector.SelectedIndex, channels, ShowExtended.IsChecked == true);
+        PlotHelp.Text = ViewSelector.SelectedIndex switch
         {
-            if (!_isMultiChannel || Plot == null) return;
-            
-            string channel = CmbQueryChannel.SelectedIndex switch
+            1 => "ESF：沿边缘法线的亮暗过渡。平台起伏可能来自像素纹理、噪声或光照不均。",
+            2 => "LSF：本图为用于傅里叶变换的加窗导数。多峰、拖尾和振铃可用于诊断。",
+            _ => "圆点为 MTF50/10 交点；虚线标示 Nyquist 0.5 cy/pixel。展开后的右半区仅供诊断。"
+        };
+    }
+
+    private async void Analyze_Click(object sender, RoutedEventArgs e) => await AnalyzeAsync();
+    private void View_Changed(object sender, RoutedEventArgs e) => RenderPlot();
+    private async void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var next = _options with { };
+        bool submitted = false;
+        var editor = new PropertyEditorWindow(next, PropertyEditorEditMode.Transactional) { Owner = this, Title = "斜边测量参数" };
+        editor.Submitted += (_, _) => submitted = true;
+        editor.ShowDialog();
+        if (!submitted) return;
+        try { next.Validate(); }
+        catch (ArgumentException ex) { MessageBox.Show(this, ex.Message, "参数无效"); return; }
+        _options = next;
+        RoiImage.Source = CreatePreview(_lease.Image, _roi, _options);
+        await AnalyzeAsync();
+    }
+
+    private void Query_Click(object sender, RoutedEventArgs e)
+    {
+        if (!double.TryParse(FrequencyInput.Text, out double frequency) || !double.IsFinite(frequency) || frequency < 0 || frequency > 0.5
+            || !double.TryParse(ThresholdInput.Text, out double threshold) || !double.IsFinite(threshold) || threshold <= 0 || threshold >= 1)
+        {
+            QueryError.Text = "频率应为 0..0.5；响应应大于 0、小于 1。";
+            return;
+        }
+        QueryError.Text = string.Empty;
+        _frequency = frequency;
+        _threshold = threshold;
+        RenderMetrics();
+    }
+
+    private void ExportJson_Click(object sender, RoutedEventArgs e)
+    {
+        if (_result == null) return;
+        var dialog = new SaveFileDialog { Filter = "完整测量 (*.json)|*.json", FileName = $"SFR_{_capturedAt:yyyyMMdd_HHmmss}.json" };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            using var optionsJson = JsonDocument.Parse(_measuredOptions!.ToJson());
+            var measurement = new
             {
-                0 => "L",
-                1 => "R",
-                2 => "G",
-                3 => "B",
-                _ => "L"
+                capturedAt = _capturedAt, documentId = _documentId, sourceRevision = _lease.Revision,
+                sourceWidth = _sourceWidth, sourceHeight = _sourceHeight, sourceBitDepth = _sourceDepth,
+                roi = new { x = _roi.X, y = _roi.Y, width = _roi.Width, height = _roi.Height },
+                options = optionsJson.RootElement, targetFrequency = _frequency, targetResponse = _threshold,
+                result = _result
             };
-            
-            Plot.SetQueryChannel(channel);
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(measurement, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
         }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "保存失败"); }
+    }
 
-        private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
+    private void ExportCsv_Click(object sender, RoutedEventArgs e)
+    {
+        if (_result == null) return;
+        var dialog = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", FileName = $"SFR_{_capturedAt:yyyyMMdd_HHmmss}.csv" };
+        if (dialog.ShowDialog(this) != true) return;
+        try
         {
-            if (!double.TryParse(TxtFreq.Text, out var freq))
+            using var writer = new StreamWriter(dialog.FileName, false, new UTF8Encoding(true));
+            writer.WriteLine($"# SFR 2.0; captured={_capturedAt:O}; source={_sourceWidth}x{_sourceHeight}; revision={_lease.Revision}; ROI={_roi.X}/{_roi.Y}/{_roi.Width}/{_roi.Height}");
+            writer.WriteLine("# options=" + _measuredOptions!.ToJson());
+            writer.WriteLine("Channel,Valid,Reason,MTF50_cyclesPerPixel,MTF10_cyclesPerPixel,MTF_at_target,Target_cyclesPerPixel,MTF_at_Nyquist,Target_response,Frequency_at_response,Warnings,Contrast,Plateau_noise,Snr,Angle_degrees,Fit_rms_pixels,Bin_coverage,Clipped_fraction");
+            foreach (var c in _result.Channels)
+                writer.WriteLine(string.Join(",", c.Channel, c.Valid, c.Reason, Number(c.Valid ? c.Mtf50 : null), Number(c.Valid ? c.Mtf10 : null),
+                    Number(c.Valid ? SfrCurveQueries.AtFrequency(c.Frequencies, c.Mtf, _frequency) : null), Number(_frequency),
+                    Number(c.Valid ? SfrCurveQueries.AtFrequency(c.Frequencies, c.Mtf, .5) : null), Number(_threshold),
+                    Number(c.Valid ? SfrCurveQueries.Crossing(c.Frequencies, c.Mtf, _threshold) : null), string.Join(";", c.Warnings),
+                    Number(c.PlateausAvailable ? c.Contrast : null), Number(c.PlateausAvailable ? c.Noise : null), Number(c.PlateausAvailable ? c.Snr : null),
+                    Number(c.FitAvailable ? c.AngleDegrees : null), Number(c.FitAvailable ? c.FitRms : null), Number(c.SamplingAvailable ? c.BinCoverage : null), Number(c.ClippedFraction)));
+            writer.WriteLine();
+            writer.WriteLine("Channel,Series,X,Value");
+            foreach (var c in _result.Channels.Where(c => c.Valid))
             {
-                TxtResult.Text = Properties.Resources.Sfr_FrequencyInputError;
-                return;
-            }
-
-            double mtf = Plot.FindMtfAtFreq(freq);
-            if (!double.IsNaN(mtf))
-            {
-                if (_isMultiChannel)
-                {
-                    string channel = Plot.GetQueryChannel();
-                    TxtResult.Text = $"[{channel}] MTF(Freq={freq:F4}) = {mtf:F5}";
-                }
-                else
-                {
-                    TxtResult.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
-                }
-            }
-            else
-            {
-                TxtResult.Text = Properties.Resources.Sfr_MtfNotFound;
+                WriteSeries(writer, c.Channel, "MTF_cyclesPerPixel", c.Frequencies, c.Mtf);
+                WriteSeries(writer, c.Channel, "ESF_pixel", c.EdgePositions, c.Esf);
+                WriteSeries(writer, c.Channel, "LSF_pixel", c.LsfPositions, c.Lsf);
             }
         }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出失败"); }
+    }
 
-        private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
+    private static void WriteSeries(StreamWriter writer, string channel, string series, double[] x, double[] y)
+    {
+        for (int i = 0; i < x.Length; i++) writer.WriteLine($"{channel},{series},{Number(x[i])},{Number(y[i])}");
+    }
+    private static string Number(double? value) => value?.ToString("G17", CultureInfo.InvariantCulture) ?? string.Empty;
+    private static string Format(double? value, bool percent = false) => value?.ToString(percent ? "P1" : "F4", CultureInfo.CurrentCulture) ?? "—";
+    private static string ChannelState(SfrChannelAnalysis c)
+    {
+        if (!c.Valid) return "无效：" + Explain(c.Reason);
+        string missing = !c.Mtf50.HasValue ? "；范围内未达到 MTF50/10" : !c.Mtf10.HasValue ? "；范围内未达到 MTF10" : string.Empty;
+        return (c.Warnings.Length == 0 ? "有效" : "需注意：" + string.Join("、", c.Warnings.Select(Explain))) + missing;
+    }
+    internal static string Explain(string code) => code switch
+    {
+        "roi_too_small" => "ROI 太小（定向后至少 40×32 px）",
+        "low_contrast_or_no_edge" => "对比度不足或没有完整边缘",
+        "textured_or_noisy_plateaus" => "平台纹理/噪声过强；检查 RGB 子像素、摩尔纹和曝光",
+        "multiple_or_noisy_edges" => "存在多条边缘或明显周期纹理/噪声",
+        "edge_fit_failed" => "无法拟合边缘",
+        "insufficient_edge_support" => "边缘离 ROI 边界过近",
+        "edge_angle_out_of_range" => "倾角不在 1°..15°；建议约 5°",
+        "edge_fit_residual_too_large" => "边缘弯曲、破碎或拟合不稳定",
+        "insufficient_subpixel_coverage" => "亚像素采样覆盖不足",
+        "invalid_lsf_dc" => "没有可归一化的有效边缘信号",
+        "unknown_input_encoding" => "输入编码未知，仅供诊断",
+        "clipped_pixels" => "存在削顶风险",
+        "display_target_measurement_chain" => "显示屏系统响应；需复核像素栅格影响",
+        _ => code
+    };
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    private sealed record MetricRow(string Channel, string Mtf50, string Mtf10, string AtFrequency, string AtNyquist, string AtThreshold, string State);
+    private sealed record QualityRow(string Channel, string Contrast, string Noise, string Snr, string AngleDegrees, string FitRms, string BinCoverage, string ClippedFraction);
+    private sealed record SampleRow(string Channel, double CyclesPerPixel, double Mtf);
+
+    // Display-only nearest-neighbour thumbnail. Measurement always reads the retained full-precision frame.
+    internal static unsafe BitmapSource CreatePreview(HImage image, RoiRect roi, SfrAnalysisOptions options)
+    {
+        if (image.depth is not (8 or 16 or 32 or 64) || image.channels is not (1 or 3 or 4)) throw new ArgumentException("不支持的 SFR 像素格式。");
+        if (image.pData == IntPtr.Zero || roi.X < 0 || roi.Y < 0 || roi.Width <= 0 || roi.Height <= 0 || roi.Width > image.cols || roi.Height > image.rows
+            || roi.X > image.cols - roi.Width || roi.Y > image.rows - roi.Height) throw new ArgumentException("无效的 SFR 预览区域。");
+        int width = Math.Min(600, roi.Width), height = Math.Min(600, roi.Height);
+        int pixelBytes = image.channels * image.depth / 8;
+        int stride = image.stride > 0 ? image.stride : checked(image.cols * pixelBytes);
+        if (image.stride < 0 || stride < (long)image.cols * pixelBytes) throw new ArgumentException("无效的 SFR 像素行跨度。");
+        double white = options.WhiteLevel == 0 ? image.depth == 8 ? 255 : image.depth == 16 ? 65535 : 1 : options.WhiteLevel;
+        double range = white - options.BlackLevel;
+        byte[] pixels = new byte[width * height * 3];
+        for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
         {
-            if (!double.TryParse(TxtMtf.Text, out var m))
+            byte* source = (byte*)image.pData + (long)(roi.Y + y * roi.Height / height) * stride + (roi.X + x * roi.Width / width) * pixelBytes;
+            for (int c = 0; c < 3; c++)
             {
-                TxtResult.Text = Properties.Resources.Sfr_MtfInputError;
-                return;
-            }
-
-            double freq = Plot.FindFreqAtThreshold(m);
-            if (freq > 0)
-            {
-                if (_isMultiChannel)
-                {
-                    string channel = Plot.GetQueryChannel();
-                    TxtResult.Text = $"[{channel}] Freq(MTF={m:F4}) = {freq:F5}";
-                }
-                else
-                {
-                    TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
-                }
-            }
-            else
-            {
-                TxtResult.Text = Properties.Resources.Sfr_FreqNotFound;
+                int channel = image.channels == 1 ? 0 : c;
+                double raw = image.depth switch { 8 => source[channel], 16 => ((ushort*)source)[channel], 32 => ((float*)source)[channel], _ => ((double*)source)[channel] };
+                double value = (raw - options.BlackLevel) / range;
+                pixels[(y * width + x) * 3 + c] = double.IsFinite(value) ? (byte)Math.Round(Math.Clamp(value, 0, 1) * 255) : (byte)0;
             }
         }
-
-        private void BtnExportCsv_Click(object sender, RoutedEventArgs e)
-        {
-            var saveDialog = new SaveFileDialog
-            {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                DefaultExt = "csv",
-                FileName = $"SFR_Data_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-            };
-
-            if (saveDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    var csvBuilder = new StringBuilder();
-                    
-                    if (_isMultiChannel)
-                    {
-                        // Multi-channel export
-                        csvBuilder.AppendLine("# Multi-Channel SFR Data Export");
-                        csvBuilder.AppendLine($"# R Channel - MTF10 (norm): {_mtf10NormR:F5}, MTF50 (norm): {_mtf50NormR:F5}, MTF10 (cy/pix): {_mtf10CyPixR:F5}, MTF50 (cy/pix): {_mtf50CyPixR:F5}");
-                        csvBuilder.AppendLine($"# G Channel - MTF10 (norm): {_mtf10NormG:F5}, MTF50 (norm): {_mtf50NormG:F5}, MTF10 (cy/pix): {_mtf10CyPixG:F5}, MTF50 (cy/pix): {_mtf50CyPixG:F5}");
-                        csvBuilder.AppendLine($"# B Channel - MTF10 (norm): {_mtf10NormB:F5}, MTF50 (norm): {_mtf50NormB:F5}, MTF10 (cy/pix): {_mtf10CyPixB:F5}, MTF50 (cy/pix): {_mtf50CyPixB:F5}");
-                        csvBuilder.AppendLine($"# L Channel - MTF10 (norm): {_mtf10NormL:F5}, MTF50 (norm): {_mtf50NormL:F5}, MTF10 (cy/pix): {_mtf10CyPixL:F5}, MTF50 (cy/pix): {_mtf50CyPixL:F5}");
-                        csvBuilder.AppendLine();
-                        csvBuilder.AppendLine("Frequency,MTF_R,MTF_G,MTF_B,MTF_L");
-                        
-                        var multiData = Plot.GetMultiChannelData();
-                        if (multiData != null)
-                        {
-                            var data = Plot.GetData();
-                            if (data.frequencies != null && multiData.ContainsKey("R"))
-                            {
-                                int n = data.frequencies.Length;
-                                for (int i = 0; i < n; i++)
-                                {
-                                    csvBuilder.AppendLine($"{data.frequencies[i]:F6},{multiData["R"][i]:F6},{multiData["G"][i]:F6},{multiData["B"][i]:F6},{multiData["L"][i]:F6}");
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Single channel export
-                        csvBuilder.AppendLine("# SFR Data Export");
-                        csvBuilder.AppendLine($"# MTF10 (normalized): {_mtf10Norm:F5}");
-                        csvBuilder.AppendLine($"# MTF50 (normalized): {_mtf50Norm:F5}");
-                        csvBuilder.AppendLine($"# MTF10 (cy/pix): {_mtf10CyPix:F5}");
-                        csvBuilder.AppendLine($"# MTF50 (cy/pix): {_mtf50CyPix:F5}");
-                        csvBuilder.AppendLine();
-                        csvBuilder.AppendLine("Frequency,MTF");
-                        
-                        var data = Plot.GetData();
-                        if (data.frequencies != null && data.sfrValues != null)
-                        {
-                            int n = Math.Min(data.frequencies.Length, data.sfrValues.Length);
-                            for (int i = 0; i < n; i++)
-                            {
-                                csvBuilder.AppendLine($"{data.frequencies[i]:F6},{data.sfrValues[i]:F6}");
-                            }
-                        }
-                    }
-                    
-                    File.WriteAllText(saveDialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"{Properties.Resources.Sfr_ExportSuccessMsg}\n{saveDialog.FileName}", Properties.Resources.Sfr_ExportSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"{Properties.Resources.Sfr_ExportFailed}: {ex.Message}", Properties.Resources.Sfr_ExportFailed, MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
+        var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr24, null, pixels, width * 3);
+        bitmap.Freeze();
+        return bitmap;
     }
 }

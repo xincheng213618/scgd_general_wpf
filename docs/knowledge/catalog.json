@@ -770,8 +770,12 @@
       "knowledge_id": "algorithms.image-profile",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。",
+      "summary": "灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。",
       "aliases": [
+        "CIE Y",
+        "CIE Yxy",
+        "CIE x/y",
+        "原始亮度剖面",
         "灰度与颜色剖面",
         "水平剖面",
         "垂直剖面",
@@ -811,6 +815,9 @@
         "profile_no_samples"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs",
+        "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
@@ -831,6 +838,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CvcieProfileTests.cs",
         "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs",
         "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
@@ -3524,7 +3532,7 @@
       "knowledge_id": "delivery.code-statistics",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。",
+      "summary": "统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。",
       "aliases": [
         "代码行数",
         "代码统计",
@@ -3541,16 +3549,22 @@
       "code_paths": [
         "Scripts/count_code_lines.py",
         "Scripts/generate_code_history_dashboard.py",
+        "Scripts/code_history_analysis.py",
+        "Scripts/code_history_dashboard",
         ".gitignore"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Scripts/tests/test_code_history_analysis.py",
+        "Scripts/tests/test_code_history_dashboard.mjs"
+      ],
       "related": [
         "delivery.scripts",
         "governance.maintenance"
       ],
       "code_scopes": [
         ".",
-        "Scripts"
+        "Scripts",
+        "Scripts/code_history_dashboard"
       ],
       "domain": "delivery",
       "title": "代码行数与 Git 历史统计",
@@ -5320,6 +5334,12 @@
         "M_ApplyCannyEdgeDetection",
         "M_ApplyHistogramEqualization",
         "M_CalSFRMultiChannel",
+        "M_AnalyzeSfrV2",
+        "斜边清晰度",
+        "ESF",
+        "MTF50",
+        "MTF10",
+        "RGB 子像素",
         "M_CalArtculation",
         "M_FindLuminousArea",
         "M_FindLuminousAreaV2",
@@ -5355,11 +5375,15 @@
         "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp",
         "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp",
         "UI/ColorVision.Core/OpenCVMediaHelper.cs",
+        "UI/ColorVision.Core/SfrAnalysis.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR",
         "UI/ColorVision.Core/OpenCVCalibration.cs",
         "UI/ColorVision.Core/HImage.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"
       ],
       "test_paths": [
+        "Test/opencv_helper_test/test_sfr_analysis.cpp",
+        "Test/ColorVision.UI.Tests/SfrAnalysisTests.cs",
         "Test/opencv_helper_test/test_find_luminous_area.cpp",
         "Test/opencv_helper_test/test_calibration.cpp",
         "Test/opencv_helper_test/test_pseudo_color.cpp",
@@ -5379,7 +5403,8 @@
         "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_helper",
-        "UI/ColorVision.Core"
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
       "title": "opencv_helper.dll API 参考",
