@@ -4,6 +4,7 @@ using ColorVision.Database;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Threading.Tasks;
 namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     public class ColorVisionLicense
@@ -65,6 +66,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
     public class PhyLicenseDao : BaseTableDao<LicenseModel>
     {
         public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
+
+        public async Task<int> DeleteExpiredAsync(int[] licenseIds, DateTime cutoff)
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return await DeleteExpiredAsync(db, licenseIds, cutoff);
+        }
+
+        internal static Task<int> DeleteExpiredAsync(ISqlSugarClient db, int[] licenseIds, DateTime cutoff)
+        {
+            if (licenseIds.Length == 0)
+                return Task.FromResult(0);
+
+            // Recheck expiration when deleting: a license may have been renewed since confirmation.
+            return db.Deleteable<LicenseModel>()
+                .In(licenseIds)
+                .Where(x => x.ExpiryDate != null && x.ExpiryDate < cutoff)
+                .ExecuteCommandAsync();
+        }
 
         public LicenseModel? GetByMAC(string Code) 
         {

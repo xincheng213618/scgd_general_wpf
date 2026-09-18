@@ -12,6 +12,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,6 +35,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand ExportSelectedCommand { get; set; }
         public RelayCommand DeleteSelectedCommand { get; set; }
+        public RelayCommand ClearExpiredCommand { get; }
         public RelayCommand CopyLicenseCommand { get; set; }
         public RelayCommand GetCameraLicenseCommand { get; set; }
         public RelayCommand GetSpectrumLicenseCommand { get; set; }
@@ -41,14 +43,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public RelayCommand SaveToLincenseCommand { get; set; }
 
         public string LicenseCountText => string.Format(Properties.Resources.LicenseCountFormat, Licenses.Count);
+        public string LicenseSummaryText => string.Format(Properties.Resources.LicenseSummaryFormat,
+            Licenses.Count(x => x.Status == LicenseStatus.Normal), Licenses.Count(x => x.Status == LicenseStatus.ExpiringSoon),
+            Licenses.Count(x => x.Status == LicenseStatus.Expired), Licenses.Count(x => x.Status == LicenseStatus.Unknown));
+
+        public string OperationMessage { get => operationMessage; private set { operationMessage = value; OnPropertyChanged(); } }
+        private string operationMessage = string.Empty;
+        private bool isClearingExpired;
 
         public LicenseManagerViewModel()
         {
-            Licenses.CollectionChanged += (_, _) => OnPropertyChanged(nameof(LicenseCountText));
-            RefreshCommand = new RelayCommand(a => LoadLicenses());
-            ImportCommand = new RelayCommand(a => ImportLicense());
+            Licenses.CollectionChanged += (_, _) => UpdateSummary();
+            RefreshCommand = new RelayCommand(a => LoadLicenses(), _ => !isClearingExpired);
+            ImportCommand = new RelayCommand(a => ImportLicense(), _ => !isClearingExpired);
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
-            DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null);
+            DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null && !isClearingExpired);
+            ClearExpiredCommand = new RelayCommand(async _ => await ClearExpiredAsync(), _ => !isClearingExpired && Licenses.Any(x => x.Status == LicenseStatus.Expired));
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => SelectedLicense != null);
             GetCameraLicenseCommand = new RelayCommand(a=> GetCameraLicense());
             GetSpectrumLicenseCommand = new RelayCommand(async _ => await GetSpectrumLicenseAsync(), _ => !isDiscoveringSpectrometers);
@@ -247,14 +257,68 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
 
         public void LoadLicenses()
         {
-            Licenses.Clear();
             var licenses = PhyLicenseDao.Instance.GetAll();
+            int? selectedId = SelectedLicense?.Id;
+            DateTime now = DateTime.Now;
+            Licenses.Clear();
             foreach (var license in licenses)
             {
-                Licenses.Add(new LicenseViewModel(license));
+                var item = new LicenseViewModel(license);
+                item.RefreshStatus(now);
+                Licenses.Add(item);
             }
 
+            SelectedLicense = Licenses.FirstOrDefault(x => x.Id == selectedId);
+            UpdateSummary();
+        }
+
+        private void UpdateSummary()
+        {
             OnPropertyChanged(nameof(LicenseCountText));
+            OnPropertyChanged(nameof(LicenseSummaryText));
+            ClearExpiredCommand?.RaiseCanExecuteChanged();
+        }
+
+        public async Task ClearExpiredAsync()
+        {
+            if (isClearingExpired)
+                return;
+
+            DateTime cutoff = DateTime.Now;
+            foreach (var license in Licenses)
+                license.RefreshStatus(cutoff);
+            UpdateSummary();
+            int[] ids = Licenses.Where(x => x.Status == LicenseStatus.Expired).Select(x => x.Id).ToArray();
+            if (ids.Length == 0)
+            {
+                OperationMessage = Properties.Resources.LicenseNoExpired;
+                return;
+            }
+
+            var owner = Application.Current.GetActiveWindow();
+            if (MessageBox.Show(owner, string.Format(Properties.Resources.LicenseClearExpiredConfirm, ids.Length),
+                Properties.Resources.LicenseClearExpired, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                return;
+
+            isClearingExpired = true;
+            ClearExpiredCommand.RaiseCanExecuteChanged();
+            OperationMessage = Properties.Resources.LicenseClearingExpired;
+            try
+            {
+                int deleted = await PhyLicenseDao.Instance.DeleteExpiredAsync(ids, cutoff);
+                LoadLicenses();
+                OperationMessage = string.Format(Properties.Resources.LicenseClearExpiredSuccess, deleted);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to clear expired licenses", ex);
+                OperationMessage = string.Format(Properties.Resources.LicenseClearExpiredFailed, ex.Message);
+            }
+            finally
+            {
+                isClearingExpired = false;
+                ClearExpiredCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public void ImportLicense()
@@ -338,6 +402,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         }
     }
 
+    public enum LicenseStatus { Unknown, Expired, ExpiringSoon, Normal }
+
     public class LicenseViewModel : ViewModelBase
     {
         public LicenseModel Model { get; set; }
@@ -345,6 +411,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public LicenseViewModel(LicenseModel model)
         {
             Model = model;
+            RefreshStatus(DateTime.Now);
         }
 
         public int Id => Model.Id;
@@ -356,29 +423,38 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public DateTime? ExpiryDate => this.Model.ExpiryDate;
         public DateTime? CreateDate => this.Model.CreateDate;
 
-        public SolidColorBrush StatusColor
+        public LicenseStatus Status { get; private set; }
+
+        internal static LicenseStatus GetStatus(DateTime? expiryDate, DateTime now)
         {
-            get
-            {
-                if (ExpiryDate == null || ExpiryDate < DateTime.Now)
-                    return new SolidColorBrush(Colors.Red);
-                if (ExpiryDate < DateTime.Now.AddDays(30))
-                    return new SolidColorBrush(Colors.Yellow);
-                return new SolidColorBrush(Colors.Green);
-            }
+            if (!expiryDate.HasValue) return LicenseStatus.Unknown;
+            if (expiryDate.Value < now) return LicenseStatus.Expired;
+            return expiryDate.Value < now.AddDays(30) ? LicenseStatus.ExpiringSoon : LicenseStatus.Normal;
         }
 
-        public string StatusText
+        internal void RefreshStatus(DateTime now)
         {
-            get
-            {
-                if (ExpiryDate == null || ExpiryDate < DateTime.Now)
-                    return Properties.Resources.LicenseExpired;
-                if (ExpiryDate < DateTime.Now.AddDays(30))
-                    return Properties.Resources.LicenseExpiringSoon;
-                return Properties.Resources.LicenseNormal;
-            }
+            Status = GetStatus(ExpiryDate, now);
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(StatusColor));
+            OnPropertyChanged(nameof(StatusText));
         }
+
+        public SolidColorBrush StatusColor => Status switch
+        {
+            LicenseStatus.Expired => Brushes.IndianRed,
+            LicenseStatus.ExpiringSoon => Brushes.DarkGoldenrod,
+            LicenseStatus.Normal => Brushes.MediumSeaGreen,
+            _ => Brushes.Gray
+        };
+
+        public string StatusText => Status switch
+        {
+            LicenseStatus.Expired => Properties.Resources.LicenseExpired,
+            LicenseStatus.ExpiringSoon => Properties.Resources.LicenseExpiringSoon,
+            LicenseStatus.Normal => Properties.Resources.LicenseNormal,
+            _ => Properties.Resources.LicenseExpiryUnknown
+        };
     }
 
     public partial class LicenseManagerWindow : Window

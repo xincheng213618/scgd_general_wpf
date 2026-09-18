@@ -5110,4 +5110,36 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>Select a valid port (COM1–COM256), or turn off serial connection to use the default connection.</value></data>
   <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>Baud rate must be greater than zero.</value></data>
   <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>View discovery details</value></data>
+  <data name="LicenseSummaryFormat" xml:space="preserve">
+    <value>Valid {0}  ·  Expiring soon {1}  ·  Expired {2}  ·  Unknown {3}</value>
+  </data>
+  <data name="LicenseClearExpired" xml:space="preserve">
+    <value>Clear expired</value>
+  </data>
+  <data name="LicenseClearExpiredHint" xml:space="preserve">
+    <value>Remove expired license records; keep records with an unknown expiry date.</value>
+  </data>
+  <data name="LicenseClearExpiredConfirm" xml:space="preserve">
+    <value>Clear {0} expired licenses?
+
+Only license records will be removed. Device settings, exported files and records with unknown expiry dates will be kept. This cannot be undone.</value>
+  </data>
+  <data name="LicenseNoExpired" xml:space="preserve">
+    <value>There are no expired licenses to clear.</value>
+  </data>
+  <data name="LicenseClearingExpired" xml:space="preserve">
+    <value>Clearing expired licenses…</value>
+  </data>
+  <data name="LicenseClearExpiredSuccess" xml:space="preserve">
+    <value>Removed {0} expired licenses.</value>
+  </data>
+  <data name="LicenseClearExpiredFailed" xml:space="preserve">
+    <value>Could not clear expired licenses: {0}</value>
+  </data>
+  <data name="LicenseExpiryUnknown" xml:space="preserve">
+    <value>Unknown expiry</value>
+  </data>
+  <data name="LicenseListEmpty" xml:space="preserve">
+    <value>No licenses yet. Import a license to get started.</value>
+  </data>
 </root>

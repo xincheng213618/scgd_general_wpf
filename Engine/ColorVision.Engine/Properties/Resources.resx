@@ -1195,4 +1195,36 @@
   <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>请选择有效串口 COM1–COM256；使用默认连接时请关闭“串口连接”。</value></data>
   <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>波特率必须大于 0。</value></data>
   <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>查看搜索详情</value></data>
+  <data name="LicenseSummaryFormat" xml:space="preserve">
+    <value>正常 {0}  ·  即将过期 {1}  ·  已过期 {2}  ·  日期未知 {3}</value>
+  </data>
+  <data name="LicenseClearExpired" xml:space="preserve">
+    <value>一键清除过期</value>
+  </data>
+  <data name="LicenseClearExpiredHint" xml:space="preserve">
+    <value>清除已过期的许可证记录，保留到期时间未知的记录。</value>
+  </data>
+  <data name="LicenseClearExpiredConfirm" xml:space="preserve">
+    <value>确定清除 {0} 个已过期的许可证？
+
+仅删除许可证记录，不删除设备配置或已导出的文件。到期时间未知的记录会保留。此操作无法撤销。</value>
+  </data>
+  <data name="LicenseNoExpired" xml:space="preserve">
+    <value>没有可清除的过期许可证。</value>
+  </data>
+  <data name="LicenseClearingExpired" xml:space="preserve">
+    <value>正在清除过期许可证…</value>
+  </data>
+  <data name="LicenseClearExpiredSuccess" xml:space="preserve">
+    <value>已清除 {0} 个过期许可证。</value>
+  </data>
+  <data name="LicenseClearExpiredFailed" xml:space="preserve">
+    <value>清除失败：{0}</value>
+  </data>
+  <data name="LicenseExpiryUnknown" xml:space="preserve">
+    <value>日期未知</value>
+  </data>
+  <data name="LicenseListEmpty" xml:space="preserve">
+    <value>暂无许可证，点击“许可证导入”添加。</value>
+  </data>
 </root>

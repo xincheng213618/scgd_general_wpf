@@ -7542,6 +7542,62 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 一键清除过期 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearExpired {
+            get {
+                return ResourceManager.GetString("LicenseClearExpired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 确定清除 {0} 个已过期的许可证？
+        ///
+        ///仅删除许可证记录，不删除设备配置或已导出的文件。到期时间未知的记录会保留。此操作无法撤销。 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearExpiredConfirm {
+            get {
+                return ResourceManager.GetString("LicenseClearExpiredConfirm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清除失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearExpiredFailed {
+            get {
+                return ResourceManager.GetString("LicenseClearExpiredFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清除已过期的许可证记录，保留到期时间未知的记录。 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearExpiredHint {
+            get {
+                return ResourceManager.GetString("LicenseClearExpiredHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已清除 {0} 个过期许可证。 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearExpiredSuccess {
+            get {
+                return ResourceManager.GetString("LicenseClearExpiredSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在清除过期许可证… 的本地化字符串。
+        /// </summary>
+        public static string LicenseClearingExpired {
+            get {
+                return ResourceManager.GetString("LicenseClearingExpired", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 许可证已复制到剪贴板 的本地化字符串。
         /// </summary>
         public static string LicenseCopiedToClipboard {
@@ -7596,6 +7652,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日期未知 的本地化字符串。
+        /// </summary>
+        public static string LicenseExpiryUnknown {
+            get {
+                return ResourceManager.GetString("LicenseExpiryUnknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 有效期至 {0} 的本地化字符串。
         /// </summary>
         public static string LicenseExpiryValidUntil {
@@ -7641,6 +7706,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 暂无许可证，点击“许可证导入”添加。 的本地化字符串。
+        /// </summary>
+        public static string LicenseListEmpty {
+            get {
+                return ResourceManager.GetString("LicenseListEmpty", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 许可证过期 的本地化字符串。
         /// </summary>
         public static string LicenseListTagExpired {
@@ -7667,6 +7741,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 没有可清除的过期许可证。 的本地化字符串。
+        /// </summary>
+        public static string LicenseNoExpired {
+            get {
+                return ResourceManager.GetString("LicenseNoExpired", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 正常 的本地化字符串。
         /// </summary>
@@ -7730,6 +7813,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 正常 {0}  ·  即将过期 {1}  ·  已过期 {2}  ·  日期未知 {3} 的本地化字符串。
+        /// </summary>
+        public static string LicenseSummaryFormat {
+            get {
+                return ResourceManager.GetString("LicenseSummaryFormat", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 相机 的本地化字符串。
         /// </summary>

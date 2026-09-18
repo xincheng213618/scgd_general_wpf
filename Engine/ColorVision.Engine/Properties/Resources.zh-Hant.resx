@@ -3236,4 +3236,36 @@
   <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>請選擇有效序列埠 COM1–COM256；使用預設連線時請關閉「序列埠連線」。</value></data>
   <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>鮑率必須大於 0。</value></data>
   <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>檢視搜尋詳情</value></data>
+  <data name="LicenseSummaryFormat" xml:space="preserve">
+    <value>正常 {0}  ·  即將過期 {1}  ·  已過期 {2}  ·  日期未知 {3}</value>
+  </data>
+  <data name="LicenseClearExpired" xml:space="preserve">
+    <value>一鍵清除過期</value>
+  </data>
+  <data name="LicenseClearExpiredHint" xml:space="preserve">
+    <value>清除已過期的授權記錄，保留到期時間未知的記錄。</value>
+  </data>
+  <data name="LicenseClearExpiredConfirm" xml:space="preserve">
+    <value>確定清除 {0} 個已過期的授權？
+
+僅刪除授權記錄，不刪除裝置設定或已匯出的檔案。到期時間未知的記錄會保留。此操作無法復原。</value>
+  </data>
+  <data name="LicenseNoExpired" xml:space="preserve">
+    <value>沒有可清除的過期授權。</value>
+  </data>
+  <data name="LicenseClearingExpired" xml:space="preserve">
+    <value>正在清除過期授權…</value>
+  </data>
+  <data name="LicenseClearExpiredSuccess" xml:space="preserve">
+    <value>已清除 {0} 個過期授權。</value>
+  </data>
+  <data name="LicenseClearExpiredFailed" xml:space="preserve">
+    <value>清除失敗：{0}</value>
+  </data>
+  <data name="LicenseExpiryUnknown" xml:space="preserve">
+    <value>日期未知</value>
+  </data>
+  <data name="LicenseListEmpty" xml:space="preserve">
+    <value>暫無授權，點選「授權匯入」新增。</value>
+  </data>
 </root>
