@@ -99,6 +99,15 @@ namespace ColorVision.Engine.Services
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
         }
 
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (TreeView1.SelectedItem is DeviceService device)
+                PublishCopilotDeviceContext(device);
+            else
+                ClearCopilotDeviceContext();
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             ClearCopilotDeviceContext();

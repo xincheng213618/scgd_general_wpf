@@ -806,9 +806,32 @@ namespace ColorVision.Copilot
                 }
 
                 var attachments = composerState.CreateAttachmentSnapshots();
-                var submissionContext = CaptureHostedTurnSnapshot(
+                var currentContext = CaptureHostedTurnSnapshot(
                     conversation,
                     attachmentOverride: attachments);
+                CopilotAgentHostContextSnapshot submissionContext;
+                if (record.HostContext != null)
+                {
+                    if (!AccessWorkspacePathsMatch(
+                            record.HostContext.SolutionDirectoryPath,
+                            currentContext.SolutionDirectoryPath)
+                        || !record.TryCreateHostContext(
+                            attachments,
+                            CopilotAgentProjectInstructions.ResolveGlobalInstructionRootPath(),
+                            out var recoveredContext)
+                        || recoveredContext == null)
+                    {
+                        if (_followUpQueue.RestoreRecoveryToDraft(runId))
+                            restoredDraftCount++;
+                        continue;
+                    }
+                    submissionContext = recoveredContext;
+                }
+                else
+                {
+                    // Legacy queue records did not persist their original host context.
+                    submissionContext = currentContext;
+                }
                 var requestProfile = CreateConversationRequestProfile(
                     profile,
                     conversation,

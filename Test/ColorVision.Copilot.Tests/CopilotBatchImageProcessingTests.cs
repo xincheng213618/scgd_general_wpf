@@ -66,6 +66,61 @@ public sealed class CopilotBatchImageProcessingTests
     }
 
     [Fact]
+    public async Task CopilotBatchConversionDoesNotOverwriteAFileCreatedDuringProcessing()
+    {
+        AlgorithmDescriptor invert = StandardAlgorithmCatalog.Create().Descriptors.Single(
+            descriptor => descriptor.Id == StandardAlgorithmIds.Invert);
+        AlgorithmCatalog catalog = new();
+        catalog.Register(invert, "InvertImage");
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-output-race-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(directory, "sample.png");
+        string contestedPath = Path.Combine(directory, "sample_invert.png");
+        string fallbackPath = Path.Combine(directory, "sample_invert_2.png");
+        byte[] otherWriterContent = [1, 2, 3, 4, 5];
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using (Mat source = new(2, 3, MatType.CV_8UC1, Scalar.All(7))) Assert.True(Cv2.ImWrite(sourcePath, source));
+            InjectedProvider provider = new(() => File.WriteAllBytes(contestedPath, otherWriterContent));
+            using AlgorithmExecutionScheduler scheduler = new(cpuConcurrency: 1);
+            AlgorithmRuntime runtime = new(catalog, [provider], scheduler);
+            CopilotConvertBatchImagesTool tool = new(
+                new BatchImageProcessor([new StandardBatchImageLoader()]),
+                runtime);
+            CopilotAgentRequest request = new()
+            {
+                UserText = "对图片执行反相",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { sourcePath },
+                    ["format"] = "png",
+                    ["algorithm"] = "InvertImage",
+                    ["parameters"] = JsonSerializer.SerializeToElement(new { }),
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(otherWriterContent, File.ReadAllBytes(contestedPath));
+            Assert.True(File.Exists(fallbackPath));
+            using Mat output = Cv2.ImRead(fallbackPath, ImreadModes.Grayscale);
+            Assert.Equal(33, output.At<byte>(0, 0));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CopilotCreationRejectsAWhitelistedIdWhoseRuntimeContractIsAnalysis()
     {
         AlgorithmDescriptor invert = StandardAlgorithmCatalog.Create().Descriptors.Single(

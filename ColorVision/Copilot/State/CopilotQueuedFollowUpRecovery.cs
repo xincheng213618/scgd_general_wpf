@@ -1,10 +1,176 @@
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 
 namespace ColorVision.Copilot
 {
+    public sealed class CopilotQueuedFollowUpHostContext
+    {
+        public const int CurrentVersion = 1;
+        private const int MaximumContextItems = 24;
+        private const int MaximumContextFieldCharacters = 16_000;
+        private const int MaximumContextCharacters = 64_000;
+
+        public int Version { get; set; } = CurrentVersion;
+
+        public string ActiveDocumentPath { get; set; } = string.Empty;
+
+        public string SolutionDirectoryPath { get; set; } = string.Empty;
+
+        public ObservableCollection<string> AdditionalReadRootPaths { get; set; } = [];
+
+        public CopilotLiveContext? LiveContext
+        {
+            get => CloneLiveContext(_liveContext);
+            set => _liveContext = CloneLiveContext(value);
+        }
+        private CopilotLiveContext? _liveContext;
+
+        internal static CopilotQueuedFollowUpHostContext Capture(CopilotAgentHostContextSnapshot source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return new CopilotQueuedFollowUpHostContext
+            {
+                ActiveDocumentPath = source.ActiveDocumentPath,
+                SolutionDirectoryPath = source.SolutionDirectoryPath,
+                AdditionalReadRootPaths = new ObservableCollection<string>(source.AdditionalReadRootPaths),
+                LiveContext = source.LiveContext,
+            };
+        }
+
+        internal CopilotQueuedFollowUpHostContext CreateSnapshot() => new()
+        {
+            Version = Version,
+            ActiveDocumentPath = ActiveDocumentPath,
+            SolutionDirectoryPath = SolutionDirectoryPath,
+            AdditionalReadRootPaths = new ObservableCollection<string>(AdditionalReadRootPaths ?? []),
+            LiveContext = LiveContext,
+        };
+
+        internal bool TryCreateHostContext(
+            IReadOnlyList<CopilotAttachmentItem> attachments,
+            string globalInstructionRootPath,
+            out CopilotAgentHostContextSnapshot? snapshot)
+        {
+            snapshot = null;
+            if (!IsStructurallyValid()
+                || !string.IsNullOrWhiteSpace(ActiveDocumentPath) && !File.Exists(ActiveDocumentPath)
+                || (AdditionalReadRootPaths ?? []).Any(path => !Directory.Exists(path)))
+            {
+                return false;
+            }
+
+            snapshot = new CopilotAgentHostContextSnapshot(
+                ActiveDocumentPath,
+                SolutionDirectoryPath,
+                attachments,
+                LiveContext,
+                conversationHistory: null,
+                AdditionalReadRootPaths,
+                globalInstructionRootPath);
+            return true;
+        }
+
+        internal bool IsStructurallyValid()
+        {
+            if (Version != CurrentVersion
+                || !IsSafePath(ActiveDocumentPath)
+                || !IsSafePath(SolutionDirectoryPath)
+                || AdditionalReadRootPaths == null
+                || AdditionalReadRootPaths.Count > CopilotAgentEnvironmentContext.MaxScopedPaths
+                || AdditionalReadRootPaths.Any(path => !IsSafePath(path)))
+            {
+                return false;
+            }
+
+            var liveContext = _liveContext;
+            if (liveContext == null)
+                return true;
+            if (!IsSafeContextField(liveContext.SourceId)
+                || !IsSafeContextField(liveContext.Title)
+                || !IsSafeContextField(liveContext.Summary)
+                || !IsSafeContextField(liveContext.AttachmentTitle)
+                || liveContext.SnapshotItems == null
+                || liveContext.SnapshotItems.Count > MaximumContextItems)
+            {
+                return false;
+            }
+
+            var totalCharacters = (long)(liveContext.SourceId?.Length ?? 0)
+                + (liveContext.Title?.Length ?? 0)
+                + (liveContext.Summary?.Length ?? 0)
+                + (liveContext.AttachmentTitle?.Length ?? 0);
+            foreach (var item in liveContext.SnapshotItems)
+            {
+                if (item == null
+                    || !IsSafeContextField(item.Id)
+                    || !IsSafeContextField(item.Title)
+                    || !IsSafeContextField(item.Summary)
+                    || !IsSafeContextField(item.Content))
+                {
+                    return false;
+                }
+                totalCharacters += (item.Id?.Length ?? 0)
+                    + (item.Title?.Length ?? 0)
+                    + (item.Summary?.Length ?? 0)
+                    + (item.Content?.Length ?? 0);
+            }
+            return totalCharacters <= MaximumContextCharacters;
+        }
+
+        private static bool IsSafePath(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return true;
+            if (path.Length > CopilotAgentEnvironmentContext.MaxPathLength
+                || path.Any(char.IsControl)
+                || !Path.IsPathFullyQualified(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                _ = Path.GetFullPath(path);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsSafeContextField(string? value) => (value?.Length ?? 0) <= MaximumContextFieldCharacters
+            && !(value ?? string.Empty).Any(character => char.IsControl(character)
+                && character is not ('\r' or '\n' or '\t'));
+
+        private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)
+        {
+            if (source == null)
+                return null;
+            return new CopilotLiveContext
+            {
+                SourceId = source.SourceId,
+                Title = source.Title,
+                Summary = source.Summary,
+                AttachmentTitle = source.AttachmentTitle,
+                SnapshotItems = (source.SnapshotItems ?? Array.Empty<CopilotContextItem>())
+                    .Where(item => item != null)
+                    .Select(item => new CopilotContextItem
+                    {
+                        Id = item.Id,
+                        Title = item.Title,
+                        Summary = item.Summary,
+                        Content = item.Content,
+                    })
+                    .ToArray(),
+            };
+        }
+    }
+
     public sealed class CopilotQueuedFollowUpRecoveryRecord
     {
         internal const int MaximumIdentifierCharacters = 128;
@@ -33,6 +199,13 @@ namespace ColorVision.Copilot
 
         public string ProfileId { get; set; } = string.Empty;
 
+        public CopilotQueuedFollowUpHostContext? HostContext
+        {
+            get => _hostContext?.CreateSnapshot();
+            set => _hostContext = value?.CreateSnapshot();
+        }
+        private CopilotQueuedFollowUpHostContext? _hostContext;
+
         public DateTimeOffset? QueuedAtUtc { get; set; }
 
         public bool ResumeAfterRestart { get; set; }
@@ -46,6 +219,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeIsLocalCommand() => IsLocalCommand;
 
         public bool ShouldSerializeProfileId() => !string.IsNullOrWhiteSpace(ProfileId);
+
+        public bool ShouldSerializeHostContext() => HostContext != null;
 
         public bool ShouldSerializeQueuedAtUtc() => QueuedAtUtc.HasValue;
 
@@ -92,7 +267,21 @@ namespace ColorVision.Copilot
             return !IsAutomaticGoalContinuation
                 && ResumeAfterRestart
                 && normalizedProfileId.Length is > 0 and <= MaximumIdentifierCharacters
-                && composerState.RequestMode != CopilotAgentMode.Chat;
+                && composerState.RequestMode != CopilotAgentMode.Chat
+                && (_hostContext == null || _hostContext.IsStructurallyValid());
+        }
+
+        internal bool TryCreateHostContext(
+            IReadOnlyList<CopilotAttachmentItem> attachments,
+            string globalInstructionRootPath,
+            out CopilotAgentHostContextSnapshot? snapshot) =>
+            _hostContext?.TryCreateHostContext(attachments, globalInstructionRootPath, out snapshot)
+            ?? ReturnNoHostContext(out snapshot);
+
+        private static bool ReturnNoHostContext(out CopilotAgentHostContextSnapshot? snapshot)
+        {
+            snapshot = null;
+            return false;
         }
 
         internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments() =>

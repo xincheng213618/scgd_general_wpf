@@ -68,6 +68,30 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
     }
 
     [Fact]
+    public void StartupRestoresAQueueItemWithAnInvalidHostContextToItsDraft()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var durable = CreateRecovery("queued-run-1", conversation.Id, "resume in the captured workspace");
+        durable.ProfileId = "profile";
+        durable.ResumeAfterRestart = true;
+        durable.HostContext = new CopilotQueuedFollowUpHostContext
+        {
+            SolutionDirectoryPath = "relative-workspace",
+        };
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation],
+            QueuedFollowUpRecoveries = [durable],
+        };
+
+        Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
+
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+        Assert.Equal("resume in the captured workspace", conversation.DraftText);
+        Assert.Equal(1, state.RecoveredQueuedFollowUpCount);
+    }
+
+    [Fact]
     public void StartupDropsAutomaticGoalContinuationInsteadOfRestoringItAsUserDraft()
     {
         var createdAt = new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.Zero);

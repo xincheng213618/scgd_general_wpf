@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -106,5 +107,42 @@ public sealed class CopilotDatabaseSqlPolicyTests
         Assert.True(accepted, error);
         Assert.NotNull(analysis);
         Assert.Equal(CopilotDatabaseSqlStatementKind.Query, analysis.Kind);
+    }
+
+    [Fact]
+    public async Task AmbiguousMutationFailureRequiresStateVerificationBeforeRetry()
+    {
+        const string sql = "UPDATE measurements SET reviewed = 1 WHERE id = 42";
+        var service = new CopilotDatabaseSqlService(new OutcomeUnknownExecutor());
+        var input = new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?> { ["sql"] = sql },
+        };
+
+        var result = await service.ExecuteApprovedAsync(input, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, result.FailureKind);
+        Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, result.FailureCode);
+        Assert.Contains(CopilotDatabaseSqlPolicy.CreateFingerprint(sql), result.Summary, StringComparison.Ordinal);
+        Assert.Contains("Do not retry", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    private sealed class OutcomeUnknownExecutor : ICopilotDatabaseSqlExecutor
+    {
+        public bool IsAvailable => true;
+
+        public Task<CopilotDatabaseQueryResult> QueryAsync(
+            string sql,
+            int maxRows,
+            int timeoutSeconds,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<CopilotDatabaseMutationResult> ExecuteAsync(
+            string sql,
+            CopilotDatabaseSqlAnalysis analysis,
+            int timeoutSeconds,
+            CancellationToken cancellationToken) => Task.FromException<CopilotDatabaseMutationResult>(
+                new CopilotDatabaseMutationOutcomeUnknownException(new IOException("commit acknowledgement lost")));
     }
 }

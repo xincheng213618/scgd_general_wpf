@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -141,6 +142,7 @@ namespace ColorVision.Copilot
                         || !IsOptionalBoolean(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.IsLocalCommand), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ProfileId), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalQueuedHostContext(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.HostContext), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalDate(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.QueuedAtUtc), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalBoolean(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ResumeAfterRestart), StringComparison.OrdinalIgnoreCase))
                         || !IsOptionalComposerStash(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ComposerState), StringComparison.OrdinalIgnoreCase)))
@@ -206,6 +208,49 @@ namespace ColorVision.Copilot
             return token is JObject reference
                 && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.Name), StringComparison.OrdinalIgnoreCase))
                 && IsOptionalString(reference.GetValue(nameof(CopilotAgentSkillReference.SkillFilePath), StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsOptionalQueuedHostContext(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JObject context
+                || !IsOptionalInteger(context.GetValue(nameof(CopilotQueuedFollowUpHostContext.Version), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalString(context.GetValue(nameof(CopilotQueuedFollowUpHostContext.ActiveDocumentPath), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalString(context.GetValue(nameof(CopilotQueuedFollowUpHostContext.SolutionDirectoryPath), StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            var roots = context.GetValue(nameof(CopilotQueuedFollowUpHostContext.AdditionalReadRootPaths), StringComparison.OrdinalIgnoreCase);
+            var liveContext = context.GetValue(nameof(CopilotQueuedFollowUpHostContext.LiveContext), StringComparison.OrdinalIgnoreCase);
+            return (roots == null
+                    || roots.Type == JTokenType.Null
+                    || roots is JArray rootArray && rootArray.All(IsStringOrNull))
+                && IsOptionalQueuedLiveContext(liveContext);
+        }
+
+        private static bool IsOptionalQueuedLiveContext(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return true;
+            if (token is not JObject context
+                || !IsOptionalString(context.GetValue(nameof(CopilotLiveContext.SourceId), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalString(context.GetValue(nameof(CopilotLiveContext.Title), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalString(context.GetValue(nameof(CopilotLiveContext.Summary), StringComparison.OrdinalIgnoreCase))
+                || !IsOptionalString(context.GetValue(nameof(CopilotLiveContext.AttachmentTitle), StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            var items = context.GetValue(nameof(CopilotLiveContext.SnapshotItems), StringComparison.OrdinalIgnoreCase);
+            return items == null
+                || items.Type == JTokenType.Null
+                || items is JArray itemArray && itemArray.All(item => item is JObject contextItem
+                    && IsOptionalString(contextItem.GetValue(nameof(CopilotContextItem.Id), StringComparison.OrdinalIgnoreCase))
+                    && IsOptionalString(contextItem.GetValue(nameof(CopilotContextItem.Title), StringComparison.OrdinalIgnoreCase))
+                    && IsOptionalString(contextItem.GetValue(nameof(CopilotContextItem.Summary), StringComparison.OrdinalIgnoreCase))
+                    && IsOptionalString(contextItem.GetValue(nameof(CopilotContextItem.Content), StringComparison.OrdinalIgnoreCase)));
         }
 
         private static bool IsOptionalPendingSteeringRecoveries(JToken? token)

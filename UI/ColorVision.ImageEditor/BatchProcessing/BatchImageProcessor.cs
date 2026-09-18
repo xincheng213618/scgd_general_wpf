@@ -127,7 +127,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                 var sourceRead = false;
                 var outputPath = string.Empty;
-                var outputExisted = false;
                 try
                 {
                     var loader = GetLoader(item.FilePath)
@@ -140,14 +139,31 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         request.PreserveFolderStructure,
                         request.AvoidOverwrite,
                         reservedPaths);
-                    outputExisted = File.Exists(outputPath);
 
                     using Mat source = loader.Load(item.FilePath);
                     sourceRead = true;
                     cancellationToken.ThrowIfCancellationRequested();
                     using Mat result = request.Algorithm.Apply(source, cancellationToken);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    BatchImageOutput.Save(result, outputPath);
+                    while (true)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        try
+                        {
+                            BatchImageOutput.Save(result, outputPath, overwrite: !request.AvoidOverwrite);
+                            break;
+                        }
+                        catch (IOException) when (request.AvoidOverwrite && File.Exists(outputPath))
+                        {
+                            outputPath = BatchImageOutput.CreateOutputPath(
+                                item,
+                                request.OutputDirectory,
+                                request.Suffix,
+                                request.OutputFormat,
+                                request.PreserveFolderStructure,
+                                avoidOverwrite: true,
+                                reservedPaths);
+                        }
+                    }
 
                     results.Add(new BatchImageFileResult
                     {
@@ -167,7 +183,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 }
                 catch (OperationCanceledException)
                 {
-                    DeleteIncompleteNewOutput(outputPath, outputExisted);
                     results.Add(new BatchImageFileResult
                     {
                         SourcePath = item.FilePath,
@@ -188,7 +203,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 }
                 catch (Exception ex)
                 {
-                    DeleteIncompleteNewOutput(outputPath, outputExisted);
                     results.Add(new BatchImageFileResult
                     {
                         SourcePath = item.FilePath,
@@ -216,20 +230,5 @@ namespace ColorVision.ImageEditor.BatchProcessing
             return _loaders.FirstOrDefault(loader => loader.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase));
         }
 
-        private static void DeleteIncompleteNewOutput(string outputPath, bool outputExisted)
-        {
-            if (outputExisted || string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
-            {
-                return;
-            }
-
-            try
-            {
-                File.Delete(outputPath);
-            }
-            catch
-            {
-            }
-        }
     }
 }

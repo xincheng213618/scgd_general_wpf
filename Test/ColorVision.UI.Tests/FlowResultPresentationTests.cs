@@ -1,5 +1,6 @@
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using SqlSugar;
 
@@ -28,5 +29,26 @@ public sealed class FlowResultPresentationTests
         var row = new ViewBatchResult { MeasureBatchModel = new MeasureBatchModel { TotalTime = 2364, FlowStatus = FlowStatus.Failed } };
         Assert.Equal(2.364, row.DurationSeconds);
         Assert.Equal(2364, row.MeasureBatchModel.TotalTime);
+    }
+
+    [Fact]
+    public void FailedHistoryQueryMarksRetainedCopilotRowsAsStale()
+    {
+        var item = CopilotBusinessContextBuilder.BuildMeasurementResultContextItem(
+            new CopilotMeasurementResultContextSnapshot
+            {
+                Surface = "Measurement result history",
+                LoadedBatchCount = 4,
+                IsFilterActive = true,
+                LastQuerySucceeded = false,
+                IsLoadedDataStale = true,
+                RequestedFilterMatchesLoadedData = false,
+                LoadedDataAsOf = "2026-09-18T01:02:03.0000000Z",
+            });
+
+        Assert.Contains("Last query: Failed", item.Content, StringComparison.Ordinal);
+        Assert.Contains("Stale (last query failed; loaded rows may predate it)", item.Content, StringComparison.Ordinal);
+        Assert.Contains("Requested filter matches loaded data: No", item.Content, StringComparison.Ordinal);
+        Assert.Contains("stale retained data", item.Summary, StringComparison.Ordinal);
     }
 }

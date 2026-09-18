@@ -5,7 +5,7 @@ status: "current"
 summary: "实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。"
 aliases: ["通用查询", "高级查询", "查询窗口", "查询条件保存", "筛选结果", "SQL预览", "清空条件", "清空表", "截断表", "查询取消", "GenericQueryWindow", "GenericQuery", "QueryCondition", "QueryOperator", "GenericQueryConditionSupport", "GenericQuerySessionStore", "GenericQueryBaseConfig"]
 code_paths: ["UI/ColorVision.Database/GenericQueryWindow.xaml", "UI/ColorVision.Database/GenericQueryWindow.xaml.cs", "UI/ColorVision.Database/GenericQueryConditionSupport.cs", "UI/ColorVision.Database/GenericQuerySessionStore.cs", "UI/ColorVision.Database/IEntity.cs", "Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs","Test/ColorVision.UI.Tests/FlowResultPresentationTests.cs"]
 related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-protocol"]
 ---
 
@@ -40,6 +40,8 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 执行顺序为：`PreQuery` → 条件转换/构造查询 → 生成并记录 SQL → 同步 `ToList` → 清空调用方 `ViewResluts` → 逐项加入结果 → `QueryCompleted`。`GenericQuery<T,T1>` 在加入阶段逐项执行 `Converter`；窗口本身不建立独立结果快照。完成事件携带实际取回数量和计时，计时包含集合替换，不是纯数据库耗时；当前窗口完成文案只显示条数。
 
 默认条件转换或数据库查询在清空集合之前失败，通常留下原集合；但 `PreQuery` 订阅者可以先修改状态。转换器、集合事件或完成事件异常可能发生在结果已经清空/部分替换之后。窗口只显示异常，不回滚结果或订阅者副作用，不能概括成“查询失败一定保留旧结果”。
+
+检测结果历史页的批次搜索是调用方自己的异步路径。查询失败时它保留上一次成功加载的行，同时在 Copilot `measurement-results` 上下文中明确标记 `Last query: Failed`、`Stale (last query failed; loaded rows may predate it)`、本次请求筛选是否仍与已加载筛选一致，以及上次成功加载的 UTC 时间。这样保留的旧行不会被当成本次筛选结果；这些新鲜度字段也用于高级查询失败后的不可信列表，不改变通用 `GenericQueryWindow` 的部分替换边界。
 
 `Query_Click` 虽为 async，但只先 `Dispatcher.Yield` 一次，随后在 UI 线程同步执行查询。没有取消令牌、该层查询超时设置或关窗状态复查：同步阶段可能阻塞窗口；在 yield 间关闭也没有阻止后续查询的判断。关闭按钮的 `IsCancel` 只是窗口关闭语义，不取消 SQL、不回滚结果。
 

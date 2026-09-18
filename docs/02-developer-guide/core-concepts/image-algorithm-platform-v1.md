@@ -138,7 +138,7 @@ Copilot 仅能看到显式白名单中同时声明 `Headless | Local | Determini
 
 批量路径通过 `CVRawBatchImageLoader` 为每个专有源文件加载一个图像，再由 `BatchImageOutput` 生成一个输出；它不拆分 CVCIE 的 X/Y/Z 通道集合。需要原生通道导出或显式 Python/CLI 包装器时，使用 [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)，按该路径核对参数、覆盖和退出码。
 
-工具使用 `AvoidOverwrite = true`，已存在或本批次已占用的路径追加 `_2`、`_3` 等编号。无算法、输出目录和后缀，且目标扩展名与源相同时记入 `skipped_identity`，不把无变化文件算成重新转换。响应提供总计和最多 100 条 `results`；`results_truncated` 表示逐文件列表被截断，完整数量仍以 `requested`、`processed`、`succeeded`、`failed`、`skipped_identity` 与 `cancelled` 为准。某项失败可继续处理后续项，取消或部分失败的整体结果不是成功。工具结果范围不等于用户最初发现的全部目录，汇报前应核对选定输入。
+工具使用 `AvoidOverwrite = true`，已存在或本批次已占用的路径追加 `_2`、`_3` 等编号。编码先写入目标目录内保留真实扩展名的唯一临时文件，再原子移动到最终路径；无覆盖落位若发现该名称刚被其他写入者占用，会重新编号并重试，不删除或覆盖竞争者的文件。临时文件在成功或失败后尽力清理。无算法、输出目录和后缀，且目标扩展名与源相同时记入 `skipped_identity`，不把无变化文件算成重新转换。响应提供总计和最多 100 条 `results`；`results_truncated` 表示逐文件列表被截断，完整数量仍以 `requested`、`processed`、`succeeded`、`failed`、`skipped_identity` 与 `cancelled` 为准。某项失败可继续处理后续项，取消或部分失败的整体结果不是成功。工具结果范围不等于用户最初发现的全部目录，汇报前应核对选定输入。
 
 ### Flow 与发布适配
 

@@ -240,6 +240,9 @@ namespace ColorVision.Engine
         private bool _copilotPublishQueued;
         private bool _isQuerying;
         private string _appliedBatchCode = string.Empty;
+        private string _requestedBatchCode = string.Empty;
+        private bool _lastQuerySucceeded = true;
+        private string _loadedDataAsOf = string.Empty;
 
         public MeasureBatchManagerPage() { }
         public MeasureBatchManagerPage(Frame MainFrame)
@@ -316,15 +319,19 @@ namespace ColorVision.Engine
             QueryControls.IsEnabled = false;
             EmptyStatePanel.Visibility = Visibility.Collapsed;
             QueryStatusText.Text = EngineLocalization.Get("正在查询批次记录…");
+            string batchCode = SearchBox.Text.Trim();
+            _requestedBatchCode = batchCode;
             try
             {
-                string batchCode = SearchBox.Text.Trim();
                 await MeasureBatchManager.LoadAsync(batchCode);
                 _appliedBatchCode = batchCode;
+                _lastQuerySucceeded = true;
+                _loadedDataAsOf = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
                 QueryStatusText.Text = EngineLocalization.Format($"已读取 {ViewResults.Count} 条，最多 {MeasureBatchManager.Config.Count} 条；概览仅统计本次查询结果。");
             }
             catch (Exception ex)
             {
+                _lastQuerySucceeded = false;
                 QueryStatusText.Text = EngineLocalization.Format($"查询失败，保留原有列表：{ex.Message}");
                 log4net.LogManager.GetLogger(typeof(MeasureBatchManagerPage)).Warn("查询流程结果失败", ex);
             }
@@ -579,12 +586,28 @@ namespace ColorVision.Engine
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(DB, ViewResults, t => new ViewBatchResult(t));
+            var queryAttempted = false;
+            var querySucceeded = false;
+            genericQuery.PreQuery += (_, _) => queryAttempted = true;
+            genericQuery.QueryCompleted += (_, _) => querySucceeded = true;
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             DB.Dispose();
-            _appliedBatchCode = "<advanced>";
+            if (queryAttempted)
+            {
+                _requestedBatchCode = "<advanced>";
+                _lastQuerySucceeded = querySucceeded;
+                if (querySucceeded)
+                {
+                    _appliedBatchCode = "<advanced>";
+                    _loadedDataAsOf = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+                }
+            }
             UpdateSummary();
-            QueryStatusText.Text = EngineLocalization.Format($"高级查询：{ViewResults.Count} 条；概览仅统计本次查询结果。");
+            if (querySucceeded)
+                QueryStatusText.Text = EngineLocalization.Format($"高级查询：{ViewResults.Count} 条；概览仅统计本次查询结果。");
+            else if (queryAttempted)
+                QueryStatusText.Text = EngineLocalization.Get("高级查询失败或未完成，当前列表可能保留旧数据。");
             PublishCopilotContext();
         }
 
@@ -666,6 +689,10 @@ namespace ColorVision.Engine
                 Surface = "Measurement result history",
                 LoadedBatchCount = ViewResults.Count,
                 IsFilterActive = !string.IsNullOrWhiteSpace(_appliedBatchCode),
+                LastQuerySucceeded = _lastQuerySucceeded,
+                IsLoadedDataStale = !_lastQuerySucceeded,
+                RequestedFilterMatchesLoadedData = string.Equals(_requestedBatchCode, _appliedBatchCode, StringComparison.Ordinal),
+                LoadedDataAsOf = _loadedDataAsOf,
                 BatchId = batch?.Id,
                 TemplateId = batch?.TId,
                 TemplateName = templateName,

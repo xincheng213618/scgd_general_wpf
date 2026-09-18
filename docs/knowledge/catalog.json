@@ -2454,6 +2454,7 @@
         "Test/ColorVision.Copilot.Tests/CopilotChatStateRecoveryAttachmentTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatStateProfileReconciliationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpCancellationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotQueuedFollowUpRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSteeringCancellationRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotGoalQueueRecoveryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPendingRecoveryConversationTests.cs",
@@ -10064,7 +10065,8 @@
         "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs"
+        "Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs",
+        "Test/ColorVision.UI.Tests/FlowResultPresentationTests.cs"
       ],
       "related": [
         "ui.database",

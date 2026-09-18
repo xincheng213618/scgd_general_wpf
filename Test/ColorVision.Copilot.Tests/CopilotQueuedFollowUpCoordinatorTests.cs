@@ -1,5 +1,7 @@
 using ColorVision.Copilot;
+using ColorVision.UI;
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -35,6 +37,7 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
             Assert.Equal(request.Prompt, Assert.IsType<CopilotComposerStash>(recovery.ComposerState).Text);
             Assert.Equal(request.Profile.Id, recovery.ProfileId);
             Assert.True(recovery.ResumeAfterRestart);
+            Assert.NotNull(recovery.HostContext);
 
             Assert.False(queue.PreserveForRestart());
             Assert.Single(state.QueuedFollowUpRecoveries);
@@ -44,6 +47,74 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
             if (queuedItem != null)
                 busyHost.Host.RequestCancel(queuedItem.RunId);
             await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
+    public async Task DurableRecoveryOwnsTheQueuedWorkspaceAndLiveContextSnapshot()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        CopilotQueuedFollowUp? queuedItem = null;
+        string capturedDirectory = Path.Combine(Path.GetTempPath(), $"colorvision-queued-context-{Guid.NewGuid():N}");
+        string activeDocumentPath = Path.Combine(capturedDirectory, "inspection.json");
+        string referenceDirectory = Path.Combine(capturedDirectory, "reference");
+        Directory.CreateDirectory(referenceDirectory);
+        File.WriteAllText(activeDocumentPath, "{}");
+        var hostContext = new CopilotAgentHostContextSnapshot(
+            activeDocumentPath,
+            capturedDirectory,
+            [],
+            new CopilotLiveContext
+            {
+                SourceId = "device-service:42",
+                Title = "Captured device",
+                SnapshotItems = [new CopilotContextItem { Title = "State", Content = "Status: offline\nUpdated: now" }],
+            },
+            additionalReadRootPaths: [referenceDirectory]);
+
+        try
+        {
+            var request = new CopilotQueuedFollowUpRequest(
+                "conversation-1",
+                "Conversation",
+                "continue diagnosing this device",
+                CopilotAgentMode.Auto,
+                CopilotProfileConfig.CreateDefault(),
+                hostContext,
+                AgentSkillReference: null,
+                new CopilotTurnRuntimeConfigSnapshot(new CopilotAgentDefaultsConfig(), []),
+                WorkspaceReviewTarget: null);
+
+            Assert.True(queue.TrySchedule(
+                request,
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out _));
+
+            var serialized = JObject.FromObject(Assert.Single(state.QueuedFollowUpRecoveries));
+            var restored = Assert.IsType<CopilotQueuedFollowUpRecoveryRecord>(
+                serialized.ToObject<CopilotQueuedFollowUpRecoveryRecord>());
+            var context = Assert.IsType<CopilotQueuedFollowUpHostContext>(restored.HostContext);
+            Assert.Equal(capturedDirectory, context.SolutionDirectoryPath);
+            Assert.Equal(activeDocumentPath, context.ActiveDocumentPath);
+            Assert.Equal(referenceDirectory, Assert.Single(context.AdditionalReadRootPaths));
+            Assert.Equal("device-service:42", context.LiveContext?.SourceId);
+            Assert.Equal("Status: offline\nUpdated: now", Assert.Single(context.LiveContext!.SnapshotItems).Content);
+            Assert.True(restored.TryGetNormalized(out _, out _, out var composerState));
+            Assert.True(restored.CanResumeAfterRestart(composerState));
+            Assert.True(restored.TryCreateHostContext([], string.Empty, out var recoveredContext));
+            Assert.Equal("device-service:42", recoveredContext?.LiveContext?.SourceId);
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+            Directory.Delete(capturedDirectory, recursive: true);
         }
     }
 

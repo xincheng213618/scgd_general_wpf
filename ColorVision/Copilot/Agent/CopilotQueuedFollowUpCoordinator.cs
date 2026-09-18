@@ -504,6 +504,7 @@ namespace ColorVision.Copilot
                 Prompt = item.Prompt,
                 ComposerState = item.CreateComposerState(),
                 ProfileId = item.Profile.Id,
+                HostContext = CopilotQueuedFollowUpHostContext.Capture(item.SubmissionContext),
                 QueuedAtUtc = item.QueuedAtUtc,
                 ResumeAfterRestart = !item.IsAutomaticGoalContinuation,
             });
