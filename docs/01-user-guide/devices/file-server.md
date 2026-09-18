@@ -5,7 +5,7 @@ status: "current"
 summary: "FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。"
 aliases: ["文件服务器", "FileServer", "DeviceFileServer", "ConfigFileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/FileServer", "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs"]
+test_paths: []
 related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data", "delivery.file-transfer"]
 ---
 

@@ -5,7 +5,7 @@ status: "current"
 summary: "ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。"
 aliases: ["FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "直接native分析", "P2", "GhostLocalAnalysis", "M_DetectGhosts", "RotatedTemplateLocalAnalysis", "M_MatchRotatedTemplate", "StereoFusionDebugWindow", "M_CalStereoBinocularFusion", "P2JsonAnalysisWindow", "本地Ghost检测", "旋转模板本地匹配", "双目标定融合", "Ghost 本地分析", "设为旋转匹配模板", "运行融合", "P2 复制结果", "灯珠数量统计", "缺失数量"]
 code_paths: ["UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/HImageExtension.cs", "Native/include/algorithm.h", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/exports/p2_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmCircleOverlayRenderOptimizationTests.cs", "Test/opencv_helper_test/test_p2_algorithms.cpp"]
+test_paths: ["Test/opencv_helper_test/test_p2_algorithms.cpp"]
 related: ["algorithms.platform", "ui.image-editor", "engine.native-integration", "algorithms.ghost", "algorithms.led"]
 ---
 
@@ -146,8 +146,6 @@ P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，�
 
 ## 验证依据与缺口
 
-`AlgorithmCircleOverlayRenderOptimizationTests.cs` 的灯珠用例通过反射直接调用 `AddCircleOverlay`，验证单圆渲染、中心/半径、颜色、缩放线宽和撤销记录，并覆盖无效缩放回退。它不调用 `M_FindLightBeads`，不能证明灯珠检出率、ROI 回退、缺失计数、全部暗区处理、真实 DLL 加载或异步 UI 完成。
-
-尚未在本主题登记灯珠 native 检测结果或端到端菜单的自动化回归。后续获授权验证应区分源码检查与真实运行，重点覆盖正/非正行列数、多个独立暗区、部分越界 ROI、同 revision 并发、换图丢弃、Gray32Float 量程及 RGB/调色板/Alpha 输入；单纯路径和文档构建通过不构成这些行为已验收。本说明不授权启动设备、发布 DLL 或改动用户图像。
+本主题没有登记灯珠覆盖层、native 检测结果或端到端菜单的自动化回归。后续获授权验证应区分源码检查与真实运行，重点覆盖单圆渲染和撤销、正/非正行列数、多个独立暗区、部分越界 ROI、同 revision 并发、换图丢弃、Gray32Float 量程及 RGB/调色板/Alpha 输入；单纯路径和文档构建通过不构成这些行为已验收。本说明不授权启动设备、发布 DLL 或改动用户图像。
 
 `Test/opencv_helper_test/test_p2_algorithms.cpp` 有合成 Ghost、旋转/缩放/遮挡匹配、常量模板拒绝、已知标定五点双目和导出失败清空指针等用例。测试源码存在不代表本次运行过，也不覆盖真实相机标定、完整 WPF 菜单、模板替换、关窗期间 native 执行或关闭自动清理后的叠加残留。这些 UI/交付边界仍需专门验收；不要用统一 Runner 测试替代。

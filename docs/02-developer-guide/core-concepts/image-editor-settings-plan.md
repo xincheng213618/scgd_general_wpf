@@ -5,7 +5,7 @@ status: "current"
 summary: "图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。"
 aliases: ["图像设置重构", "图像设置规划", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
 code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs", "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
 related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.property-grid", "engine.file-io"]
 ---
 

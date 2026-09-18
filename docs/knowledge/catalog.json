@@ -573,9 +573,7 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "UI/ColorVision.Database/BaseTableDao.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/VectorizedSelectVisualTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "algorithms.arvr",
         "algorithms.json-templates",
@@ -716,8 +714,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -962,8 +959,7 @@
         "Native/opencv_helper/algorithm/calibration/calibration_basic.cpp"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/ImagingCorrectionV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/ImagingCorrectionV1Tests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -1221,7 +1217,6 @@
         "Native/opencv_helper/exports/p2_export.cpp"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmCircleOverlayRenderOptimizationTests.cs",
         "Test/opencv_helper_test/test_p2_algorithms.cpp"
       ],
       "related": [
@@ -1447,8 +1442,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
-        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs",
-        "Test/ColorVision.UI.Tests/PoiEditorLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"
       ],
       "related": [
         "algorithms.index",
@@ -1599,8 +1593,7 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/RoiStatisticsV1Tests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
-        "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -4117,7 +4110,6 @@
         "Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj",
         "Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj",
         "Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"
       ],
       "related": [
@@ -4664,8 +4656,7 @@
         "Projects/ProjectKB/KbSqliteCleanupProvider.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs",
-        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs"
       ],
       "related": [
         "engine.index",
@@ -4767,8 +4758,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
-        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs",
-        "Test/ColorVision.UI.Tests/WindowServicePresentationTests.cs"
+        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs"
       ],
       "related": [
         "engine.index",
@@ -5555,7 +5545,6 @@
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs",
         "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs",
-        "Test/ColorVision.UI.Tests/ResultImagePresentationTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs",
         "Test/ColorVision.UI.Tests/ResultMessageBusTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"
@@ -6343,8 +6332,7 @@
         "Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs",
         "Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs",
         "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
-        "Test/ColorVision.UI.Tests/FlowNodeMenuPathTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -6975,9 +6963,7 @@
         "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "engine.devices",
         "operations.device-configuration",
@@ -7205,7 +7191,6 @@
         "Test/ColorVision.UI.Tests/LogEntryParserTests.cs",
         "Test/ColorVision.UI.Tests/LogViewConfigTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs",
-        "Test/ColorVision.UI.Tests/NativeLogWindowTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"
       ],
@@ -7333,12 +7318,9 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
-        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
-        "Test/ColorVision.UI.Tests/MenuThemeTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
         "Test/ColorVision.UI.Tests/NewUserGuideTests.cs",
         "Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs",
-        "Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs",
         "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs",
@@ -7530,7 +7512,6 @@
         "Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/NodeConfiguratorBindingTests.cs",
         "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"
       ],
       "related": [
@@ -7686,8 +7667,7 @@
         "UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs",
-        "Test/ColorVision.UI.Tests/DeveloperToolsWindowTests.cs"
+        "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs"
       ],
       "related": [
         "ui.common",
@@ -7999,12 +7979,9 @@
         "Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs",
         "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs",
         "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs",
-        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs",
-        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
         "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
@@ -9628,11 +9605,7 @@
         "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/AboutWindowChromeTests.cs",
-        "Test/ColorVision.UI.Tests/AboutMsgWindowTests.cs",
-        "Test/ColorVision.UI.Tests/AboutTextTests.cs",
-        "Test/Spectrum.Tests/SpectrumAboutWindowTests.cs"
+        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"
       ],
       "related": [
         "ui.themes",
@@ -9675,7 +9648,6 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CieAnalysisTests.cs",
-        "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs",
         "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"
       ],
       "related": [
@@ -10260,8 +10232,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs",
-        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
-        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"
+        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"
       ],
       "related": [
         "ui.solution",
@@ -10500,7 +10471,6 @@
         "UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs",
         "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
@@ -10664,9 +10634,7 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
-        "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs",
-        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
-        "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"
       ],
       "related": [
         "ui.image-editor",
@@ -11187,7 +11155,6 @@
         "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
         "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs",
-        "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
@@ -11416,7 +11383,6 @@
         "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs",
         "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs",
-        "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs",
         "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs",
         "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceSearchTests.cs",
@@ -11563,8 +11529,7 @@
         "Test/ColorVision.UI.Tests/SocketShutdownTests.cs",
         "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs",
         "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs",
-        "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs",
-        "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs"
       ],
       "related": [
         "ui.index",
@@ -12016,17 +11981,8 @@
         "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
-        "Test/ColorVision.Themes.Tests/ThemeResourceTests.cs",
         "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
-        "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
-        "Test/ColorVision.UI.Tests/StartupThemeSettingsTests.cs",
-        "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
-        "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
-        "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs",
-        "Test/ColorVision.UI.Tests/MenuThemeTests.cs"
+        "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs"
       ],
       "related": [
         "ui.index",

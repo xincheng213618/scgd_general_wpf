@@ -5,7 +5,7 @@ status: "current"
 summary: "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。"
 aliases: ["色度分析", "色度分析工作台", "CIE 色度图", "色差计算", "色域覆盖率", "CIEDE2000", "JNCD", "CieSampleAnalysisView", "CieAnalysisMath", "CieGamutGeometry", "WindowCIE", "ManualColorGamutView"]
 code_paths: ["UI/ColorVision.ImageEditor/Cie", "Engine/ColorVision.Engine/Media/CvcieDiagramEditorTool.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CieAnalysisTests.cs", "Test/ColorVision.UI.Tests/CieWindowCompositionTests.cs", "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"]
+test_paths: ["Test/ColorVision.UI.Tests/CieAnalysisTests.cs", "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"]
 related: ["ui.image-editor", "engine.cvcie-results"]
 ---
 

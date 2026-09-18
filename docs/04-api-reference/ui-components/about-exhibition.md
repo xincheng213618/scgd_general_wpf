@@ -5,7 +5,7 @@ status: "current"
 summary: "主程序的图像、色彩与测量展示，以及 Spectrum 的光谱关于页：独立品牌和版本、中英文与繁体资源、不透明深浅配色、原生圆角对齐与关闭释放约束。"
 aliases: ["关于页面", "关于窗口", "炫技界面", "光谱之间", "关于窗口黑边", "关于页中英文", "AboutMsg", "AboutMsgWindow", "AboutArtScene", "AboutArtwork", "AboutWindowChrome", "AboutText", "AboutResources", "VisionImageStudy", "SpectrumAboutWindow", "光谱粒子", "NOCTURNE", "OPALINE"]
 code_paths: ["ColorVision/AboutMsg.xaml", "ColorVision/AboutMsg.xaml.cs", "UI/ColorVision.UI/Views/About/AboutArtScene.cs", "UI/ColorVision.UI/Views/About/VisionImageStudy.cs", "UI/ColorVision.UI/Views/About/AboutWindowChrome.cs", "UI/ColorVision.UI/Views/About/AboutText.cs", "UI/ColorVision.UI/Views/About/AboutResources.resx", "UI/ColorVision.UI/Views/About/AboutResources.en.resx", "UI/ColorVision.UI/Views/About/AboutResources.zh-Hant.resx", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs", "Test/ColorVision.UI.Tests/AboutWindowChromeTests.cs", "Test/ColorVision.UI.Tests/AboutMsgWindowTests.cs", "Test/ColorVision.UI.Tests/AboutTextTests.cs", "Test/Spectrum.Tests/SpectrumAboutWindowTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"]
 related: ["ui.themes", "ui.hotkeys", "plugins.spectrum"]
 ---
 
