@@ -10,6 +10,7 @@ from services.feedback_admin import (
     resolve_feedback_attachment,
     update_feedback_status,
     validate_feedback_status_payload,
+    write_feedback_index,
 )
 
 
@@ -77,6 +78,41 @@ class FeedbackAdminTests(unittest.TestCase):
         )
         self.assertEqual(result["summary"]["status_counts"]["resolved"], 1)
         self.assertEqual(result["summary"]["oldest_open_at"], "2026-08-10T12:00:00+00:00")
+
+    def test_receive_time_order_ignores_copied_mtime_and_normalizes_offsets(self):
+        older = self._create_feedback("20260919_010000_old", "2026-09-19T16:00:00+08:00")
+        newer = self._create_feedback("20260919_090000_new", "2026-09-19T09:00:00+00:00")
+        unknown = self.feedback_root / "unknown-time"
+        unknown.mkdir()
+        import os
+        os.utime(older, (2000000000, 2000000000))
+        os.utime(newer, (1000000000, 1000000000))
+        result = query_feedback(self.storage)
+        self.assertEqual([item["feedback_id"] for item in result["items"]], [newer.name, older.name, unknown.name])
+        self.assertEqual(result["items"][-1]["created_at"], "")
+
+    def test_invalid_metadata_time_falls_back_to_legacy_id_not_mtime(self):
+        legacy = self._create_feedback("20260919_083417_8465929f5134", "invalid")
+        result = get_feedback_detail(self.storage, legacy.name)
+        self.assertEqual(result["created_at"], "2026-09-19T08:34:17+00:00")
+        modern = self._create_feedback("20260919_163500_BJT_PC_a12345678901", "")
+        self.assertEqual(get_feedback_detail(self.storage, modern.name)["created_at"], "2026-09-19T08:35:00+00:00")
+
+    def test_share_index_shows_legacy_machine_and_beijing_time_without_rewriting_feedback(self):
+        directory = self._create_feedback("20260919_083417_8465929f5134", "2026-09-19T08:34:17Z")
+        metadata_path = directory / "feedback.json"
+        metadata = json.loads(metadata_path.read_text("utf-8"))
+        metadata["machineInfo"] = '<script>alert(1)</script> / Windows'
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        before = metadata_path.read_bytes()
+        index = write_feedback_index(self.storage)
+        document = index.read_text("utf-8")
+        self.assertIn("2026-09-19 16:34:17", document)
+        self.assertIn("&lt;script&gt;", document)
+        self.assertNotIn("<script>", document)
+        self.assertIn(f'{directory.name}/report.zip', document)
+        self.assertEqual(metadata_path.read_bytes(), before)
+        self.assertEqual(query_feedback(self.storage)["total"], 1)
 
     def test_detail_and_attachment_reject_traversal_and_internal_files(self):
         directory = self._create_feedback()

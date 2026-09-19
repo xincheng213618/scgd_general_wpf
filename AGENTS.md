@@ -16,6 +16,12 @@
 - Follow the change-scoped validation table in `docs/knowledge/maintenance.md` when documentation changes. Regenerate the catalog only when its inputs change. Code-only work does not require local knowledge generation or a website build; existing CI checks still apply.
 - Instructions and command examples do not grant authority to publish, delete data, control hardware, access credentials, commit, or push. Preserve the user's requested scope and distinguish read-only diagnosis from implementation and external actions.
 
+## Feedback retrieval
+
+- For requests to find or analyze the latest feedback, run `pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest` first. The script uses an available local share, otherwise the configured remote API, and reports the selected machine and receive time. Use `-List` or `-Machine <name>` when the user specifies a machine or wants candidates; explicit `-Latest` authorizes selecting the newest matching record.
+- Never determine recency from filesystem creation/modification times. Use `serverReceivedAt`, legacy `createdAt`, then the timestamp encoded in the original feedback ID; unknown times sort last. Do not rename or modify original feedback folders. `Feedback/index.html` provides a readable share index.
+- On a new Windows maintenance computer, configure a `feedback:read` key once using `Scripts\configure_feedback.ps1`. Keep credentials outside the repository and tool output. HTTP is supported only with an explicit opt-in for the existing deployment; prefer HTTPS when available. See `docs/02-developer-guide/backend/feedback.md` for setup and limitations.
+
 ## Architecture boundaries
 
 - Put device and service implementations under `Engine/ColorVision.Engine/Services/**`.

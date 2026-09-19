@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。"
 aliases: ["反馈收件箱", "我的反馈", "Feedback Inbox", "反馈上传", "feedback:read", "feedback:manage", "feedback_attachment_download", "download_feedback.ps1", "ownerUserId", "machineName", "serverReceivedAt", "feedback.json", ".admin.json"]
-code_paths: ["Web/Backend/feedback_service.py", "Web/Backend/services/feedback_admin.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/api_key_service.py", "Web/Frontend/src/pages/FeedbackPage.tsx", "Web/Frontend/src/services/admin.ts", "Scripts/download_feedback.ps1", "UI/ColorVision.UI.Desktop/Feedback"]
+code_paths: ["Web/Backend/feedback_service.py", "Web/Backend/services/feedback_admin.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/api_key_service.py", "Web/Frontend/src/pages/FeedbackPage.tsx", "Web/Frontend/src/services/admin.ts", "Scripts/download_feedback.ps1", "Scripts/configure_feedback.ps1", "UI/ColorVision.UI.Desktop/Feedback"]
 test_paths: ["Web/Backend/test_feedback_service.py", "Web/Backend/test_feedback_admin.py", "Web/Backend/test_feedback_routes.py", "Web/Backend/test_feedback_download_script.py", "Web/Frontend/tests/feedback.test.ts", "Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-accounts", "delivery.artifact-delivery", "ui.desktop"]
 ---
@@ -41,7 +41,9 @@ yyyyMMdd_HHmmss_BJT_<安全机器标识>_<12位唯一后缀>
 
 日期时间明确使用北京时间 UTC+08:00，机器标签只保留 ASCII 字母、数字、连字符和下划线并限制长度；唯一后缀避免机器标签清洗或同秒提交碰撞。示例中的时间是 **服务端接收时间**，不是日志采集完成时间。`feedback.json.serverReceivedAt` 保留带偏移的 UTC 事实时间；页面明确按北京时间显示，筛选日期也按北京时间日界线转换为 UTC。
 
-旧目录不改名。旧 metadata 优先使用 `serverReceivedAt`，没有则使用 `createdAt`，两者都没有才回退目录 mtime；机器名优先读 `machineName`，旧记录可从形如 `机器名 / Windows...` 的 `machineInfo` 恢复。恢复出的机器信息只用于展示和筛选，缺失显示“未知机器”。
+旧目录不改名。接收时间依次使用有效的 `serverReceivedAt`、`createdAt` 和原反馈 ID 中的时间：含 `_BJT_` 的 ID 按北京时间解释，早期 `yyyyMMdd_HHmmss_<后缀>` 按 UTC 解释。全部缺失或无效则显示未知并排在最后，绝不使用文件或目录修改时间。比较前统一为 UTC，避免带不同时区的字符串排序出错。机器名优先读 `machineName`，旧记录可从形如 `机器名 / Windows...` 的 `machineInfo` 恢复；旧版客户端的新提交也使用这个机器名生成目录标签。恢复出的机器信息只用于展示和筛选，缺失显示“未知机器”。
+
+提交成功后刷新 `Feedback/index.html`，提供按北京时间倒序排列的机器、提交版本、反馈编号和附件链接，可从共享目录直接打开、用 Ctrl+F 查找。索引更新失败记录警告，但不会把已经保存的反馈报告为上传失败。部署已有目录时可单独调用 `services.feedback_admin.write_feedback_index(storage)` 生成初始索引；它只替换派生索引，不改写原反馈及其 ID。
 
 ## 读取范围与权限
 
@@ -66,26 +68,48 @@ yyyyMMdd_HHmmss_BJT_<安全机器标识>_<12位唯一后缀>
 
 前台 `/feedback` 对任何已登录账号开放，普通用户显示“我的反馈”；研发只读或管理员显示完整收件箱。页面包含状态、北京时间日期范围、机器、版本和文本筛选，详情展示归属、机器、问题、日志/数据库附件、大小与 SHA-256 摘要。附件使用受控 fetch，401/403/404/传输失败会显示错误，不把失败导航当成下载成功。管理员入口 `/admin/feedback` 复用同一页面，只有 API 返回 `can_manage=true` 时才显示状态动作。
 
-## 开发电脑按编号下载
+## 开发电脑读取反馈
 
-先由 API Key 管理员创建仅含 `feedback:read` 的 key，并通过安全渠道放入开发电脑进程环境。脚本不接受 URL 中的凭据，也没有仓库明文默认值：
+统一入口为 PowerShell 7 的 `Scripts\download_feedback.ps1`。默认 `-Source Auto`：若本机有 `H:\ColorVision\Feedback` 挂载则直接只读定位附件，否则通过已配置的远程 API 下载。显式提供 `-BaseUrl` 或 `-Source Remote` 时走网络；`-Source Local -LocalRoot <路径>` 可指定另一挂载。不要重复下载已有共享附件，也不要修改共享目录里的原反馈文件。
+
+用户明确要求“最新反馈”时使用 `-Latest`，按接收时间选择最新匹配记录，并报告所选机器名、北京时间与编号；不要求用户每次先手工找 ID。尚未写完或无法读取 `feedback.json` 的目录不参与自动选择，远程列表按需继续分页查找。需要指定机器时加 `-Machine`，浏览候选时用 `-List`。`-Latest` 找不到有效接收时间时明确失败，不把未知时间记录当作最新。原始文件时间受复制、同步影响，不参与排序。
 
 ```powershell
-$env:COLORVISION_FEEDBACK_API_KEY = '<一次性安全传入的只读 key>'
+# 本机优先共享目录；没有挂载时自动从 API 下载到用户缓存目录
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Machine 'ARVR-STATION-07'
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -List
+```
 
-# 可选查询，只列出候选，不会自动选择“全局最新”
+## 其他电脑按编号下载
+
+先由 API Key 管理员创建仅含 `feedback:read` 的 key。维护电脑不需要管理员账号或交互登录；一台电脑配置一次即可，key 可单独撤销。Windows 初始化脚本通过隐藏输入读取 key，保存到当前用户环境；凭据不进入仓库、命令示例或工具输出。不要把可用 key 随 clone 分发。非 Windows 环境设置同名进程/用户环境变量。
+
+```powershell
+# 一次性配置：执行后在隐藏输入提示中粘贴反馈只读 key
+pwsh -NoProfile -File .\Scripts\configure_feedback.ps1 `
+  -BaseUrl 'http://xc213618.ddns.me:9998' -AllowInsecureHttp
+
+# 远程获取最新反馈；已经完整下载且校验一致的附件直接复用
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Source Remote
+
+# 可选查询，只列出候选
 .\Scripts\download_feedback.ps1 `
   -BaseUrl 'https://your-colorvision-host.example' `
   -List -Machine 'ARVR-STATION-07' -Query '黑屏'
 
-# 必须明确给出反馈编号和本地输出根目录
+# 也可按明确编号下载，并指定输出目录
 .\Scripts\download_feedback.ps1 `
   -BaseUrl 'https://your-colorvision-host.example' `
   -FeedbackId '20260916_144318_BJT_ARVR-STATION-07_22ca2fafd648' `
   -OutputDirectory 'D:\ColorVisionFeedback'
 ```
 
-脚本只允许 HTTPS；`-AllowInsecureLocalhost` 仅供本机模拟测试。它先取详情清单，再把每个附件流式写入同目录随机 `.part` 文件，核对字节数和服务端 SHA-256 后以原子 rename 落盘，最后写不可覆盖的 `feedback-manifest.json`。已存在且 hash 一致的附件会复用；内容不同则停止，不覆盖。失败临时文件会删除，未验证文件不会冒充完成。脚本只读反馈附件，不导入或覆盖 ColorVision / ARVRPro 正在运行的数据库。
+地址优先使用显式 `-BaseUrl`，其次 `COLORVISION_FEEDBACK_BASE_URL`，最后才是当前服务默认地址。key 使用 `COLORVISION_FEEDBACK_API_KEY`，Windows 上也读取当前用户的已保存环境变量。默认下载缓存为用户 LocalApplicationData 下的 `ColorVision/Feedback/<反馈编号>`。它先取详情清单，再把每个附件流式写入同目录随机 `.part` 文件，核对字节数和服务端 SHA-256 后以原子 rename 落盘，最后写不可覆盖的 `feedback-manifest.json`。已存在且 hash 一致的附件会复用；内容不同则停止，不覆盖。失败临时文件会删除，未验证文件不会冒充完成。脚本只读反馈附件，不导入或覆盖 ColorVision / ARVRPro 正在运行的数据库。
+
+HTTPS 始终优先。现有 HTTP 部署只能在用户明确选择 `-AllowInsecureHttp` 或保存 `COLORVISION_FEEDBACK_ALLOW_HTTP=1` 后使用；`-AllowInsecureLocalhost` 仍仅限模拟测试。HTTP 不加密 key 与诊断附件，使用只读 key 只限制权限，不等于加密。脚本不跟随重定向，也不会绕过 TLS 证书校验。后续配置 HTTPS 时更新服务地址并取消 HTTP 选项。
+
+动态公网 IP 加 DDNS 可以承载 HTTPS，证书绑定域名。但使用公开 CA 自动签发，需要公网 80 的 HTTP-01、公网 443 的 TLS-ALPN-01，或控制 DNS TXT 的 DNS-01 验证。外部只能开放 18080/18443 且没有 DNS 权限时，不能用这些高端口替代标准验证端口；自签名证书也不能让新电脑的浏览器自动信任。当前条件下保留 HTTP，不声称已经完成 HTTPS。
 
 ## 状态 sidecar 与下载完成边界
 

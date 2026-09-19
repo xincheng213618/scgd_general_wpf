@@ -3107,6 +3107,7 @@
         "Web/Frontend/src/pages/FeedbackPage.tsx",
         "Web/Frontend/src/services/admin.ts",
         "Scripts/download_feedback.ps1",
+        "Scripts/configure_feedback.ps1",
         "UI/ColorVision.UI.Desktop/Feedback"
       ],
       "test_paths": [

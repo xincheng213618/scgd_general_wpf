@@ -105,6 +105,19 @@ class FeedbackServiceTests(unittest.TestCase):
             with self.subTest(filename=filename), self.assertRaises(FeedbackValidationError):
                 self._save(uploads=[_Upload(filename, b"forged")])
 
+    def test_legacy_client_machine_info_names_new_folder_and_refreshes_share_index(self):
+        result = self._save(form={"message": "legacy", "machineInfo": "PC-LEGACY / Windows 10"})
+        self.assertIn("_BJT_PC-LEGACY_", result.feedback_id)
+        self.assertEqual(result.metadata["machineName"], "PC-LEGACY")
+        index = self.storage / "Feedback" / "index.html"
+        self.assertIn("PC-LEGACY", index.read_text("utf-8"))
+
+    def test_share_index_failure_does_not_turn_a_saved_feedback_into_a_failed_upload(self):
+        with patch("services.feedback_admin.write_feedback_index", side_effect=OSError("index blocked")):
+            with self.assertLogs("feedback_service", level="WARNING"):
+                result = self._save()
+        self.assertTrue((result.feedback_dir / "feedback.json").is_file())
+
     def test_failed_metadata_replace_does_not_look_complete(self):
         with patch("feedback_service.os.replace", side_effect=OSError("disk failure")):
             with self.assertRaises(OSError):

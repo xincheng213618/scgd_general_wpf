@@ -27,6 +27,8 @@ class _FeedbackHandler(BaseHTTPRequestHandler):
         if self.path == f"/api/feedback/{FEEDBACK_ID}":
             payload = {
                 "feedback_id": FEEDBACK_ID,
+                "machine_name": "ARVR-PC",
+                "created_at": "2026-09-16T06:30:00Z",
                 "message": "fixture",
                 "attachments": [{
                     "name": "diagnostics.zip",
@@ -38,7 +40,10 @@ class _FeedbackHandler(BaseHTTPRequestHandler):
             self._json(payload)
             return
         if self.path.startswith("/api/feedback?limit="):
-            self._json({"items": [{"feedback_id": FEEDBACK_ID}], "total": 1})
+            self._json({"items": [
+                {"feedback_id": "20260917_010000_incomplete", "created_at": "2026-09-17T01:00:00Z", "metadata_valid": False},
+                {"feedback_id": FEEDBACK_ID, "created_at": "2026-09-16T06:30:00Z", "machine_name": "ARVR-PC", "metadata_valid": True},
+            ], "total": 2})
             return
         if self.path == f"/api/feedback/{FEEDBACK_ID}/attachments/diagnostics.zip":
             body = PAYLOAD[:-4] if self.truncate_download else PAYLOAD
@@ -73,7 +78,7 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         self.thread.start()
         self.base_url = f"http://127.0.0.1:{self.server.server_port}"
         self.script = Path(__file__).resolve().parents[2] / "Scripts" / "download_feedback.ps1"
-        self.environment = {**os.environ, "COLORVISION_FEEDBACK_API_KEY": "isolated-test-key"}
+        self.environment = {**os.environ, "COLORVISION_FEEDBACK_API_KEY": "isolated-test-key", "COLORVISION_FEEDBACK_ALLOW_HTTP": "0"}
 
     def tearDown(self):
         _FeedbackHandler.truncate_download = False
@@ -83,8 +88,10 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         self._temp.cleanup()
 
     def _run(self, *arguments):
+        command = "& '" + str(self.script).replace("'", "''") + "' "
+        command += " ".join(value if value.startswith("-") else "'" + value.replace("'", "''") + "'" for value in arguments)
         return subprocess.run(
-            ["pwsh", "-NoProfile", "-File", str(self.script), *arguments],
+            ["pwsh", "-NoProfile", "-Command", command + " | ConvertTo-Json -Depth 20"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -137,6 +144,46 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(FEEDBACK_ID, result.stdout)
+
+    def test_latest_remote_downloads_and_reports_the_selected_machine_and_time(self):
+        result = self._run(
+            "-Latest", "-Source", "Remote", "-BaseUrl", self.base_url,
+            "-OutputDirectory", str(self.root / "latest"), "-AllowInsecureLocalhost",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ARVR-PC", result.stdout)
+        self.assertIn("2026-09-16 14:30:00", result.stdout)
+        self.assertEqual((self.root / "latest" / FEEDBACK_ID / "diagnostics.zip").read_bytes(), PAYLOAD)
+
+    def test_latest_local_uses_metadata_not_mtime_and_needs_no_api_key(self):
+        share = self.root / "share"
+        for identifier, instant, machine in (
+            ("20260919_010000_older", "2026-09-19T16:00:00+08:00", "PC-OLD"),
+            ("20260919_090000_newer", "2026-09-19T09:00:00Z", "PC-NEW"),
+        ):
+            directory = share / identifier
+            directory.mkdir(parents=True)
+            (directory / "feedback.json").write_text(json.dumps({"createdAt": instant, "machineInfo": f"{machine} / Windows"}), encoding="utf-8")
+        os.utime(share / "20260919_010000_older", (2000000000, 2000000000))
+        (share / "20260920_090000_incomplete").mkdir()
+        self.environment.pop("COLORVISION_FEEDBACK_API_KEY")
+        result = self._run("-Latest", "-Source", "Local", "-LocalRoot", str(share))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("20260919_090000_newer", result.stdout)
+        self.assertIn("PC-NEW", result.stdout)
+        self.assertIn("2026-09-19 17:00:00", result.stdout)
+        filtered = self._run("-Latest", "-Source", "Local", "-LocalRoot", str(share), "-Machine", "PC-OLD")
+        self.assertEqual(filtered.returncode, 0, filtered.stderr)
+        self.assertIn("20260919_010000_older", filtered.stdout)
+
+    def test_explicit_http_opt_in_works_and_unapproved_http_is_rejected(self):
+        allowed = self._run("-List", "-BaseUrl", self.base_url, "-AllowInsecureHttp")
+        self.assertEqual(allowed.returncode, 0, allowed.stderr)
+        denied = self._run("-List", "-BaseUrl", self.base_url)
+        self.assertNotEqual(denied.returncode, 0)
+        self.assertIn("HTTP requires explicit", denied.stderr)
+        unsupported = self._run("-List", "-BaseUrl", "ftp://example.invalid")
+        self.assertNotEqual(unsupported.returncode, 0)
 
 
 if __name__ == "__main__":

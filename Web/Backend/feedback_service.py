@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import uuid
@@ -140,6 +141,8 @@ def save_feedback(
         "machineName",
         max_length=255,
     )
+    if not machine_name and " / " in machine_info:
+        machine_name = machine_info.split(" / ", 1)[0].strip()[:255]
     client_submitted_at = _optional_iso_timestamp(
         read_limited_form_value(
             form,
@@ -214,6 +217,12 @@ def save_feedback(
     finally:
         if temporary_path.exists():
             temporary_path.unlink()
+
+    try:
+        from services.feedback_admin import write_feedback_index
+        write_feedback_index(storage)
+    except OSError:
+        logging.getLogger(__name__).warning("Feedback saved, but share index refresh failed", exc_info=True)
 
     return FeedbackSaveResult(
         feedback_id=feedback_id,

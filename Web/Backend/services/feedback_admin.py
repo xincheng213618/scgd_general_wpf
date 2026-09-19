@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import hashlib
+import html
 import os
+import re
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.parse import quote
 
 
 FEEDBACK_STATUSES = ("new", "in_progress", "resolved")
@@ -46,6 +49,23 @@ def _parse_timestamp(value: str) -> datetime | None:
 
 def _bounded_text(value: Any, maximum: int = 4000) -> str:
     return value[:maximum] if isinstance(value, str) else ""
+
+
+def _received_at(metadata: Mapping[str, Any], directory_name: str) -> str:
+    # File timestamps change during copying, synchronization and status updates.
+    for field in ("serverReceivedAt", "createdAt"):
+        timestamp = _parse_timestamp(metadata.get(field))
+        if timestamp is not None:
+            return timestamp.isoformat()
+    match = re.match(r"^(\d{8}_\d{6})(_BJT_)?", directory_name)
+    if match:
+        try:
+            zone = timezone(timedelta(hours=8)) if match[2] else timezone.utc
+            timestamp = datetime.strptime(match[1], "%Y%m%d_%H%M%S").replace(tzinfo=zone)
+            return timestamp.astimezone(timezone.utc).isoformat()
+        except ValueError:
+            pass
+    return ""
 
 
 def _read_json_object(path: Path) -> tuple[dict[str, Any] | None, bool]:
@@ -137,15 +157,7 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
     if status not in FEEDBACK_STATUSES:
         status = "new"
 
-    try:
-        fallback_created_at = _utc_iso(directory.stat().st_mtime)
-    except OSError:
-        fallback_created_at = datetime.now(timezone.utc).isoformat()
-    created_at = (
-        _bounded_text(metadata.get("serverReceivedAt"), 100)
-        or _bounded_text(metadata.get("createdAt"), 100)
-        or fallback_created_at
-    )
+    created_at = _received_at(metadata, directory.name)
     message = _bounded_text(metadata.get("message"))
     attachments = _attachments(directory, include_hashes=include_details)
     owner_user_id = metadata.get("ownerUserId")
@@ -197,8 +209,53 @@ def _all_feedback(storage: Path, *, include_details: bool = False) -> list[dict[
         if directory.is_symlink() or not directory.is_dir():
             continue
         records.append(_record_from_directory(directory, include_details=include_details))
-    records.sort(key=lambda item: (item["created_at"], item["feedback_id"]), reverse=True)
+    records.sort(key=lambda item: (
+        _parse_timestamp(item["created_at"]) or datetime.min.replace(tzinfo=timezone.utc),
+        item["feedback_id"],
+    ), reverse=True)
     return records
+
+
+def write_feedback_index(storage: Path) -> Path:
+    """Write a local share index; original feedback IDs and attachments stay intact."""
+    root = _feedback_root(storage)
+    if root.is_symlink() or not root.is_dir():
+        raise FileNotFoundError("Feedback directory not found")
+    with _write_lock:
+        rows = []
+        for record in _all_feedback(storage):
+            timestamp = _parse_timestamp(record["created_at"])
+            received = timestamp.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") if timestamp else "未知"
+            identifier = record["feedback_id"]
+            attachments = _attachments(root / identifier, include_hashes=False)
+            links = "<br>".join(
+                f'<a href="{quote(identifier)}/{quote(item["name"])}">{html.escape(item["name"])}</a>'
+                for item in attachments
+            )
+            rows.append("<tr>" + "".join(f"<td>{html.escape(value)}</td>" for value in (
+                received, record["machine_name"] or "未知机器", record["app_version"], identifier,
+            )) + f"<td>{links}</td></tr>")
+        document = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
+                    '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                    '<title>ColorVision 反馈索引</title><style>'
+                    'body{font:15px system-ui;margin:28px;color:#202b3b;background:#f6f8fb}'
+                    'table{border-collapse:collapse;background:white;width:100%}'
+                    'th,td{text-align:left;padding:12px;border-bottom:1px solid #dde3eb;vertical-align:top}'
+                    'th{background:#e9eef5;position:sticky;top:0}a{color:#165ab6}'
+                    '</style><h1>ColorVision 反馈索引</h1>'
+                    '<p>按接收时间从新到旧排列（北京时间），不使用文件或目录修改时间。'
+                    '可用 Ctrl+F 查找机器名；附件保持原目录。版本为客户端提交值。</p>'
+                    '<table><thead><tr><th>接收时间（北京时间）</th><th>机器</th><th>提交版本</th>'
+                    '<th>反馈编号</th><th>附件</th></tr></thead><tbody>'
+                    + "".join(rows) + '</tbody></table></html>')
+        target = root / "index.html"
+        temporary = root / f".index.{uuid.uuid4().hex}.tmp"
+        try:
+            temporary.write_text(document, encoding="utf-8")
+            os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return target
 
 
 def query_feedback(
