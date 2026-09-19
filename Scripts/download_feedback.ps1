@@ -80,7 +80,13 @@ function Get-FeedbackTimestamp {
 function Get-LocalFeedback {
     $root = Get-Item -LiteralPath $LocalRoot
     if ($root.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'LocalRoot cannot be a reparse point.' }
-    $records = foreach ($directory in Get-ChildItem -LiteralPath $root.FullName -Directory) {
+    $directories = foreach ($parent in Get-ChildItem -LiteralPath $root.FullName -Directory) {
+        if ($parent.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
+        $children = @(Get-ChildItem -LiteralPath $parent.FullName -Directory | Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) })
+        if ((Test-Path -LiteralPath (Join-Path $parent.FullName 'feedback.json')) -or $parent.Name -match '^\d{8}_\d{6}_' -or $children.Count -eq 0) { $parent }
+        else { $children }
+    }
+    $records = foreach ($directory in $directories) {
         if ($directory.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
         if ($directory.Name -notmatch '^[A-Za-z0-9_.-]{1,128}$') { continue }
         $metadata = @{}
@@ -92,6 +98,8 @@ function Get-LocalFeedback {
         } catch { Write-Verbose "Missing or invalid feedback metadata: $($directory.Name)" }
         $metadataValid = $metadata -is [System.Collections.IDictionary] -and $metadata.Count -gt 0
         if (-not $metadataValid) { $metadata = @{} }
+        $identifier = [string]$metadata.feedbackId
+        if ($identifier -notmatch '^[A-Za-z0-9_.-]{1,128}$' -or $identifier -in @('.', '..')) { $identifier = $directory.Name }
         $timestamp = Get-FeedbackTimestamp $metadata $directory.Name
         $machineName = [string]$metadata.machineName
         if (-not $machineName -and $metadata.machineInfo -like '* / *') {
@@ -102,7 +110,7 @@ function Get-LocalFeedback {
             $_.Name -notlike '.feedback.json.*' -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint)
         })
         [pscustomobject]@{
-            feedback_id = $directory.Name
+            feedback_id = $identifier
             metadata_valid = $metadataValid
             machine_name = $machineName
             created_at = if ($null -ne $timestamp) { $timestamp.ToString('o') } else { '' }
@@ -135,6 +143,7 @@ if ($useLocal) {
     $selected = if ($FeedbackId) { $records | Where-Object feedback_id -EQ $FeedbackId | Select-Object -First 1 }
                 else { $records | Where-Object { $_.created_at -and $_.metadata_valid } | Select-Object -First 1 }
     if (-not $selected) { throw 'No matching feedback with a known receive time was found.' }
+    if (@($records | Where-Object feedback_id -EQ $selected.feedback_id).Count -ne 1) { throw 'Feedback identifier is ambiguous.' }
     return [pscustomobject]@{
         FeedbackId = $selected.feedback_id; MachineName = $selected.machine_name
         ReceivedAtBeijing = $selected.received_beijing; Directory = $selected.directory

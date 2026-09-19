@@ -49,7 +49,7 @@ class FeedbackServiceTests(unittest.TestCase):
             **kwargs,
         )
 
-    def test_feedback_id_uses_explicit_beijing_time_and_safe_machine_slug(self):
+    def test_feedback_id_uses_explicit_beijing_time_and_a_unique_machine_independent_identifier(self):
         now = datetime(2026, 9, 15, 16, 30, tzinfo=timezone.utc)
         feedback_id = build_feedback_id(
             now,
@@ -58,7 +58,7 @@ class FeedbackServiceTests(unittest.TestCase):
             machine_name="Win KAGV/测试?" + "x" * 80,
         )
 
-        self.assertRegex(feedback_id, r"^20260916_003000_BJT_WIN-KAGV-X+_[0-9a-f]{12}$")
+        self.assertRegex(feedback_id, r"^20260916_003000_BJT_[0-9a-f]{12}$")
         self.assertLessEqual(len(feedback_id), 80)
         self.assertNotEqual(feedback_id, build_feedback_id(
             now,
@@ -86,6 +86,7 @@ class FeedbackServiceTests(unittest.TestCase):
         self.assertEqual(metadata["machineName"], "ARVR-STATION-07")
         self.assertEqual(metadata["clientSubmittedAt"], "2026-09-16T06:40:38+00:00")
         self.assertTrue(metadata["serverReceivedAt"].endswith("+00:00"))
+        self.assertEqual(result.feedback_dir.parent, self.storage / "Feedback" / "ARVR-STATION-07")
 
     def test_client_cannot_smuggle_owner_fields_or_internal_metadata_files(self):
         result = self._save(
@@ -107,7 +108,7 @@ class FeedbackServiceTests(unittest.TestCase):
 
     def test_legacy_client_machine_info_names_new_folder_and_refreshes_share_index(self):
         result = self._save(form={"message": "legacy", "machineInfo": "PC-LEGACY / Windows 10"})
-        self.assertIn("_BJT_PC-LEGACY_", result.feedback_id)
+        self.assertEqual(result.feedback_dir.parent.name, "PC-LEGACY")
         self.assertEqual(result.metadata["machineName"], "PC-LEGACY")
         index = self.storage / "Feedback" / "index.html"
         self.assertIn("PC-LEGACY", index.read_text("utf-8"))
@@ -123,7 +124,7 @@ class FeedbackServiceTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 self._save(uploads=[_Upload("diagnostics.zip", b"zip")])
 
-        directories = list((self.storage / "Feedback").iterdir())
+        directories = list((self.storage / "Feedback" / "UNKNOWN").iterdir())
         self.assertEqual(len(directories), 1)
         self.assertFalse((directories[0] / "feedback.json").exists())
         self.assertEqual(list(directories[0].glob(".feedback.json.*.tmp")), [])

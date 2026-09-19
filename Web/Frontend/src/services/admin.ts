@@ -303,6 +303,7 @@ export function getFeedbackInbox(params: {
 }
 
 export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
+  // The server resolves this stable ID across flat and machine-grouped storage.
   return getJson<FeedbackDetail>(
     `/api/feedback/${encodeURIComponent(feedbackId)}`,
     signal,

@@ -114,6 +114,30 @@ class FeedbackAdminTests(unittest.TestCase):
         self.assertEqual(metadata_path.read_bytes(), before)
         self.assertEqual(query_feedback(self.storage)["total"], 1)
 
+    def test_machine_grouping_preserves_record_id_downloads_and_status_after_directory_rename(self):
+        old = self._create_feedback("20260919_083417_8465929f5134", "2026-09-19T08:34:17Z")
+        original_id = old.name
+        machine = self.feedback_root / "PC-STATION"
+        machine.mkdir()
+        moved = old.rename(machine / "20260919_163417_BJT_8465929f5134")
+        self.assertEqual(query_feedback(self.storage)["total"], 1)
+        self.assertEqual(query_feedback(self.storage)["items"][0]["feedback_id"], original_id)
+        self.assertEqual(resolve_feedback_attachment(self.storage, original_id, "report.zip"), moved / "report.zip")
+        self.assertTrue(update_feedback_status(self.storage, original_id, "in_progress")["changed"])
+        self.assertEqual(get_feedback_detail(self.storage, original_id)["status"], "in_progress")
+        document = write_feedback_index(self.storage).read_text("utf-8")
+        self.assertIn("PC-STATION/20260919_163417_BJT_8465929f5134/report.zip", document)
+        self.assertEqual(json.loads((moved / "feedback.json").read_text("utf-8"))["feedbackId"], original_id)
+
+    def test_duplicate_stable_ids_are_rejected_instead_of_downloading_from_another_machine(self):
+        first = self._create_feedback()
+        import shutil
+        machine = self.feedback_root / "PC-OTHER"
+        machine.mkdir()
+        shutil.copytree(first, machine / "another-directory")
+        with self.assertRaises(FileNotFoundError):
+            resolve_feedback_attachment(self.storage, first.name, "report.zip")
+
     def test_detail_and_attachment_reject_traversal_and_internal_files(self):
         directory = self._create_feedback()
         (directory / ".feedback.json.abcd.tmp").write_bytes(b"metadata temp")

@@ -176,6 +176,18 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         self.assertEqual(filtered.returncode, 0, filtered.stderr)
         self.assertIn("20260919_010000_older", filtered.stdout)
 
+        old = share / "20260919_090000_newer"
+        data = json.loads((old / "feedback.json").read_text("utf-8"))
+        data["feedbackId"] = old.name
+        (old / "feedback.json").write_text(json.dumps(data), encoding="utf-8")
+        (share / "PC-NEW").mkdir()
+        renamed = old.rename(share / "PC-NEW" / "20260919_170000_BJT_abc")
+        grouped = self._run("-Latest", "-Source", "Local", "-LocalRoot", str(share))
+        self.assertEqual(grouped.returncode, 0, grouped.stderr)
+        selected = json.loads(grouped.stdout)
+        self.assertEqual(selected["FeedbackId"], "20260919_090000_newer")
+        self.assertEqual(Path(selected["Directory"]), renamed)
+
     def test_explicit_http_opt_in_works_and_unapproved_http_is_rejected(self):
         allowed = self._run("-List", "-BaseUrl", self.base_url, "-AllowInsecureHttp")
         self.assertEqual(allowed.returncode, 0, allowed.stderr)

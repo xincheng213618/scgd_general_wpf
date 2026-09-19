@@ -589,6 +589,7 @@ export interface FeedbackAttachment {
 }
 
 export interface FeedbackItem {
+  /** Stable record identifier from metadata; independent of machine and storage path. */
   feedback_id: string
   status: FeedbackStatus
   created_at: string

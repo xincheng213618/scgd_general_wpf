@@ -1314,7 +1314,7 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["message"], "Feedback received")
 
-        feedback_dir = self.storage / "Feedback" / payload["feedbackId"]
+        feedback_dir = self.storage / "Feedback" / "UNKNOWN" / payload["feedbackId"]
         self.assertTrue(feedback_dir.is_dir())
 
         metadata = marketplace_app.json.loads((feedback_dir / "feedback.json").read_text(encoding="utf-8"))

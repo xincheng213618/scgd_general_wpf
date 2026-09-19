@@ -11,7 +11,7 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-account
 
 # 反馈归属、查询与诊断附件下载
 
-`POST /api/feedback` 把反馈保存到 Backend 制品根的 `Feedback/<feedback_id>/`。反馈正文和附件仍以文件目录为事实源，SQLite 只保存账号、权限、API key 与审计，不替代反馈内容。`feedback_service.py` 负责提交，`feedback_admin.py` 负责目录投影、范围过滤、附件定位和状态 sidecar。
+`POST /api/feedback` 把反馈保存到 Backend 制品根的 `Feedback/<机器标签>/<反馈目录>/`。反馈正文和附件仍以文件目录为事实源，SQLite 只保存账号、权限、API key 与审计，不替代反馈内容。`feedback_service.py` 负责提交，`feedback_admin.py` 负责目录投影、范围过滤、附件定位和状态 sidecar。
 
 反馈目录在 **Backend 服务器**，不是提交客户端。应从服务启动输出确认当前 storage；不要在客户端安装目录推断服务端收件箱，也不要为升级本功能批量移动或改名旧目录。
 
@@ -33,17 +33,17 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-account
 
 ## 目录名与时间口径
 
-新反馈 ID 同时是目录名，格式为：
+反馈编号与存放路径分离。API 使用原始 `feedback.json.feedbackId` 作为稳定编号，不能通过机器名推算身份或拼接磁盘路径。新提交以机器标签为一级目录，以接收时间和唯一后缀为二级目录；新记录的初始编号等于二级目录名：
 
 ```text
-yyyyMMdd_HHmmss_BJT_<安全机器标识>_<12位唯一后缀>
+Feedback/<安全机器标识>/yyyyMMdd_HHmmss_BJT_<12位唯一后缀>/
 ```
 
 日期时间明确使用北京时间 UTC+08:00，机器标签只保留 ASCII 字母、数字、连字符和下划线并限制长度；唯一后缀避免机器标签清洗或同秒提交碰撞。示例中的时间是 **服务端接收时间**，不是日志采集完成时间。`feedback.json.serverReceivedAt` 保留带偏移的 UTC 事实时间；页面明确按北京时间显示，筛选日期也按北京时间日界线转换为 UTC。
 
-旧目录不改名。接收时间依次使用有效的 `serverReceivedAt`、`createdAt` 和原反馈 ID 中的时间：含 `_BJT_` 的 ID 按北京时间解释，早期 `yyyyMMdd_HHmmss_<后缀>` 按 UTC 解释。全部缺失或无效则显示未知并排在最后，绝不使用文件或目录修改时间。比较前统一为 UTC，避免带不同时区的字符串排序出错。机器名优先读 `machineName`，旧记录可从形如 `机器名 / Windows...` 的 `machineInfo` 恢复；旧版客户端的新提交也使用这个机器名生成目录标签。恢复出的机器信息只用于展示和筛选，缺失显示“未知机器”。
+旧平铺目录仍可读取，升级本身不触发迁移。查询与附件定位只扫描旧平铺和“机器／反馈”两层，不递归扫描任意深度，不跟随符号链接或 Windows junction。相同稳定编号对应多个目录时拒绝详情和下载，避免误选另一台机器的附件。接收时间依次使用有效的 `serverReceivedAt`、`createdAt` 和目录名中的时间：含 `_BJT_` 的名称按北京时间解释，早期 `yyyyMMdd_HHmmss_<后缀>` 按 UTC 解释。全部缺失或无效则显示未知并排在最后，绝不使用文件或目录修改时间。比较前统一为 UTC，避免带不同时区的字符串排序出错。机器名优先读 `machineName`，旧记录可从形如 `机器名 / Windows...` 的 `machineInfo` 恢复；旧版客户端的新提交也使用这个机器名生成目录标签。恢复出的机器信息只用于展示和筛选，缺失显示“未知机器”。
 
-仅当用户明确要求整理历史目录时，才将旧目录迁移到上述命名格式，并先保存完整新旧路径对照表、检查目标路径和重名。保留原唯一后缀，不改写附件或原始 `feedback.json`；其中的历史 `feedbackId` 用于追溯，迁移后访问 API 使用新目录编号，旧编号可通过对照表查找。完成后刷新索引，并核对文件数量、大小和原始 metadata。
+仅当用户明确要求整理历史目录时，才将旧目录迁移到上述命名格式，并先保存完整新旧路径对照表、检查目标路径和重名。保留原唯一后缀，不改写附件或原始 `feedback.json`；其中的历史 `feedbackId` 始终是 API 使用的编号，移动目录不改变它。没有有效 metadata 的历史目录放入 `UNKNOWN`，保留原二级目录名作为编号，不猜测机器身份。完成后刷新索引，并核对文件数量、大小和原始 metadata。
 
 提交成功后刷新 `Feedback/index.html`，提供按北京时间倒序排列的机器、提交版本、反馈编号和附件链接，可从共享目录直接打开、用 Ctrl+F 查找。索引更新失败记录警告，但不会把已经保存的反馈报告为上传失败。部署已有目录时可单独调用 `services.feedback_admin.write_feedback_index(storage)` 生成初始索引；它只替换派生索引，不改写原反馈及其 ID。
 

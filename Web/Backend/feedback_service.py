@@ -63,7 +63,7 @@ def build_feedback_id(now: datetime, *, message: str, user_name: str, machine_na
     timestamp = beijing_now.strftime("%Y%m%d_%H%M%S")
     feedback_seed = f"{message}|{user_name}|{machine_name}|{now.isoformat()}|{uuid.uuid4().hex}"
     unique_suffix = hashlib.sha256(feedback_seed.encode()).hexdigest()[:12]
-    return f"{timestamp}_BJT_{_safe_machine_slug(machine_name)}_{unique_suffix}"
+    return f"{timestamp}_BJT_{unique_suffix}"
 
 
 def unique_output_path(directory: Path, filename: str) -> Path:
@@ -173,7 +173,12 @@ def save_feedback(
         user_name=user_name,
         machine_name=machine_name,
     )
-    feedback_dir = storage / "Feedback" / feedback_id
+    machine_dir = storage / "Feedback" / _safe_machine_slug(machine_name)
+    from services.feedback_admin import _is_link
+    for ancestor in (storage / "Feedback", machine_dir):
+        if ancestor.exists() and _is_link(ancestor):
+            raise FeedbackValidationError("Feedback storage cannot use a linked directory")
+    feedback_dir = machine_dir / feedback_id
     feedback_dir.mkdir(parents=True, exist_ok=True)
 
     metadata: dict[str, Any] = {

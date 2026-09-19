@@ -85,28 +85,52 @@ def _feedback_root(storage: Path) -> Path:
     return Path(storage) / "Feedback"
 
 
-def _safe_feedback_directory(storage: Path, feedback_id: str) -> Path:
-    if (
-        not isinstance(feedback_id, str)
-        or not feedback_id
-        or len(feedback_id) > 128
-        or feedback_id in {".", ".."}
-        or any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-" for character in feedback_id)
-    ):
-        raise FileNotFoundError("Feedback not found")
+def _valid_feedback_id(value: Any) -> bool:
+    return isinstance(value, str) and value not in {".", ".."} and re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", value) is not None
 
+
+def _is_link(path: Path) -> bool:
+    # Include Windows junctions, not just symbolic links.
+    return path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & 0x400)
+
+
+def _feedback_directories(storage: Path) -> list[Path]:
+    """Read both historical flat records and machine/record directories, at most two levels."""
     root = _feedback_root(storage)
-    if root.is_symlink() or not root.is_dir():
-        raise FileNotFoundError("Feedback not found")
-    directory = root / feedback_id
     try:
-        if directory.is_symlink() or not directory.is_dir():
-            raise FileNotFoundError("Feedback not found")
-        if directory.resolve(strict=True).parent != root.resolve(strict=True):
-            raise FileNotFoundError("Feedback not found")
-    except OSError as exc:
-        raise FileNotFoundError("Feedback not found") from exc
-    return directory
+        if _is_link(root) or not root.is_dir():
+            return []
+        result = []
+        for parent in root.iterdir():
+            if _is_link(parent) or not parent.is_dir():
+                continue
+            children = list(parent.iterdir())
+            groups = [child for child in children if not _is_link(child) and child.is_dir()]
+            if (parent / _METADATA_NAME).exists() or re.match(r"^\d{8}_\d{6}_", parent.name) or not groups:
+                result.append(parent)
+            else:
+                result.extend(groups)
+        return result
+    except OSError:
+        return []
+
+
+def _feedback_identifier(metadata: Mapping[str, Any], directory_name: str) -> str:
+    identifier = metadata.get("feedbackId")
+    return identifier if _valid_feedback_id(identifier) else directory_name
+
+
+def _safe_feedback_directory(storage: Path, feedback_id: str) -> Path:
+    if not _valid_feedback_id(feedback_id):
+        raise FileNotFoundError("Feedback not found")
+    matches = []
+    for directory in _feedback_directories(storage):
+        metadata, _ = _read_json_object(directory / _METADATA_NAME)
+        if _feedback_identifier(metadata or {}, directory.name) == feedback_id:
+            matches.append(directory)
+    if len(matches) != 1:
+        raise FileNotFoundError("Feedback not found or identifier is ambiguous")
+    return matches[0]
 
 
 def _sha256(path: Path) -> str:
@@ -168,7 +192,7 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
         legacy_machine_info = _bounded_text(metadata.get("machineInfo"))
         machine_name = legacy_machine_info.split(" / ", 1)[0].strip() if " / " in legacy_machine_info else ""
     record: dict[str, Any] = {
-        "feedback_id": directory.name,
+        "feedback_id": _feedback_identifier(metadata, directory.name),
         "status": status,
         "created_at": created_at,
         "updated_at": _bounded_text(state.get("updatedAt"), 100) or None,
@@ -197,17 +221,8 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
 
 
 def _all_feedback(storage: Path, *, include_details: bool = False) -> list[dict[str, Any]]:
-    root = _feedback_root(storage)
-    if root.is_symlink() or not root.is_dir():
-        return []
     records: list[dict[str, Any]] = []
-    try:
-        directories = list(root.iterdir())
-    except OSError:
-        return records
-    for directory in directories:
-        if directory.is_symlink() or not directory.is_dir():
-            continue
+    for directory in _feedback_directories(storage):
         records.append(_record_from_directory(directory, include_details=include_details))
     records.sort(key=lambda item: (
         _parse_timestamp(item["created_at"]) or datetime.min.replace(tzinfo=timezone.utc),
@@ -223,13 +238,19 @@ def write_feedback_index(storage: Path) -> Path:
         raise FileNotFoundError("Feedback directory not found")
     with _write_lock:
         rows = []
+        directories = {}
+        for directory in _feedback_directories(storage):
+            metadata, _ = _read_json_object(directory / _METADATA_NAME)
+            directories[_feedback_identifier(metadata or {}, directory.name)] = directory
         for record in _all_feedback(storage):
             timestamp = _parse_timestamp(record["created_at"])
             received = timestamp.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S") if timestamp else "未知"
             identifier = record["feedback_id"]
-            attachments = _attachments(root / identifier, include_hashes=False)
+            directory = directories[identifier]
+            relative = quote(directory.relative_to(root).as_posix())
+            attachments = _attachments(directory, include_hashes=False)
             links = "<br>".join(
-                f'<a href="{quote(identifier)}/{quote(item["name"])}">{html.escape(item["name"])}</a>'
+                f'<a href="{relative}/{quote(item["name"])}">{html.escape(item["name"])}</a>'
                 for item in attachments
             )
             rows.append("<tr>" + "".join(f"<td>{html.escape(value)}</td>" for value in (
