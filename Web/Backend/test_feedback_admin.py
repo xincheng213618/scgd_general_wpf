@@ -9,6 +9,8 @@ from services.feedback_admin import (
     query_feedback,
     resolve_feedback_attachment,
     update_feedback_status,
+    update_feedback_statuses,
+    validate_feedback_bulk_status_payload,
     validate_feedback_status_payload,
     write_feedback_index,
 )
@@ -187,6 +189,58 @@ class FeedbackAdminTests(unittest.TestCase):
         self.assertFalse((directory / ".admin.json").exists())
         self.assertEqual(list(directory.glob(".*.tmp")), [])
         self.assertEqual(get_feedback_detail(self.storage, directory.name)["status"], "new")
+
+    def test_lightweight_detail_and_status_update_never_hash_attachments(self):
+        directory = self._create_feedback()
+        with mock.patch("services.feedback_admin._sha256", side_effect=AssertionError("must not hash")):
+            detail = get_feedback_detail(self.storage, directory.name, include_hashes=False)
+            updated = update_feedback_status(self.storage, directory.name, "resolved")
+        self.assertEqual(detail["attachments"][0]["name"], "report.zip")
+        self.assertNotIn("sha256", detail["attachments"][0])
+        self.assertEqual(updated["status"], "resolved")
+
+    def test_bulk_status_updates_only_explicit_ids_is_idempotent_and_preserves_originals(self):
+        first = self._create_feedback("first")
+        second = self._create_feedback("second")
+        new_arrival = self._create_feedback("new-arrival")
+        original = {path: path.read_bytes() for directory in (first, second, new_arrival)
+                    for path in directory.iterdir()}
+        with mock.patch("services.feedback_admin._sha256", side_effect=AssertionError("must not hash")):
+            result = update_feedback_statuses(self.storage, [first.name, second.name], "resolved")
+            self.assertEqual((result["changed"], result["failed"]), (2, 0))
+            second_state = (second / ".admin.json").read_bytes()
+            again = update_feedback_statuses(self.storage, [first.name, second.name], "resolved")
+            self.assertEqual((again["changed"], again["unchanged"]), (0, 2))
+            self.assertEqual((second / ".admin.json").read_bytes(), second_state)
+        self.assertFalse((new_arrival / ".admin.json").exists())
+        for path, content in original.items():
+            self.assertEqual(path.read_bytes(), content)
+
+    def test_bulk_status_reports_partial_failure_without_hiding_successes(self):
+        first = self._create_feedback("first")
+        second = self._create_feedback("second")
+        import os
+        original_replace = os.replace
+
+        def fail_second(source, target):
+            if Path(target).parent == second:
+                raise OSError("locked")
+            original_replace(source, target)
+
+        with mock.patch("services.feedback_admin.os.replace", side_effect=fail_second):
+            result = update_feedback_statuses(self.storage, [first.name, second.name, "missing"], "resolved")
+        self.assertEqual((result["changed"], result["failed"]), (1, 2))
+        self.assertEqual(result["results"][0]["status"], "resolved")
+        self.assertIn("error", result["results"][1])
+        self.assertFalse((second / ".admin.json").exists())
+        self.assertEqual(list(second.glob(".*.tmp")), [])
+
+    def test_bulk_payload_rejects_invalid_ids_duplicates_and_oversized_selection(self):
+        for identifiers in ([], "one", ["../escape"], ["one", "one"], [None], [str(i) for i in range(501)]):
+            with self.subTest(identifiers=identifiers), self.assertRaises(ValueError):
+                validate_feedback_bulk_status_payload({"feedback_ids": identifiers, "status": "resolved"})
+        with self.assertRaises(ValueError):
+            validate_feedback_bulk_status_payload({"feedback_ids": ["one"], "status": "closed"})
 
     def test_owner_scope_filters_before_summary_search_and_pagination(self):
         own = self._create_feedback("20260916_BJT_PC1_own", "2026-09-16T06:00:00+00:00")

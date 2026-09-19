@@ -189,6 +189,7 @@ def api_feedback_detail(feedback_id: str):
             _get_ctx().storage,
             feedback_id,
             owner_user_id=access["owner_user_id"],
+            include_hashes=request.args.get("include_hashes") != "false",
         )
     except FileNotFoundError:
         return jsonify({"error": "Feedback not found"}), 404

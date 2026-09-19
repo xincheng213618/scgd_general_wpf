@@ -622,6 +622,20 @@ export interface FeedbackAccess {
   can_manage: boolean
 }
 
+export interface FeedbackStatusUpdate {
+  feedback_id: string
+  status: FeedbackStatus
+  updated_at: string | null
+}
+
+export interface FeedbackBulkStatusResponse {
+  changed: number
+  unchanged: number
+  failed: number
+  results: Array<(FeedbackStatusUpdate & { changed: boolean; before: FeedbackStatus })
+    | { feedback_id: string; error: string }>
+}
+
 export interface FeedbackInboxResponse {
   items: FeedbackItem[]
   total: number

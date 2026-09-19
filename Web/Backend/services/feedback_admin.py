@@ -170,7 +170,7 @@ def _attachments(directory: Path, *, include_hashes: bool = False) -> list[dict[
     return sorted(items, key=lambda item: item["name"].casefold())
 
 
-def _record_from_directory(directory: Path, *, include_details: bool) -> dict[str, Any]:
+def _record_from_directory(directory: Path, *, include_details: bool, include_hashes: bool = True) -> dict[str, Any]:
     metadata_path = directory / _METADATA_NAME
     state_path = directory / _STATE_NAME
     metadata, metadata_valid = _read_json_object(metadata_path)
@@ -183,7 +183,7 @@ def _record_from_directory(directory: Path, *, include_details: bool) -> dict[st
 
     created_at = _received_at(metadata, directory.name)
     message = _bounded_text(metadata.get("message"))
-    attachments = _attachments(directory, include_hashes=include_details)
+    attachments = _attachments(directory, include_hashes=include_details and include_hashes)
     owner_user_id = metadata.get("ownerUserId")
     if not isinstance(owner_user_id, int) or isinstance(owner_user_id, bool) or owner_user_id <= 0:
         owner_user_id = None
@@ -387,12 +387,14 @@ def get_feedback_detail(
     feedback_id: str,
     *,
     owner_user_id: int | None = None,
+    include_hashes: bool = True,
 ) -> dict[str, Any]:
     directory = _safe_feedback_directory(storage, feedback_id)
-    detail = _record_from_directory(directory, include_details=True)
-    if owner_user_id is not None and detail["owner_user_id"] != owner_user_id:
-        raise FileNotFoundError("Feedback not found")
-    return detail
+    if owner_user_id is not None:
+        record = _record_from_directory(directory, include_details=False)
+        if record["owner_user_id"] != owner_user_id:
+            raise FileNotFoundError("Feedback not found")
+    return _record_from_directory(directory, include_details=True, include_hashes=include_hashes)
 
 
 def resolve_feedback_attachment(
@@ -438,18 +440,25 @@ def update_feedback_status(storage: Path, feedback_id: str, status: str) -> dict
     if status not in FEEDBACK_STATUSES:
         raise ValueError("status must be new, in_progress, or resolved")
     directory = _safe_feedback_directory(storage, feedback_id)
-    before = _record_from_directory(directory, include_details=False)["status"]
-    if before == status:
-        return {"changed": False, "before": before, **get_feedback_detail(storage, feedback_id)}
+    result = _update_directory_status(directory, feedback_id, status)
+    # Status changes must not read potentially hundreds of MiB of diagnostic attachments.
+    return {**_record_from_directory(directory, include_details=True, include_hashes=False), **result}
 
+
+def _update_directory_status(directory: Path, feedback_id: str, status: str) -> dict[str, Any]:
     state_path = directory / _STATE_NAME
     temporary_path = directory / f"{_STATE_NAME}.{uuid.uuid4().hex}.tmp"
-    state = {
-        "status": status,
-        "updatedAt": datetime.now(timezone.utc).isoformat(),
-    }
-    encoded = (json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     with _write_lock:
+        previous, _ = _read_json_object(state_path)
+        previous = previous or {}
+        before = previous.get("status")
+        if before not in FEEDBACK_STATUSES:
+            before = "new"
+        if before == status:
+            return {"feedback_id": feedback_id, "changed": False, "before": before,
+                    "status": status, "updated_at": _bounded_text(previous.get("updatedAt"), 100) or None}
+        state = {"status": status, "updatedAt": datetime.now(timezone.utc).isoformat()}
+        encoded = (json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
         try:
             with temporary_path.open("xb") as stream:
                 stream.write(encoded)
@@ -459,4 +468,45 @@ def update_feedback_status(storage: Path, feedback_id: str, status: str) -> dict
         finally:
             if temporary_path.exists():
                 temporary_path.unlink()
-    return {"changed": True, "before": before, **get_feedback_detail(storage, feedback_id)}
+    return {"feedback_id": feedback_id, "changed": True, "before": before,
+            "status": status, "updated_at": state["updatedAt"]}
+
+
+def validate_feedback_bulk_status_payload(payload: Any) -> tuple[list[str], str]:
+    if not isinstance(payload, dict) or set(payload) != {"feedback_ids", "status"}:
+        raise ValueError("request body must contain only feedback_ids and status")
+    status = validate_feedback_status_payload({"status": payload["status"]})
+    identifiers = payload["feedback_ids"]
+    if not isinstance(identifiers, list) or not 1 <= len(identifiers) <= 500:
+        raise ValueError("feedback_ids must contain between 1 and 500 identifiers")
+    if any(not _valid_feedback_id(identifier) for identifier in identifiers):
+        raise ValueError("feedback_ids contains an invalid identifier")
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("feedback_ids must not contain duplicates")
+    return identifiers, status
+
+
+def update_feedback_statuses(storage: Path, feedback_ids: list[str], status: str) -> dict[str, Any]:
+    """Update an explicit selection; new arrivals are never included implicitly."""
+    validate_feedback_bulk_status_payload({"feedback_ids": feedback_ids, "status": status})
+    directories: dict[str, list[Path]] = {}
+    for directory in _feedback_directories(storage):
+        metadata, _ = _read_json_object(directory / _METADATA_NAME)
+        identifier = _feedback_identifier(metadata or {}, directory.name)
+        directories.setdefault(identifier, []).append(directory)
+    results = []
+    for identifier in feedback_ids:
+        matches = directories.get(identifier, [])
+        if len(matches) != 1:
+            results.append({"feedback_id": identifier, "error": "Feedback not found or identifier is ambiguous"})
+            continue
+        try:
+            results.append(_update_directory_status(matches[0], identifier, status))
+        except OSError:
+            results.append({"feedback_id": identifier, "error": "Unable to persist feedback status"})
+    return {
+        "results": results,
+        "changed": sum(bool(item.get("changed")) for item in results),
+        "unchanged": sum(item.get("changed") is False for item in results),
+        "failed": sum("error" in item for item in results),
+    }

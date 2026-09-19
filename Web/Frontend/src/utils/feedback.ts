@@ -1,7 +1,13 @@
-import type { FeedbackStatus } from '../types/admin'
+import type { FeedbackDetail, FeedbackStatus, FeedbackStatusUpdate } from '../types/admin'
 
 const HOUR_MS = 60 * 60 * 1000
 const DAY_MS = 24 * HOUR_MS
+
+export function applyFeedbackStatusUpdate(detail: FeedbackDetail | null, update: FeedbackStatusUpdate): FeedbackDetail | null {
+  if (!detail || detail.feedback_id !== update.feedback_id) return detail
+  // A status response is not a new detail/permission response. Keep the current drawer and access.
+  return { ...detail, status: update.status, updated_at: update.updated_at }
+}
 
 export interface FeedbackAgeInfo {
   label: string

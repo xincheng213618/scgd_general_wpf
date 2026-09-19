@@ -7,7 +7,25 @@ import {
   feedbackStatusAction,
   feedbackStatusLabels,
   nextFeedbackStatus,
+  applyFeedbackStatusUpdate,
 } from '../src/utils/feedback.ts'
+import type { FeedbackDetail } from '../src/types/admin.ts'
+
+test('status updates preserve drawer permissions and attachments without accepting stale targets', () => {
+  const detail = {
+    feedback_id: 'first', status: 'new', updated_at: null,
+    access: { scope: 'all', can_manage: true }, attachments: [{ name: 'large.zip' }],
+  } as FeedbackDetail
+  const updated = applyFeedbackStatusUpdate(detail, { feedback_id: 'first', status: 'in_progress', updated_at: '2026-09-20T00:00:00Z' })!
+  assert.equal(updated.status, 'in_progress')
+  assert.equal(updated.access.can_manage, true)
+  assert.equal(updated.attachments, detail.attachments)
+  const resolved = applyFeedbackStatusUpdate(updated, { feedback_id: 'first', status: 'resolved', updated_at: '2026-09-20T00:01:00Z' })!
+  assert.equal(resolved.status, 'resolved')
+  assert.equal(resolved.access, detail.access)
+  assert.equal(applyFeedbackStatusUpdate(detail, { feedback_id: 'other', status: 'resolved', updated_at: null }), detail)
+  assert.equal(applyFeedbackStatusUpdate(null, { feedback_id: 'first', status: 'resolved', updated_at: null }), null)
+})
 
 test('feedback lifecycle follows the operator workflow', () => {
   assert.equal(nextFeedbackStatus('new'), 'in_progress')

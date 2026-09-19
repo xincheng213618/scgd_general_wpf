@@ -140,7 +140,7 @@ export async function postJson<T = unknown>(
   return parseResponse<T>(response, options)
 }
 
-export async function putJson<T = unknown>(url: string, body?: unknown): Promise<T> {
+export async function putJson<T = unknown>(url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const token = await getCsrfToken()
   const response = await fetch(url, {
     method: 'PUT',
@@ -152,6 +152,7 @@ export async function putJson<T = unknown>(url: string, body?: unknown): Promise
       'X-CSRF-Token': token,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   })
   return parseResponse<T>(response)
 }

@@ -19,9 +19,11 @@ import type {
   DocsStatus,
   DeploymentHistoryResponse,
   FeedbackDetail,
+  FeedbackBulkStatusResponse,
   FeedbackInboxFilter,
   FeedbackInboxResponse,
   FeedbackStatus,
+  FeedbackStatusUpdate,
   PublishIntegrityReport,
   PerformanceSummary,
   IndexRefreshResult,
@@ -277,7 +279,7 @@ export function clearRegistrationSecurity(ipAddress: string) {
   })
 }
 
-export function getFeedbackInbox(params: {
+export interface FeedbackInboxParams {
   current?: number
   pageSize?: number
   status?: FeedbackInboxFilter
@@ -286,7 +288,9 @@ export function getFeedbackInbox(params: {
   appVersion?: string
   createdFrom?: string
   createdTo?: string
-}) {
+}
+
+export function getFeedbackInbox(params: FeedbackInboxParams, signal?: AbortSignal) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
   const search = new URLSearchParams({
@@ -299,22 +303,30 @@ export function getFeedbackInbox(params: {
   if (params.appVersion) search.set('app_version', params.appVersion)
   if (params.createdFrom) search.set('created_from', params.createdFrom)
   if (params.createdTo) search.set('created_to', params.createdTo)
-  return getJson<FeedbackInboxResponse>(`/api/feedback?${search.toString()}`)
+  return getJson<FeedbackInboxResponse>(`/api/feedback?${search.toString()}`, signal)
 }
 
 export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
   // The server resolves this stable ID across flat and machine-grouped storage.
   return getJson<FeedbackDetail>(
-    `/api/feedback/${encodeURIComponent(feedbackId)}`,
+    `/api/feedback/${encodeURIComponent(feedbackId)}?include_hashes=false`,
     signal,
   )
 }
 
 export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
-  return putJson<FeedbackDetail>(
+  return putJson<FeedbackStatusUpdate>(
     `/api/admin/feedback/${encodeURIComponent(feedbackId)}/status`,
     { status },
+    AbortSignal.timeout(20000),
   )
+}
+
+export function updateFeedbackStatuses(feedbackIds: string[], status: FeedbackStatus) {
+  return putJson<FeedbackBulkStatusResponse>('/api/admin/feedback/status', {
+    feedback_ids: feedbackIds,
+    status,
+  }, AbortSignal.timeout(20000))
 }
 
 export function feedbackAttachmentUrl(feedbackId: string, filename: string) {

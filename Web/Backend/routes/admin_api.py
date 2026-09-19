@@ -95,6 +95,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "feedback_detail": ["feedback:read"],
     "feedback_attachment": ["feedback:read"],
     "update_feedback_status": ["feedback:manage"],
+    "bulk_feedback_status": ["feedback:manage"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["users:manage"],
@@ -953,6 +954,28 @@ def update_feedback_status(feedback_id: str):
             ip=request.remote_addr or "",
             user_agent=request.headers.get("User-Agent", "")[:200],
         )
+    result["access"] = {"scope": "all", "can_manage": True}
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/status", methods=["PUT"])
+def bulk_feedback_status():
+    from services.feedback_admin import update_feedback_statuses, validate_feedback_bulk_status_payload
+
+    ctx = _get_ctx()
+    try:
+        identifiers, status = validate_feedback_bulk_status_payload(request.get_json(silent=True))
+        result = update_feedback_statuses(ctx.storage_getter(), identifiers, status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    for item in result["results"]:
+        if item.get("changed"):
+            ctx.cache.write_audit(
+                actor_type=_actor_type(), actor_id=_actor_id(),
+                action="feedback_status_update", target_type="feedback", target_id=item["feedback_id"],
+                detail=f"status: {item['before']} -> {status} (bulk)",
+                ip=request.remote_addr or "", user_agent=request.headers.get("User-Agent", "")[:200],
+            )
     return jsonify(result)
 
 

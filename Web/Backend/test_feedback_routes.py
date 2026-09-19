@@ -4,12 +4,14 @@ import copy
 import io
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from app_setup import RuntimeOverrides, create_app_and_context
 from config_loader import DEFAULT_CONFIG
 from routes.public_api import register_public_api
 from routes.public_pages import PublicPageContext, register_public_pages
+from routes.admin_api import AdminApiContext, register_admin_api_routes
 from services.api_key_service import create_api_key, revoke_api_key
 from services.auth_service import create_user
 from services.csrf_protection import register_csrf_protection
@@ -43,6 +45,16 @@ class FeedbackRouteTests(unittest.TestCase):
             dist_dir=self.root / "dist",
         ))
         register_public_api(app, self.ctx)
+        register_admin_api_routes(app, AdminApiContext(
+            cache=helpers["cache"], jobs=helpers["cache"].jobs,
+            storage_getter=lambda: self.storage, config_getter=lambda: self.config,
+            config_path_getter=lambda: self.root / "config.json", get_db=helpers["get_db"],
+            auth_policy=helpers["auth_policy"], request_context_factory=helpers["request_context_factory"],
+            operations_admin=mock.Mock(), refresh_plugin_index=mock.Mock(),
+            refresh_all_plugin_index=mock.Mock(), get_plugin_index_state=mock.Mock(),
+            is_plugin_index_populated=mock.Mock(), get_plugin_catalog_from_index=mock.Mock(),
+            human_size=str,
+        ))
         register_csrf_protection(app)
         self.app = app
         self.cache = helpers["cache"]
@@ -215,6 +227,60 @@ class FeedbackRouteTests(unittest.TestCase):
             self._submit(client, machine="FORCED-PC", message="blocked issue").status_code,
             403,
         )
+
+    def test_status_response_keeps_management_access_and_inbox_refreshes(self):
+        client = self.app.test_client()
+        login = self._login(client, "config-admin", "test-secret")
+        identifier = self._submit(client, machine="PC-ADMIN", message="issue").get_json()["feedbackId"]
+        headers = {"Origin": "http://localhost", "X-ColorVision-Web": "1", "X-CSRF-Token": login["csrf_token"]}
+        with mock.patch("services.feedback_admin._sha256", side_effect=AssertionError("must not hash")):
+            for status in ("in_progress", "resolved", "in_progress"):
+                response = client.put(f"/api/admin/feedback/{identifier}/status", json={"status": status}, headers=headers)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["access"], {"scope": "all", "can_manage": True})
+                self.assertEqual(response.get_json()["status"], status)
+                inbox = client.get("/api/feedback?status=in_progress").get_json()
+                self.assertEqual(inbox["total"], int(status == "in_progress"))
+                self.assertEqual(inbox["summary"]["status_counts"][status], 1)
+
+    def test_browser_detail_can_skip_hashing_but_default_download_manifest_keeps_hash(self):
+        client = self.app.test_client()
+        self._login(client, "config-admin", "test-secret")
+        identifier = self._submit(client, machine="PC-ADMIN", message="issue").get_json()["feedbackId"]
+        with mock.patch("services.feedback_admin._sha256", side_effect=AssertionError("must not hash")):
+            response = client.get(f"/api/feedback/{identifier}?include_hashes=false")
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn("sha256", response.get_json()["attachments"][0])
+        full = client.get(f"/api/feedback/{identifier}").get_json()
+        self.assertEqual(len(full["attachments"][0]["sha256"]), 64)
+
+    def test_bulk_requires_manage_csrf_and_audits_only_actual_changes(self):
+        admin = self.app.test_client()
+        login = self._login(admin, "config-admin", "test-secret")
+        identifiers = [self._submit(admin, machine="PC-ADMIN", message=f"issue {i}").get_json()["feedbackId"] for i in range(3)]
+        payload = {"feedback_ids": identifiers[:2] + ["missing"], "status": "resolved"}
+        anonymous = self.app.test_client()
+        self.assertEqual(anonymous.put("/api/admin/feedback/status", json=payload).status_code, 401)
+        reader = self.app.test_client()
+        self._login(reader, "sdk-developer", "developer password 789")
+        self.assertEqual(reader.put("/api/admin/feedback/status", json=payload).status_code, 403)
+        key = create_api_key(self.cache, name="read-only", scopes="feedback:read", created_by="test")
+        self.assertEqual(anonymous.put("/api/admin/feedback/status", json=payload,
+                                      headers={"Authorization": f"Bearer {key['key']}"}).status_code, 403)
+        headers = {"Origin": "http://localhost", "X-ColorVision-Web": "1"}
+        self.assertEqual(admin.put("/api/admin/feedback/status", json=payload, headers=headers).status_code, 403)
+        headers["X-CSRF-Token"] = login["csrf_token"]
+        result = admin.put("/api/admin/feedback/status", json=payload, headers=headers)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual((result.get_json()["changed"], result.get_json()["failed"]), (2, 1))
+        again = admin.put("/api/admin/feedback/status", json=payload, headers=headers).get_json()
+        self.assertEqual((again["changed"], again["unchanged"]), (0, 2))
+        self.assertEqual(admin.get(f"/api/feedback/{identifiers[2]}").get_json()["status"], "new")
+        db = self.cache.get_db()
+        try:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM audit_log WHERE action = 'feedback_status_update'").fetchone()[0], 2)
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":
