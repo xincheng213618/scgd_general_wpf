@@ -369,6 +369,7 @@ namespace ColorVision.Engine.Media
                 catch (Exception ex) { log.Warn($"RAW 色度参数不可用，保留原图：{filePath}", ex); }
                 if (snapshot?.CanReplay == true)
                 {
+                    imageView.EditorContext.ProcessingContext.ProfileMeasurementSources = CvRawProfileSource.CreateOptions(filePath);
                     CVCIEFile raw = loadedRaw ?? CVFileUtil.OpenLocalCVFile(filePath);
                     try { ReplaceMeasurementBuffer(new PoiMeasurementBuffer(raw, snapshot)); }
                     finally { if (loadedRaw == null) raw.Dispose(); }
@@ -859,7 +860,7 @@ namespace ColorVision.Engine.Media
                         if (requestId != Volatile.Read(ref _latestOpenRequest)
                             || !string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
                         {
-                            log.Info($"图像目标已切换，丢弃迟到的 CVCIE 加载结果：{requestedFilePath}");
+                            log.DebugFormat("图像目标已切换，丢弃迟到的 CVCIE 加载结果：{0}", requestedFilePath);
                             return;
                         }
 

@@ -2,10 +2,10 @@
 knowledge_id: "algorithms.image-profile"
 knowledge_type: "reference"
 status: "current"
-summary: "灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。"
+summary: "灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。"
 aliases: ["CIE Y", "CIE Yxy", "CIE x/y", "原始亮度剖面", "灰度与颜色剖面", "水平剖面", "垂直剖面", "任意折线剖面", "切面图", "截面图", "剖面采样参数", "剖面导出", "剖面采样数据", "剖面曲线", "ImageProfile", "LineProfile", "SectionalDrawing", "ImageProfileAlgorithmProvider", "ImageProfileParameters", "ImageProfileEditorTool", "ImageProfileResultWindow", "ProfileDataExtractor", "ProfileData", "ProfileChartWindow", "ImageProfileInterpolation", "ImageProfileBoundaryMode", "SampleSpacingPixels", "IncludeLuminance", "IncludeAlpha", "ImageProfileParameters.MaximumSamples", "ImageProfileParameters.ClosePath", "ImageProfileParameters.BoundaryMode", "ImageProfileParameters.Interpolation", "profile_path_required", "profile_path_degenerate", "profile_path_point_limit_exceeded", "profile_sample_limit_exceeded", "profile_execution_sample_budget_exceeded", "profile_result_budget_exceeded", "profile_sample_out_of_bounds", "profile_no_samples"]
-code_paths: ["UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs", "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CvcieProfileTests.cs", "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs", "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs", "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs", "Engine/ColorVision.Engine/Media/CvRawProfileSource.cs", "Engine/ColorVision.Engine/Media/CombinedProfileSource.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CvcieProfileTests.cs", "Test/ColorVision.UI.Tests/CvRawProfileTests.cs", "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs", "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs", "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
 related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics", "algorithms.image-comparison"]
 ---
 
@@ -39,25 +39,28 @@ related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics"
 
 ## CVCIE 亮度与色度剖面
 
-工具栏和菜单保留同一个剖面入口，打开 CVCIE 时默认读取文件内原始 **CIE Y**，不读取显示位图，也不使用经过 MinMax 归一化的 Gray8 数值。普通图片和 CVRAW（包括已计算 CIE 的 CVRAW）继续采样当前显示图像。
+工具栏和菜单保留同一个剖面入口。CVCIE 默认采样文件内全部 XYZ、x/y；存在尺寸匹配的关联 CVRAW 时，同时保留原始 B/G/R。带可重放色度校正参数的 CVRAW 提供 B/G/R、CIE X/Y/Z、CIE x/y，共八条曲线；单通道 RAW 只输出 Gray 和校正后的 CIE Y。普通图片及无可重放参数的 CVRAW 继续采样当前显示图像。测量通道不取显示转换或 MinMax 归一化后的数值。
+
+具有 CIE Y 时默认只显示 B/G/R（有原图时）和 CIE Y，不额外输出 Rec.601 Luminance；CIE X、Z、x、y 默认不勾选。结果窗口使用勾选框叠加或隐藏曲线，提供“全部”“RGB”“XYZ”“x/y”快捷组合。切换显示组合不重算、不改变统计及导出内容；RGB、XYZ、x/y 按原始值使用独立纵轴，当前只有一组时使用左轴，叠加后增加右轴；不能把 RGB 的 DN 与 XYZ 当作相同物理单位。图表背景、坐标文字、网格、图例和通道颜色跟随明暗主题。
 
 CVCIE 结果窗口的数据源提供：
 
 | 数据源 | 曲线、统计与导出含义 |
 | --- | --- |
-| CIE Y（默认） | 原始 Y；XYZ 文件取索引 1，单通道文件取索引 0 |
+| 全部通道（默认） | 全部可用测量通道，以及尺寸匹配的关联 CVRAW 原始通道；不凭 XYZ 生成伪 RGB |
+| CIE Y | 原始 Y；XYZ 文件取索引 1，单通道文件取索引 0 |
 | CIE x/y | 小写色度坐标 `x=X/(X+Y+Z)`、`y=Y/(X+Y+Z)`，无量纲 |
 | CIE Yxy | 原始 Y 和色度 x/y；曲线左轴 Y、右轴 x/y，避免亮度量级压平色度 |
 | CIE XYZ | 诊断用原始三刺激值 X/Y/Z，不与小写 x/y 混淆 |
 | 当前显示图像 | 当前位图 Gray 或 B/G/R/Rec.601 Luminance，受当前显示转换影响 |
 
-单通道文件只提供 Y 和当前显示图像，不推算缺失的色度。切换数据源沿用本次路径与采样参数并重新计算结果；旧结果会关闭，失败或取消不展示伪造的新结果。修改源像素、替换为普通位图或清空文件上下文后，不继续沿用原文件的测量坐标；需重新打开 CVCIE 恢复测量源。仅切换该文件的原生显示图层保留测量源，但会使正在执行的旧 revision 请求过期。
+单通道 CIE 只具有 Y，不推算缺失的色度。关联 RAW 按文件头原图路径、同目录原图文件名及同名 `.cvraw` 查找，须通过文件布局、完整性和尺寸检查；没有匹配文件时保留 CIE 测量通道。切换数据源沿用本次路径与采样参数并重新计算结果；旧结果会关闭，失败或取消不展示伪造的新结果。修改源像素、替换为普通位图或清空文件上下文后，不继续沿用原文件的测量坐标；需重新打开文件恢复测量源。仅切换该文件的原生显示图层保留测量源，但会使正在执行的旧 revision 请求过期。
 
 双线性采样先对原始 XYZ 分别插值，再计算 x/y；不是先生成色度图再插值。分母为零、XYZ 非有限或求和溢出时，色度值为 null、Status 为 NaN，有限 Y 仍可保留。每条曲线的均值/总体标准差对该曲线全部有限采样点计算；色度均值不是“先求 XYZ 均值再换算色度”。
 
 文件头没有可靠的单位声明，因此 Y/XYZ 的单位留空，不写为 `cd/m²` 或 `DN`；不能单凭 CVCIE 扩展名声称其 Y 已经是经标定的物理亮度 Lv。x/y 单位为 `1`（无量纲）。窗口标题、图例、统计、采样表及完整 CSV/JSON 均用 `CIE Y`、`CIE x`、`CIE y` 等明确区分。32-bit float 提升到 double 参与计算，64-bit double 不降为 float；不归一化、不夹紧负数。
 
-`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 在工作线程持有只读文件映射，按采样位置读取原始平面，不复制整幅 Y/XYZ 数组或显示帧；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。打开时记录的文件长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。
+`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。
 
 测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。`CvcieProfileTests` 覆盖版本、32/64 位、Yxy 插值顺序、统计/导出、无效值、取消/释放及上下文失效。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
 
@@ -77,7 +80,7 @@ CVCIE 结果窗口的数据源提供：
 
 窗口的表格和每条曲线最多预览 **2000 行/点**，超出时按行序均匀选取并保留首尾。摘要中的“采样点”是完整返回数，“界面预览”是显示数。预览不是峰值保留算法，可能漏掉窄尖峰或无效值所在行；被预览到的非有限值显示为曲线间断。检查完整数据时使用导出，不能把平滑预览当作所有采样点都正常的证据。
 
-样本表和统计摘要的数字按 `G17` 显示，空数值单元格配合 Status 读取。“统计摘要”和 Measurement 中的各曲线有限/无效数量、最小值、最大值、均值及总体标准差来自完整返回结果，不从预览点重新计算。均值是有限采样点的算术平均；总体标准差按 `sqrt(sum((x-mean)^2)/N)` 计算。NaN 和正负 Infinity 只计入无效数量，不参与统计。
+样本表和统计摘要的数字按 `G8` 紧凑显示，导出仍保留完整 double 精度；空数值单元格配合 Status 读取。表格采用紧凑行高，可拖动图表与表格之间的分隔条调整高度。“统计摘要”和 Measurement 中的各曲线有限/无效数量、最小值、最大值、均值及总体标准差来自完整返回结果，不从预览点重新计算。均值是有限采样点的算术平均；总体标准差按 `sqrt(sum((x-mean)^2)/N)` 计算。NaN 和正负 Infinity 只计入无效数量，不参与统计。
 
 ### 导出完整数据
 

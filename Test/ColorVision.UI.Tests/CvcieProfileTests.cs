@@ -4,6 +4,7 @@ using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile;
+using ColorVision.Themes;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
@@ -26,9 +27,9 @@ public sealed class CvcieProfileTests
         double[] y = bits == 32 ? [-17.25, 1024.125, 9000.5] : [-17.1234567890123, 1024.1234567890123, 9000.123456789013];
         using Fixture fixture = new(bits, channels, y);
         IReadOnlyList<ImageProfileSourceOption> options = CvcieProfileSource.CreateOptions(fixture.Path, channels);
-        Assert.Equal("CIE Y", options[0].Name);
-        Assert.Equal(channels == 1 ? 1 : 4, options.Count);
-        using IImageProfileMeasurementSource source = options[0].Open(default);
+        Assert.Equal("CIE 全部通道", options[0].Name);
+        Assert.Equal(channels == 1 ? 2 : 5, options.Count);
+        using IImageProfileMeasurementSource source = options.Single(option => option.Name == "CIE Y").Open(default);
         using AlgorithmResult result = Run(source);
         Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
         AlgorithmTableArtifact table = result.GetArtifact<AlgorithmTableArtifact>("image-profile-samples")!;
@@ -56,6 +57,33 @@ public sealed class CvcieProfileTests
         Assert.Contains("channel.mean", statistics);
         Assert.Contains("channel.stddev.population", statistics);
         Assert.Contains("CIE Y", statistics);
+    }
+
+    [Fact]
+    public void DefaultIncludesAllCieChannelsAndAssociatedRawWhenAvailable()
+    {
+        using Fixture fixture = new(64, 3, [500, 600, 700]);
+        using (var cie = CvcieProfileSource.CreateOptions(fixture.Path, 3)[0].Open(default))
+            Assert.Equal(new[] { "CIE X", "CIE Y", "CIE Z", "CIE x", "CIE y" }, cie.ChannelNames);
+        string rawPath = System.IO.Path.ChangeExtension(fixture.Path, ".cvraw");
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 1, 16, 3);
+        Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+        var options = CvcieProfileSource.CreateOptions(fixture.Path, 3);
+        using (var combined = options[0].Open(default))
+        using (var result = Run(combined, parameters: new ImageProfileParameters { IncludeLuminance = false }))
+        {
+            Assert.Equal(8, combined.ChannelNames.Count);
+            var table = result.GetArtifact<AlgorithmTableArtifact>()!;
+            Assert.Equal(BitConverter.ToUInt16(raw.Data, 0), table.Rows[0]["B"].GetDouble());
+            Assert.Equal(500, table.Rows[0]["CIE Y"].GetDouble());
+            Assert.Equal(11d / 542, table.Rows[0]["CIE x"].GetDouble());
+            Assert.DoesNotContain(table.Columns, column => column.Name == "Luminance");
+            Assert.Equal("DN", table.Columns.Single(column => column.Name == "R").Unit);
+            Assert.Null(table.Columns.Single(column => column.Name == "CIE Y").Unit);
+            Assert.Equal("1", table.Columns.Single(column => column.Name == "CIE x").Unit);
+        }
+        File.SetLastWriteTimeUtc(rawPath, File.GetLastWriteTimeUtc(rawPath).AddMinutes(1));
+        Assert.Throws<IOException>(() => options[0].Open(default));
     }
 
     [Fact]
@@ -178,6 +206,56 @@ public sealed class CvcieProfileTests
     }
 
     [Fact]
+    public void ChannelPresetsOnlyChangeCurvesAndChartFollowsTheme()
+    {
+        using Fixture fixture = new(64, 3, [500, 600, 700]);
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 1, 16, 3);
+        Assert.True(CVFileUtil.WriteCIEFile(System.IO.Path.ChangeExtension(fixture.Path, ".cvraw"), raw));
+        using var source = CvcieProfileSource.CreateOptions(fixture.Path, 3)[0].Open(default);
+        using var result = Run(source);
+        WpfTestHost.Invoke(() =>
+        {
+            Theme previous = ThemeManager.Current.CurrentUITheme;
+            Application.Current.ForceApplyTheme(Theme.Dark);
+            try
+            {
+                using ImageView view = new();
+                view.SetImageSource(new WriteableBitmap(3, 1, 96, 96, PixelFormats.Gray8, null));
+                using var window = new ImageProfileResultWindow(result, view.EditorContext.ProcessingContext, view.EditorContext.DrawEditorContext);
+                var panel = (WrapPanel)window.FindName("ChannelPanel");
+                var plot = ((ScottPlot.WPF.WpfPlot)window.FindName("ProfilePlot")).Plot;
+                var curves = plot.PlottableList.OfType<ScottPlot.Plottables.Scatter>().ToArray();
+                Assert.Equal(8, curves.Length);
+                Assert.Equal(8, panel.Children.OfType<CheckBox>().Count());
+                Assert.Equal(new[] { "B", "G", "R", "CIE Y" }, curves.Where(curve => curve.IsVisible).Select(curve => curve.LegendText));
+                Assert.DoesNotContain(curves, curve => curve.LegendText == "Luminance");
+                Assert.NotEqual(ScottPlot.Colors.White, plot.DataBackground.Color);
+                Assert.Same(plot.Axes.Right, curves.Single(curve => curve.LegendText == "CIE Y").Axes.YAxis);
+                void Select(string label) => panel.Children.OfType<Button>().Single(button => (string)button.Content == label).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Select("RGB");
+                Assert.Equal(new[] { "B", "G", "R" }, curves.Where(curve => curve.IsVisible).Select(curve => curve.LegendText));
+                Assert.False(plot.Axes.Right.IsVisible);
+                Select("x/y");
+                Assert.Equal(2, curves.Count(curve => curve.IsVisible));
+                Assert.False(plot.Axes.Right.IsVisible);
+                Assert.True(plot.Axes.Left.IsVisible);
+                Assert.All(curves.Where(curve => curve.IsVisible), curve => Assert.Same(plot.Axes.Left, curve.Axes.YAxis));
+                Select("全部");
+                Assert.All(curves, curve => Assert.True(curve.IsVisible));
+                Assert.NotSame(plot.Axes.Right, curves.Single(curve => curve.LegendText == "CIE x").Axes.YAxis);
+                Assert.Equal(8, ((DataGrid)window.FindName("StatisticsGrid")).Items.Count);
+                Assert.Equal(23, result.GetArtifact<AlgorithmTableArtifact>()!.Columns.Count);
+                Application.Current.ForceApplyTheme(Theme.Light);
+                Assert.Equal(ScottPlot.Colors.White, plot.FigureBackground.Color);
+                window.Dispose();
+                Application.Current.ForceApplyTheme(Theme.Dark);
+                Assert.Equal(ScottPlot.Colors.White, plot.FigureBackground.Color);
+            }
+            finally { Application.Current.ForceApplyTheme(previous); }
+        });
+    }
+
+    [Fact]
     public void SourceClearAndStaleSelectionAreRejectedAndResultNamesAreExplicit()
     {
         using Fixture fixture = new(64, 3, [500, 600, 700]);
@@ -200,7 +278,7 @@ public sealed class CvcieProfileTests
             ImageSelectionScope scope = TransientRoiSelectionSession.CaptureSourceScope(context)!;
             var window = new ImageProfileResultWindow(result, context, view.EditorContext.DrawEditorContext);
             Assert.Contains("CIE Y", window.Title);
-            Assert.Contains("CIE Y", ((TextBlock)window.FindName("SummaryText")).Text);
+            Assert.Contains("XYZ 单位未声明", ((TextBlock)window.FindName("SummaryText")).Text);
             int requested = -1;
             window.ConfigureSources(["CIE Y", "CIE XYZ", "当前显示图像"], 0, index => requested = index);
             var selector = (ComboBox)window.FindName("SourceSelector");

@@ -49,6 +49,7 @@ public sealed class CalibratedRawDisplayTests
                 Assert.IsType<CVRawOpen>(view.EditorContext.IImageOpen);
                 Assert.False(view.Config.GetProperties<bool>("IsCVCIE"));
                 Assert.True(view.Config.GetProperties<bool>("HasCieMeasurements"));
+                Assert.NotEmpty(view.EditorContext.ProcessingContext.ProfileMeasurementSources!);
                 Assert.Equal(CVType.Raw, view.Config.GetProperties<CVCIEFile>("meta").FileExtType);
                 Assert.DoesNotContain(view.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>(), layer => layer.Id == "cie-srgb");
             });
@@ -61,6 +62,7 @@ public sealed class CalibratedRawDisplayTests
                     Assert.Equal(path, view.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
                     Assert.False(view.Config.GetProperties<bool>("IsCVCIE"));
                     Assert.True(view.Config.GetProperties<bool>("HasCieMeasurements"));
+                    Assert.NotEmpty(view.EditorContext.ProcessingContext.ProfileMeasurementSources!);
                 });
             }
             Assert.Equal(original, File.ReadAllBytes(path));

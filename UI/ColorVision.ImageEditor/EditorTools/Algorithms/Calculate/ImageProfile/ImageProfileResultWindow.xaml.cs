@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
 {
@@ -22,6 +23,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
         internal const int MaximumChartPoints = 2_000;
 
         private readonly AlgorithmResult _result;
+        private readonly ThemeManager _themeManager = ThemeManager.Current;
+        private readonly Dictionary<string, ScottPlot.Plottables.Scatter> _curves = new();
+        private IYAxis? _chromaticityAxis;
+        private string _rawAxisLabel = "Value";
+        private bool _selectingChannels;
         private IDisposable? _overlaySession;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private CancellationTokenSource? _exportCancellation;
@@ -38,8 +44,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             _result = result;
             try
             {
-            InitializeComponent();
-            this.ApplyCaption();
+                InitializeComponent();
+                this.ApplyCaption();
                 int[] previewRows = PreviewIndices(samples.Rows.Count, MaximumPreviewRows);
                 int[] chartRows = PreviewIndices(samples.Rows.Count, MaximumChartPoints);
                 StatisticsGrid.ItemsSource = ToStatisticsTable(measurements).DefaultView;
@@ -53,10 +59,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 if (cieChannels.Length > 0)
                 {
                     string sourceName = string.Join(" / ", cieChannels);
-                    Title = $"直线剖面 — {sourceName}";
-                    SummaryText.Text = $"{sourceName}（Y/XYZ 为原始值，单位未声明；小写 x/y 为无量纲色度）。" + SummaryText.Text;
+                    Title = $"灰度与颜色剖面 — {sourceName}";
+                    SummaryText.Text = "RGB/Gray 为 DN；XYZ 单位未声明；x/y 为无量纲色度。" + SummaryText.Text;
                 }
                 Render(samples, chartRows);
+                ApplyPlotTheme(_themeManager.CurrentUITheme);
+                _themeManager.CurrentUIThemeChanged += OnThemeChanged;
                 _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
                 Closed += (_, _) => DisposeOwnedState();
             }
@@ -66,6 +74,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_lifetimeCancellation.Cancel, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _exportCancellation?.Cancel(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref ignored);
+                _themeManager.CurrentUIThemeChanged -= OnThemeChanged;
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(result.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_lifetimeCancellation.Dispose, ref ignored);
                 throw;
@@ -90,6 +99,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
         private void Render(AlgorithmTableArtifact table, IReadOnlyList<int> rowIndices)
         {
             ProfilePlot.Plot.Clear();
+            _rawAxisLabel = table.Columns.Any(column => column.Unit == "DN") ? "RGB / Gray (DN)" : "Value";
             double[] distances = rowIndices.Select(index => table.Rows[index]["DistancePixels"].GetDouble()).ToArray();
             string[] channels = table.Columns
                 .Select(column => column.Name)
@@ -102,27 +112,119 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 scatter.MarkerSize = 0;
                 scatter.LineWidth = 1.5f;
                 scatter.LegendText = channel;
-                if (channel is "CIE x" or "CIE y" && channels.Contains("CIE Y"))
-                    scatter.Axes.YAxis = ProfilePlot.Plot.Axes.Right;
-                scatter.Color = channel switch
-                {
-                    "R" or "CIE X" => Colors.Red,
-                    "G" or "CIE y" => Colors.Green,
-                    "B" or "CIE x" or "CIE Z" => Colors.Blue,
-                    "A" => Colors.Gray,
-                    "Luminance" or "CIE Y" => Colors.Orange,
-                    _ => Colors.Black,
-                };
+                _curves.Add(channel, scatter);
             }
             ProfilePlot.Plot.XLabel("Distance (px)");
-            ProfilePlot.Plot.YLabel(channels.Any(name => name.StartsWith("CIE ", StringComparison.Ordinal)) ? string.Join(" / ", channels) : "Value");
-            if (channels.Contains("CIE x") && channels.Contains("CIE Y"))
-            {
-                ProfilePlot.Plot.YLabel("CIE Y");
-                ProfilePlot.Plot.Axes.Right.Label.Text = "CIE x / y";
-            }
+            if (channels.Contains("CIE x")) _chromaticityAxis = ProfilePlot.Plot.Axes.AddRightAxis();
             ProfilePlot.Plot.ShowLegend(Alignment.UpperRight);
+            ProfilePlot.Plot.Legend.ShowItemsFromHiddenPlottables = false;
+            BuildChannelControls(channels);
+            RefreshVisibleChannels();
+        }
+
+        private void BuildChannelControls(string[] channels)
+        {
+            ChannelPanel.Children.Add(new TextBlock { Text = "显示通道：", VerticalAlignment = System.Windows.VerticalAlignment.Center });
+            foreach (string channel in channels)
+            {
+                bool selected = !channels.Contains("CIE Y") || channel is "R" or "G" or "B" or "Gray" or "CIE Y";
+                CheckBox check = new() { Content = channel, Tag = channel, IsChecked = selected, Margin = new Thickness(0, 0, 12, 0), VerticalContentAlignment = System.Windows.VerticalAlignment.Center };
+                check.Checked += ChannelVisibilityChanged;
+                check.Unchecked += ChannelVisibilityChanged;
+                ChannelPanel.Children.Add(check);
+            }
+            AddPreset("全部", _ => true);
+            if (channels.Contains("R")) AddPreset("RGB", name => name is "B" or "G" or "R" or "Luminance");
+            if (channels.Contains("CIE X")) AddPreset("XYZ", name => name is "CIE X" or "CIE Y" or "CIE Z");
+            if (channels.Contains("CIE x")) AddPreset("x/y", name => name is "CIE x" or "CIE y");
+        }
+
+        private void AddPreset(string label, Func<string, bool> selected)
+        {
+            Button button = new() { Content = label, Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(4, 0, 0, 0) };
+            button.Click += (_, _) =>
+            {
+                _selectingChannels = true;
+                try { foreach (CheckBox check in ChannelPanel.Children.OfType<CheckBox>()) check.IsChecked = selected((string)check.Tag); }
+                finally { _selectingChannels = false; }
+                RefreshVisibleChannels();
+            };
+            ChannelPanel.Children.Add(button);
+        }
+
+        private void ChannelVisibilityChanged(object sender, RoutedEventArgs e)
+        {
+            if (!_selectingChannels) RefreshVisibleChannels();
+        }
+
+        private void RefreshVisibleChannels()
+        {
+            foreach (CheckBox check in ChannelPanel.Children.OfType<CheckBox>()) _curves[(string)check.Tag].IsVisible = check.IsChecked == true;
+            bool raw = _curves.Any(pair => pair.Value.IsVisible && !pair.Key.StartsWith("CIE ", StringComparison.Ordinal));
+            bool xyz = _curves.Any(pair => pair.Value.IsVisible && pair.Key is "CIE X" or "CIE Y" or "CIE Z");
+            bool xy = _curves.Any(pair => pair.Value.IsVisible && pair.Key is "CIE x" or "CIE y");
+            var axes = ProfilePlot.Plot.Axes;
+            IYAxis xyzAxis = raw ? axes.Right : axes.Left;
+            IYAxis xyAxis = raw && xyz ? _chromaticityAxis! : raw || xyz ? axes.Right : axes.Left;
+            foreach (var (name, curve) in _curves)
+                curve.Axes.YAxis = name is "CIE x" or "CIE y" ? xyAxis : name.StartsWith("CIE ", StringComparison.Ordinal) ? xyzAxis : axes.Left;
+            axes.Left.IsVisible = raw || xyz || xy;
+            axes.Right.IsVisible = (raw && xyz) || ((raw || xyz) && xy);
+            if (_chromaticityAxis != null) _chromaticityAxis.IsVisible = raw && xyz && xy;
+            axes.Left.Label.Text = raw ? _rawAxisLabel : xyz ? "CIE XYZ" : "CIE x / y";
+            if (xyz) xyzAxis.Label.Text = _curves.Any(pair => pair.Value.IsVisible && pair.Key is "CIE X" or "CIE Z") ? "CIE XYZ" : "CIE Y";
+            if (xy) xyAxis.Label.Text = "CIE x / y";
             ProfilePlot.Plot.Axes.AutoScale();
+            ProfilePlot.Refresh();
+        }
+
+        private void OnThemeChanged(Theme theme)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                if (!Dispatcher.HasShutdownStarted) Dispatcher.BeginInvoke(() => OnThemeChanged(theme));
+                return;
+            }
+            if (!_disposed) ApplyPlotTheme(theme);
+        }
+
+        private void ApplyPlotTheme(Theme theme)
+        {
+            bool dark = theme == Theme.Dark;
+            var plot = ProfilePlot.Plot;
+            Color background = Color.FromHex(dark ? "#262626" : "#FFFFFF");
+            Color foreground = Color.FromHex(dark ? "#E5E7EB" : "#252525");
+            Color border = Color.FromHex(dark ? "#43464C" : "#D8DBDF");
+            plot.FigureBackground.Color = background;
+            plot.DataBackground.Color = Color.FromHex(dark ? "#1C1C1C" : "#FAFBFC");
+            plot.Axes.Color(foreground);
+            plot.Grid.MajorLineColor = border;
+            plot.Grid.MinorLineColor = Color.FromHex(dark ? "#303237" : "#ECEEF0");
+            plot.Legend.BackgroundColor = background;
+            plot.Legend.FontColor = foreground;
+            plot.Legend.OutlineColor = border;
+            foreach (var (name, curve) in _curves)
+            {
+                curve.Color = name switch
+                {
+                    "R" => Color.FromHex(dark ? "#FF6868" : "#D52F3A"),
+                    "G" => Color.FromHex(dark ? "#64D97B" : "#16803B"),
+                    "B" => Color.FromHex(dark ? "#6FA8FF" : "#2563EB"),
+                    "Luminance" => Color.FromHex(dark ? "#FFCD63" : "#9B6B00"),
+                    "CIE X" => Color.FromHex(dark ? "#D69CFF" : "#9333B5"),
+                    "CIE Y" => Color.FromHex(dark ? "#FF9E51" : "#D06612"),
+                    "CIE Z" => Color.FromHex(dark ? "#5EDBD4" : "#0F817E"),
+                    "CIE x" => Color.FromHex(dark ? "#FF91C8" : "#BE397C"),
+                    "CIE y" => Color.FromHex(dark ? "#BDDD65" : "#687D13"),
+                    _ => foreground,
+                };
+                CheckBox? check = ChannelPanel.Children.OfType<CheckBox>().FirstOrDefault(item => (string)item.Tag == name);
+                if (check != null)
+                {
+                    var color = curve.Color;
+                    check.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(color.R, color.G, color.B));
+                }
+            }
             ProfilePlot.Refresh();
         }
 
@@ -172,7 +274,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
         private static string MeasurementDisplay(IEnumerable<AlgorithmMeasurement> measurements, string name)
         {
             AlgorithmMeasurement? measurement = measurements.FirstOrDefault(item => item.Name == name);
-            return measurement == null ? string.Empty : measurement.Value.ToString("G17", CultureInfo.InvariantCulture);
+            return measurement == null ? string.Empty : measurement.Value.ToString("G8", CultureInfo.InvariantCulture);
         }
 
         internal static int[] PreviewIndices(int rowCount, int maximum)
@@ -190,7 +292,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
         {
             JsonValueKind.Null or JsonValueKind.Undefined => string.Empty,
             JsonValueKind.String => value.GetString() ?? string.Empty,
-            JsonValueKind.Number when value.TryGetDouble(out double number) => number.ToString("G17", CultureInfo.InvariantCulture),
+            JsonValueKind.Number when value.TryGetDouble(out double number) => number.ToString("G8", CultureInfo.InvariantCulture),
             _ => value.GetRawText(),
         };
 
@@ -270,6 +372,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
         {
             if (_disposed) return _disposeFailure;
             _disposed = true;
+            _themeManager.CurrentUIThemeChanged -= OnThemeChanged;
             AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(_lifetimeCancellation.Cancel, ref _disposeFailure);
             AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _exportCancellation?.Cancel(), ref _disposeFailure);
             AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => _overlaySession?.Dispose(), ref _disposeFailure);

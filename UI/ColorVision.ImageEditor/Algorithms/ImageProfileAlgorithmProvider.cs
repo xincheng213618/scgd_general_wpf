@@ -59,7 +59,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 throw new ArgumentException("Invalid profile invocation or parameters.");
             if (source.Width != scope.PixelWidth || source.Height != scope.PixelHeight || source.Width <= 0 || source.Height <= 0)
                 throw new ArgumentException("The measurement plane dimensions do not match the current image.");
-            if (source.RawChannelCount is < 1 or > 3 || source.ChannelNames.Count is < 1 or > 3 || source.ChannelNames.Distinct().Count() != source.ChannelNames.Count)
+            if (source.RawChannelCount is < 1 or > 6 || source.ChannelNames.Count is < 1 or > 9 || source.ChannelNames.Distinct().Count() != source.ChannelNames.Count)
                 throw new ArgumentException("Invalid measurement channels.");
             if (!double.IsFinite(scope.DpiX) || scope.DpiX <= 0 || !double.IsFinite(scope.DpiY) || scope.DpiY <= 0)
                 throw new ArgumentException("Invalid profile DPI.");
@@ -121,7 +121,9 @@ namespace ColorVision.ImageEditor.Algorithms
                     nameof(parameters.SampleSpacingPixels));
             }
 
-            ChannelDefinition[] channels = image.Source != null ? image.Source.ChannelNames.Select((name, index) => new ChannelDefinition(name, values => image.Source.GetChannelValue(index, values))).ToArray() : Channels(image.Format, parameters);
+            ChannelDefinition[] channels = image.Source != null ? image.Source.ChannelNames
+                .Select((name, index) => new ChannelDefinition(name, values => image.Source.GetChannelValue(index, values), index))
+                .Where(channel => parameters.IncludeLuminance || channel.Name != "Luminance").ToArray() : Channels(image.Format, parameters);
             List<AlgorithmTableColumn> columns =
             [
                 new("SampleIndex", "integer"), new("RequestedIndex", "integer"), new("SegmentIndex", "integer"),
@@ -130,7 +132,7 @@ namespace ColorVision.ImageEditor.Algorithms
             ];
             foreach (ChannelDefinition channel in channels)
             {
-                columns.Add(new AlgorithmTableColumn(channel.Name, "number", image.Source != null ? image.Source.GetUnit(Array.IndexOf(channels, channel)) : image.Unit));
+                columns.Add(new AlgorithmTableColumn(channel.Name, "number", image.Source != null ? image.Source.GetUnit(channel.SourceIndex) : image.Unit));
                 columns.Add(new AlgorithmTableColumn(channel.Name + "Status", "string"));
             }
 
@@ -238,7 +240,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 measurements.Add(new AlgorithmMeasurement("channel.invalid_count", stats.InvalidCount, "sample", index, Qualifiers: ChannelQualifier(stats.Name)));
                 if (stats.Count > 0)
                 {
-                    string? unit = image.Source?.GetUnit(index) ?? (image.Source == null ? image.Unit : null);
+                    string? unit = image.Source?.GetUnit(channels[index].SourceIndex) ?? (image.Source == null ? image.Unit : null);
                     measurements.Add(new AlgorithmMeasurement("channel.minimum", stats.Minimum, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
                     measurements.Add(new AlgorithmMeasurement("channel.maximum", stats.Maximum, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
                     measurements.Add(new AlgorithmMeasurement("channel.mean", stats.Mean, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
@@ -439,7 +441,7 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
-        private sealed record ChannelDefinition(string Name, Func<double[], double> Read);
+        private sealed record ChannelDefinition(string Name, Func<double[], double> Read, int SourceIndex = 0);
 
         private sealed class ChannelStatistics(string name)
         {
