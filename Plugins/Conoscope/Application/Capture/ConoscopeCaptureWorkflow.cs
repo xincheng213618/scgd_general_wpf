@@ -199,7 +199,7 @@ namespace Conoscope.ApplicationServices.Capture
                     continue;
                 }
 
-                if (string.Equals(Path.GetExtension(candidate), ".cvcie", StringComparison.OrdinalIgnoreCase))
+                if (ConoscopeDocument.CanOpenFile(candidate))
                 {
                     return candidate;
                 }

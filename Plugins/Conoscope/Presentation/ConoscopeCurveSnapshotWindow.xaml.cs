@@ -2,6 +2,7 @@ using ColorVision.Themes;
 using Conoscope.Core;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -47,18 +48,27 @@ namespace Conoscope.Presentation
             RefreshPlot(true);
         }
 
-        public void AddSnapshot(ConoscopeCurveSnapshot snapshot)
+        public void AddSnapshot(ConoscopeCurveSnapshot snapshot) => AddSnapshots(new[] { snapshot });
+
+        public void AddSnapshots(IReadOnlyList<ConoscopeCurveSnapshot> snapshots)
         {
-            ArgumentNullException.ThrowIfNull(snapshot);
+            ArgumentNullException.ThrowIfNull(snapshots);
             ObjectDisposedException.ThrowIf(closed, this);
             Dispatcher.VerifyAccess();
-            SnapshotRow row = new(snapshot, nextColorIndex++);
-            row.PropertyChanged += SnapshotRow_PropertyChanged;
-            rows.Add(row);
+            foreach (ConoscopeCurveSnapshot snapshot in snapshots) ArgumentNullException.ThrowIfNull(snapshot);
+            if (snapshots.Count == 0) return;
+            foreach (ConoscopeCurveSnapshot snapshot in snapshots)
+            {
+                SnapshotRow row = new(snapshot, nextColorIndex++);
+                row.PropertyChanged += SnapshotRow_PropertyChanged;
+                rows.Add(row);
+            }
             isDirty = true;
-            SnapshotList.SelectedItem = row;
-            SnapshotList.ScrollIntoView(row);
+            SnapshotList.SelectedItem = rows[^1];
+            if (IsLoaded) SnapshotList.ScrollIntoView(rows[^1]);
         }
+
+        private void NormalizeCurves_Changed(object sender, RoutedEventArgs e) => RefreshPlot(true);
 
         private void SnapshotList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshPlot(true);
 
@@ -185,6 +195,10 @@ namespace Conoscope.Presentation
             ExportSnapshotButton.IsEnabled = selected != null;
             SnapshotName.IsEnabled = selected != null;
             EmptyHint.Visibility = selected == null ? Visibility.Visible : Visibility.Collapsed;
+            SelectedCurveMetrics.Text = selected?.MetricDetails ?? string.Empty;
+            SelectedCurveContext.Text = selected?.Snapshot.ReferenceDescription ?? string.Empty;
+            SelectedCurveContext.Visibility = string.IsNullOrEmpty(SelectedCurveContext.Text) ? Visibility.Collapsed : Visibility.Visible;
+            SelectedCurveMetrics.Visibility = string.IsNullOrEmpty(SelectedCurveMetrics.Text) ? Visibility.Collapsed : Visibility.Visible;
 
             var limits = SnapshotPlot.Plot.Axes.GetLimits();
             SnapshotPlot.Plot.Clear();
@@ -197,23 +211,39 @@ namespace Conoscope.Presentation
                 : rows.Where(row => row.IsShown && row.Snapshot.IsCompatibleWith(selected.Snapshot)).ToArray();
             int incompatible = selected == null ? 0
                 : rows.Count(row => row.IsShown && !row.Snapshot.IsCompatibleWith(selected.Snapshot));
-            ComparisonSummary.Text = CompositeFormatCache.Format(Properties.Resources.SnapshotComparisonSummary, visible.Length, incompatible);
+            bool normalize = NormalizeCurves.IsChecked == true;
+            int skipped = 0;
 
             foreach (SnapshotRow row in visible)
             {
-                var scatter = SnapshotPlot.Plot.Add.Scatter(row.Snapshot.Positions.ToArray(), row.Snapshot.Values.ToArray());
+                double[]? values = normalize ? ConoscopeCurveMetrics.NormalizeToPeak(row.Snapshot.Values) : row.Snapshot.Values.ToArray();
+                if (values == null) { skipped++; continue; }
+                var scatter = SnapshotPlot.Plot.Add.Scatter(row.Snapshot.Positions.ToArray(), values);
                 scatter.LegendText = $"{row.Name} · {row.Snapshot.SourceName} · {row.Snapshot.ChannelLabel}";
-                scatter.LineWidth = 1.6f;
+                scatter.LineWidth = ReferenceEquals(row, selected) ? 2.5f : 1.6f;
                 scatter.MarkerSize = 0;
                 Color color = row.ColorBrush.Color;
                 scatter.Color = new ScottPlot.Color(color.R, color.G, color.B);
             }
+            ComparisonSummary.Text = CompositeFormatCache.Format(Properties.Resources.SnapshotComparisonSummary, visible.Length - skipped, incompatible);
+            if (skipped > 0) ComparisonSummary.Text += " " + CompositeFormatCache.Format(Properties.Resources.CurveNormalizationSkipped, skipped);
+
+            if (selected?.IsShown == true && selected.Metrics is { Width: not null } metrics)
+            {
+                double half = normalize ? 0.5 : metrics.PeakValue / 2;
+                var crossings = SnapshotPlot.Plot.Add.Scatter(new[] { metrics.LeftHalfMaximum!.Value, metrics.RightHalfMaximum!.Value }, new[] { half, half });
+                crossings.LineWidth = 1;
+                crossings.MarkerSize = 6;
+                crossings.LinePattern = ScottPlot.LinePattern.Dashed;
+                Color color = selected.ColorBrush.Color;
+                crossings.Color = new ScottPlot.Color(color.R, color.G, color.B);
+            }
 
             SnapshotPlot.Plot.XLabel(selected?.Snapshot.AxisLabel ?? string.Empty);
-            SnapshotPlot.Plot.YLabel(selected == null ? string.Empty
+            SnapshotPlot.Plot.YLabel(selected == null ? string.Empty : normalize ? Properties.Resources.CurveNormalizedAxis
                 : string.IsNullOrEmpty(selected.Snapshot.UnitLabel) ? selected.Snapshot.ChannelLabel : selected.Snapshot.UnitLabel);
-            SnapshotPlot.Plot.Legend.IsVisible = visible.Length > 0;
-            if (autoScale && visible.Length > 0) SnapshotPlot.Plot.Axes.AutoScale();
+            SnapshotPlot.Plot.Legend.IsVisible = visible.Length > skipped;
+            if (autoScale && visible.Length > skipped) SnapshotPlot.Plot.Axes.AutoScale();
             else if (!autoScale) SnapshotPlot.Plot.Axes.SetLimits(limits);
             SnapshotPlot.Refresh();
         }
@@ -251,11 +281,13 @@ namespace Conoscope.Presentation
             private bool isShown = true;
             public event PropertyChangedEventHandler? PropertyChanged;
             public ConoscopeCurveSnapshot Snapshot { get; private set; }
+            public ConoscopeFwhmResult? Metrics { get; }
 
             public SnapshotRow(ConoscopeCurveSnapshot snapshot, int colorIndex)
             {
                 Snapshot = snapshot;
                 this.colorIndex = colorIndex;
+                Metrics = ConoscopeCurveMetrics.SupportsFwhm(snapshot) ? ConoscopeCurveMetrics.Measure(snapshot.Positions, snapshot.Values) : null;
             }
 
             public string Name
@@ -281,6 +313,33 @@ namespace Conoscope.Presentation
             }
 
             public string Description => $"{Snapshot.SourceName} · {Snapshot.ChannelLabel} · {Snapshot.ReferenceDescription}";
+
+            public string MetricSummary => Metrics is not { } metrics ? string.Empty
+                : CompositeFormatCache.Format(Properties.Resources.FwhmSummary,
+                    metrics.Width is { } width ? $"{width:F2}°" : "—",
+                    double.IsFinite(metrics.PeakAngle) ? $"{metrics.PeakAngle:F2}°" : "—");
+
+            public string MetricDetails
+            {
+                get
+                {
+                    if (Metrics is not { } metrics) return string.Empty;
+                    StringBuilder text = new(MetricSummary);
+                    if (metrics.Width.HasValue)
+                        text.AppendLine().Append(CompositeFormatCache.Format(Properties.Resources.FwhmCrossings, metrics.LeftHalfMaximum!.Value, metrics.RightHalfMaximum!.Value));
+                    else
+                        text.AppendLine().Append(metrics.Status switch
+                        {
+                            ConoscopeFwhmStatus.NoPositivePeak => Properties.Resources.FwhmNoPositivePeak,
+                            ConoscopeFwhmStatus.MissingCrossing => Properties.Resources.FwhmMissingCrossing,
+                            ConoscopeFwhmStatus.GapAtCrossing => Properties.Resources.FwhmGap,
+                            _ => Properties.Resources.FwhmInvalidAxis
+                        });
+                    if (metrics.HasMultipleLobes) text.AppendLine().Append(Properties.Resources.FwhmMultipleLobes);
+                    if (metrics.HasMissingSamples) text.AppendLine().Append(Properties.Resources.FwhmMissingSamples);
+                    return text.ToString();
+                }
+            }
 
             public SolidColorBrush ColorBrush
             {
@@ -309,6 +368,7 @@ namespace Conoscope.Presentation
                     Add(Properties.Resources.SnapshotUnit, Snapshot.UnitLabel);
                     Add(Properties.Resources.SnapshotCapturedAt, Snapshot.CapturedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fff zzz", CultureInfo.CurrentCulture));
                     Add(Properties.Resources.SnapshotSamples, Snapshot.Positions.Count.ToString(CultureInfo.CurrentCulture));
+                    if (Metrics != null) Add("FWHM", MetricDetails + Environment.NewLine + Properties.Resources.FwhmRule);
                     if (!string.IsNullOrEmpty(Snapshot.Metadata)) Add(Properties.Resources.SnapshotMetadata, Snapshot.Metadata);
                     return text.ToString().TrimEnd();
 

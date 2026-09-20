@@ -100,6 +100,7 @@ namespace Conoscope
 
         private MVSViewWindow? observationCameraWindow;
         private ConoscopeCurveSnapshotWindow? curveWorkspace;
+        private CancellationTokenSource? angularAnalysisCancellation;
 
         private void ShowCurveWorkspace(ConoscopeCurveSnapshot? snapshot)
         {
@@ -110,6 +111,38 @@ namespace Conoscope
         }
 
         private void ShowCurveWorkspace_Click(object sender, RoutedEventArgs e) => ShowCurveWorkspace(null);
+
+        private async void AnalyzeAngularLuminance_Click(object sender, RoutedEventArgs e)
+        {
+            if (angularAnalysisCancellation != null) { angularAnalysisCancellation.Cancel(); return; }
+            ConoscopeView? view = ActiveView;
+            if (view == null || !view.State.HasDisplayData) return;
+            using CancellationTokenSource cancellation = new();
+            angularAnalysisCancellation = cancellation;
+            RefreshAnalysisRibbonState(view);
+            try
+            {
+                var settingsDialog = new ConoscopeAngularAnalysisWindow(view.CreateExportContext()) { Owner = this };
+                if (settingsDialog.ShowDialog() != true) return;
+                IReadOnlyList<ConoscopeCurveSnapshot> snapshots = await view.CreateAngularSnapshotsAsync(cancellation.Token, settingsDialog.Options);
+                if (disposed || cancellation.IsCancellationRequested) return;
+                curveWorkspace ??= new ConoscopeCurveSnapshotWindow { Owner = this, KeepSessionOnClose = true };
+                curveWorkspace.AddSnapshots(snapshots);
+                ShowCurveWorkspace(null);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(ConoscopeWindow)).Error("Angular luminance analysis failed", ex);
+                if (!disposed) MessageBox.Show(this, CompositeFormatCache.Format(Properties.Resources.AngularAnalysisFailed, ex.Message),
+                    Properties.Resources.AngularAnalysisTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                angularAnalysisCancellation = null;
+                if (!disposed) RefreshAnalysisRibbonState(ActiveView);
+            }
+        }
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -193,7 +226,7 @@ namespace Conoscope
 
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
-            if (!File.Exists(filename) || !CVFileUtil.IsCVCIEFile(filename))
+            if (!ConoscopeDocument.CanOpenFile(filename))
             {
                 MessageBox.Show(Properties.Resources.PleaseSelectCVCIEFile, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -522,6 +555,7 @@ namespace Conoscope
             }
 
             disposed = true;
+            angularAnalysisCancellation?.Cancel();
             if (curveWorkspace != null)
             {
                 curveWorkspace.KeepSessionOnClose = false;
@@ -1966,11 +2000,13 @@ namespace Conoscope
         private void RefreshAnalysisRibbonState(ConoscopeView? activeView)
         {
             bool hasActiveView = activeView != null;
-
-            if (btnRecordGamutRed == null)
+            if (btnRecordGamutRed == null || btnAngularAnalysis == null)
             {
                 return;
             }
+
+            btnAngularAnalysis.IsEnabled = angularAnalysisCancellation != null || activeView?.State.HasDisplayData == true;
+            tbAngularAnalysisAction.Text = angularAnalysisCancellation != null ? Properties.Resources.AngularAnalysisCancel : Properties.Resources.AngularAnalysisTitle;
 
             btnRecordGamutRed.IsEnabled = hasActiveView;
             btnRecordGamutGreen.IsEnabled = hasActiveView;

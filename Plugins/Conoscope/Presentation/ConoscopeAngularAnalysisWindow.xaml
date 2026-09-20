@@ -1,0 +1,92 @@
+<Window x:Class="Conoscope.Presentation.ConoscopeAngularAnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="clr-namespace:Conoscope.Properties"
+        Title="{x:Static p:Resources.AngularAnalysisTitle}" Width="940" Height="790" MinWidth="880" MinHeight="660"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,16">
+            <TextBlock Text="{x:Static p:Resources.AngularAnalysisTitle}" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Static p:Resources.AngularOptionsHint}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="370"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="390"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{x:Static p:Resources.AngularQuantity}" FontWeight="SemiBold"/>
+                    <RadioButton x:Name="LuminanceOption" Content="{x:Static p:Resources.AngularLuminanceLabel}" HorizontalAlignment="Left" GroupName="Quantity" IsChecked="True" Margin="0,10,0,8" Checked="Settings_Changed"/>
+                    <RadioButton x:Name="IntensityOption" Content="{x:Static p:Resources.AngularIntensityLabel}" HorizontalAlignment="Left" GroupName="Quantity" Checked="Settings_Changed"/>
+                    <StackPanel x:Name="EmitterPanel" Margin="0,12,0,0">
+                        <ComboBox x:Name="SizeMode" SelectionChanged="Settings_Changed" SelectedIndex="0" HorizontalAlignment="Left" MinWidth="220">
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularDiameter}"/>
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularArea}"/>
+                        </ComboBox>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBox x:Name="EmitterSize" Text="0.5" Width="110" Padding="6,4" TextChanged="Settings_Changed" AutomationProperties.Name="{x:Static p:Resources.AngularEmitterSize}"/>
+                            <TextBlock x:Name="EmitterUnit" Text="mm" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{x:Static p:Resources.AngularIntensityHint}" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="12"/>
+                    </StackPanel>
+                    <Separator Margin="0,18,0,16"/>
+                    <CheckBox x:Name="MirrorEnabled" Content="{x:Static p:Resources.AngularMirrorEnabled}" FontWeight="SemiBold" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
+                    <StackPanel x:Name="MirrorPanel" Margin="0,12,0,0">
+                        <TextBlock Text="{x:Static p:Resources.AngularMirrorDirection}" Margin="0,0,0,6"/>
+                        <ComboBox x:Name="MirrorDirection" SelectionChanged="Direction_Changed" SelectedIndex="0">
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularTopToBottom}"/>
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularBottomToTop}"/>
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularLeftToRight}"/>
+                            <ComboBoxItem Content="{x:Static p:Resources.AngularRightToLeft}"/>
+                        </ComboBox>
+                        <TextBlock Text="{x:Static p:Resources.AngularRegionHint}" TextWrapping="Wrap" FontSize="12" Margin="0,10,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <TextBlock Text="θx" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                            <TextBox x:Name="MinX" Grid.Column="1" TextChanged="Settings_Changed" Padding="6,4" Margin="0,0,0,6" AutomationProperties.Name="θx minimum (°)"/>
+                            <TextBlock Grid.Column="2" Text="—" Margin="8,0,8,6" VerticalAlignment="Center"/>
+                            <TextBox x:Name="MaxX" Grid.Column="3" TextChanged="Settings_Changed" Padding="6,4" Margin="0,0,0,6" AutomationProperties.Name="θx maximum (°)"/>
+                            <TextBlock Grid.Row="1" Text="θy" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="MinY" Grid.Row="1" Grid.Column="1" TextChanged="Settings_Changed" Padding="6,4" AutomationProperties.Name="θy minimum (°)"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="—" Margin="8,0" VerticalAlignment="Center"/>
+                            <TextBox x:Name="MaxY" Grid.Row="1" Grid.Column="3" TextChanged="Settings_Changed" Padding="6,4" AutomationProperties.Name="θy maximum (°)"/>
+                        </Grid>
+                        <Button Content="{x:Static p:Resources.AngularResetRegion}" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="10,4" Click="ResetRegion_Click"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="{x:Static p:Resources.AngularSourcePreview}" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="PreviewAxis" Margin="0,8,0,8" FontSize="12" TextWrapping="Wrap"/>
+                    <Border BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="1" Padding="14">
+                        <Canvas x:Name="PreviewCanvas" Width="360" Height="360" Background="Transparent"
+                                MouseLeftButtonDown="Preview_MouseDown" MouseMove="Preview_MouseMove" MouseLeftButtonUp="Preview_MouseUp" LostMouseCapture="Preview_LostCapture">
+                            <Canvas.Clip><EllipseGeometry Center="180,180" RadiusX="180" RadiusY="180"/></Canvas.Clip>
+                            <Image x:Name="SourcePreview" Width="360" Height="360" IsHitTestVisible="False"/>
+                            <Rectangle x:Name="ReferenceRectangle" Fill="#303B82F6" Stroke="#3B82F6" StrokeThickness="2" StrokeDashArray="3,2" IsHitTestVisible="False"/>
+                            <Rectangle x:Name="TargetRectangle" Fill="#70F59E0B" Stroke="#F59E0B" StrokeThickness="2" IsHitTestVisible="False"/>
+                            <Line X1="0" Y1="180" X2="360" Y2="180" Stroke="White" Opacity="0.6" IsHitTestVisible="False"/>
+                            <Line X1="180" Y1="0" X2="180" Y2="360" Stroke="White" Opacity="0.6" IsHitTestVisible="False"/>
+                        </Canvas>
+                    </Border>
+                    <TextBlock Text="{x:Static p:Resources.AngularPreviewLegend}" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="12"/>
+                    <TextBlock Text="{x:Static p:Resources.AngularMirrorHint}" TextWrapping="Wrap" Margin="0,12,0,0" FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+            <TextBlock x:Name="ValidationError" TextWrapping="Wrap" Foreground="{DynamicResource CV.Status.Error}" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{x:Static p:Resources.BtnCancel}" IsCancel="True" Padding="22,7" Margin="0,0,10,0"/>
+                <Button x:Name="GenerateButton" Content="{x:Static p:Resources.AngularGenerate}" IsDefault="True" Padding="22,7" Click="Generate_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

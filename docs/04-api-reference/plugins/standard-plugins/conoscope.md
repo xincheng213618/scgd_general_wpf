@@ -2,10 +2,10 @@
 knowledge_id: "plugins.conoscope"
 knowledge_type: "topic"
 status: "current"
-summary: "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。"
+summary: "Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。"
 aliases: ["锥镜图像怎么看","Conoscope 依赖哪些 DLL","锥镜采集完成没有图像","Conoscope","VAM","H/V 坐标","Horizontal-Vertical Coordinates","笛卡尔角度坐标","North Polar","East Polar","HV North Polar","HV East Polar","ConoscopeCaptureWorkflow","ConoscopeFlowCaptureResult","ConoscopeCameraCaptureResult","ConoscopeDocument","ConoscopeDocumentChangeKind","ConoscopeView","ConoscopeViewState","ConoscopeImageHost","ConoscopeHorizontalVerticalProjection","ConoscopeAnalysisSession","MeasurementCaptureAlignment","ConoscopeConfigWindow","ConoscopeGlobalReferenceStore","FocusPoiTemplateRepository","CONOSCOPE_REAL_SAMPLE"]
-code_paths: ["Plugins/Conoscope/README.md","Plugins/Conoscope/Docs/ARCHITECTURE.md","Plugins/Conoscope/Conoscope.csproj","Engine/cvColorVision/cvColorVision.csproj","Plugins/Conoscope/manifest.json","Plugins/Conoscope/Core/ConoscopeModuleService.cs","Plugins/Conoscope/ConoscopeWindow.xaml","Plugins/Conoscope/ConoscopeWindow.xaml.cs","Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs","Plugins/Conoscope/ConoscopeDocument.cs","Plugins/Conoscope/ConoscopeView.xaml","Plugins/Conoscope/ConoscopeView.xaml.cs","Plugins/Conoscope/ConoscopeImageHost.xaml.cs","Plugins/Conoscope/Core/ConoscopeCoordinateAxis.cs","Plugins/Conoscope/Core/ConoscopeHorizontalVerticalProjection.cs","Plugins/Conoscope/Core/ConoscopePseudoColorRenderer.cs","Plugins/Conoscope/Application/Preprocess/ConoscopePreprocessPipeline.cs","Plugins/Conoscope/Processing/Preprocess/","Plugins/Conoscope/Application/Analysis/ConoscopeAnalysisSession.cs","Plugins/Conoscope/Application/Analysis/FocusPointMeasurementService.cs","Plugins/Conoscope/Analysis/MeasurementCaptureModels.cs","Plugins/Conoscope/Analysis/AnalysisResultCsvExporter.cs","Plugins/Conoscope/Application/FocusPoiTemplateRepository.cs","Plugins/Conoscope/Core/ConoscopeConfig.cs","Plugins/Conoscope/Core/ConoscopeConfigWindow.xaml.cs","Plugins/Conoscope/ConoscopePreprocessSettingsControl.xaml","Plugins/Conoscope/Core/ConoscopeGlobalReferenceStore.cs","Plugins/Conoscope/Core/ConoscopeReferenceMatSerializer.cs","Plugins/Conoscope/Core/ConoscopeExportService.cs","Plugins/Conoscope/MVS/","PluginProject.HostCopy.targets"]
-test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Conoscope.Tests/ConoscopeDocumentTests.cs","Test/Conoscope.Tests/CvcieChannelReaderTests.cs","Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs","Test/Conoscope.Tests/ConoscopeHorizontalVerticalProjectionTests.cs","Test/Conoscope.Tests/ConoscopeAnalysisSessionTests.cs","Test/Conoscope.Tests/ConoscopeColorimetryTests.cs","Test/Conoscope.Tests/MvsCaptureSessionTests.cs","Test/Conoscope.Tests/ArchitectureSmokeTests.cs","Test/Conoscope.Tests/AdvancedExportSettingsTests.cs"]
+code_paths: ["Plugins/Conoscope/README.md","Plugins/Conoscope/Docs/ARCHITECTURE.md","Plugins/Conoscope/Conoscope.csproj","Engine/cvColorVision/cvColorVision.csproj","Plugins/Conoscope/manifest.json","Plugins/Conoscope/Core/ConoscopeModuleService.cs","Plugins/Conoscope/ConoscopeWindow.xaml","Plugins/Conoscope/ConoscopeWindow.xaml.cs","Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs","Plugins/Conoscope/ConoscopeDocument.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/CalibratedRawFileReader.cs","Plugins/Conoscope/ConoscopeView.xaml","Plugins/Conoscope/ConoscopeView.xaml.cs","Plugins/Conoscope/ConoscopeImageHost.xaml.cs","Plugins/Conoscope/Core/ConoscopeCoordinateAxis.cs","Plugins/Conoscope/Core/ConoscopeHorizontalVerticalProjection.cs","Plugins/Conoscope/Core/ConoscopePseudoColorRenderer.cs","Plugins/Conoscope/Application/Preprocess/ConoscopePreprocessPipeline.cs","Plugins/Conoscope/Processing/Preprocess/","Plugins/Conoscope/Application/Analysis/ConoscopeAnalysisSession.cs","Plugins/Conoscope/Application/Analysis/FocusPointMeasurementService.cs","Plugins/Conoscope/Analysis/MeasurementCaptureModels.cs","Plugins/Conoscope/Analysis/AnalysisResultCsvExporter.cs","Plugins/Conoscope/Application/FocusPoiTemplateRepository.cs","Plugins/Conoscope/Core/ConoscopeConfig.cs","Plugins/Conoscope/Core/ConoscopeConfigWindow.xaml.cs","Plugins/Conoscope/ConoscopePreprocessSettingsControl.xaml","Plugins/Conoscope/Core/ConoscopeGlobalReferenceStore.cs","Plugins/Conoscope/Core/ConoscopeReferenceMatSerializer.cs","Plugins/Conoscope/Core/ConoscopeExportService.cs","Plugins/Conoscope/MVS/","PluginProject.HostCopy.targets"]
+test_paths: ["Test/Conoscope.Tests/Conoscope.Tests.csproj","Test/Conoscope.Tests/ConoscopeDocumentTests.cs","Test/Conoscope.Tests/CalibratedRawDocumentTests.cs","Test/Conoscope.Tests/CvcieChannelReaderTests.cs","Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs","Test/Conoscope.Tests/ConoscopeHorizontalVerticalProjectionTests.cs","Test/Conoscope.Tests/ConoscopeAnalysisSessionTests.cs","Test/Conoscope.Tests/ConoscopeColorimetryTests.cs","Test/Conoscope.Tests/MvsCaptureSessionTests.cs","Test/Conoscope.Tests/ArchitectureSmokeTests.cs","Test/Conoscope.Tests/AdvancedExportSettingsTests.cs"]
 related: ["plugins.index","plugins.capabilities","engine.file-io","flow.session","operations.camera","ui.configuration","plugins.getting-started","engine.native-bindings"]
 ---
 
@@ -15,17 +15,18 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 
 ## 入口与运行依赖
 
-宿主 Tool 菜单的 `VAM` 进入 `ConoscopeWindow`。ImageEditor 右键入口由 `ConoscopeModuleService.CanOpenFromImageView` 检查当前文件存在、`CVFileUtil.IsCVCIEFile` 为真且编辑器配置 `Channel == 3`；这不是仅凭扩展名允许任意图像进入。模块入口负责寻找/打开窗口，单文档 View 不靠静态 Window 单例刷新业务状态。
+宿主 Tool 菜单的 `VAM` 进入 `ConoscopeWindow`。文件打开、ImageEditor 右键和采集结果入口统一通过 `ConoscopeDocument.CanOpenFile` 检查：支持 32 位浮点 XYZ CVCIE，以及带有可重放 XYZ 校正参数的三通道 CVRAW。入口依据文件的测量能力，不受编辑器当前显示 RGB 或单通道 Y 的影响；不允许把未校正 RAW 的 RGB 当作 XYZ。模块入口负责寻找/打开窗口，单文档 View 不靠静态 Window 单例刷新业务状态。
 
 身份和最低宿主要求读取 `manifest.json`，发布版本以 `Conoscope.csproj` 生成的 DLL `FileVersion` 为准。当前工程为 Windows/x64、`net10.0-windows` WPF，引用 Engine、ImageEditor 和 Solution；完整运行还依赖匹配的 ColorVision/cvColorVision 库、OpenCV 及所用功能的供应商运行库，不能只交付一个插件 DLL。`CVCommCore.*` / `MQTTMessageLib.*` 当前类型来源与旧独立程序集的兼容要求见 [cvColorVision 命名空间与程序集](../../engine-components/cvColorVision.md#命名空间与程序集)，不把历史 DLL 名称当作本项目固定输出。
 
 未打开文档时，主页显示紧凑的打开、型号和观察相机操作，工作区显示“打开数据文件”和“前往采集”入口，空文档标签栏不占位；采集、处理、分析和系统页仍可访问。打开文档后恢复主页的视图与导出分组，关闭最后一个文档后返回开始页。空工作区按整个停靠布局（包括浮动文档）判断，不以当前活动图像是否就绪判断，避免加载和切换时误回开始页。采集期间开始页入口暂时禁用并显示进度；切换工作区状态不改变用户手动折叠 Ribbon 的选择。
 
-这里有三种不同来源：
+这里有四种不同来源：
 
 | 来源 | 责任与前提 |
 | --- | --- |
 | 已有 CVCIE | 从本地文件读取内嵌通道；不要求相机硬件。文件格式、通道读取及版本限制见 [FileIO](../../engine-components/ColorVision.FileIO.md) |
+| 已校正 CVRAW | 从原始像素及文件尾部保存的色度校正快照还原 XYZ；不要求另存 CVCIE 或连接相机。只有匹配像素布局且 `CanReplay=true` 的三通道校正可用于完整分析 |
 | Ribbon 测量采集 | `ConoscopeCaptureWorkflow` 调用 Engine Flow 或服务列表中的 `DeviceCamera`，需要对应模板/设备服务与结果记录 |
 | MVS 观察相机 | `MVSViewManager`、`MvsCaptureSession` 和观察窗口管理预览/光栅；另需海康驱动及 `MvCameraControl.dll`，不是 Engine 测量相机的替代实现 |
 
@@ -37,13 +38,13 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 
 | 阶段 | 当前判据 | 不代表什么 |
 | --- | --- | --- |
-| Flow 返回 | `ConoscopeFlowCaptureResult.Started` 仅检查返回对象非空，`Completed` 检查 `FlowStatus.Completed` | 不代表已经找到 CVCIE，也不是原生设备安全确认 |
+| Flow 返回 | `ConoscopeFlowCaptureResult.Started` 仅检查返回对象非空，`Completed` 检查 `FlowStatus.Completed` | 不代表已经找到测量文件，也不是原生设备安全确认 |
 | 相机回包 | 等待 `MsgRecordState.Success / Fail / Timeout`，只有 `Success` 继续找文件 | 不代表文件已经落地或本地可读 |
-| 找到文件 | `HasFile` 表示得到非空路径；查找器只接受现存、扩展名为 `.cvcie` 的候选 | 不验证文件内容、三个通道或最终渲染 |
+| 找到文件 | `HasFile` 表示得到非空路径；查找器接受通过头部/校正能力检查的 CVCIE 或校正 CVRAW | 不证明三个通道已完整加载或最终渲染成功 |
 | 窗口操作成功 | 业务成功且有文件时调用 `OpenConoscope`，然后将按钮操作标为成功 | 不等待文档首屏或完整 XYZ 加载 |
 | 文档/显示 | 由下节事件、数据状态和 View 渲染另行完成 | 与 Flow/消息状态、按钮计时结果不同 |
 
-Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回退当前 `FlowEngineManager.Batch`；因此该回退不能被描述为严格绑定本次结果。有效批次下最多查询结果10轮，每次未找到后等待300ms，并取枚举中第一个可用 CVCIE。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序找现存文件，不负责下载远端 URL。
+Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回退当前 `FlowEngineManager.Batch`；因此该回退不能被描述为严格绑定本次结果。有效批次下最多查询结果10轮，每次未找到后等待300ms，并取枚举中第一个可用测量文件。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序找现存文件，不负责下载远端 URL。
 
 `CaptureCameraAsync` 按相机配置选择单曝光或 R/G/B 三曝光，传入选中的标定参数，以及 ID 为 `-1` 的自动曝光/JSON 模板参数。它复用的是 [Engine 相机契约](../../../01-user-guide/devices/camera.md)，Flow 执行另见 [FlowExecutionSession](../../../01-user-guide/workflow/execution.md)。
 
@@ -55,7 +56,7 @@ Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回�
 
 | OpenAsync 路径 | 提交与事件 |
 | --- | --- |
-| 无需联合预处理 | 读内嵌 Y，完成适用的单通道处理后提交 Y，发布 `InitialDisplayReady`；随后顺序读取 X、Z并补齐，发布 `DeferredChannelsReady` |
+| 无需联合预处理 | 读取或从 RAW 还原 Y，完成适用的单通道处理后提交 Y，发布 `InitialDisplayReady`；随后顺序加载 X、Z并补齐，发布 `DeferredChannelsReady` |
 | `applyPreprocess && DustRemovalEnabled` | 先读 Y 但不发布首屏；读取 X/Z并联合预处理后一次提交 XYZ，只发布 `InitialDisplayReady` |
 | 首屏前失败 | 通过 `LoadFailed(exception, initialDisplayCompleted: false)` 报告，View 显示打开错误 |
 | Y 首屏已提交、后续 X/Z失败 | 保留已提交 Y，状态栏显示“仅 Y 可用”及重新加载入口，悬停可看错误原因；完整 XYZ 能力仍未就绪 |
@@ -70,7 +71,7 @@ Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回�
 - `ApplyPreprocess` 通过 `ref` 更新 Mat，并在 `finally` 保留已替换通道；中途异常不等于整个处理已回滚。`Reload` 是同步重读 XYZ并按配置执行非正值 clamp，不是 `OpenAsync` 的分阶段过程。
 - `DataVersion` 随数据变化递增；ImageCenter 色差参考随数据版本失效，避免曲线/导出逐点重复扫描同一参考 ROI。
 
-文件层只调用 `CVFileUtil.ReadCIEFileChannel` 读取指定内嵌通道，不改走会跟随关联源文件的通用打开流程。底层格式与读取限制归 [FileIO](../../engine-components/ColorVision.FileIO.md)，此处不另维护二进制协议。
+CVCIE 仍调用 `CVFileUtil.ReadCIEFileChannel` 读取指定内嵌通道，不改走会跟随关联源文件的通用打开流程。CVRAW 通过 Engine 的 `CalibratedRawFileReader` 只读映射原始像素，以文件尾部 `colorvision.calibration.color` 快照调用原生校正逐通道还原 32 位浮点 XYZ；不依赖当前模板，不从预览 RGB 反算，不改写或另存源文件。一次加载共用同一只读文件租约和校正快照，完成或取消后释放，防止 Y 与 X/Z 来自不同版本。原生单通道计算前后检查取消；进行中的一次原生调用结束后才能响应取消。曝光信息来自校正快照。缺失、损坏、布局不匹配、不可重放或仅单通道亮度的校正拒绝用于 Conoscope；预处理和非正值 clamp 仍由 Document 按配置执行。底层格式与读取限制归 [FileIO](../../engine-components/ColorVision.FileIO.md)，此处不另维护二进制协议。
 
 ## 视图状态、通道能力与轻量 Host
 
@@ -124,6 +125,16 @@ theta = atan2(sqrt(x^2 + y^2), z), phi = atan2(y, x)
 
 快照由 `ConoscopeWindow` 的工作区持有，全部文档共享同一个列表；主页“曲线快照”入口在关闭全部图像后仍可使用。关闭快照窗口仅隐藏，关闭源文档也保留曲线及来源信息；退出工作区时，未保存修改会提示保存、放弃或取消。源文件完整路径区分同名文件，路径只是来源元信息，恢复时不读取它，也不会随源文件更新重算快照。
 
+打开 CVCIE 或校正 CVRAW 后，选择“分析 → 亮度角分布”，在参数窗口选择物理量和可选填充区域，再点“生成对比曲线”。每次打开参数窗口默认亮度、镜像关闭；取消不提交任何设置或曲线，也不更改全局配置。默认向上述工作区追加 φ=0°、45°、90°、135° 四条方位直径截线及 360° 方位平均，选中平均曲线。分析始终读取提交参数时已加载的源 Y 缓冲（包含当时已应用的预处理），不依赖当前显示通道或预览投影；源中心、像素/度系数和型号视场随请求冻结。后台仅保留源 Y 的 OpenCV 头引用，不克隆整幅图；切换、重新处理或关闭源文档不改变已发起的分析。分析期间再次点击入口可取消，取消不追加部分结果。此入口要求半视场在 (0°, 90°]；采样采用双线性插值，径向步长 0.1°，包括 0° 和精确视场端点。历史参考曲线和方位/极角导出的最近像素规则保持原样，所以新截线与旧导出之间不保证逐点相等。
+
+360° 方位平均对每个非零半径按 1° 方位步长取 360 个样本，中心仅取一次；它不是四条截线的平均，也不是光通量积分。任一采样位置（开启镜像后使用对应参考位置）超出源图或插值邻域缺测，该半径保留 NaN，禁止边缘复制或只对剩余方位取平均。平均曲线在正负入射角上对称展示，这种显示不等于镜像填充。曲线元信息记录分析版本、源几何、采样规则、曝光与加载/预处理参数；同一请求内全部曲线共享捕获时间及来源路径。
+
+“估算发光强度（cd）”使用 `Iv = Lv × A × cosθ`，假设平面发光区域内亮度近似均匀；θ 为源 Polar 入射角，使用当前 Y 亮度而非显示通道。支持圆形发光区域直径（mm，`A = π × (d/2000)²` m²）或直接面积（mm²，乘 `10⁻⁶` 转 m²）。尺寸必须有限、正数且换算面积不溢出/下溢；这里的尺寸是实际有效发光区域，不是角度图中的亮斑尺寸，也不是仪器响应校正系数。90° 端点投影因子明确为 0，缺测仍为 NaN。固定面积缩放只改变绝对强度，在峰值归一化后抵消；cos 因子改变曲线形状和 FWHM。强度快照以 `Iv` / `cd` 标识，与 `Y` / `cd/m²` 快照分开比较。
+
+“启用遮挡区域镜像填充”支持上→下、下→上、左→右、右→左；箭头起点为参考侧，终点为替换侧。在源亮度缩略预览的目标侧拖动框选，或输入 θx/θy 矩形范围（源 Polar 平面中向右/向上为正，单位度）；默认整个目标半区，矩形须位于该半区并与圆形视场相交。橙色标记将替换的范围，蓝色虚线标记镜像参考范围；预览始终保留未填充源亮度。分析只对目标矩形与圆形视场内的射线反射采样坐标，不替换对称轴，不串联填充结果，不凭低亮度自动判断遮挡。参考位置无效则保持缺测，不回退到被遮挡值。填充基于对称假设，属于估算；开启时同时追加所选物理量的五条未填充曲线和五条镜像估算曲线，先填充采样再换算强度并计算平均，默认选中镜像平均曲线。所有派生计算不写源 Mat、源文件或原有测量；关闭选项保持默认数值采样契约。快照名称、说明、CSV 和版本 1 会话保留物理量、发光尺寸、公式、填充方向与角度范围；元信息还记录有效镜像/参考缺测射线样本数（平均曲线计完整方位采样，正负显示不重复计数）。
+
+亮度入射角曲线（Y、cd/m²，方位直径或固定 H/V）和估算发光强度曲线（Iv、cd）显示峰值角与半高全宽 FWHM；圆周、色度和对比度曲线不计算此指标。峰值取最高有限正采样值，同高时先取最接近 0° 者，再取较小角度；不扣除基线，向两侧找包围该峰的最近 50% 交点并线性插值。选中曲线的分析参数与有效半高交点在图上方说明，交点在图中标记；缺测截断交点搜索，缺少任一交点时显示不可用及原因，多半高区域提示仅代表所选主瓣。勾选“按各曲线峰值归一化（仅显示）”可比较各自除以正峰值后的形状，没有有效正峰值的曲线跳过并提示；各快照、CSV 数值及会话文件不变，归一化开关不写入会话。
+
 “保存会话”写入版本 1 的 `.conocurves` JSON 文件，保留名称、来源、捕获 UTC 时间、投影与横轴语义、通道、单位、处理元信息、完整精度位置/数值、勾选、颜色与当前选择。非有限数值以 JSON `null` 保存为断口，恢复为 NaN。“导入会话”先验证整份文件，再追加到当前列表，不覆盖现有曲线；重启后可从主页手动导入，不自动加载上次会话。文件上限 128 MiB、每个会话合计最多 2,000,000 个采样值，避免无界反序列化；未知版本、缺失关键字段和不等长数组会拒绝导入。保存使用同目录临时文件，成功后才替换目标。
 
 Manual EZCom Software 第 109/111 页按线条横竖命名 Marker，第 110/112 页按固定角度命名截线；第 52 页描述跟踪，第 122–123 页明确是 VT 比较。通用命名快照是本产品的扩展，不应把这些手册章节解读成完整的通用快照生命周期定义。
@@ -145,6 +156,8 @@ Manual EZCom Software 第 109/111 页按线条横竖命名 Marker，第 110/112 
 - 几何精度仍受当前型号的中心、`MaxAngle` 与线性像素/度系数约束；CVCIE 文件本身没有在此层提供独立镜头畸变标定时，H/V 变换不能替代现场标定。
 
 固定 H/V 的回归入口为 `ConoscopeHorizontalVerticalCrossSectionTests`（三投影、非零固定角、双线性、有效域、方向及原分辨率）、`ConoscopeCoordinateAxisInteractionTests`（真实坐标图元与交互）、`ConoscopeCrossSectionWorkflowTests`（View 到快照/CSV 的值和模式契约）、`ConoscopeCurveSnapshotTests`（不可变性、比较语义和完整精度 CSV）。界面还应使用实际样本检查 H 竖线、V 横线、曲线跟踪、三投影切换、Polar 回退及快照窗口关闭重开；仅构建通过不能替代这些操作验收。
+
+亮度角分布的回归入口为 `ConoscopeAngularAnalysisTests`（方向、双线性、完整方位平均、缺测与端点）、`ConoscopeAngularOptionsTests`（四方向镜像、局部区域、缺测、面积换算、已知 cos 分布与选项关闭时一致性）、`ConoscopeCurveMetricsTests`（主瓣交点、偏峰、多峰、断口与归一化）和 `ConoscopeAngularWorkflowTests`（参数草稿与框选映射、源关闭、旧导出/固定 H/V 曲线与显示状态不变、四种镜像与两种物理量组合、CSV/会话完整精度往返）。设置 `CONOSCOPE_REAL_SAMPLE` 为本地 CVCIE 路径，或 `CONOSCOPE_RAW_SAMPLE` 为带校正快照的 CVRAW 路径，可启用只读实图分析回归，校验源文件及全部 XYZ 像素哈希；未配置时该实图用例明确跳过。CVRAW 还运行完整 XYZ 加载与独立单像素重放比对。可选 `CONOSCOPE_ANALYSIS_OUTPUT` 指向独立输出目录，生成分析会话、CSV 和默认/最小窗口截图，供人工核对；与 `CONOSCOPE_BASELINE_SESSION` 同时设置时，还逐点比较指定旧会话与新版本默认曲线的数值。这些产物包含样本数据，不能提交到仓库。该夹具使用默认 VA60 几何且不预处理；镜像方向和发光尺寸属于功能验证输入，不代表该样本已确认的物理条件，不能替代现场标定、遮挡区域核对、其他型号/配置或真机采集验收。
 
 ## 配置 working copy、参考与持久化
 
@@ -199,6 +212,8 @@ dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -c Release -p:Platform
 wrapper 会构建、校验、上传并清理本地 `.cvxp`；不把它当本地验证命令，不使用 `--no-upload`。构建成功不代表发布成功；退出结果、远端版本与可下载包属于另一层交付证据。包内 README保留平台/依赖和风险，完整正文需要匹配版本的源码仓库。
 
 ## 测试范围与验证缺口
+
+`CalibratedRawDocumentTests` 对比合成 CVRAW 与对应 CVCIE 的 XYZ、角分布和 Y/x/y 导出，覆盖 8/16 位、交错/平面布局、分阶段事件、重新加载、取消与文件租约释放，以及缺失/损坏/不可重放校正的拒绝和修复重试。实图用例只读使用显式指定的本地样本，不将现场文件写入仓库。
 
 | 测试文件 | 实际可参考的范围 |
 | --- | --- |

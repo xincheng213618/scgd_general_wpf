@@ -25,19 +25,21 @@
             </WrapPanel>
             <TextBlock Text="{x:Static properties:Resources.SnapshotSessionHint}" TextWrapping="Wrap"
                        Margin="0,0,16,0" VerticalAlignment="Center" Foreground="{DynamicResource CV.Text.Secondary}"/>
+            <CheckBox x:Name="NormalizeCurves" Content="{x:Static properties:Resources.CurveNormalize}" Margin="0,8,0,0"
+                      ToolTip="{x:Static properties:Resources.CurveNormalizeHint}" Checked="NormalizeCurves_Changed" Unchecked="NormalizeCurves_Changed"/>
         </StackPanel>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="310" MinWidth="250"/>
+                <ColumnDefinition Width="350" MinWidth="250"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="*" MinWidth="440"/>
             </Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*" MinHeight="140"/>
+                    <RowDefinition Height="4*" MinHeight="180"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="3*" MinHeight="170"/>
+                    <RowDefinition Height="2*" MinHeight="120"/>
                 </Grid.RowDefinitions>
                 <ListBox x:Name="SnapshotList" SelectionMode="Single"
                          SelectionChanged="SnapshotList_SelectionChanged"
@@ -58,6 +60,17 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="{Binding Description}" FontSize="11" Margin="0,3,0,0"
                                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource CV.Text.Secondary}"/>
+                                    <TextBlock Text="{Binding MetricSummary}" FontSize="11" Margin="0,3,0,0" ToolTip="{Binding MetricDetails}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding MetricSummary}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
                         </DataTemplate>
@@ -90,6 +103,9 @@
                     <TextBlock Text="{x:Static properties:Resources.SnapshotCompatibilityHint}" TextWrapping="Wrap"/>
                     <TextBlock x:Name="ComparisonSummary" TextWrapping="Wrap" Margin="0,4,0,0" FontSize="11"
                                Foreground="{DynamicResource CV.Text.Secondary}"/>
+                    <TextBlock x:Name="SelectedCurveContext" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    <TextBlock x:Name="SelectedCurveMetrics" TextWrapping="Wrap" Margin="0,8,0,0"
+                               ToolTip="{x:Static properties:Resources.FwhmRule}"/>
                 </StackPanel>
                 <Border Grid.Row="1" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="1" CornerRadius="4">
                     <Grid>

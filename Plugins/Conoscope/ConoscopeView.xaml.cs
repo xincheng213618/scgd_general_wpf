@@ -15,6 +15,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -3623,7 +3624,7 @@ namespace Conoscope
             if (error != null) log.Error("CSV export failed", error);
         }
 
-        private ConoscopeExportContext CreateExportContext()
+        internal ConoscopeExportContext CreateExportContext()
         {
             if (YMat == null)
             {
@@ -4107,6 +4108,84 @@ namespace Conoscope
                 ConoscopeConfig.CurrentModel.ToString(), GetCoordinateSystemDisplayName(State.CoordinateSystem), reference,
                 axisLabel, ConoscopeChannelDisplayFormatter.GetLabel(channel), GetCurveUnit(channel), positions, values, DateTimeOffset.UtcNow, FileName,
                 $"{sampling}; {GetCurveMetadata()}", axisKey);
+        }
+
+        internal async Task<IReadOnlyList<ConoscopeCurveSnapshot>> CreateAngularSnapshotsAsync(CancellationToken cancellationToken,
+            ConoscopeAngularAnalysisOptions? options = null)
+        {
+            Dispatcher.VerifyAccess();
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (YMat == null) throw new InvalidOperationException(Properties.Resources.MsgLoadImageFirst);
+            options ??= new();
+            options.Validate(MaxAngle);
+            // Retain only a header over the published Y buffer. Changing or closing the
+            // source document cannot invalidate the worker, and no full image is cloned.
+            using var heldY = YMat.SubMat(0, YMat.Rows, 0, YMat.Cols);
+            double scale = sourcePixelsPerDegree > 0 ? sourcePixelsPerDegree : CurrentModelProfile.GetConoscopeCoefficient(heldY.Width, heldY.Height);
+            string sourcePath = FileName, model = ConoscopeConfig.CurrentModel.ToString();
+            string axisLabel = Properties.Resources.Conoscope_AngleDegrees;
+            string meanName = Properties.Resources.AngularMeanName, directionFormat = Properties.Resources.AngularDirectionName;
+            string mirrorLabel = Properties.Resources.AngularMirroredLabel, unfilledLabel = Properties.Resources.AngularUnfilledLabel;
+            DateTimeOffset capturedAt = DateTimeOffset.UtcNow;
+            ConoscopeExportContext context = new()
+            {
+                ModelName = model, ImageWidth = heldY.Width, ImageHeight = heldY.Height,
+                Center = sourceImageCenter, MaxAngle = MaxAngle, PixelsPerDegree = scale,
+                ReadXyz = (x, y) => new(0, heldY.At<float>(y, x), 0)
+            };
+            string metadata = FormattableString.Invariant($"Analysis=AngularLuminance/v2; SourceY=Bilinear; RadialStepDegrees={ConoscopeAngularAnalysis.RadialStepDegrees}; AzimuthSamples={ConoscopeAngularAnalysis.AzimuthSampleCount}; Invalid=NaN; Baseline=None; SourceImageUnchanged=True; DataVersion={document.DataVersion}; SourceSize={heldY.Width}x{heldY.Height}; Center=({context.Center.X:R},{context.Center.Y:R}); PixelsPerDegree={scale:R}; MaxAngle={context.MaxAngle:R}; Exposure={document.ExposureSummary}; Processing={document.ProcessingDescription}");
+            bool hasMirror = options.MirrorDirection != ConoscopeMirrorDirection.None;
+            var batches = await Task.Run(() =>
+            {
+                List<(ConoscopeAngularAnalysisOptions Options, IReadOnlyList<ConoscopeAngularCurve> Curves)> result = new();
+                if (hasMirror)
+                {
+                    var original = options with { MirrorDirection = ConoscopeMirrorDirection.None, MirrorRegion = null };
+                    result.Add((original, ConoscopeAngularAnalysis.Analyze(context, cancellationToken, original)));
+                }
+                result.Add((options, ConoscopeAngularAnalysis.Analyze(context, cancellationToken, options)));
+                return result;
+            }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return batches.SelectMany(batch => batch.Curves.Select(curve =>
+            {
+                var settings = batch.Options;
+                bool intensity = settings.Quantity == ConoscopeAngularQuantity.LuminousIntensity;
+                string label = curve.AzimuthDegrees is { } angle ? string.Format(CultureInfo.CurrentCulture, directionFormat, angle) : meanName;
+                if (intensity) label += " · Iv";
+                if (hasMirror) label += $" · {(settings.MirrorDirection == ConoscopeMirrorDirection.None ? unfilledLabel : mirrorLabel)}";
+                string kind = curve.AzimuthDegrees is { } phi ? FormattableString.Invariant($"CutAzimuthDegrees={phi}") : "Mean=Full360Required; Display=SignedRadialMean";
+                string quantity = intensity
+                    ? FormattableString.Invariant($"Quantity=EstimatedLuminousIntensity; Model=UniformPlanarEmitter; Formula=Iv=Lv*AreaM2*cos(theta); SizeMode={settings.SizeMode}; DiameterMm={settings.DiameterMillimeters:R}; AreaMm2={settings.AreaSquareMillimeters:R}; EffectiveAreaM2={settings.AreaSquareMeters:R}")
+                    : "Quantity=Luminance";
+                string mirror = $"SampleMirror={settings.MirrorDirection}";
+                string description = label;
+                if (intensity)
+                {
+                    string emitter = settings.SizeMode == ConoscopeEmitterSizeMode.CircularDiameter
+                        ? CompositeFormatCache.Format(Properties.Resources.AngularDiameterValue, settings.DiameterMillimeters)
+                        : CompositeFormatCache.Format(Properties.Resources.AngularAreaValue, settings.AreaSquareMillimeters);
+                    description += $" · {Properties.Resources.AngularIntensityLabel} · {emitter}";
+                }
+                if (settings.MirrorDirection != ConoscopeMirrorDirection.None)
+                {
+                    var region = settings.GetMirrorRegion(context.MaxAngle);
+                    mirror += FormattableString.Invariant($"; TargetRectangleDegrees=({region.MinX:R},{region.MaxX:R},{region.MinY:R},{region.MaxY:R}); MirrorAssumption=SourceSymmetry; MirroredRaySamples={curve.MirroredRaySamples}; UnavailableMirrorRaySamples={curve.UnavailableMirrorRaySamples}");
+                    string direction = settings.MirrorDirection switch
+                    {
+                        ConoscopeMirrorDirection.TopToBottom => Properties.Resources.AngularTopToBottom,
+                        ConoscopeMirrorDirection.BottomToTop => Properties.Resources.AngularBottomToTop,
+                        ConoscopeMirrorDirection.LeftToRight => Properties.Resources.AngularLeftToRight,
+                        _ => Properties.Resources.AngularRightToLeft
+                    };
+                    description += $" · {direction}" + Environment.NewLine
+                        + CompositeFormatCache.Format(Properties.Resources.AngularRegionValue, region.MinX, region.MaxX, region.MinY, region.MaxY)
+                        + " · " + CompositeFormatCache.Format(Properties.Resources.AngularRayCounts, curve.MirroredRaySamples, curve.UnavailableMirrorRaySamples);
+                }
+                return new ConoscopeCurveSnapshot(label, Path.GetFileName(sourcePath), model, "Polar", description,
+                    axisLabel, intensity ? "Iv" : "Y", intensity ? "cd" : "cd/m²", curve.Positions, curve.Values,
+                    capturedAt, sourcePath, $"{metadata}; {kind}; {quantity}; {mirror}", "polar-diameter-angle");
+            })).ToArray();
         }
 
         private void ShowSnapshotWindow()

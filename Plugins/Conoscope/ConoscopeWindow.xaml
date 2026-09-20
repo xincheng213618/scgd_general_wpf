@@ -557,6 +557,23 @@
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
+                                    <Button x:Name="btnAngularAnalysis" Click="AnalyzeAngularLuminance_Click"
+                                            Style="{StaticResource RibbonTallButtonStyle}" IsEnabled="False"
+                                            ToolTip="{x:Static properties:Resources.AngularAnalysisTip}">
+                                        <StackPanel Orientation="Vertical">
+                                            <ContentControl ContentTemplate="{StaticResource ConoscopeIcon.Curves}" Style="{StaticResource RibbonVectorIconStyle}"/>
+                                            <TextBlock x:Name="tbAngularAnalysisAction" Text="{x:Static properties:Resources.AngularAnalysisTitle}" Style="{StaticResource RibbonTallCaptionStyle}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.AngularAnalysisTitle}" Style="{StaticResource RibbonGroupHeaderStyle}"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource RibbonGroupStyle}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <StackPanel Orientation="Horizontal">
                                         <StackPanel Orientation="Vertical">
                                             <TextBlock Text="{x:Static properties:Resources.GroupGamut}" Style="{StaticResource RibbonFieldLabelStyle}"/>
