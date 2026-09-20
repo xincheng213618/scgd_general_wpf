@@ -65,6 +65,58 @@ public sealed class CopilotBusinessGraderTests : IDisposable
     }
 
     [Theory]
+    [InlineData("ReadLocalFile", false, "line-a", true, true)]
+    [InlineData("ReadLocalFile", true, "line-a", true, false)]
+    [InlineData("ReadLocalFile", false, "line-b", true, false)]
+    [InlineData("ReadLocalFile", false, "line-a", false, false)]
+    [InlineData("GrepText", false, "line-a", true, false)]
+    public void MissingFileIsCreatedOnlyAfterTheExpectedFailedRead(string tool, bool success, string directory, bool attempted, bool expected)
+    {
+        var steering = CopilotBusinessScenarios.All.Single(s => s.Id == "steered-missing-file").SteeringAfterRead!;
+        var path = Path.Combine(_workspace, directory, "camera.json");
+        var result = new CopilotToolResult
+        {
+            ToolName = tool, Success = success,
+            AttemptedLocalFilePaths = attempted ? [path] : [],
+            SuccessfullyReadLocalFilePaths = success ? [path] : [],
+        };
+        Assert.Equal(expected, CopilotBusinessEvaluationTests.ShouldTriggerSteering(steering, _workspace,
+            new() { Type = CopilotAgentEventType.ToolResult, ToolResult = result }, null));
+        Assert.False(CopilotBusinessEvaluationTests.ShouldTriggerSteering(steering, _workspace,
+            new() { Type = CopilotAgentEventType.ToolStarted, ToolResult = result }, null));
+    }
+
+    [Theory]
+    [InlineData("line-a/camera.json", true)]
+    [InlineData("line-b/camera.json", false)]
+    [InlineData("../line-a/camera.json", false)]
+    [InlineData("line-a/\0camera.json", false)]
+    [InlineData(null, false)]
+    public void ResolutionFailureUsesTheActualInvocationPath(string? requestedPath, bool expected)
+    {
+        var steering = CopilotBusinessScenarios.All.Single(s => s.Id == "steered-missing-file").SteeringAfterRead!;
+        Assert.Equal(expected, CopilotBusinessEvaluationTests.ShouldTriggerSteering(steering, _workspace,
+            new() { Type = CopilotAgentEventType.ToolResult, ToolResult = new() { ToolName = "ReadLocalFile", Success = false } }, requestedPath));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedReadCannotCountAsEvidenceAfterTheUserRepairsAFile(bool success)
+    {
+        var steering = CopilotBusinessScenarios.All.Single(s => s.Id == "steered-missing-file").SteeringAfterRead!;
+        var path = Path.Combine(_workspace, "line-a", "camera.json");
+        var steps = new[] { new CopilotAgentStepRecord
+        {
+            Execution = new() { CallId = "after-update" },
+            Observation = new() { Success = success, AttemptedLocalFilePaths = [path], SuccessfullyReadLocalFilePaths = success ? [path] : [] },
+        } };
+        var failures = CopilotBusinessEvaluationTests.GradeSteering(steering, _workspace, true, ["after-update"], steps);
+        if (success) Assert.Empty(failures);
+        else Assert.Equal(["missing_post_steering_read:line-a/camera.json"], failures);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void AReadBeforeApplyingThePatchDoesNotProvePostWriteVerification(bool readAfterWrite)
@@ -80,6 +132,34 @@ public sealed class CopilotBusinessGraderTests : IDisposable
             readAfterWrite ? [read, apply, read] : [read, apply]);
         Assert.Equal(!readAfterWrite, failures.Contains("missing_post_write_read:camera.json"));
         if (readAfterWrite) Assert.Empty(failures);
+    }
+
+    [Theory]
+    [InlineData("before")]
+    [InlineData("after")]
+    [InlineData("wrong-path")]
+    [InlineData("successful")]
+    [InlineData("missing")]
+    public void NewFileVerificationMustIncludeTheRequestedFailureBeforeCreation(string initialRead)
+    {
+        var scenario = CopilotBusinessScenarios.All.Single(s => s.Id == "create-after-missing-read");
+        var hashes = WriteSources(scenario);
+        var target = Path.Combine(_workspace, "reports", "summary.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.WriteAllText(target, scenario.ExpectedWrites!["reports/summary.json"]);
+        var firstRead = new CopilotAgentStepRecord
+        {
+            ToolCall = new() { ToolName = "ReadLocalFile", ToolInput = new() { Path = initialRead == "wrong-path" ? "other/summary.json" : "reports/summary.json" } },
+            Observation = new() { Success = initialRead == "successful" },
+        };
+        var steps = ReadEvidence(scenario).ToList();
+        if (initialRead is not ("after" or "missing")) steps.Add(firstRead);
+        steps.Add(new() { ToolCall = new() { ToolName = "ApplyWorkspacePatchEnvelope" }, Observation = new() { Success = true } });
+        if (initialRead == "after") steps.Add(firstRead);
+        steps.Add(new() { Observation = new() { Success = true, SuccessfullyReadLocalFilePaths = [target] } });
+        var failures = CopilotBusinessEvaluationTests.Grade(scenario, _workspace, hashes, scenario.ExpectedAnswer, steps);
+        if (initialRead == "before") Assert.Empty(failures);
+        else Assert.Equal(["missing_initial_failed_read:reports/summary.json"], failures);
     }
 
     [Fact]

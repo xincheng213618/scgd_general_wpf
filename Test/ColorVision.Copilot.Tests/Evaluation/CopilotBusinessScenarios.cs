@@ -18,9 +18,10 @@ internal sealed record CopilotBusinessScenario(
     CopilotBusinessSteering? SteeringAfterRead = null,
     bool RequireSessionReplan = false,
     string? DeferredSteeringFact = null,
-    bool RestrictWritesToExpectedFiles = false);
+    bool RestrictWritesToExpectedFiles = false,
+    string[]? RequiredInitialFailedReads = null);
 
-internal sealed record CopilotBusinessSteering(string File, string Message, Dictionary<string, string> UpdatedFiles);
+internal sealed record CopilotBusinessSteering(string File, string Message, Dictionary<string, string> UpdatedFiles, bool AfterFailedRead = false);
 
 internal static class CopilotBusinessScenarios
 {
@@ -43,6 +44,14 @@ internal static class CopilotBusinessScenarios
             Mode: CopilotAgentMode.Auto,
             SteeringAfterRead: new("camera.json", "我刚更新了 camera.json，请重新读取。使用当前曝光和增益，仍返回 exposure_ms 和 gain，不要修改文件。", new()
             { ["camera.json"] = "{\"exposure_us\":24000,\"gain\":4}" })),
+        new("steered-missing-file", "请先直接尝试读取 line-a/camera.json，再返回 exposure_ms 和 gain；如果读取失败，我会补齐文件并补充消息。不要修改文件。", new(),
+            "{\"exposure_ms\":23.5,\"gain\":6}", RequiredReads: ["line-a/camera.json"], Mode: CopilotAgentMode.Auto,
+            SteeringAfterRead: new("line-a/camera.json", "我刚把缺失的 line-a/camera.json 补齐了，请重新读取，再返回 exposure_ms 和 gain。不要修改文件。", new()
+            { ["line-a/camera.json"] = "{\"exposure_us\":23500,\"gain\":6}" }, AfterFailedRead: true)),
+        new("steered-repaired-file", "读取 camera.json，返回 exposure_ms 和 gain，不修改文件。", new()
+        { ["camera.json"] = "\0damaged-export" }, "{\"exposure_ms\":17.5,\"gain\":2}", RequiredReads: ["camera.json"], Mode: CopilotAgentMode.Auto,
+            SteeringAfterRead: new("camera.json", "我刚重新导出了 camera.json，文件内容已修复。请重新读取，再返回 exposure_ms 和 gain。不要修改文件。", new()
+            { ["camera.json"] = "{\"exposure_us\":17500,\"gain\":2}" }, AfterFailedRead: true)),
         new("steered-log-refresh", "读取 capture.log，返回 RUN-648 按时间最新的 SUMMARY 的 serial、result、error_code，不修改日志。", new()
         { ["capture.log"] = "10:00:00 SUMMARY task=RUN-648 serial=CV-648 result=OK error_code=NONE\r\n" },
             "{\"serial\":\"CV-648\",\"result\":\"NG\",\"error_code\":\"CAL_48\"}",
@@ -120,6 +129,11 @@ internal static class CopilotBusinessScenarios
         new("write-result-report", "读取 batch.csv，创建 summary.json，内容包含 total、ng、yield_percent（百分数），不修改原数据。完成后返回 {\"saved\":true}。", new()
         { ["batch.csv"] = "serial,result\nD1,NG\nD2,OK\nD3,NG\nD4,OK\n" }, "{\"saved\":true}", new()
         { ["summary.json"] = "{\"total\":4,\"ng\":2,\"yield_percent\":50}" }),
+        new("create-after-missing-read", "先直接尝试读取 reports/summary.json，确认当前内容。如果该文件不存在，读取 batch.csv 并创建 reports/summary.json，字段为 total、ng、yield_percent（百分数）。保存后使用原路径再次读取核对，最后返回 saved 布尔值和 yield_percent，不修改 batch.csv。", new()
+        { ["batch.csv"] = "serial,result\nC1,OK\nC2,NG\nC3,OK\nC4,OK\n" }, "{\"saved\":true,\"yield_percent\":75}",
+            ExpectedWrites: new() { ["reports/summary.json"] = "{\"total\":4,\"ng\":1,\"yield_percent\":75}" },
+            RequiredReads: ["batch.csv"], ExposeSourceFiles: false, RequirePostWriteRead: true,
+            RequiredInitialFailedReads: ["reports/summary.json"]),
         new("scoped-profile-edit", "读取 camera-a.json，将 gain 改为2，其他字段不变，实际保存。camera-b.json 和 guard.txt 都不可修改。返回 {\"saved\":true}。", new()
         { ["camera-a.json"] = "{\"gain\":1,\"exposure_us\":9000}", ["camera-b.json"] = "{\"gain\":1,\"exposure_us\":8000}" },
             "{\"saved\":true}", new() { ["camera-a.json"] = "{\"gain\":2,\"exposure_us\":9000}" }, ["camera-a.json"], RestrictWritesToExpectedFiles: true),

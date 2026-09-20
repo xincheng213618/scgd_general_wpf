@@ -108,6 +108,8 @@ namespace ColorVision.Copilot
 
                 public HashSet<string>? ConcurrentWorkspaceChanges { get; set; }
 
+                public HashSet<string>? ConcurrentWorkspaceCreations { get; set; }
+
                 public int AttemptCount { get; set; }
 
                 public int RejectedCount { get; set; }

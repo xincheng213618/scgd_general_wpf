@@ -123,6 +123,10 @@ public sealed class CopilotBusinessEvaluationTests
             await File.WriteAllTextAsync(Path.Combine(workspace, "guard.txt"), "KEEP-ORIGINAL-7341\n");
         var hashes = CaptureFileHashes(workspace);
         var expectedHashes = new Dictionary<string, string>(hashes, StringComparer.OrdinalIgnoreCase);
+        // A user can select a known file that is missing or damaged. Preserve the
+        // exact read grant without manufacturing source bytes before the failure.
+        if (scenario.SteeringAfterRead is { AfterFailedRead: true } failedReadSteering)
+            conversation.SourceFiles.Add(ResolveScenarioFilePath(workspace, failedReadSteering.File));
         var patchStore = new CopilotWorkspacePatchStore();
         ICopilotTool[] tools =
         [
@@ -135,8 +139,9 @@ public sealed class CopilotBusinessEvaluationTests
         catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "business-evaluation", "Business evaluation", tools);
         var providerErrors = new List<string>();
         var providerRequests = new List<object>();
+        var readObserver = new EvaluationReadObserver();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(new CopilotToolRegistry(tools),
-            new CopilotAgentContextBuilder(), new CopilotToolExecutor(),
+            new CopilotAgentContextBuilder(), new CopilotToolExecutor(hooks: [readObserver]),
             p => new EvidenceRecordingChatClient(CopilotMicrosoftAgentFrameworkRuntime.CreateChatClient(p),
                 ex => providerErrors.Add(Redact(ex.ToString(), profile)), (messages, options) =>
                 {
@@ -203,8 +208,8 @@ public sealed class CopilotBusinessEvaluationTests
                 if (e.Type == CopilotAgentEventType.ToolResult && e.ToolResult != null) emittedResults.Add(e.ToolResult);
                 if (e.Type is CopilotAgentEventType.ToolResult or CopilotAgentEventType.RuntimeDiagnostic or CopilotAgentEventType.Error)
                     events.Add(new { Type = e.Type.ToString(), Text = Redact(e.Text, profile), Tool = e.ToolResult?.ToolName, Success = e.ToolResult?.Success });
-                if (scenario.SteeringAfterRead is { } steering && e.Type == CopilotAgentEventType.ToolResult && e.ToolResult?.Success == true
-                    && e.ToolResult.SuccessfullyReadLocalFilePaths.Any(p => string.Equals(Path.GetFullPath(p), ResolveScenarioFilePath(workspace, steering.File), StringComparison.OrdinalIgnoreCase))
+                readObserver.RequestedPaths.TryGetValue(e.ToolExecution?.CallId ?? "", out var requestedReadPath);
+                if (scenario.SteeringAfterRead is { } steering && ShouldTriggerSteering(steering, workspace, e, requestedReadPath)
                     && Interlocked.CompareExchange(ref steeringTriggered, 1, 0) == 0)
                 {
                     // This is a controlled external update, not a model write. Keep the
@@ -213,8 +218,9 @@ public sealed class CopilotBusinessEvaluationTests
                     {
                         var path = ResolveScenarioFilePath(workspace, name);
                         var relative = RelativeFileName(workspace, path);
-                        if (!expectedHashes.TryGetValue(relative, out var expectedHash) || HashFile(path) != expectedHash)
+                        if (expectedHashes.TryGetValue(relative, out var expectedHash) ? HashFile(path) != expectedHash : File.Exists(path))
                             fixtureFailures.Add("source_changed_before_steering:" + name);
+                        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                         File.WriteAllText(path, content, ResolveFileEncoding(scenario, name));
                         expectedHashes[relative] = HashFile(path);
                     }
@@ -300,6 +306,27 @@ public sealed class CopilotBusinessEvaluationTests
         Directory.GetFiles(workspace, "*", SearchOption.AllDirectories)
             .ToDictionary(p => RelativeFileName(workspace, p), HashFile, StringComparer.OrdinalIgnoreCase);
 
+    internal static bool ShouldTriggerSteering(CopilotBusinessSteering steering, string workspace, CopilotAgentEvent e, string? requestedReadPath)
+    {
+        if (e.Type != CopilotAgentEventType.ToolResult || e.ToolResult is not { } result
+            || result.Success == steering.AfterFailedRead) return false;
+        if (steering.AfterFailedRead && result.ToolName is not ("ReadLocalFile" or "ReadAttachedFile")) return false;
+        var paths = steering.AfterFailedRead ? result.AttemptedLocalFilePaths : result.SuccessfullyReadLocalFilePaths;
+        var target = ResolveScenarioFilePath(workspace, steering.File);
+        if (paths.Any(p => string.Equals(Path.GetFullPath(p), target, StringComparison.OrdinalIgnoreCase))) return true;
+        // Resolution can fail before a file-open attempt is reported. Match the
+        // actual executor invocation, never parse an error message or guess a path.
+        if (!steering.AfterFailedRead || string.IsNullOrWhiteSpace(requestedReadPath)) return false;
+        return MatchesRequestedFilePath(requestedReadPath, workspace, target);
+    }
+
+    private static bool MatchesRequestedFilePath(string? requestedPath, string workspace, string target)
+    {
+        if (string.IsNullOrWhiteSpace(requestedPath)) return false;
+        try { return string.Equals(Path.GetFullPath(requestedPath, workspace), target, StringComparison.OrdinalIgnoreCase); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return false; }
+    }
+
     internal static List<string> GradeSteering(CopilotBusinessSteering steering, string workspace, bool accepted,
         IEnumerable<string> postSteeringCallIds, IReadOnlyList<CopilotAgentStepRecord> steps)
     {
@@ -368,6 +395,18 @@ public sealed class CopilotBusinessEvaluationTests
         }
         if (scenario.ExpectedWrites is { Count: > 0 } && !steps.Any(s => s.ToolCall.ToolName == "ApplyWorkspacePatchEnvelope" && s.Observation.Success))
             failures.Add("missing_apply_evidence");
+        if (scenario.RequiredInitialFailedReads is { Length: > 0 } initialReads)
+        {
+            var firstApply = Enumerable.Range(0, steps.Count).FirstOrDefault(i =>
+                steps[i].ToolCall.ToolName == "ApplyWorkspacePatchEnvelope" && steps[i].Observation.Success, -1);
+            foreach (var name in initialReads)
+            {
+                var path = ResolveScenarioFilePath(workspace, name);
+                if (firstApply < 0 || !steps.Take(firstApply).Any(s => !s.Observation.Success
+                    && s.ToolCall.ToolName == "ReadLocalFile" && MatchesRequestedFilePath(s.ToolCall.ToolInput.Path, workspace, path)))
+                    failures.Add("missing_initial_failed_read:" + name);
+            }
+        }
         if (scenario.RequirePostWriteRead)
         {
             var lastApply = Enumerable.Range(0, steps.Count).LastOrDefault(i =>
@@ -472,6 +511,19 @@ public sealed class CopilotBusinessEvaluationTests
         }
 
         public void Dispose() => Instance.SetValue(null, _previous);
+    }
+
+    private sealed class EvaluationReadObserver : ICopilotToolExecutionHook
+    {
+        public ConcurrentDictionary<string, string> RequestedPaths { get; } = new(StringComparer.Ordinal);
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)
+        {
+            var invocation = context.Invocation;
+            if (invocation.Tool is CopilotReadLocalFileTool or CopilotReadAttachedFileTool && !string.IsNullOrWhiteSpace(invocation.ToolInput.Path))
+                RequestedPaths[invocation.CallId] = invocation.ToolInput.Path;
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        }
+        public Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class EvidenceRecordingChatClient(IChatClient inner, Action<Exception> record,

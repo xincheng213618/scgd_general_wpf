@@ -200,8 +200,14 @@ pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 # 在首次读取后模拟外部文件更新，并向仍在运行的任务补充用户指令。
 .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases steered-file-refresh,steered-log-refresh
 
+# 首次读取失败后，由夹具补齐缺失文件或修复损坏内容，再接受用户补充并重读。
+.\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases steered-missing-file,steered-repaired-file
+
 # 检验嵌套目录中的同名文件、指定文件写权限、新建输出目录和运行中重读。
 .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases nested-scoped-edit,nested-log-latest,nested-report-create,nested-steered-refresh
+
+# 输出文件首次读取失败，随后创建报告并重读核对。
+.\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases create-after-missing-read
 
 # 验证运行中补充的要求能跨轮保留：分别恢复原会话与因写工具面变化重建会话。
 .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases steering-memory-resume,steering-memory-replan
@@ -216,11 +222,13 @@ pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 
 文件哈希递归覆盖工作区，键使用以 `/` 分隔的相对路径；不同目录中的同名文件各自保留基线。嵌套文件场景同时检查目标文件修改或新建、未授权文件的字节级保护、意外新增文件以及保存后的完整路径读取证据。读取另一目录的同名文件不能充当复核；steering 的触发、外部更新哈希和重读证据也以规范化的完整路径匹配。夹具文件路径必须位于隔离工作区，不能用绝对路径或父目录逃逸写入外部文件。
 
+`create-after-missing-read` 要求模型先直接尝试读取不存在的输出文件，再基于源数据创建报告并重新读取。评分分别检查首次成功应用补丁之前的指定路径读取失败，以及最后一次成功应用之后的成功读取；创建后的失败、其他路径的失败或只有最终正确文件都不能替代完整流程证据。
+
 `-Repetitions` 默认为 1，范围 1–10；大于 1 时使用独立的 `repeat-01` 等目录，每次重新创建工作区、会话和 checkpoint，只在该次重复内部沿 `ContinueAfter` 共享状态。报告逐项记录 `Repetition`，总计划数包括所有重复，任何失败都会使整次评测失败；后续通过不能覆盖先前失败。`ProviderRequests` 在 Provider SDK 调用入口记录本轮提示、steering 和 JSON 格式规则是否出现，以及指令长度和消息数，不保存完整系统提示或原始请求载荷。这些字段用于区分装配缺失与回答不遵循，不能当作 HTTP 服务端已收到请求的证明。
 
 连续对话场景复用同一合成工作区、可见历史和正式 Runtime 返回的 checkpoint，每轮仍创建新的任务权限。前置轮次由 `ContinueAfter` 自动补齐，报告以轮次计数并记录 `PreviousTurnId`、`SessionResumed` 和实际工作区；读取证据只取本轮结果，不能把历史读取算作重新核验。Auto 模式场景检查外部修改配置、追加日志后的追问，以及从读取切换为修改保存；评测只追加 JSON 输出约定，不统一注入“当前工作区”意图提示。要求恢复的读取续问还会检查本轮 journal 中的真实恢复事件；写工具面改变时允许按兼容性规则重建会话并恢复历史。明确要求保存后核对的场景必须在最后一次成功应用补丁后重新读取目标文件，应用前的读取不能充当保存验证。逐轮源哈希以场景指定的外部更新完成后为基准，前一轮的原始内容和哈希保留在其证据文件中。
 
-运行中补充场景在目标文件首次成功读取后，由测试夹具保持原编码更新合成文件，并向当前 TaskId 提交用户 steering。证据同时保留最初的 `SourceHashes`、外部更新后的 `ExpectedSourceHashes`、实际最终哈希及补充准入结果；夹具更新前的非预期修改也会导致失败。评分只把补充被接受之后发出 `ToolStarted` 的 CallId 计作重读候选，并再次检查成功状态和目标路径，不能把旧读取或更新前已经启动的并行调用当作新证据。配置和 Unicode 日志场景都要求最终回答使用新值、更新后的文件及其他受保护文件保持不变；仅接受补充或仅回答正确不足以通过。该路径验证正式 Runtime 与真实模型的活动任务补充行为，不涉及 WPF 输入操作。
+运行中补充场景在目标文件首次成功读取后，由测试夹具保持原编码更新合成文件，并向当前 TaskId 提交用户 steering。缺失／损坏文件场景则预先固定用户指定文件的精确读取范围，只在真实文件读取报告该路径失败后补齐或修复内容，再提交补充；若路径解析早于文件打开失败，则由只记录参数的执行 Hook 按 CallId 匹配实际读取调用，不解析错误文本猜测路径。缺失文件首次读取前不制造内容，失败读取和其他工具结果不能算作成功证据。证据同时保留最初的 `SourceHashes`、外部更新后的 `ExpectedSourceHashes`、实际最终哈希及补充准入结果；夹具更新前的非预期修改或创建也会导致失败。评分只把补充被接受之后发出 `ToolStarted` 的 CallId 计作重读候选，并再次检查成功状态和目标路径，不能把旧读取或更新前已经启动的并行调用当作新证据。配置和 Unicode 日志场景都要求最终回答使用新值、更新后的文件及其他受保护文件保持不变；仅接受补充或仅回答正确不足以通过。该路径验证正式 Runtime 与真实模型的活动任务补充行为，不涉及 WPF 输入操作。
 
 跨轮补充记忆场景把合成工位标识只放在运行中的 steering 中，前置轮次若在回答中复述该标识则评分失败，防止后续仅凭普通可见历史答对。补充内容必须以用户 steering 身份出现在正式 checkpoint；评测不向可见历史手工补写该指令。两个独立的前置会话分别供只读续问与新增导出写任务使用，评分检查本轮的 `SessionResumed`／`SessionReplanned` 事件、工位标识和实际文件结果；重建场景不能由恢复旧会话冒充通过。证据保留 checkpoint 中的补充内容，导出仍需应用补丁后重读核对。
 

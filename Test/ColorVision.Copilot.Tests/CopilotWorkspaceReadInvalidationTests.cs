@@ -24,14 +24,17 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
     [InlineData("ReadLocalFile", true, "failed")]
     [InlineData("ReadLocalFile", true, "recheck")]
     [InlineData("ReadLocalFile", true, "failed-read")]
+    [InlineData("ReadAttachedFile", true, "failed-read")]
+    [InlineData("ReadLocalFile", false, "failed-read")]
+    [InlineData("ReadLocalFile", true, "failed-read-recheck")]
     [InlineData("ReadLocalFile", true, "budget")]
     public async Task LateReadCompletionDoesNotPoisonPostMutationRefresh(string name, bool affectedScope, string scenario)
     {
-        var readSucceeds = scenario != "failed-read";
-        var writeSucceeds = scenario is not ("failed" or "recheck");
-        var requiresRecheck = scenario == "recheck";
+        var readSucceeds = !scenario.StartsWith("failed-read", StringComparison.Ordinal);
+        var writeSucceeds = scenario is not ("failed" or "recheck" or "failed-read-recheck");
+        var requiresRecheck = scenario is "recheck" or "failed-read-recheck";
         var changesContent = scenario != "unchanged";
-        var canRefresh = affectedScope && readSucceeds && (writeSucceeds && changesContent || requiresRecheck) && scenario != "budget";
+        var canRefresh = affectedScope && (readSucceeds ? writeSucceeds && changesContent || requiresRecheck : writeSucceeds) && scenario != "budget";
         var scope = Directory.CreateDirectory(Path.Combine(_workspace, "scope")).FullName;
         var sibling = Directory.CreateDirectory(Path.Combine(_workspace, "scope-sibling")).FullName;
         var path = Path.Combine(scope, "camera.json");
@@ -170,12 +173,13 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
     [InlineData("GrepText", "colorvision_grep_text")]
     [InlineData("SearchFiles", "colorvision_search_files")]
     [InlineData("ListDirectory", "colorvision_list_directory")]
+    [InlineData("ReadLocalFile", "colorvision_read_local_file")]
     public async Task RuntimeCanRepeatTheOriginalQueryAfterApplyingARealPatch(string name, string functionName)
     {
         using var solutionScope = new VerificationWorkspaceScope(_workspace);
         var provider = new PatchVerificationChatClient(functionName);
         var store = new CopilotWorkspacePatchStore();
-        ICopilotTool[] tools = [new CopilotGrepTextTool(), new CopilotSearchFilesTool(), new CopilotListDirectoryTool(),
+        ICopilotTool[] tools = [new CopilotReadLocalFileTool(), new CopilotGrepTextTool(), new CopilotSearchFilesTool(), new CopilotListDirectoryTool(),
             new CopilotPreviewWorkspacePatchEnvelopeTool(store), new CopilotApplyWorkspacePatchEnvelopeTool(store)];
         var catalog = new CopilotCapabilityCatalog();
         catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "patch-verification", "Patch verification", tools);
@@ -206,12 +210,79 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
 
         var observations = result.StepRecords.Where(s => s.ToolCall.ToolName == name).ToArray();
         Assert.Equal(2, observations.Length);
-        Assert.All(result.StepRecords, step => Assert.True(step.Observation.Success, step.Observation.ErrorMessage));
+        Assert.Equal(name != "ReadLocalFile", observations[0].Observation.Success);
+        Assert.All(result.StepRecords.Skip(1), step => Assert.True(step.Observation.Success, step.Observation.ErrorMessage));
         Assert.DoesNotContain("camera.json", observations[0].Observation.Content, StringComparison.Ordinal);
         Assert.Contains("camera.json", observations[1].Observation.Content, StringComparison.Ordinal);
         Assert.Single(result.StepRecords, s => s.ToolCall.ToolName == "ApplyWorkspacePatchEnvelope");
         Assert.Equal("{\"camera\":2}", File.ReadAllText(Path.Combine(_workspace, "camera.json")));
         Assert.Equal(4, result.StepRecords.Count);
+    }
+
+    [Theory]
+    [InlineData("ReadLocalFile", "created", true)]
+    [InlineData("ReadAttachedFile", "created", true)]
+    [InlineData("ReadLocalFile", "batch-created", true)]
+    [InlineData("ReadAttachedFile", "batch-created", true)]
+    [InlineData("ReadLocalFile", "relative", true)]
+    [InlineData("ReadLocalFile", "multiple-roots", true)]
+    [InlineData("ReadLocalFile", "existing-damaged", false)]
+    [InlineData("ReadLocalFile", "unrelated", false)]
+    [InlineData("ReadLocalFile", "uncertain", false)]
+    [InlineData("ReadLocalFile", "failed", false)]
+    [InlineData("ReadLocalFile", "denied", false)]
+    [InlineData("ReadLocalFile", "budget", false)]
+    public async Task FailedFileReadRefreshRequiresConfirmedCreationAndCurrentPermission(string name, string scenario, bool canReadAgain)
+    {
+        var scope = Directory.CreateDirectory(Path.Combine(_workspace, "scope")).FullName;
+        var target = Path.Combine(scenario == "denied" ? _workspace : scope, "camera.json");
+        if (scenario == "existing-damaged") File.WriteAllText(target, "\0damaged-export");
+        var writer = new FixtureMutationTool(scenario == "unrelated" ? Path.Combine(scope, "other.json") : target,
+            scenario is not ("failed" or "uncertain"), true, requiresRecheck: scenario == "uncertain");
+        ICopilotTool reader = name == "ReadAttachedFile" ? new CopilotReadAttachedFileTool() : new CopilotReadLocalFileTool();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "created-read", TaskId = scenario, WorkspacePath = scope, Mode = CopilotAgentMode.Code,
+            UserText = "创建后读取并核验配置文件",
+            SearchRootPaths = scenario == "multiple-roots" ? [Directory.CreateDirectory(Path.Combine(_workspace, "first")).FullName, scope] : [scope],
+            ReadableLocalFilePaths = scenario == "batch-created" ? [target] : [],
+            Attachments = [new() { Type = CopilotAttachmentType.File, Value = target }],
+            WritableLocalRootPaths = [_workspace], CodexHooksEnabled = false,
+        };
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(request,
+            CopilotExecutionScope.ForAgentRun(request), [reader, writer], scenario == "budget" ? 2 : 8,
+            new CopilotToolExecutor(hooks: []), new CopilotFrameworkApprovalCoordinator(), _ => { }, () => 1);
+        var functions = bridge.CreateFunctions().OfType<AIFunction>().ToArray();
+        var read = Assert.Single(functions, function => function.Name != "colorvision_fixture_mutation");
+        var write = Assert.Single(functions, function => function.Name == "colorvision_fixture_mutation");
+        var input = scenario == "batch-created" ? new AIFunctionArguments()
+            : new AIFunctionArguments { ["path"] = scenario is "relative" or "multiple-roots" ? "camera.json" : target };
+        await read.InvokeAsync(input);
+        Assert.False(bridge.StepRecords.Last().Observation.Success);
+        await write.InvokeAsync(new AIFunctionArguments());
+        Assert.Equal(scenario is not ("failed" or "uncertain"), bridge.StepRecords.Last().Observation.Success);
+        var refreshedResult = await read.InvokeAsync(input);
+        if (scenario == "budget")
+        {
+            Assert.True(bridge.ToolBudgetExhausted);
+            Assert.Contains("2-call", refreshedResult?.ToString());
+            Assert.Equal(2, bridge.StepRecords.Count);
+            return;
+        }
+        var refreshed = bridge.StepRecords.Last().Observation;
+        Assert.Equal(canReadAgain, refreshed.Success);
+        if (canReadAgain) Assert.Contains("\"gain\":2", refreshed.Content);
+        else if (scenario == "denied")
+        {
+            Assert.Contains("outside the allowed workspace roots", refreshed.ErrorMessage);
+            Assert.Empty(refreshed.SuccessfullyReadLocalFilePaths);
+        }
+        else Assert.Equal(CopilotToolFailureKind.Conflict, refreshed.FailureKind);
+        await read.InvokeAsync(input);
+        Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
+        await write.InvokeAsync(new AIFunctionArguments());
+        Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
+        Assert.Equal(1, writer.Calls);
     }
 
     [Theory]
@@ -323,13 +394,17 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task AcceptedUserUpdatePermitsReadingTheSameFileAgainWithinTheActiveRun(bool targetActiveTask)
+    [InlineData(true, true, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, false, true)]
+    public async Task AcceptedUserUpdatePermitsReadingTheSameFileAgainWithinTheActiveRun(bool targetActiveTask, bool fileInitiallyExists, bool withRemainingTodo)
     {
         var path = Path.Combine(_workspace, "camera.json");
-        File.WriteAllText(path, "{\"gain\":1}");
-        var provider = new RepeatedReadChatClient(path);
+        if (fileInitiallyExists) File.WriteAllText(path, "{\"gain\":1}");
+        var provider = new RepeatedReadChatClient(path, withRemainingTodo);
         ICopilotTool[] tools = [new CopilotReadLocalFileTool()];
         var catalog = new CopilotCapabilityCatalog();
         catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "steered-file-read", "Steered file read", tools);
@@ -339,9 +414,9 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
         var request = new CopilotAgentRequest
         {
             ConversationId = "steered-read-conversation", TaskId = "steered-read-task", WorkspacePath = _workspace,
-            UserText = "读取 camera.json 中当前的 gain。", Mode = CopilotAgentMode.Code,
+            UserText = withRemainingTodo ? "请先制定计划，读取 camera.json 中当前的 gain，再继续生成报告。" : "读取 camera.json 中当前的 gain。", Mode = CopilotAgentMode.Code,
             ReadableLocalFilePaths = [path], SearchRootPaths = [_workspace],
-            HarnessFeatures = CopilotAgentHarnessFeatures.None, CodexHooksEnabled = false,
+            HarnessFeatures = withRemainingTodo ? CopilotAgentHarnessFeatures.TaskLedger : CopilotAgentHarnessFeatures.None, CodexHooksEnabled = false,
             Profile = new() { ProviderType = CopilotProviderType.OpenAICompatible, VendorType = CopilotVendorType.Custom,
                 BaseUrl = "https://example.test/v1", ApiKey = "test-key", Model = "test-model", MaxTokens = 4096 },
             RunBudgetOverride = new() { MaxToolCalls = 8, MaxAgentPasses = 1, RequestTokenBudget = 32768, TotalDuration = TimeSpan.FromSeconds(30) },
@@ -353,33 +428,65 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
             if (e.Type != CopilotAgentEventType.ToolResult || e.ToolResult?.ToolName != "ReadLocalFile" || admission != null) return;
             File.WriteAllText(path, "{\"gain\":2}");
             admission = runtime.EnqueueSteeringMessage(targetActiveTask ? request.TaskId : "another-task",
-                "我已更新刚才的文件，请重新读取并使用当前 gain。");
+                "我已补齐或更新刚才的文件，请重新读取并使用当前 gain。");
         }, cancellation.Token);
 
         Assert.NotNull(admission);
         Assert.Equal(targetActiveTask, admission.Value.IsAccepted);
         var reads = result.StepRecords.Where(s => s.ToolCall.ToolName == "ReadLocalFile").ToArray();
         Assert.Equal(2, reads.Length);
-        Assert.Contains("\"gain\":1", reads[0].Observation.Content);
+        Assert.Equal(fileInitiallyExists, reads[0].Observation.Success);
+        if (fileInitiallyExists) Assert.Contains("\"gain\":1", reads[0].Observation.Content);
         Assert.Equal(targetActiveTask, reads[1].Observation.Success);
         if (targetActiveTask)
         {
             Assert.Contains("\"gain\":2", reads[1].Observation.Content);
-            Assert.Contains("我已更新刚才的文件", provider.SecondInput);
+            Assert.Contains("我已补齐或更新刚才的文件", provider.SecondInput);
+            var remainingWork = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute", Items = [new() { Id = 1, Title = "继续生成报告" }],
+            };
+            Assert.Empty(CopilotAgentBlockerDetector.Detect(remainingWork, result.StepRecords, CopilotAgentStopReason.TaskPassLimit));
         }
         else Assert.Equal(CopilotToolFailureKind.Conflict, reads[1].Observation.FailureKind);
+        if (withRemainingTodo)
+        {
+            Assert.Equal(1, result.TaskLedger.RemainingCount);
+            Assert.NotNull(result.SessionCheckpoint);
+            Assert.Equal(targetActiveTask ? CopilotAgentStopReason.TaskPassLimit : CopilotAgentStopReason.Blocked, result.StopReason);
+            var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+            {
+                AgentTaskLedger = result.TaskLedger, AgentStopReason = result.StopReason, AgentBlockers = result.Blockers,
+            };
+            Assert.Equal(targetActiveTask, message.HasRecoverableAgentTasks);
+            if (targetActiveTask)
+            {
+                Assert.Empty(result.Blockers);
+                Assert.DoesNotContain(result.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.BlockerDetected);
+            }
+        }
     }
 
     [Theory]
-    [InlineData("ReadLocalFile")]
-    [InlineData("ReadAttachedFile")]
-    [InlineData("GrepText")]
-    [InlineData("SearchFiles")]
-    [InlineData("ListDirectory")]
-    public async Task EachNewInputAllowsOneFreshLocalObservationWithoutResettingTheBudget(string name)
+    [InlineData("ReadLocalFile", false)]
+    [InlineData("ReadAttachedFile", false)]
+    [InlineData("GrepText", false)]
+    [InlineData("SearchFiles", false)]
+    [InlineData("ListDirectory", false)]
+    [InlineData("ReadLocalFile", true)]
+    [InlineData("ReadAttachedFile", true)]
+    [InlineData("GrepText", true)]
+    [InlineData("SearchFiles", true)]
+    [InlineData("ListDirectory", true)]
+    public async Task EachNewInputAllowsOneFreshLocalObservationWithoutResettingTheBudget(string name, bool initialReadFails)
     {
-        var path = Path.Combine(_workspace, "camera.json");
-        File.WriteAllText(path, "{\"gain\":1}");
+        var directory = Path.Combine(_workspace, "line-a");
+        var path = Path.Combine(directory, "camera.json");
+        if (!initialReadFails)
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(path, "{\"gain\":1}");
+        }
         ICopilotTool tool = name switch
         {
             "ReadAttachedFile" => new CopilotReadAttachedFileTool(),
@@ -400,30 +507,34 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
         var function = Assert.Single(bridge.CreateFunctions().OfType<AIFunction>());
         var input = name switch
         {
-            "GrepText" => new AIFunctionArguments { ["query"] = "gain" },
-            "SearchFiles" => new AIFunctionArguments { ["query"] = "camera" },
-            "ListDirectory" => new AIFunctionArguments { ["path"] = _workspace },
+            "GrepText" => new AIFunctionArguments { ["query"] = "gain", ["path"] = directory },
+            "SearchFiles" => new AIFunctionArguments { ["query"] = "camera", ["path"] = directory },
+            "ListDirectory" => new AIFunctionArguments { ["path"] = directory },
             _ => new AIFunctionArguments { ["path"] = path },
         };
         for (var revision = 0; revision < 3; revision++)
         {
-            if (revision > 0) bridge.NotifyUserInputAccepted();
+            if (revision > 0)
+            {
+                Directory.CreateDirectory(directory);
+                File.WriteAllText(path, "{\"gain\":2}");
+                bridge.NotifyUserInputAccepted();
+            }
             await function.InvokeAsync(input);
-            Assert.True(bridge.StepRecords.Last().Observation.Success, bridge.StepRecords.Last().Observation.ErrorMessage);
+            Assert.Equal(revision > 0 || !initialReadFails, bridge.StepRecords.Last().Observation.Success);
             await function.InvokeAsync(input);
             Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
         }
         bridge.NotifyUserInputAccepted();
         await function.InvokeAsync(input);
         Assert.True(bridge.ToolBudgetExhausted);
-        Assert.Equal(3, bridge.StepRecords.Count(s => s.Observation.Success));
+        Assert.Equal(initialReadFails ? 2 : 3, bridge.StepRecords.Count(s => s.Observation.Success));
     }
 
     [Fact]
-    public async Task NewUserInputDoesNotReopenCompletedWritesOrFailedReads()
+    public async Task NewUserInputDoesNotReopenCompletedWrites()
     {
         var path = Path.Combine(_workspace, "camera.json");
-        var missing = Path.Combine(_workspace, "missing.json");
         File.WriteAllText(path, "{\"gain\":1}");
         var writer = new FixtureMutationTool(path, true, true);
         var request = new CopilotAgentRequest
@@ -433,23 +544,44 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
             WritableLocalRootPaths = [_workspace], CodexHooksEnabled = false,
         };
         var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(request,
-            CopilotExecutionScope.ForAgentRun(request), [new CopilotReadLocalFileTool(), writer], 8,
+            CopilotExecutionScope.ForAgentRun(request), [writer], 8,
             new CopilotToolExecutor(hooks: []), new CopilotFrameworkApprovalCoordinator(), _ => { }, () => 1);
         var functions = bridge.CreateFunctions().OfType<AIFunction>().ToArray();
-        var read = Assert.Single(functions, f => f.Name == "colorvision_read_local_file");
         var write = Assert.Single(functions, f => f.Name == "colorvision_fixture_mutation");
         await write.InvokeAsync(new AIFunctionArguments());
         Assert.True(bridge.StepRecords.Last().Observation.Success);
-        var input = new AIFunctionArguments { ["path"] = missing };
-        await read.InvokeAsync(input);
-        Assert.False(bridge.StepRecords.Last().Observation.Success);
-        File.WriteAllText(missing, "{\"gain\":3}");
         bridge.NotifyUserInputAccepted();
         await write.InvokeAsync(new AIFunctionArguments());
         Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
         Assert.Equal(1, writer.Calls);
-        await read.InvokeAsync(input);
-        Assert.Equal(CopilotToolFailureKind.Conflict, bridge.StepRecords.Last().Observation.FailureKind);
+    }
+
+    [Fact]
+    public async Task NewUserInputDoesNotAuthorizePreviouslyDeniedPaths()
+    {
+        var allowed = Directory.CreateDirectory(Path.Combine(_workspace, "allowed")).FullName;
+        var path = Path.Combine(_workspace, "outside.json");
+        File.WriteAllText(path, "{\"gain\":77}");
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "denied-read-refresh", TaskId = "read-once", WorkspacePath = allowed,
+            Mode = CopilotAgentMode.Code, UserText = "读取相机配置", SearchRootPaths = [allowed], CodexHooksEnabled = false,
+        };
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(request,
+            CopilotExecutionScope.ForAgentRun(request), [new CopilotReadLocalFileTool()], 4,
+            new CopilotToolExecutor(hooks: []), new CopilotFrameworkApprovalCoordinator(), _ => { }, () => 1);
+        var read = Assert.Single(bridge.CreateFunctions().OfType<AIFunction>());
+        for (var revision = 0; revision < 2; revision++)
+        {
+            if (revision > 0) bridge.NotifyUserInputAccepted();
+            await read.InvokeAsync(new AIFunctionArguments { ["path"] = path });
+            var observation = bridge.StepRecords.Last().Observation;
+            Assert.False(observation.Success);
+            Assert.Contains("outside the allowed workspace roots", observation.ErrorMessage);
+            Assert.Empty(observation.SuccessfullyReadLocalFilePaths);
+            Assert.DoesNotContain("\"gain\":77", observation.Content);
+        }
+        Assert.Equal("{\"gain\":77}", File.ReadAllText(path));
     }
 
     [Fact]
@@ -584,6 +716,7 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
             {
                 2 => new() { ["operations"] = new[] { new { operation = "add", path = "camera.json", content = "{\"camera\":2}" } } },
                 3 => new() { ["changeSetId"] = ChangeSetId },
+                _ when observationFunction == "colorvision_read_local_file" => new() { ["path"] = "camera.json" },
                 _ => observationFunction == "colorvision_list_directory" ? new() : new() { ["query"] = "camera" },
             };
             if (call <= 4)
@@ -630,7 +763,7 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
         public Task AfterExecuteAsync(CopilotToolExecutionOutcome outcome, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private sealed class RepeatedReadChatClient(string path) : IChatClient
+    private sealed class RepeatedReadChatClient(string path, bool withRemainingTodo) : IChatClient
     {
         private int _calls;
         public string SecondInput { get; private set; } = string.Empty;
@@ -643,6 +776,21 @@ public sealed class CopilotWorkspaceReadInvalidationTests : IDisposable
             await Task.CompletedTask;
             cancellationToken.ThrowIfCancellationRequested();
             var call = ++_calls;
+            if (withRemainingTodo)
+            {
+                if (call == 1)
+                {
+                    var addTodos = Assert.Single(options!.Tools!.OfType<AIFunction>(), function => function.Name == "todos_add");
+                    var parameter = Assert.Single(addTodos.JsonSchema.GetProperty("properties").EnumerateObject());
+                    yield return new ChatResponseUpdate(ChatRole.Assistant,
+                        [new FunctionCallContent("add-remaining-todo", addTodos.Name, new Dictionary<string, object?>
+                        {
+                            [parameter.Name] = System.Text.Json.JsonSerializer.SerializeToElement(new[] { new { title = "继续生成报告", description = "保持该项未完成，以检查读取恢复后的任务状态。" } }),
+                        })]) { FinishReason = ChatFinishReason.ToolCalls };
+                    yield break;
+                }
+                call--;
+            }
             if (call == 2) SecondInput = string.Join("\n", messages.Select(m => m.Text));
             if (call <= 2)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
