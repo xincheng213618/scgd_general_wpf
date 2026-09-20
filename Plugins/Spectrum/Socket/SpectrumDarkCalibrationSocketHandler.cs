@@ -7,7 +7,7 @@ namespace Spectrum.Socket
 {
     /// <summary>
     /// Socket指令处理器：光谱仪校零
-    /// 执行暗电流校准（Dark Calibration），支持自动快门控制
+    /// 执行暗电流校准（Dark Calibration），支持配置的快门或滤色轮遮光控制
     /// 
     /// 请求示例:
     /// {"EventName":"SpectrumDarkCalibration","MsgID":"1","Version":"1.0","Params":""}
@@ -38,7 +38,7 @@ namespace Spectrum.Socket
 
                 using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
                 int result = manager.PerformDarkCalibrationAsync(
-                    requireShutter: true,
+                    requireAutomaticControl: true,
                     cancellationToken: timeout.Token).GetAwaiter().GetResult();
                 if (result == 1)
                 {

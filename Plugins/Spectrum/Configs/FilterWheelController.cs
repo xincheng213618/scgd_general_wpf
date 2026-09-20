@@ -216,7 +216,7 @@ namespace Spectrum.Configs
         /// <summary>
         /// Sends "NOW" to query the current filter wheel position.
         /// </summary>
-        public async Task<int> QueryPositionAsync()
+        public virtual async Task<int> QueryPositionAsync()
         {
             string? response = await SendCommandAsync("NOW");
             if (response != null && int.TryParse(response.Trim(), out int pos) && pos >= 0 && pos <= 4)
@@ -237,7 +237,7 @@ namespace Spectrum.Configs
         /// <summary>
         /// Sends a position command (0-4) to set the filter wheel.
         /// </summary>
-        public async Task<bool> SetPositionAsync(int position)
+        public virtual async Task<bool> SetPositionAsync(int position)
         {
             if (position < 0 || position > 4)
             {

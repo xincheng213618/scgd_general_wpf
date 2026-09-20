@@ -170,6 +170,8 @@
   <data name="OpenShutter" xml:space="preserve"><value>打開快門</value></data>
   <data name="CloseShutter" xml:space="preserve"><value>關閉快門</value></data>
   <data name="FilterWheel" xml:space="preserve"><value>濾色輪</value></data>
+  <data name="AutoDarkControlMode" xml:space="preserve"><value>自動校零方式</value></data>
+  <data name="FilterWheelDarkPosition" xml:space="preserve"><value>濾色輪遮光孔位</value></data>
   <data name="CurrentPosition" xml:space="preserve"><value>目前位置:</value></data>
   <data name="Query" xml:space="preserve"><value>查詢</value></data>
   <data name="SwitchPosition" xml:space="preserve"><value>切換位置:</value></data>

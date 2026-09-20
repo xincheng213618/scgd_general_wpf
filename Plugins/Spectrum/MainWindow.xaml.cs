@@ -1367,7 +1367,7 @@ namespace Spectrum
                 }
                 else
                 {
-                    string errorMessage = cvColorVision.Spectrometer.GetErrorMessage(result);
+                    string errorMessage = Manager.GetOperationErrorMessage(result);
                     log.Error($"自适应校零失败: {errorMessage}");
                     MessageBox.Show(string.Format(SpectrumResources.AdaptiveAutoDarkFailed, errorMessage));
                 }
@@ -1386,9 +1386,9 @@ namespace Spectrum
                 return;
             }
 
-            if (Manager.EnableAutodark && !Manager.ShutterController.IsConnected)
+            if (Manager.EnableAutodark && !Manager.TryGetAutomaticDarkControlReady(out string autoDarkError))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), SpectrumResources.NoShutterAutoZero,
+                MessageBox.Show(Application.Current.GetActiveWindow(), autoDarkError,
                     SpectrumResources.PromptTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }

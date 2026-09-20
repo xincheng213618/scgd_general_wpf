@@ -241,6 +241,8 @@
   <data name="OpenShutter" xml:space="preserve"><value>Open Shutter</value></data>
   <data name="CloseShutter" xml:space="preserve"><value>Close Shutter</value></data>
   <data name="FilterWheel" xml:space="preserve"><value>Filter Wheel</value></data>
+  <data name="AutoDarkControlMode" xml:space="preserve"><value>Automatic Zero Control</value></data>
+  <data name="FilterWheelDarkPosition" xml:space="preserve"><value>Filter Wheel Dark Position</value></data>
   <data name="CurrentPosition" xml:space="preserve"><value>Current Position:</value></data>
   <data name="Query" xml:space="preserve"><value>Query</value></data>
   <data name="SwitchPosition" xml:space="preserve"><value>Switch Position:</value></data>

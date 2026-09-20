@@ -8,7 +8,7 @@ namespace Spectrum.Job
 {
     /// <summary>
     /// 光谱仪校零定时任务
-    /// 执行暗电流校准（Dark Calibration），支持自动快门控制
+    /// 执行暗电流校准（Dark Calibration），支持配置的快门或滤色轮遮光控制
     /// </summary>
     [DisplayName("光谱仪校零")]
     public class SpectrumDarkCalibrationJob : IJob
@@ -28,7 +28,7 @@ namespace Spectrum.Job
             log.Info("开始执行光谱仪校零任务");
 
             int ret = await manager.PerformDarkCalibrationAsync(
-                requireShutter: true,
+                requireAutomaticControl: true,
                 cancellationToken: cancellationToken);
 
             if (ret == SpectrometerManager.OperationBusy)
