@@ -12,7 +12,11 @@ namespace ColorVision.Engine.Templates
     {
         private bool _created;
 
-        public TemplateCreate(ITemplate template, bool isImport = false)
+        public TemplateCreate(ITemplate template, bool isImport = false) : this(template, isImport, allowSourceSelection: true)
+        {
+        }
+
+        internal TemplateCreate(ITemplate template, bool isImport, bool allowSourceSelection)
         {
             InitializeComponent();
 
@@ -21,10 +25,10 @@ namespace ColorVision.Engine.Templates
             {
                 InitialSourceKind = template.HasCreateTemplateSource ? TemplateCreateSourceKind.Prepared : TemplateCreateSourceKind.Default,
                 SuggestedName = string.IsNullOrWhiteSpace(template.ImportName) ? null : template.ImportName,
-                IsSourceSelectionVisible = !isImport
+                IsSourceSelectionVisible = !isImport && allowSourceSelection
             });
 
-            if (isImport && template.IsSideHide)
+            if ((isImport || !allowSourceSelection) && template.IsSideHide)
             {
                 Width = 560;
                 Height = 240;

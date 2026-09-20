@@ -169,7 +169,7 @@ namespace ColorVision.Copilot
                 {
                     var update = enumerator.Current;
                     var hasResponseContent =
-                        CopilotProviderResponseContent.HasAny(update.Contents);
+                        CopilotProviderResponseContent.HasProgress(update);
                     if (!hasResponseContent
                         && bufferedUpdates.Count >= MaximumBufferedPreambleUpdates)
                     {

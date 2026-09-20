@@ -286,7 +286,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                 if (services.Length == 0
                     && host.Nodes
                         .OfType<CVBaseServerNode>()
-                        .Any())
+                        .Any(node => node.RequiresRemoteService))
                 {
                     stopwatch.Stop();
                     return CreateFailure(

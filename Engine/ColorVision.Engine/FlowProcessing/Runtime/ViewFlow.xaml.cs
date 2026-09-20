@@ -241,13 +241,12 @@ namespace ColorVision.Engine.FlowProcessing
                 if (e.Parameter is MenuItem menuItem && menuItem.ItemsSource != STNodeEditorMain.UndoHistory)
                     menuItem.ItemsSource = STNodeEditorMain.UndoHistory;
             }));
-
+            DataContext = this;
         }
 
         public void OpenFlowTemplate()
         {
-            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            Refresh();
+            FlowEngineManager.EditTemplateFlowCommand.Execute(null);
         }
 
         public async void NewFlow()
@@ -257,7 +256,7 @@ namespace ColorVision.Engine.FlowProcessing
                 if (!ConfirmDocumentReplacement())
                     return;
 
-                var templateFlow = new TemplateFlow();
+                var templateFlow = FlowEngineManager.CreateFlowTemplate();
                 templateFlow.Load();
                 int oldCount = templateFlow.Count;
                 templateFlow.OpenCreate();
@@ -292,7 +291,7 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
                 return;
 
-            var templateFlow = new TemplateFlow();
+            var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
             int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
             if (index >= 0)
@@ -307,7 +306,7 @@ namespace ColorVision.Engine.FlowProcessing
             var flowParam = GetActiveFlowParam();
             if (flowParam == null) return;
 
-            var templateFlow = new TemplateFlow();
+            var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
             int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
             if (index >= 0)
@@ -318,7 +317,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void ImportFlow()
         {
-            var templateFlow = new TemplateFlow();
+            var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
             if (templateFlow.Import())
             {
@@ -330,7 +329,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void ImportModule()
         {
-            var templateFlow = new TemplateFlow();
+            var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
             var items = templateFlow.TemplateParams;
             if (items.Count == 0)
@@ -407,9 +406,12 @@ namespace ColorVision.Engine.FlowProcessing
                 var flowParam = GetActiveFlowParam();
                 if (flowParam == null)
                 {
-                    log.Error("Save: SelectedFlowParam 为 null, 无法保存");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowParamSelected);
-                    return false;
+                    if (_executionSession.RequestedFlowParam != null || IsExecutionActive)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "请等待当前流程加载或执行完成后再保存。", "ColorVision");
+                        return false;
+                    }
+                    return SaveNewFlow(FlowEngineManager.CreateFlowTemplate());
                 }
 
                 byte[] canvasData = STNodeEditorMain.GetCanvasData();
@@ -448,6 +450,27 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
                 return false;
             }
+        }
+
+        internal bool SaveNewFlow(TemplateFlow templateFlow)
+        {
+            byte[] canvasData = STNodeEditorMain.GetCanvasData();
+            templateFlow.Load();
+            templateFlow.ImportTemp = new FlowParam { DataBase64 = Convert.ToBase64String(canvasData) };
+            var dialog = new TemplateCreate(templateFlow, isImport: false, allowSourceSelection: false)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            if (dialog.ShowDialog() != true)
+                return false;
+
+            TemplateModel<FlowParam> created = templateFlow.TemplateParams.Single(item => item.Key == dialog.CreateName);
+            _runtimeSelectionInitialized = true;
+            _executionSession.AdoptSavedCanvas(created);
+            SetDocumentBaseline(created.Value);
+            STNodeEditorMain.MarkSaved();
+            return true;
         }
 
 
@@ -855,7 +878,6 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = this;
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (IsAutoAlignmentShortcut(e.Key, Keyboard.Modifiers))

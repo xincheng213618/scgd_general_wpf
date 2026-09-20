@@ -32,12 +32,18 @@ namespace ColorVision.Copilot
         public static bool UsesResponsesApi(CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
-            return UsesOfficialOpenAiApi(profile);
+            return UsesOfficialOpenAiApi(profile)
+                || IsExplicitResponsesEndpoint(profile.BaseUrl, profile.ProviderType);
         }
+
+        internal static bool IsExplicitResponsesEndpoint(string? baseUrl, CopilotProviderType providerType) =>
+            providerType == CopilotProviderType.OpenAICompatible
+            && Uri.TryCreate(baseUrl?.Trim(), UriKind.Absolute, out var endpoint)
+            && endpoint.AbsolutePath.TrimEnd('/').EndsWith("/responses", StringComparison.OrdinalIgnoreCase);
 
         internal static bool CanRequestPromptCacheDiagnostics(CopilotProfileConfig profile)
         {
-            if (!UsesResponsesApi(profile))
+            if (!UsesOfficialOpenAiApi(profile))
                 return false;
             var model = profile.Model?.Trim() ?? string.Empty;
             if (!model.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase))
@@ -60,7 +66,7 @@ namespace ColorVision.Copilot
                 : string.Empty;
         }
 
-        private static bool UsesOfficialOpenAiApi(
+        internal static bool UsesOfficialOpenAiApi(
             CopilotProfileConfig profile)
         {
             if (profile.VendorType != CopilotVendorType.OpenAI

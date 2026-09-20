@@ -47,6 +47,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
+        [DisplayName("启用本地光谱仪")]
+        [Description("下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
+        public bool UseLocalSpectrum { get => _useLocalSpectrum; set { _useLocalSpectrum = value; OnPropertyChanged(); } }
+        private bool _useLocalSpectrum;
         /// <summary>
         /// 是否光通量模式
         /// </summary>
@@ -111,7 +115,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     }
 
-    public class DeviceSpectrum : DeviceService<ConfigSpectrum>
+    public partial class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceSpectrum));
         private const double CorrectionSpectrumStart = 380d;
@@ -209,7 +213,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            InitializeLocalSpectrum();
             DService = new MQTTSpectrum(this);
+            DService.RefreshBackendStatus();
             _view = new Lazy<ViewSpectrum>(() => new ViewSpectrum(this, true));
             this.SetIconResource("DISpectrumIcon");
 
@@ -476,6 +482,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     : $"光谱测量失败：{detail}");
             }
 
+            if (msgRecord.MsgReturn?.Data is Local.LocalSpectrumCommandResult localResult) return localResult.Model;
             int masterId = GetCorrectionMasterId(msgRecord.MsgReturn);
             using var db = new SqlSugarClient(new ConnectionConfig
             {
@@ -945,6 +952,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string path = Config.MaguideFile;
             if (string.IsNullOrWhiteSpace(path))
                 path = Config.ActiveCalibrationGroup.MaguideFile;
+            if (SpectrumBackend.OpensLocally) return Local.LocalSpectrumSession.ResolvePath(path);
             return ResolveCalibrationFilePath(path, ServiceConfig.Instance.CVMainService_x64);
         }
 
@@ -1027,6 +1035,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             msgRecord = null;
             error = null;
+            if (SpectrumBackend?.OpensLocally == true)
+            {
+                error = "本地光谱仪暂不支持 ND 轮自动切换，请选择不关联 ND 端口的校正组。";
+                return false;
+            }
 
             if (Config.NDConfig.IsBingNDDevice)
             {
@@ -1093,7 +1106,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             SaveConfig();
 
-            if (restartService)
+            if (restartService && !SpectrumBackend.OpensLocally)
                 QueueCalibrationRestart();
 
             return true;
@@ -1281,10 +1294,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public async Task UploadLicenseNet(string sn)
         {
+            bool useLocal = SysResourceDao.IsLocalId(SysResourceModel.Id) || (SysResourceModel.Id <= 0 && SysResourceDao.Instance.UseLocal);
             try
             {
                 var license = await new SpectrumLicenseUpdateService().DownloadAsync(sn);
-                await Task.Run(() => PhySpectrumStore.SaveLicense(license));
+                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocal));
                 log.Info($"Spectrum license updated: {sn}");
             }
             catch (Exception ex)

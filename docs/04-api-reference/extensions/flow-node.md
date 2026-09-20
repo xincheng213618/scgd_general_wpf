@@ -49,7 +49,7 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 
 ### 宿主接管服务节点的本地执行
 
-`CVBaseServerNode.CreateLocalExecution(CVMQTTRequest)` 默认返回 `null`，保留 MQTT 路径。指定节点可返回宿主实现的 `FlowLocalExecution`；选择阶段抛异常时按本次命令失败处理，不回退到 MQTT。普通 `FlowEngineLib.LVCameraNode` 的实现在 Engine 内，直接调用本地相机执行器，返回 `null` 时继续原服务请求。它通过 `STNodeSerializationModelAttribute` 保留旧端可识别的保存标识；FlowEngineLib 只提供执行基类，不引用 Engine。
+`CVBaseServerNode.CreateLocalExecution(CVMQTTRequest)` 默认调用可选的宿主工厂 `FlowLocalExecution.CreateForNode`；未注册或返回 `null` 时保留 MQTT 路径。对应的 `CanExecuteLocally` 判断用于 `RequiresRemoteService`，使编辑器、无界面执行与断线 MQTT 开始节点按实际后端检查服务依赖。Engine 注册普通光谱/EQE 节点的本地转发，节点类型和序列化身份仍保留在 FlowEngineLib。指定节点也可重写方法返回宿主实现的 `FlowLocalExecution`；选择阶段抛异常时按本次命令失败处理，不回退到 MQTT。普通 `FlowEngineLib.LVCameraNode` 的实现在 Engine 内，直接调用本地相机执行器，返回 `null` 时继续原服务请求。它通过 `STNodeSerializationModelAttribute` 保留旧端可识别的保存标识；FlowEngineLib 只提供执行基类和宿主钩子，不引用 Engine。
 
 - `Execute()` 在后台准备结果；此阶段不交接流程帧或写流程结果记录。
 - `Complete(CVStartCFC)` 仅在响应成功领取原命令完成权后调用，负责落库、资源交接和生成普通响应数据。原消息 ID、超时、暂停响应缓存、失败策略和节点完成事件继续由基类管理。

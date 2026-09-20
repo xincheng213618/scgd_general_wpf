@@ -150,6 +150,10 @@ namespace ColorVision.UI
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
         public static ICommand CreateGroupCommand { get; } = new RelayCommand(_ => GetInstance().CreateGroup());
         public static ICommand ManageControlsCommand { get; } = new RelayCommand(_ => GetInstance().ShowManagementWindow());
+        public static ICommand ConfigureDevicesCommand { get; } = new RelayCommand(
+            parameter => GetInstance().DeviceConfigurationCommand?.Execute(parameter),
+            parameter => GetInstance().DeviceConfigurationCommand?.CanExecute(parameter) == true);
+        public ICommand? DeviceConfigurationCommand { get; set; }
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
         private const string DragDataFormat = "ColorVision.UI.DisPlayControl";
         private static readonly TimeSpan DisplayDragPressDelay = TimeSpan.FromMilliseconds(260);

@@ -62,11 +62,13 @@ public sealed class CopilotBusinessEvaluationTests
                 // Write after every case so a later interrupted run retains completed evidence.
                 var report = new
                 {
-                    SchemaVersion = 6,
+                    SchemaVersion = 7,
                     Scope = "live provider, synthetic business exports, production file tools; no hardware/database/UI acceptance",
                     StartedAtUtc = started,
                     UpdatedAtUtc = DateTimeOffset.UtcNow,
-                    Profile = new { profile.Name, profile.Model, Provider = profile.ProviderType.ToString(), profile.MaxTokens, Reasoning = profile.ReasoningMode.ToString() },
+                    Profile = new { profile.Name, profile.Model, Provider = profile.ProviderType.ToString(),
+                        Transport = CopilotOpenAiRequestPolicy.UsesResponsesApi(profile) ? "Responses" : profile.ProviderType == CopilotProviderType.AnthropicCompatible ? "Messages" : "ChatCompletions",
+                        profile.MaxTokens, Reasoning = profile.ReasoningMode.ToString() },
                     Settings = new { TimeoutSecondsPerCase = timeout, RequestTokenBudgetPerCase = tokenBudget, MaxToolCallsPerCase = 12, Repetitions = repetitions },
                     PlannedCases = cases.Count * repetitions,
                     CompletedCases = reports.Count,
@@ -139,6 +141,7 @@ public sealed class CopilotBusinessEvaluationTests
         catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "business-evaluation", "Business evaluation", tools);
         var providerErrors = new List<string>();
         var providerRequests = new List<object>();
+        var providerUpdateKinds = new Dictionary<string, int>(StringComparer.Ordinal);
         var readObserver = new EvaluationReadObserver();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(new CopilotToolRegistry(tools),
             new CopilotAgentContextBuilder(), new CopilotToolExecutor(hooks: [readObserver]),
@@ -157,7 +160,13 @@ public sealed class CopilotBusinessEvaluationTests
                             && messageList.Any(m => m.Role == ChatRole.User && m.Text.Contains(steering.Message, StringComparison.Ordinal)),
                         InstructionCharacters = instructions.Length,
                         MessageCount = messageList.Length,
+                        ReasoningTextCharacters = messageList.SelectMany(message => message.Contents).OfType<TextReasoningContent>().Sum(content => content.Text?.Length ?? 0),
                     });
+                }, update =>
+                {
+                    var kind = (update.RawRepresentation?.GetType().Name ?? "none")
+                        + (CopilotProviderResponseContent.HasProgress(update) ? ":progress" : ":metadata");
+                    providerUpdateKinds[kind] = providerUpdateKinds.GetValueOrDefault(kind) + 1;
                 }), new EmptyExternalTools(), catalog,
             new CopilotAgentSkillUsageStore(Path.Combine(caseDirectory, "skills")));
         var taskId = Guid.NewGuid().ToString("N");
@@ -274,7 +283,7 @@ public sealed class CopilotBusinessEvaluationTests
                 State = s.Execution.State.ToString(), s.Execution.DurationMs,
                 ApprovalMode = s.Execution.ApprovalMode.ToString(),
             }),
-            Events = events, ProviderRequests = providerRequests, ProviderErrors = providerErrors, ExceptionStack = exceptionStack,
+            Events = events, ProviderRequests = providerRequests, ProviderUpdateKinds = providerUpdateKinds, ProviderErrors = providerErrors, ExceptionStack = exceptionStack,
         }, ReportJson));
         conversation.History.Add(new CopilotRequestMessage("user", prompt));
         conversation.History.Add(new CopilotRequestMessage("assistant", answer.ToString()));
@@ -483,8 +492,38 @@ public sealed class CopilotBusinessEvaluationTests
         var profile = matches[0].ToObject<CopilotProfileConfig>() ?? throw new InvalidOperationException("Profile could not be loaded.");
         if (!CopilotCredentialProtector.TryUnprotect(profile.ApiKey, out var key, out _)) throw new InvalidOperationException("Selected profile credential could not be decrypted.");
         profile.ApiKey = key;
+        profile = ApplyProfileOverrides(profile,
+            Environment.GetEnvironmentVariable("COLORVISION_COPILOT_EVAL_RESPONSES_ENDPOINT"),
+            Environment.GetEnvironmentVariable("COLORVISION_COPILOT_EVAL_MODEL"),
+            Environment.GetEnvironmentVariable("COLORVISION_COPILOT_EVAL_REASONING"));
         if (!profile.IsConfigured) throw new InvalidOperationException("Selected profile is not configured.");
         profile.MaxTokens = Math.Min(profile.MaxTokens, 4096);
+        return profile;
+    }
+
+    internal static CopilotProfileConfig ApplyProfileOverrides(CopilotProfileConfig saved, string? responsesEndpoint, string? model, string? reasoningMode)
+    {
+        var profile = saved.Clone();
+        if (!string.IsNullOrWhiteSpace(responsesEndpoint))
+        {
+            if (!Uri.TryCreate(saved.BaseUrl, UriKind.Absolute, out var original)
+                || !Uri.TryCreate(responsesEndpoint.Trim(), UriKind.Absolute, out var selected)
+                || Uri.Compare(original, selected, UriComponents.SchemeAndServer, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase) != 0
+                || !CopilotOpenAiRequestPolicy.IsExplicitResponsesEndpoint(responsesEndpoint, CopilotProviderType.OpenAICompatible))
+                throw new InvalidOperationException("Evaluation Responses endpoint must use the saved profile's origin and end with /responses.");
+            profile.ProviderType = CopilotProviderType.OpenAICompatible;
+            profile.BaseUrl = responsesEndpoint.Trim();
+            if (!CopilotProviderEndpoint.Validate(profile).IsValid)
+                throw new InvalidOperationException("Evaluation Responses endpoint is invalid.");
+        }
+        if (!string.IsNullOrWhiteSpace(model)) profile.Model = model.Trim();
+        if (!string.IsNullOrWhiteSpace(reasoningMode))
+        {
+            if (!Enum.TryParse<CopilotReasoningMode>(reasoningMode.Trim(), ignoreCase: true, out var mode)
+                || !CopilotReasoningCapabilities.GetOptions(profile).Any(option => option.Mode == mode))
+                throw new InvalidOperationException("Evaluation reasoning mode is not supported by the selected profile.");
+            profile.ReasoningMode = mode;
+        }
         return profile;
     }
 
@@ -527,7 +566,7 @@ public sealed class CopilotBusinessEvaluationTests
     }
 
     private sealed class EvidenceRecordingChatClient(IChatClient inner, Action<Exception> record,
-        Action<IEnumerable<ChatMessage>, ChatOptions?> recordRequest) : DelegatingChatClient(inner)
+        Action<IEnumerable<ChatMessage>, ChatOptions?> recordRequest, Action<ChatResponseUpdate> recordUpdate) : DelegatingChatClient(inner)
     {
         public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -549,6 +588,7 @@ public sealed class CopilotBusinessEvaluationTests
                 try { next = await stream.MoveNextAsync(); }
                 catch (Exception ex) { record(ex); throw; }
                 if (!next) yield break;
+                recordUpdate(stream.Current);
                 yield return stream.Current;
             }
         }

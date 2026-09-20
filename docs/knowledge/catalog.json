@@ -5700,7 +5700,7 @@
       "knowledge_id": "engine.spectrum-device",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主程序物理光谱仪 SN 与许可证管理、全连接方式搜索、设备配置和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。",
+      "summary": "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。",
       "aliases": [
         "光谱仪搜不到",
         "光谱仪连接方式",
@@ -5727,7 +5727,9 @@
       "test_paths": [
         "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs",
         "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs",
-        "Test/Spectrum.Tests/PhySpectrumManagerTests.cs"
+        "Test/Spectrum.Tests/PhySpectrumManagerTests.cs",
+        "Test/Spectrum.Tests/LocalSpectrumTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"
       ],
       "related": [
         "engine.devices",

@@ -113,6 +113,11 @@ namespace ColorVision.Engine.FlowProcessing
             return _templateWorkspace.RefreshAsync();
         }
 
+        public void AdoptSavedCanvas(TemplateModel<FlowParam> flowTemplate)
+        {
+            _templateWorkspace.AdoptSavedCanvas(flowTemplate);
+        }
+
         private async Task CloseRunningFlowBeforeRefreshAsync()
         {
             if (_runLifecycle.IsActive)
@@ -1029,7 +1034,7 @@ namespace ColorVision.Engine.FlowProcessing
                 executionSnapshot.CreateFlowParam();
             bool requiresServices = View.STNodeEditorMain.Nodes
                 .OfType<CVBaseServerNode>()
-                .Any();
+                .Any(node => node.RequiresRemoteService);
             if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);

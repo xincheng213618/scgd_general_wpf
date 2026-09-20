@@ -55,7 +55,11 @@ Flow patch 仍要求当前请求或上下文与流程相关；修改工具不因
 
 `CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。
 
-官方 `api.openai.com` Profile 的普通 Chat、图片理解、连接诊断、标题／压缩辅助请求和 Agent 均统一使用 Responses API；第三方 OpenAI-compatible Profile 仍走 Chat Completions，Anthropic-compatible Profile 仍走 Messages。原始 Chat 请求使用 `/responses`、`instructions`、`input`、`max_output_tokens` 与 `store=false`，图片块使用 `input_image` 数据 URL；GPT-6 Astra 不发送 `temperature`，推理通过 `reasoning.effort` 发送。流式读取识别 `response.output_text.delta`、`response.completed` 和 `response.incomplete`，并从完成事件内的 `response.usage` 合并用量；非流式读取只收集 `output` 中的 `output_text`。完成事件的整份正文不会在已发布 delta 后重复追加。
+官方 `api.openai.com` Profile 的普通 Chat、图片理解、连接诊断、标题／压缩辅助请求和 Agent 均统一使用 Responses API；第三方 OpenAI-compatible Profile 默认走 Chat Completions，明确填写以 `/responses` 结尾的完整端点时选择 Responses，Anthropic-compatible Profile 仍走 Messages。显式端点保留根路径或网关前缀，不追加 `/v1` 或 `/chat/completions`；路由不改写已保存的 Profile。原始 Chat 请求使用 `instructions`、`input`、`max_output_tokens` 与 `store=false`，图片块使用 `input_image` 数据 URL；GPT-6 Astra 不发送 `temperature`，推理通过 `reasoning.effort` 发送。流式读取识别 `response.output_text.delta`、`response.completed` 和 `response.incomplete`，并从完成事件内的 `response.usage` 合并用量；非流式读取只收集 `output` 中的 `output_text`。完成事件的整份正文不会在已发布 delta 后重复追加。
+
+兼容 Responses 的 Agent 同样重放完整本地消息与配对的工具调用结果，不依赖 `previous_response_id` 或服务端存储。OpenAI 账户标识、缓存诊断、加密推理请求和 Codex 专用覆盖只发送给官方 OpenAI 端点；兼容服务使用 Profile 的推理档位，DeepSeek 的 `Max` 保留为 `reasoning.effort=max`。DeepSeek 的支持范围以其 [Responses 兼容说明](https://api-docs.deepseek.com/guides/responses_api/)为准；接入 Responses 本身不代表 ColorVision 已为自然语言任务生成或强制校验输出 JSON Schema。
+
+`CopilotStatelessResponsesHistoryChatClient` 保留 Responses 明文推理与摘要的类型区别：流式 `response.reasoning_text.delta` 和非流式 `reasoning.content` 进入可序列化的 `TextReasoningContent`，只额外记录来源类型与 item ID；下一次请求仍使用 `content`，不转成 DeepSeek 会忽略的 `summary`。重放从当前可移植文本构造临时副本，编辑、压缩或移除推理后不会恢复旧文本，也不改写保存的历史。没有来源标记的旧摘要不会按端点或文本猜测成明文推理，加密推理仍沿 SDK 原路径传递。`CopilotOpenAiAgentChatClientFactoryTests` 以真实 SDK 验证流式／非流式请求、分块合并、JSON 保存、文本变更和原生 Harness 检查点恢复；恢复后的已完成工具调用及结果各保留一次，不重新执行。
 
 Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误处理边界。尚未输出内容或工具调用时，只有 SDK 明确分类的 `overloaded_error`、`rate_limit_error`、`api_error` 和 `timeout_error` 可按现有次数／退避限制重试；认证、请求及未知错误不自动重试。SSE 错误不是 HTTP 错误状态，重试诊断保留固定错误类型，不伪造 429 等状态码。已经产生正文或工具执行记录后，任何该类 SSE 中断都保留进展，以 `ProviderFailure` 完成账本与检查点收尾，不重发已产生内容的调用。`CopilotAnthropicProviderFailureTests` 使用安装版本的正式适配器和受控 SSE，覆盖错误分类、正文后不重发、实际工具完成后的恢复，以及严格 Turn 终态；失败流未由适配器发布正式 usage 时仍按预算估算处理，不把底层 `message_start` 字段冒充已返回的完整用量。
 
@@ -71,7 +75,9 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 ### OpenAI HTTP 重试预算
 
-`CopilotOpenAiAgentChatClientFactory` 为第三方 Chat Completions 和官方 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
+`CopilotOpenAiAgentChatClientFactory` 为 Chat Completions 和 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
+
+Responses SDK 在参数分片收齐后才产生完整 `FunctionCallContent`；非空 `response.function_call_arguments.delta` 已构成响应进展，重试、连接恢复、空闲超时和首响应耗时采用相同判定。发布参数分片后断流不自动重放，未完成参数也不成为可执行工具调用。没有正文、推理或参数进展的流仍受 64 条前导元数据上限约束，空参数分片不刷新进展。`CopilotOpenAiAgentChatClientFactoryTests` 经真实 SDK 覆盖长参数分片和纯元数据流，`CopilotProviderConnectionRecoveryTests` 覆盖参数未完成时中断且不重试的边界。
 
 普通 Chat 与 OpenAI / Anthropic Agent 根据结构化 `error.code` / `error.type` 区分 HTTP 限流与账户限制，不通过错误正文关键词猜测。`slow_down`（429）与 `server_is_overloaded`（503）保留具体错误码；`insufficient_quota`、`credit_balance_exhausted`、`organization_spend_limit_exceeded`、`project_spend_limit_exceeded`、`organization_usage_limit_exceeded` 即使返回 429 也不自动重试，需处理额度或账户限制。普通 Chat 的 HTTP 成功错误载荷、SSE 和 `response.failed` 同样遵守此规则：具体 code 优先用于诊断，code 或 type 中明确的账户限制均阻止自动重试。未知 HTTP 错误仍按状态码兼容处理，未知流内错误不自行解释为瞬态失败。
 
@@ -191,6 +197,9 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 # 此命令调用付费模型 API，在临时目录创建合成数据及评测报告。
 pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 
+# 临时使用同一服务的 Responses 端点和模型；只覆盖评测内存副本，不修改保存的 Profile。
+.\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -ResponsesEndpoint https://api.deepseek.com/responses -Model deepseek-flash -ReasoningMode High -Cases sfr-weakest,nested-report-create
+
 # 只重跑指定场景；每项时间、累计 token 与工具次数分别受限。
 .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek -Cases yield-count,update-exposure -TimeoutSeconds 120 -TokenBudget 98304
 
@@ -218,13 +227,13 @@ pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 
 评测复用正式 Agent Runtime、Provider SDK、文件读取与补丁预览／应用工具，使用独立能力目录和任务工作区，不接入外部 MCP、Shell、设备或数据库。搜索任务可只提供工作区根，让模型自行发现文件，不把每个源文件强制装配为必须逐份读取的附件；要求的成功搜索／读取证据仍由评分器独立检查。写任务的临时完整权限绑定当前任务和合成工作区；普通写场景授予该隔离根目录，指定文件场景只授予目标文件。测试进程提供独立工作区状态以执行正常审批复核，不打开用户最近的工程。`-NoBuild` 仅用于明确复用 `-ArtifactsPath` 中已编译的测试程序集。
 
-每次运行保留新的 `report.json` 和逐场景 `evidence.json`，包含输入／最终文件哈希、实际工具参数与读取范围、终态、失败项、耗时和用量；中断前已完成场景仍写入报告。评分同时检查要求的 JSON 字段、成功读取证据、实际落盘结果和受保护源文件，不能仅凭模型声称完成通过。同一答案中与要求字段一致的多个 JSON 对象如互相矛盾会失败，源文件示例不会替代结果对象。纯 JSON 场景还会直接解析完整回答，拒绝代码围栏、说明前缀及其他多余正文。模型已报告 token 与预算估算分别保存；未报告的消耗不等于零费用。
+每次运行保留新的 `report.json` 和逐场景 `evidence.json`，包含输入／最终文件哈希、实际工具参数与读取范围、终态、失败项、耗时和用量；中断前已完成场景仍写入报告。报告区分实际使用的 Responses、Chat Completions 和 Messages 协议。可选 `-ResponsesEndpoint` 只接受与保存 Profile 同协议、主机和端口的完整 Responses 地址，防止评测将已有密钥发送到另一服务；`-Model` 和 `-ReasoningMode` 只修改评测副本，推理档位必须由该 Profile 声明支持，所有覆盖都不落盘到配置。评分同时检查要求的 JSON 字段、成功读取证据、实际落盘结果和受保护源文件，不能仅凭模型声称完成通过。同一答案中与要求字段一致的多个 JSON 对象如互相矛盾会失败，源文件示例不会替代结果对象。纯 JSON 场景还会直接解析完整回答，拒绝代码围栏、说明前缀及其他多余正文。模型已报告 token 与预算估算分别保存；未报告的消耗不等于零费用。
 
 文件哈希递归覆盖工作区，键使用以 `/` 分隔的相对路径；不同目录中的同名文件各自保留基线。嵌套文件场景同时检查目标文件修改或新建、未授权文件的字节级保护、意外新增文件以及保存后的完整路径读取证据。读取另一目录的同名文件不能充当复核；steering 的触发、外部更新哈希和重读证据也以规范化的完整路径匹配。夹具文件路径必须位于隔离工作区，不能用绝对路径或父目录逃逸写入外部文件。
 
 `create-after-missing-read` 要求模型先直接尝试读取不存在的输出文件，再基于源数据创建报告并重新读取。评分分别检查首次成功应用补丁之前的指定路径读取失败，以及最后一次成功应用之后的成功读取；创建后的失败、其他路径的失败或只有最终正确文件都不能替代完整流程证据。
 
-`-Repetitions` 默认为 1，范围 1–10；大于 1 时使用独立的 `repeat-01` 等目录，每次重新创建工作区、会话和 checkpoint，只在该次重复内部沿 `ContinueAfter` 共享状态。报告逐项记录 `Repetition`，总计划数包括所有重复，任何失败都会使整次评测失败；后续通过不能覆盖先前失败。`ProviderRequests` 在 Provider SDK 调用入口记录本轮提示、steering 和 JSON 格式规则是否出现，以及指令长度和消息数，不保存完整系统提示或原始请求载荷。这些字段用于区分装配缺失与回答不遵循，不能当作 HTTP 服务端已收到请求的证明。
+`-Repetitions` 默认为 1，范围 1–10；大于 1 时使用独立的 `repeat-01` 等目录，每次重新创建工作区、会话和 checkpoint，只在该次重复内部沿 `ContinueAfter` 共享状态。报告逐项记录 `Repetition`，总计划数包括所有重复，任何失败都会使整次评测失败；后续通过不能覆盖先前失败。`ProviderRequests` 在 Provider SDK 调用入口记录本轮提示、steering 和 JSON 格式规则是否出现，以及指令长度、消息数和推理文本字符数；`ProviderUpdateKinds` 按 SDK 更新类型及进展／元数据判定计数，不保存完整系统提示、推理正文或原始请求载荷。这些字段用于区分装配缺失、流进展误判与回答不遵循，不能当作 HTTP 服务端已收到请求的证明。
 
 连续对话场景复用同一合成工作区、可见历史和正式 Runtime 返回的 checkpoint，每轮仍创建新的任务权限。前置轮次由 `ContinueAfter` 自动补齐，报告以轮次计数并记录 `PreviousTurnId`、`SessionResumed` 和实际工作区；读取证据只取本轮结果，不能把历史读取算作重新核验。Auto 模式场景检查外部修改配置、追加日志后的追问，以及从读取切换为修改保存；评测只追加 JSON 输出约定，不统一注入“当前工作区”意图提示。要求恢复的读取续问还会检查本轮 journal 中的真实恢复事件；写工具面改变时允许按兼容性规则重建会话并恢复历史。明确要求保存后核对的场景必须在最后一次成功应用补丁后重新读取目标文件，应用前的读取不能充当保存验证。逐轮源哈希以场景指定的外部更新完成后为基准，前一轮的原始内容和哈希保留在其证据文件中。
 

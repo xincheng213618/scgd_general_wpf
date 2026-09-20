@@ -3,10 +3,12 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,8 @@ using System.ComponentModel;
 using System.Linq;
 using Newtonsoft.Json;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services
 {
@@ -51,9 +55,11 @@ namespace ColorVision.Engine.Services
     {
         private string? _copilotContextSourceId;
         private List<(ServiceObjectBase Service, string Configuration)>? _initialConfiguration;
+        public RelayCommand CreateDeviceCommand { get; }
 
         public WindowService()
         {
+            CreateDeviceCommand = new RelayCommand(_ => ShowCreateDeviceMenu(), _ => AccessControl.Check(PermissionMode.Administrator));
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -195,6 +201,34 @@ namespace ColorVision.Engine.Services
         private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
         {
             new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void ShowCreateDeviceMenu()
+        {
+            var menu = new ContextMenu { PlacementTarget = CreateDeviceButton, Placement = PlacementMode.Bottom };
+            foreach (var type in ServiceManager.GetInstance().TypeServices)
+            {
+                if (!DeviceServiceFactoryRegistry.TryGetFactory(type.ServiceTypes, out _))
+                    continue;
+                var typeItem = new MenuItem { Header = type.Name };
+                foreach (var terminal in type.VisualChildren.OfType<TerminalService>())
+                {
+                    var item = new MenuItem { Header = terminal.Name, Command = terminal.OpenCreateWindowCommand };
+                    typeItem.Items.Add(item);
+                }
+                if (typeItem.Items.Count > 0) typeItem.Items.Add(new Separator());
+                var createTerminal = new MenuItem { Header = "新建服务配置并添加设备" };
+                createTerminal.Click += (_, _) =>
+                {
+                    var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    dialog.ShowDialog();
+                    if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
+                        terminal.OpenCreateWindowCommand.Execute(null);
+                };
+                typeItem.Items.Add(createTerminal);
+                menu.Items.Add(typeItem);
+            }
+            menu.IsOpen = true;
         }
 
         private void ButtonPhySpectrumManager_Click(object sender, RoutedEventArgs e)

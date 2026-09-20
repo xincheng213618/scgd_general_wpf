@@ -60,6 +60,8 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 保存按钮的前置有效性主要约束 MCP 端口、外部 MCP 文本和 Web Pref64 语法，不要求每个 Profile 都能连接。`CopilotProfileConfig.IsConfigured` 只检查 API Key、Base URL、Model 和端点规则；“Ready”不是网络测试结果。模型的图像输入声明也不是自动探测：改变模型、地址或协议会清除 `SupportsImageInput`，不能把旧端点能力沿用给新端点。
 
+第三方服务需要 Responses 协议时，选择 `OpenAI Compatible` 并在 `Base URL` 填写完整的 `/responses` 端点，例如 `https://api.deepseek.com/responses`；路径前缀会原样保留。普通兼容 Base URL 仍选择 Chat Completions，官方 OpenAI 地址仍自动使用 Responses。该选择同时用于普通聊天、Agent 和连接诊断；服务是否支持对应模型、工具和输入类型仍需实际验证，不能只凭 URL 判断。
+
 ## 保存完成的三个层次
 
 `CopilotSettingsViewModel.ProfileManagement.cs::Save` 的顺序是：解析草稿 → 从配置和草稿构造独立候选 → `EnsureInitialized` → `ConfigHandler.TrySaveAndPublish` 先落盘，再通过 `CommitPersistenceSnapshot` 发布运行期配置 → 属性通知、重建窗口 Profiles、应用 Local MCP 设置和更新选中 Profile。

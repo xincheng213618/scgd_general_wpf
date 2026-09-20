@@ -2,10 +2,10 @@
 knowledge_id: "engine.spectrum-device"
 knowledge_type: "topic"
 status: "current"
-summary: "主程序物理光谱仪 SN 与许可证管理、全连接方式搜索、设备配置和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。"
+summary: "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。"
 aliases: ["光谱仪搜不到", "光谱仪连接方式", "光谱单次采集", "SpectrumColorMeasurement", "CaptureColorMeasurementAsync", "ConfigSpectrum", "InfoSpectrum", "GetSpectrSerialNumberAsync", "SpectrumDeviceDiscovery", "CMvSpectra", "Gaolitong", "光谱仪配置分类", "物理光谱仪管理", "PhySpectrumManager", "SpectrumLicenseUpdateService", "光谱仪联网更新许可证"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Spectrum", "Engine/ColorVision.Engine/Services/PhySpectrums", "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"]
-test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs"]
+test_paths: ["Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs", "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs", "Test/Spectrum.Tests/PhySpectrumManagerTests.cs", "Test/Spectrum.Tests/LocalSpectrumTests.cs", "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"]
 related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugins.spectrum"]
 ---
 
@@ -14,6 +14,16 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 本页适用于 ColorVision 设备树中光谱仪的属性页和许可证管理窗口。独立光谱仪软件的连接、测量与标定见 [Spectrum 插件](../plugins/standard-plugins/spectrum.md)。
 
 主程序光谱卡片与 `ViewSpectrum` 结果详情的登记、首次显示和首结果入口见[设备详情视图按需初始化](./device-service-chain.md#设备详情视图按需初始化)。
+
+光谱仪卡片提供 **启用本地** 和 **本地光谱仪**。本地配置资源默认启用本地；该偏好保存在客户端显示配置中，不改变服务端协议。下次打开时按偏好选用 SDK 或服务；已经打开的连接继续由原后端管理，关闭后才切换。服务打开后心跳断线不代表释放硬件，需要确认服务连接已关闭后再打开本地。窗口和流程共用设备会话，重复打开不会创建第二个句柄；与 Spectrum 插件的原生会话共享驱动占用保护，原生释放失败时不允许再创建连接。
+
+本地窗口支持连接、断开、单次/连续采集、停止、手动校零、自适应校零初始化、自动积分、校正组和结果导出。关闭窗口保留连接；停止按钮等待当前原生调用返回后停止连续采集。物理 SN、连接类型、串口和许可证沿用现有配置，连接后核对实际 SN，拒绝误连其它设备。已导入的许可证写入应用 `license` 目录供 SDK 验证；已有 LIC 文件可在无数据库时使用。相对校正文件路径以应用目录解析，采集前验证波长/幅度文件，修改校正组在下次采集生效，不重启服务。修改连接类型、SN 或串口后需要关闭重开。
+
+流程的 **本地光谱采集** 节点支持设备、积分时间、平均次数、自动积分、校零和自动连接；属性中的本地管理窗口可试采集，再通过 **应用到节点** 回写参数并保存流程。已有 `SpectrumNode`（GetData / InitDark）与 `SpectrumEQENode` 在设备选用本地后端时由 `LocalSpectrumFlowExecution` 接管，使用原节点参数。连接或采集失败终止本次命令，不回退到 MQTT。仅包含本地节点或可本地转发光谱节点的流程可以由未连接的 MQTT 开始节点手动执行；含其它服务节点时仍要求服务连接。
+
+单次测量和流程执行将光谱、色度与实际积分时间直接交给界面/流程。离线结果留在内存，可由本地窗口导出 JSON；在线历史结果仍写入原 MySQL 光谱结果表，流程遵守 `PersistResults`。连续预览不自动累积数据库历史。任何采集结果都不写配置 SQLite。图表按原生返回的波长起点、间隔和有效点数绘制，保留原始结果用于校正与导出。
+
+本地 EQE 使用当前 V/I 和修正系数，暂不支持 EQE 同步频率模式；外部快门自动控制、ND 轮与端口操作暂不接入本地 SDK，相关请求明确失败，不发送服务命令。手动校零和不使用外部快门的自动校零要求先遮光，自适应暗校正需要先完成自适应校零初始化。设备驱动、实际许可证、校正文件与现场遮光条件仍由真实设备验收确认。
 
 ## 搜索设备
 
@@ -63,6 +73,8 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 
 ## 四色校正的单次采集
 
+本地后端的 `GetData` 回执直接携带内存结果，单次采集接口使用该结果构建色度/校正数据，不再通过数据库查找 `MasterId`。以下历史查询行为只适用于服务回执和已存入 MySQL 的结果。
+
 `DeviceSpectrum.CaptureColorMeasurementAsync` 复用现有 `GetData` 指令、设备状态检查、动态超时和本次 `MasterId` 数据库查询，一次返回原始 `fPh`、`fx`、`fy`、相对光谱及 `fIp` 峰值 AD、积分时间、ND、设备 Code、结果 ID 与时间。它与普通测量、连续测量和光谱校正共用设备测量门禁；忙碌时拒绝并发，不另发第二次采集。该色度接口拒绝光通量 / EQE 结果与非有限的 Y/x/y 或光谱值，有限负数原样保留。波长优先使用结果中的起始波长和正间隔，缺少时按点数回退 380 nm 与 0.1/1 nm。
 
 `GetRecentColorMeasurementsAsync` 只读查询当前设备最近 100 条非光通量结果的摘要；`LoadColorMeasurementAsync` 再次按设备 Code、ID 和测量类型读取原始值及完整光谱。两者不触发硬件采集，已有结果和现场采集共用 `CreateColorMeasurement` 转换，不从已做亮度 / 负值裁剪的显示字符串回读数据。当前提供数据库历史选择，不解析外部 CSV / Excel。
@@ -76,6 +88,8 @@ related: ["engine.devices", "engine.native-bindings", "ui.property-grid", "plugi
 设备卡片上的标定分组下拉框会按分组关联的 `NDHoleIndex` 切换 ND：绑定外部滤光轮时向该服务发送端口指令，否则使用光谱仪自身的 ND 指令。只有设备成功回执后才提交活动分组、文件和显示端口；发送失败、设备失败或超时时恢复原分组和端口。没有关联 ND 的分组仍直接应用。由 ND 位置回写分组属于程序内部应用，受重入保护且不会反向再发 ND 指令；一条用户切换尚未结束时也不会重复启动下一条切换，避免双向联动形成回环。
 
 ## 验证边界
+
+`LocalSpectrumTests` 使用替身原生接口验证句柄复用、初始化失败清理、SN 不匹配、驱动互斥、校正前置检查、自动积分/校零顺序、参数和后端占用状态，以及结果数组/波长轴。`LocalSpectrumFlowTests` 验证流程本地执行钩子、失败不发 MQTT、离线开始节点对本地转发和服务节点的不同限制，以及本地节点保存字段。它们不替代真实 SDK、硬件采集和现场窗口操作验收。
 
 `SpectrumDeviceDiscoveryTests` 注入模拟查询，覆盖全部类型、USB/串口组合、单驱动失败后继续、原生返回码和序列号解析。测试不加载供应商驱动，也不能替代现场真机搜索与连接验收。
 

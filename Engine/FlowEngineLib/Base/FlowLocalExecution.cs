@@ -9,6 +9,9 @@ namespace FlowEngineLib.Base;
 /// </summary>
 public abstract class FlowLocalExecution : IDisposable
 {
+    // The application supplies device backends without introducing an Engine dependency here.
+    public static Func<CVBaseServerNode, bool> CanExecuteLocally { get; set; }
+    public static Func<CVBaseServerNode, CVMQTTRequest, FlowLocalExecution> CreateForNode { get; set; }
     public abstract void Execute();
     public abstract object Complete(CVStartCFC action);
     public abstract void Dispose();

@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.PhySpectrums;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
@@ -8,6 +9,45 @@ namespace ColorVision.UI.Tests;
 
 public sealed class OfflineDeviceConfigurationTests
 {
+    [Fact]
+    public void PhysicalSpectrumRegistrationAndLicenseRenewalUseLocalConfiguration()
+    {
+        WithStore(store =>
+        {
+            var previousResources = SysResourceDao.Instance;
+            var previousLicenses = PhyLicenseDao.Instance;
+            try
+            {
+                bool connected = false;
+                SysResourceDao.Instance = new SysResourceDao(store, () => connected);
+                PhyLicenseDao.Instance = new PhyLicenseDao(store, () => connected);
+                PhySpectrumStore.Register(" spectrum-1 ");
+                PhySpectrumStore.Register("SPECTRUM-1");
+                Assert.Single(SysResourceDao.Instance.GetAll());
+                var license = new LicenseModel { MacAddress = "spectrum-1", LiceType = 1, ExpiryDate = DateTime.Today.AddDays(2) };
+                PhySpectrumStore.SaveLicense(license);
+                PhySpectrumStore.SaveLicense(new LicenseModel { MacAddress = "SPECTRUM-1", LiceType = 1, ExpiryDate = DateTime.Today.AddDays(20) });
+                var spectrum = Assert.Single(PhySpectrumStore.Load());
+                Assert.True(spectrum.ResourceId < -1);
+                Assert.Equal(license.Id, spectrum.License!.Id);
+                Assert.Equal(DateTime.Today.AddDays(20), spectrum.License.ExpiryDate);
+                PhyLicenseDao.Instance.Save(new LicenseModel { MacAddress = "camera-1", LiceType = 0 });
+                Assert.Throws<InvalidOperationException>(() => PhySpectrumStore.SaveLicense(new LicenseModel { MacAddress = "camera-1", LiceType = 1 }));
+                Assert.Throws<InvalidOperationException>(() => PhySpectrumStore.SaveLicense(new LicenseModel { Id = 9, MacAddress = "spectrum-1", LiceType = 1 }));
+                Assert.Equal(0, PhyLicenseDao.Instance.GetByMAC("camera-1")!.LiceType);
+                connected = true;
+                PhySpectrumStore.SaveLicense(new LicenseModel { MacAddress = "SPECTRUM-1", LiceType = 1, ExpiryDate = DateTime.Today.AddDays(30) }, useLocal: true);
+                PhySpectrumStore.Register("SPECTRUM-1", useLocal: true);
+                Assert.Equal(DateTime.Today.AddDays(30), Assert.Single(PhySpectrumStore.Load(useLocal: true)).License!.ExpiryDate);
+            }
+            finally
+            {
+                SysResourceDao.Instance = previousResources;
+                PhyLicenseDao.Instance = previousLicenses;
+            }
+        });
+    }
+
     [Fact]
     public void DeviceHierarchyAndLicenseSurviveReopeningWithoutMySql()
     {

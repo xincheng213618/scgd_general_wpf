@@ -119,6 +119,7 @@
         <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="CreateDeviceButton" Style="{StaticResource NavButton}" Command="{Binding CreateDeviceCommand}" Content="{x:Static properties:Resources.CreateDevice}"/>
                 <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE722;"/>

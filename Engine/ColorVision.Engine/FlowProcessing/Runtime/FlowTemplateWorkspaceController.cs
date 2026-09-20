@@ -123,6 +123,19 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         return RefreshAsync(generation, allowEmptyFlow: false);
     }
 
+    public void AdoptSavedCanvas(TemplateModel<FlowParam> flowTemplate)
+    {
+        // First save associates the canvas already on screen; reloading it would
+        // discard its editing state and race the ComboBox selection refresh.
+        CancelPendingRefresh();
+        long generation = SetSelectedFlowTemplate(flowTemplate);
+        lock (_selectionSync)
+            _loadedFlowParam = flowTemplate.Value;
+        _flowEngineManager.SelectedFlowParam = flowTemplate.Value;
+        RefreshStartNodeSelection();
+        _workspaceState.TryCompleteLoaded(generation, flowTemplate.Id);
+    }
+
     private Task RefreshAsync(
         long generation,
         bool allowEmptyFlow)

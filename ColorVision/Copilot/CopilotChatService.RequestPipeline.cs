@@ -589,7 +589,8 @@ namespace ColorVision.Copilot
                 };
                 if (!string.IsNullOrWhiteSpace(systemPrompt))
                     payload["instructions"] = systemPrompt;
-                var safetyIdentifier = CopilotOpenAiSafetyIdentifier.GetCurrent();
+                var safetyIdentifier = CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(config)
+                    ? CopilotOpenAiSafetyIdentifier.GetCurrent() : string.Empty;
                 if (safetyIdentifier.Length > 0)
                     payload["safety_identifier"] = safetyIdentifier;
                 if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))

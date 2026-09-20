@@ -97,7 +97,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
             {
                 try
                 {
-                    var items = await Task.Run(PhySpectrumStore.Load);
+                    bool useLocal = SysResourceDao.Instance.UseLocal;
+                    var items = await Task.Run(() => PhySpectrumStore.Load(useLocal));
                     string text = combo.Text;
                     combo.ItemsSource = items;
                     combo.SetCurrentValue(ComboBox.TextProperty, text);

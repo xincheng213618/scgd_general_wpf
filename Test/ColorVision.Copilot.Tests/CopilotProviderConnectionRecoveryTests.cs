@@ -1,5 +1,8 @@
+#pragma warning disable OPENAI001
 using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
+using OpenAI.Responses;
+using System.ClientModel.Primitives;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
@@ -82,18 +85,30 @@ public sealed class CopilotProviderConnectionRecoveryTests
             budgetedClient.Snapshot.UsedEstimatedUsage);
     }
 
-    [Fact]
-    public async Task RecoveryDoesNotReplayAStreamAfterContentWasPublished()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RecoveryDoesNotReplayAStreamAfterContentWasPublished(bool argumentProgress)
     {
+        var firstUpdate = argumentProgress
+            ? new ChatResponseUpdate
+            {
+                RawRepresentation = ModelReaderWriter.Read<StreamingResponseUpdate>(BinaryData.FromString(
+                    """{"type":"response.function_call_arguments.delta","sequence_number":2,"item_id":"fc_partial","output_index":0,"delta":"{\"path\":"}"""), ModelReaderWriterOptions.Json),
+            }
+            : new ChatResponseUpdate(ChatRole.Assistant, "partial");
         var provider = new RecoveringChatClient(
             connectionFailuresBeforeSuccess: 0,
-            failAfterStreamingContent: true);
+            failAfterStreamingContent: true,
+            streamingUpdate: firstUpdate);
         var recoveries = new List<CopilotProviderConnectionRecoveryInfo>();
-        using var client = new CopilotProviderConnectionRecoveryChatClient(
+        using var recovery = new CopilotProviderConnectionRecoveryChatClient(
             provider,
             recoveries.Add,
             (_, _) => Task.CompletedTask);
-        var received = new List<string>();
+        var retries = new List<CopilotProviderRetryInfo>();
+        using var client = new CopilotProviderRetryChatClient(recovery, retries.Add, delayAsync: (_, _) => Task.CompletedTask);
+        var received = new List<ChatResponseUpdate>();
 
         var exception = await Assert.ThrowsAsync<HttpRequestException>(async () =>
         {
@@ -101,14 +116,16 @@ public sealed class CopilotProviderConnectionRecoveryTests
                 [new ChatMessage(ChatRole.User, "stream")],
                 cancellationToken: CancellationToken.None))
             {
-                received.Add(update.Text);
+                received.Add(update);
             }
         });
 
         Assert.Contains("connection dropped", exception.Message, StringComparison.Ordinal);
-        Assert.Equal(["partial"], received);
+        Assert.Same(firstUpdate, Assert.Single(received));
+        Assert.Empty(received.SelectMany(update => update.Contents).OfType<FunctionCallContent>());
         Assert.Equal(1, provider.CallCount);
         Assert.Empty(recoveries);
+        Assert.Empty(retries);
     }
 
     [Fact]
@@ -304,7 +321,8 @@ public sealed class CopilotProviderConnectionRecoveryTests
     private sealed class RecoveringChatClient(
         int connectionFailuresBeforeSuccess,
         bool failAfterStreamingContent = false,
-        Exception? nonConnectionFailure = null) : IChatClient
+        Exception? nonConnectionFailure = null,
+        ChatResponseUpdate? streamingUpdate = null) : IChatClient
     {
         public int CallCount { get; private set; }
 
@@ -340,7 +358,7 @@ public sealed class CopilotProviderConnectionRecoveryTests
             if (CallCount <= connectionFailuresBeforeSuccess)
                 throw new HttpRequestException("provider connection unavailable");
 
-            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+            yield return streamingUpdate ?? new ChatResponseUpdate(ChatRole.Assistant, "partial");
             if (failAfterStreamingContent)
                 throw new HttpRequestException("connection dropped after content");
         }

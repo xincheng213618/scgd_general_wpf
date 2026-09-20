@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace ColorVision.Copilot
     internal sealed class CopilotStatelessResponsesHistoryChatClient : DelegatingChatClient
     {
         private const string ResponseMessageJsonKey = "ColorVision.OpenAI.Responses.MessageJson";
+        private const string PlainReasoningItemIdKey = "ColorVision.OpenAI.Responses.PlainReasoningItemId";
 
         public CopilotStatelessResponsesHistoryChatClient(IChatClient innerClient)
             : base(innerClient)
@@ -35,7 +37,15 @@ namespace ColorVision.Copilot
                 options,
                 cancellationToken).ConfigureAwait(false);
             foreach (var message in response.Messages)
+            {
                 AddMessageHistoryMarker(message, message.RawRepresentation as MessageResponseItem);
+                for (var index = 0; index < message.Contents.Count; index++)
+                {
+                    if (message.Contents[index] is TextReasoningContent { RawRepresentation: ReasoningResponseItem item } reasoning
+                        && TryReadPlainReasoningText(item, out var text))
+                        message.Contents[index] = MarkPlainReasoning(reasoning, text, item.Id);
+                }
+            }
             return response;
         }
 
@@ -49,6 +59,15 @@ namespace ColorVision.Copilot
                 options,
                 cancellationToken).ConfigureAwait(false))
             {
+                if (update.RawRepresentation is StreamingResponseReasoningTextDeltaUpdate plainReasoning)
+                {
+                    var preservedUpdate = update.Clone();
+                    preservedUpdate.Contents = update.Contents.Select(content => content is TextReasoningContent reasoning
+                        ? MarkPlainReasoning(reasoning, reasoning.Text, plainReasoning.ItemId) : content).ToList();
+                    yield return preservedUpdate;
+                    continue;
+                }
+
                 if (update.RawRepresentation is StreamingResponseOutputItemDoneUpdate
                     {
                         Item: MessageResponseItem messageItem,
@@ -76,18 +95,23 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (message.AdditionalProperties?.ContainsKey(ResponseMessageJsonKey) != true)
+                var hasMessageMarker = message.AdditionalProperties?.ContainsKey(ResponseMessageJsonKey) == true;
+                var hasPlainReasoning = message.Contents.OfType<TextReasoningContent>()
+                    .Any(content => content.AdditionalProperties?.ContainsKey(PlainReasoningItemIdKey) == true);
+                if (!hasMessageMarker && !hasPlainReasoning)
                     continue;
 
                 var preparedMessage = message.Clone();
-                preparedMessage.AdditionalProperties = new(message.AdditionalProperties);
-                preparedMessage.AdditionalProperties.Remove(ResponseMessageJsonKey);
+                preparedMessage.AdditionalProperties = message.AdditionalProperties is null ? null : new(message.AdditionalProperties);
+                preparedMessage.AdditionalProperties?.Remove(ResponseMessageJsonKey);
+                preparedMessage.Contents = message.Contents.Select(content => content is TextReasoningContent reasoning
+                    ? PreparePlainReasoning(reasoning) : content).ToList();
                 // Portable message content is authoritative. Provider-private replay
                 // metadata is used only while its text still describes that content.
                 var responseItem = TryReadMessageHistoryMarker(message);
                 if (responseItem is not null)
                 {
-                    preparedMessage.Contents = message.Contents
+                    preparedMessage.Contents = preparedMessage.Contents
                         .Where(content => content is not TextContent)
                         .ToList();
                     preparedMessage.Contents.Add(new AIContent { RawRepresentation = responseItem });
@@ -96,6 +120,58 @@ namespace ColorVision.Copilot
             }
 
             return materializedMessages;
+        }
+
+        private static TextReasoningContent MarkPlainReasoning(TextReasoningContent content, string? text, string? itemId)
+        {
+            var marked = new TextReasoningContent(text)
+            {
+                ProtectedData = content.ProtectedData,
+                AdditionalProperties = content.AdditionalProperties is null ? new() : new(content.AdditionalProperties),
+            };
+            // Keep only the original kind and id, not a second copy of the text.
+            // The portable content remains authoritative after editing or compaction.
+            marked.AdditionalProperties[PlainReasoningItemIdKey] = itemId ?? string.Empty;
+            return marked;
+        }
+
+        private static AIContent PreparePlainReasoning(TextReasoningContent content)
+        {
+            if (!string.IsNullOrEmpty(content.ProtectedData)
+                || !TryGetHistoryString(content.AdditionalProperties, PlainReasoningItemIdKey, out var itemId))
+                return content;
+            var item = new Dictionary<string, object?>
+            {
+                ["type"] = "reasoning",
+                ["summary"] = Array.Empty<object>(),
+                ["content"] = new[] { new { type = "reasoning_text", text = content.Text ?? string.Empty } },
+            };
+            if (itemId.Length > 0) item["id"] = itemId;
+            var prepared = MarkPlainReasoning(content, content.Text, itemId);
+            prepared.RawRepresentation = ModelReaderWriter.Read<ReasoningResponseItem>(
+                BinaryData.FromString(JsonSerializer.Serialize(item)), ModelReaderWriterOptions.Json);
+            return prepared;
+        }
+
+        private static bool TryReadPlainReasoningText(ReasoningResponseItem item, [NotNullWhen(true)] out string? text)
+        {
+            text = null;
+            if (!string.IsNullOrEmpty(item.EncryptedContent)) return false;
+            using var document = JsonDocument.Parse(ModelReaderWriter.Write(item, ModelReaderWriterOptions.Json).ToString());
+            if (!document.RootElement.TryGetProperty("content", out var parts)
+                || parts.ValueKind != JsonValueKind.Array || parts.GetArrayLength() == 0)
+                return false;
+            var builder = new StringBuilder();
+            foreach (var part in parts.EnumerateArray())
+            {
+                if (part.ValueKind != JsonValueKind.Object
+                    || !part.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String || type.GetString() != "reasoning_text"
+                    || !part.TryGetProperty("text", out var value) || value.ValueKind != JsonValueKind.String)
+                    return false;
+                builder.Append(value.GetString());
+            }
+            text = builder.ToString();
+            return true;
         }
 
         private static void AddMessageHistoryMarker(
@@ -121,7 +197,7 @@ namespace ColorVision.Copilot
         }
 
         private static bool HasMessageHistoryMarker(AdditionalPropertiesDictionary? properties) =>
-            TryGetMessageHistoryJson(properties, out _);
+            TryGetHistoryString(properties, ResponseMessageJsonKey, out _);
 
         private static string SerializeMessageItem(MessageResponseItem messageItem) =>
             ModelReaderWriter
@@ -130,7 +206,7 @@ namespace ColorVision.Copilot
 
         private static MessageResponseItem? TryReadMessageHistoryMarker(ChatMessage message)
         {
-            if (!TryGetMessageHistoryJson(message.AdditionalProperties, out var json))
+            if (!TryGetHistoryString(message.AdditionalProperties, ResponseMessageJsonKey, out var json))
                 return null;
 
             try
@@ -179,12 +255,13 @@ namespace ColorVision.Copilot
                     StringComparison.Ordinal);
         }
 
-        private static bool TryGetMessageHistoryJson(
+        private static bool TryGetHistoryString(
             AdditionalPropertiesDictionary? properties,
+            string key,
             [NotNullWhen(true)] out string? json)
         {
             json = null;
-            if (properties?.TryGetValue(ResponseMessageJsonKey, out var value) != true)
+            if (properties?.TryGetValue(key, out var value) != true)
                 return false;
 
             json = value switch

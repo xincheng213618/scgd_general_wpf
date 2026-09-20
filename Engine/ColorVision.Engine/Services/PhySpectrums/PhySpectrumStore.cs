@@ -18,12 +18,15 @@ namespace ColorVision.Engine.Services.PhySpectrums
             return new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
         }
 
-        internal static IReadOnlyList<PhySpectrum> Load()
+        internal static IReadOnlyList<PhySpectrum> Load(bool? useLocal = null)
         {
-            using var db = OpenDatabase();
-            var resources = db.Queryable<SysResourceModel>()
-                .Where(r => !r.IsDelete && (r.Type == (int)ServiceTypes.PhySpectrums || r.Type == (int)ServiceTypes.Spectrum)).ToList();
-            var licenses = db.Queryable<LicenseModel>().Where(l => l.LiceType == 1).ToList();
+            bool local = useLocal ?? SysResourceDao.Instance.UseLocal;
+            using var db = local ? null : OpenDatabase();
+            var resources = local ? SysResourceDao.Instance.GetLocal()
+                : db!.Queryable<SysResourceModel>().Where(r => r.Type == (int)ServiceTypes.PhySpectrums || r.Type == (int)ServiceTypes.Spectrum).ToList();
+            resources = resources.Where(r => !r.IsDelete).ToList();
+            var licenses = local ? PhyLicenseDao.Instance.GetLocal()
+                : db!.Queryable<LicenseModel>().Where(l => l.LiceType == 1).ToList();
             var configured = new List<string>();
             foreach (var resource in resources.Where(r => r.Type == (int)ServiceTypes.Spectrum && !string.IsNullOrWhiteSpace(r.Value)))
             {
@@ -49,9 +52,18 @@ namespace ColorVision.Engine.Services.PhySpectrums
                 .Select(sn => new PhySpectrum { SN = sn, ResourceId = physical.GetValueOrDefault(sn)?.Id, License = licenseBySn.GetValueOrDefault(sn) }).ToArray();
         }
 
-        internal static void Register(string sn)
+        internal static void Register(string sn, bool? useLocal = null)
         {
             sn = NormalizeSerial(sn);
+            if (useLocal ?? SysResourceDao.Instance.UseLocal)
+            {
+                var resource = SysResourceDao.Instance.GetLocal().FirstOrDefault(r => r.Type == (int)ServiceTypes.PhySpectrums
+                    && string.Equals(r.Code?.Trim(), sn, StringComparison.OrdinalIgnoreCase));
+                resource ??= new SysResourceModel { Code = sn, Name = sn, Type = (int)ServiceTypes.PhySpectrums };
+                resource.IsDelete = false;
+                SysResourceDao.Instance.Save(resource, local: true);
+                return;
+            }
             using var db = OpenDatabase();
             var existing = db.Queryable<SysResourceModel>().Where(r => r.Type == (int)ServiceTypes.PhySpectrums).ToList()
                 .FirstOrDefault(r => string.Equals(r.Code?.Trim(), sn, StringComparison.OrdinalIgnoreCase));
@@ -72,24 +84,29 @@ namespace ColorVision.Engine.Services.PhySpectrums
             return sn;
         }
 
-        internal static void SaveLicense(LicenseModel license)
+        internal static void SaveLicense(LicenseModel license, bool? useLocal = null)
         {
-            using var db = OpenDatabase();
-            var existing = db.Queryable<LicenseModel>().Where(l => l.MacAddress == license.MacAddress).ToList();
+            bool local = PhyLicenseDao.IsLocalId(license.Id) || (useLocal ?? PhyLicenseDao.Instance.UseLocal);
+            if (local && license.Id > 0) throw new InvalidOperationException("MySQL 未连接，不能修改服务器许可证。");
+            using var db = local ? null : OpenDatabase();
+            var existing = local ? PhyLicenseDao.Instance.GetLocal().Where(l => string.Equals(l.MacAddress, license.MacAddress, StringComparison.OrdinalIgnoreCase)).ToList()
+                : db!.Queryable<LicenseModel>().Where(l => l.MacAddress == license.MacAddress).ToList();
             var spectrumLicense = existing.FirstOrDefault(l => l.LiceType == 1);
             // Preserve existing IDs and associations. Never overwrite a camera license with the same SN.
             if (existing.Any(l => l.LiceType != 1))
                 throw new InvalidOperationException(Properties.Resources.SpectrumLicenseTypeConflict);
             if (spectrumLicense == null)
             {
-                db.Insertable(license).ExecuteCommand();
+                if (local) PhyLicenseDao.Instance.Save(license, local: true);
+                else db!.Insertable(license).ExecuteCommand();
                 return;
             }
             spectrumLicense.LicenseValue = license.LicenseValue;
             spectrumLicense.Model = license.Model;
             spectrumLicense.CusTomerName = license.CusTomerName;
             spectrumLicense.ExpiryDate = license.ExpiryDate;
-            db.Updateable(spectrumLicense).ExecuteCommand();
+            if (local) PhyLicenseDao.Instance.Save(spectrumLicense, local: true);
+            else db!.Updateable(spectrumLicense).ExecuteCommand();
         }
     }
 }

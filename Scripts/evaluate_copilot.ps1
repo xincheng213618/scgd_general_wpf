@@ -1,6 +1,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Profile,
+    [string]$ResponsesEndpoint,
+    [string]$Model,
+    [ValidateSet('Default', 'Disabled', 'Enabled', 'Low', 'Medium', 'High', 'XHigh', 'Max')][string]$ReasoningMode,
     [string[]]$Cases = @('all'),
     [ValidateRange(30, 300)][int]$TimeoutSeconds = 120,
     [ValidateRange(8192, 262144)][int]$TokenBudget = 98304,
@@ -15,6 +18,9 @@ $evaluationOutput = Join-Path ([System.IO.Path]::GetTempPath()) ('ColorVision-Co
 $evaluationVariables = @{
     COLORVISION_COPILOT_EVAL_ENABLED = '1'
     COLORVISION_COPILOT_EVAL_PROFILE = $Profile
+    COLORVISION_COPILOT_EVAL_RESPONSES_ENDPOINT = $ResponsesEndpoint
+    COLORVISION_COPILOT_EVAL_MODEL = $Model
+    COLORVISION_COPILOT_EVAL_REASONING = $ReasoningMode
     COLORVISION_COPILOT_EVAL_CASES = ($Cases -join ',')
     COLORVISION_COPILOT_EVAL_OUTPUT = $evaluationOutput
     COLORVISION_COPILOT_EVAL_TIMEOUT = $TimeoutSeconds.ToString([cultureinfo]::InvariantCulture)

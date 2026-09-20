@@ -112,6 +112,22 @@ namespace ColorVision.Copilot
             if (!CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
                 return;
 
+            if (!CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(request.Profile))
+            {
+                // The shared abstraction stops at ExtraHigh (xhigh), while profiles
+                // such as DeepSeek explicitly support max. Do not send OpenAI-only
+                // account identifiers or Codex overrides to compatible services.
+                if (CopilotReasoningCapabilities.GetEffectiveMode(request.Profile) == CopilotReasoningMode.Max)
+                {
+                    options.Reasoning = null;
+                    options.RawRepresentationFactory = _ => new CreateResponseOptions
+                    {
+                        ReasoningOptions = new ResponseReasoningOptions { ReasoningEffortLevel = new ResponseReasoningEffortLevel("max") },
+                    };
+                }
+                return;
+            }
+
             var hasEffortOverride = request.CodexReasoningEffort !=
                 CopilotCodexReasoningEffort.Unspecified;
             var hasSummaryOverride = request.CodexReasoningSummary !=

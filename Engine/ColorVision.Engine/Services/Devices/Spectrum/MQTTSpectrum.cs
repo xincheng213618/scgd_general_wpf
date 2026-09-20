@@ -44,12 +44,50 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public override DeviceStatusType DeviceStatus
         {
-            get => base.DeviceStatus;
+            get => Device?.SpectrumBackend.Status ?? base.DeviceStatus;
             set
             {
-                base.DeviceStatus = value;
-                Device?.ObserveSpectrumDeviceStatus(value);
+                if (Device == null) { base.DeviceStatus = value; return; }
+                Device.SpectrumBackend.ObserveService(value);
+                if (!Device.SpectrumBackend.OpensLocally) Device.ObserveSpectrumDeviceStatus(value);
             }
+        }
+
+        internal void RefreshBackendStatus() => base.DeviceStatus = Device.SpectrumBackend.Status;
+
+        internal override MsgRecord PublishAsyncClient(MsgSend msg, double timeout = 30000)
+        {
+            lock (Device.SpectrumBackend.Sync)
+            {
+                if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand(msg.EventName);
+                Device.EnsureOtherSpectrumBackends(false);
+                Device.SpectrumBackend.BeginServiceCommand(msg.EventName);
+            }
+            try
+            {
+                MsgRecord record = base.PublishAsyncClient(msg, timeout);
+                int completed = 0;
+                void Complete(object? sender, MsgRecordState state)
+                {
+                    if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)
+                        || System.Threading.Interlocked.Exchange(ref completed, 1) != 0) return;
+                    record.MsgRecordStateChanged -= Complete;
+                    Device.SpectrumBackend.EndServiceCommand();
+                    if (state == MsgRecordState.Success && msg.EventName is "Open" or "Close")
+                        DeviceStatus = msg.EventName == "Close" ? DeviceStatusType.Closed : DeviceStatusType.Opened;
+                }
+                record.MsgRecordStateChanged += Complete;
+                Complete(record, record.MsgRecordState);
+                return record;
+            }
+            catch { Device.SpectrumBackend.EndServiceCommand(); throw; }
+        }
+
+        public override void Dispose()
+        {
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
+            base.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
@@ -62,6 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
+            if (Device.SpectrumBackend.OpensLocally) return Task.CompletedTask;
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
@@ -223,6 +262,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetEqe()
         {
+            if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand("EQE.GetData");
             if (!Device.TryEnterSpectrumMeasurement(out string rejectionReason))
                 return CreateRejectedMeasurementRecord("EQE.GetData", rejectionReason);
 
@@ -276,6 +316,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetData(double timeoutMilliseconds = 30000)
         {
+            if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand(Device.DisplayConfig.IsLuminousFluxMode ? "EQE.GetData" : "GetData");
             if (!Device.TryValidateMeasurementCalibrationFiles(out string calibrationError))
                 return CreateRejectedMeasurementRecord("GetData", calibrationError);
             if (!Device.TryEnterSpectrumMeasurement(out string rejectionReason))
@@ -377,6 +418,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetDataAuto()
         {
+            if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand(Device.DisplayConfig.IsLuminousFluxMode ? "EQE.GetDataAuto" : "GetDataAuto");
             if (!Device.TryEnterSpectrumContinuousMeasurement(out string rejectionReason))
                 return CreateRejectedMeasurementRecord("GetDataAuto", rejectionReason);
 
@@ -444,6 +486,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetDataAutoStop()
         {
+            if (Device.SpectrumBackend.OpensLocally) return Device.RunLocalSpectrumCommand("GetDataAutoStop");
             MsgSend msg = new()
             {
                 EventName = "GetDataAutoStop",

@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Types
     public partial class CreateType : Window
     {
         public TypeService TypeService { get; set; }
+        public TerminalService? CreatedTerminal { get; private set; }
         public CreateType(TypeService typeService)
         {
             TypeService = typeService;
@@ -62,6 +63,7 @@ namespace ColorVision.Engine.Services.Types
                 TerminalService terminalService = new TerminalService(sysResource);
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
+                CreatedTerminal = terminalService;
 
                 if (!SysResourceDao.IsLocalId(pkId)) MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), SysResourceDao.IsLocalId(pkId) ? "本地配置已创建。" : Properties.Resources.CreationSuccessRestartingService, "ColorVision");

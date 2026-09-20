@@ -476,7 +476,10 @@ public class CVBaseServerNode : CVDeviceNode
 			"timeout monitor");
 	}
 
-	protected virtual FlowLocalExecution CreateLocalExecution(CVMQTTRequest request) => null;
+    [Browsable(false), JsonIgnore]
+    public virtual bool RequiresRemoteService => !(FlowLocalExecution.CanExecuteLocally?.Invoke(this) ?? false);
+
+	protected virtual FlowLocalExecution CreateLocalExecution(CVMQTTRequest request) => FlowLocalExecution.CreateForNode?.Invoke(this, request);
 
 	private async Task ExecuteLocalAsync(CVTransAction trans, CVBaseEventCmd cmd, FlowLocalExecution execution, Exception failure)
 	{

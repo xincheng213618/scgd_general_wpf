@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public partial class EditSpectrum : Window
     {
         private readonly ConfigSpectrum target;
+        private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
         private readonly CancellationTokenSource cancellation = new();
         private readonly Dictionary<string, string> discoveries = new(StringComparer.OrdinalIgnoreCase);
         private IReadOnlyList<PhySpectrum> stored = Array.Empty<PhySpectrum>();
@@ -91,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private async Task LoadChoicesAsync()
         {
-            stored = await Task.Run(PhySpectrumStore.Load, cancellation.Token);
+            stored = await Task.Run(() => PhySpectrumStore.Load(useLocalStore), cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             RefreshChoices();
         }
@@ -189,7 +190,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             await RunAsync(async () =>
             {
                 LicenseModel license = await Task.Run(() => SpectrumLicenseUpdateService.ReadFile(dialog.FileName, sn), cancellation.Token);
-                await Task.Run(() => PhySpectrumStore.SaveLicense(license), cancellation.Token);
+                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
                 await LoadChoicesAsync();
                 StatusText.Text = $"{sn} · {Properties.Resources.UpdataSucess}";
             });

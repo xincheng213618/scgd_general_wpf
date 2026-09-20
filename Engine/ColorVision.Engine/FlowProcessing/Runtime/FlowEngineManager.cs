@@ -66,6 +66,7 @@ public sealed class FlowEngineManager : ViewModelBase
     public WindowsServiceBase WindowsServiceReg { get; }
     public FlowCopilotService Copilot { get; }
     public DisplayFlow DisplayFlow { get; }
+    internal Func<TemplateFlow> CreateFlowTemplate { get; }
 
     public int TemplateFlowParamsIndex
     {
@@ -132,12 +133,12 @@ public sealed class FlowEngineManager : ViewModelBase
         return View.RefreshRuntimeAsync();
     }
 
-    private FlowEngineManager()
+    internal FlowEngineManager(Func<TemplateFlow>? createFlowTemplate = null)
     {
+        CreateFlowTemplate = createFlowTemplate ?? (() => new TemplateFlow());
         FlowEngineControl = new FlowEngineControl(false);
         FlowControl = new FlowControl(MQTTControl.GetInstance(), FlowEngineControl);
         View = new ViewFlow(this);
-        DisplayFlow = new DisplayFlow(this);
         Copilot = new FlowCopilotService(this);
 
         ServiceConfig = ServiceConfig.Instance;
@@ -157,6 +158,7 @@ public sealed class FlowEngineManager : ViewModelBase
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
         ContextMenu.Items.Add(new MenuItem { Header = "OpenService", Command = OpenServiceCommand });
+        DisplayFlow = new DisplayFlow(this);
     }
 
     private void OpenCameraLog()
@@ -193,14 +195,14 @@ public sealed class FlowEngineManager : ViewModelBase
 
     private void EditSelectedFlowTemplate()
     {
-        if (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count)
-            return;
-
-        new TemplateEditorWindow(new TemplateFlow(), TemplateFlowParamsIndex)
+        new TemplateEditorWindow(CreateFlowTemplate(), TemplateFlowParamsIndex)
         {
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         }.ShowDialog();
-        _ = RefreshFlowAsync();
+        if (FlowParams.Count > 0 && (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count))
+            _ = View.SelectFlowTemplateAsync(FlowParams[0], allowEmptyFlow: true);
+        else
+            _ = RefreshFlowAsync();
     }
 }

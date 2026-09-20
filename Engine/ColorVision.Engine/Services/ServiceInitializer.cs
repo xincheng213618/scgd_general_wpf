@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Services
 
                 phaseStopwatch.Restart();
                 ServiceManager serviceManager = ServiceManager.GetInstance();
+                DisPlayManager.GetInstance().DeviceConfigurationCommand = new ExportWindowService().Command;
                 serviceHierarchyMilliseconds = phaseStopwatch.ElapsedMilliseconds;
 
                 phaseStopwatch.Restart();

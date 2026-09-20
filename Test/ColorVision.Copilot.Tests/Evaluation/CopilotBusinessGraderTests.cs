@@ -5,6 +5,49 @@ namespace ColorVision.Copilot.Tests.Evaluation;
 
 public sealed class CopilotBusinessGraderTests : IDisposable
 {
+    [Fact]
+    public void ProtocolEvaluationOverridesLeaveTheSavedProfileUntouched()
+    {
+        var saved = new CopilotProfileConfig
+        {
+            VendorType = CopilotVendorType.DeepSeek, ProviderType = CopilotProviderType.AnthropicCompatible,
+            BaseUrl = "https://api.deepseek.com/anthropic", Model = "existing-model",
+        };
+        var selected = CopilotBusinessEvaluationTests.ApplyProfileOverrides(saved, "https://api.deepseek.com/responses", "deepseek-flash", "High");
+        Assert.NotSame(saved, selected);
+        Assert.Equal(CopilotProviderType.AnthropicCompatible, saved.ProviderType);
+        Assert.Equal("https://api.deepseek.com/anthropic", saved.BaseUrl);
+        Assert.Equal("existing-model", saved.Model);
+        Assert.True(CopilotOpenAiRequestPolicy.UsesResponsesApi(selected));
+        Assert.Equal("deepseek-flash", selected.Model);
+        Assert.Equal(CopilotReasoningMode.High, selected.ReasoningMode);
+        Assert.Equal(CopilotReasoningMode.Default, saved.ReasoningMode);
+    }
+
+    [Theory]
+    [InlineData("https://other.test/responses")]
+    [InlineData("http://api.deepseek.com/responses")]
+    [InlineData("https://api.deepseek.com:8443/responses")]
+    [InlineData("https://api.deepseek.com/chat/completions")]
+    [InlineData("https://api.deepseek.com/responses?token=placeholder")]
+    [InlineData("https://user@api.deepseek.com/responses")]
+    public void ProtocolEvaluationDoesNotRedirectSavedCredentials(string endpoint)
+    {
+        var saved = new CopilotProfileConfig { BaseUrl = "https://api.deepseek.com/anthropic" };
+        Assert.Throws<InvalidOperationException>(() => CopilotBusinessEvaluationTests.ApplyProfileOverrides(saved, endpoint, null, null));
+    }
+
+    [Theory]
+    [InlineData("Low")]
+    [InlineData("Unknown")]
+    [InlineData("12345")]
+    public void ProtocolEvaluationRejectsUnavailableReasoningModes(string mode)
+    {
+        var saved = new CopilotProfileConfig { VendorType = CopilotVendorType.DeepSeek, BaseUrl = "https://api.deepseek.com/anthropic" };
+        Assert.Throws<InvalidOperationException>(() => CopilotBusinessEvaluationTests.ApplyProfileOverrides(saved, null, null, mode));
+        Assert.Equal(CopilotReasoningMode.Default, saved.ReasoningMode);
+    }
+
     private readonly string _workspace = Directory.CreateTempSubdirectory("CopilotBusinessGrader-").FullName;
 
     [Theory]

@@ -58,7 +58,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
     private bool CanDispatchLocally(BaseStartNode startNode) =>
         !isDisposed && attachedStartNodes.Contains(startNode)
         && startNode is MQTTStartNode or MQTTStartV5Node
-        && attachedDeviceNodes.Count == 0;
+        && !attachedDeviceNodes.Keys.Any(node => node.RequiresRemoteService);
 
     private bool IsStartReady(BaseStartNode startNode) => startNode.IsExecutionReady || CanDispatchLocally(startNode);
 
