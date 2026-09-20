@@ -302,3 +302,82 @@ BmwSfr4Result calculateBmwSfr4In1(const cv::Mat& img, const BmwSfr4Config& confi
 
 } // namespace sfr
 } // namespace cvcore
+
+namespace cvcore::sfr {
+BmwLocatedTarget locateBmwTarget(const cv::Mat& crop)
+{
+    BmwLocatedTarget output;
+    cv::Mat detection = crop;
+    if (crop.depth() == CV_64F) crop.convertTo(detection, CV_32F);
+    if (!cv::checkRange(detection)) return output;
+    cv::Mat gray = toGray8(detection);
+    if (gray.empty()) return output;
+    cv::Mat mask;
+    cv::threshold(gray, mask, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+    cv::Mat joined;
+    cv::morphologyEx(mask, joined, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {7,7}));
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(joined, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    std::vector<BmwLocatedTarget> candidates;
+    for (const auto& contour : contours) {
+        cv::Rect box = cv::boundingRect(contour);
+        double rx = box.width * .5, ry = box.height * .5, radius = std::min(rx, ry);
+        if (radius < 55 || rx/ry < .65 || rx/ry > 1.55 || box.x <= 2 || box.y <= 2 ||
+            box.br().x >= gray.cols-2 || box.br().y >= gray.rows-2) continue;
+        cv::Point2d center(box.x+rx, box.y+ry);
+        cv::Mat edge;
+        cv::Canny(mask(box), edge, 40, 100);
+        std::vector<cv::Vec4i> lines;
+        cv::HoughLinesP(edge, lines, 1, PI/720, static_cast<int>(radius*.3), radius*.55, 5);
+        cv::Point2d origins[2], directions[2];
+        double lengths[2]{};
+        for (auto l : lines) {
+            cv::Point2d p(l[0]+box.x,l[1]+box.y), d(l[2]-l[0],l[3]-l[1]);
+            double length = cv::norm(d); d *= 1/length;
+            int axis = std::abs(d.x) > std::abs(d.y) ? 0 : 1;
+            if (std::min(std::abs(d.x),std::abs(d.y)) > .27 || length <= lengths[axis]) continue;
+            cv::Point2d delta = center-p;
+            if (std::abs(delta.x*d.y-delta.y*d.x) > radius*.12) continue;
+            lengths[axis]=length; origins[axis]=p; directions[axis]=d;
+        }
+        if (lengths[0]==0 || lengths[1]==0) continue;
+        auto u=directions[0], v=directions[1];
+        if (u.x<0) u=-u; if(v.y<0) v=-v;
+        if (std::abs(u.dot(v))>.12) continue;
+        auto delta=origins[1]-origins[0];
+        double cross=u.x*v.y-u.y*v.x;
+        center=origins[0]+u*((delta.x*v.y-delta.y*v.x)/cross);
+        // Validate opposed dark quadrants and a bright exterior; text, borders and
+        // ordinary rectangles must not become BMW targets simply by having lines.
+        int matches[2]{}, total=0, outsideDark=0, outsideTotal=0;
+        for(int a=0;a<360;a+=10) {
+            double t=a*PI/180, cx=std::cos(t), sy=std::sin(t);
+            if(std::abs(cx)<.22 || std::abs(sy)<.22) continue;
+            for(double r : {.30,.50,.72}) {
+                auto p=center+u*(rx*r*cx)+v*(ry*r*sy);
+                int x=cvRound(p.x), y=cvRound(p.y);
+                if(x<0||y<0||x>=mask.cols||y>=mask.rows) continue;
+                bool dark=mask.at<uchar>(y,x)>0, expected=cx*sy>0;
+                matches[0]+=dark==expected; matches[1]+=dark!=expected; ++total;
+            }
+            auto p=center+u*(rx*1.12*cx)+v*(ry*1.12*sy);
+            int x=cvRound(p.x),y=cvRound(p.y);
+            if(x>=0&&y>=0&&x<mask.cols&&y<mask.rows) { outsideDark+=mask.at<uchar>(y,x)>0; ++outsideTotal; }
+        }
+        if(total<60 || std::max(matches[0],matches[1])<total*.95 || outsideTotal<16 || outsideDark>outsideTotal*.12) continue;
+        BmwLocatedTarget found;
+        found.located=true; found.reason=""; found.center=center; found.target=box;
+        std::array<cv::Point2d,4> centers{center-u*(rx*.53),center-v*(ry*.53),center+u*(rx*.53),center+v*(ry*.53)};
+        for(int id=0;id<4;++id) {
+            bool horizontal=id%2==0;
+            int along=static_cast<int>((horizontal?rx:ry)*.42);
+            int normal=std::max(40,static_cast<int>(radius*.28));
+            found.edges[id]=makeCenteredRoi(centers[id],horizontal?along:normal,horizontal?normal:along,gray.size());
+        }
+        candidates.push_back(found);
+    }
+    if(candidates.size()==1) return candidates.front();
+    if(candidates.size()>1) output.reason="multiple_targets_in_search_roi";
+    return output;
+}
+}

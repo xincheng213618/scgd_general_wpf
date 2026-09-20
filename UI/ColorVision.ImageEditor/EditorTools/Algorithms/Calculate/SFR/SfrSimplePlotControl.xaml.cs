@@ -12,6 +12,20 @@ public partial class SfrSimplePlotControl : UserControl
 {
     private SfrAnalysisResult? _result;
     private int _view;
+    private bool _dark;
+    public void SetDarkTheme(bool dark)
+    {
+        _dark = dark;
+        var plot = WpfPlot.Plot;
+        var background = ScottPlot.Color.FromHex(dark ? "#252930" : "#FFFFFF");
+        var foreground = ScottPlot.Color.FromHex(dark ? "#E5E7EB" : "#252525");
+        plot.FigureBackground.Color = background;
+        plot.DataBackground.Color = ScottPlot.Color.FromHex(dark ? "#1C2026" : "#FAFBFC");
+        plot.Axes.Color(foreground);
+        plot.Grid.MajorLineColor = ScottPlot.Color.FromHex(dark ? "#414750" : "#D8DDE5");
+        plot.Legend.BackgroundColor = background; plot.Legend.FontColor = foreground;
+        plot.Legend.OutlineColor = ScottPlot.Color.FromHex(dark ? "#555C68" : "#CDD3DC");
+    }
     private HashSet<string> _visible = [];
     public event Action<string>? CursorReadout;
 
@@ -98,8 +112,8 @@ public partial class SfrSimplePlotControl : UserControl
         WpfPlot.Refresh();
     }
 
-    private static ScottPlot.Color ChannelColor(string channel) => ScottPlot.Color.FromHex(channel switch
+    private ScottPlot.Color ChannelColor(string channel) => ScottPlot.Color.FromHex(channel switch
     {
-        "R" => "#BD3535", "G" => "#20833C", "B" => "#3267CD", _ => "#595959"
+        "R" => _dark ? "#FF8585" : "#BD3535", "G" => _dark ? "#76E396" : "#20833C", "B" => _dark ? "#89B8FF" : "#3267CD", _ => _dark ? "#FFD077" : "#876000"
     });
 }

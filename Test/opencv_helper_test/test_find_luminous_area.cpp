@@ -3568,8 +3568,11 @@ void testWithRealImage(const std::string& imagePath)
 
 bool RunSfrAnalysisTests();
 
+bool RunBmwLocalizationTests();
+
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--bmw-only") return RunBmwLocalizationTests() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--sfr-only") {
         const bool diagnostics = RunSfrAnalysisTests();
         const bool legacy = smokeSfrOutputsClearOnFailure() && smokeSfrCalculatesSyntheticSlantedEdge()

@@ -100,3 +100,59 @@ bool RunSfrAnalysisTests()
     }
     catch (const std::exception& ex) { std::cerr << "SFR V2 test failed: " << ex.what() << '\n'; return false; }
 }
+
+bool RunBmwLocalizationTests()
+{
+    try {
+        auto locate=[](const cv::Mat& image,RoiRect roi) {
+            char* output=nullptr;
+            int code=M_LocateBmwTargetV1(borrow(image),roi,&output);
+            if(code<=0||!output) throw std::runtime_error("BMW localization export failed");
+            auto data=json::parse(std::string(output,code-1)); FreeResult(output); return data;
+        };
+        cv::Mat3b target(480,480,cv::Vec3b(220,220,220));
+        const double angle=5*CV_PI/180;
+        for(int y=0;y<target.rows;++y) for(int x=0;x<target.cols;++x) {
+            double dx=x-240.,dy=y-240.,u=dx*std::cos(angle)+dy*std::sin(angle),v=-dx*std::sin(angle)+dy*std::cos(angle);
+            if(u*u+v*v<180*180&&u*v>0) target(y,x)=cv::Vec3b(25,25,25);
+        }
+        cv::GaussianBlur(target,target,{5,5},1);
+        auto found=locate(target,{0,0,480,480});
+        require(found["located"],"BMW opposed sectors located");
+        require(found["edges"].size()==4,"BMW retains four fixed edges");
+        for(int id=0;id<4;++id) {
+            auto e=found["edges"][id],r=e["roi"];
+            require(e["id"]==id,"BMW edge identity stable");
+            auto result=analyze(target,{{"encoding","linear"}},{r["x"],r["y"],r["width"],r["height"]});
+            require(result["channels"].size()==4,"BMW edge uses RGB and L diagnostics");
+            for(auto c:result["channels"]) require(c["valid"],"synthetic BMW straight segment valid");
+        }
+        cv::Mat wide;
+        target.convertTo(wide,CV_16U,257);
+        require(locate(wide,{0,0,480,480})["located"],"BMW 16-bit localization");
+        target.convertTo(wide,CV_64F,1.0/255);
+        require(locate(wide,{0,0,480,480})["located"],"BMW double RGB localization without changing measurement pixels");
+        require(!locate(target,{160,0,320,480})["located"],"BMW incomplete target rejected");
+        cv::Mat shifted(600,650,CV_8UC3,cv::Scalar(220,220,220)); target.copyTo(shifted(cv::Rect(90,60,480,480)));
+        auto offset=locate(shifted,{90,60,480,480});
+        require(std::abs(offset["centerX"].get<double>()-found["centerX"].get<double>()-90)<1e-6,"BMW original image X offset");
+        require(std::abs(offset["centerY"].get<double>()-found["centerY"].get<double>()-60)<1e-6,"BMW original image Y offset");
+        cv::Mat blank(480,480,CV_8UC3,cv::Scalar(220,220,220));
+        require(!locate(blank,{0,0,480,480})["located"],"BMW blank rejected");
+        cv::rectangle(blank,{80,80,320,320},cv::Scalar(25,25,25),-1);
+        require(!locate(blank,{0,0,480,480})["located"],"BMW rectangle rejected");
+        blank.setTo(cv::Scalar(220,220,220)); cv::circle(blank,{240,240},180,cv::Scalar(25,25,25),-1);
+        require(!locate(blank,{0,0,480,480})["located"],"BMW circle rejected");
+        blank.setTo(cv::Scalar(220,220,220));
+        cv::line(blank,{70,240},{410,240},cv::Scalar(25,25,25),24);
+        cv::line(blank,{240,70},{240,410},cv::Scalar(25,25,25),24);
+        require(!locate(blank,{0,0,480,480})["located"],"BMW ordinary cross rejected");
+        cv::Mat two(480,960,CV_8UC3); target.copyTo(two(cv::Rect(0,0,480,480))); target.copyTo(two(cv::Rect(480,0,480,480)));
+        auto ambiguous=locate(two,{0,0,960,480});
+        require(!ambiguous["located"]&&ambiguous["reason"]=="multiple_targets_in_search_roi","BMW ambiguity rejected");
+        char* output=reinterpret_cast<char*>(1);
+        require(M_LocateBmwTargetV1(borrow(target),{},&output)<0&&output==nullptr,"BMW full-frame sentinel prohibited");
+        require(M_LocateBmwTargetV1(borrow(target),{-1,0,100,100},&output)<0&&output==nullptr,"BMW invalid ROI clears output");
+        return true;
+    } catch(const std::exception& ex) { std::cerr<<"BMW failure: "<<ex.what()<<'\n'; return false; }
+}

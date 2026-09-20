@@ -292,3 +292,27 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
         return 0;
         });
 }
+
+COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result)
+{
+    if (!result) return -1;
+    *result=nullptr;
+    try {
+        auto image=HImageToMatView(img);
+        if(image.empty()) return -2;
+        if(roi.x<0||roi.y<0||roi.width<=0||roi.height<=0||roi.width>image.cols||roi.height>image.rows||
+            roi.x>image.cols-roi.width||roi.y>image.rows-roi.height||roi.width>8192||roi.height>8192||
+            static_cast<int64_t>(roi.width)*roi.height>16000000) return -1;
+        auto target=sfr::locateBmwTarget(image(cv::Rect(roi.x,roi.y,roi.width,roi.height)));
+        auto rect=[&](cv::Rect r) { return nlohmann::json{{"x",r.empty()?0:r.x+roi.x},{"y",r.empty()?0:r.y+roi.y},{"width",r.width},{"height",r.height}}; };
+        nlohmann::json data={{"located",target.located},{"reason",target.reason},{"targetRoi",rect(target.target)},
+            {"centerX",target.located?target.center.x+roi.x:0},{"centerY",target.located?target.center.y+roi.y:0},{"edges",nlohmann::json::array()}};
+        for(int id=0;id<4;++id) data["edges"].push_back({{"id",id},{"roi",rect(target.edges[id])}});
+        auto text=data.dump();
+        auto buffer=static_cast<char*>(CoTaskMemAlloc(text.size()+1));
+        if(!buffer) return -3;
+        std::memcpy(buffer,text.c_str(),text.size()+1); *result=buffer;
+        return static_cast<int>(text.size()+1);
+    } catch(const std::exception& ex) { cvnative::LogException("sfr.bmw",__func__,-4,"std::exception",ex.what()); return -4; }
+    catch(...) { return -6; }
+}
