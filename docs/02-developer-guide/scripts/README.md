@@ -21,6 +21,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
+| CameraTest 离线测试包 | `pwsh -NoProfile -File .\Scripts\package_camera_test.ps1` | 只生成带版本/时间的干净 ZIP，供手动分发；不内置 .NET、不上传。完整契约见[相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新两份共享文件表 | `py Scripts\generate_shared_files.py` | 从当前 Release x64 宿主输出一次扫描，同时更新仓库与 Plugin Kit 镜像 |

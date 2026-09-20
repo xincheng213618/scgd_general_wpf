@@ -105,12 +105,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pattern", "Plugins\Pattern\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pattern.Tests", "Test\Pattern.Tests\Pattern.Tests.csproj", "{A026B864-DABA-4AD4-972B-7612C17D8F9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraTest", "Plugins\CameraTest\CameraTest.csproj", "{A9B25EEA-E987-4A39-911C-391A39876625}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9B25EEA-E987-4A39-911C-391A39876625}.Debug|x64.ActiveCfg = Debug|x64
+		{A9B25EEA-E987-4A39-911C-391A39876625}.Debug|x64.Build.0 = Debug|x64
+		{A9B25EEA-E987-4A39-911C-391A39876625}.Release|x64.ActiveCfg = Release|x64
+		{A9B25EEA-E987-4A39-911C-391A39876625}.Release|x64.Build.0 = Release|x64
 		{A026B864-DABA-4AD4-972B-7612C17D8F9A}.Debug|x64.ActiveCfg = Debug|x64
 		{A026B864-DABA-4AD4-972B-7612C17D8F9A}.Debug|x64.Build.0 = Debug|x64
 		{A026B864-DABA-4AD4-972B-7612C17D8F9A}.Release|x64.ActiveCfg = Release|x64
@@ -264,6 +270,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{A9B25EEA-E987-4A39-911C-391A39876625} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{A026B864-DABA-4AD4-972B-7612C17D8F9A} = {17024679-C50D-4948-A0F7-4A67B6EFBEA8}
 		{11DBFE37-1917-D805-B065-8550F8C17F38} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{C8071225-73B5-4559-A22E-CD057B424A3C} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
