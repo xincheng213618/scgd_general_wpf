@@ -23,6 +23,11 @@ namespace ProjectARVRPro
         public DateTime RecordAnchorDate { get; set; } = DateTime.Today;
         public string RecordSn { get; set; } = string.Empty;
         public int RecordResultIndex { get; set; }
+        public bool EnableCombinedStatistics { get; set; }
+        public ResultStatisticsPeriodMode CombinedPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public DateTime CombinedAnchorDate { get; set; } = DateTime.Today;
+        public string CombinedSn { get; set; } = string.Empty;
+        public int CombinedResultIndex { get; set; }
         public ResultStatisticsPeriodMode FlowPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
         public DateTime FlowAnchorDate { get; set; } = DateTime.Today;
         public string FlowName { get; set; } = string.Empty;
@@ -69,7 +74,7 @@ namespace ProjectARVRPro
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
 
-
+        [Browsable(false)]
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex = 0;
 
@@ -167,6 +172,7 @@ namespace ProjectARVRPro
         private bool _SNlocked;
 
         [JsonIgnore]
+        [Browsable(false)]
         public string SN { get => _SN; set { if (SNlocked) return; _SN = value; OnPropertyChanged(); SNChanged?.Invoke(this, value); } }
         private string _SN = string.Empty;
     }

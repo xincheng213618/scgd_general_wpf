@@ -47,10 +47,13 @@
                             <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}">
                                 <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
                             </Button>
-                            <Button Content="SlectDb" Command="{Binding ViewResultManager.SlectSqlLiteDbCommand}" Margin="2,0,0,0"/>
                             <Button Content="数据清理" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
                             <Button Content="释放截图缓存" Click="ReleaseSnapshotBuffer_Click" Margin="2,0,0,0"/>
                             <Button Content="结果统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
+                            <Button x:Name="ViewRefreshManagerButton" Content="视图刷新管理"
+                                    Click="OpenResultViewRefreshManager_Click"
+                                    ToolTip="查看并管理所有读图与结果视图的自动刷新"
+                                    Margin="2,0,0,0"/>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Click="Button_Click_Clear" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >

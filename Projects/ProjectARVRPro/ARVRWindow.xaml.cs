@@ -83,6 +83,10 @@ namespace ProjectARVRPro
             this.ApplyCaption(false);
             ARVRWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ARVRWindow))?.GetName().Version?.ToString() ?? "";
+            Loaded += (_, _) => UpdateResultViewRefreshButtonState();
+            DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += DisplayControls_CollectionChanged;
+            foreach (ViewConfigBase config in ConfigHandler.GetInstance().Configs.Values.OfType<ViewConfigBase>())
+                config.PropertyChanged += ViewRefreshConfig_PropertyChanged;
         }
 
         private int CurrentTestType = -1;
@@ -1819,6 +1823,61 @@ namespace ProjectARVRPro
             ConfigService.Instance.SaveConfigs();
         }
 
+        private void OpenResultViewRefreshManager_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new ResultViewRefreshManagerWindow
+            {
+                Owner = this,
+            };
+            bool? saved = window.ShowDialog();
+            UpdateResultViewRefreshButtonState();
+            if (saved == true)
+                log.Info("视图刷新配置已更新并保存。");
+        }
+
+        private void UpdateResultViewRefreshButtonState()
+        {
+            int enabledCount = ResultViewRefreshDiscovery.Discover().Count(item => item.IsWarning);
+            ViewRefreshManagerButton.Content = enabledCount > 0
+                ? $"视图刷新（{enabledCount}项开启）"
+                : "视图刷新（已关闭）";
+            ViewRefreshManagerButton.ToolTip = enabledCount > 0
+                ? "仍有已加载的读图或结果视图在自动刷新，点击查看"
+                : "所有已加载的读图与结果视图均已关闭自动刷新";
+
+            if (enabledCount > 0)
+            {
+                ViewRefreshManagerButton.Background = new SolidColorBrush(Color.FromArgb(64, 255, 152, 0));
+                ViewRefreshManagerButton.BorderBrush = new SolidColorBrush(Color.FromRgb(230, 144, 0));
+            }
+            else
+            {
+                ViewRefreshManagerButton.ClearValue(Control.BackgroundProperty);
+                ViewRefreshManagerButton.ClearValue(Control.BorderBrushProperty);
+            }
+        }
+
+        private void DisplayControls_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+            RefreshResultViewButtonOnDispatcher();
+
+        private void ViewRefreshConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ViewConfigBase.AutoRefreshView))
+                RefreshResultViewButtonOnDispatcher();
+        }
+
+        private void RefreshResultViewButtonOnDispatcher()
+        {
+            if (_isDisposed)
+                return;
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isDisposed)
+                    UpdateResultViewRefreshButtonState();
+            });
+        }
+
         public async Task OpenBatchResultAsync(MeasureBatchModel batch, string flowName)
         {
             ArgumentNullException.ThrowIfNull(batch);
@@ -2871,6 +2930,9 @@ namespace ProjectARVRPro
             ImageView.ExternalRenderCompleted -= ImageView_ExternalRenderCompleted;
             ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
+            DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged -= DisplayControls_CollectionChanged;
+            foreach (ViewConfigBase config in ConfigHandler.GetInstance().Configs.Values.OfType<ViewConfigBase>())
+                config.PropertyChanged -= ViewRefreshConfig_PropertyChanged;
             if (_activeGroupChangedHandler != null)
             {
                 ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;

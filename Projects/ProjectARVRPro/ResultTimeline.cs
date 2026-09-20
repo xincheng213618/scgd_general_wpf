@@ -8,6 +8,7 @@ namespace ProjectARVRPro
         PreProcessing,
         FlowExecution,
         ResultProcessing,
+        SideTransition,
         Unattributed,
     }
 
@@ -31,6 +32,7 @@ namespace ProjectARVRPro
 
     public sealed class ResultTimelinePresentation
     {
+        public string TitleText { get; init; } = "整组时间轴";
         public IReadOnlyList<ResultTimelineFlowRow> Rows { get; init; } = [];
         public string SummaryText { get; init; } = string.Empty;
         public string NoteText { get; init; } = string.Empty;
@@ -114,6 +116,104 @@ namespace ProjectARVRPro
                 EndTimeText = endTime.ToString("HH:mm:ss.fff"),
                 HasMeasuredPhases = hasMeasuredPhases,
             };
+        }
+
+        public static ResultTimelinePresentation BuildCombined(
+            ResultStatisticsCombinedRecordRow record,
+            IEnumerable<ProjectARVRReuslt> leftFlowDetails,
+            IEnumerable<ProjectARVRReuslt> rightFlowDetails)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            ArgumentNullException.ThrowIfNull(leftFlowDetails);
+            ArgumentNullException.ThrowIfNull(rightFlowDetails);
+
+            double totalMilliseconds = record.CycleTimeMilliseconds;
+            if (totalMilliseconds <= 0)
+            {
+                return new ResultTimelinePresentation
+                {
+                    TitleText = "L/R 全批次时间轴",
+                    SummaryText = "全批次 CT 0.000 s",
+                    NoteText = "当前 L/R 记录没有可绘制的时间范围。",
+                    StartTimeText = record.StartTime.ToString("HH:mm:ss.fff"),
+                    MiddleTimeText = record.RightStartTime.ToString("HH:mm:ss.fff"),
+                    EndTimeText = record.EndTime.ToString("HH:mm:ss.fff"),
+                };
+            }
+
+            ResultTimelinePresentation left = Build(record.Left, leftFlowDetails);
+            ResultTimelinePresentation right = Build(record.Right, rightFlowDetails);
+            var rows = new List<ResultTimelineFlowRow>();
+            rows.AddRange(MapSideRows("L", left.Rows, record.Left, record.StartTime, record.EndTime, 0));
+            if (record.RightStartTime > record.LeftEndTime)
+            {
+                rows.Add(new ResultTimelineFlowRow
+                {
+                    FlowSequence = rows.Count + 1,
+                    FlowName = "L 完成 → R Init",
+                    ExecutionTimeText = record.TransitionText,
+                    Segments =
+                    [
+                        CreateSegment(
+                            ResultTimelinePhaseKind.SideTransition,
+                            record.LeftEndTime,
+                            record.RightStartTime,
+                            record.StartTime,
+                            record.EndTime),
+                    ],
+                });
+            }
+            rows.AddRange(MapSideRows("R", right.Rows, record.Right, record.StartTime, record.EndTime, rows.Count));
+
+            return new ResultTimelinePresentation
+            {
+                TitleText = "L/R 全批次时间轴",
+                Rows = rows,
+                SummaryText = $"全批次 CT {Format(record.CycleTimeMilliseconds)} · L {record.Left.CycleTimeText} · L→R 等待 {record.TransitionText} · R {record.Right.CycleTimeText}",
+                NoteText = $"里程碑：L Init {record.StartTime:HH:mm:ss.fff} · L 完成 {record.LeftEndTime:HH:mm:ss.fff} · R Init {record.RightStartTime:HH:mm:ss.fff} · R 完成 {record.EndTime:HH:mm:ss.fff}。灰色仍表示单侧批次内无法细分的时间。",
+                StartTimeText = $"L Init {record.StartTime:HH:mm:ss.fff}",
+                MiddleTimeText = $"L完 {record.LeftEndTime:HH:mm:ss.fff} / R Init {record.RightStartTime:HH:mm:ss.fff}",
+                EndTimeText = $"R完 {record.EndTime:HH:mm:ss.fff}",
+                HasMeasuredPhases = left.HasMeasuredPhases || right.HasMeasuredPhases,
+            };
+        }
+
+        private static IEnumerable<ResultTimelineFlowRow> MapSideRows(
+            string side,
+            IEnumerable<ResultTimelineFlowRow> source,
+            ResultStatisticsRecordRow sideRecord,
+            DateTime combinedStart,
+            DateTime combinedEnd,
+            int sequenceOffset)
+        {
+            double combinedMilliseconds = Math.Max(1, (combinedEnd - combinedStart).TotalMilliseconds);
+            double sideMilliseconds = Math.Max(0, (sideRecord.EndTime - sideRecord.StartTime).TotalMilliseconds);
+            double sideOffsetMilliseconds = Math.Max(0, (sideRecord.StartTime - combinedStart).TotalMilliseconds);
+            int index = 0;
+            foreach (ResultTimelineFlowRow row in source)
+            {
+                index++;
+                yield return new ResultTimelineFlowRow
+                {
+                    FlowSequence = sequenceOffset + index,
+                    FlowName = $"{side} · {row.FlowName}",
+                    ExecutionTimeText = row.ExecutionTimeText,
+                    Segments = row.Segments.Select(segment => new ResultTimelineSegment
+                    {
+                        Kind = segment.Kind,
+                        StartUnits = Math.Clamp(
+                            (sideOffsetMilliseconds + segment.StartUnits / TimelineUnits * sideMilliseconds)
+                                / combinedMilliseconds * TimelineUnits,
+                            0,
+                            TimelineUnits),
+                        WidthUnits = Math.Max(
+                            1.5,
+                            segment.WidthUnits / TimelineUnits * sideMilliseconds / combinedMilliseconds * TimelineUnits),
+                        DurationMilliseconds = segment.DurationMilliseconds,
+                        ToolTip = $"{side} · {segment.ToolTip}",
+                    }).ToList(),
+                };
+            }
         }
 
         private static List<ResultTimelineFlowRow> BuildMeasuredRows(
@@ -341,6 +441,7 @@ namespace ProjectARVRPro
                 ResultTimelinePhaseKind.PreProcessing => "预处理",
                 ResultTimelinePhaseKind.FlowExecution => "流程执行",
                 ResultTimelinePhaseKind.ResultProcessing => "执行后处理/保存",
+                ResultTimelinePhaseKind.SideTransition => "L→R 等待",
                 _ => "未归因间隔",
             };
         }

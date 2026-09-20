@@ -37,7 +37,7 @@ namespace ProjectARVRPro.Process.W255
         /// <summary>
         /// 色彩均匀性 测试项
         /// </summary>
-        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Color_Uniformity(Δu'v'max)" };
+        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem() { Name = "Conlor_Uniformity(Δu'v'max)" };
 
         /// <summary>
         /// 有效POI相对D65的均方根色度距离

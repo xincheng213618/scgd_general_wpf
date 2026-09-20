@@ -181,6 +181,17 @@ namespace ProjectARVRPro
         public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
     }
 
+    public sealed class ResultStatisticsCombinedDashboard
+    {
+        public ResultStatistics Summary { get; init; } = new();
+        public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
+        public double AverageTransitionMilliseconds { get; init; }
+
+        public string AverageTransitionText => Summary.TotalCount > 0
+            ? ResultStatisticsCalculator.FormatMilliseconds(AverageTransitionMilliseconds)
+            : "-";
+    }
+
     public static class ResultStatisticsTrendBuilder
     {
         public static IReadOnlyList<ResultStatisticsTrendPoint> BuildMonthly(ResultStatistics statistics)
@@ -259,6 +270,7 @@ namespace ProjectARVRPro
         public int PreviousResultId { get; set; }
         public int FlowCount { get; set; }
         public long FlowRunTimeMilliseconds { get; set; }
+        public int PreviousObjectiveId { get; set; }
 
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
         public string ExecutionText => $"第 {ExecutionIndex} 次";
@@ -266,6 +278,101 @@ namespace ProjectARVRPro
         public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
         public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
         public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public enum ResultStatisticsSide
+    {
+        Left,
+        Right,
+    }
+
+    public sealed class ResultStatisticsCombinedRecordRow
+    {
+        public required string SN { get; init; }
+        public required ResultStatisticsRecordRow Left { get; init; }
+        public required ResultStatisticsRecordRow Right { get; init; }
+
+        public int Id => Right.Id;
+        public DateTime StartTime => Left.StartTime;
+        public DateTime LeftEndTime => Left.EndTime;
+        public DateTime RightStartTime => Right.StartTime;
+        public DateTime EndTime => Right.EndTime;
+        public bool Result => Left.Result && Right.Result;
+        public int FlowCount => Left.FlowCount + Right.FlowCount;
+        public long FlowRunTimeMilliseconds => Left.FlowRunTimeMilliseconds + Right.FlowRunTimeMilliseconds;
+        public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
+        public double TransitionMilliseconds => Math.Max(0, (RightStartTime - LeftEndTime).TotalMilliseconds);
+        public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
+        public string TransitionText => ResultStatisticsCalculator.FormatMilliseconds(TransitionMilliseconds);
+        public string SideCycleTimeText => $"L {Left.CycleTimeText} / R {Right.CycleTimeText}";
+        public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
+        public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
+        public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public sealed class ResultStatisticsCombinedPage
+    {
+        public int TotalCount { get; init; }
+        public IReadOnlyList<ResultStatisticsCombinedRecordRow> Rows { get; init; } = [];
+    }
+
+    public static class ResultStatisticsLrPairMatcher
+    {
+        public static IReadOnlyList<ResultStatisticsCombinedRecordRow> MatchAdjacent(IEnumerable<ResultStatisticsRecordRow> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            List<ResultStatisticsRecordRow> rows = source.OrderBy(item => item.Id).ToList();
+            var result = new List<ResultStatisticsCombinedRecordRow>();
+            for (int index = 1; index < rows.Count; index++)
+            {
+                ResultStatisticsRecordRow left = rows[index - 1];
+                ResultStatisticsRecordRow right = rows[index];
+                if (right.PreviousObjectiveId != left.Id
+                    || !TryParse(left.SN, out string leftBaseSn, out ResultStatisticsSide leftSide)
+                    || !TryParse(right.SN, out string rightBaseSn, out ResultStatisticsSide rightSide)
+                    || leftSide != ResultStatisticsSide.Left
+                    || rightSide != ResultStatisticsSide.Right
+                    || !string.Equals(leftBaseSn, rightBaseSn, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                result.Add(new ResultStatisticsCombinedRecordRow
+                {
+                    SN = leftBaseSn,
+                    Left = left,
+                    Right = right,
+                });
+            }
+
+            return result;
+        }
+
+        public static bool TryParse(string? sn, out string baseSn, out ResultStatisticsSide side)
+        {
+            baseSn = string.Empty;
+            side = default;
+            string value = sn?.Trim() ?? string.Empty;
+            int timeSeparator = value.LastIndexOf('_');
+            if (timeSeparator <= 0 || value.Length - timeSeparator - 1 != 6)
+                return false;
+            if (!value.AsSpan(timeSeparator + 1).ContainsAnyExceptInRange('0', '9'))
+            {
+                int sideSeparator = value.LastIndexOf('_', timeSeparator - 1);
+                if (sideSeparator <= 0 || timeSeparator - sideSeparator != 2)
+                    return false;
+
+                char sideToken = char.ToUpperInvariant(value[sideSeparator + 1]);
+                if (sideToken is not ('L' or 'R'))
+                    return false;
+
+                baseSn = value[..sideSeparator].Trim();
+                side = sideToken == 'L' ? ResultStatisticsSide.Left : ResultStatisticsSide.Right;
+                return baseSn.Length > 0;
+            }
+
+            return false;
+        }
     }
 
     public sealed class ResultStatisticsSnSummary
@@ -691,6 +798,61 @@ namespace ProjectARVRPro
             return ApplyFilters(Query<ObjectiveTestResultRecord>(db), query).Count();
         }
 
+        public ResultStatisticsCombinedDashboard QueryCombinedDashboard(
+            ResultStatisticsQuery query,
+            ResultStatisticsPeriodMode mode,
+            DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+
+            List<ResultStatisticsCombinedRecordRow> pairs = QueryCombinedRows(query, includeFlowData: false);
+            List<ResultStatisticsSample> samples = pairs.Select(item => new ResultStatisticsSample
+            {
+                Id = item.Id,
+                SN = item.SN,
+                Result = item.Result,
+                StartTime = item.StartTime,
+                EndTime = item.EndTime,
+            }).ToList();
+            ResultStatistics summary = ResultStatisticsCalculator.Calculate(samples, query.From, query.ToExclusive, now);
+            IReadOnlyList<ResultStatisticsTrendPoint> trend = mode == ResultStatisticsPeriodMode.All
+                ? ResultStatisticsTrendBuilder.BuildMonthly(summary)
+                : ResultStatisticsTrendBuilder.BuildDetails(samples, mode);
+            return new ResultStatisticsCombinedDashboard
+            {
+                Summary = summary,
+                Trend = trend,
+                AverageTransitionMilliseconds = pairs.Count > 0 ? pairs.Average(item => item.TransitionMilliseconds) : 0,
+            };
+        }
+
+        public ResultStatisticsCombinedPage QueryCombinedRecords(ResultStatisticsQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
+
+            List<ResultStatisticsCombinedRecordRow> rows = QueryCombinedRows(query, includeFlowData: true)
+                .OrderByDescending(item => item.Id)
+                .ToList();
+            int skip = checked((query.PageNumber - 1) * query.PageSize);
+            return new ResultStatisticsCombinedPage
+            {
+                TotalCount = rows.Count,
+                Rows = rows.Skip(skip).Take(query.PageSize).ToList(),
+            };
+        }
+
+        public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsCombinedRecordRow record)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            return QueryFlowDetails(record.Left).Concat(QueryFlowDetails(record.Right)).ToList();
+        }
+
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsRecordRow record)
         {
             ArgumentNullException.ThrowIfNull(record);
@@ -721,6 +883,84 @@ namespace ProjectARVRPro
             }
 
             return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
+        }
+
+        private List<ResultStatisticsCombinedRecordRow> QueryCombinedRows(ResultStatisticsQuery query, bool includeFlowData)
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            string flowColumns = includeFlowData
+                ? """
+                    CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                        (SELECT COUNT(*)
+                         FROM "ARVRReuslt" AS F
+                         WHERE F."SN" = R."SN"
+                           AND F."Id" > R."PreviousResultId"
+                           AND F."Id" <= R."ResultId")
+                        ELSE 0 END AS "FlowCount",
+                    CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                        COALESCE((SELECT SUM(F."RunTime")
+                                  FROM "ARVRReuslt" AS F
+                                  WHERE F."SN" = R."SN"
+                                    AND F."Id" > R."PreviousResultId"
+                                    AND F."Id" <= R."ResultId"), 0)
+                        ELSE 0 END AS "FlowRunTimeMilliseconds"
+                    """
+                : """
+                    0 AS "FlowCount",
+                    0 AS "FlowRunTimeMilliseconds"
+                    """;
+            string sql = $$"""
+                WITH RankedRecords AS
+                (
+                    SELECT "Id",
+                           "SN",
+                           "CreateTime" AS "StartTime",
+                           "UpdateTime" AS "EndTime",
+                           "TotalResult" AS "Result",
+                           "LastModel",
+                           "BatchId",
+                           "ResultId",
+                           "Msg",
+                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
+                           COALESCE(LAG("Id") OVER (ORDER BY "Id"), 0) AS "PreviousObjectiveId"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                )
+                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
+                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId", R."PreviousObjectiveId",
+                       {{flowColumns}}
+                FROM RankedRecords AS R
+                WHERE (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
+                   OR R."Id" = COALESCE(
+                       (SELECT X."PreviousObjectiveId"
+                        FROM RankedRecords AS X
+                        WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
+                        ORDER BY X."Id"
+                        LIMIT 1), -1)
+                ORDER BY R."Id";
+                """;
+            List<ResultStatisticsRecordRow> candidates = db.Ado.SqlQuery<ResultStatisticsRecordRow>(
+                ReadSql(sql),
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive));
+            IEnumerable<ResultStatisticsCombinedRecordRow> pairs = ResultStatisticsLrPairMatcher.MatchAdjacent(candidates)
+                .Where(item => item.EndTime >= query.From && item.EndTime < query.ToExclusive);
+            string? sn = string.IsNullOrWhiteSpace(query.SN) ? null : query.SN.Trim();
+            if (sn != null)
+            {
+                pairs = pairs.Where(item => item.SN.Contains(sn, StringComparison.OrdinalIgnoreCase)
+                    || item.Left.SN.Contains(sn, StringComparison.OrdinalIgnoreCase)
+                    || item.Right.SN.Contains(sn, StringComparison.OrdinalIgnoreCase));
+            }
+            if (query.Result.HasValue)
+            {
+                bool expected = query.Result.Value;
+                pairs = pairs.Where(item => item.Result == expected);
+            }
+
+            return pairs.ToList();
         }
 
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetailsForExport(ResultStatisticsRecordRow record)

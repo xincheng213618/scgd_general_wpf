@@ -204,6 +204,55 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
+    public void LrPairMatcherOnlyCombinesAdjacentLeftThenRightWithTheSameBaseSn()
+    {
+        DateTime start = new(2026, 9, 19, 10, 0, 0);
+        ResultStatisticsRecordRow[] records =
+        [
+            new() { Id = 1, SN = "NZQD03BP1LJ05EX_L_100000", StartTime = start, EndTime = start.AddSeconds(20) },
+            new() { Id = 2, PreviousObjectiveId = 1, SN = "NZQD03BP1LJ05EX_R_100025", StartTime = start.AddSeconds(25), EndTime = start.AddSeconds(45) },
+            new() { Id = 3, PreviousObjectiveId = 2, SN = "OTHER_L_100100", StartTime = start.AddMinutes(1), EndTime = start.AddMinutes(1).AddSeconds(20) },
+            new() { Id = 4, PreviousObjectiveId = 3, SN = "interleaved", StartTime = start.AddMinutes(2), EndTime = start.AddMinutes(2).AddSeconds(1) },
+            new() { Id = 5, PreviousObjectiveId = 4, SN = "OTHER_R_100125", StartTime = start.AddMinutes(2).AddSeconds(5), EndTime = start.AddMinutes(2).AddSeconds(25) },
+            new() { Id = 6, PreviousObjectiveId = 5, SN = "REVERSED_R_100200", StartTime = start.AddMinutes(3), EndTime = start.AddMinutes(3).AddSeconds(20) },
+            new() { Id = 7, PreviousObjectiveId = 6, SN = "REVERSED_L_100225", StartTime = start.AddMinutes(3).AddSeconds(25), EndTime = start.AddMinutes(3).AddSeconds(45) },
+        ];
+
+        ResultStatisticsCombinedRecordRow pair = Assert.Single(ResultStatisticsLrPairMatcher.MatchAdjacent(records));
+
+        Assert.Equal("NZQD03BP1LJ05EX", pair.SN);
+        Assert.Equal(45_000, pair.CycleTimeMilliseconds);
+        Assert.Equal(5_000, pair.TransitionMilliseconds);
+        Assert.True(ResultStatisticsLrPairMatcher.TryParse("BODY_L_235959", out string baseSn, out ResultStatisticsSide side));
+        Assert.Equal("BODY", baseSn);
+        Assert.Equal(ResultStatisticsSide.Left, side);
+        Assert.False(ResultStatisticsLrPairMatcher.TryParse("BODY_L_BAD", out _, out _));
+    }
+
+    [Fact]
+    public void CombinedTimelineShowsLeftTransitionAndRightMilestones()
+    {
+        DateTime start = new(2026, 9, 19, 10, 0, 0);
+        var combined = new ResultStatisticsCombinedRecordRow
+        {
+            SN = "BODY",
+            Left = new ResultStatisticsRecordRow { Id = 1, SN = "BODY_L_100000", StartTime = start, EndTime = start.AddSeconds(10) },
+            Right = new ResultStatisticsRecordRow { Id = 2, SN = "BODY_R_100015", StartTime = start.AddSeconds(15), EndTime = start.AddSeconds(25) },
+        };
+
+        ResultTimelinePresentation timeline = ResultTimelineBuilder.BuildCombined(combined, [], []);
+
+        Assert.Equal("L/R 全批次时间轴", timeline.TitleText);
+        Assert.Equal(3, timeline.Rows.Count);
+        ResultTimelineFlowRow transition = timeline.Rows.Single(item => item.Segments.Any(segment => segment.Kind == ResultTimelinePhaseKind.SideTransition));
+        Assert.Equal("L 完成 → R Init", transition.FlowName);
+        Assert.Equal(5_000, transition.Segments.Single().DurationMilliseconds);
+        Assert.Contains("全批次 CT 25.000 s", timeline.SummaryText, StringComparison.Ordinal);
+        Assert.Contains("L 完成 10:00:10.000", timeline.NoteText, StringComparison.Ordinal);
+        Assert.Contains("R Init 10:00:15.000", timeline.NoteText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void StatisticsWindowStateRoundTripsAllIndependentSearches()
     {
         var state = new ResultStatisticsWindowState
@@ -215,6 +264,11 @@ public sealed class ResultStatisticsTests
             RecordAnchorDate = new DateTime(2026, 7, 20),
             RecordSn = "SN-123",
             RecordResultIndex = 2,
+            EnableCombinedStatistics = true,
+            CombinedPeriodMode = ResultStatisticsPeriodMode.Month,
+            CombinedAnchorDate = new DateTime(2026, 5, 1),
+            CombinedSn = "BODY-123",
+            CombinedResultIndex = 1,
             FlowPeriodMode = ResultStatisticsPeriodMode.Month,
             FlowAnchorDate = new DateTime(2026, 6, 1),
             FlowName = "White1_Fast_Test",
@@ -230,6 +284,11 @@ public sealed class ResultStatisticsTests
         Assert.Equal(state.RecordAnchorDate, restored.RecordAnchorDate);
         Assert.Equal(state.RecordSn, restored.RecordSn);
         Assert.Equal(state.RecordResultIndex, restored.RecordResultIndex);
+        Assert.Equal(state.EnableCombinedStatistics, restored.EnableCombinedStatistics);
+        Assert.Equal(state.CombinedPeriodMode, restored.CombinedPeriodMode);
+        Assert.Equal(state.CombinedAnchorDate, restored.CombinedAnchorDate);
+        Assert.Equal(state.CombinedSn, restored.CombinedSn);
+        Assert.Equal(state.CombinedResultIndex, restored.CombinedResultIndex);
         Assert.Equal(state.FlowPeriodMode, restored.FlowPeriodMode);
         Assert.Equal(state.FlowAnchorDate, restored.FlowAnchorDate);
         Assert.Equal(state.FlowName, restored.FlowName);
@@ -587,6 +646,47 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ARVRReuslt_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_CreateTime", indexNames);
         Assert.Contains("IX_ARVRReuslt_SN_Id", indexNames);
+    }
+
+    [Fact]
+    public void DataStoreBuildsCombinedBatchAcrossTheQueryBoundaryAndKeepsUnmatchedRecordsOut()
+    {
+        using var database = new TemporaryResultDatabase();
+        ResultStatisticsDataStore store = new(database.Path);
+        store.InitializeSchema();
+        DateTime day = new(2026, 9, 19);
+        database.Insert(
+            CreateRecord("BODY_L_235935", true, day.AddSeconds(-25), 24_000, "left", true),
+            CreateRecord("BODY_R_000002", false, day.AddSeconds(2), 20_000, "right", true),
+            CreateRecord("UNMATCHED_L_000100", true, day.AddMinutes(1), 20_000, "left-only", true),
+            CreateRecord("OTHER", true, day.AddMinutes(2), 1_000, "interleaved", true),
+            CreateRecord("UNMATCHED_R_000125", true, day.AddMinutes(2).AddSeconds(5), 20_000, "right-only", true));
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 100 };
+
+        ResultStatisticsCombinedPage page = store.QueryCombinedRecords(query);
+        ResultStatisticsCombinedDashboard dashboard = store.QueryCombinedDashboard(query, ResultStatisticsPeriodMode.Day, day.AddHours(12));
+
+        ResultStatisticsCombinedRecordRow pair = Assert.Single(page.Rows);
+        Assert.Equal(1, page.TotalCount);
+        Assert.Equal("BODY", pair.SN);
+        Assert.Equal(47_000, pair.CycleTimeMilliseconds);
+        Assert.Equal(3_000, pair.TransitionMilliseconds);
+        Assert.False(pair.Result);
+        Assert.Equal(1, dashboard.Summary.TotalCount);
+        Assert.Equal(1, dashboard.Summary.FailCount);
+        Assert.Equal(47_000, dashboard.Summary.AverageCtMilliseconds);
+        Assert.Equal(3_000, dashboard.AverageTransitionMilliseconds);
+        Assert.Single(dashboard.Trend);
+        Assert.Equal(day.AddSeconds(22), dashboard.Trend[0].Time);
+
+        ResultStatisticsCombinedPage passOnly = store.QueryCombinedRecords(new ResultStatisticsQuery
+        {
+            From = day,
+            ToExclusive = day.AddDays(1),
+            Result = true,
+            PageSize = 100,
+        });
+        Assert.Empty(passOnly.Rows);
     }
 
     [Fact]
@@ -992,6 +1092,11 @@ public sealed class ResultStatisticsTests
         Assert.Equal(today, state.RecordAnchorDate);
         Assert.Empty(state.RecordSn);
         Assert.Equal(0, state.RecordResultIndex);
+        Assert.False(state.EnableCombinedStatistics);
+        Assert.Equal(ResultStatisticsPeriodMode.Day, state.CombinedPeriodMode);
+        Assert.Equal(today, state.CombinedAnchorDate);
+        Assert.Empty(state.CombinedSn);
+        Assert.Equal(0, state.CombinedResultIndex);
         Assert.Equal(ResultStatisticsPeriodMode.Day, state.FlowPeriodMode);
         Assert.Equal(today, state.FlowAnchorDate);
         Assert.Empty(state.FlowName);

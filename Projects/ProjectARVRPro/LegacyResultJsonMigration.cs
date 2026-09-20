@@ -17,6 +17,31 @@ namespace ProjectARVRPro
         private const string ObjectiveTable = "ObjectiveTestResultRecord";
         private const string ObjectiveLegacyColumn = "ObjectiveTestResultJson";
 
+        public static bool HasPendingMigration(string databasePath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
+            if (!File.Exists(databasePath))
+                return false;
+
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+                DefaultTimeout = 30,
+            }.ToString();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            if (HasLegacyValues(connection, ViewTable, ViewLegacyColumn)
+                || HasLegacyValues(connection, ObjectiveTable, ObjectiveLegacyColumn))
+                return true;
+
+            TableColumn? fileNameColumn = ReadTableColumns(connection, ViewTable).FirstOrDefault(column =>
+                string.Equals(column.Name, ViewFileNameColumn, StringComparison.OrdinalIgnoreCase));
+            return fileNameColumn?.IsNotNull == true;
+        }
+
         public static LegacyResultJsonMigrationReport Execute(string databasePath)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
@@ -151,6 +176,14 @@ namespace ProjectARVRPro
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        private static bool HasLegacyValues(SqliteConnection connection, string tableName, string columnName)
+        {
+            return ColumnExists(connection, tableName, columnName)
+                && ExecuteScalarInt64(
+                    connection,
+                    $"SELECT COUNT(*) FROM {QuoteIdentifier(tableName)} WHERE {QuoteIdentifier(columnName)} IS NOT NULL;") > 0;
         }
 
         private static List<TableColumn> ReadTableColumns(
