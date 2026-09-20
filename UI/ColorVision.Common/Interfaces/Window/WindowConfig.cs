@@ -17,11 +17,17 @@ namespace ColorVision.UI
         [Description("StartRecoverUILayoutDescription")]
         public bool IsRestoreWindow { get; set; } = true;
 
+        [Browsable(false)]
         public double Width { get; set; }
+        [Browsable(false)]
         public double Height { get; set; }
+        [Browsable(false)]
         public double Left { get; set; }
+        [Browsable(false)]
         public double Top { get; set; }
+        [Browsable(false)]
         public int WindowStates { get; set; }
+        [Browsable(false)]
         public string ScreenDeviceName { get; set; }
 
         // 入口：在窗口构造后调用

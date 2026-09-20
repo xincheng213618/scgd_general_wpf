@@ -21,7 +21,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.PropertyEditor
 {
@@ -67,12 +66,17 @@ namespace ColorVision.Engine.PropertyEditor
             if (selectedItem != null)
                 combo.SelectedItem = selectedItem;
 
-            Grid myGrid = new Grid();
-            myGrid.DataContext = selectedItem;
+            var button = new Button
+            {
+                DataContext = selectedItem,
+                ToolTip = Properties.Resources.Property
+            };
+            button.SetResourceReference(FrameworkElement.StyleProperty, "ButtonProperty");
+            button.SetBinding(Button.CommandProperty, new Binding("PropertyCommand") { Mode = BindingMode.OneWay });
 
             combo.SelectionChanged += (s, e) =>
             {
-                myGrid.DataContext = combo.SelectedItem;
+                button.DataContext = combo.SelectedItem;
                 if (combo.SelectedValue is string selectedCode)
                     SetValueAndNotify(property, obj, selectedCode);
             };
@@ -84,43 +88,8 @@ namespace ColorVision.Engine.PropertyEditor
             };
 
 
-            var button = new Button
-            {
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-            };
-
-            var toggleButton = new ToggleButton
-            {
-                Style = (Style)Application.Current.FindResource("ButtonMQTTConnect"),
-                Height = 10,
-                Width = 10,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                IsChecked = true,
-                IsEnabled = false
-            };
-            // Create an Image
-            var image = new Image
-            {
-                Source = (ImageSource)Application.Current.FindResource("DrawingImageProperty"),
-                Height = 18,
-                Margin = new Thickness(0)
-            };
-            // Create the binding for IsChecked
-            var binding1 = new Binding("PropertyCommand")
-            {
-                Mode = BindingMode.OneWay
-            };
-            // Set the binding to the ToggleButton
-            button.SetBinding(Button.CommandProperty, binding1);
-
-            // Add elements to the Grid
-            myGrid.Children.Add(toggleButton);
-            myGrid.Children.Add(image);
-            myGrid.Children.Add(button);
-
-            DockPanel.SetDock(myGrid,Dock.Right);
-            dockPanel.Children.Add(myGrid);
+            DockPanel.SetDock(button, Dock.Right);
+            dockPanel.Children.Add(button);
 
             dockPanel.Children.Add(textBlock);
             dockPanel.Children.Add(combo);

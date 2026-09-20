@@ -22,11 +22,7 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Grid DockPanel.Dock="Right">
-                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
-            </Grid>
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
 
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
 

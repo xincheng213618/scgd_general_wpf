@@ -73,8 +73,7 @@ namespace ColorVision.UI
             }
             else
             {
-                Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
-                targetBorder.BorderBrush = brush;
+                targetBorder.SetResourceReference(Border.BorderBrushProperty, "CV.Border.Weak");
             }
         }
 

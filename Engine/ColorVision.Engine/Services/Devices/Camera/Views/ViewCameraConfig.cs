@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
 
-        [LocalizedDisplayName(nameof(Resources.ListHeight)), Category("View")]
+        [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 

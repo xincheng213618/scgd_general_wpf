@@ -61,7 +61,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 文件列表高度
         /// </summary>
-        [Display(Name = "Sol_MivCfg_ListHeight", GroupName = "Sol_MivCfg_View", ResourceType = typeof(Properties.Resources))]
+        [Browsable(false)]
         public double ListHeight
         {
             get => _ListHeight;

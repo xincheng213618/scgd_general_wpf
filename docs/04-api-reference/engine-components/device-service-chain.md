@@ -65,6 +65,8 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
 
+内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
+
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 
 `LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器会另行生成显示区；配置窗口在 `OnClosing()` 检测到变化时生成显示区，`OnClosed()` 负责上下文清理。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
@@ -83,7 +85,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ### 设备行置顶与顺序
 
-工作流程和内置设备行使用统一的 `DisplayPinButton`：图钉独占标题右侧的 24 DIP 按钮区域，位于原有状态/设置入口左侧；悬停设备行或键盘焦点进入设备行时显示，已置顶时常显，提示切换为“取消置顶”。透明时仍保留布局空间，因此标题和设置图标不会随悬停跳动。图钉支持鼠标和键盘激活，点击不切换展开状态、不启动标题拖动，也不通过双击打开详情。
+工作流程和内置设备行使用统一的 `DisplayPinButton`：图钉独占标题右侧的 24 DIP 按钮区域，位于原有属性/设置入口左侧；悬停设备行或键盘焦点进入设备行时显示，已置顶时常显，提示切换为“取消置顶”。透明时仍保留布局空间，因此标题和设置图标不会随悬停跳动。图钉支持鼠标和键盘激活，点击不切换展开状态、不启动标题拖动，也不通过双击打开详情。
 
 置顶在所属分组内生效；未建立分组时就是整个设备列表的顶部。多项置顶保持原有相对顺序，可继续拖动调整，跨组拖动保留置顶状态。置顶不改变设备配置、连接或流程执行顺序。
 
