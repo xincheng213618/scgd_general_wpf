@@ -197,6 +197,23 @@ public class DatabaseCleanupWindowTests
         Assert.False(viewModel.Tables.Single(table => !table.Exists).IsSelected);
     }
 
+    [Fact]
+    public async Task SourceViewModel_DisablesMigrationWhenProviderReportsNoPendingData()
+    {
+        var provider = new TestMigrationProvider { Pending = true };
+        var viewModel = new DatabaseCleanupSourceViewModel(provider);
+
+        Assert.False(viewModel.MigrationCommand.CanExecute(null));
+        await viewModel.RefreshAsync();
+        Assert.True(viewModel.HasPendingMigration);
+        Assert.True(viewModel.MigrationCommand.CanExecute(null));
+
+        provider.Pending = false;
+        await viewModel.RefreshAsync();
+        Assert.False(viewModel.HasPendingMigration);
+        Assert.False(viewModel.MigrationCommand.CanExecute(null));
+    }
+
     private sealed class TestCleanupProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupSelectionProvider,
         IDatabaseCleanupBackupProvider, IDatabaseCleanupOptimizationProvider
     {
@@ -244,5 +261,28 @@ public class DatabaseCleanupWindowTests
                 Cleanup = cleanupAction()
             };
         }
+    }
+
+    private sealed class TestMigrationProvider : IDatabaseCleanupSourceProvider, IDatabaseCleanupBackupProvider,
+        IDatabaseCleanupMigrationProvider
+    {
+        public bool Pending { get; set; }
+        public string Id => "migration-test";
+        public string DisplayName => "迁移测试数据源";
+        public string Description => "测试";
+        public int Order => 0;
+        public string MigrationActionName => "迁移";
+        public string MigrationConfirmationMessage => "测试不得执行迁移。";
+
+        public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables() =>
+        [
+            new DatabaseCleanupTableInfo { TableName = "sample", Exists = true, RowCount = 1 }
+        ];
+
+        public bool HasPendingMigration() => Pending;
+        public DatabaseCleanupExecutionResult CleanupHistory(int keepMonths) => throw new NotSupportedException();
+        public DatabaseCleanupExecutionResult CleanupAll() => throw new NotSupportedException();
+        public DatabaseCleanupBackupResult CreateBackup() => throw new NotSupportedException();
+        public DatabaseCleanupExecutionResult ExecuteMigration() => throw new NotSupportedException();
     }
 }

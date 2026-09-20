@@ -11,6 +11,33 @@ namespace ColorVision.Database
     /// </summary>
     public static class SqliteGzipTextMigration
     {
+        public static bool HasPendingMigration(
+            string databasePath,
+            IReadOnlyList<SqliteGzipTextMigrationSpec> specifications)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
+            ArgumentNullException.ThrowIfNull(specifications);
+            if (!File.Exists(databasePath))
+                return false;
+
+            using SqliteConnection connection = SqliteFileMaintenance.OpenConnection(databasePath, SqliteOpenMode.ReadOnly);
+            foreach (SqliteGzipTextMigrationSpec specification in specifications)
+            {
+                ValidateSpecification(specification);
+                if (!ColumnExists(connection, specification.TableName, specification.LegacyTextColumnName))
+                    continue;
+
+                long pending = ExecuteScalarInt64(
+                    connection,
+                    $"SELECT COUNT(*) FROM {Quote(specification.TableName)} " +
+                    $"WHERE {Quote(specification.LegacyTextColumnName)} IS NOT NULL;");
+                if (pending > 0)
+                    return true;
+            }
+
+            return false;
+        }
+
         public static SqliteGzipTextMigrationReport Execute(
             string databasePath,
             IReadOnlyList<SqliteGzipTextMigrationSpec> specifications,

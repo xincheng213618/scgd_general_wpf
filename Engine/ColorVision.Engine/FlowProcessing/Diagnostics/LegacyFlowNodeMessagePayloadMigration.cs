@@ -31,5 +31,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 Specifications,
                 batchSize: 500);
         }
+
+        internal static bool HasPendingMigration(string databasePath)
+        {
+            return SqliteGzipTextMigration.HasPendingMigration(databasePath, Specifications);
+        }
     }
 }

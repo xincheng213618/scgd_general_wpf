@@ -27,6 +27,13 @@ namespace ColorVision.Database
             EngineLocalization.Get("将把 SocketMessage.Content 旧 TEXT 正文迁移为同表 GZip BLOB，生成列表预览，校验一致后清空旧字段并执行 VACUUM 释放空间。") + Environment.NewLine +
             EngineLocalization.Get("迁移后旧版程序不能读取这些历史正文；迁移期间 Socket 消息写入会暂时等待。");
 
+        public bool HasPendingMigration()
+        {
+            string databasePath = SocketMessageManager.SqliteDbPath;
+            return File.Exists(databasePath)
+                && SocketMessagePayloadStorage.RunDatabaseMaintenance(() => LegacySocketMessageMigration.HasPendingMigration(databasePath));
+        }
+
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
             string databasePath = SocketMessageManager.SqliteDbPath;
@@ -217,20 +224,28 @@ namespace ColorVision.Database
     /// </summary>
     internal static class LegacySocketMessageMigration
     {
+        private static readonly SqliteGzipTextMigrationSpec[] Specifications =
+        [
+            new(
+                SocketMessagePayloadStorage.TableName,
+                SocketMessagePayloadStorage.IdColumnName,
+                SocketMessagePayloadStorage.LegacyContentColumnName,
+                SocketMessagePayloadStorage.GzipColumnName,
+                SocketMessagePayloadStorage.Utf8LengthColumnName,
+                SocketMessagePayloadStorage.PreviewColumnName,
+                SocketMessagePayloadStorage.PreviewCharacters)
+        ];
+
+        public static bool HasPendingMigration(string databasePath)
+        {
+            return SqliteGzipTextMigration.HasPendingMigration(databasePath, Specifications);
+        }
+
         public static SqliteGzipTextMigrationReport Execute(string databasePath)
         {
             return SqliteGzipTextMigration.Execute(
                 databasePath,
-                [
-                    new SqliteGzipTextMigrationSpec(
-                        SocketMessagePayloadStorage.TableName,
-                        SocketMessagePayloadStorage.IdColumnName,
-                        SocketMessagePayloadStorage.LegacyContentColumnName,
-                        SocketMessagePayloadStorage.GzipColumnName,
-                        SocketMessagePayloadStorage.Utf8LengthColumnName,
-                        SocketMessagePayloadStorage.PreviewColumnName,
-                        SocketMessagePayloadStorage.PreviewCharacters)
-                ]);
+                Specifications);
         }
     }
 }

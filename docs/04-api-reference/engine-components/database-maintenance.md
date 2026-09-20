@@ -37,7 +37,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 | `IDatabaseCleanupSelectionProvider` | 显示复选和“清空选中表”，传入表名列表 | 不自动补齐主从依赖或验证 provider 的白名单 |
 | `IDatabaseCleanupBackupProvider` | 显示单独备份与“清理前备份”选项 | “完整”内容由实现决定，不包含自动还原承诺 |
 | `IDatabaseCleanupMaintenanceProvider` | 将备份和动作委托给 provider 的组合入口 | 同一维护锁不等于同一数据库事务，也不锁住其它进程 |
-| `IDatabaseCleanupMigrationProvider` | 显示 provider 的迁移按钮和确认文案 | 直接 API 不因宿主存在就自动备份或获得授权 |
+| `IDatabaseCleanupMigrationProvider` | 显示 provider 的迁移按钮和确认文案，并通过 `HasPendingMigration()` 判断当前库是否仍需迁移 | 直接 API 不因宿主存在就自动备份或获得授权；旧 provider 未实现检查时默认保留可执行状态 |
 | `IDatabaseCleanupOptimizationProvider` | 显示 provider 的手动优化按钮和确认文案 | 不统一提供 dry-run、自动备份、事务回滚或低负载窗口 |
 
 当前实现入口如下；能否出现在全局窗口仍取决于程序集发现。项目 provider 不能按名字当成共享数据库实现。
@@ -55,7 +55,7 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 ## 表统计与确认固定了什么
 
-`RefreshAsync` 在后台调用 `LoadTables` 后替换 `Tables`，按表名保留仍存在的选择。不存在的表不能选中，`ExistingRowCount` 和空间只是 provider 返回值的加总，未声明共同时间点或按保留月数筛选。刷新失败不清除之前成功的表快照，退出 busy 后旧快照仍可能让按钮可用。
+`RefreshAsync` 在后台调用 `LoadTables` 后替换 `Tables`，并调用迁移 provider 的 `HasPendingMigration()` 刷新迁移状态；按表名保留仍存在的选择。不存在的表不能选中，`ExistingRowCount` 和空间只是 provider 返回值的加总，未声明共同时间点或按保留月数筛选。刷新失败不清除之前成功的表快照，退出 busy 后旧快照仍可能让普通清理按钮可用；迁移按钮在完成首次状态检查前保持禁用。
 
 通常按钮要求 `!IsBusy` 和至少一张存在的表；选表入口还要求 selection 能力及非空选择。这是当前快照的可执行状态，不是“已完成针对本次删除的预览”门禁。直接 provider 调用不依赖这些 UI 条件。
 
@@ -73,7 +73,7 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 每个 source 的 `BackupBeforeCleanup` 默认 false，界面“推荐”文字不表示默认勾选或持久策略。普通清理可在没有自动备份的情况下继续；provider 不支持备份时会提示需已有可恢复副本，但宿主不验证副本。单独点击创建备份也不会登记一个后续清理必须匹配的批准记录。
 
-迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后以 `forceBackup: true` 调用执行包装。优化入口则明确关闭可选备份路径：即使当前 source 勾选了“清理前备份”，宿主也不会为 `ExecuteOptimization()` 自动创建备份。优化确认中的“不删除业务数据”只描述该 provider 的动作范围，不代表 DDL 没有持久 schema 变更、可以事务回滚或无需按现场制度留存备份。
+迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后会再次调用 `HasPendingMigration()`，没有待迁移内容时直接禁用按钮并结束，不创建重复备份；仍需迁移时才以 `forceBackup: true` 调用执行包装。优化入口则明确关闭可选备份路径：即使当前 source 勾选了“清理前备份”，宿主也不会为 `ExecuteOptimization()` 自动创建备份。优化确认中的“不删除业务数据”只描述该 provider 的动作范围，不代表 DDL 没有持久 schema 变更、可以事务回滚或无需按现场制度留存备份。
 
 备份和动作按以下方式运行：
 
@@ -81,9 +81,9 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 - 只有 backup 能力：先 `CreateBackup()`，正常返回才执行 action；两者之间没有宿主统一维护锁或数据库事务。
 - 普通清理未启用备份：直接执行 action；底层若有单独锁或事务仍以实际 provider 为准。
 
-备份阶段失败不会继续调用清理/迁移动作，但不能扩大为“整个入口绝无先前副作用”：初始化、描述读取或 provider 的备份本身可能已经触发动作。组合入口失败时宿主提示如已生成备份则保留，并要求重新确认现状；宿主没有自动恢复或补偿事务。
+备份阶段失败不会继续调用清理/迁移动作，但不能扩大为“整个入口绝无先前副作用”：初始化、描述读取或 provider 的备份本身可能已经触发动作。组合入口失败时宿主提示如已生成备份则保留，并要求重新确认现状；宿主没有自动恢复或补偿事务。迁移成功后，迁移前完整备份也会继续保留用于人工恢复，不自动删除；空间不足时应在确认新版本读取正常后，由用户按现场留存制度清理备份目录。
 
-普通清理和迁移动作成功后另行调用 `LoadTables` 刷新。刷新失败会保留动作成功结果并加警告，不把已经完成的动作回滚；操作失败分支直接报告错误，不自动刷新统计。优化成功后不自动重新统计表，索引大小等显示值仍是旧快照，需由用户显式“刷新统计”。因此成功文案、最新统计、备份可恢复和库健康是不同证据。`DatabaseCleanupExecutionResult` 只是状态文字/摘要，没有统一的提交凭据或跨库成功协议。
+普通清理和迁移动作成功后另行调用 `LoadTables` 与 `HasPendingMigration()` 刷新；迁移已完成时按钮立即禁用。刷新失败会保留动作成功结果并加警告，不把已经完成的动作回滚；再次点击迁移时仍会先复核状态，从而避免为了“无需迁移”再复制一份完整数据库。操作失败分支直接报告错误，不自动刷新统计。优化成功后不自动重新统计表，索引大小等显示值仍是旧快照，需由用户显式“刷新统计”。因此成功文案、最新统计、备份可恢复和库健康是不同证据。`DatabaseCleanupExecutionResult` 只是状态文字/摘要，没有统一的提交凭据或跨库成功协议。
 
 ## 忙碌、关闭与并发
 
