@@ -4,6 +4,10 @@ using CameraTest.Application;
 using CameraTest.Models;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Core;
+using ColorVision.UI;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
+using System.Reflection;
 using System.Text.Json;
 using System.IO;
 using System.Windows;
@@ -17,6 +21,125 @@ namespace CameraTest.Tests;
 
 public sealed class CameraTestWindowTests
 {
+    [Fact]
+    public void UpdatingRegionGeometryPreservesTheCanvasMultiSelection()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
+            var window = new CameraTestWindow();
+            try
+            {
+                var frame = new ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraFrame(new byte[400 * 300], 400, 300, 8, 1, 400, DateTimeOffset.Now);
+                Invoke(window, "ShowFrame", new TestFrame(frame, "Selection regression", FrameSourceKind.Capture));
+                var draw = ((ImageView)window.FindName("ImageView")).EditorContext.DrawEditorContext;
+                var list = (ListBox)window.FindName("RegionList");
+                DVRectangleText first = new(new() { Text = "Point_1", Rect = new(20, 30, 60, 70) });
+                DVRectangleText second = new(new() { Text = "Point_2", Rect = new(120, 30, 60, 70) });
+                draw.DrawCanvas.AddVisualCommand(first);
+                draw.DrawCanvas.AddVisualCommand(second);
+                list.SelectedIndex = 0;
+                Assert.Same(first, draw.SelectionVisual.PrimarySelectedVisual);
+                draw.SelectionVisual.SetRenders(new[] { first, second });
+
+                // Each drag update raises synchronous geometry notifications and rebuilds RegionList.
+                for (int step = 1; step <= 2; step++)
+                {
+                    first.SetRect(new(20 + step * 6, 30, 60, 70));
+                    second.SetRect(new(120 + step * 6, 30, 60, 70));
+                    Assert.Equal(new ISelectVisual[] { first, second }, draw.SelectionVisual.SelectVisuals);
+                    Assert.Equal(20 + step * 6, list.Items.OfType<SearchRegion>().Single(r => r.Id == "Point_1").X);
+                    Assert.Equal(120 + step * 6, list.Items.OfType<SearchRegion>().Single(r => r.Id == "Point_2").X);
+                }
+
+                // Deliberate list selection must still select the corresponding drawing.
+                list.SelectedIndex = 1;
+                Assert.Same(second, draw.SelectionVisual.PrimarySelectedVisual);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
+    public void UnifiedBmwSettingsCancelOrApplyDisplayAndExistingRoiParametersTogether()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
+            var window = new CameraTestWindow { WindowStartupLocation = WindowStartupLocation.Manual, Left = -20000, Top = -20000, ShowInTaskbar = false, ShowActivated = false };
+            try
+            {
+                window.Show();
+                var profile = Field<TestProfile>(window, "_profile");
+                profile.MeasurementRoi = new() { AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 95 };
+                var originalRoi = profile.MeasurementRoi with { };
+                foreach (bool confirm in new[] { false, true })
+                {
+                    Exception? failure = null;
+                    window.Dispatcher.BeginInvoke(() =>
+                    {
+                        var dialog = System.Windows.Application.Current.Windows.OfType<PropertyEditorWindow>().Single();
+                        try
+                        {
+                            var edited = Assert.IsType<BmwSfrViewSettings>(dialog.EditConfig);
+                            Assert.Equal(originalRoi, edited.MeasurementRoi);
+                            edited.MeasurementRoi.AlongEdgePixels = 100;
+                            edited.Display.ShowTargetCenter = false;
+                            if (confirm && Environment.GetEnvironmentVariable("CAMERATEST_SETTINGS_CAPTURE") is { Length: > 0 } path)
+                            {
+                                dialog.UpdateLayout();
+                                var bitmap = new RenderTargetBitmap((int)dialog.ActualWidth, (int)dialog.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                                bitmap.Render(dialog);
+                                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                                using var stream = File.Create(path); encoder.Save(stream);
+                            }
+                            if (confirm) ((Button)dialog.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            else dialog.Close();
+                        }
+                        catch (Exception error) { failure = error; dialog.Close(); }
+                    }, DispatcherPriority.ApplicationIdle);
+                    ((MenuItem)window.FindName("DisplaySettingsMenuItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                    Assert.Null(failure);
+                    Assert.Equal(confirm ? 100 : 80, profile.MeasurementRoi.AlongEdgePixels);
+                    Assert.Equal(60, profile.MeasurementRoi.AcrossEdgePixels);
+                    Assert.Equal(95, profile.MeasurementRoi.CenterDistancePixels);
+                    Assert.Equal(!confirm, profile.Display.ShowTargetCenter);
+                }
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
+    public void VideoPreviewDoesNotRebaseMeasurementRegionsOntoAnotherResolution()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
+            var window = new CameraTestWindow();
+            try
+            {
+                var profile = Field<TestProfile>(window, "_profile");
+                profile.ImageWidth = 400; profile.ImageHeight = 300;
+                profile.Regions = [new("Existing", 20, 30, 60, 60)];
+                profile.Video.Mode = VideoAnalysisMode.Preview;
+                var camera = Field<ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraSession>(window, "_camera");
+                typeof(ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraSession).GetField("_latest", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(camera,
+                    new ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraFrame(new byte[160 * 120], 160, 120, 8, 1, 160, DateTimeOffset.Now));
+                typeof(CameraTestWindow).GetField("_live", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, true);
+                Invoke(window, "Live_Tick", window, EventArgs.Empty);
+                Invoke(window, "StopLive");
+                Invoke(window, "Refresh");
+                Assert.Equal(160, Field<TestFrame>(window, "_frame").Data.Width);
+                Assert.Equal(400, profile.ImageWidth);
+                Assert.Equal(300, profile.ImageHeight);
+                Assert.False(((Button)window.FindName("AnalyzeButton")).IsEnabled);
+                Assert.False(camera.IsConnected);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     [Fact]
     public async Task DrawnRectanglesCanAnalyzeAndStaySynchronizedThroughEditingAndUndo()
     {
@@ -65,18 +188,20 @@ public sealed class CameraTestWindowTests
                 var rows = ((DataGrid)window!.FindName("Metrics")).Items.OfType<MetricRow>().ToArray();
                 Assert.Equal(4, rows.Select(r => r.Target).Distinct().Count());
                 Assert.All(rows.GroupBy(r => r.Target), group => Assert.Equal(4, group.Select(r => r.Edge).Distinct().Count()));
+                VerifyDisplaySettingsAndZoom(window);
                 if (fieldSample != null)
                 {
                     Assert.Equal(64, rows.Length);
                     Assert.Equal(16, rows.Count(r => r.Channel == "G" && r.Mtf50.HasValue));
+                    VerifyInnerEdgeSelectionAndSfr(window);
                 }
-                Assert.True(((Button)window.FindName("ExportButton")).IsEnabled);
+                Assert.True(((MenuItem)window.FindName("ExportMenuItem")).IsEnabled);
                 var editor = ((ImageView)window.FindName("ImageView")).EditorContext.DrawEditorContext;
                 var list = (ListBox)window.FindName("RegionList");
                 drawings[0].SetRect(new(660, 250, 500, 510));
                 Assert.Equal(660, list.Items.OfType<SearchRegion>().Single(r => r.Id == "Point_1").X);
                 Assert.Empty(((DataGrid)window.FindName("Metrics")).Items);
-                Assert.False(((Button)window.FindName("ExportButton")).IsEnabled);
+                Assert.False(((MenuItem)window.FindName("ExportMenuItem")).IsEnabled);
                 editor.DrawCanvas.RemoveVisualCommand(drawings[0]);
                 Assert.Equal(3, list.Items.Count);
                 editor.DrawCanvas.Undo();
@@ -105,7 +230,7 @@ public sealed class CameraTestWindowTests
                 restored.SetRect(new(100, 100, 150, 150));
                 Assert.Equal(100, list.Items.OfType<SearchRegion>().Single(r => r.Id == restored.Attribute.Text).X);
                 list.SelectedItem = list.Items[0];
-                ((Button)window.FindName("RemoveRegionButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ((MenuItem)window.FindName("RemoveRegionMenuItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Assert.Equal(3, list.Items.Count);
                 Assert.Equal(3, editor.DrawingVisualLists.OfType<IRectangle>().Count());
             });
@@ -122,6 +247,92 @@ public sealed class CameraTestWindowTests
             });
         }
         finally { WpfTestHost.Invoke(() => window?.Close()); }
+    }
+
+    private static T Field<T>(object target, string name) => (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(target)!;
+    private static object? Invoke(CameraTestWindow window, string name, params object[] args) => typeof(CameraTestWindow).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, args);
+
+    private static void VerifyDisplaySettingsAndZoom(CameraTestWindow window)
+    {
+        var view = (ImageView)window.FindName("ImageView");
+        var draw = view.EditorContext.DrawEditorContext;
+        var originalResult = Field<FrameAnalysis>(window, "_result");
+        static IEnumerable<Rect> Glyphs(Drawing drawing)
+        {
+            if (drawing is GlyphRunDrawing glyph) yield return glyph.Bounds;
+            if (drawing is DrawingGroup group)
+                foreach (var child in group.Children)
+                    foreach (var bounds in Glyphs(child)) yield return group.Transform?.TransformBounds(bounds) ?? bounds;
+        }
+        double TextHeight() => draw.DrawCanvas.Visuals.OfType<DrawingVisual>().SelectMany(v => Glyphs(v.Drawing)).First().Height * draw.ZoomRatio;
+        double height = TextHeight();
+        draw.Zoombox.Zoom(2);
+        Assert.Equal(height, TextHeight(), 4);
+        Exception? editorFailure = null;
+        window.Dispatcher.BeginInvoke(() =>
+        {
+            var dialog = System.Windows.Application.Current.Windows.OfType<PropertyEditorWindow>().Single();
+            try
+            {
+                var settings = (BmwSfrViewSettings)dialog.EditConfig;
+                Assert.Equal(Field<TestProfile>(window, "_profile").MeasurementRoi, settings.MeasurementRoi);
+                settings.Display.FontSize = 24;
+                settings.Display.Metric = BmwSfrDisplayMetric.AtFrequency;
+                settings.Display.Frequency = .25;
+                settings.Display.ShowTargetCenter = false;
+                settings.Display.ShowRoiDimensions = true;
+                ((Button)dialog.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+            catch (Exception error) { editorFailure = error; dialog.Close(); }
+        }, DispatcherPriority.ApplicationIdle);
+        ((MenuItem)window.FindName("DisplaySettingsMenuItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        Assert.Null(editorFailure);
+        Assert.Equal(24, Field<TestProfile>(window, "_profile").Display.FontSize);
+        Assert.Equal(BmwSfrDisplayMetric.AtFrequency, Field<TestProfile>(window, "_profile").Display.Metric);
+        Assert.False(Field<TestProfile>(window, "_profile").Display.ShowTargetCenter);
+        Assert.True(Field<TestProfile>(window, "_profile").Display.ShowRoiDimensions);
+        Assert.True(TextHeight() > height); // Glyph hinting changes ink bounds nonlinearly across font sizes.
+        double enlargedHeight = TextHeight();
+        draw.Zoombox.Zoom(0.5);
+        Assert.Equal(enlargedHeight, TextHeight(), 4);
+        Assert.Same(originalResult, Field<FrameAnalysis>(window, "_result"));
+        Assert.True(((MenuItem)window.FindName("ExportMenuItem")).IsEnabled);
+        Field<TestProfile>(window, "_profile").Display.FontSize = 12;
+        Invoke(window, "RenderOverlays");
+    }
+
+    private static void VerifyInnerEdgeSelectionAndSfr(CameraTestWindow window)
+    {
+        var result = Field<FrameAnalysis>(window, "_result");
+        var target = result.Targets.Last();
+        var edge = target.Edges.First(e => e.Roi.Width > 0);
+        object? hit = Invoke(window, "HitMeasurementEdge", new Point(edge.Roi.X + edge.Roi.Width / 2.0, edge.Roi.Y + edge.Roi.Height / 2.0));
+        Assert.NotNull(hit);
+        Assert.Null(Invoke(window, "HitMeasurementEdge", new Point(-1, -1)));
+        Invoke(window, "SelectMeasurementEdge", target.Id, edge.Id);
+        var selected = Assert.IsType<MetricRow>(((DataGrid)window.FindName("Metrics")).SelectedItem);
+        Assert.Equal(target.Id, selected.Target);
+        Assert.Equal(edge.Id.ToString(), selected.Edge);
+        var color = Assert.IsType<ColorShiftRow>(((DataGrid)window.FindName("ColorMetrics")).SelectedItem);
+        Assert.Equal(target.Id, color.Target);
+        Assert.Equal(edge.Id.ToString(), color.Edge);
+        Assert.Equal(target.Id, Assert.IsType<SearchRegion>(((ListBox)window.FindName("RegionList")).SelectedItem).Id);
+        var menu = Assert.IsType<ContextMenu>(Invoke(window, "CreateEdgeMenu", target.Id, edge));
+        var sfr = menu.Items.OfType<MenuItem>().Single(item => item.IsEnabled);
+        Assert.Contains("SFR/MTF", sfr.Header.ToString());
+        try
+        {
+            sfr.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            var child = Assert.Single(System.Windows.Application.Current.Windows.OfType<SfrSimplePlotWindow>());
+            child.Left = child.Top = -20000;
+            Assert.Equal(edge.Roi, Field<RoiRect>(child, "_roi"));
+            Assert.Equal(edge.Roi.Width, ((Canvas)child.FindName("RoiCanvas")).Width);
+            Assert.Same(result, Field<FrameAnalysis>(window, "_result"));
+        }
+        finally
+        {
+            foreach (var child in System.Windows.Application.Current.Windows.OfType<SfrSimplePlotWindow>().ToArray()) child.Close();
+        }
     }
 
     [Fact]
@@ -164,7 +375,7 @@ public sealed class CameraTestWindowTests
             Assert.True(((Button)window.FindName("AddRegionButton")).IsEnabled);
             Assert.Equal("相机生产调试", window.Title);
             Assert.True(((Button)window.FindName("ArchiveButton")).IsEnabled);
-            Assert.False(((Button)window.FindName("ExportButton")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("ExportMenuItem")).IsEnabled);
         });
         string? profilePath = Environment.GetEnvironmentVariable("CAMERATEST_SMOKE_PROFILE");
         if (!string.IsNullOrWhiteSpace(profilePath))
@@ -189,7 +400,7 @@ public sealed class CameraTestWindowTests
                 Assert.Equal(analysis.Targets.Count * 4 * 3, colors.Length);
                 Assert.Contains(colors, row => !row.Shift.HasValue);
                 Assert.Equal("未设置标准", ((TextBlock)window.FindName("VerdictText")).Text);
-                Assert.True(((Button)window.FindName("ExportButton")).IsEnabled);
+                Assert.True(((MenuItem)window.FindName("ExportMenuItem")).IsEnabled);
             });
         }
         WpfTestHost.Invoke(() =>

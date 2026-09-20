@@ -22,6 +22,10 @@ export interface AccountPermissionGroup {
 }
 
 export interface AdminDashboardCapabilities {
+  readJobs: boolean
+  readBackups: boolean
+  readOperations: boolean
+  readFeedback: boolean
   readCache: boolean
   readDeployments: boolean
   readStats: boolean
@@ -119,6 +123,10 @@ export function getAdminDashboardCapabilities(
   session: AuthSession | null,
 ): AdminDashboardCapabilities {
   return {
+    readJobs: hasPermission(session, 'jobs:read'),
+    readBackups: hasPermission(session, 'backups:manage'),
+    readOperations: hasPermission(session, 'operations:manage'),
+    readFeedback: hasPermission(session, 'feedback:read', 'feedback:manage'),
     readCache: hasPermission(session, 'cache:read'),
     readDeployments: hasPermission(session, 'deployments:read'),
     readStats: hasPermission(session, 'stats:read'),

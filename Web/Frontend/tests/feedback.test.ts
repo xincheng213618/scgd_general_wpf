@@ -8,8 +8,21 @@ import {
   feedbackStatusLabels,
   nextFeedbackStatus,
   applyFeedbackStatusUpdate,
+  feedbackFilterFromSearch,
+  feedbackDetailPath,
 } from '../src/utils/feedback.ts'
 import type { FeedbackDetail } from '../src/types/admin.ts'
+
+test('feedback links preserve selected filter and encode the stable record ID', () => {
+  const path = feedbackDetailPath('/admin/feedback', '20260920_BJT_PC', '?status=resolved')
+  const url = new URL(path, 'http://localhost')
+  assert.equal(url.searchParams.get('id'), '20260920_BJT_PC')
+  assert.equal(feedbackFilterFromSearch(url.search), 'resolved')
+  assert.equal(feedbackFilterFromSearch('?status=unknown'), 'open')
+  assert.equal(feedbackFilterFromSearch('?status=new'), 'new')
+  assert.equal(feedbackFilterFromSearch('?status=all'), 'all')
+  assert.equal(feedbackFilterFromSearch('?status=in_progress'), 'in_progress')
+})
 
 test('status updates preserve drawer permissions and attachments without accepting stale targets', () => {
   const detail = {

@@ -49,6 +49,9 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 
 	public virtual bool RequiresConnectionReady => false;
 
+	[Newtonsoft.Json.JsonIgnore]
+	public bool PersistResults { get; set; } = true;
+
 	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
 
 	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0;
@@ -461,7 +464,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
 			return false;
 		}
-		CVStartCFC start = new CVStartCFC(serialNumber);
+		CVStartCFC start = new CVStartCFC(serialNumber) { PersistResults = PersistResults };
 		DoDispatch(start);
 		return true;
 	}

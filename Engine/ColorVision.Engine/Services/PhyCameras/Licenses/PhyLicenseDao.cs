@@ -63,14 +63,23 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 
-    public class PhyLicenseDao : BaseTableDao<LicenseModel>
+    public class PhyLicenseDao : LocalConfigurationDao<LicenseModel>
     {
+        public PhyLicenseDao(LocalTemplateStore? store = null, Func<bool>? isConnected = null) : base("device-license", store, isConnected) { }
         public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
 
         public async Task<int> DeleteExpiredAsync(int[] licenseIds, DateTime cutoff)
         {
+            int deleted = 0;
+            foreach (int id in System.Linq.Enumerable.Distinct(licenseIds))
+            {
+                if (IsLocalId(id) && GetById(id) is LicenseModel model && DeleteUnchanged(model, current => current.ExpiryDate != null && current.ExpiryDate < cutoff)) deleted++;
+            }
+            int[] remoteIds = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Where(licenseIds, id => id > 0));
+            if (remoteIds.Length == 0) return deleted;
+            if (UseLocal) throw new InvalidOperationException("MySQL 未连接，不能删除服务器许可证。");
             using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            return await DeleteExpiredAsync(db, licenseIds, cutoff);
+            return deleted + await DeleteExpiredAsync(db, remoteIds, cutoff);
         }
 
         internal static Task<int> DeleteExpiredAsync(ISqlSugarClient db, int[] licenseIds, DateTime cutoff)
@@ -85,8 +94,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 .ExecuteCommandAsync();
         }
 
-        public LicenseModel? GetByMAC(string Code) 
+        public LicenseModel? GetByMAC(string Code, bool? local = null)
         {
+           if (local ?? UseLocal) return System.Linq.Enumerable.FirstOrDefault(GetLocal(), model => string.Equals(model.MacAddress, Code, StringComparison.OrdinalIgnoreCase));
            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
            return  Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
         }

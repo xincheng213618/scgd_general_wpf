@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822,CA1826,CA1863,CS8602
+#pragma warning disable CA1822,CA1826,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
@@ -56,8 +56,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             OpenLicenseManagerCommand = new RelayCommand(a => OpenLicenseManager());
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
-            if (MySqlControl.GetInstance().IsConnect)
-                LoadPhyCamera();
+            LoadPhyCamera();
             PhyCameras.CollectionChanged += (s, e) =>
             {
                 RefreshEmptyCamera();
@@ -149,8 +148,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void RefreshEmptyCamera()
         {
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            Count = db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
+            Count = SysResourceDao.Instance.GetAllType(101).Count(a => string.IsNullOrEmpty(a.Value));
         }
 
 
@@ -332,9 +330,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Create()
         {
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
+            if (!SysResourceDao.Instance.UseLocal && !SysResourceDao.Instance.GetAllType(101).Any(a => string.IsNullOrEmpty(a.Value)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.NoUncreatedCameraFound, Properties.Resources.PhysicalCameraManager);
                 SearchCameraIds();
@@ -480,7 +476,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void CreatePhysicalCameraFloder(string cameraID)
         {
-            RCFileUpload.GetInstance().CreatePhysicalCameraFloder(cameraID);
+            if (!SysResourceDao.Instance.UseLocal) RCFileUpload.GetInstance().CreatePhysicalCameraFloder(cameraID);
             LoadPhyCamera();
             if (PhyCameras.Count == 1)
             {
@@ -518,8 +514,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
 
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            var list = db.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
+            var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
+            foreach (var stale in PhyCameras.Where(camera => !list.Any(row => row.Id == camera.Id && !string.IsNullOrWhiteSpace(row.Value))).ToArray()) PhyCameras.Remove(stale);
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))
@@ -558,9 +554,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            var sysResourceModels =  Db.Queryable<SysResourceModel>().Where(it => it.Pid == phyCamera.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
+            var sysResourceModels = SysResourceDao.Instance.GetAllByPid(phyCamera.SysResourceModel.Id).Where(it => !it.IsDelete && it.IsEnable).ToList();
             foreach (var sysResourceModel in sysResourceModels)
             {
                 switch (sysResourceModel.Type)

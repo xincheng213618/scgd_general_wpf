@@ -5,7 +5,7 @@ status: "current"
 summary: "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
 aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs","Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
 related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
@@ -23,10 +23,18 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 | 当前图包含服务节点 `CVBaseServerNode` | 要求注册中心已连接且 `ServiceTokens` 非空；缺 token 时请求刷新并返回，需就绪后再次执行 |
 | 有有效起始节点 | 刷新起始节点选择；无效或为空时提示并返回 |
 | 当前会话没有活动运行 | 生命周期门禁拒绝并发启动，范围包含启动准备和收尾 |
-| 业务批次可以创建 | 在启动引擎前向 MySQL 写入 `MeasureBatchModel`；失败会中断启动，不受诊断 SQLite 的容错保护 |
+| 业务批次可以创建 | MySQL 已连接时，在启动引擎前写入 `MeasureBatchModel`；未连接时使用仅驻留内存的批次，不向配置库保存结果 |
 | 前处理通过，起始节点就绪 | 前处理拒绝时不启动引擎；随后最多等待5秒的起始节点准备，再尝试启动 |
 
-不含服务节点的图可以跳过注册中心/token 检查，但共享会话仍创建业务批次；“没有设备节点”不等于“不依赖数据库”。节点还可能有自己的文件、设备或环境要求。5秒是启动准备等待，不是整图执行上限；共享会话没有向 `FlowRunExecutor` 设置整图超时，节点自身仍可报告超时。
+不含服务节点的图可以跳过注册中心/token 检查；现有 MQTT/MQTT V5 开始节点即使未连接也可承担本地分发。包含服务节点时仍要求真实 MQTT 就绪。节点还可能有自己的文件、设备或环境要求。5秒是启动准备等待，不是整图执行上限；共享会话没有向 `FlowRunExecutor` 设置整图超时，节点自身仍可报告超时。
+
+## 无 MySQL/MQTT 的本地取图
+
+本地保存的流程可以沿用 MQTT 开始节点，连接“相机取图”（`LocalCameraNode`）和结束节点。准备好本地设备配置、相机驱动及有效 SDK 许可证后，无需运行服务即可在本机取图。也可使用本地图片节点验证图像输入链。
+
+未连接 MySQL 时，一次运行在启动时固定 `PersistResults=false`：相机及本地图片节点保留内存帧，供当前流程后续节点使用；相机仍可预览，节点启用保存文件时仍按原有目录保存图像。它们不会创建 MySQL 图像结果主表，也不会把结果写进 `ColorVision.Local.db`。现有诊断记录使用独立的诊断库，不能作为图像结果历史查询。
+
+此边界覆盖本地相机取图和本地图片输入，不代表所有带“本地”名称的算法已经脱离结果数据库。依赖 MySQL 模板/结果明细、校准数据、远端服务的节点，以及用户配置的前后处理，仍须满足各自依赖；不能直接把完整服务流程视为离线流程。真实 SDK、许可证和硬件采集需单独验收。
 
 ## 执行一次并确认终态
 

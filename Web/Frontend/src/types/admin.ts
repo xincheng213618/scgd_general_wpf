@@ -393,6 +393,7 @@ export interface OperationsSupportSession {
 }
 
 export interface OperationsOverview {
+  hostId: string | null
   generatedAt: string
   onlineThresholdSeconds: number
   summary: {
@@ -620,6 +621,25 @@ export interface FeedbackDetail extends FeedbackItem {
 export interface FeedbackAccess {
   scope: 'own' | 'all'
   can_manage: boolean
+}
+
+export interface FeedbackHandlingValues {
+  conclusion: string
+  fixed_version: string
+  verification: string
+}
+
+export interface FeedbackHandlingEntry extends FeedbackHandlingValues {
+  revision: number
+  updated_at: string | null
+  actor_type: string
+  actor_id: string
+}
+
+export interface FeedbackHandling extends FeedbackHandlingEntry {
+  feedback_id: string
+  history: FeedbackHandlingEntry[]
+  changed?: boolean
 }
 
 export interface FeedbackStatusUpdate {

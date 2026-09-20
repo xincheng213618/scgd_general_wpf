@@ -13,10 +13,76 @@ from services.feedback_admin import (
     validate_feedback_bulk_status_payload,
     validate_feedback_status_payload,
     write_feedback_index,
+    get_feedback_handling,
+    update_feedback_handling,
+    validate_feedback_handling_payload,
+    FeedbackHandlingConflict,
 )
 
 
 class FeedbackAdminTests(unittest.TestCase):
+    def test_unreadable_management_state_is_not_overwritten_by_status_or_handling(self):
+        directory = self._create_feedback()
+        state_path = directory / ".admin.json"
+        original = b'{"status":"in_progress","handling":'
+        state_path.write_bytes(original)
+        with self.assertRaises(OSError):
+            update_feedback_status(self.storage, directory.name, "resolved")
+        result = update_feedback_statuses(self.storage, [directory.name], "resolved")
+        self.assertEqual(result["failed"], 1)
+        with self.assertRaises(OSError):
+            update_feedback_handling(self.storage, directory.name, {
+                "conclusion": "new", "fixed_version": "", "verification": "", "revision": 0,
+            }, actor_type="user", actor_id="reviewer")
+        self.assertEqual(state_path.read_bytes(), original)
+
+    def test_handling_preserves_originals_and_survives_status_changes(self):
+        directory = self._create_feedback()
+        originals = {name: (directory / name).read_bytes() for name in ("feedback.json", "report.zip")}
+        payload = {"conclusion": "原因及处理", "fixed_version": "1.2.3.5", "verification": "现场待验证", "revision": 0}
+        with mock.patch("services.feedback_admin._sha256", side_effect=AssertionError("must not hash")):
+            first = update_feedback_handling(self.storage, directory.name, payload, actor_type="user", actor_id="maintainer")
+            self.assertEqual(first["revision"], 1)
+            self.assertEqual(first["actor_id"], "maintainer")
+            for status in ("resolved", "in_progress"):
+                update_feedback_statuses(self.storage, [directory.name], status)
+                self.assertEqual(get_feedback_handling(self.storage, directory.name)["conclusion"], payload["conclusion"])
+            update_feedback_status(self.storage, directory.name, "resolved")
+            self.assertEqual(get_feedback_handling(self.storage, directory.name)["history"], first["history"])
+            self.assertNotIn("handling", get_feedback_detail(self.storage, directory.name, include_hashes=False))
+        for name, content in originals.items():
+            self.assertEqual((directory / name).read_bytes(), content)
+        unchanged = update_feedback_handling(self.storage, directory.name, {**payload, "revision": 1}, actor_type="user", actor_id="other")
+        self.assertFalse(unchanged["changed"])
+        self.assertEqual(unchanged["actor_id"], "maintainer")
+        with self.assertRaises(FeedbackHandlingConflict):
+            update_feedback_handling(self.storage, directory.name, payload, actor_type="user", actor_id="other")
+
+    def test_handling_atomic_failure_and_bounded_history(self):
+        directory = self._create_feedback()
+        payload = {"conclusion": "first", "fixed_version": "", "verification": "", "revision": 0}
+        update_feedback_handling(self.storage, directory.name, payload, actor_type="user", actor_id="one")
+        before = (directory / ".admin.json").read_bytes()
+        with mock.patch("services.feedback_admin.os.replace", side_effect=OSError("disk failure")):
+            with self.assertRaises(OSError):
+                update_feedback_handling(self.storage, directory.name, {**payload, "conclusion": "second", "revision": 1}, actor_type="user", actor_id="two")
+        self.assertEqual((directory / ".admin.json").read_bytes(), before)
+        self.assertEqual(list(directory.glob("*.tmp")), [])
+        for revision in range(1, 24):
+            result = update_feedback_handling(self.storage, directory.name,
+                                             {**payload, "conclusion": str(revision), "revision": revision}, actor_type="user", actor_id="one")
+        self.assertEqual(len(result["history"]), 20)
+        self.assertEqual(result["history"][0]["revision"], 24)
+        self.assertEqual(result["history"][-1]["revision"], 5)
+
+    def test_handling_payload_rejects_forged_authorship_and_invalid_fields(self):
+        payload = {"conclusion": "", "fixed_version": "", "verification": "", "revision": 0}
+        for invalid in ({**payload, "actor_id": "admin"}, {**payload, "revision": True},
+                        {**payload, "revision": -1}, {**payload, "conclusion": "x" * 4001},
+                        {**payload, "verification": None}, {**payload, "fixed_version": "x" * 101}):
+            with self.subTest(payload=invalid), self.assertRaises(ValueError):
+                validate_feedback_handling_payload(invalid)
+
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.storage = Path(self.temp_dir.name)

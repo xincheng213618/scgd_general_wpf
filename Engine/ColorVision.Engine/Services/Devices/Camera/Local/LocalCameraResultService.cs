@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using Newtonsoft.Json;
 using FlowEngineLib.Algorithm;
@@ -13,6 +13,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal static MeasureResultImgModel SaveFlowModel(CVStartCFC action, int zIndex, LocalFlowFrame frame, LocalCameraCaptureResult capture,
             CameraRunParam? cameraParameters, CalibrationParam? calibration, bool isAutoExposure)
         {
+            if (!action.PersistResults)
+                return CreateModel(0, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure);
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
             MeasureResultImgModel model = CreateModel(batch.Id, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure);

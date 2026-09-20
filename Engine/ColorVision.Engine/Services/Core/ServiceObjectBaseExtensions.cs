@@ -6,6 +6,7 @@ using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
+using System.Linq;
 
 namespace ColorVision.Engine.Services
 {
@@ -60,12 +61,9 @@ namespace ColorVision.Engine.Services
                     return true;
                 }
             }
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            //这里追加一个规则，所有Code均不允许相同 2024.04.19
-            var exists = Db.Queryable<SysResourceModel>() .Any(x => x.Code == Code);
-
-            return exists;
+            bool localParent = This is TerminalService terminal && SysResourceDao.IsLocalId(terminal.SysResourceModel.Id);
+            var resources = localParent ? SysResourceDao.Instance.GetLocal() : SysResourceDao.Instance.GetAll();
+            return resources.Any(resource => resource.Code == Code);
         }
 
         public static string NewCreateFileName<T>(this T t ,string FileName) where T : ServiceObjectBase

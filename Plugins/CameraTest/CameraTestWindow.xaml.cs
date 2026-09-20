@@ -42,9 +42,14 @@ public partial class CameraTestWindow : Window
         ImageView.Config.IsToolBarRightVisible = false;
         ImageView.ImageSourceLoaded += ImageSourceChanged;
         ImageView.EditorContext.DrawEditorContext.DrawingVisualLists.CollectionChanged += DrawingsChanged;
+        ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrixChanged += OverlayZoomChanged;
+        ImageView.EditorContext.DrawEditorContext.Zoombox.PreviewMouseDown += MeasurementEdge_MouseDown;
+        ImageView.EditorContext.DrawEditorContext.SelectionVisual.SelectionChanged += DrawingSelectionChanged;
+        ImageView.EditorContext.DrawEditorContext.Zoombox.AddHandler(ContextMenuService.ContextMenuOpeningEvent, new ContextMenuEventHandler(MeasurementEdge_ContextMenuOpening), true);
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(_profile.Analysis.LiveIntervalMilliseconds) };
         _timer.Tick += Live_Tick;
         _ready = true;
+        InitializeCameraControls();
         Refresh();
     }
 
@@ -53,6 +58,8 @@ public partial class CameraTestWindow : Window
         if (_presenting || !_ready || _closing) return;
         _generation++;
         _frame = null;
+        FrameText.Text = "图像已更改";
+        FrameText.ToolTip = null;
         ResetFocus();
         InvalidateResult();
         StatusText.Text = "图像已在编辑器中改变。请通过打开图像或取图分析重新加载测量源。";
@@ -62,16 +69,20 @@ public partial class CameraTestWindow : Window
     private void Refresh()
     {
         if (!_ready) return;
+        RefreshCameraControls();
         _regionError = GetRegionError();
         bool idle = !_busy && !_closing;
         CameraSummary.Text = $"{_profile.Camera.Model} · {_profile.Camera.Mode}\n{(_camera.IsConnected ? "已连接" : "未连接")} · {_profile.Camera.BitDepth} bit\n曝光 {_profile.Camera.ExposureMilliseconds:G} ms · 增益 {_profile.Camera.Gain:G}";
         SignalSummary.Text = $"输入编码：{_profile.Sfr.InputEncoding}\n目标频率：{_profile.Analysis.TargetFrequency:G} cycles/pixel";
         ResponseColumn.Header = $"MTF@{_profile.Analysis.TargetFrequency:G}";
         ModeText.Text = _live ? "实时调试" : "单帧调试";
-        ArchiveSummary.Text = string.IsNullOrWhiteSpace(_archiveSettings.DeviceSerial) ? "存档前请填写设备编号 / SN。" : $"设备编号：{_archiveSettings.DeviceSerial}\n批次：{_archiveSettings.Batch}";
-        ArchiveSettingsButton.IsEnabled = idle && !_live;
+        ArchiveSummary.Text = string.IsNullOrWhiteSpace(_archiveSettings.DeviceSerial) ? "设备编号 / SN 未填写" : $"设备编号：{_archiveSettings.DeviceSerial}\n批次：{_archiveSettings.Batch}";
+        RegionCountText.Text = _profile.Regions.Count.ToString();
+        DisplaySettingsMenuItem.IsEnabled = idle && !_live;
+        VideoSettingsMenuItem.IsEnabled = idle && !_live;
+        ArchiveSettingsMenuItem.IsEnabled = idle && !_live;
         ArchiveButton.IsEnabled = idle && !_live && _frame != null;
-        JudgmentSettingsButton.IsEnabled = idle && !_live;
+        JudgmentSettingsMenuItem.IsEnabled = idle && !_live;
         ClearFocusButton.IsEnabled = idle;
         ExportFocusButton.IsEnabled = idle && !_live && _focusHistory.Count > 0;
         LiveButton.IsEnabled = idle && !_live;
@@ -82,18 +93,18 @@ public partial class CameraTestWindow : Window
         AnalyzeButton.Content = _result == null ? "开始分析" : "重新分析";
         AnalyzeButton.ToolTip = _regionError;
         ImageView.EditorContext.DrawEditorContext.DrawCanvas.IsEnabled = !_closing && !_live && (!_busy || _selectingRegion);
-        ExportButton.IsEnabled = idle && !_live && _result != null && _result.FrameId == _frame?.Id;
-        SaveImageButton.IsEnabled = idle && !_live && _frame != null;
+        ExportMenuItem.IsEnabled = idle && !_live && _result != null && _result.FrameId == _frame?.Id;
+        SaveImageMenuItem.IsEnabled = idle && !_live && _frame != null;
         ConnectButton.IsEnabled = idle && !_camera.IsConnected;
         DisconnectButton.IsEnabled = idle && _camera.IsConnected;
         CameraSettingsButton.IsEnabled = DiscoverButton.IsEnabled = CameraIds.IsEnabled = idle && !_camera.IsConnected;
-        SignalSettingsButton.IsEnabled = MetricSettingsButton.IsEnabled = LoadProfileButton.IsEnabled = idle && !_live;
-        SaveProfileButton.IsEnabled = idle && !_live;
+        SignalSettingsMenuItem.IsEnabled = MetricSettingsMenuItem.IsEnabled = LoadProfileMenuItem.IsEnabled = idle && !_live;
+        SaveProfileMenuItem.IsEnabled = idle && !_live;
         AddRegionButton.IsEnabled = idle && !_live && _frame != null;
-        RemoveRegionButton.IsEnabled = idle && !_live && _profile.Regions.Count > 0;
         string? selectedRegion = (RegionList.SelectedItem as SearchRegion)?.Id;
         RegionList.ItemsSource = _profile.Regions.ToArray();
         RegionList.SelectedItem = _profile.Regions.FirstOrDefault(r => r.Id == selectedRegion);
+        RemoveRegionMenuItem.IsEnabled = idle && !_live && RegionList.SelectedItem != null;
     }
 
     private async Task PerformAsync(Func<Task> operation)
@@ -175,6 +186,7 @@ public partial class CameraTestWindow : Window
 
     private void ShowFrame(TestFrame frame)
     {
+        CloseEdgeMenu();
         bool sameSize = _frame?.Data.Width == frame.Data.Width && _frame.Data.Height == frame.Data.Height;
         var matrix = ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrix;
         _overlays?.Dispose();
@@ -190,7 +202,8 @@ public partial class CameraTestWindow : Window
             ImageView.UpdateLayout();
             ImageView.UpdateZoomAndScale();
         }));
-        FrameText.Text = $"{frame.Data.Width} × {frame.Data.Height} · {frame.Data.BitDepth} bit · {frame.Data.Channels} 通道 · {frame.Data.CapturedAt:HH:mm:ss.fff} · {frame.Source}";
+        FrameText.Text = $"{frame.Data.Width} × {frame.Data.Height} · {frame.Data.BitDepth} bit · {frame.Data.Channels} 通道 · {(frame.SourceKind == FrameSourceKind.ImageFile ? Path.GetFileName(frame.Source) : "相机图像")}";
+        FrameText.ToolTip = $"{frame.Source}\n{frame.Data.CapturedAt:yyyy-MM-dd HH:mm:ss.fff}";
     }
 
     private async void Analyze_Click(object sender, RoutedEventArgs e) => await AnalyzeCurrentFrameAsync();
@@ -225,11 +238,9 @@ public partial class CameraTestWindow : Window
         if (_closing || generation != _generation || (!_live && _frame?.Id != frame.Id)) return;
         if (_live) ShowFrame(frame);
         _result = result;
-        var rows = result.Rows();
-        Metrics.ItemsSource = rows;
-        Metrics.SelectedItem = rows.FirstOrDefault(row => row.Target == selected?.Target && row.Edge == selected.Edge && row.Channel == selected.Channel) ?? rows.FirstOrDefault();
-        var colors = result.ColorShifts.SelectMany(edge => edge.Analysis.Pairs.Select(pair => new ColorShiftRow(edge.Target, edge.Edge, pair.Pair,
-            edge.Analysis.Axis, pair.NormalShiftPixels, pair.Valid ? pair.Warnings.Length == 0 ? "有效" : string.Join("; ", pair.Warnings) : pair.Reason, edge.Analysis))).ToArray();
+        RefreshMetricRows(selected);
+        var colors = ColorShiftPresentation.Rows(result);
+        ColorSummary.Text = ColorShiftPresentation.Summary(colors);
         ColorMetrics.ItemsSource = colors;
         ColorMetrics.SelectedItem = colors.FirstOrDefault(row => row.Target == selectedColor?.Target && row.Edge == selectedColor.Edge && row.Pair == selectedColor.Pair) ?? colors.FirstOrDefault();
         JudgmentMetrics.ItemsSource = result.Judgment.Items;
@@ -269,12 +280,25 @@ public partial class CameraTestWindow : Window
             var pixels = _camera.TakeLatestFrame();
             if (pixels == null) return;
             var frame = new TestFrame(pixels, $"Live:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Live, _profile.Camera);
-            if (_profile.Regions.Count == 0)
+            if (_profile.Video.Mode != VideoAnalysisMode.BmwSfr || _profile.Regions.Count == 0)
             {
+                long generation = _generation;
+                double? sharpness = null;
+                if (_profile.Video.Mode == VideoAnalysisMode.Sharpness)
+                {
+                    var roi = _profile.Video.ResolveRoi(frame.Data.Width, frame.Data.Height);
+                    var algorithm = _profile.Video.Algorithm;
+                    sharpness = await Task.Run(() => frame.Read(image => OpenCVMediaHelper.M_CalArtculation(image, algorithm, roi)));
+                }
+                if (!_live || _closing || generation != _generation) return;
                 ShowFrame(frame);
                 InvalidateResult();
-                _profile.ImageWidth = frame.Data.Width;
-                _profile.ImageHeight = frame.Data.Height;
+                if (_profile.Regions.Count == 0)
+                {
+                    _profile.ImageWidth = frame.Data.Width;
+                    _profile.ImageHeight = frame.Data.Height;
+                }
+                StatusText.Text = sharpness.HasValue ? $"实时清晰度 · {_profile.Video.Algorithm}：{sharpness.Value:G7}" : "实时预览 · 停止后可框选测量点。";
             }
             else await AnalyzeFrameAsync(frame, _generation);
         });
@@ -324,7 +348,9 @@ public partial class CameraTestWindow : Window
 
     private void RemoveRegion_Click(object sender, RoutedEventArgs e)
     {
-        if (RegionList.SelectedItem is not SearchRegion region) { StatusText.Text = "请先选择要移除的搜索区域。"; return; }
+        if (_busy || _live || _closing) return;
+        var region = (sender as FrameworkElement)?.Tag as SearchRegion ?? RegionList.SelectedItem as SearchRegion;
+        if (region == null) { StatusText.Text = "请先选择测量点。"; return; }
         var draw = ImageView.EditorContext.DrawEditorContext;
         var visual = draw.DrawingVisualLists.FirstOrDefault(v => _regionIdentities.TryGetValue(v, out var identity) && identity.Id == region.Id);
         if (visual is System.Windows.Media.Visual shape) draw.DrawCanvas.RemoveVisualCommand(shape);
@@ -332,9 +358,11 @@ public partial class CameraTestWindow : Window
 
     private void InvalidateResult()
     {
+        CloseEdgeMenu();
         _result = null;
         Metrics.ItemsSource = null;
         ColorMetrics.ItemsSource = null;
+        ColorSummary.Text = ColorShiftPresentation.Summary([]);
         JudgmentMetrics.ItemsSource = null;
         VerdictText.Text = "未分析";
         CurvePlot.Clear();
@@ -342,52 +370,52 @@ public partial class CameraTestWindow : Window
         _overlays = null;
     }
 
-    private void RenderOverlays()
+    private HashSet<string> SelectedPlotChannels()
     {
-        _overlays?.Dispose();
-        _overlays = null;
-        if (_frame == null || _profile.ImageWidth != _frame.Data.Width || _profile.ImageHeight != _frame.Data.Height) return;
-        var geometry = new List<AlgorithmGeometry>();
-        var items = new List<AlgorithmOverlayItem>();
-        void Add(string id, RoiRect roi, string color, string label)
-        {
-            if (roi.Width <= 0 || roi.Height <= 0) return;
-            geometry.Add(new(id, AlgorithmGeometryKind.Rectangle, new[] { new AlgorithmPoint(roi.X, roi.Y), new AlgorithmPoint(roi.X + roi.Width, roi.Y + roi.Height) }));
-            items.Add(new(id, new AlgorithmOverlayStyle(color, null, 2, label)));
-        }
-        if (_result != null)
-            foreach (var target in _result.Targets)
-                foreach (var edge in target.Edges) Add($"{target.Id}-{edge.Id}", edge.Roi, edge.Valid ? "#FF35D09A" : "#FFFFB547", edge.Id.ToString());
-        using var result = new AlgorithmResult
-        {
-            Artifacts = new AlgorithmArtifact[] {
-                new AlgorithmGeometryArtifact("camera-test-regions", AlgorithmCoordinateSpace.Pixel, geometry),
-                new AlgorithmOverlayArtifact("camera-test-overlay", AlgorithmOverlayLifetime.Transient, items)
-            }
-        };
-        _overlays = AlgorithmOverlayRenderer.Apply(ImageView.EditorContext.ProcessingContext, ImageView.EditorContext.DrawEditorContext, result);
+        var channels = new HashSet<string>();
+        if (ShowY.IsChecked == true) channels.Add("L");
+        if (ShowR.IsChecked == true) channels.Add("R");
+        if (ShowG.IsChecked == true) channels.Add("G");
+        if (ShowB.IsChecked == true) channels.Add("B");
+        return channels;
+    }
+
+    private void RefreshMetricRows(MetricRow? selected)
+    {
+        var channels = SelectedPlotChannels();
+        // Channel-less rows report failed edges and remain visible while any channel is enabled.
+        var rows = (_result?.Rows() ?? []).Where(row => channels.Count > 0 &&
+            (row.Channel == "—" || channels.Contains(row.Channel == "Y (L)" ? "L" : row.Channel))).ToArray();
+        Metrics.ItemsSource = rows;
+        Metrics.SelectedItem = rows.FirstOrDefault(row => row.Target == selected?.Target && row.Edge == selected.Edge && row.Channel == selected.Channel)
+            ?? rows.FirstOrDefault(row => row.Target == selected?.Target && row.Edge == selected.Edge)
+            ?? rows.FirstOrDefault(row => row.Target == selected?.Target)
+            ?? rows.FirstOrDefault();
     }
 
     private void UpdatePlot()
     {
         if (!_ready) return;
-        if (Metrics.SelectedItem is not MetricRow { Analysis: { } analysis })
+        var selected = Metrics.SelectedItem as MetricRow;
+        CurveSelectionText.Text = selected == null ? "请选择结果行"
+            : $"{selected.Target} · {(Enum.TryParse<BmwEdgeId>(selected.Edge, out var edge) ? EdgeName(edge) : selected.Edge)}边";
+        if (selected is not { Analysis: { } analysis })
         {
             CurvePlot.Clear();
             EmptyPlot.Visibility = Visibility.Visible;
             return;
         }
         EmptyPlot.Visibility = Visibility.Collapsed;
-        var channels = new HashSet<string>();
-        if (ShowY.IsChecked == true) channels.Add("L");
-        if (ShowR.IsChecked == true) channels.Add("R");
-        if (ShowG.IsChecked == true) channels.Add("G");
-        if (ShowB.IsChecked == true) channels.Add("B");
-        CurvePlot.ShowResult(analysis, PlotMode.SelectedIndex, channels, false);
+        CurvePlot.ShowResult(analysis, PlotMode.SelectedIndex, SelectedPlotChannels(), false);
     }
-    private void Metrics_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePlot();
+    private void Metrics_SelectionChanged(object sender, SelectionChangedEventArgs e) { UpdatePlot(); if (_ready) RenderOverlays(); }
     private void PlotMode_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePlot();
-    private void PlotSettings_Click(object sender, RoutedEventArgs e) => UpdatePlot();
+    private void PlotSettings_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        RefreshMetricRows(Metrics.SelectedItem as MetricRow);
+        UpdatePlot();
+    }
 
     private void ColorMetrics_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -472,7 +500,8 @@ public partial class CameraTestWindow : Window
         Refresh();
         RenderOverlays();
     }
-    private void CameraSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Camera, "相机设置");
+    private void CameraSettings_Click(object sender, RoutedEventArgs e) => CameraModels.Focus();
+    private void VideoSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Video, "视频分析设置");
     private void SignalSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Sfr, "输入信号与质量检查");
     private void MetricSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Analysis, "指标与实时刷新");
     private void JudgmentSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Judgment, "可选判定标准（留空不检查）");
@@ -579,6 +608,8 @@ public partial class CameraTestWindow : Window
         e.Cancel = true;
         if (_closing) return;
         _closing = true;
+        _acquisitionTimer.Stop();
+        _acquisitionTimer.Tick -= ApplyAcquisition_Tick;
         StopLive();
         Refresh();
         try
@@ -589,11 +620,17 @@ public partial class CameraTestWindow : Window
             _timer.Tick -= Live_Tick;
             ImageView.ImageSourceLoaded -= ImageSourceChanged;
             ImageView.EditorContext.DrawEditorContext.DrawingVisualLists.CollectionChanged -= DrawingsChanged;
+            ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrixChanged -= OverlayZoomChanged;
+            ImageView.EditorContext.DrawEditorContext.Zoombox.PreviewMouseDown -= MeasurementEdge_MouseDown;
+            ImageView.EditorContext.DrawEditorContext.SelectionVisual.SelectionChanged -= DrawingSelectionChanged;
+            ImageView.EditorContext.DrawEditorContext.Zoombox.RemoveHandler(ContextMenuService.ContextMenuOpeningEvent, new ContextMenuEventHandler(MeasurementEdge_ContextMenuOpening));
+            CloseEdgeMenu();
             DetachRegionProperties();
             _overlays?.Dispose();
             ImageView.Dispose();
         }
         catch (Exception exception) { System.Diagnostics.Trace.TraceError(exception.ToString()); }
-        finally { _closed = true; Close(); }
+        // Disposal may complete synchronously; finish the current Closing event before closing again.
+        finally { _closed = true; _ = Dispatcher.BeginInvoke(new Action(Close)); }
     }
 }

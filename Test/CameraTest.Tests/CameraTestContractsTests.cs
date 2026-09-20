@@ -11,6 +11,62 @@ namespace CameraTest.Tests;
 public sealed class CameraTestContractsTests
 {
     [Fact]
+    public void OldProfilesDefaultToReadableMtfLabelsAndVideoSettingsRoundTrip()
+    {
+        var old = JsonSerializer.Deserialize<TestProfile>("{\"SchemaVersion\":1}", ProfileStore.JsonOptions)!;
+        old.Validate();
+        Assert.True(old.Display.ShowValues);
+        Assert.True(old.Display.FixedScreenSize);
+        old.Display.FontSize = 18;
+        old.Display.Metric = ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.BmwSfrDisplayMetric.AtFrequency;
+        old.Display.Frequency = .3;
+        old.Display.ShowTargetCenter = false;
+        old.Display.ShowCenterCoordinates = old.Display.ShowRoiDimensions = old.Display.ShowCenterDistance = true;
+        old.MeasurementRoi = new() { AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 100 };
+        old.Video = new() { Mode = VideoAnalysisMode.Sharpness, Algorithm = FocusAlgorithm.Tenengrad, X = 20, Y = 30, Width = 80, Height = 90 };
+        var restored = JsonSerializer.Deserialize<TestProfile>(JsonSerializer.Serialize(old, ProfileStore.JsonOptions), ProfileStore.JsonOptions)!;
+        Assert.Equal(18, restored.Display.FontSize);
+        Assert.Equal(.3, restored.Display.Frequency);
+        Assert.Equal(old.Display.Metric, restored.Display.Metric);
+        Assert.False(restored.Display.ShowTargetCenter);
+        Assert.True(restored.Display.ShowCenterCoordinates && restored.Display.ShowRoiDimensions && restored.Display.ShowCenterDistance);
+        Assert.Equal(old.MeasurementRoi, restored.MeasurementRoi);
+        Assert.Equal(FocusAlgorithm.Tenengrad, restored.Video.Algorithm);
+        Assert.Equal(new RoiRect(20, 30, 80, 90), restored.Video.ResolveRoi(200, 200));
+        Assert.Throws<ArgumentException>(() => restored.Video.ResolveRoi(90, 100));
+        restored.Display.FontSize = double.NaN;
+        Assert.Throws<ArgumentException>(restored.Validate);
+    }
+
+    [Fact]
+    public void RoiGeometryPreservesAutomaticCoordinatesAndAppliesDimensionsAlongEachEdge()
+    {
+        var auto = new RoiRect(20, 80, 40, 40);
+        Assert.Equal(auto, new BmwSfrRoiSettings().Resolve(BmwEdgeId.Left, auto, 100, 100));
+        var settings = new BmwSfrRoiSettings { AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 60 };
+        Assert.Equal(new RoiRect(0, 70, 80, 60), settings.Resolve(BmwEdgeId.Left, auto, 100, 100));
+        Assert.Equal(new RoiRect(70, 0, 60, 80), settings.Resolve(BmwEdgeId.Top, new(80, 20, 40, 40), 100, 100));
+        settings.CenterDistancePixels = 100;
+        var outside = settings.Resolve(BmwEdgeId.Left, auto, 100, 100);
+        Assert.Equal(-40, outside.X); // Preserve the requested geometry; never silently clip a measurement ROI.
+        Assert.False(BmwSfrRoiSettings.IsInside(outside, new(0, 0, 200, 200)));
+        Assert.Throws<ArgumentException>(() => (settings with { AlongEdgePixels = 39 }).Validate());
+        Assert.Throws<ArgumentException>(() => (settings with { CenterDistancePixels = double.NaN }).Validate());
+        var display = new ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.BmwSfrOverlaySettings { Frequency = .51 };
+        Assert.Throws<ArgumentException>(display.Validate);
+    }
+
+    [Fact]
+    public async Task AcquisitionChangesValidateWithoutInitializingSdk()
+    {
+        await using var camera = new StandaloneCameraSession();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => camera.SetAcquisitionParameterAsync(true, 0));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => camera.SetAcquisitionParameterAsync(false, 2));
+        Assert.False(camera.IsConnected);
+        Assert.Null(camera.RequestedSettings);
+    }
+
+    [Fact]
     public void ProfilesRejectDuplicateIdsAndCoordinatesFromDifferentImage()
     {
         var profile = new TestProfile { ImageWidth = 400, ImageHeight = 300, Regions = new() { new("P1", 0, 0, 100, 100), new("P1", 200, 100, 100, 100) } };

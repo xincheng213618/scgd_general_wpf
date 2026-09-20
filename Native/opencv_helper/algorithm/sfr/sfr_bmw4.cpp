@@ -314,25 +314,50 @@ BmwLocatedTarget locateBmwTarget(const cv::Mat& crop)
     if (gray.empty()) return output;
     cv::Mat mask;
     cv::threshold(gray, mask, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
-    cv::Mat joined;
-    cv::morphologyEx(mask, joined, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {7,7}));
+    // Closing directly on the search crop can extend a nearby dark sector to
+    // the crop boundary during erosion. Pad only this segmentation workspace so
+    // a complete target is not mistaken for a clipped one. All validation and
+    // measurement still use the unpadded, original search pixels.
+    constexpr int closingRadius = 3;
+    cv::Mat paddedMask, closedMask;
+    cv::copyMakeBorder(mask, paddedMask, closingRadius, closingRadius, closingRadius, closingRadius, cv::BORDER_CONSTANT, cv::Scalar(0));
+    cv::morphologyEx(paddedMask, closedMask, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {7,7}));
+    cv::Mat joined = closedMask(cv::Rect(closingRadius, closingRadius, mask.cols, mask.rows));
     std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(joined, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    std::vector<cv::Vec4i> hierarchy;
+    // A dark wall can enclose the bright chart paper. Include foreground islands
+    // inside those holes, while excluding the hole boundaries themselves.
+    cv::findContours(joined, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
     std::vector<BmwLocatedTarget> candidates;
-    for (const auto& contour : contours) {
-        cv::Rect box = cv::boundingRect(contour);
+    for (size_t index = 0; index < contours.size(); ++index) {
+        if (hierarchy[index][3] >= 0) continue;
+        cv::Rect box = cv::boundingRect(contours[index]);
         double rx = box.width * .5, ry = box.height * .5, radius = std::min(rx, ry);
-        if (radius < 55 || rx/ry < .65 || rx/ry > 1.55 || box.x <= 2 || box.y <= 2 ||
-            box.br().x >= gray.cols-2 || box.br().y >= gray.rows-2) continue;
+        // Test actual foreground containment, not an extra safety margin: a
+        // complete sector with real background pixels beside it is admissible.
+        // A sector reaching any search boundary may be cut and remains invalid.
+        if (radius < 55 || rx/ry < .65 || rx/ry > 1.55 || box.x == 0 || box.y == 0 ||
+            box.br().x == gray.cols || box.br().y == gray.rows) continue;
         cv::Point2d center(box.x+rx, box.y+ry);
+        // Vote for axes at a bounded detection scale. At full camera resolution,
+        // small contour bends and threshold stair-steps split a physical straight
+        // segment between one-pixel Hough bins, making localization depend on the
+        // search crop. Keep contour/sector validation and SFR on original pixels.
+        constexpr int axisDetectionExtent = 256;
+        const double scale = std::min(1.0, axisDetectionExtent / static_cast<double>(std::max(box.width, box.height)));
+        cv::Mat axisMask;
+        cv::resize(mask(box), axisMask, {cvRound(box.width * scale), cvRound(box.height * scale)}, 0, 0, cv::INTER_AREA);
+        const double scaleX = axisMask.cols / static_cast<double>(box.width), scaleY = axisMask.rows / static_cast<double>(box.height);
+        const double axisRadius = std::min(axisMask.cols, axisMask.rows) * .5;
         cv::Mat edge;
-        cv::Canny(mask(box), edge, 40, 100);
+        cv::Canny(axisMask, edge, 40, 100);
         std::vector<cv::Vec4i> lines;
-        cv::HoughLinesP(edge, lines, 1, PI/720, static_cast<int>(radius*.3), radius*.55, 5);
+        cv::HoughLinesP(edge, lines, 1, PI/720, static_cast<int>(axisRadius*.3), axisRadius*.55, 5);
         cv::Point2d origins[2], directions[2];
         double lengths[2]{};
         for (auto l : lines) {
-            cv::Point2d p(l[0]+box.x,l[1]+box.y), d(l[2]-l[0],l[3]-l[1]);
+            cv::Point2d p(box.x+(l[0]+.5)/scaleX-.5,box.y+(l[1]+.5)/scaleY-.5),
+                d((l[2]-l[0])/scaleX,(l[3]-l[1])/scaleY);
             double length = cv::norm(d); d *= 1/length;
             int axis = std::abs(d.x) > std::abs(d.y) ? 0 : 1;
             if (std::min(std::abs(d.x),std::abs(d.y)) > .27 || length <= lengths[axis]) continue;

@@ -48,6 +48,46 @@ bool invalid(const json& c)
     return !c.at("valid").get<bool>() && c.at("mtf50").is_null() && c.at("mtf10").is_null()
         && c.at("frequencies").empty() && c.at("mtf").empty();
 }
+
+void verifyRobustLocalization()
+{
+    // Analytic Gaussian edge plus a pixel-scale bright-platform raster. The
+    // raster is below the unchanged raw-platform noise limit, but its distant
+    // derivatives used to bias the centroid enough to reject a straight edge.
+    constexpr double sigma = .85, slope = .09;
+    cv::Mat1d textured(144, 200);
+    for (int y = 0; y < textured.rows; ++y) for (int x = 0; x < textured.cols; ++x) {
+        const double distance = (x - 100.0 - slope * (y - 72.0)) / std::sqrt(1 + slope * slope);
+        const double step = .5 * (1 + std::erf(distance / (std::sqrt(2.0) * sigma)));
+        textured(y, x) = .1 + .8 * step + .04 * step * ((x + y) % 2 ? -1.0 : 1.0);
+    }
+    const cv::Mat original = textured.clone();
+    const double reference50 = std::sqrt(2 * std::log(2.0)) / (2 * CV_PI * sigma);
+    double worstError = 0, worstAngleError = 0;
+    for (int width : {56, 82, 112, 160}) for (int dx : {-2, 0, 2}) for (int dy : {-2, 0, 2}) {
+        const auto result = analyze(textured, {{"encoding", "linear"}}, {100 - width / 2 + dx, 8 + dy, width, 128});
+        const auto& c = result["channels"][0];
+        if (!c["valid"] || c["mtf50"].is_null()) throw std::runtime_error("textured straight edge failed after ROI translation/resize");
+        worstError = std::max(worstError, std::abs(c["mtf50"].get<double>() - reference50));
+        worstAngleError = std::max(worstAngleError, std::abs(c["angleDegrees"].get<double>() - std::atan(slope) * 180.0 / CV_PI));
+        if (result["edgeLocalization"] != "lowpass_peak_v1") throw std::runtime_error("missing localization provenance");
+    }
+    require(worstError < .003, "36 textured ROI placements retain analytic Gaussian MTF50 accuracy within 0.003 cy/pixel");
+    require(worstAngleError < .05, "textured ROI angle stays within 0.05 degrees of known geometry");
+    require(cv::norm(original, textured, cv::NORM_INF) == 0, "localization filtering never modifies source pixels");
+
+    // A smoothed localization image must not conceal physical edge irregularity.
+    for (bool jagged : {false, true}) {
+        cv::Mat1d irregular(128, 128);
+        for (int y = 0; y < irregular.rows; ++y) for (int x = 0; x < irregular.cols; ++x) {
+            const double displacement = jagged ? (y % 2 ? 1.0 : -1.0) : 2.0 * std::sin(2 * CV_PI * y / 64.0);
+            const double distance = x - (63.5 + .1 * (y - 63.5) + displacement);
+            irregular(y, x) = .1 + .8 * .5 * (1 + std::erf(distance / (std::sqrt(2.0) * 1.2)));
+        }
+        auto c = analyze(irregular)["channels"][0];
+        require(invalid(c) && c["reason"] == "edge_fit_residual_too_large", "curved and row-jittered edges still fail the unchanged straight-edge residual limit");
+    }
+}
 }
 
 bool RunSfrAnalysisTests()
@@ -90,6 +130,7 @@ bool RunSfrAnalysisTests()
         cv::Mat1d noise(128, 128); cv::RNG rng(42); rng.fill(noise, cv::RNG::NORMAL, 0, .01);
         cv::Mat low = (linear - .1) * .0375 + .45 + noise;
         require(invalid(analyze(low)["channels"][0]), "low contrast noisy edge rejected instead of producing an unstable high score");
+        verifyRobustLocalization();
         char* output = reinterpret_cast<char*>(1);
         require(M_AnalyzeSfrV2(borrow(linear), {-1,0,40,40}, "{}", &output) < 0 && output == nullptr, "invalid ROI rejected and output cleared");
         require(M_AnalyzeSfrV2(borrow(linear), {}, "{", &output) < 0 && output == nullptr, "malformed configuration rejected");
@@ -120,6 +161,49 @@ bool RunBmwLocalizationTests()
         auto found=locate(target,{0,0,480,480});
         require(found["located"],"BMW opposed sectors located");
         require(found["edges"].size()==4,"BMW retains four fixed edges");
+        // Closing must not fill real background beside a complete target or
+        // invent clipping. Containment is determined by the foreground itself.
+        const auto bounds=found["targetRoi"];
+        const int bx=bounds["x"], by=bounds["y"], bw=bounds["width"], bh=bounds["height"];
+        for (int margin : {1, 2, 3, 4, 8}) {
+            const RoiRect searches[] = {
+                {bx-margin,0,480-bx+margin,480}, {0,by-margin,480,480-by+margin},
+                {0,0,bx+bw+margin,480}, {0,0,480,by+bh+margin}
+            };
+            for (auto roi : searches) {
+                auto nearBoundary=locate(target,roi);
+                require(nearBoundary["located"],"BMW complete target remains locatable beside each search boundary");
+                require(nearBoundary["targetRoi"]==bounds,"morphology padding preserves the original target bounds");
+            }
+        }
+        const RoiRect clippedSearches[] = {
+            {bx+4,0,480-bx-4,480}, {0,by+4,480,480-by-4},
+            {0,0,bx+bw-4,480}, {0,0,480,by+bh-4}
+        };
+        for (auto roi : clippedSearches)
+            require(!locate(target,roi)["located"],"BMW genuinely clipped sector is still rejected at each search boundary");
+        // Camera resolution and search-box margins must not determine whether
+        // shallow, slightly non-ideal printed edges produce enough Hough votes.
+        for (int size : {320, 960, 1440}) {
+            cv::Mat scaled;
+            cv::resize(target, scaled, {size, size}, 0, 0, cv::INTER_CUBIC);
+            cv::Mat1f mapX(size,size), mapY(size,size);
+            for (int y=0;y<size;++y) for (int x=0;x<size;++x) {
+                mapX(y,x)=static_cast<float>(x);
+                mapY(y,x)=static_cast<float>(y+size*.002*std::sin(2*CV_PI*x/size));
+            }
+            cv::Mat warped;
+            cv::remap(scaled,warped,mapX,mapY,cv::INTER_LINEAR,cv::BORDER_REPLICATE);
+            cv::Mat surround(size+160,size+160,CV_8UC3,cv::Scalar(135,135,135));
+            warped.copyTo(surround(cv::Rect(80,80,size,size)));
+            for (int margin : {0, 24, 60}) {
+                auto localized=locate(surround,{80-margin,80-margin,size+2*margin,size+2*margin});
+                require(localized["located"],"BMW high-resolution axes survive mild contour bending and changed search margins");
+                require(std::abs(localized["centerX"].get<double>()-(80+size*.5))<size*.01
+                    && std::abs(localized["centerY"].get<double>()-(80+size*.5))<size*.01,
+                    "normalized axis coordinates map back to the physical target center");
+            }
+        }
         for(int id=0;id<4;++id) {
             auto e=found["edges"][id],r=e["roi"];
             require(e["id"]==id,"BMW edge identity stable");

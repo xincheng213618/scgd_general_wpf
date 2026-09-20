@@ -8,6 +8,7 @@ pwsh -NoProfile -File .\Scripts\package_camera_test.ps1
 [CmdletBinding()]
 param(
     [string]$OutputDirectory = '',
+    [string]$OpenCvHelperBinary = '',
     [switch]$KeepBuild
 )
 
@@ -77,6 +78,13 @@ function New-CameraTestTestPackage {
             '--self-contained', 'false', '-p:PublishSingleFile=false',
             '-p:PublishTrimmed=false', '-p:GeneratePackageOnBuild=false',
             '--artifacts-path', (Join-Path $buildRoot 'artifacts'), '-o', $publishRoot)
+        $nativeHash = $null
+        if ($OpenCvHelperBinary) {
+            $nativePath = (Resolve-Path -LiteralPath $OpenCvHelperBinary).Path
+            if (![IO.File]::Exists($nativePath)) { throw 'The specified native DLL does not exist.' }
+            $nativeHash = (Get-FileHash -LiteralPath $nativePath -Algorithm SHA256).Hash
+            $arguments += @("-p:OpenCvHelperBinary=$nativePath", '-p:UseProjectReference=false')
+        }
         Write-Host 'Publishing CameraTest to a fresh isolated directory...'
         & dotnet @arguments *> $buildLog
         if ($LASTEXITCODE -ne 0) { Get-Content -LiteralPath $buildLog -Tail 50; throw "dotnet publish failed ($LASTEXITCODE). Log: $buildLog" }
@@ -101,6 +109,12 @@ function New-CameraTestTestPackage {
             Copy-Item -LiteralPath $file.FullName -Destination $target
         }
         Assert-CameraTestPayload $packageRoot
+        if ($nativeHash) {
+            $packagedNative = @(Get-ChildItem -LiteralPath $packageRoot -Recurse -File -Filter 'opencv_helper.dll')
+            if ($packagedNative.Count -eq 0 -or @($packagedNative | Where-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash -ne $nativeHash }).Count -gt 0) {
+                throw 'Packaged native DLL differs from the explicitly selected build.'
+            }
+        }
         @"
 相机生产调试 $version — 独立测试版
 打包时间：$stamp
@@ -108,10 +122,15 @@ function New-CameraTestTestPackage {
 使用方法
 1. 完整解压到可写目录，双击 CameraTest.exe。不要直接在压缩包中运行，不要只复制 EXE。
 2. 无需安装 ColorVision 主程序、数据库或后台服务。电脑需预先配置 .NET 10 Desktop Runtime x64；此包不附带 .NET。
-3. 打开 BMP、PNG、JPEG、TIFF 图片后，用下方矩形工具或“框选新增”框住完整 BMW 马蹄靶标。左侧出现区域后点击“开始分析”；移动、删除框后需重新分析。
-4. 使用相机时，沿用现有相机驱动与相应 SDK 授权，并在相机设置中选择型号、ID 和匹配的 sys.cfg。
+3. 打开 BMP、PNG、JPEG、TIFF 图片后，用下方矩形工具或菜单“分析 → 添加测量点”框住完整 BMW 马蹄靶标。画框后点击“开始分析”；移动、删除框后需重新分析。
+4. 使用相机时，沿用现有相机驱动与相应 SDK 授权，在面板选择型号和模式，刷新后选择相机 ID，再连接。SDK 配置随程序提供。
 5. 实时分析用于调焦；停止后可记录设备编号/SN、操作员、批次、参数、原图和结果。
 6. 默认存档目录为 %LOCALAPPDATA%\ColorVision\CameraTest\Archive，也可在“存档信息”中选择目录。
+7. “视图 → BMW 测量与显示”（或工具栏“BMW 设置”）可选 MTF50、MTF10、指定频率 MTF（默认 0.25）和 MTF@0.5，并控制刃边虚线。
+8. 同一设置窗口的“四边测量框”分组可设置沿刃边长度、跨刃边宽度及距靶标中心距离，单位为原图像素；0 保留自动值，确认后重新分析。
+9. “色差”显示 R−G、R−B、G−B 刃边位移；缺测会列出原因，不代表位移为零。
+10. SFR 页的 Y/R/G/B 勾选同步筛选曲线和结果列表，导出与存档保留完整计算数据。
+11. 图像底部 POI 模板框旁可打开模板管理或保存当前测量框；无可用 MySQL 时自动使用本地 SQLite，无需单独安装数据库。
 
 测试说明
 - 本包仅供人工分发测试，不配置在线更新源。

@@ -21,7 +21,11 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
         public string DataBase64 { get => _DataBase64; set { _DataBase64 = value; } }
-        private string _DataBase64;
+        private string _DataBase64 = string.Empty;
+
+        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal LocalFlowTemplateStorage? LocalStorage { get; set; }
 
         /// <summary>
         /// Runtime-only identity of the resource that owns <see cref="DataBase64"/>.

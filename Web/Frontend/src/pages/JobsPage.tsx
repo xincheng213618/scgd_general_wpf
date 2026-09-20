@@ -1,12 +1,13 @@
 import { HistoryOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { ProTable, type ActionType, type ProColumns } from '@ant-design/pro-components'
-import { Alert, App, Button, Card, Col, Drawer, Popconfirm, Row, Space, Statistic, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, Col, Drawer, Popconfirm, Radio, Row, Space, Statistic, Tag, Typography } from 'antd'
 import { useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getJobRuns, listJobs, runJob, setJobEnabled } from '../services/admin'
 import type { JobRun, ScheduledJob } from '../types/admin'
 import type { AuthSession } from '../types/site'
 import { shortDate } from '../utils/format'
-import { formatJobDuration, formatJobInterval, jobStatusMeta, jobTypeLabels, summarizeJobs } from '../utils/jobOperations'
+import { filterJobs, formatJobDuration, formatJobInterval, jobHistoryPath, jobNeedsAttention, jobStatusMeta, jobTypeLabels, jobViewFromSearch, summarizeJobs, type JobView } from '../utils/jobOperations'
 import { getAdminOperationsCapabilities } from '../utils/permissions'
 
 function statusTag(status?: string) {
@@ -75,11 +76,25 @@ export function JobsPage({ session }: JobsPageProps) {
   const actionRef = useRef<ActionType>(null)
   const historyActionRef = useRef<ActionType>(null)
   const [jobs, setJobs] = useState<ScheduledJob[]>([])
-  const [selectedJob, setSelectedJob] = useState<ScheduledJob | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const view = jobViewFromSearch(searchParams.toString())
+  const selectedJobId = searchParams.get('job') || ''
+  const selectedJob = jobs.find((job) => job.id === selectedJobId)
   const [runningJobId, setRunningJobId] = useState('')
   const [changingJobId, setChangingJobId] = useState('')
   const { writeJobs } = getAdminOperationsCapabilities(session)
   const summary = summarizeJobs(jobs)
+  const attentionCount = jobs.filter(jobNeedsAttention).length
+  const updateSearch = (name: 'job' | 'view', value: string) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (value) next.set(name, value)
+      else next.delete(name)
+      return next
+    })
+  }
 
   const reload = async (jobId?: string) => {
     await actionRef.current?.reload()
@@ -92,7 +107,9 @@ export function JobsPage({ session }: JobsPageProps) {
     setRunningJobId(job.id)
     try {
       const result = await runJob(job.id)
-      message.success(result.summary || '任务执行完成')
+      if (result.status === 'error') message.error(result.error || result.summary || '任务执行失败')
+      else if (result.status === 'success') message.success(result.summary || '任务执行完成')
+      else message.warning(result.summary || '任务尚未确认成功，请查看运行历史')
       await reload(job.id)
     } catch (error) {
       message.error(error instanceof Error ? error.message : '任务执行失败')
@@ -223,7 +240,7 @@ export function JobsPage({ session }: JobsPageProps) {
           <Button
             size="small"
             icon={<HistoryOutlined />}
-            onClick={() => setSelectedJob(record)}
+            onClick={() => updateSearch('job', record.id)}
           >
             历史
           </Button>
@@ -253,37 +270,47 @@ export function JobsPage({ session }: JobsPageProps) {
           description="你可以查看任务状态和运行历史，但当前角色不能运行、启用或禁用任务。"
         />
       )}
-      {(summary.failed > 0 || summary.interrupted > 0) && (
+      {loadError && <Alert type="error" showIcon message="任务状态加载失败" description={loadError} action={<Button onClick={() => void reload()}>重试</Button>} />}
+      {selectedJobId && loaded && !selectedJob && !loadError && <Alert type="warning" showIcon message="未找到链接指定的任务" description={selectedJobId} action={<Button onClick={() => updateSearch('job', '')}>返回列表</Button>} />}
+      {attentionCount > 0 && (
         <Alert
-          type={summary.failed > 0 ? 'warning' : 'info'}
+          type="warning"
           showIcon
-          message="任务历史包含异常结束记录"
-          description={`失败 ${summary.failed.toLocaleString()} 次，中断 ${summary.interrupted.toLocaleString()} 次。可在对应任务的“历史”中查看时间和错误摘要。`}
+          message={`${attentionCount} 项任务最近执行异常`}
+          description="按各任务最近一次执行结果统计。历史失败后已恢复成功的任务不计入当前异常；进入运行历史可查看原因。"
+          action={<Button onClick={() => updateSearch('view', 'attention')}>查看异常</Button>}
         />
       )}
 
       <Row gutter={[16, 16]}>
-        <Col xs={12} lg={6}><Card><Statistic title="任务数量" value={summary.total} /></Card></Col>
-        <Col xs={12} lg={6}><Card><Statistic title="已启用" value={summary.enabled} /></Card></Col>
-        <Col xs={12} lg={6}><Card><Statistic title="正在运行" value={summary.running} valueStyle={{ color: summary.running ? '#1677ff' : undefined }} /></Card></Col>
-        <Col xs={12} lg={6}><Card><Statistic title="历史异常" value={summary.failed + summary.interrupted} valueStyle={{ color: summary.failed + summary.interrupted ? '#d46b08' : undefined }} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="任务数量" value={loaded && !loadError ? summary.total : '—'} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="已启用" value={loaded && !loadError ? summary.enabled : '—'} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="正在运行" value={loaded && !loadError ? summary.running : '—'} valueStyle={{ color: summary.running ? '#1677ff' : undefined }} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="最近执行异常" value={loaded && !loadError ? attentionCount : '—'} valueStyle={{ color: attentionCount ? '#d46b08' : undefined }} /></Card></Col>
       </Row>
+
+      <Radio.Group value={view} onChange={(event) => updateSearch('view', event.target.value as JobView)} optionType="button" options={[
+        { label: '全部任务', value: 'all' }, { label: '最近异常', value: 'attention' },
+        { label: '运行中', value: 'running' }, { label: '已停用', value: 'disabled' },
+      ]} />
 
       <ProTable<ScheduledJob>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
         search={false}
-        request={async () => {
+        params={{ view }}
+        request={async (params) => {
           try {
-            const data = await listJobs()
+            const data = await listJobs(AbortSignal.timeout(15000))
             setJobs(data)
-            if (selectedJob) {
-              setSelectedJob(data.find((job) => job.id === selectedJob.id) || null)
-            }
-            return { data, success: true, total: data.length }
+            setLoadError('')
+            setLoaded(true)
+            const visible = filterJobs(data, params.view)
+            return { data: visible, success: true, total: visible.length }
           } catch (error) {
-            message.error(error instanceof Error ? error.message : '加载任务失败')
+            setJobs([])
+            setLoadError(error instanceof Error ? error.message : '加载任务失败')
             return { data: [], success: false, total: 0 }
           }
         }}
@@ -300,20 +327,22 @@ export function JobsPage({ session }: JobsPageProps) {
       />
 
       <Drawer
-        title={selectedJob ? `运行历史 · ${selectedJob.name}` : '运行历史'}
+        title="运行历史"
         open={Boolean(selectedJob)}
-        onClose={() => setSelectedJob(null)}
+        onClose={() => updateSearch('job', '')}
         width="min(920px, 100vw)"
         destroyOnHidden
       >
         {selectedJob && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Typography.Title level={4}>{selectedJob.name}</Typography.Title>
+            <Typography.Text code copyable={{ text: `${window.location.origin}${jobHistoryPath(selectedJob.id)}` }}>复制任务详情链接</Typography.Text>
             {(selectedJob.run_counts.error > 0 || selectedJob.run_counts.interrupted > 0) && (
               <Alert
                 type="warning"
                 showIcon
-                message={`失败 ${selectedJob.run_counts.error.toLocaleString()} 次 · 中断 ${selectedJob.run_counts.interrupted.toLocaleString()} 次`}
-                description="中断表示服务进程在任务完成前退出；重启后会自动恢复记录状态，不会永久停留在运行中。"
+                message={`历史失败 ${selectedJob.run_counts.error.toLocaleString()} 次 · 中断 ${selectedJob.run_counts.interrupted.toLocaleString()} 次`}
+                description="中断记录由服务启动时的恢复流程标记，可结合开始时间和结果核对执行情况。"
               />
             )}
             <ProTable<JobRun>

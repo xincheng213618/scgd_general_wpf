@@ -170,7 +170,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             FlowParam flowParam = selectedTemplate.Value;
             if (string.IsNullOrEmpty(flowParam.DataBase64))
             {
-                if (!allowEmptyFlow)
+                if (!allowEmptyFlow && !LocalFlowTemplateStorage.IsLocalId(flowParam.Id))
                 {
                     MessageBox.Show(
                         ColorVision.Engine.Properties.Resources

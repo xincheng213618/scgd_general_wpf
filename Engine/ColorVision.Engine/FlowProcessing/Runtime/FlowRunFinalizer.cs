@@ -324,6 +324,7 @@ namespace ColorVision.Engine.FlowProcessing
                 ? summary
                 : $"{batch.Result}{Environment.NewLine}{summary}";
 
+            if (batch.Id <= 0) return;
             try
             {
                 using var db = new SqlSugarClient(

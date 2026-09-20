@@ -449,7 +449,9 @@ def _update_directory_status(directory: Path, feedback_id: str, status: str) -> 
     state_path = directory / _STATE_NAME
     temporary_path = directory / f"{_STATE_NAME}.{uuid.uuid4().hex}.tmp"
     with _write_lock:
-        previous, _ = _read_json_object(state_path)
+        previous, valid = _read_json_object(state_path)
+        if state_path.exists() and not valid:
+            raise OSError("Unable to read feedback management state")
         previous = previous or {}
         before = previous.get("status")
         if before not in FEEDBACK_STATUSES:
@@ -457,7 +459,7 @@ def _update_directory_status(directory: Path, feedback_id: str, status: str) -> 
         if before == status:
             return {"feedback_id": feedback_id, "changed": False, "before": before,
                     "status": status, "updated_at": _bounded_text(previous.get("updatedAt"), 100) or None}
-        state = {"status": status, "updatedAt": datetime.now(timezone.utc).isoformat()}
+        state = {**previous, "status": status, "updatedAt": datetime.now(timezone.utc).isoformat()}
         encoded = (json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
         try:
             with temporary_path.open("xb") as stream:
@@ -470,6 +472,77 @@ def _update_directory_status(directory: Path, feedback_id: str, status: str) -> 
                 temporary_path.unlink()
     return {"feedback_id": feedback_id, "changed": True, "before": before,
             "status": status, "updated_at": state["updatedAt"]}
+
+
+class FeedbackHandlingConflict(Exception):
+    """The operator edited an older handling revision."""
+
+
+_HANDLING_LIMITS = {"conclusion": 4000, "fixed_version": 100, "verification": 4000}
+
+
+def validate_feedback_handling_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict) or set(payload) != {*_HANDLING_LIMITS, "revision"}:
+        raise ValueError("request body must contain conclusion, fixed_version, verification and revision")
+    if type(payload["revision"]) is not int or payload["revision"] < 0:
+        raise ValueError("revision must be a non-negative integer")
+    result = {"revision": payload["revision"]}
+    for field, maximum in _HANDLING_LIMITS.items():
+        value = payload[field]
+        if not isinstance(value, str) or len(value) > maximum:
+            raise ValueError(f"{field} must be text of at most {maximum} characters")
+        result[field] = value.strip()
+    return result
+
+
+def _handling_state(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    path = directory / _STATE_NAME
+    state, valid = _read_json_object(path)
+    if path.exists() and not valid:
+        raise OSError("Unable to read feedback management state")
+    state = state or {}
+    handling = state.get("handling")
+    if handling is None:
+        handling = {**dict.fromkeys(_HANDLING_LIMITS, ""), "revision": 0,
+                    "updated_at": None, "actor_type": "", "actor_id": "", "history": []}
+    if not isinstance(handling, dict) or type(handling.get("revision")) is not int or not isinstance(handling.get("history"), list):
+        raise OSError("Unable to read feedback handling record")
+    return state, handling
+
+
+def get_feedback_handling(storage: Path, feedback_id: str) -> dict[str, Any]:
+    _, handling = _handling_state(_safe_feedback_directory(storage, feedback_id))
+    return {"feedback_id": feedback_id, **handling}
+
+
+def update_feedback_handling(
+    storage: Path, feedback_id: str, payload: Any, *, actor_type: str, actor_id: str,
+) -> dict[str, Any]:
+    values = validate_feedback_handling_payload(payload)
+    directory = _safe_feedback_directory(storage, feedback_id)
+    with _write_lock:
+        state, previous = _handling_state(directory)
+        if previous["revision"] != values["revision"]:
+            raise FeedbackHandlingConflict()
+        if all(previous.get(field, "") == values[field] for field in _HANDLING_LIMITS):
+            return {"feedback_id": feedback_id, **previous, "changed": False}
+        entry = {**values, "revision": previous["revision"] + 1,
+                 "updated_at": datetime.now(timezone.utc).isoformat(),
+                 "actor_type": actor_type[:100], "actor_id": actor_id[:200]}
+        # Bound the sidecar size; the UI explicitly labels the retained history window.
+        handling = {**entry, "history": [entry, *previous["history"]][:20]}
+        state["handling"] = handling
+        temporary = directory / f"{_STATE_NAME}.{uuid.uuid4().hex}.tmp"
+        try:
+            with temporary.open("xb") as stream:
+                stream.write((json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, directory / _STATE_NAME)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+    return {"feedback_id": feedback_id, **handling, "changed": True}
 
 
 def validate_feedback_bulk_status_payload(payload: Any) -> tuple[list[str], str]:

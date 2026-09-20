@@ -731,7 +731,7 @@ namespace Conoscope
             int previousId = previous?.Id ?? -1;
             string previousKey = previous?.Key ?? string.Empty;
 
-            cbCalibrationTemplate.ItemsSource = camera?.PhyCamera?.CalibrationParams.CreateEmpty();
+            cbCalibrationTemplate.ItemsSource = (camera?.PhyCamera?.CalibrationParams).CreateEmpty();
             TemplateModel<CalibrationParam>? target = cbCalibrationTemplate.Items.OfType<TemplateModel<CalibrationParam>>()
                 .FirstOrDefault(item => item.Id == previousId || string.Equals(item.Key, previousKey, StringComparison.OrdinalIgnoreCase));
 

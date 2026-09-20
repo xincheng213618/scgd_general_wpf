@@ -11,13 +11,22 @@ related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-g
 
 # 设备资源配置、保存与重启
 
-设备配置主要保存到 MySQL 的 `SysResourceModel.Value`，不是主程序通用设置文件。`DeviceService<T>.Save()` 除了写入配置，还请求 RC 重启服务。查询“怎么配置”不授权新增资源、导入覆盖、保存、重置、删除或远端重启；先确认当前任务允许的设备、数据库和外部影响范围。
+MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时，沿用同一套资源字段和窗口，保存到本地 SQLite 配置库。保存本地设备不会请求 RC 重启服务。查询“怎么配置”不授权新增资源、导入覆盖、保存、重置、删除或远端重启；先确认当前任务允许的设备、数据库和外部影响范围。
 
 资源怎样进入列表和主显示区见[Engine 设备装配](../../04-api-reference/engine-components/device-service-chain.md)。本页覆盖通用终端/设备资源，不替代物理相机、客户项目或具体硬件参数契约。
 
 RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连接测试、取消、节点令牌与设备状态的区别见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
 
 设备配置不拥有心跳周期。Camera、Sensor 与 ThirdPartyAlgorithms 的旧手写编辑窗口曾残留 `HeartbeatTime` 绑定，但通用设备配置已不再定义该属性，输入不会进入设备 JSON；界面不再显示这个无效字段。节点与服务保活仍由 RC/Windows 服务协议负责，设备页只配置业务参数，不能用设备配置推断服务心跳周期。
+
+## 无 MySQL 时创建相机与许可证
+
+1. 在管理员服务配置中选择 Camera 类型，创建终端，再在终端下创建设备；操作和字段沿用现有界面。
+2. 在物理相机管理中创建相机，或者扫描后从结果列表创建，并配置 Camera ID、型号、模式及物理相机绑定。
+3. 从许可证管理导入已有许可证。许可证记录保存在本地；同一相机续期仍保留原有物理配置。SDK 需要的 `.lic` 文件继续通过原有导出入口写入程序使用的 `lincense` 目录，原生校验规则不变。
+4. 新建的本地相机默认优先本地连接，打开相机后可在本机拍照；流程可使用现有 MQTT 开始节点连接“相机取图”和结束节点，见[离线执行边界](../workflow/execution.md)。
+
+配置库不保存测试结果或图像，也不自动把远端设备搬到本地。校准模板、算法模板和需要远端服务的硬件功能不因设备配置可离线编辑而自动具备离线执行能力。
 
 ## 资源与配置身份
 
@@ -44,7 +53,7 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 - 默认命名辅助方法会查询资源是否重名，但手工提交的检查路径不同：`CreateType` 检查当前类型的终端 Code，`CreateTerminal` 检查当前已加载设备 Code。不能把界面检查当成跨进程、并发或全部数据库记录的唯一性保证。
 - 数据库插入、构建设备、加入集合和请求远端重启没有统一事务回滚。创建后异常时先定位失败阶段，不能直接重复创建。
 
-**现有实现冲突：** `CreateTerminal.Button_Click` 的创建后重启查询使用 `sysDevModel.Pid` 匹配字典 Value、使用 `sysDevModel.Type` 查资源主键；而通用 `RestartRCService` 使用 Type 匹配字典、Pid 查父资源。前者与本页的字段职责不一致，可能在资源已经插入后查错重启目标或抛异常。这里保留源码冲突供修复定位，不将它写成正确配置规则，也不宣称已经修复或真机复现。
+创建后的服务重启使用终端的服务类型、终端 Code 和新设备 Code；本地设备跳过远端重启，并刷新显示面板。
 
 ## 编辑、保存与远端应用
 
@@ -57,8 +66,8 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 | 阶段 | 代码行为 | 不能据此推断 |
 | --- | --- | --- |
 | 编辑对象 | 控件修改传入 Config；具体窗口决定直接编辑或事务副本 | 关闭一定撤销、字段变化已经落盘 |
-| `SaveConfig()` | 将 Config 的 Code/Name/JSON 写入资源并执行 MySQL Update；返回的影响行数未检查 | 没抛异常就一定更新了目标行 |
-| `RestartRCService()` | 按 Type 查服务类型、按 Pid 查终端 Code，再请求 RC 重启该设备 | 远端已经重启或应用新配置 |
+| `SaveConfig()` | 将 Config 的 Code/Name/JSON 写入该对象所属的配置库 | 没抛异常就一定更新了目标行 |
+| `RestartRCService()` | MySQL 设备按 Type/Pid 查服务与终端并请求 RC 重启；本地设备跳过 | 远端已经重启或应用新配置 |
 | 本地通知 | `OnConfigChanged()`，再发 `ConfigChanged` | 各设备全部对象已经重建或硬件已健康 |
 
 直接 SQL 修改 `t_scgd_sys_resource` 不调用上述保存、重启和通知流程，也不会自动更新已经载入的 Config。已存在的设备对象稍后执行 `SaveConfig()`，还可能把旧 Code/Name/JSON 覆盖回数据库。核验 SQL 修改时应分别确认目标行与实际使用该配置的运行对象；不能把数据库写入成功当成界面刷新或远端生效。

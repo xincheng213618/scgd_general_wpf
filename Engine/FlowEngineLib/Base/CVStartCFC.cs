@@ -7,6 +7,8 @@ namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+    [JsonIgnore]
+    public bool PersistResults { get; set; } = true;
 	private sealed class FlowFinishState
 	{
 		public readonly object Lock = new object();
@@ -57,6 +59,7 @@ public class CVStartCFC : CVBaseCFC
 		: this(startCFC.FlowStatus, startCFC.Data)
 	{
 		StartNode = startCFC.StartNode;
+		PersistResults = startCFC.PersistResults;
 		finishState = startCFC.finishState;
 		RuntimeResources = startCFC.RuntimeResources;
 		StartTime = startCFC.StartTime;

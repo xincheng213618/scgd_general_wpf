@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using System.ComponentModel;
 using System.IO;
@@ -36,16 +37,22 @@ public sealed class TestProfile
     public StandaloneCameraOptions Camera { get; set; } = new();
     public AnalysisSettings Analysis { get; set; } = new();
     public SfrAnalysisOptions Sfr { get; set; } = new();
+    public BmwSfrRoiSettings MeasurementRoi { get; set; } = new();
     public JudgmentRules Judgment { get; set; } = new();
+    public BmwSfrOverlaySettings Display { get; set; } = new();
+    public VideoAnalysisSettings Video { get; set; } = new();
     public List<SearchRegion> Regions { get; set; } = new();
 
     public void Validate()
     {
-        if (SchemaVersion != 1 || Camera == null || Analysis == null || Sfr == null || Judgment == null || Regions == null || Regions.Count > 64)
+        if (SchemaVersion != 1 || Camera == null || Analysis == null || Sfr == null || MeasurementRoi == null || Judgment == null || Display == null || Video == null || Regions == null || Regions.Count > 64)
             throw new ArgumentException("检测配置版本或内容无效；最多支持 64 个搜索区域。");
         Analysis.Validate();
         Sfr.Validate();
+        MeasurementRoi.Validate();
         Judgment.Validate();
+        Display.Validate();
+        Video.Validate();
         if (ImageWidth < 0 || ImageHeight < 0 || Regions.Count != 0 && (ImageWidth == 0 || ImageHeight == 0))
             throw new ArgumentException("搜索区域缺少参考图像尺寸。");
         var ids = new HashSet<string>(StringComparer.Ordinal);

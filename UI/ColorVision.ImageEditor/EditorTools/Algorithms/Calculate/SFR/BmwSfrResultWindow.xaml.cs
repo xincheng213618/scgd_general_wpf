@@ -25,14 +25,34 @@ public partial class BmwSfrResultWindow : Window
     private IReadOnlyList<BmwTargetAnalysis> _results;
     private SfrAnalysisOptions _options;
     private bool _closed, _busy;
+    private int _resultVersion;
+    internal bool IsClosed => _closed;
+    internal BmwSfrOverlaySettings DisplaySettings { get; set; } = new();
+    internal BmwSfrRoiSettings MeasurementRoi { get; set; } = new();
     private double _frequency = .25;
+    private string _displayChannel = "L";
+    internal event Action<IReadOnlyList<BmwTargetAnalysis>, SfrAnalysisOptions, string>? DisplayUpdated;
+    internal string DisplayChannel
+    {
+        get => _displayChannel;
+        set
+        {
+            if (!BmwSfrPresentation.ChannelNames.Contains(value)) throw new ArgumentException("回显通道必须为 L、R、G 或 B。",nameof(value));
+            if (_displayChannel == value) return;
+            _displayChannel = value;
+            DisplayChannelSelector.SelectedValue = value;
+            RefreshResults();
+            DisplayUpdated?.Invoke(_results,_options,_displayChannel);
+        }
+    }
     private readonly ThemeManager _themeManager = ThemeManager.Current;
-    internal sealed record EdgeRow(BmwTargetAnalysis Target, BmwEdgeAnalysis Edge)
+    internal sealed record EdgeRow(BmwTargetAnalysis Target, BmwEdgeAnalysis Edge, string DisplayChannel)
     {
         public string TargetId => Target.Id;
         public string EdgeName => BmwSfrPresentation.EdgeName(Edge.Id);
-        public string L50 => BmwSfrPresentation.Number(BmwSfrPresentation.Mtf50(Edge,"L"));
-        public string State => BmwSfrPresentation.State(Edge);
+        public string Mtf50 => BmwSfrPresentation.Number(BmwSfrPresentation.Mtf50(Edge,DisplayChannel));
+        public string State => BmwSfrPresentation.Channel(Edge,DisplayChannel) is { Valid:true } channel ? channel.Mtf50.HasValue ? "可计算" : "未交叉" : "INVALID";
+        public string StateDetail => BmwSfrPresentation.ChannelState(Edge,DisplayChannel);
     }
     private EdgeRow? Selected => ResultsGrid.SelectedItem as EdgeRow;
     public BmwSfrResultWindow(ImageFrameLease lease, IReadOnlyList<BmwTargetAnalysis> results, SfrAnalysisOptions options,
@@ -48,11 +68,26 @@ public partial class BmwSfrResultWindow : Window
         Closed += (_, _) => { _closed = true; _themeManager.CurrentUIThemeChanged -= OnThemeChanged; if (!_busy) _lease.Dispose(); };
         RefreshResults();
     }
+    internal void UpdateTarget(BmwTargetAnalysis target)
+    {
+        if(_closed || !_results.Any(t=>t.Id==target.Id && !ReferenceEquals(t,target)))return;
+        _results=_results.Select(t=>t.Id==target.Id?target:t).ToArray();
+        _resultVersion++;
+        RefreshResults();
+    }
+    internal void SelectEdge(string targetId,BmwEdgeId edgeId)
+    {
+        if(_closed)return;
+        var row=ResultsGrid.Items.OfType<EdgeRow>().FirstOrDefault(r=>r.TargetId==targetId && r.Edge.Id==edgeId);
+        if(row==null)return;
+        ResultsGrid.SelectedItem=row; ResultsGrid.ScrollIntoView(row);
+    }
     private void RefreshResults()
     {
         string? selectedId = Selected?.TargetId;
         BmwEdgeId? selectedEdge = Selected?.Edge.Id;
-        var rows = _results.SelectMany(target => target.Edges.Select(edge => new EdgeRow(target,edge))).ToArray();
+        var rows = _results.SelectMany(target => target.Edges.Select(edge => new EdgeRow(target,edge,DisplayChannel))).ToArray();
+        SummaryMetricColumn.Header = $"{DisplayChannel} MTF50";
         ResultsGrid.ItemsSource = rows;
         ResultsGrid.SelectedItem = rows.FirstOrDefault(r=>r.TargetId==selectedId && r.Edge.Id==selectedEdge) ?? rows.FirstOrDefault();
         SourceText.Text = $"{_lease.Image.cols} × {_lease.Image.rows} 原始像素 · {_lease.Image.depth} bit · 快照 {_capturedAt:HH:mm:ss}";
@@ -63,11 +98,15 @@ public partial class BmwSfrResultWindow : Window
         ShowSelected();
     }
     private void Edge_Changed(object sender, SelectionChangedEventArgs e) { if (IsInitialized) ShowSelected(); }
+    private void DisplayChannel_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (IsInitialized && DisplayChannelSelector.SelectedValue is string channel) DisplayChannel = channel;
+    }
     private void ShowSelected()
     {
         if (Selected is not { } row || Plot == null) return;
         SelectionText.Text = $"{row.TargetId} · {row.EdgeName}边";
-        Mtf50Text.Text = $"L MTF50  {row.L50} cy/px";
+        Mtf50Text.Text = $"{DisplayChannel} MTF50  {row.Mtf50} cy/px";
         EditRoiButton.IsEnabled = !_busy && row.Target.Located && row.Edge.Roi.Width > 0;
         RenderPreview(row);
         RenderMetrics(row.Edge);
@@ -112,21 +151,22 @@ public partial class BmwSfrResultWindow : Window
             foreach(var edge in row.Target.Edges.Where(e=>!edgeOnly && e.Roi.Width>0))
             {
                 double scale=Math.Max(1,roi.Width/300.0);
-                var rect=new Rectangle { Width=edge.Roi.Width,Height=edge.Roi.Height,Stroke=edge.Id==row.Edge.Id?Brushes.Yellow:Brushes.Cyan,StrokeThickness=(edge.Id==row.Edge.Id?2:1)*scale };
+                var rect=new Rectangle { Width=edge.Roi.Width,Height=edge.Roi.Height,Stroke=Brushes.Red,StrokeThickness=(edge.Id==row.Edge.Id?2:1)*scale };
                 Canvas.SetLeft(rect,edge.Roi.X-roi.X); Canvas.SetTop(rect,edge.Roi.Y-roi.Y); PreviewCanvas.Children.Add(rect);
             }
         }
-        if(valid && edgeOnly && BmwSfrPresentation.Channel(row.Edge,"L") is { FitAvailable:true } channel)
+        if(valid && edgeOnly && BmwSfrPresentation.Channel(row.Edge,DisplayChannel) is { FitAvailable:true } channel)
         {
             double height=channel.Rotated?roi.Width:roi.Height;
             double x0=channel.EdgeIntercept,x1=x0+channel.EdgeSlope*(height-1);
-            var fit=new Line { Stroke=Brushes.OrangeRed,StrokeThickness=Math.Max(.7,Math.Max(roi.Width,roi.Height)/200.0) };
+            var fit=new Line { Stroke=Brushes.OrangeRed,StrokeDashArray=new DoubleCollection { 4, 3 },StrokeThickness=Math.Max(.7,Math.Max(roi.Width,roi.Height)/200.0) };
             if(channel.Rotated) { fit.X1=roi.Width-1; fit.Y1=x0; fit.X2=0; fit.Y2=x1; }
             else { fit.X1=x0; fit.Y1=0; fit.X2=x1; fit.Y2=height-1; }
             PreviewCanvas.Children.Add(fit);
         }
+        var search=row.Target.SearchRoi;
         var r=row.Edge.Roi;
-        RoiText.Text=$"搜索框 ({roi.X}, {roi.Y}, {roi.Width}, {roi.Height})\n{row.EdgeName}边 ({r.X}, {r.Y}, {r.Width}, {r.Height}) 原图像素\n{(row.Target.Located?edgeOnly?"橙色为 L 边缘拟合；测量不缩放原图。":"黄色为当前边；测量不缩放原图。":BmwSfrPresentation.Reason(row.Target.Reason))}";
+        RoiText.Text=$"搜索框 ({search.X}, {search.Y}, {search.Width}, {search.Height})\n{row.EdgeName}边 ({r.X}, {r.Y}, {r.Width}, {r.Height}) 原图像素\n{(row.Target.Located?edgeOnly?$"橙色为 {DisplayChannel} 边缘拟合；测量不缩放原图。":"粗红框为当前边；测量不缩放原图。":BmwSfrPresentation.Reason(row.Target.Reason))}";
     }
     private void Preview_Changed(object sender,RoutedEventArgs e) { if(Selected is { } row) RenderPreview(row); }
     private void View_Changed(object sender,RoutedEventArgs e) { if(IsInitialized) RenderPlot(); }
@@ -150,6 +190,31 @@ public partial class BmwSfrResultWindow : Window
         if(!double.TryParse(FrequencyInput.Text,out double value)||!double.IsFinite(value)||value<0||value>.5) { QueryError.Text="频率范围为 0..0.5"; return; }
         _frequency=value; QueryError.Text=""; if(Selected is { } row) RenderMetrics(row.Edge);
     }
+    private async void DisplaySettings_Click(object sender,RoutedEventArgs e)
+    {
+        if(_busy || _closed)return;
+        var next=new BmwSfrViewSettings { Display=DisplaySettings.Copy(),MeasurementRoi=MeasurementRoi with { } };
+        bool submitted=false;
+        var dialog=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="BMW 测量与显示",Width=820,Height=680,WindowStartupLocation=WindowStartupLocation.CenterOwner };
+        dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
+        try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,"设置无效"); return; }
+        DisplaySettings=next.Display;
+        DisplayUpdated?.Invoke(_results,_options,DisplayChannel);
+        if(next.MeasurementRoi==MeasurementRoi)return;
+        _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
+        int version=_resultVersion;
+        var regions=_results.Select(t=>new BmwSearchRegion(t.Id,t.SearchRoi)).ToArray();
+        SummaryText.Text="正在按四边测量框设置重新定位与计算…";
+        try
+        {
+            var results=await Task.Run(()=>BmwSfrAnalyzer.Analyze(_lease.Image,regions,_options,next.MeasurementRoi));
+            if(_closed || version!=_resultVersion)return;
+            _resultVersion++; _results=results; MeasurementRoi=next.MeasurementRoi;
+            RefreshResults(); _updated?.Invoke(_results,_options); DisplayUpdated?.Invoke(_results,_options,DisplayChannel);
+        }
+        catch(Exception ex) { if(!_closed)SummaryText.Text=ex.Message; }
+        finally { _busy=false; if(_closed)_lease.Dispose(); else { SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=true; EditRoiButton.IsEnabled=Selected?.Target.Located==true; } }
+    }
     private async void Settings_Click(object sender,RoutedEventArgs e)
     {
         if(_busy)return;
@@ -157,16 +222,18 @@ public partial class BmwSfrResultWindow : Window
         var editor=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="BMW SFR 测量质量参数" };
         editor.Submitted+=(_,_)=>submitted=true; editor.ShowDialog(); if(!submitted)return;
         try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,"参数无效"); return; }
-        _busy=true; SettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
+        _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
         SummaryText.Text="正在重新分析固定图像快照…";
+        int version=_resultVersion;
+        var currentResults=_results;
         try
         {
-            var results=await Task.Run(()=>Reanalyze(_lease.Image,_results,next));
-            if(_closed)return;
-            _results=results; _options=next; RefreshResults(); _updated?.Invoke(_results,_options);
+            var results=await Task.Run(()=>Reanalyze(_lease.Image,currentResults,next));
+            if(_closed || version!=_resultVersion)return;
+            _resultVersion++; _results=results; _options=next; RefreshResults(); _updated?.Invoke(_results,_options); DisplayUpdated?.Invoke(_results,_options,DisplayChannel);
         }
         catch(Exception ex) { if(!_closed)SummaryText.Text=ex.Message; }
-        finally { _busy=false; if(_closed)_lease.Dispose(); else { SettingsButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=true; EditRoiButton.IsEnabled=Selected?.Target.Located==true; }; }
+        finally { _busy=false; if(_closed)_lease.Dispose(); else { SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=true; EditRoiButton.IsEnabled=Selected?.Target.Located==true; }; }
     }
     internal sealed class EdgeRoiSettings
     {
@@ -198,22 +265,24 @@ public partial class BmwSfrResultWindow : Window
         var dialog=new PropertyEditorWindow(edit,PropertyEditorEditMode.Transactional) { Owner=this,Title=$"{row.TargetId} · {row.EdgeName}边 SFR 矩形" };
         bool submitted=false; dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
         if(!IsInside(edit.ToRoi(),row.Target.SearchRoi)) { MessageBox.Show(this,"测量框必须完整位于当前搜索外框内，宽高须大于零。","矩形范围无效"); return; }
-        _busy=true; SettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
+        _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
+        int version=_resultVersion;
         try
         {
             var updated=await Task.Run(()=>AnalyzeEdge(_lease.Image,row.Edge with { Roi=edit.ToRoi() },_options));
-            if(_closed)return;
+            if(_closed || version!=_resultVersion)return;
+            _resultVersion++;
             _results=_results.Select(t=>t.Id==row.TargetId?t with { Edges=t.Edges.Select(edge=>edge.Id==updated.Id?updated:edge).ToArray() }:t).ToArray();
-            RefreshResults(); _updated?.Invoke(_results,_options);
+            RefreshResults(); _updated?.Invoke(_results,_options); DisplayUpdated?.Invoke(_results,_options,DisplayChannel);
         }
         catch(Exception ex) { if(!_closed)SummaryText.Text=ex.Message; }
-        finally { _busy=false; if(_closed)_lease.Dispose(); else { SettingsButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=true; EditRoiButton.IsEnabled=Selected?.Target.Located==true; } }
+        finally { _busy=false; if(_closed)_lease.Dispose(); else { SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=true; EditRoiButton.IsEnabled=Selected?.Target.Located==true; } }
     }
     private void ExportJson_Click(object sender,RoutedEventArgs e)
     {
         var dialog=new SaveFileDialog { Filter="完整 BMW 测量 (*.json)|*.json",FileName=$"BMW_SFR_{_capturedAt:yyyyMMdd_HHmmss}.json" };
         if(dialog.ShowDialog(this)!=true)return;
-        try { File.WriteAllText(dialog.FileName,JsonSerializer.Serialize(new { capturedAt=_capturedAt,sourceWidth=_lease.Image.cols,sourceHeight=_lease.Image.rows,sourceRevision=_lease.Revision,options=_options,targetFrequency=_frequency,results=_results },new JsonSerializerOptions { WriteIndented=true,IncludeFields=true })); }
+        try { File.WriteAllText(dialog.FileName,JsonSerializer.Serialize(new { capturedAt=_capturedAt,sourceWidth=_lease.Image.cols,sourceHeight=_lease.Image.rows,sourceRevision=_lease.Revision,options=_options,measurementRoi=MeasurementRoi,displayChannel=DisplayChannel,targetFrequency=_frequency,results=_results },new JsonSerializerOptions { WriteIndented=true,IncludeFields=true })); }
         catch(Exception ex) { MessageBox.Show(this,ex.Message,"导出失败"); }
     }
     private void ExportCsv_Click(object sender,RoutedEventArgs e)

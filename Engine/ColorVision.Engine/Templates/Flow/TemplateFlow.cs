@@ -39,8 +39,19 @@ namespace ColorVision.Engine.Templates.Flow
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
 
-        public TemplateFlow()
+        private readonly LocalFlowTemplateStorage localStorage;
+        private readonly Func<bool> isMySqlConnected;
+        private readonly Func<SqlSugarClient> openMySql;
+        private bool localReadMode;
+        private bool UseLocalStorage => localReadMode || !isMySqlConnected();
+
+        public TemplateFlow() : this(LocalFlowTemplateStorage.Default) { }
+
+        public TemplateFlow(LocalFlowTemplateStorage localStorage, Func<bool>? isMySqlConnected = null, Func<SqlSugarClient>? openMySql = null)
         {
+            this.localStorage = localStorage;
+            this.isMySqlConnected = isMySqlConnected ?? (() => MySqlSetting.IsConnect);
+            this.openMySql = openMySql ?? (() => new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }));
             IsSideHide = true;
             Title = ColorVision.Engine.Properties.Resources.WorkflowEngineTemplateManagement;
             Code = "flow";
@@ -58,49 +69,65 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Load()
         {
-            
-            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.IsConnect)
+            IReadOnlyList<FlowParam> values;
+            localReadMode = !isMySqlConnected();
+            if (!localReadMode)
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
-                foreach (var dbModel in flows)
+                try { values = LoadMySql(); }
+                catch (Exception ex)
                 {
-                    var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
-                        .Select(it => new ModDetailModel
-                        {
-                            SysPid = it.SysPid,
-                            Pid = it.Pid,
-                            ValueA = it.ValueA,
-                            ValueB = it.ValueB,
-                            IsEnable = it.IsEnable,
-                            IsDelete = it.IsDelete,
-                            Value = SqlFunc.Subqueryable<SysResourceModel>()
-                                .Where(r => r.Id == SqlFunc.ToInt32(it.ValueA))
-                                .Select(r => r.Value)     
-                        })
-                        .ToList();
-
-
-
-                    var param = new FlowParam(dbModel, details);
-                    AssignRuntimeIdentity(Db, param, details);
-                    TryAttachCatalogRevision(param);
-
-                    if (backup.TryGetValue(param.Id, out var model))
-                    {
-                        model.Value = param;
-                        model.Key = param.Name;
-
-                    }
-                    else
-                    {
-                        var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", param);
-                        TemplateParams.Add(item);
-                    }
+                    log.Warn("MySQL flow templates unavailable; using local flow templates.", ex);
+                    localReadMode = true;
+                    values = localStorage.Load();
                 }
             }
+            else values = localStorage.Load();
+
+            var ids = values.Select(value => value.Id).ToHashSet();
+            foreach (var removed in TemplateParams.Where(item => !ids.Contains(item.Id)).ToList()) TemplateParams.Remove(removed);
+            for (int index = 0; index < values.Count; index++)
+            {
+                FlowParam value = values[index];
+                TryAttachCatalogRevision(value);
+                var existing = TemplateParams.FirstOrDefault(item => item.Id == value.Id);
+                if (existing == null) TemplateParams.Insert(index, new TemplateModel<FlowParam>(value.Name, value));
+                else
+                {
+                    existing.Value = value;
+                    existing.Key = value.Name;
+                    TemplateParams.Move(TemplateParams.IndexOf(existing), index);
+                }
+            }
+            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? " · 本地" : " · MySQL");
             SaveIndex.Clear();
+        }
+
+        private IReadOnlyList<FlowParam> LoadMySql()
+        {
+            using var Db = openMySql();
+            List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).OrderBy(x => x.Id).ToList();
+            var values = new List<FlowParam>();
+            foreach (var dbModel in flows)
+            {
+                var details = Db.Queryable<ModDetailModel>().Where(x => x.Pid == dbModel.Id)
+                    .Select(it => new ModDetailModel
+                    {
+                        SysPid = it.SysPid,
+                        Pid = it.Pid,
+                        ValueA = it.ValueA,
+                        ValueB = it.ValueB,
+                        IsEnable = it.IsEnable,
+                        IsDelete = it.IsDelete,
+                        Value = SqlFunc.Subqueryable<SysResourceModel>()
+                            .Where(r => r.Id == SqlFunc.ToInt32(it.ValueA))
+                            .Select(r => r.Value)
+                    })
+                    .ToList();
+                var param = new FlowParam(dbModel, details);
+                AssignRuntimeIdentity(Db, param, details);
+                values.Add(param);
+            }
+            return values;
         }
 
         public override void Delete(int index)
@@ -110,6 +137,13 @@ namespace ColorVision.Engine.Templates.Flow
 
             void DeleteSingle(int id)
             {
+                if (LocalFlowTemplateStorage.IsLocalId(id))
+                {
+                    var value = TemplateParams.First(item => item.Id == id).Value;
+                    (value.LocalStorage ?? localStorage).Delete(id);
+                    return;
+                }
+                if (!isMySqlConnected()) throw new InvalidOperationException("MySQL 未连接，不能删除服务器流程。");
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
@@ -150,13 +184,23 @@ namespace ColorVision.Engine.Templates.Flow
                     Save2DB(item.Value);
                 }
             }
+            SaveIndex.Clear();
         }
+
+        public override void Save(TemplateModel<FlowParam> item) => Save2DB(item.Value);
 
         public static void Save2DB(
             FlowParam flowParam,
             FlowTemplateSaveCondition? condition = null)
         {
             ArgumentNullException.ThrowIfNull(flowParam);
+            if (LocalFlowTemplateStorage.IsLocalId(flowParam.Id))
+            {
+                (flowParam.LocalStorage ?? LocalFlowTemplateStorage.Default).Save(flowParam, condition);
+                TryRecordCatalogRevision(flowParam);
+                return;
+            }
+            if (!MySqlSetting.IsConnect) throw new InvalidOperationException("MySQL 未连接，服务器流程尚未保存。请连接数据库后重试。");
             string? expectedContentHash =
                 ResolveExpectedContentHash(flowParam, condition);
             log.Info($"Save2DB: 开始保存, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}, DataBase64长度={flowParam.DataBase64?.Length ?? 0}");
@@ -288,8 +332,9 @@ namespace ColorVision.Engine.Templates.Flow
             if (selectedCount <= 1)
             {
                 using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                sfd.DefaultExt = "cvflow";
-                sfd.Filter = ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
+                bool isLocal = LocalFlowTemplateStorage.IsLocalId(TemplateParams[index].Id);
+                sfd.DefaultExt = isLocal ? "stn" : "cvflow";
+                sfd.Filter = isLocal ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ExportFlowFilter;
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
                 sfd.Title = ColorVision.Engine.Properties.Resources.Flow_ExportFlow;
@@ -355,7 +400,7 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            ofd.Filter = ColorVision.Engine.Properties.Resources.Flow_ImportFlowFilter;
+            ofd.Filter = UseLocalStorage ? "STN files (*.stn)|*.stn" : ColorVision.Engine.Properties.Resources.Flow_ImportFlowFilter;
             ofd.Title = ColorVision.Engine.Properties.Resources.ImportFlow;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
@@ -365,6 +410,15 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool ImportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
+            if (UseLocalStorage && filePath.EndsWith(".stn", StringComparison.OrdinalIgnoreCase))
+            {
+                byte[] bytes = File.ReadAllBytes(filePath);
+                FlowPackageStnValidator.ValidateAndDecompress(bytes);
+                ImportName = Path.GetFileNameWithoutExtension(filePath);
+                ImportTemp = new FlowParam { Id = -1, DataBase64 = Convert.ToBase64String(bytes) };
+                return true;
+            }
+            if (UseLocalStorage) throw new NotSupportedException("本地流程目前支持导入 .stn 画布，关联模板包仍需在服务模式下导入。");
 
             try
             {
@@ -471,6 +525,11 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (index > -1 && index < TemplateParams.Count)
             {
+                if (LocalFlowTemplateStorage.IsLocalId(TemplateParams[index].Id))
+                {
+                    ImportTemp = new FlowParam { Id = -1, DataBase64 = TemplateParams[index].Value.DataBase64 };
+                    return true;
+                }
                 string fileContent = TemplateParams[index].Value.ToJsonN();
                 ImportTemp = JsonConvert.DeserializeObject<FlowParam>(fileContent);
                 if (ImportTemp != null)
@@ -484,6 +543,15 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Create(string templateName)
         {
+            if (UseLocalStorage)
+            {
+                var local = new FlowParam { Id = -1, Name = templateName, DataBase64 = ImportTemp?.DataBase64 ?? string.Empty };
+                localStorage.Save(local);
+                TemplateParams.Add(new TemplateModel<FlowParam>(templateName, local));
+                ImportTemp = null;
+                TryRecordCatalogRevision(local);
+                return;
+            }
             FlowParam? param = AddFlowParam(templateName);
             if (param != null)
             {
@@ -503,6 +571,12 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
+            if (UseLocalStorage)
+            {
+                var local = new FlowParam { Id = -1, Name = templateName };
+                localStorage.Save(local);
+                return local;
+            }
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             FlowParam? created = null;
             Db.Ado.BeginTran();
@@ -586,6 +660,25 @@ namespace ColorVision.Engine.Templates.Flow
             return created;
         }
 
+        public override object CreateDefault() => UseLocalStorage
+            ? CreateTemp = new FlowParam { Id = -1 }
+            : base.CreateDefault();
+
+        public override bool SwapTemplateOrder(int index1, int index2)
+        {
+            if (index1 < 0 || index1 >= Count || index2 < 0 || index2 >= Count) return false;
+            var first = TemplateParams[index1];
+            var second = TemplateParams[index2];
+            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) && !LocalFlowTemplateStorage.IsLocalId(second.Id))
+                return base.SwapTemplateOrder(index1, index2);
+            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) || !LocalFlowTemplateStorage.IsLocalId(second.Id)) return false;
+            if (index1 == index2) return true;
+            (first.Value.LocalStorage ?? localStorage).SwapOrder(first.Id, second.Id);
+            TemplateParams[index1] = second;
+            TemplateParams[index2] = first;
+            return true;
+        }
+
         private static void TryRecordCatalogRevision(FlowParam flowParam)
         {
             if (string.IsNullOrWhiteSpace(flowParam.FlowKey)
@@ -624,7 +717,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             catch (Exception ex)
             {
-                // The MySQL/STN save is the compatibility contract. A local
+                // The template/STN save is the persistence contract. A local
                 // catalog failure must not turn a valid save into a false
                 // failure.
                 flowParam.TemplateRevision = null;

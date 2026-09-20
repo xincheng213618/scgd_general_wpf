@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib;
@@ -77,6 +77,7 @@ namespace ColorVision.Engine.FlowProcessing
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
         private static readonly TimeSpan StartReadyTimeout = TimeSpan.FromSeconds(5);
         private FlowEngineControl flowEngine;
+        public bool PersistResults { get; set; } = true;
         private readonly Func<List<MQTTServiceInfo>> serviceTokensProvider;
         private readonly object lifecycleLock = new object();
         private readonly Dispatcher? uiDispatcher;
@@ -207,6 +208,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowRuntimeActivityRegistry.MarkStarted(this, sn);
                 try
                 {
+                    flowEngine.PersistResults = PersistResults;
                     if (!flowEngine.TryStartNode(startNodeName, sn, tol))
                     {
                         FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);

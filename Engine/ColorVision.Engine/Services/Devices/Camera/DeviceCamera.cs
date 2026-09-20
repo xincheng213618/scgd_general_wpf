@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822,CA1863,CS8602
+#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            CameraBackend = new CameraBackendState(DisplayConfig.UseLocalCamera);
+            CameraBackend = new CameraBackendState(SysResourceDao.IsLocalId(sysResourceModel.Id) || DisplayConfig.UseLocalCamera);
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);

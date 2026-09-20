@@ -32,7 +32,7 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 ## 发现和加载是两个阶段
 
-`TemplateInitializer.Order = 4`，初始化时经 UI Dispatcher 获取 `TemplateControl`。控制器首次构造调用 `Init`，并订阅 MySQL 连接变化，在 Dispatcher 上再次调用 `Init`；未连接时直接返回。
+`TemplateInitializer.Order = 4`，初始化时经 UI Dispatcher 获取 `TemplateControl`。控制器首次构造调用 `Init`，并订阅 MySQL 连接变化，在 Dispatcher 上再次调用 `Init`；未连接时只加载支持 SQLite 的本地流程，不构造其它依赖 MySQL 的模板加载器。POI 的本地加载仍由其管理器和 ImageView 入口负责。
 
 连接可用后，`AssemblyHandler.LoadImplementations<IITemplateLoad>()` 从程序集/类型缓存发现可实例化类型，要求具体类和公开无参构造；每次调用创建实例，构造失败记日志并跳过。控制器逐个调用 `Load()`，单个加载异常记日志后继续其它加载器。因此“初始化完成”日志不代表每个模板都成功，实例构造已注册也不代表参数已加载。
 

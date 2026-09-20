@@ -227,6 +227,44 @@ class OperationsAdminTests(unittest.TestCase):
         self.assertEqual(too_many.status_code, 400)
         self.assertEqual(invalid.status_code, 400)
 
+    def test_host_filter_scopes_counts_and_all_lists_before_limits(self):
+        now = datetime.now(timezone.utc)
+        db = marketplace_app._cache.get_db()
+        try:
+            db.execute("UPDATE operations_tasks SET host_id='host-stale' WHERE task_id='task-failed'")
+            for task_id, expires in (("stale-expired", now - timedelta(minutes=2)), ("stale-pending", now + timedelta(minutes=5))):
+                db.execute(
+                    """INSERT INTO operations_tasks
+                       (task_id, host_id, capability_id, payload, status, idempotency_key, created_by, created_at, expires_at)
+                       VALUES (?, 'host-stale', 'ops.status.read', '{}', 'queued', ?, '1', ?, ?)""",
+                    (task_id, task_id, (now - timedelta(minutes=4)).isoformat(), expires.isoformat()),
+                )
+            db.commit()
+        finally:
+            db.close()
+        unfiltered = self.client.get("/api/admin/operations/overview?hostLimit=1&activityLimit=1", headers=self._auth()).get_json()
+        self.assertEqual(unfiltered["hosts"][0]["hostId"], "host-online")
+        self.assertEqual(unfiltered["summary"]["pendingTasks"], 2)
+        response = self.client.get("/api/admin/operations/overview?hostId=host-stale&hostLimit=1&activityLimit=1", headers=self._auth())
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result["hostId"], "host-stale")
+        self.assertEqual(result["summary"], {
+            "totalHosts": 1, "onlineHosts": 0, "staleHosts": 1,
+            "totalTasks": 3, "pendingTasks": 1, "failedTasks": 1, "deviceTasks": 0,
+            "activeSupportSessions": 0, "signedRelayHosts": 0,
+            "totalRelayDevices": 1, "activeRelayDevices": 0, "revokedRelayDevices": 1,
+        })
+        for name in ("hosts", "relayDevices", "recentTasks", "supportSessions"):
+            self.assertEqual(len(result[name]), 1, name)
+            self.assertEqual(result[name][0]["hostId"], "host-stale", name)
+        self.assertNotIn("private-", json.dumps(result))
+
+    def test_host_filter_rejects_invalid_or_unknown_identifiers(self):
+        for host_id in ("", "x" * 129, "bad\x00id"):
+            self.assertEqual(self.client.get("/api/admin/operations/overview", query_string={"hostId": host_id}, headers=self._auth()).status_code, 400)
+        self.assertEqual(self.client.get("/api/admin/operations/overview?hostId=unknown", headers=self._auth()).status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -67,9 +67,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 throw new FileNotFoundException(string.Format(Properties.Resources.LocalImage_FileNotFound, fileUrl), fileUrl);
 
             string batchName = action.SerialNumber;
-            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(batchName))
-                ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
-            if (batch.Id <= 0)
+            MeasureBatchModel batch = action.PersistResults ? FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(batchName))
+                ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName))
+                : new MeasureBatchModel();
+            if (action.PersistResults && batch.Id <= 0)
                 throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
 
             LocalFlowFrame? frame = null;
@@ -77,8 +78,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 frame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(fileUrl));
                 MeasureResultImgModel model = FlowNodeTiming.Run("BuildImageResult", () => BuildMeasureResultImgModel(batch.Id, fileUrl));
-                int masterId = FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
-                if (masterId <= 0)
+                int masterId = action.PersistResults ? FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model)) : 0;
+                if (action.PersistResults && masterId <= 0)
                     throw new InvalidOperationException(string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
                 model.Id = masterId;
 
@@ -87,7 +88,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFlowFrame currentFrame = frame;
                 frame = null;
                 action.MasterValue(null, masterId, LocalImageMasterResultType);
-                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
+                if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalImageResultData

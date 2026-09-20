@@ -19,6 +19,8 @@ import type {
   DocsStatus,
   DeploymentHistoryResponse,
   FeedbackDetail,
+  FeedbackHandling,
+  FeedbackHandlingValues,
   FeedbackBulkStatusResponse,
   FeedbackInboxFilter,
   FeedbackInboxResponse,
@@ -65,8 +67,8 @@ import {
 } from '../utils/loginSecurity'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
-export function getAdminStats() {
-  return getJson<AdminStats>('/api/admin/stats/overview')
+export function getAdminStats(signal?: AbortSignal) {
+  return getJson<AdminStats>('/api/admin/stats/overview', signal)
 }
 
 export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {
@@ -78,23 +80,25 @@ export function getPerformanceSummary(signal?: AbortSignal) {
   return getJson<PerformanceSummary>('/api/admin/perf/summary', signal)
 }
 
-export function getOperationsOverview(signal?: AbortSignal) {
+export function getOperationsOverview(signal?: AbortSignal, params: { hostLimit?: number; activityLimit?: number; hostId?: string } = {}) {
+  const search = new URLSearchParams({ hostLimit: String(params.hostLimit ?? 100), activityLimit: String(params.activityLimit ?? 100) })
+  if (params.hostId) search.set('hostId', params.hostId)
   return getJson<OperationsOverview>(
-    '/api/admin/operations/overview?hostLimit=100&activityLimit=100',
+    `/api/admin/operations/overview?${search}`,
     signal,
   )
 }
 
-export function getCacheStatus() {
-  return getJson<CacheStatus>('/api/admin/cache/status')
+export function getCacheStatus(signal?: AbortSignal) {
+  return getJson<CacheStatus>('/api/admin/cache/status', signal)
 }
 
-export function getIndexStatus() {
-  return getJson<IndexStatusResponse>('/api/admin/index/status')
+export function getIndexStatus(signal?: AbortSignal) {
+  return getJson<IndexStatusResponse>('/api/admin/index/status', signal)
 }
 
-export function getDocsStatus() {
-  return getJson<DocsStatus>('/api/admin/docs/status')
+export function getDocsStatus(signal?: AbortSignal) {
+  return getJson<DocsStatus>('/api/admin/docs/status', signal)
 }
 
 export function getPublishIntegrity(signal?: AbortSignal) {
@@ -125,8 +129,8 @@ export function cleanupCache() {
   return postJson<{ deleted_count: number }>('/api/admin/cache/cleanup')
 }
 
-export function listDatabaseBackups() {
-  return getJson<DatabaseBackupInventory>('/api/admin/backup/db')
+export function listDatabaseBackups(signal?: AbortSignal) {
+  return getJson<DatabaseBackupInventory>('/api/admin/backup/db', signal)
 }
 
 export function backupDatabase() {
@@ -149,8 +153,8 @@ export function updateAccountSettings(values: AccountSettingsValues) {
   return putJson<AccountSettingsUpdateResponse>('/api/admin/settings/accounts', values)
 }
 
-export function listJobs() {
-  return getJson<ScheduledJob[]>('/api/admin/jobs')
+export function listJobs(signal?: AbortSignal) {
+  return getJson<ScheduledJob[]>('/api/admin/jobs', signal)
 }
 
 export function runJob(jobId: string) {
@@ -230,7 +234,7 @@ export function getDeploymentHistory(params: {
   status?: string
   source?: string
   commit?: string
-}) {
+}, signal?: AbortSignal) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
   const search = new URLSearchParams()
@@ -239,12 +243,12 @@ export function getDeploymentHistory(params: {
   if (params.status) search.set('status', params.status)
   if (params.source) search.set('source', params.source)
   if (params.commit) search.set('commit', params.commit)
-  return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`)
+  return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`, signal)
 }
 
-export function listUsers(params: UserListParams = {}) {
+export function listUsers(params: UserListParams = {}, signal?: AbortSignal) {
   const search = buildUserListSearchParams(params)
-  return getJson<UserAccountPage>(`/api/admin/users?${search.toString()}`)
+  return getJson<UserAccountPage>(`/api/admin/users?${search.toString()}`, signal)
 }
 
 export function getUserDetails(
@@ -320,6 +324,16 @@ export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus)
     { status },
     AbortSignal.timeout(20000),
   )
+}
+
+export function getFeedbackHandling(feedbackId: string, signal?: AbortSignal) {
+  return getJson<FeedbackHandling>(`/api/admin/feedback/${encodeURIComponent(feedbackId)}/handling`, signal)
+}
+
+export function saveFeedbackHandling(feedbackId: string, values: FeedbackHandlingValues, revision: number) {
+  return putJson<FeedbackHandling>(`/api/admin/feedback/${encodeURIComponent(feedbackId)}/handling`, {
+    ...values, revision,
+  }, AbortSignal.timeout(20000))
 }
 
 export function updateFeedbackStatuses(feedbackIds: string[], status: FeedbackStatus) {

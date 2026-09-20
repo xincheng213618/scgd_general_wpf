@@ -13,10 +13,10 @@ class Rect(C.Structure):
     _pack_=1
     _fields_=[('x',C.c_int),('y',C.c_int),('width',C.c_int),('height',C.c_int)]
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('image'); p.add_argument('output'); p.add_argument('--rois',required=True); p.add_argument('--encoding',default='unknown',choices=['unknown','linear','srgb']); args=p.parse_args()
+    p=argparse.ArgumentParser(); p.add_argument('image'); p.add_argument('output'); p.add_argument('--rois',required=True); p.add_argument('--encoding',default='unknown',choices=['unknown','linear','srgb']); p.add_argument('--dll',type=Path,help='Explicit native build to verify; its hash is recorded.'); args=p.parse_args()
     root=Path(__file__).resolve().parents[2]
     runtime=os.add_dll_directory(str(root/'packages/opencv/x64/vc18/bin'))
-    dllpath=root/'Native/opencv_helper/x64/Release/opencv_helper.dll'
+    dllpath=args.dll.resolve() if args.dll else root/'Native/opencv_helper/x64/Release/opencv_helper.dll'
     dll=C.CDLL(str(dllpath)); dll.M_LocateBmwTargetV1.argtypes=[Image,Rect,C.POINTER(C.c_void_p)]; dll.M_AnalyzeSfrV2.argtypes=[Image,Rect,C.c_char_p,C.POINTER(C.c_void_p)]; dll.FreeResult.argtypes=[C.c_void_p]
     source=Path(args.image); before=hashlib.sha256(source.read_bytes()).hexdigest()
     pixels=cv2.imdecode(np.fromfile(source,dtype=np.uint8),cv2.IMREAD_UNCHANGED)

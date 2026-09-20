@@ -11,7 +11,7 @@ public partial class App : System.Windows.Application
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         ConfigHandler.GetInstance("CameraTestConfig");
         this.ApplyTheme(ThemeConfig.Instance.Theme);
-        // Deliberately do not discover/run Engine IInitializers: no database, MQTT or service startup.
+        // Deliberately do not discover/run Engine IInitializers: no MySQL, MQTT or service startup; POI owns its on-demand local SQLite store.
         var window = new CameraTestWindow();
         MainWindow = window;
         window.Show();

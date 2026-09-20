@@ -44,7 +44,7 @@ COLORVISIONCORE_API int M_AnalyzeSfrV2(HImage img, RoiRect roi, const char* conf
         if (roi.x < 0 || roi.y < 0 || roi.width <= 0 || roi.height <= 0 ||
             roi.width > image.cols || roi.height > image.rows || roi.x > image.cols - roi.width || roi.y > image.rows - roi.height) return -1;
         const auto channels = sfr::analyzeSlantedEdge(image(cv::Rect(roi.x, roi.y, roi.width, roi.height)), options);
-        json data = { {"algorithmVersion", "2.0"}, {"unit", "cycles/pixel"}, {"nyquist", 0.5},
+        json data = { {"algorithmVersion", "2.0"}, {"edgeLocalization", "lowpass_peak_v1"}, {"unit", "cycles/pixel"}, {"nyquist", 0.5},
             {"roi", {{"x", roi.x}, {"y", roi.y}, {"width", roi.width}, {"height", roi.height}}},
             {"sourceDepth", image.depth()}, {"channels", json::array()} };
         for (const auto& c : channels) {

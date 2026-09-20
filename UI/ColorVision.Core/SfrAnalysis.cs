@@ -88,6 +88,8 @@ public sealed record SfrChannelAnalysis
 public sealed record SfrAnalysisResult
 {
     public string AlgorithmVersion { get; init; } = string.Empty;
+    // Earlier V2 DLLs omitted this field and used a windowed derivative centroid.
+    public string EdgeLocalization { get; init; } = "centroid";
     public string Unit { get; init; } = string.Empty;
     public double Nyquist { get; init; }
     public int SourceDepth { get; init; }

@@ -16,9 +16,9 @@ public sealed class StandaloneCameraOptions
     public CameraModel Model { get; set; } = CameraModel.HK_USB;
     [Category("连接"), DisplayName("相机模式")]
     public CameraMode Mode { get; set; } = CameraMode.BV_MODE;
-    [Category("连接"), DisplayName("相机 ID")]
+    [Browsable(false)]
     public string CameraId { get; set; } = string.Empty;
-    [Category("连接"), DisplayName("SDK 配置文件"), Description("现有相机 SDK 的 sys.cfg 路径。连接时读取；打开图片不需要。")]
+    [Browsable(false)]
     public string ConfigurationFile { get; set; } = "cfg/sys.cfg";
     [Category("采集"), DisplayName("位深"), Description("支持 8 或 16 位；实际支持能力由相机驱动决定。")]
     public int BitDepth { get; set; } = 8;
@@ -67,8 +67,31 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
     private string? _frameError;
     public bool IsConnected => _handle != IntPtr.Zero;
     public bool IsLive { get; private set; }
+    public StandaloneCameraOptions? RequestedSettings => _options?.Copy();
 
     public StandaloneCameraSession() => _callback = OnFrame;
+
+    public async Task SetAcquisitionParameterAsync(bool exposure, float value)
+    {
+        if (!float.IsFinite(value) || (exposure ? value <= 0 : value < 0)) throw new ArgumentOutOfRangeException(nameof(value));
+        await _commands.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!IsConnected || _options == null) throw new InvalidOperationException("请先连接相机。");
+            await Task.Run(() =>
+            {
+                bool accepted = exposure ? cvCameraCSLib.CM_SetExpTime(_handle, value) : cvCameraCSLib.CM_SetGain(_handle, value);
+                if (!accepted) throw new InvalidOperationException(exposure ? "相机拒绝曝光设置。" : "相机拒绝增益设置。");
+                var next = _options.Copy();
+                if (exposure) next.ExposureMilliseconds = value;
+                else next.Gain = value;
+                _options = next;
+                lock (_frames) _latest = null;
+            }).ConfigureAwait(false);
+        }
+        finally { _commands.Release(); }
+    }
 
     public static Task<cvCameraCSLib.CameraDiscoverySummary> DiscoverAsync(CameraModel model)
         => Task.Run(() => cvCameraCSLib.SearchCameraIds(new[] { model }));
@@ -86,7 +109,7 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
             await Task.Run(() =>
             {
                 string config = Path.GetFullPath(copy.ConfigurationFile, AppContext.BaseDirectory);
-                if (!File.Exists(config)) throw new FileNotFoundException("找不到相机 SDK 配置文件，请在相机设置中选择现有 sys.cfg。", config);
+                if (!File.Exists(config)) throw new FileNotFoundException("相机运行文件缺失，请检查安装目录中的 cfg/sys.cfg。", config);
                 IntPtr handle = cvCameraCSLib.CM_CreatCameraManagerV1(copy.Model, copy.Mode, config);
                 if (handle == IntPtr.Zero) throw new InvalidOperationException("创建相机 SDK 会话失败，请检查驱动、SDK 配置及许可证。");
                 try

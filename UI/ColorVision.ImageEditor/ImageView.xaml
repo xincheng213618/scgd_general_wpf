@@ -157,7 +157,7 @@
                                          IsHitTestVisible="False" ClipToBounds="True" Opacity="0.9"/>
 
                 <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" DisplayMemberPath="DisplayName" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
-                <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
+                <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Loaded="ImageToolBar_Loaded" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}" />
 
                 <StackPanel x:Name="DrawToolbarHost"
                         Margin="0,0,0,6"
@@ -178,19 +178,19 @@
                         <StackPanel x:Name="CompactInspectorPanel" Orientation="Horizontal" />
                     </Border>
                     <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.9">
-                        <ToolBar ToolBarTray.IsLocked="True" />
+                        <ToolBar ToolBarTray.IsLocked="True" Loaded="ImageToolBar_Loaded" />
                     </ToolBarTray>
                 </StackPanel>
 
                 <ToolBarTray x:Name="ToolBarTop" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.9" Visibility="{Binding Config.IsToolBarTopVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True" />
+                    <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True" Loaded="ImageToolBar_Loaded" />
                 </ToolBarTray>
 
                 <ToolBarTray x:Name="ToolBarLeft" Margin="2,50,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarLeftVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
+                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" Loaded="ImageToolBar_Loaded" />
                 </ToolBarTray>
                 <ToolBarTray x:Name="ToolBarRight" Grid.Row="0" Grid.Column="1" Margin="0,50,2,0" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarRightVisible, Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
+                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" Loaded="ImageToolBar_Loaded" />
                 </ToolBarTray>
 
                 <Border x:Name="ImageGroupNavigator"

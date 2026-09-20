@@ -22,6 +22,7 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,12">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="DisplaySettingsButton" Content="测量框与显示" Click="DisplaySettings_Click"/>
                 <Button x:Name="SettingsButton" Content="测量参数 / 重新分析" Click="Settings_Click"/>
                 <Button x:Name="CsvButton" Content="导出 CSV" Click="ExportCsv_Click"/>
                 <Button x:Name="JsonButton" Content="完整结果 JSON" Click="ExportJson_Click"/>
@@ -29,7 +30,16 @@
             <StackPanel><TextBlock Text="BMW 四边清晰度" FontSize="23" FontWeight="SemiBold"/><TextBlock x:Name="SourceText" Margin="0,5,0,0" Opacity="0.7"/></StackPanel>
         </DockPanel>
         <Border Grid.Row="1" Padding="12,9" Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="5" Margin="0,0,0,12">
-            <TextBlock x:Name="SummaryText" TextWrapping="Wrap"/>
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="16,0,0,0">
+                    <TextBlock Text="回显通道" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="DisplayChannelSelector" Width="108" SelectedValuePath="Tag" SelectedIndex="0" SelectionChanged="DisplayChannel_Changed">
+                        <ComboBoxItem Content="L · 亮度" Tag="L"/><ComboBoxItem Content="R · 红色" Tag="R"/>
+                        <ComboBoxItem Content="G · 绿色" Tag="G"/><ComboBoxItem Content="B · 蓝色" Tag="B"/>
+                    </ComboBox>
+                </StackPanel>
+                <TextBlock x:Name="SummaryText" TextWrapping="Wrap" VerticalAlignment="Center"/>
+            </DockPanel>
         </Border>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions><ColumnDefinition Width="350" MinWidth="260"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*" MinWidth="540"/></Grid.ColumnDefinitions>
@@ -38,13 +48,16 @@
                 <TextBlock Text="所有目标与四边 · MTF50 (cy/px)" FontWeight="SemiBold" Margin="0,0,0,8"/>
                 <DataGrid x:Name="ResultsGrid" Grid.Row="1" SelectionChanged="Edge_Changed">
                     <DataGrid.Columns><DataGridTextColumn Header="目标" Binding="{Binding TargetId}" Width="80"/><DataGridTextColumn Header="边" Binding="{Binding EdgeName}" Width="36"/>
-                        <DataGridTextColumn Header="L MTF50" Binding="{Binding L50}" Width="76"/><DataGridTextColumn Header="状态" Binding="{Binding State}" Width="*"/>
+                        <DataGridTextColumn x:Name="SummaryMetricColumn" Header="L MTF50" Binding="{Binding Mtf50}" Width="76"/>
+                        <DataGridTextColumn Header="状态" Binding="{Binding State}" Width="*">
+                            <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="ToolTip" Value="{Binding StateDetail}"/></Style></DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                     </DataGrid.Columns>
                 </DataGrid>
                 <Border Grid.Row="2" Background="#20252C" CornerRadius="4" Padding="8" Margin="0,10,0,6">
                     <DockPanel><CheckBox x:Name="EdgePreview" DockPanel.Dock="Top" Content="查看当前 SFR 矩形细节（取消可看整个靶标）" IsChecked="True" Foreground="White" Margin="0,0,0,8" Click="Preview_Changed"/><Viewbox Stretch="Uniform"><Canvas x:Name="PreviewCanvas" ClipToBounds="True"/></Viewbox></DockPanel>
                 </Border>
-                <StackPanel Grid.Row="3"><Button x:Name="EditRoiButton" Content="调整当前 SFR 矩形…" HorizontalAlignment="Left" Margin="0,3,0,8" Click="EditRoi_Click"/><TextBlock x:Name="RoiText" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/></StackPanel>
+                <StackPanel Grid.Row="3"><Button x:Name="EditRoiButton" Content="调整当前 SFR 矩形…" ToolTip="也可在主图选中小框，拖动或缩放后自动重算；双击小框查看该边详情。" HorizontalAlignment="Left" Margin="0,3,0,8" Click="EditRoi_Click"/><TextBlock x:Name="RoiText" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/></StackPanel>
             </Grid>
             <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="Transparent"/>
             <Grid Grid.Column="2">

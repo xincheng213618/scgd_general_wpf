@@ -28,7 +28,7 @@ next: false
 ## Plugins/CameraTest {#module-506c7567696e732f43616d65726154657374}
 
 - [相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
-  CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不初始化数据库或服务。
+  CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。
 
 ## Plugins/Conoscope {#module-506c7567696e732f436f6e6f73636f7065}
 

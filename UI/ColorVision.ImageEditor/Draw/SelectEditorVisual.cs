@@ -626,7 +626,9 @@ namespace ColorVision.ImageEditor.Draw
 
         private void TransformSelection(double xOffset, double yOffset, double widthOffset, double heightOffset)
         {
-            foreach (var selectVisual in SelectVisuals)
+            // SetRect raises synchronous notifications; hosts may replace the selection in response.
+            // Finish this update on its original targets, without moving any newly selected visual.
+            foreach (var selectVisual in SelectVisuals.ToArray())
             {
                 Rect oldRect = selectVisual.GetRect();
                 selectVisual.SetRect(new Rect(
@@ -765,20 +767,7 @@ namespace ColorVision.ImageEditor.Draw
                         if (ZoomboxSub.Cursor == Cursors.SizeAll)
                         {
                             Vector delta = point - LastMouseMove;
-                            foreach (var selectVisual in SelectVisuals)
-                            {
-                                Rect oldRect = selectVisual.GetRect();
-
-                                // 移动选择的区域
-                                Rect rect = new Rect(
-                                   oldRect.X + delta.X,
-                                   oldRect.Y + delta.Y,
-                                   oldRect.Width,
-                                   oldRect.Height
-                               );
-                                selectVisual.SetRect(rect);
-                            }
-                            Render();
+                            TransformSelection(delta.X, delta.Y, 0, 0);
                             LastMouseMove = point;
                             return;
                         }

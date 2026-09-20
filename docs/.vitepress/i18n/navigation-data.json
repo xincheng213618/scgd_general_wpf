@@ -2603,6 +2603,12 @@
             },
             {
               "text": {
+                "root": "数据库连接、DAO 与旧插件兼容"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Database"
+            },
+            {
+              "text": {
                 "root": "通用查询、条件会话与整表操作"
               },
               "link": "/04-api-reference/ui-components/database-query"
@@ -3875,6 +3881,12 @@
                 "root": "显示图案计量"
               },
               "link": "/04-api-reference/algorithms/detectors/display-metrology"
+            },
+            {
+              "text": {
+                "root": "Copilot Agent 执行链"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-execution"
             },
             {
               "text": {

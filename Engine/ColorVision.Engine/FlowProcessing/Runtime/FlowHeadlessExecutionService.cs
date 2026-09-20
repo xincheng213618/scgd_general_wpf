@@ -271,7 +271,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
         bool loaded = false;
         try
         {
-            await using var host = new FlowRuntimeHost();
+            await using var host = new FlowRuntimeHost { PersistResults = ColorVision.Database.MySqlSetting.IsConnect };
             CVCommonNode[] observedNodes = [];
             MQTTServiceInfo[] services =
                 request.CreateServices();

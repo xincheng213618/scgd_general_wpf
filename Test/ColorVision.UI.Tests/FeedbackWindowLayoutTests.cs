@@ -1,6 +1,7 @@
 using ColorVision.UI.Desktop.Feedback;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -43,6 +44,20 @@ public sealed class FeedbackWindowLayoutTests
         Assert.DoesNotContain("FeedbackAccountLoginDialog", source, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/auth/login", source, StringComparison.Ordinal);
         Assert.Contains("/api/feedback", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FeedbackTimestampsUseSixFractionalDigitsForBackendCompatibility()
+    {
+        MethodInfo method = typeof(FeedbackWindow).GetMethod(
+            "FormatFeedbackTimestamp",
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+        DateTimeOffset timestamp = new DateTimeOffset(
+            2026, 9, 20, 17, 37, 33, TimeSpan.FromHours(8)).AddTicks(1_234_567);
+
+        string formatted = Assert.IsType<string>(method.Invoke(null, [timestamp]));
+
+        Assert.Equal("2026-09-20T17:37:33.123456+08:00", formatted);
     }
 
     [Fact]

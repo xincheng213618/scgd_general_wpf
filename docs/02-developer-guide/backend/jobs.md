@@ -66,6 +66,8 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-retenti
 
 历史status只接受 `success`、`error`、`running`、`interrupted`，其它值400；limit默认20、范围1–100，offset默认0且非负。按执行ID降序分页，latest_run也是最大ID，不是最后完成时间。run_counts是**当前保留的记录**汇总，清理后会减少，不是从安装起永久累计的成功率。
 
+管理控制台的“任务待办”和任务页“最近异常”仅统计 latest_run 为 error/interrupted 的任务；后续 success 会移出当前异常，旧记录仍可在历史中查看。无运行记录或数据读取失败显示未知，不以历史累计失败数判断当前故障。任务页支持 `?view=attention|running|disabled|all` 筛选及 `?job=<任务ID>` 直达运行历史，刷新可恢复。手动运行按响应中的业务 status 提示成功或失败，不把 HTTP 200 一律显示为成功。
+
 凭据方式、普通Session permission与API key scope差异、CSRF先行拒绝规则见[HTTP认证](./authentication.md)。`jobs:write` 本身可以触发所有这些内置任务，包括备份和删除型清理；不能用只读历史接口的权限替代它。
 
 ## 单飞、失败与历史写入分开判断

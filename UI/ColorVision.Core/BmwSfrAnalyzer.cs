@@ -16,12 +16,18 @@ public sealed record BmwTargetAnalysis(string Id, RoiRect SearchRoi, bool Locate
 /// Caller retains image ownership for the entire synchronous call. No resizing or automatic encoding inference.</summary>
 public static class BmwSfrAnalyzer
 {
+    // Retain the existing public signature for already compiled plugins.
     public static IReadOnlyList<BmwTargetAnalysis> Analyze(HImage image, IReadOnlyList<BmwSearchRegion> regions, SfrAnalysisOptions options)
+        => Analyze(image, regions, options, new());
+
+    public static IReadOnlyList<BmwTargetAnalysis> Analyze(HImage image, IReadOnlyList<BmwSearchRegion> regions, SfrAnalysisOptions options, BmwSfrRoiSettings? roiSettings)
     {
         ArgumentNullException.ThrowIfNull(regions);
         ArgumentNullException.ThrowIfNull(options);
         options = options with { };
         options.Validate();
+        roiSettings = roiSettings is null ? new() : roiSettings with { };
+        roiSettings.Validate();
         var requests = regions.ToArray();
         if (requests.Length > 256 || requests.Any(r => r == null || string.IsNullOrWhiteSpace(r.Id)) || requests.Select(r => r.Id).Distinct(StringComparer.Ordinal).Count() != requests.Length)
             throw new ArgumentException("搜索框 ID 必须非空且唯一，最多 256 个。");
@@ -41,13 +47,14 @@ public static class BmwSfrAnalyzer
                 var root = json.RootElement;
                 if (!root.GetProperty("located").GetBoolean()) { results.Add(Failed(request, root.GetProperty("reason").GetString()!)); continue; }
                 var edges = new List<BmwEdgeAnalysis>();
+                double centerX = root.GetProperty("centerX").GetDouble(), centerY = root.GetProperty("centerY").GetDouble();
                 foreach (var entry in root.GetProperty("edges").EnumerateArray())
                 {
                     var id = (BmwEdgeId)entry.GetProperty("id").GetInt32();
-                    var edgeRoi = ReadRect(entry.GetProperty("roi"));
+                    var edgeRoi = roiSettings.Resolve(id, ReadRect(entry.GetProperty("roi")), centerX, centerY);
                     SfrAnalysisResult? analysis = null;
                     string reason = "edge_roi_out_of_bounds";
-                    if (edgeRoi.Width > 0 && edgeRoi.Height > 0)
+                    if (BmwSfrRoiSettings.IsInside(edgeRoi, roi))
                     {
                         try
                         {

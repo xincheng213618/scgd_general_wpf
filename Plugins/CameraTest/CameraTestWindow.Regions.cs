@@ -58,6 +58,12 @@ public partial class CameraTestWindow
                     _allocatedRegionIds.Add(id);
                     if (visual.BaseAttribute is RectangleTextProperties text) text.Text = id;
                 }
+                // Names are drawn once in the source-scoped presentation layer with readable screen sizing.
+                if (visual.BaseAttribute is RectangleTextProperties label && label.IsShowText)
+                {
+                    label.IsShowText = false;
+                    visual.Render();
+                }
                 Rect bounds = visual is ISelectVisual selectable ? selectable.GetRect() : ((IRectangle)visual).Rect;
                 int x = 0, y = 0, width = 0, height = 0;
                 if (!bounds.IsEmpty && new[] { bounds.Left, bounds.Top, bounds.Right, bounds.Bottom }.All(double.IsFinite))
@@ -85,7 +91,7 @@ public partial class CameraTestWindow
             ResetFocus();
             InvalidateResult();
             RenderOverlays();
-            StatusText.Text = _regionError ?? (regions.Count == 0 ? "请框选一个完整 BMW 靶标。" : $"已登记 {regions.Count} 个搜索区域，可点击“开始分析”。");
+            StatusText.Text = _regionError ?? (regions.Count == 0 ? "请添加测量点。" : $"已添加 {regions.Count} 个测量点，可开始分析。");
             Refresh();
         }
         finally { _syncingRegions = false; }
@@ -127,7 +133,7 @@ public partial class CameraTestWindow
             int number = NextDrawingId();
             foreach (var region in _profile.Regions)
             {
-                var visual = new DVRectangleText(new() { Id = number++, Text = region.Id, Rect = new(region.X, region.Y, region.Width, region.Height) });
+                var visual = new DVRectangleText(new() { Id = number++, Text = region.Id, IsShowText = false, Rect = new(region.X, region.Y, region.Width, region.Height) });
                 _regionIdentities.Add(visual, new(region.Id));
                 _allocatedRegionIds.Add(region.Id);
                 _regionSubscriptions.Add(visual, visual.BaseAttribute);

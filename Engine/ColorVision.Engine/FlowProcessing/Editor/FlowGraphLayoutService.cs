@@ -18,7 +18,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public void Apply(int startX = 0, int startY = 0)
         {
-            STNode? rootNode = _nodeEditor.Nodes.OfType<MQTTStartNode>().FirstOrDefault();
+            STNode? rootNode = _nodeEditor.Nodes.OfType<BaseStartNode>().FirstOrDefault();
             if (rootNode == null)
                 return;
 

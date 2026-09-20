@@ -94,8 +94,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (hdr.Id != -1) throw new NotSupportedException("本地取图尚不支持服务 HDR 模板，请选择空 HDR 模板。");
                 EnsureLocalMeasurementConnected(autoConnect: false);
+                bool persistResults = MySqlSetting.IsConnect;
                 LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
                 using LocalFlowFrame frame = capture.Frame;
+                if (!persistResults)
+                {
+                    PublishLocalPreview(frame, null, forceDisplay: true);
+                    return new { MasterId = 0, MasterResultType = 100 };
+                }
                 MeasureResultImgModel? model = null;
                 string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 try

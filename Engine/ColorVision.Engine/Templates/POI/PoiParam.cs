@@ -1,12 +1,6 @@
-﻿using ColorVision.Database;
-using log4net;
-using Newtonsoft.Json;
-using SqlSugar;
-using System;
+﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,29 +8,11 @@ namespace ColorVision.Engine.Templates.POI
 {
     public static class PoiParamExtension
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PoiParamExtension));
 
         public static int Save2DB(this PoiParam poiParam)
         {
-            PoiMasterModel poiMasterModel = new(poiParam);
-            int ret = PoiMasterDao.Instance.Save(poiMasterModel);
-            if (ret == -1) return ret;
-
-            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
-            foreach (PoiPoint pt in poiParam.PoiPoints)
-            {
-                poiDetails.Add(new PoiDetailModel(poiParam.Id, pt));
-            }
-            int count;
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            Stopwatch sw2 = Stopwatch.StartNew();
-            Db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
-            count = Db.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
-            sw2.Stop();
-            log.Debug("SqlSugar BulkCopy " + count + " 耗时: " + sw2.ElapsedMilliseconds + " ms");
-
-            return  1;
+            (poiParam.Storage ?? PoiTemplateStorage.Default).Save(poiParam);
+            return 1;
         }
     }
 
@@ -45,48 +21,21 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     public class PoiParam : ParamModBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PoiParam));
+        [JsonIgnore]
+        internal PoiTemplateStorage? Storage { get; set; }
+        [JsonIgnore]
+        internal bool DetailsLoaded { get; set; }
+
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
+            var points = (poiParam.Storage ?? PoiTemplateStorage.Default).ReadPoints(poiParam.Id);
             poiParam.PoiPoints.Clear();
-            foreach (PoiPoint point in QueryPoiDetailsFromDB(poiParam.Id))
-            {
-                poiParam.PoiPoints.Add(point);
-            }
-            log.Debug($"PoiPoints filled, count={poiParam.PoiPoints.Count}");
+            foreach (PoiPoint point in points) poiParam.PoiPoints.Add(point);
+            poiParam.DetailsLoaded = true;
         }
 
         public static Task<List<PoiPoint>> LoadPoiDetailsFromDBAsync(int poiId, CancellationToken cancellationToken = default)
-        {
-            return Task.Run(() => QueryPoiDetailsFromDB(poiId), cancellationToken);
-        }
-
-        private static List<PoiPoint> QueryPoiDetailsFromDB(int poiId)
-        {
-            log.Debug($"Start loading PoiDetail for pid={poiId}");
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            try
-            {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                List<PoiDetailModel> details = db
-                    .Queryable<PoiDetailModel>()
-                    .Where(x => x.Pid == poiId)
-                    .OrderBy(x => x.Id)
-                    .ToList();
-                log.Debug($"Query finished, count={details.Count}");
-                return details.Select(detail => new PoiPoint(detail)).ToList();
-            }
-            catch (Exception ex)
-            {
-                log.Error("Error querying PoiDetailModel", ex);
-                return new List<PoiPoint>();
-            }
-            finally
-            {
-                stopwatch.Stop();
-                log.Debug($"LoadPoiDetailFromDB finished in {stopwatch.ElapsedMilliseconds} ms for pid={poiId}");
-            }
-        }
+            => Task.Run(() => PoiTemplateStorage.Default.ReadPoints(poiId), cancellationToken);
 
         public PoiParam()
         {

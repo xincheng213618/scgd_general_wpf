@@ -53,7 +53,13 @@ namespace ColorVision.Engine.Templates
 
         private static void Init()
         {
-            if (!MySqlControl.GetInstance().IsConnect) return;
+            if (!MySqlControl.GetInstance().IsConnect)
+            {
+                // Only initialize owners with local persistence; legacy template loaders still require MySQL.
+                try { new Flow.TemplateFlow().Load(); }
+                catch (Exception ex) { log.Error("Local flow template initialization failed.", ex); }
+                return;
+            }
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             List<IITemplateLoad> templateLoaders = AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>();

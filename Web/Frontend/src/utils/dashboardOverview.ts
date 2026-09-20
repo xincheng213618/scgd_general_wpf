@@ -3,8 +3,33 @@ import type {
   IndexStatusResponse,
   TrafficStatsResponse,
   UserAccountSummary,
+  ScheduledJob,
+  DatabaseBackupInventory,
 } from '../types/admin'
 import { indexDefinitions } from './indexMaintenance.ts'
+import { jobNeedsAttention } from './jobOperations.ts'
+
+export function summarizeDashboardJobs(jobs: ScheduledJob[] | null): DashboardHealthSummary {
+  if (!jobs) return { level: 'unknown', label: '读取未完成', detail: '尚未取得任务状态' }
+  if (!jobs.length) return { level: 'warning', label: '尚无任务定义', detail: '请检查任务调度是否完成初始化' }
+  const abnormal = jobs.filter(jobNeedsAttention)
+  if (abnormal.length) return {
+    level: abnormal.some((job) => job.latest_run?.status === 'error') ? 'error' : 'warning',
+    label: `${abnormal.length} 项最近执行异常`, detail: '按最近一次执行判断，恢复成功后不再计入当前异常',
+  }
+  const neverRun = jobs.filter((job) => !job.latest_run).length
+  if (neverRun) return { level: 'unknown', label: `${neverRun} 项尚未运行`, detail: '暂无执行结果的任务不能确认是否正常' }
+  return { level: 'ok', label: '最近执行无失败', detail: '历史失败次数保留在任务运行历史中' }
+}
+
+export function summarizeDashboardBackup(inventory: DatabaseBackupInventory | null, jobs: ScheduledJob[] | null): DashboardHealthSummary {
+  if (!inventory) return { level: 'unknown', label: '读取未完成', detail: '尚未取得备份清单' }
+  const backupJob = jobs?.find((job) => job.job_type === 'database_backup')
+  if (backupJob && jobNeedsAttention(backupJob)) return { level: 'error', label: '最近自动备份异常', detail: backupJob.latest_run?.error || backupJob.latest_run?.summary || '请查看备份任务运行历史' }
+  if (!inventory.backups.length) return { level: 'warning', label: '暂无备份文件', detail: '请进入备份管理检查或创建备份' }
+  if (backupJob && !backupJob.enabled) return { level: 'warning', label: '自动备份已停用', detail: '已有备份保留；请确认是否需要恢复定时执行' }
+  return { level: 'ok', label: '已有备份文件', detail: '文件清单不代表已完成恢复演练' }
+}
 
 export type DashboardHealthLevel = 'ok' | 'warning' | 'error' | 'unknown'
 

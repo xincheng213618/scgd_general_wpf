@@ -127,7 +127,8 @@ namespace ColorVision.Engine.FlowProcessing
         internal void SetDocumentBaseline(FlowParam? flowParam)
         {
             if (flowParam == null
-                || string.IsNullOrWhiteSpace(flowParam.DataBase64))
+                || (string.IsNullOrWhiteSpace(flowParam.DataBase64)
+                    && !LocalFlowTemplateStorage.IsLocalId(flowParam.Id)))
             {
                 _documentLoadedContentHash = null;
                 return;

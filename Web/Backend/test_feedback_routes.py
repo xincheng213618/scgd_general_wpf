@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import importlib
 import io
 import tempfile
 import unittest
@@ -20,6 +21,13 @@ from services.session_service import revoke_all_user_sessions
 
 class FeedbackRouteTests(unittest.TestCase):
     def setUp(self):
+        # Blueprint registration swaps module contexts; restore them before other
+        # route suites use the application's original database and auth policy.
+        for name in ("admin_api", "public_api", "public_pages"):
+            module = importlib.import_module(f"routes.{name}")
+            context_patch = mock.patch.object(module, "_ctx", module._ctx)
+            context_patch.start()
+            self.addCleanup(context_patch.stop)
         self._temp = tempfile.TemporaryDirectory()
         self.root = Path(self._temp.name)
         self.storage = self.root / "storage"
@@ -253,6 +261,46 @@ class FeedbackRouteTests(unittest.TestCase):
             self.assertNotIn("sha256", response.get_json()["attachments"][0])
         full = client.get(f"/api/feedback/{identifier}").get_json()
         self.assertEqual(len(full["attachments"][0]["sha256"]), 64)
+
+    def test_handling_authorization_csrf_conflict_and_public_data_boundary(self):
+        admin = self.app.test_client()
+        login = self._login(admin, "config-admin", "test-secret")
+        owner = self.app.test_client()
+        self._login(owner, "alice-user", "alice password phrase 123")
+        identifier = self._submit(owner, machine="PC-ALICE", message="issue").get_json()["feedbackId"]
+        url = f"/api/admin/feedback/{identifier}/handling"
+        payload = {"conclusion": "内部诊断", "fixed_version": "1.2.3", "verification": "已复测", "revision": 0}
+        anonymous = self.app.test_client()
+        self.assertEqual(anonymous.get(url).status_code, 401)
+        self.assertEqual(owner.get(url).status_code, 403)
+        self.assertEqual(owner.put(url, json=payload).status_code, 403)
+        reader = self.app.test_client()
+        self._login(reader, "sdk-developer", "developer password 789")
+        self.assertEqual(reader.get(url).status_code, 200)
+        self.assertEqual(reader.put(url, json=payload).status_code, 403)
+        for scope in ("feedback:read", "feedback:manage"):
+            key = create_api_key(self.cache, name="handling-test", scopes=scope, created_by="test")
+            self.assertEqual(anonymous.get(url, headers={"Authorization": f"Bearer {key['key']}"}).status_code, 200)
+        headers = {"Origin": "http://localhost", "X-ColorVision-Web": "1"}
+        self.assertEqual(admin.put(url, json=payload, headers=headers).status_code, 403)
+        headers["X-CSRF-Token"] = login["csrf_token"]
+        saved = admin.put(url, json=payload, headers=headers)
+        self.assertEqual(saved.status_code, 200, saved.get_data(as_text=True))
+        self.assertEqual(saved.get_json()["actor_id"], "config-admin")
+        self.assertEqual(reader.get(url).get_json()["conclusion"], payload["conclusion"])
+        self.assertEqual(admin.put(url, json=payload, headers=headers).status_code, 409)
+        self.assertEqual(admin.put(url, json={**payload, "revision": 1, "actor_id": "forged"}, headers=headers).status_code, 400)
+        self.assertNotIn("handling", owner.get(f"/api/feedback/{identifier}").get_json())
+        self.assertNotIn("内部诊断", owner.get("/api/feedback").get_data(as_text=True))
+        self.assertEqual(owner.get(f"/api/feedback/{identifier}/attachments/.admin.json").status_code, 404)
+        again = admin.put(url, json={**payload, "revision": 1}, headers=headers)
+        self.assertFalse(again.get_json()["changed"])
+        self.assertEqual(admin.get("/api/admin/feedback/missing/handling").status_code, 404)
+        db = self.cache.get_db()
+        try:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM audit_log WHERE action = 'feedback_handling_update'").fetchone()[0], 1)
+        finally:
+            db.close()
 
     def test_bulk_requires_manage_csrf_and_audits_only_actual_changes(self):
         admin = self.app.test_client()

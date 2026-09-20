@@ -16,6 +16,7 @@ import {
   Typography,
 } from 'antd'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   backupDatabase,
   cleanupCache,
@@ -55,6 +56,7 @@ interface CachePageProps {
 export function CachePage({ session }: CachePageProps) {
   const { message, modal } = App.useApp()
   const actionRef = useRef<ActionType>(null)
+  const { hash } = useLocation()
   const [cache, setCache] = useState<CacheStatus | null>(null)
   const [backups, setBackups] = useState<DatabaseBackupInventory>({ backups: [], count: 0, keep_count: 10 })
   const [rows, setRows] = useState<IndexStatusRow[]>([])
@@ -62,7 +64,8 @@ export function CachePage({ session }: CachePageProps) {
   const [refreshing, setRefreshing] = useState<IndexScope | 'all' | null>(null)
   const [cleaning, setCleaning] = useState(false)
   const [backingUp, setBackingUp] = useState(false)
-  const [loadingBackups, setLoadingBackups] = useState(false)
+  const [loadingBackups, setLoadingBackups] = useState(true)
+  const [backupLoadError, setBackupLoadError] = useState('')
   const { manageBackups, readCache, refreshCache } = getAdminOperationsCapabilities(session)
 
   const reloadIndexes = () => actionRef.current?.reload()
@@ -73,13 +76,14 @@ export function CachePage({ session }: CachePageProps) {
     }
     setLoadingBackups(true)
     try {
-      setBackups(await listDatabaseBackups())
+      setBackups(await listDatabaseBackups(AbortSignal.timeout(15000)))
+      setBackupLoadError('')
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '数据库备份列表加载失败')
+      setBackupLoadError(error instanceof Error ? error.message : '数据库备份列表加载失败')
     } finally {
       setLoadingBackups(false)
     }
-  }, [manageBackups, message])
+  }, [manageBackups])
 
   useEffect(() => {
     let mounted = true
@@ -90,6 +94,12 @@ export function CachePage({ session }: CachePageProps) {
       mounted = false
     }
   }, [loadBackups])
+
+  useEffect(() => {
+    if (manageBackups && hash === '#database-backups' && !loadingBackups) {
+      document.getElementById('database-backups')?.scrollIntoView({ block: 'start' })
+    }
+  }, [hash, manageBackups, loadingBackups, rows.length])
 
   const runRefresh = async (scope?: IndexScope) => {
     const target = scope || 'all'
@@ -346,11 +356,13 @@ export function CachePage({ session }: CachePageProps) {
 
       {manageBackups && (
         <Card
+          id="database-backups"
+          style={{ scrollMarginTop: 80 }}
           title="数据库备份"
           loading={loadingBackups}
           extra={(
             <Space wrap>
-              <Typography.Text type="secondary">每日自动创建 · UTC 时间 · 隐私清理与轮换</Typography.Text>
+              <Typography.Text type="secondary">备份文件清单 · 自动执行状态请查看任务调度</Typography.Text>
               <Popconfirm
                 title="确认创建数据库备份？"
                 description={`系统会立即创建一致性快照、执行隐私保留清理，并自动保留最新 ${backups.keep_count} 个备份。`}
@@ -361,7 +373,9 @@ export function CachePage({ session }: CachePageProps) {
             </Space>
           )}
         >
-          {backups.backups.length ? (
+          {backupLoadError ? (
+            <Alert type="error" showIcon message="备份清单读取失败" description={backupLoadError} action={<Button onClick={() => void loadBackups()}>重试</Button>} />
+          ) : backups.backups.length ? (
             <List
               dataSource={backups.backups}
               renderItem={(backup) => (
@@ -374,7 +388,7 @@ export function CachePage({ session }: CachePageProps) {
               )}
             />
           ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚无数据库备份；每日任务会自动创建，也可立即备份" />
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚无数据库备份；可检查自动备份任务或立即备份" />
           )}
         </Card>
       )}

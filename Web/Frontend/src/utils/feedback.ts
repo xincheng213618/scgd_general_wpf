@@ -3,6 +3,17 @@ import type { FeedbackDetail, FeedbackStatus, FeedbackStatusUpdate } from '../ty
 const HOUR_MS = 60 * 60 * 1000
 const DAY_MS = 24 * HOUR_MS
 
+export function feedbackFilterFromSearch(search: string): import('../types/admin').FeedbackInboxFilter {
+  const value = new URLSearchParams(search).get('status')
+  return value === 'new' || value === 'in_progress' || value === 'resolved' || value === 'all' ? value : 'open'
+}
+
+export function feedbackDetailPath(pathname: string, feedbackId: string, search = ''): string {
+  const params = new URLSearchParams(search)
+  params.set('id', feedbackId)
+  return `${pathname}?${params.toString()}`
+}
+
 export function applyFeedbackStatusUpdate(detail: FeedbackDetail | null, update: FeedbackStatusUpdate): FeedbackDetail | null {
   if (!detail || detail.feedback_id !== update.feedback_id) return detail
   // A status response is not a new detail/permission response. Keep the current drawer and access.

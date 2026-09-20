@@ -741,6 +741,48 @@ SlantedEdgeModel fitSlantedEdgeModel(const cv::Mat& gray,
     return model;
 }
 
+// V2 localization only: distant plateau derivatives must not move the edge centroid.
+// A per-row low-pass derivative peak localizes the edge; calculateFromModel still
+// projects the original, unfiltered signal. Do not average rows or discard outliers:
+// actual curvature and irregular edges must remain visible in the fit residual.
+// See Kerr, "From Centroid to Low-Pass Edge Fitting in ISO 12233 e-SFR" (2026).
+SlantedEdgeModel fitLowPassEdgeModel(const cv::Mat1d& signal, SlantedEdgeFitWorkspace& workspace)
+{
+    SlantedEdgeModel model;
+    if (!workspace.isValidFor(signal) || signal.cols < 12) return model;
+
+    cv::Mat1d localized;
+    // Nine taps, sigma 1.5 px: suppress pixel-scale structure along the profile
+    // only. Its four-pixel radius stays within the existing 12-pixel support guard.
+    cv::GaussianBlur(signal, localized, {9, 1}, 1.5, 0.0, cv::BORDER_REPLICATE);
+    const double polarity = cv::mean(signal.colRange(signal.cols - 4, signal.cols))[0]
+        >= cv::mean(signal.colRange(0, 4))[0] ? 1.0 : -1.0;
+    workspace.loc.resize(signal.rows);
+    for (int y = 0; y < signal.rows; ++y) {
+        const double* row = localized.ptr<double>(y);
+        auto derivative = [&](int x) { return polarity * (row[x + 1] - row[x - 1]) * 0.5; };
+        int peak = 5;
+        for (int x = 6; x < signal.cols - 5; ++x)
+            if (derivative(x) > derivative(peak)) peak = x;
+        const double left = derivative(peak - 1), center = derivative(peak), right = derivative(peak + 1);
+        const double curvature = left - 2.0 * center + right;
+        if (center <= 0.0 || curvature >= -1e-12) return model;
+        // Subpixel parabola around the derivative maximum, in input-pixel units.
+        const double offset = 0.5 * (left - right) / curvature;
+        if (!std::isfinite(offset) || std::abs(offset) > 0.5) return model;
+        workspace.loc[y] = peak + offset;
+    }
+
+    model.fit = workspace.edgeFitter.fit(workspace.loc);
+    if (model.fit.size() != 2 || !std::isfinite(model.fit[0]) || !std::isfinite(model.fit[1])) return model;
+    model.edgeSlope = model.fit[1];
+    const double slope = std::abs(model.edgeSlope);
+    model.rows = slope > 1e-12 ? static_cast<int>(std::round(std::floor(signal.rows * slope) / slope)) : signal.rows;
+    if (model.rows <= 0 || model.rows > signal.rows) model.rows = signal.rows;
+    model.valid = true;
+    return model;
+}
+
 SlantedEdgeModel buildSlantedEdgeModel(const cv::Mat& grayInput,
                                        int polynomialDegree,
                                        double requestedSlope)
@@ -972,7 +1014,7 @@ std::vector<SfrChannelAnalysis> analyzeSlantedEdge(const cv::Mat& image, const S
 
         // Straight-edge model: reject curvature/texture instead of fitting away the evidence.
         SlantedEdgeFitWorkspace fitWorkspace(signal.rows, signal.cols, 1);
-        SlantedEdgeModel model = fitSlantedEdgeModel(signal, -1.0, false, fitWorkspace);
+        SlantedEdgeModel model = fitLowPassEdgeModel(signal, fitWorkspace);
         if (!model.valid) { reject("edge_fit_failed"); continue; }
         result.edgeSlope = model.edgeSlope;
         result.edgeIntercept = model.fit[0];

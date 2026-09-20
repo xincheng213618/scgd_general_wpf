@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -17,6 +18,7 @@ internal static class BmwSfrPresentation
         "invalid_search_roi" => "搜索矩形为空或超出原图",
         "edge_roi_out_of_bounds" => "边缘测量区域超出原图",
         "channel_missing" => "输入不包含该通道",
+        "roi_changed" => "测量框已调整，等待重新计算",
         "ok" or "" => "",
         _ => SfrSimplePlotWindow.Explain(reason)
     };
@@ -28,11 +30,28 @@ internal static class BmwSfrPresentation
         int count = edge.Analysis?.Channels.Count ?? 0;
         return valid == 0 ? "INVALID" : valid == count ? $"{valid}/{count} 可计算" : $"{valid}/{count} 部分可计算";
     }
-    public static string OverlayLabel(BmwEdgeAnalysis edge)
+    public static bool HasCenter(BmwTargetAnalysis? target) => target is { Located: true } && double.IsFinite(target.CenterX) && double.IsFinite(target.CenterY);
+    public static string OverlayLabel(BmwEdgeAnalysis edge, string channel, BmwSfrOverlaySettings? settings = null, BmwTargetAnalysis? target = null)
     {
-        var luminance = Channel(edge,"L");
-        string metric = luminance is { Valid: true } ? luminance.Mtf50.HasValue ? Number(luminance.Mtf50) : "未交叉" : "INVALID";
-        return $"{EdgeName(edge.Id)}  L MTF50 {metric}";
+        settings ??= new();
+        var result = Channel(edge,channel);
+        bool response = settings.Metric is BmwSfrDisplayMetric.AtFrequency or BmwSfrDisplayMetric.AtNyquist;
+        double frequency = settings.Metric == BmwSfrDisplayMetric.AtNyquist ? .5 : settings.Frequency;
+        string name = response ? $"MTF@{frequency:G}" : settings.Metric == BmwSfrDisplayMetric.Mtf10 ? "MTF10" : "MTF50";
+        double? value = result is not { Valid: true } ? null : response ? SfrCurveQueries.AtFrequency(result.Frequencies, result.Mtf, frequency)
+            : settings.Metric == BmwSfrDisplayMetric.Mtf10 ? result.Mtf10 : result.Mtf50;
+        string metric = result is not { Valid: true } ? "INVALID" : value.HasValue ? response ? value.Value.ToString("P1", CultureInfo.CurrentCulture) : Number(value)
+            : response ? "无数据" : "未交叉";
+        string label = settings.ShowEdgeNames ? EdgeName(edge.Id) : "";
+        if (settings.ShowValues) label += (label.Length > 0 ? "  " : "") + $"{channel} {name} {metric}";
+        var geometry = new List<string>();
+        if (settings.ShowRoiDimensions) geometry.Add($"{edge.Roi.Width}×{edge.Roi.Height} px");
+        if (settings.ShowCenterDistance && HasCenter(target))
+        {
+            double dx = edge.Roi.X + edge.Roi.Width / 2.0 - target!.CenterX, dy = edge.Roi.Y + edge.Roi.Height / 2.0 - target.CenterY;
+            geometry.Add($"距中心 {Math.Sqrt(dx * dx + dy * dy):F1} px");
+        }
+        return label + (geometry.Count > 0 ? (label.Length > 0 ? "\n" : "") + string.Join(" · ", geometry) : "");
     }
     public static string ChannelState(BmwEdgeAnalysis edge, string name)
     {

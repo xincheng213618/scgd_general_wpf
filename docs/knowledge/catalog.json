@@ -4788,6 +4788,7 @@
         "Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs",
         "Engine/ColorVision.Engine/Dao/VSysResourceDao.cs",
         "UI/ColorVision.Database/BaseTableDao.cs",
+        "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/WindowService.xaml.cs",
@@ -4818,6 +4819,7 @@
         "UI/ColorVision.Solution/Workspace/DockViewManager.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs",
         "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
         "Test/ColorVision.UI.Tests/DockViewManagerTests.cs"
       ],
@@ -6282,6 +6284,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs",
         "Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs",
         "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
       ],
@@ -6305,7 +6308,7 @@
       "knowledge_id": "flow.templates",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
+      "summary": "Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
       "aliases": [
         "Flow模板保存后参数为什么丢失",
         "TemplateFlow",
@@ -6321,11 +6324,15 @@
         "模板勾选项",
         "StnV1NeutralCodec",
         "动态端口索引",
-        "逻辑与索引警告"
+        "逻辑与索引警告",
+        "本地流程",
+        "离线流程模板",
+        "LocalFlowTemplateStorage"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs",
@@ -6334,6 +6341,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs",
         "Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs",
@@ -8373,7 +8381,7 @@
       "knowledge_id": "plugins.camera-test",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不初始化数据库或服务。",
+      "summary": "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。",
       "aliases": [
         "CameraTest",
         "相机生产调试",
@@ -10008,7 +10016,7 @@
       "knowledge_id": "ui.database",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。",
+      "summary": "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。",
       "aliases": [
         "数据库操作",
         "数据库浏览器",
@@ -10021,15 +10029,21 @@
         "MySqlControl",
         "BatchExecuteNonQuery",
         "数据库事务回滚",
-        "LegacyDatabaseBrowserRegistration"
+        "LegacyDatabaseBrowserRegistration",
+        "ColorVision.Local.db",
+        "POI 本地模板",
+        "PoiTemplateStorage"
       ],
       "code_paths": [
         "UI/ColorVision.Database",
-        "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs"
+        "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs",
+        "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs",
+        "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs",
-        "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs"
+        "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs",
+        "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs"
       ],
       "related": [
         "ui.database-query",
@@ -10041,6 +10055,7 @@
         "flow.session"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.Database"
       ],
       "domain": "ui",

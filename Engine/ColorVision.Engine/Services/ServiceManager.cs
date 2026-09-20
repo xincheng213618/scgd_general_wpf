@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625
+#pragma warning disable CS8625
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Services.Devices;
@@ -72,10 +72,7 @@ namespace ColorVision.Engine.Services
         {
             DisPlayManager.GetInstance().SelectedControlChanged += DisPlayManager_SelectedControlChanged;
             DeviceServices.CollectionChanged += DeviceServices_CollectionChanged;
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-                Application.Current.Dispatcher.Invoke(() => LoadServices());
-            }
+            Application.Current.Dispatcher.Invoke(() => LoadServices());
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
                 Application.Current.Dispatcher.Invoke(() => LoadServices());
         }
@@ -161,7 +158,9 @@ namespace ColorVision.Engine.Services
             }
             LastGenControl?.Clear();
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
-            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
+            List<SysDictionaryModel> SysDictionaryModels = SysResourceDao.Instance.UseLocal
+                ? Enum.GetValues<ServiceTypes>().Where(type => (int)type >= 1 && (int)type <= 16).Select(type => new SysDictionaryModel { Pid = 1, Value = (int)type, Name = type.ToString(), Key = type.ToString(), IsEnable = true }).ToList()
+                : SysDictionaryDao.Instance.GetAllByPid(1);
             long dictionaryLoadMs = phaseStopwatch.ElapsedMilliseconds;
             ServiceResourceSnapshot resourceSnapshot = LoadServiceResourceSnapshot();
 
@@ -266,6 +265,14 @@ namespace ColorVision.Engine.Services
 
         private static ServiceResourceSnapshot LoadServiceResourceSnapshot()
         {
+            if (SysResourceDao.Instance.UseLocal)
+            {
+                var resources = SysResourceDao.Instance.GetLocal();
+                return new ServiceResourceSnapshot(
+                    resources.Where(r => r.Pid == null && r.TenantId == 0 && !r.IsDelete).ToList(),
+                    resources.Where(r => r.Pid != null && r.IsEnable && !r.IsDelete).ToList(),
+                    SysResourceDao.Instance.GetLocalGroupLinks(), resources);
+            }
             Stopwatch stopwatch = Stopwatch.StartNew();
             using var db = new SqlSugarClient(new ConnectionConfig
             {

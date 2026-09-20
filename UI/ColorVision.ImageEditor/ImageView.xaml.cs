@@ -31,6 +31,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -375,6 +376,33 @@ namespace ColorVision.ImageEditor
             if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None) return;
             e.Handled = true;
             if (!e.IsRepeat) ToggleFullScreen();
+        }
+
+        private void ImageToolBar_Loaded(object sender, RoutedEventArgs e)
+        {
+            var toolbar = (ToolBar)sender;
+            toolbar.ApplyTemplate();
+            // HandyControl otherwise reserves a disabled overflow arrow even when every item fits.
+            if (toolbar.Template?.FindName("ButtonOverflow", toolbar) is FrameworkElement overflow)
+            {
+                overflow.TargetUpdated -= ImageToolBarOverflow_TargetUpdated;
+                overflow.TargetUpdated += ImageToolBarOverflow_TargetUpdated;
+                overflow.SetBinding(VisibilityProperty, new Binding(nameof(ToolBar.HasOverflowItems))
+                {
+                    Source = toolbar,
+                    Converter = new BooleanToVisibilityConverter(),
+                    NotifyOnTargetUpdated = true
+                });
+            }
+        }
+
+        private void ImageToolBarOverflow_TargetUpdated(object? sender, DataTransferEventArgs e)
+        {
+            if (sender is not DependencyObject overflow || e.Property != VisibilityProperty || !ReferenceEquals(e.TargetObject, sender)) return;
+            // HasOverflowItems changes during measurement. Remeasure the template grid afterwards
+            // so the arrow stays inside the toolbar and its space disappears when it collapses.
+            if (VisualTreeHelper.GetParent(overflow) is UIElement panel)
+                panel.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(panel.InvalidateMeasure));
         }
 
         private void ImageView_Loaded(object sender, RoutedEventArgs e)

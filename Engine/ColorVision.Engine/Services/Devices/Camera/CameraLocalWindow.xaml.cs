@@ -472,7 +472,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void UpdateCalibrationTemplateOptions()
         {
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+            ComboxCalibrationTemplate.ItemsSource = (Device.PhyCamera?.CalibrationParams).CreateEmpty();
             btn_EditCalibrationTemplate.IsEnabled = Device.PhyCamera != null;
 
             int itemCount = ComboxCalibrationTemplate.Items.Count;

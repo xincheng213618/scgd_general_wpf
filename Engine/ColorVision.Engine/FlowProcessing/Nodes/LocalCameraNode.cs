@@ -152,11 +152,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
-                FlowNodeTiming.Run("PublishPreview", () => device.PublishLocalPreview(frame, persistedResult, forceDisplay: false));
+                FlowNodeTiming.Run("PublishPreview", () => device.PublishLocalPreview(frame, masterId > 0 ? persistedResult : null, forceDisplay: false));
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
-                FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType));
+                if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType));
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),

@@ -42,6 +42,9 @@ public sealed class SfrAnalysisTests
         var c = new SfrChannelAnalysis { Valid = true, Reason = "ok", Frequencies = [0, .5, 1], Mtf = [1, .7, .4], EdgePositions = [-1, 1], Esf = [0, 1], LsfPositions = [-1, 1], Lsf = [0, 1] };
         var result = new SfrAnalysisResult { AlgorithmVersion = "2.0", Unit = "cycles/pixel", Nyquist = .5, Channels = [c] };
         Assert.Null(SfrAnalysisResult.Parse(JsonSerializer.Serialize(result)).Channels[0].Mtf50);
+        var oldJson = JsonSerializer.Serialize(result).Replace("\"EdgeLocalization\":\"centroid\",", "", StringComparison.Ordinal);
+        Assert.Equal("centroid", SfrAnalysisResult.Parse(oldJson).EdgeLocalization);
+        Assert.Equal("lowpass_peak_v1", SfrAnalysisResult.Parse(JsonSerializer.Serialize(result with { EdgeLocalization = "lowpass_peak_v1" })).EdgeLocalization);
         Assert.Throws<FormatException>(() => SfrAnalysisResult.Parse(JsonSerializer.Serialize(result with { Channels = [c with { Mtf50 = .495 }] })));
         Assert.Throws<FormatException>(() => SfrAnalysisResult.Parse(JsonSerializer.Serialize(result with { Channels = [c with { Valid = false }] })));
         Assert.Throws<FormatException>(() => SfrAnalysisResult.Parse(JsonSerializer.Serialize(result with { Channels = [c with { Channel = "R" }] })));

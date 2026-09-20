@@ -15,6 +15,7 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
     public FrameSourceKind SourceKind { get; init; }
     public StandaloneCameraOptions? AcquisitionSettings { get; init; }
     public IReadOnlyList<EdgeColorAnalysis> ColorShifts { get; init; } = [];
+    public BmwSfrRoiSettings MeasurementRoi { get; init; } = new();
     public JudgmentRules Rules { get; init; } = new();
     public FrameJudgment Judgment { get; init; } = new(JudgmentState.Unconfigured, []);
 
@@ -27,14 +28,19 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
         var regions = profile.Regions.Select(r => new BmwSearchRegion(r.Id, r.Roi)).ToArray();
         var options = profile.Sfr with { };
         var timer = Stopwatch.StartNew();
-        var targets = frame.Read(image => BmwSfrAnalyzer.Analyze(image, regions, options));
-        var colors = targets.SelectMany(target => target.Edges.Select(edge => new EdgeColorAnalysis(target.Id, edge.Id.ToString(),
-            SfrChromaticAberration.Analyze(edge.Analysis, edge.Roi)))).ToArray();
+        var roiSettings = profile.MeasurementRoi with { };
+        var targets = frame.Read(image => BmwSfrAnalyzer.Analyze(image, regions, options, roiSettings));
+        var colors = targets.SelectMany(target => target.Edges.Select(edge =>
+        {
+            var color = SfrChromaticAberration.Analyze(edge.Analysis, edge.Roi);
+            if (edge.Analysis == null) color = color with { Pairs = color.Pairs.Select(pair => pair with { Reason = edge.Reason }).ToArray() };
+            return new EdgeColorAnalysis(target.Id, edge.Id.ToString(), color);
+        })).ToArray();
         timer.Stop();
         var result = new FrameAnalysis(frame.Id, frame.Source, frame.Data.CapturedAt, frame.Data.Width, frame.Data.Height, frame.Data.BitDepth, frame.Data.Channels,
             profile.Analysis.TargetFrequency, options, timer.Elapsed.TotalMilliseconds, targets)
         {
-            SourceKind = frame.SourceKind, AcquisitionSettings = frame.AcquisitionSettings?.Copy(), ColorShifts = colors, Rules = profile.Judgment with { }
+            SourceKind = frame.SourceKind, AcquisitionSettings = frame.AcquisitionSettings?.Copy(), ColorShifts = colors, MeasurementRoi = roiSettings, Rules = profile.Judgment with { }
         };
         return result with { Judgment = FrameJudgment.Evaluate(result, result.Rules) };
     }
@@ -82,4 +88,7 @@ public sealed record FrameAnalysis(Guid FrameId, string Source, DateTimeOffset C
 
 public sealed record MetricRow(string Target, string Edge, string Channel, string Status, double? Mtf50, double? Mtf10, double? Response, SfrAnalysisResult? Analysis);
 public sealed record EdgeColorAnalysis(string Target, string Edge, SfrChromaticAberrationResult Analysis);
-public sealed record ColorShiftRow(string Target, string Edge, string Pair, string Axis, double? Shift, string Status, SfrChromaticAberrationResult Analysis);
+public sealed record ColorShiftRow(string Target, string Edge, string Pair, string Axis, double? Shift, string Status, SfrChromaticAberrationResult Analysis)
+{
+    public string ShiftText => Shift?.ToString("F3", CultureInfo.CurrentCulture) ?? "—";
+}

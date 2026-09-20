@@ -57,6 +57,8 @@ public sealed class FlowRuntimeHost : IDisposable, IAsyncDisposable
 
     public FlowRuntimeHostState State => _state;
 
+    public bool PersistResults { get => _control.PersistResults; set => _control.PersistResults = value; }
+
     public string? ContentHash { get; private set; }
 
     public IReadOnlyList<STNode> Nodes => _container.Nodes

@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Utilities;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
@@ -52,9 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             this.CreateConfig = CreateDefaultConfig();
             ApplyInitialCamera();
 
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            var cameraCandidates = Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
+            var cameraCandidates = SysResourceDao.Instance.GetAllType(101).Where(a => string.IsNullOrEmpty(a.Value)).ToList();
             if (!string.IsNullOrWhiteSpace(_InitialCameraCode) && !cameraCandidates.Any(a => string.Equals(a.Code, _InitialCameraCode, StringComparison.OrdinalIgnoreCase)))
             {
                 cameraCandidates.Insert(0, new SysResourceModel
@@ -109,7 +107,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             else
             {
-                MessageBox.Show(Properties.Resources.NoCameraToAdd);
+                if (!SysResourceDao.Instance.UseLocal) MessageBox.Show(Properties.Resources.NoCameraToAdd);
             }
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues<TakeImageMode>().Cast<TakeImageMode>()
@@ -239,8 +237,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CreateConfig.CFW.CFWNum == 3)
                 CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            var sysResourceModel = Db.Queryable<SysResourceModel>().Where(x => x.Code == CreateConfig.Code) .First();
+            var sysResourceModel = PhyCameraManager.FindPhysicalCameraResource(SysResourceDao.Instance.GetAll(), CreateConfig.Code);
             // 不存在则新建
             if (sysResourceModel == null)
             {
@@ -256,16 +253,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             // 赋值并保存
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
 
-            // 推荐用 InsertOrUpdate（SqlSugar5+），否则判断主键再决定 insert/update
-            int ret;
-            if (sysResourceModel.Id > 0)
-            {
-                ret = Db.Updateable(sysResourceModel).ExecuteCommand();
-            }
-            else
-            {
-                ret = Db.Insertable(sysResourceModel).ExecuteCommand();
-            }
+            if (SysResourceDao.Instance.Save(sysResourceModel) < 0) return;
 
             PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();

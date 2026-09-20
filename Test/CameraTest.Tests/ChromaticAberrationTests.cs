@@ -5,6 +5,73 @@ namespace CameraTest.Tests;
 
 public sealed class ChromaticAberrationTests
 {
+    [Fact]
+    public void FullBmwAnalysisComputesColorPairsAndHonorsConfiguredRoi()
+    {
+        const int size = 480;
+        var pixels = new byte[size * size * 3];
+        double angle = 5 * Math.PI / 180;
+        double[] shifts = [-.6, 0, .8];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                for (int c = 0; c < 3; c++)
+                {
+                    double dx = x - 240 - shifts[c], dy = y - 240 - shifts[c];
+                    double u = dx * Math.Cos(angle) + dy * Math.Sin(angle), v = -dx * Math.Sin(angle) + dy * Math.Cos(angle);
+                    // Same opposing dark quadrants as the existing BMW localization fixture.
+                    double signal = u * u + v * v < 180 * 180 ? .5 - .4 * Math.Tanh(u / 1.5) * Math.Tanh(v / 1.5) : .9;
+                    pixels[(y * size + x) * 3 + c] = (byte)Math.Round(signal * 255);
+                }
+        var frame = new TestFrame(new(pixels, size, size, 8, 3, size * 3, DateTimeOffset.Now), "synthetic-bmw-rgb-offsets");
+        var profile = new CameraTest.Models.TestProfile
+        {
+            ImageWidth = size, ImageHeight = size, Regions = [new("BMW", 0, 0, size, size)],
+            Sfr = new() { InputEncoding = SfrInputEncoding.Linear },
+            MeasurementRoi = new() { AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 95 }
+        };
+        var result = FrameAnalysis.Run(frame, profile);
+        var target = Assert.Single(result.Targets);
+        Assert.True(target.Located, target.Reason);
+        Assert.Equal(4, target.Edges.Count);
+        foreach (var edge in target.Edges)
+        {
+            Assert.Equal(edge.Id is BmwEdgeId.Left or BmwEdgeId.Right ? 80 : 60, edge.Roi.Width);
+            Assert.Equal(edge.Id is BmwEdgeId.Left or BmwEdgeId.Right ? 60 : 80, edge.Roi.Height);
+            double dx = edge.Roi.X + edge.Roi.Width / 2.0 - target.CenterX, dy = edge.Roi.Y + edge.Roi.Height / 2.0 - target.CenterY;
+            Assert.InRange(Math.Sqrt(dx * dx + dy * dy), 95 - Math.Sqrt(.5), 95 + Math.Sqrt(.5)); // Pixel-center rounding in X and Y.
+        }
+        Assert.Equal(12, result.ColorShifts.Sum(edge => edge.Analysis.Pairs.Count));
+        foreach (var edge in result.ColorShifts)
+        {
+            double[] displacement = [.8, 1.4, .6];
+            for (int i = 0; i < 3; i++)
+            {
+                var pair = edge.Analysis.Pairs[i];
+                Assert.True(pair.Valid, pair.Reason);
+                double expected = displacement[i] * (edge.Analysis.NormalX + edge.Analysis.NormalY);
+                Assert.InRange(pair.NormalShiftPixels!.Value, expected - .15, expected + .15); // Same 4x ESF half-bin and quantization budget as single-edge test.
+            }
+        }
+        var rows = ColorShiftPresentation.Rows(result);
+        Assert.Contains("12/12", ColorShiftPresentation.Summary(rows));
+        Assert.All(rows, row => Assert.NotEqual("—", row.ShiftText));
+        profile.MeasurementRoi.CenterDistancePixels = 400;
+        var outside = FrameAnalysis.Run(frame, profile);
+        Assert.All(outside.Targets.Single().Edges, edge => { Assert.Null(edge.Analysis); Assert.Equal("edge_roi_out_of_bounds", edge.Reason); });
+    }
+
+    [Fact]
+    public void MissingColorIsExplainedInsteadOfDisplayedAsZero()
+    {
+        var analysis = SfrChromaticAberration.Analyze(new() { Channels = [Edge("G", 40), Edge("R", 41) with { Valid = false, Reason = "textured_or_noisy_plateaus" }] }, new(0, 0, 100, 80));
+        var frame = new FrameAnalysis(Guid.NewGuid(), "sample", DateTimeOffset.Now, 100, 80, 8, 3, .25, new(), 0, [])
+        { ColorShifts = [new("P1", "Left", analysis)] };
+        var rows = ColorShiftPresentation.Rows(frame);
+        Assert.All(rows, row => { Assert.Equal("—", row.ShiftText); Assert.Contains("不可计算", row.Status); });
+        Assert.Contains("平台纹理", rows[0].Status);
+        Assert.Contains("0/3", ColorShiftPresentation.Summary(rows));
+    }
+
     private static SfrChannelAnalysis Edge(string name, double intercept, bool rotated = false) => new()
     {
         Channel = name, Valid = true, FitAvailable = true, EdgeSlope = 0.1, EdgeIntercept = intercept, Rotated = rotated,

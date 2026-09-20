@@ -7,6 +7,7 @@ using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
@@ -592,9 +593,9 @@ namespace ColorVision.UI.Desktop.Feedback
                 form.Add(new StringContent(Environment.MachineName), "machineName");
                 form.Add(new StringContent(typeof(FeedbackWindow).Assembly.GetName().Version?.ToString() ?? ""), "appVersion");
                 form.Add(new StringContent($"{Environment.MachineName} / {Environment.OSVersion}"), "machineInfo");
-                form.Add(new StringContent(DateTimeOffset.UtcNow.ToString("O")), "clientSubmittedAt");
+                form.Add(new StringContent(FormatFeedbackTimestamp(DateTimeOffset.UtcNow)), "clientSubmittedAt");
                 if (_diagnosticsCollectedAtUtc is DateTimeOffset collectedAt)
-                    form.Add(new StringContent(collectedAt.ToString("O")), "diagnosticsCollectedAt");
+                    form.Add(new StringContent(FormatFeedbackTimestamp(collectedAt)), "diagnosticsCollectedAt");
 
                 foreach (var attachment in _attachments)
                 {
@@ -642,6 +643,9 @@ namespace ColorVision.UI.Desktop.Feedback
                 SetInputEnabled(true);
             }
         }
+
+        private static string FormatFeedbackTimestamp(DateTimeOffset value)
+            => value.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture);
 
         private void OpenAttachmentFolder_Click(object sender, RoutedEventArgs e)
         {

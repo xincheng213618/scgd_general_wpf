@@ -1,5 +1,27 @@
 import type { ScheduledJob } from '../types/admin'
 
+export type JobView = 'all' | 'attention' | 'running' | 'disabled'
+
+export function jobNeedsAttention(job: ScheduledJob): boolean {
+  return ['error', 'interrupted'].includes(job.latest_run?.status || '')
+}
+
+export function jobViewFromSearch(search: string): JobView {
+  const view = new URLSearchParams(search).get('view')
+  return view === 'attention' || view === 'running' || view === 'disabled' ? view : 'all'
+}
+
+export function filterJobs(jobs: ScheduledJob[], view: JobView): ScheduledJob[] {
+  if (view === 'attention') return jobs.filter(jobNeedsAttention)
+  if (view === 'running') return jobs.filter((job) => job.run_counts.running > 0)
+  if (view === 'disabled') return jobs.filter((job) => !job.enabled)
+  return jobs
+}
+
+export function jobHistoryPath(jobId: string): string {
+  return `/admin/jobs?${new URLSearchParams({ job: jobId })}`
+}
+
 export const jobStatusMeta: Record<string, { color: string; label: string }> = {
   success: { color: 'green', label: '成功' },
   error: { color: 'red', label: '失败' },

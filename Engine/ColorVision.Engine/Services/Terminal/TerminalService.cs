@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
@@ -100,10 +100,8 @@ namespace ColorVision.Engine.Services.Terminal
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
-                Db.Deleteable<SysResourceModel>().Where(x => x.Id == SysResourceModel.Id).ExecuteCommand();
+                foreach (var child in SysResourceDao.Instance.GetAllByPid(SysResourceModel.Id)) SysResourceDao.Instance.DeleteById(child.Id);
+                SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
 
             }
             ServiceManager.GetInstance().TerminalServices.Remove(this);
@@ -118,9 +116,8 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            Db.Updateable<SysResourceModel>().ExecuteCommand();
-            MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
+            SysResourceDao.Instance.Save(SysResourceModel);
+            if (!SysResourceDao.IsLocalId(SysResourceModel.Id)) MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }
 }

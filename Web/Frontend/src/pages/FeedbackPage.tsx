@@ -24,7 +24,8 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { FeedbackHandlingCard } from '../components/FeedbackHandlingCard'
 import {
   downloadFeedbackAttachment,
   getFeedbackDetail,
@@ -48,9 +49,11 @@ import {
   feedbackStatusColors,
   feedbackStatusLabels,
   applyFeedbackStatusUpdate,
+  feedbackFilterFromSearch,
+  feedbackDetailPath,
 } from '../utils/feedback'
 import { humanSize, shortDate } from '../utils/format'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
 
 const columnsBase: ProColumns<FeedbackItem>[] = [
   {
@@ -141,6 +144,12 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
 
 export function FeedbackPage({ session }: { session: AuthSession | null }) {
   const { message, modal } = App.useApp()
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedFeedbackId = searchParams.get('id') || ''
+  const statusFilter = feedbackFilterFromSearch(location.search)
+  const handlingDirtyRef = useRef(false)
+  const onHandlingDirtyChange = useCallback((dirty: boolean) => { handlingDirtyRef.current = dirty }, [])
   const actionRef = useRef<ActionType>(null)
   const detailRequestRef = useRef<AbortController | null>(null)
   const listRequestRef = useRef<AbortController | null>(null)
@@ -155,7 +164,6 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
     invalid_state: 0,
     oldest_open_at: null,
   })
-  const [statusFilter, setStatusFilter] = useState<FeedbackInboxFilter>('open')
   const [detail, setDetail] = useState<FeedbackDetail | null>(null)
   const [detailError, setDetailError] = useState('')
   const [detailLoading, setDetailLoading] = useState(false)
@@ -168,7 +176,7 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
   const [downloading, setDownloading] = useState('')
   const [accessScope, setAccessScope] = useState<'own' | 'all'>('own')
 
-  const openDetail = async (feedbackId: string) => {
+  const loadDetail = useCallback(async (feedbackId: string) => {
     detailRequestRef.current?.abort()
     const controller = new AbortController()
     detailRequestRef.current = controller
@@ -184,7 +192,7 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
     } finally {
       if (!controller.signal.aborted) setDetailLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => () => {
     detailRequestRef.current?.abort()
@@ -194,6 +202,28 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
   const refresh = async () => {
     await actionRef.current?.reload()
   }
+
+  useEffect(() => {
+    if (!session?.authenticated) return
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      if (selectedFeedbackId) void loadDetail(selectedFeedbackId)
+      else { setDetail(null); setDetailError(''); setDetailLoading(false) }
+    })
+    return () => { active = false; detailRequestRef.current?.abort() }
+  }, [selectedFeedbackId, session?.authenticated, loadDetail])
+
+  const confirmDiscard = (action: () => void) => {
+    if (handlingDirtyRef.current) {
+      modal.confirm({ title: '放弃未保存的处理记录？', okText: '放弃修改', cancelText: '继续编辑', onOk: action })
+    } else action()
+  }
+
+  const openDetail = (feedbackId: string) => confirmDiscard(() => {
+    if (selectedFeedbackId === feedbackId) void loadDetail(feedbackId)
+    else setSearchParams((current) => { const next = new URLSearchParams(current); next.set('id', feedbackId); return next })
+  })
 
   const changeStatus = async (feedbackId: string, status: FeedbackStatus) => {
     if (mutationRef.current) return
@@ -272,7 +302,7 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
   }
 
   if (session === null) return <Spin tip="正在验证登录状态…" />
-  if (!session.authenticated) return <Navigate to="/login?next=/feedback" replace />
+  if (!session.authenticated) return <Navigate to={`/login?${new URLSearchParams({ next: location.pathname + location.search })}`} replace />
 
   const columns: ProColumns<FeedbackItem>[] = [
     ...columnsBase,
@@ -325,7 +355,10 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
         action={<Button size="small" onClick={() => void refresh()}>重试</Button>} />}
       <Segmented<FeedbackInboxFilter>
         value={statusFilter}
-        onChange={(value) => { setSelectedIds([]); setStatusFilter(value) }}
+        onChange={(value) => {
+          setSelectedIds([])
+          setSearchParams((current) => { const next = new URLSearchParams(current); next.set('status', value); return next })
+        }}
         options={[
           { label: `未解决 (${openCount})`, value: 'open' },
           { label: `新反馈 (${summary.status_counts.new})`, value: 'new' },
@@ -392,18 +425,15 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
         scroll={{ x: 1150 }}
       />
       <Drawer
-        title={detail ? `反馈 ${detail.feedback_id}` : '反馈详情'}
-        width={640}
+        title="反馈详情"
+        width="min(640px, 100vw)"
         open={detailLoading || Boolean(detail) || Boolean(detailError)}
-        onClose={() => {
-          detailRequestRef.current?.abort()
-          setDetail(null)
-          setDetailError('')
-          setDetailLoading(false)
-        }}
+        onClose={() => confirmDiscard(() => {
+          setSearchParams((current) => { const next = new URLSearchParams(current); next.delete('id'); return next })
+        })}
         loading={detailLoading}
         extra={detail && (
-          <Space>
+          <Space wrap>
             <Button icon={<ReloadOutlined />} disabled={Boolean(updating)} onClick={() => void openDetail(detail.feedback_id)}>刷新</Button>
             {detail.access.can_manage && <>
               {detail.status !== 'in_progress' && <Button disabled={Boolean(updating)} onClick={() => void changeStatus(detail.feedback_id, 'in_progress')}>
@@ -419,6 +449,12 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
         {detailError && <Alert type="error" showIcon message="反馈详情加载失败" description={detailError} />}
         {detail && (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Typography.Paragraph copyable={{
+              text: new URL(feedbackDetailPath(location.pathname, detail.feedback_id, location.search), window.location.origin).href,
+              tooltips: ['复制反馈详情链接', '已复制'],
+            }} style={{ marginBottom: 0, overflowWrap: 'anywhere' }}>
+              反馈编号：{detail.feedback_id}
+            </Typography.Paragraph>
             {!detail.metadata_valid && (
               <Alert type="warning" showIcon message="历史记录缺少有效元数据" description="附件仍可下载，提交者、版本和问题描述可能为空。" />
             )}
@@ -439,6 +475,10 @@ export function FeedbackPage({ session }: { session: AuthSession | null }) {
                 {detail.message || '提交时未填写问题描述。'}
               </Typography.Paragraph>
             </Card>
+            {location.pathname.startsWith('/admin/') && (
+              <FeedbackHandlingCard key={detail.feedback_id} feedbackId={detail.feedback_id}
+                canManage={detail.access.can_manage} onDirtyChange={onHandlingDirtyChange} />
+            )}
             <Card size="small" title={`诊断附件（${detail.attachments.length}）`}>
               <List
                 dataSource={detail.attachments}
