@@ -123,7 +123,7 @@ namespace ProjectLUX
         public ObjectiveTestResultCsvExportProfile CsvExportProfile { get => _CsvExportProfile; set { _CsvExportProfile = value; OnPropertyChanged(); } }
         private ObjectiveTestResultCsvExportProfile _CsvExportProfile = ObjectiveTestResultCsvExportProfile.Current;
 
-
+        [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
