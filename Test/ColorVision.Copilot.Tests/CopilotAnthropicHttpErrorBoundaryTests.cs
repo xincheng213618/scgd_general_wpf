@@ -18,8 +18,8 @@ public sealed class CopilotAnthropicHttpErrorBoundaryTests
     [InlineData("6", "invalid", 6)]
     [InlineData("6", "NaN", 6)]
     [InlineData("6", "-1", 6)]
-    [InlineData(null, "999999999", 120)]
-    public async Task ErrorBoundaryPreservesBoundedRetryDelayAndRedactedRequestId(string? seconds, string? milliseconds, double expectedSeconds)
+    [InlineData(null, "999999999", 999999.999)]
+    public async Task ErrorBoundaryPreservesFullRetryDelayAndRedactedRequestId(string? seconds, string? milliseconds, double expectedSeconds)
     {
         var content = new TrackingContent(JsonSerializer.Serialize(new
         {
@@ -37,6 +37,7 @@ public sealed class CopilotAnthropicHttpErrorBoundaryTests
 
         Assert.IsType<AnthropicRateLimitException>(error);
         Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), CopilotProviderRetryChatClient.ResolveRetryDelay(error, TimeSpan.Zero));
+        Assert.Equal(expectedSeconds <= 120, CopilotProviderRetryChatClient.TryResolveRetryDelay(error, TimeSpan.Zero, out _));
         Assert.Equal("req_redacted_retry", CopilotProviderRequestId.Find(error));
         Assert.DoesNotContain("secret-test-key", error.Message, StringComparison.Ordinal);
         Assert.Contains("<redacted>", error.Message, StringComparison.Ordinal);

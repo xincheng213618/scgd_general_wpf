@@ -110,6 +110,7 @@ namespace ColorVision.Copilot
                 CopilotToolExecutionState.Denied => completed + " · 未批准",
                 CopilotToolExecutionState.Cancelled => completed + " · 已取消",
                 CopilotToolExecutionState.Interrupted => completed + " · 已中断",
+                CopilotToolExecutionState.Completed when HasPartialResult => completed + " · 结果不完整",
                 _ => completed,
             };
         }
@@ -150,6 +151,8 @@ namespace ColorVision.Copilot
         {
             if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
                 return ResultSummary;
+            if (HasPartialResult)
+                return PartialResultMessage;
             if (CopilotSharedCapabilityCatalog.TryResolveAgentTool(ToolName, out var capability))
                 return capability.Presentation.SuccessSummary;
 

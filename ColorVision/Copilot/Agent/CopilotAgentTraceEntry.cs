@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 18;
+        public const int CurrentSchemaVersion = 20;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -83,6 +83,8 @@ namespace ColorVision.Copilot
 
         public string ResultSummary { get; set; } = string.Empty;
 
+        public string PartialResultMessage { get; set; } = string.Empty;
+
         public string ErrorMessage { get; set; } = string.Empty;
 
         public string DelegatedRunId { get; set; } = string.Empty;
@@ -148,6 +150,11 @@ namespace ColorVision.Copilot
         public bool WorkspaceChangeSetRolledBack { get; private set; }
 
         public List<CopilotWorkspaceChangeFile> WorkspaceChangedFiles { get; set; } = new();
+
+        // Candidate paths for an unfinished write, or explicit recheck evidence from its result.
+        public List<string> WorkspaceRecheckPaths { get; set; } = new();
+
+        public bool ShouldSerializeWorkspaceRecheckPaths() => WorkspaceRecheckPaths.Count > 0;
 
         public bool ShouldSerializeCallId() => !string.IsNullOrEmpty(CallId);
 
@@ -216,6 +223,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeArgumentSummary() => !string.IsNullOrEmpty(ArgumentSummary);
 
         public bool ShouldSerializeResultSummary() => !string.IsNullOrEmpty(ResultSummary);
+
+        public bool ShouldSerializePartialResultMessage() => !string.IsNullOrEmpty(PartialResultMessage);
 
         public bool ShouldSerializeErrorMessage() => !string.IsNullOrEmpty(ErrorMessage);
 
@@ -299,9 +308,12 @@ namespace ColorVision.Copilot
         public bool IsVisibleInActivity => !IsFailedSearchAttempt();
 
         [JsonIgnore]
+        public bool HasPartialResult => State == CopilotToolExecutionState.Completed && !string.IsNullOrWhiteSpace(PartialResultMessage);
+
+        [JsonIgnore]
         public string ActivityGlyph => State switch
         {
-            CopilotToolExecutionState.Completed => "✓",
+            CopilotToolExecutionState.Completed => HasPartialResult ? "!" : "✓",
             CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut => "!",
             CopilotToolExecutionState.Denied or CopilotToolExecutionState.Cancelled or CopilotToolExecutionState.Interrupted => "×",
             CopilotToolExecutionState.AwaitingApproval => "?",
@@ -457,6 +469,8 @@ namespace ColorVision.Copilot
                     builder.AppendLine().Append("Arguments: ").Append(ArgumentSummary);
                 if (!string.IsNullOrWhiteSpace(ResultSummary))
                     builder.AppendLine().Append(ResultSummary);
+                if (HasPartialResult)
+                    builder.AppendLine().Append(PartialResultMessage);
                 if (!string.IsNullOrWhiteSpace(ErrorMessage))
                     builder.AppendLine().Append("Error: ").Append(ErrorMessage);
                 return builder.ToString().TrimEnd();
@@ -521,8 +535,12 @@ namespace ColorVision.Copilot
             }
             if (result != null)
             {
+                entry.WorkspaceRecheckPaths = CaptureWorkspaceRecheckPaths(result.WorkspaceRecheckPaths);
                 var summary = !string.IsNullOrWhiteSpace(result.Summary) ? result.Summary : result.Content;
                 entry.ResultSummary = Sanitize(summary);
+                entry.PartialResultMessage = result.Success && execution.State == CopilotToolExecutionState.Completed
+                    ? Sanitize(result.PartialResultMessage)
+                    : string.Empty;
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
                 entry.FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
                 if (CopilotToolProcessEvidence.TryNormalizeForResult(
@@ -633,6 +651,7 @@ namespace ColorVision.Copilot
                 QueueDurationMs = Math.Max(0, execution.QueueDurationMs),
                 TimeoutMs = Math.Max(0, execution.TimeoutMs),
                 ArgumentSummary = Sanitize(execution.ArgumentSummary),
+                WorkspaceRecheckPaths = CaptureWorkspaceRecheckPaths(execution.WorkspaceRecheckPaths),
             };
         }
 

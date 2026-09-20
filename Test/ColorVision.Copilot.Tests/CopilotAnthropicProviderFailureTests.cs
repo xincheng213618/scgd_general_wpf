@@ -170,6 +170,11 @@ public sealed class CopilotAnthropicProviderFailureTests
             var result = await runtime.RunAsync(request, events.Add, CancellationToken.None);
 
             Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+            var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+            Assert.Equal(errorType == "authentication_error" ? "provider_request_rejected" : "provider_unavailable", blocker.Code);
+            Assert.Contains(errorType, blocker.Summary);
+            Assert.DoesNotContain(events, item => item.Text.Contains("starting one bounded no-tools finalization", StringComparison.Ordinal));
+            Assert.Equal("Partial answer.", string.Concat(events.Where(item => item.Type == CopilotAgentEventType.AnswerDelta).Select(item => item.Text)));
             Assert.Equal(completeToolFirst ? 2 : 1, handler.CallCount);
             Assert.Equal(completeToolFirst ? 2 : 1, result.Budget.ProviderCalls);
             Assert.Equal(completeToolFirst ? 110 : 0, result.Usage.EffectiveTotalTokens);
@@ -183,6 +188,8 @@ public sealed class CopilotAnthropicProviderFailureTests
             Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "Partial answer.");
             Assert.DoesNotContain(events, item => item.ProviderRetry != null);
             Assert.NotNull(result.SessionCheckpoint);
+            Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+                item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
             Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
                 item.Type == CopilotAgentTaskEventType.RunStopped && item.State == CopilotAgentStopReason.ProviderFailure.ToString());
             if (completeToolFirst)

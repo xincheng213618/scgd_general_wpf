@@ -177,6 +177,7 @@ namespace ColorVision.Copilot
                 : turnDescription.Trim();
             var changed = false;
             var hasUnknownToolOutcome = false;
+            var interruptedWorkspaceWrite = false;
             foreach (var entry in AgentTraceEntries.Where(entry => entry != null))
             {
                 var sourceState = entry.State;
@@ -184,7 +185,8 @@ namespace ColorVision.Copilot
                 {
                     CopilotToolExecutionState.Running => entry.CompleteActiveExecution(
                         CopilotToolExecutionState.Interrupted,
-                        CopilotToolFailureKind.Internal,
+                        entry.Access == CopilotToolAccess.Write || entry.Idempotency != CopilotToolIdempotency.Idempotent
+                            ? CopilotToolFailureKind.OutcomeUnknown : CopilotToolFailureKind.Internal,
                         CopilotToolFailureCode.OutcomeUnknown,
                         $"{description} after this tool execution entered the running stage but before an authoritative terminal result was saved; its external outcome is unknown.",
                         completedAt),
@@ -205,11 +207,14 @@ namespace ColorVision.Copilot
                 changed |= entryChanged;
                 hasUnknownToolOutcome |= entryChanged
                     && sourceState == CopilotToolExecutionState.Running;
+                interruptedWorkspaceWrite |= entryChanged && sourceState == CopilotToolExecutionState.Running
+                    && entry.Access == CopilotToolAccess.Write && entry.WorkspaceRecheckPaths?.Count > 0;
             }
 
             if (!changed)
                 return false;
 
+            RestoreWorkspaceRecheckWarning(interruptedWorkspaceWrite);
             RebuildExecutionContentFromAgentTrace();
             OnPropertyChanged(nameof(AgentRecoveryActionLabel));
             OnPropertyChanged(nameof(AgentRecoveryToolTip));

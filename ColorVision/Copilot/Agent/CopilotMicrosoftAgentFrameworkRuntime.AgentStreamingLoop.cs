@@ -19,7 +19,7 @@ namespace ColorVision.Copilot
             CopilotTokenUsage Usage,
             CopilotAgentControlIntent ControlIntent,
             bool TimeBudgetExhausted,
-            bool ProviderInterrupted,
+            CopilotAgentBlockerSnapshot? ProviderFailure,
             bool ContextWindowExceeded,
             bool ToolBudgetForcedFinalization,
             bool PostToolStopRequested,
@@ -57,7 +57,7 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
-            var providerInterrupted = false;
+            CopilotAgentBlockerSnapshot? providerFailure = null;
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
             var postToolStopRequested = false;
@@ -243,7 +243,7 @@ namespace ColorVision.Copilot
                 if (bridge.StepRecords.Count == 0 && answerText.Length == 0)
                     throw;
 
-                providerInterrupted = true;
+                providerFailure = CreateProviderFailureBlocker(ex);
                 if (CopilotProviderInactivityException.TryFind(
                     ex,
                     out var inactivity))
@@ -257,14 +257,13 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(CopilotProviderRequestId.AppendToMessage(
-                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools.",
-                        CopilotProviderRequestId.Find(ex))));
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(providerFailure.Summary
+                        + " The current Harness session will be checkpointed without replaying tools."));
                 }
                 if (answerText.Length == 0)
                 {
                     emit(CopilotAgentEvent.AnswerDelta(
-                        "模型连接在 Agent 已取得进展后中断。当前任务状态和工具结果正在保存，可安全恢复，不会自动重放工具。"));
+                        providerFailure.Summary + " 当前任务状态和工具结果正在保存，不会自动重放工具。"));
                 }
             }
             catch
@@ -289,7 +288,7 @@ namespace ColorVision.Copilot
                 usage,
                 controlIntent,
                 timeBudgetExhausted,
-                providerInterrupted,
+                providerFailure,
                 contextWindowExceeded,
                 toolBudgetForcedFinalization,
                 postToolStopRequested,

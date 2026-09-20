@@ -14,6 +14,142 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotOpenAiProviderRetryTests
 {
     [Theory]
+    [InlineData(true, "gpt-6-astra", true)]
+    [InlineData(true, "gpt-5.5", false)]
+    [InlineData(false, "gpt-6-astra", false)]
+    public async Task RuntimePublishesCacheComparisonWithoutChangingToolEvidenceOrBudget(bool responsesApi, string model, bool expectedDiagnostics)
+    {
+        await using var server = new LoopbackProvider(call =>
+        {
+            var response = CompletedResponse(responsesApi, toolCall: call == 1);
+            return response with
+            {
+                Body = response.Body.Replace("gpt-5.5", model, StringComparison.Ordinal).Replace("\"usage\":",
+                    "\"prompt_cache_diagnostics\":{\"type\":\"cache_miss\",\"reason\":\"input_changed\",\"cache_missed_tokens\":9000},\"usage\":", StringComparison.Ordinal),
+            };
+        });
+        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
+        fixture.Profile.Model = model;
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(2, server.CallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(220, result.Budget.ReportedTotalTokens);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+        Assert.Equal(expectedDiagnostics ? 1 : 0, fixture.Events.Count(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("提示缓存比较：cache_miss", StringComparison.Ordinal)));
+        using var payload = JsonDocument.Parse(server.Payloads[1]);
+        if (expectedDiagnostics)
+            Assert.Equal("resp_test", payload.RootElement.GetProperty("prompt_cache_options").GetProperty("comparison_response_id").GetString());
+        else
+            Assert.False(payload.RootElement.TryGetProperty("prompt_cache_options", out _));
+        fixture.AssertTurnLifecycle(result);
+    }
+
+    [Theory]
+    [InlineData(false, "insufficient_quota")]
+    [InlineData(true, "insufficient_quota")]
+    [InlineData(false, "credit_balance_exhausted")]
+    [InlineData(true, "credit_balance_exhausted")]
+    [InlineData(false, "organization_spend_limit_exceeded")]
+    [InlineData(true, "organization_spend_limit_exceeded")]
+    [InlineData(false, "project_spend_limit_exceeded")]
+    [InlineData(true, "project_spend_limit_exceeded")]
+    [InlineData(false, "organization_usage_limit_exceeded")]
+    [InlineData(true, "organization_usage_limit_exceeded")]
+    public async Task RuntimeDoesNotRetryBillingFailuresOrReplayCompletedTools(bool responsesApi, string code)
+    {
+        await using var server = new LoopbackProvider(call => call == 1
+            ? CompletedResponse(responsesApi, toolCall: true)
+            : StructuredErrorResponse(429, code, "rate_limit_error"));
+        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(2, server.CallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.DoesNotContain(fixture.Events, item => item.ProviderRetry != null);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        fixture.AssertTurnLifecycle(result);
+        server.AssertRoute(responsesApi);
+    }
+
+    [Theory]
+    [InlineData(false, 429, "slow_down", "rate_limit_error")]
+    [InlineData(true, 429, "slow_down", "rate_limit_error")]
+    [InlineData(false, 503, "server_is_overloaded", "service_unavailable_error")]
+    [InlineData(true, 503, "server_is_overloaded", "service_unavailable_error")]
+    public async Task SdkRetryHonorsServerDelayAndReportsSpecificError(bool responsesApi, int status, string code, string type)
+    {
+        await using var server = new LoopbackProvider(call => call == 1
+            ? StructuredErrorResponse(status, code, type) with { Headers = "Retry-After: 7\r\n" }
+            : CompletedResponse(responsesApi, toolCall: false));
+        using var httpClient = server.CreateClient(responsesApi);
+        var delays = new List<TimeSpan>();
+        var retries = new List<CopilotProviderRetryInfo>();
+        using var provider = new CopilotProviderRetryChatClient(
+            CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient), retries.Add,
+            delayFactory: _ => TimeSpan.Zero, delayAsync: (delay, _) => { delays.Add(delay); return Task.CompletedTask; });
+
+        var text = new StringBuilder();
+        await foreach (var update in provider.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "Read the result.")], cancellationToken: server.Token))
+            text.Append(update.Text);
+
+        Assert.Equal("Completed answer.", text.ToString());
+        Assert.Equal(2, server.CallCount);
+        Assert.Equal(TimeSpan.FromSeconds(7), Assert.Single(delays));
+        var retry = Assert.Single(retries);
+        Assert.Equal($"HTTP {status} ({code})", retry.FailureKind);
+        Assert.Equal(status, retry.StatusCode);
+        server.AssertRoute(responsesApi);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task SdkLongRetryAfterStopsInsteadOfRetryingEarly(bool responsesApi, bool httpDate)
+    {
+        var header = httpDate ? DateTimeOffset.UtcNow.AddMinutes(10).ToString("R", CultureInfo.InvariantCulture) : "600";
+        await using var server = new LoopbackProvider(_ => StructuredErrorResponse(429, "slow_down", "rate_limit_error") with
+        {
+            Headers = $"Retry-After: {header}\r\nx-request-id: req-long-delay\r\n",
+        });
+        using var httpClient = server.CreateClient(responsesApi);
+        var retries = new List<CopilotProviderRetryInfo>();
+        var waits = 0;
+        using var provider = new CopilotProviderRetryChatClient(
+            CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(responsesApi), httpClient), retries.Add,
+            delayAsync: (_, _) => { waits++; return Task.CompletedTask; });
+
+        var error = await Assert.ThrowsAnyAsync<ClientResultException>(async () =>
+        {
+            await foreach (var _ in provider.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "Read the result.")], cancellationToken: server.Token)) { }
+        });
+
+        Assert.Equal(429, error.Status);
+        Assert.Equal("req-long-delay", CopilotProviderRequestId.Find(error));
+        Assert.True(CopilotProviderRetryChatClient.ResolveRetryDelay(error, TimeSpan.Zero) > TimeSpan.FromMinutes(2));
+        Assert.Equal(1, server.CallCount);
+        Assert.Equal(0, waits);
+        Assert.Empty(retries);
+    }
+
+    private static ProviderResponse StructuredErrorResponse(int status, string code, string type)
+        => new(status, "application/json", JsonSerializer.Serialize(new { error = new { code, type, message = "Controlled failure." } }));
+
+    [Theory]
     [InlineData(false, 401)]
     [InlineData(false, 429)]
     [InlineData(false, 503)]
@@ -68,9 +204,11 @@ public sealed class CopilotOpenAiProviderRetryTests
 
     [Theory]
     [InlineData(false, 401, 1)]
+    [InlineData(false, 422, 1)]
     [InlineData(false, 429, 3)]
     [InlineData(false, 503, 3)]
     [InlineData(true, 401, 1)]
+    [InlineData(true, 422, 1)]
     [InlineData(true, 429, 3)]
     [InlineData(true, 503, 3)]
     public async Task HttpFailureAfterToolPreservesFactsWithoutMultiplyingRetries(bool responsesApi, int statusCode, int failedAttempts)
@@ -83,6 +221,16 @@ public sealed class CopilotOpenAiProviderRetryTests
         var result = await fixture.RunAsync();
 
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal(statusCode is 429 or 503 ? "provider_unavailable" : "provider_request_rejected", blocker.Code);
+        Assert.Contains($"HTTP {statusCode}", blocker.Summary);
+        Assert.DoesNotContain("连接中断", blocker.Summary);
+        Assert.Contains(fixture.Events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains($"HTTP {statusCode}", StringComparison.Ordinal));
+        Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("starting one bounded no-tools finalization", StringComparison.Ordinal));
+        Assert.True(blocker.IsStructurallyValid());
+        Assert.False(blocker.RetryEligible);
+        Assert.True(blocker.RequiresUserInput);
         Assert.Equal(1 + failedAttempts, server.CallCount);
         Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
         Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
@@ -99,6 +247,88 @@ public sealed class CopilotOpenAiProviderRetryTests
         Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
         Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
             item.Type == CopilotAgentTaskEventType.RunStopped && item.State == CopilotAgentStopReason.ProviderFailure.ToString());
+        server.AssertRoute(responsesApi);
+        fixture.AssertTurnLifecycle(result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task QuotaFailureAfterToolKeepsActionableCauseWithoutRetrying(bool responsesApi)
+    {
+        var failure = ErrorResponse(429) with
+        {
+            Body = JsonSerializer.Serialize(new
+            {
+                error = new { code = "insufficient_quota", type = "rate_limit_error", message = "Untrusted error body echoing test-key." },
+            }),
+        };
+        await using var server = new LoopbackProvider(call => call == 1 ? CompletedResponse(responsesApi, toolCall: true) : failure);
+        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(2, server.CallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal("provider_request_rejected", blocker.Code);
+        Assert.Contains("HTTP 429 / insufficient_quota", blocker.Summary);
+        Assert.Contains("账户限制", blocker.Summary);
+        Assert.False(blocker.RetryEligible);
+        Assert.True(blocker.RequiresUserInput);
+        Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("test-key", StringComparison.Ordinal));
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
+    }
+
+    [Theory]
+    [InlineData(false, 401, 1)]
+    [InlineData(false, 503, 3)]
+    [InlineData(true, 401, 1)]
+    [InlineData(true, 503, 3)]
+    [InlineData(false, 413, 1)]
+    [InlineData(true, 413, 1)]
+    public async Task HttpFailureDuringNoToolsFinalizationPreservesCauseAndCompletedTool(bool responsesApi, int statusCode, int failedAttempts)
+    {
+        var empty = CompletedResponse(responsesApi, toolCall: false);
+        empty = empty with { Body = empty.Body.Replace("Completed answer.", "", StringComparison.Ordinal) };
+        await using var server = new LoopbackProvider(call => call switch
+        {
+            1 => CompletedResponse(responsesApi, toolCall: true),
+            2 => empty,
+            _ => ErrorResponse(statusCode),
+        });
+        using var fixture = new RunFixture(server, responsesApi, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(2 + failedAttempts, server.CallCount);
+        Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
+        Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
+        // This finalization prompt has no older conversation groups to compact; 413 must not resend the same input.
+        Assert.Equal(0, result.Budget.ContextRecoveryCount);
+        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal(statusCode switch { 413 => "provider_context_window", 503 => "provider_unavailable", _ => "provider_request_rejected" }, blocker.Code);
+        Assert.Contains(statusCode == 413 ? "上下文" : $"HTTP {statusCode}", blocker.Summary);
+        Assert.Contains(fixture.Events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text.Contains(blocker.Summary, StringComparison.Ordinal));
+        foreach (var payload in server.Payloads.Skip(2))
+        {
+            using var document = JsonDocument.Parse(payload);
+            Assert.False(document.RootElement.TryGetProperty("tools", out var tools) && tools.GetArrayLength() > 0);
+        }
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
         server.AssertRoute(responsesApi);
         fixture.AssertTurnLifecycle(result);
     }
@@ -179,6 +409,7 @@ public sealed class CopilotOpenAiProviderRetryTests
         }
 
         public ValidationProbeTool Tool { get; } = new();
+        public CopilotProfileConfig Profile => _request.Profile;
         public List<CopilotAgentEvent> Events { get; } = [];
         public Task<CopilotAgentRunResult> RunAsync() => _runtime.RunAsync(_request, Events.Add, _server.Token);
 
@@ -308,6 +539,7 @@ public sealed class CopilotOpenAiProviderRetryTests
         public Uri BaseUri { get; }
         public CancellationToken Token => _lifetime.Token;
         public int CallCount => Volatile.Read(ref _callCount);
+        public List<string> Payloads { get; } = [];
         public HttpClient CreateClient(bool responsesApi) => new(new LoopbackRedirectHandler(BaseUri, responsesApi));
 
         public void AssertRoute(bool responsesApi)
@@ -338,14 +570,17 @@ public sealed class CopilotOpenAiProviderRetryTests
                     if (contentLength is < 0 or > 1024 * 1024)
                         throw new InvalidDataException("Unexpected loopback request length.");
                     var remaining = contentLength;
+                    var requestBody = new StringBuilder();
                     var buffer = new char[4096];
                     while (remaining > 0)
                     {
                         var count = await reader.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, remaining)), Token);
                         if (count == 0)
                             throw new EndOfStreamException();
+                        requestBody.Append(buffer, 0, count);
                         remaining -= count;
                     }
+                    Payloads.Add(requestBody.ToString());
                     var response = _response(Interlocked.Increment(ref _callCount));
                     var body = Encoding.UTF8.GetBytes(response.Body);
                     var headers = Encoding.ASCII.GetBytes(

@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
 
         public bool IsFailure => Entries.Any(entry => entry.IsFailure);
 
+        public bool HasPartialResult => Entries.Any(entry => entry.HasPartialResult);
+
         public string ActivityGlyph
         {
             get
@@ -36,7 +38,7 @@ namespace ColorVision.Copilot
                     return "!";
                 if (Entries.Any(entry => entry.State is CopilotToolExecutionState.Denied or CopilotToolExecutionState.Cancelled or CopilotToolExecutionState.Interrupted))
                     return "×";
-                return "✓";
+                return HasPartialResult ? "!" : "✓";
             }
         }
 
@@ -82,7 +84,7 @@ namespace ColorVision.Copilot
 
                 return hardFailureCount switch
                 {
-                    0 => completed,
+                    0 => HasPartialResult ? completed + " · 结果不完整" : completed,
                     _ when hardFailureCount == Entries.Count => completed + " · 失败",
                     _ => completed + " · 部分失败",
                 };
@@ -95,7 +97,9 @@ namespace ColorVision.Copilot
 
         public string ActivityDescription => IsSingle
             ? FirstEntry.ActivityDescription
-            : $"包含 {Entries.Count} 次调用，展开可查看每次调用的结果和诊断信息。";
+            : HasPartialResult
+                ? $"包含 {Entries.Count} 次调用，其中 {Entries.Count(entry => entry.HasPartialResult)} 次结果不完整；展开可查看原因和后续读取范围。"
+                : $"包含 {Entries.Count} 次调用，展开可查看每次调用的结果和诊断信息。";
 
         public static IReadOnlyList<CopilotAgentTraceGroup> Create(IEnumerable<CopilotAgentTraceEntry> entries)
         {

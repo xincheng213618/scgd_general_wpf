@@ -235,12 +235,14 @@ namespace ColorVision.Copilot
             retry = null!;
             if (failedAttempt >= _maximumAttempts
                 || cancellationToken.IsCancellationRequested
-                || !TryClassifyTransientFailure(exception, cancellationToken, out _, out _))
+                || !TryClassifyTransientFailure(exception, cancellationToken, out var failureKind, out var statusCode)
+                || !TryResolveRetryDelay(exception, _delayFactory(failedAttempt), out var delay))
             {
                 return false;
             }
 
-            retry = CreateRetry(exception, failedAttempt);
+            retry = new CopilotProviderRetryInfo(failedAttempt, failedAttempt + 1, _maximumAttempts,
+                delay, failureKind, statusCode, CopilotProviderRequestId.Find(exception));
             return true;
         }
 
@@ -259,19 +261,6 @@ namespace ColorVision.Copilot
                 or OperationCanceledException);
         }
 
-        private CopilotProviderRetryInfo CreateRetry(Exception exception, int failedAttempt)
-        {
-            _ = TryClassifyTransientFailure(exception, CancellationToken.None, out var failureKind, out var statusCode);
-            return new CopilotProviderRetryInfo(
-                failedAttempt,
-                failedAttempt + 1,
-                _maximumAttempts,
-                ResolveRetryDelay(exception, _delayFactory(failedAttempt)),
-                failureKind,
-                statusCode,
-                CopilotProviderRequestId.Find(exception));
-        }
-
         internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception, bool includeMilliseconds = false)
         {
             ArgumentNullException.ThrowIfNull(response);
@@ -282,7 +271,9 @@ namespace ColorVision.Copilot
                 && double.IsFinite(milliseconds)
                 && milliseconds >= 0)
             {
-                exception.Data[RetryAfterDataKey] = TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, milliseconds));
+                exception.Data[RetryAfterDataKey] = milliseconds >= TimeSpan.MaxValue.TotalMilliseconds
+                    ? TimeSpan.MaxValue
+                    : TimeSpan.FromMilliseconds(milliseconds);
                 return;
             }
             if (!response.Headers.TryGetValues("Retry-After", out var values))
@@ -299,6 +290,13 @@ namespace ColorVision.Copilot
             return TryGetRetryAfter(exception, out var retryAfter) && retryAfter > normalizedFallback
                 ? retryAfter
                 : normalizedFallback;
+        }
+
+        internal static bool TryResolveRetryDelay(Exception exception, TimeSpan fallbackDelay, out TimeSpan delay)
+        {
+            delay = ResolveRetryDelay(exception, fallbackDelay);
+            // Keep the automatic wait bounded without retrying before the server permits it.
+            return delay <= MaximumServerRetryDelay;
         }
 
         private static bool TryGetRetryAfter(Exception exception, out TimeSpan delay)
@@ -347,9 +345,7 @@ namespace ColorVision.Copilot
             var requestedDelay = retryAt - now;
             delay = requestedDelay <= TimeSpan.Zero
                 ? TimeSpan.Zero
-                : TimeSpan.FromMilliseconds(Math.Min(
-                    MaximumServerRetryDelay.TotalMilliseconds,
-                    requestedDelay.TotalMilliseconds));
+                : requestedDelay;
             return true;
         }
 
@@ -370,8 +366,7 @@ namespace ColorVision.Copilot
                 if (candidate is AnthropicApiException apiException)
                 {
                     statusCode = (int)apiException.StatusCode;
-                    failureKind = "HTTP " + statusCode.Value;
-                    return IsTransientStatusCode(statusCode.Value);
+                    return CopilotProviderErrorPolicy.IsTransientHttpFailure(candidate, statusCode.Value, out failureKind);
                 }
 
                 if (candidate is AnthropicSseException sseException)
@@ -390,8 +385,7 @@ namespace ColorVision.Copilot
                 if (candidate is ClientResultException { Status: > 0 } clientResultException)
                 {
                     statusCode = clientResultException.Status;
-                    failureKind = "HTTP " + statusCode.Value;
-                    return IsTransientStatusCode(statusCode.Value);
+                    return CopilotProviderErrorPolicy.IsTransientHttpFailure(candidate, statusCode.Value, out failureKind);
                 }
 
                 if (candidate is HttpRequestException { StatusCode: not null } httpRequestException)

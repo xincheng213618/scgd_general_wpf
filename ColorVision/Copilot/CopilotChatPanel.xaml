@@ -365,7 +365,7 @@
                             <ToggleButton x:Name="HeaderSite"
                                           Padding="0"
                                           HorizontalAlignment="Stretch"
-                                          HorizontalContentAlignment="Left"
+                                          HorizontalContentAlignment="Stretch"
                                           Background="Transparent"
                                           BorderBrush="Transparent"
                                           BorderThickness="0"
@@ -379,11 +379,11 @@
                                                 Background="Transparent">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="16" />
                                                 </Grid.ColumnDefinitions>
                                                 <ContentPresenter Grid.Column="0"
-                                                                  HorizontalAlignment="Left"
+                                                                  HorizontalAlignment="Stretch"
                                                                   VerticalAlignment="Center"
                                                                   Content="{TemplateBinding Content}"
                                                                   ContentTemplate="{TemplateBinding ContentTemplate}" />
@@ -578,7 +578,7 @@
                     <Grid ToolTip="{Binding ActivityDescription}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="18" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -589,6 +589,7 @@
                                    Opacity="0.48"
                                    Text="{Binding ActivityGlyph}" />
                         <TextBlock x:Name="EntryActivityLabel"
+                                   TextWrapping="Wrap"
                                    Grid.Column="1"
                                    VerticalAlignment="Center"
                                    FontSize="11"
@@ -637,6 +638,12 @@
                 </StackPanel>
             </Expander>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding HasPartialResult}" Value="True">
+                    <Setter TargetName="EntryActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                    <Setter TargetName="EntryActivityGlyph" Property="Opacity" Value="1" />
+                    <Setter TargetName="EntryActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                    <Setter TargetName="EntryActivityLabel" Property="Opacity" Value="1" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsFailure}" Value="True">
                     <Setter TargetName="EntryActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
                     <Setter TargetName="EntryActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
@@ -651,7 +658,7 @@
                     <Grid ToolTip="{Binding ActivityDescription}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="18" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -662,6 +669,7 @@
                                    Opacity="0.48"
                                    Text="{Binding ActivityGlyph}" />
                         <TextBlock x:Name="GroupActivityLabel"
+                                   TextWrapping="Wrap"
                                    Grid.Column="1"
                                    VerticalAlignment="Center"
                                    FontSize="12"
@@ -716,12 +724,45 @@
                 </StackPanel>
             </Expander>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding HasPartialResult}" Value="True">
+                    <Setter TargetName="GroupActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                    <Setter TargetName="GroupActivityGlyph" Property="Opacity" Value="1" />
+                    <Setter TargetName="GroupActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                    <Setter TargetName="GroupActivityLabel" Property="Opacity" Value="1" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsFailure}" Value="True">
                     <Setter TargetName="GroupActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
                     <Setter TargetName="GroupActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
                     <Setter TargetName="GroupActivityLabel" Property="Opacity" Value="0.82" />
                 </DataTrigger>
             </DataTemplate.Triggers>
+        </DataTemplate>
+        <DataTemplate x:Key="WorkspaceDiffTemplate">
+            <StackPanel>
+                <Border x:Name="WorkspaceDiffWarningBorder"
+                        Margin="0,8,0,0" Padding="10,7" CornerRadius="7"
+                        Background="{DynamicResource GlobalBorderBrush}"
+                        BorderBrush="{StaticResource CopilotControlWarningBrush}" BorderThickness="1"
+                        Visibility="{Binding HasWorkspaceDiffWarning, Converter={StaticResource bool2VisibilityConverter}}">
+                    <TextBlock Text="{Binding WorkspaceDiffWarning}" TextWrapping="Wrap"
+                               FontSize="12" Foreground="{DynamicResource GlobalTextBrush}" />
+                </Border>
+                <Expander Margin="0,8,0,0" Style="{StaticResource TraceExpanderStyle}"
+                          Visibility="{Binding HasWorkspaceDiff, Converter={StaticResource bool2VisibilityConverter}}">
+                    <Expander.Header>
+                        <Border Padding="0" Style="{StaticResource ExecutionSummaryPillBorderStyle}">
+                            <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72"
+                                       TextWrapping="Wrap" Text="{Binding WorkspaceDiffHeader}" />
+                        </Border>
+                    </Expander.Header>
+                    <Border Margin="0,5,0,0" Padding="8,6" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="6">
+                        <TextBox MaxHeight="360" FontFamily="Consolas" FontSize="10"
+                                 HorizontalScrollBarVisibility="Auto" Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                 Text="{Binding WorkspaceDiff, Mode=OneWay}" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" />
+                    </Border>
+                </Expander>
+            </StackPanel>
         </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -1434,33 +1475,7 @@
                                         <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}"
                                                                    Visibility="{Binding HasLegacyResponseLayout, Converter={StaticResource bool2VisibilityConverter}}" />
 
-                                        <Expander Margin="0,8,0,0"
-                                                  Style="{StaticResource TraceExpanderStyle}"
-                                                  Visibility="{Binding HasWorkspaceDiff, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Expander.Header>
-                                                <Border Padding="0" Style="{StaticResource ExecutionSummaryPillBorderStyle}">
-                                                    <TextBlock VerticalAlignment="Center"
-                                                               FontSize="12"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                               Opacity="0.72"
-                                                               Text="{Binding WorkspaceDiffHeader}" />
-                                                </Border>
-                                            </Expander.Header>
-                                            <Border Margin="0,5,0,0"
-                                                    Padding="8,6"
-                                                    Background="{DynamicResource GlobalBorderBrush}"
-                                                    CornerRadius="6">
-                                                <TextBox MaxHeight="360"
-                                                         FontFamily="Consolas"
-                                                         FontSize="10"
-                                                         HorizontalScrollBarVisibility="Auto"
-                                                         Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                         Text="{Binding WorkspaceDiff, Mode=OneWay}"
-                                                         TextWrapping="NoWrap"
-                                                         VerticalScrollBarVisibility="Auto" />
-                                            </Border>
-                                        </Expander>
+                                        <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WorkspaceDiffTemplate}" />
 
                                         <Border Margin="0,8,0,0"
                                                 Padding="10,7"

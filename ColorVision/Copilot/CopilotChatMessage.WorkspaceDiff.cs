@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -47,12 +48,31 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeIsWorkspaceDiffTruncated() => HasWorkspaceDiff && IsWorkspaceDiffTruncated;
 
+        public string WorkspaceDiffWarning
+        {
+            get => _workspaceDiffWarning;
+            set
+            {
+                if (SetProperty(ref _workspaceDiffWarning, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasWorkspaceDiffWarning));
+                    OnPropertyChanged(nameof(WorkspaceDiffHeader));
+                }
+            }
+        }
+        private string _workspaceDiffWarning = string.Empty;
+
+        public bool ShouldSerializeWorkspaceDiffWarning() => HasWorkspaceDiffWarning;
+
+        [JsonIgnore]
+        public bool HasWorkspaceDiffWarning => !string.IsNullOrWhiteSpace(WorkspaceDiffWarning);
+
         [JsonIgnore]
         public bool HasWorkspaceDiff => !string.IsNullOrWhiteSpace(WorkspaceDiff);
 
         [JsonIgnore]
         public string WorkspaceDiffHeader => HasWorkspaceDiff
-            ? $"本轮文件变更 · {WorkspaceDiffFileCount} 个文件{(IsWorkspaceDiffTruncated ? " · 已截断" : string.Empty)}"
+            ? $"{(HasWorkspaceDiffWarning ? "先前确认的文件变更" : "本轮文件变更")} · {WorkspaceDiffFileCount} 个文件{(IsWorkspaceDiffTruncated ? " · 已截断" : string.Empty)}{(HasWorkspaceDiffWarning ? " · 待核查" : string.Empty)}"
             : string.Empty;
 
         internal void ApplyWorkspaceDiff(CopilotTurnWorkspaceDiffSnapshot snapshot)
@@ -60,6 +80,23 @@ namespace ColorVision.Copilot
             WorkspaceDiff = snapshot.Diff;
             WorkspaceDiffFileCount = snapshot.FileCount;
             IsWorkspaceDiffTruncated = snapshot.DiffTruncated;
+            WorkspaceDiffWarning = snapshot.VerificationWarning;
+        }
+
+        private bool RestoreWorkspaceRecheckWarning(bool recoveredWorkspaceWrite)
+        {
+            if (IsUser || !recoveredWorkspaceWrite && HasWorkspaceDiffWarning) return false;
+            var recoveredWarning = CopilotTurnWorkspaceDiffAccumulator.BuildVerificationWarning(AgentTraceEntries
+                .Where(entry => entry.Access == CopilotToolAccess.Write
+                    && entry.ToolName is "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope"
+                    && entry.State is CopilotToolExecutionState.Interrupted or CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut)
+                .SelectMany(entry => CopilotAgentTraceEntry.CaptureWorkspaceRecheckPaths(entry.WorkspaceRecheckPaths)));
+            if (recoveredWarning.Length == 0) return false;
+            // Older records can have a warning without structured paths. Preserve it once
+            // when newly interrupting a write; repeated validation must not append it again.
+            WorkspaceDiffWarning = recoveredWarning + (HasWorkspaceDiffWarning
+                ? "\n\n先前待核查记录：\n" + WorkspaceDiffWarning : string.Empty);
+            return true;
         }
 
         private bool EnsureWorkspaceDiffValid()
@@ -67,14 +104,23 @@ namespace ColorVision.Copilot
             var changed = false;
             if (IsUser)
             {
-                if (_workspaceDiff.Length > 0 || WorkspaceDiffFileCount != 0 || IsWorkspaceDiffTruncated)
+                if (_workspaceDiff.Length > 0 || WorkspaceDiffFileCount != 0 || IsWorkspaceDiffTruncated || _workspaceDiffWarning.Length > 0)
                 {
                     WorkspaceDiff = string.Empty;
                     WorkspaceDiffFileCount = 0;
                     IsWorkspaceDiffTruncated = false;
+                    WorkspaceDiffWarning = string.Empty;
                     changed = true;
                 }
                 return changed;
+            }
+
+            if (_workspaceDiffWarning.Length > CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters)
+            {
+                var end = CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters - 1;
+                if (char.IsHighSurrogate(_workspaceDiffWarning[end - 1])) end--;
+                WorkspaceDiffWarning = _workspaceDiffWarning[..end] + "…";
+                changed = true;
             }
 
             var boundedDiff = CopilotTurnWorkspaceDiffAccumulator.BoundPersistedDiff(_workspaceDiff, out var bounded);

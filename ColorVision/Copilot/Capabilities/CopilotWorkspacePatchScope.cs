@@ -93,7 +93,14 @@ namespace ColorVision.Copilot
             fullPath = string.Empty;
             error = string.Empty;
             var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths);
-            if (!TryResolveExistingFilePath(requestedPath, writableRoots, out fullPath, out error))
+            // A file-only grant still accepts paths relative to the active workspace.
+            // This is a resolution anchor, not a directory grant: authorization below
+            // continues to use only the original writable roots and exact files.
+            var resolutionRoots = writableRoots.Count == 0 && !string.IsNullOrWhiteSpace(request.WorkspacePath)
+                && Path.IsPathFullyQualified(request.WorkspacePath)
+                ? CopilotWorkspaceSearchSupport.NormalizeSearchRoots([request.WorkspacePath])
+                : writableRoots;
+            if (!TryResolveExistingFilePath(requestedPath, resolutionRoots, out fullPath, out error))
                 return false;
             if (!File.Exists(fullPath))
             {
@@ -142,7 +149,7 @@ namespace ColorVision.Copilot
 
         private static bool TryResolveExistingFilePath(
             string requestedPath,
-            IReadOnlyList<string> writableRoots,
+            IReadOnlyList<string> resolutionRoots,
             out string fullPath,
             out string error)
         {
@@ -162,8 +169,13 @@ namespace ColorVision.Copilot
             }
             if (!Path.IsPathFullyQualified(path))
             {
+                if (resolutionRoots.Count == 0)
+                {
+                    error = "Relative paths require an active workspace or writable root; use the fully qualified path of an explicitly writable file.";
+                    return false;
+                }
                 if (CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
-                    path, writableRoots, out fullPath, out var resolutionError))
+                    path, resolutionRoots, out fullPath, out var resolutionError))
                 {
                     return true;
                 }

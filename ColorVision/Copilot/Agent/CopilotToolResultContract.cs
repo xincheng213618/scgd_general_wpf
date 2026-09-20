@@ -75,6 +75,8 @@ namespace ColorVision.Copilot
                 || result.AttemptedLocalFilePaths.Any(path => path == null)
                 || result.SuccessfullyReadLocalFilePaths.Any(path => path == null)
                 || result.LocalFileReadScopes.Any(scope => scope == null)
+                || result.LocalObservationScopePaths.Any(path => string.IsNullOrWhiteSpace(path))
+                || result.WorkspaceRecheckPaths.Any(path => string.IsNullOrWhiteSpace(path))
                 || result.BackgroundShellCommands.Any(command => !command.IsStructurallyValid()))
             {
                 return Fail("a result collection contains an invalid item", out violation);
@@ -90,7 +92,8 @@ namespace ColorVision.Copilot
                 }
             }
             else if (result.Approval != null
-                || result.FailureKind == CopilotToolFailureKind.None)
+                || result.FailureKind == CopilotToolFailureKind.None
+                || !string.IsNullOrWhiteSpace(result.PartialResultMessage))
             {
                 return Fail("terminal metadata contradicts a failed result", out violation);
             }
@@ -193,6 +196,7 @@ namespace ColorVision.Copilot
             out string violation)
         {
             if (result.Summary == null
+                || result.PartialResultMessage == null
                 || result.Content == null
                 || result.ErrorMessage == null
                 || result.FailureCode == null
@@ -205,6 +209,8 @@ namespace ColorVision.Copilot
                 || result.AttemptedLocalFilePaths == null
                 || result.SuccessfullyReadLocalFilePaths == null
                 || result.LocalFileReadScopes == null
+                || result.LocalObservationScopePaths == null
+                || result.WorkspaceRecheckPaths == null
                 || result.BackgroundShellCommands == null)
             {
                 return Fail("a required result collection is null", out violation);
@@ -227,6 +233,7 @@ namespace ColorVision.Copilot
                 ToolName = expectedToolName,
                 Success = result.Success,
                 Summary = CopilotMcpAuditLogger.RedactText(result.Summary),
+                PartialResultMessage = CopilotMcpAuditLogger.RedactText(result.PartialResultMessage),
                 Content = result.Content ?? string.Empty,
                 ErrorMessage = CopilotMcpAuditLogger.RedactText(result.ErrorMessage),
                 FailureKind = result.FailureKind,
@@ -243,6 +250,8 @@ namespace ColorVision.Copilot
                 AttemptedLocalFilePaths = Freeze(result.AttemptedLocalFilePaths),
                 SuccessfullyReadLocalFilePaths = Freeze(result.SuccessfullyReadLocalFilePaths),
                 LocalFileReadScopes = Freeze(result.LocalFileReadScopes),
+                LocalObservationScopePaths = Freeze(result.LocalObservationScopePaths),
+                WorkspaceRecheckPaths = Freeze(result.WorkspaceRecheckPaths),
                 DelegatedRunUsage = result.DelegatedRunUsage,
                 DelegatedAnswer = result.DelegatedAnswer,
                 ObservationCanRepeat = result.ObservationCanRepeat,

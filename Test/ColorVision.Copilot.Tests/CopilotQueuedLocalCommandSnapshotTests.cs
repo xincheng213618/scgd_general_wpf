@@ -11,6 +11,12 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -18,6 +24,146 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotQueuedLocalCommandSnapshotTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+
+    [Theory]
+    [InlineData("context", false)]
+    [InlineData("context", true)]
+    [InlineData("file", false)]
+    [InlineData("file", true)]
+    [InlineData("image", false)]
+    [InlineData("image", true)]
+    public async Task RunningSubmissionWithAttachmentsQueuesTheWholeInputInsteadOfSendingOnlyText(string attachmentKind, bool useSendCommand)
+    {
+        await using var fixture = new QueueFixture();
+        fixture.ConfigureAttachment(attachmentKind);
+        var queued = await fixture.QueueAsync("分析刚附加的上下文。", viewModel =>
+        {
+            if (useSendCommand) viewModel.SendCommand.Execute(null);
+            else viewModel.SteerCommand.Execute(null);
+        });
+        Assert.Equal(0, fixture.SteeringCalls);
+        Assert.Empty(fixture.Conversation.PendingSteeringRecoveries);
+        var request = await fixture.DispatchAsync();
+        Assert.Equal(queued.Prompt, request.UserText);
+        var submittedAttachment = Assert.Single(request.HostContext.Attachments);
+        Assert.Equal(Assert.Single(queued.SubmissionContext.Attachments).Type, submittedAttachment.Type);
+        if (attachmentKind == "image") Assert.True(File.Exists(submittedAttachment.Value));
+        fixture.AssertNewerDraftWasPreserved(request, consumesQueuedAttachment: true);
+    }
+
+    [Theory]
+    [InlineData("context", false)]
+    [InlineData("context", true)]
+    [InlineData("file", false)]
+    [InlineData("image", true)]
+    // This STA has real controls but no global Application dispatcher. Verify UI
+    // submission here; the command cases above independently dispatch through image admission.
+    public void WpfComposerQueuesAttachedInputsAndPreservesTheNextDraft(string attachmentKind, bool clickSteerButton)
+    {
+        StaTest.Run(() =>
+        {
+            var previousContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            var fixture = new QueueFixture();
+            var panel = new CopilotChatPanel { DataContext = fixture.ViewModel };
+            try
+            {
+                fixture.ConfigureAttachment(attachmentKind);
+                var prompt = Assert.IsType<TextBox>(panel.FindName("PromptTextBox"));
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                var button = Assert.Single(LogicalDescendants(panel).OfType<Button>(), b => ReferenceEquals(b.Command, fixture.ViewModel.SteerCommand));
+                var attachment = Assert.Single(fixture.Conversation.Attachments);
+                fixture.Conversation.Attachments.Clear();
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                Assert.Contains("加入当前", button.ToolTip?.ToString());
+                fixture.Conversation.Attachments.Add(attachment);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                Assert.Contains("附件", button.ToolTip?.ToString());
+                Assert.Contains("下一轮", button.ToolTip?.ToString());
+                Assert.Contains("附件", fixture.ViewModel.InputPlaceholder);
+                var submit = fixture.QueueAsync("分析附加的内容。", viewModel =>
+                {
+                    prompt.GetBindingExpression(TextBox.TextProperty)!.UpdateTarget();
+                    if (clickSteerButton)
+                        typeof(Button).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(button, null);
+                    else
+                    {
+                        var key = new KeyEventArgs(Keyboard.PrimaryDevice, new ComposerPresentationSource(), 0, Key.Enter)
+                        { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                        prompt.RaiseEvent(key);
+                        Assert.True(key.Handled);
+                    }
+                    Assert.Empty(viewModel.InputText);
+                    Assert.Empty(viewModel.Attachments);
+                });
+                PumpDispatcherUntil(submit);
+                Assert.Equal(0, fixture.SteeringCalls);
+                Assert.Empty(fixture.Conversation.PendingSteeringRecoveries);
+                var queued = submit.GetAwaiter().GetResult();
+                Assert.Equal("分析附加的内容。", queued.Prompt);
+                Assert.Equal(attachment.Id, Assert.Single(queued.SubmissionContext.Attachments).Id);
+                Assert.DoesNotContain(fixture.Conversation.Attachments, item => item.Id == attachment.Id);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                Assert.Equal("newer draft", prompt.Text);
+            }
+            finally
+            {
+                panel.DataContext = null;
+                PumpDispatcherUntil(fixture.DisposeAsync().AsTask());
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+        }, TimeSpan.FromSeconds(30), "The WPF attachment submission did not complete.");
+    }
+
+    [Fact]
+    public async Task FullQueueKeepsTheAttachedDraftInsteadOfFallingBackToTextOnlySteering()
+    {
+        await using var fixture = new QueueFixture();
+        await fixture.QueueAsync("First queued request.");
+        while (fixture.Host.QueuedRuns.Count < fixture.Host.MaxQueuedRuns)
+        {
+            fixture.ViewModel.InputText = "Another queued request.";
+            Assert.True(fixture.ViewModel.TryQueueCurrentRunFollowUp());
+        }
+        var attachment = CopilotAttachmentItem.CreateContext("Keep this attachment.");
+        fixture.Conversation.Attachments.Add(attachment);
+        fixture.ViewModel.InputText = "Read the attached context.";
+        fixture.ViewModel.SteerCommand.Execute(null);
+        Assert.Equal("Read the attached context.", fixture.ViewModel.InputText);
+        Assert.Same(attachment, Assert.Single(fixture.Conversation.Attachments));
+        Assert.Equal(0, fixture.SteeringCalls);
+        Assert.Empty(fixture.Conversation.PendingSteeringRecoveries);
+        Assert.Equal(fixture.Host.MaxQueuedRuns, fixture.Host.QueuedRuns.Count);
+    }
+
+    private static IEnumerable<DependencyObject> LogicalDescendants(DependencyObject root)
+    {
+        foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+        {
+            yield return child;
+            foreach (var descendant in LogicalDescendants(child)) yield return descendant;
+        }
+    }
+
+    private static void PumpDispatcherUntil(Task task)
+    {
+        var bounded = task.WaitAsync(TestTimeout);
+        if (!bounded.IsCompleted)
+        {
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            var frame = new DispatcherFrame();
+            _ = bounded.ContinueWith(_ => dispatcher.BeginInvoke(new Action(() => frame.Continue = false)), TaskScheduler.Default);
+            Dispatcher.PushFrame(frame);
+        }
+        bounded.GetAwaiter().GetResult();
+    }
+
+    private sealed class ComposerPresentationSource : PresentationSource
+    {
+        public override Visual RootVisual { get; set; } = null!;
+        public override bool IsDisposed => false;
+        protected override CompositionTarget GetCompositionTargetCore() => null!;
+    }
 
     [Theory]
     [InlineData(false)]
@@ -492,6 +638,7 @@ public sealed class CopilotQueuedLocalCommandSnapshotTests
                 ActiveConversationId = Conversation.Id,
                 ActiveProfileId = profile.Id,
                 Conversations = [Conversation],
+                DefaultFollowUpBehavior = CopilotFollowUpBehavior.Steer,
             };
             ViewModel = new CopilotChatViewModel(chatService ?? new CopilotChatService(), new MemoryStore(state, _directory.FullName), Config, _runtime, Host);
             Conversation.Attachments.Add(QueuedAttachment);
@@ -506,14 +653,34 @@ public sealed class CopilotQueuedLocalCommandSnapshotTests
         public CopilotConfig Config { get; }
         public CopilotConversationRecord Conversation { get; }
         public CopilotChatViewModel ViewModel { get; }
-        private CopilotAttachmentItem QueuedAttachment { get; } = CopilotAttachmentItem.CreateContext("Queued attachment.");
+        public int SteeringCalls => _runtime.SteeringCalls;
+        private CopilotAttachmentItem QueuedAttachment { get; set; } = CopilotAttachmentItem.CreateContext("Queued attachment.");
         private CopilotAttachmentItem NewerAttachment { get; } = CopilotAttachmentItem.CreateContext("Newer draft attachment.");
 
-        public async Task<CopilotQueuedFollowUp> QueueAsync(string prompt)
+        public void ConfigureAttachment(string kind)
+        {
+            if (kind == "context") return;
+            Conversation.Attachments.Remove(QueuedAttachment);
+            if (kind == "image")
+            {
+                var path = Path.Combine(_directory.FullName, "fixture.png");
+                var bitmap = BitmapSource.Create(2, 2, 96, 96, PixelFormats.Bgra32, null, new byte[16], 8);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using (var stream = File.Create(path)) encoder.Save(stream);
+                QueuedAttachment = CopilotAttachmentItem.CreateImage(path);
+                ViewModel.SelectedProfile!.SupportsImageInput = true;
+            }
+            else QueuedAttachment = CopilotAttachmentItem.CreateFile(_firstDocument);
+            Conversation.Attachments.Add(QueuedAttachment);
+        }
+
+        public async Task<CopilotQueuedFollowUp> QueueAsync(string prompt, Action<CopilotChatViewModel>? submit = null)
         {
             await _activeStarted.Task.WaitAsync(TestTimeout);
             ViewModel.InputText = prompt;
-            Assert.True(ViewModel.TryQueueCurrentRunFollowUp());
+            if (submit == null) Assert.True(ViewModel.TryQueueCurrentRunFollowUp());
+            else submit(ViewModel);
             var queued = Assert.Single(ViewModel.QueuedFollowUps);
             Assert.Equal(_firstDocument, queued.SubmissionContext.ActiveDocumentPath);
             Assert.Equal(_firstWorkspace, queued.SubmissionContext.SolutionDirectoryPath);
@@ -702,6 +869,7 @@ public sealed class CopilotQueuedLocalCommandSnapshotTests
     {
         public TaskCompletionSource<CopilotTurnRequest> Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int SteeringCalls { get; private set; }
 
         public async IAsyncEnumerable<CopilotTurnEvent> RunAsync(CopilotTurnRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
@@ -711,7 +879,11 @@ public sealed class CopilotQueuedLocalCommandSnapshotTests
             throw new InvalidOperationException("Expected queued snapshot test completion.");
         }
 
-        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message) => new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message)
+        {
+            SteeringCalls++;
+            return new(CopilotSteeringAdmissionReason.Accepted, "fixture-steering-" + SteeringCalls);
+        }
         public bool TryEnqueueBackgroundShellCommandCompletion(CopilotBackgroundShellCommandSnapshot snapshot) => false;
         public bool TryEnqueueBackgroundShellCommandOutput(CopilotBackgroundShellOutputMonitorEventArgs eventArgs) => false;
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) => false;

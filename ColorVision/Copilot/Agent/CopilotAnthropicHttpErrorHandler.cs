@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
                     body = body.Replace(apiKey, "<redacted>", StringComparison.Ordinal);
                 var providerException = AnthropicExceptionFactory.CreateApiException(
                     response.StatusCode, CopilotMcpAuditLogger.RedactText(body));
+                CopilotProviderErrorPolicy.PreserveHttpError(providerException, body);
                 CopilotProviderRetryChatClient.PreserveRetryAfter(response, providerException, includeMilliseconds: true);
                 CopilotProviderRequestId.Preserve(providerException, CopilotProviderRequestId.Redact(
                     CopilotProviderRequestId.Extract(response), apiKey));

@@ -6,7 +6,7 @@ public sealed class CopilotVendorCatalogTests
 {
     public static TheoryData<CopilotVendorType, string[]> CurrentModelPresets => new()
     {
-        { CopilotVendorType.DeepSeek, ["deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"] },
+        { CopilotVendorType.DeepSeek, ["deepseek-v4-pro", "deepseek-flash"] },
         { CopilotVendorType.OpenAI, ["gpt-6-astra", "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] },
         { CopilotVendorType.Claude, ["claude-fable-5", "claude-mythos-5", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"] },
         { CopilotVendorType.Grok, ["grok-4.6", "grok-4.5", "grok-4.20"] },

@@ -35,9 +35,14 @@ namespace ColorVision.Copilot
             var pipeline = new ProviderClientPipeline();
             var providerInactivityTimeouts =
                 CopilotProviderInactivityPolicy.Resolve(request.Profile);
+            var providerClient = _chatClientFactory(request.Profile);
+            if (CopilotOpenAiRequestPolicy.CanRequestPromptCacheDiagnostics(request.Profile))
+            {
+                providerClient = new CopilotOpenAiPromptCacheChatClient(providerClient,
+                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)));
+            }
             var providerChatClient = new CopilotProviderInactivityChatClient(
-                new CopilotCancellationGuardChatClient(
-                    _chatClientFactory(request.Profile)),
+                new CopilotCancellationGuardChatClient(providerClient),
                 providerInactivityTimeouts.FirstResponseTimeout,
                 providerInactivityTimeouts.StreamingUpdateTimeout);
             IChatClient recoverableProviderChatClient = providerChatClient;

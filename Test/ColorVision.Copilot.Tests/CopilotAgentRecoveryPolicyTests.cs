@@ -143,8 +143,11 @@ public sealed class CopilotAgentRecoveryPolicyTests
         Assert.Contains(nameof(CopilotChatMessage.AgentRecoveryToolTip), changedProperties);
     }
 
-    [Fact]
-    public void ProviderFailureWithIncompleteTasksKeepsResumeEntryPoint()
+    [Theory]
+    [InlineData("provider_interrupted", "模型连接中断")]
+    [InlineData("provider_request_rejected", "模型请求被拒绝")]
+    [InlineData("provider_unavailable", "模型服务暂时不可用")]
+    public void ProviderFailureWithIncompleteTasksKeepsResumeEntryPoint(string blockerCode, string blockerLabel)
     {
         var profile = CreateProfile();
         var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
@@ -174,6 +177,13 @@ public sealed class CopilotAgentRecoveryPolicyTests
         {
             AgentStopReason = CopilotAgentStopReason.ProviderFailure,
             AgentTaskLedger = ledger,
+            AgentBlockers = [new CopilotAgentBlockerSnapshot
+            {
+                Kind = CopilotAgentBlockerKind.ProviderOutput,
+                Code = blockerCode,
+                Summary = "Controlled provider failure.",
+                RequiresUserInput = true,
+            }],
         };
 
         var decision = CopilotAgentRecoveryPolicy.Evaluate(
@@ -187,6 +197,13 @@ public sealed class CopilotAgentRecoveryPolicyTests
         Assert.True(decision.IsAvailable);
         Assert.Equal(CopilotAgentRecoveryMode.Resume, decision.Request!.Mode);
         Assert.Equal("继续任务", decision.ActionLabel);
+        Assert.Equal(blockerLabel, message.AgentBlockerLabel);
+        Assert.Equal("模型服务异常", message.AgentStopReasonLabel);
+        var conversation = new CopilotConversationRecord { AgentSessionCheckpoint = checkpoint };
+        var summary = new CopilotAgentTaskSummary(conversation, message, CopilotAgentTaskAttentionKind.ProviderFailure);
+        Assert.True(summary.CanResume);
+        Assert.Equal("模型服务异常", summary.StatusLabel);
+        Assert.Equal(blockerCode == "provider_interrupted" ? "已保存当前进度，可安全恢复" : "Controlled provider failure.", summary.DetailLabel);
     }
 
     [Fact]

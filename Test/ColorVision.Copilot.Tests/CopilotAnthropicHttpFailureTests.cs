@@ -47,7 +47,7 @@ public sealed class CopilotAnthropicHttpFailureTests
         Assert.Equal(statusCode == 429 ? 1 : 0, result.Budget.ProviderRateLimitRetryCount);
         var retry = Assert.Single(fixture.Events, item => item.ProviderRetry != null).ProviderRetry!;
         Assert.Equal(statusCode, retry.StatusCode);
-        Assert.Equal("HTTP " + statusCode, retry.FailureKind);
+        Assert.Equal($"HTTP {statusCode} ({(statusCode == 429 ? "rate_limit_error" : "api_error")})", retry.FailureKind);
         Assert.Equal(110, result.Usage.EffectiveTotalTokens);
         Assert.Equal(110, result.Budget.ReportedTotalTokens);
         Assert.True(result.Budget.ConsumedTokens > result.Budget.ReportedTotalTokens);
@@ -59,6 +59,7 @@ public sealed class CopilotAnthropicHttpFailureTests
 
     [Theory]
     [InlineData(401, 1)]
+    [InlineData(422, 1)]
     [InlineData(429, 3)]
     [InlineData(503, 3)]
     public async Task HttpFailureAfterCompletedToolPreservesFactsWithoutMultiplyingRetries(int statusCode, int failedAttempts)
@@ -69,6 +70,16 @@ public sealed class CopilotAnthropicHttpFailureTests
         var result = await fixture.RunAsync();
 
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal(statusCode is 429 or 503 ? "provider_unavailable" : "provider_request_rejected", blocker.Code);
+        Assert.Contains($"HTTP {statusCode}", blocker.Summary);
+        Assert.DoesNotContain("连接中断", blocker.Summary);
+        Assert.Contains(fixture.Events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains($"HTTP {statusCode}", StringComparison.Ordinal));
+        Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("starting one bounded no-tools finalization", StringComparison.Ordinal));
+        Assert.True(blocker.IsStructurallyValid());
+        Assert.False(blocker.RetryEligible);
+        Assert.True(blocker.RequiresUserInput);
         Assert.Equal(1 + failedAttempts, server.CallCount);
         Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
         Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
@@ -85,6 +96,100 @@ public sealed class CopilotAnthropicHttpFailureTests
         Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
         Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
             item.Type == CopilotAgentTaskEventType.RunStopped && item.State == CopilotAgentStopReason.ProviderFailure.ToString());
+        fixture.AssertTurnLifecycle(result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task QuotaFailureAfterToolKeepsActionableCauseWithoutRetrying(bool typeOnly)
+    {
+        var failure = ErrorResponse(429) with
+        {
+            Body = JsonSerializer.Serialize(new
+            {
+                error = new
+                {
+                    code = typeOnly ? "" : "insufficient_quota",
+                    type = typeOnly ? "insufficient_quota" : "rate_limit_error",
+                    message = "Untrusted error body echoing test-key.",
+                },
+            }),
+        };
+        await using var server = new LoopbackProvider(call => call == 1 ? CompletedResponse(toolCall: true) : failure);
+        using var fixture = new RunFixture(server, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(2, server.CallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal("provider_request_rejected", blocker.Code);
+        Assert.Contains("HTTP 429 / insufficient_quota", blocker.Summary);
+        Assert.Contains("账户限制", blocker.Summary);
+        Assert.False(blocker.RetryEligible);
+        Assert.True(blocker.RequiresUserInput);
+        Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("test-key", StringComparison.Ordinal));
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
+    }
+
+    [Theory]
+    [InlineData(401, 1, false)]
+    [InlineData(503, 3, false)]
+    [InlineData(413, 1, false)]
+    [InlineData(401, 1, true)]
+    [InlineData(503, 3, true)]
+    public async Task HttpFailureDuringNoToolsFinalizationPreservesCauseAndCompletedTool(int statusCode, int failedAttempts, bool partialAnswer)
+    {
+        var incomplete = CompletedResponse(toolCall: false);
+        incomplete = incomplete with
+        {
+            Body = incomplete.Body.Replace("Completed answer.", partialAnswer ? "Partial answer." : "", StringComparison.Ordinal)
+                .Replace("\"end_turn\"", partialAnswer ? "\"max_tokens\"" : "\"end_turn\"", StringComparison.Ordinal),
+        };
+        await using var server = new LoopbackProvider(call => call switch
+        {
+            1 => CompletedResponse(toolCall: true),
+            2 => incomplete,
+            _ => ErrorResponse(statusCode),
+        });
+        using var fixture = new RunFixture(server, requestTool: true);
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(2 + failedAttempts, server.CallCount);
+        Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
+        Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
+        // This finalization prompt has no older conversation groups to compact; 413 must not resend the same input.
+        Assert.Equal(0, result.Budget.ContextRecoveryCount);
+        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(1, fixture.Tool.CallCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Equal(statusCode switch { 413 => "provider_context_window", 503 => "provider_unavailable", _ => "provider_request_rejected" }, blocker.Code);
+        Assert.Contains(statusCode == 413 ? "上下文" : $"HTTP {statusCode}", blocker.Summary);
+        var answer = string.Concat(fixture.Events.Where(item => item.Type == CopilotAgentEventType.AnswerDelta).Select(item => item.Text));
+        if (partialAnswer)
+            Assert.Equal("Partial answer.", answer);
+        else
+            Assert.Contains(blocker.Summary, answer);
+        Assert.DoesNotContain(fixture.Events, item => item.Type == CopilotAgentEventType.AnswerReset);
+        foreach (var payload in server.Payloads.Skip(2))
+        {
+            using var document = JsonDocument.Parse(payload);
+            Assert.False(document.RootElement.TryGetProperty("tools", out var tools) && tools.GetArrayLength() > 0);
+        }
+        Assert.NotNull(result.SessionCheckpoint);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
         fixture.AssertTurnLifecycle(result);
     }
 
@@ -236,6 +341,7 @@ public sealed class CopilotAnthropicHttpFailureTests
         public string BaseUrl { get; }
         public CancellationToken Token => _lifetime.Token;
         public int CallCount => Volatile.Read(ref _callCount);
+        public List<string> Payloads { get; } = [];
 
         private async Task ServeAsync()
         {
@@ -259,13 +365,16 @@ public sealed class CopilotAnthropicHttpFailureTests
                         throw new InvalidDataException("Unexpected loopback request length.");
                     var remaining = contentLength;
                     var buffer = new char[4096];
+                    var requestBody = new StringBuilder();
                     while (remaining > 0)
                     {
                         var count = await reader.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, remaining)), Token);
                         if (count == 0)
                             throw new EndOfStreamException();
+                        requestBody.Append(buffer, 0, count);
                         remaining -= count;
                     }
+                    Payloads.Add(requestBody.ToString());
                     var response = _response(Interlocked.Increment(ref _callCount));
                     var body = Encoding.UTF8.GetBytes(response.Body);
                     var headers = Encoding.ASCII.GetBytes(

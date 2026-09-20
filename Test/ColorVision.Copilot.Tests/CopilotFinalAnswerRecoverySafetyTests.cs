@@ -3,11 +3,86 @@ using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotFinalAnswerRecoverySafetyTests
 {
+    [Theory]
+    [InlineData(false, 401, 1)]
+    [InlineData(true, 401, 1)]
+    [InlineData(false, 503, 3)]
+    [InlineData(true, 503, 3)]
+    public async Task ProviderFailureDuringRepeatedFinalizationKeepsCauseAndUnsafeSessionRestriction(bool unresolvedProviderCall, int statusCode, int failedAttempts)
+    {
+        using var fixture = new RecoveryFixture("The earlier operation's outcome is still unknown.", "stop", unresolvedProviderCall);
+        fixture.Client.Failure = new HttpRequestException("Untrusted provider body echoes finalize-test-key.", null, (HttpStatusCode)statusCode);
+        CopilotAgentSessionCheckpoint? checkpoint = null;
+        var previousStopReason = CopilotAgentStopReason.Interrupted;
+
+        for (var run = 1; run <= 2; run++)
+        {
+            var result = await fixture.RunAsync(checkpoint, previousStopReason);
+
+            Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+            fixture.AssertNoToolsWereUsed(result, run * failedAttempts);
+            Assert.Equal(failedAttempts, result.Budget.ProviderCalls);
+            Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
+            var blocker = Assert.Single(result.Blockers);
+            Assert.Equal(statusCode == 401 ? "provider_request_rejected" : "provider_unavailable", blocker.Code);
+            Assert.Contains($"HTTP {statusCode}", blocker.Summary);
+            Assert.DoesNotContain(fixture.Events, item => item.Text.Contains("finalize-test-key", StringComparison.Ordinal));
+            checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint);
+            fixture.AssertOriginalUnsafeEvidenceRemains(checkpoint.TaskEventJournal);
+            Assert.Equal(fixture.Checkpoint.SerializedSessionJson, checkpoint.SerializedSessionJson);
+            Assert.Equal(unresolvedProviderCall ? CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall : CopilotAgentSessionResumeRestriction.UncertainToolOutcome,
+                checkpoint.SessionResumeRestriction);
+            Assert.Contains(checkpoint.TaskEventJournal.Events, item => item.Type == CopilotAgentTaskEventType.BlockerDetected && item.State == blocker.Code);
+            var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Recovery failed")
+            {
+                AgentStopReason = result.StopReason,
+                AgentTaskLedger = result.TaskLedger,
+                AgentBlockers = result.Blockers,
+            };
+            var decision = CopilotAgentRecoveryPolicy.Evaluate(message, checkpoint, fixture.Profile, fixture.Capabilities);
+            Assert.True(decision.IsAvailable);
+            Assert.Equal(CopilotAgentRecoveryMode.Finalize, decision.Request!.Mode);
+            checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(JsonConvert.SerializeObject(checkpoint)));
+            Assert.False(checkpoint.EvaluateFor(fixture.Profile, fixture.Capabilities).CanResume);
+            previousStopReason = result.StopReason;
+        }
+
+        fixture.Client.Failure = null;
+        var completed = await fixture.RunAsync(checkpoint, previousStopReason);
+        fixture.AssertNoToolsWereUsed(completed, 2 * failedAttempts + 1);
+        Assert.Equal(CopilotAgentStopReason.Completed, completed.StopReason);
+        Assert.Null(completed.SessionCheckpoint);
+        fixture.AssertOriginalUnsafeEvidenceRemains(completed.TaskEventJournal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProviderTimeoutWithoutCallerCancellationRemainsRecoverable(bool unresolvedProviderCall)
+    {
+        using var fixture = new RecoveryFixture("", "stop", unresolvedProviderCall);
+        fixture.Client.Failure = new TaskCanceledException("Provider timed out before responding.");
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        fixture.AssertNoToolsWereUsed(result, expectedProviderCalls: 3);
+        Assert.Equal(3, result.Budget.ProviderCalls);
+        Assert.Equal(2, result.Budget.ProviderRetryCount);
+        Assert.False(result.Budget.TimeBudgetExhausted);
+        Assert.Equal("provider_interrupted", Assert.Single(result.Blockers).Code);
+        var retained = Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint);
+        fixture.AssertOriginalUnsafeEvidenceRemains(retained.TaskEventJournal);
+        Assert.False(retained.EvaluateFor(fixture.Profile, fixture.Capabilities).CanResume);
+    }
+
     [Theory]
     [InlineData(false, "", "stop")]
     [InlineData(false, "The operation's outcome is still unknown.", "length")]
@@ -232,6 +307,8 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
 
         public CopilotCapabilityCatalogSnapshot Capabilities { get; }
         public CopilotAgentSessionCheckpoint Checkpoint { get; }
+        public FinalAnswerClient Client => _client;
+        public IReadOnlyList<CopilotAgentEvent> Events => _events;
 
         public async Task<CopilotAgentRunResult> RunAsync(CopilotAgentSessionCheckpoint? checkpoint = null, CopilotAgentStopReason previousStopReason = CopilotAgentStopReason.Interrupted)
         {
@@ -308,12 +385,15 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
         public int Calls { get; private set; }
         public int StreamingCalls { get; private set; }
         public ChatOptions? Options { get; private set; }
+        public Exception? Failure { get; set; }
 
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Calls++;
             Options = options;
+            if (Failure != null)
+                return Task.FromException<ChatResponse>(Failure);
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, text))
             {
                 FinishReason = new ChatFinishReason(finishReason),

@@ -181,8 +181,12 @@ namespace ColorVision.Copilot
             }
 
             var recoveredAtUtc = DateTimeOffset.UtcNow;
+            var recoveredWorkspaceWrite = AgentTraceEntries.Any(entry => entry.State == CopilotToolExecutionState.Running
+                && entry.Access == CopilotToolAccess.Write && entry.WorkspaceRecheckPaths?.Count > 0);
             foreach (var entry in AgentTraceEntries)
                 changed |= entry.EnsureValid(recoveredAtUtc);
+
+            changed |= RestoreWorkspaceRecheckWarning(recoveredWorkspaceWrite);
 
             if (ResponseTimelineEvents == null)
             {

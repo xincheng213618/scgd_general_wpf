@@ -16,7 +16,8 @@ namespace ColorVision.Copilot
             bool OutputLengthLimitReached,
             bool OutputContentFiltered,
             bool OutputFinishReasonIncomplete,
-            bool HasModelFinalAnswer);
+            bool HasModelFinalAnswer,
+            CopilotAgentBlockerSnapshot? ProviderFailure);
 
         private async Task<FinalAnswerRecoveryResult> RecoverFinalAnswerAsync(
             CopilotAgentRequest request,
@@ -59,6 +60,7 @@ namespace ColorVision.Copilot
                 .Select(ToFrameworkMessage)
                 .ToArray();
             var hasModelFinalAnswer = false;
+            CopilotAgentBlockerSnapshot? providerFailure = null;
             try
             {
                 var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
@@ -113,13 +115,26 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call also returned no displayable text."));
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
+            catch (Exception ex) when (ex is CopilotAgentContextWindowExceededException or CopilotAgentContextWindowRecoveryExhaustedException
+                || CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
+            {
+                providerFailure = ex is CopilotAgentContextWindowExceededException or CopilotAgentContextWindowRecoveryExhaustedException
+                    ? CreateProviderOutputBlocker(timeBudgetExhausted: false, contextWindowExceeded: true)
+                    : CreateProviderFailureBlocker(ex);
+                outputLengthLimitReached = false;
+                outputContentFiltered = false;
+                outputFinishReasonIncomplete = false;
+                emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call failed: " + providerFailure.Summary));
+                if (!answerHasContent)
+                    emit(CopilotAgentEvent.AnswerDelta(providerFailure.Summary + " 已取得的工具结果正在保存，可处理原因后重试最终回答。"));
+            }
             catch (Exception ex)
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"The bounded no-tools finalization call failed ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)})."));
             }
 
             return new FinalAnswerRecoveryResult(
@@ -127,7 +142,8 @@ namespace ColorVision.Copilot
                 outputLengthLimitReached,
                 outputContentFiltered,
                 outputFinishReasonIncomplete,
-                hasModelFinalAnswer);
+                hasModelFinalAnswer,
+                providerFailure);
         }
     }
 }

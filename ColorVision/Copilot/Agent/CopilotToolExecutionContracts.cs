@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    // Known paths are candidates for inspection, never proof that a write occurred.
+    internal interface ICopilotWorkspaceMutationEvidenceSource
+    {
+        IReadOnlyList<string> GetWorkspaceRecheckPaths(CopilotAgentRequest request, CopilotAgentToolInput input);
+    }
+
     public sealed class CopilotToolInvocation
     {
         private readonly List<CopilotToolAdditionalContext> _preToolAdditionalContexts = [];
@@ -55,6 +61,13 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotToolExecutionHookBinding>();
 
         internal Func<CancellationToken, ValueTask<bool>>? PreDispatchCheckpoint { get; init; }
+
+        private IReadOnlyList<string> _workspaceRecheckPaths = Array.Empty<string>();
+        internal IReadOnlyList<string> WorkspaceRecheckPaths
+        {
+            get => Volatile.Read(ref _workspaceRecheckPaths);
+            set => Volatile.Write(ref _workspaceRecheckPaths, value);
+        }
 
         internal IReadOnlyList<CopilotToolAdditionalContext> PreToolAdditionalContexts
         {

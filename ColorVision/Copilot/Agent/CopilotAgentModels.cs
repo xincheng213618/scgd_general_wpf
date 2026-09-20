@@ -136,6 +136,7 @@ namespace ColorVision.Copilot
             {
                 Success = source.Success,
                 Summary = source.Summary ?? string.Empty,
+                PartialResultMessage = source.PartialResultMessage ?? string.Empty,
                 Content = source.Content ?? string.Empty,
                 ErrorMessage = source.ErrorMessage ?? string.Empty,
                 FailureKind = source.FailureKind,

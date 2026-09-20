@@ -229,7 +229,9 @@ namespace ColorVision.Copilot
                 return;
 
             if (!CopilotLocalFileLinkNavigator.TryOpen(target, out var errorMessage))
-                hyperlink.ToolTip = "无法打开文件：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+                hyperlink.ToolTip = "文件引用未完成：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+            else
+                hyperlink.ToolTip = CopilotLocalFileLinkNavigator.BuildToolTip(target);
         }
 
         private static ContextMenu CreateLocalFileContextMenu(CopilotLocalFileLinkTarget target)

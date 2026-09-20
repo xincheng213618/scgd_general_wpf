@@ -117,7 +117,7 @@ namespace ColorVision.Copilot.Mcp
             if (!File.Exists(fullPath))
                 return CopilotMcpToolCallResult.Fail("file_not_found", $"The file does not exist: {fullPath}");
 
-            if (!CopilotWorkspaceSearchSupport.IsTextLikeFile(fullPath))
+            if (!CopilotWorkspaceSearchSupport.IsReadableTextFile(fullPath))
                 return CopilotMcpToolCallResult.Fail("unsupported_file_type", "The file extension is not in the ColorVision MCP text allow-list.");
 
             var startLine = GetInt(arguments, "start_line");

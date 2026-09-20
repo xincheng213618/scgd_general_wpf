@@ -11,6 +11,8 @@ namespace ColorVision.Copilot
         int FileCount,
         bool DiffTruncated)
     {
+        public string VerificationWarning { get; init; } = string.Empty;
+
         public bool IsStructurallyValid()
         {
             if (Diff == null
@@ -19,6 +21,9 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+
+            if (VerificationWarning == null || VerificationWarning.Length > CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters)
+                return false;
 
             return Diff.Length == 0
                 ? FileCount == 0 && !DiffTruncated
@@ -30,11 +35,13 @@ namespace ColorVision.Copilot
     {
         public const int MaxDiffCharacters = 96_000;
         public const int MaxTrackedFiles = 256;
+        public const int MaxVerificationWarningCharacters = 4_000;
         public const string DiffTruncationMarker = "...<turn workspace diff truncated>...";
         private const int MaxComparedLinesPerFile = 100_000;
         private const long MaxComparisonCells = 4_000_000;
         private const int ContextLineCount = 3;
         private readonly Dictionary<string, TrackedFile> _files = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _unverifiedPaths = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _workspacePath;
 
         public CopilotTurnWorkspaceDiffAccumulator(string? workspacePath)
@@ -45,18 +52,25 @@ namespace ColorVision.Copilot
         public bool Observe(CopilotAgentEvent agentEvent, out CopilotTurnWorkspaceDiffSnapshot snapshot)
         {
             snapshot = null!;
-            var mutation = agentEvent?.Type == CopilotAgentEventType.ToolResult
-                && agentEvent.ToolResult?.Success == true
-                    ? agentEvent.ToolResult.WorkspaceMutation
-                    : null;
-            if (mutation == null)
+            if (!HasWorkspaceEvidence(agentEvent))
                 return false;
-            if (!TryApply(mutation))
+            var result = agentEvent.ToolResult!;
+            foreach (var path in result.WorkspaceRecheckPaths)
+            {
+                if (!Path.IsPathFullyQualified(path))
+                    throw new InvalidOperationException("Copilot received an invalid workspace recheck path.");
+                _unverifiedPaths.Add(Path.GetFullPath(path));
+            }
+            if (result.Success && result.WorkspaceMutation is { } mutation && !TryApply(mutation))
                 throw new InvalidOperationException("Copilot received an invalid or discontinuous workspace mutation snapshot.");
 
             snapshot = BuildSnapshot();
             return true;
         }
+
+        internal static bool HasWorkspaceEvidence(CopilotAgentEvent? agentEvent) =>
+            agentEvent?.Type == CopilotAgentEventType.ToolResult && agentEvent.ToolResult is { } result
+            && (result.Success && result.WorkspaceMutation != null || result.WorkspaceRecheckPaths.Count > 0);
 
         internal static string BoundPersistedDiff(string? diff, out bool truncated)
         {
@@ -106,7 +120,7 @@ namespace ColorVision.Copilot
 
                 if (!Path.IsPathFullyQualified(fullPath) || !seen.Add(fullPath))
                     return false;
-                if (_files.TryGetValue(fullPath, out var current)
+                if (!_unverifiedPaths.Contains(fullPath) && _files.TryGetValue(fullPath, out var current)
                     && (current.CurrentExists != file.BeforeExists
                         || !string.Equals(current.CurrentText, file.BeforeText, StringComparison.Ordinal)))
                 {
@@ -156,8 +170,9 @@ namespace ColorVision.Copilot
 
         private CopilotTurnWorkspaceDiffSnapshot BuildSnapshot()
         {
+            var warning = BuildVerificationWarning();
             if (_files.Count == 0)
-                return new CopilotTurnWorkspaceDiffSnapshot(string.Empty, 0, false);
+                return new CopilotTurnWorkspaceDiffSnapshot(string.Empty, 0, false) { VerificationWarning = warning };
 
             var builder = new StringBuilder();
             var truncated = false;
@@ -169,7 +184,25 @@ namespace ColorVision.Copilot
             }
 
             var diff = BoundPersistedDiff(builder.ToString().TrimEnd('\r', '\n'), out var globallyTruncated);
-            return new CopilotTurnWorkspaceDiffSnapshot(diff, _files.Count, truncated || globallyTruncated);
+            return new CopilotTurnWorkspaceDiffSnapshot(diff, _files.Count, truncated || globallyTruncated) { VerificationWarning = warning };
+        }
+
+        private string BuildVerificationWarning() => BuildVerificationWarning(_unverifiedPaths.Select(GetDisplayPath));
+
+        internal static string BuildVerificationWarning(IEnumerable<string> displayPaths)
+        {
+            var paths = displayPaths.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (paths.Length == 0)
+                return string.Empty;
+            var builder = new StringBuilder($"文件状态待核查 · {paths.Length} 个文件\n文件操作未确认完成，已有差异可能不完整。请核查以下文件：");
+            foreach (var displayPath in paths.Take(8))
+            {
+                var length = AvoidSplittingSurrogateAtEnd(displayPath, Math.Min(displayPath.Length, 320));
+                builder.Append("\n• ").Append(displayPath.AsSpan(0, length));
+                if (length < displayPath.Length) builder.Append('…');
+            }
+            if (paths.Length > 8) builder.Append($"\n另有 {paths.Length - 8} 个文件，详见工具记录。");
+            return builder.ToString();
         }
 
         private void AppendFileDiff(StringBuilder builder, TrackedFile file, ref bool truncated)

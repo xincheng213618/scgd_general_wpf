@@ -47,6 +47,7 @@ namespace ColorVision.Copilot
                     Success = false,
                     Summary = "The current session has no readable file attachments.",
                     ErrorMessage = "No file attachments were found.",
+                    FailureKind = CopilotToolFailureKind.Validation,
                 };
             }
 
@@ -82,14 +83,14 @@ namespace ColorVision.Copilot
                 ? attachmentPaths.Skip(attemptedPaths.Length).ToArray()
                 : Array.Empty<string>();
             var reportedOmittedPaths = omittedPaths.Take(MaxReportedOmittedAttachments).ToArray();
-            var result = await CopilotReadLocalFileCapability.ReadAsync(
+            var result = (await CopilotReadLocalFileCapability.ReadAsync(
                 attachmentPaths,
                 selectedPath,
                 preferBatchReadAll: false,
                 toolInput?.StartLine,
                 toolInput?.StartColumn,
                 toolInput?.EndLine,
-                cancellationToken);
+                cancellationToken)).ToToolResult(Name);
 
             var builder = new StringBuilder();
             builder.AppendLine("[Attachment Read Scope]");
@@ -116,11 +117,16 @@ namespace ColorVision.Copilot
                     ? result.Summary
                     : $"{result.Summary} {omittedPaths.Length} additional attachment(s) were not read in this batch.",
                 Content = builder.ToString().TrimEnd(),
+                PartialResultMessage = result.PartialResultMessage
+                    + (result.Success && omittedPaths.Length > 0
+                        ? $"本批次还有 {omittedPaths.Length} 个附件未读取，请指定附件继续读取。"
+                        : string.Empty),
                 ErrorMessage = result.ErrorMessage,
                 FailureKind = result.FailureKind,
                 SuggestedReadableLocalFilePaths = result.SuggestedReadableLocalFilePaths,
                 AttemptedLocalFilePaths = result.AttemptedLocalFilePaths,
                 SuccessfullyReadLocalFilePaths = result.SuccessfullyReadLocalFilePaths,
+                LocalFileReadScopes = result.LocalFileReadScopes,
             };
         }
 

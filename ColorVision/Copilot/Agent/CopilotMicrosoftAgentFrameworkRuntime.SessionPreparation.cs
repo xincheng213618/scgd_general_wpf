@@ -92,7 +92,8 @@ namespace ColorVision.Copilot
                     request.TaskId,
                     messageInjector,
                     session,
-                    taskEventJournalBuilder);
+                    taskEventJournalBuilder,
+                    bridge.NotifyUserInputAccepted);
                 var liveCheckpointPublisher = new LiveCheckpointPublisher(
                     request,
                     requestedCheckpoint,

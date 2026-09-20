@@ -1,10 +1,12 @@
 #pragma warning disable MAAI001
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -139,10 +141,20 @@ namespace ColorVision.Copilot
                 }
 
                 var maxAttempts = GetMaximumAttempts(tool);
-                if (!_attemptsBySignature.TryGetValue(signature, out var state))
+                var inputRevision = Volatile.Read(ref _localEvidenceInputRevision);
+                if (!_attemptsBySignature.TryGetValue(signature, out var state)
+                    || !state.InProgress && state.LocalEvidenceInputRevision < inputRevision
+                        && state.LastOutcome?.Result.Success == true
+                        && IsLocalObservationTool(tool))
                 {
-                    state = new ToolAttemptState { AttemptCount = 1, InProgress = true };
-                    _attemptsBySignature.Add(signature, state);
+                    // A new user instruction can require fresh local evidence. It starts
+                    // a new observation attempt, not a retry of writes or failed calls.
+                    state = new ToolAttemptState
+                    {
+                        AttemptCount = 1, InProgress = true, LocalEvidenceInputRevision = inputRevision,
+                        IsLocalObservation = IsLocalObservationTool(tool),
+                    };
+                    _attemptsBySignature[signature] = state;
                 }
                 else
                 {
@@ -205,13 +217,75 @@ namespace ColorVision.Copilot
             {
                 if (!_attemptsBySignature.TryGetValue(signature, out var state))
                 {
-                    state = new ToolAttemptState { AttemptCount = Math.Max(1, outcome.Invocation.Attempt) };
+                    state = new ToolAttemptState
+                    {
+                        AttemptCount = Math.Max(1, outcome.Invocation.Attempt),
+                        LocalEvidenceInputRevision = Volatile.Read(ref _localEvidenceInputRevision),
+                        IsLocalObservation = IsLocalObservationTool(outcome.Invocation.Tool),
+                    };
                     _attemptsBySignature.Add(signature, state);
                 }
 
                 state.InProgress = false;
                 state.LastOutcome = outcome;
                 _toolBudgetCompletionGate.CompleteRound(outcome.Invocation.Round);
+
+                // The executor releases its read lease before this bridge records the result.
+                // A write can be recorded first: keep deduplication until the read completes,
+                // then discard an affected successful observation so the next call can refresh it.
+                if (state.ConcurrentWorkspaceChanges is { } concurrentChanges)
+                {
+                    if (outcome.Result.Success && IsLocalObservationAffected(outcome, concurrentChanges))
+                        _attemptsBySignature.Remove(signature);
+                    state.ConcurrentWorkspaceChanges = null;
+                }
+
+                // Refresh local evidence after a confirmed change or a failed patch
+                // recovery that explicitly requires inspecting its attempted paths.
+                // Neither condition starts duplicate in-flight reads or reopens writes.
+                if (outcome.Invocation.Tool.Capability.Access == CopilotToolAccess.Write)
+                {
+                    var changedPaths = outcome.Result.WorkspaceRecheckPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    if (outcome.Result.Success && outcome.Result.WorkspaceMutation is { } mutation)
+                        changedPaths.UnionWith(mutation.Files
+                            .Where(file => file.BeforeExists != file.AfterExists || file.BeforeText != file.AfterText)
+                            .Select(file => file.FullPath));
+                    if (changedPaths.Count == 0)
+                        return;
+                    foreach (var pendingRead in _attemptsBySignature.Values.Where(value => value.InProgress && value.IsLocalObservation))
+                    {
+                        pendingRead.ConcurrentWorkspaceChanges ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        pendingRead.ConcurrentWorkspaceChanges.UnionWith(changedPaths);
+                    }
+                    var staleReads = _attemptsBySignature.Where(entry => !entry.Value.InProgress
+                        && entry.Value.LastOutcome is { } previous
+                        && previous.Result.Success
+                        && IsLocalObservationAffected(previous, changedPaths))
+                        .Select(entry => entry.Key).ToArray();
+                    foreach (var staleRead in staleReads)
+                        _attemptsBySignature.Remove(staleRead);
+                }
+            }
+
+            private static bool IsLocalObservationTool(ICopilotTool tool) =>
+                tool.Capability.Access == CopilotToolAccess.ReadOnly
+                && tool is CopilotReadLocalFileTool or CopilotReadAttachedFileTool
+                    or CopilotGrepTextTool or CopilotSearchFilesTool or CopilotListDirectoryTool;
+
+            private static bool IsLocalObservationAffected(CopilotToolExecutionOutcome outcome, HashSet<string> changedPaths)
+            {
+                if (!IsLocalObservationTool(outcome.Invocation.Tool))
+                    return false;
+                if (outcome.Invocation.Tool is CopilotReadLocalFileTool or CopilotReadAttachedFileTool)
+                    return outcome.Result.SuccessfullyReadLocalFilePaths.Any(changedPaths.Contains);
+
+                // Scopes were resolved and authorized by the observation itself.
+                // Match lexically: deleted files no longer pass existence checks,
+                // and a sibling with the same name prefix is outside this scope.
+                return outcome.Result.LocalObservationScopePaths.Any(scope =>
+                    changedPaths.Contains(scope) || changedPaths.Any(path => path.StartsWith(
+                        scope.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                        StringComparison.OrdinalIgnoreCase)));
             }
 
             private string FormatToolResult(CopilotToolExecutionOutcome outcome)

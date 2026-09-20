@@ -456,23 +456,45 @@ namespace ColorVision.Copilot
 
                 using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
+                IReadOnlyList<string> workspaceRecheckPaths = Array.Empty<string>();
                 var executionProgress = new CopilotToolProgressContext();
                 using var progressCancellation = new CancellationTokenSource();
+                var progressPublicationLock = new object();
+                var progressStopped = false;
+
+                bool PublishProgress(CopilotToolProgressUpdate? reportedProgress)
+                {
+                    lock (progressPublicationLock)
+                    {
+                        if (progressStopped || !stopwatch.IsRunning)
+                            return false;
+                        var elapsedMs = Math.Max(0, stopwatch.ElapsedMilliseconds);
+                        var execution = CreateExecutionInfo(invocation, CopilotToolExecutionState.Running,
+                            startedAt, null, elapsedMs, timeout, queueDurationMs: queueDurationMs);
+                        var progressText = FormatReportedProgress(reportedProgress);
+                        onEvent(CopilotAgentEvent.ToolProgress(execution,
+                            string.IsNullOrWhiteSpace(progressText)
+                                ? $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."
+                                : $"{invocation.Tool.Name} · {progressText} · {FormatElapsed(elapsedMs)} elapsed.",
+                            reportedProgress));
+                        return true;
+                    }
+                }
+
                 var progressTask = PublishToolProgressAsync(
                     invocation,
-                    startedAt,
-                    timeout,
-                    queueDurationMs,
                     stopwatch,
                     executionProgress,
-                    onEvent,
+                    PublishProgress,
                     progressCancellation.Token);
-                var progressStopped = 0;
 
                 async Task StopProgressAsync()
                 {
-                    if (Interlocked.Exchange(ref progressStopped, 1) != 0)
-                        return;
+                    lock (progressPublicationLock)
+                    {
+                        if (progressStopped) return;
+                        progressStopped = true;
+                    }
 
                     await progressCancellation.CancelAsync();
                     await progressTask;
@@ -496,7 +518,44 @@ namespace ColorVision.Copilot
                     // the runtime loop. The independent source is cancelled only after the
                     // caller/timeout boundary has already released this invocation.
                     executionTask = Task.Run(
-                        () => ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token),
+                        async () =>
+                        {
+                            if (invocation.FrameworkApprovalGranted && invocation.Tool.Capability.Access == CopilotToolAccess.Write
+                                && invocation.Tool is ICopilotWorkspaceMutationEvidenceSource workspaceEvidence)
+                            {
+                                var paths = Array.AsReadOnly(workspaceEvidence.GetWorkspaceRecheckPaths(
+                                    invocation.AgentRequest, invocation.ToolInput).ToArray());
+                                Volatile.Write(ref workspaceRecheckPaths, paths);
+                                invocation.WorkspaceRecheckPaths = paths;
+                                executionCancellation.Token.ThrowIfCancellationRequested();
+                                if (!PublishProgress(null))
+                                    throw new OperationCanceledException(executionCancellation.Token);
+                                if (paths.Count > 0 && invocation.PreDispatchCheckpoint != null)
+                                {
+                                    // Persist the exact candidate paths before entering the write body.
+                                    // The earlier checkpoint alone only records that dispatch is pending.
+                                    bool checkpointSaved;
+                                    try
+                                    {
+                                        checkpointSaved = await invocation.PreDispatchCheckpoint(executionCancellation.Token).ConfigureAwait(false);
+                                    }
+                                    catch (OperationCanceledException) { throw; }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Warn($"Copilot workspace path checkpoint failed. Tool={invocation.Tool.Name} CallId={invocation.CallId} ErrorType={ex.GetType().FullName}");
+                                        checkpointSaved = false;
+                                    }
+                                    if (!checkpointSaved)
+                                        return Failure(invocation.Tool.Name, $"{invocation.Tool.Name} was not dispatched.",
+                                            "The affected workspace paths could not be saved to the Copilot recovery checkpoint.",
+                                            CopilotToolFailureKind.Transient, "tool_dispatch_checkpoint_failed");
+                                }
+                            }
+                            // Publish the path snapshot before this last cancellation check.
+                            // Either the boundary sees it or the write body cannot start.
+                            executionCancellation.Token.ThrowIfCancellationRequested();
+                            return await ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token).ConfigureAwait(false);
+                        },
                         executionCancellation.Token);
                     var result = CopilotToolResultContract.Capture(
                         invocation.Tool.Name,
@@ -515,7 +574,8 @@ namespace ColorVision.Copilot
                         invocation,
                         timeout,
                         wasCancelled: false,
-                        outcomeUnknown: HasUnknownOutcomeAfterExecutionBoundary(invocation));
+                        outcomeUnknown: HasUnknownOutcomeAfterExecutionBoundary(invocation),
+                        Volatile.Read(ref workspaceRecheckPaths));
                     var outcome = CreateOutcome(
                         invocation,
                         CopilotToolExecutionState.TimedOut,
@@ -546,7 +606,8 @@ namespace ColorVision.Copilot
                             invocation,
                             timeout,
                             wasCancelled: true,
-                            outcomeUnknown),
+                            outcomeUnknown,
+                            Volatile.Read(ref workspaceRecheckPaths)),
                         queueDurationMs);
                     await PublishExecutionOutcomeAsync(outcome);
                     throw new CopilotToolExecutionCancellationException(

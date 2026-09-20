@@ -9,6 +9,8 @@ namespace ColorVision.Copilot
 
         public string Summary { get; init; } = string.Empty;
 
+        public string PartialResultMessage { get; init; } = string.Empty;
+
         public string Content { get; init; } = string.Empty;
 
         public string ErrorMessage { get; init; } = string.Empty;
@@ -23,6 +25,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
 
+        internal IReadOnlyList<string> LocalObservationScopePaths { get; init; } = Array.Empty<string>();
+
         public CopilotToolResult ToToolResult(string toolName)
         {
             return new CopilotToolResult
@@ -30,13 +34,17 @@ namespace ColorVision.Copilot
                 ToolName = toolName,
                 Success = Success,
                 Summary = Summary,
+                PartialResultMessage = PartialResultMessage,
                 Content = Content,
                 ErrorMessage = ErrorMessage,
-                FailureKind = FailureKind,
+                FailureKind = !Success && FailureKind == CopilotToolFailureKind.None
+                    ? CopilotToolFailureKind.Unspecified
+                    : FailureKind,
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
                 AttemptedLocalFilePaths = AttemptedLocalFilePaths,
                 SuccessfullyReadLocalFilePaths = SuccessfullyReadLocalFilePaths,
                 LocalFileReadScopes = LocalFileReadScopes,
+                LocalObservationScopePaths = LocalObservationScopePaths,
             };
         }
     }

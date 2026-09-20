@@ -15,7 +15,7 @@ namespace ColorVision.Copilot
         private static readonly EnumerationOptions SearchEnumerationOptions = new()
         {
             AttributesToSkip = FileAttributes.ReparsePoint,
-            IgnoreInaccessible = true,
+            IgnoreInaccessible = false,
             RecurseSubdirectories = false,
             ReturnSpecialDirectories = false,
         };
@@ -69,6 +69,12 @@ namespace ColorVision.Copilot
             ".xaml",
             ".yaml",
             ".yml",
+        };
+
+        // Business exports can supply evidence without expanding the separate patch allowlist.
+        private static readonly HashSet<string> ReadOnlyTextFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".csv", ".tsv", ".jsonl", ".ndjson",
         };
 
         public static IReadOnlyList<string> NormalizeSearchRoots(IEnumerable<string>? roots)
@@ -133,19 +139,22 @@ namespace ColorVision.Copilot
         public static IEnumerable<CopilotSearchFileEntry> EnumerateFiles(
             IEnumerable<string>? roots,
             bool textFilesOnly,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string, string>? reportIncompletePath = null)
         {
             foreach (var root in NormalizeSearchScopes(roots))
             {
                 if (File.Exists(root))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!textFilesOnly || IsSearchableTextFile(root))
+                    if (textFilesOnly && !IsReadableTextFile(root))
+                        reportIncompletePath?.Invoke(root, "The explicit file extension is outside the text-search allowlist. Use ReadLocalFile to inspect this file.");
+                    if (!textFilesOnly || IsSearchableTextFile(root, reportIncompletePath))
                         yield return new CopilotSearchFileEntry(root, root);
                     continue;
                 }
 
-                foreach (var file in EnumerateFilesUnderRoot(root, textFilesOnly, cancellationToken))
+                foreach (var file in EnumerateFilesUnderRoot(root, textFilesOnly, cancellationToken, reportIncompletePath))
                 {
                     yield return new CopilotSearchFileEntry(root, file);
                 }
@@ -157,6 +166,9 @@ namespace ColorVision.Copilot
             var extension = Path.GetExtension(filePath);
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
         }
+
+        public static bool IsReadableTextFile(string filePath) =>
+            IsTextLikeFile(filePath) || ReadOnlyTextFileExtensions.Contains(Path.GetExtension(filePath));
 
         public static bool IsPathWithinRoots(string? path, IEnumerable<string>? roots)
         {
@@ -347,7 +359,8 @@ namespace ColorVision.Copilot
         private static IEnumerable<string> EnumerateFilesUnderRoot(
             string rootPath,
             bool textFilesOnly,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string, string>? reportIncompletePath)
         {
             var pendingDirectories = new Stack<string>();
             pendingDirectories.Push(rootPath);
@@ -360,7 +373,8 @@ namespace ColorVision.Copilot
 
                 foreach (var subDirectory in EnumerateSafely(
                     () => Directory.EnumerateDirectories(currentDirectory, "*", SearchEnumerationOptions),
-                    cancellationToken))
+                    cancellationToken,
+                    () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
                     if (ShouldIgnoreDirectory(subDirectory))
                         continue;
@@ -370,9 +384,10 @@ namespace ColorVision.Copilot
 
                 foreach (var file in EnumerateSafely(
                     () => Directory.EnumerateFiles(currentDirectory, "*", SearchEnumerationOptions),
-                    cancellationToken))
+                    cancellationToken,
+                    () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (textFilesOnly && !IsSearchableTextFile(file))
+                    if (textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
                         continue;
 
                     yield return file;
@@ -382,7 +397,8 @@ namespace ColorVision.Copilot
 
         private static IEnumerable<string> EnumerateSafely(
             Func<IEnumerable<string>> createEntries,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action reportFailure)
         {
             IEnumerator<string>? enumerator;
             try
@@ -391,6 +407,7 @@ namespace ColorVision.Copilot
             }
             catch
             {
+                reportFailure();
                 yield break;
             }
 
@@ -414,6 +431,7 @@ namespace ColorVision.Copilot
                     }
                     catch
                     {
+                        reportFailure();
                         yield break;
                     }
 
@@ -422,17 +440,21 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool IsSearchableTextFile(string filePath)
+        private static bool IsSearchableTextFile(string filePath, Action<string, string>? reportIncompletePath)
         {
-            if (!IsTextLikeFile(filePath))
+            if (!IsReadableTextFile(filePath))
                 return false;
 
             try
             {
-                return new FileInfo(filePath).Length <= MaxTextSearchFileBytes;
+                if (new FileInfo(filePath).Length <= MaxTextSearchFileBytes)
+                    return true;
+                reportIncompletePath?.Invoke(filePath, "The file exceeds the 8 MiB text-search limit. Use bounded ReadLocalFile ranges to inspect it.");
+                return false;
             }
             catch
             {
+                reportIncompletePath?.Invoke(filePath, "The file metadata could not be read.");
                 return false;
             }
         }

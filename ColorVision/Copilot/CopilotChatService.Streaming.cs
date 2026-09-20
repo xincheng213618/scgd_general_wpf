@@ -384,7 +384,7 @@ namespace ColorVision.Copilot
                 if (!TryExtractProviderPayloadError(root, out var providerError))
                     return false;
 
-                var errorCode = NormalizeProviderErrorCode(providerError.Code);
+                var errorCode = NormalizeProviderErrorCode(providerError.Code, apiKey);
                 var codeSuffix = string.IsNullOrWhiteSpace(errorCode)
                     ? string.Empty
                     : $" ({errorCode})";
@@ -401,7 +401,7 @@ namespace ColorVision.Copilot
                 exception = new CopilotProviderPayloadException(
                     message,
                     errorCode,
-                    IsTransientProviderErrorCode(errorCode),
+                    CopilotProviderErrorPolicy.IsTransientPayload(providerError.Code, providerError.Type),
                     requestId);
                 return true;
             }

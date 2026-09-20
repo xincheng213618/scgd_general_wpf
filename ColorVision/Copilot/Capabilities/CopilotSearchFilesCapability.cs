@@ -56,9 +56,15 @@ namespace ColorVision.Copilot
             {
                 Success = Success,
                 Summary = Summary,
+                PartialResultMessage = !Success || ResultsComplete ? string.Empty
+                    : (ScanComplete ? string.Empty : "文件扫描达到上限，请缩小搜索范围。")
+                        + (!string.IsNullOrWhiteSpace(NextCursor)
+                            ? $"本页显示 {Matches.Count} 个文件，仍有更多结果可继续读取。"
+                            : string.Empty),
                 Content = Content,
                 ErrorMessage = ErrorMessage,
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
+                LocalObservationScopePaths = Success ? SearchRoots : Array.Empty<string>(),
             };
         }
     }
@@ -279,7 +285,7 @@ namespace ColorVision.Copilot
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = pageMatches
                     .Select(item => item.FullPath)
-                    .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
+                    .Where(CopilotWorkspaceSearchSupport.IsReadableTextFile)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .Take(3)
                     .ToArray(),

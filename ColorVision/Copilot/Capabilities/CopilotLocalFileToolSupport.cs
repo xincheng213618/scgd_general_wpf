@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,11 +21,15 @@ namespace ColorVision.Copilot
         int EndLine,
         int EndColumn,
         int ContinuationStartLine,
-        int ContinuationStartColumn);
+        int ContinuationStartColumn)
+    {
+        public int? ObservedTotalLineCount { get; init; }
+    }
 
     public static class CopilotLocalFileToolSupport
     {
-        private const int BinaryPreviewBytes = 4096;
+        internal const int BinaryPreviewBytes = 4096;
+        internal const string InvalidEncodingMessage = "The file encoding is not supported or contains invalid text bytes. Use UTF-8 or BOM-marked UTF-16/UTF-32.";
         internal const int MinimumReadCharacters = 1_000;
         public const int MaxReadCharacters = 20000;
 
@@ -176,31 +181,13 @@ namespace ColorVision.Copilot
                 await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 var previewLength = (int)Math.Min(BinaryPreviewBytes, stream.Length);
                 var previewBuffer = new byte[previewLength];
-                var previewRead = await stream.ReadAsync(previewBuffer.AsMemory(0, previewLength), cancellationToken);
-
-                if (previewBuffer.AsSpan(0, previewRead).IndexOf((byte)0) >= 0)
-                {
-                    return new CopilotLocalFileReadResult(
-                        fullPath,
-                        false,
-                        false,
-                        string.Empty,
-                        "The target file does not appear to be a directly readable text file.",
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0);
-                }
-
-                stream.Position = 0;
+                var previewRead = await stream.ReadAtLeastAsync(previewBuffer.AsMemory(), previewLength, throwOnEndOfStream: false, cancellationToken);
+                using var reader = CreateTextReader(stream, previewBuffer.AsSpan(0, previewRead));
                 var normalizedStartLine = Math.Max(1, startLine ?? 1);
                 var normalizedStartColumn = Math.Max(1, startColumn ?? 1);
                 var normalizedEndLine = endLine.HasValue
                     ? Math.Max(normalizedStartLine, endLine.Value)
                     : int.MaxValue;
-                using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
                 var range = await ReadBoundedRangeAsync(
                     reader,
                     normalizedStartLine,
@@ -216,13 +203,16 @@ namespace ColorVision.Copilot
                         false,
                         false,
                         string.Empty,
-                        $"Requested start line {normalizedStartLine} is beyond the total file line count.",
+                        $"Requested start line {normalizedStartLine} is beyond the total file line count ({range.TotalLineCount} at read time).",
                         0,
                         0,
                         0,
                         0,
                         0,
-                        0);
+                        0)
+                    {
+                        ObservedTotalLineCount = range.ReachedEndOfFile ? range.TotalLineCount : null,
+                    };
                 }
 
                 if (range.ActualStartLine == 0 && normalizedStartColumn > 1)
@@ -245,7 +235,7 @@ namespace ColorVision.Copilot
 
                 if (range.WasTruncated)
                 {
-                    content += Environment.NewLine + $"...<content truncated; kept the first {maximumReadCharacters} characters.>";
+                    content += Environment.NewLine + $"...<content truncated; kept the first {range.Content.Length} characters.>";
                 }
 
                 return new CopilotLocalFileReadResult(
@@ -259,11 +249,20 @@ namespace ColorVision.Copilot
                     range.ActualEndLine,
                     range.ActualEndColumn,
                     range.ContinuationStartLine,
-                    range.ContinuationStartColumn);
+                    range.ContinuationStartColumn)
+                {
+                    ObservedTotalLineCount = range.ReachedEndOfFile ? range.TotalLineCount : null,
+                };
             }
             catch (OperationCanceledException)
             {
                 throw;
+            }
+            catch (DecoderFallbackException)
+            {
+                return new CopilotLocalFileReadResult(fullPath, false, false, string.Empty,
+                    InvalidEncodingMessage,
+                    0, 0, 0, 0, 0, 0);
             }
             catch (Exception ex)
             {
@@ -280,6 +279,44 @@ namespace ColorVision.Copilot
                     0,
                     0);
             }
+        }
+
+        internal static StreamReader CreateTextReader(FileStream stream, ReadOnlySpan<byte> preview)
+        {
+            var encoding = ResolveTextEncoding(preview, out var preambleLength);
+            if (preambleLength == 0 && preview.IndexOf((byte)0) >= 0)
+                throw new InvalidDataException("The file contains NUL bytes and appears to be binary.");
+
+            stream.Position = preambleLength;
+            // Disable automatic detection so StreamReader cannot replace the strict decoder.
+            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: false);
+        }
+
+        private static Encoding ResolveTextEncoding(ReadOnlySpan<byte> preview, out int preambleLength)
+        {
+            // UTF-32 LE shares UTF-16 LE's first two BOM bytes, so check it first.
+            if (preview is [0xFF, 0xFE, 0x00, 0x00, ..])
+            {
+                preambleLength = 4;
+                return new UTF32Encoding(false, false, true);
+            }
+            if (preview is [0x00, 0x00, 0xFE, 0xFF, ..])
+            {
+                preambleLength = 4;
+                return new UTF32Encoding(true, false, true);
+            }
+            if (preview is [0xFF, 0xFE, ..])
+            {
+                preambleLength = 2;
+                return new UnicodeEncoding(false, false, true);
+            }
+            if (preview is [0xFE, 0xFF, ..])
+            {
+                preambleLength = 2;
+                return new UnicodeEncoding(true, false, true);
+            }
+            preambleLength = preview is [0xEF, 0xBB, 0xBF, ..] ? 3 : 0;
+            return new UTF8Encoding(false, true);
         }
 
         private static async Task<BoundedTextRange> ReadBoundedRangeAsync(
@@ -301,26 +338,53 @@ namespace ColorVision.Copilot
             var actualEndColumn = 0;
             var continuationStartLine = 0;
             var continuationStartColumn = 0;
-            var hasCharactersSinceLastLineFeed = false;
+            var hasCharactersOnLine = false;
+            var pendingCarriageReturn = false;
             var wasTruncated = false;
             var reachedRequestedEnd = false;
+            var reachedEndOfFile = false;
+
+            void FinishLine()
+            {
+                var startColumnWasNotReached = currentLine == startLine && startColumn > 1 && actualStartLine == 0;
+                totalLineCount = currentLine;
+                hasCharactersOnLine = false;
+                pendingCarriageReturn = false;
+                currentLine++;
+                currentColumn = 1;
+                reachedRequestedEnd = currentLine > endLine || startColumnWasNotReached;
+            }
 
             while (!wasTruncated && !reachedRequestedEnd)
             {
                 var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
                 if (read == 0)
+                {
+                    reachedEndOfFile = true;
                     break;
+                }
 
                 for (var index = 0; index < read; index++)
                 {
                     var character = buffer[index];
-                    hasCharactersSinceLastLineFeed = true;
+                    // Defer CR until the next character, including across read buffers, so
+                    // CRLF belongs to one source line while a lone CR also ends a line.
+                    if (pendingCarriageReturn && character != '\n')
+                    {
+                        FinishLine();
+                        if (reachedRequestedEnd)
+                            break;
+                    }
+                    if (character == '\0')
+                        throw new InvalidDataException("The file contains NUL characters and appears to be binary.");
+                    hasCharactersOnLine = true;
                     var isWithinRequestedRange = currentLine >= startLine
                         && currentLine <= endLine
                         && (currentLine > startLine || currentColumn >= startColumn);
                     if (isWithinRequestedRange)
                     {
-                        if (builder.Length >= maximumReadCharacters)
+                        if (builder.Length >= maximumReadCharacters
+                            || builder.Length == maximumReadCharacters - 1 && (char.IsHighSurrogate(character) || character == '\r'))
                         {
                             wasTruncated = true;
                             continuationStartLine = currentLine;
@@ -339,23 +403,18 @@ namespace ColorVision.Copilot
 
                     if (character != '\n')
                     {
+                        pendingCarriageReturn = character == '\r';
                         currentColumn++;
                         continue;
                     }
 
-                    totalLineCount = currentLine;
-                    hasCharactersSinceLastLineFeed = false;
-                    currentLine++;
-                    currentColumn = 1;
-                    if (currentLine > endLine)
-                    {
-                        reachedRequestedEnd = true;
+                    FinishLine();
+                    if (reachedRequestedEnd)
                         break;
-                    }
                 }
             }
 
-            if (!reachedRequestedEnd && !wasTruncated && hasCharactersSinceLastLineFeed)
+            if (!reachedRequestedEnd && !wasTruncated && hasCharactersOnLine)
                 totalLineCount = currentLine;
 
             return new BoundedTextRange(
@@ -366,6 +425,7 @@ namespace ColorVision.Copilot
                 actualEndLine,
                 actualEndColumn,
                 totalLineCount,
+                reachedEndOfFile,
                 continuationStartLine,
                 continuationStartColumn);
         }
@@ -378,6 +438,7 @@ namespace ColorVision.Copilot
             int ActualEndLine,
             int ActualEndColumn,
             int TotalLineCount,
+            bool ReachedEndOfFile,
             int ContinuationStartLine,
             int ContinuationStartColumn);
 

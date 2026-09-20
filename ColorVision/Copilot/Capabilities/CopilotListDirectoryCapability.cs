@@ -156,8 +156,14 @@ namespace ColorVision.Copilot
                         ? $"Listed {page.Length} entries from {GetDirectoryLabel(directoryPath)}; another stable page is available."
                         : $"Listed {page.Length} entries from an incomplete bounded scan of {GetDirectoryLabel(directoryPath)}.",
                 Content = builder.ToString().TrimEnd(),
+                LocalObservationScopePaths = new[] { directoryPath },
+                PartialResultMessage = entriesComplete ? string.Empty
+                    : (entries.ScanComplete ? string.Empty : $"目录扫描达到 {MaxScannedEntries} 项的上限，请缩小范围。")
+                        + (!string.IsNullOrWhiteSpace(nextCursor)
+                            ? $"本页显示 {page.Length} 项，仍有更多目录内容可继续读取。"
+                            : string.Empty),
                 SuggestedReadableLocalFilePaths = page
-                    .Where(entry => !entry.IsDirectory && CopilotWorkspaceSearchSupport.IsTextLikeFile(entry.FullPath))
+                    .Where(entry => !entry.IsDirectory && CopilotWorkspaceSearchSupport.IsReadableTextFile(entry.FullPath))
                     .Select(entry => entry.FullPath)
                     .Take(MaxSuggestedReadableFiles)
                     .ToArray(),

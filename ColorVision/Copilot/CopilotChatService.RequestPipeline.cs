@@ -369,6 +369,7 @@ namespace ColorVision.Copilot
                     providerRequestId,
                     out var errorRequestId));
                 providerException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                CopilotProviderErrorPolicy.PreserveHttpError(providerException, errorBody);
                 CopilotProviderRequestId.Preserve(
                     providerException,
                     errorRequestId);
@@ -470,8 +471,7 @@ namespace ColorVision.Copilot
             else if (TryGetProviderStatusCode(exception, out var providerStatusCode))
             {
                 statusCode = providerStatusCode;
-                failureKind = "HTTP " + statusCode.Value;
-                if (!CopilotProviderRetryChatClient.IsTransientStatusCode(statusCode.Value))
+                if (!CopilotProviderErrorPolicy.IsTransientHttpFailure(exception, statusCode.Value, out failureKind))
                     return false;
             }
             else if (!CopilotProviderRetryChatClient.TryClassifyTransientFailure(
@@ -483,11 +483,14 @@ namespace ColorVision.Copilot
                 return false;
             }
 
+            if (!CopilotProviderRetryChatClient.TryResolveRetryDelay(exception, _retryDelayFactory(failedAttempt), out var delay))
+                return false;
+
             retry = new CopilotProviderRetryInfo(
                 failedAttempt,
                 failedAttempt + 1,
                 _maximumAttempts,
-                CopilotProviderRetryChatClient.ResolveRetryDelay(exception, _retryDelayFactory(failedAttempt)),
+                delay,
                 failureKind,
                 statusCode,
                 CopilotProviderRequestId.Find(exception));

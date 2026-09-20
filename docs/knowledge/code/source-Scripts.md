@@ -25,6 +25,9 @@ next: false
 - [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
   本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
 
+- [Copilot Agent 执行链](../../02-developer-guide/core-concepts/copilot-agent-execution.md) — `copilot.execution`
+  Copilot 请求调度、工具筛选、审批、只读委派与执行证据闭环。
+
 - [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
   反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
 

@@ -1,5 +1,6 @@
 using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
@@ -242,6 +243,7 @@ namespace ColorVision.Copilot
                 DurationMs = Math.Max(0, durationMs),
                 QueueDurationMs = Math.Max(0, queueDurationMs),
                 TimeoutMs = Math.Max(1, (long)timeout.TotalMilliseconds),
+                WorkspaceRecheckPaths = invocation.WorkspaceRecheckPaths,
             };
         }
 
@@ -290,19 +292,28 @@ namespace ColorVision.Copilot
             CopilotToolInvocation invocation,
             TimeSpan timeout,
             bool wasCancelled,
-            bool outcomeUnknown)
+            bool outcomeUnknown,
+            IReadOnlyList<string> workspaceRecheckPaths)
         {
             if (outcomeUnknown)
             {
                 var boundary = wasCancelled
                     ? "cancellation"
                     : $"its {FormatTimeout(timeout)} execution timeout";
-                return Failure(
-                    invocation.Tool.Name,
-                    $"{invocation.Tool.Name} crossed {boundary} before its final outcome was known.",
-                    "The operation may still be completing or may already have completed. Verify the current external state before retrying.",
-                    CopilotToolFailureKind.OutcomeUnknown,
-                    CopilotToolFailureCode.OutcomeUnknown);
+                return new CopilotToolResult
+                {
+                    ToolName = invocation.Tool.Name,
+                    Success = false,
+                    Summary = $"{invocation.Tool.Name} crossed {boundary} before its final outcome was known.",
+                    ErrorMessage = "The operation may still be completing or may already have completed. Verify the current external state before retrying.",
+                    FailureKind = CopilotToolFailureKind.OutcomeUnknown,
+                    FailureCode = CopilotToolFailureCode.OutcomeUnknown,
+                    WorkspaceRecheckPaths = workspaceRecheckPaths,
+                    Content = workspaceRecheckPaths.Count == 0 ? string.Empty
+                        : "[Workspace Write Outcome Unknown]\nPotentially affected paths (not proof of completed writes):\n"
+                            + string.Join("\n", workspaceRecheckPaths)
+                            + "\nWait for the operation to settle and re-read these files before describing their final state. Do not automatically repeat the write.",
+                };
             }
 
             return wasCancelled

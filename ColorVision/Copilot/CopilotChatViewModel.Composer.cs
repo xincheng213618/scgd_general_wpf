@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
                     {
                         CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
                         CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
+                        _ when IsAgentRequestActive && HasAttachments => $"{ComposerSubmitShortcutLabel}/Tab 连同附件排到下一轮 · Ctrl+Enter 立即接管",
                         _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管 · @ 关联",
                         _ => "正在生成回复 · 可使用 /status",
                     }

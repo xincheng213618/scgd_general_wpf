@@ -6,6 +6,94 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotTurnWorkspaceDiffTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedWritesPublishAWarningEvenWithoutAnyConfirmedDiff(bool previousChange)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "camera.json");
+        var accumulator = new CopilotTurnWorkspaceDiffAccumulator(Path.GetTempPath());
+        if (previousChange) Assert.True(accumulator.Observe(CreateMutationEvent(path, true, "original", true, "patched"), out _));
+        var failure = CreateMutationEvent(path, true, "patched", true, "unknown", failed: true);
+        Assert.True(accumulator.Observe(failure, out var snapshot));
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.Contains("文件状态待核查", snapshot.VerificationWarning, StringComparison.Ordinal);
+        Assert.Contains("camera.json", snapshot.VerificationWarning, StringComparison.Ordinal);
+        Assert.Equal(previousChange ? 1 : 0, snapshot.FileCount);
+        Assert.DoesNotContain("unknown", snapshot.Diff, StringComparison.Ordinal);
+
+        var state = CopilotTurnEventReducer.Reduce(CreateStartedState(CopilotAgentMode.Auto), new CopilotTurnAgentEvent(failure));
+        Assert.True(state.WorkspaceDiffExpected);
+        Assert.Throws<InvalidOperationException>(() => CopilotTurnEventReducer.Reduce(state, new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("done"))));
+        state = CopilotTurnEventReducer.Reduce(state, new CopilotTurnWorkspaceDiffUpdatedEvent(snapshot));
+        Assert.False(state.WorkspaceDiffExpected);
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "检查文件状态");
+        CopilotAssistantMessagePresenter.ApplyWorkspaceDiffUpdated(message, snapshot);
+        Assert.True(message.HasWorkspaceDiffWarning);
+        Assert.Equal(previousChange, message.HasWorkspaceDiff);
+        if (previousChange) Assert.Contains("先前确认", message.WorkspaceDiffHeader, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ANewConfirmedPatchAfterFailedRecoveryKeepsTheOriginalBaselineAndWarning()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "camera.json");
+        var accumulator = new CopilotTurnWorkspaceDiffAccumulator(Path.GetTempPath());
+        Assert.True(accumulator.Observe(CreateMutationEvent(path, true, "original", true, "patched"), out _));
+        Assert.True(accumulator.Observe(CreateMutationEvent(path, true, "patched", true, "unknown", failed: true), out _));
+        Assert.False(accumulator.Observe(CopilotAgentEvent.FromToolResult(new()
+        {
+            ToolName = "ReadLocalFile", Success = true, SuccessfullyReadLocalFilePaths = [path], Content = "partial read",
+        }), out _));
+        // A fresh approved patch can legitimately observe a different before state
+        // after incomplete compensation. Retain the turn's known original baseline.
+        Assert.True(accumulator.Observe(CreateMutationEvent(path, true, "residual", true, "verified"), out var snapshot));
+        Assert.Contains("-original", snapshot.Diff, StringComparison.Ordinal);
+        Assert.Contains("+verified", snapshot.Diff, StringComparison.Ordinal);
+        Assert.DoesNotContain("residual", snapshot.Diff, StringComparison.Ordinal);
+        Assert.NotEmpty(snapshot.VerificationWarning);
+    }
+
+    [Fact]
+    public void WarningOnlyMessagesSurviveStateSaveLoadAndAreNotAllowedOnUserMessages()
+    {
+        var root = CreateWorkspace();
+        try
+        {
+            var message = new CopilotChatMessage(CopilotChatRole.Assistant, "操作失败");
+            message.ApplyWorkspaceDiff(new(string.Empty, 0, false) { VerificationWarning = "文件状态待核查 · camera.json" });
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.Messages.Add(message);
+            var store = new CopilotChatStateStore(root);
+            store.Save(new() { Conversations = [conversation] });
+            var state = store.Load();
+            Assert.Equal(CopilotChatState.CurrentSchemaVersion, state.SchemaVersion);
+            var restored = Assert.Single(Assert.Single(state.Conversations).Messages);
+            Assert.Equal(message.WorkspaceDiffWarning, restored.WorkspaceDiffWarning);
+            Assert.False(restored.HasWorkspaceDiff);
+            Assert.True(restored.HasWorkspaceDiffWarning);
+            restored.Role = CopilotChatRole.User;
+            restored.EnsureValid();
+            Assert.False(restored.HasWorkspaceDiffWarning);
+        }
+        finally { DeleteVerifiedWorkspace(root); }
+    }
+
+    [Fact]
+    public void WarningIsBoundedWithoutSplittingUnicodeAndLegacyMessagesRemainUnmarked()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "done")
+        {
+            WorkspaceDiffWarning = new string('a', CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters - 2) + "😀" + new string('b', 100),
+        };
+        message.EnsureValid();
+        Assert.InRange(message.WorkspaceDiffWarning.Length, 1, CopilotTurnWorkspaceDiffAccumulator.MaxVerificationWarningCharacters);
+        Assert.DoesNotContain('\ud83d', message.WorkspaceDiffWarning);
+        var legacy = JsonConvert.DeserializeObject<CopilotChatMessage>("{\"Role\":\"Assistant\",\"Content\":\"old\"}")!;
+        legacy.EnsureValid();
+        Assert.False(legacy.HasWorkspaceDiffWarning);
+    }
+
     [Fact]
     public void AccumulatorBuildsNetUnifiedDiffAcrossRepeatedChangesAndClearsAfterRollback()
     {
@@ -275,15 +363,19 @@ public sealed class CopilotTurnWorkspaceDiffTests
         bool beforeExists,
         string beforeText,
         bool afterExists,
-        string afterText)
+        string afterText,
+        bool failed = false)
     {
         var completedAt = DateTimeOffset.UtcNow;
         return CopilotAgentEvent.FromToolResult(
             new CopilotToolResult
             {
                 ToolName = "ApplyWorkspacePatchEnvelope",
-                Success = true,
-                WorkspaceMutation = new CopilotWorkspaceMutationSnapshot(
+                Success = !failed,
+                FailureKind = failed ? CopilotToolFailureKind.Internal : CopilotToolFailureKind.None,
+                ErrorMessage = failed ? "A file write failed." : string.Empty,
+                WorkspaceRecheckPaths = failed ? [path] : [],
+                WorkspaceMutation = failed ? null : new CopilotWorkspaceMutationSnapshot(
                 [
                     new CopilotWorkspaceMutationFileSnapshot(path, beforeExists, beforeText, afterExists, afterText),
                 ]),
@@ -303,7 +395,8 @@ public sealed class CopilotTurnWorkspaceDiffTests
                 ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
                 ConcurrencyKey = "resource:workspace",
                 ArgumentSummary = "workspace mutation test",
-                State = CopilotToolExecutionState.Completed,
+                State = failed ? CopilotToolExecutionState.Failed : CopilotToolExecutionState.Completed,
+                FailureKind = failed ? CopilotToolFailureKind.Internal : CopilotToolFailureKind.None,
                 StartedAtUtc = completedAt.AddMilliseconds(-1),
                 CompletedAtUtc = completedAt,
                 DurationMs = 1,
@@ -331,5 +424,12 @@ public sealed class CopilotTurnWorkspaceDiffTests
         var root = Path.Combine(Path.GetTempPath(), "ColorVisionCopilotDiff", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         return root;
+    }
+
+    private static void DeleteVerifiedWorkspace(string root)
+    {
+        var fullPath = Path.GetFullPath(root);
+        Assert.Equal(Path.Combine(Path.GetTempPath(), "ColorVisionCopilotDiff"), Path.GetDirectoryName(fullPath), ignoreCase: true);
+        Directory.Delete(fullPath, recursive: true);
     }
 }

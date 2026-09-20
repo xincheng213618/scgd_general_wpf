@@ -368,6 +368,9 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
+            OnPropertyChanged(nameof(SteerActionToolTip));
+            OnPropertyChanged(nameof(FollowUpQueueHintText));
+            OnPropertyChanged(nameof(InputPlaceholder));
             RefreshCompactHistoryConversations();
             if (HasConversationSearchQuery)
                 RefreshFilteredConversations();
@@ -448,6 +451,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Messages));
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
+            OnPropertyChanged(nameof(SteerActionToolTip));
+            OnPropertyChanged(nameof(FollowUpQueueHintText));
             OnPropertyChanged(nameof(HasComposerStash));
             OnPropertyChanged(nameof(ComposerStashToolTip));
             OnPropertyChanged(nameof(IsConversationEmpty));

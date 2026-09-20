@@ -237,6 +237,12 @@ namespace ColorVision.Copilot
                     maximumReadCharacters,
                     cancellationToken);
                 builder.AppendLine($"[File] {result.FullPath}");
+                if (result.ObservedTotalLineCount is { } observedTotalLines)
+                {
+                    builder.AppendLine("[Observed File Boundary]");
+                    builder.AppendLine("end_of_file_observed: true");
+                    builder.AppendLine($"observed_total_lines: {observedTotalLines}");
+                }
 
                 if (result.Success)
                 {
@@ -282,27 +288,40 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    builder.AppendLine(result.ErrorMessage);
+                    builder.AppendLine($"[Read Error] {result.ErrorMessage}");
                     errors.Add($"{result.FullPath}: {result.ErrorMessage}");
                 }
 
                 builder.AppendLine();
             }
 
+            var truncatedCount = readScopes.Count(scope => scope.WasTruncated);
+            var partialResultMessage = string.Empty;
+            if (successCount > 0)
+            {
+                if (errors.Count > 0)
+                    partialResultMessage = $"已读取 {successCount}/{paths.Length} 个文件，其余 {errors.Count} 个文件读取失败，请检查文件格式或访问权限。";
+                if (truncatedCount > 0)
+                    partialResultMessage += $"有 {truncatedCount} 个文件的所选内容达到长度上限，可从返回的行列位置继续读取。";
+            }
+
             return new CopilotCapabilityResult
             {
                 Success = successCount > 0,
+                PartialResultMessage = partialResultMessage,
                 Summary = successCount > 0
                     ? BuildSuccessSummary(
                         successCount,
                         paths.Length,
                         normalizedSelectedPath,
                         lastSuccess,
-                        readScopes.Count(scope => scope.WasTruncated),
+                        truncatedCount,
                         focusedRangeCount)
                     : $"Failed to read any local files from {paths.Length} paths.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
+                // Partial batch reads retain per-file errors in Content; terminal failure
+                // metadata applies only when none of the files could be read.
+                ErrorMessage = successCount > 0 ? string.Empty : string.Join("; ", errors),
                 AttemptedLocalFilePaths = paths,
                 SuccessfullyReadLocalFilePaths = successfullyReadPaths,
                 LocalFileReadScopes = readScopes,

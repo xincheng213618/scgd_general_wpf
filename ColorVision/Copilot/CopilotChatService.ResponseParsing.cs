@@ -417,7 +417,8 @@ namespace ColorVision.Copilot
 
                     if (TryExtractProviderPayloadError(root, out var providerError))
                     {
-                        detail = providerError.Message;
+                        var code = NormalizeProviderErrorCode(providerError.Code, apiKey);
+                        detail = code.Length == 0 ? providerError.Message : $"({code}) {providerError.Message}";
                     }
                     else if (root.ValueKind == JsonValueKind.Object
                         && root.TryGetProperty("message", out var topLevelMessage)
@@ -508,7 +509,7 @@ namespace ColorVision.Copilot
 
             TryGetString(error, "type", out var errorType);
             TryGetString(error, "code", out var errorCode);
-            var code = string.IsNullOrWhiteSpace(errorType) ? errorCode : errorType;
+            var code = string.IsNullOrWhiteSpace(errorCode) ? errorType : errorCode;
             if (!TryGetString(error, "message", out var message))
                 message = code;
             if (string.IsNullOrWhiteSpace(message))
@@ -517,7 +518,8 @@ namespace ColorVision.Copilot
             providerError = new ProviderPayloadError(
                 code,
                 message,
-                string.Empty);
+                string.Empty,
+                errorType);
             return true;
         }
 
@@ -539,11 +541,14 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static string NormalizeProviderErrorCode(string? value)
+        private static string NormalizeProviderErrorCode(string? value, string? apiKey)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return string.Empty;
 
+            // Redact complete credentials before normalization or truncation can split them.
+            if (!string.IsNullOrEmpty(apiKey))
+                value = value.Replace(apiKey, "redacted", StringComparison.Ordinal);
             var builder = new StringBuilder(Math.Min(value.Length, 64));
             foreach (var character in value.Trim())
             {
@@ -555,25 +560,11 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private static bool IsTransientProviderErrorCode(string errorCode)
-        {
-            var comparable = errorCode
-                .Replace('-', '_')
-                .Replace('.', '_')
-                .ToLowerInvariant();
-            return comparable is "overloaded_error"
-                or "rate_limit_error"
-                or "rate_limit_exceeded"
-                or "api_error"
-                or "server_error"
-                or "timeout_error"
-                or "service_unavailable";
-        }
-
         private readonly record struct ProviderPayloadError(
             string Code,
             string Message,
-            string RequestId);
+            string RequestId,
+            string Type = "");
 
     }
 }

@@ -77,7 +77,9 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 ## 新建 Profile 的模型预设
 
-`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。当前候选为：OpenAI `gpt-6-astra`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`；DeepSeek `deepseek-v4-pro`、`deepseek-v4-flash`、`deepseek-v4-flash-vision-exp`；Claude `claude-fable-5`、`claude-mythos-5`、`claude-opus-5`、`claude-sonnet-5`、`claude-haiku-4-5-20251001`；Grok `grok-4.6`、`grok-4.5`、`grok-4.20`；Gemini `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash`、`gemini-3.5-flash-lite`；GLM `glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air`；MiniMax `MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed`；MiMo `mimo-v2.5-pro`、`mimo-v2.5`；SenseNova `sensenova-6.7-flash-lite`。
+`CopilotVendorCatalog` 只为新建或编辑 Profile 提供当前模型名候选，不自动改写已经保存的模型、地址、凭据或默认 Profile。当前候选为：OpenAI `gpt-6-astra`、`gpt-5.6`、`gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna`；DeepSeek `deepseek-v4-pro`、`deepseek-flash`；Claude `claude-fable-5`、`claude-mythos-5`、`claude-opus-5`、`claude-sonnet-5`、`claude-haiku-4-5-20251001`；Grok `grok-4.6`、`grok-4.5`、`grok-4.20`；Gemini `gemini-3.1-pro-preview`、`gemini-3.8-flash`、`gemini-3.7-flash`、`gemini-3.6-flash`、`gemini-3.5-flash`、`gemini-3.5-flash-lite`；GLM `glm-5.2`、`glm-5-turbo`、`glm-4.7-flash`、`glm-4.5-air`；MiniMax `MiniMax-M2.7`、`MiniMax-M2.7-highspeed`、`MiniMax-M2.5`、`MiniMax-M2.5-highspeed`；MiMo `mimo-v2.5-pro`、`mimo-v2.5`；SenseNova `sensenova-6.7-flash-lite`。
+
+DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官方已将旧 `deepseek-v4-flash` 和 `deepseek-v4-flash-vision-exp` 暂时路由到该模型，因此菜单只列正式名称。已有 Profile 的旧名称继续保留；目录更新也不自动开启图像输入，仍由 Profile 的“支持图片输入”声明和附件校验控制。详见 [DeepSeek 2026-09-10 更新](https://api-docs.deepseek.com/news/news260910/) 与[图像接口说明](https://api-docs.deepseek.com/guides/vision/)。
 
 目录移除已退役或已被当前系列替代的旧候选，但兼容读取手工填写或既有保存值。模型名出现在候选中不等于账号已获权限、端点兼容或模型可连接；仍应通过 Profile 的实际连接测试验证。
 

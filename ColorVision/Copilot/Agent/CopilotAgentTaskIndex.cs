@@ -77,7 +77,7 @@ namespace ColorVision.Copilot
             CopilotAgentTaskAttentionKind.BudgetExhausted => "预算耗尽",
             CopilotAgentTaskAttentionKind.TaskPassLimit => "达到轮次上限",
             CopilotAgentTaskAttentionKind.IncompleteOutput => "等待最终回答",
-            CopilotAgentTaskAttentionKind.ProviderFailure => "模型连接中断",
+            CopilotAgentTaskAttentionKind.ProviderFailure => "模型服务异常",
             CopilotAgentTaskAttentionKind.Interrupted => "应用中断，可继续",
             _ => string.Empty,
         };
@@ -93,6 +93,7 @@ namespace ColorVision.Copilot
                         "provider_interrupted" => Conversation.AgentSessionCheckpoint == null
                             ? "恢复点未能保存，请重新发送请求"
                             : "已保存当前进度，可安全恢复",
+                        "provider_request_rejected" or "provider_unavailable" => blocker.Summary,
                         "provider_output_length" => "最终回答达到输出上限，已保留部分内容",
                         "provider_content_filtered" => "最终回答被内容策略提前停止",
                         "provider_output_finish_reason" => "最终回答以未确认完成的状态结束",

@@ -46,12 +46,9 @@ namespace ColorVision.Copilot
 
         private async Task PublishToolProgressAsync(
             CopilotToolInvocation invocation,
-            DateTimeOffset startedAt,
-            TimeSpan timeout,
-            long queueDurationMs,
             Stopwatch stopwatch,
             CopilotToolProgressContext progressContext,
-            Action<CopilotAgentEvent> onEvent,
+            Func<CopilotToolProgressUpdate?, bool> publishProgress,
             CancellationToken cancellationToken)
         {
             try
@@ -97,25 +94,8 @@ namespace ColorVision.Copilot
                             progressSnapshot.Version);
                     }
 
-                    if (!stopwatch.IsRunning)
+                    if (!publishProgress(reportedProgress))
                         return;
-
-                    var elapsedMs = Math.Max(0, stopwatch.ElapsedMilliseconds);
-                    var execution = CreateExecutionInfo(
-                        invocation,
-                        CopilotToolExecutionState.Running,
-                        startedAt,
-                        completedAt: null,
-                        elapsedMs,
-                        timeout,
-                        queueDurationMs: queueDurationMs);
-                    var progressText = FormatReportedProgress(reportedProgress);
-                    onEvent(CopilotAgentEvent.ToolProgress(
-                        execution,
-                        string.IsNullOrWhiteSpace(progressText)
-                            ? $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."
-                            : $"{invocation.Tool.Name} · {progressText} · {FormatElapsed(elapsedMs)} elapsed.",
-                        reportedProgress));
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
