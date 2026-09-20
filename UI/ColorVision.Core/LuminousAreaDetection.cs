@@ -13,7 +13,10 @@ namespace ColorVision.Core
         RobustV2 = 0,
 
         [Description("经典兼容")]
-        Legacy = 1
+        Legacy = 1,
+
+        [Description("实验：中心亮度比例边界（非几何 FOV）")]
+        FovLuminanceBoundary = 2
     }
 
     public readonly record struct LuminousAreaPoint(double X, double Y);

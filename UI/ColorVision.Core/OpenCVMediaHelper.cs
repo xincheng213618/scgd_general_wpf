@@ -29,6 +29,21 @@ namespace ColorVision.Core
         private const string LibPath = "opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalibrationGetColorTransformV1(IntPtr context, in CalibrationExecutionOptionsV1 options, ref RawColorTransformV1 transform);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_TransformRawColorV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, int channel, IntPtr output, ulong outputFloats);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalculateRawPoiBatchV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, [In] PoiRequestV1[] requests, uint count, in PoiOptionsV2 options, [Out] PoiResultV1[] results);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalculateRawRegionV1(int width, int height, int bpp, IntPtr raw, ulong rawBytes,
+            in RawColorTransformV1 transform, [In] RawPixelRunV1[] runs, uint count, in PoiOptionsV2 options, out PoiResultV1 result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalSFRMultiChannel(
         HImage img,
         double del,
@@ -50,6 +65,9 @@ namespace ColorVision.Core
         public static extern int M_CalSFRBmw4In1(HImage img, RoiRect roi, string config, out IntPtr result);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_LocateBmwTargetV1(HImage img, RoiRect roi, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalDistortionP9(HImage img, RoiRect roi, string config, out IntPtr result);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
@@ -57,6 +75,9 @@ namespace ColorVision.Core
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_DetectGhosts(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
+        [DllImport("opencv_helper.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int M_AnalyzeSfrV2(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);

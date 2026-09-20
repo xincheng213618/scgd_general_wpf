@@ -101,10 +101,13 @@ public class DockContentRegistrationTests
             Assert.Empty(provider.TitleActions);
             deferredContent.Materialize();
 
-            DockPanelTitleAction action = Assert.Single(provider.TitleActions);
-            Assert.Same(DisPlayManager.CreateGroupCommand, action.Command);
-            Assert.Equal("\uE710", action.Glyph);
-            Assert.Equal("新建分组", action.ToolTip);
+            Assert.Equal(2, provider.TitleActions.Count);
+            Assert.Same(DisPlayManager.ConfigureDevicesCommand, provider.TitleActions[0].Command);
+            Assert.Equal("\uE710", provider.TitleActions[0].Glyph);
+            DockPanelTitleAction action = provider.TitleActions[1];
+            Assert.Same(DisPlayManager.ManageControlsCommand, action.Command);
+            Assert.Equal("\uE713", action.Glyph);
+            Assert.Equal("管理设备控制", action.ToolTip);
         });
     }
 

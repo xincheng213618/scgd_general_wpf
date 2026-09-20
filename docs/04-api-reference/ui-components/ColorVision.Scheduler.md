@@ -11,7 +11,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 
 # 任务计划程序：创建、调度与执行历史
 
-`UI/ColorVision.Scheduler/` 负责把 `SchedulerInfo` 定义注册到 Quartz、保存调度意图并记录已返回的执行结果。真正的设备、流程和客户操作由各 `IJob` 实现负责；任务已登记、Quartz 已触发、业务已完成和历史已落盘是不同完成条件。
+`UI/ColorVision.Scheduler/` 负责把 `SchedulerInfo` 定义注册到 Quartz、保存调度意图并记录已返回的执行结果。该包当前只面向 `net10.0-windows7.0`，使用 Quartz 4；真正的设备、流程和客户操作由各 `IJob` 实现负责。任务已登记、Quartz 已触发、业务已完成和历史已落盘是不同完成条件。
 
 ## 创建和管理任务
 
@@ -47,7 +47,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 `QuartzSchedulerManager.GetInstance()` 创建进程内单例，构造函数依次执行 `Load()`、`RestoreStatsFromDb()`、注册 Copilot 上下文，然后把 `Start()` 保存为 `InitializationTask`。取得对象不等于异步初始化已完成。
 
 - `Load()` 读取 JSON；统计恢复会取得 `SchedulerDbManager`，其首次构造创建目录并执行 `CodeFirst.InitTables<JobExecutionRecord>()`，即使当前没有任务也可能创建历史数据库。
-- `Start()` 取得默认 Quartz scheduler、注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `CreateJob` 恢复定义。恢复暂停意图后，最后调用 `Scheduler.Start()` 开始分派触发。
+- `Start()` 通过 `QuartzSchedulerBuilder` 创建本进程持有的 scheduler，显式保留 `DefaultQuartzScheduler` 名称、10 个最大并发 worker、内存 JobStore 和 60 秒 misfire 阈值；随后注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `CreateJob` 恢复定义。恢复暂停意图后，最后调用 `Scheduler.Start()` 开始分派触发。
 - `TaskViewerInitializer.Order=1000` 的正常宿主入口等待 `InitializationTask`，让低 Order 的服务初始化先执行。但 `SchedulerStatusBarProvider`、`TaskViewerWindow` 和历史窗口的上下文注册也会取得单例，不能据初始化器顺序断言所有首次访问都已等待设备就绪。
 - 单个任务类型丢失、定义校验失败或注册失败会汇总警告，其他可恢复任务仍会启动；启动阶段整体异常则记录日志、提示并使初始化任务失败。JSON/SQLite 加载异常有各自的捕获分支，不等于启动被统一阻断。
 
@@ -74,7 +74,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 
 - `Simple` 的 Once 只设置首次触发；Multiple 的 `RepeatCount` 是首次之后的追加次数；Forever 按 `Interval` 重复。
 - `Interval` 使用 `DailyTimeIntervalScheduleBuilder`，要求整数秒间隔。Multiple 同样传递追加次数，Forever 不设置零重复次数；不要把它当成 Simple 触发器或“每天只执行一次”。
-- `Calendar` 当前固定为一个日历日间隔，不能把界面“24 h”理解为跨夏令时始终固定秒数；Cron 直接交给 Quartz。当前构造器不显式设置时区或 misfire 策略，具体时区/错过触发行为不能由任务标题推断。
+- `Calendar` 当前固定为一个日历日间隔，不能把界面“24 h”理解为跨夏令时始终固定秒数；Cron 直接交给 Quartz。scheduler 的全局 misfire 阈值为 60 秒，但各触发器没有额外指定时区或逐类 misfire 指令，具体时区/错过触发行为不能由任务标题推断。
 - `Priority` 传给触发器，不是抢占正在执行的 Job。立即运行直接调用 `Scheduler.TriggerJob(JobKey)`，没有在这个 UI 入口检查 `Running`/`Paused` 或去重；返回只表示触发请求完成，不是业务完成，也不是暂停状态下绝对不可运行的保证。
 
 `_mutationGate` 串行化创建、更新、删除、暂停等管理操作，并不串行化 Job 执行。是否禁止同一任务并发由 Job 自身的 `[DisallowConcurrentExecution]` 等机制决定；该属性以 `JobKey` 为界，不能防止两个不同任务名同时操作同一设备。`CameraCaptureJob`、`SpectrumGetDataJob` 和 `HeadlessFlowJob` 声明了此属性，不能据此扩展成所有 Job 都受保护。
@@ -98,7 +98,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 | `StopJob` / `PauseAll` | 调用 Quartz PauseJob/PauseAll 并保存暂停意图；没有调用 Interrupt，不终止已开始的 Job |
 | `ResumeJob` / `ResumeAll` | 恢复触发并保存 Ready 意图；可能重新开始设备动作，不是单纯改界面状态 |
 | `TimeoutSeconds` | 通用模型和触发器只保存/校验该值，没有统一包裹每个 Job 的超时执行器；是否生效取决于具体 Job |
-| `Shutdown` | 当前调用无布尔参数的 Quartz `Shutdown()`，等价于 `Shutdown(false)`，不等待在途 Job 完成；同一已关闭 scheduler 不能通过 StartCommand 重启 |
+| `Shutdown` | 调用无布尔参数的 Quartz `Shutdown()` 后释放其独立 factory，等价于不等待在途 Job 完成；同一已关闭 scheduler 不能通过 StartCommand 重启 |
 | 关闭任务/历史窗口 | 解除窗口事件与 Copilot 上下文，不关闭进程级 scheduler，也不取消 Job |
 
 例如相机任务通过 `ScheduledDeviceJobHelper.WaitForTerminalStateAsync` 等待消息 Success/Fail/Timeout，并观察 Quartz cancellation token；超时只是使等待结束并上报异常，清理的是事件订阅，没有向硬件发送停止命令。取消 token 同样不等于相机采集已停止。0 秒在该 helper 中表示无限等待，但不能将此解释为所有 Job 的实现约定；FlowJob、HeadlessFlowJob 各有自己的执行链。

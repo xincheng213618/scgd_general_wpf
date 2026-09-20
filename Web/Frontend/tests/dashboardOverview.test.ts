@@ -1,12 +1,33 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { DeploymentHistoryEntry, IndexStatusResponse, TrafficStatsResponse, UserAccountSummary } from '../src/types/admin.ts'
+import type { DatabaseBackupInventory, DeploymentHistoryEntry, IndexStatusResponse, ScheduledJob, TrafficStatsResponse, UserAccountSummary } from '../src/types/admin.ts'
 import {
   summarizeDashboardAccountTasks,
   summarizeDashboardDeployment,
   summarizeDashboardIndexes,
   summarizeDashboardTraffic,
+  summarizeDashboardJobs,
+  summarizeDashboardBackup,
 } from '../src/utils/dashboardOverview.ts'
+
+test('dashboard distinguishes missing evidence, current job failure and recovery', () => {
+  const job = { id: 'database_backup', job_type: 'database_backup', enabled: true, latest_run: { status: 'success' }, run_counts: { error: 10 } } as ScheduledJob
+  assert.equal(summarizeDashboardJobs(null).level, 'unknown')
+  assert.equal(summarizeDashboardJobs([{ ...job, latest_run: null }]).level, 'unknown')
+  assert.equal(summarizeDashboardJobs([job]).level, 'ok')
+  assert.equal(summarizeDashboardJobs([{ ...job, latest_run: { id: 1, job_id: job.id, status: 'error' } }]).level, 'error')
+})
+
+test('backup file availability does not conceal a failed or disabled automatic backup', () => {
+  const inventory: DatabaseBackupInventory = { count: 1, keep_count: 3, backups: [{ name: 'backup.db', created_at: '2026-09-20T00:00:00Z', size_bytes: 20 }] }
+  const job = { id: 'daily', job_type: 'database_backup', enabled: true, latest_run: { status: 'error', error: 'disk unavailable' } } as ScheduledJob
+  assert.equal(summarizeDashboardBackup(null, [job]).level, 'unknown')
+  assert.equal(summarizeDashboardBackup(inventory, [job]).label, '最近自动备份异常')
+  assert.equal(summarizeDashboardBackup(inventory, [{ ...job, latest_run: null, enabled: false }]).label, '自动备份已停用')
+  assert.equal(summarizeDashboardBackup({ ...inventory, backups: [], count: 0 }, null).label, '暂无备份文件')
+  assert.equal(summarizeDashboardBackup(inventory, null).label, '已有备份文件')
+  assert.match(summarizeDashboardBackup(inventory, null).detail, /不代表.*恢复/)
+})
 
 function accountSummary(passwordChanges: number, passwordRecoveries: number) {
   return {

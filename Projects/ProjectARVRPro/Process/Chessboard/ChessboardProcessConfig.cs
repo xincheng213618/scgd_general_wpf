@@ -1,3 +1,4 @@
+using ColorVision.Engine.Media;
 using System.ComponentModel;
 using Newtonsoft.Json;
 
@@ -40,5 +41,12 @@ namespace ProjectARVRPro.Process.Chessboard
         [Description("启用后，修正后的暗格平均亮度为负数时仍输出暗格均值和棋盘格对比度；等于0时仍无法计算。")]
         public bool AllowNegativeCorrectedDarkLuminance { get => _AllowNegativeCorrectedDarkLuminance; set { _AllowNegativeCorrectedDarkLuminance = value; OnPropertyChanged(); } }
         private bool _AllowNegativeCorrectedDarkLuminance;
+
+        [Category("显示配置")]
+        [DisplayName("显示内容")]
+        [Description("选择棋盘格关注点图层显示的字段和小数位；仅影响结果图绘制。")]
+        [PropertyEditorType(typeof(CvcieTemplatePropertiesEditor))]
+        public string DisplayTemplate { get => _DisplayTemplate; set { _DisplayTemplate = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _DisplayTemplate = PoiDisplayTemplateDefaults.Luminance;
     }
 }

@@ -19,9 +19,13 @@ import type {
   DocsStatus,
   DeploymentHistoryResponse,
   FeedbackDetail,
+  FeedbackHandling,
+  FeedbackHandlingValues,
+  FeedbackBulkStatusResponse,
   FeedbackInboxFilter,
   FeedbackInboxResponse,
   FeedbackStatus,
+  FeedbackStatusUpdate,
   PublishIntegrityReport,
   PerformanceSummary,
   IndexRefreshResult,
@@ -63,8 +67,8 @@ import {
 } from '../utils/loginSecurity'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
-export function getAdminStats() {
-  return getJson<AdminStats>('/api/admin/stats/overview')
+export function getAdminStats(signal?: AbortSignal) {
+  return getJson<AdminStats>('/api/admin/stats/overview', signal)
 }
 
 export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {
@@ -76,23 +80,25 @@ export function getPerformanceSummary(signal?: AbortSignal) {
   return getJson<PerformanceSummary>('/api/admin/perf/summary', signal)
 }
 
-export function getOperationsOverview(signal?: AbortSignal) {
+export function getOperationsOverview(signal?: AbortSignal, params: { hostLimit?: number; activityLimit?: number; hostId?: string } = {}) {
+  const search = new URLSearchParams({ hostLimit: String(params.hostLimit ?? 100), activityLimit: String(params.activityLimit ?? 100) })
+  if (params.hostId) search.set('hostId', params.hostId)
   return getJson<OperationsOverview>(
-    '/api/admin/operations/overview?hostLimit=100&activityLimit=100',
+    `/api/admin/operations/overview?${search}`,
     signal,
   )
 }
 
-export function getCacheStatus() {
-  return getJson<CacheStatus>('/api/admin/cache/status')
+export function getCacheStatus(signal?: AbortSignal) {
+  return getJson<CacheStatus>('/api/admin/cache/status', signal)
 }
 
-export function getIndexStatus() {
-  return getJson<IndexStatusResponse>('/api/admin/index/status')
+export function getIndexStatus(signal?: AbortSignal) {
+  return getJson<IndexStatusResponse>('/api/admin/index/status', signal)
 }
 
-export function getDocsStatus() {
-  return getJson<DocsStatus>('/api/admin/docs/status')
+export function getDocsStatus(signal?: AbortSignal) {
+  return getJson<DocsStatus>('/api/admin/docs/status', signal)
 }
 
 export function getPublishIntegrity(signal?: AbortSignal) {
@@ -123,8 +129,8 @@ export function cleanupCache() {
   return postJson<{ deleted_count: number }>('/api/admin/cache/cleanup')
 }
 
-export function listDatabaseBackups() {
-  return getJson<DatabaseBackupInventory>('/api/admin/backup/db')
+export function listDatabaseBackups(signal?: AbortSignal) {
+  return getJson<DatabaseBackupInventory>('/api/admin/backup/db', signal)
 }
 
 export function backupDatabase() {
@@ -147,8 +153,8 @@ export function updateAccountSettings(values: AccountSettingsValues) {
   return putJson<AccountSettingsUpdateResponse>('/api/admin/settings/accounts', values)
 }
 
-export function listJobs() {
-  return getJson<ScheduledJob[]>('/api/admin/jobs')
+export function listJobs(signal?: AbortSignal) {
+  return getJson<ScheduledJob[]>('/api/admin/jobs', signal)
 }
 
 export function runJob(jobId: string) {
@@ -228,7 +234,7 @@ export function getDeploymentHistory(params: {
   status?: string
   source?: string
   commit?: string
-}) {
+}, signal?: AbortSignal) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
   const search = new URLSearchParams()
@@ -237,12 +243,12 @@ export function getDeploymentHistory(params: {
   if (params.status) search.set('status', params.status)
   if (params.source) search.set('source', params.source)
   if (params.commit) search.set('commit', params.commit)
-  return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`)
+  return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`, signal)
 }
 
-export function listUsers(params: UserListParams = {}) {
+export function listUsers(params: UserListParams = {}, signal?: AbortSignal) {
   const search = buildUserListSearchParams(params)
-  return getJson<UserAccountPage>(`/api/admin/users?${search.toString()}`)
+  return getJson<UserAccountPage>(`/api/admin/users?${search.toString()}`, signal)
 }
 
 export function getUserDetails(
@@ -277,39 +283,94 @@ export function clearRegistrationSecurity(ipAddress: string) {
   })
 }
 
-export function getFeedbackInbox(params: {
+export interface FeedbackInboxParams {
   current?: number
   pageSize?: number
   status?: FeedbackInboxFilter
   query?: string
-}) {
+  machine?: string
+  appVersion?: string
+  createdFrom?: string
+  createdTo?: string
+}
+
+export function getFeedbackInbox(params: FeedbackInboxParams, signal?: AbortSignal) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
   const search = new URLSearchParams({
     limit: String(pageSize),
     offset: String((current - 1) * pageSize),
   })
-  if (params.status) search.set('status', params.status)
+  if (params.status && params.status !== 'all') search.set('status', params.status)
   if (params.query) search.set('query', params.query)
-  return getJson<FeedbackInboxResponse>(`/api/admin/feedback?${search.toString()}`)
+  if (params.machine) search.set('machine', params.machine)
+  if (params.appVersion) search.set('app_version', params.appVersion)
+  if (params.createdFrom) search.set('created_from', params.createdFrom)
+  if (params.createdTo) search.set('created_to', params.createdTo)
+  return getJson<FeedbackInboxResponse>(`/api/feedback?${search.toString()}`, signal)
 }
 
 export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
+  // The server resolves this stable ID across flat and machine-grouped storage.
   return getJson<FeedbackDetail>(
-    `/api/admin/feedback/${encodeURIComponent(feedbackId)}`,
+    `/api/feedback/${encodeURIComponent(feedbackId)}?include_hashes=false`,
     signal,
   )
 }
 
 export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
-  return putJson<FeedbackDetail>(
+  return putJson<FeedbackStatusUpdate>(
     `/api/admin/feedback/${encodeURIComponent(feedbackId)}/status`,
     { status },
+    AbortSignal.timeout(20000),
   )
 }
 
+export function getFeedbackHandling(feedbackId: string, signal?: AbortSignal) {
+  return getJson<FeedbackHandling>(`/api/admin/feedback/${encodeURIComponent(feedbackId)}/handling`, signal)
+}
+
+export function saveFeedbackHandling(feedbackId: string, values: FeedbackHandlingValues, revision: number) {
+  return putJson<FeedbackHandling>(`/api/admin/feedback/${encodeURIComponent(feedbackId)}/handling`, {
+    ...values, revision,
+  }, AbortSignal.timeout(20000))
+}
+
+export function updateFeedbackStatuses(feedbackIds: string[], status: FeedbackStatus) {
+  return putJson<FeedbackBulkStatusResponse>('/api/admin/feedback/status', {
+    feedback_ids: feedbackIds,
+    status,
+  }, AbortSignal.timeout(20000))
+}
+
 export function feedbackAttachmentUrl(feedbackId: string, filename: string) {
-  return `/api/admin/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
+  return `/api/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
+}
+
+export async function downloadFeedbackAttachment(feedbackId: string, filename: string) {
+  const response = await fetch(feedbackAttachmentUrl(feedbackId, filename), {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/octet-stream', 'X-ColorVision-Web': '1' },
+  })
+  if (!response.ok) {
+    const payload = (response.headers.get('content-type') || '').includes('application/json')
+      ? await response.json()
+      : await response.text()
+    const detail = typeof payload === 'object' && payload && 'error' in payload
+      ? String((payload as { error?: unknown }).error)
+      : `下载失败 (${response.status})`
+    throw new Error(detail)
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  try {
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${feedbackId}__${filename}`
+    anchor.click()
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 export function createUserAccount(payload: CreateUserPayload) {

@@ -13,7 +13,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Start;
 
-public abstract class BaseStartNode : CVCommonNode, IDisposable
+public abstract class BaseStartNode : CVDeviceNode, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BaseStartNode));
 
@@ -48,6 +48,9 @@ public abstract class BaseStartNode : CVCommonNode, IDisposable
 	}
 
 	public virtual bool RequiresConnectionReady => false;
+
+	[Newtonsoft.Json.JsonIgnore]
+	public bool PersistResults { get; set; } = true;
 
 	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
 
@@ -461,7 +464,7 @@ public abstract class BaseStartNode : CVCommonNode, IDisposable
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
 			return false;
 		}
-		CVStartCFC start = new CVStartCFC(serialNumber);
+		CVStartCFC start = new CVStartCFC(serialNumber) { PersistResults = PersistResults };
 		DoDispatch(start);
 		return true;
 	}

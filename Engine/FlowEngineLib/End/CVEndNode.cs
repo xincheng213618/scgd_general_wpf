@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.End;
 
 [STNode("/00 全局")]
-public class CVEndNode : CVCommonNode
+public class CVEndNode : CVDeviceNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVEndNode));
 

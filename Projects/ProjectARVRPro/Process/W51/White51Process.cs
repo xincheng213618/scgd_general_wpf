@@ -1,11 +1,13 @@
 #pragma warning disable CS8601
 using ColorVision.Common.Algorithms;
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
@@ -93,26 +95,81 @@ namespace ProjectARVRPro.Process.W51
             W51ViewTestResult testResult = JsonConvert.DeserializeObject<W51ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
-            if (testResult.AlgResultLightAreaModels.Count>0)
+            if (Config.DrawFovOverlay && TryCreateFovMeasurement(testResult, out FovMeasurement measurement))
             {
-                DVPolygon polygon = new DVPolygon();
-                List<System.Windows.Point> point1s = new List<System.Windows.Point>();
-
-                foreach (var item in testResult.AlgResultLightAreaModels)
-                {
-                    point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
-                }
-                foreach (var item in GrahamScan.ComputeConvexHull(point1s))
-                {
-                    polygon.Attribute.Points.Add(new Point(item.X, item.Y));
-                }
-                polygon.Attribute.Brush = Brushes.Transparent;
-                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
-                polygon.Attribute.Id = -1;
-                polygon.IsComple = true;
-                polygon.Render();
-                ctx.ImageView.AddVisual(polygon);
+                FovOverlayRenderer.Render(
+                    ctx.ImageView.EditorContext.ProcessingContext,
+                    ctx.ImageView.EditorContext.DrawEditorContext,
+                    measurement);
+                return;
             }
+
+            AlgorithmResultOverlay.ClearTagged(
+                ctx.ImageView.EditorContext.DrawEditorContext,
+                AlgorithmResultOverlay.FovTag);
+            RenderLuminousArea(ctx, testResult.AlgResultLightAreaModels);
+        }
+
+        internal static bool TryCreateFovMeasurement(W51ViewTestResult testResult, out FovMeasurement measurement)
+        {
+            measurement = null!;
+            if (testResult.AlgResultLightAreaModels == null || testResult.AlgResultLightAreaModels.Count != 4
+                || testResult.HorizontalFieldOfViewAngle == null
+                || testResult.VerticalFieldOfViewAngle == null
+                || testResult.DiagonalFieldOfViewAngle == null)
+                return false;
+
+            LuminousAreaPoint[] points = testResult.AlgResultLightAreaModels
+                .Select(item => new LuminousAreaPoint(item.PosX, item.PosY))
+                .ToArray();
+            double centerX = points.Average(point => point.X);
+            double centerY = points.Average(point => point.Y);
+            LuminousAreaPoint[] aroundCenter = points
+                .OrderBy(point => Math.Atan2(point.Y - centerY, point.X - centerX))
+                .ToArray();
+            int leftTopIndex = Enumerable.Range(0, aroundCenter.Length)
+                .OrderBy(index => aroundCenter[index].X + aroundCenter[index].Y)
+                .ThenBy(index => aroundCenter[index].Y)
+                .First();
+            LuminousAreaPoint[] corners = aroundCenter
+                .Skip(leftTopIndex)
+                .Concat(aroundCenter.Take(leftTopIndex))
+                .ToArray();
+            if (!LuminousAreaResultParser.TryValidateOrderedCorners(corners, out _))
+                return false;
+
+            double horizontal = testResult.HorizontalFieldOfViewAngle.Value;
+            double vertical = testResult.VerticalFieldOfViewAngle.Value;
+            double diagonal = testResult.DiagonalFieldOfViewAngle.Value;
+            if (!double.IsFinite(horizontal) || !double.IsFinite(vertical) || !double.IsFinite(diagonal))
+                return false;
+
+            measurement = new FovMeasurement
+            {
+                Corners = corners,
+                HorizontalFovDegrees = horizontal,
+                VerticalFovDegrees = vertical,
+                DiagonalFovDegrees = diagonal,
+                DirectionalHorizontalFovDegrees = horizontal,
+                DirectionalVerticalFovDegrees = vertical
+            };
+            return true;
+        }
+
+        private static void RenderLuminousArea(IProcessExecutionContext ctx, List<AlgResultLightAreaModel>? models)
+        {
+            if (models == null || models.Count == 0) return;
+
+            DVPolygon polygon = new();
+            List<Point> points = models.Select(item => new Point((int)item.PosX, (int)item.PosY)).ToList();
+            foreach (Point point in GrahamScan.ComputeConvexHull(points))
+                polygon.Attribute.Points.Add(point);
+            polygon.Attribute.Brush = Brushes.Transparent;
+            polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+            polygon.Attribute.Id = -1;
+            polygon.IsComple = true;
+            polygon.Render();
+            ctx.ImageView.AddVisual(polygon);
         }
 
         public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)

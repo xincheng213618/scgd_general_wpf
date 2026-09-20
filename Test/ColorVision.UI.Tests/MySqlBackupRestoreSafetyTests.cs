@@ -58,6 +58,37 @@ public sealed class MySqlBackupRestoreSafetyTests
     }
 
     [Fact]
+    public void MySqlServiceImagePathDiscoversCommandLineToolsBesideServerExecutable()
+    {
+        string root = Directory.CreateTempSubdirectory("ColorVision MySQL Tools ").FullName;
+        string bin = Directory.CreateDirectory(Path.Combine(root, "MySQL Server 8.0", "bin")).FullName;
+        string mysqld = Path.Combine(bin, "mysqld.exe");
+        string mysql = Path.Combine(bin, "mysql.exe");
+        string mysqldump = Path.Combine(bin, "mysqldump.exe");
+        File.WriteAllBytes(mysqld, [0]);
+        File.WriteAllBytes(mysql, [0]);
+        File.WriteAllBytes(mysqldump, [0]);
+
+        try
+        {
+            MySqlLocalConfig config = new();
+
+            bool configured = MySqlLocalServicesManager.TryConfigureMySqlToolPaths(
+                config,
+                $"\"{mysqld}\" --defaults-file=\"{Path.Combine(root, "my.ini")}\"");
+
+            Assert.True(configured);
+            Assert.Equal(mysqld, config.MysqldPath);
+            Assert.Equal(mysql, config.MysqlPath);
+            Assert.Equal(mysqldump, config.MysqldumpPath);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void BackupAndRestoreExposeExactSuccessfulPath()
     {
         MethodInfo backup = typeof(MySqlLocalServicesManager).GetMethod(nameof(MySqlLocalServicesManager.BackupAllMysql))!;
@@ -69,6 +100,7 @@ public sealed class MySqlBackupRestoreSafetyTests
 
     [Theory]
     [InlineData(false, "导入数据库", "SQL 未完成导入，导入数据库失败")]
+    [InlineData(true, "更新流程节点", "SQL 已导入，但更新流程节点失败")]
     [InlineData(true, "同步服务配置", "SQL 已导入，但同步服务配置失败")]
     [InlineData(true, "重启注册中心服务", "SQL 已导入，但重启注册中心服务失败")]
     public void RestoreFailureSummaryDistinguishesCompletedSqlImport(
@@ -131,6 +163,10 @@ public sealed class MySqlBackupRestoreSafetyTests
         Assert.Contains("process.Kill(entireProcessTree: true)", source, StringComparison.Ordinal);
         Assert.Contains("MySqlRestoreProgressWindow", source, StringComparison.Ordinal);
         Assert.Contains("SynchronizeInstalledServiceConfigs", source, StringComparison.Ordinal);
+        Assert.Contains(
+            "internal static string CreateFeedbackResourceBackup()\n        {\n            RefreshMySqlToolPathsFromServices();",
+            source.Replace("\r\n", "\n"),
+            StringComparison.Ordinal);
         Assert.DoesNotContain("ExecuteCommandAsAdmin", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ExecuteCommandUI", source, StringComparison.Ordinal);
         Assert.DoesNotContain("restoreCommand", source, StringComparison.Ordinal);

@@ -149,6 +149,16 @@ public sealed class LocalFrameMirrorTests
     }
 
     [Fact]
+    public void CalibrationUsesDatabaseExposureFallbackOnlyForAllZeroFileMetadata()
+    {
+        float[] fallback = { 12.5f, 25, 50 };
+
+        Assert.Equal(fallback, LocalFrameCalibrationService.ResolveExposureForCalibration(new float[] { 0, 0, 0 }, fallback));
+        Assert.Equal(new float[] { 10, 20, 30 }, LocalFrameCalibrationService.ResolveExposureForCalibration(new float[] { 10, 20, 30 }, fallback));
+        Assert.Equal(new float[] { 0, 20, 30 }, LocalFrameCalibrationService.ResolveExposureForCalibration(new float[] { 0, 20, 30 }, fallback));
+    }
+
+    [Fact]
     public void PreparingColorCalibrationKeepsRawAndAddsOnlyCieData()
     {
         LocalFrameMetadata metadata = new()

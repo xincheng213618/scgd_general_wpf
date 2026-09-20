@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#pragma warning disable CA2101 // 厂商 cvCamera.dll 同时提供 ANSI char* 与显式 W 后缀的 Unicode 文件接口，封送方式必须匹配其 ABI。
+
 namespace cvColorVision
 {
     /// <summary>
@@ -28,7 +30,8 @@ namespace cvColorVision
                 const int bufferSize = 1024;
                 StringBuilder sb = new StringBuilder(bufferSize);
                 int len = bufferSize;
-                CM_GetErrorMessage(errorCode, sb, ref len);
+                int lookupResult = CM_GetErrorMessage(errorCode, sb, ref len);
+                if (lookupResult != 1) return $"未知错误 (错误码: {errorCode})";
                 string msg = sb.ToString();
                 return string.IsNullOrEmpty(msg) ? $"未知错误 (错误码: {errorCode})" : $"{errorCode} ErrorMessage:{msg}" ;
             }
@@ -129,3 +132,4 @@ namespace cvColorVision
         public static extern int CM_Emission_CreateMagiude(float fIntTime, float[] fDarkData, float[] fLightData, string szCSFile, string szWavaLengthFile, string szMagiude);
     }
 }
+#pragma warning restore CA2101

@@ -103,7 +103,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotApplyWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
+    public sealed class CopilotApplyWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool, ICopilotWorkspaceMutationEvidenceSource
     {
         private readonly CopilotWorkspacePatchStore _store;
 
@@ -153,9 +153,12 @@ namespace ColorVision.Copilot
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput) => _store.CreateChangeSetApprovalPresentation(toolInput, rollback: false);
+
+        IReadOnlyList<string> ICopilotWorkspaceMutationEvidenceSource.GetWorkspaceRecheckPaths(CopilotAgentRequest request, CopilotAgentToolInput input) =>
+            _store.GetChangeSetRecheckPaths(request, input, rollback: false);
     }
 
-    public sealed class CopilotRollbackWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
+    public sealed class CopilotRollbackWorkspacePatchEnvelopeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool, ICopilotWorkspaceMutationEvidenceSource
     {
         private readonly CopilotWorkspacePatchStore _store;
 
@@ -205,5 +208,8 @@ namespace ColorVision.Copilot
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput) => _store.CreateChangeSetApprovalPresentation(toolInput, rollback: true);
+
+        IReadOnlyList<string> ICopilotWorkspaceMutationEvidenceSource.GetWorkspaceRecheckPaths(CopilotAgentRequest request, CopilotAgentToolInput input) =>
+            _store.GetChangeSetRecheckPaths(request, input, rollback: true);
     }
 }

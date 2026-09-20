@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GeometricTran
             AlgorithmTableArtifact matrix = result.GetArtifact<AlgorithmTableArtifact>("geometric-transform-matrix")
                 ?? throw new ArgumentException("The result has no transform matrix table.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             TransformedPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(transformed.Image);
             MaskPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(mask.Image);

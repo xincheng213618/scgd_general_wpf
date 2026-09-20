@@ -17,8 +17,8 @@ Per-endpoint scope requirements:
   - GET  /audit-log           → audit:read
   - GET  /deployments         → deployments:read
   - GET  /operations/overview → operations:manage
-  - GET  /feedback            → feedback:manage
-  - GET  /feedback/*          → feedback:manage
+  - GET  /feedback            → feedback:read
+  - GET  /feedback/*          → feedback:read
   - PUT  /feedback/*/status   → feedback:manage
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
@@ -91,10 +91,13 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "audit_log": ["audit:read"],
     "deployment_history": ["deployments:read"],
     "operations_overview": ["operations:manage"],
-    "feedback_inbox": ["feedback:manage"],
-    "feedback_detail": ["feedback:manage"],
-    "feedback_attachment": ["feedback:manage"],
+    "feedback_inbox": ["feedback:read"],
+    "feedback_detail": ["feedback:read"],
+    "feedback_attachment": ["feedback:read"],
     "update_feedback_status": ["feedback:manage"],
+    "bulk_feedback_status": ["feedback:manage"],
+    "feedback_handling": ["feedback:read"],
+    "save_feedback_handling": ["feedback:manage"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["users:manage"],
@@ -198,6 +201,8 @@ def _require_admin_auth(required_scopes: list[str] | None = None):
         scopes_to_check,
         allow_user_session=True,
     )
+    if not decision.allowed and decision.reason == "insufficient_scope" and request.endpoint == "admin_api.feedback_handling":
+        decision = ctx.auth_policy.authorize(request_context, ["feedback:manage"], allow_user_session=True)
     if decision.allowed:
         set_authenticated_request_context(request_context.with_actor(decision.principal))
         return None
@@ -860,7 +865,10 @@ def operations_overview():
             now=datetime.now(timezone.utc),
             host_limit=host_limit,
             activity_limit=activity_limit,
+            host_id=request.args.get("hostId"),
         )
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify(result)
@@ -953,6 +961,64 @@ def update_feedback_status(feedback_id: str):
             ip=request.remote_addr or "",
             user_agent=request.headers.get("User-Agent", "")[:200],
         )
+    result["access"] = {"scope": "all", "can_manage": True}
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/status", methods=["PUT"])
+def bulk_feedback_status():
+    from services.feedback_admin import update_feedback_statuses, validate_feedback_bulk_status_payload
+
+    ctx = _get_ctx()
+    try:
+        identifiers, status = validate_feedback_bulk_status_payload(request.get_json(silent=True))
+        result = update_feedback_statuses(ctx.storage_getter(), identifiers, status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    for item in result["results"]:
+        if item.get("changed"):
+            ctx.cache.write_audit(
+                actor_type=_actor_type(), actor_id=_actor_id(),
+                action="feedback_status_update", target_type="feedback", target_id=item["feedback_id"],
+                detail=f"status: {item['before']} -> {status} (bulk)",
+                ip=request.remote_addr or "", user_agent=request.headers.get("User-Agent", "")[:200],
+            )
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/<feedback_id>/handling", methods=["GET"])
+def feedback_handling(feedback_id: str):
+    from services.feedback_admin import get_feedback_handling
+
+    try:
+        return jsonify(get_feedback_handling(_get_ctx().storage_getter(), feedback_id))
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+    except OSError:
+        return jsonify({"error": "无法读取处理记录，请检查反馈管理文件"}), 500
+
+
+@admin_api.route("/feedback/<feedback_id>/handling", methods=["PUT"])
+def save_feedback_handling(feedback_id: str):
+    from services.feedback_admin import FeedbackHandlingConflict, update_feedback_handling
+
+    ctx = _get_ctx()
+    try:
+        result = update_feedback_handling(ctx.storage_getter(), feedback_id, request.get_json(silent=True),
+                                         actor_type=_actor_type(), actor_id=_actor_id())
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+    except FeedbackHandlingConflict:
+        return jsonify({"error": "处理记录已被其他人修改，请重新加载后核对再保存", "code": "feedback_handling_conflict"}), 409
+    except OSError:
+        return jsonify({"error": "无法保存处理记录，请刷新核对后重试"}), 500
+    if result["changed"]:
+        ctx.cache.write_audit(actor_type=_actor_type(), actor_id=_actor_id(), action="feedback_handling_update",
+                              target_type="feedback", target_id=feedback_id,
+                              detail=f"handling revision: {result['revision']}",
+                              ip=request.remote_addr or "", user_agent=request.headers.get("User-Agent", "")[:200])
     return jsonify(result)
 
 
@@ -1136,8 +1202,8 @@ def list_users():
     sort_order = str(request.args.get("sort_order") or "").strip()
     if len(query) > 100:
         return jsonify({"error": "q must be at most 100 characters"}), 400
-    if role not in {"", "admin", "user"}:
-        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if role not in {"", "admin", "developer", "user"}:
+        return jsonify({"error": "role must be 'admin', 'developer', or 'user'"}), 400
     if status not in {"", "active", "inactive"}:
         return jsonify({"error": "status must be 'active' or 'inactive'"}), 400
     if account_origin not in {

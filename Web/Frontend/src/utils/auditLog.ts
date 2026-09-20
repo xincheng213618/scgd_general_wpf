@@ -12,6 +12,7 @@ export interface AuditDetailField {
 }
 
 const actionDefinitions: Record<string, AuditActionMeta> = {
+  feedback_handling_update: { label: '更新反馈处理记录', category: '反馈', color: 'blue', security: false },
   auth_forbidden: { label: '权限不足', category: '安全', color: 'red', security: true },
   auth_unauthorized: { label: '未授权访问', category: '安全', color: 'red', security: true },
   login_failed: { label: '登录失败', category: '安全', color: 'volcano', security: true },

@@ -3,10 +3,10 @@ knowledge_id: "flow.index"
 knowledge_type: "index"
 status: "current"
 summary: "按节点用途与执行归属定位 FlowEngineLib、Engine 本地节点和属性编辑器。"
-aliases: ["Flow有哪些节点在哪里定义","NodeType","STNode","FlowNodePropertyEditorAttribute"]
+aliases: ["Flow有哪些节点在哪里定义","NodeType","STNode","PropertyEditorTypeAttribute"]
 code_paths: ["Engine/FlowEngineLib/Node","Engine/FlowEngineLib/Base","Engine/ColorVision.Engine/FlowProcessing/Nodes","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
 test_paths: []
-related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","flow.workspace","flow.headless","flow.conversion-calibration","algorithms.find-cross"]
+related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","flow.workspace","flow.headless","flow.conversion-calibration","algorithms.find-cross","algorithms.grid-distortion"]
 ---
 
 # Flow 节点检索入口
@@ -20,6 +20,7 @@ related: ["flow.runtime","flow.editor","flow.node-extension","flow.templates","f
 | 公共流程节点与执行参数 | `Engine/FlowEngineLib/` | [FlowEngineLib](./engine-components/FlowEngineLib.md) |
 | 本地执行、内存帧和宿主扩展节点 | `Engine/ColorVision.Engine/FlowProcessing/Nodes/` | [节点扩展](./extensions/flow-node.md) |
 | 本地十字定位、搜索区域、结果文件与下游中心 | `FlowProcessing/Nodes/LocalFindCrossNode.cs` | [本地 FindCross](./algorithms/detectors/find-cross.md) |
+| 本地点阵畸变、多口径指标及 ARVR 结果 | `FlowProcessing/Nodes/LocalGridDistortionNode.cs` | [本地点阵畸变 V2](./algorithms/detectors/grid-distortion-v2.md) |
 | 通用节点参数如何选择属性编辑器 | `Engine/FlowEngineLib/PropertyEditor/`、`Engine/ColorVision.Engine/PropertyEditor/` | [PropertyGrid 契约](./ui-components/property-grid.md) |
 | 复杂多模板或流程专用配置面板 | `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` | [模板与 Flow 链](./engine-components/template-flow-chain.md) |
 | 模板存储、关联模板与导入导出 | `Templates/Flow/` | [模板与 Flow 链](./engine-components/template-flow-chain.md) |
@@ -38,7 +39,7 @@ rg -n "class .*Node|NodeType|FlowNodePropertyEditor|PropertyEditorType|NodeConfi
 
 ## 修改时保持的边界
 
-公共节点不直接依赖 Engine 高层 UI；依赖服务或内存图像宿主的节点留在 Engine。普通参数用元数据驱动属性编辑器，复杂专用面板才进入 `NodeConfiguration/`。节点可发现、参数可编辑和执行正确是不同验证点。
+公共节点不直接依赖 Engine 高层 UI；依赖模板/量程属性编辑器、设备或内存图像宿主的节点留在 Engine，兼容节点集中在 `FlowProcessing/Nodes/Compatibility/`。普通参数用元数据驱动属性编辑器，复杂专用面板才进入 `NodeConfiguration/`。节点可发现、参数可编辑和执行正确是不同验证点。
 
 ## 验证入口与缺口
 

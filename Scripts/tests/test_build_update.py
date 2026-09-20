@@ -1,7 +1,10 @@
 import tempfile
+import hashlib
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
+from Scripts import build_update
 
 from Scripts.build_update import (
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
@@ -10,6 +13,71 @@ from Scripts.build_update import (
     make_incremental_zip,
     validate_service_host_runtime,
 )
+
+
+class NativeRuntimeDeliveryTests(unittest.TestCase):
+    def test_native_dependencies_follow_content_diff_for_old_and_new_baselines(self):
+        native_paths = (
+            'runtimes/win-x64/native/OpenCvSharpExtern.dll',
+            'runtimes/win-x64/native/opencv_videoio_ffmpeg4130_64.dll',
+            'runtimes/win-x64/native/opencv_videoio_ffmpeg4140_64.dll',
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / "runtime"
+            baseline = root / "ColorVision-[1.4.14.1].zip"
+            expected = {}
+            with zipfile.ZipFile(baseline, "w") as z:
+                for relative in native_paths:
+                    data = relative.encode()
+                    path = runtime / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(data)
+                    z.writestr(relative, data)
+                    expected[relative] = hashlib.sha256(data).hexdigest()
+            package = root / "incremental.cvx"
+            for name in ("ColorVision-[1.4.14.1].zip", "ColorVision-[1.4.15.1].zip"):
+                with self.subTest(baseline=name):
+                    candidate = root / name
+                    if candidate != baseline:
+                        candidate.write_bytes(baseline.read_bytes())
+                    make_incremental_zip(candidate, runtime, package, native_hashes=expected)
+                    with zipfile.ZipFile(package) as z:
+                        self.assertEqual(z.namelist(), [])
+
+            # Changed native libraries must still be delivered; do not blacklist these DLLs.
+            changed = native_paths[0]
+            content = b'updated native runtime'
+            (runtime / changed).write_bytes(content)
+            expected[changed] = hashlib.sha256(content).hexdigest()
+            make_incremental_zip(baseline, runtime, package, native_hashes=expected)
+            with zipfile.ZipFile(package) as z:
+                self.assertEqual(z.namelist(), [changed])
+                self.assertEqual(z.read(changed), content)
+
+    def test_runtime_corruption_stops_before_packaging_or_upload(self):
+        with mock.patch.object(build_update, "get_file_version", return_value="1.4.14.82"), \
+             mock.patch.object(build_update, "validate_service_host_runtime"), \
+             mock.patch.object(build_update, "validate_operations_watchdog_runtime"), \
+             mock.patch.object(build_update, "ensure_native_runtime_integrity", side_effect=ValueError("bad native")), \
+             mock.patch.object(build_update, "make_incremental_zip") as pack, \
+             mock.patch.object(build_update, "upload_file") as upload:
+            self.assertEqual(build_update.main(), 1)
+        pack.assert_not_called()
+        upload.assert_not_called()
+
+    def test_packaged_content_failure_stops_upload(self):
+        with mock.patch.object(build_update, "get_file_version", return_value="1.4.14.82"), \
+             mock.patch.object(build_update, "validate_service_host_runtime"), \
+             mock.patch.object(build_update, "validate_operations_watchdog_runtime"), \
+             mock.patch.object(build_update, "ensure_native_runtime_integrity", return_value={"native.dll": "hash"}), \
+             mock.patch.object(build_update, "create_directory_if_not_exists"), \
+             mock.patch.object(build_update, "find_incremental_baseline", return_value="base.zip"), \
+             mock.patch.object(build_update, "make_incremental_zip", side_effect=ValueError("bad archive")) as pack, \
+             mock.patch.object(build_update, "upload_file") as upload:
+            self.assertEqual(build_update.main(), 1)
+        self.assertEqual(pack.call_args.kwargs["native_hashes"], {"native.dll": "hash"})
+        upload.assert_not_called()
 
 
 class IncrementalBaselineTests(unittest.TestCase):

@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
         public DeviceMotor Device { get; set; }
         private MQTTMotor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplayMotor(DeviceMotor device)
         {

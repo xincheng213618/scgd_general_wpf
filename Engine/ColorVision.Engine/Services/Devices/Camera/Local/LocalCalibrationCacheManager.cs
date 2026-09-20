@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using cvColorVision;
 using log4net;
@@ -25,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private readonly SemaphoreSlim openCvGate = new(1, 1);
         private readonly OpenCvLocalCalibrationCache openCvCache = new();
         private readonly Dictionary<string, CachedCalibrationFile> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IntPtr> colorSnapshotContexts = new(StringComparer.OrdinalIgnoreCase);
         private IntPtr contextToken;
         private IntPtr lineArityHandle;
         private CachedCalibrationFile? loadedLineArity;
@@ -73,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public void Execute(
+        public RawColorTransformV1? Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
@@ -85,14 +87,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
-            SemaphoreSlim executionGate = EnterExecution();
+            SemaphoreSlim executionGate = FlowNodeTiming.Run("WaitCalibration", EnterExecution);
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (!useLegacyCalibration)
                 {
-                    openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi);
-                    return;
+                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi);
                 }
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
@@ -119,20 +120,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 foreach (CachedCalibrationFile file in files)
                 {
-                    EnsureLoaded(file);
+                    FlowNodeTiming.Run("LoadCalibrationResource", () => EnsureLoaded(file));
                 }
 
                 CachedCalibrationFile[] normalFiles = files.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
                 int lineArityIndex = Array.FindIndex(normalFiles, file => file.CalibrationType == CalibrationType.LineArity);
                 if (lineArityIndex < 0)
                 {
-                    ExecuteRoutine(layout, normalFiles, rawPointer);
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles, rawPointer));
                 }
                 else
                 {
-                    ExecuteRoutine(layout, normalFiles.Take(lineArityIndex).ToArray(), rawPointer);
-                    ExecuteLineArity(layout, rawPointer);
-                    ExecuteRoutine(layout, normalFiles.Skip(lineArityIndex + 1).ToArray(), rawPointer);
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Take(lineArityIndex).ToArray(), rawPointer));
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteLineArity(layout, rawPointer));
+                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Skip(lineArityIndex + 1).ToArray(), rawPointer));
                 }
 
                 if (colorFiles.Length == 1)
@@ -153,7 +154,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     {
                         throw new InvalidOperationException($"生成本地 CIE 内存失败：{colorFile.DisplayName}。");
                     }
+                    CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
+                    RawColorTransformV1 snapshot = RawColorTransformV1.Create();
+                    int result = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(colorSnapshotContexts[colorFile.CacheKey], in options, ref snapshot);
+                    if (result != OpenCVCalibration.CalibrationOk) throw new InvalidOperationException("读取已加载的旧版色度参数失败。");
+                    return snapshot;
                 }
+                return null;
             }
             finally
             {
@@ -282,9 +289,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             if (loadedFiles.ContainsKey(file.CacheKey)) return;
             EnsureV1Context();
+            // Keep both loaders on the same immutable file contents; retain the snapshot
+            // context with the legacy item rather than reopening the .dat after execution.
+            using FileStream? colorFileLock = IsColorCalibration(file.CalibrationType)
+                ? new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
             if (cvCameraCSLib.CM_LoadItemV1(contextToken, file.CalibrationType, file.Title, file.FullPath) == 0)
             {
                 throw new InvalidOperationException($"加载校正文件失败：{file.DisplayName}（{file.FullPath}）。");
+            }
+            if (colorFileLock != null)
+            {
+                IntPtr snapshotContext = IntPtr.Zero;
+                try
+                {
+                    if (OpenCVCalibration.M_CalibrationCreate(out snapshotContext) != OpenCVCalibration.CalibrationOk
+                        || OpenCVCalibration.M_CalibrationLoadFileW(snapshotContext, (int)file.CalibrationType, file.FullPath) != OpenCVCalibration.CalibrationOk)
+                        throw new InvalidOperationException($"保存旧版校正参数快照失败：{file.DisplayName}。");
+                    colorSnapshotContexts.Add(file.CacheKey, snapshotContext);
+                    snapshotContext = IntPtr.Zero;
+                }
+                finally { if (snapshotContext != IntPtr.Zero) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext); }
             }
             loadedFiles.Add(file.CacheKey, file);
         }
@@ -429,6 +453,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (contextToken == IntPtr.Zero && lineArityHandle == IntPtr.Zero)
             {
                 loadedLayout = null;
+            }
+            if (contextToken == IntPtr.Zero)
+            {
+                foreach (IntPtr snapshotContext in colorSnapshotContexts.Values) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext);
+                colorSnapshotContexts.Clear();
             }
             if (releaseError != null) throw releaseError;
             return releasedItems;

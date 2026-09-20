@@ -1,0 +1,39 @@
+{
+  "ArvrHost": "127.0.0.1",
+  "ArvrPort": 6666,
+  "PgHost": "192.168.200.200",
+  "PgPort": 40009,
+  "NetworkNumber": 255,
+  "Channel": "01",
+  "PgResponseTimeoutSeconds": 30,
+  "HeartbeatSeconds": 5,
+  "AutoExecuteMappedPgCommand": false,
+  "ConfirmArvrAfterPgSuccess": true,
+  "ManagePgPowerForRun": true,
+  "Mappings": [
+    {
+      "Enabled": false,
+      "EventName": "SwitchPG",
+      "ArvrTestType": "0",
+      "Name": "切图 1",
+      "CommandTemplate": "PG,{channel},PATTERN,INDEX,1",
+      "SuccessContains": ",PATTERN,INDEX,END,OK"
+    },
+    {
+      "Enabled": false,
+      "EventName": "SwitchPG",
+      "ArvrTestType": "1",
+      "Name": "切图 2",
+      "CommandTemplate": "PG,{channel},PATTERN,INDEX,2",
+      "SuccessContains": ",PATTERN,INDEX,END,OK"
+    },
+    {
+      "Enabled": false,
+      "EventName": "SwitchPG",
+      "ArvrTestType": "2",
+      "Name": "切图 3",
+      "CommandTemplate": "PG,{channel},PATTERN,INDEX,3",
+      "SuccessContains": ",PATTERN,INDEX,END,OK"
+    }
+  ]
+}

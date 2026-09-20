@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Services.Devices.LightingController
         private MQTTLightingController DService => Device.DService;
 
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplayLightingController(DeviceLightingController device)
         {

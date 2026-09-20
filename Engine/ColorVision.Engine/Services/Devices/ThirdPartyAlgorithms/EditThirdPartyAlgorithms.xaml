@@ -22,10 +22,6 @@
                             <TextBlock Text="{x:Static properties:Resources.FrameDisplayName}" Width="120"/>
                             <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{x:Static properties:Resources.HeartbeatTimeLabel}"  Width="120"/>
-                            <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
-                        </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
                             <TextBlock Text="SN" Width="120"/>
                             <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
@@ -41,14 +37,6 @@
                         <DockPanel Margin="0,2">
                             <TextBlock  Text="{x:Static properties:Resources.DataDirectory}"  Width="120"/>
                             <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
-                            <TextBox  x:Name="TextBox_Endpoint" Text="{Binding FileServerCfg.Endpoint}"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="{x:Static properties:Resources.PortRange}" Width="120"/>
-                            <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="{x:Static properties:Resources.RetentionDays}" Width="120"/>

@@ -21,7 +21,7 @@ next: false
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
 
 - [CVCIE POI 结果数值](../../04-api-reference/engine-components/cvcie-results.md) — `engine.cvcie-results`
-  ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
+  ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
   数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
@@ -30,7 +30,7 @@ next: false
   设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
-  CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。
+  CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [ColorVision.Engine 工程、资源与依赖](../../04-api-reference/engine-components/ColorVision.Engine.md) — `engine.host`
   ColorVision.Engine工程的条件引用、NuGet/DLL依赖回退与资源打包；schema嵌入程序集，缺少输出散文件不等于漏包，也不保证脱离UI源码独立构建。
@@ -39,7 +39,7 @@ next: false
   MySQL 结果表的手动关联索引优化、历史删除、整表截断和SQL备份；在线DDL、并发、部分成功、备份与恢复边界分别说明。
 
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
-  MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
+  MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
 - [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
@@ -51,7 +51,7 @@ next: false
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
 
 - [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
-  主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。
+  主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。
 
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
@@ -69,4 +69,4 @@ next: false
   opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
 
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。

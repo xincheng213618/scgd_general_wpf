@@ -1,3 +1,4 @@
+using ColorVision.Themes;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,7 @@ namespace ColorVision.ImageEditor.Settings
             _session = new ImageSettingsSession(entries);
             _pages = entries.GroupBy(entry => entry.PageId).Select(group => new SettingsPage(group.Key, group.ToArray())).OrderBy(page => page.SectionOrder).ToList();
             InitializeComponent();
+            this.ApplyCaption();
             _session.Changed += Session_Changed;
             _imageView.Config.Cleared += Context_Cleared;
             _imageView.ImageSourceLoaded += ImageSource_Loaded;
@@ -99,6 +101,11 @@ namespace ColorVision.ImageEditor.Settings
                     hint.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                     section.Children.Add(hint);
                 }
+                WrapPanel actions = new() { Margin = new Thickness(0, 0, 0, 10) };
+                foreach (ImageSettingsAction action in entry.Actions) AddAction(actions, action);
+                if (entry.Scope == ImageSettingsScope.Extension && entry.Save != null && !entry.IsReadOnly)
+                    AddAction(actions, new ImageSettingsAction(SettingsText.Save, entry.Save));
+                if (actions.Children.Count > 0) section.Children.Add(actions);
                 FrameworkElement content;
                 try { content = entry.CreateView?.Invoke() ?? SettingsPropertyPresenter.Create(entry.Source, entry.PropertyNames); }
                 catch (Exception ex) { content = new TextBlock { Text = $"{SettingsText.Unavailable} {ex.Message}", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(14) }; }
@@ -107,11 +114,6 @@ namespace ColorVision.ImageEditor.Settings
                 card.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
                 card.SetResourceReference(Border.BackgroundProperty, "GlobalBackground");
                 section.Children.Add(card);
-                WrapPanel actions = new() { Margin = new Thickness(0, 10, 0, 0) };
-                foreach (ImageSettingsAction action in entry.Actions) AddAction(actions, action);
-                if (entry.Scope == ImageSettingsScope.Extension && entry.Save != null && !entry.IsReadOnly)
-                    AddAction(actions, new ImageSettingsAction(SettingsText.Save, entry.Save));
-                if (actions.Children.Count > 0) section.Children.Add(actions);
                 if (_contextChanged && IsContextBound(entry)) section.IsEnabled = false;
                 section.Tag = entry;
                 panel.Children.Add(section);

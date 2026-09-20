@@ -17,10 +17,10 @@ related: ["governance.maintenance", "governance.retrieval", "platform.system", "
 
 ## 从问题到实现
 
-1. 从[知识地图](./knowledge/index.md)按源码职责定位，或直接使用本地查询。
+1. 归属不清时从[知识地图](./knowledge/index.md)或本地查询定位；已知归属时直接读取对应主题和实现。
 2. 阅读最小相关主题及必要的 `related`，区分 `current`、`planned` 和验证缺口。
 3. 核对当前分支源码与测试；文档或实现冲突时报告并调查。
-4. 行为、契约、架构或命令改变后，用 `impact` 找到并同步更新权威主题。
+4. 行为、契约、架构、操作或命令变化时同步所属主题；归属不清或引用路径移动/删除时用 `impact`。内部重构、恢复既有契约的修复，在已有知识、实现入口与验证说明仍准确时不要求改正文，否则只修正受影响位置。
 
 ```powershell
 # 只读；不需要网站依赖，不联网
@@ -29,7 +29,9 @@ node docs/.vitepress/scripts/knowledge.mjs search "ONNX" --all
 node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEditor"
 ```
 
-没有 Node.js 时直接读取已提交的 `docs/knowledge/index.md`，或用 `rg` 搜索 Markdown。本地查询和生成目录只负责定位，不证明正文与当前实现一致。
+脚本可使用 `search --json` 读取结构化结果，字段和错误处理见[JSON 查询结果](./knowledge/retrieval-checks.md#json-查询结果)。
+
+没有 Node.js 时直接读取已提交的 `docs/knowledge/index.md`，或用 `rg` 搜索 Markdown。自然问句未命中时，改用真实界面名、代码符号、路径或 `rg` 查找；不要求为简单问题通读所有目录。本地查询和生成目录只负责定位，不证明正文与当前实现一致。
 
 ## 资料职责
 
@@ -51,11 +53,6 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 - 维护知识：[知识维护规范](./knowledge/maintenance.md)。
 - 检索器规则与问题抽样：[检索验收](./knowledge/retrieval-checks.md)。
 
-```powershell
-npm run docs:knowledge
-npm run docs:check
-# 需要站点依赖；生成本地网页，不发布
-npm run docs:build
-```
+修改知识后按[验证范围](./knowledge/maintenance.md#按变更选择验证)选择生成与检查；知识生成和网站构建不是每次代码修改的固定收尾步骤。
 
 字段、路径和网站检查只证明资料可发现、链接有效；语义正确性仍需核对源码、相关测试和真实问题。

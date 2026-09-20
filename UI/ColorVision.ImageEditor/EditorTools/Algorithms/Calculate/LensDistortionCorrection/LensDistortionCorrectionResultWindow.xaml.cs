@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             AlgorithmStructuredDataArtifact structured = result.GetArtifact<AlgorithmStructuredDataArtifact>("lens-distortion-correction")
                 ?? throw new ArgumentException("The result has no structured calibration record.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             CorrectedPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(corrected.Image);
             MaskPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(mask.Image);

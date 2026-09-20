@@ -88,7 +88,7 @@ internal static class StartupFailureGuard
             },
             FailureConnectTimeoutMilliseconds);
 
-        NativeMethods.MessageBox(
+        _ = NativeMethods.MessageBox(
             IntPtr.Zero,
             presentation.Message,
             "ColorVision 无法启动",

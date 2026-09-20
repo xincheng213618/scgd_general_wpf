@@ -52,8 +52,14 @@ next: false
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
+- [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
+  本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
+
 - [Ghost1.0 鬼影检测](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
   Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。
+
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
@@ -89,7 +95,7 @@ next: false
   CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
 
 - [CVCIE POI 结果数值](../../04-api-reference/engine-components/cvcie-results.md) — `engine.cvcie-results`
-  ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
+  ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
 
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
   数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
@@ -98,7 +104,7 @@ next: false
   设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
-  CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。
+  CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [ColorVision.Engine 工程、资源与依赖](../../04-api-reference/engine-components/ColorVision.Engine.md) — `engine.host`
   ColorVision.Engine工程的条件引用、NuGet/DLL依赖回退与资源打包；schema嵌入程序集，缺少输出散文件不等于漏包，也不保证脱离UI源码独立构建。
@@ -107,7 +113,7 @@ next: false
   MySQL 结果表的手动关联索引优化、历史删除、整表截断和SQL备份；在线DDL、并发、部分成功、备份与恢复边界分别说明。
 
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
-  MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
+  MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
 - [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
@@ -116,7 +122,7 @@ next: false
   算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
 
 - [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
-  主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。
+  主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。
 
 - [模板注册、参数与持久化](../../03-architecture/components/templates/design.md) — `engine.template-design`
   TemplateControl注册与普通ITemplate\<T\>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。
@@ -130,26 +136,26 @@ next: false
 - [Flow 隔离无界面执行](../../04-api-reference/algorithms/templates/flow-engine.md) — `flow.headless`
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
-- [Flow 启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
-  流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。
+- [流程执行：启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
+  从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。
 
 - [Flow 模板、持久化与流程包](../../04-api-reference/engine-components/template-flow-chain.md) — `flow.templates`
-  Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
+  Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
 
-- [Flow 编辑工作区与文档命令](../../01-user-guide/workflow/design.md) — `flow.workspace`
+- [流程编辑器：画布与工作区文档命令](../../01-user-guide/workflow/design.md) — `flow.workspace`
   流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。
 
 - [校准服务、本地文件校正与结果持久化](../../01-user-guide/devices/calibration.md) — `operations.calibration`
   校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
-  远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。
+  本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
 
 - [相机参数来源、同步与保存](../../01-user-guide/devices/camera-configuration.md) — `operations.camera-configuration`
   相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。
 
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
-  终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
+  终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
 
 - [FileServer 设备配置与实现边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
   FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。
@@ -175,8 +181,20 @@ next: false
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
 
+- [相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) — `plugins.camera-test`
+  CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。
+
+- [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
+  Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
+
 - [WindowsServicePlugin：选包、本机安装与恢复](../../04-api-reference/plugins/standard-plugins/windows-service.md) — `plugins.windows-service`
   WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。
+
+- [CIE 色度与样品分析](../../04-api-reference/ui-components/cie-analysis.md) — `ui.cie-analysis`
+  统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。
+
+- [数据库连接、DAO 与旧插件兼容](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
+  MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
@@ -184,8 +202,14 @@ next: false
 - [ColorVision.ImageEditor：打开、绘制与输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md) — `ui.image-editor`
   图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
+- [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
+  景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
+
 - [多图查看、刷新与缩略图缓存](../../04-api-reference/ui-components/ColorVision.ImageTools.md) — `ui.image-tools`
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。
+
+- [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
+  界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
 - [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md) — `ui.property-grid`
   属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。
@@ -198,6 +222,9 @@ next: false
 
 - [SQLite 正文存储、迁移与文件维护](../../04-api-reference/ui-components/sqlite-storage.md) — `ui.sqlite-storage`
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
+
+- [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
+  配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
@@ -215,7 +242,7 @@ next: false
   按交付范围验收启动、设备、流程、数据和外部协议；明确通过、失败、未测和不适用，记录同一轮证据及回退材料与演练状态。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
-  按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。
+  按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
 
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。
@@ -227,7 +254,7 @@ next: false
   ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
+  灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
 
 - [成像校正：参考图、执行与结果保存](../../02-developer-guide/core-concepts/imaging-correction-v1.md) — `algorithms.imaging-correction`
   成像校正的参考图、固定阶段、参数/preset、执行并提交、mask与PNG/CSV/JSON保存；明确Alpha裁剪、无效样本、精确复制和批量只保存主图的边界。
@@ -257,7 +284,7 @@ next: false
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
   图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
@@ -268,7 +295,7 @@ next: false
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
-  CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。
+  CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [Explorer 缩略图读取与 COM 注册](../../04-api-reference/engine-components/ColorVision.ShellExtension.md) — `engine.shell-extension`
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
@@ -287,7 +314,7 @@ next: false
   物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
-  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
+  Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
 
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
@@ -299,7 +326,7 @@ next: false
   定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。
 
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 ## Engine/FlowEngineLib {#module-456e67696e652f466c6f77456e67696e654c6962}
 
@@ -318,9 +345,6 @@ next: false
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
-- [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
-  区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
-
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
 
@@ -331,13 +355,16 @@ next: false
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
-  远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。
+  本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
 
 - [电机命令与位置读回](../../01-user-guide/devices/motor.md) — `operations.motor`
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。
 
 - [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
   SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。
+
+- [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
+  界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
 - [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md) — `ui.property-grid`
   属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。
@@ -358,9 +385,12 @@ next: false
   节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。
 
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 ## Engine/ST.Library.UI {#module-456e67696e652f53542e4c6962726172792e5549}
+
+- [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
+  界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
 
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。

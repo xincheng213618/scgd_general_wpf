@@ -2,6 +2,8 @@ using ColorVision.Engine;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -61,5 +63,34 @@ public sealed class PhyCameraLicenseImportPolicyTests
     public void ServiceRestartIsOfferedOnlyAfterAChangedLicenseWasSaved(string? previousValue, string? currentValue, int saveResult, bool expected)
     {
         Assert.Equal(expected, PhyCamera.ShouldRestartServicesAfterLicenseUpdate(previousValue, currentValue, saveResult));
+    }
+
+    [Fact]
+    public async Task OnlineLicenseCompletionReturnsToTheApplicationDispatcher()
+    {
+        int dispatcherThreadId = WpfTestHost.Invoke(() => Environment.CurrentManagedThreadId);
+
+        int actionThreadId = await Task.Run(() =>
+            PhyCamera.InvokeOnApplicationDispatcherAsync(() => Environment.CurrentManagedThreadId));
+
+        Assert.Equal(dispatcherThreadId, actionThreadId);
+
+        string source = File.ReadAllText(FindPhyCameraSource());
+        Assert.DoesNotContain("Task.Run(() => UploadLicenseNet())", source, StringComparison.Ordinal);
+        Assert.Contains("await InvokeOnApplicationDispatcherAsync(() => SetLicense(fileName))", source, StringComparison.Ordinal);
+    }
+
+    private static string FindPhyCameraSource([CallerFilePath] string testSourcePath = "")
+    {
+        string testDirectory = Path.GetDirectoryName(testSourcePath)!;
+        return Path.GetFullPath(Path.Combine(
+            testDirectory,
+            "..",
+            "..",
+            "Engine",
+            "ColorVision.Engine",
+            "Services",
+            "PhyCameras",
+            "PhyCamera.cs"));
     }
 }

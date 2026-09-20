@@ -1246,11 +1246,26 @@ internal sealed class ServiceHostCommandHandler
     {
         try
         {
-            return ServiceController.GetServices().Any(service => string.Equals(service.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase));
+            return ContainsServiceAndDispose(ServiceController.GetServices(), serviceName);
         }
         catch
         {
             return false;
+        }
+    }
+
+    internal static bool ContainsServiceAndDispose(ServiceController[] services, string serviceName)
+    {
+        try
+        {
+            return services.Any(service => string.Equals(service.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            foreach (ServiceController service in services)
+            {
+                service.Dispose();
+            }
         }
     }
 

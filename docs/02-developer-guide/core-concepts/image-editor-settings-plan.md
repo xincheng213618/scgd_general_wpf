@@ -4,8 +4,8 @@ knowledge_type: "decision"
 status: "current"
 summary: "图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。"
 aliases: ["图像设置重构", "图像设置规划", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
-code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs", "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs", "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"]
+code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs", "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
 related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.property-grid", "engine.file-io"]
 ---
 
@@ -29,7 +29,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 窗口按稳定页面 ID 导航，只有旧兼容条目回退到分组文本。搜索匹配页面、条目和可编辑属性名称。普通页面使用一个主滚动容器；当前值与默认值不依据“恰有两个条目”自动左右并排。
 
-`SettingsPropertyPresenter` 位于 `ColorVision.UI`，沿用现有属性编辑器、验证和可见性绑定，提供统一说明和紧凑控件列；同时读取 `Display` 资源元数据及 `DisplayName / Description`。ImageEditor 不依赖 Desktop 或 Engine。主应用设置尚未迁移到这个公共行呈现器。
+`SettingsPropertyPresenter` 位于 `ColorVision.UI`，沿用现有属性编辑器、验证和可见性绑定，提供统一说明和紧凑控件列；同时读取 `Display` 资源元数据及 `DisplayName / Description`。属性可通过本地化 `Display.GroupName`（没有时回退 `Category`）形成分区；带 `Range` 且显式选择 `SliderPropertiesEditor` 的数值项同时提供滑动调节和精确文本输入。ImageEditor 不依赖 Desktop 或 Engine。主应用设置尚未迁移到这个公共行呈现器。
 
 ## 局部状态和默认值
 
@@ -37,7 +37,13 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 ### 显示滤镜
 
-`DisplayShaderFilterEditorTool` 构造时复制 `DisplayShaderFilterDefaultConfig.State` 到独立 `State`。调节、普通窗口关闭和工具释放都不会自动写入全局默认值；`SaveAsDefault` 才显式复制并保存。修改默认值只影响后续创建的视图，已有视图通过 `RestoreDefaults` 主动应用。
+每视图的 `ImageDisplayEffects.Shader`（`ImageShaderPresentation`）在创建时复制 `DisplayShaderFilterDefaultConfig.State`，并负责 effect 附着与释放。`DisplayShaderFilterEditorTool` 引用同一局部状态，负责界面和显式持久化，工具释放不释放显示能力。调节、普通窗口关闭和工具释放都不会自动写入全局默认值；`SaveAsDefault` 才显式复制并保存。修改默认值只影响后续创建的视图，已有视图通过 `RestoreDefaults` 主动应用。
+
+统一滤镜页把“应用默认值”和“将当前设为默认”放在参数卡片之前，避免长参数列表把动作隐藏到滚动区域底部。参数按基础显示、白平衡与通道、色调调整、阈值与高亮、滤镜伪彩分区；有界数值在滑块拖动时立即更新当前视图，右侧文本框保留键盘精确输入。
+
+`Temperature` 和 `Tint` 是默认值均为 `0`、范围为 `-1..1` 的显示白平衡快捷控制。正色温提高红色并降低蓝色，正色调提高红蓝并降低绿色；负值方向相反。它们在 C# 侧转换成保持几何平均值为 1 的 RGB 增益，再与手动 RGB 增益相乘，因此不增加 Pixel Shader 2.0 的指令数。当前不在相机回调、文件打开链路或显示滤镜中提供通道重排；如真实设备验证后仍需要固定入口纠正，再单独引入配置。
+
+显示滤镜保留 `ImagePresentation.SceneEffect` 的完整画布作用范围，图像与叠加内容一起受影响；滤镜状态变化会立即重绘，不提交源像素，也不保证后台 source 输出包含该效果。图像/叠加承载与输出限制见[ImageEditor](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)。
 
 工具栏设置按钮打开统一图像设置窗口的滤镜页。旧 `DisplayShaderFilterWindow` 类型保留给兼容调用方，但不再是这个工具的默认入口。
 
@@ -45,7 +51,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 
 ### 伪彩与探针的换图行为
 
-同一视图切换图像时保留伪彩配色与自动范围偏好，但关闭效果并按新图像位深重置范围，需重新启用效果。默认值只在工具创建或显式应用时读取。自动范围在新源已赋值后计算；实时帧的 generation 防护继续由原 controller 管理。
+同一视图切换图像时保留伪彩配色与自动范围偏好，但关闭效果并按新图像位深重置范围，需重新启用效果。默认值只在 `ImageDisplayEffects` 创建或显式应用时读取。自动范围在新源已赋值后计算；controller 提供状态与不可变参数请求，连续帧由 `ImageStreamPresentation` 处理、检查有效期并发布，工具不再拥有或释放基础处理能力。具体源/显示分离和过期拒绝见[编辑器上下文](../../04-api-reference/ui-components/image-editor-context.md)。
 
 CVCIE 探针对象缓存在 `Configs`，切换文件不丢失此视图的半径/形状偏好。初次创建从全局默认值复制；旧 `Properties[ViewStateKey]` 对象可被收纳到新的视图缓存。全局默认页无需先打开 CVCIE；局部探针条目只在适用图像中注册。
 
@@ -106,6 +112,6 @@ new ImageViewSettingsEntry(SettingsText.FileOpening, "CVCIE", config,
 
 ## 验证
 
-`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、显式默认值、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
+`ImageSettingsScopeTests` 覆盖双视图 Shader/标定隔离、白平衡默认值持久化、来源切换、探针/伪彩换图、仅保存改动、失败重试、无修改关闭零写入、注册注销及配置实例替换。`CvcieDisplaySettingsTests` 覆盖无图可见、共享全局对象和文件打开页归属。
 
 相邻回归入口是比例尺弱事件、尺子渲染、实时伪彩 generation、打开完成及工具工厂生命周期测试。控件布局和主题需使用实际 WPF 资源验证；输出更高 DPI 的截图不等同于跨显示器 DPI 运行验收，真实设备图像与外部二进制宿主也需分别验证。

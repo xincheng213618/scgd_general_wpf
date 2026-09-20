@@ -54,6 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public int MasterId { get; set; } = -1;
         public string CvRawFilePath { get; set; } = string.Empty;
         public string CvCieFilePath { get; set; } = string.Empty;
+        internal ColorCalibrationSnapshot? ColorCalibration { get; set; }
         public bool HasRaw => storage.RawLength > 0;
         public bool HasCie => storage.CieLength > 0;
         public bool IsRawFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
@@ -72,7 +73,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength), metadata);
         }
 
-        internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration)
+        internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration, float[]? exposure = null)
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
             storage.ResizeCieBuffer(cieLength);
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 CieBpp = source.CieBpp,
                 Channels = source.Channels,
                 Gain = source.Gain,
-                Exposure = source.Exposure,
+                Exposure = exposure ?? source.Exposure,
                 DeviceCode = source.DeviceCode,
                 SourceFilePath = source.SourceFilePath,
                 CalibrationTemplate = calibrationTemplate,
@@ -95,6 +96,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 IsMirrorReady = true
             };
             CvCieFilePath = string.Empty;
+            ColorCalibration = null;
             if (hasBasicCalibration) CvRawFilePath = string.Empty;
         }
 
@@ -333,6 +335,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             frame = null;
             if (!TryGetCurrentFrameId(action, out Guid frameId)) return false;
             return action.RuntimeResources.TryGet(GetFrameResourceKey(frameId), out frame);
+        }
+
+        /// <summary>
+        /// Returns a file that represents the pixels and geometry of the frame's
+        /// current primary buffer. The original source is safe only before any
+        /// calibration or mirror transform changes that buffer.
+        /// </summary>
+        public static string? ResolveResultImageFilePath(this LocalFlowFrame frame)
+        {
+            ArgumentNullException.ThrowIfNull(frame);
+            string primaryFile = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
+                ? frame.CvCieFilePath
+                : frame.CvRawFilePath;
+            if (!string.IsNullOrWhiteSpace(primaryFile)) return primaryFile;
+
+            bool sourceStillMatchesPrimary = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw
+                && frame.Metadata.FlipMode == CVImageFlipMode.None
+                && string.IsNullOrWhiteSpace(frame.Metadata.CalibrationTemplate);
+            return sourceStillMatchesPrimary && !string.IsNullOrWhiteSpace(frame.Metadata.SourceFilePath)
+                ? frame.Metadata.SourceFilePath
+                : null;
         }
 
         public static string GetPoiResultResourceKey(Guid frameId) => PoiResultResourceKeyPrefix + frameId.ToString("N");

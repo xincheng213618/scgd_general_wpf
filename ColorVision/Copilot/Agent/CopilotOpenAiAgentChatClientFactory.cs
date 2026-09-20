@@ -37,7 +37,7 @@ namespace ColorVision.Copilot
                 chatClient = new CopilotStatelessResponsesHistoryChatClient(
                     client.AsIChatClientWithStoredOutputDisabled(
                         profile.Model,
-                        includeReasoningEncryptedContent: true));
+                        includeReasoningEncryptedContent: CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(profile)));
             }
             else
             {
@@ -50,18 +50,20 @@ namespace ColorVision.Copilot
         internal static Uri NormalizeEndpoint(string baseUrl)
         {
             var value = (baseUrl ?? string.Empty).Trim().TrimEnd('/');
+            var isCompleteEndpoint = false;
             foreach (var suffix in new[] { "/chat/completions", "/responses" })
             {
                 if (value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                 {
                     value = value[..^suffix.Length];
+                    isCompleteEndpoint = true;
                     break;
                 }
             }
 
             var endpoint = new Uri(value, UriKind.Absolute);
-            if (string.IsNullOrWhiteSpace(endpoint.AbsolutePath)
-                || endpoint.AbsolutePath == "/")
+            if (!isCompleteEndpoint && (string.IsNullOrWhiteSpace(endpoint.AbsolutePath)
+                || endpoint.AbsolutePath == "/"))
             {
                 value = value.TrimEnd('/') + "/v1";
             }

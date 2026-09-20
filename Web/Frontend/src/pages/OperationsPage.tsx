@@ -9,11 +9,11 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import {
   Alert,
-  App,
   Button,
   Card,
   Col,
   Descriptions,
+  Input,
   Row,
   Space,
   Statistic,
@@ -22,6 +22,7 @@ import {
   Typography,
 } from 'antd'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getOperationsOverview } from '../services/admin'
 import type {
   OperationsHost,
@@ -128,6 +129,7 @@ const hostColumns: ColumnsType<OperationsHost> = [
   },
   { title: '能力', key: 'capabilities', width: 90, align: 'right', render: (_, host) => host.capabilities.length },
   { title: '最后心跳', dataIndex: 'lastSeenAt', width: 170, render: (value) => shortDate(value) },
+  { title: '详情', key: 'detail', width: 100, render: (_, host) => <Button type="link" href={`/admin/operations/hosts?host=${encodeURIComponent(host.hostId)}`}>查看终端</Button> },
 ]
 
 const taskColumns: ColumnsType<OperationsTask> = [
@@ -237,8 +239,11 @@ const supportColumns: ColumnsType<OperationsSupportSession> = [
 ]
 
 export function OperationsPage() {
-  const { message } = App.useApp()
-  const [data, setData] = useState<OperationsOverview | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const hostId = searchParams.get('host') || ''
+  const [overview, setData] = useState<OperationsOverview | null>(null)
+  const data = overview?.hostId === (hostId || null) ? overview : null
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const controllerRef = useRef<AbortController | null>(null)
@@ -247,13 +252,19 @@ export function OperationsPage() {
     controllerRef.current?.abort()
     const controller = new AbortController()
     controllerRef.current = controller
-    if (initial) setLoading(true)
+    if (initial) {
+      setLoading(true)
+      setLoadError('')
+    }
     else setRefreshing(true)
     try {
-      setData(await getOperationsOverview(controller.signal))
+      const result = await getOperationsOverview(AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]), { hostId })
+      if (controller.signal.aborted) return
+      setData(result)
+      setLoadError('')
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return
-      message.error(error instanceof Error ? error.message : '加载终端运维状态失败')
+      if (controller.signal.aborted) return
+      setLoadError(error instanceof Error ? error.message : '加载终端运维状态失败')
     } finally {
       if (controllerRef.current === controller) {
         controllerRef.current = null
@@ -261,7 +272,7 @@ export function OperationsPage() {
         setRefreshing(false)
       }
     }
-  }, [message])
+  }, [hostId])
 
   useEffect(() => {
     const initialTimer = window.setTimeout(() => void load(true), 0)
@@ -274,14 +285,32 @@ export function OperationsPage() {
   }, [load])
 
   const summary = data?.summary
+  const chooseHost = (value: string) => setSearchParams((previous) => {
+    const next = new URLSearchParams(previous)
+    if (value.trim()) next.set('host', value.trim())
+    else next.delete('host')
+    return next
+  })
   return (
     <Space direction="vertical" size={16} className="page-stack">
+      <Card title={hostId ? data?.hosts[0]?.displayName || '终端详情' : '终端运维'}>
+        <Space direction="vertical" size={12} className="wide-space">
+          <Input.Search key={hostId} defaultValue={hostId} placeholder="输入完整终端 ID，查看该终端" aria-label="终端 ID" allowClear enterButton="查看" onSearch={chooseHost} style={{ maxWidth: 540 }} />
+          {hostId && <Space wrap>
+            <Button onClick={() => chooseHost('')}>查看全部终端</Button>
+            <Typography.Text copyable={{ text: window.location.href }}>复制终端详情链接</Typography.Text>
+            <Typography.Text type="secondary" style={{ overflowWrap: 'anywhere' }}>{hostId}</Typography.Text>
+          </Space>}
+          <Typography.Text type="secondary">{hostId ? '以下统计、任务、配对设备和支持会话均属于当前终端。' : '统计覆盖全部终端；列表显示最近上报的 100 台终端及最近 100 条活动，可通过完整终端 ID 查找更早的记录。'}</Typography.Text>
+        </Space>
+      </Card>
+      {loadError && <Alert type="error" showIcon message="终端状态更新失败" description={`${loadError}${data ? `；以下为 ${shortDate(data.generatedAt)} 的旧快照，当前连接状态尚未确认。` : '；当前状态未知。'}`} action={<Button onClick={() => void load(false)}>重试</Button>} />}
       <Alert
         type="info"
         showIcon
         icon={<SafetyCertificateOutlined />}
         message="只读终端运维总览"
-        description="本页只展示经过固定字段裁剪的安全快照、签名 Relay 状态、配对设备元数据、任务状态和会话计数；不返回证书、公钥、签名、nonce、任务正文、回执 evidence 或支持消息正文，也不会创建任务或发送消息。"
+        description="查看终端最近上报的运行状态和活动记录。心跳未更新可能来自关机或网络中断；任务历史中的失败记录需要结合具体时间判断。"
       />
 
       {data && data.summary.totalHosts === 0 && (
@@ -295,16 +324,16 @@ export function OperationsPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={12} xl={6}>
-          <Card loading={loading}><Statistic title="已登记终端" value={summary?.totalHosts ?? 0} prefix={<DesktopOutlined />} /></Card>
+          <Card loading={loading}><Statistic title="已登记终端" value={summary?.totalHosts ?? '—'} prefix={<DesktopOutlined />} /></Card>
         </Col>
         <Col xs={12} xl={6}>
-          <Card loading={loading}><Statistic title="在线终端" value={summary?.onlineHosts ?? 0} valueStyle={{ color: summary?.onlineHosts ? '#389e0d' : undefined }} /></Card>
+          <Card loading={loading}><Statistic title="在线终端" value={summary?.onlineHosts ?? '—'} valueStyle={{ color: summary?.onlineHosts && !loadError ? '#389e0d' : undefined }} /></Card>
         </Col>
         <Col xs={12} xl={6}>
-          <Card loading={loading}><Statistic title="待处理任务" value={summary?.pendingTasks ?? 0} prefix={<ReloadOutlined />} /></Card>
+          <Card loading={loading}><Statistic title="待处理任务" value={summary?.pendingTasks ?? '—'} prefix={<ReloadOutlined />} /></Card>
         </Col>
         <Col xs={12} xl={6}>
-          <Card loading={loading}><Statistic title="活动支持会话" value={summary?.activeSupportSessions ?? 0} prefix={<MessageOutlined />} /></Card>
+          <Card loading={loading}><Statistic title="活动支持会话" value={summary?.activeSupportSessions ?? '—'} prefix={<MessageOutlined />} /></Card>
         </Col>
       </Row>
 
@@ -313,8 +342,8 @@ export function OperationsPage() {
         loading={loading}
         extra={(
           <Space wrap>
-            <Tag icon={<SafetyCertificateOutlined />} color="blue">{summary?.signedRelayHosts ?? 0} 台终端已建立身份</Tag>
-            <Tag icon={<KeyOutlined />} color="green">{summary?.activeRelayDevices ?? 0} 台有效设备</Tag>
+            <Tag icon={<SafetyCertificateOutlined />} color={summary ? 'blue' : 'default'}>{summary?.signedRelayHosts ?? '—'} 台终端已建立身份</Tag>
+            <Tag icon={<KeyOutlined />} color={summary ? 'green' : 'default'}>{summary?.activeRelayDevices ?? '—'} 台有效设备</Tag>
             {(summary?.revokedRelayDevices ?? 0) > 0 && <Tag>{summary?.revokedRelayDevices} 台已撤销</Tag>}
           </Space>
         )}
@@ -330,12 +359,13 @@ export function OperationsPage() {
         />
       </Card>
 
-      {summary && (summary.staleHosts > 0 || summary.failedTasks > 0) && (
+      {summary && summary.staleHosts > 0 && (
         <Alert
-          type={summary.failedTasks > 0 ? 'error' : 'warning'}
+          type="warning"
           showIcon
           icon={<WarningOutlined />}
-          message={`需要关注：${summary.staleHosts} 台终端未连接，${summary.failedTasks} 个任务失败或被拒绝`}
+          message={`${summary.staleHosts} 台终端心跳未更新`}
+          description="请先核对是否正常关机，再检查网络与桌面端运行状态。"
         />
       )}
 
@@ -345,7 +375,7 @@ export function OperationsPage() {
         extra={(
           <Space wrap>
             <Typography.Text type="secondary">
-              {data ? `${data.onlineThresholdSeconds} 秒无心跳视为未连接 · 更新于 ${shortDate(data.generatedAt)}` : '加载中'}
+              {data ? `${data.onlineThresholdSeconds} 秒无心跳视为未连接 · 更新于 ${shortDate(data.generatedAt)}` : loading ? '加载中' : '状态未知'}
             </Typography.Text>
             <Button icon={<ReloadOutlined />} loading={refreshing} onClick={() => void load(false)}>刷新</Button>
           </Space>
@@ -358,7 +388,7 @@ export function OperationsPage() {
           dataSource={data?.hosts ?? []}
           pagination={false}
           locale={{ emptyText: '尚无终端心跳' }}
-          expandable={{ expandedRowRender: hostDetails }}
+          expandable={{ expandedRowRender: hostDetails, ...(hostId ? { expandedRowKeys: [hostId] } : {}) }}
           scroll={{ x: 900 }}
         />
       </Card>
@@ -368,7 +398,8 @@ export function OperationsPage() {
         loading={loading}
         extra={(
           <Space wrap>
-            <Tag color="purple">{summary?.deviceTasks ?? 0} 个来自配对设备</Tag>
+            <Tag>历史失败或拒绝 {summary?.failedTasks ?? '—'} 次</Tag>
+            <Tag color="purple">{summary?.deviceTasks ?? '—'} 个来自配对设备</Tag>
             <Tag>不显示任务输入与回执详情</Tag>
           </Space>
         )}

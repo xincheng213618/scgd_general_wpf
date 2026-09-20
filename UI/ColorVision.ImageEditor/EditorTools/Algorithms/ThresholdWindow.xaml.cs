@@ -1,6 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using log4net;
 using System;
 using System.Windows;
@@ -20,6 +21,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         public ThresholdWindow(ImageProcessingContext image)
         {
             InitializeComponent();
+            this.ApplyCaption();
             _image = image;
             _preview = ImageAlgorithmPreviewSession.Start(image);
             

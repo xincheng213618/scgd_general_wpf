@@ -35,6 +35,14 @@ enum class StitchingErrorCode {
 };
 
 extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
+
+// Versioned diagnostic SFR. Positive UTF-8 byte count (including NUL) on success;
+// negative transport/config error. Per-channel measurement validity is in JSON.
+// Strict ROI, cycles/input-pixel units. Release result using FreeResult.
+extern "C" COLORVISIONCORE_API int M_AnalyzeSfrV2(HImage img, RoiRect roi, const char* config, char** result);
+
+// Explicit search rectangle only; JSON buffer is released with FreeResult.
+extern "C" COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result);
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
@@ -186,6 +194,14 @@ extern "C" COLORVISIONCORE_API int M_CalDistortionP9(
     const char* config,
     char** result);
 
+// Complete odd 3..15 row/column circle-grid measurement, version 2.
+// UTF-8 JSON; positive return is the allocated byte count, not measurement success.
+// Inspect success/statusCode; rejected measurements have metrics=null. Point
+// coordinates are full-image coordinates. All-zero ROI means the full image;
+// other ROIs must be positive and fully within the image. Release with FreeResult.
+extern "C" COLORVISIONCORE_API int M_CalDistortionGridV2(
+    HImage image, RoiRect roi, const char* config, char** result);
+
 // Process-local calibration pipeline. The opaque context owns parsed files,
 // large gain/offset tables and precomputed OpenCV maps across frames.
 // Mutating/execution functions use the C calling convention and return 1 on
@@ -218,6 +234,22 @@ struct MCalibrationExecutionOptionsV1 {
 };
 
 static_assert(sizeof(MCalibrationExecutionOptionsV1) == 56, "Calibration options ABI layout changed");
+
+struct MRawColorTransformV1 {
+    std::uint32_t structSize;
+    std::int32_t calibrationType;
+    std::int32_t channels;
+    std::int32_t kind; // 0: matrix, 1: one-color factors, 2: luminance factor
+    std::int32_t interleavedBgr;
+    std::uint32_t reserved;
+    double coefficients[9];
+};
+static_assert(sizeof(MRawColorTransformV1) == 96, "RAW color transform ABI changed");
+
+// Snapshot the actual immutable item held by this context, without reopening its file.
+// Serialize this with execution on the same context and use the execution's options.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetColorTransformV1(
+    void* context, const MCalibrationExecutionOptionsV1* options, MRawColorTransformV1* transform);
 
 enum MCalibrationCacheEntryFlagsV1 : std::uint32_t {
     M_CALIBRATION_CACHE_ENTRY_LOADING = 1U,
@@ -412,6 +444,23 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalculatePoiBatchV2(
     const MPoiOptionsV2* options,
     MPoiResultV1* results);
 
+// RAW replay: no ownership transfer, 8/16-bit input, float output; buffers must not overlap.
+// channel == -1 writes all planes, otherwise writes just the selected plane.
+extern "C" COLORVISIONCORE_API int __cdecl M_TransformRawColorV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    std::int32_t channel, float* output, std::uint64_t outputFloats);
+extern "C" COLORVISIONCORE_API int __cdecl M_CalculateRawPoiBatchV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    const MPoiRequestV1* requests, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* results);
+struct MRawPixelRunV1 { std::int32_t y, startX, endX; }; // end exclusive, exact region coverage
+static_assert(sizeof(MRawPixelRunV1) == 12, "RAW pixel run ABI changed");
+extern "C" COLORVISIONCORE_API int __cdecl M_CalculateRawRegionV1(
+    std::int32_t width, std::int32_t height, std::int32_t bpp,
+    const void* raw, std::uint64_t rawBytes, const MRawColorTransformV1* transform,
+    const MRawPixelRunV1* runs, std::uint32_t count, const MPoiOptionsV2* options, MPoiResultV1* result);
+
 // Synchronous logging callback. message is a borrowed, null-terminated UTF-8
 // string that is valid only for the duration of the callback. The callback must
 // copy data it retains, must not throw across the ABI, and must remain alive
@@ -424,5 +473,3 @@ extern "C" COLORVISIONCORE_API void __cdecl M_SetLogCallback(CVNativeLogCallback
 extern "C" COLORVISIONCORE_API void __cdecl M_SetLogEnabled(int enabled);
 extern "C" COLORVISIONCORE_API void __cdecl M_SetLogLevel(int level);
 extern "C" COLORVISIONCORE_API void __cdecl M_EnableNativeSink(int enabled);
-
-

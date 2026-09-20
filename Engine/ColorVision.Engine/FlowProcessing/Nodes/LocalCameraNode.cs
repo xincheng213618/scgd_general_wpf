@@ -1,8 +1,9 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
@@ -12,7 +13,6 @@ using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -42,14 +42,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? CvCieFilePath { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地相机取图")]
+    [STNode("Flow_CustomNodes", "相机取图")]
     [FlowNodeDocumentation(
         "Flow_LocalCamera_Summary",
         Usage = "Flow_LocalCamera_Usage",
         Processing = "Flow_LocalCamera_Processing",
         Notes = "Flow_LocalCamera_Notes")]
-    [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
-    public sealed class LocalCameraNode : LocalFlowNodeBase
+    public sealed class LocalCameraNode : LocalDeviceFlowNodeBase
     {
         private const int CameraMasterResultType = 100;
         private string _CalibTempName = string.Empty;
@@ -75,6 +74,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地相机")]
         [STNodeProperty("校正模板", "取图时使用的校正模板；为空时只输出 CVRAW", true)]
+        [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibTempName { get => _CalibTempName; set { _CalibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地相机")]
@@ -103,12 +103,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : base("本地相机取图", "Camera", "GetData")
+        public LocalCameraNode() : base("相机取图", "Camera", "GetData")
         {
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
         }
+
+        protected override string GetCompactSummaryValue() => $"{ExpTime:0.###} ms";
 
         private void OpenLocalCameraManager()
         {
@@ -130,8 +132,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ?? throw new InvalidOperationException($"找不到本地相机设备：{DeviceCode}");
             CameraRunParam cameraParameters = BuildCameraParameters();
             CalibrationParam? calibration = ResolveCalibration(device);
-            if (AutoConnect)
-                EnsureCameraConnected(device);
+            if (CalibrationGroupGainResolver.TryResolve(calibration, device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float calibrationGain, out _))
+                cameraParameters.Gain = calibrationGain;
+            FlowNodeTiming.Run("ConnectCamera", () => device.EnsureLocalMeasurementConnected(AutoConnect));
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
             {
                 Device = device,
@@ -145,14 +148,15 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = capture.Frame;
             try
             {
-                MeasureResultImgModel persistedResult = SaveMasterResult(action, frame, capture, cameraParameters, calibration);
+                MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
+                FlowNodeTiming.Run("PublishPreview", () => device.PublishLocalPreview(frame, masterId > 0 ? persistedResult : null, forceDisplay: false));
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType);
+                if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType));
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),
@@ -183,38 +187,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles });
         }
 
-        private static void EnsureCameraConnected(DeviceCamera device)
-        {
-            if (device.LocalCameraSession.IsOpen)
-                return;
-            if (device.Config.TakeImageMode == TakeImageMode.Live)
-            {
-                throw new InvalidOperationException(
-                    "本地取图结点不能使用 Live 模式，请将设备切换为测量模式后重试。");
-            }
-
-            string cameraId = device.Config.CameraID?.Trim() ?? string.Empty;
-            if (cameraId.Length == 0)
-            {
-                throw new InvalidOperationException(
-                    $"本地相机“{device.Code}”未配置 Camera ID，无法自动连接。");
-            }
-
-            int errorCode = device.LocalCameraSession.Open(
-                cameraId,
-                device.Config.TakeImageMode,
-                device.Config.ImageBpp == ImageBpp.bpp16 ? 16 : 8);
-            if (errorCode == cvErrorDefine.CV_ERR_SUCCESS)
-                return;
-
-            string errorMessage = string.Empty;
-            cvCameraCSLib.CM_GetErrorMessage(errorCode, ref errorMessage);
-            if (string.IsNullOrWhiteSpace(errorMessage))
-                errorMessage = "未知相机错误";
-            throw new InvalidOperationException(
-                $"本地相机“{device.Code}”自动连接失败：{errorMessage} ({errorCode})");
-        }
-
         internal CameraRunParam BuildCameraParameters()
         {
             if (!float.IsFinite(ExpTime) || ExpTime <= 0)
@@ -238,52 +210,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (string.IsNullOrWhiteSpace(CalibTempName)) return null;
             return device.PhyCamera?.CalibrationParams.FirstOrDefault(item => string.Equals(item.Key, CalibTempName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到校正模板：{CalibTempName}");
-        }
-
-        private MeasureResultImgModel SaveMasterResult(CVStartCFC action, LocalFlowFrame frame, LocalCameraCaptureResult capture, CameraRunParam? cameraParameters, CalibrationParam? calibration)
-        {
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-            string fileUrl = !string.IsNullOrWhiteSpace(frame.CvCieFilePath) ? frame.CvCieFilePath : frame.CvRawFilePath;
-            bool? savedRawFileFlipApplied = string.IsNullOrWhiteSpace(frame.CvRawFilePath) ? null : frame.IsRawFlipApplied;
-            bool? savedCieFileFlipApplied = string.IsNullOrWhiteSpace(frame.CvCieFilePath) ? null : frame.IsCieFlipApplied;
-            bool? savedFileFlipApplied = !string.IsNullOrWhiteSpace(frame.CvCieFilePath)
-                ? savedCieFileFlipApplied
-                : savedRawFileFlipApplied;
-            MeasureResultImgModel model = new()
-            {
-                BatchId = batch.Id,
-                ZIndex = ZIndex,
-                NDPort = -1,
-                Params = JsonConvert.SerializeObject(new
-                {
-                    frame.Metadata.SourceBpp,
-                    frame.Metadata.Gain,
-                    ExpTime = frame.Metadata.Exposure,
-                    IsAutoExpTime = IsAutoExp,
-                    FlipMode,
-                    MemoryFlipApplied = frame.IsFlipApplied,
-                    MemoryFlipDeferred = frame.Metadata.FlipMode != CVImageFlipMode.None && !frame.Metadata.IsMirrorReady,
-                    SavedRawFileFlipApplied = savedRawFileFlipApplied,
-                    SavedCieFileFlipApplied = savedCieFileFlipApplied,
-                    CamParamTemplate = new { ID = cameraParameters?.Id ?? -1, Name = cameraParameters?.Name ?? string.Empty },
-                    Calibration = new { ID = calibration?.Id ?? -1, Name = calibration?.Name ?? string.Empty, Backend = capture.CalibrationBackend },
-                    Timing = new { Capture = capture.CaptureTimeMs, Calibration = capture.CalibrationTimeMs, Save = capture.SaveTimeMs, Total = capture.TotalTimeMs }
-                }),
-                RawFile = NullIfEmpty(System.IO.Path.GetFileName(frame.CvRawFilePath)),
-                FileUrl = NullIfEmpty(fileUrl),
-                FileType = string.IsNullOrWhiteSpace(fileUrl) ? null : (sbyte?)(fileUrl.EndsWith(".cvcie", StringComparison.OrdinalIgnoreCase) ? 1 : 2),
-                ImgFrameInfo = JsonConvert.SerializeObject(new { bpp = frame.Metadata.SourceBpp, width = frame.Metadata.Width, height = frame.Metadata.Height, channels = frame.Metadata.Channels, hasCie = frame.HasCie, flipMode = frame.Metadata.FlipMode, memoryFlipApplied = frame.IsFlipApplied, savedFileFlipApplied }),
-                ResultCode = 0,
-                Result = "ok",
-                TotalTime = capture.TotalTimeMs,
-                DeviceCode = DeviceCode,
-                CreateDate = DateTime.Now
-            };
-            int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
-            if (masterId <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
-            model.Id = masterId;
-            return model;
         }
 
         private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

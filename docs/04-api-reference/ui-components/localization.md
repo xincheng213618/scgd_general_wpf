@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。"
 aliases: ["多语言", "界面语言", "语言切换", "语言下拉框", "系统语言", "语言资源", "翻译", "日语", "简体中文", "繁体中文", "英文", "LanguageManager", "LanguageConfig", "LanguagePropertiesEditor", "UICulture", "CurrentUICulture", "LanguageChange", "zh-Hans", "zh-Hant", "添加界面语言", "卫星资源"]
-code_paths: ["UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Properties/Resources.resx", "UI/ColorVision.UI/Properties/Resources.en.resx", "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Properties/Resources.Designer.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/Serach/SearchSettingsWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Capabilities/CopilotApplicationControlSupport.cs", "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
+code_paths: ["UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "Engine/ST.Library.UI/Lang.cs", "Engine/FlowEngineLib/FlowEngineLocalization.cs", "Engine/ColorVision.Engine/EngineLocalization.cs", "Engine/ColorVision.Engine/Properties/Resources.en.resx", "Engine/ColorVision.Engine/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Properties/Resources.resx", "UI/ColorVision.UI/Properties/Resources.en.resx", "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Properties/Resources.Designer.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/Serach/SearchSettingsWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Capabilities/CopilotApplicationControlSupport.cs", "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/EngineUiLocalizationTests.cs", "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"]
 related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid", "platform.runtime", "copilot.tool-contracts", "governance.maintenance"]
 ---
@@ -77,6 +77,8 @@ LanguageChange 本身不要求 lang 先存在于下拉框，只直接构造 Cult
 1. 在拥有该文字的模块中维护 `Properties/Resources.<culture>.resx`，沿用中性资源的键与格式占位符；语言显示名称由 `ColorVision.UI` 资源中的文化名键提供。只补显示名称不会生成其它模块的翻译。
 2. 核对主程序与目标模块构建后的卫星资源及部署目录。默认语言发现查主程序名对应的资源 DLL，仅有某个插件的翻译文件不保证它进入可选列表。
 3. 在隔离配置中启动新的应用实例，再检查目标窗口、属性标签和格式化文本；确认“跟随系统”、资源缺项及显式资源 Culture 的回退结果。语言切换会保存配置并关闭当前应用，先处理未保存工作。
+
+Flow 节点标题、属性名称/说明和分类通过 `ST.Library.UI.Lang` 查询 ST、FlowEngineLib 及 Engine 已注册的资源。节点迁入 Engine 后，枚举下拉先用对象资源，再回退到枚举类型所属程序集的资源；既有枚举仍可使用 FlowEngineLib 译文。模板/量程和校正组增益提示由 Engine 资源提供。`FlowLocalizationTests` 使用简体、英文和繁体文化检查迁出节点的枚举选择、属性说明、提示及保存值。
 
 翻译只改变显示文本，不改枚举值、序列化字段、协议名称或资源键。历史翻译可从 Git 查询后按当前键集合核对；不要直接用旧资源覆盖当前文件。
 

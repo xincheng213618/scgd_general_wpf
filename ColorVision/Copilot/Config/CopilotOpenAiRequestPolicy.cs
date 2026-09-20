@@ -32,7 +32,29 @@ namespace ColorVision.Copilot
         public static bool UsesResponsesApi(CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
-            return UsesOfficialOpenAiApi(profile);
+            return UsesOfficialOpenAiApi(profile)
+                || IsExplicitResponsesEndpoint(profile.BaseUrl, profile.ProviderType);
+        }
+
+        internal static bool IsExplicitResponsesEndpoint(string? baseUrl, CopilotProviderType providerType) =>
+            providerType == CopilotProviderType.OpenAICompatible
+            && Uri.TryCreate(baseUrl?.Trim(), UriKind.Absolute, out var endpoint)
+            && endpoint.AbsolutePath.TrimEnd('/').EndsWith("/responses", StringComparison.OrdinalIgnoreCase);
+
+        internal static bool CanRequestPromptCacheDiagnostics(CopilotProfileConfig profile)
+        {
+            if (!UsesOfficialOpenAiApi(profile))
+                return false;
+            var model = profile.Model?.Trim() ?? string.Empty;
+            if (!model.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase))
+                return false;
+            var version = model[4..].Split('-')[0].Split('.');
+            if (version.Length is < 1 or > 2 || !int.TryParse(version[0], out var major))
+                return false;
+            var minor = 0;
+            if (version.Length == 2 && !int.TryParse(version[1], out minor))
+                return false;
+            return major > 5 || major == 5 && minor >= 6;
         }
 
         public static string GetAgentSessionTransportVersion(
@@ -44,7 +66,7 @@ namespace ColorVision.Copilot
                 : string.Empty;
         }
 
-        private static bool UsesOfficialOpenAiApi(
+        internal static bool UsesOfficialOpenAiApi(
             CopilotProfileConfig profile)
         {
             if (profile.VendorType != CopilotVendorType.OpenAI

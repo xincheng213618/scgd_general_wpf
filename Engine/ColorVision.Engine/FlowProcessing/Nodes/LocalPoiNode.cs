@@ -1,9 +1,8 @@
-using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
@@ -23,8 +22,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地 POI")]
-    [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
+    [STNode("Flow_CustomNodes", "POI")]
     public sealed class LocalPoiNode : LocalFlowNodeBase
     {
         private string _POITempName = string.Empty;
@@ -33,6 +31,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地 POI")]
         [STNodeProperty("POI 模板", "要计算的 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => _POITempName; set { _POITempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Browsable(false)]
@@ -41,10 +40,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Browsable(false)]
         public string POIReviseTempName { get => _POIReviseTempName; set { _POIReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        public LocalPoiNode() : base("本地 POI", "POI", "Calculate")
+        public LocalPoiNode() : base("POI", "POI", "Calculate")
         {
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(POITempName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
@@ -63,14 +63,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                     action,
                     resultType,
                     poi.Id,
                     poi.Name,
                     currentFrame.CvCieFilePath,
-                    algorithmDeviceCode,
+                    null,
                     ZIndex,
                     totalTime,
                     new
@@ -87,7 +86,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
                     action.Data["LocalPoiCount"] = result.Points.Count;
                     action.MasterValue(null, masterId, (int)resultType);
-                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
+                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
                     return new LocalNodeExecutionResult
                     {
                         Data = new LocalPoiNodeResultData

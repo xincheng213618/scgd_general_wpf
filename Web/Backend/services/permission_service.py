@@ -17,7 +17,13 @@ ROLE_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         "code": "user",
         "name": "注册用户",
-        "description": "公开注册与管理员创建的普通账号；当前默认拥有全部功能权限。",
+        "description": "公开注册与管理员创建的普通账号；反馈仅可查看本人提交。",
+        "is_system": True,
+    },
+    {
+        "code": "developer",
+        "name": "研发只读",
+        "description": "受控研发账号；默认只进入反馈收件箱并读取全部反馈与诊断附件。",
         "is_system": True,
     },
 )
@@ -35,7 +41,8 @@ PERMISSION_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"code": "deployments:read", "name": "部署历史", "description": "查看部署记录和数据库备份。", "category": "系统运维", "sort_order": 100},
     {"code": "backups:manage", "name": "数据库备份", "description": "查看并创建后台数据库备份。", "category": "系统运维", "sort_order": 110},
     {"code": "operations:manage", "name": "终端运维", "description": "查看终端并执行受控运维操作。", "category": "系统运维", "sort_order": 120},
-    {"code": "feedback:manage", "name": "反馈管理", "description": "查看反馈、附件并更新处理状态。", "category": "运营", "sort_order": 130},
+    {"code": "feedback:read", "name": "反馈只读", "description": "查看全部反馈与诊断附件，不可更新处理状态。", "category": "运营", "sort_order": 125},
+    {"code": "feedback:manage", "name": "反馈管理", "description": "更新反馈处理状态；同时包含反馈只读能力。", "category": "运营", "sort_order": 130},
     {"code": "stats:read", "name": "统计查看", "description": "查看概览、访问统计与性能数据。", "category": "运营", "sort_order": 140},
     {"code": "audit:read", "name": "审计日志", "description": "查看后台操作审计记录。", "category": "安全", "sort_order": 150},
     {"code": "users:manage", "name": "用户管理", "description": "创建、启停用户并调整账号角色。", "category": "安全", "sort_order": 160},
@@ -64,14 +71,21 @@ def describe_permissions(permission_codes: Iterable[str]) -> list[dict[str, Any]
 
 
 def seed_permission_catalog(db) -> None:
-    """Create/update the fixed catalog and grant new permissions to both roles.
+    """Create/update the fixed catalog and apply least-privilege feedback defaults.
 
     Existing grants for the user role are not recreated, so later permission
     adjustments remain durable. The administrator role is intentionally kept
     fully privileged to preserve the existing administrator contract.
     """
     now = _now_iso()
+    new_roles: set[str] = set()
     for role in ROLE_DEFINITIONS:
+        existed = db.execute(
+            "SELECT 1 FROM roles WHERE code = ?",
+            (role["code"],),
+        ).fetchone() is not None
+        if not existed:
+            new_roles.add(role["code"])
         db.execute(
             """INSERT INTO roles (code, name, description, is_system, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?)
@@ -115,7 +129,14 @@ def seed_permission_catalog(db) -> None:
             ),
         )
         if not existed:
-            for role_code in ("admin", "user"):
+            default_roles = (
+                ("admin", "developer")
+                if permission["code"] == "feedback:read"
+                else ("admin",)
+                if permission["code"] == "feedback:manage"
+                else ("admin", "user")
+            )
+            for role_code in default_roles:
                 db.execute(
                     """INSERT OR IGNORE INTO role_permissions
                        (role_code, permission_code, granted_at)
@@ -130,6 +151,23 @@ def seed_permission_catalog(db) -> None:
                VALUES ('admin', ?, ?)""",
             (permission_code, now),
         )
+
+    if "developer" in new_roles:
+        for permission_code in ("admin:access", "feedback:read"):
+            db.execute(
+                """INSERT OR IGNORE INTO role_permissions
+                   (role_code, permission_code, granted_at)
+                   VALUES ('developer', ?, ?)""",
+                (permission_code, now),
+            )
+
+    # Ordinary accounts always use owner-scoped feedback access. Existing
+    # installations may have inherited feedback:manage from the old catalog.
+    db.execute(
+        """DELETE FROM role_permissions
+           WHERE role_code = 'user'
+             AND permission_code IN ('feedback:read', 'feedback:manage')"""
+    )
 
 
 def ensure_permission_catalog(cache) -> None:
@@ -190,7 +228,7 @@ def list_permission_matrix(cache) -> dict[str, Any]:
         roles = []
         for row in db.execute(
             """SELECT code, name, description, is_system
-               FROM roles ORDER BY CASE code WHEN 'admin' THEN 0 ELSE 1 END, code"""
+               FROM roles ORDER BY CASE code WHEN 'admin' THEN 0 WHEN 'developer' THEN 1 ELSE 2 END, code"""
         ).fetchall():
             role = dict(row)
             role["is_system"] = bool(role["is_system"])
@@ -222,12 +260,14 @@ def replace_role_permissions(
     expected_revision: str | None = None,
 ) -> tuple[dict[str, Any] | None, str | None]:
     requested = {str(code).strip() for code in permission_codes if str(code).strip()}
+    if "feedback:manage" in requested:
+        requested.add("feedback:read")
     invalid = requested - ALL_PERMISSION_CODES
     if invalid:
         return None, f"invalid_permissions:{','.join(sorted(invalid))}"
     if role == "admin":
         return None, "administrator_permissions_are_fixed"
-    if role != "user":
+    if role not in {"user", "developer"}:
         return None, "role_not_found"
 
     ensure_permission_catalog(cache)

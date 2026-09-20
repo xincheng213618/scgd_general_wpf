@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。"
 aliases: ["SMU","源表","点测","扫描电压","通道串了","关闭输出","MQTTSMU","SMUParam","SMUSweepModelNode"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Configs/ConfigSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DisplaySMU.xaml.cs","Engine/ColorVision.Engine/Services/Devices/SMU/SMUParam.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SMUResultModel.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SmuScanModel.cs","Engine/FlowEngineLib/SMUNode.cs","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/NodeConfiguratorBindingTests.cs","Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Configs/ConfigSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DisplaySMU.xaml.cs","Engine/ColorVision.Engine/Services/Devices/SMU/SMUParam.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SMUResultModel.cs","Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SmuScanModel.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU/SMUNode.cs","Engine/FlowEngineLib/SMUBaseNode.cs","Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"]
 related: ["engine.devices","operations.device-configuration","flow.session"]
 ---
 

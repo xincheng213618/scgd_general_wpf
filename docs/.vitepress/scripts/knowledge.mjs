@@ -384,6 +384,48 @@ function qualifiedSearchOwners(symbol) {
   return [...new Set([owner, localOwner].filter((value) => /[a-z_]/u.test(value)))]
 }
 
+function chineseSubjectEvidence(entries, query) {
+  let subject = query.trim().replace(/[。！？!?]+$/u, '')
+  // Mixed symbols and multi-clause questions retain their existing evidence.
+  // A quantified creation request names its object after the classifier;
+  // do not strip arbitrary verbs from questions such as "怎么设置...".
+  if (!/^[\p{Script=Han}\s]+$/u.test(subject)) return new Map()
+  const object = subject.replace(/^(?:(?:请问?|帮我|如何|怎么|怎样|我想要?|想要)\s*)*(?:新增|增加|添加|创建|实现|自定义)(?:一个|一种|一项|一套|一组)\s*/u, '')
+  const quantifiedRequest = object !== subject
+  subject = object
+  // Only an explicit predicate or the end of a quantified request establishes
+  // the object's end. A matched prefix followed by another noun is not enough.
+  const predicate = /(?:(?:一直|始终|仍然|仍|还)?(?:没有|无法|不能)|是否|能否|可否|为何|为什么|如何|怎么|怎样)/u.exec(subject)
+  if (predicate) subject = subject.slice(0, predicate.index).trim()
+  else if (!quantifiedRequest) return new Map()
+  const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'word' })
+  const prefixes = [...segmenter.segment(subject)].map((part) => subject.slice(0, part.index + part.segment.length))
+    .filter((prefix) => /^[\p{Script=Han}]{2,}$/u.test(prefix)).reverse()
+  if (!prefixes.length) return new Map()
+  const matchPrefix = (value) => {
+    const boundaries = new Set([0, value.length])
+    for (const part of segmenter.segment(value)) {
+      boundaries.add(part.index)
+      boundaries.add(part.index + part.segment.length)
+    }
+    return prefixes.find((prefix) => {
+      for (let index = value.indexOf(prefix); index >= 0; index = value.indexOf(prefix, index + 1)) {
+        if (boundaries.has(index) && boundaries.has(index + prefix.length)) return true
+      }
+      return false
+    })?.length ?? 0
+  }
+  const matches = entries.map((entry) => {
+    // Later title sections often enumerate actions (edit/close), not subjects.
+    const titleLength = matchPrefix(entry.title.split(/[：:、，,；;（(]/u)[0])
+    return { entry, titleLength, length: Math.max(titleLength, ...entry.aliases.map(matchPrefix)) }
+  })
+  // Aliases may themselves be questions. Require a title to corroborate the
+  // subject. Candidates must name the complete object, not a shorter prefix.
+  if (!matches.some((match) => match.titleLength)) return new Map()
+  return new Map(matches.filter((match) => match.length === subject.length).map((match) => [match.entry, match.titleLength]))
+}
+
 export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) {
   const normalized = query.replace(/\\/gu, '/').toLocaleLowerCase().trim()
   if (!normalized) throw new Error('search requires a query')
@@ -399,6 +441,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     owners: qualifiedSearchOwners(symbol).map(searchSymbolPattern),
   }))
   const entries = catalog.entries.filter((entry) => entry.searchable !== false && (all || entry.status === 'current'))
+  const subjects = chineseSubjectEvidence(entries, normalized)
   // Infer code spelling from the catalog, not query casing: StateStore should
   // rank identically when typed as statestore. Single words/acronyms such as
   // Save, backup and ID remain lexical; camel/Pascal boundaries and snake_case
@@ -459,7 +502,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
     let score = exactMatch * 100 + ownerMatches * 5
     for (const term of terms) if (fields.includes(term)) score += tokens.includes(term) ? 10 : 1
     return { entry, score, exactMatch, fullMatches, namedFullMatches, ownerMatches, ownerSpecificity, describedOwners,
-      bareMatches, namedBareMatches, describedBareMatches }
+      bareMatches, namedBareMatches, describedBareMatches, subjectMatch: Number(subjects.has(entry)), subjectTitleLength: subjects.get(entry) ?? 0 }
   }).filter((result) => result.score > 0)
     // score is the lexical tie-break, not the final rank. Preserve this order
     // when consuming results: named qualified symbols outrank equally complete
@@ -468,6 +511,7 @@ export function searchCatalog(catalog, query, { all = false, limit = 12 } = {}) 
       || b.ownerMatches - a.ownerMatches
       || b.ownerSpecificity - a.ownerSpecificity || b.describedOwners - a.describedOwners
       || b.bareMatches - a.bareMatches || b.namedBareMatches - a.namedBareMatches || b.describedBareMatches - a.describedBareMatches
+      || b.subjectMatch - a.subjectMatch || b.subjectTitleLength - a.subjectTitleLength
       || b.score - a.score || a.entry.knowledge_id.localeCompare(b.entry.knowledge_id, 'en'))
     .slice(0, limit).map(({ entry, score, exactMatch, fullMatches, ownerMatches, bareMatches }) => ({
       ...entry, score,
@@ -502,11 +546,12 @@ export function validateRetrievalCases(catalog, fixture) {
   return results
 }
 
-const cliUsage = 'Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all] [--limit N]|impact "path"\nSearch defaults to 12 results; --all includes planned/historical topics. Use -- before literal option text.\nImpact takes one repository-relative path and always lists every mapped topic. Use --help for this message.'
+const cliUsage = 'Usage: node docs/.vitepress/scripts/knowledge.mjs generate|check|search "query" [--all] [--limit N] [--json]|impact "path"\nSearch defaults to 12 results; --all includes planned/historical topics; --json emits {total, matches}. Use -- before literal option text.\nImpact takes one repository-relative path and always lists every mapped topic. Use --help for this message.'
 
 function parseLookupArguments(command, args) {
   const values = []
   let all = false
+  let json = false
   let limit = 12
   let limitSeen = false
   let literal = false
@@ -515,6 +560,7 @@ function parseLookupArguments(command, args) {
     if (literal) values.push(arg)
     else if (arg === '--') literal = true
     else if (command === 'search' && arg === '--all') all = true
+    else if (command === 'search' && arg === '--json') json = true
     else if (command === 'search' && (arg === '--limit' || arg.startsWith('--limit='))) {
       if (limitSeen) throw new Error('--limit may only be supplied once')
       limitSeen = true
@@ -529,7 +575,7 @@ function parseLookupArguments(command, args) {
   if (command === 'impact' && values.length !== 1) throw new Error('impact requires exactly one repository-relative path; quote paths containing spaces')
   const value = values.join(' ').trim()
   if (!value) throw new Error(`${command} requires ${command === 'search' ? 'a query' : 'a repository-relative path'}`)
-  return { value, all, limit }
+  return { value, all, limit, json }
 }
 
 async function main() {
@@ -553,12 +599,19 @@ async function main() {
     return
   }
   if (command === 'search' || command === 'impact') {
-    const { value, all, limit } = parseLookupArguments(command, args)
+    const { value, all, limit, json } = parseLookupArguments(command, args)
     const catalog = JSON.parse(await fs.readFile(path.join(repoRoot, 'docs/knowledge/catalog.json'), 'utf8'))
     // Ranking already considers the full catalog. Slice only the printed window
     // so a smaller response does not change order or conceal the total count.
     const candidates = command === 'search' ? searchCatalog(catalog, value, { all, limit: catalog.entries.length }) : impactCatalog(catalog, value)
     const matches = command === 'search' ? candidates.slice(0, limit) : candidates
+    if (json) {
+      // Keep the wire contract to the human-visible fields, not ranking internals.
+      console.log(JSON.stringify({ total: candidates.length, matches: matches.map(({ knowledge_id, status, title, source, summary, match_kind }) => ({
+        knowledge_id, status, title, source, summary, match_kind,
+      })) }, null, 2))
+      return
+    }
     for (const entry of matches) {
       console.log(`[${entry.status}] ${entry.knowledge_id} — ${entry.title}\n  ${entry.source}\n  ${entry.summary}`)
       if (command === 'impact') console.log(`  mapped: ${entry.matched_paths.join(', ')}`)

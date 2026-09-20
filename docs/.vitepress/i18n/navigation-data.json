@@ -677,6 +677,12 @@
                 "root": "存储清理与选择性设置重置"
               },
               "link": "/04-api-reference/ui-components/storage-maintenance"
+            },
+            {
+              "text": {
+                "root": "设置、流程与结果的导入导出边界"
+              },
+              "link": "/01-user-guide/data-management/export-import"
             }
           ]
         },
@@ -728,6 +734,12 @@
                 "root": "开发工具管理：检测与安装 Python、Node.js"
               },
               "link": "/02-developer-guide/core-concepts/developer-tools-manager"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
             }
           ]
         },
@@ -1079,6 +1091,18 @@
             },
             {
               "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
@@ -1223,6 +1247,12 @@
             },
             {
               "text": {
+                "root": "显示图案计量"
+              },
+              "link": "/04-api-reference/algorithms/detectors/display-metrology"
+            },
+            {
+              "text": {
                 "root": "本地十字定位 FindCross"
               },
               "link": "/04-api-reference/algorithms/detectors/find-cross"
@@ -1232,6 +1262,18 @@
                 "root": "发光区定位：远端模板与本地 V2"
               },
               "link": "/04-api-reference/algorithms/templates/find-light-area"
+            },
+            {
+              "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
             },
             {
               "text": {
@@ -1253,6 +1295,12 @@
             },
             {
               "text": {
+                "root": "CVRAW / CVCIE 图像导出"
+              },
+              "link": "/04-api-reference/engine-components/cv-image-export"
+            },
+            {
+              "text": {
                 "root": "CVCIE POI 结果数值"
               },
               "link": "/04-api-reference/engine-components/cvcie-results"
@@ -1271,9 +1319,21 @@
             },
             {
               "text": {
+                "root": "相机服务、采集与结果视图"
+              },
+              "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
                 "root": "系统职责与跨模块边界"
               },
               "link": "/03-architecture/overview/system-overview"
+            },
+            {
+              "text": {
+                "root": "CIE 色度与样品分析"
+              },
+              "link": "/04-api-reference/ui-components/cie-analysis"
             },
             {
               "text": {
@@ -1403,6 +1463,12 @@
             },
             {
               "text": {
+                "root": "opencv_helper.dll API 参考"
+              },
+              "link": "/04-api-reference/engine-components/opencv-helper-api"
+            },
+            {
+              "text": {
                 "root": "ColorVision 概览"
               },
               "link": "/00-getting-started/what-is-colorvision"
@@ -1473,6 +1539,12 @@
           "link": "/knowledge/code/source-UI#module-55492f436f6c6f72566973696f6e2e52626163",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "文件中转、覆盖与公开分享"
+              },
+              "link": "/02-developer-guide/backend/file-transfer"
+            },
             {
               "text": {
                 "root": "RBAC：登录缓存、会话与权限边界"
@@ -2057,6 +2129,12 @@
             },
             {
               "text": {
+                "root": "反馈归属、查询与诊断附件下载"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
                 "root": "Backend Operations 中继与只读概览"
               },
               "link": "/02-developer-guide/backend/operations-relay"
@@ -2243,9 +2321,21 @@
             },
             {
               "text": {
+                "root": "本地 FOV V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/fov-v2-local"
+            },
+            {
+              "text": {
                 "root": "Ghost1.0 鬼影检测"
               },
               "link": "/04-api-reference/algorithms/detectors/ghost-detection"
+            },
+            {
+              "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
             },
             {
               "text": {
@@ -2399,7 +2489,7 @@
             },
             {
               "text": {
-                "root": "Flow 启动、停止与最终化"
+                "root": "流程执行：启动、停止与最终化"
               },
               "link": "/01-user-guide/workflow/execution"
             },
@@ -2411,7 +2501,7 @@
             },
             {
               "text": {
-                "root": "Flow 编辑工作区与文档命令"
+                "root": "流程编辑器：画布与工作区文档命令"
               },
               "link": "/01-user-guide/workflow/design"
             },
@@ -2489,9 +2579,33 @@
             },
             {
               "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
+            },
+            {
+              "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+            },
+            {
+              "text": {
                 "root": "WindowsServicePlugin：选包、本机安装与恢复"
               },
               "link": "/04-api-reference/plugins/standard-plugins/windows-service"
+            },
+            {
+              "text": {
+                "root": "CIE 色度与样品分析"
+              },
+              "link": "/04-api-reference/ui-components/cie-analysis"
+            },
+            {
+              "text": {
+                "root": "数据库连接、DAO 与旧插件兼容"
+              },
+              "link": "/04-api-reference/ui-components/ColorVision.Database"
             },
             {
               "text": {
@@ -2507,9 +2621,21 @@
             },
             {
               "text": {
+                "root": "景深融合：输入、执行与结果生命周期"
+              },
+              "link": "/04-api-reference/ui-components/image-fusion"
+            },
+            {
+              "text": {
                 "root": "多图查看、刷新与缩略图缓存"
               },
               "link": "/04-api-reference/ui-components/ColorVision.ImageTools"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
             },
             {
               "text": {
@@ -2534,6 +2660,12 @@
                 "root": "SQLite 正文存储、迁移与文件维护"
               },
               "link": "/04-api-reference/ui-components/sqlite-storage"
+            },
+            {
+              "text": {
+                "root": "配置向导：步骤、应用与完成边界"
+              },
+              "link": "/04-api-reference/ui-components/wizards"
             },
             {
               "text": {
@@ -2795,12 +2927,6 @@
             },
             {
               "text": {
-                "root": "ImageCropping 图像裁剪模板"
-              },
-              "link": "/04-api-reference/algorithms/templates/image-cropping-template"
-            },
-            {
-              "text": {
                 "root": "Matching 模板匹配"
               },
               "link": "/04-api-reference/algorithms/templates/matching-template"
@@ -2834,6 +2960,12 @@
                 "root": "SMU 参数、结果与输出关闭"
               },
               "link": "/01-user-guide/devices/smu"
+            },
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
             },
             {
               "text": {
@@ -2886,6 +3018,12 @@
           "link": "/knowledge/code/source-Engine#module-456e67696e652f53542e4c6962726172792e5549",
           "collapsed": true,
           "items": [
+            {
+              "text": {
+                "root": "界面语言：资源发现、配置与重启"
+              },
+              "link": "/04-api-reference/ui-components/localization"
+            },
             {
               "text": {
                 "root": "配置 ARVRPro 流程、解析映射与 Recipe"
@@ -2957,6 +3095,12 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
@@ -3023,9 +3167,21 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "本地灯珠与 P2 分析"
               },
               "link": "/04-api-reference/algorithms/local-native-analysis"
+            },
+            {
+              "text": {
+                "root": "CV 文件读取、通道与写回契约"
+              },
+              "link": "/04-api-reference/engine-components/ColorVision.FileIO"
             },
             {
               "text": {
@@ -3103,6 +3259,21 @@
         },
         {
           "text": {
+            "root": "Plugins/CameraTest"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f43616d65726154657374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "Plugins/Conoscope"
           },
           "link": "/knowledge/code/source-Plugins#module-506c7567696e732f436f6e6f73636f7065",
@@ -3119,27 +3290,6 @@
                 "root": "Conoscope 图像、采集与分析"
               },
               "link": "/04-api-reference/plugins/standard-plugins/conoscope"
-            },
-            {
-              "text": {
-                "root": "插件依赖与接入矩阵"
-              },
-              "link": "/04-api-reference/plugins/plugin-capability-matrix"
-            }
-          ]
-        },
-        {
-          "text": {
-            "root": "Plugins/ImageProjector"
-          },
-          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f496d61676550726f6a6563746f72",
-          "collapsed": true,
-          "items": [
-            {
-              "text": {
-                "root": "图卡生成与图片投影"
-              },
-              "link": "/04-api-reference/plugins/standard-plugins/pattern"
             },
             {
               "text": {
@@ -3308,6 +3458,12 @@
             },
             {
               "text": {
+                "root": "本地点阵畸变 V2"
+              },
+              "link": "/04-api-reference/algorithms/detectors/grid-distortion-v2"
+            },
+            {
+              "text": {
                 "root": "数据库清理窗口、能力接入与完成边界"
               },
               "link": "/04-api-reference/engine-components/database-maintenance"
@@ -3374,6 +3530,21 @@
                 "root": "项目横向速查"
               },
               "link": "/04-api-reference/projects/project-capability-matrix"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Projects/ProjectARVRPro.SemiAuto"
+          },
+          "link": "/knowledge/code/source-Projects#module-50726f6a656374732f50726f6a6563744152565250726f2e53656d694175746f",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "ProjectARVRPro SemiAuto"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-semi-auto"
             }
           ]
         },
@@ -3518,7 +3689,7 @@
             },
             {
               "text": {
-                "root": "Backend反馈提交、处理状态与附件访问"
+                "root": "反馈归属、查询与诊断附件下载"
               },
               "link": "/02-developer-guide/backend/feedback"
             },
@@ -3623,7 +3794,7 @@
             },
             {
               "text": {
-                "root": "Backend反馈提交、处理状态与附件访问"
+                "root": "反馈归属、查询与诊断附件下载"
               },
               "link": "/02-developer-guide/backend/feedback"
             },
@@ -3707,9 +3878,33 @@
             },
             {
               "text": {
+                "root": "显示图案计量"
+              },
+              "link": "/04-api-reference/algorithms/detectors/display-metrology"
+            },
+            {
+              "text": {
+                "root": "Copilot Agent 执行链"
+              },
+              "link": "/02-developer-guide/core-concepts/copilot-agent-execution"
+            },
+            {
+              "text": {
+                "root": "反馈归属、查询与诊断附件下载"
+              },
+              "link": "/02-developer-guide/backend/feedback"
+            },
+            {
+              "text": {
                 "root": "构建平台与制品边界"
               },
               "link": "/02-developer-guide/README"
+            },
+            {
+              "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
             },
             {
               "text": {
@@ -3758,6 +3953,27 @@
                 "root": "ProjectARVRPro.IntegrationDemo"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-integration-demo"
+            },
+            {
+              "text": {
+                "root": "ProjectARVRPro SemiAuto"
+              },
+              "link": "/04-api-reference/projects/project-arvr-pro-semi-auto"
+            }
+          ]
+        },
+        {
+          "text": {
+            "root": "Scripts/code_history_dashboard"
+          },
+          "link": "/knowledge/code/source-Scripts#module-536372697074732f636f64655f686973746f72795f64617368626f617264",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "代码行数与 Git 历史统计"
+              },
+              "link": "/02-developer-guide/scripts/code-statistics"
             }
           ]
         },

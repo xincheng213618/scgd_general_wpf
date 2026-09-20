@@ -5,7 +5,7 @@ status: "current"
 summary: "Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。"
 aliases: ["Ghost检测入口和结果在哪里","TemplateGhost","AlgorithmGhost","ViewHandleGhost","Ghost1.0","鬼影模板管理","Ghost模板","请先选择Ghost模板","鬼影灰度"]
 code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs","Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs","Engine/ColorVision.Engine/Abstractions/IDisplayAlgorithm.cs","Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs","Engine/ColorVision.Engine/Abstractions/IViewResult.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","UI/ColorVision.Database/BaseTableDao.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/VectorizedSelectVisualTests.cs"]
+test_paths: []
 related: ["algorithms.arvr","algorithms.json-templates","engine.results","algorithms.local-native-analysis","algorithms.template-menus","engine.template-design"]
 ---
 

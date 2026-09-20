@@ -1,6 +1,6 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 #pragma warning disable CA1861
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
@@ -54,8 +54,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             : base(Properties.Resources.Engine_PG_LocalImage, "Camera", "GetData")
         {
             _ImageFileUrl = string.Empty;
-            SelectFirstAvailableDevice<DeviceCamera>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(Path.GetFileName(ImageFileUrl));
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
@@ -66,18 +67,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 throw new FileNotFoundException(string.Format(Properties.Resources.LocalImage_FileNotFound, fileUrl), fileUrl);
 
             string batchName = action.SerialNumber;
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(batchName)
-                ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
-            if (batch.Id <= 0)
+            MeasureBatchModel batch = action.PersistResults ? FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(batchName))
+                ?? throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName))
+                : new MeasureBatchModel();
+            if (action.PersistResults && batch.Id <= 0)
                 throw new InvalidOperationException(string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
 
             LocalFlowFrame? frame = null;
             try
             {
-                frame = LocalFrameFileService.Load(fileUrl);
-                MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
-                int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
-                if (masterId <= 0)
+                frame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(fileUrl));
+                MeasureResultImgModel model = FlowNodeTiming.Run("BuildImageResult", () => BuildMeasureResultImgModel(batch.Id, fileUrl));
+                int masterId = action.PersistResults ? FlowNodeTiming.Run("PersistResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model)) : 0;
+                if (action.PersistResults && masterId <= 0)
                     throw new InvalidOperationException(string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
                 model.Id = masterId;
 
@@ -86,7 +88,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalFlowFrame currentFrame = frame;
                 frame = null;
                 action.MasterValue(null, masterId, LocalImageMasterResultType);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType);
+                if (masterId > 0) FlowNodeTiming.Run("PublishResult", () => ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Image, model.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, LocalImageMasterResultType));
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalImageResultData
@@ -126,7 +128,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ResultCode = DefaultResultCode,
                 Result = DefaultResult,
                 TotalTime = LocalImageTotalTime,
-                DeviceCode = DeviceCode,
+                DeviceCode = null,
                 CreateDate = DateTime.Now
             };
         }
@@ -230,7 +232,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new
             {
                 ServiceName = NodeName,
-                DeviceCode,
                 EventName = OperatorCode,
                 action.SerialNumber,
                 FileUrl = ResolveFileUrl()

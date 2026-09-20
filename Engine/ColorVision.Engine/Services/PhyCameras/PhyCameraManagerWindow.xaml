@@ -5,21 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         Title="{x:Static properties:Resources.PhysicalCameraManager}"
-        Height="680" Width="970" MinHeight="600" MinWidth="970"
-        Background="{DynamicResource GlobalBackground}"
+        Height="680" Width="970" MinHeight="600" MinWidth="900"
+        Background="{DynamicResource GlobalBorderBrush}"
         Initialized="Window_Initialized"
-        SnapsToDevicePixels="True"
-        UseLayoutRounding="True">
+        SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
             <local:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
@@ -28,8 +25,21 @@
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
             </Style>
-
+            <Style x:Key="ManagerToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource BaseActionButtonStyle}">
+                <Setter Property="MinHeight" Value="36"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="12,6"/>
+                <Setter Property="Margin" Value="8,3,0,3"/>
+                <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            </Style>
+            <Style x:Key="ManagerPrimaryButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource ManagerToolbarButtonStyle}">
+                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
             <Style x:Key="CameraListItemContainerStyle" TargetType="{x:Type ListBoxItem}">
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="Margin" Value="0"/>
@@ -47,25 +57,22 @@
                     </Setter.Value>
                 </Setter>
             </Style>
-
-            <Style x:Key="CameraListCardStyle" TargetType="{x:Type Border}">
-                <Setter Property="Margin" Value="0,0,0,5"/>
-                <Setter Property="Padding" Value="8,7"/>
-                <Setter Property="CornerRadius" Value="7"/>
-                <Setter Property="MinHeight" Value="62"/>
-                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+            <Style x:Key="CameraListCardStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource ConsoleSurfaceStyle}">
+                <Setter Property="Margin" Value="0,0,0,8"/>
+                <Setter Property="Padding" Value="8,10"/>
+                <Setter Property="CornerRadius" Value="6"/>
                 <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
                         <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
                         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-
             <Style x:Key="CameraListSelectionBarStyle" TargetType="{x:Type Border}">
-                <Setter Property="Width" Value="4"/>
+                <Setter Property="Width" Value="3"/>
                 <Setter Property="CornerRadius" Value="2"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Style.Triggers>
@@ -74,60 +81,34 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-
-            <Style x:Key="CameraListPrimaryTextStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="FontSize" Value="13"/>
-            </Style>
-
             <Style x:Key="CameraListSecondaryTextStyle" TargetType="{x:Type TextBlock}">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
                 <Setter Property="FontSize" Value="11"/>
-                <Setter Property="Opacity" Value="0.68"/>
+                <Setter Property="Opacity" Value="0.65"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
             </Style>
-
-            <Style x:Key="CameraListConnectionBadgeStyle" TargetType="{x:Type Border}">
-                <Setter Property="Margin" Value="8,0,0,0"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-            </Style>
-
-            <Style x:Key="CameraListConnectionTextStyle" TargetType="{x:Type TextBlock}">
-                <Setter Property="FontSize" Value="11"/>
+            <Style x:Key="CameraListPrimaryTextStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource CameraListSecondaryTextStyle}">
+                <Setter Property="FontSize" Value="13"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-            </Style>
-
-            <Style x:Key="CameraListLicenseTagStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource StatusBadgeBorderStyle}">
-                <Setter Property="Margin" Value="8,0,0,0"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Opacity" Value="1"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="24,18">
+    <Grid Margin="20,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="1"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}"
-                           FontSize="23"
-                           FontWeight="SemiBold"/>
-                <TextBlock FontSize="12" Opacity="0.62" Margin="0,4,0,0">
+            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock FontSize="12" Opacity="0.65" Margin="0,4,0,0">
                     <Run Text="{Binding PhyCameras.Count, Mode=OneWay}"/>
                     <Run Text="{x:Static properties:Resources.LabelCamerasSuffix}"/>
                     <Run Text=" / "/>
@@ -136,130 +117,104 @@
                     <Run Text="{x:Static properties:Resources.Online}"/>
                 </TextBlock>
             </StackPanel>
-
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        Margin="20,0,0,0">
-                    <Button Style="{StaticResource ToolbarButtonStyle}"
-                            Content="{x:Static properties:Resources.ButtonScanOnlineCameras}"
-                            Command="{Binding SearchCameraCommand}"/>
-
-                <hc:Badge Value="{Binding Count, Mode=OneWay}"
-                          BadgeMargin="0,-12,-8,0"
-                          Style="{StaticResource BadgeDanger}"
-                          Margin="2,0,8,0">
-                    <Button Style="{StaticResource PrimaryToolbarButtonStyle}"
-                            Content="{x:Static properties:Resources.AddUncreatedCamera}"
-                            Command="{Binding CreateCommand}"/>
-                </hc:Badge>
-
-                <Button Style="{StaticResource ToolbarMenuButtonStyle}"
-                        Click="ToolbarMenuButton_Click">
+            <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Command="{Binding SearchCameraCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Margin="0,0,8,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Scan}"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ManagerPrimaryButtonStyle}" Command="{Binding CreateCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="White" Margin="0,0,8,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.AddUncreatedCamera}" Foreground="White" FontWeight="SemiBold"/>
+                        <Border Background="#26FFFFFF" CornerRadius="9" Padding="6,1" Margin="8,0,0,0">
+                            <Border.Style>
+                                <Style TargetType="{x:Type Border}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding Count, Mode=OneWay}" Foreground="White" FontSize="11"/>
+                        </Border>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Content="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
+                <Button Style="{StaticResource ManagerToolbarButtonStyle}" Click="ToolbarMenuButton_Click">
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                            <MenuItem Header="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}"/>
-                            <MenuItem Header="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}"/>
-                            <Separator/>
                             <MenuItem Header="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}"/>
                             <MenuItem Header="{x:Static properties:Resources.PhyCamera_MvsLog}" Command="{Binding OpenMVSLogViewerCommand}"/>
                         </ContextMenu>
                     </Button.ContextMenu>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{x:Static properties:Resources.Operation}"/>
-                        <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="6,0,0,0" FontSize="12"/>
+                        <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" Margin="8,0,0,0" FontSize="11"/>
                     </StackPanel>
                 </Button>
-            </StackPanel>
+            </WrapPanel>
         </Grid>
 
-        <Border Grid.Row="1" Background="{DynamicResource GlobalBorderBrush1}" Opacity="0.7"/>
-
-        <Grid Grid.Row="2" Margin="0,12,0,0">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="260" MinWidth="220" MaxWidth="360"/>
                 <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" MinWidth="400"/>
             </Grid.ColumnDefinitions>
-
-            <Border Style="{StaticResource SectionPanelStyle}" Padding="10" Margin="0">
+            <Border Style="{StaticResource ConsoleSurfaceStyle}" Padding="12">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-
-                    <DockPanel Margin="2,0,2,5">
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding PhyCameras.Count, Mode=OneWay, StringFormat={}{0}}"
-                                   FontSize="13" FontWeight="SemiBold" Opacity="0.75"/>
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.SectionCameraList}" FontSize="16" FontWeight="SemiBold"/>
-                        </StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Border DockPanel.Dock="Right" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="10" Padding="7,2">
+                            <TextBlock Text="{Binding PhyCameras.Count, Mode=OneWay}" FontSize="11" Opacity="0.65"/>
+                        </Border>
+                        <TextBlock Text="{x:Static properties:Resources.SectionCameraList}" Style="{StaticResource ConsoleSectionTitleStyle}"/>
                     </DockPanel>
-
-                    <ListBox x:Name="CameraList" Grid.Row="1"
-                             ItemsSource="{Binding PhyCameras}"
+                    <ListBox x:Name="CameraList" Grid.Row="1" ItemsSource="{Binding PhyCameras}"
                              SelectionChanged="CameraList_SelectionChanged"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             Background="Transparent"
-                             BorderThickness="0"
+                             Background="Transparent" BorderThickness="0" Padding="0"
                              ItemContainerStyle="{StaticResource CameraListItemContainerStyle}">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:PhyCamera}">
                                 <Border Style="{StaticResource CameraListCardStyle}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="4"/>
-                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="3"/>
+                                            <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-
-                                        <Border Grid.Column="0" Style="{StaticResource CameraListSelectionBarStyle}"/>
-
-                                        <Grid Grid.Column="2">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Id}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                                <TextBlock Text="  " Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                                <TextBlock Text="{Binding DeviceModeDisplayText}" Style="{StaticResource CameraListPrimaryTextStyle}"/>
-                                            </StackPanel>
-
-                                            <Border Grid.Column="1" Style="{StaticResource CameraListConnectionBadgeStyle}">
-                                                <TextBlock Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
-                                                           Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
-                                                           Style="{StaticResource CameraListConnectionTextStyle}"/>
-                                            </Border>
-
-                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Code}"
-                                                       Style="{StaticResource CameraListSecondaryTextStyle}" Margin="0,6,0,0"/>
-
-                                            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0">
+                                        <Border Style="{StaticResource CameraListSelectionBarStyle}"/>
+                                        <StackPanel Grid.Column="2">
+                                            <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-
-                                                <TextBlock Text="{Binding CameraListMetaText, Mode=OneWay}"
-                                                           Style="{StaticResource CameraListSecondaryTextStyle}"/>
-
-                                                <Border Grid.Column="1"
-                                                        Style="{StaticResource CameraListLicenseTagStyle}"
-                                                        Visibility="{Binding ShowLicenseListTag, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                    <TextBlock Text="{Binding LicenseListTagText}"
-                                                               Foreground="{Binding LicenseListTagBrush}"
-                                                               FontSize="11" FontWeight="SemiBold"/>
-                                                </Border>
+                                                <TextBlock Text="{Binding DeviceModeDisplayText}" Style="{StaticResource CameraListPrimaryTextStyle}" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToTextConverter}}"
+                                                           Foreground="{Binding SysResourceModel.Remark, Converter={StaticResource StatusToBrushConverter}}"
+                                                           FontSize="11" FontWeight="SemiBold"/>
                                             </Grid>
-                                        </Grid>
+                                            <TextBlock Text="{Binding Code}" Style="{StaticResource CameraListSecondaryTextStyle}"
+                                                       FontFamily="Consolas" FontSize="10" Margin="0,6,0,0"/>
+                                            <TextBlock Text="{Binding CameraListMetaText, Mode=OneWay}" Style="{StaticResource CameraListSecondaryTextStyle}" Margin="0,4,0,0"/>
+                                            <DockPanel Margin="0,6,0,0">
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding LicenseListTagText}" Foreground="{Binding LicenseListTagBrush}"
+                                                           Visibility="{Binding ShowLicenseListTag, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                           FontSize="10" FontWeight="SemiBold"/>
+                                                <TextBlock Style="{StaticResource CameraListSecondaryTextStyle}" FontSize="10">
+                                                    <Run Text="ID "/><Run Text="{Binding Id}"/>
+                                                </TextBlock>
+                                            </DockPanel>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -267,17 +222,19 @@
                     </ListBox>
                 </Grid>
             </Border>
-
-            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Stretch" Background="Transparent"/>
-
-            <Grid x:Name="StackPanelShow" Grid.Column="2">
-                <Border Style="{StaticResource SectionPanelStyle}" Padding="24" Margin="0">
+            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Stretch" Background="Transparent"
+                          ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+            <Grid Grid.Column="2">
+                <Border x:Name="EmptyState" Style="{StaticResource ConsoleSurfaceStyle}" Padding="24">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{x:Static properties:Resources.LabelCameraConsole}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{x:Static properties:Resources.DescriptionSelectCamera}"
-                                   FontSize="13" Opacity="0.6" Margin="0,6,0,0" HorizontalAlignment="Center"/>
+                        <TextBlock Text="&#xE714;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{x:Static properties:Resources.LabelCameraConsole}" FontSize="18" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,12,0,8"/>
+                        <TextBlock Text="{x:Static properties:Resources.DescriptionSelectCamera}" FontSize="12" Opacity="0.65"
+                                   TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320"/>
                     </StackPanel>
                 </Border>
+                <Grid x:Name="StackPanelShow"/>
             </Grid>
         </Grid>
     </Grid>

@@ -3,11 +3,162 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotProviderPayloadErrorTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SpecificErrorCodeRedactsCredentialsBeforeTruncation(bool isHttp)
+    {
+        var profile = CreateProfile(CopilotProviderType.OpenAICompatible);
+        profile.ApiKey = new string('z', 100);
+        var body = JsonSerializer.Serialize(new { error = new { code = profile.ApiKey, message = "Controlled failure." } });
+        using var handler = new SequentialHandler(_ => isHttp
+            ? CreateJsonResponse(body, statusCode: HttpStatusCode.BadRequest)
+            : CreateStreamingResponse("data: " + body + "\n\n"));
+        using var httpClient = new HttpClient(handler);
+
+        var error = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => CreateService(httpClient, 1).StreamReplyAsync(
+            profile, [new CopilotRequestMessage("user", "Read the result.")], _ => { }, CancellationToken.None));
+
+        Assert.Contains("redacted", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(new string('z', 64), error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CancellationDuringServerBackoffDoesNotSendAnotherRequest()
+    {
+        using var handler = new SequentialHandler(_ =>
+        {
+            var response = CreateJsonResponse("{\"error\":{\"code\":\"slow_down\",\"message\":\"Retry later.\"}}", statusCode: HttpStatusCode.TooManyRequests);
+            response.Headers.TryAddWithoutValidation("Retry-After", "120");
+            return response;
+        });
+        using var httpClient = new HttpClient(handler);
+        using var cancellation = new CancellationTokenSource();
+        var service = new CopilotChatService(httpClient, 3, _ => TimeSpan.Zero, (delay, token) =>
+        {
+            Assert.Equal(TimeSpan.FromMinutes(2), delay);
+            cancellation.Cancel();
+            return Task.FromCanceled(token);
+        });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Read the result.")],
+            _ => { }, cancellation.Token));
+
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    [Theory]
+    [InlineData("insufficient_quota", "rate_limit_error")]
+    [InlineData("credit_balance_exhausted", "rate_limit_error")]
+    [InlineData("organization_spend_limit_exceeded", "insufficient_quota")]
+    [InlineData("project_spend_limit_exceeded", "rate_limit_error")]
+    [InlineData("organization_usage_limit_exceeded", "insufficient_quota")]
+    [InlineData("vendor_code", "insufficient_quota")]
+    [InlineData("slow_down", "insufficient_quota")]
+    public async Task BillingErrorsStopInHttpJsonAndStreamResponses(string code, string type)
+    {
+        var body = JsonSerializer.Serialize(new { error = new { code, type, message = "Account action required." } });
+        foreach (var transport in new[] { "http", "json", "sse", "responses" })
+        {
+            using var handler = new SequentialHandler(_ => transport switch
+            {
+                "http" => CreateJsonResponse(body, statusCode: HttpStatusCode.TooManyRequests),
+                "json" => CreateJsonResponse(body),
+                "responses" => CreateStreamingResponse("data: " + JsonSerializer.Serialize(new
+                {
+                    type = "response.failed", response = new { error = new { code, type, message = "Account action required." } },
+                }) + "\n\n"),
+                _ => CreateStreamingResponse("data: " + body + "\n\n"),
+            });
+            using var httpClient = new HttpClient(handler);
+            var retries = new List<CopilotProviderRetryInfo>();
+            var service = CreateService(httpClient, maximumAttempts: 3);
+
+            var error = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+                CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Read the result.")],
+                _ => { }, retries.Add, CancellationToken.None));
+
+            Assert.Contains(code, error.Message, StringComparison.Ordinal);
+            Assert.Equal(1, handler.CallCount);
+            Assert.Empty(retries);
+        }
+    }
+
+    [Theory]
+    [InlineData(429, "slow_down", "rate_limit_error")]
+    [InlineData(503, "server_is_overloaded", "service_unavailable_error")]
+    public async Task TransientErrorsKeepSpecificCodeAcrossHttpAndPayloads(int status, string code, string type)
+    {
+        foreach (var isHttp in new[] { true, false })
+        {
+            var body = JsonSerializer.Serialize(new { error = new { code, type, message = "Retry later." } });
+            using var handler = new SequentialHandler(call => call > 1
+                ? CreateStreamingResponse(CreateCompletedOpenAiStream("Recovered."))
+                : isHttp ? CreateJsonResponse(body, statusCode: (HttpStatusCode)status) : CreateStreamingResponse("data: " + body + "\n\n"));
+            using var httpClient = new HttpClient(handler);
+            var retries = new List<CopilotProviderRetryInfo>();
+            var deltas = new List<CopilotStreamDelta>();
+            await CreateService(httpClient, 3).StreamReplyAsync(
+                CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Read the result.")],
+                deltas.Add, retries.Add, CancellationToken.None);
+
+            Assert.Equal(2, handler.CallCount);
+            Assert.Equal("Recovered.", string.Concat(deltas.Select(delta => delta.Content)));
+            var retry = Assert.Single(retries);
+            Assert.Equal(isHttp ? $"HTTP {status} ({code})" : code, retry.FailureKind);
+            Assert.Equal(isHttp ? status : (int?)null, retry.StatusCode);
+        }
+    }
+
+    [Theory]
+    [InlineData("0", 1, true)]
+    [InlineData("7", 7, true)]
+    [InlineData("120", 120, true)]
+    [InlineData("121", 121, false)]
+    [InlineData("999999999999999999999", 0, false)]
+    [InlineData("invalid", 1, true)]
+    public async Task ChatHonorsRetryAfterWithoutShorteningLongDelays(string header, int expectedSeconds, bool shouldRetry)
+    {
+        using var handler = new SequentialHandler(call =>
+        {
+            if (call > 1)
+                return CreateStreamingResponse(CreateCompletedOpenAiStream("Recovered."));
+            var response = CreateJsonResponse("{\"error\":{\"code\":\"slow_down\",\"message\":\"Retry later.\"}}", statusCode: HttpStatusCode.TooManyRequests);
+            response.Headers.TryAddWithoutValidation("Retry-After", header);
+            return response;
+        });
+        using var httpClient = new HttpClient(handler);
+        var delays = new List<TimeSpan>();
+        var retries = new List<CopilotProviderRetryInfo>();
+        var service = new CopilotChatService(httpClient, 3, _ => TimeSpan.FromSeconds(1),
+            (delay, _) => { delays.Add(delay); return Task.CompletedTask; });
+        Task<CopilotChatStreamResult> RunAsync() => service.StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Read the result.")],
+            _ => { }, retries.Add, CancellationToken.None);
+
+        if (shouldRetry)
+        {
+            await RunAsync();
+            Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), Assert.Single(delays));
+            Assert.Single(retries);
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(RunAsync);
+            Assert.Contains("slow_down", error.Message, StringComparison.Ordinal);
+            Assert.Empty(delays);
+            Assert.Empty(retries);
+        }
+        Assert.Equal(shouldRetry ? 2 : 1, handler.CallCount);
+    }
+
     [Theory]
     [InlineData(CopilotProviderType.OpenAICompatible, false)]
     [InlineData(CopilotProviderType.OpenAICompatible, true)]

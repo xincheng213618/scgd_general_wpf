@@ -15,6 +15,33 @@ namespace ColorVision.UI.Tests;
 public sealed class FlowRuntimeCompletionTests
 {
     [Theory]
+    [InlineData(StatusTypeEnum.Completed)]
+    [InlineData(StatusTypeEnum.Failed)]
+    public void DeferredCompletionKeepsTheFinishingCopyInsteadOfTheUpstreamCopy(StatusTypeEnum expected) => StaTest.Run(() =>
+    {
+        using var start = new RuntimeTestStartNode();
+        start.Create();
+        StatusTypeEnum? receivedStatus = null;
+        string? receivedMessage = null;
+        start.Finished += (_, args) => { receivedStatus = args.Status; receivedMessage = args.Message; };
+        var upstream = new CVStartCFC(start, ActionTypeEnum.Start, "SN-DEFERRED-COPY");
+        using (upstream.DeferFlowCompletionNotification())
+        {
+            var downstream = new CVStartCFC(upstream) { FlowStatus = expected };
+            downstream.Data["Msg"] = "downstream failure";
+            using (downstream.DeferFlowCompletionNotification())
+            {
+                Assert.True(downstream.TryDoFinishing());
+                downstream.FireFinished();
+            }
+            Assert.Null(receivedStatus);
+        }
+        Assert.Equal(expected, receivedStatus);
+        if (expected == StatusTypeEnum.Failed) Assert.Equal("downstream failure", receivedMessage);
+        Assert.Equal(StatusTypeEnum.Runing, upstream.FlowStatus);
+    });
+
+    [Theory]
     [InlineData(0, StatusTypeEnum.Completed)]
     [InlineData(500, StatusTypeEnum.Failed)]
     public void TerminalNodeEndIsPublishedBeforeFlowCompletion(

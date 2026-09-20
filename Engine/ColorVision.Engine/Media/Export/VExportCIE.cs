@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
 using log4net;
 using OpenCvSharp;
@@ -41,6 +42,11 @@ namespace ColorVision.Engine.Media
 
         public static void SaveTo(VExportCIE export, Mat src, string fileName)
         {
+            SaveTo(export, src, fileName, null);
+        }
+
+        private static void SaveTo(VExportCIE export, Mat src, string fileName, ColorVisionTiffParameters? parameters)
+        {
             ArgumentNullException.ThrowIfNull(export);
             ArgumentNullException.ThrowIfNull(src);
             if (src.Empty())
@@ -54,6 +60,8 @@ namespace ColorVision.Engine.Media
             if (IsFormat(export.ExportImageFormat, ImageFormat.Tiff))
             {
                 image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, export.TiffCompression));
+                if (parameters != null)
+                    TiffImageDescriptionWriter.Write(fileName, parameters.ToJson());
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Bmp))
             {
@@ -205,6 +213,31 @@ namespace ColorVision.Engine.Media
             return File.Exists(fallback) ? fallback : null;
         }
 
+        private static ColorVisionTiffParameters CreateTiffParameters(CVCIEFile fileInfo, string exportedChannel)
+        {
+            return new ColorVisionTiffParameters
+            {
+                SourceType = fileInfo.FileExtType switch
+                {
+                    CVType.Raw => "CVRAW",
+                    CVType.Src => "CVSRC",
+                    CVType.CIE => "CVCIE",
+                    _ => fileInfo.FileExtType.ToString().ToUpperInvariant(),
+                },
+                ExportedChannel = exportedChannel,
+                InputFileName = string.IsNullOrWhiteSpace(fileInfo.FilePath) ? null : Path.GetFileName(fileInfo.FilePath),
+                AssociatedSourceFileName = string.IsNullOrWhiteSpace(fileInfo.SrcFileName) ? null : Path.GetFileName(fileInfo.SrcFileName),
+                FileVersion = fileInfo.Version,
+                Rows = fileInfo.Rows,
+                Cols = fileInfo.Cols,
+                Bpp = fileInfo.Bpp,
+                SourceChannels = fileInfo.Channels,
+                NdPort = fileInfo.NDPort,
+                Gain = fileInfo.Gain,
+                Exposure = fileInfo.Exp == null ? [] : (float[])fileInfo.Exp.Clone(),
+            };
+        }
+
         public static int SaveToTif(VExportCIE export)
         {
             try
@@ -260,11 +293,32 @@ namespace ColorVision.Engine.Media
                     ? CVType.Src
                     : CVType.CIE;
 
+            string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
+                ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
+                : null;
+            int selectedImageCount = cvcie.FileExtType switch
+            {
+                CVType.Raw or CVType.Src => export.IsExportSrc ? 1 : 0,
+                CVType.CIE =>
+                    (export.IsExportSrc && associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath) ? 1 : 0) +
+                    (cvcie.Channels == 1 && export.IsExportChannelY ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelX ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelY ? 1 : 0) +
+                    (cvcie.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
+                _ => 0,
+            };
+            bool includeImageSuffix = selectedImageCount > 1;
+
             Mat src;
             int exportedCount = 0;
-            void SaveImage(Mat image, string suffix)
+            void SaveImage(Mat image, string suffix, CVCIEFile parameterSource, string exportedChannel)
             {
-                SaveTo(export, image, Path.Combine(savePath, name + suffix));
+                string outputFileName = name + (includeImageSuffix ? suffix : string.Empty) + GetFileExtension(export.ExportImageFormat);
+                SaveTo(
+                    export,
+                    image,
+                    Path.Combine(savePath, outputFileName),
+                    CreateTiffParameters(parameterSource, exportedChannel));
                 exportedCount++;
             }
 
@@ -277,7 +331,7 @@ namespace ColorVision.Engine.Media
                             throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                         using (src = CreateMatFromCVCIEFile(cvcie))
                         {
-                            SaveImage(src, "Src");
+                            SaveImage(src, "Src", cvcie, "Src");
                         }
                     }
                     break;
@@ -288,7 +342,7 @@ namespace ColorVision.Engine.Media
                             throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                         using (src = CreateMatFromCVCIEFile(cvcie))
                         {
-                            SaveImage(src, "Src");
+                            SaveImage(src, "Src", cvcie, "Src");
                         }
                     }
                     break;
@@ -296,14 +350,13 @@ namespace ColorVision.Engine.Media
 
                     if (export.IsExportSrc)
                     {
-                        string? associatedSourcePath = ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName);
                         if (associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath))
                         {
                             if (CVFileUtil.Read(associatedSourcePath, out CVCIEFile cvraw))
                             {
                                 using (src = CreateMatFromCVCIEFile(cvraw))
                                 {
-                                    SaveImage(src, "_Src");
+                                    SaveImage(src, "_Src", cvraw, "Src");
                                 }
                             }
                         }
@@ -317,7 +370,7 @@ namespace ColorVision.Engine.Media
                             {
                                 using (src = CreateSingleChannelMat(cvcie, cvcie.Data))
                                 {
-                                    SaveImage(src, "_Y");
+                                    SaveImage(src, "_Y", cvcie, "Y");
                                 }
                             }
                         }
@@ -328,7 +381,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 0);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveImage(src, "_X");
+                                    SaveImage(src, "_X", cvcie, "X");
                                 }
                             }
                             if (export.IsExportChannelY)
@@ -336,7 +389,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 1);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveImage(src, "_Y");
+                                    SaveImage(src, "_Y", cvcie, "Y");
                                 }
 
                             }
@@ -345,7 +398,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 2);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveImage(src, "_Z");
+                                    SaveImage(src, "_Z", cvcie, "Z");
                                 }
                             }
                         }

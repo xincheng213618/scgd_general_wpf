@@ -1,3 +1,6 @@
+using System.Reflection;
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -6,10 +9,11 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using FlowEngineLib.Node.POI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace ColorVision.UI.Tests;
@@ -68,18 +72,66 @@ public class LocalFlowNodePortTests
         Assert.Null(typeof(LocalBuildPoiByTemplateNode).GetProperty("ImgFileName"));
         Assert.Equal("POI_W_AUTO", remappingNode.LayoutROITemplateName);
         Assert.Equal("POI_W_AUTO", parameterNode.LayoutROITemplateName);
-        Assert.Equal(typeof(FlowBuildPoiTemplateEditor), FlowNodePropertyEditorAttribute.Resolve(
-            typeof(LocalBuildPoiByTemplateNode),
-            nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName)));
+        Assert.Equal(typeof(BuildPoiTemplatePropertiesEditor), typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
-    [Fact]
-    public void LocalBuildPoiNodesHideDeviceCode()
+    [Theory]
+    [InlineData(typeof(LocalFindCrossNode))]
+    [InlineData(typeof(LocalGridDistortionNode))]
+    [InlineData(typeof(LocalFovNode))]
+    [InlineData(typeof(LocalFindLuminousAreaNode))]
+    [InlineData(typeof(LocalBuildPoiNode))]
+    [InlineData(typeof(LocalBuildPoiByTemplateNode))]
+    [InlineData(typeof(LocalPoiNode))]
+    [InlineData(typeof(LocalRealPoiNode))]
+    [InlineData(typeof(LocalImageNode))]
+    [InlineData(typeof(TestMessageBoxNode))]
+    [InlineData(typeof(LocalFileFusionNode))]
+    public void LocalCalculationAndFileNodesHaveNoDeviceCodeAndDiscardLegacyValue(Type nodeType)
     {
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
-            typeof(LocalBuildPoiNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
-            typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
+        Assert.Null(nodeType.GetProperty(nameof(IFlowDeviceNode.DeviceCode)));
+        Assert.False(typeof(IFlowDeviceNode).IsAssignableFrom(nodeType));
+
+        var node = (LocalFlowNodeBase)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [nameof(IFlowDeviceNode.DeviceCode)] = Encoding.UTF8.GetBytes("LEGACY-DEVICE-1")
+        });
+
+        Assert.DoesNotContain("DeviceCode", Encoding.UTF8.GetString(node.GetSaveData()));
+        Assert.DoesNotContain("LEGACY-DEVICE-1", Encoding.UTF8.GetString(node.GetSaveData()));
+        var buildPayload = typeof(LocalFlowNodeBase).GetMethod("BuildRunPayload", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        string payload = (string)buildPayload.Invoke(node, [new CVStartCFC("pure-node")])!;
+        Assert.Null(Newtonsoft.Json.Linq.JObject.Parse(payload)["DeviceCode"]);
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalCameraNode))]
+    [InlineData(typeof(LocalCalibrationNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    [InlineData(typeof(CVBaseServerNode))]
+    public void ResourceAndRemoteNodesKeepDeviceCodeVisible(Type nodeType)
+    {
+        Assert.True(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
+            nodeType.GetProperty(nameof(IFlowDeviceNode.DeviceCode))!));
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalCameraNode))]
+    [InlineData(typeof(LocalCalibrationNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    public void LocalResourceNodesKeepSerializedDeviceSelection(Type nodeType)
+    {
+        var node = (LocalDeviceFlowNodeBase)Activator.CreateInstance(nodeType)!;
+        node.Create();
+        node.OnLoadNode(new Dictionary<string, byte[]>
+        {
+            [nameof(IFlowDeviceNode.DeviceCode)] = Encoding.UTF8.GetBytes("CAMERA-1")
+        });
+        Assert.Equal("CAMERA-1", node.DeviceCode);
+        Assert.Contains("DeviceCode", Encoding.UTF8.GetString(node.GetSaveData()));
+        Assert.Contains("CAMERA-1", Encoding.UTF8.GetString(node.GetSaveData()));
     }
 
     [Theory]
@@ -253,6 +305,37 @@ public class LocalFlowNodePortTests
 
         Assert.False(node.UseROI);
         Assert.True(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(property));
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiReadsExposureFromLegacyImageResultParams()
+    {
+        float[]? singleExposure = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Gain\":10,\"ExpTime\":[700]}");
+        float[]? threeExposures = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Gain\":10,\"ExpTime\":[716.67,716.67,716.67]}");
+
+        Assert.Equal(new float[] { 700 }, singleExposure);
+        Assert.Equal(new float[] { 716.67f, 716.67f, 716.67f }, threeExposures);
+    }
+
+    [Fact]
+    public void LocalCalibrationRealPoiReadsExposureFromLocalCalibrationResultParams()
+    {
+        float[]? exposure = LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(
+            "{\"Exposure\":[8,16,32]}");
+
+        Assert.Equal(new float[] { 8, 16, 32 }, exposure);
+    }
+
+    [Theory]
+    [InlineData("{\"ExpTime\":[0,0,0]}")]
+    [InlineData("{\"ExpTime\":[10,-1,30]}")]
+    [InlineData("{\"Other\":[10,20,30]}")]
+    [InlineData("not-json")]
+    public void LocalCalibrationRealPoiRejectsInvalidDatabaseExposure(string parameters)
+    {
+        Assert.Null(LocalCalibrationRealPoiNode.ReadExposureFromImageResultParams(parameters));
     }
 
     [Fact]

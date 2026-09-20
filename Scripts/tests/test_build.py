@@ -9,20 +9,31 @@ from Scripts.build import (
     ensure_runtime_copy_integrity,
     get_installer_for_version,
     publish_primary_release,
+    rebuild_project,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
+from Scripts.operations_watchdog_runtime import REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS
 
 
 class InstallerRuntimeValidationTests(unittest.TestCase):
+    def test_native_integrity_failure_prevents_installer_build(self) -> None:
+        with mock.patch("Scripts.build.subprocess.run") as run, \
+             mock.patch("Scripts.build.ensure_runtime_copy_integrity", return_value=True), \
+             mock.patch("Scripts.build.ensure_native_runtime_integrity", side_effect=ValueError("damaged native")), \
+             mock.patch("Scripts.build.validate_installer_runtime_dlls") as installer_check:
+            self.assertFalse(rebuild_project(Path("msbuild"), Path("repo/build.sln"), Path("installer"), Path("app.aip")))
+        self.assertEqual(run.call_count, 1)
+        installer_check.assert_not_called()
+
     def setUp(self) -> None:
         self._temp_directory = tempfile.TemporaryDirectory(prefix="build-installer-tests-")
         self.root = Path(self._temp_directory.name)
         self.runtime_directory = self.root / "runtime"
         self.runtime_directory.mkdir()
         (self.runtime_directory / "ColorVision.UI.dll").write_bytes(b"runtime")
-        for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS:
+        for relative_path in (*REQUIRED_SERVICE_HOST_RUNTIME_PATHS, *REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS):
             path = self.runtime_directory / relative_path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"service-host")
@@ -52,6 +63,11 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         (self.runtime_directory / REQUIRED_SERVICE_HOST_RUNTIME_PATHS[0]).unlink()
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
 
+        self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_rejects_incomplete_watchdog_build_output(self) -> None:
+        (self.runtime_directory / REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS[0]).unlink()
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
 
     def test_rejects_native_runtime_dll_missing_from_installer_mapping(self) -> None:
@@ -137,6 +153,7 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         source_paths = [
             "C:\\build\\ColorVision.UI.dll",
             *[f"C:\\build\\{path}" for path in service_host_paths],
+            *[f"C:\\build\\{path}" for path in REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS],
             *[f"C:\\build\\{path}" for path in additional_paths],
         ]
         rows = "".join(f'<ROW SourcePath="{path}" />' for path in source_paths)

@@ -21,6 +21,7 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传尝试结束后删除本地 `.cvxp` |
 | 发布 Spectrum 独立包和插件包 | `Scripts\Spectrum.bat --release-notes "<说明>"` | 同时维护独立更新源和 ColorVision 插件更新源，完整远程验收后才删除本地 `.cvxp` |
+| CameraTest 离线测试包 | `pwsh -NoProfile -File .\Scripts\package_camera_test.ps1` | 只生成带版本/时间的干净 ZIP，供手动分发；不内置 .NET、不上传。完整契约见[相机生产调试](../../04-api-reference/plugins/standard-plugins/camera-test.md) |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
 | 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新两份共享文件表 | `py Scripts\generate_shared_files.py` | 从当前 Release x64 宿主输出一次扫描，同时更新仓库与 Plugin Kit 镜像 |
@@ -39,6 +40,10 @@ Scripts\release.bat
 ```
 
 `docs/_history/CHANGELOG.md` 保存截至 `1.4.14.37` 的完整旧版记录，仅供仓库内回顾；它是固定历史快照，不在日常发布时更新，也不作为主程序 changelog 上传。下划线目录会从公开文档构建中排除。
+
+发布前会按 SHA-256 校验 OpenCV 原生运行库：OpenCvSharp 的源文件由主程序 `project.assets.json` 中实际解析的 NuGet 版本定位，本地 OpenCV 由 `packages/OpenCV.Release.x64.props` 定位。安装器构建前自动修复输出副本，复制后再次校验；缺少源文件、复制失败或校验不符会停止发布。增量打包前只读复查，包内包含的原生库还会在上传前再次校验，文件大小和修改时间相同不能代替内容一致性。
+
+OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相同的 DLL 不进入增量包；新增或内容变化的 DLL 正常进入增量包。文件完整性校验只保证内容正确，不会强制把未变化的库加入更新包，也不因历史版本异常增加额外修复载荷。
 
 主程序发布不携带输出根目录的 `CHANGELOG.md`：`build_update.py` 在全量 ZIP 和增量 CVX 中排除该路径，`generate_shared_files.py` 也忽略该文件，避免旧输出副本重新进入共享清单。运行时 `Config/` 和窗口尺寸诊断使用的根目录 `window-resize-diagnostics.mode`、`window-resize-traces/` 属于本机产物，不进入主程序全量 ZIP 或增量 CVX；诊断文件也不进入插件共享清单。外部 `ColorVision.aip` 不应包含这些文件；仓库根目录的变更日志原稿继续由 `build.py` 独立上传，插件自己的日志照常随插件包交付。这些规则不清理历史包或已有安装目录。
 

@@ -7,7 +7,7 @@ ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dl
 - Windows x64 / .NET 10 WPF；项目依赖 `ColorVision.Engine` 及其 Flow、通信、图像和数据库运行组件，不能只复制项目 DLL 单独运行。
 - 宿主版本要求读取随包 `manifest.json` 的 `requires`。项目版本独立于主程序；手工修改 `ProjectARVRPro.csproj` 的 `VersionPrefix`，打包器从主 DLL 同步 manifest 版本。
 - 运行检测需要现场的 Flow 模板、设备服务、Engine MySQL 数据和匹配的 Recipe；本地结果保存在 SQLite。
-- 流程配置默认位于 `%APPDATA%\ColorVision\Config\ProcessGroups.json`，结果库为同目录 `ProjectARVRPro.db`。Recipe 随流程或解析实例保存；使用其他项目的配置前必须核对格式与业务含义。
+- 流程配置默认位于 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，结果库为同目录 `ProjectARVRPro.db`。首次升级仅在能确认旧共享 `ProcessGroups.json` 属于 ARVRPro 时复制迁移，原文件保留；Recipe 随流程或解析实例保存。
 - 真实运行可能切换图案、控制设备及写入结果。Demura 的 `BurnAfterGenerate` 默认开启，运行该类型前须核对源文件和目标设备操作范围。
 
 ## 查找功能说明

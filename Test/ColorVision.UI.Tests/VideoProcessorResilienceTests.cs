@@ -15,7 +15,7 @@ public sealed class VideoProcessorResilienceTests
         using var firstAttempt = new ManualResetEventSlim();
         using var resultReceived = new ManualResetEventSlim();
         int attempts = 0;
-        using var processor = new VideoFrameProcessor(
+        using var processor = new CameraFocusFrameProcessor(
             result =>
             {
                 if (result.Articulation == 42)
@@ -31,10 +31,10 @@ public sealed class VideoProcessorResilienceTests
                     throw new InvalidOperationException("simulated frame failure");
                 }
 
-                return new VideoFrameProcessingResult(42, null, null);
+                return new CameraFocusFrameResult(42);
             });
         byte[] frame = [0];
-        var request = new VideoFrameProcessingRequest(true, default, new RoiRect(0, 0, 1, 1), null, 0);
+        var request = new CameraFocusFrameRequest(default, new RoiRect(0, 0, 1, 1));
 
         processor.SubmitFrame(frame, frame.Length, 1, 1, 1, 8, 1, request);
         Assert.True(firstAttempt.Wait(TimeSpan.FromSeconds(5)));
@@ -42,29 +42,6 @@ public sealed class VideoProcessorResilienceTests
 
         Assert.True(resultReceived.Wait(TimeSpan.FromSeconds(5)));
         Assert.Equal(2, Volatile.Read(ref attempts));
-    }
-
-    [Theory]
-    [InlineData(1, new byte[] { 3, 4, 1, 2 })]
-    [InlineData(2, new byte[] { 2, 1, 4, 3 })]
-    [InlineData(3, new byte[] { 4, 3, 2, 1 })]
-    public void PseudoColorTransformMatchesRealtimeDisplayTransform(int transform, byte[] expected)
-    {
-        HImage image = OpenCVMediaHelper.AllocateHImage(2, 2, 1, 8);
-        try
-        {
-            Marshal.Copy(new byte[] { 1, 2, 3, 4 }, 0, image.pData, 4);
-
-            VideoFrameProcessor.ApplyTransform(image, transform);
-
-            byte[] actual = new byte[4];
-            Marshal.Copy(image.pData, actual, 0, actual.Length);
-            Assert.Equal(expected, actual);
-        }
-        finally
-        {
-            image.Dispose();
-        }
     }
 
     [Fact]

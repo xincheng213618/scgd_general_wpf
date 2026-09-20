@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
 
-        public void Execute(
+        public RawColorTransformV1? Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             IntPtr rawPointer,
@@ -35,9 +36,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW pointer is null.", nameof(rawPointer));
 
-            CachedContext cachedContext = Prepare(layout, calibrationFiles, ciePointer);
+            CachedContext cachedContext = FlowNodeTiming.Run("LoadCalibrationResources", () => Prepare(layout, calibrationFiles, ciePointer));
             CalibrationExecutionOptionsV1 options = CreateExecutionOptions(exposure, calibrationRoi);
             (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
+            using var computeStage = FlowNodeTiming.Measure("CalibrationAlgorithm");
             int result = OpenCVCalibration.M_CalibrationExecute(
                 cachedContext.Context,
                 checked((uint)layout.Width),
@@ -53,6 +55,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
+            computeStage?.Complete();
+            if (!cachedContext.Files.Any(file => IsColorCalibration(file.CalibrationType))) return null;
+            RawColorTransformV1 transform = RawColorTransformV1.Create();
+            int snapshotResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(cachedContext.Context, in options, ref transform);
+            if (snapshotResult != OpenCVCalibration.CalibrationOk)
+                throw CreateNativeException("读取已执行的色度校正参数失败", snapshotResult, cachedContext.Context);
+            return transform;
         }
 
         internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)

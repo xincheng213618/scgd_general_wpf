@@ -430,6 +430,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 置顶 的本地化字符串。
+        /// </summary>
+        public static string DisplayPin {
+            get {
+                return ResourceManager.GetString("DisplayPin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取消置顶 的本地化字符串。
+        /// </summary>
+        public static string DisplayUnpin {
+            get {
+                return ResourceManager.GetString("DisplayUnpin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 echo 复制完成。 的本地化字符串。
         /// </summary>
         public static string EchoCopyComplete {
@@ -1752,9 +1770,6 @@ namespace ColorVision.UI.Properties {
             }
         }
         
-        public static string DisplayPin => ResourceManager.GetString("DisplayPin", resourceCulture);
-        public static string DisplayUnpin => ResourceManager.GetString("DisplayUnpin", resourceCulture);
-
         /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>

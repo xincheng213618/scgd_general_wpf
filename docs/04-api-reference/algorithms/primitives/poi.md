@@ -5,7 +5,7 @@ status: "current"
 summary: "说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。"
 aliases: ["POI点集由谁生成和消费","POI 1x1中心点","POI 50%缩进","POI自动填充","自动适配尺寸","POI边距设置","PoiPoint","PoiParam","AlgorithmPoi","AlgorithmBuildPoi"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/PoiPoint.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml","Engine/ColorVision.Engine/Templates/POI/EditPoiParam.xaml.cs","Engine/ColorVision.Engine/Templates/POI/PoiLayoutGeometry.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs","Test/ColorVision.UI.Tests/PoiEditorLayoutTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"]
 related: ["algorithms.index","algorithms.poi-template","flow.templates","ui.image-editor-context"]
 ---
 
@@ -54,6 +54,8 @@ POI 在当前系统里是一套共享点位原语，不是单个“检测算法�
 “边距设置”与“设置布点区域”位于四角坐标下方，同一操作区在宽度不足时换行；边距弹窗仍锚定“边距设置”按钮。
 
 手动框出布点区域可使用默认白色/矢量画布，不必先导入位图；这只绘制几何区域，不执行像素计算。选区有效期与换图取消遵循 [ImageEditor 临时 ROI 契约](../../ui-components/image-editor-context.md#临时-roi-形状、坐标与有效期)。自动寻找发光区等图像算法仍要求真实像素图。
+
+`EditPoiParam` 的 native 图像处理入口保留源更新与纯预览两种语义：需要替换 `WriteableBitmap` 源的分支先生成独立冻结副本，再以 `CommitSourcePixels` 提交；仅预览分支使用 `ImagePresentation.Publish`。不能原地改写已有源却遗漏 revision 通知，也不能将纯显示结果隐式升级为源提交。
 
 ## 存储方式
 

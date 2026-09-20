@@ -9,9 +9,9 @@ namespace ProjectARVRPro
     [DisallowConcurrentExecution]
     public class ProjectARVRLitetestJob : IJob
     {
-        public async Task Execute(IJobExecutionContext context)
+        public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
-            context.CancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             Dispatcher? dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
@@ -27,10 +27,10 @@ namespace ProjectARVRPro
                         throw new JobExecutionException("Open the ProjectARVRPro window before running this scheduled task.");
                     }
 
-                    return window.TryStartNextTemplateAsync(context.CancellationToken);
+                    return window.TryStartNextTemplateAsync(cancellationToken);
                 },
                 DispatcherPriority.Normal,
-                context.CancellationToken);
+                cancellationToken);
             bool accepted = await startTask;
             if (!accepted)
             {

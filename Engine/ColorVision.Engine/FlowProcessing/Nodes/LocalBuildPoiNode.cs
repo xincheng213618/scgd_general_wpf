@@ -1,12 +1,11 @@
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -29,9 +28,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public int TotalTime { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "本地关注点布点(Re)")]
-    [FlowNodePropertyEditorAttribute(nameof(LayoutROITemplateName), typeof(FlowPoiTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(RePOITemplateName), typeof(FlowPoiTemplateEditor))]
+    [STNode("Flow_CustomNodes", "关注点布点(Re)")]
     public sealed class LocalBuildPoiNode : LocalFlowNodeBase
     {
         private string layoutRoiTemplateName = "POI_W_AUTO";
@@ -40,6 +37,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地关注点布点(Re)")]
         [STNodeProperty("布点 ROI", "包含目标四角点的 POI 模板，例如 POI_W_AUTO", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string LayoutROITemplateName
         {
             get => layoutRoiTemplateName;
@@ -52,6 +50,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地关注点布点(Re)")]
         [STNodeProperty("POI 模板(Re)", "包含画布四角参考点、用于 ReMapping 的 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string RePOITemplateName
         {
             get => rePoiTemplateName;
@@ -74,10 +73,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiNode() : base("本地关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
+        public LocalBuildPoiNode() : base("关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
         {
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(RePOITemplateName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
@@ -89,14 +89,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout, PrefixName);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-            string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
             int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                 action,
                 ViewResultAlgType.BuildPOI,
                 template.Id,
                 template.Name,
                 null,
-                algorithmDeviceCode,
+                null,
                 ZIndex,
                 totalTime,
                 new
@@ -117,7 +116,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalBuildPoiNodeResultData
@@ -199,9 +198,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "本地关注点布点(参数)")]
-    [FlowNodePropertyEditorAttribute(nameof(ParameterTemplateName), typeof(FlowBuildPoiTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(LayoutROITemplateName), typeof(FlowPoiTemplateEditor))]
+    [STNode("Flow_CustomNodes", "关注点布点(参数)")]
     public sealed class LocalBuildPoiByTemplateNode : LocalFlowNodeBase
     {
         private string parameterTemplateName = string.Empty;
@@ -209,6 +206,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地关注点布点(参数)")]
         [STNodeProperty("参数模板", "使用行列、边距、点类型和点尺寸生成关注点", true)]
+        [PropertyEditorType(typeof(BuildPoiTemplatePropertiesEditor))]
         public string ParameterTemplateName
         {
             get => parameterTemplateName;
@@ -221,6 +219,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("本地关注点布点(参数)")]
         [STNodeProperty("布点 ROI", "提供布点区域的 POI 模板，例如 POI_W_AUTO", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string LayoutROITemplateName
         {
             get => layoutRoiTemplateName;
@@ -231,10 +230,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiByTemplateNode() : base("本地关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI")
+        public LocalBuildPoiByTemplateNode() : base("关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI")
         {
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => CompactValueOrDash(ParameterTemplateName);
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
@@ -245,14 +245,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             List<LocalPoiRemappedPoint> points = LocalPoiLayoutCalculator.Build(parameter, layoutTemplate);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-            string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
             int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                 action,
                 ViewResultAlgType.BuildPOI,
                 parameter.Id,
                 parameter.Name,
                 null,
-                algorithmDeviceCode,
+                null,
                 ZIndex,
                 totalTime,
                 new
@@ -270,7 +269,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalPoiRemappingCalculator.SaveDetails(masterId, points);
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
-                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalBuildPoiNodeResultData

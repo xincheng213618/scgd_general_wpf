@@ -3,9 +3,9 @@ knowledge_id: "projects.lux"
 knowledge_type: "reference"
 status: "current"
 summary: "ProjectLUX 流程组、Recipe/Fix 共享配置、处理类型与 CSV/SQLite 结果链；文本协议有独立参考主题。"
-aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
+aliases: ["T00XX 如何匹配 LUX 流程","LUX 结果和修正在哪里","ProjectLUX","LUXWindow","ProcessMeta.SocketCode","ProjectLUXProcessGroups.json","ProcessGroups.json","ARVRRecipe.json","ProjectARVRProFixConfig.json","ProjectLUXSummary.json","LUX Recipe","LUX Fix"]
 code_paths: ["Projects/ProjectLUX/LUXWindow.xaml","Projects/ProjectLUX/TestResultViewWindow.xaml","Projects/ProjectLUX/LUXWindow.xaml.cs","Projects/ProjectLUX/Services/SocketControl.cs","Projects/ProjectLUX/Process/","Projects/ProjectLUX/ViewResultManager.cs","Projects/ProjectLUX/ResultStatistics.cs","Projects/ProjectLUX/ResultStatisticsWindow.xaml","Projects/ProjectLUX/ResultStatisticsWindow.xaml.cs","Projects/ProjectLUX/ResultJsonPayloadStorage.cs","Projects/ProjectLUX/LegacyResultJsonMigration.cs","Projects/ProjectLUX/LuxSqliteCleanupProvider.cs","Projects/ProjectLUX/Recipe/","Projects/ProjectLUX/Fix/","Projects/ProjectLUX/Summary.cs"]
-test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj","Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"]
+test_paths: ["Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj","Test/ProjectLUX.Tests/ProcessManagerPersistenceTests.cs","Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"]
 related: ["projects.index","projects.capabilities","projects.lux-protocol","projects.arvr-pro-processes","ui.socket-protocol"]
 ---
 
@@ -23,7 +23,7 @@ related: ["projects.index","projects.capabilities","projects.lux-protocol","proj
 | CSV 没生成 | `ProjectLUXConfig.Instance.ResultSavePath` 是否存在且可写 |
 | 结果全部失败 | Recipe 上下限、Fix 系数、`Process.Execute()` 读取字段 |
 | VID 或光通量无响应 | 相机/光谱仪服务是否在线，专用命令链是否可用 |
-| 重启后流程丢失 | `%APPDATA%\ColorVision\Config\ProcessGroups.json` 是否保存 |
+| 重启后流程丢失 | `%APPDATA%\ColorVision\Config\ProjectLUXProcessGroups.json` 是否保存；升级时核对旧共享文件迁移日志 |
 
 ## 项目入口与运行链路
 
@@ -90,7 +90,7 @@ Flow 已运行时，新的流程启动被忽略并记日志，但命令入口此
 
 | 文件 | 所有者 / 内容 |
 | --- | --- |
-| `ProcessGroups.json` | `ProcessManager`：活动组、步骤、SocketCode 和步骤 ConfigJson |
+| `ProjectLUXProcessGroups.json` | `ProcessManager`：活动组、步骤、SocketCode 和步骤 ConfigJson |
 | `ARVRRecipe.json` | `RecipeManager`：各类型的限值配置 |
 | `ProjectARVRProFixConfig.json` | `FixManager`：各类型的修正配置；这是 LUX 实际使用的文件名 |
 | `ProjectLUXSummary.json` | `SummaryManager`：设备号、产线、工人和生产摘要 |
@@ -98,9 +98,9 @@ Flow 已运行时，新的流程启动被忽略并记日志，但命令入口此
 
 CSV 写入 `ProjectLUXConfig.ResultSavePath`，普通流程、VID 和光通量分别使用 `C_<SN>.csv`、`B_<SN>.csv` 和 `D_<SN>.csv`。Engine 原始批次与算法数据仍在 MySQL，保存本地结果不等于备份完整 Engine 数据。
 
-流程配置只在 `ProcessGroups.json` 不存在时从 `ProcessMetas.json` 迁移；新格式损坏不会自动回退旧文件。LUX 与 ARVRPro 默认使用同名的 `ProcessGroups.json`，内容和类型属于各自项目，不能直接跨项目互换。
+LUX 与 ARVRPro 使用各自独立的流程文件，不再互相覆盖。`ProjectLUXProcessGroups.json` 不存在时，LUX 只从能明确识别为 LUX 的旧共享 `ProcessGroups.json` 或 `ProcessMetas.json` 复制迁移；旧文件原样保留，无法确认归属时跳过迁移。新格式损坏不会自动回退旧文件。
 
-这些管理器使用直接文件写入，保存异常主要记入日志，不提供跨文件事务。界面值改变或编辑窗口关闭不证明所有文件已保存。Recipe/Fix 初始化时若发现已存配置数量与当前发现的类型数量不同，会在内存中重建整组默认配置；升级后限值异常时应先保留原文件并核对类型及日志，不以“文件存在”判断原限值已成功加载。
+LUX 流程管理器使用直接文件写入，保存异常主要记入日志；迁移只在内存加载成功后写入独立文件，不删除共享源文件。界面值改变或编辑窗口关闭不证明所有文件已保存。Recipe/Fix 初始化时若发现已存配置数量与当前发现的类型数量不同，会在内存中重建整组默认配置；升级后限值异常时应先保留原文件并核对类型及日志，不以“文件存在”判断原限值已成功加载。
 
 ## 结果统计与数据库维护
 

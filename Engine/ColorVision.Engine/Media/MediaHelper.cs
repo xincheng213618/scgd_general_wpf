@@ -280,6 +280,7 @@ namespace ColorVision.Engine.Media
 
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {
+            if (writeableBitmap.IsFrozen) return false;
             if (writeableBitmap.PixelWidth != srcMat.Cols || writeableBitmap.PixelHeight != srcMat.Rows)
                 return false;
 

@@ -452,6 +452,7 @@ namespace ColorVision.Copilot
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
             var providerInterrupted = false;
+            CopilotAgentBlockerSnapshot? providerFailure = null;
             var contextWindowExceeded = false;
             var postToolStopRequested = false;
             var automaticReviewCircuitBreakerTripped = false;
@@ -491,11 +492,13 @@ namespace ColorVision.Copilot
                 usage = usage.Add(loopResult.Usage);
                 controlIntent = loopResult.ControlIntent;
                 timeBudgetExhausted = loopResult.TimeBudgetExhausted;
-                providerInterrupted = loopResult.ProviderInterrupted;
+                providerFailure = loopResult.ProviderFailure;
+                providerInterrupted = providerFailure != null;
                 contextWindowExceeded = loopResult.ContextWindowExceeded;
                 postToolStopRequested = loopResult.PostToolStopRequested;
                 var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
-                var providerFinishReason = loopResult.ProviderFinishReason;
+                // A previous tool-use finish marker must not override a later provider failure.
+                var providerFinishReason = providerInterrupted || contextWindowExceeded ? null : loopResult.ProviderFinishReason;
                 automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
                 automaticReviewCircuitBreakerTripped = automaticReviewCircuitBreaker?.IsTripped == true;
                 outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
@@ -559,6 +562,9 @@ namespace ColorVision.Copilot
                         outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
                         outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
                         hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
+                        providerFailure = recoveredFinalAnswer.ProviderFailure;
+                        providerInterrupted = providerFailure != null;
+                        contextWindowExceeded = providerFailure?.Code == "provider_context_window";
                     }
                     catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
                         || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
@@ -796,8 +802,8 @@ namespace ColorVision.Copilot
             {
                 blockers = blockers.Prepend(postToolStopBlocker).ToArray();
             }
-            if (providerInterrupted)
-                blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
+            if (providerFailure != null)
+                blockers = blockers.Prepend(providerFailure).ToArray();
             if (automaticReviewCircuitBreaker is { IsTripped: true } circuitBreaker)
             {
                 var deniedStep = bridge.StepRecords.LastOrDefault(

@@ -1,4 +1,6 @@
+#pragma warning disable OPENAI001
 using Microsoft.Extensions.AI;
+using OpenAI.Responses;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -114,6 +116,11 @@ namespace ColorVision.Copilot
 
     internal static class CopilotProviderResponseContent
     {
+        public static bool HasProgress(ChatResponseUpdate update) => HasAny(update.Contents)
+            // The SDK assembles FunctionCallContent only after all arguments arrive.
+            // Nonempty argument fragments are response progress, not idle metadata.
+            || update.RawRepresentation is StreamingResponseFunctionCallArgumentsDeltaUpdate { Delta: { Length: > 0 } };
+
         public static bool HasAny(IEnumerable<AIContent>? contents)
         {
             return (contents ?? Enumerable.Empty<AIContent>()).Any(content => content switch
@@ -246,7 +253,7 @@ namespace ColorVision.Copilot
                         yield break;
 
                     var update = enumerator.Current;
-                    if (CopilotProviderResponseContent.HasAny(update.Contents))
+                    if (CopilotProviderResponseContent.HasProgress(update))
                     {
                         receivedContent = true;
                         remaining = _streamingUpdateTimeout;

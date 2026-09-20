@@ -26,14 +26,17 @@ next: false
 - [关于窗口：视觉展示与光谱展示](../../04-api-reference/ui-components/about-exhibition.md) — `ui.about-exhibition`
   主程序的图像、色彩与测量展示，以及 Spectrum 的光谱关于页：独立品牌和版本、中英文与繁体资源、不透明深浅配色、原生圆角对齐与关闭释放约束。
 
+- [CIE 色度与样品分析](../../04-api-reference/ui-components/cie-analysis.md) — `ui.cie-analysis`
+  统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。
+
 - [共享接口、属性通知与粗粒度权限](../../04-api-reference/ui-components/ColorVision.Common.md) — `ui.common`
   共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。
 
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
-  ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
+  应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
 - [数据库连接、DAO 与旧插件兼容](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
-  MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。
+  MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
@@ -54,13 +57,13 @@ next: false
   图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
-  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。
+  ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。
 
 - [源图像帧：租约、位图复制与缓存失效](../../04-api-reference/ui-components/image-frame-lifetime.md) — `ui.image-frames`
   位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
-  景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。
+  景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
 
 - [多图查看、刷新与缩略图缓存](../../04-api-reference/ui-components/ColorVision.ImageTools.md) — `ui.image-tools`
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。

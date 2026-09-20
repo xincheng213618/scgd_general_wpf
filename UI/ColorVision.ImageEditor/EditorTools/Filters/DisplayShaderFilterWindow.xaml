@@ -66,6 +66,27 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="56" />
                             </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Temperature" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Temperature, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Temperature, StringFormat=F2}" />
+                        </Grid>
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RowText}" Text="Tint" />
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Tint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding Tint, StringFormat=F2}" />
+                        </Grid>
+
+                        <Grid Style="{StaticResource SliderRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
                             <TextBlock Style="{StaticResource RowText}" Text="R gain" />
                             <Slider Grid.Column="1" Minimum="0" Maximum="3" Value="{Binding RedGain, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Grid.Column="2" Style="{StaticResource ValueText}" Text="{Binding RedGain, StringFormat=F2}" />

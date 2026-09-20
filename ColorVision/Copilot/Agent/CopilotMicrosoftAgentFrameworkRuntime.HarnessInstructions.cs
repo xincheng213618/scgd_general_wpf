@@ -82,6 +82,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("For ColorVision-specific implementation, project code, device, flow, file, log, or app-state questions, answer only from supplied ColorVision context and collected evidence. If they do not confirm a project-specific fact, omit that fact instead of guessing or inventing an implementation.");
             builder.AppendLine("Do not create a section about missing ColorVision context, say that context was not found, or ask the user to provide source files, configuration, screenshots, or documentation unless they explicitly ask what to attach next.");
             builder.AppendLine("Do not end with a request for more context.");
+            builder.AppendLine(UserOutputFormatInstruction);
             if (request.CodexIncludeCollaborationModeInstructions)
                 builder.AppendLine(CopilotAgentContextBuilder.BuildModeInstruction(request.Mode));
             if (hasWorkspacePathTools && request.CodexIncludeEnvironmentContext)
@@ -176,8 +177,8 @@ namespace ColorVision.Copilot
             }
             if (hasAnyTools)
             {
-                builder.AppendLine("Avoid identical calls. Do not stop immediately after a successful tool call; use its observation to decide whether another tool is needed, then answer naturally.");
-                builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true. A retry is a new bounded attempt; protected tools require a fresh approval.");
+                builder.AppendLine("After each tool result, assess whether the collected evidence answers the user's requested scope. Give the final answer once it does. Call another tool only to resolve a required evidence gap; do not broaden a targeted question into exhaustive inspection or repeat unrelated reads merely to keep using tools.");
+                builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true, or when the host permits a fresh local observation. ReadLocalFile, ReadAttachedFile, GrepText, SearchFiles, and ListDirectory may refresh after new accepted user steering, or after a workspace mutation changes their previously successful evidence. An earlier failed local observation may refresh after new user steering; a failed ReadLocalFile or ReadAttachedFile may also refresh when a successful workspace mutation confirms that the exact target file was newly created. These exceptions apply even if the old result said retry_allowed: false. A preview, unchanged file, or uncertain write does not prove creation. Each refresh must pass the frozen file permissions, consume the remaining tool budget, and use a new provider call ID; it never reopens writes, other tool failures, or calls still running. Otherwise do not repeat failed reads. Protected tools require a fresh approval.");
             }
             if (hasSearchTools)
             {
@@ -186,6 +187,7 @@ namespace ColorVision.Copilot
             if (hasFileReadTools)
             {
                 builder.AppendLine("Treat ReadLocalFile or ReadAttachedFile content_complete false as partial evidence. When omitted content matters, call the same tool again for the same path using both continuation_start_line and continuation_start_column exactly as returned. This cursor advances from the first omitted character, including inside a very long line; do not increment it or skip to the following line.");
+                builder.AppendLine("A successful focused read around a complete search match is sufficient for a targeted question when it supports the requested conclusion; unrelated lines need not be read. end_of_file_observed and observed_total_lines are reported only after the reader actually reaches the file end. Use that observed boundary instead of guessing higher line numbers; absence of these fields means the total is unknown, not zero. File changes can invalidate an earlier observed boundary.");
             }
             if (toolNames.Contains("ReadAttachedFile"))
                 builder.AppendLine("ReadAttachedFile reads at most three attachments when path is omitted. When attachment_set_complete is false and every attachment matters, call it again for each omitted_attachment_path that is relevant; do not repeat attachments already read. If omitted_attachment_list_complete is false, select the next unread attachment from the original attachment metadata. Supply path whenever using a line or column range.");

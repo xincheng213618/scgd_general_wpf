@@ -1,6 +1,5 @@
 using ColorVision.Properties;
 using ColorVision.Themes;
-using ColorVision.Themes.Controls;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views.About;
@@ -28,7 +27,7 @@ public class AboutMsgExport : MenuItemBase, IHotKey
     }
 }
 
-public partial class AboutMsgWindow : BaseWindow
+public partial class AboutMsgWindow : Window
 {
     private ThemeManager? _themePublisher;
     private bool _dark;
@@ -41,6 +40,7 @@ public partial class AboutMsgWindow : BaseWindow
         _brandBrush = (Brush)Resources["About.Brand"];
         Icon = null;
         AboutWindowChrome.FitToWorkArea(this, 16);
+        Closing += (_, _) => Owner?.Activate();
 
         Assembly assembly = typeof(AboutMsgWindow).Assembly;
         VersionLabel.Text = assembly.GetName().Version?.ToString() ?? "—";
@@ -110,6 +110,12 @@ public partial class AboutMsgWindow : BaseWindow
     private void Window_Deactivated(object? sender, EventArgs e) => SpectralScene.MotionEnabled = false;
     private void Exhibition_MouseMove(object sender, MouseEventArgs e) => SpectralScene.TrackPointer(e.GetPosition(Exhibition));
     private void Exhibition_MouseLeave(object sender, MouseEventArgs e) => SpectralScene.TrackPointer(null);
+
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseLeftButtonDown(e);
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {

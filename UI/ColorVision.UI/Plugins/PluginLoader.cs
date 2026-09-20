@@ -2,6 +2,7 @@
 using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -47,7 +48,7 @@ namespace ColorVision.UI.Plugins
             return false;
         }
 
-        internal static bool IsPluginAssemblyAvailable(string? dllPath)
+        internal static bool IsPluginAssemblyAvailable([NotNullWhen(true)] string? dllPath)
         {
             return !string.IsNullOrWhiteSpace(dllPath) && File.Exists(dllPath);
         }

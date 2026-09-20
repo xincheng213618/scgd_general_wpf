@@ -12,6 +12,28 @@ namespace ColorVision.UI.Tests;
 public sealed class AlgorithmOverlayManagerTests
 {
     [Fact]
+    public void ApplicationVisualUsesManagedReplacementAndSourceLifetime()
+    {
+        using TestImageView host = new();
+        WpfTestHost.Invoke(() =>
+        {
+            var context = host.View.EditorContext.ProcessingContext;
+            var first = new DrawingVisual();
+            var second = new DrawingVisual();
+            using var oldSession = AlgorithmOverlayRenderer.RegisterVisual(context, Overlay("application", AlgorithmOverlayLifetime.Transient), first);
+            using var newSession = AlgorithmOverlayRenderer.RegisterVisual(context, Overlay("application", AlgorithmOverlayLifetime.Transient), second);
+            oldSession.Dispose();
+            Assert.False(context.ImageShow.ContainsVisual(first));
+            Assert.Same(second, Assert.Single(context.SnapshotAlgorithmOverlayRegistrations()).Visual);
+            Assert.True(context.ImageShow.ContainsVisual(second));
+            context.NotifySourcePixelsChanged();
+            Assert.False(context.ImageShow.ContainsVisual(second));
+            Assert.Empty(context.SnapshotAlgorithmOverlayRegistrations());
+            Assert.Empty(context.AlgorithmOverlays.Snapshot());
+        });
+    }
+
+    [Fact]
     public void ApplyChangedFailureRollsBackTheStoreMutation()
     {
         AlgorithmOverlayStore store = new();

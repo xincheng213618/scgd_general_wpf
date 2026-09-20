@@ -1,0 +1,650 @@
+<Window x:Class="ProjectARVRPro.SemiAuto.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ProjectARVRPro SemiAuto"
+        Width="1180"
+        Height="780"
+        MinWidth="960"
+        MinHeight="640"
+        Background="#F4F6F8"
+        Foreground="#1F2937"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#1D4ED8" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#DCE1E7" />
+        <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6B7280" />
+        <SolidColorBrush x:Key="SuccessBrush" Color="#0F766E" />
+        <SolidColorBrush x:Key="WarningBrush" Color="#B45309" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="PageTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#111827" />
+        </Style>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#111827" />
+        </Style>
+        <Style x:Key="LabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+            <Setter Property="Margin" Value="0,0,0,5" />
+        </Style>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style x:Key="StatusBadgeStyle" TargetType="Border">
+            <Setter Property="Background" Value="#EEF2F7" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="9,3" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#CBD2DA" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style x:Key="ReadOnlyValueTextBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="MinWidth" Value="78" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="#273244" />
+            <Setter Property="BorderBrush" Value="#CBD2DA" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#F3F6FA" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#AEB8C5" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E8EDF3" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{StaticResource PrimaryHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.86" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="GridTextStyle" TargetType="TextBlock">
+            <Setter Property="Padding" Value="5,3" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="RowBackground" Value="#FFFFFF" />
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC" />
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HorizontalGridLinesBrush" Value="#E8ECF1" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="16,9" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,2"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#EEF2F7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20,16,20,18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="ProjectARVRPro SemiAuto" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock Text="ARVR · GECS" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,3,0,0" />
+            </StackPanel>
+            <Border Grid.Column="1" Style="{StaticResource StatusBadgeStyle}" VerticalAlignment="Center">
+                <TextBlock x:Name="WorkflowStatusTextBlock" Text="待机" Foreground="{StaticResource SecondaryTextBrush}" FontWeight="SemiBold" />
+            </Border>
+        </Grid>
+
+        <TabControl Grid.Row="2" Background="Transparent" BorderBrush="Transparent">
+            <TabItem Header="运行">
+                <Grid Margin="0,14,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="12" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="ARVR" Style="{StaticResource SectionTitleStyle}" />
+                                        <TextBlock x:Name="ArvrEndpointSummaryTextBlock" Text="127.0.0.1:6666" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource StatusBadgeStyle}" VerticalAlignment="Top">
+                                        <TextBlock x:Name="ArvrStatusTextBlock" Text="未连接" Foreground="{StaticResource SecondaryTextBrush}" />
+                                    </Border>
+                                </Grid>
+                                <WrapPanel Grid.Row="2">
+                                    <Button x:Name="ArvrConnectButton" Content="连接" Click="ConnectOnlyButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrInitButton" Content="初始化" Click="ConnectInitButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrRunAllButton" Content="内部运行全部" Click="ConnectRunAllButton_Click" Margin="0,0,8,0" />
+                                    <Button x:Name="PgIntegratedRunButton" Content="PG 联动运行" Click="PgIntegratedRunButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+                                    <Button x:Name="ArvrDisconnectButton" Content="断开" Click="DisconnectButton_Click" />
+                                </WrapPanel>
+                            </Grid>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="12" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="GECS PG" Style="{StaticResource SectionTitleStyle}" />
+                                        <TextBlock x:Name="PgEndpointSummaryTextBlock" Text="192.168.200.200:40009 · CH 01" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource StatusBadgeStyle}" VerticalAlignment="Top">
+                                        <TextBlock x:Name="PgStatusTextBlock" Text="未连接" Foreground="{StaticResource SecondaryTextBrush}" />
+                                    </Border>
+                                </Grid>
+                                <WrapPanel Grid.Row="2">
+                                    <Button x:Name="PgConnectButton" Content="连接 PG" Click="ConnectPgButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+                                    <Button x:Name="PgDisconnectButton" Content="断开" Click="DisconnectPgButton_Click" />
+                                </WrapPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="2" Style="{StaticResource CardStyle}" BorderBrush="#BFDBFE" Background="#F8FBFF">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="当前任务" Style="{StaticResource SectionTitleStyle}" />
+                                    <TextBlock x:Name="PendingPgActionTextBlock" Text="无待处理请求" Margin="0,5,16,0" TextWrapping="Wrap" Foreground="{StaticResource SecondaryTextBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <CheckBox x:Name="ManagePgPowerCheckBox" Content="自动电源" IsChecked="True" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <CheckBox x:Name="AutoExecutePgCheckBox" Content="自动执行" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <CheckBox x:Name="AutoConfirmAfterPgCheckBox" Content="成功后确认" IsChecked="True" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                            <WrapPanel Grid.Row="2">
+                                <Button x:Name="ExecutePgAndConfirmButton" Content="执行并确认" Click="ExecutePgAndConfirmButton_Click" Style="{StaticResource PrimaryButtonStyle}" IsEnabled="False" Margin="0,0,8,0" />
+                                <Button x:Name="ExecutePgOnlyButton" Content="仅执行 PG" Click="ExecutePgOnlyButton_Click" IsEnabled="False" Margin="0,0,8,0" />
+                                <Button x:Name="ConfirmPendingArvrButton" Content="仅确认 ARVR" Click="ConfirmPendingArvrButton_Click" IsEnabled="False" Margin="0,0,20,0" />
+                                <Button x:Name="PauseIntegratedRunButton" Content="暂停" Click="PauseIntegratedRunButton_Click" IsEnabled="False" Margin="0,0,8,0" />
+                                <Button x:Name="CancelIntegratedRunButton" Content="取消" Click="CancelIntegratedRunButton_Click" IsEnabled="False" />
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Margin="16,8,12,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="通信日志" Style="{StaticResource SectionTitleStyle}" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Content="清除" Click="ClearLogButton_Click" Padding="14,5" />
+                            </Grid>
+                            <TextBox x:Name="LogTextBox" Grid.Row="1" Style="{StaticResource ReadOnlyValueTextBox}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="0,1,0,0" TextWrapping="Wrap" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="配置">
+                <Grid Margin="0,14,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="配置文件" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBox x:Name="PgProfilePathTextBox" Grid.Column="2" MinWidth="360" Margin="0" />
+                            <Button Grid.Column="4" Content="加载" Click="LoadPgProfileButton_Click" />
+                            <Button Grid.Column="6" Content="保存" Click="SavePgProfileButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="ARVR 连接" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,12" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="2*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Host" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="HostTextBox" Text="127.0.0.1" TextChanged="ConnectionSettingTextBox_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Port" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PortTextBox" Text="6666" TextChanged="ConnectionSettingTextBox_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Serial Number" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="SerialNumberTextBox" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="2*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="超时 (s)" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="TimeoutTextBox" Text="300" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="消息上限" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="MaxMessagesTextBox" Text="200" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="输出目录" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="OutputDirectoryTextBox" Text="output" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="GECS PG 连接" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,12" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Host" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgHostTextBox" Text="192.168.200.200" TextChanged="ConnectionSettingTextBox_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Port" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgPortTextBox" Text="40009" TextChanged="ConnectionSettingTextBox_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Network" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgNetworkTextBox" Text="255" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="Channel" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgChannelTextBox" Text="01" TextChanged="ConnectionSettingTextBox_TextChanged" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="响应超时 (s)" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgTimeoutTextBox" Text="30" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="心跳 (s)" Style="{StaticResource LabelStyle}" />
+                                        <TextBox x:Name="PgHeartbeatTextBox" Text="5" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Margin="16,12,16,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="指令映射" Style="{StaticResource SectionTitleStyle}" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="新增" Click="AddPgMappingButton_Click" Margin="0,0,8,0" />
+                                    <Button Content="删除" Click="DeletePgMappingButton_Click" />
+                                </StackPanel>
+                            </Grid>
+                            <DataGrid x:Name="PgMappingsGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" BorderThickness="0,1,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridCheckBoxColumn Header="启用" Binding="{Binding Enabled}" Width="55" />
+                                    <DataGridTextColumn Header="ARVR Event" Binding="{Binding EventName}" Width="125" />
+                                    <DataGridTextColumn Header="Test Type" Binding="{Binding ArvrTestType}" Width="90" />
+                                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="170" />
+                                    <DataGridTextColumn Header="GECS Command" Binding="{Binding CommandTemplate}" Width="*" MinWidth="260" />
+                                    <DataGridTextColumn Header="成功匹配" Binding="{Binding SuccessContains}" Width="210" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="结果">
+                <Grid Margin="0,14,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Style="{StaticResource CardStyle}" Padding="12">
+                        <WrapPanel>
+                            <Button Content="加载样例" Click="LoadSampleButton_Click" Margin="0,0,8,0" />
+                            <Button Content="打开 JSON" Click="OpenJsonButton_Click" Margin="0,0,8,0" />
+                            <Button Content="导出 CSV" Click="SaveCsvButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                        </WrapPanel>
+                    </Border>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="330" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="10" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="结果摘要" Style="{StaticResource SectionTitleStyle}" />
+                                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                        <TextBlock x:Name="SummaryTextBlock" TextWrapping="Wrap" FontFamily="Consolas" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                            <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="W51" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,10" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="86" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Horizontal" Grid.Row="0" />
+                                        <TextBox x:Name="W51HorizontalTextBox" Grid.Row="0" Grid.Column="1" Style="{StaticResource ReadOnlyValueTextBox}" Margin="0,0,0,6" />
+                                        <TextBlock Text="Vertical" Grid.Row="1" />
+                                        <TextBox x:Name="W51VerticalTextBox" Grid.Row="1" Grid.Column="1" Style="{StaticResource ReadOnlyValueTextBox}" Margin="0,0,0,6" />
+                                        <TextBlock Text="Diagonal" Grid.Row="2" />
+                                        <TextBox x:Name="W51DiagonalTextBox" Grid.Row="2" Grid.Column="1" Style="{StaticResource ReadOnlyValueTextBox}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="8">
+                            <TabControl Background="Transparent" BorderBrush="Transparent">
+                                <TabItem Header="测试项">
+                                    <DataGrid x:Name="ItemsGrid" Margin="0,8,0,0" AutoGenerateColumns="False" IsReadOnly="True" CanUserResizeColumns="True" EnableRowVirtualization="True" EnableColumnVirtualization="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Screen" Binding="{Binding Screen}" Width="SizeToCells" MinWidth="100" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Item" Binding="{Binding Item}" Width="SizeToCells" MinWidth="220" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="SizeToCells" MinWidth="300" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="100" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="TestValue" Binding="{Binding TestValue}" Width="100" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="80" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="LowLimit" Binding="{Binding LowLimit}" Width="90" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="UpLimit" Binding="{Binding UpLimit}" Width="90" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Result" Binding="{Binding TestResult}" Width="80" ElementStyle="{StaticResource GridTextStyle}" />
+                                            <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="220" ElementStyle="{StaticResource GridTextStyle}" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </TabItem>
+                                <TabItem Header="原始 JSON">
+                                    <TextBox x:Name="RawJsonTextBox" Margin="0,8,0,0" Style="{StaticResource ReadOnlyValueTextBox}" AcceptsReturn="True" AcceptsTab="True" VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
+                                </TabItem>
+                            </TabControl>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="高级">
+                <Grid Margin="0,14,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="ARVR 调试" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,12" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CommandEventNameComboBox" Grid.Column="0" SelectedIndex="0">
+                                    <ComboBoxItem Content="SwitchGroup" />
+                                    <ComboBoxItem Content="GetProcessEnable" />
+                                    <ComboBoxItem Content="SetProcessEnable" />
+                                </ComboBox>
+                                <TextBox x:Name="CommandParamsTextBox" Grid.Column="2" />
+                                <Button Grid.Column="4" Content="发送" Click="SendCommandButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                            </Grid>
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Content="SwitchPG 完成" Click="SwitchPgCompleteButton_Click" Margin="0,0,8,0" />
+                                <Button Content="AOI 完成" Click="AoiCompleteButton_Click" Margin="0,0,18,0" />
+                                <CheckBox x:Name="AutoSwitchPgCheckBox" Content="直接确认 SwitchPG" IsChecked="False" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                <CheckBox x:Name="AutoAoiCheckBox" Content="直接确认 AOI" IsChecked="False" VerticalAlignment="Center" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="GECS 调试" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,12" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="PgManualCommandTextBox" Text="PG,{channel},STATE" Grid.Column="0" />
+                                <TextBox x:Name="PgManualSuccessTextBox" Text=",STATE," Grid.Column="2" />
+                                <Button Grid.Column="4" Content="发送并解析" Click="SendManualPgCommandButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="8">
+                        <TabControl Background="Transparent" BorderBrush="Transparent">
+                            <TabItem Header="字段">
+                                <TextBox x:Name="FieldGuideTextBox" Margin="0,8,0,0" Style="{StaticResource ReadOnlyValueTextBox}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+                            </TabItem>
+                            <TabItem Header="契约">
+                                <TextBox x:Name="ContractTextBox" Margin="0,8,0,0" Style="{StaticResource ReadOnlyValueTextBox}" AcceptsReturn="True" AcceptsTab="True" VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
+                            </TabItem>
+                        </TabControl>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

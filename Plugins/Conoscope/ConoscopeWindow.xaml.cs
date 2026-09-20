@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822
+#pragma warning disable CA1822
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AvalonDock.Layout;
@@ -35,6 +36,8 @@ using System.Windows.Input;
 using Conoscope.Presentation.Helpers;
 using Conoscope.Analysis;
 using Conoscope.ApplicationServices.Analysis;
+using Conoscope.Presentation.Docking;
+using Conoscope.Presentation;
 #pragma warning disable CS8602
 
 namespace Conoscope
@@ -60,7 +63,29 @@ namespace Conoscope
     {
         public static ConoscopeWindow? Instance { get; private set; }
 
+        private static readonly DependencyPropertyKey HasWorkspaceDocumentsPropertyKey = DependencyProperty.RegisterReadOnly(
+            nameof(HasWorkspaceDocuments), typeof(bool), typeof(ConoscopeWindow), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty HasWorkspaceDocumentsProperty = HasWorkspaceDocumentsPropertyKey.DependencyProperty;
+
+        public bool HasWorkspaceDocuments => (bool)GetValue(HasWorkspaceDocumentsProperty);
+
+        private void RefreshWorkspaceState()
+        {
+            // Include floating documents; a missing active image does not mean the workspace is empty.
+            SetValue(HasWorkspaceDocumentsPropertyKey, documentLayout.HasDocuments);
+            StartPageActions.IsEnabled = !isRunningOperation;
+        }
+
+        private void GoToCapture_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureTab.IsSelected = true;
+            ExpandRibbonCommands();
+        }
+
         private ThemeChangedHandler? themeChangedHandler;
+        private ThemeManager? windowThemeManager;
+        private readonly ConoscopeDocumentLayout documentLayout;
         private bool isUpdatingModelSelection;
         private bool isUpdatingPreprocessControls;
         private bool isRunningOperation;
@@ -74,10 +99,61 @@ namespace Conoscope
         private double operationExpectedDurationMs;
 
         private MVSViewWindow? observationCameraWindow;
+        private ConoscopeCurveSnapshotWindow? curveWorkspace;
+        private CancellationTokenSource? angularAnalysisCancellation;
+
+        private void ShowCurveWorkspace(ConoscopeCurveSnapshot? snapshot)
+        {
+            curveWorkspace ??= new ConoscopeCurveSnapshotWindow { Owner = this, KeepSessionOnClose = true };
+            if (snapshot != null) curveWorkspace.AddSnapshot(snapshot);
+            curveWorkspace.Show();
+            curveWorkspace.Activate();
+        }
+
+        private void ShowCurveWorkspace_Click(object sender, RoutedEventArgs e) => ShowCurveWorkspace(null);
+
+        private async void AnalyzeAngularLuminance_Click(object sender, RoutedEventArgs e)
+        {
+            if (angularAnalysisCancellation != null) { angularAnalysisCancellation.Cancel(); return; }
+            ConoscopeView? view = ActiveView;
+            if (view == null || !view.State.HasDisplayData) return;
+            using CancellationTokenSource cancellation = new();
+            angularAnalysisCancellation = cancellation;
+            RefreshAnalysisRibbonState(view);
+            try
+            {
+                var settingsDialog = new ConoscopeAngularAnalysisWindow(view.CreateExportContext()) { Owner = this };
+                if (settingsDialog.ShowDialog() != true) return;
+                IReadOnlyList<ConoscopeCurveSnapshot> snapshots = await view.CreateAngularSnapshotsAsync(cancellation.Token, settingsDialog.Options);
+                if (disposed || cancellation.IsCancellationRequested) return;
+                curveWorkspace ??= new ConoscopeCurveSnapshotWindow { Owner = this, KeepSessionOnClose = true };
+                curveWorkspace.AddSnapshots(snapshots);
+                ShowCurveWorkspace(null);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(ConoscopeWindow)).Error("Angular luminance analysis failed", ex);
+                if (!disposed) MessageBox.Show(this, CompositeFormatCache.Format(Properties.Resources.AngularAnalysisFailed, ex.Message),
+                    Properties.Resources.AngularAnalysisTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                angularAnalysisCancellation = null;
+                if (!disposed) RefreshAnalysisRibbonState(ActiveView);
+            }
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            if (!e.Cancel && curveWorkspace != null && !curveWorkspace.ConfirmDiscardOrSave(this)) e.Cancel = true;
+        }
 
         public ConoscopeWindow()
         {
             InitializeComponent();
+            documentLayout = new ConoscopeDocumentLayout(DockingManager);
             operationProgressTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
             {
                 Interval = TimeSpan.FromMilliseconds(100)
@@ -96,6 +172,7 @@ namespace Conoscope
             InitializeLanguageAndThemeSelectors();
             InitializeModelSelector();
             InitializeRibbonControls();
+            DockingManager.ActiveContentChanged += DockingManager_ActiveContentChanged;
 
             ConoscopeManager.Instance.Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.Instance.Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
@@ -121,9 +198,35 @@ namespace Conoscope
         public ConoscopeView? ActiveView => GetActiveView();
         private ConoscopeConfig ConoscopeConfig => ConoscopeManager.Instance.Config;
 
+        private void RibbonTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ReferenceEquals(e.Source, RibbonTabs))
+                ExpandRibbonCommands();
+        }
+
+        private void RibbonTabs_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            for (DependencyObject? element = e.OriginalSource as DependencyObject;
+                 element != null && !ReferenceEquals(element, RibbonTabs);
+                 element = element is Visual ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element))
+            {
+                if (element is TabItem)
+                {
+                    ExpandRibbonCommands();
+                    break;
+                }
+            }
+        }
+
+        private void ExpandRibbonCommands()
+        {
+            if (RibbonTabs?.Template?.FindName("RibbonCollapseButton", RibbonTabs) is ToggleButton collapseButton)
+                collapseButton.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
+        }
+
         public void OpenConoscope(string filename, string? exposureSummary = null, bool preferReuseActiveView = false)
         {
-            if (!File.Exists(filename) || !CVFileUtil.IsCVCIEFile(filename))
+            if (!ConoscopeDocument.CanOpenFile(filename))
             {
                 MessageBox.Show(Properties.Resources.PleaseSelectCVCIEFile, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -135,9 +238,18 @@ namespace Conoscope
 
         private void RefreshActiveViewUi()
         {
+            RefreshWorkspaceState();
             ConoscopeView? activeView = ActiveView;
             btnApplyPreprocessToActiveView.IsEnabled = !isRunningOperation && activeView != null;
             RefreshRibbonState(activeView);
+            if (documentLoadStatusItem != null)
+            {
+                string status = activeView?.DocumentLoadStatus ?? string.Empty;
+                documentLoadStatusItem.Visibility = status.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+                tbDocumentLoadStatus.Text = status;
+                tbDocumentLoadStatus.ToolTip = activeView?.DocumentLoadError;
+                btnRetryDocumentLoad.Visibility = activeView?.CanRetryDocumentLoad == true ? Visibility.Visible : Visibility.Collapsed;
+            }
 
             if (tbExposureStatus == null)
             {
@@ -147,12 +259,12 @@ namespace Conoscope
             if (activeView?.HasCaptureExposureSummary == true)
             {
                 tbExposureStatus.Text = activeView.CaptureExposureSummary;
-                tbExposureStatus.Foreground = Brushes.LimeGreen;
+                tbExposureStatus.SetResourceReference(TextBlock.ForegroundProperty, "CV.Status.Success");
             }
             else
             {
                 tbExposureStatus.Text = Properties.Resources.StatusNotRecorded;
-                tbExposureStatus.Foreground = Brushes.Gray;
+                tbExposureStatus.SetResourceReference(TextBlock.ForegroundProperty, "CV.Text.Secondary");
             }
         }
 
@@ -197,14 +309,26 @@ namespace Conoscope
         {
             void ThemeChange(Theme theme)
             {
-                DockingManager.Theme = theme == Theme.Dark
-                    ? new AvalonDock.Themes.Vs2013DarkTheme()
-                    : new AvalonDock.Themes.Vs2013LightTheme();
+                if (!Dispatcher.CheckAccess())
+                {
+                    Dispatcher.BeginInvoke(() => ThemeChange(theme));
+                    return;
+                }
+
+                if (!disposed)
+                    DockingManager.Theme = ConoscopeDockTheme.Create(theme);
             }
 
+            windowThemeManager = ThemeManager.Current;
             themeChangedHandler = ThemeChange;
-            ThemeChange(ThemeManager.Current.CurrentUITheme);
-            ThemeManager.Current.CurrentUIThemeChanged += themeChangedHandler;
+            ThemeChange(windowThemeManager.CurrentUITheme);
+            windowThemeManager.CurrentUIThemeChanged += themeChangedHandler;
+        }
+
+        private void DockingManager_ActiveContentChanged(object? sender, EventArgs e)
+        {
+            if (!disposed)
+                RefreshActiveViewUi();
         }
 
         private void InitializeLanguageAndThemeSelectors()
@@ -275,8 +399,8 @@ namespace Conoscope
             operationExpectedDurationMs = Math.Max(1000, expectedDurationMs);
 
             pbOperationProgress.Value = 0;
-            pbOperationProgress.Foreground = Brushes.DodgerBlue;
-            tbOperationProgressText.Foreground = Brushes.DodgerBlue;
+            pbOperationProgress.SetResourceReference(Control.ForegroundProperty, "CV.Accent.Primary");
+            tbOperationProgressText.SetResourceReference(TextBlock.ForegroundProperty, "CV.Accent.Primary");
             operationProgressStatusItem.Visibility = Visibility.Visible;
 
             operationProgressStopwatch.Restart();
@@ -416,10 +540,10 @@ namespace Conoscope
             {
                 observationCameraWindow = null;
                 tbObservationCameraStatus.Text = Properties.Resources.NotOpened;
-                tbObservationCameraStatus.Foreground = Brushes.Gray;
+                tbObservationCameraStatus.SetResourceReference(TextBlock.ForegroundProperty, "CV.Text.Secondary");
             };
             tbObservationCameraStatus.Text = Properties.Resources.MsgOpened;
-            tbObservationCameraStatus.Foreground = Brushes.LimeGreen;
+            tbObservationCameraStatus.SetResourceReference(TextBlock.ForegroundProperty, "CV.Status.Success");
             observationCameraWindow.Show();
         }
 
@@ -431,6 +555,13 @@ namespace Conoscope
             }
 
             disposed = true;
+            angularAnalysisCancellation?.Cancel();
+            if (curveWorkspace != null)
+            {
+                curveWorkspace.KeepSessionOnClose = false;
+                curveWorkspace.Close();
+                curveWorkspace = null;
+            }
             ConoscopeManager.Instance.Config.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
             ConoscopeManager.Instance.Config.PropertyChanged -= ConoscopeConfig_PropertyChanged;
             ConoscopeManager.Instance.GlobalReferences.Changed -= GlobalReferences_Changed;
@@ -441,10 +572,12 @@ namespace Conoscope
             operationProgressTimer.Stop();
             operationProgressTimer.Tick -= OperationProgressTimer_Tick;
             this.DisposeTimedButtonOperations();
-            if (themeChangedHandler != null)
+            DockingManager.ActiveContentChanged -= DockingManager_ActiveContentChanged;
+            if (themeChangedHandler != null && windowThemeManager != null)
             {
-                ThemeManager.Current.CurrentUIThemeChanged -= themeChangedHandler;
+                windowThemeManager.CurrentUIThemeChanged -= themeChangedHandler;
                 themeChangedHandler = null;
+                windowThemeManager = null;
             }
 
             foreach (ConoscopeView view in GetOpenViews())
@@ -460,8 +593,7 @@ namespace Conoscope
             if (!string.IsNullOrWhiteSpace(filePath))
             {
                 string existingContentId = GetContentId(filePath);
-                LayoutDocument? existingDocument = ViewDocumentPane.Children
-                    .OfType<LayoutDocument>()
+                LayoutDocument? existingDocument = GetDocuments()
                     .FirstOrDefault(item => item.ContentId == existingContentId);
                 if (existingDocument?.Content is ConoscopeView existingView && !ReferenceEquals(existingView, reuseView))
                 {
@@ -491,7 +623,7 @@ namespace Conoscope
                 }
             }
 
-            ConoscopeView view = new ConoscopeView();
+            ConoscopeView view = new ConoscopeView { SnapshotRequested = ShowCurveWorkspace };
             if (!string.IsNullOrWhiteSpace(filePath))
             {
                 view.OpenConoscope(filePath, exposureSummary);
@@ -506,20 +638,14 @@ namespace Conoscope
                 CanFloat = true
             };
 
-            layoutDocument.IsActiveChanged += (s, e) =>
+            documentLayout.TrackLifetime(layoutDocument, () =>
             {
-                if (layoutDocument.IsActive)
-                {
-                    RefreshActiveViewUi();
-                }
-            };
-            layoutDocument.Closing += (s, e) =>
-            {
-                view.Dispose();
-                Dispatcher.BeginInvoke(RefreshActiveViewUi);
-            };
+                if (!disposed)
+                    Dispatcher.BeginInvoke(RefreshActiveViewUi);
+            });
 
-            ViewDocumentPane.Children.Add(layoutDocument);
+            documentLayout.Add(layoutDocument);
+            RefreshWorkspaceState();
             if (activate)
             {
                 SelectDocument(layoutDocument);
@@ -530,48 +656,29 @@ namespace Conoscope
 
         private void SelectDocument(LayoutDocument document)
         {
-            ViewDocumentPane.SelectedContentIndex = ViewDocumentPane.IndexOf(document);
-            document.IsActive = true;
+            documentLayout.Select(document);
             RefreshActiveViewUi();
         }
 
         private ConoscopeView? GetActiveView()
         {
-            LayoutDocument? activeDocument = ViewDocumentPane.Children
-                .OfType<LayoutDocument>()
-                .FirstOrDefault(item => item.IsActive);
-
-            if (activeDocument?.Content is ConoscopeView activeView)
-            {
-                return activeView;
-            }
-
-            int selectedIndex = ViewDocumentPane.SelectedContentIndex;
-            if (selectedIndex >= 0 && selectedIndex < ViewDocumentPane.Children.Count
-                && ViewDocumentPane.Children[selectedIndex] is LayoutDocument selectedDocument
-                && selectedDocument.Content is ConoscopeView selectedView)
-            {
-                return selectedView;
-            }
-
-            return null;
+            return documentLayout.ActiveDocument?.Content as ConoscopeView;
         }
 
         internal ConoscopeView[] GetOpenViews()
         {
-            return ViewDocumentPane.Children
-                .OfType<LayoutDocument>()
+            return GetDocuments()
                 .Select(item => item.Content as ConoscopeView)
                 .Where(item => item != null)
                 .Cast<ConoscopeView>()
                 .ToArray();
         }
 
-        private LayoutDocument? GetDocument(ConoscopeView view)
+        private IEnumerable<LayoutDocument> GetDocuments() => documentLayout.Documents;
+
+        private LayoutDocument? GetDocument(ConoscopeView? view)
         {
-            return ViewDocumentPane.Children
-                .OfType<LayoutDocument>()
-                .FirstOrDefault(item => ReferenceEquals(item.Content, view));
+            return documentLayout.Find(view);
         }
 
         private static string GetContentId(string filePath)
@@ -624,7 +731,7 @@ namespace Conoscope
             int previousId = previous?.Id ?? -1;
             string previousKey = previous?.Key ?? string.Empty;
 
-            cbCalibrationTemplate.ItemsSource = camera?.PhyCamera?.CalibrationParams.CreateEmpty();
+            cbCalibrationTemplate.ItemsSource = (camera?.PhyCamera?.CalibrationParams).CreateEmpty();
             TemplateModel<CalibrationParam>? target = cbCalibrationTemplate.Items.OfType<TemplateModel<CalibrationParam>>()
                 .FirstOrDefault(item => item.Id == previousId || string.Equals(item.Key, previousKey, StringComparison.OrdinalIgnoreCase));
 
@@ -698,6 +805,7 @@ namespace Conoscope
         private void SetOperationBusy(bool busy)
         {
             isRunningOperation = busy;
+            RefreshWorkspaceState();
             btnRunFlow.IsEnabled = !busy && GetSelectedFlowTemplate() != null;
             btnCaptureCamera.IsEnabled = !busy && GetSelectedCamera() != null;
             btnRefreshCameraDevices.IsEnabled = !busy;
@@ -1320,6 +1428,8 @@ namespace Conoscope
                 panelActiveAnalysisParameters.IsEnabled = false;
                 bdActiveViewControls.DataContext = null;
                 panelActiveAnalysisParameters.DataContext = null;
+                rbActiveReferenceHorizontal.Visibility = Visibility.Collapsed;
+                rbActiveReferenceVertical.Visibility = Visibility.Collapsed;
 
                 if (panelActiveColorDifferenceCustomUv != null)
                 {
@@ -1356,14 +1466,25 @@ namespace Conoscope
         private void RefreshActiveReferenceControls(ConoscopeView activeView)
         {
             ConoscopeCoordinateAxisParam axis = activeView.State.CoordinateAxis;
+            Visibility fixedModeVisibility = activeView.State.CoordinateSystem != ConoscopeCoordinateSystem.Polar ? Visibility.Visible : Visibility.Collapsed;
+            rbActiveReferenceHorizontal.Visibility = fixedModeVisibility;
+            rbActiveReferenceVertical.Visibility = fixedModeVisibility;
             SetActiveReferenceModeSelection(axis.ReferenceMode);
-            double referenceValue = axis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? axis.ReferenceAngle
-                : axis.ReferenceRadiusAngle;
+            double referenceValue = axis.ReferenceMode switch
+            {
+                ConoscopeCoordinateReferenceMode.AzimuthLine => axis.ReferenceAngle,
+                ConoscopeCoordinateReferenceMode.FixedHorizontal => axis.ReferenceHorizontalAngle,
+                ConoscopeCoordinateReferenceMode.FixedVertical => axis.ReferenceVerticalAngle,
+                _ => axis.ReferenceRadiusAngle
+            };
             txtActiveReferenceValue.Text = referenceValue.ToString("F2", CultureInfo.InvariantCulture);
-            txtActiveReferenceValue.ToolTip = axis.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? Properties.Resources.TipEnterAzimuth
-                : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, activeView.MaxAngle);
+            txtActiveReferenceValue.ToolTip = axis.ReferenceMode switch
+            {
+                ConoscopeCoordinateReferenceMode.AzimuthLine => Properties.Resources.TipEnterAzimuth,
+                ConoscopeCoordinateReferenceMode.FixedHorizontal => Properties.Resources.TipFixedHorizontal,
+                ConoscopeCoordinateReferenceMode.FixedVertical => Properties.Resources.TipFixedVertical,
+                _ => CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, activeView.MaxAngle)
+            };
         }
 
         private void RefreshActiveViewChannelAvailability(bool canUseDerivedChannels, bool canUseContrastChannel)
@@ -1427,6 +1548,16 @@ namespace Conoscope
             if (rbActiveReferenceCircle != null)
             {
                 rbActiveReferenceCircle.IsChecked = mode == ConoscopeCoordinateReferenceMode.PolarCircle;
+            }
+
+            if (rbActiveReferenceHorizontal != null)
+            {
+                rbActiveReferenceHorizontal.IsChecked = mode == ConoscopeCoordinateReferenceMode.FixedHorizontal;
+            }
+
+            if (rbActiveReferenceVertical != null)
+            {
+                rbActiveReferenceVertical.IsChecked = mode == ConoscopeCoordinateReferenceMode.FixedVertical;
             }
         }
 
@@ -1524,6 +1655,7 @@ namespace Conoscope
             if (subscribedActiveViewControlView != null)
             {
                 subscribedActiveViewControlView.State.PropertyChanged -= ActiveViewState_PropertyChanged;
+                subscribedActiveViewControlView.StatusBarItemsChanged -= ActiveViewStatusBarItemsChanged;
                 subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged -= ActiveCoordinateAxis_PropertyChanged;
             }
 
@@ -1532,6 +1664,7 @@ namespace Conoscope
             if (subscribedActiveViewControlView != null)
             {
                 subscribedActiveViewControlView.State.PropertyChanged += ActiveViewState_PropertyChanged;
+                subscribedActiveViewControlView.StatusBarItemsChanged += ActiveViewStatusBarItemsChanged;
                 subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged += ActiveCoordinateAxis_PropertyChanged;
             }
         }
@@ -1544,8 +1677,19 @@ namespace Conoscope
             }
 
             subscribedActiveViewControlView.State.PropertyChanged -= ActiveViewState_PropertyChanged;
+            subscribedActiveViewControlView.StatusBarItemsChanged -= ActiveViewStatusBarItemsChanged;
             subscribedActiveViewControlView.State.CoordinateAxis.PropertyChanged -= ActiveCoordinateAxis_PropertyChanged;
             subscribedActiveViewControlView = null;
+        }
+
+        private void btnRetryDocumentLoad_Click(object sender, RoutedEventArgs e) => ActiveView?.RetryDocumentLoad();
+
+        private void ActiveViewStatusBarItemsChanged(object? sender, EventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (ReferenceEquals(sender, ActiveView)) RefreshActiveViewUi();
+            }));
         }
 
         private void ActiveViewState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -1560,7 +1704,8 @@ namespace Conoscope
 
                 if (e.PropertyName is nameof(ConoscopeViewState.HasDisplayData)
                     or nameof(ConoscopeViewState.CanUseDerivedChannels)
-                    or nameof(ConoscopeViewState.CanUseContrastChannel))
+                    or nameof(ConoscopeViewState.CanUseContrastChannel)
+                    or nameof(ConoscopeViewState.CoordinateSystem))
                 {
                     RefreshActiveViewControlState(activeView);
                 }
@@ -1575,7 +1720,9 @@ namespace Conoscope
         {
             if (e.PropertyName is not nameof(ConoscopeCoordinateAxisParam.ReferenceMode)
                 and not nameof(ConoscopeCoordinateAxisParam.ReferenceAngle)
-                and not nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle))
+                and not nameof(ConoscopeCoordinateAxisParam.ReferenceRadiusAngle)
+                and not nameof(ConoscopeCoordinateAxisParam.ReferenceHorizontalAngle)
+                and not nameof(ConoscopeCoordinateAxisParam.ReferenceVerticalAngle))
             {
                 return;
             }
@@ -1619,6 +1766,16 @@ namespace Conoscope
             ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode.PolarCircle);
         }
 
+        private void rbActiveReferenceHorizontal_Checked(object sender, RoutedEventArgs e)
+        {
+            ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode.FixedHorizontal);
+        }
+
+        private void rbActiveReferenceVertical_Checked(object sender, RoutedEventArgs e)
+        {
+            ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode.FixedVertical);
+        }
+
         private void ApplyActiveReferenceMode(ConoscopeCoordinateReferenceMode mode)
         {
             if (isUpdatingActiveViewControls || !IsInitialized || ActiveView == null)
@@ -1627,11 +1784,14 @@ namespace Conoscope
             }
 
             ActiveView.SetReferenceMode(mode);
-            if (txtActiveReferenceValue != null)
+            isUpdatingActiveViewControls = true;
+            try
             {
-                txtActiveReferenceValue.ToolTip = mode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                    ? Properties.Resources.TipEnterAzimuth
-                    : CompositeFormatCache.Format(Properties.Resources.TipEnterPolarAngle, ActiveView.MaxAngle);
+                RefreshActiveReferenceControls(ActiveView);
+            }
+            finally
+            {
+                isUpdatingActiveViewControls = false;
             }
         }
 
@@ -1840,11 +2000,13 @@ namespace Conoscope
         private void RefreshAnalysisRibbonState(ConoscopeView? activeView)
         {
             bool hasActiveView = activeView != null;
-
-            if (btnRecordGamutRed == null)
+            if (btnRecordGamutRed == null || btnAngularAnalysis == null)
             {
                 return;
             }
+
+            btnAngularAnalysis.IsEnabled = angularAnalysisCancellation != null || activeView?.State.HasDisplayData == true;
+            tbAngularAnalysisAction.Text = angularAnalysisCancellation != null ? Properties.Resources.AngularAnalysisCancel : Properties.Resources.AngularAnalysisTitle;
 
             btnRecordGamutRed.IsEnabled = hasActiveView;
             btnRecordGamutGreen.IsEnabled = hasActiveView;

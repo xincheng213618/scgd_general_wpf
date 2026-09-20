@@ -1,3 +1,4 @@
+using ColorVision.Common.Utilities;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -21,6 +22,8 @@ namespace ColorVision.Windowing
         private static readonly Version MinimumSupportedWindowsVersion = new(10, 0, 22000);
         private static readonly DependencyPropertyDescriptor BackgroundDescriptor =
             CreateBackgroundDescriptor();
+        private static readonly DependencyPropertyDescriptor FullScreenDescriptor =
+            DependencyPropertyDescriptor.FromProperty(WindowFullScreenSession.IsActiveProperty, typeof(Window));
 
         internal static bool IsSupportedOperatingSystem =>
             OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
@@ -49,6 +52,7 @@ namespace ColorVision.Windowing
         private double originalPlaceholderWidth;
         private Thickness originalRootMargin;
         private bool isFullScreen;
+        private bool isHostFullScreen;
         private bool isDark;
         private bool isDisposed;
         private bool isClosed;
@@ -121,6 +125,7 @@ namespace ColorVision.Windowing
             window.Closed += OnClosed;
             titleBar.SizeChanged += OnTitleBarSizeChanged;
             BackgroundDescriptor.AddValueChanged(window, OnWindowBackgroundChanged);
+            FullScreenDescriptor.AddValueChanged(window, OnFullScreenChanged);
             TraceStartupPhase(trace, "event subscriptions");
 
             UpdateMetrics();
@@ -190,6 +195,15 @@ namespace ColorVision.Windowing
         public void SetFullScreen(bool fullScreen)
         {
             window.VerifyAccess();
+            isHostFullScreen = fullScreen;
+            UpdateFullScreen();
+        }
+
+        private void OnFullScreenChanged(object? sender, EventArgs e) => UpdateFullScreen();
+
+        private void UpdateFullScreen()
+        {
+            bool fullScreen = isHostFullScreen || WindowFullScreenSession.GetIsActive(window);
             if (!IsAttached || isDisposed || isFullScreen == fullScreen)
                 return;
             isFullScreen = fullScreen;
@@ -420,6 +434,7 @@ namespace ColorVision.Windowing
             window.Closed -= OnClosed;
             titleBar.SizeChanged -= OnTitleBarSizeChanged;
             BackgroundDescriptor.RemoveValueChanged(window, OnWindowBackgroundChanged);
+            FullScreenDescriptor.RemoveValueChanged(window, OnFullScreenChanged);
             if (source != null && !source.IsDisposed)
                 source.RemoveHook(WindowProc);
             source = null;

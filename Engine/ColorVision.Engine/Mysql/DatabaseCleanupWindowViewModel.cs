@@ -27,6 +27,7 @@ namespace ColorVision.Database
         private string _status = EngineLocalization.Get("打开窗口后会自动统计。");
         private bool _isBusy;
         private bool _backupBeforeCleanup;
+        private bool _hasPendingMigration;
         private bool _suppressTableStateNotifications;
 
         public DatabaseCleanupSourceViewModel(IDatabaseCleanupSourceProvider provider)
@@ -47,7 +48,7 @@ namespace ColorVision.Database
             CleanupSelectedCommand = new RelayCommand(_ => ExecuteCleanupSelected(), _ => !IsBusy && SupportsTableCleanup && SelectedTableCount > 0);
             CleanupHistoryCommand = new RelayCommand(_ => ExecuteCleanupHistory(), _ => !IsBusy && ExistingTableCount > 0);
             CleanupAllCommand = new RelayCommand(_ => ExecuteCleanupAll(), _ => !IsBusy && ExistingTableCount > 0);
-            MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && ExistingTableCount > 0);
+            MigrationCommand = new RelayCommand(_ => ExecuteMigration(), _ => !IsBusy && SupportsMigration && HasPendingMigration && ExistingTableCount > 0);
             OptimizationCommand = new RelayCommand(_ => ExecuteOptimization(), _ => !IsBusy && SupportsOptimization && ExistingTableCount > 0);
         }
 
@@ -58,6 +59,19 @@ namespace ColorVision.Database
         public bool SupportsBackup => _backupProvider != null;
         public bool SupportsMigration => _migrationProvider != null;
         public bool SupportsOptimization => _optimizationProvider != null;
+        public bool HasPendingMigration
+        {
+            get => _hasPendingMigration;
+            private set
+            {
+                if (_hasPendingMigration == value)
+                    return;
+
+                _hasPendingMigration = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
         public string MigrationActionName => _migrationProvider?.MigrationActionName ?? string.Empty;
         public string OptimizationActionName => _optimizationProvider?.OptimizationActionName ?? string.Empty;
         public ObservableCollection<DatabaseCleanupTableInfo> Tables { get; } = new();
@@ -151,8 +165,9 @@ namespace ColorVision.Database
             try
             {
                 SetDescription(_provider.Description);
-                var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
+                var (snapshot, hasPendingMigration) = await Task.Run(LoadSnapshot).ConfigureAwait(false);
                 ApplySnapshot(snapshot, selectedTableNames);
+                SetHasPendingMigration(hasPendingMigration);
 
                 int existingCount = snapshot.Count(item => item.Exists);
                 SetStatus(existingCount > 0
@@ -278,7 +293,8 @@ namespace ColorVision.Database
                 _migrationProvider.ExecuteMigration,
                 EngineLocalization.Format($"正在执行 {DisplayName} 数据迁移并释放空间..."),
                 "迁移",
-                forceBackup: true);
+                forceBackup: true,
+                preflight: _migrationProvider.HasPendingMigration);
         }
 
         private void ExecuteOptimization()
@@ -307,7 +323,8 @@ namespace ColorVision.Database
             string operationName = "清理",
             bool forceBackup = false,
             bool allowOptionalBackup = true,
-            bool refreshTables = true)
+            bool refreshTables = true,
+            Func<bool>? preflight = null)
         {
             if (IsBusy)
                 return;
@@ -319,6 +336,28 @@ namespace ColorVision.Database
 
             try
             {
+                if (preflight != null)
+                {
+                    bool shouldExecute;
+                    try
+                    {
+                        shouldExecute = await Task.Run(preflight).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        SetStatus(EngineLocalization.Get("迁移状态检查失败。"));
+                        ShowMessage(EngineLocalization.Format($"{DisplayName} 迁移状态检查失败：{ex.Message}"), MessageBoxImage.Error);
+                        return;
+                    }
+
+                    if (!shouldExecute)
+                    {
+                        SetHasPendingMigration(false);
+                        SetStatus(EngineLocalization.Get("当前数据库已完成迁移，无需再次创建备份或执行迁移。"));
+                        return;
+                    }
+                }
+
                 if ((forceBackup || (allowOptionalBackup && BackupBeforeCleanup)) && _backupProvider != null)
                 {
                     if (_maintenanceProvider != null)
@@ -380,8 +419,9 @@ namespace ColorVision.Database
                     try
                     {
                         SetDescription(_provider.Description);
-                        var snapshot = await Task.Run(_provider.LoadTables).ConfigureAwait(false);
+                        var (snapshot, hasPendingMigration) = await Task.Run(LoadSnapshot).ConfigureAwait(false);
                         ApplySnapshot(snapshot, GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase));
+                        SetHasPendingMigration(hasPendingMigration);
                     }
                     catch (Exception ex)
                     {
@@ -436,6 +476,13 @@ namespace ColorVision.Database
                 Backup = backupProvider.CreateBackup(),
                 Cleanup = cleanupAction()
             };
+        }
+
+        private (IReadOnlyList<DatabaseCleanupTableInfo> Snapshot, bool HasPendingMigration) LoadSnapshot()
+        {
+            IReadOnlyList<DatabaseCleanupTableInfo> snapshot = _provider.LoadTables();
+            bool hasPendingMigration = _migrationProvider?.HasPendingMigration() ?? false;
+            return (snapshot, hasPendingMigration);
         }
 
         private bool TryGetKeepMonths(out int keepMonths)
@@ -551,6 +598,7 @@ namespace ColorVision.Database
         private void SetDescription(string description) => RunOnUi(() => Description = description);
         private void SetStatus(string status) => RunOnUi(() => Status = status);
         private void SetBusy(bool isBusy) => RunOnUi(() => IsBusy = isBusy);
+        private void SetHasPendingMigration(bool hasPendingMigration) => RunOnUi(() => HasPendingMigration = hasPendingMigration);
 
         private void ShowMessage(string message, MessageBoxImage image)
         {

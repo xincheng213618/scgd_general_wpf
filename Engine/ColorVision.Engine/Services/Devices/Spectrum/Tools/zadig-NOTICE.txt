@@ -1,0 +1,16 @@
+Zadig 2.4.721
+Copyright (c) Pete Batard and contributors
+
+Zadig is distributed under the GNU General Public License version 3 or later.
+Official site: https://zadig.akeo.ie/
+Source code and license: https://github.com/pbatard/libwdi
+
+ColorVision redistributes the original, unmodified Akeo Consulting signed executable.
+
+GCS spectrometer installation:
+1. Open Options -> List All Devices.
+2. Select GCS Spectrameter. Verify the device name before continuing.
+3. Select libusb-win32 on the right side of the driver arrow.
+4. Select Replace Driver.
+
+Warning: Never replace the driver of a keyboard, mouse, receiver, camera, or USB hub.

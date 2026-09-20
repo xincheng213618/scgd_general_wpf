@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Copilot
@@ -209,6 +210,7 @@ namespace ColorVision.Copilot
             var originalApprovalActionId = ApprovalActionId;
             var originalConcurrencyKey = ConcurrencyKey;
             var originalResultSummary = ResultSummary;
+            var originalPartialResultMessage = PartialResultMessage;
             var originalErrorMessage = ErrorMessage;
             var originalFailureCode = FailureCode;
             var originalProcessOperation = ProcessOperation;
@@ -257,6 +259,7 @@ namespace ColorVision.Copilot
             ApprovalActionId = SanitizeIdentifier(ApprovalActionId);
             ConcurrencyKey = SanitizeIdentifier(ConcurrencyKey);
             ResultSummary = Sanitize(ResultSummary);
+            PartialResultMessage = State == CopilotToolExecutionState.Completed ? Sanitize(PartialResultMessage) : string.Empty;
             ErrorMessage = Sanitize(ErrorMessage);
             FailureCode = State == CopilotToolExecutionState.Completed
                 ? string.Empty
@@ -338,6 +341,7 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalApprovalActionId, ApprovalActionId, StringComparison.Ordinal)
                 || !string.Equals(originalConcurrencyKey, ConcurrencyKey, StringComparison.Ordinal)
                 || !string.Equals(originalResultSummary, ResultSummary, StringComparison.Ordinal)
+                || !string.Equals(originalPartialResultMessage, PartialResultMessage, StringComparison.Ordinal)
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
                 || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
@@ -421,13 +425,36 @@ namespace ColorVision.Copilot
             if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running or CopilotToolExecutionState.AwaitingApproval)
             {
                 var wasAwaitingApproval = State == CopilotToolExecutionState.AwaitingApproval;
+                var outcomeUnknown = State == CopilotToolExecutionState.Running
+                    && (Access == CopilotToolAccess.Write || Idempotency != CopilotToolIdempotency.Idempotent);
+                if (State != CopilotToolExecutionState.Running)
+                    WorkspaceRecheckPaths = new();
                 State = CopilotToolExecutionState.Interrupted;
+                RetryEligible = false;
+                if (outcomeUnknown)
+                {
+                    FailureKind = CopilotToolFailureKind.OutcomeUnknown;
+                    FailureCode = CopilotToolFailureCode.OutcomeUnknown;
+                }
                 CompletedAtUtc = recoveredAtUtc;
                 if (StartedAtUtc != default)
                     DurationMs = Math.Max(DurationMs, (long)Math.Max(0, (recoveredAtUtc - StartedAtUtc).TotalMilliseconds));
                 ErrorMessage = wasAwaitingApproval
                     ? "Approval was interrupted before a decision was recorded. Submit the request again to create a fresh approval."
-                    : "Execution was interrupted before completion.";
+                    : outcomeUnknown
+                        ? "Execution was interrupted before its outcome was recorded. Verify the affected state before retrying; changes may already exist."
+                        : "Execution was interrupted before completion.";
+                changed = true;
+            }
+
+            var recheckPaths = Access == CopilotToolAccess.Write
+                && ToolName is "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope"
+                && State is CopilotToolExecutionState.Interrupted or CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut
+                    ? CaptureWorkspaceRecheckPaths(WorkspaceRecheckPaths)
+                    : new List<string>();
+            if (WorkspaceRecheckPaths == null || !WorkspaceRecheckPaths.SequenceEqual(recheckPaths, StringComparer.Ordinal))
+            {
+                WorkspaceRecheckPaths = recheckPaths;
                 changed = true;
             }
 
@@ -456,6 +483,25 @@ namespace ColorVision.Copilot
 
             changed |= NormalizeWorkspaceRollbackAuthority(recoveredAtUtc);
             return changed;
+        }
+
+        internal static List<string> CaptureWorkspaceRecheckPaths(IEnumerable<string>? paths)
+        {
+            var result = new List<string>();
+            if (paths == null) return result;
+            foreach (var path in paths)
+            {
+                if (string.IsNullOrWhiteSpace(path) || path.Length > 4096 || path.IndexOfAny(Path.GetInvalidPathChars()) >= 0
+                    || !Path.IsPathFullyQualified(path)) continue;
+                try
+                {
+                    var fullPath = Path.GetFullPath(path);
+                    if (!result.Contains(fullPath, StringComparer.OrdinalIgnoreCase)) result.Add(fullPath);
+                    if (result.Count == 8) break;
+                }
+                catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException) { }
+            }
+            return result;
         }
 
         private static string NormalizeDelegatedReasoningEffort(string? value)

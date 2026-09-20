@@ -216,6 +216,9 @@
   <data name="Select" xml:space="preserve">
     <value>選擇</value>
   </data>
+  <data name="SelectInFolder" xml:space="preserve">
+    <value>選中</value>
+  </data>
   <data name="InstallOptions" xml:space="preserve">
     <value>安裝選項</value>
   </data>
@@ -254,6 +257,12 @@
   </data>
   <data name="InstallLog" xml:space="preserve">
     <value>安裝日誌</value>
+  </data>
+  <data name="InstallCompletedMessage" xml:space="preserve">
+    <value>所選元件已安裝完成。</value>
+  </data>
+  <data name="InstallCompletedTitle" xml:space="preserve">
+    <value>安裝完成</value>
   </data>
   <data name="InstallNow" xml:space="preserve">
     <value>立即安裝</value>

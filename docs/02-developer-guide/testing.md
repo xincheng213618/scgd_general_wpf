@@ -5,7 +5,7 @@ status: "current"
 summary: "按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。"
 aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","COLORVISION_IMAGE_ALGORITHM_PERF"]
 code_paths: ["Test","Scripts/tests","Web/Backend","package.json",".github/workflows/dotnet.yml"]
-test_paths: ["Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj","Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
+test_paths: ["Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj","Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
 related: ["delivery.index","delivery.prerequisites","delivery.native-testing","governance.retrieval","copilot.configuration"]
 ---
 
@@ -32,11 +32,11 @@ related: ["delivery.index","delivery.prerequisites","delivery.native-testing","g
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
-| `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs`、`ThemeSettingsTests.cs` | 配置 adapter、配置持久化和主题设置 |
+| `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs` | 配置 adapter 与配置持久化 |
 | `PropertyEditorContractTests.cs`、`PropertyEditSessionTests.cs`、`ListEditorTests.cs` | PropertyGrid 契约、编辑会话和列表编辑器 |
 | `FindCrossResultOverlayTests.cs`、`AlgorithmResultOverlayTests.cs`、`AlgorithmOverlayManagerTests.cs` | 历史结果坐标、算法叠加内容、临时/持久Overlay生命周期；三者不是同一个职责 |
-| `ResultImagePresentationTests.cs` 与 `Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` | 不同宿主/项目的图像呈现规则，按主题核对实际目标 |
-| `UniversalSortTests.cs`、`TreemapLayoutTests.cs` | 通用排序、Treemap 布局 |
+| `Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` | ProjectARVRPro 图像候选、保存路径与尺寸回退 |
+| `UniversalSortTests.cs` | 通用排序 |
 | `TerminalScreenBufferTests.cs`、`STNodeCopyPasteTests.cs` | 终端屏幕缓冲、Flow/STNode 复制粘贴 |
 | `LogEntryParserTests.cs`、`LogHistoryReaderTests.cs`、`LogSearchHelperTests.cs` | 日志解析、历史读取和搜索 |
 | `MarketplacePackageDownloadServiceTests.cs` | 插件市场包下载、校验和临时目录处理 |

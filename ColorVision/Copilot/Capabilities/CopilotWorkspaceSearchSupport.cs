@@ -15,7 +15,7 @@ namespace ColorVision.Copilot
         private static readonly EnumerationOptions SearchEnumerationOptions = new()
         {
             AttributesToSkip = FileAttributes.ReparsePoint,
-            IgnoreInaccessible = true,
+            IgnoreInaccessible = false,
             RecurseSubdirectories = false,
             ReturnSpecialDirectories = false,
         };
@@ -69,6 +69,12 @@ namespace ColorVision.Copilot
             ".xaml",
             ".yaml",
             ".yml",
+        };
+
+        // Business exports can supply evidence without expanding the separate patch allowlist.
+        private static readonly HashSet<string> ReadOnlyTextFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".csv", ".tsv", ".jsonl", ".ndjson",
         };
 
         public static IReadOnlyList<string> NormalizeSearchRoots(IEnumerable<string>? roots)
@@ -133,19 +139,22 @@ namespace ColorVision.Copilot
         public static IEnumerable<CopilotSearchFileEntry> EnumerateFiles(
             IEnumerable<string>? roots,
             bool textFilesOnly,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string, string>? reportIncompletePath = null)
         {
             foreach (var root in NormalizeSearchScopes(roots))
             {
                 if (File.Exists(root))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!textFilesOnly || IsSearchableTextFile(root))
+                    if (textFilesOnly && !IsReadableTextFile(root))
+                        reportIncompletePath?.Invoke(root, "The explicit file extension is outside the text-search allowlist. Use ReadLocalFile to inspect this file.");
+                    if (!textFilesOnly || IsSearchableTextFile(root, reportIncompletePath))
                         yield return new CopilotSearchFileEntry(root, root);
                     continue;
                 }
 
-                foreach (var file in EnumerateFilesUnderRoot(root, textFilesOnly, cancellationToken))
+                foreach (var file in EnumerateFilesUnderRoot(root, textFilesOnly, cancellationToken, reportIncompletePath))
                 {
                     yield return new CopilotSearchFileEntry(root, file);
                 }
@@ -157,6 +166,9 @@ namespace ColorVision.Copilot
             var extension = Path.GetExtension(filePath);
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
         }
+
+        public static bool IsReadableTextFile(string filePath) =>
+            IsTextLikeFile(filePath) || ReadOnlyTextFileExtensions.Contains(Path.GetExtension(filePath));
 
         public static bool IsPathWithinRoots(string? path, IEnumerable<string>? roots)
         {
@@ -347,7 +359,8 @@ namespace ColorVision.Copilot
         private static IEnumerable<string> EnumerateFilesUnderRoot(
             string rootPath,
             bool textFilesOnly,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string, string>? reportIncompletePath)
         {
             var pendingDirectories = new Stack<string>();
             pendingDirectories.Push(rootPath);
@@ -360,7 +373,8 @@ namespace ColorVision.Copilot
 
                 foreach (var subDirectory in EnumerateSafely(
                     () => Directory.EnumerateDirectories(currentDirectory, "*", SearchEnumerationOptions),
-                    cancellationToken))
+                    cancellationToken,
+                    () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
                     if (ShouldIgnoreDirectory(subDirectory))
                         continue;
@@ -370,9 +384,10 @@ namespace ColorVision.Copilot
 
                 foreach (var file in EnumerateSafely(
                     () => Directory.EnumerateFiles(currentDirectory, "*", SearchEnumerationOptions),
-                    cancellationToken))
+                    cancellationToken,
+                    () => reportIncompletePath?.Invoke(currentDirectory, "The directory could not be fully enumerated.")))
                 {
-                    if (textFilesOnly && !IsSearchableTextFile(file))
+                    if (textFilesOnly && !IsSearchableTextFile(file, reportIncompletePath))
                         continue;
 
                     yield return file;
@@ -382,7 +397,8 @@ namespace ColorVision.Copilot
 
         private static IEnumerable<string> EnumerateSafely(
             Func<IEnumerable<string>> createEntries,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action reportFailure)
         {
             IEnumerator<string>? enumerator;
             try
@@ -391,6 +407,7 @@ namespace ColorVision.Copilot
             }
             catch
             {
+                reportFailure();
                 yield break;
             }
 
@@ -414,6 +431,7 @@ namespace ColorVision.Copilot
                     }
                     catch
                     {
+                        reportFailure();
                         yield break;
                     }
 
@@ -422,17 +440,21 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool IsSearchableTextFile(string filePath)
+        private static bool IsSearchableTextFile(string filePath, Action<string, string>? reportIncompletePath)
         {
-            if (!IsTextLikeFile(filePath))
+            if (!IsReadableTextFile(filePath))
                 return false;
 
             try
             {
-                return new FileInfo(filePath).Length <= MaxTextSearchFileBytes;
+                if (new FileInfo(filePath).Length <= MaxTextSearchFileBytes)
+                    return true;
+                reportIncompletePath?.Invoke(filePath, "The file exceeds the 8 MiB text-search limit. Use bounded ReadLocalFile ranges to inspect it.");
+                return false;
             }
             catch
             {
+                reportIncompletePath?.Invoke(filePath, "The file metadata could not be read.");
                 return false;
             }
         }
@@ -475,13 +497,13 @@ namespace ColorVision.Copilot
                     var candidate = Path.GetFullPath(requestedPath);
                     if (!IsPathWithinRoots(candidate, searchRoots))
                     {
-                        errorMessage = $"The {pathKind} path is outside the allowed workspace roots: {candidate}";
+                        errorMessage = DescribePathResolutionFailure(candidate, searchRoots, pathKind);
                         return false;
                     }
 
                     if (!exists(candidate))
                     {
-                        errorMessage = $"The {pathKind} does not exist: {candidate}";
+                        errorMessage = DescribePathResolutionFailure(candidate, searchRoots, pathKind);
                         return false;
                     }
 
@@ -496,7 +518,7 @@ namespace ColorVision.Copilot
             }
 
             var matches = new List<string>();
-            var escapedWorkspace = false;
+            var unresolvedPaths = new List<(string Path, string Root)>();
             foreach (var root in searchRoots)
             {
                 string candidate;
@@ -512,12 +534,14 @@ namespace ColorVision.Copilot
 
                 if (!IsPathWithinRoots(candidate, [root]))
                 {
-                    escapedWorkspace = true;
+                    unresolvedPaths.Add((candidate, root));
                     continue;
                 }
 
                 if (exists(candidate))
                     matches.Add(candidate);
+                else
+                    unresolvedPaths.Add((candidate, root));
             }
 
             var distinctMatches = matches.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -533,10 +557,59 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            errorMessage = escapedWorkspace
-                ? $"The workspace-relative {pathKind} path escapes the allowed workspace roots: {requestedPath}"
-                : $"The {pathKind} does not exist in the allowed workspace roots: {requestedPath}";
+            errorMessage = string.Join(Environment.NewLine, unresolvedPaths.Take(3)
+                .Select(candidate => DescribePathResolutionFailure(candidate.Path, [candidate.Root], pathKind)));
+            if (unresolvedPaths.Count > 3)
+                errorMessage += $" No accessible match was found in {unresolvedPaths.Count - 3} additional roots.";
             return false;
+        }
+
+        // Diagnostics only: the existing path resolution has already failed.
+        // Inspect from the allowed root outwards, stopping before following a link.
+        internal static string DescribePathResolutionFailure(string fullPath, IReadOnlyList<string> roots, string pathKind)
+        {
+            var root = roots.FirstOrDefault(candidate => string.Equals(fullPath, candidate, StringComparison.OrdinalIgnoreCase)
+                || IsSubPathOf(fullPath, candidate));
+            if (root == null)
+                return $"The {pathKind} path is outside the allowed workspace roots: {fullPath}";
+
+            var components = new List<string> { root };
+            var current = root;
+            foreach (var segment in Path.GetRelativePath(root, fullPath)
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (segment == ".") continue;
+                current = Path.Combine(current, segment);
+                components.Add(current);
+            }
+
+            foreach (var component in components)
+            {
+                FileAttributes attributes;
+                try { attributes = File.GetAttributes(component); }
+                catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+                {
+                    return $"The {pathKind} does not exist: {fullPath}. Relative paths start at an allowed workspace root; '.' refers to that root. Inspect a root with the directory-listing tool and use an exact listed path.";
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+                {
+                    return $"The {pathKind} path could not be verified safely: {fullPath}. {ex.Message}";
+                }
+
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    return $"The {pathKind} path crosses a file-system reparse point and is not allowed: {fullPath}";
+                if ((attributes & FileAttributes.Directory) == 0 && !string.Equals(component, fullPath, StringComparison.OrdinalIgnoreCase))
+                    return $"The {pathKind} path cannot be resolved because a parent component is a file: {component}";
+                if (string.Equals(component, fullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (pathKind == "directory" && (attributes & FileAttributes.Directory) == 0)
+                        return $"The path refers to a file; a directory is required: {fullPath}";
+                    if (pathKind == "file" && (attributes & FileAttributes.Directory) != 0)
+                        return $"The path refers to a directory; a file is required: {fullPath}";
+                }
+            }
+
+            return $"The {pathKind} path could not be verified as accessible: {fullPath}. Re-list the allowed workspace root before choosing another path.";
         }
 
         private static string NormalizeToExistingDirectory(string? path)

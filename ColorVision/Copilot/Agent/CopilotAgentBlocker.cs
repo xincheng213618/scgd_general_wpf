@@ -84,6 +84,7 @@ namespace ColorVision.Copilot
                 }];
             }
 
+            steps = ExcludeResolvedReadFailures(steps);
             var denied = steps.LastOrDefault(step => step?.Execution.State == CopilotToolExecutionState.Denied);
             if (denied != null)
             {
@@ -139,6 +140,39 @@ namespace ColorVision.Copilot
                 failureCode,
                 summary,
                 outcomeUnknown)];
+        }
+
+        internal static IReadOnlyList<CopilotAgentStepRecord> ExcludeResolvedReadFailures(IReadOnlyList<CopilotAgentStepRecord> steps)
+        {
+            var laterSuccesses = new Dictionary<string, string>(StringComparer.Ordinal);
+            var unresolved = new List<CopilotAgentStepRecord>(steps.Count);
+            for (var index = steps.Count - 1; index >= 0; index--)
+            {
+                var step = steps[index];
+                if (step == null) continue;
+                if (step.Execution.Access == CopilotToolAccess.ReadOnly
+                    && !string.IsNullOrWhiteSpace(step.Execution.CallId)
+                    && !string.IsNullOrWhiteSpace(step.Execution.ToolName)
+                    && string.Equals(step.Execution.ToolName, step.ToolCall.ToolName, StringComparison.Ordinal))
+                {
+                    var signature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(step.Execution.ToolName, step.ToolCall.ToolInput);
+                    if (step.Execution.State == CopilotToolExecutionState.Completed && step.Observation.Success)
+                        laterSuccesses.TryAdd(signature, step.Execution.CallId);
+                    else if (step.Execution.State is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut or CopilotToolExecutionState.Denied
+                        && !step.Observation.Success
+                        && step.Execution.FailureKind != CopilotToolFailureKind.OutcomeUnknown
+                        && step.Observation.FailureKind != CopilotToolFailureKind.OutcomeUnknown
+                        && CopilotToolFailureCode.Normalize(step.Observation.FailureCode) != CopilotToolFailureCode.OutcomeUnknown
+                        && laterSuccesses.TryGetValue(signature, out var successfulCallId)
+                        && !string.Equals(step.Execution.CallId, successfulCallId, StringComparison.Ordinal))
+                        continue;
+                }
+                unresolved.Add(step);
+            }
+            // This is only the current blocker view. Keep the original steps and
+            // journal intact, including failed attempts and their approval decisions.
+            unresolved.Reverse();
+            return unresolved;
         }
 
         private static CopilotAgentBlockerSnapshot CreateToolBlocker(

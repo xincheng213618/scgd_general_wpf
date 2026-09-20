@@ -3,15 +3,15 @@ knowledge_id: "flow.conversion-calibration"
 knowledge_type: "reference"
 status: "current"
 summary: "定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。"
-aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","Calibration2InNode","FlowCalibrationTemplateEditor"]
-code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/FlowEngineLib/Algorithm/CalibrationNode.cs","Engine/FlowEngineLib/Node/OLED/Calibration2InNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+aliases: ["找不到图像转换或校准模板","AlgDataConvertNode","Calibration2InNode","CalibrationTemplatePropertiesEditor"]
+code_paths: ["Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/Calibration2InNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs"]
 related: ["flow.index","flow.templates","ui.property-grid"]
 ---
 
 # Flow 转换与校准节点
 
-当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。相关能力分散在 `FlowEngineLib` 节点、Engine 属性编辑器注册和校准设备服务里；`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` 只保留节点类型级补充面板，当前没有 `CalibrationNodeConfigurator`。
+当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。数据转换节点保留在 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供；`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` 只保留节点类型级补充面板，当前没有 `CalibrationNodeConfigurator`。
 
 ## 先查什么
 
@@ -32,8 +32,8 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 | 数据转换参数 | `DataConvertData` | `DataConvertData.cs` | `MethodType`、`InType`、`OutType`、`TemplateParam` |
 | 图像转换 | `AlgorithmImageConvertNode` | `AlgorithmImageConvertNode.cs` | 发送 `Image.Convert` |
 | 图像转换参数 | `AlgorithmImageConvertParam` | `AlgorithmImageConvertParam.cs` | `ResultImageFormat`、`ResultDataFileName`、`Channel` |
-| 单输入校准 | `CalibrationNode` | `FlowEngineLib/Algorithm/CalibrationNode.cs` | 曝光模板、图像、可选 POI 参数 |
-| 双输入校准 | `Calibration2InNode` | `Node/OLED/Calibration2InNode.cs` | 第二输入的 `MasterId` 写入 `POI_MasterId` |
+| 单输入校准 | `CalibrationNode` | `ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs` | 曝光模板、图像、可选 POI 参数 |
+| 双输入校准 | `Calibration2InNode` | `ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/Calibration2InNode.cs` | 第二输入的 `MasterId` 写入 `POI_MasterId` |
 | 校准 ROI | `CalibrationROINode` | `Node/Camera/CalibrationROINode.cs` | 发送 `SetROI`，不执行完整校准 |
 | 旧色差校正 | `AlgorithmCaliNode` | `Node/Algorithm/AlgorithmCaliNode.cs` | 不提供新建入口，仅兼容旧流程解析 |
 
@@ -63,10 +63,10 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 | 编辑器 | 对应节点 | 补充内容 |
 | --- | --- | --- |
-| `FlowCalibrationTemplateEditor` | `CalibrationNode`、`Calibration2InNode` 和相机节点 | 根据节点设备和 `PhyCamera` 提供 `TemplateCalibrationParam` 选择 |
-| `FlowAutoExposureTemplateEditor` / `TextSelectFilePropertiesEditor` | 校准节点 | 选择曝光模板和图像路径 |
+| `CalibrationTemplatePropertiesEditor` | `CalibrationNode`、`Calibration2InNode` 和相机节点 | 根据节点设备和 `PhyCamera` 提供 `TemplateCalibrationParam` 选择 |
+| `AutoExposureTemplatePropertiesEditor` / `TextSelectFilePropertiesEditor` | 校准节点 | 选择曝光模板和图像路径 |
 
-这些节点通过 `PropertyEditorTypeAttribute` 或 `FlowNodePropertyEditorAttribute` 声明编辑器，再由 `Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` 注册具体 UI。
+这些节点在属性上直接使用 `PropertyEditorTypeAttribute` 声明 `FlowTemplatePropertiesEditors.cs` 中的具体编辑器；模板控件复用 `FlowNodePropertyEditorRegistration.cs` 的构建方法，无需模板代理注册。
 
 ## 验收
 
@@ -82,7 +82,7 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 ## 维护要求
 
 - 新增转换类型时，同步枚举、算法服务解释、节点 UI、测试样例和本页矩阵。
-- 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode` 和属性编辑器注册。
+- 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode` 和属性编辑器声明。
 - 修改 `PhyCamera` 关系时，回归校准模板选择器。
 - 新需求使用 JSON V2 或强类型模板规范。
 

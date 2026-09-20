@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -25,6 +26,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis
             AlgorithmMeasurementArtifact summary = result.GetArtifact<AlgorithmMeasurementArtifact>("moire-analysis-summary") ?? throw new ArgumentException("Missing summary.", nameof(result));
             AlgorithmTableArtifact suggestions = result.GetArtifact<AlgorithmTableArtifact>("moire-notch-suggestions") ?? throw new ArgumentException("Missing suggestions.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             SpectrumPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(spectrum.Image);
             HeatmapPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(heatmap.Image);

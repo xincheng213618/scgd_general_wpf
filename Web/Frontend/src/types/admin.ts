@@ -393,6 +393,7 @@ export interface OperationsSupportSession {
 }
 
 export interface OperationsOverview {
+  hostId: string | null
   generatedAt: string
   onlineThresholdSeconds: number
   summary: {
@@ -585,14 +586,20 @@ export interface FeedbackAttachment {
   name: string
   size_bytes: number
   modified_at: string
+  sha256?: string
 }
 
 export interface FeedbackItem {
+  /** Stable record identifier from metadata; independent of machine and storage path. */
   feedback_id: string
   status: FeedbackStatus
   created_at: string
   updated_at: string | null
   user_name: string
+  owner_user_id: number | null
+  owner_username: string
+  ownership: 'account' | 'legacy_unbound'
+  machine_name: string
   app_version: string
   message_preview: string
   attachment_count: number
@@ -606,6 +613,47 @@ export interface FeedbackDetail extends FeedbackItem {
   machine_info: string
   client_ip: string
   attachments: FeedbackAttachment[]
+  client_submitted_at: string | null
+  diagnostics_collected_at: string | null
+  access: FeedbackAccess
+}
+
+export interface FeedbackAccess {
+  scope: 'own' | 'all'
+  can_manage: boolean
+}
+
+export interface FeedbackHandlingValues {
+  conclusion: string
+  fixed_version: string
+  verification: string
+}
+
+export interface FeedbackHandlingEntry extends FeedbackHandlingValues {
+  revision: number
+  updated_at: string | null
+  actor_type: string
+  actor_id: string
+}
+
+export interface FeedbackHandling extends FeedbackHandlingEntry {
+  feedback_id: string
+  history: FeedbackHandlingEntry[]
+  changed?: boolean
+}
+
+export interface FeedbackStatusUpdate {
+  feedback_id: string
+  status: FeedbackStatus
+  updated_at: string | null
+}
+
+export interface FeedbackBulkStatusResponse {
+  changed: number
+  unchanged: number
+  failed: number
+  results: Array<(FeedbackStatusUpdate & { changed: boolean; before: FeedbackStatus })
+    | { feedback_id: string; error: string }>
 }
 
 export interface FeedbackInboxResponse {
@@ -622,6 +670,7 @@ export interface FeedbackInboxResponse {
     invalid_state: number
     oldest_open_at: string | null
   }
+  access: FeedbackAccess
 }
 
 export interface RetentionSettingsValues {
@@ -662,7 +711,7 @@ export interface AccountSettingsUpdateResponse extends AccountSettingsResponse {
   changed: Array<keyof AccountSettingsValues>
 }
 
-export type UserRole = 'admin' | 'user'
+export type UserRole = 'admin' | 'developer' | 'user'
 export type UserAccountOrigin = 'self_registered' | 'administrator_created' | 'legacy'
 export type UserAccountStatus = 'active' | 'inactive'
 export type UserPasswordState = 'pending' | 'ready'
@@ -778,6 +827,7 @@ export interface UserAccountSummary {
   active: number
   inactive: number
   admins: number
+  developers: number
   users: number
   self_registered: number
   administrator_created: number

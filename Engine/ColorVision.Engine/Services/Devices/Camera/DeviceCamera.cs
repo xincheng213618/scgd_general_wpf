@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822,CA1863,CS8602
+#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing;
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         string RelativePath,
         string FullPath);
 
-    public class DeviceCamera : DeviceService<ConfigCamera>
+    public partial class DeviceCamera : DeviceService<ConfigCamera>
     {
         public PhyCamera? PhyCamera { get => _PhyCamera; set => AttachPhyCamera(value); }
         private PhyCamera? _PhyCamera;
@@ -78,9 +78,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            CameraBackend = new CameraBackendState(SysResourceDao.IsLocalId(sysResourceModel.Id) || DisplayConfig.UseLocalCamera);
             LocalCameraSession = new LocalCameraSession(this);
             LocalCalibrationCacheManager = new LocalCalibrationCacheManager(Config.Code);
             DService = new MQTTCamera(this);
+            CameraBackend.Changed += CameraBackend_Changed;
+            DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
             _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
             this.SetIconResource("DrawingImageCamera");
 
@@ -102,6 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
+            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
@@ -138,6 +142,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cameraLocalWindow.Owner = owner;
             }
             cameraLocalWindow.Show();
+        }
+
+        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
+        [Category("AcquisitionDisplay")]
+        [Description("CommandDisplayConfigHint")]
+        public RelayCommand EditDisplayConfigCommand { get; }
+
+        private void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         [CommandDisplay("CameraLog", CategoryOrder = 3)]
@@ -488,10 +507,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             AttachPhyCamera(null);
 
+            CameraBackend.Changed -= CameraBackend_Changed;
+            DisplayConfig.PropertyChanged -= DisplayConfig_BackendPreferenceChanged;
+            lock (previewSync) pendingPreview = null;
             LocalCalibrationCacheManager.Dispose();
             LocalCameraSession.Dispose();
             DService?.Dispose();
             base.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -38,7 +38,8 @@ namespace ColorVision.Copilot
                     // ColorVision owns bounded retries and accounts for every provider attempt.
                     MaxRetries = 0,
                 });
-                return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
+                return CopilotDeepSeekAnthropicChatClient.WrapIfRequired(
+                    anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens), profile);
             }
 
             return CopilotOpenAiAgentChatClientFactory.Create(
@@ -71,7 +72,8 @@ namespace ColorVision.Copilot
             var options = new ChatOptions
             {
                 Instructions = profile.EffectiveSystemPrompt
-                    + "\n\nYou are the final-answer stage of ColorVision Agent. Business and framework tools are unavailable in this stage. Return only a supported user-facing answer based on the supplied evidence, and explicitly identify incomplete work instead of claiming success.",
+                    + "\n\nYou are the final-answer stage of ColorVision Agent. Business and framework tools are unavailable in this stage. Return only a supported user-facing answer based on the supplied evidence, and explicitly identify incomplete work instead of claiming success.\n"
+                    + UserOutputFormatInstruction,
                 MaxOutputTokens = profile.MaxTokens,
                 Temperature = CopilotReasoningRequestMapper.ShouldIncludeTemperature(profile) ? (float)profile.Temperature : null,
                 Reasoning = BuildReasoningOptions(profile),
@@ -109,6 +111,22 @@ namespace ColorVision.Copilot
         {
             if (!CopilotOpenAiRequestPolicy.UsesResponsesApi(request.Profile))
                 return;
+
+            if (!CopilotOpenAiRequestPolicy.UsesOfficialOpenAiApi(request.Profile))
+            {
+                // The shared abstraction stops at ExtraHigh (xhigh), while profiles
+                // such as DeepSeek explicitly support max. Do not send OpenAI-only
+                // account identifiers or Codex overrides to compatible services.
+                if (CopilotReasoningCapabilities.GetEffectiveMode(request.Profile) == CopilotReasoningMode.Max)
+                {
+                    options.Reasoning = null;
+                    options.RawRepresentationFactory = _ => new CreateResponseOptions
+                    {
+                        ReasoningOptions = new ResponseReasoningOptions { ReasoningEffortLevel = new ResponseReasoningEffortLevel("max") },
+                    };
+                }
+                return;
+            }
 
             var hasEffortOverride = request.CodexReasoningEffort !=
                 CopilotCodexReasoningEffort.Unspecified;

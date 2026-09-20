@@ -2,19 +2,16 @@ using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Settings;
+using ColorVision.ImageEditor.Tooling;
 using ColorVision.UI;
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.ImageEditor
 {   
@@ -33,11 +30,9 @@ namespace ColorVision.ImageEditor
             typeof(ImageViewConfig),
         };
 
-        private readonly ImageView _imageView;
+        private readonly EditorToolbarComposer _toolbarComposer;
         private readonly EditorContext _context;
         private readonly List<IEditorTool> _imageOpenEditorTools = new();
-        private readonly List<FrameworkElement> _generatedToolElements = new();
-        private readonly HashSet<ButtonBase> _generatedIconHosts = new();
         private IImageOpen? _currentImageOpen;
 
         public T? GetIEditorTool<T>() where T : IEditorTool => GetEffectiveEditorTools().OfType<T>().FirstOrDefault();
@@ -61,7 +56,7 @@ namespace ColorVision.ImageEditor
 
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
-            _imageView = imageView;
+            _toolbarComposer = new EditorToolbarComposer(imageView.GetRegionToolBar);
             _context = context;
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -200,39 +195,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        public void RefreshToolBars()
-        {
-            ClearGeneratedToolElements();
-
-            foreach (var group in GetEffectiveEditorTools().GroupBy(t => t.ToolBarLocal))
-            {
-                ToolBar? toolBar = _imageView.GetRegionToolBar(group.Key);
-                if (toolBar == null)
-                {
-                    continue;
-                }
-
-                Thickness margin = GetSpacingFor(group.Key);
-                bool hasExistingItems = toolBar.Items.Count > 0;
-                int index = 0;
-                foreach (IEditorTool tool in group.OrderBy(t => t.Order))
-                {
-                    FrameworkElement btn = GenIEditorTool(tool);
-                    if (hasExistingItems || index++ > 0)
-                    {
-                        btn.Margin = margin;
-                    }
-
-                    toolBar.Items.Add(btn);
-                    _generatedToolElements.Add(btn);
-                    if (tool is not IEditorCustomControlTool && btn is ButtonBase iconHost)
-                    {
-                        _generatedIconHosts.Add(iconHost);
-                    }
-                    hasExistingItems = true;
-                }
-            }
-        }
+        public void RefreshToolBars() => _toolbarComposer.Refresh(GetEffectiveEditorTools());
 
         public void Dispose()
         {
@@ -241,7 +204,7 @@ namespace ColorVision.ImageEditor
                 lifecycle.OnEditorToolsDeactivated(_context);
             }
 
-            ClearGeneratedToolElements();
+            _toolbarComposer.Clear();
 
             HashSet<IDisposable> disposableTools = new();
             foreach (IDisposable item in IEditorTools.Concat(_imageOpenEditorTools).OfType<IDisposable>())
@@ -254,25 +217,6 @@ namespace ColorVision.ImageEditor
 
             _imageOpenEditorTools.Clear();
             GC.SuppressFinalize(this);
-        }
-
-        private void ClearGeneratedToolElements()
-        {
-            foreach (FrameworkElement element in _generatedToolElements)
-            {
-                if (element is ButtonBase buttonBase && _generatedIconHosts.Remove(buttonBase))
-                {
-                    buttonBase.Content = null;
-                }
-
-                if (element.Parent is ToolBar parentToolBar)
-                {
-                    parentToolBar.Items.Remove(element);
-                }
-            }
-
-            _generatedToolElements.Clear();
-            _generatedIconHosts.Clear();
         }
 
         private static bool CanCreateGlobalEditorTool(Type type)
@@ -371,76 +315,11 @@ namespace ColorVision.ImageEditor
         /// 生成编辑器工具的 UI 元素
         /// </summary>
         /// <returns>Button 或 ToggleButton</returns>
-        public static FrameworkElement GenIEditorTool(IEditorTool editorTool)
-        {
-            if (editorTool is IEditorCustomControlTool customControlTool)
-            {
-                return customControlTool.CreateToolControl();
-            }
-            else if (editorTool is IEditorToggleTool toggleTool)
-            {
-                var tbtn = new ToggleButton
-                {
-                    Height = 27,
-                    Width = 27,
-                    Padding = new Thickness(3),
-                    Content = editorTool.Icon,
-                    Command = editorTool.Command,
-                    DataContext = toggleTool
-                };
-
-                // Bind IsChecked to the tool's IsChecked property (two-way)
-                var binding = new Binding(nameof(IEditorToggleTool.IsChecked))
-                {
-                    Source = toggleTool,
-                    Mode = BindingMode.TwoWay,
-                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
-                };
-                tbtn.SetBinding(ToggleButton.IsCheckedProperty, binding);
-                return tbtn;
-            }
-            else if (editorTool is IEditorTextTool editorTextTool)
-            {
-                TextBox textBox = new TextBox()
-                {
-                    Background =Brushes.Transparent,
-                    BorderThickness= new Thickness(1),
-                    HorizontalContentAlignment = HorizontalAlignment.Center,
-                    DataContext = editorTextTool
-                };
-                textBox.SetBinding(TextBox.TextProperty, editorTextTool.Binding);
-                return textBox;
-
-            }
-            else
-            {
-                var button = new Button() { Height = 27, Width = 27, Padding = new Thickness(3) };
-                button.Content = editorTool.Icon;
-                button.Command = editorTool.Command;
-                return button;
-            }
-        }
-
-        private static Thickness GetSpacingFor(ToolBarLocal loc)
-        {
-            return loc switch
-            {
-                ToolBarLocal.Top => new Thickness(5, 0, 0, 0),
-                ToolBarLocal.Left => new Thickness(0, 5, 0, 0),
-                ToolBarLocal.Right => new Thickness(0, 5, 0, 0),
-                _ => new Thickness(5, 0, 0, 0)
-            };
-        }
+        public static FrameworkElement GenIEditorTool(IEditorTool editorTool) => EditorToolbarComposer.CreateToolControl(editorTool);
 
         /// <summary>
         /// 尝试从资源中查找并返回图像
         /// </summary>
-        public static Image TryFindResource(string resourcePath)
-        {
-            var image = new Image();
-            // 动态资源引用，资源变更时自动更新
-            image.SetResourceReference(Image.SourceProperty, resourcePath);
-            return image;
-        }
+        public static Image TryFindResource(string resourcePath) => EditorToolbarComposer.CreateResourceImage(resourcePath);
     }
 }

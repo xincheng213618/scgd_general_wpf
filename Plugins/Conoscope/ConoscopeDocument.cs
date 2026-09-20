@@ -1,4 +1,5 @@
 using ColorVision.FileIO;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using Conoscope.ApplicationServices.Preprocess;
 using Conoscope.Processing.Preprocess;
 using log4net;
@@ -40,8 +41,10 @@ namespace Conoscope
     }
 
     /// <summary>
-    /// Owns one CVCIE document and its Mat lifetime. Loading remains latest-wins and
-    /// publishes Y before X/Z whenever preprocessing allows it.
+    /// Owns one CIE measurement document and its Mat lifetime. Loading remains latest-wins and
+    /// publishes Y before X/Z whenever preprocessing allows it. Published buffers are
+    /// read-only: preprocessing must replace them, since background exports can retain
+    /// OpenCV headers after this document releases its own references.
     /// </summary>
     internal sealed class ConoscopeDocument : IDisposable
     {
@@ -51,6 +54,7 @@ namespace Conoscope
         private CancellationTokenSource? loadCancellation;
         private int loadVersion;
         private int dataVersion;
+        private OpenRequest? lastOpen;
 
         public ConoscopeDocument(ILog log)
         {
@@ -65,9 +69,43 @@ namespace Conoscope
         public bool HasDisplayData => Y != null;
         public bool HasXyzData => X != null && Y != null && Z != null;
         public int DataVersion => Volatile.Read(ref dataVersion);
+        public string ProcessingDescription { get; private set; } = string.Empty;
+        public bool IsLoading { get; private set; }
+        public Exception? LoadError { get; private set; }
+        public bool CanRetryLoad => !IsLoading && LoadError != null && lastOpen != null;
+
+        internal static bool CanOpenFile(string? fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName) || !File.Exists(fileName)) return false;
+            try
+            {
+                using CalibratedRawFileReader? raw = OpenRawSource(fileName);
+                if (raw != null) return true;
+                if (!string.Equals(Path.GetExtension(fileName), ".cvcie", StringComparison.OrdinalIgnoreCase)) return false;
+                int headerEnd = CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile header);
+                using (header)
+                    return headerEnd > 0 && header.Bpp == 32
+                        && header.Channels >= 3 && header.Rows > 0 && header.Cols > 0;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException
+                or NotSupportedException or OverflowException or Newtonsoft.Json.JsonException)
+            {
+                return false;
+            }
+        }
+
+        private static CalibratedRawFileReader? OpenRawSource(string fileName)
+        {
+            if (!string.Equals(Path.GetExtension(fileName), ".cvraw", StringComparison.OrdinalIgnoreCase)) return null;
+            var raw = new CalibratedRawFileReader(fileName);
+            if (raw.Channels == 3) return raw;
+            raw.Dispose();
+            throw new InvalidDataException("Conoscope 需要完整的 XYZ 三通道色度数据。");
+        }
 
         public event EventHandler<ConoscopeDocumentChangedEventArgs>? Changed;
         public event EventHandler<ConoscopeDocumentLoadFailedEventArgs>? LoadFailed;
+        public event EventHandler? LoadStateChanged;
 
         public Task OpenAsync(
             string fileName,
@@ -82,7 +120,18 @@ namespace Conoscope
             ClearData(cancelPendingLoad: false);
             FileName = string.Empty;
             ExposureSummary = null;
+            ProcessingDescription = $"InitialPreprocess={applyPreprocess}; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
+            lastOpen = new(fileName, requestedExposureSummary, options, applyPreprocess);
+            SetLoadState(true, null);
             return LoadAsync(fileName, requestedExposureSummary, options, applyPreprocess, request);
+        }
+
+        public Task RetryLoadAsync()
+        {
+            if (!CanRetryLoad || lastOpen is not { } request) return Task.CompletedTask;
+            // Reload all channels with the original options; never combine retained Y
+            // with X/Z from a file that may have been repaired or replaced on disk.
+            return OpenAsync(request.FileName, request.ExposureSummary, request.Options, request.ApplyPreprocess);
         }
 
         public void Reload(ConoscopePreprocessOptions options)
@@ -101,7 +150,8 @@ namespace Conoscope
             Mat? z = null;
             try
             {
-                using (CVCIEFile file = ReadChannel(fileName, 0))
+                using CalibratedRawFileReader? rawSource = OpenRawSource(fileName);
+                using (CVCIEFile file = ReadChannel(fileName, 0, rawSource))
                 {
                     x = CreateMat(file);
                 }
@@ -109,7 +159,7 @@ namespace Conoscope
                 int cols;
                 int rows;
                 int bpp;
-                using (CVCIEFile file = ReadChannel(fileName, 1))
+                using (CVCIEFile file = ReadChannel(fileName, 1, rawSource))
                 {
                     y = CreateMat(file);
                     ExposureSummary ??= FormatExposureSummary(file);
@@ -118,7 +168,7 @@ namespace Conoscope
                     bpp = file.Bpp;
                 }
 
-                using (CVCIEFile file = ReadChannel(fileName, 2))
+                using (CVCIEFile file = ReadChannel(fileName, 2, rawSource))
                 {
                     z = CreateMat(file);
                 }
@@ -134,11 +184,12 @@ namespace Conoscope
                 X = x;
                 Y = y;
                 Z = z;
+                ProcessingDescription = $"ReloadedSource; ClampNonPositive={options.ClampNonPositiveXyz}; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
                 x = null;
                 y = null;
                 z = null;
                 MarkDataChanged();
-                log.Info($"已加载 CVCIE XYZ 数据: {cols}x{rows}, Bpp={bpp}");
+                log.Info($"已加载 CIE XYZ 数据: {cols}x{rows}, Bpp={bpp}");
             }
             finally
             {
@@ -156,6 +207,7 @@ namespace Conoscope
             try
             {
                 ConoscopePreprocessPipeline.Apply(ref x, ref y, ref z, options, log);
+                ProcessingDescription = $"AppliedPreprocess; Options={Newtonsoft.Json.JsonConvert.SerializeObject(options)}";
             }
             finally
             {
@@ -172,6 +224,7 @@ namespace Conoscope
         public void Dispose()
         {
             CancelPendingLoad();
+            lastOpen = null;
             ClearData(cancelPendingLoad: false);
         }
 
@@ -185,6 +238,7 @@ namespace Conoscope
             bool gateAcquired = false;
             bool initialDisplayCompleted = false;
             Stopwatch totalStopwatch = new();
+            CalibratedRawFileReader? rawSource = null;
 
             try
             {
@@ -193,8 +247,10 @@ namespace Conoscope
                 request.Cancellation.Token.ThrowIfCancellationRequested();
                 totalStopwatch.Start();
 
+                rawSource = await Task.Run(() => OpenRawSource(fileName), request.Cancellation.Token);
+
                 InitialLoadResult initial = await Task.Run(
-                    () => LoadInitialChannel(fileName, options, applyPreprocess, request.Cancellation.Token),
+                    () => LoadInitialChannel(fileName, rawSource, options, applyPreprocess, request.Cancellation.Token),
                     request.Cancellation.Token);
 
                 if (!initial.RequiresJointPreprocess)
@@ -221,7 +277,7 @@ namespace Conoscope
                 // into the delegate and its finally block must run even if cancellation
                 // happens before the work is scheduled.
                 DeferredLoadResult deferred = await Task.Run(
-                    () => LoadDeferredChannels(fileName, options, applyPreprocess, jointY, request.Cancellation.Token));
+                    () => LoadDeferredChannels(fileName, rawSource, options, applyPreprocess, jointY, request.Cancellation.Token));
 
                 if (deferred.Y != null)
                 {
@@ -267,21 +323,25 @@ namespace Conoscope
                     log.Error($"打开Conoscope图像失败: {ex.Message}", ex);
                 }
 
+                SetLoadState(true, ex);
                 PublishLoadFailed(ex, initialDisplayCompleted);
             }
             finally
             {
+                rawSource?.Dispose();
                 if (gateAcquired)
                 {
                     loadGate.Release();
                 }
 
+                if (IsCurrent(request)) SetLoadState(false, LoadError);
                 Release(request);
             }
         }
 
         private static InitialLoadResult LoadInitialChannel(
             string fileName,
+            CalibratedRawFileReader? rawSource,
             ConoscopePreprocessOptions options,
             bool applyPreprocess,
             CancellationToken cancellationToken)
@@ -290,7 +350,7 @@ namespace Conoscope
             Mat? y = null;
             try
             {
-                using CVCIEFile file = ReadChannel(fileName, 1, cancellationToken);
+                using CVCIEFile file = ReadChannel(fileName, 1, rawSource, cancellationToken);
                 y = CreateMat(file);
                 cancellationToken.ThrowIfCancellationRequested();
                 ClampIfEnabled(y, options);
@@ -326,6 +386,7 @@ namespace Conoscope
 
         private static DeferredLoadResult LoadDeferredChannels(
             string fileName,
+            CalibratedRawFileReader? rawSource,
             ConoscopePreprocessOptions options,
             bool applyPreprocess,
             Mat? jointY,
@@ -338,14 +399,14 @@ namespace Conoscope
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                using (CVCIEFile file = ReadChannel(fileName, 0, cancellationToken))
+                using (CVCIEFile file = ReadChannel(fileName, 0, rawSource, cancellationToken))
                 {
                     x = CreateMat(file);
                 }
                 ClampIfEnabled(x, options);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                using (CVCIEFile file = ReadChannel(fileName, 2, cancellationToken))
+                using (CVCIEFile file = ReadChannel(fileName, 2, rawSource, cancellationToken))
                 {
                     z = CreateMat(file);
                 }
@@ -381,8 +442,12 @@ namespace Conoscope
         private static CVCIEFile ReadChannel(
             string fileName,
             int channelIndex,
+            CalibratedRawFileReader? rawSource,
             CancellationToken cancellationToken = default)
         {
+            if (rawSource != null) return rawSource.ReadChannel(channelIndex, cancellationToken);
+            if (!string.Equals(Path.GetExtension(fileName), ".cvcie", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Conoscope 需要 CVCIE 或带有可重放色度校正参数的 CVRAW 文件。");
             bool channelRead = CVFileUtil.ReadCIEFileChannel(fileName, channelIndex, out CVCIEFile file, cancellationToken);
             try
             {
@@ -589,6 +654,19 @@ namespace Conoscope
                 loadCancellation?.Cancel();
                 loadCancellation = null;
             }
+            SetLoadState(false, null);
+        }
+
+        private void SetLoadState(bool loading, Exception? error)
+        {
+            IsLoading = loading;
+            LoadError = error;
+            if (LoadStateChanged == null) return;
+            foreach (EventHandler observer in LoadStateChanged.GetInvocationList())
+            {
+                try { observer(this, EventArgs.Empty); }
+                catch (Exception ex) { log.Error("Conoscope load-state observer failed", ex); }
+            }
         }
 
         private void Release(LoadRequest request)
@@ -621,6 +699,7 @@ namespace Conoscope
         }
 
         private sealed record LoadRequest(int Version, CancellationTokenSource Cancellation);
+        private sealed record OpenRequest(string FileName, string? ExposureSummary, ConoscopePreprocessOptions Options, bool ApplyPreprocess);
 
         private sealed record InitialLoadResult(
             Mat Y,

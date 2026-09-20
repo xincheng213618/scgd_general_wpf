@@ -94,6 +94,9 @@ namespace ProjectARVRPro
         /// </summary>
         public Dictionary<string, ScreenDefectsData> DynamicScreenDefectResults { get; set; } = new Dictionary<string, ScreenDefectsData>();
 
+        /// <summary>九点 RGB 结果按导出名称保存；保留原始/修正值、测量有效性和可选判定。</summary>
+        public Dictionary<string, ProjectARVRPro.Process.OpticCenter.RgbCrossViewResult> DynamicRgbCrossResults { get; set; } = new();
+
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>

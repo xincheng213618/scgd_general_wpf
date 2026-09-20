@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace ProjectLUX.Process
@@ -17,10 +18,12 @@ namespace ProjectLUX.Process
     public class ProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
-        private const string PersistFileName = "ProcessMetas.json";
-        private const string GroupPersistFileName = "ProcessGroups.json";
+        private const string LegacyPersistFileName = "ProcessMetas.json";
+        private const string LegacyGroupPersistFileName = "ProcessGroups.json";
+        internal const string GroupPersistFileName = "ProjectLUXProcessGroups.json";
         private static string PersistDirectory => ViewResultManager.DirectoryPath; // 复用配置目录
-        private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
+        private static string LegacyPersistFilePath => Path.Combine(PersistDirectory, LegacyPersistFileName);
+        private static string LegacyGroupPersistFilePath => Path.Combine(PersistDirectory, LegacyGroupPersistFileName);
         private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
 
         private static ProcessManager _instance;
@@ -414,15 +417,23 @@ namespace ProjectLUX.Process
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
 
-                // Try new format first
                 if (File.Exists(GroupPersistFilePath))
                 {
-                    LoadFromGroupsFile();
+                    LoadFromGroupsFile(GroupPersistFilePath);
                 }
-                // Fall back to old format (auto-migrate)
-                else if (File.Exists(PersistFilePath))
+                else if (File.Exists(LegacyGroupPersistFilePath) && IsLuxGroupsFile(LegacyGroupPersistFilePath))
                 {
-                    MigrateFromOldFormat();
+                    log.Info($"检测到 LUX 旧共享流程配置，迁移到 {GroupPersistFileName}");
+                    LoadFromGroupsFile(LegacyGroupPersistFilePath);
+                    SavePersistedGroups();
+                }
+                else if (File.Exists(LegacyPersistFilePath) && IsLuxLegacyMetasFile(LegacyPersistFilePath))
+                {
+                    MigrateFromOldFormat(LegacyPersistFilePath);
+                }
+                else if (File.Exists(LegacyGroupPersistFilePath) || File.Exists(LegacyPersistFilePath))
+                {
+                    log.Warn($"检测到无法确认属于 LUX 的旧共享流程配置，已保留原文件并跳过迁移。新配置将保存到 {GroupPersistFileName}");
                 }
 
                 // Ensure we have at least one group
@@ -439,13 +450,13 @@ namespace ProjectLUX.Process
             }
             catch (Exception ex)
             {
-                log.Error("加载ProcessGroups失败", ex);
+                log.Error($"加载{GroupPersistFileName}失败", ex);
             }
         }
 
-        private void LoadFromGroupsFile()
+        private void LoadFromGroupsFile(string filePath)
         {
-            string json = File.ReadAllText(GroupPersistFilePath);
+            string json = File.ReadAllText(filePath);
             var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json);
             if (root == null || root.Groups == null || root.Groups.Count == 0)
             {
@@ -468,10 +479,10 @@ namespace ProjectLUX.Process
             _ActiveGroupIndex = Math.Max(0, Math.Min(root.ActiveGroupIndex, ProcessGroups.Count - 1));
         }
 
-        private void MigrateFromOldFormat()
+        private void MigrateFromOldFormat(string filePath)
         {
-            log.Info("检测到旧格式 ProcessMetas.json，自动迁移到 ProcessGroups.json");
-            string json = File.ReadAllText(PersistFilePath);
+            log.Info($"检测到 LUX 旧格式 {LegacyPersistFileName}，自动迁移到 {GroupPersistFileName}");
+            string json = File.ReadAllText(filePath);
             var list = JsonConvert.DeserializeObject<List<ProcessMetaPersist>>(json) ?? new List<ProcessMetaPersist>();
 
             var defaultGroup = new ProcessGroup { Name = "Default" };
@@ -485,6 +496,74 @@ namespace ProjectLUX.Process
 
             // Save in new format
             SavePersistedGroups();
+        }
+
+        private bool IsLuxGroupsFile(string filePath)
+        {
+            try
+            {
+                if (JToken.Parse(File.ReadAllText(filePath)) is not JObject root
+                    || root[nameof(ProcessGroupsRoot.Groups)] is not JArray groups)
+                {
+                    return false;
+                }
+
+                foreach (JObject group in groups.OfType<JObject>())
+                {
+                    if (group[nameof(ProcessGroupPersist.Metas)] is not JArray metas)
+                        continue;
+
+                    foreach (JObject meta in metas.OfType<JObject>())
+                    {
+                        if (meta.Property(nameof(ProcessMetaPersist.SocketCode)) != null
+                            || IsKnownProcessType(meta.Value<string>(nameof(ProcessMetaPersist.ProcessTypeFullName)), "ProjectLUX."))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"无法识别旧共享流程配置 {filePath}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool IsLuxLegacyMetasFile(string filePath)
+        {
+            try
+            {
+                if (JToken.Parse(File.ReadAllText(filePath)) is not JArray metas || metas.Count == 0)
+                    return false;
+
+                foreach (JObject meta in metas.OfType<JObject>())
+                {
+                    if (meta.Property(nameof(ProcessMetaPersist.SocketCode)) != null
+                        || IsKnownProcessType(meta.Value<string>(nameof(ProcessMetaPersist.ProcessTypeFullName)), "ProjectLUX."))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"无法识别旧共享流程配置 {filePath}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool IsKnownProcessType(string? processTypeFullName, string projectNamespace)
+        {
+            if (string.IsNullOrWhiteSpace(processTypeFullName))
+                return false;
+
+            return processTypeFullName.StartsWith(projectNamespace, StringComparison.Ordinal)
+                || Processes.Any(process => string.Equals(process.GetType().FullName, processTypeFullName, StringComparison.Ordinal));
         }
 
         private ProcessMeta DeserializeProcessMeta(ProcessMetaPersist item)
@@ -554,7 +633,7 @@ namespace ProjectLUX.Process
             }
             catch (Exception ex)
             {
-                log.Error("保存ProcessGroups失败", ex);
+                log.Error($"保存{GroupPersistFileName}失败", ex);
             }
         }
 

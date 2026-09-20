@@ -26,6 +26,9 @@ next: false
 - [DataLoad 数据加载模板](../../04-api-reference/algorithms/templates/data-load-template.md) — `algorithms.data-load`
   数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。
 
+- [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
+  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
@@ -35,8 +38,14 @@ next: false
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
 
+- [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
+  本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
+
 - [Ghost1.0 鬼影检测](../../04-api-reference/algorithms/detectors/ghost-detection.md) — `algorithms.ghost`
   Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。
+
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [ImageCropping 图像裁剪模板](../../04-api-reference/algorithms/templates/image-cropping-template.md) — `algorithms.image-cropping`
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
@@ -84,7 +93,7 @@ next: false
   图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
+  灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
 
 - [图像配准 V1](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
   ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。

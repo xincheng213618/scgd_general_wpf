@@ -29,8 +29,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             IReadOnlyList<FlowNodeMessage> messages,
             IReadOnlyList<FlowExecutionEvent> events,
             DateTime capturedAt,
-            long slowNodeThresholdMs)
+            long slowNodeThresholdMs,
+            FlowAnalysisDataSource? dataSource = null)
         {
+            DataSource = dataSource ?? new FlowAnalysisDataSource();
             BatchId = batchId;
             SerialNumber = serialNumber ?? string.Empty;
             Batch = batch;
@@ -62,6 +64,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         public int BatchId { get; }
+        internal FlowAnalysisDataSource DataSource { get; }
 
         public string SerialNumber { get; }
 

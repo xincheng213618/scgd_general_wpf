@@ -33,10 +33,7 @@ namespace Conoscope.Core
         public static bool CanOpenFromImageView(EditorContext context)
         {
             string? filePath = context.Config.FilePath;
-            return !string.IsNullOrWhiteSpace(filePath)
-                && File.Exists(filePath)
-                && ColorVision.FileIO.CVFileUtil.IsCVCIEFile(filePath)
-                && context.Config.GetProperties<int>(ImageViewPropertyKeys.Channel) == 3;
+            return ConoscopeDocument.CanOpenFile(filePath);
         }
 
         private static ConoscopeWindow GetOrCreateWindow()

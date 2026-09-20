@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.BlobAnalysis
             AlgorithmTableArtifact components = result.GetArtifact<AlgorithmTableArtifact>("blob-components")
                 ?? throw new ArgumentException("The result has no blob component table.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
             ComponentsGrid.ItemsSource = ToTable(components).DefaultView;

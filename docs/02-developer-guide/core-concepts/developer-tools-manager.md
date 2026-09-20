@@ -5,7 +5,7 @@ status: "current"
 summary: "开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。"
 aliases: ["开发工具管理", "系统开发工具", "Python安装", "Node.js安装", "npm版本", "命令路径详情", "当前应用", "新终端参考", "随附包管理器", "刷新检测", "获取可安装版本", "下载并安装", "npmmirror", "NVM_HOME", "FNM_DIR", "VOLTA_HOME", "DeveloperToolsAppProvider", "DeveloperToolsWindow", "DeveloperToolPageModel", "DeveloperToolDiscoveryService", "DeveloperToolCatalogService", "DeveloperToolInstallerService", "DeveloperToolRelease", "ResolvePathCommand", "PrepareInstaller", "VerifiedInstaller", "官网SHA256", "下载服务返回了意外的文件路径", "安装向导已退出"]
 code_paths: ["ColorVision/ToolPlugins/DeveloperTools", "Engine/ColorVision.Engine/Services/DeveloperTools", "UI/ColorVision.Common/ThirdPartyApps/ThirdPartyAppManager.cs", "UI/ColorVision.UI/Download/IDownloadService.cs", "UI/ColorVision.UI/Environments.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadService.cs", "UI/ColorVision.UI.Desktop/Download/Aria2cDownloadManager.cs", "UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs", "Test/ColorVision.UI.Tests/DeveloperToolsWindowTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs"]
 related: ["ui.common", "ui.desktop", "ui.storage-maintenance"]
 ---
 

@@ -316,7 +316,7 @@ namespace Conoscope.Core
             });
         }
 
-        private static bool TryMapHorizontalVerticalToSource(
+        internal static bool TryMapHorizontalVerticalToSource(
             ConoscopeCoordinateSystem coordinateSystem,
             double horizontalAngle,
             double verticalAngle,

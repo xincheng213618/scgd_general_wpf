@@ -3,9 +3,9 @@ knowledge_id: "ui.image-frames"
 knowledge_type: "topic"
 status: "current"
 summary: "位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。"
-aliases: ["图像帧租约", "图像内存所有权", "像素缓存失效", "借用图像", "复制图像", "SourceImageFrame", "ImageFrameStore", "ImageFrameLease", "HImageExtension", "ForHImage", "ToHImage", "NotifySourcePixelsChanged"]
-code_paths: ["UI/ColorVision.Core/SourceImageFrame.cs", "UI/ColorVision.Core/HImage.cs", "UI/ColorVision.Core/HImageExtension.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs", "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"]
+aliases: ["图像帧租约", "图像内存所有权", "像素缓存失效", "借用图像", "复制图像", "SourceImageFrame", "ImageFrameStore", "ImageFrameLease", "HImageExtension", "ForHImage", "ToHImage", "NotifySourcePixelsChanged", "ImageDocument", "CommitSourcePixels"]
+code_paths: ["UI/ColorVision.Core/SourceImageFrame.cs", "UI/ColorVision.Core/HImage.cs", "UI/ColorVision.Core/HImageExtension.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs", "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs", "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs", "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"]
 related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms.platform"]
 ---
 
@@ -13,7 +13,7 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 图像帧租约用于在后台读取或 native 调用期间保留源图像的像素缓冲。通过 `ImageView.AcquireImageFrame()` 取得租约，在读取结束后释放；显示计算结果前还需检查图像版本，防止把旧结果应用到新图。租约的内存所有权、缓存版本与结果适用性分别遵循下面的规则。
 
-`SourceImageFrame` 与 `ImageFrameStore` 是 Core 内部实现，`ImageFrameLease` 是公开读者句柄。外部调用方通过 ImageView 取帧，不直接构造内部存储。`HImage` 的 Pack=8、释放标志和 native 函数族约定只在[native 集成](../../02-developer-guide/engine-development/opencv-integration.md)维护。
+`SourceImageFrame` 与 `ImageFrameStore` 是 Core 内部实现，`ImageFrameLease` 是公开读者句柄。每个 `ImageDocument` 持有自己的 store、源引用、文档 ID 和 revision；`ImageView` 及处理上下文提供取帧入口，外部调用方不直接构造内部存储。`HImage` 的 Pack=8、释放标志和 native 函数族约定只在[native 集成](../../02-developer-guide/engine-development/opencv-integration.md)维护。
 
 ## 借用、复制与拥有者
 
@@ -44,9 +44,11 @@ related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms
 
 `Invalidate()` 显式推进 revision、取下当前帧并释放其 owner 引用；`Dispose()` 还关闭 store，此后取得帧会抛异常、`IsCurrent` 返回 false。`IsCurrent(revision)` 只比较这个 store 的版本与存活状态，不读取/哈希像素，不证明当前已有一帧，也不比较不同文档或不同调用。
 
-ImageView 的取帧工厂优先读 `ViewBitmapSource`，其次 `ImageShow.Source`；只有 `WriteableBitmap` 才以 `ToHImage()` 创建缓存副本，不重新读取磁盘。取帧入口会调度到该 ImageView 的 Dispatcher。旧租约因此是旧副本：原位图换掉或改写，不会自动改掉它的像素。
+`ImageDocument.AcquireFrame` 只读取文档 `Source`（`ViewBitmapSource` 的转发目标）；文档无源时返回 null，即使画布上已有显示图，也不将显示结果当成计算输入。只有 `WriteableBitmap` 才以 `ToHImage()` 创建缓存副本，不重新读取磁盘。取帧入口会调度到文档所属 Dispatcher。旧租约因此是旧副本：原位图换掉或改写，不会自动改掉它的像素。矢量源可保留有效逻辑画布，但不会创建虚构像素帧。
 
-ImageView 会记录当前缓存帧对应的 `ImageSource` 对象；取帧时若发现规范源图对象已被替换，会先推进 revision 并从当前源图重建缓存，不能把上一张图的帧交给当前本地算法。原地改写同一张位图后对象引用不变，宿主仍须经 `NotifySourcePixelsChanged()` 通知失效；只改字节或调用 Core 的位图复制工具不会由 store 自动识别为新版本。`SetImageSource`、`Clear` 和显式像素变更入口怎样联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
+文档记录当前缓存帧对应的 `ImageSource` 对象；取帧时若发现该对象已被替换，会先推进 revision 并从当前源图重建缓存。兼容源 setter 仍只赋值，不在赋值时自动推进版本。生产者应使用 `CommitSourcePixels(source)` 显式完成源赋值和一次失效；原地改写同一张位图也可调用 `NotifySourcePixelsChanged()`。只改字节或调用 Core 位图复制工具不会由 store 自动识别为新版本。完整 `SetImageSource`、`Clear` 和像素提交如何联动算法会话、预览与 overlay，统一见[文档变更边界](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#m0-执行与所有权规则)。
+
+显示发布与像素提交独立：`ImagePresentation.Publish` / `RestoreSource` 不推进 source revision。连续帧先保存冻结源快照，再提交与处理结果对应的同一帧源；可变生产者缓冲不能作为后台长期读取输入。该有界处理队列、过期拒绝和失败回退见[连续帧显示](./image-editor-context.md#连续帧显示)，不能将冻结快照与借用 native 指针混为同一种所有权。
 
 发布结果前仍须核对当前宿主的 revision；统一算法路径还核对 `DocumentInstanceId` 与 `InvocationId`。保留租约只保证读取期帧存储持有的像素内存有效，不能用它证明结果仍属于当前图像，也不自动提供 latest-wins 或取消。
 

@@ -105,6 +105,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public double ColorUniformityDeltaUv { get; set; }
         public double ColorUniformityDeltaX { get; set; }
         public double ColorUniformityDeltaY { get; set; }
+        public int ChromaticitySampleCount { get; set; }
+        public int InvalidChromaticitySampleCount { get; set; }
+        public double AverageUPrime { get; set; } = double.NaN;
+        public double AverageVPrime { get; set; } = double.NaN;
+        public double ColorCenterRmsToD65 { get; set; } = double.NaN;
+        public double ColorCenterDistanceToD65 { get; set; } = double.NaN;
+        public double ChromaticitySpatialRms { get; set; } = double.NaN;
         public double CenterX { get; set; }
         public double CenterY { get; set; }
         public double CenterU { get; set; }
@@ -144,6 +151,14 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             stats.ColorUniformityDeltaUv = CalcMaxDeltaUv(items);
             stats.ColorUniformityDeltaX = maxX - minX;
             stats.ColorUniformityDeltaY = maxY - minY;
+            ChromaticityCenterMetrics chromaticity = ChromaticityCenterCalculator.Calculate(items.Select(o => (o.u, o.v)));
+            stats.ChromaticitySampleCount = chromaticity.SampleCount;
+            stats.InvalidChromaticitySampleCount = chromaticity.InvalidSampleCount;
+            stats.AverageUPrime = chromaticity.AverageUPrime;
+            stats.AverageVPrime = chromaticity.AverageVPrime;
+            stats.ColorCenterRmsToD65 = chromaticity.RmsToReference;
+            stats.ColorCenterDistanceToD65 = chromaticity.CenterDistanceToReference;
+            stats.ChromaticitySpatialRms = chromaticity.SpatialRms;
 
             double maxWave = items.Max(o => o.Wave);
             double minWave = items.Min(o => o.Wave);

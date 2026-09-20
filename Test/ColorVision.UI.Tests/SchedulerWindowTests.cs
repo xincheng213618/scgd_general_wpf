@@ -4,6 +4,7 @@ using Quartz;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using SchedulerStatus = ColorVision.Scheduler.SchedulerStatus;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Resources = ColorVision.Scheduler.Properties.Resources;
@@ -136,13 +137,13 @@ public class SchedulerWindowTests
     {
         public Type ConfigType => typeof(TestJobConfig);
         public IJobConfig CreateDefaultConfig() => new TestJobConfig();
-        public Task Execute(IJobExecutionContext context) => Task.CompletedTask;
+        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
     }
     public sealed class BrokenConfigurationJob : IJob, IConfigurableJob
     {
         public Type ConfigType => typeof(TestJobConfig);
         public IJobConfig CreateDefaultConfig() => throw new InvalidOperationException("configuration failed");
-        public Task Execute(IJobExecutionContext context) => Task.CompletedTask;
+        public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
     }
 
     [Fact]
@@ -223,6 +224,6 @@ internal sealed class SchedulerWindowTestService : ISchedulerService
     public string GetNewGroupName(string name) => name;
     public void SaveTasks() { }
     public void LoadTasks() { }
-    public sealed class FirstJob : IJob { public Task Execute(IJobExecutionContext context) => Task.CompletedTask; }
-    public sealed class SecondJob : IJob { public Task Execute(IJobExecutionContext context) => Task.CompletedTask; }
+    public sealed class FirstJob : IJob { public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask; }
+    public sealed class SecondJob : IJob { public ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default) => ValueTask.CompletedTask; }
 }

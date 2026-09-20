@@ -94,6 +94,7 @@ namespace ColorVision.Copilot
             var finalAnswer = string.Empty;
             var timeBudgetExhausted = false;
             var contextWindowExceeded = false;
+            CopilotAgentBlockerSnapshot? providerFailure = null;
             var outputLengthLimited = false;
             var outputContentFiltered = false;
             var outputFinishReasonIncomplete = false;
@@ -124,7 +125,7 @@ namespace ColorVision.Copilot
                 timeBudgetExhausted = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery exhausted its total-time budget after {FormatDuration(stopwatch.Elapsed)}."));
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
@@ -143,9 +144,14 @@ namespace ColorVision.Copilot
                     + $" · estimated input {ex.EstimatedInputTokensBefore:N0} → {ex.EstimatedInputTokensAfter:N0} tokens"
                     + $" · target {ex.TargetInputTokens:N0})."));
             }
+            catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
+            {
+                providerFailure = CreateProviderFailureBlocker(ex);
+                emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery failed: " + providerFailure.Summary));
+            }
             catch (Exception ex)
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery failed ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message, request.Profile.ApiKey)})."));
             }
 
             var hasDisplayableFinalAnswer = !string.IsNullOrWhiteSpace(finalAnswer);
@@ -161,11 +167,13 @@ namespace ColorVision.Copilot
                         : outputContentFiltered
                             ? "\n\n最终回答被提供商内容策略提前停止；已保留以上允许返回的内容。"
                             : "\n\n最终回答以未确认完成的提供商状态结束；已保留以上部分内容，可以稍后再次重试最终回答。"
-                    : contextWindowExceeded
-                        ? "最终回答所需上下文超过当前模型窗口，请缩短会话或附件内容后重试；已保存的上下文和工具结果没有被重放。"
-                        : timeBudgetExhausted
-                            ? "最终回答生成达到本轮时间预算。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"
-                            : "模型仍未返回可显示的最终回答。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"));
+                    : providerFailure != null
+                        ? providerFailure.Summary + " 已保存的上下文和工具结果没有被重放，可处理原因后重试最终回答。"
+                        : contextWindowExceeded
+                            ? "最终回答所需上下文超过当前模型窗口，请缩短会话或附件内容后重试；已保存的上下文和工具结果没有被重放。"
+                            : timeBudgetExhausted
+                                ? "最终回答生成达到本轮时间预算。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"
+                                : "模型仍未返回可显示的最终回答。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"));
             }
 
             var budgetSnapshot = runBudget.CreateSnapshot(
@@ -181,14 +189,14 @@ namespace ColorVision.Copilot
             var budgetExhausted = timeBudgetExhausted || budgetSnapshot.BudgetExhausted;
             var stopReason = hasFinalAnswer
                 ? CopilotAgentStopReason.Completed
-                : contextWindowExceeded
+                : contextWindowExceeded || providerFailure != null
                     ? CopilotAgentStopReason.ProviderFailure
                     : budgetExhausted
                         ? CopilotAgentStopReason.BudgetExhausted
                         : CopilotAgentStopReason.IncompleteOutput;
             IReadOnlyList<CopilotAgentBlockerSnapshot> blockers = hasFinalAnswer
                 ? Array.Empty<CopilotAgentBlockerSnapshot>()
-                : [CreateProviderOutputBlocker(
+                : [providerFailure ?? CreateProviderOutputBlocker(
                     timeBudgetExhausted,
                     requestBudgetExhausted: budgetSnapshot.BudgetExhausted && !timeBudgetExhausted && !contextWindowExceeded,
                     contextWindowExceeded,
@@ -262,7 +270,7 @@ namespace ColorVision.Copilot
                 Summary = timeBudgetExhausted
                     ? "The provider did not complete the Agent final answer before its time budget expired."
                     : contextWindowExceeded
-                        ? "The provider rejected the request as larger than its actual context window after one bounded compaction recovery."
+                        ? "最终回答所需上下文超过可用模型窗口。请缩短会话或附件内容后重试。"
                         : outputLengthLimited
                             ? "The provider reached its maximum output length before the Agent final answer completed."
                             : outputContentFiltered
@@ -276,13 +284,38 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static CopilotAgentBlockerSnapshot CreateProviderInterruptionBlocker()
+        private static CopilotAgentBlockerSnapshot CreateProviderFailureBlocker(Exception exception)
         {
+            var transient = CopilotProviderRetryChatClient.TryClassifyTransientFailure(
+                exception, CancellationToken.None, out _, out var statusCode);
+            var error = CopilotProviderErrorPolicy.FindHttpError(exception);
+            var code = error.DiagnosticCode;
+            var blockerCode = "provider_interrupted";
+            var summary = "模型连接在 Agent 已取得进展后中断。请检查连接后继续。";
+            if (statusCode.HasValue || code.Length > 0)
+            {
+                blockerCode = transient ? "provider_unavailable" : "provider_request_rejected";
+                var detail = statusCode.HasValue ? $"HTTP {statusCode}" : "服务错误";
+                if (code.Length > 0)
+                    detail += $" / {code}";
+                summary = error.RequiresUserAction
+                    ? $"模型服务的额度或账单限制阻止了请求（{detail}）。请处理账户限制后继续。"
+                    : transient
+                        ? $"模型服务暂时不可用（{detail}）。请稍后继续。"
+                        : $"模型服务拒绝了请求（{detail}）。" + (statusCode switch
+                        {
+                            401 => "请检查 API 密钥或登录状态后继续。",
+                            403 => "请检查账户或模型访问权限后继续。",
+                            404 => "请检查服务地址和模型名称后继续。",
+                            400 or 422 => "请检查请求参数与接口兼容性后继续。",
+                            _ => "请检查服务配置和请求参数后继续。",
+                        });
+            }
             return new CopilotAgentBlockerSnapshot
             {
                 Kind = CopilotAgentBlockerKind.ProviderOutput,
-                Code = "provider_interrupted",
-                Summary = "The provider stream ended after material Agent progress; the current session was checkpointed before any tool replay.",
+                Code = blockerCode,
+                Summary = CopilotProviderRequestId.AppendToMessage(summary, CopilotProviderRequestId.Find(exception)),
                 RequiresUserInput = true,
             };
         }

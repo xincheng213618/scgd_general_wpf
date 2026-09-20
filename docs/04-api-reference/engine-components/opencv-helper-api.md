@@ -3,9 +3,9 @@ knowledge_id: "engine.opencv-helper-api"
 knowledge_type: "reference"
 status: "current"
 summary: "opencv_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。"
-aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
-code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
-test_paths: ["Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
+aliases: ["opencv_helper API", "原生函数参考", "图像拼接", "伪彩原位输出", "POI 批量计算", "校准共享缓存", "StitchingErrorCode", "VideoInfo", "RoiRect", "COLORVISION_CALIBRATION_CACHE_MB", "M_CalibrationExecuteToV1", "M_CalibrationCacheReleaseV1", "M_CalculatePoiBatchV1", "M_CalculatePoiBatchV2", "MPoiOptionsV2", "PoiOptionsFlagsV2", "M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES", "PoiMeasurementService", "M_AutoLevelsAdjust", "M_AutomaticColorAdjustment", "M_AutomaticToneAdjustment", "M_PseudoColor", "M_PseudoColorAutoRange", "M_PseudoColorInto", "M_GetMinMax", "M_ExtractChannel", "M_GetWhiteBalance", "M_ApplyGammaCorrection", "M_AdjustBrightnessContrast", "M_InvertImage", "M_Threshold", "M_RemoveMoire", "M_ConvertImage", "M_ConvertGray32Float", "M_DrawPoiImage", "M_StitchImages", "M_Fusion", "M_ApplyGaussianBlur", "M_ApplyMedianBlur", "M_ApplySharpen", "M_ApplyCannyEdgeDetection", "M_ApplyHistogramEqualization", "M_CalSFRMultiChannel", "M_AnalyzeSfrV2", "斜边清晰度", "ESF", "MTF50", "MTF10", "RGB 子像素", "M_CalArtculation", "M_FindLuminousArea", "M_FindLuminousAreaV2", "M_FindLightBeads", "M_DetectKeyRegions", "M_VideoOpen", "M_VideoReadFrame", "M_VideoSeek", "M_VideoGetCurrentFrame", "M_VideoSetPlaybackSpeed", "M_VideoSetResizeScale", "M_VideoPlay", "M_VideoPause", "M_VideoClose", "FreeResult", "M_FreeHImageData", "M_PseudoColorAutoRangeInto"]
+code_paths: ["Native/opencv_helper/API_Documentation.md", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/include/video_export.h", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/video_export.cpp", "Native/opencv_helper/exports/calibration_export.cpp", "Native/opencv_helper/exports/poi_export.cpp", "Native/opencv_helper/exports/sfr_export.cpp", "Native/opencv_helper/exports/p2_export.cpp", "Native/opencv_helper/algorithm/calibration", "Native/opencv_helper/algorithm/poi/poi_batch.cpp", "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp", "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/SfrAnalysis.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR", "UI/ColorVision.Core/OpenCVCalibration.cs", "UI/ColorVision.Core/HImage.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"]
+test_paths: ["Test/opencv_helper_test/test_sfr_analysis.cpp", "Test/ColorVision.UI.Tests/SfrAnalysisTests.cs", "Test/opencv_helper_test/test_find_luminous_area.cpp", "Test/opencv_helper_test/test_calibration.cpp", "Test/opencv_helper_test/test_pseudo_color.cpp", "Test/opencv_helper_test/test_p2_algorithms.cpp", "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
 related: ["engine.native-integration", "ui.core", "ui.image-frames", "algorithms.local-native-analysis", "algorithms.poi-routes", "algorithms.find-cross"]
 ---
 
@@ -186,6 +186,8 @@ selected. Color-transform exposure values must be finite and positive.
 Geometric transforms that cannot safely run in place share one context-owned
 RAW-sized work buffer and ping-pong through it. Consecutive Distortion and
 ColorDiff therefore require no intermediate full-frame copy.
+
+`AngleShift` 保留整数/小数光心、各通道多项式、整数采样坐标及越界补零规则。16-bit 三通道输入在 IPP 启用且 `interpolate_ratio` 为 2、3、4 时，可缓存分块区域与局部采样坐标，只对需要的区域执行同一套 `INTER_CUBIC`；裁剪区域包含完整插值邻域，不把分块边缘当作图像边缘。复用的分块图像缓冲总计不超过 64 MiB（不含坐标表和 RAW 工作缓冲）。8-bit、其他倍率、IPP 关闭，或分块会增加处理量/需要过大区域时，保留完整图像放大路径；执行上下文切换这些条件时重建对应坐标，不改进程全局线程或 IPP 设置。`Test/opencv_helper_test/test_calibration.cpp` 的校准 smoke 覆盖随机/极值图、边缘、光心小数、后端与位深切换，并要求与完整放大参考逐字节一致。
 
 `M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write
 corrected RAW, planar CIE, or both without first copying the source in managed
@@ -653,6 +655,22 @@ COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImag
 
 ## SFR (Spatial Frequency Response) Functions
 
+ImageEditor 的“框选斜边测清晰度（SFR/MTF）”使用诊断接口 `M_AnalyzeSfrV2(HImage, RoiRect, const char* config, char** result)`，托管入口为 `SfrAnalyzer.Analyze`。选择一条完整斜边、两侧保留均匀平台；也可从已有矩形右键进入。窗口持有输入帧租约，参数重算使用同一快照；主图换帧不会偷偷改变本次测量。参数仅在当前窗口生效，完整 JSON 保存本次参数与来源版本。
+
+MTF 是边缘信号经 ESF（边缘过渡）、LSF（导数）、加窗及傅里叶幅值归一化得到的空间频率响应。MTF50/10 表示响应首次向下穿越 50%/10% 的频率，不是百分制清晰度分数。主图频率为 `cycles/input-pixel`，默认显示 `0..0.5`；0.5 是输入图像的 Nyquist，展开更高频段仅供诊断。L 是 `0.213 R + 0.715 G + 0.072 B` 的组合信号，不等同于经过光度标定的亮度。
+
+V2 接受单通道、BGR、BGRA（忽略 alpha），位深为 unsigned 8/16 bit 或 32/64 bit float。保留精度，不进行 ROI min/max 拉伸到 8 bit。配置 JSON 的 `encoding` 为 `unknown`（默认，仅诊断）、`linear`、`srgb` 或 `power`；`decodeExponent=2.2` 仅用于 power，线性信号等于归一化输入的该次幂。`blackLevel=0`、`whiteLevel=0` 默认按类型使用 255/65535/1 满量程；装入 16 位容器的低位深图或标定浮点图须填实际范围。非有限值或超出范围的像素拒绝处理，不能靠自动增益掩盖输入差异。
+
+`minimumContrast=0.02` 是解码后平台差，`minimumSnr=10` 是平台差/合并平台标准差，`maximumFitRms=0.35` 是直线边缘拟合残差像素值，均为可配置的诊断门限，不是 ISO 或客户验收规格。固定使用一次直线拟合、4 倍分箱、加窗 LSF 和微分响应补偿；定向后 ROI 至少 40×32 像素，边缘距左右边界保留至少约 12 像素，倾角范围 1°..15°（建议约 5°），边缘附近分箱覆盖至少 95%。单 ROI 最多 1600 万像素、边长最多 8192。过强平台纹理、多个边缘、不足的采样覆盖等给出逐通道原因，不能把放宽门限当作修复。
+
+`displayTarget=true` 增加显示系统测量提示。可见 RGB 子像素、摩尔纹、相机去马赛克与栅格相位会干扰单斜边模型；平滑 RGB 斜边仍可能可测。质量检查是启发式诊断，不能识别所有显示像素污染；通过检查不证明结果只来自镜头或光学系统。窗口不自动做周期平均、模糊或强制曲线单调，因为这些处理会改变被测响应。比较重复性需要多帧原始图、相同曝光/ROI/编码和拍摄倍率，单张图不能给出帧间置信区间。
+
+V2 正返回值为包含末尾 NUL 的 UTF-8 JSON 字节数，由 `FreeResult` 释放。JSON `algorithmVersion="2.0"`、`unit="cycles/pixel"`、`nyquist=0.5`；每个通道有 `valid/reason/warnings`、平台/拟合/覆盖诊断及其 `plateausAvailable/fitAvailable/samplingAvailable`，未执行的阶段不能解释为零误差。有效通道分别携带 `frequencies/mtf`、`edgePositions/esf`、`lsfPositions/lsf`，坐标不能混用；LSF 为实际用于运算的居中加窗导数。`mtf50/mtf10` 没有在 Nyquist 内交点时为 null，失败通道的指标为 null、曲线为空。`sourceDepth` 使用 OpenCV depth 枚举；窗口完整测量另存来源的 bit depth。全零 ROI 表示全图，其余 ROI 必须完整在图内，无旧版全图回退。错误码 -1 参数/ROI、-2 空图、-3 分配失败、-4 解析/输入/计算异常、-6 未知异常；输出指针在失败时清空。
+
+窗口同时列出 L/R/G/B 的 MTF50、MTF10、指定频率响应、Nyquist 响应和指定响应交点；提供 ROI 与拟合线、质量表、完整 MTF 数据、ESF/LSF 和术语说明。CSV 输出完整曲线，JSON 另包含完整诊断、采集时间、文档/帧版本、ROI、输入尺寸及参数。未知编码、削顶或显示对象提示独立于可计算状态，不能误当成产品“合格”。这一路径与 Engine 历史 SFR/SFR2、远端 MTF 模板及统一平台 `FieldSfr` 的输入/结果契约独立，不替换服务算法或历史 DAO。
+
+验证使用 `opencv_helper_test.exe --sfr-only`（V2 合成图及既有 sfrmat5/旧 ABI 回归）。托管侧 `SfrAnalysisTests` 覆盖阈值语义、输入配置、结果解析和高位深预览；设置 `COLORVISION_RUN_SFR_NATIVE_TESTS=1` 后还覆盖实际 P/Invoke 与 WPF 快照释放，须配套构建的原生 DLL。合成图通过不等于客户显示屏样本或 ISO 12233 一致性认证。概念依据可参阅 [Imatest sharpness](https://www.imatest.com/imaging/sharpness/) 与 [MTF measurement consistency](https://www.imatest.com/docs/mtf-measurement-consistency/)。
+
 ### M_CalSFRMultiChannel
 
 Calculate slanted-edge SFR for one gray channel or four reported R/G/B/L curves from BGR/BGRA input. This description does not certify optical conformance to a standard.
@@ -719,7 +737,7 @@ public static extern int M_CalSFRMultiChannel(
 
 ### C++ Implementation Notes
 
-SFR is implemented as a slanted-edge native module behind the stable C exports. Use `M_CalSFR` or `M_CalSFRMultiChannel` for cross-module calls so callers do not depend on `cv::Mat` or ColorVision C++ struct ABI.
+SFR is implemented behind C exports. New diagnostic callers use `M_AnalyzeSfrV2`; `M_CalSFR` and `M_CalSFRMultiChannel` retain their legacy capped metrics and numeric behavior for compatibility. Legacy success alone does not establish a usable edge. Callers must not depend on `cv::Mat` or ColorVision C++ struct ABI.
 
 ---
 

@@ -69,7 +69,7 @@
                         <TextBox Text="{Binding PoiConfig.BackgroundFilePath}" IsReadOnly="True"/>
                     </DockPanel>
                     <StackPanel Margin="0" Orientation="Horizontal">
-                        <Button  ToolTip="{x:Static properties:Resources.SavePOI}" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
+                        <Button x:Name="SavePoiButton" ToolTip="{x:Static properties:Resources.SavePOI}" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageSave}" Height="20" />
                         </Button>
                         <Button x:Name="button3" ToolTip="{x:Static properties:Resources.ClearPOI}" Click="Button3_Click" HorizontalAlignment="Right" Margin="0,0,5,0">

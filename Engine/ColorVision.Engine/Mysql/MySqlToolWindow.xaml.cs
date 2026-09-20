@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -308,6 +309,38 @@ namespace ColorVision.Database
         private void OpenCleanupWindow_Click(object sender, RoutedEventArgs e)
         {
             DatabaseCleanupWindow.OpenWindow();
+        }
+
+        private async void UpdateFlowNodes_Click(object sender, RoutedEventArgs e)
+        {
+            MySqlConfig config = MySqlDatabaseMaintenanceService.CloneConfig(MySqlSetting.Instance.MySqlConfig, MySqlSetting.Instance.MySqlConfig.Database);
+            var log = log4net.LogManager.GetLogger(typeof(MySqlToolWindow));
+            UpdateFlowNodesButton.IsEnabled = false;
+            UpdateFlowNodesStatus.Visibility = Visibility.Visible;
+            UpdateFlowNodesStatus.Text = EngineLocalization.Format($"正在更新数据库 {config.Database} 的流程节点，请稍候。");
+            try
+            {
+                string summary = await Task.Run(() => MySqlLocalServicesManager.RunDatabaseMaintenance(() =>
+                {
+                    string lastMessage = string.Empty;
+                    MySqlDatabaseMaintenanceService.UpdateRestoredFlowNodes(config, message =>
+                    {
+                        log.Info(message);
+                        lastMessage = message;
+                    });
+                    return lastMessage;
+                }));
+                UpdateFlowNodesStatus.Text = $"{config.Database}：{summary}\n{EngineLocalization.Get("重新加载流程后生效。")}";
+            }
+            catch (Exception ex)
+            {
+                log.Error("流程节点更新失败", ex);
+                UpdateFlowNodesStatus.Text = EngineLocalization.Format($"流程节点更新失败：{ex.Message}");
+            }
+            finally
+            {
+                UpdateFlowNodesButton.IsEnabled = true;
+            }
         }
 
         private async void InitializeTables_Click(object sender, RoutedEventArgs e)

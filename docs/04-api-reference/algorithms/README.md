@@ -15,6 +15,8 @@ related: ["algorithms.platform","algorithms.local-native-analysis","algorithms.f
 
 ## 按问题检索
 
+AR 波导、Micro OLED/Micro LED 与双目整机的 RGB 套色、鬼影候选、屏体缺陷、Eyebox 扫描和全视场 SFR，见[显示图案计量](./detectors/display-metrology.md)。该入口支持离线图案与合成样本评价；物理标定、硬件扫描和量产验收范围分别说明。
+
 | 问题 | 主题 | 主要源码 |
 | --- | --- | --- |
 | 新算法如何定义输入、参数、结果、overlay 与执行入口 | [统一图像算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) | `UI/ColorVision.Algorithms/` |

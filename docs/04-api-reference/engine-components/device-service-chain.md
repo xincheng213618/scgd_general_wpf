@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。"
 aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand","设备行置顶","取消置顶","DisplayPinButton","设备详情按需初始化","ViewShell","EnsureInitialized","ViewCamera","ViewSpectrum","AlgorithmView","ViewCalibration"]
-code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisplayPinButton.xaml","UI/ColorVision.UI/DisplayPinButton.xaml.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs","Test/ColorVision.UI.Tests/DockViewManagerTests.cs","Test/ColorVision.UI.Tests/WindowServicePresentationTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisplayPinButton.xaml","UI/ColorVision.UI/DisplayPinButton.xaml.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs","Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs","Test/ColorVision.UI.Tests/DockViewManagerTests.cs"]
 related: ["engine.index","platform.runtime","operations.device-configuration","engine.mqtt","engine.rc-registration","engine.results","engine.spectrum-device","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
 ---
 
@@ -17,7 +17,9 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ## 初始化与资源树
 
-`ServiceInitializer.Order=5`；MySQL 已连接时，初始化物理相机管理器、服务集合、待应用 RC 更新和设备显示控件，再调用相机资源初始化。未连接时跳过服务配置。`ServiceManager` 构造器在 MySQL 已连接时通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
+`ServiceInitializer.Order=5`；无论 MySQL 是否连接，都会初始化物理相机管理器、设备集合和显示控件（包括流程面板）。连接时沿用 MySQL 资源树与原有原生资源初始化；未连接时读取本地配置，以 `ServiceTypes` 建立类型列表。`ServiceManager` 构造器通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
+
+本地资源和许可证复用现有字段及窗口，写入 `%APPDATA%/ColorVision/Config/ColorVision.Local.db` 的配置文档。资源 ID 使用小于等于 -2 的本地身份，父子及组引用也使用本地 ID；已打开的本地对象恢复联网后仍保存到本地。MySQL 与本地配置独立，不复制服务器资源、不自动同步，也不修改服务端表结构。结果、图像、运行记录不写入这个配置库。
 
 早到 RC 更新只在管理器实例不存在时暂存，每类保留最新引用；应用顺序与异常边界见[RC 服务快照](./rc-registration.md)。缓冲锁不代表远端一致快照，实例已存在也不代表本地资源已匹配。
 
@@ -47,7 +49,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 `LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出、重置与删除)。
 
-构造器只在 MySQL 已连接时首次重载，但其 `MySqlConnectChanged` 订阅没有按新的连接值过滤就调用 `LoadServices()`。不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
+构造器始终首次重载，离线时从本地配置装配；`MySqlConnectChanged` 订阅同样调用 `LoadServices()`。断开会切换到本地资源，不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
 
 ## 工厂存在不等于默认可见
 
@@ -65,21 +67,33 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 设备卡片或上下文菜单中的 **属性** 同样复用 `GetDeviceInfo()`，但由 `DevicePropertyWindow` 提供独立窗口外壳：窗口显示设备名称与 Code，并在带边框、圆角和内边距的内容区承载设备页。这个外壳只属于独立窗口；管理员服务配置和终端详情继续使用各自已有的面板边界，不把窗口留白重复写进设备控件。
 
+内置设备卡片标题与 Flow 设备选择器的属性入口统一使用主题 `ButtonProperty` 样式：24 DIP 点击区域、单色信息图标和属性工具提示。按钮不显示边框或默认焦点虚线框，悬停与键盘焦点通过图标主题强调色反馈。图标随深浅主题更新，只表示打开属性窗口，不承担在线状态显示；不叠加常亮的绿色状态灯。它仍绑定原设备的 `PropertyCommand`，与相邻的置顶按钮各自独立。设备与工作流程内容区未选中时使用 `CV.Border.Weak` 的低对比度主题描边，选中时保留深浅主题各自的紫色高亮。
+
 `GenDeviceDisplayControl()` 沿当前类型树生成主显示区；`GenControl(collection)` 使用指定设备集合。两者都先加入共享 `DisplayFlow`，只有设备 `GetDisplayControl()` 返回 `IDisPlayControl` 才追加该页，最后通过 `DisPlayManager.ReplaceControls` 替换显示集合。
 
 `LoadServices()` 最后发布 `ServiceChanged`，但本身不调用 `GenDeviceDisplayControl()` 或 `ReplaceControls()`；释放设备、清空 `LastGenControl` 也不等于替换主显示集合。初始化器会另行生成显示区；配置窗口在 `OnClosing()` 检测到变化时生成显示区，`OnClosed()` 负责上下文清理。因此资源集合、主显示项和旧窗口引用可能处于不同轮次；新增资源后列表出现、主区域出现、Flow 能按正确 Code 绑定，应分别核对，不能只检查一个窗口。
 
-`ReplaceControls` 清空并重新填充显示集合，恢复分组和排序后按 `LastSelectIndex` 选择控件；索引越界时选第 0 项。显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题、排序和拖入分组的能力继续保留，但滚动内容底部不再创建“分组 / + 分组”页脚；主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，由它把 `DisPlayManager.CreateGroupCommand` 提供给上方停靠标题栏。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现该命令，也不会多出自己的标题按钮。`ReplaceControls` 不按设备 Code 恢复原来的选中设备，也不调用旧控件的 Dispose。设备增减或排序变化后，应核对实际选中对象，不能仅凭界面仍有选中项推断身份未变。
+`ReplaceControls` 清空并重新填充显示集合，恢复分组、顺序、置顶、隐藏和开合状态后，优先按稳定 `PersistenceKey` 恢复选中对象，旧配置才回退到 `LastSelectIndex`；索引越界或原对象已隐藏时选择第一个可见项。内置设备使用 `Config.Code` 作为稳定键，工作流程使用固定 `Flow` 键；第三方实现不提供该属性时仍回退到 `DisPlayName`。这只替换显示集合，不调用旧控件的 Dispose。
+
+显示控件装入设备控制面板时保留各自左右外边距，将统一的 2 DIP 项间距全部放在控件下方，上方不再额外留白。分组标题和标题拖动能力继续保留；滚动内容底部不再创建“分组 / + 分组”页脚。主程序和 Engine 独立宿主都使用实现 `IDockPanelTitleActionProvider` 的 `DisPlayControlPanel`，标题栏的“+”由 `DisPlayManager.ManageControlsCommand` 打开统一管理窗口。该派生宿主显式解析原 `ScrollViewer` 的隐式主题，避免扩展标题动作后回退成系统默认的粗滚动条。各设备提供的 `IDisPlayControl` 无需实现标题命令，也不会多出自己的标题按钮。
+
+### 设备控制管理、隐藏与开合
+
+“设备控制管理”窗口统一管理分组的新建、重命名、删除和顺序，也可调整每个控制项的分组、顺序、置顶、展开和显示状态。隐藏只从左侧设备控制栏移除对应显示控件，不删除 `IDisPlayControl`，不停止设备服务、连接、详情页或流程执行；重新显示时保留原分组、基础顺序、置顶和开合状态。全部控制项都隐藏时管理窗口仍列出这些项，作为恢复入口。
+
+分组标题的“+”新建分组，每行的“…”或右键菜单提供重命名、上下移动和删除；默认分组不能移动或删除。右侧始终列出全部控制项，通过行内分组选择、显示开关、置顶和展开图标调整状态，行尾箭头调整所属分组内的基础顺序。行内操作直接作用于所在项，无需预先选中。
+
+`DisPlayManagerConfig.HiddenControls` 和 `ControlExpandedStates` 与 `StoreIndex`、`PinnedControls`、`ControlGroups` 一样按 `PersistenceKey` 保存。标题开合、分组开合和管理窗口变更经过短延迟合写入配置，窗口关闭时刷新尚未写入的变更。展开状态只由 `ControlExpandedStates` 管理，没有记录的控件默认展开；旧的 `DisPlayName` 排序、分组、置顶、隐藏、开合和选择键会在遇到同一控件时复制到稳定键，兼容现有统一面板配置。
 
 ### 设备行置顶与顺序
 
-工作流程和内置设备行使用统一的 `DisplayPinButton`：图钉独占标题右侧的 24 DIP 按钮区域，位于原有状态/设置入口左侧；悬停设备行或键盘焦点进入设备行时显示，已置顶时常显，提示切换为“取消置顶”。透明时仍保留布局空间，因此标题和设置图标不会随悬停跳动。图钉支持鼠标和键盘激活，点击不切换展开状态、不启动标题拖动，也不通过双击打开详情。
+工作流程和内置设备行使用统一的 `DisplayPinButton`：图钉独占标题右侧的 24 DIP 按钮区域，位于原有属性/设置入口左侧；悬停设备行或键盘焦点进入设备行时显示，已置顶时常显，提示切换为“取消置顶”。透明时仍保留布局空间，因此标题和设置图标不会随悬停跳动。图钉支持鼠标和键盘激活，点击不切换展开状态、不启动标题拖动，也不通过双击打开详情。
 
 置顶在所属分组内生效；未建立分组时就是整个设备列表的顶部。多项置顶保持原有相对顺序，可继续拖动调整，跨组拖动保留置顶状态。置顶不改变设备配置、连接或流程执行顺序。
 
-`DisPlayManagerConfig.PinnedControls` 按既有显示标识 `DisPlayName` 独立保存置顶状态，沿用应用配置保存周期；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。显示标识改变不会自动迁移旧偏好。置顶或拖动重排现有集合时保持当前选中对象，并同步 `LastSelectIndex`。
+`DisPlayManagerConfig.PinnedControls` 按稳定 `PersistenceKey` 独立保存置顶状态；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。置顶或拖动重排现有集合时保持当前选中对象，并同步索引和稳定选择键。
 
-`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
+`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、稳定键迁移、开合恢复、隐藏/重新显示、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
 
 ### 设备详情视图按需初始化
 

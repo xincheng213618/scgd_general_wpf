@@ -207,6 +207,7 @@ def build_project(configuration: str, framework: str) -> str | None:
         "-f",
         framework,
         "-p:Platform=x64",
+        "-m:1",
         "--self-contained",
         "false",
         "-o",

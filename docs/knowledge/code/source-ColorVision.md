@@ -225,6 +225,9 @@ next: false
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
   设置中的日志、缓存、安装包扫描与清理，以及配置恢复点和选择性启动重置；先确认白名单清单，保护活跃任务和业务数据，删除不回滚，重置先独立备份。
 
+- [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
+  按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
+
 ## ColorVision/Startup {#module-436f6c6f72566973696f6e2f53746172747570}
 
 - [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
@@ -242,6 +245,9 @@ next: false
 
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
+
+- [配置向导：步骤、应用与完成边界](../../04-api-reference/ui-components/wizards.md) — `ui.wizards`
+  配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
 ## ColorVision/Update {#module-436f6c6f72566973696f6e2f557064617465}
 

@@ -438,7 +438,7 @@
   </data>
 
   <data name="AddUncreatedCamera" xml:space="preserve">
-    <value>Adding an uncreated camera</value>
+    <value>Add unregistered cameras</value>
   </data>
   <data name="LicenseImport" xml:space="preserve">
     <value>License Import</value>
@@ -447,7 +447,7 @@
     <value>Auto Exposure Template</value>
   </data>
   <data name="ModifyConfiguration" xml:space="preserve">
-    <value>Change setting</value>
+    <value>Edit configuration</value>
   </data>
 
 
@@ -538,7 +538,7 @@
     <value>Enable HDR</value>
   </data>
   <data name="UploadCalibrationFiles" xml:space="preserve">
-    <value>Upload calibration file</value>
+    <value>Upload calibration files</value>
   </data>
   <data name="RestorePointCreatedSuccessfully" xml:space="preserve">
     <value>Restore point created successfully</value>
@@ -1081,16 +1081,16 @@
 
 
   <data name="CaliTemplateSet" xml:space="preserve">
-    <value>Calibration Template Settings</value>
+    <value>Calibration templates</value>
   </data>
   <data name="DownLicOnline" xml:space="preserve">
     <value>Download License Online</value>
   </data>
   <data name="CreateRestorePoint" xml:space="preserve">
-    <value>Create a restore point</value>
+    <value>Create restore point</value>
   </data>
   <data name="LoadRestorePoint" xml:space="preserve">
-    <value>Load Restore Point</value>
+    <value>Load restore point</value>
   </data>
 
   <data name="DefaultCanvas" xml:space="preserve">
@@ -1369,7 +1369,7 @@
     <value>Display data columns</value>
   </data>
   <data name="Operation" xml:space="preserve">
-    <value>Operate</value>
+    <value>Actions</value>
   </data>  
   <data name="ParameterTemplate" xml:space="preserve">
     <value>Parameter template</value>
@@ -1795,7 +1795,7 @@
     <value>Spectrometer</value>
   </data>
   <data name="EditFilterWheelConfig" xml:space="preserve">
-    <value>Edit Filter Wheel Configuration</value>
+    <value>Filter wheel settings</value>
   </data>
   <data name="ContinuousMeasurement" xml:space="preserve">
     <value>Continuous Measurement</value>
@@ -1922,7 +1922,7 @@
     <value>Notes</value>
   </data>
   <data name="PropertyEdit" xml:space="preserve">
-    <value>Attribute Editing</value>
+    <value>Edit properties</value>
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>Text Edit</value>
@@ -2406,7 +2406,7 @@
   </data>
 
   <data name="ButtonCalibrationEdit" xml:space="preserve">
-    <value>Calibration Edit</value>
+    <value>Edit calibration</value>
   </data>
 
 
@@ -2421,7 +2421,7 @@
   </data>
 
   <data name="ButtonOpenConfigFile" xml:space="preserve">
-    <value>Open Configuration File</value>
+    <value>Open config folder</value>
   </data>
 
 
@@ -2431,7 +2431,7 @@
     <value>Reset Channel</value>
   </data>
   <data name="ButtonScanOnlineCameras" xml:space="preserve">
-    <value>Scan Online Cameras</value>
+    <value>Scan cameras</value>
   </data>
   <data name="ButtonSelectAll" xml:space="preserve">
     <value>Select All</value>
@@ -2606,7 +2606,7 @@
     <value>4-coefficient → CIE XYZ</value>
   </data>
   <data name="DescriptionSelectCamera" xml:space="preserve">
-    <value>Select a physical camera from the left to view details and management operations</value>
+    <value>Select a physical camera from the list to view its details and manage its configuration.</value>
   </data>
   <data name="DescriptionSelectCameraType" xml:space="preserve">
     <value>Select camera model for online search</value>
@@ -2883,7 +2883,7 @@ Please check serial port settings.</value>
 
 
   <data name="SectionCameraList" xml:space="preserve">
-    <value>SectionCameraList</value>
+    <value>Cameras</value>
   </data>
   <data name="SectionColorCalibration" xml:space="preserve">
     <value>SectionColorCalibration</value>
@@ -3541,7 +3541,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>File Path</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
-    <value>Local Image</value>
+    <value>Load Image</value>
   </data>
 
   <data name="Engine_PG_Ratio" xml:space="preserve">
@@ -4196,7 +4196,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>Node Execution Details</value>
   </data>
   <data name="CloneCalibrationTemplates" xml:space="preserve">
-    <value>Clone calibration templates</value>
+    <value>Clone templates</value>
   </data>
   <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
     <value>Copy calibration templates from another physical camera and preserve their names so flow bindings do not need to be configured again.</value>
@@ -4251,6 +4251,14 @@ Please close camera or other programs using this serial port, or check device co
   <data name="本地相机取图" xml:space="preserve"><value>Local Camera Capture</value></data>
   <data name="本地相机" xml:space="preserve"><value>Local Camera</value></data>
   <data name="本地 POI" xml:space="preserve"><value>Local POI</value></data>
+  <data name="关注点布点(Re)" xml:space="preserve"><value>POI Layout (Remap)</value></data>
+  <data name="关注点布点(参数)" xml:space="preserve"><value>POI Layout (Parameters)</value></data>
+  <data name="校正+实时 POI" xml:space="preserve"><value>Calibration + Real-time POI</value></data>
+  <data name="相机取图" xml:space="preserve"><value>Camera Capture</value></data>
+  <data name="十字定位" xml:space="preserve"><value>Crosshair Detection</value></data>
+  <data name="FOV计算" xml:space="preserve"><value>FOV Calculation</value></data>
+  <data name="点阵畸变" xml:space="preserve"><value>Grid Distortion</value></data>
+  <data name="全图" xml:space="preserve"><value>Full Image</value></data>
   <data name="实时 POI" xml:space="preserve"><value>Real-time POI</value></data>
   <data name="备用图像文件" xml:space="preserve"><value>Fallback Image File</value></data>
   <data name="POI 模板" xml:space="preserve"><value>POI Template</value></data>
@@ -4935,7 +4943,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>Acquisition and display</value></data>
   <data name="SpectrumSearchDevices" xml:space="preserve"><value>Find spectrometers</value></data>
   <data name="SpectrumSearchHint" xml:space="preserve"><value>Search all supported drivers</value></data>
-  <data name="SpectrumRefreshHint" xml:space="preserve"><value>Refresh service devices and licenses</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>Refresh the server device serial number list</value></data>
+  <data name="SpectrumDriverTool" xml:space="preserve"><value>Spectrometer driver tool</value></data>
+  <data name="SpectrumDriverToolHint" xml:space="preserve"><value>Open Zadig to configure the GCS spectrometer libusb-win32 driver</value></data>
+  <data name="SpectrumDriverToolWarning" xml:space="preserve"><value>Select only GCS Spectrameter and confirm that the target driver is libusb-win32.&#xA;&#xA;Do not select a keyboard, mouse, receiver, camera, or USB hub. Continue opening the driver tool?</value></data>
+  <data name="SpectrumDriverToolMissing" xml:space="preserve"><value>The spectrometer driver tool was not found:&#xA;{0}&#xA;&#xA;Reinstall or repair ColorVision.</value></data>
+  <data name="SpectrumDriverToolInvalid" xml:space="preserve"><value>The spectrometer driver tool failed integrity verification. Reinstall or repair ColorVision.</value></data>
+  <data name="SpectrumDriverToolOpenFailed" xml:space="preserve"><value>Unable to open the spectrometer driver tool: {0}</value></data>
   <data name="SpectrumLicenseHint" xml:space="preserve"><value>Import local license files</value></data>
   <data name="CalibrationGroup" xml:space="preserve"><value>Calibration groups</value></data>
   <data name="ApplyCalibrationGroup" xml:space="preserve"><value>Apply active group</value></data>
@@ -5047,4 +5061,85 @@ Please close camera or other programs using this serial port, or check device co
   <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL result relation index optimization failed.{0} {1} Elapsed time: {2}. Resolve the issue and run the operation again; existing equivalent indexes will be skipped automatically.{3}{4}</value></data>
   <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>Unsupported result relation column: {0}</value></data>
   <data name="WindowServiceTitle" xml:space="preserve"><value>Device configuration</value></data>
+  <data name="PhyCameraConfigurationSection" xml:space="preserve"><value>Camera configuration</value></data>
+  <data name="PhyCameraConfigurationHint" xml:space="preserve"><value>Camera parameters, configuration files and filter wheel</value></data>
+  <data name="PhyCameraCalibrationSection" xml:space="preserve"><value>Calibration</value></data>
+  <data name="PhyCameraCalibrationHint" xml:space="preserve"><value>Calibration files, groups and templates</value></data>
+  <data name="PhyCameraRecoverySection" xml:space="preserve"><value>Backup and restore</value></data>
+  <data name="PhyCameraRecoveryHint" xml:space="preserve"><value>Save a restore point or load an existing one</value></data>
+  <data name="PhyCameraResetHint" xml:space="preserve"><value>Reset clears this camera’s calibration resources and templates</value></data>
+  <data name="POI模板(ReMapping)" xml:space="preserve"><value>POI Template (ReMapping)</value></data>
+  <data name="POI模板名称" xml:space="preserve"><value>POI template name</value></data>
+  <data name="亚像素模板" xml:space="preserve"><value>Subpixel Template</value></data>
+  <data name="参数模板名称" xml:space="preserve"><value>Parameter template name</value></data>
+  <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>Enable ND Filter Wheel (Auto Exposure)</value></data>
+  <data name="图像裁剪2" xml:space="preserve"><value>Image Cropping 2</value></data>
+  <data name="布点ROI(区域)" xml:space="preserve"><value>Point Placement ROI (Region)</value></data>
+  <data name="数据加载" xml:space="preserve"><value>Data Loading</value></data>
+  <data name="自动曝光模板" xml:space="preserve"><value>Auto Exposure Template</value></data>
+  <data name="电压量程（V）" xml:space="preserve"><value>Voltage Range (V)</value></data>
+  <data name="电流量程（mA）" xml:space="preserve"><value>Current Range (mA)</value></data>
+  <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>Gain is fixed at {1:0.##} by calibration group “{0}”</value></data>
+  <data name="PhysicalSpectrumManager" xml:space="preserve"><value>Physical spectrometer manager</value></data>
+  <data name="SpectrumDiscovered" xml:space="preserve"><value>Discovered</value></data>
+  <data name="SpectrumNotDiscovered" xml:space="preserve"><value>Not confirmed online</value></data>
+  <data name="SpectrumDatabaseRequired" xml:space="preserve"><value>Connect to the database, then refresh.</value></data>
+  <data name="SpectrumInvalidSerial" xml:space="preserve"><value>Enter a valid serial number (1–255 characters, no paths or control characters).</value></data>
+  <data name="SpectrumLicenseTypeConflict" xml:space="preserve"><value>This SN has a license of another type. The existing record was preserved.</value></data>
+  <data name="SpectrumLicenseSerialMismatch" xml:space="preserve"><value>The license must contain exactly one {0}.lic. Check the selected SN.</value></data>
+  <data name="SpectrumInvalidLicense" xml:space="preserve"><value>Invalid license content: model or expiry date cannot be read.</value></data>
+  <data name="SpectrumManagerHint" xml:space="preserve"><value>Manage spectrometer serials and licenses</value></data>
+  <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} spectrometers / {1} discovered</value></data>
+  <data name="SpectrumWorking" xml:space="preserve"><value>Working…</value></data>
+  <data name="SpectrumScanComplete" xml:space="preserve"><value>Discovered {0} spectrometers; {1} queries failed.</value></data>
+  <data name="SpectrumImportLicense" xml:space="preserve"><value>Import local license</value></data>
+  <data name="SpectrumScanOnline" xml:space="preserve"><value>Scan spectrometers</value></data>
+  <data name="SpectrumSerialList" xml:space="preserve"><value>Spectrometers</value></data>
+  <data name="SpectrumSearchSerial" xml:space="preserve"><value>Search SN or model</value></data>
+  <data name="SpectrumEmptySelection" xml:space="preserve"><value>Select a spectrometer, scan, or import a license.</value></data>
+  <data name="SpectrumDiscoveryDetails" xml:space="preserve"><value>Scan details</value></data>
+  <data name="SpectrumTools" xml:space="preserve"><value>Spectrometer tools</value></data>
+  <data name="SpectrumCorrectionDevice" xml:space="preserve"><value>Select the device for correction</value></data>
+  <data name="SpectrumCorrectionNeedsDevice" xml:space="preserve"><value>First assign this SN to a spectrometer in device configuration.</value></data>
+  <data name="SpectrumEditorTitle" xml:space="preserve"><value>Edit spectrometer configuration</value></data>
+  <data name="SpectrumEditorLicenseHint" xml:space="preserve"><value>Licenses match the SN above. Uploads are saved immediately and are not undone when configuration editing is canceled.</value></data>
+  <data name="SpectrumEditorUpload" xml:space="preserve"><value>Upload license</value></data>
+  <data name="SpectrumEditorManage" xml:space="preserve"><value>Manage licenses</value></data>
+  <data name="SpectrumEditorSerial" xml:space="preserve"><value>Serial connection</value></data>
+  <data name="SpectrumEditorConnectionHint" xml:space="preserve"><value>Use USB / the default connection unless your device requires a serial port. Enable serial connection to select its port and baud rate.</value></data>
+  <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>Select a valid port (COM1–COM256), or turn off serial connection to use the default connection.</value></data>
+  <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>Baud rate must be greater than zero.</value></data>
+  <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>View discovery details</value></data>
+  <data name="LicenseSummaryFormat" xml:space="preserve">
+    <value>Valid {0}  ·  Expiring soon {1}  ·  Expired {2}  ·  Unknown {3}</value>
+  </data>
+  <data name="LicenseClearExpired" xml:space="preserve">
+    <value>Clear expired</value>
+  </data>
+  <data name="LicenseClearExpiredHint" xml:space="preserve">
+    <value>Remove expired license records; keep records with an unknown expiry date.</value>
+  </data>
+  <data name="LicenseClearExpiredConfirm" xml:space="preserve">
+    <value>Clear {0} expired licenses?
+
+Only license records will be removed. Device settings, exported files and records with unknown expiry dates will be kept. This cannot be undone.</value>
+  </data>
+  <data name="LicenseNoExpired" xml:space="preserve">
+    <value>There are no expired licenses to clear.</value>
+  </data>
+  <data name="LicenseClearingExpired" xml:space="preserve">
+    <value>Clearing expired licenses…</value>
+  </data>
+  <data name="LicenseClearExpiredSuccess" xml:space="preserve">
+    <value>Removed {0} expired licenses.</value>
+  </data>
+  <data name="LicenseClearExpiredFailed" xml:space="preserve">
+    <value>Could not clear expired licenses: {0}</value>
+  </data>
+  <data name="LicenseExpiryUnknown" xml:space="preserve">
+    <value>Unknown expiry</value>
+  </data>
+  <data name="LicenseListEmpty" xml:space="preserve">
+    <value>No licenses yet. Import a license to get started.</value>
+  </data>
 </root>

@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Cie
@@ -21,10 +22,33 @@ namespace ColorVision.ImageEditor.Cie
         private bool isInitialized;
         private bool isUpdatingText;
         private bool isUpdatingSelection;
+        private CieDiagramKind CalculationPlane => GamutPlane.SelectedIndex == 1 ? CieDiagramKind.Cie1976uv : CieDiagramKind.Cie1931xy;
 
         public ManualColorGamutView()
         {
             InitializeComponent();
+            SetBinding(BackgroundProperty, new Binding(nameof(Background)) { Source = CieDiagram, Mode = BindingMode.OneWay });
+        }
+
+        public void SetPrimary(string primary, CieChromaticity xy)
+        {
+            if (!xy.IsFinite || xy.X < 0 || xy.Y <= 0 || xy.X + xy.Y > 1)
+                throw new ArgumentException("原色色坐标无效。");
+            (TextBox x, TextBox y) = primary switch
+            {
+                "R" => (TextBoxRedX, TextBoxRedY),
+                "G" => (TextBoxGreenX, TextBoxGreenY),
+                "B" => (TextBoxBlueX, TextBoxBlueY),
+                _ => throw new ArgumentException("请选择 R、G 或 B 原色。")
+            };
+            isUpdatingText = true;
+            try
+            {
+                x.Text = xy.X.ToString("G17", CultureInfo.InvariantCulture);
+                y.Text = xy.Y.ToString("G17", CultureInfo.InvariantCulture);
+            }
+            finally { isUpdatingText = false; }
+            UpdateResult();
         }
 
         private void View_Initialized(object sender, EventArgs e)
@@ -53,6 +77,18 @@ namespace ColorVision.ImageEditor.Cie
 
         private void ListBoxStandards_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+        }
+
+        private void GamutPlane_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized) return;
+            CieDiagram.SetDiagram(CalculationPlane);
+            UpdateResult();
+        }
+
+        private void ResultGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isInitialized) RenderDiagram(resultRows.Select(r => r.Result).ToArray(), GetSelectedStandards());
         }
 
         private void StandardCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -88,6 +124,12 @@ namespace ColorVision.ImageEditor.Cie
         {
             UpdateResult();
         }
+
+        private void ButtonFit_Click(object sender, RoutedEventArgs e) => CieDiagram.ZoomUniform();
+
+        private void ButtonZoomIn_Click(object sender, RoutedEventArgs e) => CieDiagram.Zoom(1.25);
+
+        private void ButtonZoomOut_Click(object sender, RoutedEventArgs e) => CieDiagram.Zoom(0.8);
 
         private void ButtonExport_Click(object sender, RoutedEventArgs e)
         {
@@ -164,19 +206,20 @@ namespace ColorVision.ImageEditor.Cie
                 resultRows.Clear();
                 for (int index = 0; index < results.Count; index++)
                 {
-                    resultRows.Add(new ManualColorGamutResultRow(index + 1, results[index]));
+                    resultRows.Add(new ManualColorGamutResultRow(index + 1, results[index], CalculationPlane));
                 }
 
-                double sampleArea = DefaultCieColorGamutCalculator.TriangleArea(red, green, blue);
+                double sampleArea = resultRows[0].Comparison.SampleArea;
                 TextBlockSampleArea.Text = sampleArea.ToString("F6", CultureInfo.InvariantCulture);
                 TextBlockResultCount.Text = resultRows.Count.ToString(CultureInfo.InvariantCulture);
                 TextBlockCoverageRange.Text = resultRows.Count == 0
                     ? "-"
-                    : $"{resultRows.Min(item => item.Result.CoveragePercent):F2}% - {resultRows.Max(item => item.Result.CoveragePercent):F2}%";
+                    : $"{resultRows.Min(item => item.Comparison.AreaRatioPercent):F2}% - {resultRows.Max(item => item.Comparison.AreaRatioPercent):F2}%";
                 TextBlockStatus.Foreground = Brushes.Gray;
-                TextBlockStatus.Text = "计算完成。表格按标准色域逐行显示面积比，导出会包含当前全部结果。";
+                TextBlockStatus.Text = $"{(CalculationPlane == CieDiagramKind.Cie1931xy ? "xy" : "u′v′")} 平面：面积比可超过 100%；覆盖率为交集 / 标准面积。选中结果行查看交集填充。";
                 ButtonExport.IsEnabled = resultRows.Count > 0;
                 RenderDiagram(results, standards);
+                if (ResultGrid.SelectedItem == null && resultRows.Count > 0) ResultGrid.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -238,13 +281,8 @@ namespace ColorVision.ImageEditor.Cie
                 return false;
             }
 
-            const double tolerance = 0.000001;
-            if (x < -tolerance || y < -tolerance || x > 1 + tolerance || y > 1 + tolerance || x + y > 1 + tolerance)
-            {
-                error = $"{channel} 坐标应满足 0 <= x <= 1、0 <= y <= 1 且 x + y <= 1。";
-                return false;
-            }
-
+            // Standard colour spaces may contain imaginary primaries (e.g. ACEScg red).
+            // Their finite coordinates are valid gamut geometry, not measured sample chromaticities.
             return true;
         }
 
@@ -282,10 +320,12 @@ namespace ColorVision.ImageEditor.Cie
                 markers.Add(new CieMarker("B", firstResult.Blue.ToChromaticity(), Color.FromRgb(60, 123, 246)));
             }
 
+            if (ResultGrid.SelectedItem is ManualColorGamutResultRow selected && selected.Comparison.IntersectionXy.Count >= 3)
+                gamuts.Add(new CieGamut("交集", selected.Comparison.IntersectionXy, Brushes.Teal, new SolidColorBrush(Color.FromArgb(65, 0, 128, 128))));
+
             CieDiagram.SetGamuts(gamuts);
             CieDiagram.SetMarkers(markers);
             CieDiagram.ClearSelection();
-            CieDiagram.ZoomUniform();
         }
 
         private void ExportResults()
@@ -353,7 +393,10 @@ namespace ColorVision.ImageEditor.Cie
                 "StandardBluey",
                 "SampleArea",
                 "StandardArea",
-                "AreaRatio(%)"
+                "AreaRatio(%)",
+                "Coverage(%)",
+                "IntersectionArea",
+                "CoordinatePlane"
             };
 
             foreach (ManualColorGamutResultRow row in resultRows)
@@ -374,9 +417,12 @@ namespace ColorVision.ImageEditor.Cie
                     FormatDouble(result.Standard.Green.Y),
                     FormatDouble(result.Standard.Blue.X),
                     FormatDouble(result.Standard.Blue.Y),
-                    FormatDouble(result.SampleArea),
-                    FormatDouble(result.StandardArea),
-                    FormatDouble(result.CoveragePercent)
+                    FormatDouble(row.Comparison.SampleArea),
+                    FormatDouble(row.Comparison.ReferenceArea),
+                    FormatDouble(row.Comparison.AreaRatioPercent),
+                    FormatDouble(row.Comparison.CoveragePercent),
+                    FormatDouble(row.Comparison.IntersectionArea),
+                    CalculationPlane.ToString()
                 };
             }
         }
@@ -500,18 +546,23 @@ namespace ColorVision.ImageEditor.Cie
 
         private sealed class ManualColorGamutResultRow
         {
-            public ManualColorGamutResultRow(int index, CieColorGamutCalculationResult result)
+            public ManualColorGamutResultRow(int index, CieColorGamutCalculationResult result, CieDiagramKind plane)
             {
                 Index = index;
                 Result = result;
+                Comparison = CieGamutGeometry.Compare(new[] { result.Red.ToChromaticity(), result.Green.ToChromaticity(), result.Blue.ToChromaticity() },
+                    new[] { result.Standard.Red.ToChromaticity(), result.Standard.Green.ToChromaticity(), result.Standard.Blue.ToChromaticity() }, plane);
             }
 
             public int Index { get; }
             public CieColorGamutCalculationResult Result { get; }
+            public CieGamutComparison Comparison { get; }
             public string StandardName => Result.Standard.Name;
-            public string SampleAreaDisplay => Result.SampleArea.ToString("F6", CultureInfo.InvariantCulture);
-            public string StandardAreaDisplay => Result.StandardArea.ToString("F6", CultureInfo.InvariantCulture);
-            public string CoverageDisplay => Result.CoveragePercent.ToString("F2", CultureInfo.InvariantCulture);
+            public string SampleAreaDisplay => Comparison.SampleArea.ToString("F6", CultureInfo.InvariantCulture);
+            public string StandardAreaDisplay => Comparison.ReferenceArea.ToString("F6", CultureInfo.InvariantCulture);
+            public string CoverageDisplay => Comparison.AreaRatioPercent.ToString("F2", CultureInfo.InvariantCulture);
+            public string ActualCoverageDisplay => Comparison.CoveragePercent.ToString("F2", CultureInfo.InvariantCulture);
+            public string IntersectionDisplay => Comparison.IntersectionArea.ToString("F6", CultureInfo.InvariantCulture);
             public string RedDisplay => FormatPrimary(Result.Red);
             public string GreenDisplay => FormatPrimary(Result.Green);
             public string BlueDisplay => FormatPrimary(Result.Blue);

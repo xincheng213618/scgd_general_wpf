@@ -215,9 +215,10 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         {
             ApplyShaderVariant(state);
             ChannelMode = (double)state.ChannelMode;
-            RedGain = state.RedGain;
-            GreenGain = state.GreenGain;
-            BlueGain = state.BlueGain;
+            (double red, double green, double blue) = DisplayShaderWhiteBalance.GetGains(state.Temperature, state.Tint);
+            RedGain = state.RedGain * red;
+            GreenGain = state.GreenGain * green;
+            BlueGain = state.BlueGain * blue;
             RedOffset = state.RedOffset;
             GreenOffset = state.GreenOffset;
             BlueOffset = state.BlueOffset;

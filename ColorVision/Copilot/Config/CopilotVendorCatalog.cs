@@ -52,7 +52,7 @@ namespace ColorVision.Copilot
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 OpenAICompatibleBaseUrl = "https://api.deepseek.com/v1",
                 AnthropicCompatibleBaseUrl = "https://api.deepseek.com/anthropic",
-                ModelPresets = new[] { "deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp" },
+                ModelPresets = new[] { "deepseek-v4-pro", "deepseek-flash" },
             },
             new CopilotVendorPreset
             {

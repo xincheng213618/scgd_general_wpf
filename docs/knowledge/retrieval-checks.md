@@ -50,11 +50,16 @@ npm run docs:build
 | 2 | 完整限定符的命中数量，其次是 ID/标题/别名明确声明的完整身份数量 |
 | 3 | 所属类型或版本标签前缀回退的数量、具体程度及是否在描述中出现 |
 | 4 | 非限定代码符号的完整命中数量、明确身份数量、描述命中数量 |
-| 5 | 词法分，再按知识 ID 确定顺序 |
+| 5 | 单句纯中文查询的完整主题对象匹配，其次是标题主段的支持程度 |
+| 6 | 词法分，再按知识 ID 确定顺序 |
 
 `Namespace.StateStore.Save` 可回退 `Namespace.StateStore` 或 `StateStore`，不拆成通用成员 `Save` 或外层 `Namespace`。路径可回退具体的尾部路径/文件名，不广泛匹配其中的目录名称。`widget-v1.2.3` 这类带数字版本的标签可回退元数据中的 `widget-v`；数字组件不会作为类型 owner。前缀回退不校验版本格式是否合法，也不证明所问成员存在，结果标记为 `owner-fallback`。
 
 重复符号不叠加命中数，完整成员仍优先于 owner 回退。`score` 仅是排序的一个组成部分，消费者不能单独按它重新排序。
+
+单句纯中文问题仅在明确对象边界时辅助定位：截取“没有”“无法”“是否”“怎么”等否定或疑问谓词前的完整片段；带“一个”“一种”等数量短语的新增类请求先去掉请求前缀，没有谓词时以整个剩余片段为对象。不能仅取对象开头能命中的泛词。标题或别名须在完整词边界内覆盖整个对象，且至少一个可搜索标题主段为对象的开头短语提供佐证，才提升候选；同名时比较各自标题主段的支持程度。
+
+标题主段在冒号、顿号、逗号、分号或左括号前结束，避免后面的操作列表充当主题。对象边界不明、没有完整名称或标题佐证、包含代码符号或内部标点的复杂问题继续使用原有依据。中文词边界由 Node 的 `Intl.Segmenter` 提供；运行时分词数据和目录变化都可能影响结果。这仍是目录匹配，返回 `text` 标记，不证明唯一归属或语义理解。
 
 ### CLI 数量与读取范围
 
@@ -68,7 +73,41 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 
 `impact` 接收一个仓库相对路径，输出全部相交主题，不接受搜索专用选项。查询已删除路径仍有意义，不能要求目标文件当前存在。反向映射是复核候选，不是完整依赖图。
 
-离线 CLI 回归在临时目录中只复制查询脚本与合成 catalog，从其它工作目录调用，不安装网站依赖。验证损坏正文/缺失源码不妨碍查询、查询不写回 catalog、帮助不需要 catalog，以及数量限制和状态过滤。此测试不等于所有 Node 版本上的完整首次克隆验收。
+离线 CLI 回归在临时目录中只复制查询脚本与合成 catalog，从其它工作目录调用，不安装网站依赖。验证损坏正文/缺失源码不妨碍查询、查询不写回 catalog、帮助不需要 catalog，以及数量限制和状态过滤。JSON 回归还覆盖字段与转义、排序和截断总数、空结果、字面选项及错误输出通道。此测试不等于所有 Node 版本上的完整首次克隆验收。
+
+### JSON 查询结果
+
+`search --json` 用于脚本读取结果；可与 `--all`、两种 `--limit` 写法组合，选项可放在查询前后。`--json` 是无值开关，`--` 后的同名文本仍作为查询内容。
+
+```powershell
+node docs/.vitepress/scripts/knowledge.mjs search "StateStore.Save" --json --limit 5
+```
+
+成功时退出码为 0，stdout 仅输出一个 UTF-8 JSON 对象（末尾换行），不附加人类可读提示，stderr 为空。顶层只有 `total` 与 `matches`：
+
+| 字段 | 类型与含义 |
+| --- | --- |
+| `total` | 非负整数；应用状态和可搜索过滤后、数量截断前的总匹配数 |
+| `matches` | 按现有搜索排名排列的结果数组；长度不超过 limit，`matches.length < total` 表示截断 |
+| `matches[].knowledge_id` | 字符串；稳定主题 ID |
+| `matches[].status` | 字符串；`current`、`planned` 或 `historical` |
+| `matches[].title`、`matches[].summary` | 字符串；主题标题与摘要 |
+| `matches[].source` | 字符串；仓库相对 Markdown 路径，使用 `/` 分隔 |
+| `matches[].match_kind` | 字符串；`exact`、`qualified-symbol`、`owner-fallback`、`code-symbol` 或 `text`，含义见本页检索规则 |
+
+每项只包含上述六个字符串字段，与默认文本展示的信息一致；不暴露排序分数或完整 catalog 元数据。保留数组顺序读取即可，源码/测试关联继续在对应主题核对。JSON 同样只提供元数据定位，不证明成员、版本或产品行为有效。
+
+零匹配是成功，输出 `{"total":0,"matches":[]}`（空白排版不属于契约）。参数错误、catalog 缺失或损坏仍退出 1、向 stderr 写文本错误、stdout 为空；不返回 JSON 错误对象。脚本先检查进程退出码，再解析 stdout。`--help` 保持原有文本帮助行为。
+
+Windows PowerShell 若仍按本地代码页解码原生命令输出，中文可能被损坏。将当前会话的控制台输出编码设为 UTF-8 后再读取；这不修改系统编码设置：
+
+```powershell
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+$json = node docs/.vitepress/scripts/knowledge.mjs search "knowledge" --json --limit 5
+if ($LASTEXITCODE -ne 0) { throw "Knowledge search failed." }
+$result = $json | ConvertFrom-Json
+$result.matches | Select-Object knowledge_id, source
+```
 
 ## 非限定代码符号与混合问句
 
@@ -90,6 +129,12 @@ node docs/.vitepress/scripts/knowledge.mjs impact "UI/ColorVision.UI/PropertyEdi
 ## 冷启动抽样条件
 
 在干净克隆或新上下文中，从仓库根入口开始。不提供答案文件，不使用维护者个人记忆、以前的聊天或未提交的本地知识。代码问答不要求构建；首次构建另行记录环境、依赖和执行结果。
+
+代码接手抽样使用同一已提交版本的独立副本，分别给新上下文一个解释、小修复和小扩展任务。开始前固定原始问题、允许修改范围、可用工具与验收条件；不提供正确主题或实现答案。已有失败问题可用于回归，但不能算作新的独立检索样本。主工作区的并行改动不进入基线，试验补丁单独保存，不自动合并。
+
+记录实际读取的文档、源码和测试，说明哪段知识避免了什么误判，以及缺失信息、无关阅读和文档维护步骤。构建、测试和样本能否取得也属于接手条件；工具版本不兼容或试验明确禁止的安装应单列，不能归咎于知识内容。只统计可观测的命令、文件、时间与用量，不推测 token 数。
+
+单轮试验只能发现薄弱点。比较规则调整前后或有无文档的收益时，应固定代码、任务、模型/工具和权限，使用独立新上下文并重复取样；不能从一个案例、检索命中或减少的文件数推算净效率提升。接手试验用于重要规则调整或实际交接，不是每次代码编辑的门禁。
 
 可用提示词：
 

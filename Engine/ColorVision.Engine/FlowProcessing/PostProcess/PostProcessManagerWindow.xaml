@@ -8,8 +8,11 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PostProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="{x:Static properties:Resources.ProcessHandlingConfig}" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.ProcessHandlingConfig}" Height="720" Width="1280" MinWidth="1000" MinHeight="540" Foreground="{DynamicResource GlobalTextBrush}" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
         <local:ProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -40,7 +43,7 @@
                         Command="{Binding RemoveMetaCommand}"/>
                 <Button Content="{x:Static properties:Resources.MoveUp}" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveUpCommand}"/>
                 <Button Content="{x:Static properties:Resources.MoveDown}" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
-                <TextBlock Text="  ({x:Static properties:Resources.ProcessOrderHint})" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
+                <TextBlock Text="{x:Static properties:Resources.ProcessOrderHint}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </DockPanel>
 
             <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}"
@@ -58,7 +61,7 @@
                         <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="100" DisplayMemberBinding="{Binding Name}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.FlowTemplate}" Width="120" DisplayMemberBinding="{Binding TemplateName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.ProcessClass}" Width="140" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
-                        <GridViewColumn Header="{x:Static properties:Resources.Tag_Column}" Width="80" DisplayMemberBinding="{Binding Tag}"/>
+                        <GridViewColumn Header="{engine:EngineLang 标签}" Width="80" DisplayMemberBinding="{Binding Tag}"/>
                         <GridViewColumn Header="{engine:EngineLang 失败策略}" Width="80" DisplayMemberBinding="{Binding FailurePolicy}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.Description}" Width="150" DisplayMemberBinding="{Binding ProcessDescription}"/>
                     </GridView>
@@ -92,7 +95,7 @@
                 <!-- Properties Content -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel x:Name="PropertyPanel">
-                        <TextBlock Text="{x:Static properties:Resources.SelectProcessToViewConfig}" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
+                        <TextBlock Text="{x:Static properties:Resources.SelectProcessToViewConfig}" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,20,0,0"
                                    x:Name="PlaceholderText"/>
                     </StackPanel>
                 </ScrollViewer>

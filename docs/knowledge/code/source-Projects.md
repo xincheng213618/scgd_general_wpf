@@ -24,6 +24,9 @@ next: false
 - [数据所有者与存储定位](../../01-user-guide/data-management/README.md) — `operations.data`
   按设置JSON、Engine MySQL、模块SQLite和结果文件定位数据所有者；有记录、有图片、已导出和已备份不是同一状态。
 
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
+
 - [数据库清理窗口、能力接入与完成边界](../../04-api-reference/engine-components/database-maintenance.md) — `engine.database-maintenance`
   数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。
 
@@ -55,6 +58,11 @@ next: false
 
 - [项目横向速查](../../04-api-reference/projects/project-capability-matrix.md) — `projects.capabilities`
   比较 ARVRPro、KB、LUX 和 IntegrationDemo 的检测触发、测试完成判据、流程配置与结果出口。
+
+## Projects/ProjectARVRPro.SemiAuto {#module-50726f6a656374732f50726f6a6563744152565250726f2e53656d694175746f}
+
+- [ProjectARVRPro SemiAuto](../../04-api-reference/projects/project-arvr-pro-semi-auto.md) — `projects.arvr-pro-semi-auto`
+  独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。
 
 ## Projects/ProjectKB {#module-50726f6a656374732f50726f6a6563744b42}
 

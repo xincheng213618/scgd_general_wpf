@@ -104,7 +104,233 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("Bit", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 已取消管理员授权，驱动安装未启动。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardCancelled {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardCancelled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在检测相机驱动安装状态。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardChecking {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardChecking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 下载未完成，请在下载管理器中检查或重试。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardDownloadFailed {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardDownloadFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在通过下载管理器获取驱动。关闭本窗口会取消后续安装；下载任务可在下载管理器中处理。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardDownloading {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardDownloading", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 查看驱动下载目录 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardDownloadPage {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardDownloadPage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 下载服务不可用，请检查下载管理器后重试。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardDownloadUnavailable {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardDownloadUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 相机驱动检测或安装失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardErrorFormat {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardErrorFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 驱动安装未完成（退出代码 {0}），请检查安装窗口的结果后重试。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardExitCodeFormat {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardExitCodeFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 相机驱动 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardHeader {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 检测到部分安装信息，但驱动文件或系统登记不完整，可重新下载安装修复。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardIncomplete {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardIncomplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 下载并安装 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardInstallAction {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardInstallAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已检测到相机驱动，版本 {0}。如相机无法识别，仍可重新安装。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardInstalledFormat {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardInstalledFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装程序已完成，已检测到驱动。请接回相机，在主程序中验证识别与采集。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardInstalledResult {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardInstalledResult", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装或重新安装前，请先断开相机 USB。将下载 240301 版完整驱动安装包；安装完成后接回相机，并在主程序中验证采集。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardInstallHint {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardInstallHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装程序已退出，但尚未检测到完整驱动。请按安装程序提示处理后重新检测。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardInstallIncomplete {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardInstallIncomplete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 本机通过 USB 连接 ColorVision（QHY）相机时需要此驱动。打开驱动管理可检测、下载安装或重新安装；仅远程使用时可直接点击“下一步”跳过。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardIntro {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardIntro", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 驱动安装与修复 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardManageAction {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardManageAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未检测到完整的 ColorVision 相机驱动。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardMissing {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardMissing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 重新检测 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardRecheckAction {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardRecheckAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 下载并重新安装 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardReinstallAction {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardReinstallAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装程序提示需要重启 Windows。请保存工作并自行重启，再接回相机和重新检测。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardRestartRequired {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardRestartRequired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 下载文件路径与所选驱动不一致，请重试。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardUnexpectedPath {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardUnexpectedPath", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 暂时无法确认驱动安装状态，请重新检测。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardUnknown {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardUnknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 系统登记：{0}
+        ///启动驱动：{1}    通信驱动：{2} 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardVersionDetailsFormat {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardVersionDetailsFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在校验下载文件或等待驱动安装完成，请按照安装窗口的提示操作。 的本地化字符串。
+        /// </summary>
+        public static string CameraDriverWizardWorking {
+            get {
+                return ResourceManager.GetString("CameraDriverWizardWorking", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
@@ -167,7 +393,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("CompactTitleBarMoreActions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 COM 注册失败，请确认已授予管理员权限。 的本地化字符串。
         /// </summary>
@@ -302,7 +528,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ConfigUseCompactMainWindow", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 将菜单与快捷入口合并到标题栏，保留系统按钮和边框。全新安装或首次升级到此开关时默认开启，重启生效；关闭并重启可恢复旧主窗口，之后保留该选择。仅在兼容的 Windows 11 环境启用，不支持时保留原生标题栏。 的本地化字符串。
         /// </summary>
@@ -311,7 +537,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ConfigUseCompactMainWindowDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
@@ -1210,6 +1436,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启动时恢复窗口 的本地化字符串。
+        /// </summary>
+        public static string StartRecoverUILayout {
+            get {
+                return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启动时恢复上次保存的主窗口位置、大小和状态。 的本地化字符串。
+        /// </summary>
+        public static string StartRecoverUILayoutDescription {
+            get {
+                return ResourceManager.GetString("StartRecoverUILayoutDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
         /// </summary>
         public static string TbSettingsStartBoot {
@@ -1514,7 +1758,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewNoInternetConnectionMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 没有可更新的插件。 的本地化字符串。
         /// </summary>
@@ -1550,7 +1794,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPackageDownloadFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 完整安装包更新时，本轮不合并插件更新。 的本地化字符串。
         /// </summary>
@@ -1559,7 +1803,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDeferredByFullApplicationUpdate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 插件下载未成功完成，请稍后重试。 的本地化字符串。
         /// </summary>
@@ -1568,7 +1812,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewPluginDownloadFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 插件更新 的本地化字符串。
         /// </summary>
@@ -1685,7 +1929,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableHeading", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置后重试。 的本地化字符串。
         /// </summary>
@@ -1694,7 +1938,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未能获取主程序、插件和主题的最新版本信息。 的本地化字符串。
         /// </summary>
@@ -1703,7 +1947,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewServerUnavailableSummary", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前主程序和插件都已经是最新版本。 的本地化字符串。
         /// </summary>

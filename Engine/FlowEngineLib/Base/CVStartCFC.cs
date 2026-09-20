@@ -7,6 +7,8 @@ namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+    [JsonIgnore]
+    public bool PersistResults { get; set; } = true;
 	private sealed class FlowFinishState
 	{
 		public readonly object Lock = new object();
@@ -15,7 +17,7 @@ public class CVStartCFC : CVBaseCFC
 
 		public int FinishedNotificationDeferralCount;
 
-		public bool IsFinishedNotificationPending;
+		public CVStartCFC PendingFinishedAction;
 	}
 
 	private sealed class FinishedNotificationDeferral : IDisposable
@@ -57,6 +59,7 @@ public class CVStartCFC : CVBaseCFC
 		: this(startCFC.FlowStatus, startCFC.Data)
 	{
 		StartNode = startCFC.StartNode;
+		PersistResults = startCFC.PersistResults;
 		finishState = startCFC.finishState;
 		RuntimeResources = startCFC.RuntimeResources;
 		StartTime = startCFC.StartTime;
@@ -190,7 +193,7 @@ public class CVStartCFC : CVBaseCFC
 		{
 			if (finishState.FinishedNotificationDeferralCount > 0)
 			{
-				finishState.IsFinishedNotificationPending = true;
+				finishState.PendingFinishedAction = this;
 				return;
 			}
 			startNode = StartNode;
@@ -211,7 +214,7 @@ public class CVStartCFC : CVBaseCFC
 
 	private void ReleaseFinishedNotification()
 	{
-		BaseStartNode startNode = null;
+		CVStartCFC finishedAction = null;
 		lock (finishState.Lock)
 		{
 			if (finishState.FinishedNotificationDeferralCount <= 0)
@@ -219,12 +222,12 @@ public class CVStartCFC : CVBaseCFC
 
 			finishState.FinishedNotificationDeferralCount--;
 			if (finishState.FinishedNotificationDeferralCount == 0
-				&& finishState.IsFinishedNotificationPending)
+				&& finishState.PendingFinishedAction != null)
 			{
-				finishState.IsFinishedNotificationPending = false;
-				startNode = StartNode;
+				finishedAction = finishState.PendingFinishedAction;
+				finishState.PendingFinishedAction = null;
 			}
 		}
-		startNode?.FireFinished(this);
+		finishedAction?.StartNode?.FireFinished(finishedAction);
 	}
 }

@@ -44,6 +44,10 @@ namespace ColorVision.Engine.Templates.POI
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
         private bool _isClosing;
+        private bool _isLoadingPoi;
+        private bool _poiLoadFailed;
+        private bool _isSavingPoi;
+        internal Task PoiLoadTask { get; private set; } = Task.CompletedTask;
         private string TagName { get; set; } = "P_";
         public PoiParam PoiParam { get; set; }
         public PoiConfig PoiConfig => PoiParam.PoiConfig;
@@ -120,6 +124,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
+                CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
             }
             PreviewKeyDown += (s, e) =>
             {
@@ -168,30 +173,41 @@ namespace ColorVision.Engine.Templates.POI
                 }
             };
 
-            if (!loadExistingPoi)
+            if (PoiParam.Id == -1 || PoiParam.Id == 0)
             {
                 return;
             }
 
-            List<PoiPoint> points = await PoiParam.LoadPoiDetailsFromDBAsync(PoiParam.Id);
-            if (_isClosing)
-            {
-                return;
-            }
+            PoiLoadTask = LoadPointsAsync();
+            await PoiLoadTask;
+        }
 
-            PoiParam.PoiPoints.Clear();
-            foreach (PoiPoint point in points)
+        private async Task LoadPointsAsync()
+        {
+            _isLoadingPoi = true;
+            SavePoiButton.IsEnabled = false;
+            try
             {
-                PoiParam.PoiPoints.Add(point);
+                var storage = PoiParam.Storage ?? PoiTemplateStorage.Default;
+                List<PoiPoint> points = await Task.Run(() => storage.ReadPoints(PoiParam.Id));
+                if (_isClosing) return;
+                PoiParam.PoiPoints.Clear();
+                foreach (PoiPoint point in points) PoiParam.PoiPoints.Add(point);
+                PoiParam.DetailsLoaded = true;
+                if (points.Count > 500) PoiConfig.IsLayoutUpdated = false;
+                PoiParamToDrawingVisual(PoiParam);
             }
-
-            if (points.Count > 500)
+            catch (Exception ex)
             {
-                PoiConfig.IsLayoutUpdated = false;
+                _poiLoadFailed = true;
+                log.Error("POI template load failed", ex);
+                if (!_isClosing) MessageBox.Show(this, $"模板读取失败，已禁止保存以保护原数据。{ex.Message}", "POI 模板");
             }
-
-            PoiParamToDrawingVisual(PoiParam);
-            log.Debug($"Render Poi end, count={points.Count}");
+            finally
+            {
+                _isLoadingPoi = false;
+                if (!_isClosing) SavePoiButton.IsEnabled = !_poiLoadFailed;
+            }
         }
 
         private bool UpdateAreaFromRect(Rect rect)
@@ -671,45 +687,41 @@ namespace ColorVision.Engine.Templates.POI
                                 ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
                                 ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
                             }
-                            Application.Current.Dispatcher.Invoke(() =>
+                            ImageView.Dispatcher.Invoke(() =>
                             {
-                                if (ImageShow.Source is BitmapImage bitmapSource)
+                                var source = ImageView.Presentation.DisplaySource;
+                                if (source is not BitmapImage && source is not WriteableBitmap) return;
+                                using HImage hImage = source is BitmapImage bitmapSource
+                                    ? bitmapSource.ToHImage() : ((WriteableBitmap)source).ToHImage();
+                                HImage hImageProcessed = default;
+                                try
                                 {
-                                    using HImage hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
-                                    Application.Current.Dispatcher.Invoke(() =>
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);
+                                    if (ret != 0) return;
+
+                                    WriteableBitmap? image = null;
+                                    bool replacesSource = false;
+                                    if (source is WriteableBitmap writeable)
                                     {
-                                        if (ret == 0)
+                                        // Retain the former compatible-buffer source-edit contract without mutating a published frame.
+                                        image = writeable.Clone();
+                                        HImage borrowedOutput = hImageProcessed;
+                                        borrowedOutput.isDispose = true;
+                                        if (HImageExtension.UpdateWriteableBitmap(image, borrowedOutput))
                                         {
-                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                                            ImageShow.Source = image;
-
+                                            replacesSource = ReferenceEquals(ImageView.ViewBitmapSource, source);
                                         }
-                                        else
-                                        {
-                                            hImageProcessed.Dispose();
-                                        }
-                                    });
+                                        else image = null;
+                                    }
+
+                                    image ??= hImageProcessed.ToWriteableBitmap();
+                                    image.Freeze();
+                                    if (replacesSource) ImageView.CommitSourcePixels(image);
+                                    else ImageView.Presentation.Publish(image, image);
                                 }
-
-                                else if (ImageShow.Source is WriteableBitmap writeable)
+                                finally
                                 {
-                                    using HImage hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length , PoiConfig.Thickness);
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        if (ret != 0)
-                                        {
-                                            hImageProcessed.Dispose();
-                                        }
-                                        else if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
-                                        {
-                                            var image = hImageProcessed.ToWriteableBitmapAndDispose();
-
-                                            ImageShow.Source = image;
-                                        }
-                                    });
+                                    hImageProcessed.Dispose();
                                 }
                             });
 
@@ -961,8 +973,24 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        private void SavePoiParam()
+        private async void SavePoiParam()
         {
+            if (_isSavingPoi || _isLoadingPoi || _poiLoadFailed) return;
+            try
+            {
+                await SaveTemplateAsync();
+                if (!_isClosing) MessageBox.Show(this, PoiTemplateStorage.IsLocalId(PoiParam.Id) ? "已保存到本地模板库" : "保存成功", "ColorVision");
+            }
+            catch (Exception ex)
+            {
+                log.Error("POI template save failed", ex);
+                if (!_isClosing) MessageBox.Show(this, $"保存失败：{ex.Message}", "ColorVision");
+            }
+        }
+
+        internal async Task SaveTemplateAsync()
+        {
+            if (_isLoadingPoi || _poiLoadFailed || _isSavingPoi) throw new InvalidOperationException("模板正在读取、保存或读取失败，不能保存。");
             PoiParam.PoiPoints.Clear();
             Rect rect = new Rect(0,0, PoiParam.Width, PoiParam.Height);
             foreach (var item in DrawingVisualLists)
@@ -1019,16 +1047,24 @@ namespace ColorVision.Engine.Templates.POI
                 PoiParam.PoiPoints.Add(PointInt4);
             }
 
-            Thread thread = new(() =>
+            // Capture on the UI thread; background persistence must not enumerate a live drawing collection.
+            var snapshot = Newtonsoft.Json.JsonConvert.DeserializeObject<PoiParam>(Newtonsoft.Json.JsonConvert.SerializeObject(PoiParam))!;
+            snapshot.DetailsLoaded = true;
+            var storage = PoiParam.Storage ?? PoiTemplateStorage.Default;
+            _isSavingPoi = true;
+            SavePoiButton.IsEnabled = false;
+            try
             {
-                int ret = PoiParam.Save2DB();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    string Msg = ret ==-1 ?"保存失败,具体报错信息请查看日志": "保存成功";
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Msg, "ColorVision");
-                });
-            });
-            thread.Start();
+                await Task.Run(() => storage.Save(snapshot));
+                PoiParam.Id = snapshot.Id;
+                PoiParam.Storage = storage;
+                PoiParam.DetailsLoaded = true;
+            }
+            finally
+            {
+                _isSavingPoi = false;
+                if (!_isClosing) SavePoiButton.IsEnabled = true;
+            }
         }
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
@@ -1040,6 +1076,11 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
+            if (!MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(this, "本地模式请使用图像导入；服务图像需要连接 MySQL。", "POI 模板");
+                return;
+            }
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             var recentItems = Db.Queryable<MeasureResultImgModel>()

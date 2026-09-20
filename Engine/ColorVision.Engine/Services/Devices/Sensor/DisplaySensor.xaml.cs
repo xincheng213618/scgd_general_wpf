@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using MQTTMessageLib;
-using MQTTMessageLib.Sensor;
 using System;
 using System.IO.Ports;
 using System.Windows;
@@ -21,6 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         public DeviceSensor Device { get; set; }
         private MQTTSensor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplaySensor(DeviceSensor device)
         {
@@ -40,7 +40,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             }
             Device.ConfigChanged += (s, e) => Update();
             Update();
-            ComboBoxType.ItemsSource = Enum.GetValues<SensorCmdType>();
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
             DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
@@ -208,38 +207,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             return string.IsNullOrWhiteSpace(message) ? openFailure : $"{openFailure}: {message}";
         }
 
-
-        private void SendCommand_Click(object sender, RoutedEventArgs e)
-        {
-            if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
-            {
-                bool ische = IsAddNewLine.IsChecked ?? false;
-                string sendcmd = TextBoxSendCommand.Text;
-
-                // 处理转义字符：将字面字符串转换为实际的转义字符
-                sendcmd = sendcmd.Replace("\\r\\n", "\r\n")
-                                 .Replace("\\n", "\n")
-                                 .Replace("\\r", "\r")
-                                 .Replace("\\t", "\t");
-
-                sendcmd += ische ? "\n" : "";
-
-                SensorCmd cmd = new()
-                {
-                    CmdType = CmdType,
-                    Request = sendcmd,
-                    Response = TextBoxResCommand.Text,
-                    Timeout = 5000,
-                    Delay = 0,
-                    RetryCount = 1
-                };
-                MsgRecord msgRecord = DeviceService.ExecCmd(cmd);
-                msgRecord.MsgRecordStateChanged += (s,e) =>
-                {
-                    MessageBox.Show(e.ToString());
-                };
-            }
-        }
 
         private void SendTemp_Click(object sender, RoutedEventArgs e)
         {

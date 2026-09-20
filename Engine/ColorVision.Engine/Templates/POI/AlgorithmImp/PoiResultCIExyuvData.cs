@@ -133,6 +133,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             double deltaUv = CalcMaxDeltaUv(items);
             double deltaX = maxX - minX;
             double deltaY = maxY - minY;
+            ChromaticityCenterMetrics chromaticity = ChromaticityCenterCalculator.Calculate(items.Select(o => (o.u, o.v)));
 
             double maxWave = items.Max(o => o.Wave);
             double minWave = items.Min(o => o.Wave);
@@ -176,6 +177,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             Row("Color Uniformity(Δuv)", FormatDouble(deltaUv),"");
             Row("Color Uniformity(Δx)", FormatDouble(deltaX), "");
             Row("Color Uniformity(Δy)", FormatDouble(deltaY), "");
+            Row("Average CIE1976 Chromatic Coordinates u'", FormatDouble(chromaticity.AverageUPrime), "");
+            Row("Average CIE1976 Chromatic Coordinates v'", FormatDouble(chromaticity.AverageVPrime), "");
+            Row("Color Center RMS Δu'v' to D65", FormatDouble(chromaticity.RmsToReference), "");
+            Row("Average Chromaticity Δu'v' to D65", FormatDouble(chromaticity.CenterDistanceToReference), "");
+            Row("Spatial Chromaticity RMS Δu'v'", FormatDouble(chromaticity.SpatialRms), "");
+            Row("Valid Chromaticity Sample Count", chromaticity.SampleCount, "count");
+            Row("Invalid Chromaticity Sample Count", chromaticity.InvalidSampleCount, "count");
 
             if (center != null)
             {

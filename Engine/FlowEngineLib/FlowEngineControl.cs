@@ -51,7 +51,18 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	private bool isDisposed;
 
-	public bool IsReady => GetFlowReady();
+	public bool PersistResults { get; set; } = true;
+
+    // A disconnected MQTT start can dispatch a graph that contains no remote service nodes.
+    // Keep transport readiness on the MQTT node itself, so external MQTT triggers still reconnect normally.
+    private bool CanDispatchLocally(BaseStartNode startNode) =>
+        !isDisposed && attachedStartNodes.Contains(startNode)
+        && startNode is MQTTStartNode or MQTTStartV5Node
+        && !attachedDeviceNodes.Keys.Any(node => node.RequiresRemoteService);
+
+    private bool IsStartReady(BaseStartNode startNode) => startNode.IsExecutionReady || CanDispatchLocally(startNode);
+
+    public bool IsReady => GetFlowReady();
 
 	public bool IsRunning
 	{
@@ -72,7 +83,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			if (startNodeNames.Count > 0)
 			{
-				return startNodeNames.First().Value.IsExecutionReady;
+				return IsStartReady(startNodeNames.First().Value);
 			}
 			return false;
 		}
@@ -84,7 +95,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			return name != null
 				&& startNodeNames.TryGetValue(name, out BaseStartNode startNode)
-				&& startNode.IsExecutionReady;
+				&& IsStartReady(startNode);
 		}
 	}
 
@@ -95,7 +106,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			return !_IsRunning
 				&& name != null
 				&& startNodeNames.TryGetValue(name, out BaseStartNode startNode)
-				&& startNode.IsExecutionReady
+				&& IsStartReady(startNode)
 				&& startNode.CanAcceptStart;
 		}
 	}
@@ -113,7 +124,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 		}
 
-		if (!startNode.RequiresConnectionReady)
+		if (!startNode.RequiresConnectionReady || CanDispatchLocally(startNode))
 		{
 			return true;
 		}
@@ -138,7 +149,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			return attachedStartNodes.Contains(startNode)
 				&& startNodeNames.TryGetValue(name, out BaseStartNode current)
 				&& ReferenceEquals(current, startNode)
-				&& startNode.IsExecutionReady;
+				&& IsStartReady(startNode);
 		}
 	}
 
@@ -878,7 +889,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			if (!_IsRunning
 				&& name != null
 				&& startNodeNames.TryGetValue(name, out startNode)
-				&& startNode.IsExecutionReady
+				&& IsStartReady(startNode)
 				&& startNode.CanAcceptStart)
 			{
 				_IsRunning = true;
@@ -897,6 +908,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		try
 		{
 			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
+			startNode.PersistResults = PersistResults;
 			started = startNode.TryStart(serialNumber);
 		}
 		finally

@@ -55,6 +55,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId)
         {
             CalibrationParamModes.Clear();
+            // Legacy service resource templates are not needed for local SDK calibration groups.
+            if (SysResourceDao.IsLocalId(resourceId) || !MySqlSetting.IsConnect) return;
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();

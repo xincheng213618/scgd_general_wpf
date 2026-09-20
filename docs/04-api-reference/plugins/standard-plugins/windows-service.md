@@ -75,8 +75,8 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 | 备份 | BackupBeforeInstall和BackupServiceBeforeInstall初始均false；即使勾选，方法也可能跳过、只记异常或忽略返回false而继续，不是备份验证成功才允许覆盖 |
 | 停止与替换 | 尝试停止受管理服务并关闭旧CVWinSMS进程；普通停止失败不一定阻止清理，归档服务卸载失败则阻止包更新 |
 | CommonDll与注册 | CommonDll存在时复制到已存在的三个服务目录再删源目录；不存在或复制异常只记日志。选中服务安装时，三个服务目录对应的exe均为必需项：缺exe、后台安装返回false或抛异常都会汇总；既有归档服务在替换包后使用当前 `ArchivedWindowsService.exe` 重新注册，失败也并入同一清单，全部尝试结束后统一使安装失败。ServiceHost仍兼容旧 `RegWindowsService.exe` |
-| SQL与业务账号 | 新装MySQL走初始化；其它勾选升级时由插件MySqlServiceManager委托Engine的MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync。安装先要求找到color_vision_all.sql，数据库步骤成功后更新业务账号授权；明确失败中止后续配置/启动 |
-| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
+| SQL与业务账号 | 新装MySQL走初始化；其它勾选升级时由插件MySqlServiceManager委托Engine的MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync。同名源库和目标库都尚未创建时按新安装直接初始化，不尝试备份不存在的库；跨库更新缺少源库时仍停止，避免跳过旧数据。安装先要求找到color_vision_all.sql，数据库步骤成功后更新业务账号授权；明确失败中止后续配置/启动 |
+| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。业务连接会写入或更新CVPath、设为桌面端当前连接并持久化，root配置不会被改成业务账号。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
 
 MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHelper` 将带UTF-8 BOM的SQL按UTF-8读取，其余先严格UTF-8解码、失败回退GB18030，再向mysql.exe传UTF-8。[Engine重置与资源保留](../../engine-components/mysql-recovery.md)负责保留表、字典依赖和SQL失败语义，不是整库或全部结果无损迁移。安装器要求SQL存在，而直接调用部分MySQL helper找不到SQL时会记录跳过并返回true，二者成功判据不同。
 
@@ -84,9 +84,9 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 `ServiceManagerConfig.BaseLocation` 是安装根，`MySqlPort` 默认3306；安装窗口的 `InstallServiceChecked/InstallMySqlChecked/InstallMqttChecked` 直接代理同名配置字段，初始缺省分别true/false/false。`AutoUpdateDatabase`、两个备份开关和所选包路径则是安装ViewModel自己的状态，不能把勾选项一律当作已保存配置或已完成动作。
 
-窗口只有在所选安装阶段及必需服务安装/启动汇总均通过后才显示“安装完成”；任一必需服务失败会显示安装失败及失败服务列表。该结果仍只覆盖编排收到的返回值，还须分别核对服务状态、版本、配置及数据库结果；日志、progress=100、某次ServiceHost成功均不替代整条安装验收。
+窗口只有在所选安装阶段及必需服务安装/启动汇总均通过后才将进度设为“安装完成”并显示完成弹窗；任一必需服务失败会显示安装失败及失败服务列表。该结果仍只覆盖编排收到的返回值，还须分别核对服务状态、版本、配置及数据库结果；日志、progress=100、完成弹窗或某次ServiceHost成功均不替代整条安装验收。
 
-插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 本身也只是业务账号SQL导入包装，不是该桌面恢复流程。
+插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
 
 ## 备份和恢复不等于自动回滚
 

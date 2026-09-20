@@ -22,8 +22,6 @@ public class CVCommonNode : STNode
 
 	protected string m_nodeType;
 
-	protected string m_deviceCode;
-
 	protected int m_zIndex;
 
 	protected int OptionItemHeight;
@@ -58,20 +56,6 @@ public class CVCommonNode : STNode
             OnPropertyChanged();
         }
     }
-
-	[STNodeProperty("设备代码", "设备代码", false, true)]
-	public string DeviceCode
-	{
-		get
-		{
-			return m_deviceCode;
-		}
-		set
-		{
-			m_deviceCode = value;
-			OnPropertyChanged();
-		}
-	}
 
 	[STNodeProperty("节点ID", "节点ID", false, false, true)]
 	public string NodeID
@@ -112,12 +96,11 @@ public class CVCommonNode : STNode
 	{
 	}
 
-	public CVCommonNode(string title, string nodeType, string nodeName, string deviceCode)
+	public CVCommonNode(string title, string nodeType, string nodeName)
 	{
 		base.Title = Lang.Get(title);
 		m_nodeType = nodeType;
 		m_nodeName = nodeName;
-		DeviceCode = deviceCode;
 		m_zIndex = -1;
 		OptionItemHeight = 18;
 		_ignoreErrors = false;
@@ -173,7 +156,7 @@ public class CVCommonNode : STNode
 		return !ShowControls && InputOptionsCount < 2 && !string.IsNullOrEmpty(GetCompactSummaryValue());
 	}
 
-	private void DrawCompactSummary(DrawingTools dt, string label, string value)
+	protected virtual void DrawCompactSummary(DrawingTools dt, string label, string value)
 	{
 		Rectangle rectangle = new Rectangle(
 			Left + StandardNodeContentPadding,

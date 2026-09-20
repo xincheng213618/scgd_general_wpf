@@ -246,6 +246,13 @@ public:
     {
     }
 
+    bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const override
+    {
+        transform = { type(), 2, 1, {} };
+        transform.coefficients[0] = coefficient_ / options.exposure[0];
+        return true;
+    }
+
     bool apply(
         const ImageView& raw,
         float* cieData,
@@ -292,6 +299,16 @@ public:
           gain_{ values[3], values[4], values[5] },
           coefficient_{ values[6], values[7], values[8], values[9] }
     {
+    }
+
+    bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const override
+    {
+        transform = { type(), 1, 3, {} };
+        transform.coefficients[0] = coefficient_[0] / options.exposure[0] / gain_[0];
+        transform.coefficients[1] = coefficient_[1] / options.exposure[1] / gain_[1];
+        transform.coefficients[2] = coefficient_[2] / options.exposure[2] / gain_[2];
+        transform.coefficients[3] = coefficient_[3] / options.exposure[2] / gain_[2];
+        return true;
     }
 
     bool apply(
@@ -392,6 +409,16 @@ public:
           gain_(std::move(gain)),
           usesGain_(usesGain)
     {
+    }
+
+    bool colorTransform(const ExecutionOptions& options, ColorTransform& transform) const override
+    {
+        transform = { type(), 0, 3, {} };
+        for (std::size_t i = 0; i < transform.coefficients.size(); ++i) {
+            transform.coefficients[i] = coefficient_[i] / options.exposure[i % 3];
+            if (usesGain_) transform.coefficients[i] /= gain_[i % 3];
+        }
+        return true;
     }
 
     bool apply(

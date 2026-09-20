@@ -13,6 +13,16 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>WPF adapter for host-neutral Geometry/Overlay artifacts.</summary>
     public static class AlgorithmOverlayRenderer
     {
+        /// <summary>Registers an application-rendered overlay with the same source lifetime as neutral overlays.</summary>
+        public static IDisposable RegisterVisual(ImageProcessingContext image, AlgorithmOverlayArtifact artifact, DrawingVisual visual)
+        {
+            ArgumentNullException.ThrowIfNull(image);
+            ArgumentNullException.ThrowIfNull(artifact);
+            ArgumentNullException.ThrowIfNull(visual);
+            return image.TryRegisterAlgorithmOverlay(artifact, visual, image.DocumentInstanceId, image.ImageRevision, out var registration)
+                ? registration : new RenderSession([]);
+        }
+
         public static IDisposable Apply(ImageProcessingContext image, DrawEditorContext draw, AlgorithmResult result)
         {
             ArgumentNullException.ThrowIfNull(image);

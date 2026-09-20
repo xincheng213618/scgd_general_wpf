@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor.Draw.Line;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.Plottables;
@@ -25,6 +26,7 @@ namespace ColorVision.ImageEditor
         {
             _profileData = profileData;
             InitializeComponent();
+            this.ApplyCaption();
             this.Title = title;
         }
 

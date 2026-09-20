@@ -48,12 +48,20 @@ struct ExecutionOptions {
     std::array<float, 3> exposure{};
 };
 
+struct ColorTransform {
+    CalibrationType type = CalibrationType::LumFourColor;
+    std::int32_t kind = 0; // 0: 3x3 matrix, 1: legacy one-color a/b/c/d, 2: luminance
+    std::int32_t channels = 3;
+    std::array<double, 9> coefficients{}; // effective factors, including exposure/gain
+};
+
 class CalibrationItem {
 public:
     virtual ~CalibrationItem() = default;
 
     [[nodiscard]] virtual CalibrationType type() const noexcept = 0;
     [[nodiscard]] virtual bool isColorTransform() const noexcept { return false; }
+    [[nodiscard]] virtual bool colorTransform(const ExecutionOptions&, ColorTransform&) const { return false; }
     [[nodiscard]] virtual bool requiresDistinctOutput() const noexcept { return false; }
     [[nodiscard]] virtual bool supportsDistinctOutput() const noexcept
     {

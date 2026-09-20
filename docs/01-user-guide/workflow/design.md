@@ -5,11 +5,11 @@ status: "current"
 summary: "流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。"
 aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController","流程编辑器","流程引擎模板管理","导入模板为模块","自动对齐","适应全部节点"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs","Test/ColorVision.UI.Tests/FlowNodeMenuPathTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"]
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
 
-# Flow 编辑工作区与文档命令
+# 流程编辑器：画布与工作区文档命令
 
 使用流程编辑器创建节点图、配置参数、保存流程或打开本地画布。先确认编辑对象是数据库模板还是本地文件，再执行保存、刷新和导出。
 
@@ -23,6 +23,8 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 2. 在画布空白处右击添加节点，或选择“导入模板为模块”插入已有流程的节点图。选中节点后编辑属性，再核对端口连接、设备 Code 和模板绑定。
 3. 用“自动对齐”（画布内 Ctrl+L）整理位置，用“适应全部节点”查看完整图。布局和视口调整不会代替保存。
 4. 核对窗口标题及下表中的保存目标，点击“保存”。需要保留修改时，先保存成功，再切换模板、刷新或导出；这些操作没有统一的自动保存行为。
+
+编辑完成后要运行当前画布，使用同一编辑器工具栏中工具提示为“执行流程”的按钮。“工作流程”面板也提供同名按钮。启动前提、停止行为和最终状态见[流程执行](./execution.md)；保存流程与执行流程是两个命令，执行不会替代保存。
 
 ## 保存目标与命令范围
 
@@ -47,7 +49,7 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 
 | 能力 | 实现落点与约束 |
 | --- | --- |
-| 添加节点、连接端口、拖动和命名 | `FlowEditorCanvas` 承载 `STNodeEditor`；节点目录与端口兼容由 ST 库负责 |
+| 添加节点、连接端口、拖动和命名 | `FlowEditorCanvas` 承载 `STNodeEditor`；节点目录与端口兼容由 ST 库负责。空白处右键新建菜单按最终显示分类合并和自然排序，Engine 与 FlowEngineLib 的“02 相机”等同名分类共用一个入口；第三方程序集前缀保留 |
 | 画布平移与框选 | 每次打开流程时工具栏锁按钮默认开启，空白处左键拖动平移画布；首次选中节点后一次性进入编辑模式并保持，清空或重新选择节点都不会自动切回。编辑模式下普通左键拖动框选，Ctrl + 左键拖动或中键拖动可临时平移；按钮仍可手动切换两种模式 |
 | 节点参数 | 属性标注接入统一 PropertyGrid；设备 Code、模板选择与输入字段须分别确认，连线成功不代表参数正确 |
 | 撤销/重做、复制/粘贴、删除 | Canvas 转发编辑命令到 ST 控件的历史栈；撤销不等于撤销已经写入数据库或外部系统的动作 |
@@ -55,7 +57,7 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 | 自动适配 | `AutoSizeCommand` 调用 `FitToViewport` 调整视口，不是保存操作 |
 | 导入模块 | 工具栏命令和画布空白处右键“导入模板为模块”复用 `ImportModule`：点击后重新加载模板并打开 `TemplateSelectionDialog`，选择画布后交给 `FlowEditorOperations.ImportCanvasAsModule` 加入当前图；没有模板、模板无画布数据或导入异常时显示提示；随后仍需检查参数并保存当前文档 |
 
-普通设备/模板字段使用 `FlowNodePropertyEditorAttribute` 或 `PropertyEditorTypeAttribute`；多模板族、随算法类型变化的补充面板归 `Editor/NodeConfiguration/`。选择顺序、缓存和降级规则只在 [PropertyGrid 契约](../../04-api-reference/ui-components/property-grid.md)维护。
+普通设备/模板字段使用 属性上的 `PropertyEditorTypeAttribute`；多模板族、随算法类型变化的补充面板归 `Editor/NodeConfiguration/`。选择顺序、缓存和降级规则只在 [PropertyGrid 契约](../../04-api-reference/ui-components/property-grid.md)维护。
 
 ## 选择、加载与多窗口隔离
 

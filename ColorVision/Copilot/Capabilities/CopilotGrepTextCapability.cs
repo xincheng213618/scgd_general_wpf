@@ -32,6 +32,8 @@ namespace ColorVision.Copilot
 
         public string Summary { get; init; } = string.Empty;
 
+        public string PartialResultMessage { get; init; } = string.Empty;
+
         public string ErrorMessage { get; init; } = string.Empty;
 
         public string Content { get; init; } = string.Empty;
@@ -60,9 +62,11 @@ namespace ColorVision.Copilot
             {
                 Success = Success,
                 Summary = Summary,
+                PartialResultMessage = PartialResultMessage,
                 Content = Content,
                 ErrorMessage = ErrorMessage,
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
+                LocalObservationScopePaths = Success ? SearchRoots : Array.Empty<string>(),
             };
         }
     }
@@ -169,8 +173,19 @@ namespace ColorVision.Copilot
                 };
             }
 
+            var incompletePathCount = 0;
+            var warnings = new List<string>(5);
+            void AddWarning(string path, string reason)
+            {
+                if (warnings.Count < 5)
+                    warnings.Add($"{CopilotWorkspaceSearchSupport.TruncateLine(path, 260)}: {reason}");
+            }
             var candidateFiles = CopilotWorkspaceSearchSupport
-                .EnumerateFiles(searchRoots, textFilesOnly: true, cancellationToken)
+                .EnumerateFiles(searchRoots, textFilesOnly: true, cancellationToken, (path, reason) =>
+                {
+                    incompletePathCount++;
+                    AddWarning(path, reason);
+                })
                 .Take(MaxFilesToScan + 1)
                 .ToArray();
             var fileListComplete = candidateFiles.Length <= MaxFilesToScan;
@@ -180,7 +195,7 @@ namespace ColorVision.Copilot
                 .ThenBy(entry => entry.FullPath, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var revision = BuildSearchRevision(searchRoots, patterns, orderedFiles);
-            if (!TryResolveCursor(cursor, revision, orderedFiles.Length, out var startFileIndex, out var startLineNumber, out var cursorError))
+            if (!TryResolveCursor(cursor, revision, orderedFiles.Length, out var startFileIndex, out var startLineNumber, out var previousReadFailure, out var cursorError))
             {
                 return new CopilotTextSearchResult
                 {
@@ -195,7 +210,7 @@ namespace ColorVision.Copilot
             var scannedFiles = 0;
             var matches = new List<CopilotTextSearchMatch>(MaxMatches);
             var matchedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var readFailureEncountered = false;
+            var readFailureCount = 0;
             var hasMoreMatches = false;
             var pageEndFileIndex = 0;
             var pageEndLineNumber = 0;
@@ -204,61 +219,107 @@ namespace ColorVision.Copilot
             {
                 var entry = orderedFiles[fileIndex];
                 scannedFiles++;
+                var fileMatches = new List<CopilotTextSearchMatch>();
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    using var stream = new FileStream(entry.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    var preview = new byte[(int)Math.Min(CopilotLocalFileToolSupport.BinaryPreviewBytes, stream.Length)];
+                    var previewRead = stream.ReadAtLeast(preview, preview.Length, throwOnEndOfStream: false);
+                    using var reader = CopilotLocalFileToolSupport.CreateTextReader(stream, preview.AsSpan(0, previewRead));
                     var lineNumber = 0;
-                    foreach (var line in File.ReadLines(entry.FullPath))
+                    while (reader.ReadLine() is { } line)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        if (line.Contains('\0'))
+                            throw new InvalidDataException("The file contains NUL characters and appears to be binary.");
                         lineNumber++;
                         if (fileIndex == startFileIndex && lineNumber <= startLineNumber)
                             continue;
                         if (!patterns.Any(pattern => line.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
                             continue;
-                        if (matches.Count >= MaxMatches)
+                        if (matches.Count + fileMatches.Count >= MaxMatches)
                         {
                             hasMoreMatches = true;
                             break;
                         }
 
-                        matches.Add(new CopilotTextSearchMatch
+                        fileMatches.Add(new CopilotTextSearchMatch
                         {
                             RootPath = displayRootMap[entry.RootPath],
                             FullPath = entry.FullPath,
                             LineNumber = lineNumber,
                             LineText = line,
                         });
+                    }
+                    // A decoding/read failure invalidates this file's tentative matches, while
+                    // independently read files remain usable. A full page still stops promptly.
+                    matches.AddRange(fileMatches);
+                    if (fileMatches.Count > 0)
+                    {
                         matchedFilePaths.Add(entry.FullPath);
                         pageEndFileIndex = fileIndex;
-                        pageEndLineNumber = lineNumber;
+                        pageEndLineNumber = fileMatches[^1].LineNumber;
                     }
                 }
                 catch (OperationCanceledException)
                 {
                     throw;
                 }
-                catch
+                catch (Exception exception)
                 {
-                    readFailureEncountered = true;
+                    readFailureCount++;
+                    AddWarning(entry.FullPath, exception switch
+                    {
+                        DecoderFallbackException => CopilotLocalFileToolSupport.InvalidEncodingMessage,
+                        InvalidDataException => "The file contains NUL bytes or characters and appears to be binary.",
+                        _ => "The file could not be read. Check access or retry after it becomes available.",
+                    });
                 }
             }
 
+            var readFailureEncountered = previousReadFailure || readFailureCount > 0;
             var nextCursor = hasMoreMatches && fileListComplete
-                ? $"{revision}:{pageEndFileIndex.ToString(CultureInfo.InvariantCulture)}:{pageEndLineNumber.ToString(CultureInfo.InvariantCulture)}"
+                ? $"{revision}:{pageEndFileIndex.ToString(CultureInfo.InvariantCulture)}:{pageEndLineNumber.ToString(CultureInfo.InvariantCulture)}:{(readFailureEncountered ? "1" : "0")}"
                 : string.Empty;
-            var scanComplete = fileListComplete && !readFailureEncountered && !hasMoreMatches;
+            var scanComplete = fileListComplete && incompletePathCount == 0 && !readFailureEncountered && !hasMoreMatches;
             var resultsComplete = scanComplete;
             var resultsTruncated = hasMoreMatches;
+            var coverageNotes = new List<string>();
+            if (!fileListComplete)
+                coverageNotes.Add($"已达到 {MaxFilesToScan} 个文件的搜索上限，请缩小范围后重试。");
+            if (incompletePathCount > 0)
+                coverageNotes.Add($"有 {incompletePathCount} 个路径因格式、大小或访问限制未能检查，不能据此判断没有匹配项。");
+            if (readFailureCount > 0)
+                coverageNotes.Add($"本页有 {readFailureCount} 个文件无法读取，不能据此判断没有匹配项。");
+            if (previousReadFailure)
+                coverageNotes.Add("之前的分页中有文件无法读取，当前结果仍不完整。");
+            if (hasMoreMatches)
+                coverageNotes.Add(!string.IsNullOrWhiteSpace(nextCursor)
+                    ? $"本页显示 {matches.Count} 条匹配，仍有更多结果可继续读取。"
+                    : $"仅显示 {matches.Count} 条匹配，请缩小搜索范围。");
+            var partialResultMessage = string.Join(" ", coverageNotes);
             var builder = new StringBuilder();
             builder.AppendLine($"[Search Keywords] {string.Join(", ", patterns)}");
             builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
             builder.AppendLine($"[Candidate Text Files] {orderedFiles.Length}");
             builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
+            builder.AppendLine("[Search Policy] Text extensions only; generated/dependency directories and reparse points are excluded.");
+            builder.AppendLine($"[Scope Inspection Failures] {incompletePathCount}");
+            builder.AppendLine($"[Unreadable Text Files This Page] {readFailureCount}");
             builder.AppendLine($"[Matches Shown] {matches.Count}");
             builder.AppendLine($"[Scan Complete] {scanComplete.ToString().ToLowerInvariant()}");
             builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
             if (!string.IsNullOrWhiteSpace(nextCursor))
                 builder.AppendLine($"next_cursor: {nextCursor}");
+            if (!fileListComplete)
+                builder.AppendLine($"[Search Warning] The {MaxFilesToScan}-file scan limit was reached. Narrow the path before concluding that a query is absent.");
+            if (previousReadFailure)
+                builder.AppendLine("[Search Warning] At least one file on an earlier page could not be read. This continuation cannot prove a complete search; inspect the earlier warnings and restart or narrow the scope.");
+            if (incompletePathCount > 0 || readFailureCount > 0)
+                builder.AppendLine("[Search Warning] Some paths could not be inspected. The matches below are partial evidence; no absence conclusion is supported for unread paths.");
+            foreach (var warning in warnings)
+                builder.AppendLine($"[Search Warning] {warning}");
             builder.AppendLine();
 
             if (matches.Count == 0)
@@ -275,6 +336,7 @@ namespace ColorVision.Copilot
                     ScanComplete = scanComplete,
                     ResultsComplete = resultsComplete,
                     ResultsTruncated = resultsTruncated,
+                    PartialResultMessage = partialResultMessage,
                     Matches = matches,
                     Summary = scanComplete
                         ? $"Scanned {scannedFiles} text files; no lines matched the literal query."
@@ -295,6 +357,7 @@ namespace ColorVision.Copilot
                 ScanComplete = scanComplete,
                 ResultsComplete = resultsComplete,
                 ResultsTruncated = resultsTruncated,
+                PartialResultMessage = partialResultMessage,
                 NextCursor = nextCursor,
                 Matches = matches,
                 Summary = resultsComplete
@@ -345,26 +408,30 @@ namespace ColorVision.Copilot
             int fileCount,
             out int fileIndex,
             out int lineNumber,
+            out bool previousReadFailure,
             out string error)
         {
             fileIndex = 0;
             lineNumber = 0;
+            previousReadFailure = false;
             error = string.Empty;
             if (string.IsNullOrWhiteSpace(cursor))
                 return true;
 
-            var parts = cursor.Trim().Split(':', 3, StringSplitOptions.None);
-            if (parts.Length != 3
+            var parts = cursor.Trim().Split(':', 5, StringSplitOptions.None);
+            if (parts.Length != 4
                 || parts[0].Length != revision.Length
                 || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out fileIndex)
                 || !int.TryParse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture, out lineNumber)
                 || fileIndex < 0
                 || fileIndex >= fileCount
-                || lineNumber < 1)
+                || lineNumber < 1
+                || parts[3] is not ("0" or "1"))
             {
                 error = "The text-search cursor format or position is invalid. Restart the search without a cursor.";
                 return false;
             }
+            previousReadFailure = parts[3] == "1";
             if (!string.Equals(parts[0], revision, StringComparison.OrdinalIgnoreCase))
             {
                 error = "The search query, scope, or candidate files changed after the previous page. Restart the search without a cursor.";

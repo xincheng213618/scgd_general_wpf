@@ -6,12 +6,14 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes;
 using ColorVision.UI.Views;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -212,6 +214,41 @@ public sealed class DeferredDeviceViewTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LocalCameraSnapshotDisplaysWithoutFileAndSurvivesDelayedResultNotification(bool autoRefresh)
+    {
+        Run(() =>
+        {
+            using ShellCase item = CreateShell("Camera");
+            var camera = Assert.IsType<ViewCamera>(item.View);
+            bool previousRefresh = ViewCamera.Config.AutoRefreshView;
+            try
+            {
+                ViewCamera.Config.AutoRefreshView = autoRefresh;
+                using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
+                using (var lease = frame.Acquire()) Marshal.Copy(new byte[] { 11, 29 }, 0, lease.RawPointer, 2);
+                var model = new MeasureResultImgModel { Id = 734, FileUrl = null };
+                camera.ShowLocalResult(model, LocalCameraPreview.Create(frame), forceDisplay: true);
+                frame.Dispose();
+                camera.ShowResult(new MeasureResultImgModel { Id = 733, FileUrl = null });
+                camera.ShowResult(model);
+                var list = Assert.IsType<ListView>(camera.FindName("listView1"));
+                Assert.Equal(734, Assert.IsType<ViewResultImage>(list.SelectedItem).Id);
+                Assert.Equal(2, camera.ViewResults.Count);
+                byte[] pixels = new byte[2];
+                Assert.IsAssignableFrom<System.Windows.Media.Imaging.BitmapSource>(camera.ImageView.ViewBitmapSource).CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 11, 29 }, pixels);
+                list.SelectedItem = camera.ViewResults.Single(result => result.Id == 733);
+                list.SelectedItem = camera.ViewResults.Single(result => result.Id == 734);
+                Assert.IsAssignableFrom<System.Windows.Media.Imaging.BitmapSource>(camera.ImageView.ViewBitmapSource).CopyPixels(pixels, 2, 0);
+                Assert.Equal(new byte[] { 11, 29 }, pixels);
+            }
+            finally { ViewCamera.Config.AutoRefreshView = previousRefresh; }
+        });
+    }
+
     private static ShellCase CreateShell(string kind)
     {
         // Constructors of real devices/MQTT services discover hardware, subscribe to the
@@ -222,6 +259,8 @@ public sealed class DeferredDeviceViewTests
             {
                 var device = Uninitialized<DeviceCamera>();
                 device.Config = new() { Code = "deferred-test-camera" };
+                typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(device, new CameraBackendState(false));
                 device.DService = Uninitialized<MQTTCamera>();
                 var view = new ViewCamera(device, deferInitialization: true);
                 SetView(device, view);

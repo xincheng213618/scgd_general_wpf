@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.Common.MVVM;
@@ -8,6 +9,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
     {
         private bool _isEnabled;
         private DisplayShaderChannelMode _channelMode = DisplayShaderChannelMode.Rgb;
+        private double _temperature;
+        private double _tint;
         private double _redGain = 1;
         private double _greenGain = 1;
         private double _blueGain = 1;
@@ -30,161 +33,215 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         private double _pseudoMin;
         private double _pseudoMax = 1;
 
-        [Display(Name = nameof(SettingsText.IsEnabled), ResourceType = typeof(SettingsText))]
+        [Display(Name = nameof(SettingsText.IsEnabled), GroupName = nameof(SettingsText.FilterBasics), ResourceType = typeof(SettingsText))]
         public bool IsEnabled
         {
             get => _isEnabled;
             set => SetProperty(ref _isEnabled, value);
         }
 
-        [Display(Name = nameof(SettingsText.ChannelMode), ResourceType = typeof(SettingsText))]
+        [Display(Name = nameof(SettingsText.ChannelMode), GroupName = nameof(SettingsText.FilterBasics), ResourceType = typeof(SettingsText))]
         public DisplayShaderChannelMode ChannelMode
         {
             get => _channelMode;
             set => SetProperty(ref _channelMode, value);
         }
 
-        [Display(Name = nameof(SettingsText.RedGain), ResourceType = typeof(SettingsText))]
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Temperature), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
+        public double Temperature
+        {
+            get => _temperature;
+            set => SetProperty(ref _temperature, value);
+        }
+
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Tint), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
+        public double Tint
+        {
+            get => _tint;
+            set => SetProperty(ref _tint, value);
+        }
+
+        [Range(0d, 3d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.RedGain), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double RedGain
         {
             get => _redGain;
             set => SetProperty(ref _redGain, value);
         }
 
-        [Display(Name = nameof(SettingsText.GreenGain), ResourceType = typeof(SettingsText))]
+        [Range(0d, 3d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.GreenGain), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double GreenGain
         {
             get => _greenGain;
             set => SetProperty(ref _greenGain, value);
         }
 
-        [Display(Name = nameof(SettingsText.BlueGain), ResourceType = typeof(SettingsText))]
+        [Range(0d, 3d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.BlueGain), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double BlueGain
         {
             get => _blueGain;
             set => SetProperty(ref _blueGain, value);
         }
 
-        [Display(Name = nameof(SettingsText.RedOffset), ResourceType = typeof(SettingsText))]
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.RedOffset), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double RedOffset
         {
             get => _redOffset;
             set => SetProperty(ref _redOffset, value);
         }
 
-        [Display(Name = nameof(SettingsText.GreenOffset), ResourceType = typeof(SettingsText))]
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.GreenOffset), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double GreenOffset
         {
             get => _greenOffset;
             set => SetProperty(ref _greenOffset, value);
         }
 
-        [Display(Name = nameof(SettingsText.BlueOffset), ResourceType = typeof(SettingsText))]
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.BlueOffset), GroupName = nameof(SettingsText.FilterWhiteBalance), ResourceType = typeof(SettingsText))]
         public double BlueOffset
         {
             get => _blueOffset;
             set => SetProperty(ref _blueOffset, value);
         }
 
-        [Display(Name = nameof(SettingsText.Brightness), ResourceType = typeof(SettingsText))]
+        [Range(-1d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Brightness), GroupName = nameof(SettingsText.FilterTone), ResourceType = typeof(SettingsText))]
         public double Brightness
         {
             get => _brightness;
             set => SetProperty(ref _brightness, value);
         }
 
-        [Display(Name = nameof(SettingsText.Contrast), ResourceType = typeof(SettingsText))]
+        [Range(0d, 3d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Contrast), GroupName = nameof(SettingsText.FilterTone), ResourceType = typeof(SettingsText))]
         public double Contrast
         {
             get => _contrast;
             set => SetProperty(ref _contrast, value);
         }
 
-        [Display(Name = nameof(SettingsText.Gamma), ResourceType = typeof(SettingsText))]
+        [Range(0.1d, 4d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Gamma), GroupName = nameof(SettingsText.FilterTone), ResourceType = typeof(SettingsText))]
         public double Gamma
         {
             get => _gamma;
             set => SetProperty(ref _gamma, value);
         }
 
-        [Display(Name = nameof(SettingsText.Saturation), ResourceType = typeof(SettingsText))]
+        [Range(0d, 3d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Saturation), GroupName = nameof(SettingsText.FilterTone), ResourceType = typeof(SettingsText))]
         public double Saturation
         {
             get => _saturation;
             set => SetProperty(ref _saturation, value);
         }
 
-        [Display(Name = nameof(SettingsText.Invert), ResourceType = typeof(SettingsText))]
+        [Display(Name = nameof(SettingsText.Invert), GroupName = nameof(SettingsText.FilterTone), ResourceType = typeof(SettingsText))]
         public bool Invert
         {
             get => _invert;
             set => SetProperty(ref _invert, value);
         }
 
-        [Display(Name = nameof(SettingsText.ThresholdMode), ResourceType = typeof(SettingsText))]
+        [Display(Name = nameof(SettingsText.ThresholdMode), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public DisplayShaderThresholdMode ThresholdMode
         {
             get => _thresholdMode;
             set => SetProperty(ref _thresholdMode, value);
         }
 
-        [Display(Name = nameof(SettingsText.Threshold), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.Threshold), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double Threshold
         {
             get => _threshold;
             set => SetProperty(ref _threshold, value);
         }
 
-        [Display(Name = nameof(SettingsText.ThresholdLow), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.ThresholdLow), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double ThresholdLow
         {
             get => _thresholdLow;
             set => SetProperty(ref _thresholdLow, value);
         }
 
-        [Display(Name = nameof(SettingsText.ThresholdHigh), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.ThresholdHigh), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double ThresholdHigh
         {
             get => _thresholdHigh;
             set => SetProperty(ref _thresholdHigh, value);
         }
 
-        [Display(Name = nameof(SettingsText.RangeLow), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.RangeLow), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double RangeLow
         {
             get => _rangeLow;
             set => SetProperty(ref _rangeLow, value);
         }
 
-        [Display(Name = nameof(SettingsText.RangeHigh), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.RangeHigh), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double RangeHigh
         {
             get => _rangeHigh;
             set => SetProperty(ref _rangeHigh, value);
         }
 
-        [Display(Name = nameof(SettingsText.HighlightOpacity), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.HighlightOpacity), GroupName = nameof(SettingsText.FilterThreshold), ResourceType = typeof(SettingsText))]
         public double HighlightOpacity
         {
             get => _highlightOpacity;
             set => SetProperty(ref _highlightOpacity, value);
         }
 
-        [Display(Name = nameof(SettingsText.PseudoColorMode), ResourceType = typeof(SettingsText))]
+        [Display(Name = nameof(SettingsText.PseudoColorMode), GroupName = nameof(SettingsText.FilterPseudoColor), ResourceType = typeof(SettingsText))]
         public DisplayShaderPseudoColorMode PseudoColorMode
         {
             get => _pseudoColorMode;
             set => SetProperty(ref _pseudoColorMode, value);
         }
 
-        [Display(Name = nameof(SettingsText.PseudoMin), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.PseudoMin), GroupName = nameof(SettingsText.FilterPseudoColor), ResourceType = typeof(SettingsText))]
         public double PseudoMin
         {
             get => _pseudoMin;
             set => SetProperty(ref _pseudoMin, value);
         }
 
-        [Display(Name = nameof(SettingsText.PseudoMax), ResourceType = typeof(SettingsText))]
+        [Range(0d, 1d)]
+        [PropertyEditorType(typeof(SliderPropertiesEditor))]
+        [Display(Name = nameof(SettingsText.PseudoMax), GroupName = nameof(SettingsText.FilterPseudoColor), ResourceType = typeof(SettingsText))]
         public double PseudoMax
         {
             get => _pseudoMax;
@@ -194,6 +251,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
         public void Reset()
         {
             ChannelMode = DisplayShaderChannelMode.Rgb;
+            Temperature = 0;
+            Tint = 0;
             RedGain = 1;
             GreenGain = 1;
             BlueGain = 1;
@@ -226,6 +285,8 @@ namespace ColorVision.ImageEditor.EditorTools.Filters
 
             IsEnabled = source.IsEnabled;
             ChannelMode = source.ChannelMode;
+            Temperature = source.Temperature;
+            Tint = source.Tint;
             RedGain = source.RedGain;
             GreenGain = source.GreenGain;
             BlueGain = source.BlueGain;

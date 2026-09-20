@@ -4,7 +4,6 @@ using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Quartz;
-using Quartz.Impl.Matchers;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -135,8 +134,8 @@ namespace ColorVision.Scheduler
                         task = new SchedulerInfo { JobName = key.Name, GroupName = key.Group };
                         TaskInfos.Add(task);
                     }
-                    task.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                    task.PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    task.NextFireTime = trigger.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    task.PreviousFireTime = trigger.PreviousFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
                 }
             }
         }
@@ -274,7 +273,7 @@ namespace ColorVision.Scheduler
         private async void MenuTrigger_Click(object sender, RoutedEventArgs e)
         {
             if (ResolveTask(sender) is SchedulerInfo info)
-                await RunOperationAsync(() => _schedulerService.Scheduler.TriggerJob(new JobKey(info.JobName, info.GroupName)));
+                await RunOperationAsync(() => _schedulerService.Scheduler.TriggerJob(new JobKey(info.JobName, info.GroupName)).AsTask());
         }
 
         private void ViewAllHistory_Click(object sender, RoutedEventArgs e) =>

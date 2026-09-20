@@ -28,7 +28,8 @@ namespace ColorVision.Copilot
             CopilotProviderType providerType,
             bool allowInsecureHttp)
         {
-            return Validate(baseUrl, providerType, allowInsecureHttp, useResponsesApi: false);
+            return Validate(baseUrl, providerType, allowInsecureHttp,
+                CopilotOpenAiRequestPolicy.IsExplicitResponsesEndpoint(baseUrl, providerType));
         }
 
         private static CopilotProviderEndpointValidation Validate(

@@ -7,6 +7,20 @@ namespace ProjectARVRPro.Tests;
 public sealed class ProjectImageExportServiceTests
 {
     [Fact]
+    public void DiagnosticContextIncludesStableCorrelationFieldsOnOneLine()
+    {
+        string context = ProjectImageExportService.BuildDiagnosticContext(
+            "SN\r\n42",
+            resultId: 17,
+            batchId: 23,
+            model: "White\n255");
+
+        Assert.Equal(
+            "Task=ProjectARVRPro.ImageExport SN=SN  42 ResultId=17 BatchId=23 Model=White 255",
+            context);
+    }
+
+    [Fact]
     public void FileNames_KeepRenderedAndSourceArtifactsDistinctAndSanitized()
     {
         string rendered = ProjectImageExportService.BuildResultFileStem(

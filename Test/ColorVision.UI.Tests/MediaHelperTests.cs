@@ -8,6 +8,24 @@ namespace ColorVision.UI.Tests;
 public class MediaHelperTests
 {
     [Fact]
+    public void MatUpdateWriteableBitmapRejectsMatchingFrozenTargetWithoutChangingPixels()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using Mat source = new(2, 2, MatType.CV_8UC1, Scalar.All(200));
+            WriteableBitmap bitmap = new(2, 2, 96, 96, PixelFormats.Gray8, null);
+            bitmap.WritePixels(new System.Windows.Int32Rect(0, 0, 2, 2), new byte[] { 10, 11, 12, 13 }, 2, 0);
+            bitmap.Freeze();
+
+            Assert.False(source.MatUpdateWriteableBitmap(bitmap));
+
+            byte[] pixels = new byte[4];
+            bitmap.CopyPixels(pixels, 2, 0);
+            Assert.Equal(new byte[] { 10, 11, 12, 13 }, pixels);
+        });
+    }
+
+    [Fact]
     public void MatUpdateWriteableBitmapRejectsSameByteCountWithDifferentFormats()
     {
         using Mat floatGray = new(2, 2, MatType.CV_32FC1, Scalar.All(1));

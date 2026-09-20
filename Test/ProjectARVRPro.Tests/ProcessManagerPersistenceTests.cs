@@ -198,7 +198,7 @@ public sealed class ProcessManagerPersistenceTests
         RunInTemporaryPersistenceDirectory(() =>
         {
             Directory.CreateDirectory(ViewResultManager.DirectoryPath);
-            string filePath = Path.Combine(ViewResultManager.DirectoryPath, "ProcessGroups.json");
+            string filePath = Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName);
             var process = new BlackProcess();
             var legacyRoot = new ProcessGroupsRoot
             {
@@ -257,7 +257,7 @@ public sealed class ProcessManagerPersistenceTests
             ProcessGroup originalGroup = Assert.Single(manager.ProcessGroups);
             RecipeConfig originalRecipeConfig = manager.RecipeConfig;
             Assert.True(manager.TrySaveProcessGroups());
-            string filePath = Path.Combine(ViewResultManager.DirectoryPath, "ProcessGroups.json");
+            string filePath = Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName);
             string originalJson = File.ReadAllText(filePath);
             var importedProcess = new BlackProcess();
             importedProcess.Config.RecipeConfig.FOFOContrast.Min = 999;
@@ -292,6 +292,91 @@ public sealed class ProcessManagerPersistenceTests
             Assert.Same(originalRecipeConfig, manager.RecipeConfig);
             Assert.Empty(manager.ResultParserMetas);
             Assert.Equal(originalJson, File.ReadAllText(filePath));
+        });
+    }
+
+    [Fact]
+    public void LegacySharedArvrGroupsMigrateWithoutChangingTheSharedFile()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            string sharedFilePath = Path.Combine(ViewResultManager.DirectoryPath, "ProcessGroups.json");
+            var process = new BlackProcess();
+            var legacyRoot = new ProcessGroupsRoot
+            {
+                Version = 3,
+                Groups =
+                [
+                    new ProcessGroupPersist
+                    {
+                        Name = "ARVR Legacy",
+                        Metas =
+                        [
+                            new ProcessMetaPersist
+                            {
+                                Name = "Black",
+                                FlowTemplate = "BlackFlow",
+                                ProcessTypeFullName = typeof(BlackProcess).FullName!,
+                                ConfigJson = JsonConvert.SerializeObject(process.Config)
+                            }
+                        ]
+                    }
+                ]
+            };
+            string sharedJson = JsonConvert.SerializeObject(
+                legacyRoot,
+                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, Formatting = Formatting.Indented });
+            File.WriteAllText(sharedFilePath, sharedJson);
+
+            var manager = new ProcessManager();
+
+            Assert.Equal("ARVR Legacy", Assert.Single(manager.ProcessGroups).Name);
+            Assert.IsType<BlackProcess>(Assert.Single(manager.ProcessMetas).Process);
+            Assert.True(File.Exists(Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName)));
+            Assert.Equal(sharedJson, File.ReadAllText(sharedFilePath));
+        });
+    }
+
+    [Fact]
+    public void SharedLuxGroupsAreIgnoredAndFutureSavesUseTheArvrFile()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            string sharedFilePath = Path.Combine(ViewResultManager.DirectoryPath, "ProcessGroups.json");
+            const string sharedJson = """
+                {
+                  "Version": 1,
+                  "ActiveGroupIndex": 0,
+                  "Groups": [
+                    {
+                      "Name": "LUX",
+                      "Metas": [
+                        {
+                          "Name": "White255",
+                          "FlowTemplate": "LuxFlow",
+                          "ProcessTypeFullName": "ProjectLUX.Process.W255.White255Process",
+                          "IsEnabled": true,
+                          "SocketCode": "21",
+                          "ConfigJson": null
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+            File.WriteAllText(sharedFilePath, sharedJson);
+
+            var manager = new ProcessManager();
+
+            Assert.Equal("Default", Assert.Single(manager.ProcessGroups).Name);
+            Assert.Empty(manager.ProcessMetas);
+            Assert.False(File.Exists(Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName)));
+
+            manager.NewGroupName = "ARVR";
+            manager.AddGroupCommand.Execute(null);
+
+            Assert.True(File.Exists(Path.Combine(ViewResultManager.DirectoryPath, ProcessManager.GroupPersistFileName)));
+            Assert.Equal(sharedJson, File.ReadAllText(sharedFilePath));
         });
     }
 

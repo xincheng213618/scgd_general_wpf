@@ -116,7 +116,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type uiDocking:DockPanelTitleAction}">
                                             <Button x:Name="PanelTitleActionButton"
-                                                AutomationProperties.Name="{Binding ToolTip}"
+                                                AutomationProperties.Name="{Binding ToolTip, TargetNullValue=操作, FallbackValue=操作}"
                                                 Command="{Binding Command}"
                                                 CommandParameter="{Binding CommandParameter}"
                                                 Style="{StaticResource DockingCaptionButtonStyle}"

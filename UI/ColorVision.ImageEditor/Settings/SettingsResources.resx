@@ -66,8 +66,15 @@
   <data name="FilePath" xml:space="preserve"><value>完整路径</value></data>
   <data name="Technical" xml:space="preserve"><value>技术详情</value></data>
   <data name="PseudoHint" xml:space="preserve"><value>配色与自动范围偏好保留在此视图。切换图像后重新计算范围，伪彩效果需重新启用。</value></data>
+  <data name="FilterBasics" xml:space="preserve"><value>基础显示</value></data>
+  <data name="FilterWhiteBalance" xml:space="preserve"><value>白平衡与通道</value></data>
+  <data name="FilterTone" xml:space="preserve"><value>色调调整</value></data>
+  <data name="FilterThreshold" xml:space="preserve"><value>阈值与高亮</value></data>
+  <data name="FilterPseudoColor" xml:space="preserve"><value>滤镜伪彩</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>启用滤镜</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>显示通道</value></data>
+  <data name="Temperature" xml:space="preserve"><value>色温调整</value></data>
+  <data name="Tint" xml:space="preserve"><value>色调（绿–洋红）</value></data>
   <data name="RedGain" xml:space="preserve"><value>红色增益</value></data>
   <data name="GreenGain" xml:space="preserve"><value>绿色增益</value></data>
   <data name="BlueGain" xml:space="preserve"><value>蓝色增益</value></data>

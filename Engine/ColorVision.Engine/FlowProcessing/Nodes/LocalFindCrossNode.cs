@@ -1,9 +1,11 @@
+﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
@@ -63,7 +65,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         public required CVStartCFC Action { get; init; }
         public string? ImageFilePath { get; init; }
-        public required string DeviceCode { get; init; }
         public int ZIndex { get; init; }
         public int TotalTime { get; init; }
         public int ResultCode { get; init; }
@@ -81,7 +82,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal sealed class LocalFindCrossPublishRequest
     {
-        public required string DeviceCode { get; init; }
         public required string OperatorCode { get; init; }
         public required string SerialNumber { get; init; }
         public required string NodeId { get; init; }
@@ -91,6 +91,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal interface ILocalFindCrossNodeServices
     {
+        Int32Rect LoadSearchRegionTemplate(string templateName);
         LocalFlowFrame LoadFrame(string filePath);
         MeasureResultImgModel? GetImageResult(int masterId);
         LocalFindCrossDetection Detect(HImage image, RoiRect roi, string parameterJson);
@@ -111,6 +112,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private LocalFindCrossNodeServices()
         {
         }
+
+        public Int32Rect LoadSearchRegionTemplate(string templateName) => LocalPoiSearchRegionResolver.Load(templateName);
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 
@@ -187,9 +190,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             ArgumentNullException.ThrowIfNull(request);
             ResultMessageBus.Default.PublishPersisted(
-                ResultRoutes.Algorithm,
+                ResultRoutes.LocalFlow,
                 ResultKinds.Algorithm,
-                request.DeviceCode,
+                string.Empty,
                 request.OperatorCode,
                 request.SerialNumber,
                 request.NodeId,
@@ -311,7 +314,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 BatchId = batchId,
                 Zindex = request.ZIndex,
                 Params = JsonConvert.SerializeObject(request.Parameters),
-                DeviceCode = NullIfWhiteSpace(request.DeviceCode),
+                DeviceCode = null,
                 ResultCode = request.ResultCode,
                 Result = request.ResultDescription,
                 TotalTime = request.TotalTime,
@@ -430,7 +433,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "本地十字定位")]
+    [STNode("Flow_CustomNodes", "十字定位")]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
         internal const int DetectionFailureResultCode = -1;
@@ -449,6 +452,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private string parameterJson = DefaultParameterJson;
         private string resultDirectory = string.Empty;
         private Int32Rect searchRegion = Int32Rect.Empty;
+        private string searchRegionPoiTemplate = string.Empty;
         private readonly ILocalFindCrossNodeServices services;
 
         [Category("本地十字定位")]
@@ -465,7 +469,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         [Category("本地十字定位")]
-        [STNodeProperty("算法参数(JSON)", "生产参数只需名义角度、最大允许旋转偏差和光学校准；极性、阈值、臂长、可信度、处理尺寸及旋转算法均由内部鲁棒配置管理。省略 stdCenter 时以整幅图像中心作为光学基准。", true)]
+        [PropertyEditorType(typeof(LocalFindCrossConfigurationEditor))]
+        [STNodeProperty("算法参数", "生产参数只需名义角度、最大允许旋转偏差和光学校准；极性、阈值、臂长、可信度、处理尺寸及旋转算法均由内部鲁棒配置管理。省略 stdCenter 时以整幅图像中心作为光学基准。", true)]
         public string ParameterJson
         {
             get => parameterJson;
@@ -476,8 +481,19 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        [Category("本地十字定位")]
-        [STNodeProperty("搜索区域", "可选 ROI（X,Y,Width,Height）；默认 0,0,0,0 为通用整幅图像模式。现场 G0941 复现需设为 2888,1920,3751,2655", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
+        [Category("搜索区域")]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
+        [STNodeProperty("搜索区域关注点", "可选；选择寻找发光区写入的 POI 模板，每次运行读取最新矩形或四角点外接矩形。填写后优先于固定搜索区域；模板无效或越界时停止。留空保持原搜索区域行为。", true)]
+        public string SearchRegionPoiTemplate
+        {
+            get => searchRegionPoiTemplate;
+            set { searchRegionPoiTemplate = value ?? string.Empty; OnPropertyChanged(); OnPropertyChanged(nameof(HasSearchRegionPoi)); }
+        }
+
+        [Browsable(false)] public bool HasSearchRegionPoi => !string.IsNullOrWhiteSpace(SearchRegionPoiTemplate);
+        [PropertyVisibility(nameof(HasSearchRegionPoi), true)]
+        [Category("搜索区域")]
+        [STNodeProperty("搜索区域", "固定像素 ROI（X,Y,Width,Height）；未选择搜索区域关注点时使用，0,0,0,0 表示整幅图像。", true, DescriptorType = typeof(Int32RectNodePropertyDescriptor))]
         public Int32Rect SearchRegion
         {
             get => searchRegion;
@@ -489,6 +505,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         [Category("本地十字定位")]
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         [STNodeProperty("结果目录", "可选；留空时保存到当前用户 LocalAppData 下的 ColorVision\\Results\\FindCross", true)]
         public string ResultDirectory
         {
@@ -505,17 +522,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
 
         internal LocalFindCrossNode(ILocalFindCrossNodeServices services)
-            : base("本地十字定位", "LocalFindCross", "FindCross")
+            : base("十字定位", "LocalFindCross", "FindCross")
         {
             this.services = services ?? throw new ArgumentNullException(nameof(services));
-            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
+
+        protected override string GetCompactSummaryValue() => string.IsNullOrWhiteSpace(SearchRegionPoiTemplate)
+            ? FormatCompactRegion(SearchRegion) : $"POI: {SearchRegionPoiTemplate.Trim()}";
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action) =>
             new() { Data = ExecuteSynchronously(action) };
 
         internal LocalFindCrossNodeResultData ExecuteSynchronously(CVStartCFC action)
         {
+            string configuredTemplate = SearchRegionPoiTemplate.Trim();
+            Int32Rect configuredRegion = SearchRegion;
             ArgumentNullException.ThrowIfNull(action);
             if (string.IsNullOrWhiteSpace(ParameterJson))
                 throw new InvalidOperationException("FindCross 算法参数 JSON 不能为空。");
@@ -529,13 +550,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 if (!lease.IsFlipApplied)
                     throw new InvalidOperationException("当前图像的方向变换尚未完成，无法生成可供后续映射使用的十字中心结果。");
 
-                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(SearchRegion, lease.Metadata.Width, lease.Metadata.Height);
-                HImage image = LocalFindLuminousAreaNode.CreateBorrowedImage(lease);
+                RoiRect roi = LocalFindLuminousAreaNode.ResolveRoi(string.IsNullOrWhiteSpace(configuredTemplate) ? configuredRegion : services.LoadSearchRegionTemplate(configuredTemplate), lease.Metadata.Width, lease.Metadata.Height);
+                HImage image = FlowNodeTiming.Run("PrepareImage", () => LocalFindLuminousAreaNode.CreateBorrowedImage(lease));
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                LocalFindCrossDetection detection = services.Detect(image, roi, ParameterJson);
+                LocalFindCrossDetection detection = FlowNodeTiming.Run("Algorithm", () => services.Detect(image, roi, ParameterJson));
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 LocalFindCrossNodeItem result;
                 try
                 {
@@ -543,11 +563,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 }
                 catch (InvalidOperationException validationException)
                 {
-                    LocalFindCrossPersistenceResult failed = services.Persist(new LocalFindCrossPersistenceRequest
+                    LocalFindCrossPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindCrossPersistenceRequest
                     {
                         Action = action,
                         ImageFilePath = imageFile,
-                        DeviceCode = algorithmDeviceCode,
                         ZIndex = ZIndex,
                         TotalTime = totalTime,
                         ResultCode = DetectionFailureResultCode,
@@ -558,6 +577,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             SourceMasterId = lease.MasterId,
                             FrameId = lease.FrameId.ToString("N"),
                             ImageFilePath = imageFile,
+                            SearchRegionPoiTemplate = configuredTemplate,
                             SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                             ParameterJson,
                             Success = false,
@@ -576,18 +596,17 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                             ImageRead = loadedFromFile,
                             MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
                         }
-                    });
+                    }));
                     if (failed.MasterId <= 0)
                         throw new InvalidOperationException("本地 FindCross 失败持久化返回了无效主表 ID。");
-                    services.Publish(new LocalFindCrossPublishRequest
+                    FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindCrossPublishRequest
                     {
-                        DeviceCode = algorithmDeviceCode,
                         OperatorCode = OperatorCode,
                         SerialNumber = action.SerialNumber,
                         NodeId = NodeID,
                         ZIndex = ZIndex,
                         MasterId = failed.MasterId
-                    });
+                    }));
                     throw;
                 }
                 object parameters = new
@@ -596,6 +615,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     SourceMasterId = lease.MasterId,
                     FrameId = lease.FrameId.ToString("N"),
                     ImageFilePath = imageFile,
+                    SearchRegionPoiTemplate = configuredTemplate,
                     SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                     ParameterJson,
                     Result = result,
@@ -613,17 +633,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     ImageRead = loadedFromFile,
                     MemoryOnly = string.IsNullOrWhiteSpace(imageFile)
                 };
-                LocalFindCrossPersistenceResult persisted = services.Persist(new LocalFindCrossPersistenceRequest
+                LocalFindCrossPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFindCrossPersistenceRequest
                 {
                     Action = action,
                     ImageFilePath = imageFile,
-                    DeviceCode = algorithmDeviceCode,
                     ZIndex = ZIndex,
                     TotalTime = totalTime,
                     Parameters = parameters,
                     Result = result,
                     ResultDirectory = ResultDirectory
-                });
+                }));
                 if (persisted.MasterId <= 0)
                     throw new InvalidOperationException("本地 FindCross 持久化返回了无效主表 ID。");
                 if (string.IsNullOrWhiteSpace(persisted.ResultFilePath))
@@ -647,15 +666,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 if (!string.IsNullOrWhiteSpace(detection.InteropDiagnostic))
                     action.Data["LocalFindCrossInteropDiagnostic"] = detection.InteropDiagnostic;
                 action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.FindCross);
-                services.Publish(new LocalFindCrossPublishRequest
+                FlowNodeTiming.Run("PublishResult", () => services.Publish(new LocalFindCrossPublishRequest
                 {
-                    DeviceCode = algorithmDeviceCode,
                     OperatorCode = OperatorCode,
                     SerialNumber = action.SerialNumber,
                     NodeId = NodeID,
                     ZIndex = ZIndex,
                     MasterId = persisted.MasterId
-                });
+                }));
                 return new LocalFindCrossNodeResultData
                 {
                     MasterId = persisted.MasterId,
@@ -683,6 +701,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 ImageFilePath,
                 SearchRegion,
+                SearchRegionPoiTemplate,
                 ParameterJson,
                 ResultDirectory,
                 Algorithm = "LocalFindCross"
@@ -733,6 +752,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             imageFile = null;
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
+                FlowNodeTiming.Skip("OpenImage");
                 imageFile = ResolveFrameFile(currentFrame);
                 return currentFrame;
             }
@@ -740,8 +760,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             string? fallbackFile = ResolveFallbackFile(action, out int sourceMasterId);
             if (fallbackFile != null)
             {
-                if (!File.Exists(fallbackFile)) throw new FileNotFoundException("FindCross 图像文件不存在。", fallbackFile);
-                ownedFrame = services.LoadFrame(fallbackFile);
+                ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
+                {
+                    if (!File.Exists(fallbackFile)) throw new FileNotFoundException("FindCross 图像文件不存在。", fallbackFile);
+                    return services.LoadFrame(fallbackFile);
+                });
                 if (sourceMasterId > 0) ownedFrame.MasterId = sourceMasterId;
                 imageFile = fallbackFile;
                 return ownedFrame;
@@ -770,7 +793,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     $"IN 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像或本地校正节点连接到 IN。");
             }
 
-            MeasureResultImgModel imageResult = services.GetImageResult(masterId)
+            MeasureResultImgModel imageResult = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
                 ?? throw new InvalidOperationException($"找不到 IN 图像结果：MasterId={masterId}。");
             sourceMasterId = masterId;
             string? firstCandidate = null;

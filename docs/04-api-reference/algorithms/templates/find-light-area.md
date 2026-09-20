@@ -71,6 +71,8 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","
 - 四个角点明细：按明细 ID 顺序写入 LT、RT、RB、LB，坐标转为整数，宽高归零。按服务的 `POIPointTypes` 判断类型；首行允许 `PolygonFour` 或兼容的 `LTRect` 数值表示，写回时统一为 `PolygonFour`。
 - 其它形状、明细数量或不存在的模板会报错，不会自动创建新模板。
 
+下游本地十字定位和本地点阵畸变 V2 的“搜索区域关注点”可选择同一模板，按最新保存明细生成搜索矩形，优先于节点固定区域。四角点取外接矩形，不透视裁正；模板读写遵循服务点类型数值。节点不缓存坐标，但模板不携带帧身份，也不能证明本轮前序检测成功；流程必须保证前序成功后再执行，并行流程使用不同模板以避免互相覆盖。
+
 POI 回写有自己的事务，且在算法结果事务之前提交。后续结果保存失败不会撤销已提交的 POI 修改；这两步不是一个整体事务。
 
 ### 结果提交与失败状态
@@ -97,6 +99,8 @@ V2 将输入归一化，在多尺度、多阈值候选中寻找四边形，再�
 | 托管 `LuminousAreaNative.DetectV2` | 解析 JSON、校验成功结果几何、还原 ROI 坐标并执行置信度门限。`HasValidCorners` 要求 `Success` 且角点几何有效，不因诊断角点存在而把失败改为成功 |
 
 内存所有权和 ABI 约定见 [OpenCV 和 native 集成](../../../02-developer-guide/engine-development/opencv-integration.md)。ImageEditor、POI 的配置对象默认使用 `RobustV2`，旧配置缺少 `Algorithm` 字段时也保持此默认值；显式选择经典兼容模式才显示 `Threshold`、`UseRotatedRect`。本地 V2 Flow 节点固定使用 RobustV2。
+
+ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验：中心亮度比例边界（非几何 FOV）**）。它先调用 `RobustV2`，再以中心亮度乘 `LuminanceBoundaryRatio`（默认 `0.5`）寻找亮度交点并拟合四边。内部暗角和渐变可能使角点明显内缩，该实验方法不代表标准有效视场。普通发光区和独立 FOV 均默认使用 `RobustV2` 几何边缘；FOV 有上游四角时直接复用，不调用此实验算法。
 
 ## 历史结果与 CSV
 

@@ -317,7 +317,7 @@ export interface AuthSession {
   must_change_password?: boolean
   permissions?: string[]
   public_registration_enabled?: boolean
-  role?: string
+  role?: 'admin' | 'developer' | 'user' | string
   username?: string
 }
 

@@ -4,6 +4,30 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotToolResultContractTests
 {
+    [Theory]
+    [InlineData(CopilotToolFailureKind.None, CopilotToolFailureKind.Unspecified)]
+    [InlineData(CopilotToolFailureKind.Authorization, CopilotToolFailureKind.Authorization)]
+    public void CapabilityFailureAdapterPreservesTheFailureWithoutInventingACause(CopilotToolFailureKind sourceKind, CopilotToolFailureKind expectedKind)
+    {
+        var result = new CopilotCapabilityResult
+        {
+            Success = false, Summary = "Read failed.", ErrorMessage = "The file could not be read.",
+            FailureKind = sourceKind,
+        }.ToToolResult("ReadLocalFile");
+        var captured = CopilotToolResultContract.Capture("ReadLocalFile", result);
+        Assert.False(captured.Success);
+        Assert.Equal(expectedKind, captured.FailureKind);
+        Assert.Equal(result.ErrorMessage, captured.ErrorMessage);
+        Assert.NotEqual(CopilotToolResultContract.InvalidOutputFailureCode, captured.FailureCode);
+    }
+
+    [Fact]
+    public void CapabilityAdapterDoesNotHideContradictorySuccessMetadata()
+    {
+        var result = new CopilotCapabilityResult { Success = true, ErrorMessage = "Failed anyway." }.ToToolResult("InvalidCapability");
+        AssertInvalid(CopilotToolResultContract.Capture("InvalidCapability", result), "InvalidCapability");
+    }
+
     [Fact]
     public void CaptureFreezesMutableCollectionsAndCanonicalizesIdentity()
     {
@@ -14,6 +38,8 @@ public sealed class CopilotToolResultContractTests
             Success = true,
             Summary = "Captured output.",
             SuggestedReadableLocalFilePaths = paths,
+            LocalObservationScopePaths = paths,
+            WorkspaceRecheckPaths = paths,
         };
 
         var captured = CopilotToolResultContract.Capture("SnapshotTool", result);
@@ -24,6 +50,8 @@ public sealed class CopilotToolResultContractTests
         Assert.Equal("SnapshotTool", captured.ToolName);
         Assert.True(captured.Success);
         Assert.Equal([@"C:\workspace\first.cs"], captured.SuggestedReadableLocalFilePaths);
+        Assert.Equal([@"C:\workspace\first.cs"], captured.LocalObservationScopePaths);
+        Assert.Equal([@"C:\workspace\first.cs"], captured.WorkspaceRecheckPaths);
     }
 
     [Fact]

@@ -93,17 +93,21 @@ namespace WindowsServicePlugin.CVWinSMS
                                     {
                                         try
                                         {
-                                            string? folderBrowser = Directory.GetParent(Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName)?.FullName;
-                                            if (folderBrowser != null)
+                                            string configuredPath = CVWinSMSConfig.Instance.CVWinSMSPath;
+                                            DirectoryInfo? directoryInfo = string.IsNullOrWhiteSpace(configuredPath)
+                                                ? null
+                                                : Directory.GetParent(configuredPath);
+                                            string? folderBrowser = directoryInfo?.Parent?.FullName;
+                                            if (folderBrowser != null && directoryInfo != null)
                                             {
                                                 ZipFile.ExtractToDirectory(filePath, folderBrowser, true);
 
-                                                DirectoryInfo directoryInfo = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath);
                                                 if (directoryInfo.Name != "InstallTool")
                                                 {
                                                     string ConfigPath = directoryInfo.FullName + "\\config\\App.config";
                                                     string dirconfig = folderBrowser + "\\InstallTool\\config\\App.config";
-                                                    DirectoryInfo targetDirInfo = Directory.GetParent(dirconfig);
+                                                    DirectoryInfo targetDirInfo = Directory.GetParent(dirconfig)
+                                                        ?? throw new InvalidOperationException("无法确定 CVWinSMS 配置目录。");
                                                     if (!targetDirInfo.Exists)
                                                     {
                                                         targetDirInfo.Create();
@@ -327,7 +331,10 @@ namespace WindowsServicePlugin.CVWinSMS
                         try
                         {
                             // 获取进程的主模块文件路径
-                            CVWinSMSConfig.Instance.CVWinSMSPath = process.MainModule.FileName;
+                            string? processPath = process.MainModule?.FileName;
+                            if (string.IsNullOrWhiteSpace(processPath))
+                                continue;
+                            CVWinSMSConfig.Instance.CVWinSMSPath = processPath;
                             log.Info($"进程ID: {process.Id}, 文件路径: {CVWinSMSConfig.Instance.CVWinSMSPath}");
 
                             return;

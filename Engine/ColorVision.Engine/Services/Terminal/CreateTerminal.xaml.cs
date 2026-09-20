@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1863,CS8604
+#pragma warning disable CA1863,CS8604
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Themes;
@@ -38,9 +38,7 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
             {
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                int pkId = Db.Insertable(sysResource).ExecuteReturnIdentity();
+                int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
                 sysResource.Id = pkId;
                 return sysResource;
             }
@@ -78,12 +76,9 @@ namespace ColorVision.Engine.Services.Terminal
 
             TerminalService.AddChild(deviceService);
             ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            string TypeCode = Db.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
-            string PCode = Db.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
-
-            RC.MqttRCService.GetInstance().RestartServices(TypeCode, PCode, sysDevModel.Code);
+            if (!SysResourceDao.IsLocalId(sysDevModel.Id))
+                RC.MqttRCService.GetInstance().RestartServices(TerminalService.ServiceType.ToString(), TerminalService.SysResourceModel.Code, sysDevModel.Code);
+            ServiceManager.GetInstance().GenDeviceDisplayControl();
             Close();
 
         }

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1859,CS8604,CS8631
+#pragma warning disable CA1859,CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Cache;
@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
         public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
-        public virtual int HeartbeatTime { get; set; }
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;
@@ -256,9 +255,7 @@ namespace ColorVision.Engine.Services
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            DB.Updateable(SysResourceModel).ExecuteCommand();
+            SysResourceDao.Instance.Save(SysResourceModel);
         }
 
         public override void Save()
@@ -279,6 +276,7 @@ namespace ColorVision.Engine.Services
 
         public virtual void RestartRCService()
         {
+            if (SysResourceDao.IsLocalId(SysResourceModel.Id)) return;
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             string TypeCode =DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Type).First().Key;
@@ -297,8 +295,7 @@ namespace ColorVision.Engine.Services
             //删除数据库
             if (SysResourceModel != null)
             {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                DB.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
+                SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
 
             }
 

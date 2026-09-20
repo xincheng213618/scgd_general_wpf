@@ -102,6 +102,14 @@ namespace ColorVision.Copilot
 
             private sealed class ToolAttemptState
             {
+                public long LocalEvidenceInputRevision { get; init; }
+
+                public bool IsLocalObservation { get; init; }
+
+                public HashSet<string>? ConcurrentWorkspaceChanges { get; set; }
+
+                public HashSet<string>? ConcurrentWorkspaceCreations { get; set; }
+
                 public int AttemptCount { get; set; }
 
                 public int RejectedCount { get; set; }

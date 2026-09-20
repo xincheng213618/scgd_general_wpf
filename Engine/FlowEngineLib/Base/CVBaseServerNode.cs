@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace FlowEngineLib.Base;
 
-public class CVBaseServerNode : CVCommonNode
+public class CVBaseServerNode : CVDeviceNode
 {
 	private sealed class IgnoreErrorsExecutionState
 	{
@@ -435,6 +435,20 @@ public class CVBaseServerNode : CVCommonNode
 		bool publishNodeRun = true)
 	{
 		svrRecvResp = null;
+		FlowLocalExecution localExecution = null;
+		Exception localSelectionError = null;
+		try { localExecution = CreateLocalExecution(cmd.cmd); }
+		catch (Exception ex) { localSelectionError = ex; }
+		if (localExecution != null || localSelectionError != null)
+		{
+			// Local results must not modify the input shared with sibling branches.
+			trans.trans_action = new CVStartCFC(trans.trans_action);
+			if (publishNodeRun) PublishNodeRun(CreateNodeRunEventArgs(trans, act));
+			trans.ResetStartTime();
+			ObserveBackgroundTask(WaitingOverTimeAsync(cmd), "local timeout monitor");
+			ObserveBackgroundTask(ExecuteLocalAsync(trans, cmd, localExecution, localSelectionError), "local execution");
+			return;
+		}
 		if (publishNodeRun)
 		{
 			PublishNodeRun(CreateNodeRunEventArgs(trans, act));
@@ -460,6 +474,33 @@ public class CVBaseServerNode : CVCommonNode
 		ObserveBackgroundTask(
 			WaitingOverTimeAsync(cmd),
 			"timeout monitor");
+	}
+
+    [Browsable(false), JsonIgnore]
+    public virtual bool RequiresRemoteService => !(FlowLocalExecution.CanExecuteLocally?.Invoke(this) ?? false);
+
+	protected virtual FlowLocalExecution CreateLocalExecution(CVMQTTRequest request) => FlowLocalExecution.CreateForNode?.Invoke(this, request);
+
+	private async Task ExecuteLocalAsync(CVTransAction trans, CVBaseEventCmd cmd, FlowLocalExecution execution, Exception failure)
+	{
+		using (execution)
+		{
+			if (trans.IsCanceled || trans.trans_action.RuntimeResources.IsDisposed) return;
+			try
+			{
+				if (failure == null) await Task.Run(execution.Execute).ConfigureAwait(false);
+			}
+			catch (Exception ex) { failure = ex; }
+			CVMQTTRequest request = cmd.cmd;
+			DoServerStatusRecv(new CVBaseDataFlowResp
+			{
+				MsgID = request.MsgID, SerialNumber = request.SerialNumber,
+				ServiceName = request.ServiceCode, DeviceNodeCode = request.DeviceNodeCode,
+				EventName = request.EventName, ZIndex = request.ZIndex,
+				Code = failure == null ? 0 : -1, Message = failure?.Message ?? "ok",
+				Data = failure == null ? execution : null
+			});
+		}
 	}
 
 	private FlowEngineNodeRunEventArgs CreateNodeRunEventArgs(
@@ -548,6 +589,8 @@ public class CVBaseServerNode : CVCommonNode
 				cVBaseEventCmd.waiter.SignalMessageReceived();
 				try
 				{
+					if (cVServerResponse.Data is FlowLocalExecution localExecution)
+						cVServerResponse.Data = localExecution.Complete(cVTransByEvent.trans_action);
 					OnServerResponse(
 						cVServerResponse,
 						cVTransByEvent.trans_action);

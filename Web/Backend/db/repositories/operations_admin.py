@@ -129,36 +129,44 @@ class SqliteOperationsAdminQuery:
         now: datetime,
         host_limit: int,
         activity_limit: int,
+        host_id: str | None = None,
     ) -> dict[str, Any]:
         if host_limit < 1 or host_limit > 200:
             raise ValueError("host_limit must be between 1 and 200")
         if activity_limit < 1 or activity_limit > 200:
             raise ValueError("activity_limit must be between 1 and 200")
+        if host_id is not None and (not host_id or len(host_id) > 128 or any(ord(char) < 32 for char in host_id)):
+            raise ValueError("hostId must contain between 1 and 128 printable characters")
 
         generated_at = _utc(now)
         online_cutoff = generated_at - timedelta(seconds=ONLINE_THRESHOLD_SECONDS)
         db = self._connection_factory()
         try:
+            if host_id is not None and not db.execute("SELECT 1 FROM operations_hosts WHERE host_id=?", (host_id,)).fetchone():
+                raise LookupError("未找到指定终端")
             host_summary = db.execute(
                 """SELECT COUNT(*) AS total,
                           SUM(CASE WHEN last_seen_at>=? THEN 1 ELSE 0 END) AS online
-                   FROM operations_hosts""",
-                (online_cutoff.isoformat(),),
+                   FROM operations_hosts WHERE (? IS NULL OR host_id=?)""",
+                (online_cutoff.isoformat(), host_id, host_id),
             ).fetchone()
             task_summary = db.execute(
                 """SELECT COUNT(*) AS total,
-                          SUM(CASE WHEN status IN ('queued','delivered','accepted') THEN 1 ELSE 0 END) AS pending,
+                          SUM(CASE WHEN status IN ('queued','delivered','accepted') AND julianday(expires_at)>=julianday(?) THEN 1 ELSE 0 END) AS pending,
                           SUM(CASE WHEN status IN ('failed','rejected') THEN 1 ELSE 0 END) AS failed,
                           SUM(CASE WHEN source_type='device' THEN 1 ELSE 0 END) AS device
-                   FROM operations_tasks"""
+                   FROM operations_tasks WHERE (? IS NULL OR host_id=?)""",
+                (generated_at.isoformat(), host_id, host_id),
             ).fetchone()
             device_summary = db.execute(
                 """SELECT COUNT(*) AS total,
                           SUM(CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END) AS active
-                   FROM operations_relay_devices"""
+                   FROM operations_relay_devices WHERE (? IS NULL OR host_id=?)""",
+                (host_id, host_id),
             ).fetchone()
             signed_relay_hosts = db.execute(
-                "SELECT COUNT(*) FROM operations_relay_host_identities"
+                "SELECT COUNT(*) FROM operations_relay_host_identities WHERE (? IS NULL OR host_id=?)",
+                (host_id, host_id),
             ).fetchone()[0]
             active_support = db.execute(
                 """SELECT COUNT(*) FROM (
@@ -169,8 +177,10 @@ class SqliteOperationsAdminQuery:
                                  AND e2.event_type!='message'
                                ORDER BY e2.created_at DESC, e2.rowid DESC LIMIT 1) AS state
                        FROM operations_support_events e
+                       WHERE (? IS NULL OR e.host_id=?)
                        GROUP BY e.host_id, e.session_id
-                   ) WHERE state='session.active'"""
+                   ) WHERE state='session.active'""",
+                (host_id, host_id),
             ).fetchone()[0]
 
             host_rows = db.execute(
@@ -179,9 +189,10 @@ class SqliteOperationsAdminQuery:
                           EXISTS(SELECT 1 FROM operations_relay_host_identities i
                                  WHERE i.host_id=h.host_id) AS signed_relay_ready
                    FROM operations_hosts h
+                   WHERE (? IS NULL OR h.host_id=?)
                    ORDER BY h.last_seen_at DESC, h.host_id
                    LIMIT ?""",
-                (host_limit,),
+                (host_id, host_id, host_limit),
             ).fetchall()
             task_rows = db.execute(
                 """SELECT t.task_id, t.host_id, h.display_name, t.capability_id,
@@ -199,9 +210,10 @@ class SqliteOperationsAdminQuery:
                    LEFT JOIN operations_hosts h ON h.host_id=t.host_id
                    LEFT JOIN operations_relay_devices d
                      ON d.host_id=t.host_id AND d.device_id=t.device_id
+                   WHERE (? IS NULL OR t.host_id=?)
                    ORDER BY t.created_at DESC, t.rowid DESC
                    LIMIT ?""",
-                (activity_limit,),
+                (host_id, host_id, activity_limit),
             ).fetchall()
             support_rows = db.execute(
                 """SELECT e.host_id, h.display_name, e.session_id,
@@ -216,10 +228,11 @@ class SqliteOperationsAdminQuery:
                            ORDER BY e2.created_at DESC, e2.rowid DESC LIMIT 1) AS state
                    FROM operations_support_events e
                    LEFT JOIN operations_hosts h ON h.host_id=e.host_id
+                   WHERE (? IS NULL OR e.host_id=?)
                    GROUP BY e.host_id, e.session_id
                    ORDER BY last_event_at DESC, e.session_id
                    LIMIT ?""",
-                (activity_limit,),
+                (host_id, host_id, activity_limit),
             ).fetchall()
             device_rows = db.execute(
                 """SELECT d.host_id, h.display_name AS host_name, d.device_id,
@@ -227,10 +240,11 @@ class SqliteOperationsAdminQuery:
                           d.updated_at
                    FROM operations_relay_devices d
                    LEFT JOIN operations_hosts h ON h.host_id=d.host_id
+                   WHERE (? IS NULL OR d.host_id=?)
                    ORDER BY d.revoked_at IS NOT NULL, d.updated_at DESC,
                             d.host_id, d.device_id
                    LIMIT ?""",
-                (activity_limit,),
+                (host_id, host_id, activity_limit),
             ).fetchall()
         finally:
             db.close()
@@ -301,6 +315,7 @@ class SqliteOperationsAdminQuery:
         active_devices = int(device_summary["active"] or 0)
         return {
             "generatedAt": generated_at.isoformat(),
+            "hostId": host_id,
             "onlineThresholdSeconds": ONLINE_THRESHOLD_SECONDS,
             "summary": {
                 "totalHosts": total_hosts,

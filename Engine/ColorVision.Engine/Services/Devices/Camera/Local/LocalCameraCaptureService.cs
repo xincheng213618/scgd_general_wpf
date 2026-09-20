@@ -1,3 +1,4 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
@@ -19,6 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
         public bool SaveFiles { get; init; }
+        public bool SaveCieFile { get; init; } = true;
     }
 
     internal sealed class LocalCameraCaptureResult
@@ -50,10 +52,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static LocalCameraCaptureResult Capture(LocalCameraCaptureRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            CaptureLock.Wait();
+            FlowNodeTiming.Run("WaitCamera", CaptureLock.Wait);
             try
             {
-                return request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle));
+                return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
             }
             finally
             {
@@ -65,7 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             LocalFrameMirrorService.ValidateFlipMode(request.FlipMode);
             DeviceCamera device = request.Device;
-            if (device.Config.TakeImageMode == TakeImageMode.Live)
+            if (device.LocalCameraSession.OpenedMode == TakeImageMode.Live)
             {
                 throw new InvalidOperationException("本地取图结点不能使用 Live 模式，请先在本地相机窗口中以测量模式连接相机。");
             }
@@ -76,6 +78,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             CameraRunParam cameraParameters = request.CameraParameters ?? BuildDefaultCameraParameters(device);
+            if (!float.IsFinite(cameraParameters.Gain) || cameraParameters.Gain < 0 || cameraParameters.AvgCount < 1)
+                throw new InvalidOperationException("增益必须为非负有限值，平均次数至少为 1。");
+            foreach (float exposure in GetExposureValues(device, cameraParameters, device.Config.IsExpThree ? 3 : 1))
+                if (!float.IsFinite(exposure) || exposure <= 0) throw new InvalidOperationException("曝光时间必须为大于 0 的有限值。");
             LocalFlowFrame? frame = null;
             Stopwatch stopwatch = Stopwatch.StartNew();
             int captureTimeMs = 0;
@@ -83,10 +89,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int saveTimeMs = 0;
             try
             {
-                _ = cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain);
-                if (!device.Config.IsExpThree) _ = cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime);
+                _ = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
+                if (!device.Config.IsExpThree) _ = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
 
-                string captureJson = BuildRawCaptureJson(device, cameraParameters, request.IsAutoExposure);
+                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters));
+                else FlowNodeTiming.Skip("AutoExposure");
+                string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 if (cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels) == 0
                     || width == 0 || height == 0 || sourceBpp == 0 || channels == 0)
@@ -120,15 +128,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     FlipMode = request.FlipMode,
                     IsMirrorReady = calibrationFiles.Count > 0
                 };
-                frame = LocalFlowFrame.Allocate(metadata, rawLength, cieLength);
+                frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength));
 
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
                     uint destinationBpp = 32;
-                    // CM_GetFrame is retained for its CFW, averaging and auto-exposure
-                    // acquisition pipeline. BuildRawCaptureJson deliberately supplies no
+                    // CM_GetFrame is retained for its CFW and averaging acquisition pipeline.
+                    // Auto-exposure was resolved above so metadata and calibration use the actual exposure. BuildRawCaptureJson deliberately supplies no
                     // calibration items; all calibration runs once below on these buffers.
+                    using var captureStage = FlowNodeTiming.Measure("CaptureFrame");
                     int captureResult = cvCameraCSLib.CM_GetFrame(
                         cameraHandle,
                         captureJson,
@@ -145,6 +154,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     {
                         throw CreateNativeException("本地相机取图失败", captureResult);
                     }
+                    captureStage?.Complete();
 
                 }
 
@@ -160,14 +170,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }
+                else FlowNodeTiming.Skip("Calibration");
 
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
-                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code);
+                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code, includeCie: request.SaveCieFile);
                     saveStopwatch.Stop();
                     saveTimeMs = ToMilliseconds(saveStopwatch.ElapsedMilliseconds);
                 }
+                else FlowNodeTiming.Skip("SaveImage");
 
                 stopwatch.Stop();
                 LocalFlowFrame completedFrame = frame;
@@ -221,6 +233,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 posBurst = 0,
                 autoExpFlag = isAutoExposure
             };
+            // Keep packed color RAW in the SDK; null selects legacy split/merge
+            // even when there are no calibration items. Other camera modes retain their existing path.
+            if (channelCount == 3 && device.Config.CameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
+                param.calibrationlist = new List<CalibrationItem>();
             IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> channels = GetChannelConfigs(device, channelCount);
             float[] exposures = GetExposureValues(device, cameraParameters, channelCount);
             for (int index = 0; index < channelCount; index++)
@@ -279,7 +295,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static int ToMilliseconds(long value)
             => checked((int)Math.Min(value, int.MaxValue));
 
-        private static InvalidOperationException CreateNativeException(string prefix, int errorCode)
+        internal static InvalidOperationException CreateNativeException(string prefix, int errorCode)
         {
             string message = string.Empty;
             cvCameraCSLib.CM_GetErrorMessage(errorCode, ref message);

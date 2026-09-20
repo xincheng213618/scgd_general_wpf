@@ -45,7 +45,7 @@ public class ThemeSubscriptionLifecycleTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static (WeakReference Display, WeakReference Border) CreateDisplayThemeSubscription()
     {
-        Application.Current.Resources["GlobalBorderBrush1"] = Brushes.Gray;
+        Application.Current.Resources["CV.Border.Weak"] = Brushes.Gray;
         var display = new TestDisplayControl();
         var border = new Border();
 

@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services
                 DeviceStatus = device.IsAlive ? "Online" : "Offline",
                 IsAlive = device.IsAlive ? "yes" : "no",
                 LastAliveTime = device.LastAliveTime == default ? string.Empty : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture),
-                HeartbeatTime = device.HeartbeatTime.ToString(CultureInfo.InvariantCulture),
                 SendTopic = device.SendTopic ?? string.Empty,
                 SubscribeTopic = device.SubscribeTopic ?? string.Empty,
                 RuntimeProperties = BuildRuntimeProperties(device),
@@ -86,7 +85,6 @@ namespace ColorVision.Engine.Services
             {
                 new CopilotContextProperty { Name = "IsAlive", Value = device.IsAlive ? "true" : "false" },
                 new CopilotContextProperty { Name = "LastAliveTime", Value = device.LastAliveTime == default ? string.Empty : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture) },
-                new CopilotContextProperty { Name = "HeartbeatTime", Value = device.HeartbeatTime.ToString(CultureInfo.InvariantCulture) },
                 new CopilotContextProperty { Name = "ServiceType", Value = device.ServiceTypes.ToString() },
                 new CopilotContextProperty { Name = "OperationalStatus", Value = device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty },
             };

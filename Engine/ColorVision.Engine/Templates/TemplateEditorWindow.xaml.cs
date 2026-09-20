@@ -414,7 +414,12 @@ namespace ColorVision.Engine.Templates
         {
             var editors = GridProperty.Children.OfType<ITemplateEditorValidation>().ToArray();
             if (editors.Any(editor => !editor.TryCommitPendingEdits())) return false;
-            ITemplate.Save();
+            try { ITemplate.Save(); }
+            catch (Exception ex) when (ITemplate is POI.TemplatePoi or Flow.TemplateFlow)
+            {
+                MessageBox1.Show(this, $"{ITemplate.Title}保存失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
             foreach (var editor in editors) editor.AcceptSavedChanges();
             return true;
         }
@@ -456,7 +461,12 @@ namespace ColorVision.Engine.Templates
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.TemplateEditor_ConfirmDelete, ITemplate.Code), "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
             {
                 int index = ListView1.SelectedIndex;
-                ITemplate.Delete(ListView1.SelectedIndex);
+                try { ITemplate.Delete(ListView1.SelectedIndex); }
+                catch (Exception ex) when (ITemplate is POI.TemplatePoi or Flow.TemplateFlow)
+                {
+                    MessageBox1.Show(this, $"{ITemplate.Title}删除失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
                 if (index > ITemplate.Count)
                     index = ITemplate.Count - 1;
                 ListView1.SelectedIndex = index;
@@ -491,7 +501,11 @@ namespace ColorVision.Engine.Templates
                 MessageBox1.Show(Properties.Resources.TemplateEditor_SelectFlowToExport, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-            ITemplate.Export(ListView1.SelectedIndex);
+            try { ITemplate.Export(ListView1.SelectedIndex); }
+            catch (Exception ex) when (ITemplate is POI.TemplatePoi or Flow.TemplateFlow)
+            {
+                MessageBox1.Show(this, $"{ITemplate.Title}导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void Button_Import_Click(object sender, RoutedEventArgs e)

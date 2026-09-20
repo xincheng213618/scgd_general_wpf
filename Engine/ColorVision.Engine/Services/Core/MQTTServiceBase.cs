@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Services
             return Task.CompletedTask;
         }
 
-        public MsgReturnHandler MsgReturnReceived { get; set; }
+        public MsgReturnHandler? MsgReturnReceived { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string DeviceCode { get; set; }

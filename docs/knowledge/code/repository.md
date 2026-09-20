@@ -41,16 +41,16 @@ next: false
   ColorVisionDriver 实验性 WDM 驱动骨架的两个 IOCTL、WDK 构建输入与接入边界；尚未接入主程序、服务宿主或正式发布链。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
-  Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
+  Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
 
 - [插件产物、安装与交付](../../02-developer-guide/plugin-development/getting-started.md) — `plugins.getting-started`
   插件项目构建、HostCopy、市场与本地安装、备份回退和提取插件；DLL目录替换、依赖补回及重启后加载的完成条件，正式打包会上传。
 
 - [图卡生成与图片投影](../../04-api-reference/plugins/standard-plugins/pattern.md) — `plugins.pattern`
-  Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。
+  Pattern 图卡、用户默认值、模板文件管理，以及内置图片投影的预览和全屏切换；区分当前参数、已生成图片和实际投影。
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
-  统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。
+  统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
 - [原生 helper 测试与调试](../../02-developer-guide/engine-development/native-testing.md) — `delivery.native-testing`
   opencv\_helper\_test 的实际入口、工具集与配置映射、专项参数、DLL/样本前提和退出码边界；默认运行与真实样本验收不同。

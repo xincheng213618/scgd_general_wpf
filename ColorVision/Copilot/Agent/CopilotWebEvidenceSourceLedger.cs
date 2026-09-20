@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.Copilot
@@ -55,7 +56,7 @@ namespace ColorVision.Copilot
                 }
             }
 
-            if (evidenceUrls.Count == 0)
+            if (evidenceUrls.Count == 0 || IsStructuredJson(answer))
                 return string.Empty;
 
             var citedUrls = CopilotWebPageToolSupport.ExtractHttpUrls(answer)
@@ -72,6 +73,25 @@ namespace ColorVision.Copilot
             foreach (var url in evidenceUrls.Take(MaxAppendedSources))
                 builder.Append("- <").Append(url).AppendLine(">");
             return builder.ToString().TrimEnd();
+        }
+
+        private static bool IsStructuredJson(string answer)
+        {
+            var trimmed = answer.AsSpan().TrimStart();
+            if (trimmed.IsEmpty || trimmed[0] is not ('{' or '['))
+                return false;
+
+            try
+            {
+                // Validate the complete answer without rewriting its fields or
+                // whitespace. Sources remain in the tool records for JSON output.
+                using var document = JsonDocument.Parse(answer, new JsonDocumentOptions { MaxDepth = int.MaxValue });
+                return document.RootElement.ValueKind is JsonValueKind.Object or JsonValueKind.Array;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
         }
 
         private static IReadOnlyList<string> ExtractEvidenceUrls(string toolName, string content)

@@ -32,7 +32,9 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 ## 发现和加载是两个阶段
 
-`TemplateInitializer.Order = 4`，初始化时经 UI Dispatcher 获取 `TemplateControl`。控制器首次构造调用 `Init`，并订阅 MySQL 连接变化，在 Dispatcher 上再次调用 `Init`；未连接时直接返回。
+`TemplateInitializer.Order = 4`，初始化时经 UI Dispatcher 获取 `TemplateControl`。控制器首次构造调用 `Init`，并订阅 MySQL 连接变化，在 Dispatcher 上再次调用 `Init`；未连接时只加载支持 SQLite 的本地流程，不构造其它依赖 MySQL 的模板加载器。POI 的本地加载仍由其管理器和 ImageView 入口负责。
+
+本地流程和 POI 不代表所有模板已经支持 SQLite。普通 `ITemplate<T>` 仍依赖 MySQL 的主表、明细和 `SymbolCache` 字典；`ITemplateJson<T>` 的载荷及默认 JSON 仍从 MySQL 获取；校正模板的资源组合、第三方算法的定义和参数也各有数据库访问。节点参数齿轮和 `DisplayAlgorithmTemplateSelection.EditCommand` 本身不检查 MySQL，离线新建失败应继续追到这些存储 owner，不能只删除 `TemplateControl` 或基类 DAO 的连接检查。接入本地配置时还需处理默认值、嵌套资源引用、存储身份和保存失败语义，服务数据库结构保持兼容。
 
 连接可用后，`AssemblyHandler.LoadImplementations<IITemplateLoad>()` 从程序集/类型缓存发现可实例化类型，要求具体类和公开无参构造；每次调用创建实例，构造失败记日志并跳过。控制器逐个调用 `Load()`，单个加载异常记日志后继续其它加载器。因此“初始化完成”日志不代表每个模板都成功，实例构造已注册也不代表参数已加载。
 
@@ -90,7 +92,7 @@ JSON、POI、Flow 可覆写上述方法。尤其 JSON 的“设为默认”与 F
 
 参数属于设备时保持设备的资源关联；属于客户判定、报表或 MES 格式时放回项目包，不因为有模板窗口就移入通用层。算法适配器如何把模板名称/ID、POI 等写入 `CVTemplateParam`，应追实际 `Algorithm*` 请求实现，而不是由模板基类推定已经接入。
 
-Flow 常规属性通过 `FlowNodePropertyEditorAttribute` / `PropertyEditorTypeAttribute` 和 Engine 注册桥接入；只有类型级、多模板或动态选择器才使用 `FlowProcessing/Editor/NodeConfiguration/`。选择、缓存与验证归[PropertyGrid 契约](../../../04-api-reference/ui-components/property-grid.md)。历史结果 DAO/`ViewHandle*`、中立算法 overlay 和项目结果分别遵守[结果展示边界](../../../04-api-reference/engine-components/result-handoff-chain.md)，不属于模板保存的完成条件。
+Flow 常规属性通过 属性上的 `PropertyEditorTypeAttribute` 选择编辑器；公共设备字段保留 Engine 注册桥接；只有类型级、多模板或动态选择器才使用 `FlowProcessing/Editor/NodeConfiguration/`。选择、缓存与验证归[PropertyGrid 契约](../../../04-api-reference/ui-components/property-grid.md)。历史结果 DAO/`ViewHandle*`、中立算法 overlay 和项目结果分别遵守[结果展示边界](../../../04-api-reference/engine-components/result-handoff-chain.md)，不属于模板保存的完成条件。
 
 ## 验证入口与缺口
 

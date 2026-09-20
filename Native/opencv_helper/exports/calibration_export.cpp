@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 #include <limits>
 #include <new>
 #include <string>
@@ -74,6 +75,31 @@ ExecutionOptions convertOptions(const MCalibrationExecutionOptionsV1* value)
 } // namespace
 
 #define fail(...) failImpl(__func__, __VA_ARGS__)
+
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetColorTransformV1(
+    void* context, const MCalibrationExecutionOptionsV1* options, MRawColorTransformV1* transform)
+{
+    if (context == nullptr || options == nullptr || options->structSize < sizeof(*options)
+        || transform == nullptr || transform->structSize < sizeof(*transform))
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Invalid color snapshot arguments");
+    try {
+        cvcore::calibration::ColorTransform value;
+        if (!asContext(context)->colorTransform(convertOptions(options), value))
+            return fail(context, M_CALIBRATION_UNSUPPORTED, "Context has no unique color transform");
+        for (double factor : value.coefficients)
+            if (!std::isfinite(factor)) return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Non-finite color factor");
+        *transform = {};
+        transform->structSize = sizeof(*transform);
+        transform->calibrationType = static_cast<std::int32_t>(value.type);
+        transform->channels = value.channels;
+        transform->kind = value.kind;
+        transform->interleavedBgr = options->interleavedBgr != 0;
+        std::copy(value.coefficients.begin(), value.coefficients.end(), transform->coefficients);
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) { return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what()); }
+    catch (...) { return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unable to capture color transform"); }
+}
 
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCreate(void** context)
 {

@@ -5,185 +5,243 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Pattern"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:properties ="clr-namespace:Pattern.Properties"
-        mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:PatternManager}"
-        Title="ChartGenerationTool" Height="600" Width="1400" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance local:PatternManager}"
+        Title="{x:Static local:PatternText.ChartGenerationTool}" Height="600" Width="616" MinHeight="460" MinWidth="566"
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized"
+        UseLayoutRounding="True">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
-        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseStyle}"/>
+        <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockBaseStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource TextBlockBaseStyle}">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style x:Key="Pane" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+        </Style>
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}, TargetNullValue=操作, FallbackValue=操作}"/>
+        </Style>
+        <Style x:Key="Icon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="290"/>
-            <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <!-- 左侧操作区 -->
-        <Grid Grid.Column="0" Margin="5,5,5,5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <StackPanel Margin="0,0,0,5">
-                <!-- 操作按钮组1 -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button Content="模板文件夹" Command="{Binding OpenPatternPathCommand}" ToolTip="打开模板存储目录" Margin="0,0,8,0">
-                        <Button.ContentTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0"/>
-                                    <TextBlock Text="打开模板文件夹"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </Button.ContentTemplate>
-                    </Button>
-                    <Button Content="导出" Command="{Binding ExportZipCommand}" ToolTip="导出所有模板为ZIP" Margin="0,0,8,0"/>
-                    <Button Content="导入" Command="{Binding ImportZipCommand}" ToolTip="导入ZIP模板组"/>
-                    <Button Content="投影工具" Command="{Binding OpenImageProjectorCommand}" ToolTip="导入ZIP模板组"/>
-                </StackPanel>
-                <!-- 操作按钮组2 -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button Content="生成所有模板图片" Click="GenAllTemplate_Click" ToolTip="批量生成所有模板图片" Margin="0,0,8,0"/>
-                    <Button Content="打开输出文件夹" Command="{Binding OpenSaveFilePathCommand}" ToolTip="打开图片输出目录" Margin="0,0,8,0"/>
-                    <Button Content="清空" Command="{Binding ClearSaveFilePathCommand}" ToolTip="清空输出目录"/>
-                </StackPanel>
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right"  Margin="5,0,0,0">
-                        <Button x:Name="ThemeToggleButton" Click="ThemeToggleButton_Click" Padding="2" Height="25" Width="25" Margin="0,0,5,0" ToolTip="切换主题">
-                            <TextBlock x:Name="ThemeIconText" Text="&#xE708;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}"/>
+    <Grid Margin="6">
+        <Grid x:Name="WorkspaceGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="LibraryColumn" Width="250" MinWidth="200" MaxWidth="520"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*" MinWidth="330"/>
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Pane}">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,6">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Click="OpenActions_Click" ToolTip="{x:Static local:PatternText.TemplateActions}">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE712;"/>
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="{x:Static local:PatternText.TemplateFolder}" Command="{Binding OpenPatternPathCommand}"/>
+                                    <MenuItem Header="{x:Static local:PatternText.Import}" Command="{Binding ImportZipCommand}" ToolTip="{x:Static local:PatternText.ImportTemplateZip}"/>
+                                    <MenuItem Header="{x:Static local:PatternText.Export}" Command="{Binding ExportZipCommand}" ToolTip="{x:Static local:PatternText.ExportAllTemplatesZip}"/>
+                                    <Separator/>
+                                    <MenuItem Header="{x:Static local:PatternText.ClearTemplateList}" Command="{Binding ClearTemplatePatternFilesCommand}"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
                         </Button>
-                        <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,5,0" ToolTip="清空模板列表">
-                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform>
-                                    <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
-                                </Image.RenderTransform>
-                            </Image>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding EditCommand}" ToolTip="{x:Static local:PatternText.EditSettings}" Margin="0,0,4,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE713;"/>
                         </Button>
-                        <Button HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" ToolTip="编辑配置">
-                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform99" CenterX="8" CenterY="8"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
+                        <Button x:Name="ThemeToggleButton" DockPanel.Dock="Right" Style="{StaticResource IconButton}" Click="ThemeToggleButton_Click"
+                                ToolTip="{x:Static local:PatternText.SwitchTheme}" Margin="0,0,4,0">
+                            <TextBlock x:Name="ThemeIconText" Style="{StaticResource Icon}" Text="&#xE708;"/>
                         </Button>
-                    </StackPanel>
-                    <Grid x:Name="SearchGrid"  VerticalAlignment="Center" >
-                        <hc:TextBox x:Name="PatternSearchBox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center"  />
-                        <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                            <Rectangle Width="16 " Height="16" >
-                                <Rectangle.Resources>
-                                    <SolidColorBrush x:Key="canvas" Opacity="0" />
-                                    <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
-                                    <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
-                                </Rectangle.Resources>
-                                <Rectangle.Fill>
-                                    <DrawingBrush Stretch="None">
-                                        <DrawingBrush.Drawing>
-                                            <DrawingGroup>
-                                                <DrawingGroup x:Name="canvas">
-                                                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
-                                                </DrawingGroup>
-                                                <DrawingGroup x:Name="level_1">
-                                                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
-                                                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
-                                                </DrawingGroup>
-                                            </DrawingGroup>
-                                        </DrawingBrush.Drawing>
-                                    </DrawingBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                        </Viewbox>
+                        <TextBlock Text="{x:Static local:PatternText.TemplateLibrary}" Style="{StaticResource SectionTitle}"/>
+                        <TextBlock Text="{Binding Items.Count, ElementName=ListViewPattern}" Margin="8,0,0,0" Opacity="0.6" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <Grid Grid.Row="1" Margin="0,0,0,6">
+                        <hc:TextBox x:Name="PatternSearchBox" Style="{DynamicResource TextBoxPlus.Small}" Padding="28,3,6,3" MinHeight="28"
+                                    hc:InfoElement.Placeholder="{x:Static local:PatternText.SearchTemplates}" AutomationProperties.Name="{x:Static local:PatternText.SearchTemplates}"/>
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" HorizontalAlignment="Left" Margin="8,0,0,0" Opacity="0.6" IsHitTestVisible="False"/>
                     </Grid>
-                </DockPanel>
-            </StackPanel>
-            <!-- 模板列表 -->
-            <ListView Grid.Row="1" x:Name="ListViewPattern" Background="Transparent" Padding="0" BorderThickness="0" SelectionChanged="ListViewPattern_SelectionChanged">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Setter Property="Padding" Value="0"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="文件名">
-                            <GridViewColumn.CellTemplate>
+                    <Grid Grid.Row="2">
+                        <ListView x:Name="ListViewPattern" Background="Transparent" Padding="0" BorderThickness="0"
+                                  SelectionChanged="ListViewPattern_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                  AutomationProperties.Name="{x:Static local:PatternText.TemplateLibrary}">
+                            <ListView.Template>
+                                <ControlTemplate TargetType="ListView">
+                                    <ScrollViewer Focusable="False" CanContentScroll="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </ControlTemplate>
+                            </ListView.Template>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="6,3"/>
+                                    <Setter Property="Margin" Value="0,0,0,1"/>
+                                    <Setter Property="ToolTip" Value="{Binding Name}"/>
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplatePatternFile}">
-                                    <DockPanel Height="20">
-                                        <Grid VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
-                                            <TextBox Text="{Binding Name}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" Padding="6,0,6,0" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
-                                        </Grid>
-                                    </DockPanel>
+                                    <Grid>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                                   Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                        <TextBox Text="{Binding Name}" LostFocus="TextBox_LostFocus" Tag="{Binding}" Padding="2,0"
+                                                 Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    </Grid>
                                 </DataTemplate>
-                            </GridViewColumn.CellTemplate> 
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </Grid>
-        <!-- 中间编辑区 -->
-        <Grid Grid.Column="1" Margin="5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="auto"/>
-            </Grid.RowDefinitions>
-            <ScrollViewer Grid.Row="0">
-                <StackPanel>
-                    <!-- 分辨率选择 -->
-                    <DockPanel Margin="0,0,0,8">
-                        <ComboBox x:Name="cmbResolution"  DockPanel.Dock="Right" Width="120"/>
-
-                        <StackPanel x:Name="ResolutionStackPanel" Orientation="Horizontal" >
-                            <TextBox x:Name="txtWidth" Width="70" Text="{Binding Width}" Margin="0,0,5,0" />
-                            <TextBox x:Name="txtHeight" Width="70" Text="{Binding Height}"  Margin="0,0,5,0" />
-                        </StackPanel>
-                    </DockPanel>
-
-                    <!-- 模板选择 -->
-                    <DockPanel Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Grid.Column="1" Margin="8,0,4,0" HorizontalAlignment="Left" Padding="2" Height="28" Width="28" Click="Button_Click" ToolTip="编辑模板参数">
-                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="18" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
-                        <Button DockPanel.Dock="Right" Content="重置默认配置" Click="ResetSaveAsDefault_Click" Margin="8,0,0,0" ToolTip="重置默认配置" />
-                        <Button DockPanel.Dock="Right" Content="重置" Click="Reset_Click"  Margin="8,0,0,0" ToolTip="重置到用户默认值(如果有)或类默认值" />
-                        <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" Height="28"/>
-                    </DockPanel>
-                    <!-- 模板参数编辑区 -->
-                    <Border x:Name="PatternEditorGrid" />
-                </StackPanel>
-            </ScrollViewer>
-            <!-- 操作按钮区 -->
-            <Grid Grid.Row="1" Margin="0,0,0,8">
-                <StackPanel>
-                    <UniformGrid Columns="3" Margin="0,0,0,8">
-                        <Button Content="保存到模板" Click="TempSave_Click" Height="40" Margin="0,0,4,0" ToolTip="保存当前参数到模板"/>
-                        <Button Content="保存到默认" Click="SaveAsDefault_Click" Height="40" Margin="0,0,4,0" ToolTip="保存当前参数到模板"/>
-                        <Button Content="生成图卡" Click="PatternGen_Click" Height="40" Margin="4,0,0,0" ToolTip="生成当前图卡"/>
-                    </UniformGrid>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="另存为" Click="BtnSave_Click" ToolTip="另存为图片文件" Margin="5,0,0,0"/>
-                        <ComboBox x:Name="cmbFormat" SelectedValue="{Binding Config.PatternFormat}" DisplayMemberPath="Key" SelectedValuePath="Value" Height="28"/>
-                    </DockPanel>
-                </StackPanel>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <TextBlock Text="{x:Static local:PatternText.NoTemplatesFound}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Stretch" Margin="12,32" Opacity="0.6" IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockBaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=ListViewPattern}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                    <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Command="{Binding OpenSaveFilePathCommand}" Margin="6,0,0,0"
+                                    ToolTip="{x:Static local:PatternText.OpenOutputFolder}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;"/>
+                            </Button>
+                            <Button Content="{x:Static local:PatternText.GenerateAllTemplateImages}" Click="GenAllTemplate_Click" MinHeight="28"
+                                    ToolTip="{x:Static local:PatternText.GenerateAllTemplateImagesTooltip}"/>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Border>
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" DragCompleted="LibrarySplitter_DragCompleted"/>
+            <Grid x:Name="EditorAndPreview" Grid.Column="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="ParameterColumn" Width="330" MinWidth="330"/>
+                    <ColumnDefinition x:Name="PreviewGapColumn" Width="0"/>
+                    <ColumnDefinition x:Name="PreviewColumn" Width="0"/>
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource Pane}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel Margin="8,8,8,6">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Click="OpenActions_Click" ToolTip="{x:Static local:PatternText.PatternActions}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE712;"/>
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static local:PatternText.Reset}" Click="Reset_Click" ToolTip="{x:Static local:PatternText.ResetTooltip}"/>
+                                        <MenuItem Header="{x:Static local:PatternText.SaveAsDefault}" Click="SaveAsDefault_Click" ToolTip="{x:Static local:PatternText.SaveCurrentParametersAsDefault}"/>
+                                        <MenuItem Header="{x:Static local:PatternText.EditPatternParameters}" Click="Button_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="{x:Static local:PatternText.ResetFactoryDefaults}" Click="ResetSaveAsDefault_Click" ToolTip="{x:Static local:PatternText.ResetFactoryDefaultsTooltip}"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                            <Button DockPanel.Dock="Right" Content="{x:Static local:PatternText.ProjectionTool}" Command="{Binding OpenImageProjectorCommand}"
+                                    ToolTip="{x:Static local:PatternText.OpenProjectionTool}" Padding="8,2" Margin="6,0,6,0"/>
+                            <TextBlock Text="{x:Static local:PatternText.PatternSettings}" Style="{StaticResource SectionTitle}"/>
+                        </DockPanel>
+                        <ScrollViewer x:Name="ParameterScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="8,0,8,8">
+                            <StackPanel>
+                                <Grid x:Name="ResolutionStackPanel" Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/><ColumnDefinition Width="16"/><ColumnDefinition/><ColumnDefinition Width="6"/><ColumnDefinition Width="1.6*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="txtWidth" Text="{Binding Width, ValidatesOnExceptions=True}" MinHeight="28" ToolTip="{x:Static local:PatternText.ImageWidth}" AutomationProperties.Name="{x:Static local:PatternText.ImageWidth}"/>
+                                    <TextBlock Grid.Column="1" Text="×" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/>
+                                    <TextBox x:Name="txtHeight" Grid.Column="2" Text="{Binding Height, ValidatesOnExceptions=True}" MinHeight="28" ToolTip="{x:Static local:PatternText.ImageHeight}" AutomationProperties.Name="{x:Static local:PatternText.ImageHeight}"/>
+                                    <ComboBox x:Name="cmbResolution" Grid.Column="4" MinHeight="28" hc:InfoElement.Placeholder="{x:Static local:PatternText.ResolutionPreset}"
+                                              ToolTip="{x:Static local:PatternText.ResolutionPreset}" AutomationProperties.Name="{x:Static local:PatternText.ResolutionPreset}"/>
+                                </Grid>
+                                <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" MinHeight="28" Margin="0,0,0,8"
+                                          ToolTip="{x:Static local:PatternText.PatternType}" AutomationProperties.Name="{x:Static local:PatternText.PatternType}"/>
+                                <Border x:Name="PatternEditorGrid"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="8">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Button Content="{x:Static local:PatternText.SaveToTemplate}" Click="TempSave_Click" MinHeight="32" ToolTip="{x:Static local:PatternText.SaveCurrentParametersToTemplate}"/>
+                                    <Button x:Name="GenerateButton" Grid.Column="2" Content="{x:Static local:PatternText.GeneratePattern}" Click="PatternGen_Click" MinHeight="32"
+                                            Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource PrimaryBrush}" Foreground="White" FontWeight="SemiBold"
+                                            ToolTip="{x:Static local:PatternText.GenerateCurrentPattern}"/>
+                                </Grid>
+                                <Border x:Name="OutputActions" Margin="0,8,0,0" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Click="OpenActions_Click" ToolTip="{x:Static local:PatternText.ImageOutput}" Margin="8,0,0,0">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE712;"/>
+                                            <Button.ContextMenu>
+                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                    <MenuItem Header="{x:Static local:PatternText.OpenOutputFolder}" Command="{Binding OpenSaveFilePathCommand}"/>
+                                                    <MenuItem Header="{x:Static local:PatternText.ClearOutputDirectory}" Command="{Binding ClearSaveFilePathCommand}"/>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
+                                        <Button x:Name="SaveImageButton" DockPanel.Dock="Right" Content="{x:Static local:PatternText.SaveAs}" Click="BtnSave_Click" MinHeight="32" Padding="14,4" Margin="8,0,0,0"
+                                                IsEnabled="False" ToolTip="{x:Static local:PatternText.SaveAsImageFile}"/>
+                                        <ComboBox x:Name="cmbFormat" SelectedValue="{Binding Config.PatternFormat}" DisplayMemberPath="Key" SelectedValuePath="Value" MinHeight="32"
+                                                  AutomationProperties.Name="{x:Static local:PatternText.ImageOutput}"/>
+                                    </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+                <Border x:Name="PreviewPane" Grid.Column="2" Style="{StaticResource Pane}" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top" UseLayoutRounding="False">
+                    <Border x:Name="DisplayGrid" ClipToBounds="True"/>
+                </Border>
             </Grid>
         </Grid>
-        <!-- 右侧图片显示区 -->
-        <Border x:Name="DisplayGrid" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8"/>
     </Grid>
 </Window>

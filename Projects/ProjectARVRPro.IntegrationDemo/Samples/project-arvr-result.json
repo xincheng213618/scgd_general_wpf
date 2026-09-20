@@ -517,6 +517,64 @@
         ]
       }
     },
+    "DynamicRgbCrossResults": {
+      "RgbCross": {
+        "GridRows": 1,
+        "GridColumns": 1,
+        "ExportName": "RgbCross",
+        "SourceMasterId": 42,
+        "MeasurementId": "rgb-cross-demo-001",
+        "AlgorithmVersion": "1.5.0",
+        "SourceImageId": "SN-DEMO-001-RGB",
+        "SourceSha256": null,
+        "ImageWidth": 1920,
+        "ImageHeight": 1080,
+        "JsonFile": "RgbCross_42_demo.json",
+        "JsonSha256": "9D0E3D51A745526ED476E7005C19D7C6D90C1269A7D98A350705723AD49492E6",
+        "SourceImageFile": "SN-DEMO-001-RGB.cvraw",
+        "AppliedRecipe": {
+          "Min": 0.0,
+          "Max": 2.0,
+          "Fix": 1.0,
+          "B": 0.0
+        },
+        "Status": "PASS",
+        "Error": "",
+        "Points": [
+          {
+            "Id": "P1",
+            "Valid": true,
+            "Reason": "",
+            "Warning": "",
+            "Region": { "X": 900.0, "Y": 500.0, "Width": 120.0, "Height": 120.0 },
+            "Channels": [
+              {
+                "Name": "R",
+                "Horizontal": { "X": 940.0, "Y": 500.8, "Width": 40.0, "Height": 118.0 },
+                "Vertical": { "X": 900.9, "Y": 540.0, "Width": 118.0, "Height": 40.0 }
+              },
+              {
+                "Name": "G",
+                "Horizontal": { "X": 940.0, "Y": 500.0, "Width": 40.0, "Height": 118.0 },
+                "Vertical": { "X": 900.0, "Y": 540.0, "Width": 118.0, "Height": 40.0 }
+              },
+              {
+                "Name": "B",
+                "Horizontal": { "X": 940.0, "Y": 500.4, "Width": 40.0, "Height": 118.0 },
+                "Vertical": { "X": 900.6, "Y": 540.0, "Width": 118.0, "Height": 40.0 }
+              }
+            ],
+            "Comparisons": {
+              "R-G": { "Value": 0.9, "JudgedValue": 0.9, "Judgment": "PASS" },
+              "B-G": { "Value": 0.6, "JudgedValue": 0.6, "Judgment": "PASS" }
+            },
+            "MaximumEdgeSeparation": 0.9,
+            "JudgedEdgeSeparation": null,
+            "Judgment": "PASS"
+          }
+        ]
+      }
+    },
     "Msg": "",
     "TotalResult": true,
     "TotalResultString": "PASS"

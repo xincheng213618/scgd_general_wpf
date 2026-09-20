@@ -2,6 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Themes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
@@ -10,8 +12,8 @@ using ColorVision.UI.Sorts;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
@@ -32,6 +34,21 @@ namespace ColorVision.Engine
         public ContextMenu ContextMenu { get; set; }
 
         public RelayCommand ProcessCommand { get; set; }
+
+        public string TemplateName => TemplateFlow.Params.FirstOrDefault(item => item.Id == MeasureBatchModel.TId)?.Key
+            ?? MeasureBatchModel.TId?.ToString(CultureInfo.CurrentCulture) ?? "—";
+        public double DurationSeconds => MeasureBatchModel.TotalTime / 1000d;
+        public string StatusText => EngineLocalization.Get(MeasureBatchModel.FlowStatus switch
+        {
+            FlowStatus.Ready => "就绪",
+            FlowStatus.Runing => "运行中",
+            FlowStatus.Paused => "已暂停",
+            FlowStatus.Failed => "失败",
+            FlowStatus.Canceled => "已取消",
+            FlowStatus.OverTime => "超时",
+            FlowStatus.Completed => "已完成",
+            _ => MeasureBatchModel.FlowStatus.ToString()
+        });
 
         public ViewBatchResult()
         {
@@ -92,7 +109,7 @@ namespace ColorVision.Engine
                 {
                     Batch = MeasureBatchModel,
                     Config = PostProcessConfig.Instance,
-                    FlowName = TemplateFlow.Params[MeasureBatchModel.TId ??0].Key
+                    FlowName = TemplateFlow.Params.FirstOrDefault(item => item.Id == MeasureBatchModel.TId)?.Key ?? string.Empty
                 };
 
                 bool success = process.Process(context);
@@ -115,10 +132,35 @@ namespace ColorVision.Engine
         }
     }
 
-    [Display(Name = "Engine_PG_BatchProcessConfig", ResourceType = typeof(Properties.Resources))]
-    public class MeasureBatchManagerPageConfig : ViewConfigBase, IConfig
+    [DisplayName("流程结果查询设置")]
+    public class MeasureBatchManagerPageConfig : ViewModelBase, IConfig
     {
         public static MeasureBatchManagerPageConfig Instance => ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();
+
+        [Browsable(false)]
+        public RelayCommand EditCommand { get; }
+
+        public MeasureBatchManagerPageConfig()
+        {
+            EditCommand = new RelayCommand(_ => new PropertyEditorWindow(this)
+            {
+                Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog());
+        }
+
+        [DisplayName("查询数量"), Category("查询"), Description("普通查询最多读取的批次数量，至少为 1。修改后重新查询生效。")]
+        public int Count { get => _count; set { _count = Math.Max(value, 1); OnPropertyChanged(); } }
+        private int _count = 50;
+
+        [DisplayName("排列顺序"), Category("查询"), Description("按批次序号排列：Desc 为最新在前，Asc 为最早在前。")]
+        public OrderByType OrderByType { get => _orderByType; set { _orderByType = value; OnPropertyChanged(); } }
+        private OrderByType _orderByType = OrderByType.Desc;
+
+        // Retain the serialized keys from ViewConfigBase; they do not control history queries.
+        [Browsable(false)]
+        public bool AutoRefreshView { get; set; } = true;
+        [Browsable(false)]
+        public bool InsertAtBeginning { get; set; } = true;
     }
 
     public class MeasureBatchManager
@@ -135,16 +177,30 @@ namespace ColorVision.Engine
         {
             Config = ConfigService.Instance.GetRequiredService<MeasureBatchManagerPageConfig>();
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            Load();
         }
 
-        public void Load()
+        public async Task LoadAsync(string? batchCode = null)
+        {
+            int count = Config.Count;
+            var order = Config.OrderByType;
+            var batches = await Task.Run(() => QueryBatches(batchCode, count, order));
+            ReplaceResults(batches);
+        }
+
+        public void Load() => ReplaceResults(QueryBatches(null, Config.Count, Config.OrderByType));
+
+        private static List<MeasureBatchModel> QueryBatches(string? batchCode, int count, OrderByType order)
+        {
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var query = db.Queryable<MeasureBatchModel>();
+            if (!string.IsNullOrWhiteSpace(batchCode)) query = query.Where(item => item.Code == batchCode);
+            return query.OrderBy(item => item.Id, order).Take(count).ToList();
+        }
+
+        private void ReplaceResults(IEnumerable<MeasureBatchModel> batches)
         {
             ViewResults.Clear();
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, Config.OrderByType).Take(Config.Count).ToList();
-            foreach (var item in BatchResultMasterModels)
+            foreach (var item in batches)
             {
                 ViewResults.Add(new ViewBatchResult(item));
             }
@@ -182,6 +238,8 @@ namespace ColorVision.Engine
         private CopilotDynamicContextSession? _copilotContextSession;
         private Window? _copilotHostWindow;
         private bool _copilotPublishQueued;
+        private bool _isQuerying;
+        private string _appliedBatchCode = string.Empty;
 
         public MeasureBatchManagerPage() { }
         public MeasureBatchManagerPage(Frame MainFrame)
@@ -189,12 +247,12 @@ namespace ColorVision.Engine
             Frame = MainFrame;
             InitializeComponent();
         }
-        private void Page_Loaded(object sender, RoutedEventArgs e)
+        private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.CollectionChanged -= ViewResults_CollectionChanged;
             ViewResults.CollectionChanged += ViewResults_CollectionChanged;
-            MeasureBatchManager.Load();
             this.DataContext = MeasureBatchManager;
+            Window.GetWindow(this)?.ApplyCaption();
             
             // Initialize process ComboBox
             var postProcessManager = PostProcessManager.GetInstance();
@@ -204,6 +262,7 @@ namespace ColorVision.Engine
                 ProcessComboBox.SelectedIndex = 0;
             }
             EnsureCopilotContextRegistered();
+            await QueryAsync();
             PublishCopilotContext();
         }
         private void Page_Unloaded(object sender, RoutedEventArgs e)
@@ -220,6 +279,7 @@ namespace ColorVision.Engine
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 _copilotPublishQueued = false;
+                UpdateSummary();
                 PublishCopilotContext();
             }));
         }
@@ -231,51 +291,60 @@ namespace ColorVision.Engine
         }
         private void KeyEnter(object sender, KeyEventArgs e)
         {
-
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            _ = QueryAsync();
         }
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            ViewResults.Clear();
-            if (string.IsNullOrWhiteSpace(SearchBox.Text))
-            {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
-                foreach (var item in BatchResultMasterModels)
-                {
-                    ViewResults.Add(new ViewBatchResult(item));
-                }
-            }
-            else
-            {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            if (QueryStatusText != null && !_isQuerying)
+                QueryStatusText.Text = EngineLocalization.Get("条件已修改，按 Enter 或点击搜索应用查询。");
+        }
 
-                foreach (var item in DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
-                {
-                    ViewResults.Add(new ViewBatchResult(item));
-                }
+        private async void Query_Click(object sender, RoutedEventArgs e) => await QueryAsync();
+
+        private async void ResetQuery_Click(object sender, RoutedEventArgs e)
+        {
+            SearchBox.Clear();
+            await QueryAsync();
+        }
+
+        private async Task QueryAsync()
+        {
+            if (_isQuerying) return;
+            _isQuerying = true;
+            QueryControls.IsEnabled = false;
+            EmptyStatePanel.Visibility = Visibility.Collapsed;
+            QueryStatusText.Text = EngineLocalization.Get("正在查询批次记录…");
+            try
+            {
+                string batchCode = SearchBox.Text.Trim();
+                await MeasureBatchManager.LoadAsync(batchCode);
+                _appliedBatchCode = batchCode;
+                QueryStatusText.Text = EngineLocalization.Format($"已读取 {ViewResults.Count} 条，最多 {MeasureBatchManager.Config.Count} 条；概览仅统计本次查询结果。");
+            }
+            catch (Exception ex)
+            {
+                QueryStatusText.Text = EngineLocalization.Format($"查询失败，保留原有列表：{ex.Message}");
+                log4net.LogManager.GetLogger(typeof(MeasureBatchManagerPage)).Warn("查询流程结果失败", ex);
+            }
+            finally
+            {
+                _isQuerying = false;
+                QueryControls.IsEnabled = true;
+                UpdateSummary();
+                PublishCopilotContext();
             }
         }
 
-        private void Query_Click(object sender, RoutedEventArgs e)
+        private void UpdateSummary()
         {
-            ViewResults.Clear();
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            if (string.IsNullOrWhiteSpace(SearchBox.Text))
-            {
-                var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
-                foreach (var item in BatchResultMasterModels)
-                {
-                    ViewResults.Add(new ViewBatchResult(item));
-                }
-            }
-            else
-            {
-                foreach (var item in DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
-                {
-                    ViewResults.Add(new ViewBatchResult(item));
-                }
-            }
+            LoadedCountText.Text = ViewResults.Count.ToString(CultureInfo.CurrentCulture);
+            var completed = ViewResults.Where(item => item.MeasureBatchModel.FlowStatus == FlowStatus.Completed).ToArray();
+            CompletedCountText.Text = completed.Length.ToString(CultureInfo.CurrentCulture);
+            FailedCountText.Text = ViewResults.Count(item => item.MeasureBatchModel.FlowStatus is FlowStatus.Failed or FlowStatus.OverTime).ToString(CultureInfo.CurrentCulture);
+            AverageTimeText.Text = completed.Length == 0 ? "—" : completed.Average(item => item.DurationSeconds).ToString("0.###", CultureInfo.CurrentCulture);
+            EmptyStatePanel.Visibility = !_isQuerying && ViewResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -290,13 +359,13 @@ namespace ColorVision.Engine
         {
             if (listView1.SelectedItem is ViewBatchResult viewBatch)
             {
-                SelectedBatchText.Text = $"ID: {viewBatch.MeasureBatchModel.Id} - {viewBatch.MeasureBatchModel.Name}";
-                SelectedBatchText.Foreground = System.Windows.Media.Brushes.Black;
+                SelectedBatchText.Text = $"#{viewBatch.MeasureBatchModel.Id} · {viewBatch.MeasureBatchModel.Code}";
+                SelectedBatchText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             }
             else
             {
                 SelectedBatchText.Text = Properties.Resources.Flow_MeasureBatch_NotSelected;
-                SelectedBatchText.Foreground = System.Windows.Media.Brushes.Gray;
+                SelectedBatchText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
             }
         }
         
@@ -327,13 +396,13 @@ namespace ColorVision.Engine
                 // Add process info section
                 var infoBorder = new Border
                 {
-                    BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(4),
                     Padding = new Thickness(10),
                     Margin = new Thickness(0, 0, 0, 10)
                 };
                 
+                infoBorder.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
                 var infoStack = new StackPanel();
                 infoBorder.Child = infoStack;
                 
@@ -362,13 +431,13 @@ namespace ColorVision.Engine
                 {
                     var configBorder = new Border
                     {
-                        BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
                         BorderThickness = new Thickness(1),
                         CornerRadius = new CornerRadius(4),
                         Padding = new Thickness(10),
                         Margin = new Thickness(0, 0, 0, 10)
                     };
                     
+                    configBorder.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
                     var configStack = new StackPanel();
                     configBorder.Child = configStack;
                     
@@ -380,7 +449,7 @@ namespace ColorVision.Engine
                     });
                     
                     // Generate property editor controls
-                    var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
+                    var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config, showCategoryHeader: false);
                     configStack.Children.Add(configPanel);
                     
                     ProcessConfigPanel.Children.Add(configBorder);
@@ -392,7 +461,6 @@ namespace ColorVision.Engine
                 ProcessConfigPanel.Children.Add(new TextBlock 
                 { 
                     Text = Properties.Resources.Flow_MeasureBatch_SelectProcessTypeToViewConfig,
-                    Foreground = System.Windows.Media.Brushes.Gray, 
                     HorizontalAlignment = HorizontalAlignment.Center, 
                     Margin = new Thickness(0, 20, 0, 0) 
                 });
@@ -420,6 +488,8 @@ namespace ColorVision.Engine
         private void UpdateExecuteButtonState()
         {
             ExecuteButton.IsEnabled = listView1.SelectedItem != null && _selectedProcess != null;
+            OpenResultButton.IsEnabled = listView1.SelectedItem != null;
+            OpenAnalysisButton.IsEnabled = listView1.SelectedItem != null;
         }
         
         private void ExecuteProcess_Click(object sender, RoutedEventArgs e)
@@ -431,7 +501,8 @@ namespace ColorVision.Engine
                     var context = new PostProcessContext
                     {
                         Batch = viewBatch.MeasureBatchModel,
-                        Config = PostProcessConfig.Instance
+                        Config = PostProcessConfig.Instance,
+                        FlowName = TemplateFlow.Params.FirstOrDefault(item => item.Id == viewBatch.MeasureBatchModel.TId)?.Key ?? string.Empty
                     };
 
                     bool success = _selectedProcess.Process(context);
@@ -467,10 +538,25 @@ namespace ColorVision.Engine
         }
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (ItemsControl.ContainerFromElement(listView1, e.OriginalSource as DependencyObject) is ListViewItem)
+                OpenResult_Click(sender, e);
+        }
+
+        private void OpenResult_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedItem is ViewBatchResult selected)
             {
-                Frame.Navigate(new MeasureBatchPage(Frame, ViewResults[listView.SelectedIndex].MeasureBatchModel));
+                Frame.Navigate(new MeasureBatchPage(Frame, selected.MeasureBatchModel));
             }
+        }
+
+        private void OpenAnalysis_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedItem is ViewBatchResult selected)
+                new FlowExecutionAnalysisWindow(selected.MeasureBatchModel)
+                {
+                    Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.Show();
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
         {
@@ -496,6 +582,9 @@ namespace ColorVision.Engine
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             DB.Dispose();
+            _appliedBatchCode = "<advanced>";
+            UpdateSummary();
+            QueryStatusText.Text = EngineLocalization.Format($"高级查询：{ViewResults.Count} 条；概览仅统计本次查询结果。");
             PublishCopilotContext();
         }
 
@@ -576,7 +665,7 @@ namespace ColorVision.Engine
                 SourceId = CopilotMeasurementResultAgentExtension.SourceId,
                 Surface = "Measurement result history",
                 LoadedBatchCount = ViewResults.Count,
-                IsFilterActive = !string.IsNullOrWhiteSpace(SearchBox.Text),
+                IsFilterActive = !string.IsNullOrWhiteSpace(_appliedBatchCode),
                 BatchId = batch?.Id,
                 TemplateId = batch?.TId,
                 TemplateName = templateName,

@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PreProcess;
-using ColorVision.Engine.PropertyEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -40,7 +39,6 @@ namespace ProjectARVRPro.Process
         public ProcessManagerWindow()
         {
             InitializeComponent();
-            FlowNodePropertyEditorRegistration.EnsureRegistered();
             this.ApplyCaption();
             Closing += Window_Closing;
         }
@@ -560,7 +558,7 @@ namespace ProjectARVRPro.Process
                     {
                         MessageBox.Show(
                             this,
-                            "Recipe 已修改，但保存 ProcessGroups.json 失败。请检查磁盘空间和文件权限后重试。",
+                            $"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。",
                             "ColorVision",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);

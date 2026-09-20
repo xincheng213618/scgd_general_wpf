@@ -2,7 +2,7 @@ using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Testing;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
+using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Start;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process;
@@ -24,7 +24,7 @@ public sealed class FlowCameraParameterOverrideServiceTests
         PropertyEditorTypeAttribute attribute = Assert.IsType<PropertyEditorTypeAttribute>(
             Assert.Single(property!.GetCustomAttributes(typeof(PropertyEditorTypeAttribute), inherit: false)));
 
-        Assert.Equal(typeof(FlowCalibrationTemplateEditor), attribute.EditorType);
+        Assert.Equal(typeof(CalibrationTemplatePropertiesEditor), attribute.EditorType);
         string json = JsonConvert.SerializeObject(config);
         Assert.DoesNotContain(nameof(FlowCameraParameterOverrideConfig.DeviceCode), json, StringComparison.Ordinal);
         Assert.DoesNotContain(nameof(FlowCameraParameterOverrideConfig.NodeType), json, StringComparison.Ordinal);

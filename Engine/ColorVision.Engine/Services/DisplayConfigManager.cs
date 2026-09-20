@@ -15,8 +15,6 @@ namespace ColorVision.Engine.Services
     }
     public class IDisplayConfigBase : ViewModelBase, IDisplayConfig
     {
-        public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; OnPropertyChanged(); } }
-        private bool _IsDisplayOpen = true;
     }
     public class DisplayConfigManager : IConfig
     {

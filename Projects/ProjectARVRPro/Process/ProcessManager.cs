@@ -22,14 +22,16 @@ namespace ProjectARVRPro.Process
     public class ProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
-        private const string PersistFileName = "ProcessMetas.json";
-        private const string GroupPersistFileName = "ProcessGroups.json";
+        private const string LegacyPersistFileName = "ProcessMetas.json";
+        private const string LegacyGroupPersistFileName = "ProcessGroups.json";
+        internal const string GroupPersistFileName = "ProjectARVRProProcessGroups.json";
         private const string ExportConfigFilter = "ARVR流程配置 (*.arvrprocess.json)|*.arvrprocess.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
         private const string LegacyRecipeFilter = "旧版 ARVR Recipe (ARVRRecipe.json)|ARVRRecipe.json|JSON文件 (*.json)|*.json|所有文件 (*.*)|*.*";
 
         private static string PersistDirectory => ViewResultManager.DirectoryPath;
-        private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
-        private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
+        private static string LegacyPersistFilePath => Path.Combine(PersistDirectory, LegacyPersistFileName);
+        private static string LegacyGroupPersistFilePath => Path.Combine(PersistDirectory, LegacyGroupPersistFileName);
+        internal static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
         private static JsonSerializerSettings ExportJsonSerializerSettings => new()
         {
             TypeNameHandling = TypeNameHandling.All,
@@ -371,7 +373,7 @@ namespace ProjectARVRPro.Process
                 }
 
                 if (!SavePersistedGroups())
-                    throw new IOException("保存 ProcessGroups.json 失败。");
+                    throw new IOException($"保存 {GroupPersistFileName} 失败。");
             }
             catch (Exception ex)
             {
@@ -1115,20 +1117,29 @@ namespace ProjectARVRPro.Process
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
 
-                // Try new format first
                 if (File.Exists(GroupPersistFilePath))
                 {
-                    saveAfterLoad = LoadFromGroupsFile();
+                    saveAfterLoad = LoadFromGroupsFile(GroupPersistFilePath);
                 }
-                else if (File.Exists(PersistFilePath))
+                else if (File.Exists(LegacyGroupPersistFilePath) && IsArvrProGroupsFile(LegacyGroupPersistFilePath))
                 {
-                    MigrateFromOldFormat();
+                    log.Info($"检测到 ARVRPro 旧共享流程配置，迁移到 {GroupPersistFileName}");
+                    LoadFromGroupsFile(LegacyGroupPersistFilePath);
                     saveAfterLoad = true;
+                }
+                else if (File.Exists(LegacyPersistFilePath) && IsArvrProLegacyMetasFile(LegacyPersistFilePath))
+                {
+                    MigrateFromOldFormat(LegacyPersistFilePath);
+                    saveAfterLoad = true;
+                }
+                else if (File.Exists(LegacyGroupPersistFilePath) || File.Exists(LegacyPersistFilePath))
+                {
+                    log.Warn($"检测到无法确认属于 ARVRPro 的旧共享流程配置，已保留原文件并跳过迁移。新配置将保存到 {GroupPersistFileName}");
                 }
             }
             catch (Exception ex)
             {
-                log.Error("加载ProcessGroups失败", ex);
+                log.Error($"加载{GroupPersistFileName}失败", ex);
                 ProcessGroups.Clear();
                 RecipeConfig = new RecipeConfig();
             }
@@ -1149,9 +1160,9 @@ namespace ProjectARVRPro.Process
                 SavePersistedGroups();
         }
 
-        private bool LoadFromGroupsFile()
+        private bool LoadFromGroupsFile(string filePath)
         {
-            string json = File.ReadAllText(GroupPersistFilePath);
+            string json = File.ReadAllText(filePath);
             var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json, ExportJsonSerializerSettings);
             if (root == null || root.Groups == null || root.Groups.Count == 0)
             {
@@ -1186,10 +1197,10 @@ namespace ProjectARVRPro.Process
             return migrated;
         }
 
-        private void MigrateFromOldFormat()
+        private void MigrateFromOldFormat(string filePath)
         {
-            log.Info("检测到旧格式 ProcessMetas.json，自动迁移到 ProcessGroups.json");
-            string json = File.ReadAllText(PersistFilePath);
+            log.Info($"检测到 ARVRPro 旧格式 {LegacyPersistFileName}，自动迁移到 {GroupPersistFileName}");
+            string json = File.ReadAllText(filePath);
             var list = JsonConvert.DeserializeObject<List<ProcessMetaPersist>>(json) ?? new List<ProcessMetaPersist>();
 
             var defaultGroup = new ProcessGroup { Name = "Default" };
@@ -1201,6 +1212,102 @@ namespace ProjectARVRPro.Process
             ProcessGroups.Add(defaultGroup);
             _ActiveGroupIndex = 0;
             SeedResultParsersFromGroups();
+        }
+
+        private bool IsArvrProGroupsFile(string filePath)
+        {
+            try
+            {
+                if (JToken.Parse(File.ReadAllText(filePath)) is not JObject root)
+                    return false;
+
+                string? rootType = root.Value<string>("$type");
+                if (rootType?.Contains("ProjectARVRPro.Process.ProcessGroupsRoot", StringComparison.Ordinal) == true)
+                    return true;
+
+                if (root.Property(nameof(ProcessGroupsRoot.ResultParsers)) != null || root.Property(nameof(ProcessGroupsRoot.RecipeConfig)) != null)
+                    return true;
+
+                foreach (JObject meta in EnumeratePersistedMetas(root[nameof(ProcessGroupsRoot.Groups)]))
+                {
+                    if (meta.Property("SocketCode") != null)
+                        return false;
+                    if (meta.Property("InterStepAction") != null
+                        || meta.Property(nameof(ProcessMetaPersist.PictureSwitchConfig)) != null
+                        || meta.Property(nameof(ProcessMetaPersist.FlowCameraParameterOverrideConfig)) != null
+                        || IsKnownProcessType(meta.Value<string>(nameof(ProcessMetaPersist.ProcessTypeFullName)), "ProjectARVRPro."))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"无法识别旧共享流程配置 {filePath}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool IsArvrProLegacyMetasFile(string filePath)
+        {
+            try
+            {
+                if (JToken.Parse(File.ReadAllText(filePath)) is not JArray metas || metas.Count == 0)
+                    return false;
+
+                foreach (JObject meta in metas.OfType<JObject>())
+                {
+                    if (meta.Property("SocketCode") != null)
+                        return false;
+                    if (meta.Property("InterStepAction") != null
+                        || meta.Property(nameof(ProcessMetaPersist.PictureSwitchConfig)) != null
+                        || meta.Property(nameof(ProcessMetaPersist.FlowCameraParameterOverrideConfig)) != null
+                        || IsKnownProcessType(meta.Value<string>(nameof(ProcessMetaPersist.ProcessTypeFullName)), "ProjectARVRPro."))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"无法识别旧共享流程配置 {filePath}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private bool IsKnownProcessType(string? processTypeFullName, string projectNamespace)
+        {
+            if (string.IsNullOrWhiteSpace(processTypeFullName))
+                return false;
+
+            return processTypeFullName.StartsWith(projectNamespace, StringComparison.Ordinal)
+                || Processes.Any(process => string.Equals(process.GetType().FullName, processTypeFullName, StringComparison.Ordinal));
+        }
+
+        private static IEnumerable<JObject> EnumeratePersistedMetas(JToken? groupsToken)
+        {
+            JArray? groups = UnwrapArray(groupsToken);
+            if (groups == null)
+                yield break;
+
+            foreach (JObject group in groups.OfType<JObject>())
+            {
+                JArray? metas = UnwrapArray(group[nameof(ProcessGroupPersist.Metas)]);
+                if (metas == null)
+                    continue;
+
+                foreach (JObject meta in metas.OfType<JObject>())
+                    yield return meta;
+            }
+        }
+
+        private static JArray? UnwrapArray(JToken? token)
+        {
+            return token as JArray ?? token?["$values"] as JArray;
         }
 
         private void SeedResultParsersFromGroups()
@@ -1311,7 +1418,7 @@ namespace ProjectARVRPro.Process
             }
             catch (Exception ex)
             {
-                log.Error("保存ProcessGroups失败", ex);
+                log.Error($"保存{GroupPersistFileName}失败", ex);
                 return false;
             }
         }
@@ -1558,7 +1665,7 @@ namespace ProjectARVRPro.Process
                 importedResultParsers,
                 importedActiveGroupIndex);
             if (!SavePersistedGroups(candidateRoot))
-                throw new IOException("保存导入的 ProcessGroups.json 失败，当前配置未被替换。");
+                throw new IOException($"保存导入的 {GroupPersistFileName} 失败，当前配置未被替换。");
 
             UnhookProcessMetasEvents();
             UnhookResultParserEvents();

@@ -35,6 +35,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             "逐条校验后清空旧字段并执行 VACUUM 释放空间。" + Environment.NewLine +
             "迁移后旧版程序不能读取这些历史 Payload；迁移期间请停止流程执行并关闭流程分析窗口。";
 
+        public bool HasPendingMigration()
+        {
+            string databasePath = GetDatabasePath();
+            return File.Exists(databasePath)
+                && RunMaintenance(() => LegacyFlowNodeMessagePayloadMigration.HasPendingMigration(databasePath));
+        }
+
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
             string databasePath = GetDatabasePath();

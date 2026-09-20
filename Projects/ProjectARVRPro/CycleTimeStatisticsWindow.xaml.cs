@@ -5,6 +5,7 @@ using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.UI;
+using ColorVision.Themes;
 using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -25,25 +26,34 @@ namespace ProjectARVRPro
         private const int FlowPageSize = 1000;
         private const int SuggestionDisplayLimit = 20;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
-        private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
-        private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
-        private readonly ResultStatisticsWindowState _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
+        private readonly ViewResultManager? _viewResultManager;
+        private readonly ResultStatisticsDataStore _statisticsStore;
+        private readonly ResultStatisticsWindowState _windowState;
+        private readonly Offline.ArvrOfflineDataSource? _offlineSource;
+        private bool _openingOffline;
+        private bool _closed;
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
+        private readonly ObservableCollection<ResultStatisticsCombinedRecordRow> _combinedRows = [];
         private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
         private string[] _snSuggestions = [];
         private string[] _flowNameSuggestions = [];
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
+        private readonly ObservableCollection<ProjectARVRReuslt> _combinedDetails = [];
         private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
         private TextBox? _snEditor;
         private TextBox? _flowNameEditor;
         private int _homeLoadVersion;
         private int _recordLoadVersion;
+        private int _combinedLoadVersion;
         private int _flowLoadVersion;
         private int _snIndexVersion;
         private int _flowNameIndexVersion;
         private int _detailLoadVersion;
+        private int _combinedDetailLoadVersion;
         private int _currentPage = 1;
         private int _totalRecordCount;
+        private int _combinedCurrentPage = 1;
+        private int _totalCombinedCount;
         private int _flowCurrentPage = 1;
         private int _totalFlowCount;
         private bool _updatingSnSuggestions;
@@ -54,36 +64,151 @@ namespace ProjectARVRPro
         private int _queuedHomeRefreshVersion;
         private string _homeStatus = string.Empty;
         private string _recordStatus = string.Empty;
+        private string _combinedStatus = string.Empty;
         private string _snIndexStatus = string.Empty;
         private string _flowStatus = string.Empty;
         private string _flowNameIndexStatus = string.Empty;
 
-        public CycleTimeStatisticsWindow()
+        public CycleTimeStatisticsWindow() : this(null) { }
+
+        public CycleTimeStatisticsWindow(Offline.ArvrOfflineDataSource? offlineSource)
         {
+            _offlineSource = offlineSource;
+            if (offlineSource == null)
+            {
+                _viewResultManager = ViewResultManager.GetInstance();
+                _statisticsStore = ResultStatisticsDataStore.Instance;
+                _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
+            }
+            else
+            {
+                _statisticsStore = offlineSource.Statistics;
+                _windowState = new ResultStatisticsWindowState
+                {
+                    HomeAnchorDate = offlineSource.LatestDate, RecordAnchorDate = offlineSource.LatestDate,
+                    FlowAnchorDate = offlineSource.LatestDate, SelectedTabIndex = 1,
+                };
+            }
             InitializeComponent();
+            this.ApplyCaption();
+            if (offlineSource != null)
+            {
+                Title = $"结果统计 · {offlineSource.Label} · 只读";
+                DataSourceText.Text = offlineSource.Description;
+                DataSourceText.ToolTip = $"来源：{offlineSource.SourcePath}\n读取副本：{offlineSource.DirectoryPath}\n各数据库是独立快照；图片未随记录自动导入。";
+                OfflineMessagesButton.Visibility = Visibility.Visible;
+            }
             RestoreSearchState();
             RecordDataGrid.ItemsSource = _recordRows;
+            CombinedRecordDataGrid.ItemsSource = _combinedRows;
             FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
+            CombinedDetailList.ItemsSource = _combinedDetails;
             TimelinePanel.DataContext = CreateEmptyTimeline("选择左侧批次后显示整组时间轴。");
+            CombinedTimelinePanel.DataContext = CreateEmptyTimeline("选择左侧全批次后显示 L/R 时间轴。");
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
+            CombinedRecordDataGrid.SelectionChanged += CombinedRecordDataGrid_SelectionChanged;
             BuildDetailContextMenu();
             ConfigureHomeTrendPlot();
             ApplyStatistics(new ResultStatistics());
+            ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
+            ApplyCombinedVisibility();
             _restoringSearchState = false;
             UpdateHomePeriodText();
             UpdateRecordPeriodText();
+            UpdateCombinedPeriodText();
             UpdateFlowPeriodText();
         }
 
         private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
+        private ResultStatisticsCombinedRecordRow? SelectedCombinedRow => CombinedRecordDataGrid.SelectedItem as ResultStatisticsCombinedRecordRow;
         private FlowExecutionRecordRow? SelectedFlowRow => FlowDataGrid.SelectedItem as FlowExecutionRecordRow;
+        private bool IsCombinedStatisticsEnabled => EnableCombinedStatisticsCheckBox.IsChecked == true;
+
+        private void StatisticsSettings_Click(object sender, RoutedEventArgs e)
+        {
+            StatisticsSettingsPopup.IsOpen = !StatisticsSettingsPopup.IsOpen;
+        }
+
+        private async void EnableCombinedStatistics_Changed(object sender, RoutedEventArgs e)
+        {
+            ApplyCombinedVisibility();
+            CaptureSearchState();
+            if (_restoringSearchState || !_windowLoaded)
+                return;
+
+            ++_homeLoadVersion;
+            if (IsCombinedStatisticsEnabled)
+                await Task.WhenAll(RefreshHomeAsync(), RefreshCombinedRecordsAsync(1));
+            else
+            {
+                ++_combinedLoadVersion;
+                ++_combinedDetailLoadVersion;
+                if (StatisticsTabs.SelectedItem == CombinedRecordTab)
+                    StatisticsTabs.SelectedIndex = 1;
+                await RefreshHomeAsync();
+            }
+        }
+
+        private void ApplyCombinedVisibility()
+        {
+            if (CombinedRecordTab == null || CombinedSummaryPanel == null || CombinedSummaryLabel == null || CombinedSummaryRow == null)
+                return;
+
+            Visibility visibility = IsCombinedStatisticsEnabled ? Visibility.Visible : Visibility.Collapsed;
+            CombinedRecordTab.Visibility = visibility;
+            CombinedSummaryPanel.Visibility = visibility;
+            CombinedSummaryLabel.Visibility = visibility;
+            CombinedSummaryRow.Height = IsCombinedStatisticsEnabled ? GridLength.Auto : new GridLength(0);
+            StatisticsSettingsButton.Content = IsCombinedStatisticsEnabled ? "统计设置 · L/R 已开启" : "统计设置";
+        }
+
+        private async void OpenOfflineData_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog { Title = "打开现场数据", Filter = "反馈包或 ARVRPro 数据库|*.zip;*.db|所有文件|*.*", CheckFileExists = true };
+            if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FileName);
+        }
+
+        private async void OpenOfflineFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog { Title = "选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹" };
+            if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FolderName);
+        }
+
+        private async Task OpenOfflineAsync(string path)
+        {
+            if (_openingOffline || _closed) return;
+            _openingOffline = true;
+            string previous = DataSourceText.Text;
+            DataSourceText.Text = "正在准备现场只读副本…";
+            try
+            {
+                Offline.ArvrOfflineDataSource source = await Task.Run(() => Offline.ArvrOfflineDataSource.Open(path));
+                if (_closed) return;
+                new CycleTimeStatisticsWindow(source) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            }
+            catch (Exception ex) { if (!_closed) MessageBox.Show(this, $"打开现场数据失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+            finally { DataSourceText.Text = previous; _openingOffline = false; }
+        }
+
+        private void OfflineMessages_Click(object sender, RoutedEventArgs e)
+        {
+            if (_offlineSource == null) return;
+            if (SelectedRecordRow is not ResultStatisticsRecordRow row)
+            {
+                MessageBox.Show(this, "请先在测试记录中选择一轮测试。", "现场消息");
+                return;
+            }
+            new Offline.OfflineMessagesWindow(_offlineSource, row) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _windowLoaded = true;
             _ = LoadSnSuggestionsAsync();
             var tasks = new List<Task> { RefreshHomeAsync(), RefreshRecordsAsync(1) };
+            if (IsCombinedStatisticsEnabled)
+                tasks.Add(RefreshCombinedRecordsAsync(1));
             if (StatisticsTabs.SelectedItem == FlowQueryTab)
             {
                 _flowTabInitialized = true;
@@ -111,6 +236,12 @@ namespace ProjectARVRPro
         {
             CaptureSearchState();
             await RefreshRecordsAsync(1);
+        }
+
+        private async void CombinedRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            CaptureSearchState();
+            await RefreshCombinedRecordsAsync(1);
         }
 
         private async void FlowRefresh_Click(object sender, RoutedEventArgs e)
@@ -141,6 +272,17 @@ namespace ProjectARVRPro
             await RefreshFlowsAsync(1);
         }
 
+        private async void CombinedReset_Click(object sender, RoutedEventArgs e)
+        {
+            CombinedPeriodMode.SelectedIndex = 0;
+            CombinedAnchorDatePicker.SelectedDate = DateTime.Today;
+            CombinedSnFilter.Text = string.Empty;
+            CombinedResultFilter.SelectedIndex = 0;
+            UpdateCombinedPeriodText();
+            CaptureSearchState();
+            await RefreshCombinedRecordsAsync(1);
+        }
+
         private void HomePeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateHomePeriodText();
@@ -159,6 +301,12 @@ namespace ProjectARVRPro
             CaptureSearchState();
         }
 
+        private void CombinedPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateCombinedPeriodText();
+            CaptureSearchState();
+        }
+
         private void HomeAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateHomePeriodText();
@@ -174,6 +322,12 @@ namespace ProjectARVRPro
         private void FlowAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateFlowPeriodText();
+            CaptureSearchState();
+        }
+
+        private void CombinedAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateCombinedPeriodText();
             CaptureSearchState();
         }
 
@@ -231,6 +385,25 @@ namespace ProjectARVRPro
             await RefreshFlowsAsync(1);
         }
 
+        private async void CombinedPreviousPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(CombinedPeriodMode, CombinedAnchorDatePicker, -1);
+            await RefreshCombinedRecordsAsync(1);
+        }
+
+        private async void CombinedNextPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            ShiftPeriod(CombinedPeriodMode, CombinedAnchorDatePicker, 1);
+            await RefreshCombinedRecordsAsync(1);
+        }
+
+        private async void CombinedCurrentPeriod_Click(object sender, RoutedEventArgs e)
+        {
+            CombinedAnchorDatePicker.SelectedDate = DateTime.Today;
+            CaptureSearchState();
+            await RefreshCombinedRecordsAsync(1);
+        }
+
         private static void ShiftPeriod(ComboBox modeSelector, DatePicker anchorPicker, int offset)
         {
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(modeSelector);
@@ -246,11 +419,20 @@ namespace ProjectARVRPro
             RecordAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.RecordAnchorDate);
             SnFilter.Text = _windowState.RecordSn ?? string.Empty;
             ResultFilter.SelectedIndex = Math.Clamp(_windowState.RecordResultIndex, 0, 2);
+            EnableCombinedStatisticsCheckBox.IsChecked = _windowState.EnableCombinedStatistics;
+            CombinedPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.CombinedPeriodMode);
+            CombinedAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.CombinedAnchorDate);
+            CombinedSnFilter.Text = _windowState.CombinedSn ?? string.Empty;
+            CombinedResultFilter.SelectedIndex = Math.Clamp(_windowState.CombinedResultIndex, 0, 2);
             FlowPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.FlowPeriodMode);
             FlowAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.FlowAnchorDate);
             FlowNameFilter.Text = _windowState.FlowName ?? string.Empty;
             FlowResultFilter.SelectedIndex = Math.Clamp(_windowState.FlowResultIndex, 0, 2);
-            StatisticsTabs.SelectedIndex = Math.Clamp(_windowState.SelectedTabIndex, 0, StatisticsTabs.Items.Count - 1);
+            int selectedTabIndex = Math.Clamp(_windowState.SelectedTabIndex, 0, StatisticsTabs.Items.Count - 1);
+            // In builds before the combined page existed, index 2 meant the flow-query page.
+            if (!IsCombinedStatisticsEnabled && selectedTabIndex == 2)
+                selectedTabIndex = 3;
+            StatisticsTabs.SelectedIndex = selectedTabIndex;
         }
 
         private void CaptureSearchState()
@@ -265,6 +447,11 @@ namespace ProjectARVRPro
             _windowState.RecordAnchorDate = (RecordAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
             _windowState.RecordSn = SnFilter.Text?.Trim() ?? string.Empty;
             _windowState.RecordResultIndex = Math.Clamp(ResultFilter.SelectedIndex, 0, 2);
+            _windowState.EnableCombinedStatistics = IsCombinedStatisticsEnabled;
+            _windowState.CombinedPeriodMode = GetSelectedPeriodMode(CombinedPeriodMode);
+            _windowState.CombinedAnchorDate = (CombinedAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
+            _windowState.CombinedSn = CombinedSnFilter.Text?.Trim() ?? string.Empty;
+            _windowState.CombinedResultIndex = Math.Clamp(CombinedResultFilter.SelectedIndex, 0, 2);
             _windowState.FlowPeriodMode = GetSelectedPeriodMode(FlowPeriodMode);
             _windowState.FlowAnchorDate = (FlowAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
             _windowState.FlowName = FlowNameFilter.Text?.Trim() ?? string.Empty;
@@ -327,6 +514,18 @@ namespace ProjectARVRPro
             FlowPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        private void UpdateCombinedPeriodText()
+        {
+            if (CombinedPeriodText == null || CombinedPeriodMode == null || CombinedAnchorDatePicker == null || CombinedCurrentPeriodButton == null)
+                return;
+
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(CombinedPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, CombinedAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            CombinedPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            CombinedCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
+            CombinedPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
+        }
+
         private static string GetCurrentPeriodButtonText(ResultStatisticsPeriodMode mode)
         {
             return mode switch
@@ -371,14 +570,22 @@ namespace ProjectARVRPro
             try
             {
                 DateTime now = DateTime.Now;
-                ResultStatisticsDashboard dashboard = await Task.Run(() => _statisticsStore.QueryDashboard(query, mode, now));
+                Task<ResultStatisticsDashboard> dashboardTask = Task.Run(() => _statisticsStore.QueryDashboard(query, mode, now));
+                Task<ResultStatisticsCombinedDashboard>? combinedTask = IsCombinedStatisticsEnabled
+                    ? Task.Run(() => _statisticsStore.QueryCombinedDashboard(query, mode, now))
+                    : null;
+                ResultStatisticsDashboard dashboard = await dashboardTask;
+                ResultStatisticsCombinedDashboard? combined = combinedTask == null ? null : await combinedTask;
 
                 if (loadVersion != _homeLoadVersion)
                     return;
 
                 ApplyStatistics(dashboard.Summary);
-                RenderHomeTrend(dashboard.Trend, mode, query.From, query.ToExclusive);
-                _homeStatus = $"已查询 {dashboard.Summary.TotalCount:N0} 条记录";
+                ApplyCombinedStatistics(combined ?? new ResultStatisticsCombinedDashboard());
+                RenderHomeTrend(combined?.Trend ?? dashboard.Trend, mode, query.From, query.ToExclusive, combined != null);
+                _homeStatus = combined == null
+                    ? $"已查询 {dashboard.Summary.TotalCount:N0} 条单侧记录"
+                    : $"已查询 {dashboard.Summary.TotalCount:N0} 条单侧记录；匹配 {combined.Summary.TotalCount:N0} 个 L/R 全批次";
             }
             catch (Exception ex)
             {
@@ -386,7 +593,8 @@ namespace ProjectARVRPro
                     return;
 
                 ApplyStatistics(new ResultStatistics());
-                RenderHomeTrend([], mode, query.From, query.ToExclusive);
+                ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
+                RenderHomeTrend([], mode, query.From, query.ToExclusive, IsCombinedStatisticsEnabled);
                 _homeStatus = "查询失败";
                 MessageBox.Show(this, $"读取首页统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -441,6 +649,54 @@ namespace ProjectARVRPro
                 if (loadVersion == _recordLoadVersion)
                 {
                     RecordRefreshButton.IsEnabled = true;
+                    UpdateStatusText();
+                }
+            }
+        }
+
+        private async Task RefreshCombinedRecordsAsync(int pageNumber)
+        {
+            if (!IsCombinedStatisticsEnabled)
+                return;
+
+            ResultStatisticsQuery query = CreateCombinedQuery(pageNumber);
+            int loadVersion = ++_combinedLoadVersion;
+            CombinedRefreshButton.IsEnabled = false;
+            _combinedStatus = "正在匹配 L/R 全批次...";
+            UpdateStatusText();
+            CombinedDetailHeader.Text = "L/R 流程 CT 明细";
+            _combinedDetails.Clear();
+            CombinedTimelinePanel.DataContext = CreateEmptyTimeline("正在查询全批次记录...");
+            try
+            {
+                ResultStatisticsCombinedPage page = await Task.Run(() => _statisticsStore.QueryCombinedRecords(query));
+                if (loadVersion != _combinedLoadVersion)
+                    return;
+
+                ReplaceItems(_combinedRows, page.Rows);
+                _totalCombinedCount = page.TotalCount;
+                _combinedCurrentPage = Math.Clamp(pageNumber, 1, Math.Max(1, GetCombinedPageCount()));
+                UpdateCombinedPagination();
+                if (_combinedRows.Count > 0)
+                    CombinedRecordDataGrid.SelectedIndex = 0;
+                else
+                    CombinedTimelinePanel.DataContext = CreateEmptyTimeline("当前筛选范围没有匹配到相邻的 L→R 全批次。");
+                _combinedStatus = _totalCombinedCount > RecordPageSize
+                    ? $"已匹配 {_totalCombinedCount:N0} 个 L/R 全批次；第 {_combinedCurrentPage:N0}/{GetCombinedPageCount():N0} 页，本页 {_combinedRows.Count:N0} 条"
+                    : $"已匹配 {_totalCombinedCount:N0} 个 L/R 全批次；未配对记录仍保留在“批次记录”";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _combinedLoadVersion)
+                    return;
+                _combinedStatus = "查询失败";
+                MessageBox.Show(this, $"读取 L/R 全批次记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (loadVersion == _combinedLoadVersion)
+                {
+                    CombinedRefreshButton.IsEnabled = true;
                     UpdateStatusText();
                 }
             }
@@ -545,6 +801,28 @@ namespace ProjectARVRPro
             await RefreshRecordsAsync(GetPageCount());
         }
 
+        private async void CombinedFirstPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshCombinedRecordsAsync(1);
+        }
+
+        private async void CombinedPreviousPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_combinedCurrentPage > 1)
+                await RefreshCombinedRecordsAsync(_combinedCurrentPage - 1);
+        }
+
+        private async void CombinedNextPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_combinedCurrentPage < GetCombinedPageCount())
+                await RefreshCombinedRecordsAsync(_combinedCurrentPage + 1);
+        }
+
+        private async void CombinedLastPage_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshCombinedRecordsAsync(GetCombinedPageCount());
+        }
+
         private async void FlowFirstPage_Click(object sender, RoutedEventArgs e)
         {
             await RefreshFlowsAsync(1);
@@ -585,6 +863,28 @@ namespace ProjectARVRPro
                 _ => null,
             };
             string sn = SnFilter.Text.Trim();
+            return new ResultStatisticsQuery
+            {
+                From = range.From,
+                ToExclusive = range.ToExclusive,
+                SN = string.IsNullOrWhiteSpace(sn) ? null : sn,
+                Result = result,
+                PageNumber = Math.Max(1, pageNumber),
+                PageSize = RecordPageSize,
+            };
+        }
+
+        private ResultStatisticsQuery CreateCombinedQuery(int pageNumber)
+        {
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(CombinedPeriodMode);
+            ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, CombinedAnchorDatePicker.SelectedDate ?? DateTime.Today);
+            bool? result = CombinedResultFilter.SelectedIndex switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            };
+            string sn = CombinedSnFilter.Text.Trim();
             return new ResultStatisticsQuery
             {
                 From = range.From,
@@ -806,10 +1106,37 @@ namespace ProjectARVRPro
             PassCountText.Text = statistics.PassCount.ToString("N0");
             FailCountText.Text = statistics.FailCount.ToString("N0");
             PassRateText.Text = statistics.PassRateText;
-            FailRateText.Text = statistics.FailRateText;
             AverageCtText.Text = statistics.AverageCtText;
             CurrentHourCountText.Text = statistics.CurrentHourCount.ToString("N0");
             TodayCountText.Text = statistics.TodayCount.ToString("N0");
+        }
+
+        private int GetCombinedPageCount()
+        {
+            return Math.Max(1, (int)Math.Ceiling(_totalCombinedCount / (double)RecordPageSize));
+        }
+
+        private void UpdateCombinedPagination()
+        {
+            int pageCount = GetCombinedPageCount();
+            CombinedPaginationPanel.Visibility = _totalCombinedCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
+            CombinedPageStatusText.Text = $"第 {_combinedCurrentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            CombinedFirstPageButton.IsEnabled = _combinedCurrentPage > 1;
+            CombinedPreviousPageButton.IsEnabled = _combinedCurrentPage > 1;
+            CombinedNextPageButton.IsEnabled = _combinedCurrentPage < pageCount;
+            CombinedLastPageButton.IsEnabled = _combinedCurrentPage < pageCount;
+        }
+
+        private void ApplyCombinedStatistics(ResultStatisticsCombinedDashboard dashboard)
+        {
+            ResultStatistics statistics = dashboard.Summary;
+            CombinedTotalCountText.Text = statistics.TotalCount.ToString("N0");
+            CombinedPassCountText.Text = statistics.PassCount.ToString("N0");
+            CombinedFailCountText.Text = statistics.FailCount.ToString("N0");
+            CombinedPassRateText.Text = statistics.PassRateText;
+            CombinedAverageCtText.Text = statistics.AverageCtText;
+            CombinedTransitionText.Text = dashboard.AverageTransitionText;
+            CombinedTodayCountText.Text = statistics.TodayCount.ToString("N0");
         }
 
         private void ConfigureHomeTrendPlot()
@@ -834,7 +1161,7 @@ namespace ProjectARVRPro
             HomeTrendPlot.Plot.Legend.FontName = chineseFont;
             HomeTrendPlot.Plot.Grid.MajorLineColor = border;
             HomeTrendPlot.Plot.XLabel("时间");
-            ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode.Day);
+            ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode.Day, false);
         }
 
         private ScottPlot.Color GetPlotColor(string resourceKey, string fallback)
@@ -851,18 +1178,20 @@ namespace ProjectARVRPro
             return ScottPlot.Color.FromHex(fallback);
         }
 
-        private void ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode mode)
+        private void ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode mode, bool combined)
         {
+            string unit = combined ? "L/R 全批次" : "单侧批次";
+            HomeTrendHeading.Text = combined ? "L/R 全批次产量与 CT 趋势" : "单侧批次产量与 CT 趋势";
             if (mode == ResultStatisticsPeriodMode.All)
             {
-                HomeTrendPlot.Plot.Title("月产量与平均整组 CT");
+                HomeTrendPlot.Plot.Title($"月产量与平均{unit} CT");
                 HomeTrendPlot.Plot.YLabel("产量（组）");
                 HomeTrendPlot.Plot.Axes.Right.Label.Text = "平均 CT（秒）";
             }
             else
             {
-                HomeTrendPlot.Plot.Title("逐条整组 CT 与累计产量");
-                HomeTrendPlot.Plot.YLabel("整组 CT（秒）");
+                HomeTrendPlot.Plot.Title($"逐条{unit} CT 与累计产量");
+                HomeTrendPlot.Plot.YLabel($"{unit} CT（秒）");
                 HomeTrendPlot.Plot.Axes.Right.Label.Text = "累计产量（组）";
             }
         }
@@ -871,10 +1200,11 @@ namespace ProjectARVRPro
             IReadOnlyList<ResultStatisticsTrendPoint> points,
             ResultStatisticsPeriodMode mode,
             DateTime from,
-            DateTime toExclusive)
+            DateTime toExclusive,
+            bool combined)
         {
             HomeTrendPlot.Plot.Clear();
-            ConfigureHomeTrendPresentation(mode);
+            ConfigureHomeTrendPresentation(mode, combined);
             bool hasData = points.Any(item => item.TotalCount > 0);
             HomeTrendEmptyText.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
             if (!hasData)
@@ -994,6 +1324,7 @@ namespace ProjectARVRPro
         {
             HomeStatusText.Text = _homeStatus;
             QueryStatusText.Text = string.Join("；", new[] { _recordStatus, _snIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
+            CombinedQueryStatusText.Text = _combinedStatus;
             FlowQueryStatusText.Text = string.Join("；", new[] { _flowStatus, _flowNameIndexStatus }.Where(item => !string.IsNullOrWhiteSpace(item)));
         }
 
@@ -1207,7 +1538,7 @@ namespace ProjectARVRPro
                     return;
                 }
 
-                bool useLegacy = _viewResultManager.Config.UseLegacyARVROutput;
+                bool useLegacy = _viewResultManager?.Config.UseLegacyARVROutput ?? false;
                 ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (useLegacy && result == null)
                 {
@@ -1377,6 +1708,51 @@ namespace ProjectARVRPro
             }
         }
 
+        private void CombinedRecordDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ResultStatisticsCombinedRecordRow? selectedRow = SelectedCombinedRow;
+            if (selectedRow == null)
+            {
+                ++_combinedDetailLoadVersion;
+                _combinedDetails.Clear();
+                CombinedDetailHeader.Text = "L/R 流程 CT 明细";
+                CombinedTimelinePanel.DataContext = CreateEmptyTimeline("选择左侧全批次后显示 L/R 时间轴。");
+                return;
+            }
+
+            _ = LoadCombinedFlowDetailsAsync(selectedRow);
+        }
+
+        private async Task LoadCombinedFlowDetailsAsync(ResultStatisticsCombinedRecordRow row)
+        {
+            int loadVersion = ++_combinedDetailLoadVersion;
+            CombinedDetailHeader.Text = $"{row.SN} - 正在读取 L/R 流程 CT 明细...";
+            CombinedTimelinePanel.DataContext = CreateEmptyTimeline("正在生成 L/R 全批次时间轴...");
+            try
+            {
+                Task<IReadOnlyList<ProjectARVRReuslt>> leftTask = Task.Run(() => _statisticsStore.QueryFlowDetails(row.Left));
+                Task<IReadOnlyList<ProjectARVRReuslt>> rightTask = Task.Run(() => _statisticsStore.QueryFlowDetails(row.Right));
+                await Task.WhenAll(leftTask, rightTask);
+                if (loadVersion != _combinedDetailLoadVersion || SelectedCombinedRow != row)
+                    return;
+
+                IReadOnlyList<ProjectARVRReuslt> left = await leftTask;
+                IReadOnlyList<ProjectARVRReuslt> right = await rightTask;
+                ReplaceItems(_combinedDetails, left.Concat(right));
+                CombinedTimelinePanel.DataContext = ResultTimelineBuilder.BuildCombined(row, left, right);
+                CombinedDetailHeader.Text = $"{row.SN} · 全批次 CT {row.CycleTimeText} · L→R 等待 {row.TransitionText} · {left.Count + right.Count:N0} 个流程";
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion != _combinedDetailLoadVersion)
+                    return;
+                _combinedDetails.Clear();
+                CombinedDetailHeader.Text = $"{row.SN} - L/R 流程 CT 明细读取失败";
+                CombinedTimelinePanel.DataContext = CreateEmptyTimeline("L/R 全批次时间轴读取失败。");
+                MessageBox.Show(this, $"读取 L/R 流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private static ResultTimelinePresentation CreateEmptyTimeline(string note)
         {
             return new ResultTimelinePresentation
@@ -1392,10 +1768,10 @@ namespace ProjectARVRPro
 
             var openFolderCommand = new RelayCommand(
                 _ => OpenFolderAndSelectFile(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
+                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
             var batchHistoryCommand = new RelayCommand(
                 _ => OpenBatchDataHistory(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var flowExecutionAnalysisCommand = new RelayCommand(
                 _ => OpenFlowExecutionAnalysis(),
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
@@ -1427,12 +1803,14 @@ namespace ProjectARVRPro
 
         private void OpenFolderAndSelectFile()
         {
+            if (_offlineSource != null) return;
             if (DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrWhiteSpace(item.FileName))
                 PlatformHelper.OpenFolderAndSelectFile(item.FileName);
         }
 
         private void OpenBatchDataHistory()
         {
+            if (_offlineSource != null) return;
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
@@ -1448,8 +1826,23 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private void OpenFlowExecutionAnalysis()
+        private async void OpenFlowExecutionAnalysis()
         {
+            if (_offlineSource != null)
+            {
+                if (DetailList.SelectedItem is not ProjectARVRReuslt result) return;
+                try
+                {
+                    string serial = await Task.Run(() => _offlineSource.ResolveFlowSerialNumber(result));
+                    if (_closed) return;
+                    new FlowExecutionAnalysisWindow(_offlineSource.FlowDatabasePath!, _offlineSource.Label, result.BatchId, serial)
+                    {
+                        Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    }.Show();
+                }
+                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, "现场节点分析", MessageBoxButton.OK, MessageBoxImage.Information); }
+                return;
+            }
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
@@ -1466,6 +1859,7 @@ namespace ProjectARVRPro
 
         private MeasureBatchModel? GetSelectedMeasureBatch()
         {
+            if (_offlineSource != null) return null;
             if (DetailList.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
                 return null;
 
@@ -1499,19 +1893,23 @@ namespace ProjectARVRPro
 
         protected override void OnClosed(EventArgs e)
         {
+            _closed = true;
             _windowLoaded = false;
             CaptureSearchState();
             ++_homeLoadVersion;
             ++_recordLoadVersion;
+            ++_combinedLoadVersion;
             ++_flowLoadVersion;
             ++_snIndexVersion;
             ++_flowNameIndexVersion;
             ++_detailLoadVersion;
+            ++_combinedDetailLoadVersion;
             if (_snEditor != null)
                 _snEditor.TextChanged -= SnEditor_TextChanged;
             if (_flowNameEditor != null)
                 _flowNameEditor.TextChanged -= FlowNameEditor_TextChanged;
             RecordDataGrid.SelectionChanged -= RecordDataGrid_SelectionChanged;
+            CombinedRecordDataGrid.SelectionChanged -= CombinedRecordDataGrid_SelectionChanged;
             base.OnClosed(e);
         }
     }

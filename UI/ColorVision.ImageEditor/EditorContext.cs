@@ -130,6 +130,11 @@ namespace ColorVision.ImageEditor
             ImageView.SetImageSource(imageSource);
         }
 
+        public void CommitSourcePixels(ImageSource source)
+        {
+            ProcessingContext.CommitSourcePixels(source);
+        }
+
         public void SaveAs()
         {
             ImageView.SaveAs();

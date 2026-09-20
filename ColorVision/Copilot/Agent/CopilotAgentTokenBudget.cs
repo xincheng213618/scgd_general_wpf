@@ -403,7 +403,7 @@ namespace ColorVision.Copilot
                         var update = enumerator.Current;
                         responseWeight += EstimateContentWeight(update.Contents);
                         usage = usage.MergeProgress(ExtractUsage(update.Contents));
-                        if (CopilotProviderResponseContent.HasAny(update.Contents))
+                        if (CopilotProviderResponseContent.HasProgress(update))
                         {
                             if (!providerResponseStarted)
                             {

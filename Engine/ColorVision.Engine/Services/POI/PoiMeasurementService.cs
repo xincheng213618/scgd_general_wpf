@@ -1,5 +1,7 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.FileIO;
 using System;
 using System.Collections.Generic;
 
@@ -38,6 +40,13 @@ namespace ColorVision.Engine.Services.POI
     {
         private readonly object sync = new();
         private byte[]? data;
+        internal RawColorMeasurementSource? RawSource { get; }
+
+        internal PoiMeasurementBuffer(CVCIEFile raw, ColorCalibrationSnapshot snapshot)
+        {
+            RawSource = new RawColorMeasurementSource(raw, snapshot);
+            Width = raw.Cols; Height = raw.Rows; BitsPerChannel = 32; Channels = snapshot.Channels;
+        }
 
         public PoiMeasurementBuffer(byte[] data, int width, int height, int bitsPerChannel, int channels)
         {
@@ -58,6 +67,7 @@ namespace ColorVision.Engine.Services.POI
         internal unsafe T Borrow<T>(Func<IntPtr, long, T> action)
         {
             ArgumentNullException.ThrowIfNull(action);
+            if (RawSource != null) return RawSource.BorrowXyz(action);
             lock (sync)
             {
                 byte[] current = data ?? throw new ObjectDisposedException(nameof(PoiMeasurementBuffer));
@@ -73,6 +83,7 @@ namespace ColorVision.Engine.Services.POI
             lock (sync)
             {
                 data = null;
+                RawSource?.Dispose();
             }
         }
     }
@@ -86,6 +97,7 @@ namespace ColorVision.Engine.Services.POI
         {
             ArgumentNullException.ThrowIfNull(buffer);
             ArgumentNullException.ThrowIfNull(region);
+            if (buffer.RawSource != null) return buffer.RawSource.CalculateRegion(region, preserveNonPositiveValues);
             return buffer.Borrow((pointer, length) => CalculateRegionCore(pointer, buffer.Width, buffer.Height, buffer.Channels, region, preserveNonPositiveValues));
         }
 
@@ -124,6 +136,7 @@ namespace ColorVision.Engine.Services.POI
         internal static PoiMeasurementResult[] CalculateRaw(PoiMeasurementBuffer buffer, IReadOnlyList<PoiMeasurementPoint> points)
         {
             ArgumentNullException.ThrowIfNull(buffer);
+            if (buffer.RawSource != null) return buffer.RawSource.Calculate(points, true);
             return buffer.Borrow((pointer, length) => CalculateCore(pointer, length, buffer.Width, buffer.Height,
                 buffer.BitsPerChannel, buffer.Channels, points, true));
         }
@@ -144,6 +157,7 @@ namespace ColorVision.Engine.Services.POI
             IReadOnlyList<PoiMeasurementPoint> points)
         {
             ArgumentNullException.ThrowIfNull(buffer);
+            if (buffer.RawSource != null) return buffer.RawSource.Calculate(points, false);
             return buffer.Borrow((pointer, length) => Calculate(
                 pointer,
                 length,

@@ -162,6 +162,7 @@ namespace ColorVision.Database
     {
         string MigrationActionName { get; }
         string MigrationConfirmationMessage { get; }
+        bool HasPendingMigration() => true;
         DatabaseCleanupExecutionResult ExecuteMigration();
     }
 

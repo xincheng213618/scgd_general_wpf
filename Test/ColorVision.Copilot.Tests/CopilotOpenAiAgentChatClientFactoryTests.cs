@@ -1,4 +1,6 @@
+#pragma warning disable MAAI001
 using ColorVision.Copilot;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.Net;
 using System.Net.Http;
@@ -9,6 +11,176 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotOpenAiAgentChatClientFactoryTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ArgumentFragmentsAreProgressWhileMetadataOnlyStreamsRemainBounded(bool argumentProgress)
+    {
+        var arguments = JsonSerializer.Serialize(new { path = "fixture/" + new string('a', 96) + ".txt" });
+        var item = new { type = "function_call", id = "fc_fragmented", call_id = "call_fragmented", name = "read_file", arguments, status = "completed" };
+        var response = new { id = "resp_fragmented", @object = "response", created_at = 1234567890, model = "deepseek-flash", status = "completed", output = new[] { item } };
+        var stream = new StringBuilder();
+        var sequence = 0;
+        var started = new { response.id, response.@object, response.created_at, response.model, status = "in_progress", output = Array.Empty<object>() };
+        stream.Append("data: ").Append(JsonSerializer.Serialize(new { type = "response.created", sequence_number = sequence++, response = started })).Append("\n\n");
+        if (argumentProgress)
+            stream.Append("data: ").Append(JsonSerializer.Serialize(new { type = "response.output_item.added", sequence_number = sequence++, output_index = 0,
+                item = new { item.type, item.id, item.call_id, item.name, arguments = "", status = "in_progress" } })).Append("\n\n");
+        foreach (var character in arguments)
+        {
+            object update = argumentProgress
+                ? new { type = "response.function_call_arguments.delta", sequence_number = sequence++, item_id = item.id, output_index = 0, delta = character.ToString() }
+                : new { type = "response.in_progress", sequence_number = sequence++, response = started };
+            stream.Append("data: ").Append(JsonSerializer.Serialize(update)).Append("\n\n");
+        }
+        stream.Append("data: ").Append(JsonSerializer.Serialize(new { type = "response.output_item.done", sequence_number = sequence++, output_index = 0, item })).Append("\n\n");
+        stream.Append("data: ").Append(JsonSerializer.Serialize(new { type = "response.completed", sequence_number = sequence, response })).Append("\n\n");
+        using var handler = new CapturingHandler(stream.ToString());
+        using var httpClient = new HttpClient(handler);
+        using var transport = CopilotOpenAiAgentChatClientFactory.Create(CreateProfile(CopilotVendorType.DeepSeek, "https://api.deepseek.com/responses", "deepseek-flash"), httpClient);
+        using var recovery = new CopilotProviderConnectionRecoveryChatClient(transport);
+        using var client = new CopilotProviderRetryChatClient(recovery);
+        var run = client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "Read the selected file.")], CreateToolOptions()).ToChatResponseAsync();
+        if (argumentProgress)
+        {
+            var result = await run;
+            var call = Assert.Single(result.Messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+            Assert.Equal("call_fragmented", call.CallId);
+            Assert.Equal("fixture/" + new string('a', 96) + ".txt", call.Arguments!["path"]?.ToString());
+        }
+        else Assert.Contains("metadata-only", (await Assert.ThrowsAsync<InvalidOperationException>(() => run)).Message);
+        Assert.Single(handler.Payloads);
+    }
+
+    private const string PlainReasoningResponseJson =
+        """
+        {"id":"resp_plain","object":"response","created_at":1234567890,"model":"deepseek-flash","status":"completed","output":[{"type":"reasoning","id":"rs_plain","summary":[],"content":[{"type":"reasoning_text","text":"Inspect the selected file before answering."}]},{"type":"function_call","id":"fc_plain","call_id":"call_plain","name":"read_file","arguments":"{\"path\":\"evidence.txt\"}","status":"completed"}],"usage":{"input_tokens":12,"output_tokens":8,"total_tokens":20,"input_tokens_details":{"cached_tokens":0},"output_tokens_details":{"reasoning_tokens":4}}}
+        """;
+
+    private static string PlainReasoningResponseStream =>
+        """
+        data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_plain","object":"response","created_at":1234567890,"model":"deepseek-flash","status":"in_progress","output":[]}}
+
+        data: {"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"type":"reasoning","id":"rs_plain","summary":[],"content":[]}}
+
+        data: {"type":"response.reasoning_text.delta","sequence_number":2,"item_id":"rs_plain","output_index":0,"content_index":0,"delta":"Inspect the selected file "}
+
+        data: {"type":"response.reasoning_text.delta","sequence_number":3,"item_id":"rs_plain","output_index":0,"content_index":0,"delta":"before answering."}
+
+        data: {"type":"response.output_item.done","sequence_number":4,"output_index":0,"item":{"type":"reasoning","id":"rs_plain","summary":[],"content":[{"type":"reasoning_text","text":"Inspect the selected file before answering."}]}}
+
+        data: {"type":"response.output_item.done","sequence_number":5,"output_index":1,"item":{"type":"function_call","id":"fc_plain","call_id":"call_plain","name":"read_file","arguments":"{\"path\":\"evidence.txt\"}","status":"completed"}}
+
+        """ + "\n\ndata: {\"type\":\"response.completed\",\"sequence_number\":6,\"response\":" + PlainReasoningResponseJson + "}\n\n";
+
+    [Theory]
+    [InlineData(true, false, "keep")]
+    [InlineData(true, true, "keep")]
+    [InlineData(false, false, "keep")]
+    [InlineData(false, true, "keep")]
+    [InlineData(true, true, "compact")]
+    [InlineData(false, true, "compact")]
+    [InlineData(true, true, "remove")]
+    [InlineData(false, true, "remove")]
+    public async Task PlainReasoningKeepsItsContentAcrossToolCallsAndSavedHistory(bool streamFirst, bool serialize, string historyChange)
+    {
+        using var handler = new CapturingHandler(new[]
+        {
+            (HttpStatusCode.OK, streamFirst ? PlainReasoningResponseStream : PlainReasoningResponseJson, streamFirst ? "text/event-stream" : "application/json"),
+            (HttpStatusCode.OK, TextResponseStream, "text/event-stream"),
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(
+            CreateProfile(CopilotVendorType.DeepSeek, "https://api.deepseek.com/responses", "deepseek-flash"), httpClient);
+        var messages = new List<ChatMessage> { new(ChatRole.User, "Inspect the file.") };
+        var first = streamFirst ? await client.GetStreamingResponseAsync(messages, CreateToolOptions()).ToChatResponseAsync()
+            : await client.GetResponseAsync(messages, CreateToolOptions());
+        var reasoning = Assert.Single(first.Messages.SelectMany(message => message.Contents).OfType<TextReasoningContent>());
+        Assert.Equal("Inspect the selected file before answering.", reasoning.Text);
+        messages.AddRange(serialize ? JsonSerializer.Deserialize<List<ChatMessage>>(JsonSerializer.Serialize(first.Messages, AIJsonUtilities.DefaultOptions), AIJsonUtilities.DefaultOptions)! : first.Messages);
+        foreach (var message in messages)
+        {
+            foreach (var saved in message.Contents.OfType<TextReasoningContent>().ToArray())
+            {
+                if (historyChange == "compact") saved.Text = "Compacted reasoning.";
+                else if (historyChange == "remove") message.Contents.Remove(saved);
+            }
+        }
+        messages.Add(new(ChatRole.Tool, [new FunctionResultContent("call_plain", "Observed evidence.")]));
+        var beforeReplay = JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions);
+        var response = await client.GetStreamingResponseAsync(messages, CreateToolOptions()).ToChatResponseAsync();
+        Assert.Equal("Responses adapter OK.", response.Text);
+        Assert.Equal(beforeReplay, JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions));
+        using var replay = JsonDocument.Parse(handler.LastPayload);
+        var input = replay.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        Assert.Contains(input, item => item.GetProperty("type").GetString() == "function_call_output" && item.GetProperty("call_id").GetString() == "call_plain");
+        if (historyChange == "remove")
+        {
+            Assert.DoesNotContain(input, item => item.GetProperty("type").GetString() == "reasoning");
+            return;
+        }
+        var item = Assert.Single(input, item => item.GetProperty("type").GetString() == "reasoning");
+        Assert.Equal("rs_plain", item.GetProperty("id").GetString());
+        var content = Assert.Single(item.GetProperty("content").EnumerateArray());
+        Assert.Equal("reasoning_text", content.GetProperty("type").GetString());
+        Assert.Equal(historyChange == "compact" ? "Compacted reasoning." : reasoning.Text, content.GetProperty("text").GetString());
+        Assert.Empty(item.GetProperty("summary").EnumerateArray());
+        Assert.False(item.TryGetProperty("encrypted_content", out _));
+        Assert.Equal("function_call", input[Array.IndexOf(input, item) + 1].GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task ExistingSummaryIsNotReclassifiedFromTheEndpointOrItsText()
+    {
+        using var handler = new CapturingHandler(TextResponseStream);
+        using var httpClient = new HttpClient(handler);
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(
+            CreateProfile(CopilotVendorType.DeepSeek, "https://api.deepseek.com/responses", "deepseek-flash"), httpClient);
+        await client.GetStreamingResponseAsync([
+            new ChatMessage(ChatRole.Assistant, [new TextReasoningContent("Existing summary.")]),
+            new ChatMessage(ChatRole.User, "Continue."),
+        ]).ToChatResponseAsync();
+        using var replay = JsonDocument.Parse(handler.LastPayload);
+        var item = Assert.Single(replay.RootElement.GetProperty("input").EnumerateArray(), item => item.GetProperty("type").GetString() == "reasoning");
+        Assert.False(item.TryGetProperty("content", out _));
+        Assert.Equal("Existing summary.", Assert.Single(item.GetProperty("summary").EnumerateArray()).GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public async Task HarnessCheckpointRetainsPlainReasoningWithoutReexecutingCompletedTools()
+    {
+        using var handler = new CapturingHandler(PlainReasoningResponseStream, TextResponseStream, TextResponseStream);
+        using var httpClient = new HttpClient(handler);
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(
+            CreateProfile(CopilotVendorType.DeepSeek, "https://api.deepseek.com/responses", "deepseek-flash"), httpClient);
+        var reads = 0;
+        AIAgent CreateHarness() => client.AsHarnessAgent(new HarnessAgentOptions
+        {
+            Name = "PlainReasoningCheckpoint", DisableCompaction = true, DisableFileMemory = true,
+            DisableWebSearch = true, DisableTodoProvider = true, DisableAgentModeProvider = true,
+            DisableAgentSkillsProvider = true, DisableToolAutoApproval = true, DisableOpenTelemetry = true,
+            MaximumIterationsPerRequest = 3,
+            ChatOptions = new() { Tools = [AIFunctionFactory.Create((string path) => { reads++; return "Observed evidence."; }, "read_file")] },
+        });
+        var original = CreateHarness();
+        var session = await original.CreateSessionAsync();
+        await foreach (var _ in original.RunStreamingAsync([new ChatMessage(ChatRole.User, "Read the selected file.")], session)) { }
+        Assert.Equal(1, reads);
+        var checkpoint = await original.SerializeSessionAsync(session);
+        var restored = CreateHarness();
+        var restoredSession = await restored.DeserializeSessionAsync(checkpoint);
+        await foreach (var _ in restored.RunStreamingAsync([new ChatMessage(ChatRole.User, "Continue using the observed evidence.")], restoredSession)) { }
+        Assert.Equal(1, reads);
+        Assert.Equal(3, handler.Payloads.Count);
+        using var payload = JsonDocument.Parse(handler.LastPayload);
+        var input = payload.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        var reasoning = Assert.Single(input, item => item.GetProperty("type").GetString() == "reasoning");
+        Assert.Equal("rs_plain", reasoning.GetProperty("id").GetString());
+        Assert.Equal("Inspect the selected file before answering.", Assert.Single(reasoning.GetProperty("content").EnumerateArray()).GetProperty("text").GetString());
+        Assert.Single(input, item => item.GetProperty("type").GetString() == "function_call" && item.GetProperty("call_id").GetString() == "call_plain");
+        Assert.Single(input, item => item.GetProperty("type").GetString() == "function_call_output" && item.GetProperty("call_id").GetString() == "call_plain");
+    }
+
     private const string TextResponseStream =
         """
         data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_test","object":"response","created_at":1234567890,"model":"gpt-5.5","status":"in_progress","output":[]}}
@@ -60,6 +232,48 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         data: [DONE]
 
         """;
+
+    [Theory]
+    [InlineData("https://api.deepseek.com/responses", CopilotReasoningMode.Max, "max")]
+    [InlineData("https://example.test/gateway/responses/", CopilotReasoningMode.High, "high")]
+    [InlineData("https://example.test/v1/responses", CopilotReasoningMode.Disabled, "none")]
+    public async Task ExplicitResponsesEndpointSupportsStatelessToolRoundTrip(string endpoint, CopilotReasoningMode mode, string effort)
+    {
+        using var handler = new CapturingHandler(FunctionCallResponseStream.Replace("data: [DONE]", string.Empty), TextResponseStream.Replace("data: [DONE]", string.Empty));
+        using var httpClient = new HttpClient(handler);
+        var profile = CreateProfile(CopilotVendorType.DeepSeek, endpoint, "deepseek-flash");
+        profile.ReasoningMode = mode;
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
+        var request = new CopilotAgentRequest
+        {
+            Profile = profile, CodexReasoningEffort = CopilotCodexReasoningEffort.Minimal,
+            CodexFastModeEnabled = true, CodexServiceTier = "fast",
+        };
+        var options = CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, CreateToolOptions().Tools!);
+        var messages = new List<ChatMessage> { new(ChatRole.User, "Read the evidence and answer.") };
+        var first = await client.GetStreamingResponseAsync(messages, options).ToChatResponseAsync();
+        var call = Assert.Single(first.Messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+        messages.AddRange(JsonSerializer.Deserialize<List<ChatMessage>>(JsonSerializer.Serialize(first.Messages, AIJsonUtilities.DefaultOptions), AIJsonUtilities.DefaultOptions)!);
+        messages.Add(new(ChatRole.Tool, [new FunctionResultContent(call.CallId, "observed file content")]));
+        var answer = await client.GetStreamingResponseAsync(messages, options).ToChatResponseAsync();
+        Assert.Equal("Responses adapter OK.", answer.Text);
+        Assert.Equal(new Uri(endpoint.TrimEnd('/')), handler.LastRequestUri);
+        Assert.Equal(2, handler.Payloads.Count);
+        foreach (var payloadText in handler.Payloads)
+        {
+            using var payload = JsonDocument.Parse(payloadText);
+            var root = payload.RootElement;
+            Assert.False(root.GetProperty("store").GetBoolean());
+            Assert.Equal(effort, root.GetProperty("reasoning").GetProperty("effort").GetString());
+            foreach (var key in new[] { "previous_response_id", "safety_identifier", "service_tier", "include" })
+                Assert.False(root.TryGetProperty(key, out _), key);
+        }
+        using var replay = JsonDocument.Parse(handler.LastPayload);
+        var input = replay.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        Assert.Contains(input, item => item.GetProperty("type").GetString() == "function_call" && item.GetProperty("call_id").GetString() == call.CallId);
+        Assert.Contains(input, item => item.GetProperty("type").GetString() == "function_call_output" && item.GetProperty("call_id").GetString() == call.CallId);
+        Assert.DoesNotContain(input, item => item.GetProperty("type").GetString() == "item_reference");
+    }
 
     [Fact]
     public async Task OfficialOpenAiAgentUsesStatelessResponsesStreamingContract()
@@ -554,7 +768,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         {
         }
 
-        private CapturingHandler(
+        public CapturingHandler(
             IEnumerable<(HttpStatusCode StatusCode, string Response, string MediaType)> responses)
         {
             _responses = new Queue<(HttpStatusCode, string, string)>(responses);

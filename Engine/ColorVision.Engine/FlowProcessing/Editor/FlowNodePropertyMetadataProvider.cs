@@ -1,7 +1,6 @@
 using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
-using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using ST.Library.UI;
 using System;
@@ -48,15 +47,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return false;
             }
 
-            Type? nodeType = propertyInfo.ReflectedType;
-            if (propertyInfo.Name == nameof(FlowEngineLib.Base.CVBaseServerNode.DeviceCode)
-                && (nodeType == typeof(LocalBuildPoiNode)
-                    || nodeType == typeof(LocalBuildPoiByTemplateNode)
-                    || nodeType == typeof(LocalFindLuminousAreaNode)))
-            {
-                return false;
-            }
-
             return true;
         }
 
@@ -67,9 +57,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public Type? GetEditorType(PropertyInfo propertyInfo)
         {
-            var nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
-            if (nodeType != null && FlowNodePropertyEditorAttribute.Resolve(nodeType, propertyInfo.Name) != null)
-                return typeof(FlowNodePropertyEditorSelector);
+            if (CameraCalibrationGainPropertiesEditor.IsSupported(propertyInfo))
+                return typeof(CameraCalibrationGainPropertiesEditor);
 
             return null;
         }

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1863,CS8625
+#pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -110,7 +110,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceDao.Instance.Save(sysResourceModel);
 
             int pkId = sysResourceModel.Id;
-            if (pkId > 0 && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
+            if ((pkId > 0 || SysResourceDao.IsLocalId(pkId)) && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
             {
                 GroupResource groupResource = new(model);
                 Application.Current.Dispatcher.Invoke(() =>
@@ -214,14 +214,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             string md5 = Tool.CalculateMD5(desFile);
 
             // 同名 + 同 MD5 的资源已存在则复用
-            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            SysResourceModel existing = db.Queryable<SysResourceModel>()
+            SysResourceModel? existing = SysResourceDao.Instance.GetAllByPid(phyCamera.Id)
                 .Where(a => a.Pid == phyCamera.SysResourceModel.Id
                             && a.Type == (int)serviceType
                             && a.Name == title
                             && a.Code != null
                             && a.Code.Contains(md5))
-                .First();
+                .FirstOrDefault();
 
             CalibrationResource calibrationResource;
             if (existing != null)
@@ -248,7 +247,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 };
 
                 int ret = SysResourceDao.Instance.Save(sysResourceModel);
-                if (ret < 0 || sysResourceModel.Id <= 0)
+                if (ret < 0 || sysResourceModel.Id == -1 || sysResourceModel.Id == 0)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SaveResourceRecordFailed, Properties.Resources.CalibrationFileManagement);
                     return;
@@ -272,8 +271,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void Delete()
         {
             this.Parent?.RemoveChild(this);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            Db.Deleteable<SysResourceModel>().Where(a => a.Id == this.Id).ExecuteCommand();
+            SysResourceDao.Instance.DeleteById(Id);
         }
 
         public override void Save()
@@ -282,8 +280,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            Db.Deleteable<SysResourceGoupModel>().Where(x => x.GroupId == SysResourceModel.Id).ExecuteCommand();
+
 
             VisualChildren.Clear();
             foreach (var slot in CalibrationSlotDefinitions.AllSlots)
@@ -295,10 +292,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 }
             }
 
-            foreach (var item in VisualChildren.OfType<CalibrationResource>())
-            {
-                Db.Insertable(new SysResourceGoupModel { ResourceId = item.SysResourceModel.Id, GroupId = SysResourceModel.Id }).ExecuteCommand();
-            }
+            SysResourceDao.Instance.ReplaceGroupResources(Id, VisualChildren.OfType<CalibrationResource>().Select(item => item.Id));
             base.Save();
         }
         public void SetCalibrationResource()

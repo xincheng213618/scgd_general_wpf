@@ -65,6 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplayCalibration(DeviceCalibration device)
         {

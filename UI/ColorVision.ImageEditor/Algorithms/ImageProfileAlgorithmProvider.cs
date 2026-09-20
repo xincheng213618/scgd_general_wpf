@@ -45,20 +45,46 @@ namespace ColorVision.ImageEditor.Algorithms
         }
 
         public ValueTask<AlgorithmResult> ExecuteAsync(AlgorithmExecutionContext context, CancellationToken cancellationToken)
+            => ValueTask.FromResult(ExecuteCore(context, new ProfileRaster(context.Inputs[0].Image), cancellationToken));
+
+        // Interactive measurement sources are request-owned and do not require a full display-frame copy.
+        public AlgorithmResult ExecuteMeasurement(AlgorithmInvocation invocation, ImageProfileParameters parameters,
+            IImageProfileMeasurementSource source, ImageSelectionScope scope, CancellationToken cancellationToken,
+            IProgress<AlgorithmProgress>? progress = null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!parameters.Validate().IsValid
+                || invocation.Roi is not PolylineAlgorithmRoi path || !path.Validate().IsValid
+                || invocation.AlgorithmId != StandardAlgorithmIds.ImageProfile)
+                throw new ArgumentException("Invalid profile invocation or parameters.");
+            if (source.Width != scope.PixelWidth || source.Height != scope.PixelHeight || source.Width <= 0 || source.Height <= 0)
+                throw new ArgumentException("The measurement plane dimensions do not match the current image.");
+            if (source.RawChannelCount is < 1 or > 6 || source.ChannelNames.Count is < 1 or > 9 || source.ChannelNames.Distinct().Count() != source.ChannelNames.Count)
+                throw new ArgumentException("Invalid measurement channels.");
+            if (!double.IsFinite(scope.DpiX) || scope.DpiX <= 0 || !double.IsFinite(scope.DpiY) || scope.DpiY <= 0)
+                throw new ArgumentException("Invalid profile DPI.");
+            ImageAlgorithmPlatform.Catalog.TryResolve(StandardAlgorithmIds.ImageProfile, out AlgorithmDescriptor? descriptor);
+            AlgorithmExecutionContext context = new()
+            {
+                Descriptor = descriptor!, Invocation = invocation, Parameters = parameters, Inputs = [], Progress = progress,
+            };
+            return ExecuteCore(context, new ProfileRaster(source, scope), cancellationToken);
+        }
+
+        private AlgorithmResult ExecuteCore(AlgorithmExecutionContext context, ProfileRaster image, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (context.Invocation.Roi is not PolylineAlgorithmRoi path)
-                return ValueTask.FromResult(Failure(context, "profile_path_required", "Image profile requires a polyline ROI.", "roi"));
+                return Failure(context, "profile_path_required", "Image profile requires a polyline ROI.", "roi");
             if (path.Points.Count > ImageProfileParameters.MaximumPathPoints)
             {
-                return ValueTask.FromResult(Failure(
+                return Failure(
                     context,
                     "profile_path_point_limit_exceeded",
                     $"The profile path contains {path.Points.Count} points, exceeding the platform limit of {ImageProfileParameters.MaximumPathPoints}.",
-                    "roi.points"));
+                    "roi.points");
             }
 
-            AlgorithmImageBuffer image = context.Inputs[0].Image;
             ImageProfileParameters parameters = (ImageProfileParameters)context.Parameters;
             AlgorithmPoint[] points = new AlgorithmPoint[path.Points.Count];
             for (int index = 0; index < points.Length; index++)
@@ -68,7 +94,7 @@ namespace ColorVision.ImageEditor.Algorithms
             }
             Segment[] segments = BuildSegments(points, parameters.ClosePath, image.DpiX, image.DpiY, cancellationToken);
             if (segments.Length == 0)
-                return ValueTask.FromResult(Failure(context, "profile_path_degenerate", "The profile path has no positive-length segment.", "roi.points"));
+                return Failure(context, "profile_path_degenerate", "The profile path has no positive-length segment.", "roi.points");
 
             double totalPixels = segments[^1].PixelStart + segments[^1].PixelLength;
             double totalMillimetres = segments[^1].PhysicalStart + segments[^1].PhysicalLength;
@@ -76,26 +102,28 @@ namespace ColorVision.ImageEditor.Algorithms
             try { requestedSamples = CountSamples(totalPixels, parameters.SampleSpacingPixels, parameters.ClosePath); }
             catch (OverflowException)
             {
-                return ValueTask.FromResult(Failure(context, "profile_sample_limit_exceeded", "The requested sampling count exceeds the supported integer range.", nameof(parameters.SampleSpacingPixels)));
+                return Failure(context, "profile_sample_limit_exceeded", "The requested sampling count exceeds the supported integer range.", nameof(parameters.SampleSpacingPixels));
             }
             if (requestedSamples > parameters.MaximumSamples)
             {
-                return ValueTask.FromResult(Failure(
+                return Failure(
                     context,
                     "profile_sample_limit_exceeded",
                     $"The path requires {requestedSamples} samples, exceeding MaximumSamples={parameters.MaximumSamples}.",
-                    nameof(parameters.MaximumSamples)));
+                    nameof(parameters.MaximumSamples));
             }
             if (requestedSamples > ImageProfileParameters.ExecutionMaximumSamples)
             {
-                return ValueTask.FromResult(Failure(
+                return Failure(
                     context,
                     "profile_execution_sample_budget_exceeded",
                     $"The path requires {requestedSamples} samples, exceeding the execution budget of {ImageProfileParameters.ExecutionMaximumSamples}. The schema-v1 MaximumSamples value remains valid for preset compatibility.",
-                    nameof(parameters.SampleSpacingPixels)));
+                    nameof(parameters.SampleSpacingPixels));
             }
 
-            ChannelDefinition[] channels = Channels(image.Format, parameters);
+            ChannelDefinition[] channels = image.Source != null ? image.Source.ChannelNames
+                .Select((name, index) => new ChannelDefinition(name, values => image.Source.GetChannelValue(index, values), index))
+                .Where(channel => parameters.IncludeLuminance || channel.Name != "Luminance").ToArray() : Channels(image.Format, parameters);
             List<AlgorithmTableColumn> columns =
             [
                 new("SampleIndex", "integer"), new("RequestedIndex", "integer"), new("SegmentIndex", "integer"),
@@ -104,7 +132,7 @@ namespace ColorVision.ImageEditor.Algorithms
             ];
             foreach (ChannelDefinition channel in channels)
             {
-                columns.Add(new AlgorithmTableColumn(channel.Name, "number", image.Format.IsFloatingPoint() ? "value" : "DN"));
+                columns.Add(new AlgorithmTableColumn(channel.Name, "number", image.Source != null ? image.Source.GetUnit(channel.SourceIndex) : image.Unit));
                 columns.Add(new AlgorithmTableColumn(channel.Name + "Status", "string"));
             }
 
@@ -119,11 +147,11 @@ namespace ColorVision.ImageEditor.Algorithms
             }
             if (estimatedResultBytes > ImageProfileParameters.MaximumEstimatedResultBytes)
             {
-                return ValueTask.FromResult(Failure(
+                return Failure(
                     context,
                     "profile_result_budget_exceeded",
                     $"The requested {requestedSamples} rows and {columns.Count} columns require an estimated {estimatedResultBytes} bytes, exceeding the platform result budget of {ImageProfileParameters.MaximumEstimatedResultBytes} bytes.",
-                    nameof(parameters.SampleSpacingPixels)));
+                    nameof(parameters.SampleSpacingPixels));
             }
 
             List<IReadOnlyDictionary<string, JsonElement>> rows = new(requestedSamples);
@@ -132,7 +160,7 @@ namespace ColorVision.ImageEditor.Algorithms
             int clamped = 0;
             int outputIndex = 0;
             int segmentIndex = 0;
-            double[] raw = new double[image.Format.Channels()];
+            double[] raw = new double[image.Source?.RawChannelCount ?? image.Format.Channels()];
             context.Progress?.Report(new AlgorithmProgress(0.05, "profile.sample", "Sampling image profile"));
             for (int requestedIndex = 0; requestedIndex < requestedSamples; requestedIndex++)
             {
@@ -155,11 +183,11 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     if (parameters.BoundaryMode == ImageProfileBoundaryMode.Reject)
                     {
-                        return ValueTask.FromResult(Failure(
+                        return Failure(
                             context,
                             "profile_sample_out_of_bounds",
                             $"Sample {requestedIndex} at ({x:R}, {y:R}) is outside the image.",
-                            "roi.points"));
+                            "roi.points");
                     }
                     if (parameters.BoundaryMode == ImageProfileBoundaryMode.Skip)
                     {
@@ -192,7 +220,7 @@ namespace ColorVision.ImageEditor.Algorithms
             }
 
             if (rows.Count == 0)
-                return ValueTask.FromResult(Failure(context, "profile_no_samples", "No profile samples remain after applying the boundary rule.", "roi"));
+                return Failure(context, "profile_no_samples", "No profile samples remain after applying the boundary rule.", "roi");
 
             context.Progress?.Report(new AlgorithmProgress(0.9, "profile.artifacts", "Building profile artifacts"));
             List<AlgorithmMeasurement> measurements =
@@ -212,10 +240,11 @@ namespace ColorVision.ImageEditor.Algorithms
                 measurements.Add(new AlgorithmMeasurement("channel.invalid_count", stats.InvalidCount, "sample", index, Qualifiers: ChannelQualifier(stats.Name)));
                 if (stats.Count > 0)
                 {
-                    string unit = image.Format.IsFloatingPoint() ? "value" : "DN";
+                    string? unit = image.Source?.GetUnit(channels[index].SourceIndex) ?? (image.Source == null ? image.Unit : null);
                     measurements.Add(new AlgorithmMeasurement("channel.minimum", stats.Minimum, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
                     measurements.Add(new AlgorithmMeasurement("channel.maximum", stats.Maximum, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
                     measurements.Add(new AlgorithmMeasurement("channel.mean", stats.Mean, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
+                    measurements.Add(new AlgorithmMeasurement("channel.stddev.population", stats.StandardDeviation, unit, index, Qualifiers: ChannelQualifier(stats.Name)));
                 }
             }
 
@@ -226,7 +255,7 @@ namespace ColorVision.ImageEditor.Algorithms
             JsonElement provenance = AlgorithmJson.ToElement(new
             {
                 schema = ResultSchema,
-                input = new { image.Width, image.Height, format = image.Format.ToString(), image.DpiX, image.DpiY },
+                input = new { image.Width, image.Height, format = image.Source?.FormatName ?? image.Format.ToString(), channels = image.Source?.ChannelNames, valueRule = image.Source?.ValueDescription, image.DpiX, image.DpiY },
                 path = context.Invocation.Roi,
                 parameters,
                 requestedSamples,
@@ -239,12 +268,13 @@ namespace ColorVision.ImageEditor.Algorithms
                 openEndpointRule = "include-first-and-last",
                 closedEndpointRule = "include-first-do-not-repeat-at-total-length",
                 nearestRule = "floor-coordinate-plus-one-half",
-                luminance = "Rec.601: 0.299R + 0.587G + 0.114B",
+                luminance = image.Source != null ? "measurement channels; see input.valueRule" : "Rec.601: 0.299R + 0.587G + 0.114B",
             });
             List<AlgorithmDiagnosticMessage> diagnostics = new();
             if (clamped > 0) diagnostics.Add(new AlgorithmDiagnosticMessage("profile_samples_clamped", $"Clamped {clamped} samples to image bounds."));
             if (skipped > 0) diagnostics.Add(new AlgorithmDiagnosticMessage("profile_samples_skipped", $"Skipped {skipped} out-of-bounds samples."));
-            return ValueTask.FromResult(new AlgorithmResult
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AlgorithmResult
             {
                 InvocationId = context.Invocation.InvocationId,
                 AlgorithmId = context.Descriptor.Id,
@@ -260,7 +290,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     new AlgorithmStructuredDataArtifact("image-profile-provenance", ResultSchema, provenance),
                 ],
                 Diagnostics = new AlgorithmExecutionDiagnostics { Messages = diagnostics },
-            });
+            };
         }
 
         private static Segment[] BuildSegments(AlgorithmPoint[] points, bool closed, double dpiX, double dpiY, CancellationToken cancellationToken)
@@ -302,7 +332,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return Math.Min(length, index * spacing);
         }
 
-        private static void SampleRaw(AlgorithmImageBuffer image, double x, double y, ImageProfileInterpolation interpolation, Span<double> result)
+        private static void SampleRaw(ProfileRaster image, double x, double y, ImageProfileInterpolation interpolation, Span<double> result)
         {
             if (interpolation == ImageProfileInterpolation.Nearest)
             {
@@ -331,16 +361,17 @@ namespace ColorVision.ImageEditor.Algorithms
             return start + (end - start) * amount;
         }
 
-        private static void ReadRaw(AlgorithmImageBuffer image, int x, int y, Span<double> values)
+        private static void ReadRaw(ProfileRaster image, int x, int y, Span<double> values)
         {
             for (int channel = 0; channel < values.Length; channel++) values[channel] = ReadRaw(image, x, y, channel);
         }
 
-        private static double ReadRaw(AlgorithmImageBuffer image, int x, int y, int channel)
+        private static double ReadRaw(ProfileRaster image, int x, int y, int channel)
         {
-            ReadOnlySpan<byte> data = image.Data.Span;
+            if (image.Source != null) return image.Source.Read(x, y, channel);
+            ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
             int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-            int offset = checked(y * image.Stride + x * image.Format.BytesPerPixel() + channel * bytesPerChannel);
+            int offset = checked(y * image.Buffer!.Stride + x * image.Format.BytesPerPixel() + channel * bytesPerChannel);
             return image.Format.BitsPerChannel() switch
             {
                 8 => data[offset],
@@ -390,7 +421,27 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static JsonElement Value(object? value) => AlgorithmJson.ToElement(value);
 
-        private sealed record ChannelDefinition(string Name, Func<double[], double> Read);
+        private sealed class ProfileRaster
+        {
+            public AlgorithmImageBuffer? Buffer { get; }
+            public IImageProfileMeasurementSource? Source { get; }
+            public int Width { get; }
+            public int Height { get; }
+            public double DpiX { get; }
+            public double DpiY { get; }
+            public AlgorithmImageFormat Format => Buffer?.Format ?? AlgorithmImageFormat.Gray32Float;
+            public string Unit => Format.IsFloatingPoint() ? "value" : "DN";
+            public ProfileRaster(AlgorithmImageBuffer buffer)
+            {
+                Buffer = buffer; Width = buffer.Width; Height = buffer.Height; DpiX = buffer.DpiX; DpiY = buffer.DpiY;
+            }
+            public ProfileRaster(IImageProfileMeasurementSource source, ImageSelectionScope scope)
+            {
+                Source = source; Width = source.Width; Height = source.Height; DpiX = scope.DpiX; DpiY = scope.DpiY;
+            }
+        }
+
+        private sealed record ChannelDefinition(string Name, Func<double[], double> Read, int SourceIndex = 0);
 
         private sealed class ChannelStatistics(string name)
         {
@@ -400,6 +451,9 @@ namespace ColorVision.ImageEditor.Algorithms
             public double Minimum { get; private set; } = double.PositiveInfinity;
             public double Maximum { get; private set; } = double.NegativeInfinity;
             public double Mean { get; private set; }
+            public double StandardDeviation => Count == 0 ? double.NaN : Math.Sqrt(_m2 / Count);
+
+            private double _m2;
 
             public void Add(double value)
             {
@@ -411,7 +465,9 @@ namespace ColorVision.ImageEditor.Algorithms
                 Count++;
                 Minimum = Math.Min(Minimum, value);
                 Maximum = Math.Max(Maximum, value);
-                Mean += (value - Mean) / Count;
+                double delta = value - Mean;
+                Mean += delta / Count;
+                _m2 += delta * (value - Mean);
             }
         }
 

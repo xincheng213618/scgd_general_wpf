@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
             private CopilotTokenUsage _delegatedUsage;
             private CopilotAgentBlockerSnapshot? _postToolStopBlocker;
             private int _reservedToolCalls;
+            private long _localEvidenceInputRevision;
             private MessageInjectingChatClient? _messageInjector;
             private AgentSession? _messageInjectionSession;
             private Func<CancellationToken, ValueTask<bool>>? _interactionCheckpointPublisher;
@@ -130,6 +131,8 @@ namespace ColorVision.Copilot
                 }
                 return functions;
             }
+
+            public void NotifyUserInputAccepted() => Interlocked.Increment(ref _localEvidenceInputRevision);
 
             public void AttachMessageInjection(
                 MessageInjectingChatClient messageInjector,

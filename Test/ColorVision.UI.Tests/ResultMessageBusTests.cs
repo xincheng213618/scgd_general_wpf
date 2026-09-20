@@ -1,4 +1,8 @@
 using ColorVision.Engine.Services.Results;
+using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services.Images.FileFusion;
+using ColorVision.Engine;
+using FlowEngineLib.Base;
 using System;
 using Xunit;
 
@@ -6,6 +10,47 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ResultMessageBusTests
 {
+    [Theory]
+    [InlineData("cross")]
+    [InlineData("grid")]
+    [InlineData("fov")]
+    [InlineData("luminous")]
+    [InlineData("fusion")]
+    public void LocalAlgorithmsPublishByBatchAndNodeWithoutDevice(string algorithm)
+    {
+        string nodeId = Guid.NewGuid().ToString("N");
+        ResultMessage? received = null;
+        using IDisposable subscription = ResultMessageBus.Default.Subscribe(message =>
+        {
+            if (message.NodeId == nodeId) received = message;
+        });
+        switch (algorithm)
+        {
+            case "cross":
+                LocalFindCrossNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3, OperatorCode = "FindCross" });
+                break;
+            case "grid":
+                LocalGridDistortionNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3 });
+                break;
+            case "fov":
+                LocalFovNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3 });
+                break;
+            case "luminous":
+                LocalFindLuminousAreaNodeServices.Instance.Publish(new() { NodeId = nodeId, SerialNumber = "batch", MasterId = 42, ZIndex = 3, OperatorCode = "FindLightArea" });
+                break;
+            case "fusion":
+                FileFusionServices.Instance.Publish(new CVStartCFC("batch"), nodeId, 3, new MeasureResultImgModel { Id = 42 });
+                break;
+        }
+        Assert.NotNull(received);
+        Assert.Equal(ResultRoutes.LocalFlow, received.Route);
+        Assert.Empty(received.DeviceCode);
+        Assert.Equal("batch", received.SerialNumber);
+        Assert.Equal(3, received.ZIndex);
+        Assert.Equal(42, received.Data.MasterId);
+        Assert.Equal(algorithm == "fusion" ? ResultKinds.Image : ResultKinds.Algorithm, received.ResultKind);
+    }
+
     [Fact]
     public void PersistedMessageUsesVersionedStandardEnvelope()
     {

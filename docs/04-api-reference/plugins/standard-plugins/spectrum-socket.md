@@ -46,7 +46,7 @@ related: ["plugins.spectrum","ui.socket-protocol"]
 | --- | --- | --- |
 | `SpectrumStatus` | 读取 Manager 当前属性；`200` 只表示状态读取成功 | 连接、采集配置及 `WindowOpen`，不含标定 readiness |
 | `SpectrumConnect` | `Params` 去空白并转小写后，只有 `disconnect` 进入断开；其他值（包括空值、空串和拼错的值）都进入连接 | `IsConnected`、`IsCalibrationReady`、`CalibrationStatus` |
-| `SpectrumDarkCalibration` | 已连接；`PerformDarkCalibrationAsync(requireShutter: true)` 要求可用快门并执行暗场；成功返回 `200` | 未设置 |
+| `SpectrumDarkCalibration` | 已连接；`PerformDarkCalibrationAsync(requireAutomaticControl: true)` 要求自动校零参数中所选的 Shutter 或滤色轮可用并执行暗场；成功返回 `200` | 未设置 |
 | `SpectrumAutoIntTime` | 已连接；`TryGetAutoIntegrationTimeAsync` 成功得到时间并写回 Manager 后返回 `200` | 数值 `IntTime` |
 | `SpectrumMeasure` | 已连接，Manager 再检查标定和采集条件；直接等待本次 `MeasureAsync` 的结果，不从窗口列表找最新记录 | 本次结果的色度等字段，以及响应构造时 Manager 的 `IntTime` |
 
@@ -54,13 +54,13 @@ related: ["plugins.spectrum","ui.socket-protocol"]
 
 `SpectrumStatus.Data` 完整字段为 `IsConnected`、`IntTime`、`Average`、`SerialNumber`、`EnableAutodark`、`EnableAutoIntegration`、`EnableAdaptiveAutoDark`、`MeasurementInterval`、`MeasurementNum`、`WindowOpen`。这些属性顺序读取，不持有设备操作锁，不是一次测量的冻结快照；`WindowOpen` 仅检查 `MainWindow.Instance != null`，不表示窗口可见、设备就绪或测量成功。
 
-## 连接、标定与快门
+## 连接、标定与遮光控制
 
 连接响应 `Code = 200` 需要 `Connect()` 返回 `1` 且 Manager 为已连接，但不要求 `IsCalibrationReady`。因此必须把“通信已建立”和“可以测量”分开；连接时读到 readiness 也不能替代后续测量入口的再次校验。`SpectrumStatus` 没有 readiness 字段，标定门禁及修复依据见 [Spectrum 标定契约](./spectrum.md)。
 
 断开响应按 `Disconnect()` 返回值决定 `200` 或 `-2`。Manager 的断开路径即使原生关闭/释放失败也会清空本地连接状态；释放失败还可能隔离原生会话。`Data.IsConnected = false` 不能单独证明驱动释放成功，必须结合 `Code` / `Msg` 和设备检查。
 
-Socket 校零不回退到人工遮光。`CaptureDarkWithShutterCoreAsync` 先关闭快门，关闭确认失败时尝试恢复打开；正常进入暗场后在 `finally` 中尝试重新打开。`ShutterController` 分别识别 `turn off` / `turn on` 确认。快门缺失、关闭或恢复确认失败、native 返回失败通常映射为 `-3`，异常/取消另按下节处理；收到失败码不能据此认定光路已经恢复。
+Socket 校零不回退到人工遮光。自动校零参数选择 Shutter 时，Manager 先关闭快门，正常进入暗场后在 `finally` 中尝试重新打开；`ShutterController` 分别识别 `turn off` / `turn on` 确认。选择滤色轮时，Manager 读取当前测量孔位、切到已配置的遮光孔位，暗场结束后在 `finally` 中恢复原孔位；临时切换不会改变当前标定组。所选控制器缺失、遮光切换失败、原光路恢复失败或 native 返回失败都会使指令失败；收到失败响应不能据此认定光路已经恢复。
 
 ## 设备锁与合作式取消
 
@@ -68,11 +68,11 @@ Socket 校零不回退到人工遮光。`CaptureDarkWithShutterCoreAsync` 先关
 
 校零、自动积分和测量使用 `TryRunExclusiveAsync` 的 `WaitAsync(0, token)`，拿不到设备门禁就拒绝，不排队另一项原生操作。测量在服务停止接收请求时也可返回 `IsBusy`，handler 将其转成 `-4`。UI、Job 和 Socket 应复用这些 Manager 入口，不自行创建、释放或缓存光谱仪句柄。测量的设备锁覆盖采集阶段，捕获完成后才在锁外检查取消并保存结果；这不是覆盖数据库保存与响应发送的整请求锁。
 
-三个耗时 handler 同步等待异步 Manager API，并分别建立校零/自动积分 `30` 秒、测量 `60` 秒的 `CancellationTokenSource`。**这是合作式取消触发时间，不是响应或设备停止的硬截止。** native 同步调用不接收该令牌，快门恢复也不会被它强制中断：
+三个耗时 handler 同步等待异步 Manager API，并分别建立校零/自动积分 `30` 秒、测量 `60` 秒的 `CancellationTokenSource`。**这是合作式取消触发时间，不是响应或设备停止的硬截止。** native 同步调用不接收该令牌，快门或滤色轮的恢复也不会被它强制中断：
 
-- 校零在 native 暗场调用前检查取消，调用后还等待快门恢复，但没有最终再次检查令牌。自动积分只在进入设备工作时检查取消，之后的 native 自动积分、可选同步频率调整和 `IntTime` 写回没有最终取消检查。两者都可能超过 `30` 秒后仍返回 `200`。
+- 校零在 native 暗场调用前检查取消，调用后还等待所选遮光控制器恢复，但没有最终再次检查令牌。自动积分只在进入设备工作时检查取消，之后的 native 自动积分、可选同步频率调整和 `IntTime` 写回没有最终取消检查。两者都可能超过 `30` 秒后仍返回 `200`。
 - 测量有多个取消检查点，成功捕获后、保存结果前还会检查一次。只有检测到取消并抛出 `OperationCanceledException` 才走取消响应；失败捕获也可能直接走业务失败。同步保存阶段不接收令牌，因此在该阶段触发 `60` 秒取消仍可能提交结果并返回成功。
-- 请求超时、客户端断开或 `-4` 响应都不是设备安全停止证明。已经执行的暗场、快门或其他设备动作不会因令牌取消而自动回滚；设备锁等工作返回后才释放。
+- 请求超时、客户端断开或 `-4` 响应都不是设备安全停止证明。已经执行的暗场、快门、滤色轮或其他设备动作不会因令牌取消而自动回滚；设备锁等工作返回后才释放。
 
 自动积分成功表示得到并写回一个时间，不表示可选同步频率调整也成功：`TryGetAutoIntegrationTimeAsync` 对后者失败只记录警告，仍可使用原自动积分值返回 `200`。
 
@@ -124,10 +124,10 @@ Socket 校零不回退到人工遮光。`CaptureDarkWithShutterCoreAsync` 先关
 
 `MeasureAsync` 会把部分内部异常转成失败结果，因此数据库或采集异常可能表现为 `-3`，不能只检查 `-99`。公共分发/解析错误不属于上述业务码表，按[公共 Socket 契约](../../ui-components/ColorVision.SocketProtocol.md)处理。
 
-业务 handler 不要求 `MainWindow` 已打开，不等于“关闭独立程序后仍提供后台服务”。Spectrum 窗口关闭会暂停接收新测量、等待在途路径并尝试断开设备；独立 WPF 程序也没有在 `App.xaml` 配置关闭窗口后常驻的模式。宿主仍存活且入口已启用时，可以在没有 Spectrum 窗口的情况下重新连接并操作，但仍须满足设备/标定/快门门禁。
+业务 handler 不要求 `MainWindow` 已打开，不等于“关闭独立程序后仍提供后台服务”。Spectrum 窗口关闭会暂停接收新测量、等待在途路径并尝试断开设备；独立 WPF 程序也没有在 `App.xaml` 配置关闭窗口后常驻的模式。宿主仍存活且入口已启用时，可以在没有 Spectrum 窗口的情况下重新连接并操作，但仍须满足设备、标定和所选自动遮光控制器门禁。
 
 ## 实现与验证范围
 
-五个 handler 的 `Handle` 定义参数和返回码；设备互斥、标定检查和取消观察点在 `SpectrometerManager`，快门确认在 `Configs/ShutterController.cs`，结果事务在 `Data/ViewResultManager.cs`，字段格式在 `Models/ViewResultSpectrum.cs`。扩展指令时保留这些责任边界，传输注册只依公共 Socket 的当前发现规则。
+五个 handler 的 `Handle` 定义参数和返回码；设备互斥、标定检查和取消观察点在 `SpectrometerManager`，快门确认在 `Configs/ShutterController.cs`，滤色轮位置确认在 `Configs/FilterWheelController.cs`，结果事务在 `Data/ViewResultManager.cs`，字段格式在 `Models/ViewResultSpectrum.cs`。扩展指令时保留这些责任边界，传输注册只依公共 Socket 的当前发现规则。
 
 当前没有发现针对这五个 handler 的专项自动化测试，因此 `test_paths` 为空。已有 Spectrum 数据/标定测试不等于 Socket 返回码、字段序列化、设备争用、超时或关闭窗口的协议覆盖；公共 Socket 的测试也不证明原生设备行为。源码契约说明不是端到端或真机验证结果；验证仍须分别覆盖 handler 字段/异常、忙与取消时序，以及经授权的快门恢复、原生长调用和进程生命周期。

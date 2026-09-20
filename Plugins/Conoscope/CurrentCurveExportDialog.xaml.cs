@@ -22,7 +22,8 @@ namespace Conoscope
         private void btnExport_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(txtStepDegrees.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double stepDegrees)
-                || stepDegrees < 0.01
+                || !double.IsFinite(stepDegrees)
+                || stepDegrees < 0.1
                 || stepDegrees > 360)
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidSamplingInterval, Properties.Resources.TitleCurrentCurveExport, MessageBoxButton.OK, MessageBoxImage.Warning);

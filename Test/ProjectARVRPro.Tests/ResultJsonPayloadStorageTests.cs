@@ -98,6 +98,8 @@ public sealed class ResultJsonPayloadStorageTests
         database.InsertLegacyRow("ObjectiveTestResultRecord", 1, "ObjectiveTestResultJson", objectiveJson);
         long beforeBytes = new FileInfo(database.Path).Length;
 
+        Assert.True(LegacyResultJsonMigration.HasPendingMigration(database.Path));
+
         LegacyResultJsonMigrationReport first = LegacyResultJsonMigration.Execute(database.Path);
 
         Assert.Equal(1, first.ViewResultRowsMigrated);
@@ -111,6 +113,7 @@ public sealed class ResultJsonPayloadStorageTests
         Assert.Equal(objectiveJson, database.LoadGzip("ObjectiveTestResultRecord", ResultJsonPayloadStorage.ObjectiveResultColumnName, 1));
         Assert.Equal("BLOB", database.QueryColumns("ARVRReuslt")[ResultJsonPayloadStorage.ViewResultColumnName]);
         Assert.Equal("BLOB", database.QueryColumns("ObjectiveTestResultRecord")[ResultJsonPayloadStorage.ObjectiveResultColumnName]);
+        Assert.False(LegacyResultJsonMigration.HasPendingMigration(database.Path));
 
         // Simulate the first normal application start after migrating a field database.
         var restartedStore = new ResultStatisticsDataStore(database.Path);
@@ -137,6 +140,8 @@ public sealed class ResultJsonPayloadStorageTests
         database.CreateLegacySchemaWithRequiredFileName();
         database.InsertLegacyResultWithFileName(7, "legacy.png", json, "keep-this-value");
 
+        Assert.True(LegacyResultJsonMigration.HasPendingMigration(database.Path));
+
         LegacyResultJsonMigrationReport first = LegacyResultJsonMigration.Execute(database.Path);
 
         Assert.True(first.ViewFileNameMadeNullable);
@@ -146,6 +151,7 @@ public sealed class ResultJsonPayloadStorageTests
         Assert.Equal(json, database.LoadGzip("ARVRReuslt", ResultJsonPayloadStorage.ViewResultColumnName, 7));
         Assert.True(database.IndexExists("IX_ARVRReuslt_CustomField"));
         Assert.Equal(8, database.InsertNullFileNameRow());
+        Assert.False(LegacyResultJsonMigration.HasPendingMigration(database.Path));
 
         LegacyResultJsonMigrationReport second = LegacyResultJsonMigration.Execute(database.Path);
 

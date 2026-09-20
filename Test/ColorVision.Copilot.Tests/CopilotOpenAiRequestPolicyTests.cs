@@ -8,6 +8,46 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotOpenAiRequestPolicyTests
 {
+    [Theory]
+    [InlineData("https://api.deepseek.com/responses", CopilotReasoningMode.Max, "max", false)]
+    [InlineData("https://example.test/v1/responses/", CopilotReasoningMode.High, "high", true)]
+    [InlineData("https://example.test/gateway/responses", CopilotReasoningMode.Disabled, "none", false)]
+    public async Task ExplicitResponsesEndpointPreservesTheSelectedProtocolAndPath(string endpoint, CopilotReasoningMode mode, string effort, bool stream)
+    {
+        using var handler = new CapturingHandler(streamResponses: stream);
+        var profile = CreateProfile(CopilotVendorType.DeepSeek, "deepseek-flash");
+        profile.BaseUrl = endpoint;
+        profile.ReasoningMode = mode;
+        using var document = await CaptureRequestAsync(profile, handler);
+        var root = document.RootElement;
+        Assert.Equal(new Uri(endpoint.TrimEnd('/')), handler.LastRequestUri);
+        Assert.Equal(handler.LastRequestUri, CopilotProviderEndpoint.Validate(endpoint, profile.ProviderType, false).Endpoint);
+        Assert.Equal(4_096, root.GetProperty("max_output_tokens").GetInt32());
+        Assert.Equal(effort, root.GetProperty("reasoning").GetProperty("effort").GetString());
+        Assert.False(root.GetProperty("store").GetBoolean());
+        Assert.Equal("Follow the test instruction.", root.GetProperty("instructions").GetString());
+        Assert.True(root.TryGetProperty("input", out _));
+        foreach (var key in new[] { "messages", "thinking", "reasoning_effort", "safety_identifier", "stream_options" })
+            Assert.False(root.TryGetProperty(key, out _), key);
+        Assert.Equal(endpoint, profile.BaseUrl);
+        Assert.Equal(CopilotProviderType.OpenAICompatible, profile.ProviderType);
+    }
+
+    [Theory]
+    [InlineData("https://api.deepseek.com/v1", CopilotProviderType.OpenAICompatible)]
+    [InlineData("https://example.test/v1/chat/completions", CopilotProviderType.OpenAICompatible)]
+    [InlineData("https://example.test/v1/responses-other", CopilotProviderType.OpenAICompatible)]
+    [InlineData("https://example.test/responses/v1", CopilotProviderType.OpenAICompatible)]
+    [InlineData("https://example.test/responses", CopilotProviderType.AnthropicCompatible)]
+    public void ResponsesRequiresAnExplicitEndpointForThirdPartyProfiles(string endpoint, CopilotProviderType protocol)
+    {
+        var profile = CreateProfile(CopilotVendorType.Custom, "gpt-6-astra");
+        profile.BaseUrl = endpoint;
+        profile.ProviderType = protocol;
+        Assert.False(CopilotOpenAiRequestPolicy.UsesResponsesApi(profile));
+        Assert.False(CopilotOpenAiRequestPolicy.CanRequestPromptCacheDiagnostics(profile));
+    }
+
     [Fact]
     public async Task OfficialAstraUsesResponsesContract()
     {

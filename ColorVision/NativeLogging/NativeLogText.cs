@@ -7,7 +7,7 @@ internal static class NativeLogText
 {
     private static bool IsChinese => string.Equals(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, "zh", StringComparison.OrdinalIgnoreCase);
 
-    public static string Title => IsChinese ? "原生日志" : "Native Logs";
+    public static string Title => IsChinese ? "原生日志" : "Native logs";
     public static string Start => IsChinese ? "开始捕获" : "Start capture";
     public static string Stop => IsChinese ? "停止捕获" : "Stop capture";
     public static string Pause => IsChinese ? "暂停显示" : "Pause display";

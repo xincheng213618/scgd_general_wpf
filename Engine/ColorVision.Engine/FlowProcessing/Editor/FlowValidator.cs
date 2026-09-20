@@ -17,10 +17,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             ConnectionInfo[] connections = nodeEditor.GetConnectionInfo();
             log.Debug($"CheckFlow: 节点数={nodeEditor.Nodes.Count}, 连接数={connections.Length}");
 
-            STNode? startNode = nodeEditor.Nodes.OfType<MQTTStartNode>().FirstOrDefault();
+            STNode? startNode = nodeEditor.Nodes.OfType<BaseStartNode>().FirstOrDefault();
             if (startNode == null)
             {
-                log.Warn("CheckFlow: 找不到流程起始结点 (MQTTStartNode)");
+                log.Warn("CheckFlow: 找不到流程起始结点");
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoStartNode);
                 return false;
             }

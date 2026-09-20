@@ -30,7 +30,7 @@ public sealed class DockingTabBorder : Border
     public Dock Placement { get => (Dock)GetValue(PlacementProperty); set => SetValue(PlacementProperty, value); }
     public bool IsSelected { get => (bool)GetValue(IsSelectedProperty); set => SetValue(IsSelectedProperty, value); }
 
-    protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters)
+    protected override HitTestResult? HitTestCore(PointHitTestParameters hitTestParameters)
         => new Rect(RenderSize).Contains(hitTestParameters.HitPoint) ? base.HitTestCore(hitTestParameters) : null;
 
     private void UpdateLayoutTracking()

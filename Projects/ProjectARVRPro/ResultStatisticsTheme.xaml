@@ -9,6 +9,7 @@
     <SolidColorBrush x:Key="Statistics.TimelinePrepare" Color="#D79A2B"/>
     <SolidColorBrush x:Key="Statistics.TimelineFlow" Color="#2F9D68"/>
     <SolidColorBrush x:Key="Statistics.TimelineProcess" Color="#8A68CC"/>
+    <SolidColorBrush x:Key="Statistics.TimelineTransition" Color="#D97706"/>
     <SolidColorBrush x:Key="Statistics.TimelineUnknown" Color="#8A949F" Opacity="0.68"/>
 
     <Style x:Key="StatisticsCard" TargetType="Border">
@@ -31,6 +32,17 @@
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="FontSize" Value="26"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="CompactSummaryCard" TargetType="Border" BasedOn="{StaticResource StatisticsCard}">
+        <Setter Property="Margin" Value="3"/>
+        <Setter Property="Padding" Value="10,7"/>
+    </Style>
+    <Style x:Key="CompactSummaryLabel" TargetType="TextBlock" BasedOn="{StaticResource SummaryLabel}">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Margin" Value="0,0,0,2"/>
+    </Style>
+    <Style x:Key="CompactSummaryValue" TargetType="TextBlock" BasedOn="{StaticResource SummaryValue}">
+        <Setter Property="FontSize" Value="20"/>
     </Style>
     <Style x:Key="CompactQueryButton" TargetType="Button">
         <Setter Property="MinHeight" Value="34"/>

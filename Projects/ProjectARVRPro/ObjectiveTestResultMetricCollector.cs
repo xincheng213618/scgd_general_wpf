@@ -1,4 +1,5 @@
 using ProjectARVRPro.Process;
+using ProjectARVRPro.Process.OpticCenter;
 using System.Collections;
 using System.ComponentModel;
 using System.Globalization;
@@ -72,6 +73,16 @@ namespace ProjectARVRPro
             CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
             CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
             CollectDynamicPois(result.DynamicPoixyuvDatas, metrics, keys);
+            if (result.DynamicRgbCrossResults != null)
+                foreach (var pair in result.DynamicRgbCrossResults)
+                    if (pair.Value != null)
+                        foreach (var point in pair.Value.Points)
+                        {
+                            if (point.Comparisons.Count == 0) RgbCrossResultParser.PopulateComparisons(point);
+                            foreach (var comparison in point.Comparisons)
+                                AddMetric(pair.Key, point.Id + "_" + comparison.Key,
+                                    (comparison.Value.JudgedValue ?? comparison.Value.Value)?.ToString("R", CultureInfo.InvariantCulture) ?? "", metrics, keys);
+                        }
 
             return metrics;
         }
@@ -81,6 +92,7 @@ namespace ProjectARVRPro
             return propertyName == nameof(ObjectiveTestResult.DynamicTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
+                   propertyName == nameof(ObjectiveTestResult.DynamicRgbCrossResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
                    propertyName == nameof(ObjectiveTestResult.MTFH07TestResults) ||
                    propertyName == nameof(ObjectiveTestResult.MTFV07TestResults) ||

@@ -1,5 +1,7 @@
 ﻿using System.Windows.Controls;
 using System.ComponentModel;
+using ColorVision.Common.Utilities;
+using System.Windows.Input;
 
 namespace System.Windows
 {
@@ -23,6 +25,8 @@ namespace System.Windows
 
     public static class WindowHelpers
     {
+        private static readonly DependencyProperty FullScreenBindingProperty = DependencyProperty.RegisterAttached(
+            "FullScreenBinding", typeof(FullScreenBinding), typeof(WindowHelpers));
 
         public static Window? GetActiveWindow(this Application application)
         {
@@ -45,48 +49,71 @@ namespace System.Windows
 
         public static void SetWindowFull(this Window window, IFullScreenState  fullScreenState)
         {
-            WindowStatus OldWindowStatus = null;
+            if (window.GetValue(FullScreenBindingProperty) is FullScreenBinding)
+                return;
+            window.SetValue(FullScreenBindingProperty, new FullScreenBinding(window, fullScreenState));
+        }
 
-            //void PreviewKeyDown(object s, KeyEventArgs e)
-            //{
-            //    if (e.Key == Key.F11)
-            //    {
-            //        ToggleFull();
-            //        e.Handled = true;
-            //    }
-            //}
-            //window.PreviewKeyDown += PreviewKeyDown;
+        private sealed class FullScreenBinding
+        {
+            private readonly Window window;
+            private readonly IFullScreenState config;
+            private WindowFullScreenSession? session;
 
-            void ToggleFull()
+            public FullScreenBinding(Window window, IFullScreenState config)
             {
-                if (fullScreenState.IsFull)
+                this.window = window;
+                this.config = config;
+                config.PropertyChanged += OnConfigChanged;
+                window.KeyDown += OnKeyDown;
+                window.Loaded += OnLoaded;
+                window.Closed += OnClosed;
+                if (window.IsLoaded)
+                    Apply();
+            }
+
+            private void OnKeyDown(object sender, KeyEventArgs e)
+            {
+                // Let focused content (such as ImageView) handle F11 first.
+                // The active session owns exit keys during PreviewKeyDown.
+                if (e.Handled || e.Key != Key.F11 || Keyboard.Modifiers != ModifierKeys.None || WindowFullScreenSession.GetIsActive(window))
+                    return;
+                e.Handled = true;
+                if (!e.IsRepeat)
+                    config.IsFull = true;
+            }
+
+            private void OnLoaded(object sender, RoutedEventArgs e) => Apply();
+
+            private void OnConfigChanged(object? sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == nameof(IFullScreenState.IsFull))
+                    Apply();
+            }
+
+            private void Apply()
+            {
+                if (!window.IsLoaded)
+                    return;
+                if (config.IsFull)
                 {
-                    OldWindowStatus = new WindowStatus();
-                    OldWindowStatus.WindowState = window.WindowState;
-                    OldWindowStatus.WindowStyle = window.WindowStyle;
-                    OldWindowStatus.ResizeMode = window.ResizeMode;
-                    OldWindowStatus.Root = window.Content;
-                    window.WindowStyle = WindowStyle.None;
-                    window.WindowState = WindowState.Maximized;
+                    session ??= new WindowFullScreenSession(window, () => config.IsFull = false);
                 }
                 else
                 {
-                    if (OldWindowStatus != null)
-                    {
-                        window.WindowStyle = OldWindowStatus.WindowStyle;
-                        window.WindowState = OldWindowStatus.WindowState;
-                        window.ResizeMode = OldWindowStatus.ResizeMode;
-                        window.Content = OldWindowStatus.Root;
-                    }
+                    session?.Dispose();
+                    session = null;
                 }
             }
-            fullScreenState.PropertyChanged += (sender, args) =>
+            private void OnClosed(object? sender, EventArgs e)
             {
-                if (args.PropertyName == nameof(IFullScreenState.IsFull))
-                {
-                    ToggleFull();
-                }
-            };
+                config.PropertyChanged -= OnConfigChanged;
+                window.KeyDown -= OnKeyDown;
+                window.Loaded -= OnLoaded;
+                window.Closed -= OnClosed;
+                session = null;
+                window.ClearValue(FullScreenBindingProperty);
+            }
         }
     }
 }

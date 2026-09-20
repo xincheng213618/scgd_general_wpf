@@ -27,7 +27,8 @@ internal sealed class ProjectImageExportAttempt : IDisposable
 
     public ImageViewSnapshotExportOptions CreateOptions(
         ImageViewSnapshotSaveOptions renderedOptions,
-        ImageViewSourceSaveOptions sourceOptions)
+        ImageViewSourceSaveOptions sourceOptions,
+        string? diagnosticContext = null)
     {
         return new ImageViewSnapshotExportOptions
         {
@@ -35,6 +36,7 @@ internal sealed class ProjectImageExportAttempt : IDisposable
             RenderedOptions = renderedOptions,
             SourceFileName = SourceStagingFileName,
             SourceOptions = sourceOptions,
+            DiagnosticContext = diagnosticContext,
         };
     }
 
@@ -210,6 +212,16 @@ internal static class ProjectImageExportService
         };
     }
 
+    internal static string BuildDiagnosticContext(
+        string? serialNumber,
+        int resultId,
+        int batchId,
+        string? model)
+    {
+        return $"Task=ProjectARVRPro.ImageExport SN={NormalizeDiagnosticValue(serialNumber)} "
+            + $"ResultId={resultId} BatchId={batchId} Model={NormalizeDiagnosticValue(model)}";
+    }
+
     internal static string BuildFilePath(string outputDirectory, string fileStem, string extension)
     {
         if (string.IsNullOrWhiteSpace(outputDirectory))
@@ -230,5 +242,12 @@ internal static class ProjectImageExportService
 
         sanitized = sanitized.Trim().TrimEnd('.');
         return string.IsNullOrWhiteSpace(sanitized) ? fallback : sanitized;
+    }
+
+    private static string NormalizeDiagnosticValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "-";
+        return value.Replace('\r', ' ').Replace('\n', ' ').Trim();
     }
 }

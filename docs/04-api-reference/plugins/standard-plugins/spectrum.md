@@ -3,9 +3,9 @@ knowledge_id: "plugins.spectrum"
 knowledge_type: "topic"
 status: "current"
 summary: "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。"
-aliases: ["Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
-code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
-test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
+aliases: ["HoleMapping","孔位映射","编辑滤光轮配置","Spectrum 如何校准和发布","光谱测量结果不一致","Spectrum","Spectrum.bat","SpectrometerManager","SpectrumMeasurementResult","ViewResultManagerConfig","ViewResultSpectrum","SpectrumMeasurementProfile","光谱仪软件","连接光谱仪","单次测试","IsCalibrationReady","设备序列号未知，无法保存标定配置"]
+code_paths: ["Plugins/Spectrum/README.md","Plugins/Spectrum/Spectrum.csproj","Plugins/Spectrum/manifest.json","Plugins/Spectrum/App.xaml.cs","Plugins/Spectrum/MainWindow.xaml.cs","Plugins/Spectrum/MainWindow.Chrome.cs","Plugins/Spectrum/MainWindow.PlotTheme.cs","Plugins/Spectrum/MainWindowConfig.cs","Plugins/Spectrum/Layout/","Plugins/Spectrum/MainWindow.xaml","Plugins/Spectrum/Properties/Resources.resx","Plugins/Spectrum/SpectrometerManager.cs","Plugins/Spectrum/Calibration/","Plugins/Spectrum/Configs/","Plugins/Spectrum/PropertyEditor/","Plugins/Spectrum/Data/","Plugins/Spectrum/Models/ViewResultSpectrum.cs","Plugins/Spectrum/SpectrumCsvExporter.cs","Plugins/Spectrum/DirectSpectrometer/","Plugins/Spectrum/Job/","Plugins/Spectrum/License/","Plugins/Spectrum/Update/","Scripts/Spectrum.bat","Scripts/build_spectrum.py"]
+test_paths: ["Test/Spectrum.Tests/Spectrum.Tests.csproj","Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs","Test/Spectrum.Tests/ViewResultSpectrumTests.cs","Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs","Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs","Test/Spectrum.Tests/SpectrumCsvExporterTests.cs","Scripts/tests/test_build_spectrum.py"]
 related: ["plugins.index","plugins.capabilities","plugins.spectrum-socket","ui.documents","operations.main-window","ui.themes"]
 ---
 
@@ -21,7 +21,7 @@ Spectrum 窗口的 **帮助 → 关于 Spectrum** 打开光谱展示页 `Help/Sp
 
 1. 在 **光谱仪连接** 区域选择型号和连接方式；使用串口时配置串口与波特率，再点 **连接光谱仪**。确认型号、SN 和连接状态，连接失败先按下表排查。
 2. 查看 **标定文件** 区域的当前分组、波长文件、幅值文件和状态。需要配置时点 **管理...**，保存后确认加载结果；已有配置可用 **加载分组** 或文件旁的 **加载** 重载。标定未就绪时先修复配置，不继续测量。
-3. 设置 **积分时间 (ms)**、**平均次数** 及所需自动校零、自动积分等选项。自动暗场要求可用快门；启用 EQE 时核实电压、电流的实际来源，见下文。
+3. 设置 **积分时间 (ms)**、**平均次数** 及所需自动校零、自动积分等选项。自动校零的齿轮窗口可选择 **Shutter** 或 **滤色轮**：滤色轮模式必须配置实际遮光孔位并先连接滤色轮；启用 EQE 时核实电压、电流的实际来源，见下文。
 4. 点 **单次测试**，成功后检查结果列表与曲线。后台测量与界面投影异步衔接，返回成功和界面刷新不是同一时刻。
 5. 在结果列表选中需要导出的记录，点击列表右上方的保存图标，选择 CSV 路径。没有选中记录会提示先选择数据；导出使用当前 Normal/EQE 模式的固定字段。
 
@@ -33,9 +33,19 @@ Spectrum 使用与主程序相同的现代 AvalonDock 主题，资源与停靠�
 
 Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最大化和关闭按钮合并到同一行，不再向设置发现公开独立开关；旧配置中的 `UseCompactTitleBar` 字段不再影响窗口选择。系统、DWM 或窗口条件不满足时保留原生标题栏。Spectrum 以源码链接复用主程序的 `CompactTitleBarChrome` 与可见性保护逻辑，不加载主程序可执行程序集；全屏时暂停紧凑外观，退出全屏后恢复。
 
-左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
+左侧控制分组使用公共分组标题、圆角面板和按钮样式，可单独折叠，折叠不改变设备连接或测量状态。工作区外边距与主程序对齐，控制卡片使用紧凑间距；快门与滤色轮没有错误时折叠提示行，保留原有按钮尺寸和连接入口。默认控制区宽度为 360 DIP，底部日志高度为 180 DIP；已有保存布局继续恢复，使用重置布局才应用新的默认尺寸。曲线与结果列表之间的分隔条直接调整可用空间比例，结果工具栏为右侧操作预留独立列，查询等按钮在宽度不足时进入工具栏溢出菜单。
 
-相对和绝对光谱的背景、坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。光谱色条与测量曲线配色保留。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
+相对和绝对光谱使用纯白或近黑背景，坐标、网格与图例跟随全局深浅主题；换主题只更新现有绘图颜色，不重建曲线、重置坐标范围或清除选择。单条结果把 380–780 nm 可见范围按波长颜色填充到曲线与零基线之间，并叠加与背景反差明确的轮廓线；可见范围以外仍保留测量曲线但不伪造显示色。多结果比较保持折线显示，避免彩色填充相互遮挡。颜色只用于帮助识别波段，不改变相对/绝对光谱数值和后续计算。外观事件在窗口关闭时解除，设备、标定、数据库和测量生命周期仍由各自原有入口管理。
+
+## 滤光轮孔位映射
+
+在滤色轮设置的 PropertyGrid 中，`HoleMapping` 显示孔位数量，右侧 **编辑** 打开“编辑滤光轮配置”。窗口逐行编辑孔位索引和名称，支持添加、删除及滚动；Serial 和 BaudRate 仍使用各自原有属性编辑器。
+
+`FilterWheelHoleMappingPropertiesEditor` 通过属性上的 `PropertyEditorType` 接入。`FilterWheelHoleMappingEditSession` 打开时复制每行，**提交** 校验成功才替换该属性；取消、Esc 或关闭窗口均丢弃副本。新行取当前草稿中最小的未使用非负索引，默认五行之后为 5，删除后可复用空缺。提交拒绝非 Int32 整数和重复索引，但不限制空名称、同名孔位、空集合或已有整数范围。配置编辑不扩大硬件能力：当前 `FilterWheelController.SetPositionAsync` 仍只接受 0–4。
+
+每行的 `CalibrationGroupName` 不在此窗口展示，复制与提交时原样保留。该字段注释描述了自动切组用途，但当前 `SpectrometerManager.OnFilterWheelPositionChanged` 实际先按标定组的 `FilterWheelPosition` 查找，再按孔位的 ND 名称查找，并不调用 `GetCalibrationGroupName`。自动切组关联仍在“标定文件分组管理”维护，不能把此字段的保存误认为运行时已经使用它。
+
+`FilterWheelHoleMappingEditSessionTests` 覆盖隔离编辑、提交快照、添加/删除、索引校验和标定组保留；窗口按钮、主题和滚动需要 WPF 预览验收。
 
 ## 先查什么
 
@@ -46,7 +56,7 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 | 连接失败 | 许可证同步、USB/COM 配置、native DLL、设备占用、驱动 |
 | 已连接但测量按钮不可用 | `IsCalibrationReady`、`CalibrationStatus`、配置路径与已加载文件指纹 |
 | SN 为空或标定失败 | 设备序列号、当前 SN 的标定分组、`WavaLength.dat` / `Magiude.dat`，以及失败后的旧标定恢复状态 |
-| 自动校零失败 | `ShutterController` 连接、严格开关确认和暗场流程；Socket/Job 必须有可用快门 |
+| 自动校零失败 | 检查所选遮光方式：Shutter 的连接与开关确认，或滤色轮连接、遮光孔位和原孔位恢复；Socket/Job 同样要求所选控制器可用 |
 | 测量超时或曲线不刷新 | 积分时间、同步频率模式、SDK 返回码、重试结果 |
 | 结果列表有数据但数据库没有 | `ViewResultManager`、SQLite 路径、写入异常 |
 | EQE 字段为 0 | SMU 配置、测量模式、EQE 回写 |
@@ -72,7 +82,7 @@ Windows build 22000 或更高版本固定尝试将菜单与原生最小化、最
 | --- | --- |
 | 标定分组 | 当前设备 SN 能找到活动分组 |
 | 标定文件 | 两个文件通过预校验，加载快照与当前配置的路径、分组和 SHA-256 一致 |
-| 自动校零 | UI 手动流程允许人工遮光；Socket/Job 无人值守流程要求 Shutter 严格完成关闭和恢复 |
+| 自动校零 | UI 手动流程允许人工遮光；自动测量、Socket 和 Job 按配置使用 Shutter 或滤色轮。滤色轮会记录当前测量孔位，切到可配置的遮光孔位采集暗场，再恢复原孔位；任何切换或恢复失败都会阻止正式测量 |
 | EQE | 已启用 EQE；确认本次电压、电流来自手工配置还是源表采集，且与被测样品一致 |
 
 `CalibrationGroupWindow` 编辑独立副本。保存要求已知设备 SN；已连接时先加载两个候选文件，加载成功且请求仍有效才提交配置。未连接分支不加载 native，但 SN 缺失仍会拒绝保存。配置保存在 Windows 文档目录的 `Spectrometer/<SN>/CalibrationGroups.json`，以临时文件替换写入；保存失败会尝试恢复原标定，恢复失败时保持不可测量状态。
@@ -139,7 +149,7 @@ dotnet build .\Plugins\Spectrum\Spectrum.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -c Release -p:Platform=x64
 ```
 
-`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查字段、采样网格、格式和调用时快照。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
+`ViewResultSpectrumTests` 覆盖有效点数、采样端点和旧元信息回退；`SpectrumPlotFillTests` 覆盖填充取值、可见波段裁剪、边界插值和异常样本；`SpectrumCalibrationStateTests` 检查标定快照、路径及文件哈希；`SpectrumCsvExporterTests` 检查字段、采样网格、格式和调用时快照。`SpectrumArchitectureBoundaryTests` 检查 Manager 不反向引用指定窗口、对话框或同步 Application Dispatcher 的源码模式。这些用例不能代替原生设备、窗口关闭或 Socket 时序验证；引用测试文件也不表示测试已经运行。
 
 ## 双通道发布（需明确发布授权）
 

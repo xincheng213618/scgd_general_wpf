@@ -1,0 +1,72 @@
+#nullable disable
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
+using FlowEngineLib.Base;
+using ST.Library.UI.NodeEditor;
+
+namespace FlowEngineLib.Node.Algorithm;
+
+[STNode("/03_4 KB")]
+[STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Algorithm.AlgorithmKBNode")]
+public class AlgorithmKBNode : CVBaseServerNode
+{
+	private string _CaliTemplate;
+
+	[STNodeProperty("参数模板", "参数模板", true)]
+	[PropertyEditorType(typeof(KbTemplatePropertiesEditor))]
+	public string TempName
+	{
+		get
+		{
+			return _TempName;
+		}
+		set
+		{
+			setTempName(value);
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("图像文件", "图像文件", true)]
+	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
+	public string ImgFileName
+	{
+		get
+		{
+			return _ImgFileName;
+		}
+		set
+		{
+			_ImgFileName = value;
+			OnPropertyChanged();
+		}
+	}
+
+	public AlgorithmKBNode()
+		: base("KB算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
+	{
+		operatorCode = "KB";
+		_CaliTemplate = "";
+	}
+
+	protected override void OnCreate()
+	{
+		base.OnCreate();
+		m_ctrl_temp = CreateTempControl(m_custom_item, "");
+	}
+
+	public override void ApplyCompactNodeDisplay()
+	{
+		ShowControls = true;
+		SetAutoSize(true);
+	}
+
+	protected override object getBaseEventData(CVStartCFC start)
+	{
+		KBParam kBParam = new KBParam(_CaliTemplate);
+		getPreStepParam(start, kBParam);
+		BuildImageParam(kBParam);
+		return kBParam;
+	}
+}

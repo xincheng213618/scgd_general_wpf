@@ -8,6 +8,7 @@ using log4net.Appender;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -78,6 +79,124 @@ public sealed class CvcieDisplayIntegrationTests
             Assert.Equal(defaultMode, CvcieDisplayConfig.Current.DisplayMode);
             Assert.Equal(CvcieBrightnessMode.ReferenceWhite, CvcieDisplayConfig.Current.BrightnessMode);
             Assert.Equal(1, CvcieDisplayConfig.Current.ReferenceWhiteLuminance);
+        });
+    }
+
+    [Fact]
+    public async Task CvRawRgbSelectionKeepsChannelTransitionsGrayWithoutReplacingTheSource()
+    {
+        using DisplayFixture fixture = new(CvcieDisplayMode.Source);
+        fixture.WriteCie(true, Red(), Green());
+        await fixture.OpenRawAsync();
+
+        ImageSource originalSource = WpfTestHost.Invoke(() => fixture.View.Document.Source!);
+        long originalRevision = WpfTestHost.Invoke(() => fixture.View.Document.Revision);
+        int originalCompletionCount = fixture.CompletionCount;
+        List<ImageSource?> channelTransitions = [];
+        DependencyPropertyDescriptor sourceProperty = DependencyPropertyDescriptor.FromProperty(Image.SourceProperty, typeof(DrawCanvas));
+        TaskCompletionSource channelDisplayed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler channelChanged = (_, _) =>
+        {
+            channelTransitions.Add(fixture.View.Presentation.DisplaySource);
+            if (fixture.View.FunctionImage is BitmapSource functionImage
+                && ReferenceEquals(functionImage, fixture.View.Presentation.DisplaySource))
+                channelDisplayed.TrySetResult();
+        };
+
+        WpfTestHost.Invoke(() =>
+        {
+            sourceProperty.AddValueChanged(fixture.View.ImageShow, channelChanged);
+            fixture.SelectLayer("red");
+        });
+        try
+        {
+            await channelDisplayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => sourceProperty.RemoveValueChanged(fixture.View.ImageShow, channelChanged));
+        }
+
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(originalRevision, fixture.View.Document.Revision);
+            Assert.Same(originalSource, fixture.View.Document.Source);
+            Assert.Equal(originalCompletionCount, fixture.CompletionCount);
+            Assert.NotEmpty(channelTransitions);
+            BitmapSource gray = Assert.IsAssignableFrom<BitmapSource>(fixture.View.Presentation.DisplaySource);
+            Assert.Equal(PixelFormats.Gray8, gray.Format);
+        });
+
+        ImageSource redPreview = WpfTestHost.Invoke(() => fixture.View.Presentation.DisplaySource!);
+        List<ImageSource?> nextChannelTransitions = [];
+        TaskCompletionSource nextChannelDisplayed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler nextChannelChanged = (_, _) =>
+        {
+            ImageSource? display = fixture.View.Presentation.DisplaySource;
+            nextChannelTransitions.Add(display);
+            if (!ReferenceEquals(display, redPreview) && ReferenceEquals(display, fixture.View.FunctionImage))
+                nextChannelDisplayed.TrySetResult();
+        };
+        WpfTestHost.Invoke(() =>
+        {
+            sourceProperty.AddValueChanged(fixture.View.ImageShow, nextChannelChanged);
+            fixture.SelectLayer("green");
+        });
+        try
+        {
+            await nextChannelDisplayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => sourceProperty.RemoveValueChanged(fixture.View.ImageShow, nextChannelChanged));
+        }
+
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(originalRevision, fixture.View.Document.Revision);
+            Assert.Same(originalSource, fixture.View.Document.Source);
+            Assert.Equal(originalCompletionCount, fixture.CompletionCount);
+            Assert.NotEmpty(nextChannelTransitions);
+            Assert.DoesNotContain(nextChannelTransitions, source => ReferenceEquals(source, originalSource));
+            Assert.All(nextChannelTransitions, source =>
+            {
+                BitmapSource transition = Assert.IsAssignableFrom<BitmapSource>(source);
+                Assert.Equal(PixelFormats.Gray8, transition.Format);
+            });
+            Assert.NotSame(redPreview, fixture.View.Presentation.DisplaySource);
+        });
+
+        List<ImageSource?> compositeTransitions = [];
+        TaskCompletionSource compositeDisplayed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler compositeChanged = (_, _) =>
+        {
+            compositeTransitions.Add(fixture.View.Presentation.DisplaySource);
+            if (ReferenceEquals(originalSource, fixture.View.Presentation.DisplaySource)
+                && fixture.View.FunctionImage == null)
+                compositeDisplayed.TrySetResult();
+        };
+        WpfTestHost.Invoke(() =>
+        {
+            sourceProperty.AddValueChanged(fixture.View.ImageShow, compositeChanged);
+            fixture.SelectLayer("composite");
+        });
+        try
+        {
+            await compositeDisplayed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => sourceProperty.RemoveValueChanged(fixture.View.ImageShow, compositeChanged));
+        }
+
+        WpfTestHost.Invoke(() =>
+        {
+            Assert.Equal(originalRevision, fixture.View.Document.Revision);
+            Assert.Same(originalSource, fixture.View.Document.Source);
+            Assert.Equal(originalCompletionCount, fixture.CompletionCount);
+            Assert.NotEmpty(compositeTransitions);
+            Assert.All(compositeTransitions, source => Assert.Same(originalSource, source));
+            Assert.Same(originalSource, fixture.View.Presentation.DisplaySource);
         });
     }
 
@@ -399,6 +518,7 @@ public sealed class CvcieDisplayIntegrationTests
         }
 
         public string CiePath { get; }
+        public ImageView View => _imageView;
         private string RawPath { get; }
         private string ReplacementRawPath { get; }
         public int CompletionCount { get; private set; }
@@ -466,6 +586,9 @@ public sealed class CvcieDisplayIntegrationTests
 
         public Task<DisplayState> OpenAsync()
             => WaitForDisplayAsync(() => _imageView.OpenImage(CiePath), $"open {CiePath}");
+
+        public Task<DisplayState> OpenRawAsync()
+            => WaitForDisplayAsync(() => _imageView.OpenImage(RawPath), $"open {RawPath}");
 
         public Task<DisplayState> SelectLayerAsync(string layerId)
             => WaitForDisplayAsync(() => SelectLayer(layerId), $"select {layerId}");
@@ -542,7 +665,7 @@ public sealed class CvcieDisplayIntegrationTests
             return new InvalidOperationException($"CVCIE display did not complete successfully ({operation}, completed frames: {CompletionCount}): {CiePath}{Environment.NewLine}{diagnostics}", error);
         }
 
-        private void SelectLayer(string layerId)
+        public void SelectLayer(string layerId)
         {
             ImageLayerDescriptor layer = Assert.Single(_imageView.ComboBoxLayers.Items.Cast<ImageLayerDescriptor>(), item => item.Id == layerId);
             _imageView.ComboBoxLayers.SelectedItem = layer;

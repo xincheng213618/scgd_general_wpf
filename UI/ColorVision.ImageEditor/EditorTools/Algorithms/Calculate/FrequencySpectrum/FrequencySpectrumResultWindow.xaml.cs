@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using ScottPlot;
 using System;
@@ -36,6 +37,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
                 ?? throw new ArgumentException("The result has no peak table.", nameof(result));
 
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             MagnitudePreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(magnitude.Image);
             PowerPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(power.Image);

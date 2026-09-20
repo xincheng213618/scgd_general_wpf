@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
+#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
@@ -113,6 +113,11 @@ namespace ColorVision.Engine.FlowProcessing
             return _templateWorkspace.RefreshAsync();
         }
 
+        public void AdoptSavedCanvas(TemplateModel<FlowParam> flowTemplate)
+        {
+            _templateWorkspace.AdoptSavedCanvas(flowTemplate);
+        }
+
         private async Task CloseRunningFlowBeforeRefreshAsync()
         {
             if (_runLifecycle.IsActive)
@@ -211,8 +216,11 @@ namespace ColorVision.Engine.FlowProcessing
                     completedBatch.Result = flowControlData.Params;
                     try
                     {
-                        using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                        Db.Updateable(completedBatch).ExecuteReturnEntity();
+                        if (completedBatch.Id > 0)
+                        {
+                            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                            Db.Updateable(completedBatch).ExecuteReturnEntity();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1026,7 +1034,7 @@ namespace ColorVision.Engine.FlowProcessing
                 executionSnapshot.CreateFlowParam();
             bool requiresServices = View.STNodeEditorMain.Nodes
                 .OfType<CVBaseServerNode>()
-                .Any();
+                .Any(node => node.RequiresRemoteService);
             if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
@@ -1123,8 +1131,12 @@ namespace ColorVision.Engine.FlowProcessing
                     Name = sn,
                     Code = sn
                 };
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                CurrentBatch.Id = Db.Insertable(CurrentBatch).ExecuteReturnIdentity();
+                FlowControl.PersistResults = MySqlSetting.IsConnect;
+                if (FlowControl.PersistResults)
+                {
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                    CurrentBatch.Id = Db.Insertable(CurrentBatch).ExecuteReturnIdentity();
+                }
                 preparedBatch = CurrentBatch;
                 journalScope = TryBeginExecutionJournal(
                     selectedFlowParam,

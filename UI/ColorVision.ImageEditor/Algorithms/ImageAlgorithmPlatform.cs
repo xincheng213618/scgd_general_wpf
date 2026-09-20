@@ -29,6 +29,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static IImageAlgorithmProvider[] CreateDefaultProviders() =>
         [
+            new DisplayMetrologyProvider(),
             new ImagingCorrectionAlgorithmProvider(),
             Experimental(
                 new MoireAnalysisAlgorithmProvider(),

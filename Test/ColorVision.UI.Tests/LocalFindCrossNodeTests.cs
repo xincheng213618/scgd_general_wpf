@@ -1,4 +1,4 @@
-using ColorVision.Core;
+﻿using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -14,13 +14,71 @@ namespace ColorVision.UI.Tests;
 public sealed class LocalFindCrossNodeTests
 {
     [Fact]
+    public void PoiSearchRegionOverridesFixedBoundsAndReloadsEveryRun()
+    {
+        CVStartCFC action = CreateRawAction("poi-region");
+        int reads = 0;
+        FakeNodeServices services = new()
+        {
+            LoadSearchRegionTemplateHandler = name =>
+            {
+                Assert.Equal("发光区", name);
+                return new Int32Rect(5 + reads++, 6, 40, 30);
+            },
+            DetectHandler = (_, roi, _) =>
+            {
+                Assert.Equal(4 + reads, roi.X);
+                Assert.Equal(6, roi.Y);
+                Assert.Equal(40, roi.Width);
+                Assert.Equal(30, roi.Height);
+                return CreateSuccessfulDetection();
+            },
+            PersistHandler = request =>
+            {
+                JObject audit = JObject.FromObject(request.Parameters);
+                Assert.Equal("发光区", audit.Value<string>("SearchRegionPoiTemplate"));
+                Assert.Equal(4 + reads, audit["SearchRegion"]!.Value<int>("X"));
+                return new() { MasterId = 73, ResultFilePath = @"C:\result.json" };
+            }
+        };
+        LocalFindCrossNode node = new(services) { SearchRegion = new Int32Rect(100, 100, 10, 10), SearchRegionPoiTemplate = " 发光区 " };
+        try
+        {
+            node.ExecuteSynchronously(action);
+            node.ExecuteSynchronously(action);
+            Assert.Equal(2, reads);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvalidPoiSearchRegionStopsBeforeDetection(bool outOfBounds)
+    {
+        CVStartCFC action = CreateRawAction("poi-region");
+        FakeNodeServices services = new()
+        {
+            LoadSearchRegionTemplateHandler = _ => outOfBounds ? new Int32Rect(50, 40, 40, 30) : throw new InvalidOperationException("找不到搜索区域关注点模板")
+        };
+        LocalFindCrossNode node = new(services) { SearchRegionPoiTemplate = "错误模板" };
+        try
+        {
+            Assert.ThrowsAny<Exception>(() => node.ExecuteSynchronously(action));
+            Assert.Equal(0, services.DetectCount);
+            Assert.Equal(0, services.PersistCount);
+        }
+        finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Fact]
     public void NodeDefaultsExposeOnlyProductGeometryAndOpticsAndUseFullImage()
     {
         LocalFindCrossNode node = new();
         node.Create();
 
         Assert.Equal("LocalFindCross", node.NodeType);
-        Assert.Equal("本地十字定位", node.Title);
+        Assert.Equal("十字定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(string.Empty, node.ImageFilePath);
@@ -76,6 +134,7 @@ public sealed class LocalFindCrossNodeTests
         original.Create();
         original.ImageFilePath = @"C:\images\cross.cvraw";
         original.ParameterJson = "{\"ExpectedAngleDegrees\":1.5,\"AngleToleranceDegrees\":8}";
+        original.SearchRegionPoiTemplate = "发光区";
         original.SearchRegion = new Int32Rect(2888, 1920, 3751, 2655);
         original.ResultDirectory = @"D:\results\cross";
         Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
@@ -87,6 +146,7 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal(original.ImageFilePath, restored.ImageFilePath);
         Assert.Equal(original.ParameterJson, restored.ParameterJson);
         Assert.Equal(original.SearchRegion, restored.SearchRegion);
+        Assert.Equal(original.SearchRegionPoiTemplate, restored.SearchRegionPoiTemplate);
         Assert.Equal(original.ResultDirectory, restored.ResultDirectory);
     }
 
@@ -348,7 +408,6 @@ public sealed class LocalFindCrossNodeTests
         LocalFindCrossPersistenceRequest request = new()
         {
             Action = action,
-            DeviceCode = "ALG-1",
             ImageFilePath = @"H:\ColorVision\Transfer\G0941\source.cvraw",
             ZIndex = 4,
             TotalTime = 18,
@@ -384,7 +443,6 @@ public sealed class LocalFindCrossNodeTests
         LocalFindCrossPersistenceRequest request = new()
         {
             Action = action,
-            DeviceCode = "ALG-1",
             ZIndex = 5,
             TotalTime = 21,
             ResultCode = LocalFindCrossNode.DetectionFailureResultCode,
@@ -494,6 +552,8 @@ public sealed class LocalFindCrossNodeTests
 
     private sealed class FakeNodeServices : ILocalFindCrossNodeServices
     {
+        public Func<string, Int32Rect> LoadSearchRegionTemplateHandler { get; init; } = _ => throw new InvalidOperationException("Unexpected POI lookup");
+        public Int32Rect LoadSearchRegionTemplate(string templateName) => LoadSearchRegionTemplateHandler(templateName);
         public Func<string, LocalFlowFrame> LoadFrameHandler { get; init; } = _ => throw new InvalidOperationException("File loading was not configured.");
         public Func<int, MeasureResultImgModel?> GetImageResultHandler { get; init; } = _ => throw new InvalidOperationException("Image-result loading was not configured.");
         public Func<HImage, RoiRect, string, LocalFindCrossDetection> DetectHandler { get; init; } = (_, _, _) => throw new InvalidOperationException("Detection was not configured.");

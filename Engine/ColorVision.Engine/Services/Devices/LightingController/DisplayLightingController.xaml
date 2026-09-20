@@ -23,22 +23,19 @@
 
     <StackPanel>
         <DockPanel Margin="0,0,5,0" ToolTip="{Binding DService.DeviceStatus}">
-            <Grid DockPanel.Dock="Right">
-                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                <Image Height="18" Source="{DynamicResource DrawingImageProperty}" />
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
-            </Grid>
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
-            <ToggleButton Content="{Binding Config.Name}"
+            <ToggleButton x:Name="DisplayHeaderToggle"
+                          Content="{Binding Config.Name}"
                           FontSize="15"
-                          IsChecked="{Binding DisplayConfig.IsDisplayOpen}"
+                          IsChecked="True"
                           Style="{StaticResource ButtonPageControl1}"
                           ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
 
         <Border x:Name="DisPlayBorder"
                 Style="{DynamicResource BorderModuleArea}"
-                Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
+                Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknown" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <TextBlock x:Name="TextBlockOffline" Text="{x:Static properties:Resources.offline}" />

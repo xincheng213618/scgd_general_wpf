@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl
+    public partial class ViewSpectrum : UserControl, IDisposable
     {
 
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
@@ -159,7 +159,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, Button_Click,(s, e) => e.CanExecute = true));
 
             DisplayConfig_IsIsLuminousFluxModeChanged();
-            DisplayConfig.IsIsLuminousFluxModeChanged +=(s,e) => DisplayConfig_IsIsLuminousFluxModeChanged();
+            DisplayConfig.IsIsLuminousFluxModeChanged += LuminousFluxModeChanged;
+        }
+
+        private void LuminousFluxModeChanged(object? sender, bool value) => DisplayConfig_IsIsLuminousFluxModeChanged();
+
+        public void Dispose()
+        {
+            Loaded -= View_Loaded;
+            IsVisibleChanged -= View_IsVisibleChanged;
+            if (_isInitialized) DisplayConfig.IsIsLuminousFluxModeChanged -= LuminousFluxModeChanged;
+            GC.SuppressFinalize(this);
         }
 
         private void DisplayConfig_IsIsLuminousFluxModeChanged()
@@ -573,6 +583,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
             listView1.ScrollIntoView(viewResultSpectrum);
+        }
+
+        private ViewResultSpectrum? localPreview;
+        internal void SetLocalPreview(ViewResultSpectrum result)
+        {
+            if (localPreview != null)
+            {
+                ViewResults.Remove(localPreview);
+                ScatterPlots.Remove(localPreview.ScatterPlot);
+                AbsoluteScatterPlots.Remove(localPreview.AbsoluteScatterPlot);
+            }
+            localPreview = result;
+            AddViewResultSpectrum(result);
         }
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {

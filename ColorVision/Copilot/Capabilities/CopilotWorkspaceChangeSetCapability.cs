@@ -252,8 +252,8 @@ namespace ColorVision.Copilot
                     if (!result.Success)
                     {
                         return rollback
-                            ? await HandleRollbackFailureAsync(request, changeSet, records, completed, result, toolName)
-                            : await HandleApplyFailureAsync(request, changeSet, records, completed, result, toolName);
+                            ? await HandleRollbackFailureAsync(request, changeSet, records, completed, record, result, toolName)
+                            : await HandleApplyFailureAsync(request, changeSet, records, completed, record, result, toolName);
                     }
                     completed.Add(record);
                 }
@@ -264,17 +264,17 @@ namespace ColorVision.Copilot
                 {
                     var restored = await RestoreAppliedChildrenAsync(request, completed, changeSetId);
                     CompleteChangeSet(changeSet,
-                        restored && AreAllChildrenInState(records, WorkspacePatchState.Applied)
+                        restored.Success && AreAllChildrenInState(records, WorkspacePatchState.Applied)
                             ? WorkspaceChangeSetState.Applied
                             : WorkspaceChangeSetState.Invalidated,
-                        releaseReservations: !restored,
+                        releaseReservations: !restored.Success,
                         records);
                 }
                 else
                 {
                     var compensated = await RollbackAppliedChildrenAsync(request, completed, changeSetId);
                     CompleteChangeSet(changeSet,
-                        compensated ? WorkspaceChangeSetState.RolledBack : WorkspaceChangeSetState.Invalidated,
+                        compensated.Success ? WorkspaceChangeSetState.RolledBack : WorkspaceChangeSetState.Invalidated,
                         releaseReservations: true,
                         records);
                 }
@@ -385,20 +385,20 @@ namespace ColorVision.Copilot
             WorkspaceChangeSetRecord changeSet,
             WorkspacePatchRecord[] records,
             IReadOnlyList<WorkspacePatchRecord> appliedRecords,
+            WorkspacePatchRecord failedRecord,
             CopilotToolResult failure,
             string toolName)
         {
             var compensated = await RollbackAppliedChildrenAsync(request, appliedRecords, changeSet.ChangeSetId);
             CompleteChangeSet(changeSet,
-                compensated ? WorkspaceChangeSetState.RolledBack : WorkspaceChangeSetState.Invalidated,
+                compensated.Success ? WorkspaceChangeSetState.RolledBack : WorkspaceChangeSetState.Invalidated,
                 releaseReservations: true,
                 records);
-            return Failure(toolName,
-                failure.FailureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Internal : failure.FailureKind,
-                compensated
+            return CreateChangeSetFailureResult(toolName, changeSet, failedRecord, failure, compensated,
+                compensated.Success
                     ? "The workspace change set was not applied; earlier writes were rolled back."
                     : "The workspace change set failed and compensation could not fully restore earlier files.",
-                failure.ErrorMessage);
+                rollback: false);
         }
 
         private async Task<CopilotToolResult> HandleRollbackFailureAsync(
@@ -406,50 +406,50 @@ namespace ColorVision.Copilot
             WorkspaceChangeSetRecord changeSet,
             WorkspacePatchRecord[] records,
             IReadOnlyList<WorkspacePatchRecord> rolledBackRecords,
+            WorkspacePatchRecord failedRecord,
             CopilotToolResult failure,
             string toolName)
         {
             var restored = await RestoreAppliedChildrenAsync(request, rolledBackRecords, changeSet.ChangeSetId);
-            var fullyApplied = restored && AreAllChildrenInState(records, WorkspacePatchState.Applied);
+            var fullyApplied = restored.Success && AreAllChildrenInState(records, WorkspacePatchState.Applied);
             CompleteChangeSet(changeSet,
                 fullyApplied ? WorkspaceChangeSetState.Applied : WorkspaceChangeSetState.Invalidated,
                 releaseReservations: !fullyApplied,
                 records);
-            return Failure(toolName,
-                failure.FailureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Internal : failure.FailureKind,
+            return CreateChangeSetFailureResult(toolName, changeSet, failedRecord, failure, restored,
                 fullyApplied
                     ? "The workspace change-set rollback failed; already restored files were reapplied so the set remains applied."
                     : "The workspace change-set rollback failed and the prior applied state could not be fully restored.",
-                failure.ErrorMessage);
+                rollback: true);
         }
 
-        private async Task<bool> RollbackAppliedChildrenAsync(
+        private async Task<WorkspaceRecoveryResult> RollbackAppliedChildrenAsync(
             CopilotAgentRequest request,
             IEnumerable<WorkspacePatchRecord> records,
             string changeSetId)
         {
-            var success = true;
+            var attempts = new List<WorkspaceRecoveryAttempt>();
             foreach (var record in records.Reverse())
             {
                 try
                 {
                     var result = await MutateChangeSetChildAsync(request, record, rollback: true, changeSetId, CancellationToken.None);
-                    success &= result.Success;
+                    attempts.Add(new(record.FullPath, result.Success, result.FailureKind, result.ErrorMessage));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    success = false;
+                    attempts.Add(new(record.FullPath, false, CopilotToolFailureClassifier.Classify(ex), CopilotUserFacingErrorFormatter.Sanitize(ex.Message)));
                 }
             }
-            return success;
+            return new(attempts);
         }
 
-        private async Task<bool> RestoreAppliedChildrenAsync(
+        private async Task<WorkspaceRecoveryResult> RestoreAppliedChildrenAsync(
             CopilotAgentRequest request,
             IEnumerable<WorkspacePatchRecord> records,
             string changeSetId)
         {
-            var success = true;
+            var attempts = new List<WorkspaceRecoveryAttempt>();
             foreach (var record in records.Reverse())
             {
                 lock (_syncRoot)
@@ -460,14 +460,82 @@ namespace ColorVision.Copilot
                 try
                 {
                     var result = await MutateChangeSetChildAsync(request, record, rollback: false, changeSetId, CancellationToken.None);
-                    success &= result.Success;
+                    attempts.Add(new(record.FullPath, result.Success, result.FailureKind, result.ErrorMessage));
                 }
-                catch
+                catch (Exception ex)
                 {
-                    success = false;
+                    attempts.Add(new(record.FullPath, false, CopilotToolFailureClassifier.Classify(ex), CopilotUserFacingErrorFormatter.Sanitize(ex.Message)));
                 }
             }
-            return success;
+            return new(attempts);
+        }
+
+        internal IReadOnlyList<string> GetChangeSetRecheckPaths(CopilotAgentRequest request, CopilotAgentToolInput input, bool rollback)
+        {
+            EnsureCheckpointRecordsLoaded();
+            if (!TryGetChangeSetId(input, out var changeSetId))
+                return Array.Empty<string>();
+            lock (_syncRoot)
+            {
+                if (!_changeSets.TryGetValue(changeSetId, out var changeSet)
+                    || changeSet.ExpiresAtUtc <= DateTimeOffset.UtcNow
+                    || !MatchesCheckpointBinding(request, changeSet)
+                    || changeSet.State != (rollback ? WorkspaceChangeSetState.Applied : WorkspaceChangeSetState.Previewed)
+                    || !TryResolveChangeSetRecords(changeSet, out var records))
+                    return Array.Empty<string>();
+                return Array.AsReadOnly(records.Select(record => record.FullPath).ToArray());
+            }
+        }
+
+        private static CopilotToolResult CreateChangeSetFailureResult(
+            string toolName,
+            WorkspaceChangeSetRecord changeSet,
+            WorkspacePatchRecord failedRecord,
+            CopilotToolResult failure,
+            WorkspaceRecoveryResult recovery,
+            string summary,
+            bool rollback)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("[Workspace Change Set Recovery]");
+            builder.AppendLine($"change_set_id: {changeSet.ChangeSetId}");
+            builder.AppendLine($"state: {changeSet.State}");
+            builder.AppendLine($"failed_operation: {(rollback ? "rollback" : "apply")}");
+            builder.AppendLine($"failed_path: {failedRecord.FullPath}");
+            builder.AppendLine($"failure: {CopilotUserFacingErrorFormatter.Sanitize(failure.ErrorMessage)}");
+            builder.AppendLine($"recovery_action: {(rollback ? "restore_applied_state" : "undo_completed_writes")}");
+            builder.AppendLine($"recovery_attempt_count: {recovery.Attempts.Count}");
+            foreach (var attempt in recovery.Attempts)
+            {
+                builder.AppendLine();
+                builder.AppendLine($"path: {attempt.FullPath}");
+                builder.AppendLine($"recovery_result: {(attempt.Success ? "succeeded" : "failed")}");
+                if (!attempt.Success)
+                {
+                    builder.AppendLine($"failure_kind: {attempt.FailureKind}");
+                    builder.AppendLine($"error: {CopilotUserFacingErrorFormatter.Sanitize(attempt.ErrorMessage)}");
+                }
+            }
+            builder.AppendLine();
+            builder.AppendLine("Re-read the attempted paths before describing the current workspace. Recovery results record individual attempts, not a fresh filesystem snapshot. Do not repeat the failed write automatically.");
+            return new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = false,
+                Summary = summary,
+                ErrorMessage = failure.ErrorMessage,
+                FailureKind = failure.FailureKind == CopilotToolFailureKind.None ? CopilotToolFailureKind.Internal : failure.FailureKind,
+                Content = builder.ToString().TrimEnd(),
+                WorkspaceRecheckPaths = recovery.Attempts.Select(attempt => attempt.FullPath).Append(failedRecord.FullPath)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            };
+        }
+
+        private sealed record WorkspaceRecoveryAttempt(string FullPath, bool Success, CopilotToolFailureKind FailureKind, string ErrorMessage);
+
+        private sealed record WorkspaceRecoveryResult(IReadOnlyList<WorkspaceRecoveryAttempt> Attempts)
+        {
+            public bool Success => Attempts.All(attempt => attempt.Success);
         }
 
         private bool TryResolveChangeSetRecords(WorkspaceChangeSetRecord changeSet, out WorkspacePatchRecord[] records)

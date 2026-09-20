@@ -147,11 +147,13 @@ Backend 创建 signed 任务要求非空 JSON 对象正文，最多 16,384 字�
 
 `GET /api/admin/operations/overview?hostLimit=100&activityLimit=100` 为 `/admin/operations/hosts` 提供只读数据。两个 limit 默认 100、各限 1–200；非法整数或越界返回 400。`hostLimit` 限制 hosts；`activityLimit` 分别限制 recentTasks、supportSessions、relayDevices，不是所有列表合计上限。
 
-`summary` 来自整表 SQL 计数，不是截断列表长度；但多条 SELECT 没有显式统一读快照事务，不能保证并发写入时摘要与列表同一时刻一致。主要显示值的含义是：
+可选 `hostId` 按稳定终端 ID 精确筛选，在所有摘要统计与列表截断之前应用；空值、控制字符或超过 128 字符返回 400，不存在的 ID 返回 404。响应 `hostId` 为当前筛选值，未筛选时为 null。页面 `?host=<终端ID>` 可直接进入单终端视图并刷新恢复；终端名称不作为跨记录关联键。读取失败会显示错误，保留旧快照时标明快照时间，不能把旧在线状态当作当前连接结论。
+
+`summary` 来自当前终端筛选范围内的 SQL 计数，不是截断列表长度；未指定 hostId 时覆盖全部终端。但多条 SELECT 没有显式统一读快照事务，不能保证并发写入时摘要与列表同一时刻一致。主要显示值的含义是：
 
 - `online` 由 `lastSeenAt >= now - 90秒` 判断，与主机上报的 `reportedStatus` 分开。桌面每轮完成同步、轮询等处理后再等待 20 秒，网络/任务耗时另计，并非严格每 20 秒心跳；90 秒窗口不是连通性或可控制性保证。
 - `signedRelayReady` / `signedRelayHosts` 仅表示身份表存在记录，不重新验签或证明证书仍有效。配对设备 `active` 仅表示 `revoked_at IS NULL`，不等于设备当前在线。
-- `pendingTasks` 统计 queued/delivered/accepted，包括仍保留这些状态的过期任务；列表 `expired` 独立计算。failedTasks 包含 failed/rejected，receiptCount 是记录数。支持会话 active 按最新非 message 状态统计，不因心跳过期自动结束。
+- `pendingTasks` 只统计 queued/delivered/accepted 且 expires_at 不早于当前时间的任务；过期或无法解析到期时间的记录不计为待处理。列表 `expired` 独立计算。failedTasks 包含历史 failed/rejected，不表示当前故障数；页面将历史失败与心跳未更新分别展示。receiptCount 是记录数。支持会话 active 按最新非 message 状态统计，不因心跳过期自动结束。
 
 `_safe_snapshot` 只保留固定字段并做类型/长度归一：application/version/isRunning/uptimeSeconds/capturedAt、process.memoryMb、mainWindow 的存在/状态/可见性，以及 secureOperations 的运行/配对数/relayConfigured/relayRunning。未知键丢弃，缺少或非法值回退；这不是完整 `OperationsRelaySnapshot` 的转发。
 

@@ -66,8 +66,15 @@
   <data name="FilePath" xml:space="preserve"><value>Full path</value></data>
   <data name="Technical" xml:space="preserve"><value>Technical details</value></data>
   <data name="PseudoHint" xml:space="preserve"><value>Palette and auto-range preferences stay with this view. Image changes reset the range and disable the effect.</value></data>
+  <data name="FilterBasics" xml:space="preserve"><value>Basic display</value></data>
+  <data name="FilterWhiteBalance" xml:space="preserve"><value>White balance and channels</value></data>
+  <data name="FilterTone" xml:space="preserve"><value>Tone</value></data>
+  <data name="FilterThreshold" xml:space="preserve"><value>Threshold and highlight</value></data>
+  <data name="FilterPseudoColor" xml:space="preserve"><value>Filter pseudo-color</value></data>
   <data name="IsEnabled" xml:space="preserve"><value>Enable filter</value></data>
   <data name="ChannelMode" xml:space="preserve"><value>Display channel</value></data>
+  <data name="Temperature" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Tint" xml:space="preserve"><value>Tint (green–magenta)</value></data>
   <data name="RedGain" xml:space="preserve"><value>Red gain</value></data>
   <data name="GreenGain" xml:space="preserve"><value>Green gain</value></data>
   <data name="BlueGain" xml:space="preserve"><value>Blue gain</value></data>

@@ -2790,6 +2790,14 @@ body.cv-home-light .workflow-icon {
   align-items: center;
 }
 
+.dashboard-detail-link.ant-btn {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
 .dashboard-shortcuts {
   max-width: 100%;
 }

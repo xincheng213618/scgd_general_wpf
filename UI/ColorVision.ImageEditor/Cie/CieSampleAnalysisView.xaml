@@ -1,0 +1,177 @@
+<UserControl x:Class="ColorVision.ImageEditor.Cie.CieSampleAnalysisView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie"
+        FontSize="13" Background="{DynamicResource GlobalBackground}"
+        TextElement.Foreground="{DynamicResource GlobalTextBrush}" UseLayoutRounding="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CieWorkspaceStyles.xaml" />
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Controls/ComboBox.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="TextWrapping" Value="Wrap" /></Style>
+            <Style TargetType="Button" BasedOn="{StaticResource CieAction}"><Setter Property="Margin" Value="0,2,6,2" /><Setter Property="MinHeight" Value="32" /></Style>
+            <Style TargetType="TextBox"><Setter Property="MinHeight" Value="30" /><Setter Property="Padding" Value="6,3" /><Setter Property="VerticalContentAlignment" Value="Center" /><Setter Property="Margin" Value="0,3,6,3" /><Setter Property="Background" Value="{DynamicResource GlobalBackground}" /><Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" /><Setter Property="CaretBrush" Value="{DynamicResource GlobalTextBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" /></Style>
+            <Style TargetType="ComboBox" BasedOn="{StaticResource ComboBoxBaseStyle}"><Setter Property="MinHeight" Value="30" /><Setter Property="VerticalContentAlignment" Value="Center" /><Setter Property="Margin" Value="0,3,6,3" /></Style>
+            <Style TargetType="CheckBox"><Setter Property="Margin" Value="0,4,12,4" /></Style>
+            <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="FontSize" Value="14" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Margin" Value="0,10,0,6" /></Style>
+            <Style x:Key="Hint" TargetType="TextBlock"><Setter Property="FontSize" Value="12" /><Setter Property="Opacity" Value="0.7" /><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="Margin" Value="0,4,0,6" /></Style>
+            <Style x:Key="Number" TargetType="TextBlock"><Setter Property="FontFamily" Value="Consolas" /><Setter Property="FontSize" Value="13" /><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="Margin" Value="0,4" /></Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <DockPanel Margin="16,12">
+        <WrapPanel x:Name="SessionToolbar" DockPanel.Dock="Top" Margin="0,0,0,10" MinHeight="44" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <Button Content="新建样品会话" Click="New_Click" />
+            <Button Content="打开会话" Click="OpenSession_Click" />
+            <Button Content="保存会话" Click="SaveSession_Click" ToolTip="保存样品、参考白与色差条件；色域结果使用色域页独立导出" />
+            <ToggleButton x:Name="ShowHelp" Content="计算说明" Style="{StaticResource CieToggle}" Margin="6,2" />
+        </WrapPanel>
+        <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+            <TextBlock x:Name="StatusText" Text="添加样品，或导入 CSV / 粘贴 Excel 表格开始分析。" FontSize="12" />
+        </Border>
+        <Grid>
+                <Grid x:Name="AnalysisContent">
+                    <Grid.Style><Style TargetType="Grid"><Style.Triggers>
+                        <DataTrigger Binding="{Binding IsChecked, ElementName=ShowHelp}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers></Style></Grid.Style>
+                    <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="120" /><RowDefinition Height="6" /><RowDefinition x:Name="SamplesRow" Height="180" MinHeight="150" /></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="10" /><ColumnDefinition x:Name="InspectorColumn" Width="280" /></Grid.ColumnDefinitions>
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <ComboBox x:Name="DiagramKindCombo" Width="145" SelectedIndex="0" SelectionChanged="Display_Changed" AutomationProperties.Name="色度图坐标系">
+                                <ComboBoxItem Content="CIE 1931 xy" /><ComboBoxItem Content="CIE 1960 uv" /><ComboBoxItem Content="CIE 1976 u′v′" />
+                            </ComboBox>
+                            <Button Style="{StaticResource CieZoomOutButton}" Click="ZoomOut_Click" />
+                            <Button Style="{StaticResource CieZoomInButton}" Click="ZoomIn_Click" />
+                            <Button Style="{StaticResource CieFitButton}" Click="Fit_Click" /><Button Content="保存图像" Click="ExportImage_Click" />
+                            <Button Content="分析面板" ToolTip="显示或折叠分析面板" Click="ToggleInspector_Click" />
+                        </WrapPanel>
+                        <TextBlock DockPanel.Dock="Bottom" x:Name="CursorText" FontSize="11" MinHeight="30" Margin="4,4,0,0" Text="双击图中的样品点可选中；双击空白色度位置可填入 xy。" />
+                        <Border Background="{Binding Background, ElementName=AnalysisDiagram}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                            <Grid><cie:CieDiagramView x:Name="AnalysisDiagram" Margin="6" />
+                                <Border x:Name="EmptyHint" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="18" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="300" IsHitTestVisible="False">
+                                    <StackPanel><TextBlock Text="从一个样品开始" FontSize="18" FontWeight="SemiBold" /><TextBlock Text="在右侧输入坐标，或从下方导入数据。&#x0a;也可载入演示数据了解样品对比。" Opacity="0.7" Margin="0,8,0,0" /></StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DockPanel>
+                    <Border x:Name="Inspector" Grid.Column="2" Grid.RowSpan="3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,2,8,10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="0,0,4,0">
+                                <TextBlock Text="添加 / 编辑样品" Style="{StaticResource SectionTitle}" />
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                    <TextBox x:Name="SampleName" Text="样品 1" ToolTip="样品名称" AutomationProperties.Name="样品名称" />
+                                    <TextBox x:Name="SampleGroup" Grid.Column="1" ToolTip="分组" AutomationProperties.Name="样品分组" />
+                                </Grid>
+                                <ComboBox x:Name="InputSpaceCombo" SelectedIndex="0" SelectionChanged="InputSpace_Changed" AutomationProperties.Name="输入色彩空间">
+                                    <ComboBoxItem Content="xyY · 色坐标与亮度" Tag="XyY" /><ComboBoxItem Content="XYZ · 三刺激值" Tag="XYZ" />
+                                    <ComboBoxItem Content="u′v′Y · CIE 1976" Tag="UvY" /><ComboBoxItem Content="L*a*b* · CIELAB" Tag="Lab" />
+                                    <ComboBoxItem Content="L*u*v* · CIELUV" Tag="Luv" /><ComboBoxItem Content="sRGB · 0–255 推算" Tag="SRgb" />
+                                    <ComboBoxItem Content="xy · 仅色坐标" Tag="Xy" />
+                                </ComboBox>
+                                <UniformGrid Columns="3">
+                                    <StackPanel><TextBlock x:Name="LabelV1" Text="x" /><TextBox x:Name="Value1" Text="0.31271" AutomationProperties.Name="第一个分量" /></StackPanel>
+                                    <StackPanel><TextBlock x:Name="LabelV2" Text="y" /><TextBox x:Name="Value2" Text="0.32902" AutomationProperties.Name="第二个分量" /></StackPanel>
+                                    <StackPanel><TextBlock x:Name="LabelV3" Text="Y" /><TextBox x:Name="Value3" Text="100" AutomationProperties.Name="第三个分量" /></StackPanel>
+                                </UniformGrid>
+                                <ComboBox x:Name="BasisCombo" SelectedIndex="0" AutomationProperties.Name="亮度尺度">
+                                    <ComboBoxItem Content="相对 XYZ · 参考白 Y=100" /><ComboBoxItem Content="绝对 XYZ · Y 为 cd/m²" />
+                                </ComboBox>
+                                <WrapPanel><Button x:Name="AddSampleButton" Content="添加样品" Click="AddSample_Click" Background="#220078D4" /><Button x:Name="UpdateSampleButton" Content="更新所选" Click="UpdateSample_Click" IsEnabled="False" /><Button Content="读取所选" Click="LoadSelected_Click" /></WrapPanel>
+                                <Button x:Name="CaptureSourceButton" Content="加入色度图当前点" Click="CaptureSource_Click" IsEnabled="False" HorizontalAlignment="Left" />
+                                <TextBlock x:Name="InputHint" Style="{StaticResource Hint}" Text="输入与参考白必须使用一致尺度。仅 xy 不计算完整色差。" />
+                                <Separator Margin="0,8" />
+                                <TextBlock Text="所选样品分析" Style="{StaticResource SectionTitle}" />
+                                <TextBlock x:Name="SelectedTitle" Text="尚未选中样品" FontWeight="SemiBold" />
+                                <TextBlock x:Name="DifferenceHeadline" Text="ΔE00 —" FontSize="25" FontWeight="SemiBold" Margin="0,8,0,4" />
+                                <TextBlock x:Name="DifferenceDetails" Style="{StaticResource Number}" />
+                                <TextBlock x:Name="DifferenceNote" Style="{StaticResource Hint}" Text="在样品表中设置参考点，查看色差与批量统计。" />
+                                <Expander Header="坐标与光谱信息" Margin="0,8,0,0">
+                                    <StackPanel>
+                                        <TextBlock x:Name="SelectedCoordinates" Style="{StaticResource Number}" Text="xy / u′v′ / XYZ / Lab / Luv" />
+                                        <TextBlock x:Name="SelectedSpectrum" Style="{StaticResource Number}" />
+                                    </StackPanel>
+                                </Expander>
+                                <Expander Header="参考白与判定条件" Margin="0,12,0,0" IsExpanded="False">
+                                    <StackPanel>
+                                        <ComboBox x:Name="WhitePresetCombo" DisplayMemberPath="Name" SelectionChanged="WhitePreset_Changed" AutomationProperties.Name="参考白预设" />
+                                        <TextBlock Text="与本窗口色度图共用参考白，应用后同步更新。" Style="{StaticResource Hint}" />
+                                        <UniformGrid Columns="2"><StackPanel><TextBlock Text="白点 x" /><TextBox x:Name="WhiteX" Text="0.31271" /></StackPanel><StackPanel><TextBlock Text="白点 y" /><TextBox x:Name="WhiteY" Text="0.32902" /></StackPanel></UniformGrid>
+                                        <TextBlock Text="绝对样品参考白 Y（cd/m²）" /><TextBox x:Name="WhiteLuminance" Text="100" />
+                                        <UniformGrid Columns="2"><StackPanel><TextBlock Text="ΔE00 阈值" /><TextBox x:Name="Threshold" Text="2" /></StackPanel><StackPanel><TextBlock Text="JNCD 步长" /><TextBox x:Name="JncdStep" Text="0.004" /></StackPanel></UniformGrid>
+                                        <Button x:Name="ApplyCalculationSettings" Content="应用计算条件" Click="ApplySettings_Click" HorizontalAlignment="Left" />
+                                        <TextBlock Text="所有样品统一采用此参考白，不自动进行色适应。JNCD 步长与阈值是可调整的约定。" Style="{StaticResource Hint}" />
+                                    </StackPanel>
+                                </Expander>
+                                <Expander Header="图层与标准色域" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <CheckBox x:Name="ShowCct" Content="黑体轨迹与色温参考" IsChecked="True" Checked="Display_Changed" Unchecked="Display_Changed" />
+                                        <CheckBox x:Name="ShowDaylight" Content="日光轨迹" Checked="Display_Changed" Unchecked="Display_Changed" />
+                                        <CheckBox x:Name="ShowWavelength" Content="主 / 补波长辅助线" IsChecked="True" Checked="Display_Changed" Unchecked="Display_Changed" />
+                                        <WrapPanel x:Name="GamutOptions" />
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Height="6" Background="Transparent" ResizeDirection="Rows" />
+                    <DockPanel Grid.Row="2">
+                        <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                            <Button Content="导入…" Click="OpenActionMenu_Click"><Button.ContextMenu><ContextMenu>
+                                <MenuItem Header="导入 CSV / TSV…" Click="Import_Click" /><MenuItem Header="粘贴 Excel 表格" Click="Paste_Click" />
+                                <Separator /><MenuItem Header="下载 CSV 模板…" Click="Template_Click" /><MenuItem Header="载入演示数据" Click="Demo_Click" />
+                            </ContextMenu></Button.ContextMenu></Button>
+                            <Button Content="导出…" Click="OpenActionMenu_Click"><Button.ContextMenu><ContextMenu>
+                                <MenuItem Header="导出全部样品 CSV…" Click="ExportCsv_Click" /><MenuItem Header="导出离线 HTML 报告…" Click="ExportReport_Click" />
+                            </ContextMenu></Button.ContextMenu></Button>
+                            <Button x:Name="SetReferenceButton" Content="设为参考" Click="SetReference_Click" IsEnabled="False" />
+                            <Button x:Name="SampleActionsButton" Content="更多…" Click="OpenActionMenu_Click"><Button.ContextMenu><ContextMenu>
+                                <MenuItem x:Name="UseAsPrimaryMenu" Header="用于色域" IsEnabled="False">
+                                    <MenuItem x:Name="UseAsRed" Header="设为红原色 R" Tag="R" Click="UseAsPrimary_Click" />
+                                    <MenuItem x:Name="UseAsGreen" Header="设为绿原色 G" Tag="G" Click="UseAsPrimary_Click" />
+                                    <MenuItem x:Name="UseAsBlue" Header="设为蓝原色 B" Tag="B" Click="UseAsPrimary_Click" />
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem Header="删除所选" Click="Delete_Click" /><MenuItem Header="清除参考" Click="ClearReference_Click" />
+                            </ContextMenu></Button.ContextMenu></Button>
+                            <TextBox x:Name="SampleFilter" Width="120" TextChanged="Filter_Changed" ToolTip="按名称或分组筛选" AutomationProperties.Name="筛选样品" />
+                        </WrapPanel>
+                        <TextBlock x:Name="BatchSummary" DockPanel.Dock="Bottom" Style="{StaticResource Hint}" Text="0 个样品" />
+                        <DataGrid x:Name="SamplesGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" SelectionMode="Extended"
+                                  SelectionUnit="FullRow" SelectionChanged="Samples_SelectionChanged" HeadersVisibility="Column" RowHeaderWidth="0"
+                                  EnableRowVirtualization="True" EnableColumnVirtualization="True" GridLinesVisibility="Horizontal" RowHeight="30" ColumnHeaderHeight="32">
+                            <DataGrid.CellStyle><Style TargetType="DataGridCell"><Setter Property="Padding" Value="4,2" /><Setter Property="VerticalContentAlignment" Value="Center" /></Style></DataGrid.CellStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="角色" Binding="{Binding Role}" Width="56" /><DataGridTextColumn Header="样品" Binding="{Binding Name}" Width="120" />
+                                <DataGridTextColumn Header="分组" Binding="{Binding Group}" Width="90" /><DataGridTextColumn Header="x" Binding="{Binding XText}" Width="80" />
+                                <DataGridTextColumn Header="y" Binding="{Binding YText}" Width="80" /><DataGridTextColumn Header="Y" Binding="{Binding LuminanceText}" Width="80" />
+                                <DataGridTextColumn Header="ΔE00" Binding="{Binding DeltaEText}" Width="80" /><DataGridTextColumn Header="判定" Binding="{Binding Result}" Width="100" />
+                                <DataGridTextColumn Header="CCT≈K" Binding="{Binding CctText}" Width="75" /><DataGridTextColumn Header="Duv" Binding="{Binding DuvText}" Width="85" />
+                                <DataGridTextColumn Header="Δu′v′" Binding="{Binding DeltaUvText}" Width="85" /><DataGridTextColumn Header="JNCD" Binding="{Binding JncdText}" Width="70" />
+                                <DataGridTextColumn Header="尺度" Binding="{Binding BasisText}" Width="90" /><DataGridTextColumn Header="来源" Binding="{Binding Source}" Width="160" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+                </Grid>
+                <ScrollViewer x:Name="CalculationHelp" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsChecked, ElementName=ShowHelp, Converter={StaticResource CieBoolVisibility}}"><StackPanel Margin="24" MaxWidth="860" HorizontalAlignment="Left">
+                    <TextBlock Text="让每一个结果都有明确的计算条件" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,18" />
+                    <TextBlock Text="数据与尺度" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="支持 xyY、XYZ、u′v′Y、CIELAB、CIELUV、sRGB 与仅 xy。色度坐标使用 CIE 1931 2°。相对样品的参考白 Y 固定为 100；绝对 XYZ 的 Y 单位为 cd/m²，参考白 Y 可配置。sRGB 按 D65 解码为相对 XYZ，属于推算值。仅色坐标样品可以比较 Δu′v′，不会假定其实际亮度。" />
+                    <TextBlock Text="色差与白点" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="ΔE76 为 CIELAB 欧氏距离；ΔEuv 为 CIELUV 欧氏距离；ΔE00 使用 CIEDE2000，kL=kC=kH=1；ΔE94 使用 graphic arts 参数；CMC 分别显示 1:1 与 2:1。CIE94 / CMC 具有方向性，以设定的参考样品作为公式中的第一色。所有样品使用相同白点，不自动做色适应。ΔE00 阈值用于比较，不代表任何行业认证。" />
+                    <TextBlock Text="Δu′v′、Duv 与 JNCD" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Δu′v′ 是两个样品在 CIE 1976 平面的距离；Duv 是单个样品到黑体轨迹在 CIE 1960 uv 平面的有符号距离，两者不能混用。JNCD=Δu′v′/步长，默认步长 0.004，仅为可修改的换算约定。" />
+                    <TextBlock Text="色温、主波长与纯度" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="CCT 是近似黑体轨迹上的最近投影，范围 1667–25000 K；轨迹距离大于 0.05 或落在范围端点时不报告。主波长使用参考白点向样品的射线与光谱轨迹交点；紫色区域报告反方向的补色波长。纯度为白点至样品距离 / 白点至边界距离，紫色区域使用紫线边界。白点自身、无效色坐标或光谱边界外不报告波长。图面颜色仅为屏幕示意。" />
+                    <TextBlock Text="面积比与覆盖率" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="面积比=样品三角形面积/标准三角形面积，可超过 100%；覆盖率=二者交集面积/标准三角形面积，范围 0–100%。两者均为所选 xy 或 u′v′ 平面上的二维面积，不是三维色域体积。选择结果行可查看交集填充。" />
+                    <TextBlock Text="导入与保存" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="CSV / Excel TSV 支持带表头的 Space,V1,V2,V3 格式，以及 X,Y,Z 或 x,y,Y 或 x,y 简表（区分大小写）。Name、Group、Source、Basis 可选；Basis 为 Relative、Absolute、ChromaticityOnly，默认 Relative。小数点使用 .，不解析公式。整批验证后才加入；最多 5000 点。CSV 保存 XYZ 原值与色差结果，JSON 会话另存参考样品、白点与图层条件。筛选只影响图和表的显示，批量统计及导出使用全部样品。报告为含图像的离线 HTML，可在浏览器打印。色域页的输入和结果独立导出，不包含在样品会话中。" />
+                    <TextBlock Text="算法依据" Style="{StaticResource SectionTitle}" />
+                    <TextBlock><Hyperlink NavigateUri="https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/" RequestNavigate="ReferenceLink_Click">Sharma、Wu、Dalal：CIEDE2000 实现说明与 34 组验证数据</Hyperlink></TextBlock>
+                    <TextBlock Margin="0,8"><Hyperlink NavigateUri="https://www.cie.co.at/publications/terms-related-planckian-radiation-temperature-light-sources" RequestNavigate="ReferenceLink_Click">CIE TN 013:2022：色温的定义与适用范围</Hyperlink></TextBlock>
+                </StackPanel></ScrollViewer>
+        </Grid>
+    </DockPanel>
+</UserControl>

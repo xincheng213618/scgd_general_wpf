@@ -1,5 +1,6 @@
 #pragma warning disable CA1859,CS8604
 using ColorVision.FileIO;
+using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
 using log4net;
@@ -19,7 +20,9 @@ namespace ColorVision.Engine.Media
         private static readonly ILog Log = LogManager.GetLogger(typeof(CvRawLayerController));
         private readonly ImageView _imageView;
         private readonly string _filePath;
+        private readonly bool _isCie;
         private readonly CVCIEFile? _liveXyz;
+        private readonly RawColorMeasurementSource? _rawColor;
         private readonly WriteableBitmap? _liveSource;
         private ImageLayerDescriptor _lastSuccessfulLayer;
         private CancellationTokenSource? _selection;
@@ -30,15 +33,17 @@ namespace ColorVision.Engine.Media
         private readonly record struct FileStamp(long Length, DateTime LastWriteTime);
         private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap);
 
-        private CvRawLayerController(ImageView imageView, string filePath, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
-            CVCIEFile? liveXyz = null, WriteableBitmap? liveSource = null)
+        private CvRawLayerController(ImageView imageView, string filePath, bool isCie, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
+            CVCIEFile? liveXyz = null, WriteableBitmap? liveSource = null, RawColorMeasurementSource? rawColor = null)
         {
             _imageView = imageView;
             _filePath = filePath;
+            _isCie = isCie;
             Layers = layers;
             DefaultLayer = layers.FirstOrDefault(layer => layer.Id == displayedLayerId) ?? layers[0];
             _lastSuccessfulLayer = DefaultLayer;
             _liveXyz = liveXyz;
+            _rawColor = rawColor;
             if (liveSource != null)
             {
                 _liveSource = liveSource.Clone();
@@ -52,12 +57,18 @@ namespace ColorVision.Engine.Media
 
         public static CvRawLayerController Create(ImageView imageView, string filePath, bool isCie, int channelCount, int bpp, bool hasRgbLayers, string displayedLayerId)
         {
-            return new CvRawLayerController(imageView, filePath, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId);
+            return new CvRawLayerController(imageView, filePath, isCie, BuildLayers(isCie, channelCount, bpp, hasRgbLayers), displayedLayerId);
         }
 
         public static IImageLayerController CreateLive(ImageView imageView, CVCIEFile xyz, WriteableBitmap source, string displayedLayerId)
         {
-            return new CvRawLayerController(imageView, string.Empty, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
+            return new CvRawLayerController(imageView, string.Empty, true, BuildLayers(true, xyz.Channels, xyz.Bpp, false), displayedLayerId, xyz, source);
+        }
+
+        internal static CvRawLayerController CreateCalibratedRaw(ImageView imageView, string path, RawColorMeasurementSource source, string displayedLayerId)
+        {
+            var layers = BuildLayers(true, source.Channels, 32, source.Channels >= 3).Where(layer => layer.Id != "cie-srgb").ToArray();
+            return new CvRawLayerController(imageView, path, true, layers, displayedLayerId, rawColor: source);
         }
 
         public static WriteableBitmap LoadSrgb(string filePath, CvcieBrightnessMode brightnessMode, double referenceWhiteLuminance, CancellationToken cancellationToken = default)
@@ -160,6 +171,17 @@ namespace ColorVision.Engine.Media
             double white = config.ReferenceWhiteLuminance;
             try
             {
+                // A CVRAW RGB selection is a display choice, not a new document source.
+                // Keep the already loaded composite in place so channel changes neither
+                // reread the file nor publish a colored intermediate frame.
+                if ((!_isCie || (_rawColor != null && _lastSuccessfulLayer.Kind != ImageLayerKind.Derived))
+                    && (layer.Id == "composite" || layer.SourceChannelIndex.HasValue))
+                {
+                    _imageView.ExtractChannel(layer.SourceChannelIndex ?? -1);
+                    _lastSuccessfulLayer = layer;
+                    return;
+                }
+
                 FileStamp stamp = GetFileStamp();
                 DisplayCache? cache = layer.Id == "cie-srgb" ? _srgbCache : _channelCache;
                 WriteableBitmap bitmap;
@@ -242,7 +264,7 @@ namespace ColorVision.Engine.Media
 
         private FileStamp GetFileStamp()
         {
-            if (_liveXyz != null) return default;
+            if (_liveXyz != null || _rawColor != null) return default;
             FileInfo file = new(_filePath);
             return new FileStamp(file.Length, file.LastWriteTimeUtc);
         }
@@ -268,12 +290,26 @@ namespace ColorVision.Engine.Media
         {
             usesLuminance = false;
             if (_liveSource != null) return _liveSource;
+            if (_rawColor != null)
+            {
+                using CVCIEFile raw = _rawColor.GetRawFile();
+                return ConvertForDisplay(raw, token);
+            }
             using CVCIEFile source = LoadSourceFile(_filePath, out usesLuminance, token);
             return ConvertForDisplay(source, token);
         }
 
         private WriteableBitmap LoadCieChannel(int index, CancellationToken token)
         {
+            if (_rawColor != null)
+            {
+                using CVCIEFile rawPlane = new()
+                {
+                    Cols = _rawColor.Width, Rows = _rawColor.Height, Bpp = 32, Channels = 1, FileExtType = CVType.Raw,
+                    Data = _rawColor.CreateChannel(_rawColor.Channels == 1 ? 0 : index, token),
+                };
+                return ConvertForDisplay(rawPlane, token);
+            }
             if (_liveXyz == null)
             {
                 if (CVFileUtil.ReadCIEFileHeader(_filePath, out CVCIEFile header) <= 0)

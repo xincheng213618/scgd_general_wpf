@@ -182,13 +182,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 .Where(item => item.Key.IsSubclassOf(typeof(STNode))
                     && !item.Key.IsAbstract
                     && !item.Key.IsDefined(typeof(ObsoleteAttribute), inherit: false))
-                .GroupBy(item => item.Value)
+                .GroupBy(item => LocalizeNodeMenuPath(item.Value), StringComparer.Ordinal)
                 .OrderBy(group => group.Key, Comparer<string>.Create(
                     (x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y)));
 
             foreach (var group in groups)
             {
-                var categoryItem = new MenuItem { Header = LocalizeNodeMenuPath(group.Key) };
+                var categoryItem = new MenuItem { Header = group.Key };
                 foreach (var entry in group.OrderBy(item => item.Key.Name, StringComparer.CurrentCulture))
                 {
                     STNode? previewNode;

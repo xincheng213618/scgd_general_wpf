@@ -1,0 +1,720 @@
+[
+  {
+    "type": "FlowEngineLib.AOILocAndRegPixelsCameraNode",
+    "request": {
+      "POI_MasterId": -1,
+      "AlgParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-AlgTempName"
+      },
+      "OutputTemplate": {
+        "ID": -1,
+        "Name": "fixture-OutputTempName"
+      },
+      "Channel": 1,
+      "AlgParamType": "OLED_FindDotsArrayAndRebuildPixelsMem",
+      "Gain": 10.0,
+      "AvgCount": 1,
+      "FlipMode": -99,
+      "ExpTime": [
+        100.0
+      ],
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CaliTempName"
+      },
+      "ImageSaveBpp": 16,
+      "ImageOutName": ""
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.AOILocatePixelsCameraNode",
+    "request": {
+      "AlgParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-AlgTempName"
+      },
+      "Channel": 1,
+      "AlgParamType": "FindLed",
+      "Gain": 10.0,
+      "AvgCount": 1,
+      "FlipMode": -99,
+      "ExpTime": [
+        100.0
+      ],
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CaliTempName"
+      },
+      "ImageSaveBpp": 16,
+      "ImageOutName": ""
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.AOIRegisterPixelsCameraNode",
+    "request": {
+      "POI_MasterId": -1,
+      "AlgParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-AlgTempName"
+      },
+      "OutputTemplate": {
+        "ID": -1,
+        "Name": "fixture-OutputTempName"
+      },
+      "Channel": 1,
+      "AlgParamType": "OLED_RebuildPixelsMem",
+      "Gain": 10.0,
+      "AvgCount": 1,
+      "FlipMode": -99,
+      "ExpTime": [
+        100.0
+      ],
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CaliTempName"
+      },
+      "ImageSaveBpp": 16,
+      "ImageOutName": ""
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.BuildPOINode",
+    "request": {
+      "BuildType": 0,
+      "POILayoutReq": -99,
+      "POITemplateParam": {
+        "ID": -1,
+        "Name": "fixture-LayoutROITemplate"
+      },
+      "RePOITemplateParam": null,
+      "CADMappingParam": null,
+      "PrefixName": null,
+      "POIStorageType": 0,
+      "OutputFileName": "pos.csv",
+      "POITypeData": {
+        "PointType": -99,
+        "Width": 0.0,
+        "Height": 0.0
+      },
+      "BufferLen": 1024,
+      "SavePOITemplate": {
+        "ID": -1,
+        "Name": "fixture-SavePOITempName"
+      },
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": ""
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_1 关注点"
+  },
+  {
+    "type": "FlowEngineLib.CamMotorNode",
+    "request": {
+      "nPosition": 0,
+      "bAbs": true
+    },
+    "menu": "07 传感器"
+  },
+  {
+    "type": "FlowEngineLib.CommonSensorNode",
+    "request": {
+      "Cmd": null,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      }
+    },
+    "menu": "07 传感器"
+  },
+  {
+    "type": "FlowEngineLib.CVCameraNode",
+    "request": {
+      "CV2LVChannel": -1,
+      "EnableFocus": false,
+      "Focus": 0,
+      "Aperture": 0.0,
+      "Gain": 10.0,
+      "AvgCount": 1,
+      "FlipMode": -99,
+      "ExpTime": [
+        100.0,
+        100.0,
+        100.0
+      ],
+      "ExpTimeTemplate": null,
+      "AutoExpTimeTemplate": null,
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CalibTempName"
+      },
+      "POIParam": {
+        "POI": {
+          "ID": -1,
+          "Name": "fixture-POITempName"
+        },
+        "Filter": {
+          "ID": -1,
+          "Name": "fixture-POIFilterTempName"
+        },
+        "Revise": {
+          "ID": -1,
+          "Name": "fixture-POIReviseTempName"
+        }
+      }
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.POINode",
+    "request": {
+      "FilterTemplate": {
+        "ID": -1,
+        "Name": "fixture-FilterTemplateName"
+      },
+      "ReviseTemplate": {
+        "ID": -1,
+        "Name": "fixture-ReviseTemplateName"
+      },
+      "OutputTemplate": {
+        "ID": -1,
+        "Name": "fixture-OutputTemplateName"
+      },
+      "IsSubPixel": false,
+      "IsCCTWave": true,
+      "OutputFileName": null,
+      "IsInversion": false,
+      "BufferLen": 0,
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_1 关注点"
+  },
+  {
+    "type": "FlowEngineLib.SMUFromCSVNode",
+    "request": {
+      "SerialNumber": "SYNTHETIC-EDITOR-MIGRATION",
+      "TempName": ""
+    },
+    "menu": "04 源表"
+  },
+  {
+    "type": "FlowEngineLib.SMUModelNode",
+    "request": {
+      "SerialNumber": "SYNTHETIC-EDITOR-MIGRATION",
+      "TempName": ""
+    },
+    "menu": "04 源表"
+  },
+  {
+    "type": "FlowEngineLib.SMUNode",
+    "request": {
+      "SerialNumber": "SYNTHETIC-EDITOR-MIGRATION",
+      "TempName": ""
+    },
+    "menu": "04 源表"
+  },
+  {
+    "type": "FlowEngineLib.TempCommonSensorNode",
+    "request": {
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      }
+    },
+    "menu": "07 传感器"
+  },
+  {
+    "type": "FlowEngineLib.Algorithm.AlgorithmARVRNode",
+    "request": {
+      "POITemplateParam": {
+        "ID": -1,
+        "Name": "fixture-POITempName"
+      },
+      "OutputFileName": "result.json",
+      "IsInversion": false,
+      "BufferLen": 1024,
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": ""
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_2 Algorithm"
+  },
+  {
+    "type": "FlowEngineLib.Algorithm.CalibrationNode",
+    "request": {
+      "POI_MasterId": -1,
+      "ExpTemplateParam": {
+        "ID": -1,
+        "Name": "fixture-ExpTempName"
+      },
+      "POIParam": {
+        "POI": {
+          "ID": -1,
+          "Name": "fixture-POITempName"
+        },
+        "Filter": {
+          "ID": -1,
+          "Name": "fixture-POIFilterTempName"
+        },
+        "Revise": {
+          "ID": -1,
+          "Name": "fixture-POIReviseTempName"
+        }
+      },
+      "IsSaveCIE": true,
+      "OutputFileName": null,
+      "IsInversion": false,
+      "BufferLen": 0,
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_3 校正"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgDataLoadNode",
+    "request": {
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      }
+    },
+    "menu": null
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode",
+    "request": {
+      "OIndex": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "SavePOITemplate": {
+        "ID": -1,
+        "Name": "fixture-SavePOITempName"
+      },
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_2 Algorithm"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode",
+    "request": {
+      "SavePOITemplate": {
+        "ID": -1,
+        "Name": "fixture-SavePOITempName"
+      },
+      "OIndex": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "BufferLen": 1024,
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": ""
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_2 Algorithm"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmImageROINode",
+    "request": {
+      "ResultDataFileName": "imgROI.cvraw",
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_3 Image"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmKBNode",
+    "request": {
+      "CaliTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_4 KB"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmKBOutputNode",
+    "request": {
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_4 KB"
+  },
+  {
+    "type": "FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode",
+    "request": {
+      "FixedLEDPoint": [
+        {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        {
+          "X": 0.0,
+          "Y": 0.0
+        }
+      ],
+      "FDAType": 0,
+      "ImgPosResultFile": "ImgPos.tif",
+      "OutputFileName": "pos.csv",
+      "IsInversion": false,
+      "BufferLen": 0,
+      "SMUData": null,
+      "Color": 0,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": null
+  },
+  {
+    "type": "FlowEngineLib.Node.Camera.CommCameraNode",
+    "request": {
+      "FlipMode": -99,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "IsHDR": false,
+      "POIParam": {
+        "POI": {
+          "ID": -1,
+          "Name": "fixture-POITempName"
+        },
+        "Filter": {
+          "ID": -1,
+          "Name": "fixture-POIFilterTempName"
+        },
+        "Revise": {
+          "ID": -1,
+          "Name": "fixture-POIReviseTempName"
+        }
+      },
+      "CamParamTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CalibTempName"
+      }
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.Node.Camera.CVAOI2CameraNode",
+    "request": {
+      "POI_MasterId": -1,
+      "AlgParamType": "OLED_RebuildPixelsMem",
+      "AlgParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-AlgTempName"
+      },
+      "ImageSaveBpp": 16,
+      "FlipMode": -99,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "IsHDR": false,
+      "POIParam": null,
+      "CamParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-CamTempName"
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CalibTempName"
+      }
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.Node.Camera.CVAOICameraNode",
+    "request": {
+      "AlgParamType": "FindLed",
+      "AlgParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-AlgTempName"
+      },
+      "ImageSaveBpp": 16,
+      "FlipMode": -99,
+      "AutoExpTimeTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "IsAutoExpWithND": false,
+      "IsAutoExpTime": false,
+      "IsHDR": false,
+      "POIParam": null,
+      "CamParamTemplate": {
+        "ID": -1,
+        "Name": "fixture-CamTempName"
+      },
+      "Calibration": {
+        "ID": -1,
+        "Name": "fixture-CalibTempName"
+      }
+    },
+    "menu": "02 相机"
+  },
+  {
+    "type": "FlowEngineLib.Node.OLED.Calibration2InNode",
+    "request": {
+      "POI_MasterId": -1,
+      "ExpTemplateParam": {
+        "ID": -1,
+        "Name": "fixture-ExpTempName"
+      },
+      "POIParam": null,
+      "IsSaveCIE": true,
+      "OutputFileName": null,
+      "IsInversion": false,
+      "BufferLen": 0,
+      "SMUData": null,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_3 校正"
+  },
+  {
+    "type": "FlowEngineLib.Node.OLED.OLEDImageCroppingNode",
+    "request": {
+      "ROI_MasterId": -1,
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": null
+  },
+  {
+    "type": "FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode",
+    "request": {
+      "CIE_MasterId": -1,
+      "POI_MasterId": -1,
+      "OutputTemplate": {
+        "ID": -1,
+        "Name": "fixture-OutputTemplateName"
+      },
+      "Color": 1,
+      "Channel": 1,
+      "ImgFileName": null,
+      "FileType": -1,
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_5 OLED"
+  },
+  {
+    "type": "FlowEngineLib.Node.POI.POIAnalysisNode",
+    "request": {
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TempName"
+      },
+      "MasterId": -1,
+      "MasterValue": null,
+      "MasterResultType": -1
+    },
+    "menu": "03_1 关注点"
+  },
+  {
+    "type": "FlowEngineLib.Node.POI.POIReviseNode",
+    "request": {
+      "TemplateParam": {
+        "ID": -1,
+        "Name": "fixture-TemplateName"
+      },
+      "OutputParam": null,
+      "POIPointName": "",
+      "IsSelfResultRevise": false,
+      "SPE_MasterId": -1,
+      "POI_MasterId": -1
+    },
+    "menu": "03_1 关注点"
+  },
+  {
+    "type": "FlowEngineLib.Node.POI.RealPOINode",
+    "request": {
+      "ImgFileName": "",
+      "POITypeData": {
+        "PointType": -99,
+        "Width": 10.0,
+        "Height": 10.0
+      },
+      "CIE_MasterId": -1,
+      "POI_MasterId": -1,
+      "MasterResultType": -1,
+      "FilterTemplate": {
+        "ID": -1,
+        "Name": "fixture-FilterTemplateName"
+      },
+      "ReviseTemplate": {
+        "ID": -1,
+        "Name": "fixture-ReviseTemplateName"
+      },
+      "OutputTemplate": {
+        "ID": -1,
+        "Name": "fixture-OutputTemplateName"
+      },
+      "SubPixelTemplate": {
+        "ID": -1,
+        "Name": ""
+      },
+      "POIReviseFileName": "",
+      "IsResultAdd": false,
+      "IsSubPixel": false,
+      "IsCCTWave": true,
+      "SMUData": null
+    },
+    "menu": "03_1 关注点"
+  }
+]

@@ -14,7 +14,7 @@ public enum FlowTerminationStatus
 }
 
 [STNode("/01 运算", "以指定状态立即结束当前流程")]
-public sealed class FlowTerminationNode : CVCommonNode
+public sealed class FlowTerminationNode : CVDeviceNode
 {
 	private FlowTerminationStatus terminationStatus;
 	private string reason = string.Empty;

@@ -1,3 +1,7 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using System.Reflection;
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -8,7 +12,6 @@ using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Text;
@@ -27,7 +30,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         node.Create();
 
         Assert.Equal("LocalFindLuminousAreaV2", node.NodeType);
-        Assert.Equal("本地发光区定位(V2)", node.Title);
+        Assert.Equal("发光区定位", node.Title);
         Assert.Equal(["IN"], node.GetAllInputOptions().Select(option => option.Text));
         Assert.Equal(["OUT"], node.GetAllOutputOptions().Select(option => option.Text));
         Assert.Equal(string.Empty, node.ImageFilePath);
@@ -36,17 +39,13 @@ public sealed class LocalFindLuminousAreaNodeTests
         Assert.Equal(LocalFindLuminousAreaNode.DefaultMinimumConfidence, node.MinimumConfidence);
         Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("BufferLen"));
         Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("OIndex"));
-        Assert.Equal(typeof(FlowPoiTemplateEditor), FlowNodePropertyEditorAttribute.Resolve(
-            typeof(LocalFindLuminousAreaNode), nameof(LocalFindLuminousAreaNode.SavePOITempName)));
+        Assert.Equal(typeof(PoiTemplatePropertiesEditor), typeof(LocalFindLuminousAreaNode).GetProperty(nameof(LocalFindLuminousAreaNode.SavePOITempName))!.GetCustomAttribute<PropertyEditorTypeAttribute>()?.EditorType);
     }
 
     [Fact]
-    public void LocalOnlyDeviceCodeIsHiddenFromUserConfiguration()
+    public void LocalAlgorithmHasNoDeviceCode()
     {
-        var deviceCode = typeof(LocalFindLuminousAreaNode).GetProperty(nameof(LocalFindLuminousAreaNode.DeviceCode));
-
-        Assert.NotNull(deviceCode);
-        Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(deviceCode!));
+        Assert.Null(typeof(LocalFindLuminousAreaNode).GetProperty("DeviceCode"));
     }
 
     [Fact]
@@ -611,6 +610,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void InputImageResultFallsBackToPersistedFileWhenMemoryFrameIsUnavailable()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-LuminousArea-Input-{Guid.NewGuid():N}.png");
         CVStartCFC action = new("input-image-result");
         try
@@ -631,6 +632,15 @@ public sealed class LocalFindLuminousAreaNodeTests
             LocalFindLuminousAreaNode node = new(services);
 
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+            var stages = timing.Finish().Stages;
+            var open = Assert.Single(stages, stage => stage.Name == "OpenImage");
+            Assert.Equal("Completed", open.Status);
+            Assert.Contains(stages, stage => stage.Name == "ReadImageHeader" && stage.ParentId == open.Id);
+            Assert.Contains(stages, stage => stage.Name == "DecodeImage" && stage.ParentId == open.Id);
+            Assert.Contains(stages, stage => stage.Name == "Algorithm" && stage.Status == "Completed");
+            Assert.Contains(stages, stage => stage.Name == "PersistResult" && stage.Status == "Completed");
+            Assert.Contains("OpenImage", timing.SerializePayload(result));
+
 
             Assert.Equal(1, services.GetImageResultCount);
             Assert.Equal(1, services.LoadCount);
@@ -648,6 +658,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void UpstreamFrameTakesPriorityOverConfiguredFallbackFile()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         CVStartCFC action = CreateRawAction("upstream-priority");
         Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? expectedFrame));
         FakeNodeServices services = new()
@@ -662,12 +674,53 @@ public sealed class LocalFindLuminousAreaNodeTests
         try
         {
             LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+            var stages = timing.Finish().Stages;
+            var open = Assert.Single(stages, stage => stage.Name == "OpenImage");
+            Assert.Equal("Skipped", open.Status);
+            Assert.Equal(0, open.ElapsedMs);
+            Assert.DoesNotContain(stages, stage => stage.Name == "DecodeImage" || stage.Name == "ReadImageData");
+
 
             Assert.Equal(0, services.LoadCount);
             Assert.True(action.TryGetCurrentFrame(out LocalFlowFrame? actualFrame));
             Assert.Same(expectedFrame, actualFrame);
             Assert.Equal(expectedFrame!.FrameId.ToString("N"), result.FrameId);
             Assert.Null(result.ImageFilePath);
+        }
+        finally
+        {
+            action.RuntimeResources.Dispose();
+        }
+    }
+
+    [Fact]
+    public void UntransformedMemoryFramePersistsKnownSourceFilePath()
+    {
+        const string sourcePath = @"C:\capture\White51.png";
+        CVStartCFC action = CreateRawAction("known-source", sourcePath);
+        LocalFindLuminousAreaPersistenceRequest? persisted = null;
+        FakeNodeServices services = new()
+        {
+            DetectHandler = (_, _, _) => CreateSuccessfulDetection(),
+            PersistHandler = request =>
+            {
+                persisted = request;
+                return 80;
+            }
+        };
+        LocalFindLuminousAreaNode node = new(services);
+        try
+        {
+            LocalFindLuminousAreaNodeResultData result = node.ExecuteSynchronously(action);
+
+            Assert.NotNull(persisted);
+            Assert.Equal(sourcePath, persisted!.ImageFilePath);
+            Assert.Equal(sourcePath, result.ImageFilePath);
+            JObject parameters = JObject.FromObject(persisted.Parameters);
+            Assert.Equal(sourcePath, parameters.Value<string>("ImageFilePath"));
+            Assert.Equal(sourcePath, parameters.Value<string>("SourceFilePath"));
+            Assert.False(parameters.Value<bool>("ImageRead"));
+            Assert.False(parameters.Value<bool>("MemoryOnly"));
         }
         finally
         {
@@ -789,6 +842,8 @@ public sealed class LocalFindLuminousAreaNodeTests
     [Fact]
     public void PersistenceFailureDoesNotPublishOrExposeUncommittedMaster()
     {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
         CVStartCFC action = CreateRawAction("persistence-failure");
         FakeNodeServices services = new()
         {
@@ -801,6 +856,10 @@ public sealed class LocalFindLuminousAreaNodeTests
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => node.ExecuteSynchronously(action));
 
             Assert.Equal("transaction crashed", exception.Message);
+            var stages = timing.Finish().Stages;
+            Assert.Contains(stages, stage => stage.Name == "Algorithm" && stage.Status == "Completed");
+            Assert.Contains(stages, stage => stage.Name == "PersistResult" && stage.Status == "Failed");
+
             Assert.Equal(1, services.PersistCount);
             Assert.Equal(0, services.PublishCount);
             Assert.False(action.Data.ContainsKey("MasterId"));
@@ -954,7 +1013,7 @@ public sealed class LocalFindLuminousAreaNodeTests
         new(9.8, 70.3)
     ];
 
-    private static CVStartCFC CreateRawAction(string serialNumber)
+    private static CVStartCFC CreateRawAction(string serialNumber, string sourceFilePath = "")
     {
         const int width = 8;
         const int height = 6;
@@ -965,6 +1024,7 @@ public sealed class LocalFindLuminousAreaNodeTests
                 Height = height,
                 SourceBpp = 8,
                 Channels = 1,
+                SourceFilePath = sourceFilePath,
                 PrimaryBufferKind = LocalFrameBufferKind.CvRaw
             },
             rawLength: width * height,

@@ -31,6 +31,7 @@ try:
         validate_service_host_runtime,
     )
     from .generate_shared_files import build_release_manifest
+    from .native_runtime_integrity import ensure_native_runtime_integrity
     from .build_update import get_all_files, get_file_version
     from .installer_shared_files import collect_installer_shared_files
     from .operations_watchdog_runtime import (
@@ -58,6 +59,7 @@ except ImportError:
         validate_service_host_runtime,
     )
     from generate_shared_files import build_release_manifest
+    from native_runtime_integrity import ensure_native_runtime_integrity
     from build_update import get_all_files, get_file_version
     from installer_shared_files import collect_installer_shared_files
     from operations_watchdog_runtime import (
@@ -257,6 +259,11 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
         if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
+            return False
+        try:
+            ensure_native_runtime_integrity(solution_path.parent, runtime_directory, repair=True)
+        except (OSError, ValueError) as exc:
+            print(f"Native runtime integrity check failed: {exc}")
             return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False

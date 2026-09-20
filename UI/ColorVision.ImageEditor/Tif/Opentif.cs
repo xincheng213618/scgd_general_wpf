@@ -178,7 +178,7 @@ namespace ColorVision.ImageEditor.Tif
             PixelFormat pixelFormat,
             BitmapPalette? palette)
         {
-            if (currentBitmap != null &&
+            if (currentBitmap != null && !currentBitmap.IsFrozen &&
                 currentBitmap.PixelWidth == width &&
                 currentBitmap.PixelHeight == height &&
                 currentBitmap.Format == pixelFormat &&
@@ -303,7 +303,8 @@ namespace ColorVision.ImageEditor.Tif
                     metadata.DateTaken,
                     metadata.ApplicationName,
                     metadata.Title,
-                    metadata.Subject);
+                    metadata.Subject,
+                    ColorVisionTiffParameters.TryRead(metadata, out ColorVisionTiffParameters? parameters) ? parameters : null);
             }
             catch
             {
@@ -325,6 +326,31 @@ namespace ColorVision.ImageEditor.Tif
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageTitle, metadata.Title, nameof(Opentif), "EXIF 标题");
             if (metadata.Subject != null)
                 context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(Opentif), "EXIF 主题");
+            if (metadata.ColorVisionParameters != null)
+                ApplyColorVisionMetadata(context.Config, metadata.ColorVisionParameters);
+        }
+
+        internal static void ApplyColorVisionMetadata(ImageViewConfig config, ColorVisionTiffParameters parameters)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(parameters);
+
+            const string owner = nameof(Opentif);
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionSchema, parameters.Schema, owner, "ColorVision TIFF 参数架构版本");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionSourceType, parameters.SourceType, owner, "导出源文件类型");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionExportedChannel, parameters.ExportedChannel, owner, "导出的源图或测量通道");
+            if (parameters.InputFileName != null)
+                config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionInputFileName, parameters.InputFileName, owner, "参数所属的输入文件名");
+            if (parameters.AssociatedSourceFileName != null)
+                config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionAssociatedSourceFileName, parameters.AssociatedSourceFileName, owner, "CVCIE 关联源文件名");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionFileVersion, parameters.FileVersion, owner, "CVRAW/CVSRC/CVCIE 文件格式版本");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionRows, parameters.Rows, owner, "源文件图像行数");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionCols, parameters.Cols, owner, "源文件图像列数");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionBpp, parameters.Bpp, owner, "源文件单通道位深");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionSourceChannels, parameters.SourceChannels, owner, "源文件通道数");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionNdPort, parameters.NdPort, owner, "源文件 NDPort");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionGain, parameters.Gain, owner, "采集增益");
+            config.SetImageMetadata(ImageViewPropertyKeys.ColorVisionExposure, parameters.Exposure, owner, "各源通道曝光参数");
         }
 
         private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata);
@@ -335,9 +361,10 @@ namespace ColorVision.ImageEditor.Tif
             string? DateTaken,
             string? ApplicationName,
             string? Title,
-            string? Subject)
+            string? Subject,
+            ColorVisionTiffParameters? ColorVisionParameters)
         {
-            public static ImageMetadata Empty { get; } = new(null, null, null, null, null, null);
+            public static ImageMetadata Empty { get; } = new(null, null, null, null, null, null, null);
         }
     }
 }

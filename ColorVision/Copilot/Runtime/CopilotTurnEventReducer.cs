@@ -232,9 +232,7 @@ namespace ColorVision.Copilot
             var steeringLifecycle = state.SteeringLifecycle.Observe(agent.Event);
             var approvalLifecycle = state.ApprovalLifecycle.Observe(agent.Event);
             var toolLifecycle = state.ToolLifecycle.Observe(agent.Event);
-            var workspaceDiffExpected = agent.Event.Type == CopilotAgentEventType.ToolResult
-                && agent.Event.ToolResult?.Success == true
-                && agent.Event.ToolResult.WorkspaceMutation != null;
+            var workspaceDiffExpected = CopilotTurnWorkspaceDiffAccumulator.HasWorkspaceEvidence(agent.Event);
             CopilotCodeReviewSnapshot? pendingCodeReviewSnapshot = null;
             if (state.Mode == CopilotAgentMode.Review)
             {

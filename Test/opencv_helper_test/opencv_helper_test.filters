@@ -27,6 +27,9 @@
     <ClCompile Include="test_find_cross.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test_grid_distortion_v2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="test_cuda_fusion.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

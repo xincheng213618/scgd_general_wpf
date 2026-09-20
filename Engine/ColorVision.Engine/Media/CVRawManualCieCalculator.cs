@@ -1,6 +1,8 @@
 #pragma warning disable CA1707
 using ColorVision.Common.MVVM;
 using ColorVision.FileIO;
+using ColorVision.Core;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -85,7 +87,7 @@ namespace ColorVision.Engine.Media
 
     internal static class CVRawManualCieCalculator
     {
-        internal readonly record struct CalculationResult(byte[] XyzData, int Width, int Height, float[] Exposure);
+        internal readonly record struct CalculationResult(byte[] XyzData, int Width, int Height, float[] Exposure, ColorCalibrationSnapshot Snapshot);
 
         public static bool TryLoadLumFourColorCalibrationDefaults(string filePath, out CVRawManualCieConfig config, out string? errorMessage)
         {
@@ -222,7 +224,11 @@ namespace ColorVision.Engine.Media
             byte[] xyzData = new byte[checked(xyzPlanes.Length * sizeof(float))];
             Buffer.BlockCopy(xyzPlanes, 0, xyzData, 0, xyzData.Length);
 
-            return new CalculationResult(xyzData, rawFile.Cols, rawFile.Rows, exposure);
+            RawColorTransformV1 transform = RawColorTransformV1.Create();
+            transform.CalibrationType = 8;
+            transform.Coefficients = [xFrom0, xFrom1, xFrom2, yFrom0, yFrom1, yFrom2, zFrom0, zFrom1, zFrom2];
+            var snapshot = ColorCalibrationSnapshot.Create(transform, rawFile.Cols, rawFile.Rows, rawFile.Bpp, exposure, "Manual CIE");
+            return new CalculationResult(xyzData, rawFile.Cols, rawFile.Rows, exposure, snapshot);
         }
 
         private static float ResolveExposure(double configuredValue, float[]? sourceExposure, int index)

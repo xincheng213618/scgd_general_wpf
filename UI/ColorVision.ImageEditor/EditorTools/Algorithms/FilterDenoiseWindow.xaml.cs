@@ -1,6 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using log4net;
 using System;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         public FilterDenoiseWindow(ImageProcessingContext image, int defaultFilter = 0)
         {
             InitializeComponent();
+            this.ApplyCaption();
             _preview = ImageAlgorithmPreviewSession.Start(image);
             FilterCombo.SelectedIndex = defaultFilter;
             UpdatePanelVisibility();

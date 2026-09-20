@@ -5,7 +5,7 @@ status: "current"
 summary: "应用主题即时预览，启动页独立选择深色、浅色或跟随软件且下次启动生效；ThemeManager 的资源、系统跟随、窗口外观和保存边界。"
 aliases: ["切换深色主题","跟随系统","外观与语言","启动页主题","启动页默认深色","跟随软件主题","StartupTheme","ThemeConfig.StartupTheme","FollowApplication","主题切换为什么不生效","跟随系统但标题栏没变","强制主题重复资源字典","主题预览会自动保存吗","主题系统事件订阅释放","XAML绑定失败","ComboBoxItem","GridViewColumnHeader","圆角菜单","右键菜单","MenuPopupCornerRadius","MenuItemSecondaryForeground","ColorVision.Themes","ThemeManager","ThemeManager.Current","Theme","ApplyTheme","ForceApplyTheme","ApplyThemeChanged","CurrentTheme","CurrentUITheme","CurrentThemeChanged","CurrentUIThemeChanged","ApplyCaption","TryLoadPackageIcon","PackageIcon.png","ThemeConfig","ThemePropertiesEditor","AppsUseLightTheme"]
 code_paths: ["UI/ColorVision.Themes/README.md","UI/ColorVision.Themes/Theme.cs","UI/ColorVision.Themes/ThemeManager.cs","UI/ColorVision.Themes/ThemeManagerExtensions.cs","UI/ColorVision.Themes/Behaviors","UI/ColorVision.Themes/Windowing","UI/ColorVision.Themes/ThemeResourceDictionary.cs","UI/ColorVision.Themes/HandyControlStyleResources.cs","UI/ColorVision.Themes/Themes","UI/ColorVision.Themes/ColorVision.Themes.csproj","UI/ColorVision.UI/Themes/ThemeConfig.cs","UI/ColorVision.UI/Themes/StartupTheme.cs","UI/ColorVision.UI/Themes/ThemePropertiesEditor.cs","UI/ColorVision.UI/Properties/Resources.resx","UI/ColorVision.UI/Properties/Resources.en.resx","UI/ColorVision.UI/Properties/Resources.zh-Hant.resx","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs","UI/ColorVision.UI.Desktop/Settings/MenuOptions.cs","UI/ColorVision.UI.Desktop/Settings/SettingSearchProvider.cs","UI/ColorVision.UI/Extension/IIconExtension.cs","UI/ColorVision.UI/DisPlayManager.cs","ColorVision/App.xaml","ColorVision/App.xaml.cs","ColorVision/StartWindow.xaml.cs","ColorVision/StartWindow.Presentation.cs","ColorVision/CompactMainWindow.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs","Test/ColorVision.Themes.Tests/ThemeResourceTests.cs","Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/ThemeSettingsTests.cs","Test/ColorVision.UI.Tests/StartupThemeSettingsTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs","Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs","Test/ColorVision.UI.Tests/StartupPresentationTests.cs","Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs","Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs","Test/ColorVision.UI.Tests/MenuThemeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs"]
 related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platform.runtime","operations.main-window"]
 ---
 
@@ -82,11 +82,11 @@ related: ["ui.index","ui.settings","ui.property-grid","ui.configuration","platfo
 
 ## 窗口外观与生命周期
 
-`window.ApplyCaption(Icon: true)` 按窗口幂等接入：尚未加载时等待 Loaded，已加载时立即取得 HWND；后续订阅 `CurrentUIThemeChanged`，并切回窗口 Dispatcher。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。它只处理原生标题栏与图标，不接管 BaseWindow 的 WPF 标题按钮或紧凑主窗口布局。
+`window.ApplyCaption(Icon: true)` 按窗口幂等接入：原生窗口源尚未建立时等待 `SourceInitialized`，已有 HWND 时立即初始化，不等待内容 `Loaded`；后续订阅 `CurrentUIThemeChanged`，并切回窗口 Dispatcher。关闭时向保存的发布者解绑，包括全局管理器被替换的情况。默认图标资源缺失或解码失败不会阻断标题栏初始化。它只处理原生标题栏与图标，不接管 BaseWindow 的 WPF 标题按钮或紧凑主窗口布局。
 
 `ThemeManagerExtensions.TryLoadPackageIcon(Window)` 从窗口类型所在程序集目录读取 `PackageIcon.png`，用 OnLoad 解码并冻结后返回。路径、文件或解码不可用时返回 null；方法自身不赋值图标、不订阅主题、不调用 DWM。ApplyCaption 找到包图标时优先采用它，包括 Icon=false；该参数仅禁用默认图标回退。默认图标是 `Assets/Image/ColorVision.ico` / `ColorVision1.ico`。
 
-`SetWindowTitleBarColor` 恢复 DWM 默认 caption/border 色，再尝试旧/新沉浸式暗色属性；返回码仍不作为生效保证。Windows 版本与原生属性支持范围需要实际窗口验证。
+`SetWindowTitleBarColor` 恢复 DWM 默认 caption/border 色，先写当前 `DWMWA_USE_IMMERSIVE_DARK_MODE`（20），仅在调用失败时回退旧 Windows 10 使用的属性值 19；返回码仍不作为生效保证。Windows 版本与原生属性支持范围需要实际窗口验证。
 
 BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默认样式缺失时从兼容入口局部加载，不在类型初始化期间追加 Application 字典。启用 `IsBlurEnabled` 后首次 Loaded 初始化背景效果，订阅实际主题，并在关闭时向同一个管理器解绑、移除 HWND hook。Loaded 后改变该属性仍不自动初始化模糊。
 
@@ -121,6 +121,10 @@ BaseWindow 拥有自己的 WindowChrome、窗口命令及 WPF 标题按钮。默
 ## 对话框外观与键盘行为
 
 `Themes/Components/Dialog.xaml` 提供通用的 `CV.Button.Primary`、`CV.Button.Secondary`、`CV.Button.Text`、`CV.Tag.Border` 和 `CV.Card`。文字操作使用 `CV.Action.Foreground`，辅助说明使用不透明度 0.72 的 `CV.Text.Secondary`。悬停、按下、禁用等反馈仍由共享模板负责。
+
+`Controls/MessageBox.cs` 的 `MessageBox1.Show` 保留现有重载，由 `MessageBoxWindow` 统一呈现浅深主题消息。正文保持可选择、复制，使用透明底色；状态图标为矢量图形，确认/是与次要按钮有清晰层级，长文本按所在显示器工作区限制宽高并滚动，操作区始终留在正文外。`ShowAgain` 使用独立复选项行，返回“不再提示”的勾选值；传入 `true` 时直接跳过显示。
+
+普通调用在显式 owner 或应用的 Dispatcher 上显示。未传 owner 时优先使用活动窗口，再使用可见主窗口，否则屏幕居中；弹窗仅继承 owner 的 Topmost，不全局强制置顶。`defaultResult` 指定初始焦点及 Enter 默认按钮，无匹配项时使用第一个操作；它不会预先写入返回结果。按钮点击先写结果再关闭；Esc、标题栏关闭与 Alt+F4 对 OK 返回 OK，对 OKCancel/YesNoCancel 返回 Cancel，对 YesNo 返回 No，避免关闭被当作确认。`RightAlign`/`RtlReading` 由主题窗口处理；`ServiceNotification`/`DefaultDesktopOnly` 保留原生窗口语义并完整传递 options。`Test/ColorVision.Themes.Tests/MessageBoxTests.cs` 覆盖按钮结果、关闭/defaultResult 分离、后台线程调用、owner、选项、复选项及浅深主题长文本布局；真实多显示器混合 DPI 与屏幕阅读器仍需交互验收。
 
 检查更新窗口直接接入这套资源，“变更日志”“程序备份”“重新安装”保持主要操作文字层级。恢复、服务主机、应用与工具、RBAC 等现有消费者仍可通过 `Themes/UpdateDialogTheme.xaml` 使用旧 `UpdateDialog.*` 资源；旧文字按钮保留次要文字默认值。主程序的 `Update/UpdateDialogTheme.xaml` 继续是兼容入口。共享资源不引入更新、服务或权限业务依赖。
 

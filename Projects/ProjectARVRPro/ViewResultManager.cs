@@ -50,7 +50,7 @@ namespace ProjectARVRPro
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
-        [DisplayName("视图高度"), Category("View")]
+        [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
@@ -306,7 +306,6 @@ namespace ProjectARVRPro
 
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
-        public RelayCommand SlectSqlLiteDbCommand { get; set; }
 
         private readonly SqlSugarClient _db;
 
@@ -315,9 +314,6 @@ namespace ProjectARVRPro
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            SlectSqlLiteDbCommand = new RelayCommand(a => SlectSqlLiteDb());
-
-
 
             _db = new SqlSugarClient(new ConnectionConfig
             {
@@ -332,12 +328,6 @@ namespace ProjectARVRPro
             ResultJsonPayloadStorage.EnsureSchema(_db);
             LoadAll(Config.Count);
         }
-        public void SlectSqlLiteDb()
-        {
-            PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath);
-        }
-
-
         public void Query()
         {
             Query(null,null,Config.Count);

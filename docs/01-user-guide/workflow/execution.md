@@ -2,14 +2,14 @@
 knowledge_id: "flow.session"
 knowledge_type: "topic"
 status: "current"
-summary: "流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。"
-aliases: ["流程运行","流程没结束","执行流程","停止流程","执行耗时","流程后处理","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
-code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
+summary: "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
+aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
+code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs","Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]
 related: ["flow.architecture","flow.templates","flow.workspace","flow.headless","flow.diagnostics"]
 ---
 
-# Flow 启动、停止与最终化
+# 流程执行：启动、停止与最终化
 
 从“工作流程”面板或“流程编辑器”点击“执行流程”，运行对应工作区的节点图。本页说明启动前提、停止行为，以及如何区分引擎结束、后处理完成和结果落库。共享业务链由 `FlowExecutionSession` 编排；项目窗口直接持有 `FlowControl` 的入口可能使用自己的完成规则。
 
@@ -23,10 +23,18 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 | 当前图包含服务节点 `CVBaseServerNode` | 要求注册中心已连接且 `ServiceTokens` 非空；缺 token 时请求刷新并返回，需就绪后再次执行 |
 | 有有效起始节点 | 刷新起始节点选择；无效或为空时提示并返回 |
 | 当前会话没有活动运行 | 生命周期门禁拒绝并发启动，范围包含启动准备和收尾 |
-| 业务批次可以创建 | 在启动引擎前向 MySQL 写入 `MeasureBatchModel`；失败会中断启动，不受诊断 SQLite 的容错保护 |
+| 业务批次可以创建 | MySQL 已连接时，在启动引擎前写入 `MeasureBatchModel`；未连接时使用仅驻留内存的批次，不向配置库保存结果 |
 | 前处理通过，起始节点就绪 | 前处理拒绝时不启动引擎；随后最多等待5秒的起始节点准备，再尝试启动 |
 
-不含服务节点的图可以跳过注册中心/token 检查，但共享会话仍创建业务批次；“没有设备节点”不等于“不依赖数据库”。节点还可能有自己的文件、设备或环境要求。5秒是启动准备等待，不是整图执行上限；共享会话没有向 `FlowRunExecutor` 设置整图超时，节点自身仍可报告超时。
+不含服务节点的图可以跳过注册中心/token 检查；现有 MQTT/MQTT V5 开始节点即使未连接也可承担本地分发。包含服务节点时仍要求真实 MQTT 就绪。节点还可能有自己的文件、设备或环境要求。5秒是启动准备等待，不是整图执行上限；共享会话没有向 `FlowRunExecutor` 设置整图超时，节点自身仍可报告超时。
+
+## 无 MySQL/MQTT 的本地取图
+
+本地保存的流程可以沿用 MQTT 开始节点，连接“相机取图”（`LocalCameraNode`）和结束节点。准备好本地设备配置、相机驱动及有效 SDK 许可证后，无需运行服务即可在本机取图。也可使用本地图片节点验证图像输入链。
+
+未连接 MySQL 时，一次运行在启动时固定 `PersistResults=false`：相机及本地图片节点保留内存帧，供当前流程后续节点使用；相机仍可预览，节点启用保存文件时仍按原有目录保存图像。它们不会创建 MySQL 图像结果主表，也不会把结果写进 `ColorVision.Local.db`。现有诊断记录使用独立的诊断库，不能作为图像结果历史查询。
+
+此边界覆盖本地相机取图和本地图片输入，不代表所有带“本地”名称的算法已经脱离结果数据库。依赖 MySQL 模板/结果明细、校准数据、远端服务的节点，以及用户配置的前后处理，仍须满足各自依赖；不能直接把完整服务流程视为离线流程。真实 SDK、许可证和硬件采集需单独验收。
 
 ## 执行一次并确认终态
 
@@ -34,11 +42,13 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 2. 需要按保存版本复现时，先确认保存成功。UI 手动运行可使用未保存的画布；`FlowJob` 使用主工作区，不跟随任意独立窗口的激活状态。完整输入差异见[当前画布与已保存版本](./design.md#当前画布与已保存版本)。
 3. 点击“执行流程”，记录实际生成的 SN、批次和开始时间。进度及当前节点用于定位阶段，不作为成功凭据。
 4. 等待共享链最终化，再核对最终状态、后处理结果和本流程负责的输出。API 调用方使用 `RunFlowAndWaitForFinalizationAsync()`；事件订阅方使用 `RunFinalized`。
-5. 需要中止时点击“停止流程”，按下节确认后续状态；不要仅凭取消提示判断设备停稳或数据写入已停止。
+5. 节点图运行中需要中止时点击“停止流程”，按下节确认后续状态；不要仅凭取消提示判断设备停稳或数据写入已停止。
 
 ## 停止后会发生什么
 
 `StopFlow()` 请求取消活动生命周期的 token，并更新界面摘要。取消在不同阶段产生不同结果：
+
+“停止流程”按钮跟随节点图的 `FlowControl.IsFlowRun` 标记显示，不跟随完整执行生命周期；启动准备、前处理和图结束后的后处理阶段可能没有该按钮。下表描述 `StopFlow()` 被调用时的阶段行为，不表示各阶段都有可点击的停止按钮。
 
 | 请求停止时的阶段 | 后续行为 |
 | --- | --- |
@@ -71,6 +81,10 @@ related: ["flow.architecture","flow.templates","flow.workspace","flow.headless",
 `FlowJob` 仅将 `Succeeded` / `SucceededWithWarnings` 映射为成功，并将失败后处理摘要加入消息。它与读取已保存快照的 `HeadlessFlowJob` 是两条入口。部分 `Projects/*` 窗口直接监听 `FlowCompleted` 后执行自己的 `Processing`、导出或协议响应，须继续核对所属项目的完成规则。
 
 ## 耗时与落库状态
+
+“流程结果管理”读取 MySQL 批次历史。普通查询按设置中的批次序号顺序和查询数量读取，输入完整批次编号后按 Enter 或点击“搜索”应用条件；“重置”返回未指定批次的列表，高级查询保留独立条件入口。输入过程中不查询数据库，读取失败时保留原列表并显示错误。顶部概览只统计本次查询结果：完成数为 `Completed`，失败/超时数为 `Failed` 与 `OverTime`，平均耗时只取已完成批次；不代表全部历史产量或项目良率。
+
+列表与详情将批次耗时由毫秒换算为秒，时间采用 24 小时制。选中记录后可查看完整结果信息、打开测量结果或流程执行分析；手动后处理位于独立页签，仍需选中批次与处理器后执行。查询设置只展示查询数量和排列顺序，旧配置中的 `AutoRefreshView`、`InsertAtBeginning` 字段继续兼容读取，但不控制历史查询。
 
 | 字段或现象 | 判读方式 |
 | --- | --- |

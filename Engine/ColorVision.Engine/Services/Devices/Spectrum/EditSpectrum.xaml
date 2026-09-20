@@ -1,41 +1,243 @@
-<Window x:Class="ColorVision.Engine.Services.Devices.Spectrum.EditSpectrum"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Spectrum"
-             xmlns:config="clr-namespace:ColorVision.Engine.Services.Devices.Spectrum.Configs"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:hc="https://handyorg.github.io/handycontrol"
-             d:DataContext="{d:DesignInstance local:DeviceSpectrum}"
-             mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="600" Width="800" Initialized="UserControl_Initialized">
+﻿<Window x:Class="ColorVision.Engine.Services.Devices.Spectrum.EditSpectrum"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="{x:Static properties:Resources.SpectrumEditorTitle}"
+        Width="960" Height="680" MinWidth="860" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}"
+        SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Window.Resources>
-        <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
-        </Style>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
-            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="VisibleWhen"/>
+            <Style x:Key="CardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,12"/>
+                <Setter Property="Margin" Value="0,0,0,12"/>
+            </Style>
+            <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+            </Style>
+            <Style x:Key="HintStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="Opacity" Value="0.65"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+            </Style>
+            <Style x:Key="ConfigNavStyle" TargetType="{x:Type ListBox}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="VerticalAlignment" Value="Top"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+            </Style>
+
+            <Style x:Key="ConfigNavItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="MinHeight" Value="34"/>
+                <Setter Property="Padding" Value="10,7"/>
+                <Setter Property="Margin" Value="0,0,0,4"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Chrome"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="SelectionBar"
+                                            Width="3"
+                                            CornerRadius="2"
+                                            Background="{DynamicResource PrimaryBrush}"
+                                            Opacity="0"/>
+                                    <ContentPresenter x:Name="HeaderContent"
+                                                      Grid.Column="2"
+                                                      Content="{TemplateBinding Content}"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                    <Setter TargetName="SelectionBar" Property="Opacity" Value="1"/>
+                                    <Setter TargetName="HeaderContent" Property="TextElement.Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Chrome" Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
-    <Grid  Margin="5">
+    <Grid Margin="18,16,18,0" Background="{DynamicResource GlobalBackground}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSpectrum}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
-                <StackPanel x:Name="EditStackPanel" >
-
-
-                </StackPanel>
+        <Grid x:Name="EditorBody">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Border Style="{StaticResource CardStyle}">
+                <DockPanel>
+                    <TextBlock Text="{x:Static properties:Resources.Name}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <TextBox Text="{Binding EditConfig.Name, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" VerticalContentAlignment="Center" AutomationProperties.Name="{x:Static properties:Resources.Name}"/>
+                </DockPanel>
             </Border>
-        </ScrollViewer>
-        <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="174"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <ListBox x:Name="ConfigTabs" Style="{StaticResource ConfigNavStyle}" ItemContainerStyle="{StaticResource ConfigNavItemStyle}">
+                    <ListBoxItem x:Name="ConnectionTab" IsSelected="True" Content="{x:Static properties:Resources.SpectrumDeviceConnection}"/>
+                    <ListBoxItem x:Name="CalibrationTab" Content="{x:Static properties:Resources.SpectrumCalibrationCorrection}"/>
+                    <ListBoxItem x:Name="AcquisitionTab" Content="{x:Static properties:Resources.SpectrumAcquisitionSettings}"/>
+                    <ListBoxItem x:Name="ShutterTab" Content="{x:Static properties:Resources.SpectrumShutterSettings}"/>
+                    <ListBoxItem x:Name="NdTab" Content="{x:Static properties:Resources.SpectrumNdSettings}"/>
+                    <ListBoxItem x:Name="FileTab" Content="{x:Static properties:Resources.SpectrumFileSettings}"/>
+                </ListBox>
+                <Grid Grid.Column="2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=ConnectionTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumDeviceConnection}" Style="{StaticResource SectionTitleStyle}"/>
+                                <Grid Margin="0,4,0,12">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="125"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Static properties:Resources.SpectrumSN}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                                    <DockPanel Grid.Column="1">
+                                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.SpectrumSearchDevices}" Style="{StaticResource ToolbarButtonStyle}" Margin="10,0,0,0" Click="Search_Click"/>
+                                        <hc:ComboBox x:Name="SerialChoices" IsEditable="True" MinHeight="34" TextSearch.TextPath="SN"
+                                                     Text="{Binding EditConfig.SN, UpdateSourceTrigger=PropertyChanged}"
+                                                     AutomationProperties.Name="{x:Static properties:Resources.SpectrumSN}">
+                                            <hc:ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,3">
+                                                        <TextBlock Text="{Binding SN}" FontWeight="SemiBold"/>
+                                                        <WrapPanel>
+                                                            <TextBlock Text="{Binding DisplayModel}" Margin="0,0,10,0"/>
+                                                            <TextBlock Text="{Binding DiscoveryText}" Margin="0,0,10,0"/>
+                                                            <TextBlock Text="{Binding LicenseStatus}" Foreground="{Binding LicenseBrush}"/>
+                                                        </WrapPanel>
+                                                        <TextBlock Text="{Binding DiscoverySource}" FontSize="11" Opacity="0.65" Visibility="{Binding IsDiscovered, Converter={StaticResource VisibleWhen}}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </hc:ComboBox.ItemTemplate>
+                                        </hc:ComboBox>
+                                    </DockPanel>
+                                </Grid>
+                                <Border Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16">
+                                    <DockPanel LastChildFill="True">
+                                        <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <Button x:Name="ImportButton" Content="{x:Static properties:Resources.SpectrumEditorUpload}" Style="{StaticResource ToolbarButtonStyle}" Margin="0,0,6,0" Click="Import_Click" ToolTip="{x:Static properties:Resources.SpectrumEditorLicenseHint}"/>
+                                            <Button Content="{x:Static properties:Resources.SpectrumEditorManage}" Style="{StaticResource ToolbarButtonStyle}" Margin="0" Click="ManageLicenses_Click"/>
+                                        </WrapPanel>
+                                        <StackPanel x:Name="LicenseSummary" VerticalAlignment="Center">
+                                            <WrapPanel>
+                                                <TextBlock Text="{Binding DisplayModel}" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                                                <TextBlock Text="{Binding LicenseBadgeText}" Foreground="{Binding LicenseBrush}"/>
+                                            </WrapPanel>
+                                            <TextBlock Text="{Binding LicenseDateRange}" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.65" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                                <StackPanel x:Name="ConnectionFields"/>
+                                <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Margin="0,10,0,0" Padding="0,14,0,0">
+                                    <StackPanel>
+                                        <CheckBox Content="{x:Static properties:Resources.SpectrumEditorSerial}" IsChecked="{Binding Draft.IsSerialConnection}" Margin="0,0,0,10"/>
+                                        <StackPanel x:Name="SerialFields" Visibility="{Binding Draft.IsSerialConnection, Converter={StaticResource VisibleWhen}}"/>
+                                        <TextBlock Text="{x:Static properties:Resources.SpectrumEditorConnectionHint}" Style="{StaticResource HintStyle}" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Expander x:Name="DiscoveryExpander" Visibility="Collapsed" Header="{x:Static properties:Resources.SpectrumEditorSearchDetails}" Margin="0,14,0,0">
+                                    <TextBlock x:Name="DiscoveryDetails" Style="{StaticResource HintStyle}" Margin="0,8,0,0"/>
+                                </Expander>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=CalibrationTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumCalibrationCorrection}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="CalibrationFields"/>
+
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=AcquisitionTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumAcquisitionSettings}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="AcquisitionFields"/>
+
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=ShutterTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumShutterSettings}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="ShutterFields"/>
+                                <StackPanel x:Name="ShutterDetails" Visibility="{Binding EditConfig.IsShutterEnable, Converter={StaticResource VisibleWhen}}"/>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=NdTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumNdSettings}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="NdFields"/>
+
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=FileTab, Converter={StaticResource VisibleWhen}}">
+                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static properties:Resources.SpectrumFileSettings}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="FileFields"/>
+
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+        <StackPanel Grid.Row="1">
+            <ProgressBar x:Name="Progress" Height="3" IsIndeterminate="True" Visibility="Collapsed"/>
+            <TextBlock x:Name="StatusText" Style="{StaticResource HintStyle}" Margin="0,5,0,5" MaxHeight="48" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </StackPanel>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,14,0,14">
+            <DockPanel>
+                <Button x:Name="AdvancedButton" Content="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" Click="Advanced_Click" DockPanel.Dock="Left"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="OkButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="110" Height="36" Click="Ok_Click"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" IsCancel="True" Margin="4,0,0,6"/>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

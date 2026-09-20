@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <VersionPrefix>1.0.0.6</VersionPrefix>
+    <AssemblyOriginatorKeyFile>../../ColorVision.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
+    <CETCompat>false</CETCompat>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Engine/ColorVision.Engine/ColorVision.Engine.csproj" />
+    <ProjectReference Include="../../UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="manifest.json;README.md;CHANGELOG.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="RestoreCameraTestMetadata" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="manifest.json;README.md;CHANGELOG.md" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

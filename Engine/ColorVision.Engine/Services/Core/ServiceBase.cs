@@ -1,4 +1,4 @@
-﻿using ColorVision.Database;
+using ColorVision.Database;
 using SqlSugar;
 
 namespace ColorVision.Engine.Services
@@ -26,15 +26,13 @@ namespace ColorVision.Engine.Services
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            Db.Updateable(SysResourceModel).ExecuteCommand();
+            SysResourceDao.Instance.Save(SysResourceModel);
         }
 
         public override void Delete()
         {
             base.Delete();
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            int ret = Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
+            SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
         }
 
     }

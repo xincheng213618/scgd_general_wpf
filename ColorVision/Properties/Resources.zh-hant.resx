@@ -820,4 +820,80 @@
   <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>缺少安裝程式</value></data>
   <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>將安裝</value></data>
   <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>已略過</value></data>
+  <data name="CameraDriverWizardHeader" xml:space="preserve">
+    <value>相機驅動</value>
+  </data>
+  <data name="CameraDriverWizardIntro" xml:space="preserve">
+    <value>本機透過 USB 連接 ColorVision（QHY）相機時需要此驅動。開啟驅動管理可偵測、下載安裝或重新安裝；僅遠端使用時可直接點擊「下一步」跳過。</value>
+  </data>
+  <data name="CameraDriverWizardChecking" xml:space="preserve">
+    <value>正在偵測相機驅動安裝狀態。</value>
+  </data>
+  <data name="CameraDriverWizardUnknown" xml:space="preserve">
+    <value>暫時無法確認驅動安裝狀態，請重新偵測。</value>
+  </data>
+  <data name="CameraDriverWizardInstalledFormat" xml:space="preserve">
+    <value>已偵測到相機驅動，版本 {0}。如相機無法識別，仍可重新安裝。</value>
+  </data>
+  <data name="CameraDriverWizardMissing" xml:space="preserve">
+    <value>未偵測到完整的 ColorVision 相機驅動。</value>
+  </data>
+  <data name="CameraDriverWizardIncomplete" xml:space="preserve">
+    <value>偵測到部分安裝資訊，但驅動檔案或系統登記不完整，可重新下載安裝修復。</value>
+  </data>
+  <data name="CameraDriverWizardWorking" xml:space="preserve">
+    <value>正在校驗下載檔案或等待驅動安裝完成，請按照安裝視窗的提示操作。</value>
+  </data>
+  <data name="CameraDriverWizardRecheckAction" xml:space="preserve">
+    <value>重新偵測</value>
+  </data>
+  <data name="CameraDriverWizardManageAction" xml:space="preserve">
+    <value>驅動安裝與修復</value>
+  </data>
+  <data name="CameraDriverWizardInstallAction" xml:space="preserve">
+    <value>下載並安裝</value>
+  </data>
+  <data name="CameraDriverWizardReinstallAction" xml:space="preserve">
+    <value>下載並重新安裝</value>
+  </data>
+  <data name="CameraDriverWizardInstallHint" xml:space="preserve">
+    <value>安裝或重新安裝前，請先中斷相機 USB 連接。將下載 240301 版完整驅動安裝包；安裝完成後接回相機，並在主程式中驗證擷取。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadPage" xml:space="preserve">
+    <value>檢視驅動下載目錄</value>
+  </data>
+  <data name="CameraDriverWizardVersionDetailsFormat" xml:space="preserve">
+    <value>系統登記：{0}
+啟動驅動：{1}    通訊驅動：{2}</value>
+  </data>
+  <data name="CameraDriverWizardDownloading" xml:space="preserve">
+    <value>正在透過下載管理器取得驅動。關閉本視窗會取消後續安裝；下載工作可在下載管理器中處理。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadFailed" xml:space="preserve">
+    <value>下載未完成，請在下載管理器中檢查或重試。</value>
+  </data>
+  <data name="CameraDriverWizardUnexpectedPath" xml:space="preserve">
+    <value>下載檔案路徑與所選驅動不一致，請重試。</value>
+  </data>
+  <data name="CameraDriverWizardDownloadUnavailable" xml:space="preserve">
+    <value>下載服務無法使用，請檢查下載管理器後重試。</value>
+  </data>
+  <data name="CameraDriverWizardErrorFormat" xml:space="preserve">
+    <value>相機驅動偵測或安裝失敗：{0}</value>
+  </data>
+  <data name="CameraDriverWizardExitCodeFormat" xml:space="preserve">
+    <value>驅動安裝未完成（結束代碼 {0}），請檢查安裝視窗的結果後重試。</value>
+  </data>
+  <data name="CameraDriverWizardInstallIncomplete" xml:space="preserve">
+    <value>安裝程式已結束，但尚未偵測到完整驅動。請按安裝程式提示處理後重新偵測。</value>
+  </data>
+  <data name="CameraDriverWizardInstalledResult" xml:space="preserve">
+    <value>安裝程式已完成，已偵測到驅動。請接回相機，在主程式中驗證識別與擷取。</value>
+  </data>
+  <data name="CameraDriverWizardCancelled" xml:space="preserve">
+    <value>已取消管理員授權，驅動安裝未啟動。</value>
+  </data>
+  <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
+    <value>安裝程式提示需要重新啟動 Windows。請儲存工作並自行重新啟動，再接回相機和重新偵測。</value>
+  </data>
 </root>

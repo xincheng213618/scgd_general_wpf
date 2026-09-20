@@ -30,6 +30,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public ViewSMU View { get => Device.View; }
 
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         public DisplaySMU(DeviceSMU deviceSMU)
         {

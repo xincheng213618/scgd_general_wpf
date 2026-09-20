@@ -1,3 +1,4 @@
+using ColorVision.Engine.Media;
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.POI
@@ -9,6 +10,13 @@ namespace ProjectARVRPro.Process.POI
         [Description("关注点结果显示格式")]
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F4";
+
+        [Category("显示配置")]
+        [DisplayName("显示内容")]
+        [Description("选择关注点图层显示的字段和小数位；仅影响结果图绘制。")]
+        [PropertyEditorType(typeof(CvcieTemplatePropertiesEditor))]
+        public string DisplayTemplate { get => _DisplayTemplate; set { _DisplayTemplate = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _DisplayTemplate = PoiDisplayTemplateDefaults.Cie;
 
         [Category("解析配置")]
         [DisplayName("算法名称过滤")]

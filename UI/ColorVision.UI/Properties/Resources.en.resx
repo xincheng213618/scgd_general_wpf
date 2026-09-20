@@ -61,7 +61,7 @@
   <data name="MenuFile" xml:space="preserve">
     <value>_File</value>
   </data>  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
+    <value>_Tools</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
     <value>_Help</value>
@@ -116,7 +116,7 @@
     <value>E_xit</value>
   </data>
   <data name="Log" xml:space="preserve">
-    <value>_Log</value>
+    <value>Log</value>
   </data>  <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Automatically scroll to the bottom</value>
   </data>

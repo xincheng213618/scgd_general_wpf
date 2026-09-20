@@ -115,7 +115,7 @@ namespace ColorVision.UI
             InitializeComponent();
             var type = config.GetType();
             string objectName = PropertyEditorHelper.GetLocalizedString(PropertyEditorHelper.GetResourceManager(config),
-                type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name);
+                type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? PropertyEditorHelper.GetDisplayMetadata(type, display => display.GetName()) ?? type.Name);
             Title = $"{Properties.Resources.Edit} {objectName}";
             this.ApplyCaption();
         }
@@ -198,7 +198,7 @@ namespace ColorVision.UI
             foreach (var prop in sortedProps)
             {
                 var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                string category = PropertyEditorHelper.GetLocalizedString(resourceManager, categoryAttr?.Category ?? t.Name);
+                string category = PropertyEditorHelper.GetLocalizedString(resourceManager, categoryAttr?.Category ?? PropertyEditorHelper.GetDisplayMetadata(prop, display => display.GetGroupName()) ?? t.Name);
 
                 if (!categoryGroups.TryGetValue(category, out var list))
                 {
@@ -231,7 +231,7 @@ namespace ColorVision.UI
 
             foreach (var categoryGroup in categoryGroups)
             {
-                bool showHeader = categoryGroups.Count > 1 || categoryGroup.Value.Any(property => property.GetCustomAttribute<CategoryAttribute>() != null);
+                bool showHeader = categoryGroups.Count > 1 || categoryGroup.Value.Any(property => property.GetCustomAttribute<CategoryAttribute>() != null || PropertyEditorHelper.GetDisplayMetadata(property, display => display.GetGroupName()) != null);
                 var border = CreateCategoryBorder(categoryGroup.Key, showHeader, out var stackPanel);
                 var treeNode = new PropertyTreeNode(categoryGroup.Key, border);
                 bool hasProperties = false;
@@ -565,7 +565,7 @@ namespace ColorVision.UI
 
             string category = PropertyEditorHelper.GetLocalizedString(
                 resourceManager,
-                property.GetCustomAttribute<CategoryAttribute>()?.Category ?? property.DeclaringType?.Name);
+                property.GetCustomAttribute<CategoryAttribute>()?.Category ?? PropertyEditorHelper.GetDisplayMetadata(property, display => display.GetGroupName()) ?? property.DeclaringType?.Name);
             if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 

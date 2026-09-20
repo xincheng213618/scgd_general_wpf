@@ -175,6 +175,7 @@ namespace ColorVision.ImageEditor.Tif
 
         internal static bool TryUpdateWriteableBitmap(BitmapSource source, WriteableBitmap target)
         {
+            if (target.IsFrozen) return false;
             if (source.PixelWidth != target.PixelWidth || source.PixelHeight != target.PixelHeight || source.Format != target.Format)
                 return false;
             if (Math.Abs(source.DpiX - target.DpiX) > 0.01 || Math.Abs(source.DpiY - target.DpiY) > 0.01)

@@ -1,8 +1,11 @@
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Core;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -38,8 +41,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             LocalCalibrationCacheManager cacheManager,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             string calibrationTemplate,
-            LocalCalibrationRoi calibrationRoi)
+            LocalCalibrationRoi calibrationRoi,
+            IReadOnlyList<float>? zeroExposureFallback = null)
         {
+            using var calibrationStage = FlowNodeTiming.Measure("Calibration");
             ArgumentNullException.ThrowIfNull(frame);
             ArgumentNullException.ThrowIfNull(cacheManager);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
@@ -56,10 +61,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 sourceRawAlreadyMirrored = IsRawAlreadyMirrored(source);
                 ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
             }
-            frame.PrepareForCalibration(calibrationTemplate, plan.CieLength, plan.HasBasicCalibration);
+            float[] effectiveExposure = plan.GeneratesCie
+                ? ResolveExposureForCalibration(frame.Metadata.Exposure, zeroExposureFallback)
+                : frame.Metadata.Exposure;
+            float[] normalizedExposure = plan.GeneratesCie ? NormalizeExposure(effectiveExposure) : Array.Empty<float>();
+            frame.PrepareForCalibration(calibrationTemplate, plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
+            RawColorTransformV1? colorTransform;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
-                cacheManager.Execute(
+                colorTransform = cacheManager.Execute(
                     new LocalCalibrationLayout(
                         lease.Metadata.Width,
                         lease.Metadata.Height,
@@ -68,14 +78,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     calibrationFiles,
                     lease.RawPointer,
                     plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
-                    plan.GeneratesCie ? NormalizeExposure(lease.Metadata.Exposure) : Array.Empty<float>(),
+                    normalizedExposure,
                     calibrationRoi);
                 if (plan.GeneratesCie && sourceRawAlreadyMirrored)
                 {
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
                 }
             }
-            LocalFrameMirrorService.ApplyPending(frame);
+            FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
+            if (colorTransform.HasValue)
+            {
+                ColorCalibrationSnapshot snapshot = ColorCalibrationSnapshot.Create(colorTransform.Value,
+                    frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, normalizedExposure, calibrationTemplate);
+                frame.ColorCalibration = snapshot;
+                string rawPath = frame.CvRawFilePath;
+                bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
+                if (!canReplay) rawPath = frame.Metadata.SourceFilePath;
+                if (!string.IsNullOrWhiteSpace(rawPath) && File.Exists(rawPath)
+                    && string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
+                    FlowNodeTiming.Run("SaveColorParameters", () => snapshot.Save(rawPath, canReplay));
+            }
+            calibrationStage?.Complete();
         }
 
         public static int GetRequiredCieLength(
@@ -132,6 +155,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             return calibrationFiles.Count > 0 && calibrationFiles.All(file => IsColorCalibration(file.CalibrationType));
+        }
+
+        internal static float[] ResolveExposureForCalibration(float[] exposure, IReadOnlyList<float>? zeroExposureFallback)
+        {
+            ArgumentNullException.ThrowIfNull(exposure);
+            return exposure.Length > 0
+                && exposure.All(value => value == 0)
+                && zeroExposureFallback != null
+                ? zeroExposureFallback.ToArray()
+                : exposure;
         }
 
         private static bool IsRawAlreadyMirrored(LocalFlowFrameLease source)

@@ -36,6 +36,12 @@ namespace ColorVision.Copilot
             if (!match.Success || !TryGetWorkspaceRoot(out var workspaceRoot))
                 return false;
 
+            var lineNumber = TryParsePositiveNumber(match.Groups["line"].Value);
+            var columnNumber = TryParsePositiveNumber(match.Groups["column"].Value);
+            if ((match.Groups["line"].Success && lineNumber == null)
+                || (match.Groups["column"].Success && columnNumber == null))
+                return false;
+
             try
             {
                 var pathValue = match.Groups["path"].Value.Trim();
@@ -59,8 +65,8 @@ namespace ColorVision.Copilot
 
                 target = new CopilotLocalFileLinkTarget(
                     fullPath,
-                    TryParsePositiveNumber(match.Groups["line"].Value),
-                    TryParsePositiveNumber(match.Groups["column"].Value));
+                    lineNumber,
+                    columnNumber);
                 return true;
             }
             catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or PathTooLongException or UriFormatException)
@@ -98,13 +104,22 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException("文件已不存在或不在当前工作区或受信指令目录内。");
                 }
 
-                if (!ResourceOpenService.Instance.TryOpen(target.FilePath))
-                    throw new InvalidOperationException("当前没有可用于打开此文件的编辑器。");
+                var openResult = ResourceOpenService.Instance.Open(target.FilePath);
+                if (!openResult.Succeeded)
+                    throw new InvalidOperationException(!string.IsNullOrWhiteSpace(openResult.ErrorMessage)
+                        ? openResult.ErrorMessage
+                        : openResult.Canceled ? "打开文件已取消。" : "当前没有可用于打开此文件的编辑器。");
 
-                if (target.LineNumber is > 0
-                    && WorkspaceManager.LayoutDocumentPane != null
-                    && WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane)?.Content is AvalonEditControll textEditor)
+                if (target.LineNumber is > 0)
                 {
+                    var document = WorkspaceManager.FindDocumentActive((object?)WorkspaceManager.layoutRoot ?? WorkspaceManager.LayoutDocumentPane);
+                    if (document?.Content is not AvalonEditControll textEditor
+                        || !EditorDocumentService.TryGetFilePath(document, out var editorPath)
+                        || !string.Equals(editorPath, Path.GetFullPath(target.FilePath), StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("文件已打开，但当前查看器无法定位到该文件的行列位置。");
+                    }
+
                     textEditor.NavigateTo(target.LineNumber.Value, target.ColumnNumber ?? 1);
                 }
                 return true;

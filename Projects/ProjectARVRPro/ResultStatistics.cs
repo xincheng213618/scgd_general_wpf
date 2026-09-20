@@ -1,4 +1,5 @@
 using SqlSugar;
+using ColorVision.Database;
 using System.Globalization;
 
 namespace ProjectARVRPro
@@ -180,6 +181,17 @@ namespace ProjectARVRPro
         public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
     }
 
+    public sealed class ResultStatisticsCombinedDashboard
+    {
+        public ResultStatistics Summary { get; init; } = new();
+        public IReadOnlyList<ResultStatisticsTrendPoint> Trend { get; init; } = [];
+        public double AverageTransitionMilliseconds { get; init; }
+
+        public string AverageTransitionText => Summary.TotalCount > 0
+            ? ResultStatisticsCalculator.FormatMilliseconds(AverageTransitionMilliseconds)
+            : "-";
+    }
+
     public static class ResultStatisticsTrendBuilder
     {
         public static IReadOnlyList<ResultStatisticsTrendPoint> BuildMonthly(ResultStatistics statistics)
@@ -258,6 +270,7 @@ namespace ProjectARVRPro
         public int PreviousResultId { get; set; }
         public int FlowCount { get; set; }
         public long FlowRunTimeMilliseconds { get; set; }
+        public int PreviousObjectiveId { get; set; }
 
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
         public string ExecutionText => $"第 {ExecutionIndex} 次";
@@ -265,6 +278,101 @@ namespace ProjectARVRPro
         public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
         public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
         public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public enum ResultStatisticsSide
+    {
+        Left,
+        Right,
+    }
+
+    public sealed class ResultStatisticsCombinedRecordRow
+    {
+        public required string SN { get; init; }
+        public required ResultStatisticsRecordRow Left { get; init; }
+        public required ResultStatisticsRecordRow Right { get; init; }
+
+        public int Id => Right.Id;
+        public DateTime StartTime => Left.StartTime;
+        public DateTime LeftEndTime => Left.EndTime;
+        public DateTime RightStartTime => Right.StartTime;
+        public DateTime EndTime => Right.EndTime;
+        public bool Result => Left.Result && Right.Result;
+        public int FlowCount => Left.FlowCount + Right.FlowCount;
+        public long FlowRunTimeMilliseconds => Left.FlowRunTimeMilliseconds + Right.FlowRunTimeMilliseconds;
+        public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
+        public double TransitionMilliseconds => Math.Max(0, (RightStartTime - LeftEndTime).TotalMilliseconds);
+        public string CycleTimeText => ResultStatisticsCalculator.FormatMilliseconds(CycleTimeMilliseconds);
+        public string TransitionText => ResultStatisticsCalculator.FormatMilliseconds(TransitionMilliseconds);
+        public string SideCycleTimeText => $"L {Left.CycleTimeText} / R {Right.CycleTimeText}";
+        public string FlowCountText => FlowCount > 0 ? FlowCount.ToString(CultureInfo.InvariantCulture) : "-";
+        public string FlowRunTimeText => FlowCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(FlowRunTimeMilliseconds) : "-";
+        public string ResultText => Result ? "PASS" : "FAIL";
+    }
+
+    public sealed class ResultStatisticsCombinedPage
+    {
+        public int TotalCount { get; init; }
+        public IReadOnlyList<ResultStatisticsCombinedRecordRow> Rows { get; init; } = [];
+    }
+
+    public static class ResultStatisticsLrPairMatcher
+    {
+        public static IReadOnlyList<ResultStatisticsCombinedRecordRow> MatchAdjacent(IEnumerable<ResultStatisticsRecordRow> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            List<ResultStatisticsRecordRow> rows = source.OrderBy(item => item.Id).ToList();
+            var result = new List<ResultStatisticsCombinedRecordRow>();
+            for (int index = 1; index < rows.Count; index++)
+            {
+                ResultStatisticsRecordRow left = rows[index - 1];
+                ResultStatisticsRecordRow right = rows[index];
+                if (right.PreviousObjectiveId != left.Id
+                    || !TryParse(left.SN, out string leftBaseSn, out ResultStatisticsSide leftSide)
+                    || !TryParse(right.SN, out string rightBaseSn, out ResultStatisticsSide rightSide)
+                    || leftSide != ResultStatisticsSide.Left
+                    || rightSide != ResultStatisticsSide.Right
+                    || !string.Equals(leftBaseSn, rightBaseSn, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                result.Add(new ResultStatisticsCombinedRecordRow
+                {
+                    SN = leftBaseSn,
+                    Left = left,
+                    Right = right,
+                });
+            }
+
+            return result;
+        }
+
+        public static bool TryParse(string? sn, out string baseSn, out ResultStatisticsSide side)
+        {
+            baseSn = string.Empty;
+            side = default;
+            string value = sn?.Trim() ?? string.Empty;
+            int timeSeparator = value.LastIndexOf('_');
+            if (timeSeparator <= 0 || value.Length - timeSeparator - 1 != 6)
+                return false;
+            if (!value.AsSpan(timeSeparator + 1).ContainsAnyExceptInRange('0', '9'))
+            {
+                int sideSeparator = value.LastIndexOf('_', timeSeparator - 1);
+                if (sideSeparator <= 0 || timeSeparator - sideSeparator != 2)
+                    return false;
+
+                char sideToken = char.ToUpperInvariant(value[sideSeparator + 1]);
+                if (sideToken is not ('L' or 'R'))
+                    return false;
+
+                baseSn = value[..sideSeparator].Trim();
+                side = sideToken == 'L' ? ResultStatisticsSide.Left : ResultStatisticsSide.Right;
+                return baseSn.Length > 0;
+            }
+
+            return false;
+        }
     }
 
     public sealed class ResultStatisticsSnSummary
@@ -455,20 +563,31 @@ namespace ProjectARVRPro
         private const string TableName = "ObjectiveTestResultRecord";
         private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
         private readonly string? _databasePath;
+        private readonly ReadOnlySqliteDatabase? _readOnlyDatabase;
         private readonly object _schemaGate = new();
         private bool _schemaInitialized;
 
         public static ResultStatisticsDataStore Instance => LazyInstance.Value;
 
-        public ResultStatisticsDataStore(string? databasePath = null)
+        public ResultStatisticsDataStore(string? databasePath = null) : this(databasePath, readOnly: false) { }
+
+        public ResultStatisticsDataStore(string? databasePath, bool readOnly)
         {
             _databasePath = databasePath;
+            if (readOnly)
+            {
+                _readOnlyDatabase = new ReadOnlySqliteDatabase(databasePath ?? throw new ArgumentNullException(nameof(databasePath)));
+                _readOnlyDatabase.RequireColumns("ObjectiveTestResultRecord", "Id", "SN", "ResultId", "BatchId", "CreateTime", "UpdateTime", "TotalResult");
+                _readOnlyDatabase.RequireColumns("ARVRReuslt", "Id", "SN", "BatchId", "Model", "CreateTime", "RunTime");
+            }
         }
 
         private string DatabasePath => _databasePath ?? ViewResultManager.SqliteDbPath;
 
         public void InitializeSchema()
         {
+            if (_readOnlyDatabase != null)
+                return;
             if (_schemaInitialized)
                 return;
 
@@ -502,7 +621,7 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            List<ResultStatisticsSample> samples = ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
+            List<ResultStatisticsSample> samples = ApplyFilters(Query<ObjectiveTestResultRecord>(db), query)
                 .Select(item => new ResultStatisticsSample
                 {
                     Id = item.Id,
@@ -526,7 +645,9 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            db.Ado.BeginTran();
+            // SqlSugar's default SQLite transaction requests a write lock. Offline readers need a deferred read snapshot.
+            if (_readOnlyDatabase == null) db.Ado.BeginTran();
+            else db.Ado.ExecuteCommand("BEGIN DEFERRED");
             try
             {
                 const string cycleTimeExpression = "CASE WHEN julianday(\"UpdateTime\") >= julianday(\"CreateTime\") THEN (julianday(\"UpdateTime\") - julianday(\"CreateTime\")) * 86400000.0 ELSE 0.0 END";
@@ -550,7 +671,7 @@ namespace ProjectARVRPro
                       {{optionalFilter}};
                     """;
                 ResultStatisticsAggregateRow aggregate = db.Ado.SqlQuery<ResultStatisticsAggregateRow>(
-                    summarySql,
+                    ReadSql(summarySql),
                     CreateDashboardParameters(query, now)).Single();
 
                 IReadOnlyList<ResultStatisticsTrendPoint> trend;
@@ -571,14 +692,14 @@ namespace ProjectARVRPro
                         ORDER BY {{bucketExpression}};
                         """;
                     List<ResultStatisticsAggregateBucketRow> buckets = db.Ado.SqlQuery<ResultStatisticsAggregateBucketRow>(
-                        trendSql,
+                        ReadSql(trendSql),
                         CreateDashboardParameters(query, now));
                     ResultStatistics bucketStatistics = CreateBucketStatistics(buckets, mode);
                     trend = ResultStatisticsTrendBuilder.BuildMonthly(bucketStatistics);
                 }
                 else
                 {
-                    List<ResultStatisticsSample> samples = ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query)
+                    List<ResultStatisticsSample> samples = ApplyFilters(Query<ObjectiveTestResultRecord>(db), query)
                         .OrderBy(item => item.UpdateTime)
                         .OrderBy(item => item.Id)
                         .Select(item => new ResultStatisticsSample
@@ -592,12 +713,14 @@ namespace ProjectARVRPro
                 }
 
                 ResultStatistics summary = CreateStatistics(aggregate);
-                db.Ado.CommitTran();
+                if (_readOnlyDatabase == null) db.Ado.CommitTran();
+                else db.Ado.ExecuteCommand("COMMIT");
                 return new ResultStatisticsDashboard { Summary = summary, Trend = trend };
             }
             catch
             {
-                db.Ado.RollbackTran();
+                if (_readOnlyDatabase == null) db.Ado.RollbackTran();
+                else db.Ado.ExecuteCommand("ROLLBACK");
                 throw;
             }
         }
@@ -656,7 +779,7 @@ namespace ProjectARVRPro
                 LIMIT @PageSize OFFSET @Skip;
                 """;
             return db.Ado.SqlQuery<ResultStatisticsRecordRow>(
-                sql,
+                ReadSql(sql),
                 new SugarParameter("@From", query.From),
                 new SugarParameter("@ToExclusive", query.ToExclusive),
                 new SugarParameter("@SN", string.IsNullOrWhiteSpace(query.SN) ? DBNull.Value : query.SN.Trim()),
@@ -672,7 +795,62 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            return ApplyFilters(db.Queryable<ObjectiveTestResultRecord>(), query).Count();
+            return ApplyFilters(Query<ObjectiveTestResultRecord>(db), query).Count();
+        }
+
+        public ResultStatisticsCombinedDashboard QueryCombinedDashboard(
+            ResultStatisticsQuery query,
+            ResultStatisticsPeriodMode mode,
+            DateTime now)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+
+            List<ResultStatisticsCombinedRecordRow> pairs = QueryCombinedRows(query, includeFlowData: false);
+            List<ResultStatisticsSample> samples = pairs.Select(item => new ResultStatisticsSample
+            {
+                Id = item.Id,
+                SN = item.SN,
+                Result = item.Result,
+                StartTime = item.StartTime,
+                EndTime = item.EndTime,
+            }).ToList();
+            ResultStatistics summary = ResultStatisticsCalculator.Calculate(samples, query.From, query.ToExclusive, now);
+            IReadOnlyList<ResultStatisticsTrendPoint> trend = mode == ResultStatisticsPeriodMode.All
+                ? ResultStatisticsTrendBuilder.BuildMonthly(summary)
+                : ResultStatisticsTrendBuilder.BuildDetails(samples, mode);
+            return new ResultStatisticsCombinedDashboard
+            {
+                Summary = summary,
+                Trend = trend,
+                AverageTransitionMilliseconds = pairs.Count > 0 ? pairs.Average(item => item.TransitionMilliseconds) : 0,
+            };
+        }
+
+        public ResultStatisticsCombinedPage QueryCombinedRecords(ResultStatisticsQuery query)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
+            if (query.PageNumber <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageNumber, "页码必须大于零。");
+            if (query.PageSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
+
+            List<ResultStatisticsCombinedRecordRow> rows = QueryCombinedRows(query, includeFlowData: true)
+                .OrderByDescending(item => item.Id)
+                .ToList();
+            int skip = checked((query.PageNumber - 1) * query.PageSize);
+            return new ResultStatisticsCombinedPage
+            {
+                TotalCount = rows.Count,
+                Rows = rows.Skip(skip).Take(query.PageSize).ToList(),
+            };
+        }
+
+        public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsCombinedRecordRow record)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            return QueryFlowDetails(record.Left).Concat(QueryFlowDetails(record.Right)).ToList();
         }
 
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetails(ResultStatisticsRecordRow record)
@@ -688,7 +866,7 @@ namespace ProjectARVRPro
             {
                 int previousResultId = Math.Max(0, record.PreviousResultId);
                 int resultId = record.ResultId;
-                return db.Queryable<ProjectARVRReuslt>()
+                return Query<ProjectARVRReuslt>(db)
                     .Where(item => item.SN == sn && item.Id > previousResultId && item.Id <= resultId)
                     .OrderBy(item => item.Id, OrderByType.Asc)
                     .ToList();
@@ -696,7 +874,7 @@ namespace ProjectARVRPro
 
             DateTime startTime = record.StartTime;
             DateTime endTime = record.EndTime >= startTime ? record.EndTime : startTime;
-            ISugarQueryable<ProjectARVRReuslt> query = db.Queryable<ProjectARVRReuslt>()
+            ISugarQueryable<ProjectARVRReuslt> query = Query<ProjectARVRReuslt>(db)
                 .Where(item => item.SN == sn && item.CreateTime >= startTime && item.CreateTime <= endTime);
             if (record.ResultId > 0)
             {
@@ -707,6 +885,84 @@ namespace ProjectARVRPro
             return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
         }
 
+        private List<ResultStatisticsCombinedRecordRow> QueryCombinedRows(ResultStatisticsQuery query, bool includeFlowData)
+        {
+            InitializeSchema();
+            using SqlSugarClient db = CreateClient();
+            string flowColumns = includeFlowData
+                ? """
+                    CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                        (SELECT COUNT(*)
+                         FROM "ARVRReuslt" AS F
+                         WHERE F."SN" = R."SN"
+                           AND F."Id" > R."PreviousResultId"
+                           AND F."Id" <= R."ResultId")
+                        ELSE 0 END AS "FlowCount",
+                    CASE WHEN R."ResultId" > R."PreviousResultId" THEN
+                        COALESCE((SELECT SUM(F."RunTime")
+                                  FROM "ARVRReuslt" AS F
+                                  WHERE F."SN" = R."SN"
+                                    AND F."Id" > R."PreviousResultId"
+                                    AND F."Id" <= R."ResultId"), 0)
+                        ELSE 0 END AS "FlowRunTimeMilliseconds"
+                    """
+                : """
+                    0 AS "FlowCount",
+                    0 AS "FlowRunTimeMilliseconds"
+                    """;
+            string sql = $$"""
+                WITH RankedRecords AS
+                (
+                    SELECT "Id",
+                           "SN",
+                           "CreateTime" AS "StartTime",
+                           "UpdateTime" AS "EndTime",
+                           "TotalResult" AS "Result",
+                           "LastModel",
+                           "BatchId",
+                           "ResultId",
+                           "Msg",
+                           COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId",
+                           ROW_NUMBER() OVER (PARTITION BY TRIM("SN") ORDER BY "Id") AS "ExecutionIndex",
+                           COALESCE(LAG("Id") OVER (ORDER BY "Id"), 0) AS "PreviousObjectiveId"
+                    FROM "ObjectiveTestResultRecord"
+                    WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                )
+                SELECT R."Id", R."ExecutionIndex", R."SN", R."StartTime", R."EndTime", R."Result",
+                       R."LastModel", R."BatchId", R."ResultId", R."Msg", R."PreviousResultId", R."PreviousObjectiveId",
+                       {{flowColumns}}
+                FROM RankedRecords AS R
+                WHERE (R."EndTime" >= @From AND R."EndTime" < @ToExclusive)
+                   OR R."Id" = COALESCE(
+                       (SELECT X."PreviousObjectiveId"
+                        FROM RankedRecords AS X
+                        WHERE X."EndTime" >= @From AND X."EndTime" < @ToExclusive
+                        ORDER BY X."Id"
+                        LIMIT 1), -1)
+                ORDER BY R."Id";
+                """;
+            List<ResultStatisticsRecordRow> candidates = db.Ado.SqlQuery<ResultStatisticsRecordRow>(
+                ReadSql(sql),
+                new SugarParameter("@From", query.From),
+                new SugarParameter("@ToExclusive", query.ToExclusive));
+            IEnumerable<ResultStatisticsCombinedRecordRow> pairs = ResultStatisticsLrPairMatcher.MatchAdjacent(candidates)
+                .Where(item => item.EndTime >= query.From && item.EndTime < query.ToExclusive);
+            string? sn = string.IsNullOrWhiteSpace(query.SN) ? null : query.SN.Trim();
+            if (sn != null)
+            {
+                pairs = pairs.Where(item => item.SN.Contains(sn, StringComparison.OrdinalIgnoreCase)
+                    || item.Left.SN.Contains(sn, StringComparison.OrdinalIgnoreCase)
+                    || item.Right.SN.Contains(sn, StringComparison.OrdinalIgnoreCase));
+            }
+            if (query.Result.HasValue)
+            {
+                bool expected = query.Result.Value;
+                pairs = pairs.Where(item => item.Result == expected);
+            }
+
+            return pairs.ToList();
+        }
+
         public IReadOnlyList<ProjectARVRReuslt> QueryFlowDetailsForExport(ResultStatisticsRecordRow record)
         {
             List<ProjectARVRReuslt> results = QueryFlowDetails(record).ToList();
@@ -714,7 +970,8 @@ namespace ProjectARVRPro
                 return results;
 
             using SqlSugarClient db = CreateClient();
-            ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
+            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadViewResultJsons(db, results);
+            else foreach (ProjectARVRReuslt result in results) result.ViewResultJson = ReadFlowPayload(db, result.Id);
             return results;
         }
 
@@ -724,7 +981,7 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            return ApplyFlowFilters(db.Queryable<ProjectARVRReuslt>(), query)
+            return ApplyFlowFilters(Query<ProjectARVRReuslt>(db), query)
                 .OrderBy(item => item.Id, OrderByType.Desc)
                 .Select(item => new FlowExecutionRecordRow
                 {
@@ -744,7 +1001,7 @@ namespace ProjectARVRPro
             InitializeSchema();
 
             using SqlSugarClient db = CreateClient();
-            return ApplyFlowFilters(db.Queryable<ProjectARVRReuslt>(), query).Count();
+            return ApplyFlowFilters(Query<ProjectARVRReuslt>(db), query).Count();
         }
 
         public IReadOnlyList<string> QueryFlowNames()
@@ -766,7 +1023,7 @@ namespace ProjectARVRPro
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            List<ResultStatisticsSnAggregate> aggregates = db.Queryable<ObjectiveTestResultRecord>()
+            List<ResultStatisticsSnAggregate> aggregates = Query<ObjectiveTestResultRecord>(db)
                 .Where(item => item.SN.Trim() != string.Empty && (item.IsFinalized == true || item.IsFinalized == null))
                 .GroupBy(item => item.SN.Trim())
                 .Select(item => new ResultStatisticsSnAggregate
@@ -799,9 +1056,9 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            ObjectiveTestResultRecord? record = db.Queryable<ObjectiveTestResultRecord>().Where(item => item.Id == id).First();
+            ObjectiveTestResultRecord? record = Query<ObjectiveTestResultRecord>(db).Where(item => item.Id == id).First();
             if (record != null)
-                record.ObjectiveTestResultJson = ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, record.Id) ?? string.Empty;
+                record.ObjectiveTestResultJson = ReadObjectivePayload(db, record.Id) ?? string.Empty;
             return record;
         }
 
@@ -814,10 +1071,11 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            List<ObjectiveTestResultRecord> records = db.Queryable<ObjectiveTestResultRecord>()
+            List<ObjectiveTestResultRecord> records = Query<ObjectiveTestResultRecord>(db)
                 .Where(item => recordIds.Contains(item.Id))
                 .ToList();
-            ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
+            if (_readOnlyDatabase == null) ResultJsonPayloadStorage.LoadObjectiveTestResultJsons(db, records);
+            else foreach (ObjectiveTestResultRecord record in records) record.ObjectiveTestResultJson = ReadObjectivePayload(db, record.Id);
             foreach (ObjectiveTestResultRecord record in records.Where(item => item.ObjectiveTestResultJson == null))
                 record.ObjectiveTestResultJson = string.Empty;
             return records;
@@ -831,7 +1089,7 @@ namespace ProjectARVRPro
 
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            result.ViewResultJson = ResultJsonPayloadStorage.LoadViewResultJson(db, result.Id) ?? string.Empty;
+            result.ViewResultJson = ReadFlowPayload(db, result.Id) ?? string.Empty;
             return result.ViewResultJson;
         }
 
@@ -965,6 +1223,8 @@ namespace ProjectARVRPro
 
         private SqlSugarClient CreateClient()
         {
+            if (_readOnlyDatabase != null)
+                return _readOnlyDatabase.OpenClient();
             return new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = $"Data Source={DatabasePath};Default Timeout=5",
@@ -973,6 +1233,20 @@ namespace ProjectARVRPro
                 InitKeyType = InitKeyType.Attribute,
             });
         }
+
+        private ISugarQueryable<T> Query<T>(SqlSugarClient db) where T : class, new()
+            => _readOnlyDatabase?.Query<T>(db) ?? db.Queryable<T>();
+
+        private string ReadSql(string sql) => _readOnlyDatabase == null ? sql
+            : sql.Replace("FROM \"ObjectiveTestResultRecord\"", $"FROM ({_readOnlyDatabase.SelectSql<ObjectiveTestResultRecord>()})");
+
+        private string? ReadObjectivePayload(SqlSugarClient db, int id) => _readOnlyDatabase == null
+            ? ResultJsonPayloadStorage.LoadObjectiveTestResultJson(db, id)
+            : _readOnlyDatabase.ReadPayload("ObjectiveTestResultRecord", "Id", id, "ObjectiveTestResultJson", "ObjectiveTestResultJsonGzip");
+
+        private string? ReadFlowPayload(SqlSugarClient db, int id) => _readOnlyDatabase == null
+            ? ResultJsonPayloadStorage.LoadViewResultJson(db, id)
+            : _readOnlyDatabase.ReadPayload("ARVRReuslt", "Id", id, "ViewResultJson", "ViewResultJsonGzip");
 
         private sealed class ResultStatisticsSnAggregate
         {

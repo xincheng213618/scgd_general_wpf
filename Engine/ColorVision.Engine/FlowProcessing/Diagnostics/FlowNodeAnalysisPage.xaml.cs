@@ -50,6 +50,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _messages = _session.GetMessages(_record);
 
             InitializeComponent();
+            ClearCurrentNodeButton.Visibility = _session.DataSource.IsReadOnly ? Visibility.Collapsed : Visibility.Visible;
             LocateFlowNodeButton.IsEnabled = canLocate;
             bool hasAdjacentNodes = _session.Records.Count > 1;
             PreviousNodeButton.IsEnabled = hasAdjacentNodes;
@@ -74,7 +75,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _session.CapturedAt);
 
             NodeTitleText.Text = string.IsNullOrWhiteSpace(_record.NodeName) ? EngineLocalization.Get("未知节点") : _record.NodeName;
-            NodeSubtitleText.Text = EngineLocalization.Format($"Batch {_record.BatchId} · {_record.NodeType ?? EngineLocalization.Get("未知类型")} · {_record.StartTime:yyyy/MM/dd HH:mm:ss.fff}");
+            NodeSubtitleText.Text = _record.StartTime.ToString("yyyy/MM/dd");
             NodeElapsedText.Text = elapsedMs.HasValue
                 ? FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs.Value)
                 : "—";
@@ -170,14 +171,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         () =>
                         {
                             List<FlowNodeRecord> records =
-                                FlowNodeRecordDataBaseHelper.GetByNodeId(nodeId, 50);
+                                _session.DataSource.GetByNodeId(nodeId, 50);
                             int[] batchIds = records
                                 .Select(item => item.BatchId)
                                 .Append(_record.BatchId)
                                 .Distinct()
                                 .ToArray();
                             List<FlowNodeMessage> messages =
-                                FlowNodeRecordDataBaseHelper.GetHistoryMessagesByNodeId(
+                                _session.DataSource.GetHistoryMessagesByNodeId(
                                     nodeId,
                                     batchIds);
                             return (Records: records, Messages: messages);
@@ -334,7 +335,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             try
             {
                 FlowNodeMessagePayloads payloads = await Task.Run(
-                    () => FlowNodeRecordDataBaseHelper.GetMessagePayloads(message.Id));
+                    () => _session.DataSource.GetMessagePayloads(message.Id));
                 if (!ReferenceEquals(MessageListView.SelectedItem, message))
                     return;
 

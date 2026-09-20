@@ -26,7 +26,7 @@ namespace ProjectKB
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
         private bool _AutoRefresh = true;
 
-        [DisplayName("视图高度"), Category("View")]
+        [Browsable(false)]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 

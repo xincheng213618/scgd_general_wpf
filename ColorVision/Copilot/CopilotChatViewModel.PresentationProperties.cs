@@ -124,14 +124,16 @@ namespace ColorVision.Copilot
         public CopilotFollowUpBehavior DefaultFollowUpBehavior =>
             CopilotFollowUpPreference.Normalize(_state.DefaultFollowUpBehavior);
 
-        public string SteerActionToolTip =>
-            $"把输入作为新指令加入当前 Agent 运行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）";
+        public string SteerActionToolTip => HasAttachments
+            ? $"输入含附件，将与附件一起排到下一轮（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）"
+            : $"把输入作为新指令加入当前 Agent 运行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）";
 
         public string QueueFollowUpToolTip =>
             $"排到当前 Agent 任务结束后再执行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Queue)}）";
 
-        public string FollowUpQueueHintText =>
-            $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管";
+        public string FollowUpQueueHintText => HasAttachments
+            ? $"{ComposerSubmitShortcutLabel}/Tab 连同附件排队 · Ctrl+Enter 立即接管"
+            : $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管";
 
         public string ComposerInputToolTip => UseMultilineComposer
             ? "多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑"

@@ -5,6 +5,11 @@ namespace ColorVision.Engine.Templates
 {
     public static class TemplatesExtension
     {
+        internal static T CreateEmptyParam<T>() where T : ParamBase, new()
+        {
+            return new T { Id = -1, Name = "Empty" };
+        }
+
         public static ObservableCollection<TemplateModel<T>> CreateEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
             return CreateTemplateModelEmpty(templateModels);
@@ -13,7 +18,7 @@ namespace ColorVision.Engine.Templates
         public static ObservableCollection<TemplateModel<T>> CreateTemplateModelEmpty<T>(ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
             var templateModels1 = new ObservableCollection<TemplateModel<T>>();
-            templateModels1.Insert(0, new TemplateModel<T>("Empty", new T() { Id = -1 }));
+            templateModels1.Insert(0, new TemplateModel<T>("Empty", CreateEmptyParam<T>()));
 
             if (templateModels != null)
             {
@@ -39,7 +44,7 @@ namespace ColorVision.Engine.Templates
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         templateModels1.Clear();
-                        templateModels1.Insert(0, new TemplateModel<T>("Empty", new T()) { Id = -1 });
+                        templateModels1.Insert(0, new TemplateModel<T>("Empty", CreateEmptyParam<T>()));
                         break;
                 }
             }

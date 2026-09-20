@@ -17,6 +17,11 @@ namespace ProjectARVRPro.Process.W255
         private RecipeBase _ColorUniformity = new RecipeBase(0, 0.02);
 
         [Category("W255")]
+        [DisplayName("Color center RMS to D65")]
+        public RecipeBase ColorCenterRmsToD65 { get => _ColorCenterRmsToD65; set { _ColorCenterRmsToD65 = value; OnPropertyChanged(); } }
+        private RecipeBase _ColorCenterRmsToD65 = new RecipeBase(0, 0.02);
+
+        [Category("W255")]
         [DisplayName("Center Correlated Color Temperature(K)")]
         public RecipeBase CenterCorrelatedColorTemperature { get => _CenterCorrelatedColorTemperature; set { _CenterCorrelatedColorTemperature = value; OnPropertyChanged(); } }
         private RecipeBase _CenterCorrelatedColorTemperature = new RecipeBase(6000, 7000);

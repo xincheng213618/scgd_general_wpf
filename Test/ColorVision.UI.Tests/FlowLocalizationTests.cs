@@ -3,6 +3,10 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using FlowEngineLib.Node.PG;
+using FlowEngineLib;
+using FlowEngineLib.Algorithm;
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
@@ -17,6 +21,50 @@ namespace ColorVision.UI.Tests;
 
 public class FlowLocalizationTests
 {
+    [Theory]
+    [InlineData("zh-Hans", "屏幕缺陷检测", "自动曝光模板", "电压量程（V）", "增益由校正组“sample”固定为 12.5")]
+    [InlineData("en-US", "Screen Defect Detection", "Auto Exposure Template", "Voltage Range (V)", "Gain is fixed at 12.5 by calibration group “sample”")]
+    [InlineData("zh-Hant", "螢幕缺陷檢測", "自動曝光範本", "電壓量程（V）", "增益由校正組「sample」固定為 12.5")]
+    public void MigratedNodesKeepEnumTranslationsMetadataAndPersistedValues(string culture, string enumLabel, string description, string rangeHint, string gainHint)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+                EnsurePropertyEditorResources();
+                var node = new AlgorithmARVRNode();
+                node.Create();
+                var property = typeof(AlgorithmARVRNode).GetProperty(nameof(AlgorithmARVRNode.Algorithm))!;
+                var panel = new EnumPropertiesEditor().GenProperties(property, node);
+                var combo = Assert.Single(panel.Children.OfType<ComboBox>());
+                Assert.Contains(combo.Items.Cast<KeyValuePair<object?, string>>(), item => Equals(item.Key, AlgorithmARVRType.屏幕缺陷检测) && item.Value == enumLabel);
+                combo.SelectedValue = AlgorithmARVRType.屏幕缺陷检测;
+                combo.GetBindingExpression(Selector.SelectedValueProperty)!.UpdateSource();
+                Assert.Equal(AlgorithmARVRType.屏幕缺陷检测, node.Algorithm);
+                Assert.Equal("屏幕缺陷检测", Encoding.UTF8.GetString(ParseState(node.GetSaveData())[nameof(node.Algorithm)]));
+
+                var exposure = typeof(AOIRegisterPixelsCameraNode).GetProperty(nameof(AOIRegisterPixelsCameraNode.AutoExpTempName))!;
+                Assert.Equal(description, FlowNodePropertyMetadataProvider.Instance.GetDescription(exposure));
+                var smu = new SMUFromCSVNode();
+                smu.Create();
+                var range = typeof(SMUFromCSVNode).GetProperty(nameof(SMUFromCSVNode.SrcRng))!;
+                DockPanel rangePanel = new SmuRangePropertiesEditor().GenProperties(range, smu);
+                try { Assert.Equal(rangeHint, Assert.Single(rangePanel.Children.OfType<HandyControl.Controls.ComboBox>()).ToolTip); }
+                finally { rangePanel.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+                Assert.Equal(gainHint, CalibrationGroupGainResolver.CreateHint("sample", 12.5f));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
+        });
+    }
+
     [Fact]
     public void EnglishEnumLabelsKeepTheOriginalEnumValuesAndSerializedPayload()
     {

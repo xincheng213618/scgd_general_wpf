@@ -23,16 +23,16 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel Margin="0,0,5,0">
-            <Grid DockPanel.Dock="Right">
-                <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
-                <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
-            </Grid>
+            <Button DockPanel.Dock="Right" Style="{DynamicResource ButtonProperty}" Command="{Binding PropertyCommand}" ToolTip="{x:Static properties:Resources.Property}" />
             <displayUi:DisplayPinButton DockPanel.Dock="Right"/>
-            <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
+            <ToggleButton x:Name="DisplayHeaderToggle" Content="{Binding Config.Name}" FontSize="15" IsChecked="True" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
-        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
+                <WrapPanel Margin="0,0,0,5">
+                    <CheckBox Content="启用本地" IsChecked="{Binding DisplayConfig.UseLocalSpectrum}" Margin="0,0,8,0" ToolTip="下次打开时使用本机 SDK；已打开连接需先关闭再切换。"/>
+                    <Button Content="本地光谱仪" Command="{Binding OpenLocalSpectrumManagerCommand}"/>
+                </WrapPanel>
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <Button x:Name="TextBlockOffLine"  HorizontalAlignment="Left" Margin="0,0,0,3" Click="Button_Click_Open" Content="OffLine" />
                 <Button x:Name="ButtonUnauthorized"  HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
@@ -47,7 +47,7 @@
                         <ComboBox x:Name="ComboBoxCalibrationGroups"
                                   DisplayMemberPath="GroupName"
                                   ItemsSource="{Binding Config.CalibrationGroups}"
-                                  SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedValue="{Binding Config.ActiveCalibrationGroupName, Mode=OneWay}"
                                   SelectedValuePath="GroupName"
                                   SelectionChanged="CalibrationGroup_SelectionChanged"
                                   Style="{StaticResource ComboBox.Small}" Height="22" />

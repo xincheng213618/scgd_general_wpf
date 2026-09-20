@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "Id": "SystemMonitor",
   "name": "性能监控",
-  "version": "1.4.3.5",
+  "version": "1.4.3.6",
   "description": "增强的电脑性能监控插件",
   "dllpath": "SystemMonitor.dll",
   "requires": "1.4.12.35"

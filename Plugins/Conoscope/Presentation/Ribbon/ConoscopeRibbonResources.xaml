@@ -1,19 +1,99 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <sys:Double x:Key="RibbonHostHeight">96</sys:Double>
-    <sys:Double x:Key="RibbonContentHeight">50</sys:Double>
-    <Thickness x:Key="RibbonTabContentMargin">4,3,4,2</Thickness>
+                    xmlns:properties="clr-namespace:Conoscope.Properties">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="../ConoscopeIcons.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+    <Thickness x:Key="RibbonTabContentMargin">4,3,4,3</Thickness>
 
     <DataTemplate x:Key="DocumentHeaderTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Style="{x:Null}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <Style TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="RibbonTabItemStyle" TargetType="TabItem">
+        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Grid Background="Transparent">
+                        <Border x:Name="HeaderSurface" Background="Transparent" CornerRadius="5,5,0,0">
+                            <ContentPresenter x:Name="HeaderContent" ContentSource="Header" Margin="{TemplateBinding Padding}"
+                                              RecognizesAccessKey="True" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <Border x:Name="SelectionIndicator" Height="2" Margin="13,0" VerticalAlignment="Bottom"
+                                Background="{DynamicResource CV.Accent.Primary}" Visibility="Collapsed" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HeaderSurface" Property="Background" Value="{DynamicResource CV.Surface.ControlHover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource CV.Text.Primary}" />
+                            <Setter TargetName="HeaderContent" Property="TextElement.FontWeight" Value="SemiBold" />
+                            <Setter TargetName="HeaderSurface" Property="Background" Value="{DynamicResource CV.Surface.Control}" />
+                            <Setter TargetName="SelectionIndicator" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="SelectionIndicator" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="RibbonTabControlStyle" TargetType="TabControl">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource RibbonTabItemStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <ToggleButton x:Name="RibbonCollapseButton" DockPanel.Dock="Right" Width="28" Height="24" Margin="4,0"
+                                          Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource CV.Text.Secondary}"
+                                          IsChecked="False" ToolTip="{x:Static properties:Resources.RibbonCollapseCommands}"
+                                          AutomationProperties.Name="{x:Static properties:Resources.RibbonCollapseCommands}">
+                                <Path x:Name="RibbonChevron" Data="M 0 5 L 4 1 L 8 5" Width="8" Height="6"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                      StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </ToggleButton>
+                            <TabPanel IsItemsHost="True" Margin="6,0" KeyboardNavigation.TabIndex="1" />
+                        </DockPanel>
+                        <Border x:Name="RibbonCommands" Grid.Row="1" Background="{DynamicResource CV.Surface.Control}" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,1,0,0">
+                            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger SourceName="RibbonCollapseButton" Property="IsChecked" Value="True">
+                            <Setter TargetName="RibbonCommands" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="RibbonChevron" Property="Data" Value="M 0 1 L 4 5 L 8 1" />
+                            <Setter TargetName="RibbonCollapseButton" Property="ToolTip" Value="{x:Static properties:Resources.RibbonExpandCommands}" />
+                            <Setter TargetName="RibbonCollapseButton" Property="AutomationProperties.Name" Value="{x:Static properties:Resources.RibbonExpandCommands}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="QuickButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -24,10 +104,10 @@
     </Style>
 
     <Style x:Key="RibbonGroupStyle" TargetType="Border">
-        <Setter Property="MinHeight" Value="46" />
+        <Setter Property="MinHeight" Value="78" />
         <Setter Property="Margin" Value="0,0,4,0" />
-        <Setter Property="Padding" Value="6,4,10,3" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Padding" Value="6,1,6,1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}" />
         <Setter Property="BorderThickness" Value="0,0,1,0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="CornerRadius" Value="0" />
@@ -37,23 +117,26 @@
         <Setter Property="Visibility" Value="Visible" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="FontSize" Value="10.5" />
-        <Setter Property="Foreground" Value="Gray" />
-        <Setter Property="Margin" Value="0,6,0,0" />
+        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}" />
+        <Setter Property="Margin" Value="2,3,0,0" />
     </Style>
 
     <Style x:Key="RibbonFieldLabelStyle" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Margin" Value="0,0,6,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style x:Key="RibbonButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="MinHeight" Value="28" />
         <Setter Property="MinWidth" Value="38" />
         <Setter Property="Padding" Value="8,4" />
-        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource CV.Surface.Control}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}" />
+        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Primary}" />
     </Style>
 
     <Style x:Key="RibbonLargeButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonButtonStyle}">
@@ -62,6 +145,44 @@
 
     <Style x:Key="RibbonPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonLargeButtonStyle}">
         <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="{DynamicResource CV.Tag.Background}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CV.Tag.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource CV.Accent.Primary}" />
+    </Style>
+
+    <Style x:Key="RibbonTallButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonLargeButtonStyle}">
+        <Setter Property="MinWidth" Value="62" />
+        <Setter Property="MinHeight" Value="60" />
+        <Setter Property="Padding" Value="9,5" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style x:Key="RibbonTallPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonTallButtonStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource CV.Accent.Primary}" />
+        <Setter Property="Background" Value="{DynamicResource CV.Tag.Background}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="RibbonVectorIconStyle" TargetType="ContentControl">
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <Style x:Key="RibbonCompactVectorIconStyle" TargetType="ContentControl" BasedOn="{StaticResource RibbonVectorIconStyle}">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+
+    <Style x:Key="RibbonTallCaptionStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Margin" Value="0,5,0,0" />
+        <Setter Property="TextAlignment" Value="Center" />
     </Style>
 
     <Style x:Key="RibbonExecuteButtonStyle" TargetType="Button" BasedOn="{StaticResource RibbonPrimaryButtonStyle}">
@@ -83,11 +204,11 @@
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Margin" Value="0" />
-        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
     </Style>
 
     <Style x:Key="RibbonButtonCaptionStyle" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
         <Setter Property="FontSize" Value="11.5" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Margin" Value="5,0,0,0" />
@@ -110,12 +231,14 @@
     </Style>
 
     <Style x:Key="RibbonComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource ComboBox.Small}">
-        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
     <Style x:Key="RibbonTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
@@ -153,13 +276,13 @@
 
     <Style x:Key="CompactStatusTextStyle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="10" />
-        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Foreground" Value="{DynamicResource CV.Text.Secondary}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style x:Key="ReferenceModeRadioStyle" TargetType="RadioButton">
         <Setter Property="Width" Value="30" />
-        <Setter Property="Height" Value="26" />
+        <Setter Property="Height" Value="28" />
         <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -181,11 +304,15 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource GlobalBorderBrush}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource CV.Accent.Primary}" />
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource CV.Tag.Background}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource CV.Accent.Primary}" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource CV.Accent.Primary}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.6" />

@@ -771,7 +771,7 @@
   </data>
 
 <data name="MenuAbout" xml:space="preserve">
-    <value>_About</value>
+    <value>_About ColorVision</value>
   </data>
 
 <data name="About" xml:space="preserve">
@@ -871,4 +871,80 @@
   <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>Installer missing</value></data>
   <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>Will install</value></data>
   <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="CameraDriverWizardHeader" xml:space="preserve">
+    <value>Camera driver</value>
+  </data>
+  <data name="CameraDriverWizardIntro" xml:space="preserve">
+    <value>This driver is needed for a ColorVision (QHY) camera connected to this PC by USB. Open driver management to check, download, install or reinstall it. For remote use, select Next to skip.</value>
+  </data>
+  <data name="CameraDriverWizardChecking" xml:space="preserve">
+    <value>Checking the camera driver installation.</value>
+  </data>
+  <data name="CameraDriverWizardUnknown" xml:space="preserve">
+    <value>Driver installation status is unavailable. Check again.</value>
+  </data>
+  <data name="CameraDriverWizardInstalledFormat" xml:space="preserve">
+    <value>Camera driver detected, version {0}. You can reinstall it if the camera is not recognized.</value>
+  </data>
+  <data name="CameraDriverWizardMissing" xml:space="preserve">
+    <value>A complete ColorVision camera driver installation was not detected.</value>
+  </data>
+  <data name="CameraDriverWizardIncomplete" xml:space="preserve">
+    <value>Some installation information was found, but driver files or system registration are incomplete. Download and install the driver to repair it.</value>
+  </data>
+  <data name="CameraDriverWizardWorking" xml:space="preserve">
+    <value>Verifying the download or waiting for the driver installer. Follow the instructions in the installer window.</value>
+  </data>
+  <data name="CameraDriverWizardRecheckAction" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="CameraDriverWizardManageAction" xml:space="preserve">
+    <value>Driver installation and repair</value>
+  </data>
+  <data name="CameraDriverWizardInstallAction" xml:space="preserve">
+    <value>Download and install</value>
+  </data>
+  <data name="CameraDriverWizardReinstallAction" xml:space="preserve">
+    <value>Download and reinstall</value>
+  </data>
+  <data name="CameraDriverWizardInstallHint" xml:space="preserve">
+    <value>Disconnect the camera USB cable before installing or reinstalling. The complete driver installer, version 240301, will be downloaded. Reconnect afterwards and verify capture in the application.</value>
+  </data>
+  <data name="CameraDriverWizardDownloadPage" xml:space="preserve">
+    <value>View driver downloads</value>
+  </data>
+  <data name="CameraDriverWizardVersionDetailsFormat" xml:space="preserve">
+    <value>System registration: {0}
+Startup driver: {1}    USB driver: {2}</value>
+  </data>
+  <data name="CameraDriverWizardDownloading" xml:space="preserve">
+    <value>Downloading through the download manager. Closing this window cancels the subsequent installation; you can manage the download in the download manager.</value>
+  </data>
+  <data name="CameraDriverWizardDownloadFailed" xml:space="preserve">
+    <value>Download did not complete. Check or retry it in the download manager.</value>
+  </data>
+  <data name="CameraDriverWizardUnexpectedPath" xml:space="preserve">
+    <value>The downloaded file path does not match the selected driver. Try again.</value>
+  </data>
+  <data name="CameraDriverWizardDownloadUnavailable" xml:space="preserve">
+    <value>The download service is unavailable. Check the download manager and try again.</value>
+  </data>
+  <data name="CameraDriverWizardErrorFormat" xml:space="preserve">
+    <value>Camera driver check or installation failed: {0}</value>
+  </data>
+  <data name="CameraDriverWizardExitCodeFormat" xml:space="preserve">
+    <value>Driver installation did not finish (exit code {0}). Check the installer result and try again.</value>
+  </data>
+  <data name="CameraDriverWizardInstallIncomplete" xml:space="preserve">
+    <value>The installer exited, but a complete installation has not been detected. Follow the installer instructions and check again.</value>
+  </data>
+  <data name="CameraDriverWizardInstalledResult" xml:space="preserve">
+    <value>The installer finished and the driver was detected. Reconnect the camera and verify recognition and capture in the application.</value>
+  </data>
+  <data name="CameraDriverWizardCancelled" xml:space="preserve">
+    <value>Administrator permission was cancelled; driver installation did not start.</value>
+  </data>
+  <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
+    <value>The installer requires a Windows restart. Save your work and restart Windows, then reconnect the camera and check again.</value>
+  </data>
 </root>

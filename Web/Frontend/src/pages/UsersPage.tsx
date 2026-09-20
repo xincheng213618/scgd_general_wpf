@@ -7,7 +7,7 @@ import {
   type ActionType,
   type ProColumns,
 } from '@ant-design/pro-components'
-import { Alert, App, Button, Popconfirm, Space, Tag, Typography } from 'antd'
+import { Alert, App, Button, Dropdown, Popconfirm, Space, Tag, Typography } from 'antd'
 import { useRef, useState, type Key } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { UserDetailsDrawer } from '../components/UserDetailsDrawer'
@@ -43,7 +43,6 @@ import {
   canDeleteUserAccount,
   canManageUserAccount,
   forceLogoutSuccessMessage,
-  oppositeUserRole,
   passwordChangeRequiredSuccessMessage,
   passwordResetSuccessMessage,
   resolveUserListEntryFilters,
@@ -215,10 +214,11 @@ export function UsersPage() {
       sorter: true,
       valueEnum: {
         user: { text: '普通用户' },
+        developer: { text: '研发只读' },
         admin: { text: '管理员' },
       },
       render: (_, record) => (
-        <Tag color={record.role === 'admin' ? 'red' : 'blue'}>
+        <Tag color={record.role === 'admin' ? 'red' : record.role === 'developer' ? 'purple' : 'blue'}>
           {userRoleLabel(record.role)}
         </Tag>
       ),
@@ -306,7 +306,6 @@ export function UsersPage() {
       fixed: 'right',
       render: (_, record) => {
         const enabled = Boolean(record.is_active)
-        const nextRole = oppositeUserRole(record.role)
         const detailsButton = (
           <Button
             size="small"
@@ -384,23 +383,33 @@ export function UsersPage() {
               </Popconfirm>
             )}
             {!record.is_current && (
-              <Popconfirm
-                title={`确认将 ${record.username} 设为${userRoleLabel(nextRole)}？`}
-                description="角色变更后，该账号已有登录会话会失效。"
-                onConfirm={async () => {
-                  try {
-                    await updateUserRole(record.id, nextRole)
-                    message.success(`账号已设为${userRoleLabel(nextRole)}；旧会话已失效`)
-                    actionRef.current?.reload()
-                  } catch (error) {
-                    message.error(error instanceof Error ? error.message : '账号角色更新失败')
-                  }
+              <Dropdown
+                menu={{
+                  items: USER_ROLE_OPTIONS
+                    .filter((option) => option.value !== record.role)
+                    .map((option) => ({ key: option.value, label: `设为${option.label}` })),
+                  onClick: ({ key }) => {
+                    const nextRole = key as UserRole
+                    modal.confirm({
+                      title: `确认将 ${record.username} 设为${userRoleLabel(nextRole)}？`,
+                      content: '角色变更后，该账号已有登录会话会失效。',
+                      okText: '确认调整',
+                      onOk: async () => {
+                        try {
+                          await updateUserRole(record.id, nextRole)
+                          message.success(`账号已设为${userRoleLabel(nextRole)}；旧会话已失效`)
+                          actionRef.current?.reload()
+                        } catch (error) {
+                          message.error(error instanceof Error ? error.message : '账号角色更新失败')
+                          throw error
+                        }
+                      },
+                    })
+                  },
                 }}
               >
-                <Button size="small" icon={<SafetyCertificateOutlined aria-hidden="true" />}>
-                  {nextRole === 'admin' ? '设为管理员' : '降为普通用户'}
-                </Button>
-              </Popconfirm>
+                <Button size="small" icon={<SafetyCertificateOutlined aria-hidden="true" />}>调整角色</Button>
+              </Dropdown>
             )}
             {!record.is_current && (
               <Popconfirm
@@ -458,8 +467,8 @@ export function UsersPage() {
       <Alert
         type="info"
         showIcon
-        message="注册用户当前默认拥有全部功能权限"
-        description="具体能力由“权限管理”中的注册用户角色控制。永久删除前必须先停用账号；配置管理员继续使用现有服务配置且不可删除。"
+        message="反馈权限按普通用户、研发只读和管理员分离"
+        description="普通用户只查看本人反馈；研发只读账号可查看全部反馈和附件；只有反馈管理权限可更新处理状态。"
       />
       <ProTable<UserAccount>
         actionRef={actionRef}
@@ -514,6 +523,7 @@ export function UsersPage() {
                 <Tag color="green">启用 {summary.active}</Tag>
                 <Tag>停用 {summary.inactive}</Tag>
                 <Tag color="red">管理员 {summary.admins}</Tag>
+                <Tag color="purple">研发只读 {summary.developers}</Tag>
                 <Tag color="cyan">公开注册 {summary.self_registered}</Tag>
                 <Tag color="purple">管理员创建 {summary.administrator_created}</Tag>
                 {summary.legacy > 0 && <Tag>历史账号 {summary.legacy}</Tag>}

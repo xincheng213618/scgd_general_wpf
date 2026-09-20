@@ -4,21 +4,20 @@ knowledge_type: "reference"
 status: "current"
 summary: "横向定位现存插件的菜单、状态、数据库、设备与管理员权限边界。"
 aliases: ["插件依赖","插件扩展点","插件权限","哪些插件会操作设备或服务","插件状态栏比较"]
-code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/","Plugins/Pattern/","Plugins/ImageProjector/"]
+code_paths: ["Plugins/Conoscope/","Plugins/Spectrum/","Plugins/SystemMonitor/","Plugins/WindowsServicePlugin/","Plugins/Pattern/"]
 test_paths: []
 related: ["plugins.index","plugins.model","plugins.getting-started","plugins.conoscope","plugins.spectrum","plugins.system-monitor","plugins.windows-service","plugins.pattern"]
 ---
 
 # 插件依赖与接入矩阵
 
-本页用于按功能、宿主扩展点和外部影响选择插件。范围为 `Plugins/` 中的六个插件项目；每行插件名连接其操作、实现和验证主题。客户专用判定、MES 和项目流程见[项目知识入口](../projects/README.md)。
+本页用于按功能、宿主扩展点和外部影响选择插件。范围为 `Plugins/` 中的五个插件项目；每行插件名连接其操作、实现和验证主题。客户专用判定、MES 和项目流程见[项目知识入口](../projects/README.md)。
 
 ## 当前源码插件总表
 
 | 插件与源码目录 | 主要用途 | 界面入口 | 外部依赖与操作影响 |
 | --- | --- | --- | --- |
-| [Pattern](./standard-plugins/pattern.md) · `Plugins/Pattern/` | 测试图卡生成、模板管理与文件导出 | 工具 → 图卡生成工具；功能启动器 | OpenCV、私有 ImageProjector 依赖；导入 ZIP 会替换模板目录，清空操作会删除对应目录内容 |
-| [ImageProjector](./standard-plugins/pattern.md#图片投影) · `Plugins/ImageProjector/` | 图片列表、多屏投影、缩放与全屏显示 | 工具 → 图片投影工具；Pattern 窗口内入口 | Windows 显示器及 DPI；投影会改变目标屏幕的显示内容 |
+| [Pattern](./standard-plugins/pattern.md) · `Plugins/Pattern/` | 测试图卡生成、模板管理、文件导出，以及内置图片列表、多屏投影、缩放与全屏显示 | 工具 → 图卡生成工具 / 图片投影工具；功能启动器；图卡窗口内投影入口 | OpenCV、Windows 显示器及 DPI；目录操作可能删除文件，投影会改变目标屏幕的显示内容 |
 | [Conoscope](./standard-plugins/conoscope.md) · `Plugins/Conoscope/` | VAM/锥镜图像、关注点、参考轴、预处理、色域与对比度分析 | 工具 → VAM；符合条件的 ImageEditor 右键入口；视图 → MVSVideo | 本地 CVCIE、Engine 测量采集和 MVS 观察相机是三种来源；MVS 另需海康驱动及 `MvCameraControl.dll`，采集可能操作设备与数据库 |
 | [Spectrum](./standard-plugins/spectrum.md) · `Plugins/Spectrum/` | 光谱测量、标定分组、EQE、CIE 与结果导出 | 工具中的光谱窗口；窗口菜单与状态栏 | 光谱仪、快门/滤光轮/SMU、串口、native DLL 和许可证；测量及校零会操作设备，结果保存到 SQLite |
 | [SystemMonitor](./standard-plugins/system-monitor.md) · `Plugins/SystemMonitor/` | CPU/RAM、磁盘、网络、进程、GPU 和缓存信息 | 工具 → 系统监控；同名设置页；可选状态栏项 | Windows 性能计数器、CUDA 信息和网卡；缓存统计与清理范围不同，清理会删除文件 |
@@ -30,16 +29,16 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 
 | 接入点 | 插件与实现 | 范围 |
 | --- | --- | --- |
-| 主菜单 | Pattern `ExportTestPatternWpf`、ImageProjector `MenuImageProjector`、Conoscope `MenuConoscopeWindow`、Spectrum `MenuSpectrumWindow`；SystemMonitor 通过 `SystemMonitorProvider` 提供元数据 | 前四者继承 `MenuItemBase`，SystemMonitor 实现 `IMenuItemProvider` |
+| 主菜单 | Pattern 程序集中的 `ExportTestPatternWpf` / `MenuImageProjector`、Conoscope `MenuConoscopeWindow`、Spectrum `MenuSpectrumWindow`；SystemMonitor 通过 `SystemMonitorProvider` 提供元数据 | 前四个菜单类继承 `MenuItemBase`，SystemMonitor 实现 `IMenuItemProvider` |
 | 窗口菜单 | Spectrum `LoadMenuForWindow("Spectrum", menu)` | 菜单按目标窗口加载；Conoscope 的 Ribbon、View 菜单和配置控件由其模块主题说明 |
-| 宿主状态栏 | `SystemMonitorIStatusBarProvider : IStatusBarProviderUpdatable`；`SpectrumStatusBarProvider : IStatusBarProvider` | 前者按配置开关增删监控项；后者的目标为 `Spectrum`。其余四个项目没有声明这两类状态栏提供器 |
+| 宿主状态栏 | `SystemMonitorIStatusBarProvider : IStatusBarProviderUpdatable`；`SpectrumStatusBarProvider : IStatusBarProvider` | 前者按配置开关增删监控项；后者的目标为 `Spectrum`。其余三个项目没有声明这两类状态栏提供器 |
 | 宿主设置页 | `SystemMonitorProvider : IConfigSettingProvider` | 设置页与菜单窗口共用 `SystemMonitorControl`；插件持有 `IConfig` 对象不等于注册了独立设置页 |
 | ImageEditor 右键 | `ConoscopeImageViewContextMenu : IIEditorToolContextMenu` | 由 `ConoscopeModuleService` 检查当前文件与通道条件后显示入口 |
 | 图卡扩展与启动 | Pattern 的 `IPattern` 发现、`PatternFeatureLauncher` | 从已装载程序集发现图卡；窗口可调用 `OpenImageProjectorCommand` 打开投影工具 |
 | 帮助菜单、应用工具与向导 | `MenuServiceManager`、`ServiceManagerAppProvider`、`InstallServiceManager` | 前两者打开同一非模态服务管理窗口并要求应用内 Administrator 权限，后者是模态向导步骤；旧 `InstallTool` 仍声明 `ServiceLog` 菜单位置并实现主窗口初始化器 |
 | Socket 与调度 | Spectrum 的五个 `ISocketJsonHandler` 和 `Job/` 测量/校零任务 | 复用测量 Manager；传输服务与业务指令见 [Spectrum Socket](./standard-plugins/spectrum-socket.md)，需要服务启用与相应设备条件 |
 
-Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文档状态；全局配置、参考存储与窗口工作副本见[配置与持久化](./standard-plugins/conoscope.md#配置-working-copy、参考与持久化)。Pattern、ImageProjector、Spectrum 和服务管理器的配置也由各模块维护，不能把配置类型列表当作宿主设置页列表。
+Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文档状态；全局配置、参考存储与窗口工作副本见[配置与持久化](./standard-plugins/conoscope.md#配置-working-copy、参考与持久化)。Pattern（含投影配置）、Spectrum 和服务管理器的配置也由各模块维护，不能把配置类型列表当作宿主设置页列表。
 
 ## 构建与交付差异
 
@@ -47,7 +46,7 @@ Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文�
 
 | 插件 | 本地复制与交付差异 | 命令及资源清单 |
 | --- | --- | --- |
-| Pattern / ImageProjector | HostCopy 默认关闭，需各自启用开关及有效 `SolutionDir`，只写当前配置；Pattern 包私有携带 ImageProjector。完整独立运行输出与剥离共享依赖的 `.cvxp` 用途不同 | [构建、独立运行与交付](./standard-plugins/pattern.md#构建、独立运行与交付) |
+| Pattern | HostCopy 默认关闭，需启用 `EnablePatternHostCopy` 并提供有效 `SolutionDir`；图卡与投影统一编译、复制和发布。完整独立运行输出与剥离共享依赖的 `.cvxp` 用途不同 | [构建、独立运行与交付](./standard-plugins/pattern.md#构建、独立运行与交付) |
 | Conoscope | 有效 `SolutionDir` 下，通用 HostCopy 写两套宿主插件目录；额外 target 还向 Debug/Release 宿主根目录复制顶层项目引用 DLL 及存在的 PDB | [本地构建、宿主复制与发布](./standard-plugins/conoscope.md#本地构建、宿主复制与发布) |
 | SystemMonitor / WindowsServicePlugin | 使用通用 HostCopy 条件和 Debug/Release 双目录复制；WindowsServicePlugin 的插件 `.cvxp` 与业务服务 ZIP 分别发布 | [SystemMonitor 构建](./standard-plugins/system-monitor.md#本地构建与测试)、[服务插件交付](./standard-plugins/windows-service.md#构建、发布与验证) |
 | Spectrum | 没有项目 HostCopy；正式发布同时维护独立 ZIP 和插件 `.cvxp` 两个更新源，使用专用脚本 | [本地构建](./standard-plugins/spectrum.md#本地构建与测试)、[双通道发布](./standard-plugins/spectrum.md#双通道发布-需明确发布授权) |

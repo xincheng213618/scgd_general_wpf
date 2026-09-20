@@ -297,7 +297,7 @@ namespace ColorVision.Copilot
             if (mode == CopilotReasoningMode.Default)
                 return;
 
-            if (CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            if (CopilotOpenAiRequestPolicy.UsesResponsesApi(profile))
             {
                 var effort = mode switch
                 {

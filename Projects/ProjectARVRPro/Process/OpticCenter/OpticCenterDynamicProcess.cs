@@ -49,7 +49,7 @@ namespace ProjectARVRPro.Process.OpticCenter
                         }
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.FindCross)
+                    if (master.ImgFileType == ViewResultAlgType.FindCross && master.version != "2.0")
                     {
                         var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                         if (details.Count == 1)

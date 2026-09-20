@@ -38,8 +38,8 @@ next: false
 - [Backend Copilot配置管理与敏感配置交付](../../02-developer-guide/backend/copilot-sync.md) — `delivery.backend-copilot-sync`
   Backend Copilot配置管理、AES-GCM密钥存储与全量同步；版本HMAC不是独立设备身份，nonce不去重，成功读取会交付provider秘密。
 
-- [Backend反馈提交、处理状态与附件访问](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
-  Backend公开反馈提交、文件目录收件箱、状态sidecar和受控附件响应；上传与管理校验不同，201、resolved及下载审计各有完成边界。
+- [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
+  反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
 
 - [Backend内置任务、执行记录与恢复](../../02-developer-guide/backend/jobs.md) — `delivery.backend-jobs`
   Backend内置任务的后台轮询、同步手动执行、SQLite单飞和启动恢复；禁用/停止不取消运行中handler，任务返回不证明历史落盘或副作用回滚。
@@ -63,7 +63,7 @@ next: false
   CVWindowsService 服务包的发布、LATEST\_RELEASE、缓存与按版本选包；文件名通过不证明ZIP有效，发布不等于本机安装。
 
 - [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
-  Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。
+  Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。
 
 - [构建平台与制品边界](../../02-developer-guide/README.md) — `delivery.index`
   定义宿主、插件、客户包和独立FileIO包的构建平台与制品边界，区分构建验证和远端发布。
@@ -81,7 +81,7 @@ next: false
   React 页面和 VitePress 文档的托管、开发代理、缓存、Brotli/gzip 与 Range 协商、旧分块恢复及文档索引；后台索引刷新不构建网页，也不证明已部署内容最新。
 
 - [代码行数与 Git 历史统计](../../02-developer-guide/scripts/code-statistics.md) — `delivery.code-statistics`
-  统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。
+  统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。
 
 - [安装制品与运行输出](../../00-getting-started/installation.md) — `delivery.installation`
   区分完整安装制品、增量更新和源码输出，定位安装后缺依赖、配置与启动问题。

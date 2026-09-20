@@ -700,6 +700,39 @@ namespace ColorVision.FileIO
             if (string.IsNullOrEmpty(filePath)) return false;
             if (fileInfo == null) return false;
 
+            byte[] data = fileInfo.Data;
+            return WriteCIEFile(
+                filePath,
+                fileInfo,
+                data == null ? 0 : data.LongLength,
+                stream =>
+                {
+                    if (data != null && data.Length > 0)
+                    {
+                        stream.Write(data, 0, data.Length);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Writes a CVCIE file while streaming its pixel payload from a caller-owned buffer.
+        /// The callback completes synchronously before this method returns.
+        /// </summary>
+        /// <param name="filePath">The path where the file should be written.</param>
+        /// <param name="fileInfo">The CVCIE header metadata. Its <see cref="CVCIEFile.Data"/> value is ignored.</param>
+        /// <param name="dataLength">The exact number of payload bytes the callback will write.</param>
+        /// <param name="writeData">Writes exactly <paramref name="dataLength"/> bytes to the supplied stream.</param>
+        /// <returns>True if the complete file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(
+            string filePath,
+            CVCIEFile fileInfo,
+            long dataLength,
+            Action<Stream> writeData)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+            if (fileInfo == null || writeData == null || dataLength < 0) return false;
+            if (fileInfo.Version != 2 && dataLength > int.MaxValue) return false;
+
             try
             {
                 // Get encoding, fallback to UTF8 if GBK is not available
@@ -762,33 +795,25 @@ namespace ColorVision.FileIO
                     bw.Write((uint)fileInfo.Rows);
                     bw.Write((uint)fileInfo.Bpp);
 
-                    // Write Data
-                    if (fileInfo.Data != null && fileInfo.Data.Length > 0)
+                    // Write Data length before allowing the caller to stream the payload.
+                    if (fileInfo.Version == 2)
                     {
-                        if (fileInfo.Version == 2)
-                        {
-                            bw.Write((long)fileInfo.Data.Length);
-                        }
-                        else
-                        {
-                            bw.Write((int)fileInfo.Data.Length);
-                        }
-                        bw.Write(fileInfo.Data);
+                        bw.Write(dataLength);
                     }
                     else
                     {
-                        // No Data, write zero length
-                        if (fileInfo.Version == 2)
-                        {
-                            bw.Write(0L);
-                        }
-                        else
-                        {
-                            bw.Write(0);
-                        }
+                        bw.Write((int)dataLength);
                     }
 
                     bw.Flush();
+                    long dataStart = fs.Position;
+                    writeData(fs);
+                    bw.Flush();
+                    if (fs.Position - dataStart != dataLength)
+                    {
+                        throw new InvalidDataException(
+                            $"The CVCIE payload writer produced {fs.Position - dataStart} bytes; expected {dataLength} bytes.");
+                    }
                     return true;
                 }
             }
@@ -918,6 +943,18 @@ namespace ColorVision.FileIO
         public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo)
         {
             return WriteCIEFile(filePath, fileInfo);
+        }
+
+        /// <summary>
+        /// Writes a CVRAW file while streaming its pixel payload from a caller-owned buffer.
+        /// </summary>
+        public static bool WriteCVRaw(
+            string filePath,
+            CVCIEFile fileInfo,
+            long dataLength,
+            Action<Stream> writeData)
+        {
+            return WriteCIEFile(filePath, fileInfo, dataLength, writeData);
         }
 
         /// <summary>

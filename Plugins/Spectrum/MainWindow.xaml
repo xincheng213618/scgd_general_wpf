@@ -27,7 +27,7 @@
             <Style TargetType="Expander">
                 <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
                 <Setter Property="IsExpanded" Value="True" />
-                <Setter Property="Margin" Value="0,2,0,8" />
+                <Setter Property="Margin" Value="0,2,0,4" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Expander">
@@ -35,7 +35,7 @@
                                 <ToggleButton Content="{TemplateBinding Header}" FontSize="15"
                                               IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                               Style="{StaticResource ButtonPageControl1}" />
-                                <Border x:Name="Panel" Margin="2,5,2,0" Padding="8" Style="{DynamicResource BorderModuleArea}">
+                                <Border x:Name="Panel" Margin="2,3,2,0" Padding="6" Style="{DynamicResource BorderModuleArea}">
                                     <ContentPresenter />
                                 </Border>
                             </StackPanel>
@@ -47,6 +47,20 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+            <Style x:Key="DeviceErrorTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="Margin" Value="0,4,0,0" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Style.Triggers>
+                    <Trigger Property="Text" Value="">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                    <Trigger Property="Text" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
             <Style TargetType="Button" BasedOn="{StaticResource CV.Button.Secondary}">
                 <Setter Property="MinWidth" Value="0" />
@@ -107,7 +121,7 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager x:Name="DockingManager" Grid.Row="2" Margin="6,2,6,4" Background="Transparent" BorderThickness="0" IsEnabled="False">
+        <xcad:DockingManager x:Name="DockingManager" Grid.Row="2" Margin="-2,-3,-2,-2" Padding="0" Background="Transparent" BorderThickness="0" IsEnabled="False">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
 
@@ -115,7 +129,7 @@
                     <xcad:LayoutAnchorablePaneGroup DockWidth="360" DockMinWidth="300">
                         <xcad:LayoutAnchorablePane>
                             <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="{x:Static properties:Resources.ControlPanel}" CanAutoHide="True" CanClose="False" CanFloat="True" ContentId="ControlPanel">
-                                <ScrollViewer Margin="4,2,4,5" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer Margin="2,0,2,2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                     <StackPanel>
 
                                         <!--  ═══ 光谱仪连接 (Spectrometer Connection) ═══  -->
@@ -319,7 +333,7 @@
                                                         <Button Margin="0,0,4,0" Padding="8,2" Command="{Binding ShutterController.CloseShutterCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}" Content="{x:Static properties:Resources.CloseShutter}" />
                                                     </StackPanel>
                                                 </StackPanel>
-                                                <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding ShutterController.LastErrorMessage}" TextWrapping="Wrap" />
+                                                <TextBlock Style="{StaticResource DeviceErrorTextStyle}" Text="{Binding ShutterController.LastErrorMessage}" />
                                             </StackPanel>
                                         </Expander>
 
@@ -378,7 +392,7 @@
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
                                                 </StackPanel>
-                                                <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{DynamicResource DangerBrush}" Text="{Binding FilterWheelController.LastErrorMessage}" TextWrapping="Wrap" />
+                                                <TextBlock Style="{StaticResource DeviceErrorTextStyle}" Text="{Binding FilterWheelController.LastErrorMessage}" />
                                             </StackPanel>
                                         </Expander>
 

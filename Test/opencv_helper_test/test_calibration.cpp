@@ -6,6 +6,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <nlohmann/json.hpp>
 
 #include <array>
 #include <algorithm>
@@ -1022,10 +1023,12 @@ void runSyntheticCoverage()
     const auto colorShift = directory.path / "color_shift.json";
     const auto colorDiff = directory.path / "color_diff.json";
     const auto angleShift = directory.path / "angle_shift.json";
+    const auto fractionalAngleShift = directory.path / "angle_shift_fractional.json";
     writeText(distortion, R"({"alpha":0.0,"cameraMatrix":[1.0,0.0,1.5,0.0,1.0,1.5,0.0,0.0,1.0],"distCoeffs":[0.0,0.0,0.0,0.0,0.0],"h":4,"w":4,"useFisheye":false})");
     writeText(colorShift, R"({"fillOffset":false,"offset":[{"X":0,"Y":0},{"X":0,"Y":0},{"X":0,"Y":0}]})");
     writeText(colorDiff, R"({"CalibDis":1.0,"CenterCol":2,"CenterRow":2,"ColRowCoeffs_GB":[0.0,0.0],"ColRowCoeffs_GR":[0.0,0.0],"ColorDiffCoeffs_GB":[0.0],"ColorDiffCoeffs_GR":[0.0],"MeasDis":1.0,"h":4,"w":4})");
     writeText(angleShift, R"({"optical_center_x":2,"optical_center_y":2,"interpolate_ratio":1.0,"coefficient_order":0,"target_row":5,"target_col":5,"coeff_r":[0.0],"coeff_g":[0.0],"coeff_b":[0.0],"rowColShift":[0.0,0.0]})");
+    writeText(fractionalAngleShift, R"({"optical_center_x":2.5,"optical_center_y":2.5,"interpolate_ratio":1.0,"coefficient_order":0,"target_row":5,"target_col":5,"coeff_r":[2.0],"coeff_g":[2.0],"coeff_b":[2.0],"rowColShift":[0.0,0.0]})");
 
     std::vector<std::uint16_t> geometricPixels(4 * 4 * 3);
     for (std::size_t index = 0; index < geometricPixels.size(); ++index) geometricPixels[index] = static_cast<std::uint16_t>(index + 1);
@@ -1233,6 +1236,133 @@ void runSyntheticCoverage()
         || !std::all_of(anglePixels.begin(), anglePixels.end(), [](auto value) { return value == 0 || value == 100; })) {
         throw std::runtime_error("AngleShift synthetic output is invalid");
     }
+
+    std::vector<std::uint16_t> fractionalAnglePixels(5 * 5 * 3);
+    for (std::size_t index = 0; index < fractionalAnglePixels.size(); ++index) {
+        fractionalAnglePixels[index] = static_cast<std::uint16_t>(index + 1);
+    }
+    const std::vector<std::uint16_t> fractionalAngleSourcePixels = fractionalAnglePixels;
+    std::vector<std::uint8_t> fractionalAngleRaw(fractionalAnglePixels.size() * sizeof(std::uint16_t));
+    std::memcpy(fractionalAngleRaw.data(), fractionalAnglePixels.data(), fractionalAngleRaw.size());
+    runOne(15, fractionalAngleShift, 5, 5, 16, 3, fractionalAngleRaw);
+    std::memcpy(fractionalAnglePixels.data(), fractionalAngleRaw.data(), fractionalAngleRaw.size());
+    const std::size_t centerPixel = static_cast<std::size_t>(2 * 5 + 2) * 3;
+    const std::size_t expectedSourcePixel = static_cast<std::size_t>(3 * 5 + 3) * 3;
+    if (!std::equal(
+            fractionalAnglePixels.begin() + centerPixel,
+            fractionalAnglePixels.begin() + centerPixel + 3,
+            fractionalAngleSourcePixels.begin() + expectedSourcePixel)) {
+        throw std::runtime_error("AngleShift fractional optical center was truncated");
+    }
+}
+
+std::vector<std::uint8_t> referenceAngleShift(const RawImage& raw, const nlohmann::json& config)
+{
+    const double ratio = config.at("interpolate_ratio");
+    const int width = static_cast<std::uint16_t>(raw.width * ratio);
+    const int height = static_cast<std::uint16_t>(raw.height * ratio);
+    const double centerX = config.at("optical_center_x").get<double>() * ratio;
+    const double centerY = config.at("optical_center_y").get<double>() * ratio;
+    const auto shift = config.at("rowColShift").get<std::array<double, 2>>();
+    const std::array<std::vector<double>, 3> coefficients{
+        config.at("coeff_b").get<std::vector<double>>(),
+        config.at("coeff_g").get<std::vector<double>>(),
+        config.at("coeff_r").get<std::vector<double>>() };
+    const int type = CV_MAKETYPE(raw.bitsPerChannel == 8 ? CV_8U : CV_16U, 3);
+    cv::Mat source(raw.height, raw.width, type, const_cast<std::uint8_t*>(raw.data.data()));
+    cv::Mat enlarged;
+    // Independent legacy oracle: materialize the entire cubic resize and
+    // gather global coordinates, without using the new tile plan or offsets.
+    cv::resize(source, enlarged, cv::Size(width, height), 0.0, 0.0, cv::INTER_CUBIC);
+    std::vector<std::uint8_t> result(raw.data.size(), 0);
+    const std::size_t sampleBytes = raw.bitsPerChannel / 8;
+    for (std::uint32_t row = 0; row < raw.height; ++row) {
+        for (std::uint32_t column = 0; column < raw.width; ++column) {
+            const double dx = column * ratio - centerX, dy = row * ratio - centerY;
+            const double radius = std::sqrt(dy * dy + dx * dx);
+            for (int channel = 0; channel < 3; ++channel) {
+                double correction = 0.0, power = 1.0;
+                for (double coefficient : coefficients[channel]) {
+                    correction += coefficient * power;
+                    power *= radius;
+                }
+                const int x = static_cast<int>((radius - correction) * (dx / (radius + 1.0e-12)) + centerX - shift[1]);
+                const int y = static_cast<int>((radius - correction) * (dy / (radius + 1.0e-12)) + centerY - shift[0]);
+                if (x < 0 || x >= width || y < 0 || y >= height || radius > height / 2.0 || radius > width / 2.0) continue;
+                const auto destination = (static_cast<std::size_t>(row) * raw.width + column) * 3 + channel;
+                std::memcpy(result.data() + destination * sampleBytes,
+                    enlarged.ptr(y) + (static_cast<std::size_t>(x) * 3 + channel) * sampleBytes, sampleBytes);
+            }
+        }
+    }
+    return result;
+}
+
+void runAngleShiftTilingCoverage()
+{
+    struct RestoreRuntime {
+        bool ipp = cv::ipp::useIPP();
+        int threads = cv::getNumThreads();
+        ~RestoreRuntime() { cv::ipp::setUseIPP(ipp); cv::setNumThreads(threads); }
+    } restore;
+    TemporaryDirectory directory(std::filesystem::temp_directory_path()
+        / ("colorvision_angle_shift_" + std::to_string(GetCurrentProcessId())));
+    cv::RNG random(0x29A753);
+    int number = 0;
+    for (const auto size : { cv::Size(641, 479), cv::Size(131, 129), cv::Size(1, 257), cv::Size(257, 1) }) {
+        for (const double ratio : { 1.0, 1.5, 2.0, 3.0, 4.0 }) {
+            for (int variant = 0; variant < (size.width == 641 ? 3 : 1); ++variant) {
+                const auto path = directory.path / ("angle_" + std::to_string(number++) + ".json");
+                nlohmann::json config{
+                    { "optical_center_x", size.width / 2.0 + 0.5 },
+                    { "optical_center_y", size.height / 2.0 - 0.25 },
+                    { "interpolate_ratio", ratio }, { "coefficient_order", 2 },
+                    { "target_row", size.height }, { "target_col", size.width },
+                    { "coeff_b", { -1.25, -0.08, 0.00001 } },
+                    { "coeff_g", { 0.5, -0.04, -0.00002 } },
+                    { "coeff_r", { 2.25, 0.06, 0.00001 } },
+                    { "rowColShift", { -1.75, 2.5 } } };
+                if (variant == 1) config["rowColShift"] = { 1.0e6, -1.0e6 }; // Entirely zero output.
+                if (variant == 2) {
+                    // A nonlocal map exercises the bounded tiling fallback.
+                    config["coeff_b"] = config["coeff_g"] = config["coeff_r"] = { -500.0, 5.0, 0.0 };
+                }
+                writeText(path, config.dump());
+                Context context = createContext();
+                requireResult(M_CalibrationLoadFileW(context.get(), 15, path.c_str()), context.get(), "load angle tile test");
+                // Reuse a context across content, thread-count, backend and
+                // bit-depth changes: local offsets and scratch must not leak.
+                for (int pass = 0; pass < 4; ++pass) {
+                    cv::ipp::setUseIPP(pass == 1 ? false : restore.ipp);
+                    cv::setNumThreads(pass == 0 ? 1 : 4);
+                    const int bits = pass == 2 ? 8 : 16;
+                    cv::Mat pixels(size, CV_MAKETYPE(bits == 8 ? CV_8U : CV_16U, 3));
+                    random.fill(pixels, cv::RNG::UNIFORM, 0, bits == 8 ? 256 : 65536);
+                    if (pass == 3) {
+                        for (int row = 0; row < pixels.rows; ++row) {
+                            auto* values = pixels.ptr<std::uint16_t>(row);
+                            for (int column = 0; column < pixels.cols * 3; ++column)
+                                values[column] = (row + column) % 2 == 0 ? 0 : 65535;
+                        }
+                    }
+                    RawImage raw;
+                    raw.width = size.width; raw.height = size.height; raw.channels = 3; raw.bitsPerChannel = bits;
+                    raw.exposure = { 1.0F, 1.0F, 1.0F };
+                    raw.data.assign(pixels.data, pixels.data + pixels.total() * pixels.elemSize());
+                    const auto original = raw.data;
+                    const auto expected = referenceAngleShift(raw, config);
+                    auto actual = raw.data;
+                    execute(context.get(), raw, actual);
+                    if (actual != expected) throw std::runtime_error("AngleShift tile/legacy mismatch: " + path.string() + " pass=" + std::to_string(pass));
+                    std::fill(actual.begin(), actual.end(), 0xA5);
+                    executeTo(context.get(), raw, raw.data, &actual, nullptr);
+                    if (actual != expected || raw.data != original)
+                        throw std::runtime_error("AngleShift read-only tile output or source mismatch");
+                }
+            }
+        }
+    }
+    std::cout << "angle_shift_exact_cases," << number * 4 << std::endl;
 }
 
 void runPoiV2SyntheticCoverage()
@@ -1707,6 +1837,46 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
     }
 }
 
+static void runRawColorApiCoverage()
+{
+    static_assert(sizeof(MRawColorTransformV1) == 96);
+    static_assert(sizeof(MRawPixelRunV1) == 12);
+    MRawColorTransformV1 transform{};
+    transform.structSize = sizeof(transform);
+    transform.channels = 3;
+    transform.interleavedBgr = 1;
+    transform.coefficients[0] = 1;
+    transform.coefficients[4] = 2;
+    transform.coefficients[8] = 3;
+    const std::array<std::uint16_t, 6> raw{ 1, 2, 3, 4, 5, 6 };
+    std::array<float, 6> xyz{};
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, -1, xyz.data(), xyz.size()) != M_POI_OK
+        || xyz != std::array<float, 6>{ 3, 6, 4, 10, 3, 12 })
+        throw std::runtime_error("RAW transform planar XYZ mismatch");
+    std::array<float, 2> y{};
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, 1, y.data(), y.size()) != M_POI_OK
+        || y != std::array<float, 2>{ 4, 10 })
+        throw std::runtime_error("RAW transform selected channel mismatch");
+    if (M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw) - 1, &transform, -1, xyz.data(), xyz.size()) != M_POI_INVALID_ARGUMENT
+        || M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, -1, xyz.data(), xyz.size() - 1) != M_POI_INVALID_ARGUMENT
+        || M_TransformRawColorV1(2, 1, 16, raw.data(), sizeof(raw), &transform, 3, y.data(), y.size()) != M_POI_INVALID_ARGUMENT)
+        throw std::runtime_error("RAW transform did not reject invalid buffers/channel");
+    MPoiOptionsV2 options{};
+    options.structSize = sizeof(options);
+    MPoiRequestV1 request{ 0, 1, 0, 1, 1 };
+    MPoiResultV1 point{};
+    if (M_CalculateRawPoiBatchV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &request, 1, &options, &point) != M_POI_OK
+        || point.X != 6 || point.Y != 10 || point.Z != 12)
+        throw std::runtime_error("RAW point calculation mismatch");
+    MRawPixelRunV1 run{ 0, 0, 2 };
+    if (M_CalculateRawRegionV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &run, 1, &options, &point) != M_POI_OK
+        || point.X != 4.5f || point.Y != 7 || point.Z != 7.5f)
+        throw std::runtime_error("RAW region calculation mismatch");
+    run.endX = 3;
+    if (M_CalculateRawRegionV1(2, 1, 16, raw.data(), sizeof(raw), &transform, &run, 1, &options, &point) != M_POI_INVALID_ARGUMENT)
+        throw std::runtime_error("RAW region did not reject out-of-bounds run");
+}
+
 bool RunCalibrationApiSmokeTests()
 {
     try {
@@ -1736,7 +1906,9 @@ bool RunCalibrationApiSmokeTests()
         }
         requireResult(M_CalibrationClear(context.get()), context.get(), "M_CalibrationClear");
         runSyntheticCoverage();
+        runAngleShiftTilingCoverage();
         runPoiV2SyntheticCoverage();
+        runRawColorApiCoverage();
         std::array<wchar_t, 32768> baselinePath{};
         const DWORD baselinePathLength = GetEnvironmentVariableW(
             L"COLORVISION_POI_BATCH_BASELINE_DLL", baselinePath.data(), static_cast<DWORD>(baselinePath.size()));

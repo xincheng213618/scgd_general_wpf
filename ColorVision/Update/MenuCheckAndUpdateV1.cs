@@ -14,7 +14,7 @@ namespace ColorVision.Update
 
         public override Visibility Visibility => Visibility.Visible;
 
-        public override string Header => $"{Properties.Resources.CheckForUpdates}(_U)";
+        public override string Header => LocalizedMenuAccessKey.Format(Properties.Resources.CheckForUpdates, 'U');
 
         public override void Execute() => _ = CombinedUpdateCoordinator.StartInteractiveAsync();
     }

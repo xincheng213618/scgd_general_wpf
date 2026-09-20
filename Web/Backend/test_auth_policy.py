@@ -80,6 +80,20 @@ class AuthPolicyTests(unittest.TestCase):
         self.assertIn("users:manage", decision.principal.scopes)
         self.assertFalse(decision.principal.is_admin)
 
+    def test_developer_feedback_permission_is_read_only_by_default(self):
+        context = RequestContext(
+            session_user_authenticated=True,
+            session_username="sdk-developer",
+            session_role="developer",
+        )
+
+        read = self.policy.authorize(context, ["feedback:read"], allow_user_session=True)
+        manage = self.policy.authorize(context, ["feedback:manage"], allow_user_session=True)
+
+        self.assertTrue(read.allowed)
+        self.assertFalse(manage.allowed)
+        self.assertTrue(manage.forbidden)
+
     def test_password_change_required_session_is_denied_until_password_changes(self):
         context = RequestContext(
             session_user_authenticated=True,

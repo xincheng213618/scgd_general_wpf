@@ -41,15 +41,15 @@ namespace ColorVision.Themes
                 this.window = window;
                 this.useDefaultIcon = useDefaultIcon;
                 window.Closed += Closed;
-                if (window.IsLoaded) Initialize();
-                else window.Loaded += Loaded;
+                if (new WindowInteropHelper(window).Handle != IntPtr.Zero) Initialize();
+                else window.SourceInitialized += SourceInitialized;
             }
 
-            private void Loaded(object sender, RoutedEventArgs e) => Initialize();
+            private void SourceInitialized(object? sender, EventArgs e) => Initialize();
 
             private void Initialize()
             {
-                window.Loaded -= Loaded;
+                window.SourceInitialized -= SourceInitialized;
                 hwnd = new WindowInteropHelper(window).Handle;
                 packageIcon = TryLoadPackageIcon(window);
                 if (packageIcon != null) window.Icon = packageIcon;
@@ -66,14 +66,14 @@ namespace ColorVision.Themes
                     return;
                 }
                 if (closed) return;
-                if (useDefaultIcon && packageIcon == null) window.Icon = CreateDefaultIcon(theme);
+                if (useDefaultIcon && packageIcon == null && TryCreateDefaultIcon(theme) is { } defaultIcon) window.Icon = defaultIcon;
                 ThemeManager.SetWindowTitleBarColor(hwnd, theme);
             }
 
             private void Closed(object? sender, EventArgs e)
             {
                 closed = true;
-                window.Loaded -= Loaded;
+                window.SourceInitialized -= SourceInitialized;
                 window.Closed -= Closed;
                 if (publisher != null) publisher.CurrentUIThemeChanged -= Apply;
                 publisher = null;
@@ -81,7 +81,19 @@ namespace ColorVision.Themes
             }
         }
 
-        private static BitmapImage CreateDefaultIcon(Theme theme) => new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+        private static BitmapImage? TryCreateDefaultIcon(Theme theme)
+        {
+            try
+            {
+                BitmapImage image = new(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+                if (image.CanFreeze) image.Freeze();
+                return image;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         /// <summary>Loads and freezes a package-specific window icon without applying any native frame styling.</summary>
         public static BitmapImage? TryLoadPackageIcon(Window window)

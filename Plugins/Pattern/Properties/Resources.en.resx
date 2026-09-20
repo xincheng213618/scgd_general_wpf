@@ -121,6 +121,236 @@
     <value>Search</value>
   </data>
   <data name="ChartGenerationTool" xml:space="preserve">
-    <value>ChartGenerationTool</value>
+    <value>Chart Generation Tool</value>
   </data>
+  <data name="TemplateFolder" xml:space="preserve"><value>Template Folder</value></data>
+  <data name="OpenTemplateFolder" xml:space="preserve"><value>Open Template Folder</value></data>
+  <data name="OpenTemplateFolderTooltip" xml:space="preserve"><value>Open the template storage folder</value></data>
+  <data name="Export" xml:space="preserve"><value>Export</value></data>
+  <data name="ExportAllTemplatesZip" xml:space="preserve"><value>Export all templates to a ZIP file</value></data>
+  <data name="Import" xml:space="preserve"><value>Import</value></data>
+  <data name="ImportTemplateZip" xml:space="preserve"><value>Import a ZIP template collection</value></data>
+  <data name="ProjectionTool" xml:space="preserve"><value>Projection Tool</value></data>
+  <data name="OpenProjectionTool" xml:space="preserve"><value>Open the image projection tool</value></data>
+  <data name="GenerateAllTemplateImages" xml:space="preserve"><value>Generate All Template Images</value></data>
+  <data name="GenerateAllTemplateImagesTooltip" xml:space="preserve"><value>Generate images for all templates</value></data>
+  <data name="OpenOutputFolder" xml:space="preserve"><value>Open Output Folder</value></data>
+  <data name="OpenImageOutputFolderTooltip" xml:space="preserve"><value>Open the image output folder</value></data>
+  <data name="Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="ClearOutputDirectory" xml:space="preserve"><value>Clear the output folder</value></data>
+  <data name="SwitchTheme" xml:space="preserve"><value>Switch theme</value></data>
+  <data name="ClearTemplateList" xml:space="preserve"><value>Clear the template list</value></data>
+  <data name="EditSettings" xml:space="preserve"><value>Edit settings</value></data>
+  <data name="FileName" xml:space="preserve"><value>File Name</value></data>
+  <data name="EditPatternParameters" xml:space="preserve"><value>Edit pattern parameters</value></data>
+  <data name="ResetFactoryDefaults" xml:space="preserve"><value>Reset Default Settings</value></data>
+  <data name="ResetFactoryDefaultsTooltip" xml:space="preserve"><value>Reset to class defaults and save them as user defaults</value></data>
+  <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="ResetTooltip" xml:space="preserve"><value>Reset to user defaults when available, otherwise to class defaults</value></data>
+  <data name="SaveToTemplate" xml:space="preserve"><value>Save as Template</value></data>
+  <data name="SaveCurrentParametersToTemplate" xml:space="preserve"><value>Save the current parameters as a template</value></data>
+  <data name="SaveAsDefault" xml:space="preserve"><value>Save as Default</value></data>
+  <data name="SaveCurrentParametersAsDefault" xml:space="preserve"><value>Save the current parameters as defaults</value></data>
+  <data name="GeneratePattern" xml:space="preserve"><value>Generate Pattern</value></data>
+  <data name="GenerateCurrentPattern" xml:space="preserve"><value>Generate the current pattern</value></data>
+  <data name="SaveAs" xml:space="preserve"><value>Save As</value></data>
+  <data name="SaveAsImageFile" xml:space="preserve"><value>Save as an image file</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Select" xml:space="preserve"><value>Select</value></data>
+  <data name="SelectColor" xml:space="preserve"><value>Select color</value></data>
+  <data name="Red" xml:space="preserve"><value>Red</value></data>
+  <data name="Green" xml:space="preserve"><value>Green</value></data>
+  <data name="Blue" xml:space="preserve"><value>Blue</value></data>
+  <data name="White" xml:space="preserve"><value>White</value></data>
+  <data name="Black" xml:space="preserve"><value>Black</value></data>
+  <data name="ZipFileFilter" xml:space="preserve"><value>ZIP files (*.zip)|*.zip</value></data>
+  <data name="ExportSucceeded" xml:space="preserve"><value>Export succeeded.</value></data>
+  <data name="ImportSucceeded" xml:space="preserve"><value>Import succeeded.</value></data>
+  <data name="InformationTitle" xml:space="preserve"><value>Information</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="ExportFailedFormat" xml:space="preserve"><value>Export failed: {0}</value></data>
+  <data name="ImportFailedFormat" xml:space="preserve"><value>Import failed: {0}</value></data>
+  <data name="ConfirmClearOutput" xml:space="preserve"><value>Are you sure you want to clear the contents?</value></data>
+  <data name="ClearConfirmationTitle" xml:space="preserve"><value>Confirm Clear</value></data>
+  <data name="ClearSucceeded" xml:space="preserve"><value>Clear succeeded.</value></data>
+  <data name="ClearFailedFormat" xml:space="preserve"><value>Clear failed: {0}</value></data>
+  <data name="DirectoryNotFound" xml:space="preserve"><value>The folder does not exist.</value></data>
+  <data name="GeneratePatternFirst" xml:space="preserve"><value>Generate a pattern first.</value></data>
+  <data name="SelectPatternFirst" xml:space="preserve"><value>Select a pattern first.</value></data>
+  <data name="ImageSavedFormat" xml:space="preserve"><value>Saved successfully: {0}</value></data>
+  <data name="ResetFailedFormat" xml:space="preserve"><value>Reset failed: {0}</value></data>
+  <data name="CurrentConfigSavedAsDefault" xml:space="preserve"><value>The current settings were saved as defaults.</value></data>
+  <data name="SaveSucceededTitle" xml:space="preserve"><value>Saved</value></data>
+  <data name="SaveFailedFormat" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="PatternTypeNotFoundFormat" xml:space="preserve"><value>No matching pattern type was found: {0}</value></data>
+  <data name="ReplaceTemplatePrompt" xml:space="preserve"><value>Replace the existing template?</value></data>
+
+  <data name="主色" xml:space="preserve"><value>Primary Color</value></data>
+  <data name="副色" xml:space="preserve"><value>Secondary Color</value></data>
+  <data name="尺寸模式" xml:space="preserve"><value>Size Mode</value></data>
+  <data name="视场系数X" xml:space="preserve"><value>Field of View X</value></data>
+  <data name="视场系数Y" xml:space="preserve"><value>Field of View Y</value></data>
+  <data name="像素宽度" xml:space="preserve"><value>Pixel Width</value></data>
+  <data name="像素高度" xml:space="preserve"><value>Pixel Height</value></data>
+  <data name="模板路径" xml:space="preserve"><value>Template Folder</value></data>
+  <data name="图卡生成路径" xml:space="preserve"><value>Pattern Output Folder</value></data>
+  <data name="切换模板后创建图像" xml:space="preserve"><value>Generate Image After Switching Templates</value></data>
+  <data name="保存格式" xml:space="preserve"><value>Save Format</value></data>
+  <data name="绘制模式" xml:space="preserve"><value>Drawing Mode</value></data>
+  <data name="视场背景" xml:space="preserve"><value>Field Background</value></data>
+  <data name="线条颜色" xml:space="preserve"><value>Line Color</value></data>
+  <data name="背景色" xml:space="preserve"><value>Background Color</value></data>
+  <data name="间隔颜色" xml:space="preserve"><value>Gap Color</value></data>
+  <data name="线宽（像素）" xml:space="preserve"><value>Line Width (pixels)</value></data>
+  <data name="排列模式" xml:space="preserve"><value>Layout Mode</value></data>
+  <data name="列数" xml:space="preserve"><value>Columns</value></data>
+  <data name="行数" xml:space="preserve"><value>Rows</value></data>
+  <data name="单元格宽度（像素）" xml:space="preserve"><value>Cell Width (pixels)</value></data>
+  <data name="单元格高度（像素）" xml:space="preserve"><value>Cell Height (pixels)</value></data>
+  <data name="水平线条数" xml:space="preserve"><value>Horizontal Line Count</value></data>
+  <data name="垂直线条数" xml:space="preserve"><value>Vertical Line Count</value></data>
+  <data name="水平间隔" xml:space="preserve"><value>Horizontal Spacing</value></data>
+  <data name="垂直间隔" xml:space="preserve"><value>Vertical Spacing</value></data>
+  <data name="水平线宽度" xml:space="preserve"><value>Horizontal Line Width</value></data>
+  <data name="垂直线宽度" xml:space="preserve"><value>Vertical Line Width</value></data>
+  <data name="绘制边缘线" xml:space="preserve"><value>Draw Edge Lines</value></data>
+  <data name="边缘偏移量" xml:space="preserve"><value>Edge Offset</value></data>
+  <data name="边缘线宽度" xml:space="preserve"><value>Edge Line Width</value></data>
+  <data name="噪声类型" xml:space="preserve"><value>Noise Type</value></data>
+  <data name="噪声颜色" xml:space="preserve"><value>Noise Color</value></data>
+  <data name="噪声强度" xml:space="preserve"><value>Noise Intensity</value></data>
+  <data name="噪声密度" xml:space="preserve"><value>Noise Density</value></data>
+  <data name="随机种子" xml:space="preserve"><value>Random Seed</value></data>
+  <data name="半径模式" xml:space="preserve"><value>Radius Mode</value></data>
+  <data name="像素半径列表" xml:space="preserve"><value>Pixel Radius List</value></data>
+  <data name="比例系数列表" xml:space="preserve"><value>Radius Ratio List</value></data>
+  <data name="自定义圆心" xml:space="preserve"><value>Custom Center</value></data>
+  <data name="圆心X坐标" xml:space="preserve"><value>Center X</value></data>
+  <data name="圆心Y坐标" xml:space="preserve"><value>Center Y</value></data>
+  <data name="是否绘制中心线" xml:space="preserve"><value>Draw Center Lines</value></data>
+  <data name="中心线宽度" xml:space="preserve"><value>Center Line Width</value></data>
+  <data name="图像类型" xml:space="preserve"><value>Image Type</value></data>
+  <data name="高斯噪声的标准差 (0-255)" xml:space="preserve"><value>Standard deviation of Gaussian noise (0-255)</value></data>
+  <data name="椒盐噪声的像素比例 (0.0-1.0)" xml:space="preserve"><value>Pixel ratio of salt-and-pepper noise (0.0-1.0)</value></data>
+  <data name="用于生成可重复的噪声 (-1 表示随机)" xml:space="preserve"><value>Seed for repeatable noise (-1 uses a random seed)</value></data>
+  <data name="按行列数量或单元格像素尺寸交替绘制水平和垂直等宽线栅" xml:space="preserve"><value>Alternate horizontal and vertical equal-width gratings by grid count or cell size</value></data>
+  <data name="按数量" xml:space="preserve"><value>By Count</value></data>
+  <data name="按间隔" xml:space="preserve"><value>By Spacing</value></data>
+  <data name="高斯噪声" xml:space="preserve"><value>Gaussian Noise</value></data>
+  <data name="椒盐噪声" xml:space="preserve"><value>Salt-and-Pepper Noise</value></data>
+  <data name="均匀噪声" xml:space="preserve"><value>Uniform Noise</value></data>
+  <data name="单色位图 (*.bmp;*.dib)" xml:space="preserve"><value>Monochrome bitmap (*.bmp;*.dib)</value></data>
+  <data name="16色位图 (*.bmp;*.dib)" xml:space="preserve"><value>16-color bitmap (*.bmp;*.dib)</value></data>
+  <data name="256色位图 (*.bmp;*.dib)" xml:space="preserve"><value>256-color bitmap (*.bmp;*.dib)</value></data>
+  <data name="24位位图 (*.bmp;*.dib)" xml:space="preserve"><value>24-bit bitmap (*.bmp;*.dib)</value></data>
+
+  <data name="GridX" xml:space="preserve"><value>Horizontal Grid Count</value></data>
+  <data name="GridY" xml:space="preserve"><value>Vertical Grid Count</value></data>
+  <data name="CellW" xml:space="preserve"><value>Cell Width</value></data>
+  <data name="CellH" xml:space="preserve"><value>Cell Height</value></data>
+  <data name="HorizontalWidth" xml:space="preserve"><value>Horizontal Line Width</value></data>
+  <data name="VerticalWidth" xml:space="preserve"><value>Vertical Line Width</value></data>
+  <data name="HorizontalLength" xml:space="preserve"><value>Horizontal Line Length</value></data>
+  <data name="VerticalLength" xml:space="preserve"><value>Vertical Line Length</value></data>
+  <data name="FieldX" xml:space="preserve"><value>Field X Coordinates</value></data>
+  <data name="FieldY" xml:space="preserve"><value>Field Y Coordinates</value></data>
+  <data name="XIndex" xml:space="preserve"><value>Starting X Index</value></data>
+  <data name="YIndex" xml:space="preserve"><value>Starting Y Index</value></data>
+  <data name="Spacing" xml:space="preserve"><value>Spacing</value></data>
+  <data name="Radius" xml:space="preserve"><value>Radius</value></data>
+  <data name="Rows" xml:space="preserve"><value>Rows</value></data>
+  <data name="Cols" xml:space="preserve"><value>Columns</value></data>
+  <data name="UseRectangle" xml:space="preserve"><value>Use Rectangles</value></data>
+  <data name="RectWidth" xml:space="preserve"><value>Rectangle Width</value></data>
+  <data name="RectHeight" xml:space="preserve"><value>Rectangle Height</value></data>
+  <data name="MarginRatioX" xml:space="preserve"><value>Horizontal Margin Ratio</value></data>
+  <data name="MarginRatioY" xml:space="preserve"><value>Vertical Margin Ratio</value></data>
+  <data name="LineThickness" xml:space="preserve"><value>Line Width</value></data>
+  <data name="LineLength" xml:space="preserve"><value>Line Length</value></data>
+  <data name="Angle" xml:space="preserve"><value>Angle</value></data>
+  <data name="DotFitType" xml:space="preserve"><value>Dot Fit</value></data>
+  <data name="RingWidth" xml:space="preserve"><value>Ring Width</value></data>
+  <data name="StripeMode" xml:space="preserve"><value>Stripe Direction</value></data>
+  <data name="HorizontalSpacing" xml:space="preserve"><value>Horizontal Spacing</value></data>
+  <data name="VerticalSpacing" xml:space="preserve"><value>Vertical Spacing</value></data>
+
+  <data name="棋盘格" xml:space="preserve"><value>Checkerboard</value></data>
+  <data name="十字网格" xml:space="preserve"><value>Cross Grid</value></data>
+  <data name="点阵" xml:space="preserve"><value>Dot Matrix</value></data>
+  <data name="十字" xml:space="preserve"><value>Cross</value></data>
+  <data name="九点" xml:space="preserve"><value>Nine Dots</value></data>
+  <data name="MTF" xml:space="preserve"><value>MTF</value></data>
+  <data name="噪点" xml:space="preserve"><value>Noise</value></data>
+  <data name="四象限线栅" xml:space="preserve"><value>Quadrant Grating</value></data>
+  <data name="Ring" xml:space="preserve"><value>Rings</value></data>
+  <data name="纯色" xml:space="preserve"><value>Solid Color</value></data>
+  <data name="隔行点亮" xml:space="preserve"><value>Stripes</value></data>
+
+  <data name="PatternManagerConfig" xml:space="preserve"><value>Pattern Settings</value></data>
+  <data name="PatternCheckerboardConfig" xml:space="preserve"><value>Checkerboard Settings</value></data>
+  <data name="PatternCrossGridConfig" xml:space="preserve"><value>Cross Grid Settings</value></data>
+  <data name="PatternCrossConfig" xml:space="preserve"><value>Cross Settings</value></data>
+  <data name="PatternDotConfig" xml:space="preserve"><value>Dot Matrix Settings</value></data>
+  <data name="PatternLinePairMTFConfig" xml:space="preserve"><value>MTF Settings</value></data>
+  <data name="PatternNineDotConfig" xml:space="preserve"><value>Nine-Dot Settings</value></data>
+  <data name="PatternNoiseConfig" xml:space="preserve"><value>Noise Settings</value></data>
+  <data name="PatternQuadrantGratingConfig" xml:space="preserve"><value>Quadrant Grating Settings</value></data>
+  <data name="PatternRingConfig" xml:space="preserve"><value>Ring Settings</value></data>
+  <data name="PatternSolodConfig" xml:space="preserve"><value>Solid Color Settings</value></data>
+  <data name="PatternStripeConfig" xml:space="preserve"><value>Stripe Settings</value></data>
+
+  <data name="ByFieldOfView" xml:space="preserve"><value>By Field of View</value></data>
+  <data name="ByPixelSize" xml:space="preserve"><value>By Pixel Size</value></data>
+  <data name="ByGridCount" xml:space="preserve"><value>By Grid Count</value></data>
+  <data name="ByCellSize" xml:space="preserve"><value>By Cell Size</value></data>
+  <data name="ByCount" xml:space="preserve"><value>By Count</value></data>
+  <data name="BySpacing" xml:space="preserve"><value>By Spacing</value></data>
+  <data name="FourLinePair" xml:space="preserve"><value>Four Line Pairs</value></data>
+  <data name="RotatedRect" xml:space="preserve"><value>Rotated Rectangle</value></data>
+  <data name="BMW" xml:space="preserve"><value>BMW Pattern</value></data>
+  <data name="Gaussian" xml:space="preserve"><value>Gaussian Noise</value></data>
+  <data name="SaltAndPepper" xml:space="preserve"><value>Salt-and-Pepper Noise</value></data>
+  <data name="Center" xml:space="preserve"><value>Centered at Original Size</value></data>
+  <data name="Inscribed" xml:space="preserve"><value>Inscribed</value></data>
+  <data name="Circumscribed" xml:space="preserve"><value>Circumscribed</value></data>
+  <data name="Horizontal" xml:space="preserve"><value>Horizontal</value></data>
+  <data name="Vertical" xml:space="preserve"><value>Vertical</value></data>
+  <data name="ByPixelRadius" xml:space="preserve"><value>By Pixel Radius</value></data>
+  <data name="ByRadiusRatio" xml:space="preserve"><value>By Radius Ratio</value></data>
+  <data name="bmp1" xml:space="preserve"><value>Monochrome bitmap (*.bmp;*.dib)</value></data>
+  <data name="bmp4" xml:space="preserve"><value>16-color bitmap (*.bmp;*.dib)</value></data>
+  <data name="bmp8" xml:space="preserve"><value>256-color bitmap (*.bmp;*.dib)</value></data>
+  <data name="bmp24" xml:space="preserve"><value>24-bit bitmap (*.bmp;*.dib)</value></data>
+  <data name="tif" xml:space="preserve"><value>TIFF (*.tif)</value></data>
+  <data name="png" xml:space="preserve"><value>PNG (*.png)</value></data>
+  <data name="jpg" xml:space="preserve"><value>JPEG (*.jpg)</value></data>
+  <data name="TemplateLibrary" xml:space="preserve"><value>Templates</value></data>
+  <data name="TemplateActions" xml:space="preserve"><value>Manage Templates</value></data>
+  <data name="PatternSettings" xml:space="preserve"><value>Pattern Settings</value></data>
+  <data name="PatternActions" xml:space="preserve"><value>Parameter Actions</value></data>
+  <data name="OutputSize" xml:space="preserve"><value>Output Size</value></data>
+  <data name="ResolutionPreset" xml:space="preserve"><value>Resolution Preset</value></data>
+  <data name="ImageWidth" xml:space="preserve"><value>Width</value></data>
+  <data name="ImageHeight" xml:space="preserve"><value>Height</value></data>
+  <data name="PatternType" xml:space="preserve"><value>Pattern Type</value></data>
+  <data name="Preview" xml:space="preserve"><value>Image Preview</value></data>
+  <data name="PreviewEmptyTitle" xml:space="preserve"><value>Preview Your Pattern</value></data>
+  <data name="PreviewEmptyHint" xml:space="preserve"><value>Choose a template, or adjust parameters and generate a pattern.</value></data>
+  <data name="NoTemplatesFound" xml:space="preserve"><value>No templates to display</value></data>
+  <data name="SearchTemplates" xml:space="preserve"><value>Search templates</value></data>
+  <data name="GenerateHint" xml:space="preserve"><value>Generate again after changing parameters.</value></data>
+  <data name="ImageOutput" xml:space="preserve"><value>Image Output</value></data>
+  <data name="图片列表" xml:space="preserve"><value>Image List</value></data>
+  <data name="上次选中索引" xml:space="preserve"><value>Last Selected Index</value></data>
+  <data name="上次选中的显示器" xml:space="preserve"><value>Last Selected Monitor</value></data>
+  <data name="图片显示模式" xml:space="preserve"><value>Image Display Mode</value></data>
+  <data name="适应" xml:space="preserve"><value>Fit</value></data>
+  <data name="拉伸" xml:space="preserve"><value>Stretch</value></data>
+  <data name="居中" xml:space="preserve"><value>Center</value></data>
+  <data name="填充" xml:space="preserve"><value>Fill</value></data>
+  <data name="ImageProjectorConfig" xml:space="preserve"><value>Image Projection Settings</value></data>
+  <data name="PatternWindowConfig" xml:space="preserve"><value>Pattern Output Size</value></data>
+  <data name="Width" xml:space="preserve"><value>Width</value></data>
+  <data name="Height" xml:space="preserve"><value>Height</value></data>
 </root>

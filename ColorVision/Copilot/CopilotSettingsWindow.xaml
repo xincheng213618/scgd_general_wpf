@@ -302,7 +302,8 @@
 
                                 <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
                                 <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,10">
-                                    <TextBox Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="For an OpenAI-compatible Responses service, enter its complete endpoint ending in /responses. Other compatible base URLs use Chat Completions." />
                                     <TextBlock Margin="0,5,0,0"
                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                FontSize="11"

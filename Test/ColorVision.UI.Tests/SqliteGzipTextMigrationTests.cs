@@ -97,6 +97,8 @@ public sealed class SqliteGzipTextMigrationTests
         database.InsertLegacyRows(payloadRows, CreateLargeText);
         database.ExecuteNonQuery("INSERT INTO PayloadLog (legacy_text) VALUES (NULL);");
 
+        Assert.True(SqliteGzipTextMigration.HasPendingMigration(database.Path, [MigrationSpec]));
+
         SqliteGzipTextMigrationReport first = SqliteGzipTextMigration.Execute(
             database.Path,
             [MigrationSpec],
@@ -114,6 +116,7 @@ public sealed class SqliteGzipTextMigrationTests
         Assert.Equal(firstText, database.LoadPayload(1));
         Assert.Equal(lastText, database.LoadPayload(payloadRows));
         Assert.Equal(GzipTextPayloadCodec.CreatePreview(firstText, 24), database.ExecuteScalarString("SELECT payload_preview FROM PayloadLog WHERE id = 1;"));
+        Assert.False(SqliteGzipTextMigration.HasPendingMigration(database.Path, [MigrationSpec]));
 
         Dictionary<string, string> columns = database.QueryColumns("PayloadLog");
         Assert.Equal("TEXT", columns["legacy_text"]);

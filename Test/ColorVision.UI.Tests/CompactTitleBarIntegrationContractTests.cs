@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Json;
 using ColorVision.UI.Menus;
@@ -596,6 +597,66 @@ public sealed class CompactTitleBarIntegrationContractTests
 
     private static XElement Named(XDocument document, string name)
         => Assert.Single(document.Descendants(), element => (string?)element.Attribute(Xaml + "Name") == name);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FullScreenKeepsTheRealMenuAndTopActionsVisibleAndInteractive(bool compact)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var fixture = CreateSyntheticHeader();
+            var markup = new XElement(Named(LoadMainWindow(), "TopBarGrid"));
+            markup.SetAttributeValue(XNamespace.Xmlns + "x", Xaml.NamespaceName);
+            markup.Elements().Single(element => (string?)element.Attribute(Xaml + "Name") == "MainWindowTitleBar").Remove();
+            var topBar = Assert.IsType<Grid>(XamlReader.Parse(markup.ToString()));
+            topBar.Children.Add(fixture.Header);
+            var caption = Assert.IsType<Border>(topBar.FindName("NativeCaptionButtonsPlaceholder"));
+            var menu = new MenuItem { Header = "File" };
+            fixture.Menu.Items.Add(menu);
+            var action = new Button { Content = "Account", Width = 60, Height = 28 };
+            fixture.Tools.Children.Add(action);
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition());
+            root.Children.Add(topBar);
+            var config = new MainWindowConfig();
+            var window = new Window { Content = root, DataContext = config, Width = 1000, Height = 600,
+                ShowActivated = false, ShowInTaskbar = false, Background = Brushes.White };
+            CompactTitleBarChrome? chrome = null;
+            try
+            {
+                window.Show();
+                if (compact && CompactTitleBarChrome.IsSupportedOperatingSystem)
+                {
+                    chrome = new CompactTitleBarChrome(window, fixture.Header, caption, root);
+                    Assert.True(chrome.TryAttach());
+                }
+                window.SetWindowFull(config);
+                config.IsFull = true;
+                PumpDispatcher();
+                Assert.True(WindowFullScreenSession.GetIsActive(window));
+                Assert.Equal(0, caption.ActualWidth);
+                Assert.True(menu.IsVisible);
+                Assert.True(action.IsVisible);
+                foreach (FrameworkElement control in new FrameworkElement[] { menu, action })
+                {
+                    Point point = control.TranslatePoint(new Point(control.ActualWidth / 2, control.ActualHeight / 2), root);
+                    var hit = Assert.IsAssignableFrom<DependencyObject>(root.InputHitTest(point));
+                    Assert.True(ReferenceEquals(control, hit) || control.IsAncestorOf(hit));
+                }
+                config.IsFull = false;
+                PumpDispatcher();
+                Assert.True(menu.IsVisible);
+                Assert.True(action.IsVisible);
+            }
+            finally
+            {
+                chrome?.Dispose();
+                window.Close();
+            }
+        });
+    }
 
     private static (Border Header, Border Drag, StackPanel Tools, Menu Menu, Button Update, Button Overflow) CreateSyntheticHeader()
     {

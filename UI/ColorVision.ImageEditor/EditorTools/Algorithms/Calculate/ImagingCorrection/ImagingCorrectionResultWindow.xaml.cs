@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             AlgorithmTableArtifact stages = result.GetArtifact<AlgorithmTableArtifact>("imaging-correction-stages") ?? throw new ArgumentException("The result has no stage table.", nameof(result));
             AlgorithmTableArtifact provenance = result.GetArtifact<AlgorithmTableArtifact>("imaging-correction-provenance") ?? throw new ArgumentException("The result has no provenance table.", nameof(result));
             InitializeComponent();
+            this.ApplyCaption();
             _result = result;
             CorrectedPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(corrected.Image);
             MaskPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(mask.Image);

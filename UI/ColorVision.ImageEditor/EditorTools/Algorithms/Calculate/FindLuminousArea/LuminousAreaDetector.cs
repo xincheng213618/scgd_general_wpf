@@ -14,6 +14,8 @@ namespace ColorVision.ImageEditor
             {
                 LuminousAreaDetectionMode.RobustV2 => LuminousAreaNative.DetectV2(image, roi, config.MinConfidence),
                 LuminousAreaDetectionMode.Legacy => LuminousAreaNative.DetectLegacy(image, roi, config.Threshold, config.UseRotatedRect),
+                LuminousAreaDetectionMode.FovLuminanceBoundary => FovLuminousAreaDetector.Detect(
+                    image, roi, config.MinConfidence, config.LuminanceBoundaryRatio),
                 _ => LuminousAreaDetectionResultForUnsupportedMode(config.Algorithm)
             };
         }
@@ -31,6 +33,8 @@ namespace ColorVision.ImageEditor
                 "AmbiguousCandidates" => "存在多个相近候选，无法唯一定位。",
                 "UnstableCorners" => "角点不稳定，已拒绝输出。",
                 "InvalidGeometry" => "检测到的四边形几何关系无效。",
+                "ReferenceLuminanceUnavailable" => "无法从发光区中心取得有效参考亮度。",
+                "BoundaryNotFound" => "无法按配置的中心亮度比例确定完整边界。",
                 "UnsupportedImage" => "当前图像格式不受发光区算法支持。",
                 "LowConfidence" => "定位可信度低于配置要求。",
                 "InvalidConfiguration" => "发光区定位配置无效。",

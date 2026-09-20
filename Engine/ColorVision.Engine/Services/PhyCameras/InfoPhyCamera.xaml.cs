@@ -1,10 +1,11 @@
-using System;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
     /// <summary>
-    /// InfoPG.xaml 的交互逻辑
+    /// Physical camera details and management actions.
     /// </summary>
     public partial class InfoPhyCamera : UserControl
     {
@@ -14,6 +15,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             Device = deviceCamera;
             InitializeComponent();
             DataContext = Device;
+        }
+
+        private void ActionGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Keep translated captions in equal cells; narrow detail panes use two columns.
+            if (sender is UniformGrid grid)
+                grid.Columns = e.NewSize.Width >= 520 ? 4 : 2;
         }
     }
 }

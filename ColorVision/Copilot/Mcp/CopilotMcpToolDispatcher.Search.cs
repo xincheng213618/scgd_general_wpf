@@ -117,7 +117,7 @@ namespace ColorVision.Copilot.Mcp
             if (!File.Exists(fullPath))
                 return CopilotMcpToolCallResult.Fail("file_not_found", $"The file does not exist: {fullPath}");
 
-            if (!CopilotWorkspaceSearchSupport.IsTextLikeFile(fullPath))
+            if (!CopilotWorkspaceSearchSupport.IsReadableTextFile(fullPath))
                 return CopilotMcpToolCallResult.Fail("unsupported_file_type", "The file extension is not in the ColorVision MCP text allow-list.");
 
             var startLine = GetInt(arguments, "start_line");
@@ -220,13 +220,7 @@ namespace ColorVision.Copilot.Mcp
             var resolvedFullPath = fullPath;
             if (!CopilotWorkspaceSearchSupport.IsPathWithinRoots(resolvedFullPath, roots))
             {
-                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedFullPath))
-                {
-                    error = $"The path crosses a file-system reparse point and is not allowed: {fullPath}";
-                    return false;
-                }
-
-                error = $"The path is outside the allowed ColorVision workspace roots: {fullPath}";
+                error = CopilotWorkspaceSearchSupport.DescribePathResolutionFailure(resolvedFullPath, roots, "target");
                 return false;
             }
 

@@ -21,7 +21,7 @@
         <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.Sol_Fusion_Label}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <!-- File List -->
-        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.Sol_Fusion_FileList}" Margin="0,0,0,10">
+        <GroupBox x:Name="FileInputGroup" Grid.Row="1" Header="{x:Static properties:Resources.Sol_Fusion_FileList}" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -72,8 +72,8 @@
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ModeCol}" Width="140" DisplayMemberBinding="{Binding Mode}"/>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_LoadMs}" Width="80" DisplayMemberBinding="{Binding LoadMs}"/>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_FusionMs}" Width="80" DisplayMemberBinding="{Binding FusionMs}"/>
+                            <GridViewColumn Header="校验(ms)" Width="80" DisplayMemberBinding="{Binding LoadMs}"/>
+                            <GridViewColumn Header="读图及融合(ms)" Width="80" DisplayMemberBinding="{Binding FusionMs}"/>
                             <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ConvertMs}" Width="80" DisplayMemberBinding="{Binding ConvertMs}"/>
                             <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_TotalMs}" Width="80" DisplayMemberBinding="{Binding TotalMs}"/>
                             <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ImageCount}" Width="55" DisplayMemberBinding="{Binding ImageCount}"/>

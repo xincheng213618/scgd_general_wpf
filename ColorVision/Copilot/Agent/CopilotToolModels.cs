@@ -560,6 +560,9 @@ namespace ColorVision.Copilot
 
         public string Summary { get; init; } = string.Empty;
 
+        /// <summary>Advisory coverage limits on a successful result; empty when no limit was reported.</summary>
+        public string PartialResultMessage { get; init; } = string.Empty;
+
         public string Content { get; init; } = string.Empty;
 
         public string ErrorMessage { get; init; } = string.Empty;
@@ -593,6 +596,14 @@ namespace ColorVision.Copilot
         public string ObservationProgressSignature { get; init; } = string.Empty;
 
         internal CopilotWorkspaceMutationSnapshot? WorkspaceMutation { get; init; }
+
+        // Captured search/list scope, including queries with no matches. This only
+        // invalidates observations within a run; it never grants file access.
+        internal IReadOnlyList<string> LocalObservationScopePaths { get; init; } = Array.Empty<string>();
+
+        // A failed multi-file write can need fresh inspection even after recovery.
+        // These paths are not proof of a change and must never become a diff.
+        internal IReadOnlyList<string> WorkspaceRecheckPaths { get; init; } = Array.Empty<string>();
 
         internal IReadOnlyList<CopilotBackgroundShellCommandEvidence> BackgroundShellCommands { get; init; } =
             Array.Empty<CopilotBackgroundShellCommandEvidence>();
@@ -661,6 +672,8 @@ namespace ColorVision.Copilot
 
         public string Summary { get; init; } = string.Empty;
 
+        public string PartialResultMessage { get; init; } = string.Empty;
+
         public string Content { get; init; } = string.Empty;
 
         public string ErrorMessage { get; init; } = string.Empty;
@@ -706,6 +719,7 @@ namespace ColorVision.Copilot
             {
                 Success = result?.Success ?? false,
                 Summary = result?.Summary ?? string.Empty,
+                PartialResultMessage = result?.PartialResultMessage ?? string.Empty,
                 Content = result?.Content ?? string.Empty,
                 ErrorMessage = result?.ErrorMessage ?? string.Empty,
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
@@ -790,6 +804,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotToolExecutionInfo
     {
+        internal IReadOnlyList<string> WorkspaceRecheckPaths { get; init; } = Array.Empty<string>();
+
         public string CallId { get; init; } = string.Empty;
 
         public int Round { get; init; }

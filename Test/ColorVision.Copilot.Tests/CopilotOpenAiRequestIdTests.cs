@@ -177,8 +177,10 @@ public sealed class CopilotOpenAiRequestIdTests
         Assert.Equal(110, result.Usage.EffectiveTotalTokens);
         Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
         Assert.NotNull(result.SessionCheckpoint);
+        var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
+        Assert.Contains($"HTTP {statusCode}", blocker.Summary);
         var terminal = Assert.Single(fixture.Events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
-            && item.Text.StartsWith("The provider stream was interrupted after material Agent progress.", StringComparison.Ordinal));
+            && item.Text.StartsWith(blocker.Summary, StringComparison.Ordinal));
         Assert.Contains("[request req_redacted_attempt_" + expectedCalls + "]", terminal.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("test-key", terminal.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("Controlled HTTP failure", terminal.Text, StringComparison.Ordinal);

@@ -8,6 +8,7 @@ from pathlib import PurePosixPath
 
 try:
     from .backend_client import upload_file_to_folder
+    from .native_runtime_integrity import ensure_native_runtime_integrity, validate_native_archive
     from .operations_watchdog_runtime import (
         REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
         validate_operations_watchdog_runtime,
@@ -15,6 +16,7 @@ try:
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
 except ImportError:
     from backend_client import upload_file_to_folder
+    from native_runtime_integrity import ensure_native_runtime_integrity, validate_native_archive
     from operations_watchdog_runtime import (
         REQUIRED_OPERATIONS_WATCHDOG_RUNTIME_PATHS,
         validate_operations_watchdog_runtime,
@@ -245,18 +247,20 @@ def create_directory_if_not_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def create_full_zip(version_dir, output_zip):
+def create_full_zip(version_dir, output_zip, *, native_hashes=None):
     """创建全量更新包"""
     all_files = get_all_files(version_dir)
     with zipfile.ZipFile(str(output_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
         for file in all_files:
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
+    if native_hashes is not None:
+        validate_native_archive(output_zip, native_hashes, require_all=True)
 
 
-def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
+def make_incremental_zip(old_zip, new_version_dir, incremental_zip, *, native_hashes=None):
     """制作增量更新包"""
     if not os.path.exists(old_zip):
-        create_full_zip(new_version_dir, incremental_zip.replace('Update', ''))
+        create_full_zip(new_version_dir, incremental_zip.replace('Update', ''), native_hashes=native_hashes)
         return
 
     with tempfile.TemporaryDirectory(prefix='colorvision-old-version-', ignore_cleanup_errors=True) as old_version_dir:
@@ -284,6 +288,8 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
         with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
             for rel_path, file in sorted(files_to_zip.items()):
                 zipf.write(str(file), str(rel_path))
+        if native_hashes is not None:
+            validate_native_archive(incremental_zip, native_hashes, require_all=False)
 
 
 def find_incremental_baseline(directory, version):
@@ -323,7 +329,8 @@ def main() -> int:
     try:
         validate_service_host_runtime(new_version_dir)
         validate_operations_watchdog_runtime(new_version_dir)
-    except FileNotFoundError as exc:
+        native_hashes = ensure_native_runtime_integrity(base_path, new_version_dir)
+    except (OSError, ValueError) as exc:
         print(str(exc))
         return 1
 
@@ -339,13 +346,17 @@ def main() -> int:
 
     if old_zip:
         print(f"创建增量包: {incremental_zip}")
-        make_incremental_zip(old_zip, new_version_dir, incremental_zip)
+        try:
+            make_incremental_zip(old_zip, new_version_dir, incremental_zip, native_hashes=native_hashes)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            print(f"Incremental package integrity check failed: {exc}")
+            return 1
         if not upload_file(incremental_zip, "ColorVision/Update"):
             print("增量包上传失败，终止发布。")
             return 1
     print("创建全量包")
     full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
-    create_full_zip(new_version_dir, full_zip)
+    create_full_zip(new_version_dir, full_zip, native_hashes=native_hashes)
     return 0
 
 

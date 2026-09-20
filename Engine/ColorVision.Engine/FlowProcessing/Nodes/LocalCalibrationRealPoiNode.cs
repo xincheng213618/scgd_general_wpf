@@ -1,3 +1,5 @@
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -6,12 +8,15 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using ServicePoiPointTypes = FlowEngineLib.Node.POI.POIPointTypes;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
@@ -115,9 +120,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private static int? Offset(int? value, int offset) => value.HasValue ? checked(value.Value - offset) : null;
     }
 
-    [STNode("Flow_CustomNodes", "本地校正+实时 POI")]
-    [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
-    [FlowNodePropertyEditorAttribute(nameof(POITempName), typeof(FlowPoiTemplateEditor))]
+    [STNode("Flow_CustomNodes", "校正+实时 POI")]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
@@ -137,6 +140,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         [Category("实时 POI")]
         [STNodeProperty("POI 模板", "校正后直接在 CIE 内存上计算的 POI 模板", true)]
+        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
         public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Browsable(false)]
@@ -193,11 +197,50 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [STNodeProperty("使用 ROI", "输入 POI 为全幅坐标且当前图像来自物理相机 ROI 时，将 POI 临时转换为 ROI 图像坐标；全幅或历史图像保持关闭", true)]
         public bool UseROI { get => useROI; set { useROI = value; OnPropertyChanged(); } }
 
-        public LocalCalibrationRealPoiNode() : base("本地校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
+        public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
         }
 
         private protected override string SourceImageFilePath => ImageFilePath;
+
+        private protected override float[]? ResolveZeroExposureFallback(CVStartCFC action, LocalFlowFrame sourceFrame)
+        {
+            if (sourceFrame.Metadata.Exposure.Length == 0 || sourceFrame.Metadata.Exposure.Any(value => value != 0)) return null;
+            if (!TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _) || imageMasterId <= 0) return null;
+
+            MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(imageMasterId);
+            return ReadExposureFromImageResultParams(imageResult?.Params);
+        }
+
+        internal static float[]? ReadExposureFromImageResultParams(string? parameters)
+        {
+            if (string.IsNullOrWhiteSpace(parameters)) return null;
+            try
+            {
+                if (JToken.Parse(parameters) is not JObject root) return null;
+                JToken? exposureToken = root.GetValue("ExpTime", StringComparison.OrdinalIgnoreCase)
+                    ?? root.GetValue("Exposure", StringComparison.OrdinalIgnoreCase);
+                if (exposureToken == null) return null;
+
+                IEnumerable<JToken> values = exposureToken is JArray array ? array.Children() : new[] { exposureToken };
+                List<float> exposure = new();
+                foreach (JToken valueToken in values)
+                {
+                    if (!float.TryParse(valueToken.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                        || !float.IsFinite(value)
+                        || value <= 0)
+                    {
+                        return null;
+                    }
+                    exposure.Add(value);
+                }
+                return exposure.Count == 0 ? null : exposure.ToArray();
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {

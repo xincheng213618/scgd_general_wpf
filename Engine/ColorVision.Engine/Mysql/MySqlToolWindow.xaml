@@ -25,18 +25,23 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
+        <WrapPanel Grid.Row="0">
                 <Button Content="{x:Static properties:Resources.MigrationBackup}" Command="{Binding BackupResourcesCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.FullBackup}" Command="{Binding BackupAllResourcesCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.LoadBackup}" Command="{Binding RestoreSelectCommand}" Background="Red" Foreground="White" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.DataCleanup}" Click="OpenCleanupWindow_Click" Margin="0,0,5,0"/>
+                <Button x:Name="UpdateFlowNodesButton" Content="{engine:EngineLang Key='更新流程节点'}" Click="UpdateFlowNodes_Click" Margin="0,0,5,0"
+                        ToolTip="{engine:EngineLang Key='将当前数据库中的流程节点标识更新为当前版本，保留参数和连线'}"/>
                 <Button x:Name="InitializeTablesButton" Content="{x:Static databaseProperties:Resources.MenuMySqlInitTables}" Click="InitializeTables_Click" Background="Red" Foreground="White"/>
-        </StackPanel>
+        </WrapPanel>
 
-        <ListView Grid.Row="1" x:Name="listView1" Background="Transparent" Margin="0,10,0,0" Padding="0" BorderThickness="0" KeyDown="ListView1_KeyDown">
+        <TextBlock x:Name="UpdateFlowNodesStatus" Grid.Row="1" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed"/>
+
+        <ListView Grid.Row="2" x:Name="listView1" Background="Transparent" Margin="0,10,0,0" Padding="0" BorderThickness="0" KeyDown="ListView1_KeyDown">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>

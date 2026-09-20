@@ -14,7 +14,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     /// Helpers for transient algorithm result overlays. Tagged overlays are intentionally
     /// kept out of the annotation/undo stream and can be replaced independently.
     /// </summary>
-    internal static class AlgorithmResultOverlay
+    public static class AlgorithmResultOverlay
     {
         private sealed class RequestState
         {
@@ -25,6 +25,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
         public const string FindCrossTag = "ImageView.FindCrossLocal.Result";
         public const string FindLuminousAreaTag = "ImageView.FindLuminousArea.Result";
+        public const string GridDistortionTag = "ImageView.GridDistortionV2.Result";
+        public const string FovTag = "ImageView.FOV2.Result";
 
         public static void ClearTagged(DrawEditorContext drawContext, string tag)
         {
@@ -84,7 +86,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             Point center,
             string message,
             Brush brush,
-            string tag)
+            string tag,
+            bool scaleRadiusWithFontSize = false)
         {
             if (!IsFinite(center) || string.IsNullOrWhiteSpace(message)) return;
 
@@ -93,6 +96,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             {
                 Center = center,
                 Radius = 6 / zoom,
+                ScaleRadiusWithFontSize = scaleRadiusWithFontSize,
                 Brush = Brushes.Transparent,
                 Pen = new Pen(brush, 1.5 / zoom),
                 Foreground = brush,
@@ -133,7 +137,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 foreach (string tag in new[]
                 {
                     AlgorithmResultOverlay.FindCrossTag,
-                    AlgorithmResultOverlay.FindLuminousAreaTag
+                    AlgorithmResultOverlay.FindLuminousAreaTag,
+                    AlgorithmResultOverlay.GridDistortionTag,
+                    AlgorithmResultOverlay.FovTag
                 })
                 {
                     AlgorithmResultOverlay.InvalidateRequest(drawContext, tag);

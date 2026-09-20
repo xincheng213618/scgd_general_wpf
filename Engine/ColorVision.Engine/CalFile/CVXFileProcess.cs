@@ -23,10 +23,10 @@ namespace ColorVision.Engine.CalFile
             try
             {
                 using ZipArchive archive = ZipFile.OpenRead(targetFile);
-                ZipArchiveEntry? entry = archive.GetEntry("CameraConfig.cfg");
+                ZipArchiveEntry? entry = archive.GetEntry("Camera.cfg") ?? archive.GetEntry("CameraConfig.cfg");
                 if (entry == null)
                 {
-                    errorMessage = "校准文件中缺少 CameraConfig.cfg。";
+                    errorMessage = "校准文件中缺少 Camera.cfg。";
                     return false;
                 }
 

@@ -1,0 +1,281 @@
+<Window x:Class="CameraTest.CameraTestWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:images="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+        xmlns:sfr="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;assembly=ColorVision.ImageEditor"
+        xmlns:plots="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        Title="相机生产调试" Width="1500" Height="920" MinWidth="1100" MinHeight="700"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource PrimaryTextBrush}"
+        Closing="Window_Closing" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="12,5"/><Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="MinHeight" Value="30"/><Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}"/>
+        </Style>
+        <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/><Setter Property="Margin" Value="0"/>
+        </Style>
+        <Style x:Key="ResultGrid" TargetType="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource CV.Surface.Control}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource CV.Surface.Control}"/>
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource CV.Surface.Alternate}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CV.Border.Weak}"/>
+            <Setter Property="BorderThickness" Value="0"/><Setter Property="RowHeight" Value="30"/>
+            <Setter Property="ColumnHeaderHeight" Value="32"/><Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HeadersVisibility" Value="Column"/><Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="ClipboardCopyMode" Value="IncludeHeader"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ColumnHeaderStyle"><Setter.Value><Style TargetType="DataGridColumnHeader"><Setter Property="Background" Value="{DynamicResource CV.Surface.Alternate}"/><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/><Setter Property="Padding" Value="6,4"/></Style></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="MetricText" TargetType="TextBlock">
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </Window.Resources>
+    <DockPanel Background="{DynamicResource GlobalBackground}">
+        <StackPanel DockPanel.Dock="Top">
+            <Border BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,0,0,1">
+                <Menu x:Name="MainMenu" Padding="8,2" Background="Transparent">
+                    <MenuItem Header="文件(_F)">
+                        <MenuItem Header="打开图像…" Click="Open_Click" IsEnabled="{Binding IsEnabled, ElementName=OpenButton}"/>
+                        <MenuItem x:Name="SaveImageMenuItem" Header="保存原图…" Click="SaveImage_Click"/>
+                        <MenuItem x:Name="ExportMenuItem" Header="导出分析结果…" Click="Export_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="LoadProfileMenuItem" Header="加载检测配置…" Click="LoadProfile_Click"/>
+                        <MenuItem x:Name="SaveProfileMenuItem" Header="保存检测配置…" Click="SaveProfile_Click"/>
+                        <Separator/><MenuItem Header="退出" Click="Exit_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="相机(_C)">
+                        <MenuItem Header="查找相机" Click="Discover_Click" IsEnabled="{Binding IsEnabled, ElementName=DiscoverButton}"/>
+                        <MenuItem Header="连接" Click="Connect_Click" IsEnabled="{Binding IsEnabled, ElementName=ConnectButton}"/>
+                        <MenuItem Header="断开" Click="Disconnect_Click" IsEnabled="{Binding IsEnabled, ElementName=DisconnectButton}"/>
+                        <MenuItem x:Name="VideoSettingsMenuItem" Header="视频分析设置…" Click="VideoSettings_Click"/>
+                        <Separator/><MenuItem Header="相机参数" Click="CameraSettings_Click" IsEnabled="{Binding IsEnabled, ElementName=CameraSettingsButton}"/>
+                    </MenuItem>
+                    <MenuItem Header="分析(_A)">
+                        <MenuItem Header="{Binding Content, ElementName=AnalyzeButton}" Click="Analyze_Click" IsEnabled="{Binding IsEnabled, ElementName=AnalyzeButton}"/>
+                        <MenuItem Header="实时分析" Click="Live_Click" IsEnabled="{Binding IsEnabled, ElementName=LiveButton}"/>
+                        <MenuItem Header="停止并冻结" Click="Stop_Click" IsEnabled="{Binding IsEnabled, ElementName=StopButton}"/>
+                        <Separator/>
+                        <MenuItem Header="添加测量点" Click="AddRegion_Click" IsEnabled="{Binding IsEnabled, ElementName=AddRegionButton}"/>
+                        <MenuItem x:Name="RemoveRegionMenuItem" Header="移除所选测量点" Click="RemoveRegion_Click"/>
+                        <Separator/>
+                        <MenuItem x:Name="SignalSettingsMenuItem" Header="输入信号与质量…" Click="SignalSettings_Click"/>
+                        <MenuItem x:Name="MetricSettingsMenuItem" Header="指标与刷新频率…" Click="MetricSettings_Click"/>
+                        <MenuItem x:Name="JudgmentSettingsMenuItem" Header="判定标准…" Click="JudgmentSettings_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="存档(_R)">
+                        <MenuItem Header="记录并存档" Click="Archive_Click" IsEnabled="{Binding IsEnabled, ElementName=ArchiveButton}"/>
+                        <MenuItem x:Name="ArchiveSettingsMenuItem" Header="存档信息…" Click="ArchiveSettings_Click"/>
+                        <MenuItem Header="打开存档目录" Click="ArchiveFolder_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="视图(_V)">
+                        <MenuItem Header="适合窗口" Click="FitImage_Click"/>
+                        <MenuItem x:Name="DisplaySettingsMenuItem" Header="BMW 测量与显示…" Click="DisplaySettings_Click"/>
+                    </MenuItem>
+                </Menu>
+            </Border>
+            <WrapPanel Margin="12,8,12,10">
+                <Button x:Name="OpenButton" Content="打开图像" Style="{StaticResource ActionButton}" Click="Open_Click"/>
+                <Button x:Name="AddRegionButton" Content="添加测量点" Click="AddRegion_Click" Style="{StaticResource ActionButton}"/>
+                <Button x:Name="AnalyzeButton" Content="开始分析" Style="{StaticResource ActionButton}" Click="Analyze_Click" Margin="12,0,6,0"/>
+                <Button Content="BMW 设置" Style="{StaticResource ActionButton}" Click="DisplaySettings_Click" IsEnabled="{Binding IsEnabled, ElementName=DisplaySettingsMenuItem}"/>
+                <Button x:Name="ArchiveButton" Content="记录并存档" Style="{StaticResource ActionButton}" Click="Archive_Click"/>
+            </WrapPanel>
+        </StackPanel>
+        <Border x:Name="StatusBar" DockPanel.Dock="Bottom" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,1,0,0" Padding="12,7" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Text="打开图像，或连接相机开始。" FontSize="11" Margin="0,0,16,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                <TextBlock x:Name="FrameText" Grid.Column="1" Text="尚未加载图像" FontSize="11" MaxWidth="580" Opacity="0.7"/>
+                <TextBlock x:Name="ModeText" Grid.Column="2" Text="单帧调试" FontSize="11" Margin="16,0,0,0" Opacity="0.7"/>
+            </Grid>
+        </Border>
+        <Grid Margin="12,0,12,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="220" MinWidth="180" MaxWidth="320"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*" MinWidth="200"/><ColumnDefinition Width="10"/><ColumnDefinition Width="490" MinWidth="360"/></Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock Text="相机" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="相机型号" FontSize="11" Opacity="0.7"/>
+                    <ComboBox x:Name="CameraModels" SelectionChanged="ConnectionSelection_Changed" Margin="0,4,0,10" MinHeight="28"/>
+                    <TextBlock Text="相机模式" FontSize="11" Opacity="0.7"/>
+                    <ComboBox x:Name="CameraModes" SelectionChanged="ConnectionSelection_Changed" Margin="0,4,0,10" MinHeight="28"/>
+                    <TextBlock Text="相机 ID" FontSize="11" Opacity="0.7"/>
+                    <DockPanel Margin="0,4,0,10">
+                        <Button x:Name="DiscoverButton" DockPanel.Dock="Right" Content="刷新" ToolTip="查找相机" Style="{StaticResource QuietButton}" Click="Discover_Click" Margin="4,0,0,0"/>
+                        <ComboBox x:Name="CameraIds" SelectionChanged="CameraIds_SelectionChanged" ToolTip="点击刷新后选择相机。" MinHeight="28"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,12"><TextBlock Text="像素位数" VerticalAlignment="Center" Margin="0,0,12,0"/><ComboBox x:Name="CameraDepths" SelectionChanged="ConnectionSelection_Changed" MinHeight="28"/></DockPanel>
+                    <WrapPanel Margin="0,0,0,12">
+                        <Button x:Name="ConnectButton" Content="连接" Style="{StaticResource ActionButton}" Click="Connect_Click"/>
+                        <Button x:Name="DisconnectButton" Content="断开" Style="{StaticResource ActionButton}" Click="Disconnect_Click"/>
+                    </WrapPanel>
+                    <TextBlock x:Name="CameraSummary" TextWrapping="Wrap" FontSize="11" Opacity="0.65"/>
+                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,14"/>
+                    <TextBlock Text="曝光 (ms)" FontSize="11" Opacity="0.7"/>
+                    <TextBox x:Name="ExposureInput" Text="100" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown" Margin="0,4,0,5"/>
+                    <Slider x:Name="ExposureSlider" Minimum="0" Maximum="11.0021" SmallChange="0.05" Value="4.60517" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整曝光" Margin="0,0,0,12"/>
+                    <TextBlock Text="增益" FontSize="11" Opacity="0.7"/>
+                    <TextBox x:Name="GainInput" Text="0" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown" Margin="0,4,0,5"/>
+                    <Slider x:Name="GainSlider" Minimum="0" Maximum="100" SmallChange="1" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整增益" Margin="0,0,0,14"/>
+                    <WrapPanel><Button x:Name="CaptureButton" Content="取图" Style="{StaticResource ActionButton}" Click="Capture_Click"/><Button x:Name="LiveButton" Content="视频模式" Style="{StaticResource QuietButton}" Click="Live_Click"/><Button x:Name="StopButton" Content="停止" ToolTip="停止实时分析并冻结当前画面" Style="{StaticResource QuietButton}" Click="Stop_Click" IsEnabled="False"/><Button Content="视频设置…" Click="VideoSettings_Click" IsEnabled="{Binding IsEnabled, ElementName=VideoSettingsMenuItem}" Style="{StaticResource QuietButton}"/></WrapPanel>
+                    <Button x:Name="CameraSettingsButton" Visibility="Collapsed"/>
+                    <TextBlock x:Name="RegionCountText" Visibility="Collapsed"/>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,0,0,10"/>
+                    <TextBlock x:Name="SignalSummary" FontSize="11" TextWrapping="Wrap" Opacity="0.65"/>
+                    <TextBlock x:Name="ArchiveSummary" FontSize="11" TextWrapping="Wrap" Opacity="0.65" Margin="0,8,0,0"/>
+                </StackPanel>
+                <Grid>
+                    <ListBox x:Name="RegionList" Visibility="Collapsed" BorderThickness="0" Background="Transparent" SelectionChanged="RegionList_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/><Setter Property="Padding" Value="4,7"/></Style></ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate><DataTemplate><DockPanel ToolTip="{Binding Bounds}">
+                            <Button DockPanel.Dock="Right" Content="×" Tag="{Binding}" Click="RemoveRegion_Click" ToolTip="移除此测量点" Style="{StaticResource QuietButton}" IsEnabled="{Binding IsEnabled, ElementName=AddRegionButton}"/>
+                            <StackPanel><TextBlock Text="{Binding Id}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold"/><TextBlock Text="{Binding Bounds}" Foreground="{DynamicResource PrimaryTextBrush}" Opacity="0.55" FontSize="10" Margin="0,3,0,0"/></StackPanel>
+                        </DockPanel></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock x:Name="EmptyRegionsText" Visibility="Collapsed"/>
+                </Grid>
+            </DockPanel>
+            </ScrollViewer>
+            <GridSplitter Grid.Column="1" Width="4" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+            <images:ImageView x:Name="ImageView" Grid.Column="2"/>
+            <GridSplitter Grid.Column="3" Width="4" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+            <TabControl x:Name="AnalysisTabs" Grid.Column="4">
+            <TabItem Header="SFR" ToolTip="MTF50 / MTF10 单位为 cycles/pixel。Y 为相对亮度组合信号，曲线中记为 L。">
+            <Grid Margin="6">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="260"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <WrapPanel Margin="0,0,0,8">
+                    <TextBlock Text="通道" Margin="0,0,12,0"/>
+                    <CheckBox x:Name="ShowY" Content="Y" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
+                    <CheckBox x:Name="ShowR" Content="R" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
+                    <CheckBox x:Name="ShowG" Content="G" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
+                    <CheckBox x:Name="ShowB" Content="B" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
+                    <ComboBox x:Name="PlotMode" Width="90" SelectedIndex="0" SelectionChanged="PlotMode_SelectionChanged"><ComboBoxItem Content="MTF"/><ComboBoxItem Content="ESF"/><ComboBoxItem Content="LSF"/></ComboBox>
+                    <TextBlock x:Name="CurveSelectionText" Text="请选择结果行" Margin="12,0,0,0" ToolTip="点击下方结果行切换点位和刃边；通道勾选决定显示的曲线。"/>
+                </WrapPanel>
+                <Grid Grid.Row="1">
+                    <sfr:SfrSimplePlotControl x:Name="CurvePlot"/>
+                    <Border x:Name="EmptyPlot" Background="{DynamicResource GlobalBackground}">
+                        <TextBlock Text="选择一条边查看 RGB/Y 曲线" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/>
+                    </Border>
+                </Grid>
+                <DataGrid Grid.Row="2" x:Name="Metrics" Style="{StaticResource ResultGrid}" Margin="0,10,0,0" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Metrics_SelectionChanged" EnableRowVirtualization="True">
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="ToolTip" Value="{Binding Status}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border Background="{TemplateBinding Background}" Padding="0">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="点位" Binding="{Binding Target}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="边" Binding="{Binding Edge}" Width="50" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="通道" Binding="{Binding Channel}" Width="48" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="MTF50" Binding="{Binding Mtf50, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="MTF10" Binding="{Binding Mtf10, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn x:Name="ResponseColumn" Header="MTF@0.25" Binding="{Binding Response, StringFormat=P1}" Width="80" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="*" MinWidth="90" ElementStyle="{StaticResource MetricText}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Grid.Row="3" Text="{Binding SelectedItem.Status, ElementName=Metrics}" FontSize="11" Opacity="0.65" Margin="0,8,0,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            </Grid>
+            </TabItem>
+            <TabItem Header="色差" ToolTip="RGB 50% 边缘位移，单位 px。包括镜头、传感器和图像处理的综合偏移，不等同于 ΔE 或纯镜头径向色差。">
+                <Grid Margin="6">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="220"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <TextBlock x:Name="ColorSummary" Text="分析图像后显示 R−G、R−B、G−B 的刃边位移。" TextWrapping="Wrap" Margin="0,4,0,8"/>
+                    <plots:WpfPlot x:Name="ColorPlot" Grid.Row="1"/>
+                    <DataGrid x:Name="ColorMetrics" Style="{StaticResource ResultGrid}" Grid.Row="2" Margin="0,10,0,10" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="ColorMetrics_SelectionChanged" CellStyle="{Binding CellStyle, ElementName=Metrics}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="点位" Binding="{Binding Target}" Width="70" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="边" Binding="{Binding Edge}" Width="60" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="通道差" Binding="{Binding Pair}" Width="70" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="位移 (px)" Binding="{Binding ShiftText}" Width="90" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="方向" Binding="{Binding Axis}" Width="60" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="220" ElementStyle="{StaticResource MetricText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Grid.Row="3" Text="{Binding SelectedItem.Status, ElementName=ColorMetrics}" TextWrapping="Wrap" FontSize="11" Opacity="0.75" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="调焦趋势">
+                <DockPanel Margin="6">
+                    <StackPanel DockPanel.Dock="Top">
+                        <ComboBox x:Name="FocusSelection" SelectionChanged="FocusSelection_Changed" Margin="0,0,0,10"/>
+                        <ComboBox x:Name="FocusMetricPicker" SelectedIndex="0" SelectionChanged="FocusSelection_Changed" Margin="0,0,0,10"><ComboBoxItem Content="指定频率 MTF"/><ComboBoxItem Content="MTF50"/></ComboBox>
+                        <TextBlock x:Name="FocusReadout" Text="开始实时分析后记录调焦趋势。" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <TextBlock Text="保留本轮最近 300 帧；缺测处断开。峰值仅供调焦参考，不代表已到最佳焦点。" TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,10"/>
+                        <WrapPanel>
+                            <Button x:Name="ClearFocusButton" Content="清空本轮" Style="{StaticResource ActionButton}" Click="ClearFocus_Click"/>
+                            <Button x:Name="ExportFocusButton" Content="导出调焦记录…" Style="{StaticResource ActionButton}" Click="ExportFocus_Click"/>
+                        </WrapPanel>
+                    </StackPanel>
+                    <plots:WpfPlot x:Name="FocusPlot"/>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="判定">
+                <DockPanel Margin="6">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <TextBlock x:Name="VerdictText" Text="未分析" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="判定为可选功能。未设标准、未知编码、缺通道或无效测量不会显示为合格。" TextWrapping="Wrap" Opacity="0.75"/>
+                    </StackPanel>
+                    <DataGrid x:Name="JudgmentMetrics" Style="{StaticResource ResultGrid}" IsReadOnly="True" AutoGenerateColumns="False" CellStyle="{Binding CellStyle, ElementName=Metrics}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="点位 / 边" Binding="{Binding Target}" Width="70" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="边" Binding="{Binding Edge}" Width="60" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="通道" Binding="{Binding Channel}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="指标" Binding="{Binding Metric}" Width="110" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="值" Binding="{Binding Value, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="阈值" Binding="{Binding Limit, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="判定" Binding="{Binding Status}" Width="85" ElementStyle="{StaticResource MetricText}"/>
+                            <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="220" ElementStyle="{StaticResource MetricText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

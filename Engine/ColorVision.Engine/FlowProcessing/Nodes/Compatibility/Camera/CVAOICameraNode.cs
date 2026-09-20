@@ -1,0 +1,255 @@
+#nullable disable
+using System.ComponentModel;
+using ColorVision.Engine.PropertyEditor;
+using System.Drawing;
+using FlowEngineLib.Algorithm;
+using FlowEngineLib.Base;
+using ST.Library.UI;
+using ST.Library.UI.NodeEditor;
+
+namespace FlowEngineLib.Node.Camera;
+
+[STNode("/02 相机")]
+[STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Camera.CVAOICameraNode")]
+public class CVAOICameraNode : CVBaseServerNode
+{
+	private string _CamTempName;
+
+	private ImgSaveBppMode _ImgSaveMode;
+
+	protected CVImageFlipMode _FlipMode;
+
+	protected bool _IsAutoExp;
+
+	private bool _IsWithND;
+
+	protected string _CalibTempName;
+
+	private AOITypeEnum _AOIType;
+
+	protected string _AlgTempName;
+
+	private STNodeEditText<string> m_ctrl_algTemp;
+
+	private STNodeEditText<string> m_ctrl_camTemp;
+
+	private STNodeEditText<string> m_ctrl_caliTemp;
+
+	private STNodeEditText<string> m_ctrl_expAutoTemp;
+
+	private STNodeEditText<string> m_ctrl_img;
+
+	[STNodeProperty("相机模板", "相机参数模板", true)]
+	[PropertyEditorType(typeof(CameraRunTemplatePropertiesEditor))]
+	public string CamTempName
+	{
+		get
+		{
+			return _CamTempName;
+		}
+		set
+		{
+			_CamTempName = value;
+			setTempValue();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("保存原图", "保存原图", true)]
+	public ImgSaveBppMode ImgSaveMode
+	{
+		get
+		{
+			return _ImgSaveMode;
+		}
+		set
+		{
+			_ImgSaveMode = value;
+			setImgValue();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("图像翻转", "图像翻转", true)]
+	public CVImageFlipMode FlipMode
+	{
+		get
+		{
+			return _FlipMode;
+		}
+		set
+		{
+			_FlipMode = value;
+			setImgValue();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("自动曝光", "自动曝光", true)]
+	public bool IsAutoExp
+	{
+		get
+		{
+			return _IsAutoExp;
+		}
+		set
+		{
+			_IsAutoExp = value;
+			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("曝光模板", "曝光模板", true)]
+	public string TempName
+	{
+		get
+		{
+			return _TempName;
+		}
+		set
+		{
+			setTempName(value);
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("启用ND", "启用ND滤轮(自动曝光)", true)]
+	public bool IsWithND
+	{
+		get
+		{
+			return _IsWithND;
+		}
+		set
+		{
+			_IsWithND = value;
+			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("校正模板", "校正模板", true)]
+	[PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
+	public string CalibTempName
+	{
+		get
+		{
+			return _CalibTempName;
+		}
+		set
+		{
+			_CalibTempName = value;
+			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("AOI算法", "AOI算法", true)]
+	public AOITypeEnum AOIType
+	{
+		get
+		{
+			return _AOIType;
+		}
+		set
+		{
+			_AOIType = value;
+			setAOIValue();
+			OnPropertyChanged();
+		}
+	}
+
+	[STNodeProperty("算子模板", "算子模板", true)]
+	[PropertyEditorType(typeof(LedCheck2TemplatePropertiesEditor))]
+	public string AlgTempName
+	{
+		get
+		{
+			return _AlgTempName;
+		}
+		set
+		{
+			_AlgTempName = value;
+			setAOIValue();
+			OnPropertyChanged();
+		}
+	}
+
+	private void setTempValue()
+	{
+		m_ctrl_camTemp.Value = GetCameraTempDis();
+	}
+
+	public CVAOICameraNode()
+		: base("通用AOI相机", "Camera", "SVR.Camera.Default", "DEV.Camera.Default")
+	{
+		operatorCode = "GetDataAndAlgorithm";
+		_MaxTime = 60000;
+		_AlgTempName = "";
+		_CamTempName = "";
+		_TempName = "";
+		_CalibTempName = "";
+		_FlipMode = CVImageFlipMode.None;
+		_IsWithND = false;
+		_IsAutoExp = false;
+		_ImgSaveMode = ImgSaveBppMode.Bit16;
+		base.Height += 100;
+	}
+
+	protected override void OnCreate()
+	{
+		base.OnCreate();
+		initCtrl();
+	}
+
+	private string GetAutoExpDis()
+	{
+		return string.Format("{0}/{1}", _IsAutoExp ? "T" : "F", _IsWithND ? "T" : "F");
+	}
+
+	private string GetCameraTempDis()
+	{
+		return $"{_CamTempName}";
+	}
+
+	private void setImgValue()
+	{
+		m_ctrl_img.Value = GetImgTempDis();
+	}
+
+	private void setAOIValue()
+	{
+		m_ctrl_algTemp.Value = GetAlgTempDis();
+	}
+
+	private string GetImgTempDis()
+	{
+		return $"{_ImgSaveMode.ToString()}/{_FlipMode.ToString()}";
+	}
+
+	private void initCtrl()
+	{
+		Rectangle custom_item = m_custom_item;
+		m_ctrl_camTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "相机:", GetCameraTempDis());
+		custom_item.Y += 25;
+		m_ctrl_expAutoTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动曝光/ND:", GetAutoExpDis());
+		custom_item.Y += 25;
+		m_ctrl_img = CreateControl(typeof(STNodeEditText<string>), custom_item, "保存/翻转:", GetImgTempDis());
+		custom_item.Y += 25;
+		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
+		custom_item.Y += 25;
+		m_ctrl_algTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "算子:", GetAlgTempDis());
+	}
+
+	private string GetAlgTempDis()
+	{
+		return $"{Lang.Get(_AOIType.ToString())}:{_AlgTempName}";
+	}
+
+	protected override object getBaseEventData(CVStartCFC start)
+	{
+		string algParamType = "FindLed";
+		return new CVAOICameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, (int)_ImgSaveMode, _FlipMode);
+	}
+}

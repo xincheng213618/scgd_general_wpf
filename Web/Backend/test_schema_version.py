@@ -457,7 +457,7 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
-    def test_v17_seeds_roles_and_equal_default_permissions(self):
+    def test_v17_seeds_roles_with_owner_scoped_user_and_read_only_developer_feedback(self):
         db = sqlite3.connect(":memory:")
         db.row_factory = sqlite3.Row
         try:
@@ -470,7 +470,7 @@ class SchemaVersionTests(unittest.TestCase):
 
             self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
             roles = {row["code"] for row in db.execute("SELECT code FROM roles")}
-            self.assertEqual(roles, {"admin", "user"})
+            self.assertEqual(roles, {"admin", "developer", "user"})
             admin_permissions = {
                 row["permission_code"]
                 for row in db.execute(
@@ -483,9 +483,19 @@ class SchemaVersionTests(unittest.TestCase):
                     "SELECT permission_code FROM role_permissions WHERE role_code = 'user'"
                 )
             }
-            self.assertEqual(user_permissions, admin_permissions)
+            developer_permissions = {
+                row["permission_code"]
+                for row in db.execute(
+                    "SELECT permission_code FROM role_permissions WHERE role_code = 'developer'"
+                )
+            }
+            self.assertEqual(
+                user_permissions,
+                admin_permissions - {"feedback:read", "feedback:manage"},
+            )
             self.assertIn("admin:access", user_permissions)
             self.assertIn("permissions:manage", user_permissions)
+            self.assertEqual(developer_permissions, {"admin:access", "feedback:read"})
         finally:
             db.close()
 

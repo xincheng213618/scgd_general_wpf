@@ -56,7 +56,7 @@ namespace ColorVision.Scheduler
                         });
                         break;
                     case JobExecutionMode.Calendar:
-                        triggerBuilder.WithCalendarIntervalSchedule(schedule => schedule.WithIntervalInDays(1));
+                        triggerBuilder.WithCalendarIntervalSchedule(schedule => schedule.WithInterval(1, IntervalUnit.Day));
                         break;
                     case JobExecutionMode.Cron:
                         triggerBuilder.WithCronSchedule(info.CronExpression);
@@ -146,7 +146,7 @@ namespace ColorVision.Scheduler
             {
                 if (string.IsNullOrWhiteSpace(info.CronExpression))
                     return Properties.Resources.Sched_CronEmpty;
-                if (!CronExpression.IsValidExpression(info.CronExpression))
+                if (!CronExpression.TryParse(info.CronExpression, CronFormat.Quartz, out _))
                     return Properties.Resources.Sched_CronInvalid;
             }
 

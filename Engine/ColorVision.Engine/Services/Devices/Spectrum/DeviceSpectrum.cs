@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -29,11 +30,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -47,6 +47,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
+        [DisplayName("启用本地光谱仪")]
+        [Description("下次打开时直接连接本机光谱仪；已打开的连接在关闭前保持当前模式。")]
+        public bool UseLocalSpectrum { get => _useLocalSpectrum; set { _useLocalSpectrum = value; OnPropertyChanged(); } }
+        private bool _useLocalSpectrum;
         /// <summary>
         /// 是否光通量模式
         /// </summary>
@@ -111,7 +115,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     }
 
-    public class DeviceSpectrum : DeviceService<ConfigSpectrum>
+    public partial class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceSpectrum));
         private const double CorrectionSpectrumStart = 380d;
@@ -121,10 +125,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private const double CorrectionWavelengthTolerance = 1e-6;
         private const int CalibrationRestartDebounceMilliseconds = 1000;
         private const int CalibrationRestartCooldownMilliseconds = 4000;
+        internal const string SpectrumDriverToolSha256 = "4B7C58696B7A809525F6ABCEA9B3E9C1BF91518EBDC0D19AF31E219654074342";
         private readonly object calibrationRestartSync = new object();
         private readonly SemaphoreSlim calibrationRestartGate = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim correctionExecutionGate = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim correctionMeasurementGate = new SemaphoreSlim(1, 1);
+        internal SpectrumCalibrationGroupChangeGuard CalibrationGroupChangeGuard { get; } = new SpectrumCalibrationGroupChangeGuard();
         private CancellationTokenSource? calibrationRestartCts;
         private int spectrumContinuousMeasurementLease;
         private int spectrumContinuousStatusObserved;
@@ -147,13 +153,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
 
-        [CommandDisplay("RefreshDeviceList", Order = 1, CategoryOrder = 0)]
+        [CommandDisplay("PhysicalSpectrumManager", Order = -1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumManagerHint")]
+        public RelayCommand OpenPhysicalSpectrumManagerCommand { get; set; }
+
+        [CommandDisplay("RefreshDeviceList", Order = 2, CategoryOrder = 0)]
         [Category("DeviceConnection")]
         [Description("SpectrumRefreshHint")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
-        [CommandDisplay("UploadLic", Order = 2, CategoryOrder = 4)]
-        [Category("MaintenanceDiagnostics")]
+        [CommandDisplay("SpectrumDriverTool", Order = 3, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
+        [Description("SpectrumDriverToolHint")]
+        public RelayCommand OpenSpectrumDriverToolCommand { get; set; }
+
+        [CommandDisplay("UploadLic", Order = 1, CategoryOrder = 0)]
+        [Category("DeviceConnection")]
         [Description("SpectrumLicenseHint")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
@@ -197,7 +213,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            InitializeLocalSpectrum();
             DService = new MQTTSpectrum(this);
+            DService.RefreshBackendStatus();
             _view = new Lazy<ViewSpectrum>(() => new ViewSpectrum(this, true));
             this.SetIconResource("DISpectrumIcon");
 
@@ -207,30 +225,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             EditCommand = new RelayCommand(a =>
             {
-                PropertyEditorWindow window = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional);
+                EditSpectrum window = new EditSpectrum(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.Submitted +=(s,e)=>
+                if (window.ShowDialog() == true)
                 {
-                    //2026.01.21 增加逻辑，如果切换了ND模式，则清空对应的绑定信息
-                    if (Config.NDConfig.IsBingNDDevice)
-                    {
-                        Config.NDConfig.SzComName = string.Empty;
-                    }
-                    else
-                    {
-                        Config.NDConfig.NDBindDeviceCode = string.Empty;
-                    }
-
                     Save();
-                };
-                window.ShowDialog();
+                }
 
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            OpenPhysicalSpectrumManagerCommand = new RelayCommand(_ => new PhySpectrumManagerWindow(Config.SN, int.TryParse(Config.ComPort, out int port) ? port : 0)
+                { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            OpenSpectrumDriverToolCommand = new RelayCommand(a => OpenSpectrumDriverTool());
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
 
             SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
@@ -472,6 +482,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     : $"光谱测量失败：{detail}");
             }
 
+            if (msgRecord.MsgReturn?.Data is Local.LocalSpectrumCommandResult localResult) return localResult.Model;
             int masterId = GetCorrectionMasterId(msgRecord.MsgReturn);
             using var db = new SqlSugarClient(new ConnectionConfig
             {
@@ -941,6 +952,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string path = Config.MaguideFile;
             if (string.IsNullOrWhiteSpace(path))
                 path = Config.ActiveCalibrationGroup.MaguideFile;
+            if (SpectrumBackend.OpensLocally) return Local.LocalSpectrumSession.ResolvePath(path);
             return ResolveCalibrationFilePath(path, ServiceConfig.Instance.CVMainService_x64);
         }
 
@@ -1019,6 +1031,37 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().FirstOrDefault(a => a.Code == deviceCode);
         }
 
+        internal bool TrySetNDPortForCalibrationGroup(int holeIndex, out MsgRecord? msgRecord, out string? error)
+        {
+            msgRecord = null;
+            error = null;
+            if (SpectrumBackend?.OpensLocally == true)
+            {
+                error = "本地光谱仪暂不支持 ND 轮自动切换，请选择不关联 ND 端口的校正组。";
+                return false;
+            }
+
+            if (Config.NDConfig.IsBingNDDevice)
+            {
+                DeviceCfwPort? cfwPort = GetBoundCfwPort();
+                if (cfwPort == null)
+                {
+                    string deviceCode = Config.NDConfig.NDBindDeviceCode;
+                    error = string.IsNullOrWhiteSpace(deviceCode)
+                        ? "当前光谱仪未绑定 ND 滤光轮服务。"
+                        : $"绑定的 ND 滤光轮服务 {deviceCode} 未加载。";
+                    return false;
+                }
+
+                msgRecord = cfwPort.DService.SetPort(holeIndex);
+                return true;
+            }
+
+            DisplayConfig.PortNum = holeIndex;
+            msgRecord = DService.SetPort();
+            return true;
+        }
+
         public void OpenCalibrationGroupWindow()
         {
             Config.EnsureCalibrationGroups();
@@ -1048,6 +1091,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (group == null)
                 return false;
 
+            using IDisposable applyScope = CalibrationGroupChangeGuard.EnterApply();
+
             bool changed = !string.Equals(Config.ActiveCalibrationGroupName, group.GroupName, StringComparison.Ordinal)
                 || !string.Equals(Config.WavelengthFile, group.WavelengthFile, StringComparison.Ordinal)
                 || !string.Equals(Config.MaguideFile, group.MaguideFile, StringComparison.Ordinal);
@@ -1061,7 +1106,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             SaveConfig();
 
-            if (restartService)
+            if (restartService && !SpectrumBackend.OpensLocally)
                 QueueCalibrationRestart();
 
             return true;
@@ -1128,7 +1173,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
             IsDiscoveringSpectrometers = true;
             GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
-            int.TryParse(Config.ComPort, out int port);
+            int port = int.TryParse(Config.ComPort, out int configuredPort) ? configuredPort : 0;
             try
             {
                 var results = await Task.Run(() => SpectrumDeviceDiscovery.Discover(port, Spectrometer.CM_Emission_GetAllSN));
@@ -1142,6 +1187,68 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 GetSpectrSerialNumberCommand.RaiseCanExecuteChanged();
             }
         }
+
+        internal static string GetSpectrumDriverToolPath(string baseDirectory) =>
+            Path.Combine(baseDirectory, "Tools", "Spectrum", "zadig-2.4.exe");
+
+        internal static bool HasExpectedSpectrumDriverToolHash(string filePath)
+        {
+            using FileStream stream = File.OpenRead(filePath);
+            return Convert.ToHexString(SHA256.HashData(stream)).Equals(SpectrumDriverToolSha256, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static void OpenSpectrumDriverTool()
+        {
+            Window? owner = Application.Current.GetActiveWindow();
+            string title = GetSpectrumDriverToolText("SpectrumDriverTool", "光谱仪驱动工具");
+            string toolPath = GetSpectrumDriverToolPath(AppContext.BaseDirectory);
+            if (!File.Exists(toolPath))
+            {
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolMissing", "未找到光谱仪驱动工具：{0}"), toolPath), title,
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                if (!HasExpectedSpectrumDriverToolHash(toolPath))
+                {
+                    MessageBox.Show(owner, GetSpectrumDriverToolText("SpectrumDriverToolInvalid", "光谱仪驱动工具校验失败，请重新安装或修复 ColorVision。"), title,
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("校验光谱仪驱动工具失败", ex);
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolOpenFailed", "无法打开光谱仪驱动工具：{0}"), ex.Message), title,
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (MessageBox.Show(owner, GetSpectrumDriverToolText("SpectrumDriverToolWarning",
+                    "请仅选择 GCS Spectrameter，并确认目标驱动为 libusb-win32。不要选择键盘、鼠标、接收器、摄像头或 USB Hub。是否继续？"),
+                    title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+                return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(toolPath)
+                {
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(toolPath) ?? AppContext.BaseDirectory,
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("打开光谱仪驱动工具失败", ex);
+                MessageBox.Show(owner, string.Format(GetSpectrumDriverToolText("SpectrumDriverToolOpenFailed", "无法打开光谱仪驱动工具：{0}"), ex.Message), title,
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static string GetSpectrumDriverToolText(string key, string fallback) =>
+            Properties.Resources.ResourceManager.GetString(key) ?? fallback;
 
         public void SelfAdaptionInitDark()
         {
@@ -1187,46 +1294,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public async Task UploadLicenseNet(string sn)
         {
-            // 设置请求的URL和数据
-            string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
-            var postData = new { macSn = sn };
-            string DirLicense = $"{Environments.DirAppData}\\Licenses";
-            if (!Directory.Exists(DirLicense))
-                Directory.CreateDirectory(DirLicense);
-
-            string fileName = $"{DirLicense}\\{sn}-license.zip";
-
-            using (HttpClient client = new HttpClient())
+            bool useLocal = SysResourceDao.IsLocalId(SysResourceModel.Id) || (SysResourceModel.Id <= 0 && SysResourceDao.Instance.UseLocal);
+            try
             {
-                try
-                {
-                    // 发送POST请求
-                    HttpResponseMessage response = await client.PostAsJsonAsync(url, postData);
-                    // 检查响应状态码
-                    response.EnsureSuccessStatusCode();
-
-                    // 确保返回的是一个文件而不是JSON
-                    if (response.Content.Headers.ContentType?.MediaType == "application/json")
-                    {
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                    }
-                    // 获取文件名
-                    fileName = "license.zip"; // 默认文件名
-                    if (response.Content.Headers.ContentDisposition != null)
-                    {
-                        fileName = response.Content.Headers.ContentDisposition.FileName?.Trim('"');
-                    }
-                    fileName = $"{DirLicense}\\{fileName}";
-                    using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        await response.Content.CopyToAsync(fs);
-                    }
-                    SetLicense(fileName);
-                }
-                catch 
-                {
-
-                }
+                var license = await new SpectrumLicenseUpdateService().DownloadAsync(sn);
+                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocal));
+                log.Info($"Spectrum license updated: {sn}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Spectrum license update failed: {sn}", ex);
             }
         }
         public  LicenseModel CameraLicenseModel { get; set; }
@@ -1296,7 +1373,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
                     {
                         strings.Add(item.Code);
-                        Task.Run(() => UploadLicenseNet(item.Code));
                     }
                     string result = string.Join(",", strings);
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AllSpectrumDeviceInfo + Environment.NewLine + result);

@@ -2,14 +2,17 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Views;
+using log4net;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
@@ -70,8 +73,7 @@ namespace ColorVision.UI
             }
             else
             {
-                Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
-                targetBorder.BorderBrush = brush;
+                targetBorder.SetResourceReference(Border.BorderBrushProperty, "CV.Border.Weak");
             }
         }
 
@@ -127,21 +129,31 @@ namespace ColorVision.UI
 
         public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
         public HashSet<string> PinnedControls { get; set; } = new();
+        public HashSet<string> HiddenControls { get; set; } = new();
         public Dictionary<string, string> ControlGroups { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, bool> ControlExpandedStates { get; set; } = new Dictionary<string, bool>();
         public ObservableCollection<DisPlayGroupConfig> Groups { get; set; } = new ObservableCollection<DisPlayGroupConfig>();
 
         public int LastSelectIndex { get => _LastSelectIndex; set { _LastSelectIndex = value; OnPropertyChanged(); } }
         private int _LastSelectIndex ;
+
+        public string LastSelectedControlKey { get; set; } = string.Empty;
     }
 
 
 
     public class DisPlayManager
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(DisPlayManager));
         private static DisPlayManager _instance;
         private static readonly object _locker = new();
         public static DisPlayManager GetInstance() { lock (_locker) { return _instance ??= new DisPlayManager(); } }
         public static ICommand CreateGroupCommand { get; } = new RelayCommand(_ => GetInstance().CreateGroup());
+        public static ICommand ManageControlsCommand { get; } = new RelayCommand(_ => GetInstance().ShowManagementWindow());
+        public static ICommand ConfigureDevicesCommand { get; } = new RelayCommand(
+            parameter => GetInstance().DeviceConfigurationCommand?.Execute(parameter),
+            parameter => GetInstance().DeviceConfigurationCommand?.CanExecute(parameter) == true);
+        public ICommand? DeviceConfigurationCommand { get; set; }
         public ObservableCollection<IDisPlayControl> IDisPlayControls { get; private set; }
         private const string DragDataFormat = "ColorVision.UI.DisPlayControl";
         private static readonly TimeSpan DisplayDragPressDelay = TimeSpan.FromMilliseconds(260);
@@ -151,8 +163,11 @@ namespace ColorVision.UI
         private DateTime _dragStartTime;
         private bool _suppressCollectionChanged;
         private bool _isInitialized;
+        private readonly Dictionary<ToggleButton, RoutedEventHandler> _expansionHandlers = new();
+        private DispatcherTimer? _saveTimer;
+        private Window? _ownerWindow;
 
-        private DisPlayManager()
+        internal DisPlayManager()
         {
             IDisPlayControls = new ObservableCollection<IDisPlayControl>();
         }
@@ -163,8 +178,22 @@ namespace ColorVision.UI
 
         public StackPanel StackPanel { get; set; } = null!;
 
+        public ObservableCollection<DisPlayGroupConfig> Groups
+        {
+            get
+            {
+                EnsureDefaultGroup();
+                return DisPlayManagerConfig.Instance.Groups;
+            }
+        }
+
         public void Init(Window window, StackPanel stackPanel)
         {
+            if (_ownerWindow != null)
+                _ownerWindow.Closing -= OwnerWindow_Closing;
+            _ownerWindow = window;
+            _ownerWindow.Closing += OwnerWindow_Closing;
+
             StackPanel = stackPanel;
             StackPanel.AllowDrop = true;
             StackPanel.Drop -= StackPanel_Drop;
@@ -184,6 +213,16 @@ namespace ColorVision.UI
             if (_suppressCollectionChanged || !_isInitialized)
                 return;
 
+            if (e.OldItems != null)
+            {
+                foreach (IDisPlayControl control in e.OldItems.OfType<IDisPlayControl>())
+                    DetachExpansionState(control);
+            }
+
+            bool configChanged = e.NewItems != null
+                && MigrateLegacyControlSettings(e.NewItems.OfType<IDisPlayControl>());
+            if (configChanged)
+                ScheduleConfigSave();
             RebuildPanel();
         }
 
@@ -198,6 +237,8 @@ namespace ColorVision.UI
             _suppressCollectionChanged = true;
             try
             {
+                foreach (IDisPlayControl control in IDisPlayControls)
+                    DetachExpansionState(control);
                 IDisPlayControls.Clear();
                 foreach (IDisPlayControl control in controls)
                 {
@@ -215,17 +256,52 @@ namespace ColorVision.UI
 
         private void RestoreLastSelectedControl()
         {
-            if (IDisPlayControls.Count == 0)
-                return;
-
-            int index = DisPlayManagerConfig.Instance.LastSelectIndex;
-            if (index < 0 || index >= IDisPlayControls.Count)
+            List<IDisPlayControl> visibleControls = IDisPlayControls.Where(IsControlVisible).ToList();
+            if (visibleControls.Count == 0)
             {
-                index = 0;
-                DisPlayManagerConfig.Instance.LastSelectIndex = index;
+                ClearSelection();
+                return;
             }
 
-            SelectControl(IDisPlayControls[index]);
+            EnsureConfigCollections();
+            var config = DisPlayManagerConfig.Instance;
+            IDisPlayControl? selected = null;
+            if (!string.IsNullOrWhiteSpace(config.LastSelectedControlKey))
+            {
+                selected = visibleControls.FirstOrDefault(control =>
+                    string.Equals(GetControlKey(control), config.LastSelectedControlKey, StringComparison.Ordinal)
+                    || string.Equals(control.DisPlayName, config.LastSelectedControlKey, StringComparison.Ordinal));
+            }
+
+            if (selected == null)
+            {
+                int index = config.LastSelectIndex;
+                if (index < 0 || index >= IDisPlayControls.Count || !IsControlVisible(IDisPlayControls[index]))
+                {
+                    index = IDisPlayControls.IndexOf(visibleControls[0]);
+                    config.LastSelectIndex = index;
+                }
+                selected = IDisPlayControls[index];
+            }
+
+            SelectControl(selected);
+        }
+
+        private void ClearSelection()
+        {
+            bool selectionChanged = _selectedControl != null;
+            if (_selectedControl != null)
+                _selectedControl.IsSelected = false;
+            _selectedControl = null;
+            if (StackPanel != null)
+                StackPanel.Tag = null;
+
+            var config = DisPlayManagerConfig.Instance;
+            config.LastSelectIndex = -1;
+            config.LastSelectedControlKey = string.Empty;
+            if (selectionChanged)
+                SelectedControlChanged?.Invoke(this, EventArgs.Empty);
+            ScheduleConfigSave();
         }
 
         public void SelectControl(IDisPlayControl disPlayControl)
@@ -244,7 +320,16 @@ namespace ColorVision.UI
 
             int index = IDisPlayControls.IndexOf(disPlayControl);
             if (index >= 0)
-                DisPlayManagerConfig.Instance.LastSelectIndex = index;
+            {
+                var config = DisPlayManagerConfig.Instance;
+                string key = GetControlKey(disPlayControl);
+                bool stateChanged = config.LastSelectIndex != index
+                    || !string.Equals(config.LastSelectedControlKey, key, StringComparison.Ordinal);
+                config.LastSelectIndex = index;
+                config.LastSelectedControlKey = key;
+                if (stateChanged)
+                    ScheduleConfigSave();
+            }
 
             if (selectionChanged)
                 SelectedControlChanged?.Invoke(this, EventArgs.Empty);
@@ -255,8 +340,11 @@ namespace ColorVision.UI
             var config = DisPlayManagerConfig.Instance;
             config.StoreIndex ??= new Dictionary<string, int>();
             config.PinnedControls ??= new HashSet<string>();
+            config.HiddenControls ??= new HashSet<string>();
             config.ControlGroups ??= new Dictionary<string, string>();
+            config.ControlExpandedStates ??= new Dictionary<string, bool>();
             config.Groups ??= new ObservableCollection<DisPlayGroupConfig>();
+            config.LastSelectedControlKey ??= string.Empty;
         }
 
         private static DisPlayGroupConfig EnsureDefaultGroup()
@@ -277,7 +365,67 @@ namespace ColorVision.UI
             return defaultGroup;
         }
 
-        private static bool IsDefaultGroup(string groupId) => groupId == DisPlayManagerConfig.DefaultGroupId;
+        internal static bool IsDefaultGroup(string groupId) => groupId == DisPlayManagerConfig.DefaultGroupId;
+
+        private static string GetControlKey(IDisPlayControl control)
+        {
+            string key = control.PersistenceKey;
+            return string.IsNullOrWhiteSpace(key) ? control.DisPlayName : key;
+        }
+
+        private static bool MigrateLegacyControlSettings(IEnumerable<IDisPlayControl> controls)
+        {
+            EnsureConfigCollections();
+            var config = DisPlayManagerConfig.Instance;
+            bool changed = false;
+            foreach (IDisPlayControl control in controls)
+            {
+                string key = GetControlKey(control);
+                string legacyKey = control.DisPlayName;
+                if (string.Equals(key, legacyKey, StringComparison.Ordinal))
+                    continue;
+
+                if (!config.StoreIndex.ContainsKey(key)
+                    && config.StoreIndex.TryGetValue(legacyKey, out int storedIndex))
+                {
+                    config.StoreIndex[key] = storedIndex;
+                    changed = true;
+                }
+
+                if (!config.PinnedControls.Contains(key) && config.PinnedControls.Contains(legacyKey))
+                {
+                    config.PinnedControls.Add(key);
+                    changed = true;
+                }
+
+                if (!config.HiddenControls.Contains(key) && config.HiddenControls.Contains(legacyKey))
+                {
+                    config.HiddenControls.Add(key);
+                    changed = true;
+                }
+
+                if (!config.ControlGroups.ContainsKey(key)
+                    && config.ControlGroups.TryGetValue(legacyKey, out string? groupId))
+                {
+                    config.ControlGroups[key] = groupId;
+                    changed = true;
+                }
+
+                if (!config.ControlExpandedStates.ContainsKey(key)
+                    && config.ControlExpandedStates.TryGetValue(legacyKey, out bool isExpanded))
+                {
+                    config.ControlExpandedStates[key] = isExpanded;
+                    changed = true;
+                }
+
+                if (string.Equals(config.LastSelectedControlKey, legacyKey, StringComparison.Ordinal))
+                {
+                    config.LastSelectedControlKey = key;
+                    changed = true;
+                }
+            }
+            return changed;
+        }
 
         private static List<DisPlayGroupConfig> GetGroupsInOrder()
         {
@@ -297,7 +445,7 @@ namespace ColorVision.UI
         {
             EnsureDefaultGroup();
             var config = DisPlayManagerConfig.Instance;
-            if (config.ControlGroups.TryGetValue(disPlayControl.DisPlayName, out string? groupId)
+            if (config.ControlGroups.TryGetValue(GetControlKey(disPlayControl), out string? groupId)
                 && config.Groups.Any(a => a.Id == groupId))
             {
                 return groupId;
@@ -315,7 +463,7 @@ namespace ColorVision.UI
 
         private static int GetStoredIndex(IDisPlayControl disPlayControl)
         {
-            return DisPlayManagerConfig.Instance.StoreIndex.TryGetValue(disPlayControl.DisPlayName, out int index)
+            return DisPlayManagerConfig.Instance.StoreIndex.TryGetValue(GetControlKey(disPlayControl), out int index)
                 ? index
                 : int.MaxValue;
         }
@@ -337,18 +485,149 @@ namespace ColorVision.UI
             return string.Compare(a.DisPlayName, b.DisPlayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private List<IDisPlayControl> GetControlsInGroup(string groupId, bool applyPins = true)
+        private List<IDisPlayControl> GetControlsInGroup(string groupId, bool applyPins = true, bool includeHidden = false)
         {
             return IDisPlayControls
-                .Where(a => GetGroupKey(a) == groupId)
+                .Where(a => GetGroupKey(a) == groupId && (includeHidden || IsControlVisible(a)))
                 .OrderBy(a => applyPins && IsPinned(a) ? 0 : 1)
                 .ThenBy(GetStoredIndex)
                 .ThenBy(a => a.DisPlayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 
-        public static bool IsPinned(IDisPlayControl control) =>
-            DisPlayManagerConfig.Instance.PinnedControls?.Contains(control.DisPlayName) == true;
+        public static bool IsPinned(IDisPlayControl control)
+        {
+            EnsureConfigCollections();
+            return DisPlayManagerConfig.Instance.PinnedControls.Contains(GetControlKey(control));
+        }
+
+        public static bool IsControlVisible(IDisPlayControl control)
+        {
+            EnsureConfigCollections();
+            return !DisPlayManagerConfig.Instance.HiddenControls.Contains(GetControlKey(control));
+        }
+
+        public void SetControlVisible(IDisPlayControl control, bool isVisible)
+        {
+            if (!IDisPlayControls.Contains(control))
+                return;
+
+            EnsureConfigCollections();
+            string key = GetControlKey(control);
+            bool changed = isVisible
+                ? DisPlayManagerConfig.Instance.HiddenControls.Remove(key)
+                : DisPlayManagerConfig.Instance.HiddenControls.Add(key);
+            if (isVisible && !string.Equals(key, control.DisPlayName, StringComparison.Ordinal))
+                changed |= DisPlayManagerConfig.Instance.HiddenControls.Remove(control.DisPlayName);
+            if (!changed)
+                return;
+
+            RebuildPanel();
+            if (!isVisible && ReferenceEquals(_selectedControl, control))
+            {
+                IDisPlayControl? replacement = IDisPlayControls.FirstOrDefault(IsControlVisible);
+                if (replacement != null)
+                    SelectControl(replacement);
+                else
+                    ClearSelection();
+            }
+            ScheduleConfigSave();
+        }
+
+        public bool IsControlExpanded(IDisPlayControl control)
+        {
+            EnsureConfigCollections();
+            string key = GetControlKey(control);
+            if (DisPlayManagerConfig.Instance.ControlExpandedStates.TryGetValue(key, out bool isExpanded))
+                return isExpanded;
+
+            isExpanded = true;
+            DisPlayManagerConfig.Instance.ControlExpandedStates[key] = isExpanded;
+            ScheduleConfigSave();
+            return isExpanded;
+        }
+
+        public void SetControlExpanded(IDisPlayControl control, bool isExpanded)
+        {
+            if (!IDisPlayControls.Contains(control))
+                return;
+
+            EnsureConfigCollections();
+            string key = GetControlKey(control);
+            if (control is UserControl userControl && FindDisplayHeaderToggle(userControl) is ToggleButton header)
+                header.SetCurrentValue(ToggleButton.IsCheckedProperty, isExpanded);
+
+            if (DisPlayManagerConfig.Instance.ControlExpandedStates.TryGetValue(key, out bool stored)
+                && stored == isExpanded)
+            {
+                return;
+            }
+
+            DisPlayManagerConfig.Instance.ControlExpandedStates[key] = isExpanded;
+            ScheduleConfigSave();
+        }
+
+        public string GetControlGroupId(IDisPlayControl control) => GetGroupKey(control);
+
+        public void SetControlGroup(IDisPlayControl control, string groupId)
+        {
+            if (!IDisPlayControls.Contains(control) || GetGroupKey(control) == groupId)
+                return;
+
+            MoveControlToGroup(GetControlKey(control), groupId,
+                GetControlsInGroup(groupId, includeHidden: true).Count);
+        }
+
+        public void MoveControl(IDisPlayControl control, int offset)
+        {
+            if (!IDisPlayControls.Contains(control) || offset == 0)
+                return;
+
+            string groupId = GetGroupKey(control);
+            List<IDisPlayControl> controls = GetControlsInGroup(groupId, applyPins: false, includeHidden: true);
+            int oldIndex = controls.IndexOf(control);
+            int newIndex = Math.Clamp(oldIndex + offset, 0, controls.Count - 1);
+            if (oldIndex < 0 || oldIndex == newIndex)
+                return;
+
+            controls.RemoveAt(oldIndex);
+            controls.Insert(newIndex, control);
+            UpdateGroupIndexes(controls);
+            ArrangeCollectionByConfig();
+            RebuildPanel();
+            ScheduleConfigSave();
+        }
+
+        internal void MoveGroup(DisPlayGroupConfig group, int offset)
+        {
+            if (IsDefaultGroup(group.Id) || offset == 0)
+                return;
+
+            ObservableCollection<DisPlayGroupConfig> groups = DisPlayManagerConfig.Instance.Groups;
+            int oldIndex = groups.IndexOf(group);
+            if (oldIndex < 0)
+                return;
+
+            int firstCustomIndex = groups.IndexOf(EnsureDefaultGroup()) + 1;
+            int newIndex = Math.Clamp(oldIndex + offset, firstCustomIndex, groups.Count - 1);
+            if (oldIndex == newIndex)
+                return;
+
+            groups.Move(oldIndex, newIndex);
+            ArrangeCollectionByConfig();
+            RebuildPanel();
+            ScheduleConfigSave();
+        }
+
+        internal void SetGroupExpanded(DisPlayGroupConfig group, bool isExpanded)
+        {
+            if (group.IsExpanded == isExpanded)
+                return;
+
+            group.IsExpanded = isExpanded;
+            RebuildPanel();
+            ScheduleConfigSave();
+        }
 
         public void SetPinned(IDisPlayControl control, bool pinned)
         {
@@ -356,14 +635,18 @@ namespace ColorVision.UI
                 return;
 
             EnsureConfigCollections();
+            string key = GetControlKey(control);
             bool changed = pinned
-                ? DisPlayManagerConfig.Instance.PinnedControls.Add(control.DisPlayName)
-                : DisPlayManagerConfig.Instance.PinnedControls.Remove(control.DisPlayName);
+                ? DisPlayManagerConfig.Instance.PinnedControls.Add(key)
+                : DisPlayManagerConfig.Instance.PinnedControls.Remove(key);
+            if (!pinned && !string.Equals(key, control.DisPlayName, StringComparison.Ordinal))
+                changed |= DisPlayManagerConfig.Instance.PinnedControls.Remove(control.DisPlayName);
             if (!changed)
                 return;
 
             ArrangeCollectionByConfig();
             RebuildPanel();
+            ScheduleConfigSave();
         }
 
         private void RebuildPanel()
@@ -436,6 +719,7 @@ namespace ColorVision.UI
             {
                 group.IsExpanded = !group.IsExpanded;
                 RebuildPanel();
+                ScheduleConfigSave();
                 e.Handled = true;
             };
             header.Drop += Group_Drop;
@@ -594,6 +878,7 @@ namespace ColorVision.UI
             if (item is not UserControl userControl)
                 return;
 
+            AttachExpansionState(item, userControl);
             userControl.AllowDrop = true;
             userControl.PreviewMouseLeftButtonDown -= DisplayControl_PreviewMouseLeftButtonDown;
             userControl.PreviewMouseLeftButtonDown += DisplayControl_PreviewMouseLeftButtonDown;
@@ -609,6 +894,84 @@ namespace ColorVision.UI
             userControl.Drop += DisplayControl_Drop;
             userControl.Margin = new Thickness(userControl.Margin.Left, 0, userControl.Margin.Right, 2);
             panel.Children.Add(userControl);
+        }
+
+        private void AttachExpansionState(IDisPlayControl control, UserControl userControl)
+        {
+            ToggleButton? header = FindDisplayHeaderToggle(userControl);
+            if (header == null)
+                return;
+
+            if (_expansionHandlers.Remove(header, out RoutedEventHandler? existingHandler))
+            {
+                header.Checked -= existingHandler;
+                header.Unchecked -= existingHandler;
+            }
+
+            EnsureConfigCollections();
+            var config = DisPlayManagerConfig.Instance;
+            string key = GetControlKey(control);
+            bool isExpanded;
+            bool configChanged = false;
+            if (!config.ControlExpandedStates.TryGetValue(key, out isExpanded))
+            {
+                isExpanded = header.IsChecked != false;
+                config.ControlExpandedStates[key] = isExpanded;
+                configChanged = true;
+            }
+
+            header.SetCurrentValue(ToggleButton.IsCheckedProperty, isExpanded);
+            RoutedEventHandler handler = (_, _) =>
+            {
+                bool current = header.IsChecked == true;
+                if (config.ControlExpandedStates.TryGetValue(key, out bool stored) && stored == current)
+                    return;
+
+                config.ControlExpandedStates[key] = current;
+                ScheduleConfigSave();
+            };
+            header.Checked += handler;
+            header.Unchecked += handler;
+            _expansionHandlers[header] = handler;
+
+            if (configChanged)
+                ScheduleConfigSave();
+        }
+
+        private void DetachExpansionState(IDisPlayControl control)
+        {
+            if (control is not UserControl userControl)
+                return;
+
+            ToggleButton? header = FindDisplayHeaderToggle(userControl);
+            if (header != null && _expansionHandlers.Remove(header, out RoutedEventHandler? handler))
+            {
+                header.Checked -= handler;
+                header.Unchecked -= handler;
+            }
+        }
+
+        private static ToggleButton? FindDisplayHeaderToggle(DependencyObject owner)
+        {
+            if (owner is ToggleButton { Name: "DisplayHeaderToggle" } namedHeader)
+                return namedHeader;
+
+            if (owner is FrameworkElement element
+                && element.FindName("DisplayHeaderToggle") is ToggleButton registeredHeader)
+            {
+                return registeredHeader;
+            }
+
+            int childCount = owner is Visual || owner is Visual3D
+                ? VisualTreeHelper.GetChildrenCount(owner)
+                : 0;
+            for (int i = 0; i < childCount; i++)
+            {
+                if (FindDisplayHeaderToggle(VisualTreeHelper.GetChild(owner, i)) is ToggleButton childHeader)
+                    return childHeader;
+            }
+
+            return null;
         }
 
         private void DisplayControl_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -651,7 +1014,7 @@ namespace ColorVision.UI
 
             if (_dragSourceControl is UserControl userControl)
             {
-                var data = new DataObject(DragDataFormat, _dragSourceControl.DisPlayName);
+                var data = new DataObject(DragDataFormat, GetControlKey(_dragSourceControl));
                 try
                 {
                     DragDrop.DoDragDrop(userControl, data, DragDropEffects.Move);
@@ -705,11 +1068,11 @@ namespace ColorVision.UI
 
         private void DisplayControl_Drop(object sender, DragEventArgs e)
         {
-            if (sender is not IDisPlayControl targetControl || !TryGetDraggedDisplayName(e, out string draggedName))
+            if (sender is not IDisPlayControl targetControl || !TryGetDraggedControlKey(e, out string draggedKey))
                 return;
 
             string targetGroupId = GetGroupKey(targetControl);
-            var controls = GetControlsInGroup(targetGroupId).Where(a => a.DisPlayName != draggedName).ToList();
+            var controls = GetControlsInGroup(targetGroupId).Where(a => GetControlKey(a) != draggedKey).ToList();
             int targetIndex = controls.FindIndex(a => ReferenceEquals(a, targetControl));
             if (targetIndex < 0)
                 targetIndex = controls.Count;
@@ -717,76 +1080,88 @@ namespace ColorVision.UI
             if (sender is FrameworkElement targetElement && e.GetPosition(targetElement).Y > targetElement.ActualHeight / 2)
                 targetIndex++;
 
-            MoveControlToGroup(draggedName, targetGroupId, targetIndex);
+            MoveControlToGroup(draggedKey, targetGroupId, targetIndex);
             e.Handled = true;
         }
 
         private void Group_Drop(object sender, DragEventArgs e)
         {
-            if (!TryGetDraggedDisplayName(e, out string draggedName))
+            if (!TryGetDraggedControlKey(e, out string draggedKey))
                 return;
 
             string groupId = (sender as FrameworkElement)?.Tag as string ?? DisPlayManagerConfig.DefaultGroupId;
-            MoveControlToGroup(draggedName, groupId, GetControlsInGroup(groupId).Count);
+            MoveControlToGroup(draggedKey, groupId, GetControlsInGroup(groupId).Count);
             e.Handled = true;
         }
 
         private void StackPanel_Drop(object sender, DragEventArgs e)
         {
-            if (!TryGetDraggedDisplayName(e, out string draggedName))
+            if (!TryGetDraggedControlKey(e, out string draggedKey))
                 return;
 
-            MoveControlToGroup(draggedName, DisPlayManagerConfig.DefaultGroupId, GetControlsInGroup(DisPlayManagerConfig.DefaultGroupId).Count);
+            MoveControlToGroup(draggedKey, DisPlayManagerConfig.DefaultGroupId, GetControlsInGroup(DisPlayManagerConfig.DefaultGroupId).Count);
             e.Handled = true;
         }
 
-        private static bool TryGetDraggedDisplayName(DragEventArgs e, out string displayName)
+        private static bool TryGetDraggedControlKey(DragEventArgs e, out string controlKey)
         {
-            displayName = e.Data.GetDataPresent(DragDataFormat)
+            controlKey = e.Data.GetDataPresent(DragDataFormat)
                 ? e.Data.GetData(DragDataFormat) as string ?? string.Empty
                 : string.Empty;
 
-            return !string.IsNullOrWhiteSpace(displayName);
+            return !string.IsNullOrWhiteSpace(controlKey);
         }
 
-        private void MoveControlToGroup(string displayName, string groupId, int insertIndex)
+        private void MoveControlToGroup(string controlKey, string groupId, int insertIndex)
         {
             EnsureDefaultGroup();
             if (!DisPlayManagerConfig.Instance.Groups.Any(a => a.Id == groupId))
                 groupId = DisPlayManagerConfig.DefaultGroupId;
 
-            var draggedControl = IDisPlayControls.FirstOrDefault(a => a.DisPlayName == displayName);
+            var draggedControl = IDisPlayControls.FirstOrDefault(a => GetControlKey(a) == controlKey);
             if (draggedControl == null)
                 return;
 
             var config = DisPlayManagerConfig.Instance;
             string oldGroupId = GetGroupKey(draggedControl);
-            config.ControlGroups[displayName] = groupId;
+            config.ControlGroups[controlKey] = groupId;
+            if (!string.Equals(controlKey, draggedControl.DisPlayName, StringComparison.Ordinal))
+                config.ControlGroups.Remove(draggedControl.DisPlayName);
 
-            var visibleControls = GetControlsInGroup(groupId).Where(a => a.DisPlayName != displayName).ToList();
+            var visibleControls = GetControlsInGroup(groupId).Where(a => GetControlKey(a) != controlKey).ToList();
             insertIndex = Math.Clamp(insertIndex, 0, visibleControls.Count);
             // Translate the visible drop position back into the base order. Pinning
             // must never bake the pinned partition into the saved field order.
             bool pinned = IsPinned(draggedControl);
             var next = visibleControls.Skip(insertIndex).FirstOrDefault(a => IsPinned(a) == pinned);
             var previous = visibleControls.Take(insertIndex).LastOrDefault(a => IsPinned(a) == pinned);
-            var targetControls = GetControlsInGroup(groupId, applyPins: false).Where(a => a.DisPlayName != displayName).ToList();
+            var targetControls = GetControlsInGroup(groupId, applyPins: false, includeHidden: true).Where(a => GetControlKey(a) != controlKey).ToList();
             int baseIndex = next != null ? targetControls.IndexOf(next)
                 : previous != null ? targetControls.IndexOf(previous) + 1 : targetControls.Count;
             targetControls.Insert(baseIndex, draggedControl);
             UpdateGroupIndexes(targetControls);
 
             if (oldGroupId != groupId)
-                UpdateGroupIndexes(GetControlsInGroup(oldGroupId, applyPins: false));
+                UpdateGroupIndexes(GetControlsInGroup(oldGroupId, applyPins: false, includeHidden: true));
 
             ArrangeCollectionByConfig();
             RebuildPanel();
+            ScheduleConfigSave();
         }
 
-        private static void UpdateGroupIndexes(List<IDisPlayControl> controls)
+        private static bool UpdateGroupIndexes(List<IDisPlayControl> controls)
         {
+            bool changed = false;
             for (int i = 0; i < controls.Count; i++)
-                DisPlayManagerConfig.Instance.StoreIndex[controls[i].DisPlayName] = i;
+            {
+                string key = GetControlKey(controls[i]);
+                if (!DisPlayManagerConfig.Instance.StoreIndex.TryGetValue(key, out int storedIndex) || storedIndex != i)
+                {
+                    DisPlayManagerConfig.Instance.StoreIndex[key] = i;
+                    changed = true;
+                }
+            }
+            return changed;
         }
 
         private void ArrangeCollectionByConfig()
@@ -801,10 +1176,13 @@ namespace ColorVision.UI
                 _suppressCollectionChanged = false;
             }
             if (_selectedControl != null && IDisPlayControls.Contains(_selectedControl))
+            {
                 DisPlayManagerConfig.Instance.LastSelectIndex = IDisPlayControls.IndexOf(_selectedControl);
+                DisPlayManagerConfig.Instance.LastSelectedControlKey = GetControlKey(_selectedControl);
+            }
         }
 
-        private void CreateGroup()
+        internal void CreateGroup()
         {
             string defaultName = $"分组 {DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id)) + 1}";
             string? name = ShowTextDialog("新建分组", "分组名称", defaultName);
@@ -819,9 +1197,10 @@ namespace ColorVision.UI
             });
 
             RebuildPanel();
+            ScheduleConfigSave();
         }
 
-        private void RenameGroup(DisPlayGroupConfig group)
+        internal void RenameGroup(DisPlayGroupConfig group)
         {
             string? name = ShowTextDialog("重命名分组", "分组名称", group.Name);
             if (string.IsNullOrWhiteSpace(name))
@@ -829,9 +1208,10 @@ namespace ColorVision.UI
 
             group.Name = name.Trim();
             RebuildPanel();
+            ScheduleConfigSave();
         }
 
-        private void DeleteGroup(DisPlayGroupConfig group)
+        internal void DeleteGroup(DisPlayGroupConfig group)
         {
             if (IsDefaultGroup(group.Id))
                 return;
@@ -847,6 +1227,7 @@ namespace ColorVision.UI
             config.Groups.Remove(group);
             ArrangeCollectionByConfig();
             RebuildPanel();
+            ScheduleConfigSave();
         }
 
         private static string? ShowTextDialog(string title, string label, string value)
@@ -905,16 +1286,75 @@ namespace ColorVision.UI
             return window.ShowDialog() == true ? textBox.Text : null;
         }
 
+        private void ShowManagementWindow()
+        {
+            if (!_isInitialized)
+                return;
+
+            Window? owner = Application.Current?.GetActiveWindow();
+            var window = new DisplayControlManagerWindow(this)
+            {
+                Owner = owner,
+                WindowStartupLocation = owner == null
+                    ? WindowStartupLocation.CenterScreen
+                    : WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
+            FlushPendingConfigSave();
+        }
+
         public void RestoreControl()
         {
             EnsureDefaultGroup();
+            bool configChanged = MigrateLegacyControlSettings(IDisPlayControls);
             ArrangeCollectionByConfig();
 
             foreach (var group in GetGroupsInOrder())
-                UpdateGroupIndexes(GetControlsInGroup(group.Id, applyPins: false));
+                configChanged |= UpdateGroupIndexes(GetControlsInGroup(group.Id, applyPins: false, includeHidden: true));
+
+            if (configChanged)
+                ScheduleConfigSave();
 
             if (_isInitialized)
                 RebuildPanel();
+        }
+
+        private void OwnerWindow_Closing(object? sender, CancelEventArgs e) => FlushPendingConfigSave();
+
+        private void ScheduleConfigSave()
+        {
+            if (ConfigService.Instance is ConfigHandler { IsAutoSave: false } || StackPanel == null)
+                return;
+
+            _saveTimer ??= CreateSaveTimer();
+            _saveTimer.Stop();
+            _saveTimer.Start();
+        }
+
+        private DispatcherTimer CreateSaveTimer()
+        {
+            var timer = new DispatcherTimer(DispatcherPriority.Background, StackPanel.Dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(400)
+            };
+            timer.Tick += (_, _) => FlushPendingConfigSave();
+            return timer;
+        }
+
+        internal void FlushPendingConfigSave()
+        {
+            if (_saveTimer?.IsEnabled != true)
+                return;
+
+            _saveTimer.Stop();
+            try
+            {
+                ConfigService.Instance?.Save<DisPlayManagerConfig>();
+            }
+            catch (Exception exception)
+            {
+                log.Warn("Failed to save display panel state.", exception);
+            }
         }
     }
 }

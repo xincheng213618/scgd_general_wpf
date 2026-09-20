@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。"
 aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值","ConvertBatchImages","OpenBatchImageProcessing","colorvision-batch-image-conversion","批量图片处理"]
-code_paths: ["UI/ColorVision.Algorithms/","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md","UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs","UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs","Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs","ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs","ColorVision/Copilot/Skills/colorvision-batch-image-conversion","Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
+code_paths: ["UI/ColorVision.Algorithms/", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
 related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","engine.cv-image-export"]
 ---
@@ -26,11 +26,14 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","eng
 | 发布状态 | 能力 |
 | --- | --- |
 | 当前默认启用 | 14 个既有像素算法；ROI 统计；图像剖面；图像比较；几何变换；图像配准；镜头畸变校正；成像校正 |
+| 当前默认启用（离线图案评价） | 显示计量六项：RGB 套色、鬼影与杂散光、屏体缺陷、双目几何与信号一致性、Eyebox 扫描汇总、全视场斜边 SFR；明确输入图案、信号口径、资源预算与无效结果，不承诺现场精度 |
 | 条件启用 | `RemoveMoire` 属于上述既有像素算法，但只有 `opencv_helper.dll` 可加载且包含 `M_RemoveMoire` export 时才显示和执行；依赖缺失时结构化拒绝 |
 | 暂缓发布（Experimental） | Blob / 连通域、轮廓提取、亚像素边缘、直线拟合、圆拟合、FFT / 频域分析、摩尔纹分析 |
 | 仅设计（Deferred） | ONNX / AI 推理；没有运行时、模型、Execution Provider、产品菜单或默认 Runner 能力 |
 
 暂缓项的 Descriptor 和实现不删除；重新启用必须分别闭环文档中记录的最坏情况资源上限、数值/测量正确性和生产规模测试，再从这一处默认 provider 注册门禁移除，不能在菜单、Batch、Flow 或其他 Runner 调用方单独开旁路。未完成的改进和验证不因文档整理而自动成为已发布能力。
+
+显示计量通过 `DisplayMetrologyCatalog` 与 `DisplayMetrologyProvider` 注册，不启用上述暂缓 provider。菜单复用统一分析会话的取消、换图失效、结果窗口和 overlay 生命周期；多图由专用适配器组织为左右眼对或显式扫描序列，不进入像素输出 Batch/Copilot 白名单。方法、操作、公开依据与合成样本见[显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md)。Flow capability 仍只表示 Runner/API 可调用，不表示已注册量产节点。
 
 ## 当前普通像素算法执行入口
 
@@ -45,6 +48,8 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","eng
 以上路径相对 `UI/ColorVision.ImageEditor/`。`Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs` 的 `EightBitBatchAndRunnerUseIdenticalCannyParametersAndPixels` 对照 Batch 与 Runner 的参数和像素；测试存在不表示本次已经运行。RemoveMoire 的 native 依赖和允许的宿主入口仍以下方能力矩阵及前述发布门禁为准。
 
 ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源帧生命周期。租约、位图复制与显式失效的实现及测试范围见[源图像帧契约](../../04-api-reference/ui-components/image-frame-lifetime.md)，不把内存仍有效当作结果仍可发布。
+
+ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`，`ImageProcessingContext` 保留同名兼容入口并转发。协调器管理 preview claim、analysis、发布/回滚和 overlay 注册；文档源及 revision 归 `ImageDocument`，显示成对赋值归 `ImagePresentation`。普通显示 generation 不能代替算法 invocation claim。静态伪彩仍可使用算法预览会话，连续帧则由 `ImageStreamPresentation` 使用冻结帧调度；不能假定两条输入/处理路径在数值和取消语义上等价。完整职责见[编辑器上下文](../../04-api-reference/ui-components/image-editor-context.md)。
 
 ### ImageEditor 参数窗口、应用与取消
 

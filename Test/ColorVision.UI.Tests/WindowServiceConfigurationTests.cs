@@ -8,7 +8,7 @@ namespace ColorVision.UI.Tests;
 public sealed class WindowServiceConfigurationTests
 {
     [Fact]
-    public void Snapshot_IgnoresSelectionAndHeartbeatButDetectsEditsAndReverts()
+    public void Snapshot_IgnoresTransientRuntimeStateButDetectsEditsAndReverts()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -21,7 +21,7 @@ public sealed class WindowServiceConfigurationTests
             var initial = WindowService.CaptureConfiguration(types);
             device.IsSelected = true;
             device.IsAlive = true;
-            device.HeartbeatTime = 200;
+            device.LastAliveTime = DateTime.Now;
             Assert.Equal(initial, WindowService.CaptureConfiguration(types));
             device.Configuration.Name = "Changed";
             Assert.NotEqual(initial, WindowService.CaptureConfiguration(types));
@@ -32,6 +32,14 @@ public sealed class WindowServiceConfigurationTests
             terminal.VisualChildren.Clear();
             Assert.NotEqual(initial, WindowService.CaptureConfiguration(types));
         });
+    }
+
+    [Fact]
+    public void DeviceContracts_DoNotExposeLegacyPerDeviceHeartbeat()
+    {
+        Assert.Null(typeof(DeviceServiceConfig).GetProperty("HeartbeatTime"));
+        Assert.Null(typeof(DeviceService).GetProperty("HeartbeatTime"));
+        Assert.Null(typeof(ColorVision.UI.CopilotDeviceContextSnapshot).GetProperty("HeartbeatTime"));
     }
 
     private sealed class TestDevice : DeviceService

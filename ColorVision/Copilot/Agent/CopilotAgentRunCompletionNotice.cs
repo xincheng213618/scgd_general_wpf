@@ -52,7 +52,7 @@ namespace ColorVision.Copilot
                 CopilotAgentStopReason.Paused => "已暂停，可继续",
                 CopilotAgentStopReason.Cancelled => "已取消",
                 CopilotAgentStopReason.IncompleteOutput => "等待最终回答",
-                CopilotAgentStopReason.ProviderFailure => "模型连接中断",
+                CopilotAgentStopReason.ProviderFailure => "模型服务异常",
                 CopilotAgentStopReason.Interrupted => "应用中断，可继续",
                 _ => "已结束",
             };

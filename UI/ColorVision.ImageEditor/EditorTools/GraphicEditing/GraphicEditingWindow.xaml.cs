@@ -176,7 +176,7 @@ namespace ColorVision.ImageEditor
     public class FindLuminousAreaCorner : Common.MVVM.ViewModelBase
     {
         [Category("定位"), DisplayName("算法")]
-        [Description("鲁棒自动定位适用于透视、暗角和局部异常；经典定位用于兼容旧流程。")]
+        [Description("鲁棒自动用于普通发光区；FOV 亮度边界先作鲁棒粗定位，再按中心亮度比例细化；经典定位仅兼容旧流程。")]
         public LuminousAreaDetectionMode Algorithm { get => _Algorithm; set { _Algorithm = value; OnPropertyChanged(); } }
         private LuminousAreaDetectionMode _Algorithm = LuminousAreaDetectionMode.RobustV2;
 
@@ -194,6 +194,21 @@ namespace ColorVision.ImageEditor
             }
         }
         private double _MinConfidence = 0.25;
+
+        [Category("定位"), DisplayName("FOV 亮度边界比例")]
+        [Description("以中心区域亮度为参考确定 FOV 边界；0.5 表示中心亮度的 50%。该判据应按测量规范配置。")]
+        [PropertyVisibility(nameof(Algorithm), LuminousAreaDetectionMode.FovLuminanceBoundary)]
+        public double LuminanceBoundaryRatio
+        {
+            get => _LuminanceBoundaryRatio;
+            set
+            {
+                if (!double.IsFinite(value)) value = FovLuminousAreaDetector.DefaultBoundaryRatio;
+                _LuminanceBoundaryRatio = Math.Clamp(value, 0.01, 0.99);
+                OnPropertyChanged();
+            }
+        }
+        private double _LuminanceBoundaryRatio = FovLuminousAreaDetector.DefaultBoundaryRatio;
 
         [Category("定位"), DisplayName("经典阈值")]
         [Description("经典兼容算法使用的二值化阈值。")]

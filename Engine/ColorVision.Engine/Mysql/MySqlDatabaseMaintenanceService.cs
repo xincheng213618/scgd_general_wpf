@@ -1,4 +1,6 @@
+using ColorVision.Engine;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates.Flow;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,13 @@ using System.Xml.Linq;
 
 namespace ColorVision.Database
 {
+    internal enum DatabaseResetPlan
+    {
+        ResetExisting,
+        InitializeMissing,
+        RejectMissingCrossDatabase
+    }
+
     /// <summary>
     /// ColorVision 数据库重置、SQL 恢复及服务 MySQL 配置同步的唯一实现。
     /// </summary>
@@ -27,6 +36,72 @@ namespace ColorVision.Database
         public static Task<string> RestoreSqlFileAsync(string sqlFilePath, MySqlConfig config, string mysqlPath, bool selectDatabase = true)
         {
             return MySqlLocalServicesManager.ExecuteSqlFileCoreAsync(sqlFilePath, config, mysqlPath, selectDatabase);
+        }
+
+        public static void UpdateRestoredFlowNodes(MySqlConfig config, Action<string>? logCallback = null)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            using var database = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(config, 5),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+            if (!database.DbMaintenance.IsAnyTable("t_scgd_sys_resource", false))
+            {
+                logCallback?.Invoke("没有流程资源表，跳过流程节点更新");
+                return;
+            }
+
+            int updatedFlows = 0, updatedNodes = 0, unresolvedNodes = 0, invalidFlows = 0;
+            database.Ado.BeginTran();
+            try
+            {
+                // Read one canvas at a time; other resource types and result tables are untouched.
+                var ids = database.Queryable<SysResourceModel>().Where(row => row.Type == 101).Select(row => row.Id).ToList();
+                foreach (int id in ids)
+                {
+                    var resource = database.Queryable<SysResourceModel>().Where(row => row.Id == id && row.Type == 101)
+                        .Select(row => new { row.Value }).First();
+                    if (string.IsNullOrWhiteSpace(resource?.Value))
+                        continue;
+
+                    string normalized;
+                    int changed, unresolved;
+                    try
+                    {
+                        normalized = FlowNodeIdentityNormalizer.Normalize(resource.Value, out changed, out unresolved);
+                    }
+                    catch (Exception ex) when (ex is FormatException or InvalidDataException)
+                    {
+                        invalidFlows++;
+                        logCallback?.Invoke($"流程资源 {id} 数据无效，保留原数据：{ex.Message}");
+                        continue;
+                    }
+                    unresolvedNodes += unresolved;
+                    if (unresolved > 0)
+                        logCallback?.Invoke($"流程资源 {id} 有 {unresolved} 个未匹配节点，保留其原标识");
+                    if (changed == 0)
+                        continue;
+
+                    // Base64 is case-sensitive even when the MySQL text column is not.
+                    int affected = database.Ado.ExecuteCommand(
+                        "UPDATE t_scgd_sys_resource SET txt_value = @value WHERE id = @id AND type = 101 AND BINARY txt_value = BINARY @original",
+                        new SugarParameter("@value", normalized), new SugarParameter("@id", id),
+                        new SugarParameter("@original", resource.Value));
+                    if (affected != 1)
+                        throw new InvalidOperationException($"流程资源 {id} 在更新期间发生变化，已停止流程节点更新。");
+                    updatedFlows++;
+                    updatedNodes += changed;
+                }
+                database.Ado.CommitTran();
+            }
+            catch
+            {
+                database.Ado.RollbackTran();
+                throw;
+            }
+            logCallback?.Invoke($"流程节点更新完成：更新 {updatedFlows} 个流程、{updatedNodes} 个节点；保留 {unresolvedNodes} 个未匹配节点、{invalidFlows} 个无效流程");
         }
 
         public static async Task<bool> ResetDatabaseFromSqlFileAsync(
@@ -56,19 +131,28 @@ namespace ColorVision.Database
             try
             {
                 logCallback?.Invoke($"数据库更新路径: {sourceDatabase} -> {targetDatabase}");
-                if (!string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase)
-                    && !CanConnectToDatabase(rootConfig, sourceDatabase, logCallback))
+                bool sourceDatabaseAvailable = DatabaseExists(rootConfig, sourceDatabase, logCallback);
+                DatabaseResetPlan resetPlan = ResolveDatabaseResetPlan(sourceDatabase, targetDatabase, sourceDatabaseAvailable);
+                if (resetPlan == DatabaseResetPlan.RejectMissingCrossDatabase)
                 {
                     logCallback?.Invoke($"跨版本更新的源数据库 {sourceDatabase} 不存在或无法连接，已停止更新");
                     return false;
                 }
 
-                string? preservedDataSql = await BackupPreservedDataAsync(
-                    sourceDatabase,
-                    rootConfig,
-                    mysqldumpPath,
-                    backupDirectory,
-                    logCallback).ConfigureAwait(false);
+                string? preservedDataSql = null;
+                if (resetPlan == DatabaseResetPlan.ResetExisting)
+                {
+                    preservedDataSql = await BackupPreservedDataAsync(
+                        sourceDatabase,
+                        rootConfig,
+                        mysqldumpPath,
+                        backupDirectory,
+                        logCallback).ConfigureAwait(false);
+                }
+                else
+                {
+                    logCallback?.Invoke($"源数据库 {sourceDatabase} 尚未创建，按新安装初始化目标数据库");
+                }
 
                 logCallback?.Invoke($"使用 root 执行数据库重置脚本: {fullSqlPath}");
                 await MySqlLocalServicesManager.ExecuteSqlFileCoreAsync(
@@ -81,6 +165,12 @@ namespace ColorVision.Database
                 {
                     logCallback?.Invoke($"安装版本没有创建预期目标数据库 {targetDatabase}，已停止资源数据回写");
                     return false;
+                }
+
+                if (resetPlan == DatabaseResetPlan.InitializeMissing)
+                {
+                    logCallback?.Invoke($"目标数据库 {targetDatabase} 初始化完成");
+                    return true;
                 }
 
                 if (string.IsNullOrWhiteSpace(preservedDataSql))
@@ -96,6 +186,7 @@ namespace ColorVision.Database
                     mysqlPath,
                     selectDatabase: true).ConfigureAwait(false);
                 logCallback?.Invoke("资源数据回写完成");
+                UpdateRestoredFlowNodes(CloneConfig(rootConfig, targetDatabase), logCallback);
                 return true;
             }
             catch (Exception ex)
@@ -103,6 +194,19 @@ namespace ColorVision.Database
                 logCallback?.Invoke($"数据库重置失败: {ex.Message}");
                 return false;
             }
+        }
+
+        internal static DatabaseResetPlan ResolveDatabaseResetPlan(
+            string sourceDatabase,
+            string targetDatabase,
+            bool sourceDatabaseAvailable)
+        {
+            if (sourceDatabaseAvailable)
+                return DatabaseResetPlan.ResetExisting;
+
+            return string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase)
+                ? DatabaseResetPlan.InitializeMissing
+                : DatabaseResetPlan.RejectMissingCrossDatabase;
         }
 
         public static IReadOnlyList<string> SynchronizeInstalledServiceConfigs(MySqlConfig config, Action<string>? logCallback = null)
@@ -280,7 +384,27 @@ namespace ColorVision.Database
             }
         }
 
-        private static MySqlConfig CloneConfig(MySqlConfig source, string database)
+        private static bool DatabaseExists(MySqlConfig rootConfig, string databaseName, Action<string>? logCallback)
+        {
+            MySqlConfig serverConfig = CloneConfig(rootConfig, string.Empty);
+            using SqlSugarClient database = new(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(serverConfig, 5),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+            DataTable result = database.Ado.GetDataTable(
+                "SELECT COUNT(*) AS database_count FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = @database",
+                new SugarParameter("@database", databaseName));
+            bool exists = result.Rows.Count > 0
+                && Convert.ToInt32(result.Rows[0]["database_count"], CultureInfo.InvariantCulture) > 0;
+            logCallback?.Invoke(exists
+                ? $"源数据库 {databaseName} 已存在"
+                : $"源数据库 {databaseName} 尚未创建");
+            return exists;
+        }
+
+        internal static MySqlConfig CloneConfig(MySqlConfig source, string database)
         {
             return new MySqlConfig
             {

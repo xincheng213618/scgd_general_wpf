@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "数据加载与数据加载2的模板选择、参数初值和请求格式；区分要读取的数据来源与本次 Flow 执行设备、流水号及 ZIndex。"
 aliases: ["DataLoad是文件导入吗","TemplateDataLoad","AlgDataLoadNode","AlgDataLoadNode2","数据加载2","加载设备Code","加载ZIndex","DataLoadInput"]
-code_paths: ["Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs","Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadInput.cs","Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVMQTTRequest.cs","Engine/FlowEngineLib/CVTemplateParam.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs","Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgDataLoadNode.cs","Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs","Engine/FlowEngineLib/Node/Algorithm/DataLoadInput.cs","Engine/FlowEngineLib/Node/Algorithm/CVResultType.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Base/CVMQTTRequest.cs","Engine/FlowEngineLib/CVTemplateParam.cs","Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs"]
 test_paths: []
 related: ["algorithms.index","flow.templates","flow.node-extension","engine.template-design","algorithms.template-management"]
 ---
@@ -94,10 +94,10 @@ Flow 的 **数据加载** 和 **数据加载2** 节点将数据来源条件交�
 | 路径 | 责任 |
 | --- | --- |
 | `Engine/ColorVision.Engine/Templates/DataLoad/` | 模板注册、字典和参数属性 |
-| `Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode*.cs` | 两种节点的名称、属性、初值和请求构造 |
+| `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgDataLoadNode.cs`、`Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs` | 两种节点的名称、属性、初值和请求构造 |
 | 同目录 `DataLoadData.cs`、`DataLoadData2.cs`、`DataLoadInput.cs`、`CVResultType.cs` | 内层数据结构与 Flow 结果枚举 |
 | `Engine/FlowEngineLib/Base/CVBaseServerNode.cs`、`CVMQTTRequest.cs` | 模板引用与请求外层字段 |
-| `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` | `FlowDataLoadTemplateEditor` 代理及模板选择/编辑窗口 |
+| `Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs`、`FlowNodePropertyEditorRegistration.cs` | `DataLoadTemplatePropertiesEditor` 及模板选择/编辑窗口 |
 
 ## 排查与验证
 

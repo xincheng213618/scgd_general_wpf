@@ -17,6 +17,7 @@ DEFAULT_OUTPUT_FILES = (
 )
 EXCLUDED_DIR_NAMES = {"plugins", "log", "window-resize-traces"}
 EXCLUDED_ROOT_FILE_NAMES = {"changelog.md", "window-resize-diagnostics.mode"}
+EXCLUDED_SYMBOL_DIR_NAMES = {"operationswatchdog", "servicehost"}
 
 
 def normalize_relative_path(path: str | Path) -> str:
@@ -36,7 +37,14 @@ def collect_shared_files(root_dir: Path, *, excluded_files: Iterable[Path] = ())
             file_path = current_root_path / file_name
             if file_path.resolve() in resolved_excluded_files:
                 continue
-            shared_files.append(normalize_relative_path(file_path.relative_to(root_dir)))
+            relative_path = file_path.relative_to(root_dir)
+            if (
+                file_path.suffix.lower() == ".pdb"
+                and relative_path.parts
+                and relative_path.parts[0].lower() in EXCLUDED_SYMBOL_DIR_NAMES
+            ):
+                continue
+            shared_files.append(normalize_relative_path(relative_path))
     return shared_files
 
 

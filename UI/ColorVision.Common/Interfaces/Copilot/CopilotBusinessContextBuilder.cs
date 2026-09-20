@@ -226,8 +226,6 @@ namespace ColorVision.UI
 
         public string LastAliveTime { get; init; } = string.Empty;
 
-        public string HeartbeatTime { get; init; } = string.Empty;
-
         public string SendTopic { get; init; } = string.Empty;
 
         public string SubscribeTopic { get; init; } = string.Empty;
@@ -606,7 +604,6 @@ namespace ColorVision.UI
             AppendKeyValue(builder, "Device status", MaskSensitiveText(snapshot.DeviceStatus));
             AppendKeyValue(builder, "Heartbeat status", MaskSensitiveText(snapshot.IsAlive));
             AppendKeyValue(builder, "Last heartbeat", MaskSensitiveText(snapshot.LastAliveTime));
-            AppendKeyValue(builder, "Heartbeat interval", MaskSensitiveText(snapshot.HeartbeatTime));
             AppendKeyValue(builder, "Send topic", MaskIfSensitive("SendTopic", snapshot.SendTopic));
             AppendKeyValue(builder, "Subscribe topic", MaskIfSensitive("SubscribeTopic", snapshot.SubscribeTopic));
 

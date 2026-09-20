@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using Conoscope.Core;
@@ -13,6 +14,17 @@ namespace Conoscope
     public partial class AdvancedExportDialog : Window
     {
         public AdvancedExportSettings Settings { get; private set; }
+        private double exportMaxAngle = 80;
+        public double ExportMaxAngle
+        {
+            get => exportMaxAngle;
+            set
+            {
+                if (!double.IsFinite(value) || value <= 0 || value > 90) throw new ArgumentOutOfRangeException(nameof(value));
+                exportMaxAngle = value;
+                UpdateExportUiState();
+            }
+        }
 
         public AdvancedExportDialog(AdvancedExportSettings? initialSettings = null, int defaultDecimalPlaces = 4)
         {
@@ -20,6 +32,8 @@ namespace Conoscope
             InitializeLocalizedText();
             Settings = NormalizeSettings(initialSettings, defaultDecimalPlaces);
             ApplySettings(Settings);
+            foreach (System.Windows.Controls.TextBox field in new[] { txtAzimuthStep, txtRadialStep, txtPolarStep, txtCircumferentialStep, txtDecimalPlaces })
+                field.TextChanged += (_, _) => UpdateExportUiState();
             UpdateExportUiState();
         }
 
@@ -100,7 +114,7 @@ namespace Conoscope
 
             List<Core.ExportChannel> channels = CollectSelectedChannels();
             int modeCount = (exportAzimuth ? 1 : 0) + (exportPolar ? 1 : 0);
-            btnExport.IsEnabled = channels.Count > 0 && modeCount > 0;
+            btnExport.IsEnabled = channels.Count > 0 && (modeCount > 0 || crossSectionEnabled);
 
             if (!btnExport.IsEnabled)
             {
@@ -110,13 +124,37 @@ namespace Conoscope
 
             int fileCount = channels.Count * (modeCount + (crossSectionEnabled ? 1 : 0));
             string prefix = string.IsNullOrWhiteSpace(txtFilePrefix?.Text) ? "Conoscope_Export" : txtFilePrefix.Text.Trim();
-            string modeName = exportAzimuth ? "Azimuth" : "Polar";
+            string modeName = exportAzimuth ? "Azimuth" : exportPolar ? "Polar" : azimuthCrossSection ? "CrossSection_Azimuth" : "CrossSection_Polar";
             string channelName = channels[0].ToString();
             string example = $"{prefix}_{modeName}_{channelName}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
             tbExportSummary.Text = Core.CompositeFormatCache.Format(
                 UiText("Ui_ExportSummaryFormat", "预计生成 {0} 个 CSV 文件；示例：{1}"),
                 fileCount,
                 example);
+            try
+            {
+                double azimuthStep = ParseDoubleOrDefault(txtAzimuthStep.Text, double.NaN);
+                double radialStep = ParseDoubleOrDefault(txtRadialStep.Text, double.NaN);
+                double polarStep = ParseDoubleOrDefault(txtPolarStep.Text, double.NaN);
+                double circumStep = ParseDoubleOrDefault(txtCircumferentialStep.Text, double.NaN);
+                bool needsAzimuth = exportAzimuth || (crossSectionEnabled && azimuthCrossSection);
+                bool needsPolar = exportPolar || (crossSectionEnabled && !azimuthCrossSection);
+                if ((needsAzimuth && (!double.IsFinite(azimuthStep) || azimuthStep < .1 || !double.IsFinite(radialStep) || radialStep < .1))
+                    || (needsPolar && (!double.IsFinite(polarStep) || polarStep < .1 || !double.IsFinite(circumStep) || circumStep < .1)))
+                    throw new ArgumentException();
+                long samples = (exportAzimuth ? ConoscopeExportService.EstimateMatrixSamples(ExportMaxAngle, azimuthStep, radialStep, false) : 0)
+                    + (exportPolar ? ConoscopeExportService.EstimateMatrixSamples(ExportMaxAngle, polarStep, circumStep, true) : 0);
+                if (crossSectionEnabled) samples += (long)Math.Ceiling((azimuthCrossSection ? 2 * ExportMaxAngle / radialStep : 360 / circumStep)) + 1;
+                samples *= channels.Count;
+                int digits = int.TryParse(txtDecimalPlaces.Text, out int parsed) ? Math.Clamp(parsed, 0, 8) : 4;
+                // Values have variable integer widths; this is a size estimate, never an allocation or a hard limit.
+                double approximateMiB = samples * (digits + 10.0) / (1024 * 1024);
+                tbFooterHint.Text = CompositeFormatCache.Format(Properties.Resources.ExportEstimateFormat, samples, approximateMiB);
+            }
+            catch (ArgumentException)
+            {
+                tbFooterHint.Text = Properties.Resources.ExportEstimateInvalid;
+            }
         }
 
         private void btnExport_Click(object sender, RoutedEventArgs e)
@@ -139,7 +177,7 @@ namespace Conoscope
                 bool exportAzimuth = chkExportAzimuth.IsChecked == true;
                 bool exportPolar = chkExportPolar.IsChecked == true;
 
-                if (!exportAzimuth && !exportPolar)
+                if (!exportAzimuth && !exportPolar && chkEnableCrossSection.IsChecked != true)
                 {
                     MessageBox.Show(Properties.Resources.MsgSelectOneExportMode, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -180,9 +218,9 @@ namespace Conoscope
 
         private bool ValidateInputs()
         {
-            if (string.IsNullOrWhiteSpace(txtFilePrefix.Text))
+            if (string.IsNullOrWhiteSpace(txtFilePrefix.Text) || txtFilePrefix.Text.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             {
-                MessageBox.Show(Properties.Resources.MsgEnterFilePrefix, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Properties.Resources.ExportInvalidPrefix, Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
@@ -191,25 +229,25 @@ namespace Conoscope
             bool needsAzimuthSettings = chkExportAzimuth.IsChecked == true || (crossSectionEnabled && azimuthCrossSection);
             bool needsPolarSettings = chkExportPolar.IsChecked == true || (crossSectionEnabled && !azimuthCrossSection);
 
-            if (needsAzimuthSettings && (!TryParseDouble(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180))
+            if (needsAzimuthSettings && (!TryParseDouble(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.1 || azimuthStep > 180))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidAzimuthStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (needsAzimuthSettings && (!TryParseDouble(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80))
+            if (needsAzimuthSettings && (!TryParseDouble(txtRadialStep.Text, out double radialStep) || radialStep < 0.1 || radialStep > 80))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRadialStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (needsPolarSettings && (!TryParseDouble(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80))
+            if (needsPolarSettings && (!TryParseDouble(txtPolarStep.Text, out double polarStep) || polarStep < 0.1 || polarStep > 80))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidRingStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
-            if (needsPolarSettings && (!TryParseDouble(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360))
+            if (needsPolarSettings && (!TryParseDouble(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.1 || circumStep > 360))
             {
                 MessageBox.Show(Properties.Resources.MsgInvalidCircularStep, Properties.Resources.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -293,10 +331,10 @@ namespace Conoscope
                 Channels = channels,
                 ExportAzimuth = exportAzimuth,
                 ExportPolar = exportPolar,
-                AzimuthStep = NormalizeValue(settings?.AzimuthStep ?? 1, 0.01, 180, 1),
-                RadialStep = NormalizeValue(settings?.RadialStep ?? 1, 0.01, 80, 1),
-                PolarStep = NormalizeValue(settings?.PolarStep ?? 1, 0.01, 80, 1),
-                CircumferentialStep = NormalizeValue(settings?.CircumferentialStep ?? 1, 0.01, 360, 1),
+                AzimuthStep = NormalizeValue(settings?.AzimuthStep ?? 1, 0.1, 180, 1),
+                RadialStep = NormalizeValue(settings?.RadialStep ?? 1, 0.1, 80, 1),
+                PolarStep = NormalizeValue(settings?.PolarStep ?? 1, 0.1, 80, 1),
+                CircumferentialStep = NormalizeValue(settings?.CircumferentialStep ?? 1, 0.1, 360, 1),
                 DecimalPlaces = Math.Clamp(settings?.DecimalPlaces ?? defaultDecimalPlaces, 0, 8),
                 EnableCrossSection = settings?.EnableCrossSection ?? false,
                 CrossSectionType = crossSectionType,
@@ -322,8 +360,8 @@ namespace Conoscope
 
         private static bool TryParseDouble(string? text, out double value)
         {
-            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
-                || double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
+            return (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
+                || double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) && double.IsFinite(value);
         }
 
         private static double ParseDoubleOrDefault(string? text, double fallback)

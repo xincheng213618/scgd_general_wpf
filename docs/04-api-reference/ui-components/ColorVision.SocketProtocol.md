@@ -5,7 +5,7 @@ status: "current"
 summary: "Socket连接管理器的监听配置、窗口关闭与服务停止、防火墙放行、消息查询和JSON/Text分发；清空消息只清列表，重发可能换客户端，Sent不证明对端执行。"
 aliases: ["Socket端口连不上或消息没响应", "网络通信", "Socket 连接管理器", "Socket服务设置", "通信协议", "文本模式", "发送消息记录", "消息重发", "Socket消息搜索", "关闭Socket窗口", "停止Socket服务", "清空消息", "防火墙放行", "防火墙专用公用", "ColorVision.SocketProtocol", "SocketManager", "SocketManagerWindow", "SocketConfig", "SocketServerLifecycle", "SocketServerSettings", "SocketManagerApplicationLifetime", "SocketWorkerTracker", "SocketJsonDispatcher", "SocketTextDispatcher", "ISocketJsonHandler", "ISocketTextDispatcher", "SocketMessageManager", "SocketMessageManagerConfig", "SocketRequest", "SocketResponse", "SocketFirewallService", "WindowsFirewallStatusReader", "FirewallCommandService"]
 code_paths: ["UI/ColorVision.SocketProtocol", "src/ColorVisionServiceHost/FirewallCommandService.cs", "ColorVision/App.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/SocketServerLifecycleTests.cs", "Test/ColorVision.UI.Tests/SocketShutdownTests.cs", "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs", "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs", "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs"]
 related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "platform.service-host"]
 ---
 

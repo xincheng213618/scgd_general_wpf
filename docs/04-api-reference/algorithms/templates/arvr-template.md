@@ -4,9 +4,9 @@ knowledge_type: "reference"
 status: "current"
 summary: "ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。"
 aliases: ["ARVR算法","MTF SFR FOV模板对应哪个结果","SFR1.0","MTF2.0","FOV2.0","畸变评价","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR","WindowSFR"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/ARVR/Distortion","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/ARVR/Distortion","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
-related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","algorithms.template-menus","algorithms.find-cross","engine.results"]
+related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","algorithms.template-menus","algorithms.find-cross","algorithms.grid-distortion","engine.results"]
 ---
 
 # ARVR 算法与模板
@@ -28,7 +28,7 @@ ARVR 算法通过算法服务计算，宿主负责选择模板、发送请求和
 | ARVR → Ghost1.0 | `TemplateGhost`；`ghost` / `7` | `Ghost` | `ViewHandleGhost`；参数与叠图见[鬼影检测](../detectors/ghost-detection.md) |
 | ARVR → MTF2.0 | `TemplateMTF2`；`MTF` / `48` | `MTF` | `ViewHandleMTF2`；`Version == "2.0"` |
 | ARVR → FOV2.0 | `TemplateDFOV`；`FOV` / `39` | `FOV` | `ViewHandleDFOV`；`Version == "2.0"` |
-| ARVR → 畸变评价 | `TemplateDistortionParam`；`distortion` / `10` | `Distortion` | `ViewHandleDistortion`；不排除 2.0 结果 |
+| ARVR → 畸变评价 | `TemplateDistortionParam`；`distortion` / `10` | `Distortion` | `ViewHandleDistortion`；`Version != "2.0"` |
 | ARVR → 畸变2.0 | `TemplateDistortion2`；`distortion` / `40` | `Distortion` | `ViewHandleDistortion2`；`Version == "2.0"` |
 | ARVR → StereoFusion | `TemplateBinocularFusion`；`ARVR.BinocularFusion` / `35` | `ARVR.BinocularFusion` | `ViewHandleBinocularFusion` |
 | Json → SFR寻边 | `TemplateSFRFindROI`；`ARVR.SFR.FindROI` / `36` | `ARVR.SFR.FindROI` | `ViewHandleSFRFindROI` |
@@ -61,7 +61,7 @@ ARVR 算法通过算法服务计算，宿主负责选择模板、发送请求和
 | 十字计算 | `FindCross` | `TemplateFindCross` |
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
-**POI模板** 是节点的公共属性行，由 `FlowPoiTemplateEditor` 编辑，对所有算子都存在。畸变的两个参数选择器共享同一名称，不是同时发送两套模板；运行前确认最终 `TempName`。
+**POI模板** 是节点的公共属性行，由 `PoiTemplatePropertiesEditor` 编辑，对所有算子都存在。畸变的两个参数选择器共享同一名称，不是同时发送两套模板；运行前确认最终 `TempName`。
 
 ### 公共请求字段
 
@@ -83,7 +83,7 @@ ARVR 算法通过算法服务计算，宿主负责选择模板、发送请求和
 
 结果处理器先匹配 `ViewResultAlg.ResultType`，再执行各自的 `CanHandle1` 条件。上表标注的版本是**返回结果的 `Version`**；JSON 模板、请求版本和返回版本是不同层次，选择 JSON 模板不保证结果一定进入 V2 处理器。三个 `ARVR.*` 事件对应的结果枚举为 `ARVR_BinocularFusion`、`ARVR_SFR_FindROI`、`ARVR_DetectScreenDefects`。
 
-畸变存在匹配重叠：传统 `ViewHandleDistortion` 不限制版本，`ViewHandleDistortion2` 接受 2.0，两者可能同时命中。算法结果界面与数据保存器均取注册集合中第一个 `CanHandle1` 成功项，注册器没有显式 V2 优先级。排查时确认实际选中的处理器及结果模型，不能假定畸变2.0 必然选中 `ViewHandleDistortion2`。公共装载、显示和保存链路见 [Engine 结果展示](../../engine-components/result-handoff-chain.md)。
+传统 `ViewHandleDistortion` 排除 2.0，`ViewHandleDistortion2` 接受 2.0，两者按版本分开。V2 无明细失败记录显示失败原因和参数；成功记录使用一条 JSON 文件明细。[本地点阵畸变 V2](../detectors/grid-distortion-v2.md) 也通过此结构交给 ProjectARVRPro，定位后可选择 TV、九点口径；相对光学估计默认不发布到既有光学字段。公共装载、显示和保存链路见 [Engine 结果展示](../../engine-components/result-handoff-chain.md)。
 
 ## SFR 曲线与 CSV
 
@@ -103,6 +103,6 @@ SFR 明细包含 ROI 坐标、`Pdfrequency` 频率数组和 `PdomainSamplingData
 
 ## 源码与验证边界
 
-手动适配器和结果处理器与模板位于同一算法目录；SFR 曲线及查询位于 `Templates/ARVR/SFR/WindowSFR.xaml.cs`。流程的入口是 `Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs`，面板配置位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs`。本页讨论的是宿主请求与显示契约，不定义算法服务内部计算公式或客户项目判定标准。
+手动适配器和结果处理器与模板位于同一算法目录；SFR 曲线及查询位于 `Templates/ARVR/SFR/WindowSFR.xaml.cs`。流程的入口是 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs`，面板配置位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs`。本页讨论的是宿主请求与显示契约，不定义算法服务内部计算公式或客户项目判定标准。
 
-`AlgorithmNodeTemplateMappingTests.cs` 只断言 ARVR 的 `POITempName` 解析到 `FlowPoiTemplateEditor`，没有覆盖所有算子切换及请求发送。`FindCrossResultOverlayTests.cs` 验证本地诊断数据与旧结果的叠图中心坐标选择，不验证远端 ARVR 服务或真实绘制。算法请求、返回版本、SFR 曲线和导出仍需用对应结果样例验证；测试文件存在不表示这些链路已通过端到端测试。
+`AlgorithmNodeTemplateMappingTests.cs` 只断言 ARVR 的 `POITempName` 解析到 `PoiTemplatePropertiesEditor`，没有覆盖所有算子切换及请求发送。`FindCrossResultOverlayTests.cs` 验证本地诊断数据与旧结果的叠图中心坐标选择，不验证远端 ARVR 服务或真实绘制。算法请求、返回版本、SFR 曲线和导出仍需用对应结果样例验证；测试文件存在不表示这些链路已通过端到端测试。

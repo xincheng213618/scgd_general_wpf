@@ -220,7 +220,7 @@ public sealed class CopilotConversationListProjectionTests
                 Assert.Same(task, Assert.Single(viewModel.AgentTasks));
                 Assert.Empty(changes);
                 Assert.Equal("Renamed task", title.Text);
-                Assert.Equal("模型连接中断", status.Text);
+                Assert.Equal("模型服务异常", status.Text);
                 Assert.Equal("Choose a target", detail.Text);
                 Assert.Equal("2", remaining.Text);
                 Assert.True(resume.IsChecked);

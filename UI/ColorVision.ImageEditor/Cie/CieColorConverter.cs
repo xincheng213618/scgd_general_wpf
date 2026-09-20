@@ -125,7 +125,7 @@ namespace ColorVision.ImageEditor.Cie
                 return CieChromaticity.Empty;
             }
 
-            double denominator = 3 * uv.X - 8 * uv.Y + 6;
+            double denominator = 2 * uv.X - 8 * uv.Y + 4;
             if (Math.Abs(denominator) < double.Epsilon)
             {
                 return CieChromaticity.Empty;

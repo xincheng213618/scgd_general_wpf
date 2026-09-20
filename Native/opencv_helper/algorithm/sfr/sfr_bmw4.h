@@ -54,3 +54,15 @@ BmwSfr4Result calculateBmwSfr4In1(const cv::Mat& img, const BmwSfr4Config& confi
 
 } // namespace sfr
 } // namespace cvcore
+
+namespace cvcore::sfr {
+// Localizes exactly one target inside an explicitly supplied search crop.
+struct BmwLocatedTarget {
+    bool located = false;
+    std::string reason = "target_not_found";
+    cv::Rect target;
+    cv::Point2d center;
+    std::array<cv::Rect, 4> edges{}; // Left, Top, Right, Bottom; crop coordinates
+};
+BmwLocatedTarget locateBmwTarget(const cv::Mat& crop);
+}

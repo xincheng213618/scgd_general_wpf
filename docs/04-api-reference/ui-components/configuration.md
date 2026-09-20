@@ -2,18 +2,18 @@
 knowledge_id: "ui.configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。"
-aliases: ["配置文件在哪里","改了配置文件为什么没生效","配置导出缺少项目","配置重载旧引用","保存后发布失败","配置同名覆盖","完整类型名配置","ConfigHandler","ConfigService","SaveConfigs","Reload","ReloadFromDisk","ConfigsReloaded","TrySaveAndPublish","PersistedButPublishFailed","IConfigSecure"]
+summary: "应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。"
+aliases: ["应用设置","软件设置","设置备份","备份恢复","配置文件在哪里","改了配置文件为什么没生效","配置导出缺少项目","配置重载旧引用","保存后发布失败","配置同名覆盖","完整类型名配置","ConfigHandler","ConfigService","SaveConfigs","BackupConfigs","LoadConfigs","LoadDefaultConfigs","Reload","ReloadFromDisk","ConfigsReloaded","TrySaveAndPublish","PersistedButPublishFailed","IConfigSecure"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.Common/Interfaces/Config/IConfig.cs","UI/ColorVision.Common/Interfaces/Config/IConfigSecure.cs","UI/ColorVision.Common/Interfaces/Config/IConfigService.cs","UI/ColorVision.Common/Interfaces/Config/ConfigService.cs","UI/ColorVision.UI/ConfigSetting/ConfigServiceAdapters.cs","UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs","Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs"]
-related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid","operations.exports","operations.device-configuration"]
+related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid","ui.storage-maintenance","operations.exports","operations.device-configuration"]
 ---
 
 # 配置持久化、重载与对象所有权
 
 `ConfigHandler` 负责应用设置 JSON 的读取、实例缓存、合并写入和备份恢复；`ConfigService` 只是可替换的 `IConfigService` 入口。文件保存、运行期对象发布和订阅者重绑定是不同完成条件，不能用“保存方法返回”统一代表。
 
-本主题不处理设备资源的 MySQL 保存，也不定义属性编辑事务：分别见[设备资源配置](../../01-user-guide/devices/configuration.md)和[属性编辑器契约](./property-grid.md)。设置导入/导出界面的调用顺序与覆盖风险由[导入导出边界](../../01-user-guide/data-management/export-import.md)负责。
+本主题不处理设备资源的 MySQL 保存，也不定义属性编辑事务：分别见[设备资源配置](../../01-user-guide/devices/configuration.md)和[属性编辑器契约](./property-grid.md)。配置恢复点的界面入口由[存储与维护](./storage-maintenance.md)负责；软件设置、流程和结果各自的备份范围见[导入导出边界](../../01-user-guide/data-management/export-import.md)。
 
 ## 配置路径由谁决定
 
@@ -117,6 +117,15 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 ## 备份、损坏文件与导入范围
 
+先区分设置值不合适、文件损坏和恢复默认，不把它们都当作同一种恢复操作：
+
+| 情况 | 当前行为与核对点 |
+| --- | --- |
+| 选项改错，但文件仍能解析为 JSON 对象 | `LoadConfigs` 正常加载，不因选项不合适而自动选择旧备份；先确定需要恢复哪些配置节及备份范围 |
+| 主文件缺失或内容损坏 | 普通 `LoadConfigs` 尝试下面的最新有效滚动备份；`ReloadFromDisk` 读失败时拒绝重载，不自动恢复 |
+| 调用 `LoadDefaultConfigs` | 先尝试滚动备份；备份不可用或恢复失败时进入默认回退，不能按方法名理解为直接恢复出厂设置 |
+| 从备份成功加载配置 | 缓存对象会被替换，仍需使用方重新取得对象并处理订阅；不保证已打开窗口自动刷新 |
+
 主程序另行注册非关键配置节白名单，提供 `ConfigMaintenanceResetService` 选择性维护重置：只记录计划，在下一次配置 `Load`、正常加载与实例化之前处理，完整原文件备份成功后才提交。它不使用 `LoadDefaultConfigs` 的旧备份回退，也不在运行中替换对象。独立备份、启动准入、取消、崩溃幂等与部分失败语义由[存储清理与设置重置](./storage-maintenance.md)定义，不能将它与下面的滚动 `BackupConfigs` 混为一谈。
 
 `BackupConfigs` 使用 `<ConfigDIFileName>Backup_yyyyMMdd_HHmmss.json`，通过 `SaveConfigs(backupPath)` 保存当前已实例化快照；它不是直接复制主文件。同一秒再次备份会合并写入同一个目标文件。清理目标是按文件名倒序保留最多 10 个匹配备份文件，并不先筛出有效 JSON。备份和清理异常分别记日志，调用方拿不到可靠的布尔成功结果。
@@ -125,7 +134,7 @@ related: ["ui.framework","ui.settings","ui.wizards","ui.menus","ui.property-grid
 
 默认回退不会保证已修复损坏的主文件；若坏文件仍在，后续保存仍可能被“拒绝覆盖无效 JSON”的保护拦下。`ReloadFromDisk` 不使用这套自动恢复，它在读文件失败时拒绝重载。
 
-设置文件导入不是数据库、插件和全部资源的恢复；导入界面是否先备份、如何覆盖文件、失败后是否补偿，统一见[设置导入导出契约](../../01-user-guide/data-management/export-import.md)。此处的单文件提交不能作为导入全过程具有回滚保证的证据。
+设置窗口不提供 `.cvsettings` 导入/导出或通用的备份恢复按钮。“配置恢复点”使用独立的 `MaintenanceBackups` 完整文件备份，不参与上述 `Backup` 滚动备份选择；不要混用两种目录及恢复假设。配置文件加载也不恢复数据库、插件和全部资源，具体范围见[设置导入导出契约](../../01-user-guide/data-management/export-import.md)。单文件提交不构成跨文件迁移或整个运行状态的回滚保证。
 
 ## 验证入口与缺口
 

@@ -242,6 +242,8 @@
   <data name="OpenShutter" xml:space="preserve"><value>打开快门</value></data>
   <data name="CloseShutter" xml:space="preserve"><value>关闭快门</value></data>
   <data name="FilterWheel" xml:space="preserve"><value>滤色轮</value></data>
+  <data name="AutoDarkControlMode" xml:space="preserve"><value>自动校零方式</value></data>
+  <data name="FilterWheelDarkPosition" xml:space="preserve"><value>滤色轮遮光孔位</value></data>
   <data name="CurrentPosition" xml:space="preserve"><value>当前位置:</value></data>
   <data name="Query" xml:space="preserve"><value>查询</value></data>
   <data name="SwitchPosition" xml:space="preserve"><value>切换位置:</value></data>

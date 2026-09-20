@@ -75,11 +75,13 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <CheckBox Content="{x:Static res:Resources.ServicePackage}" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
                             <ContentControl Grid.Column="1" Content="{Binding ServicePackagePath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
                             <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadServicePackageCommand}" Margin="10,0,0,0" />
                             <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectServicePackageCommand}" Margin="8,0,0,0" />
+                            <Button Grid.Column="4" Content="{x:Static res:Resources.SelectInFolder}" Command="{Binding SelectServicePackageInFolderCommand}" Margin="8,0,0,0" />
                         </Grid>
                         <Grid Margin="0,0,0,6" Visibility="{Binding IsMySqlInstallVisible, Converter={StaticResource BoolToVis}}">
                             <Grid.ColumnDefinitions>
@@ -87,11 +89,13 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <CheckBox Content="{x:Static res:Resources.MySQL}" IsChecked="{Binding InstallMySqlChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
                             <ContentControl Grid.Column="1" Content="{Binding MySqlPackagePath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
                             <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMySqlPackageCommand}" Margin="10,0,0,0" />
                             <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMySqlZipCommand}" Margin="8,0,0,0" />
+                            <Button Grid.Column="4" Content="{x:Static res:Resources.SelectInFolder}" Command="{Binding SelectMySqlPackageInFolderCommand}" Margin="8,0,0,0" />
                         </Grid>
                         <Grid Margin="0,0,0,6" Visibility="{Binding IsVc2013InstallVisible, Converter={StaticResource BoolToVis}}">
                             <Grid.ColumnDefinitions>
@@ -111,11 +115,13 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <CheckBox Content="{x:Static res:Resources.MQTT}" IsChecked="{Binding InstallMqttChecked}" VerticalAlignment="Center" Margin="0,0,16,0" MinWidth="100" />
                             <ContentControl Grid.Column="1" Content="{Binding MqttInstallerPath}" ContentTemplate="{StaticResource ServicePackagePath}" VerticalAlignment="Center" />
                             <Button Grid.Column="2" Content="{x:Static res:Resources.Download}" Command="{Binding DownloadMqttInstallerCommand}" Margin="10,0,0,0" />
                             <Button Grid.Column="3" Content="{x:Static res:Resources.Select}" Command="{Binding SelectMqttInstallerCommand}" Margin="8,0,0,0" />
+                            <Button Grid.Column="4" Content="{x:Static res:Resources.SelectInFolder}" Command="{Binding SelectMqttInstallerInFolderCommand}" Margin="8,0,0,0" />
                         </Grid>
                 </StackPanel>
             </Border>

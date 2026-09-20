@@ -2254,7 +2254,7 @@
     <value>File Path</value>
   </data>
   <data name="Engine_PG_LocalImage" xml:space="preserve">
-    <value>Local Image</value>
+    <value>載入圖片</value>
   </data>
 
   <data name="Engine_PG_Ratio" xml:space="preserve">
@@ -3068,7 +3068,13 @@
   <data name="SpectrumAcquisitionDisplay" xml:space="preserve"><value>擷取與顯示</value></data>
   <data name="SpectrumSearchDevices" xml:space="preserve"><value>搜尋光譜儀</value></data>
   <data name="SpectrumSearchHint" xml:space="preserve"><value>遍歷所有支援的連線方式</value></data>
-  <data name="SpectrumRefreshHint" xml:space="preserve"><value>重新整理服務端裝置與授權</value></data>
+  <data name="SpectrumRefreshHint" xml:space="preserve"><value>重新整理伺服器裝置序列號清單</value></data>
+  <data name="SpectrumDriverTool" xml:space="preserve"><value>光譜儀驅動程式工具</value></data>
+  <data name="SpectrumDriverToolHint" xml:space="preserve"><value>開啟 Zadig 設定 GCS 光譜儀的 libusb-win32 驅動程式</value></data>
+  <data name="SpectrumDriverToolWarning" xml:space="preserve"><value>請僅選擇 GCS Spectrameter，並確認目標驅動程式為 libusb-win32。&#xA;&#xA;請勿選擇鍵盤、滑鼠、接收器、攝影機或 USB Hub。是否繼續開啟驅動程式工具？</value></data>
+  <data name="SpectrumDriverToolMissing" xml:space="preserve"><value>找不到光譜儀驅動程式工具：&#xA;{0}&#xA;&#xA;請重新安裝或修復 ColorVision。</value></data>
+  <data name="SpectrumDriverToolInvalid" xml:space="preserve"><value>光譜儀驅動程式工具完整性驗證失敗，請重新安裝或修復 ColorVision。</value></data>
+  <data name="SpectrumDriverToolOpenFailed" xml:space="preserve"><value>無法開啟光譜儀驅動程式工具：{0}</value></data>
   <data name="SpectrumLicenseHint" xml:space="preserve"><value>匯入本機授權檔案</value></data>
   <data name="CalibrationGroup" xml:space="preserve"><value>標定分組</value></data>
   <data name="ApplyCalibrationGroup" xml:space="preserve"><value>套用目前分組</value></data>
@@ -3181,4 +3187,85 @@
   <data name="MySQL 结果关联索引优化失败。{0} {1} 用时 {2}。问题排除后可重新执行，已有等价索引会自动跳过。{3}{4}" xml:space="preserve"><value>MySQL 結果關聯索引最佳化失敗。{0} {1} 耗時 {2}。排除問題後可重新執行；已有等價索引將自動略過。{3}{4}</value></data>
   <data name="不支持的结果关联列：{0}" xml:space="preserve"><value>不支援的結果關聯欄位：{0}</value></data>
   <data name="WindowServiceTitle" xml:space="preserve"><value>裝置設定</value></data>
+  <data name="PhyCameraConfigurationSection" xml:space="preserve"><value>相機配置</value></data>
+  <data name="PhyCameraConfigurationHint" xml:space="preserve"><value>設定相機參數、設定檔與濾光輪</value></data>
+  <data name="PhyCameraCalibrationSection" xml:space="preserve"><value>校正管理</value></data>
+  <data name="PhyCameraCalibrationHint" xml:space="preserve"><value>管理校正檔案、校正組與範本</value></data>
+  <data name="PhyCameraRecoverySection" xml:space="preserve"><value>備份與還原</value></data>
+  <data name="PhyCameraRecoveryHint" xml:space="preserve"><value>儲存還原點，或從現有還原點還原</value></data>
+  <data name="PhyCameraResetHint" xml:space="preserve"><value>重設將清除目前相機的校正資源與範本</value></data>
+  <data name="POI模板(ReMapping)" xml:space="preserve"><value>POI範本(ReMapping)</value></data>
+  <data name="POI模板名称" xml:space="preserve"><value>POI範本名稱</value></data>
+  <data name="亚像素模板" xml:space="preserve"><value>次像素範本</value></data>
+  <data name="参数模板名称" xml:space="preserve"><value>參數範本名稱</value></data>
+  <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>啟用ND濾輪(自動曝光)</value></data>
+  <data name="图像裁剪2" xml:space="preserve"><value>影像裁剪2</value></data>
+  <data name="布点ROI(区域)" xml:space="preserve"><value>布點ROI(區域)</value></data>
+  <data name="数据加载" xml:space="preserve"><value>資料載入</value></data>
+  <data name="自动曝光模板" xml:space="preserve"><value>自動曝光範本</value></data>
+  <data name="电压量程（V）" xml:space="preserve"><value>電壓量程（V）</value></data>
+  <data name="电流量程（mA）" xml:space="preserve"><value>電流量程（mA）</value></data>
+  <data name="增益由校正组“{0}”固定为 {1:0.##}" xml:space="preserve"><value>增益由校正組「{0}」固定為 {1:0.##}</value></data>
+  <data name="PhysicalSpectrumManager" xml:space="preserve"><value>物理光譜儀管理</value></data>
+  <data name="SpectrumDiscovered" xml:space="preserve"><value>本次發現</value></data>
+  <data name="SpectrumNotDiscovered" xml:space="preserve"><value>未確認在線</value></data>
+  <data name="SpectrumDatabaseRequired" xml:space="preserve"><value>資料庫未連線，請連線後重新整理。</value></data>
+  <data name="SpectrumInvalidSerial" xml:space="preserve"><value>請輸入有效的序列號（1–255 個字元，不包含路徑或控制字元）。</value></data>
+  <data name="SpectrumLicenseTypeConflict" xml:space="preserve"><value>此 SN 已有關聯的其他類型授權，未覆蓋原記錄。</value></data>
+  <data name="SpectrumLicenseSerialMismatch" xml:space="preserve"><value>授權必須包含唯一的 {0}.lic，請核對所選 SN。</value></data>
+  <data name="SpectrumInvalidLicense" xml:space="preserve"><value>授權內容無效，型號或到期日期無法讀取。</value></data>
+  <data name="SpectrumManagerHint" xml:space="preserve"><value>管理光譜儀序列號與授權</value></data>
+  <data name="SpectrumManagerSummary" xml:space="preserve"><value>{0} 台光譜儀 / {1} 本次發現</value></data>
+  <data name="SpectrumWorking" xml:space="preserve"><value>正在處理…</value></data>
+  <data name="SpectrumScanComplete" xml:space="preserve"><value>本次發現 {0} 台光譜儀，{1} 項查詢失敗。</value></data>
+  <data name="SpectrumImportLicense" xml:space="preserve"><value>匯入本機授權</value></data>
+  <data name="SpectrumScanOnline" xml:space="preserve"><value>掃描光譜儀</value></data>
+  <data name="SpectrumSerialList" xml:space="preserve"><value>光譜儀清單</value></data>
+  <data name="SpectrumSearchSerial" xml:space="preserve"><value>依 SN 或型號查詢</value></data>
+  <data name="SpectrumEmptySelection" xml:space="preserve"><value>請選擇光譜儀，或掃描 / 匯入授權。</value></data>
+  <data name="SpectrumDiscoveryDetails" xml:space="preserve"><value>掃描結果詳情</value></data>
+  <data name="SpectrumTools" xml:space="preserve"><value>光譜儀工具</value></data>
+  <data name="SpectrumCorrectionDevice" xml:space="preserve"><value>選擇用於校正的光譜儀裝置</value></data>
+  <data name="SpectrumCorrectionNeedsDevice" xml:space="preserve"><value>請先在裝置設定中將此 SN 關聯至光譜儀裝置。</value></data>
+  <data name="SpectrumEditorTitle" xml:space="preserve"><value>編輯光譜儀配置</value></data>
+  <data name="SpectrumEditorLicenseHint" xml:space="preserve"><value>授權依上方 SN 配對。上傳後立即儲存；取消設定編輯不會撤銷授權匯入。</value></data>
+  <data name="SpectrumEditorUpload" xml:space="preserve"><value>上傳授權</value></data>
+  <data name="SpectrumEditorManage" xml:space="preserve"><value>管理授權</value></data>
+  <data name="SpectrumEditorSerial" xml:space="preserve"><value>序列埠連線</value></data>
+  <data name="SpectrumEditorConnectionHint" xml:space="preserve"><value>預設使用 USB / 預設連線。僅使用序列埠裝置時開啟「序列埠連線」，並選擇連接埠及鮑率。</value></data>
+  <data name="SpectrumEditorInvalidPort" xml:space="preserve"><value>請選擇有效序列埠 COM1–COM256；使用預設連線時請關閉「序列埠連線」。</value></data>
+  <data name="SpectrumEditorInvalidBaud" xml:space="preserve"><value>鮑率必須大於 0。</value></data>
+  <data name="SpectrumEditorSearchDetails" xml:space="preserve"><value>檢視搜尋詳情</value></data>
+  <data name="LicenseSummaryFormat" xml:space="preserve">
+    <value>正常 {0}  ·  即將過期 {1}  ·  已過期 {2}  ·  日期未知 {3}</value>
+  </data>
+  <data name="LicenseClearExpired" xml:space="preserve">
+    <value>一鍵清除過期</value>
+  </data>
+  <data name="LicenseClearExpiredHint" xml:space="preserve">
+    <value>清除已過期的授權記錄，保留到期時間未知的記錄。</value>
+  </data>
+  <data name="LicenseClearExpiredConfirm" xml:space="preserve">
+    <value>確定清除 {0} 個已過期的授權？
+
+僅刪除授權記錄，不刪除裝置設定或已匯出的檔案。到期時間未知的記錄會保留。此操作無法復原。</value>
+  </data>
+  <data name="LicenseNoExpired" xml:space="preserve">
+    <value>沒有可清除的過期授權。</value>
+  </data>
+  <data name="LicenseClearingExpired" xml:space="preserve">
+    <value>正在清除過期授權…</value>
+  </data>
+  <data name="LicenseClearExpiredSuccess" xml:space="preserve">
+    <value>已清除 {0} 個過期授權。</value>
+  </data>
+  <data name="LicenseClearExpiredFailed" xml:space="preserve">
+    <value>清除失敗：{0}</value>
+  </data>
+  <data name="LicenseExpiryUnknown" xml:space="preserve">
+    <value>日期未知</value>
+  </data>
+  <data name="LicenseListEmpty" xml:space="preserve">
+    <value>暫無授權，點選「授權匯入」新增。</value>
+  </data>
 </root>

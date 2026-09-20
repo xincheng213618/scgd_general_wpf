@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Media
                     Id = "cvcie-probe-defaults", OwnerId = "Engine", CategoryId = ImageSettingsCategories.Defaults,
                     Scope = ImageSettingsScope.Defaults, Order = 114, Description = SettingsText.DefaultHint
                 };
-                if (!imageView.Config.GetProperties<bool>("IsCVCIE"))
+                if (!imageView.Config.GetProperties<bool>("IsCVCIE") && !imageView.Config.GetProperties<bool>("HasCieMeasurements"))
                 {
                     return [defaultEntry];
                 }

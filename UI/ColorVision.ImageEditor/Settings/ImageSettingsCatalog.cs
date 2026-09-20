@@ -63,18 +63,18 @@ namespace ColorVision.ImageEditor.Settings
                 PropertyNames = new[] { nameof(ImageViewConfig.IsToolBarTopVisible), nameof(ImageViewConfig.IsToolBarLeftVisible), nameof(ImageViewConfig.IsToolBarRightVisible), nameof(ImageViewConfig.IsToolBarAlVisible), nameof(ImageViewConfig.IsToolBarDrawVisible) }
             };
 
-            if (view.IEditorToolFactory.GetIEditorTool<PseudoColorEditorTool>() is { } pseudo)
+            if (view.EditorContext.ProcessingContext.DisplayEffects.PseudoColor is { } pseudo)
             {
-                yield return new(SettingsText.PseudoColor, SettingsText.PseudoColor, pseudo.State)
+                yield return new(SettingsText.PseudoColor, SettingsText.PseudoColor, pseudo)
                 {
                     Id = "pseudo-color", OwnerId = "ImageEditor", CategoryId = ImageSettingsCategories.PseudoColor,
                     Scope = ImageSettingsScope.CurrentView, Order = 20, Description = SettingsText.PseudoHint,
                     Actions = new[] {
-                        new ImageSettingsAction(SettingsText.RestoreDefaults, () => pseudo.State.ApplyDefaults(PseudoColorDefaultConfig.Current)),
+                        new ImageSettingsAction(SettingsText.RestoreDefaults, () => pseudo.ApplyDefaults(PseudoColorDefaultConfig.Current)),
                         new ImageSettingsAction(SettingsText.SetAsDefault, () => {
                             var defaults = PseudoColorDefaultConfig.Current;
-                            defaults.DefaultColormapTypes = pseudo.State.ColormapTypes;
-                            defaults.IsAutoSetRangeByDefault = pseudo.State.IsAutoSetRange;
+                            defaults.DefaultColormapTypes = pseudo.ColormapTypes;
+                            defaults.IsAutoSetRangeByDefault = pseudo.IsAutoSetRange;
                             ImageSettingsPersistence.Save(defaults);
                         }) { SavedSource = PseudoColorDefaultConfig.Current }
                     }

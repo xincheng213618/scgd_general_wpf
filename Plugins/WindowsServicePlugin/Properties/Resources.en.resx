@@ -136,7 +136,7 @@
     <value>Management Services</value>
   </data>
   <data name="ServiceManager" xml:space="preserve">
-    <value>Service Manager</value>
+    <value>Service manager</value>
   </data>
   <data name="CVWinSMSPath" xml:space="preserve">
     <value>CVWinSMS path</value>
@@ -187,7 +187,7 @@
     <value>Selects the MQTT installation item by default when the service installation wizard opens.</value>
   </data>
   <data name="Service" xml:space="preserve">
-    <value>Service</value>
+    <value>Service logs</value>
   </data>
   <data name="ServiceInstallManager" xml:space="preserve">
     <value>Service Installation Manager</value>
@@ -215,6 +215,9 @@
   </data>
   <data name="Select" xml:space="preserve">
     <value>Select</value>
+  </data>
+  <data name="SelectInFolder" xml:space="preserve">
+    <value>Show</value>
   </data>
   <data name="InstallOptions" xml:space="preserve">
     <value>Install Options</value>
@@ -254,6 +257,12 @@
   </data>
   <data name="InstallLog" xml:space="preserve">
     <value>Install Log</value>
+  </data>
+  <data name="InstallCompletedMessage" xml:space="preserve">
+    <value>The selected components were installed successfully.</value>
+  </data>
+  <data name="InstallCompletedTitle" xml:space="preserve">
+    <value>Installation Complete</value>
   </data>
   <data name="InstallNow" xml:space="preserve">
     <value>Install Now</value>

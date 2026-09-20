@@ -1,6 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.UI;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.Themes;
 using log4net;
 using OpenCvSharp;
 using System;
@@ -46,6 +47,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             ArgumentNullException.ThrowIfNull(algorithms);
             ArgumentNullException.ThrowIfNull(loaders);
             InitializeComponent();
+            this.ApplyCaption();
             DataContext = this;
 
             _processor = new BatchImageProcessor(loaders);

@@ -47,10 +47,16 @@ namespace ColorVision.Engine.Media
                 _pixelSampleChangedHandler = (_, pixelSample) =>
                 {
                     CvcieMouseProbeOptions probeSettings = _getProbeSettings();
-                    PoiMeasurementResult measurement = _calculatePoi(
-                        probeSettings.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY)).Result;
+                    (int channels, PoiMeasurementResult measurement) = _calculatePoi(
+                        probeSettings.CreateMeasurementPoint(pixelSample.PixelX, pixelSample.PixelY));
+                    if (channels != 3)
+                    {
+                        _windowCie?.SetSelectedMarker(null);
+                        return;
+                    }
 
-                    _windowCie?.ChangeSelect(measurement.ChromaX, measurement.ChromaY);
+                    _windowCie?.ChangeSelect(new CieXyz(measurement.X, measurement.Y, measurement.Z),
+                        $"POI ({pixelSample.PixelX}, {pixelSample.PixelY})", "CVCIE 原始 XYZ / POI");
                 };
 
                 _context.MouseInfoProvider.PixelSampleChanged += _pixelSampleChangedHandler;

@@ -73,6 +73,7 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 | `--luminous-v2-only` | 本地亮区 V2 合成回归 |
 | `--find-cross-only` | [FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) 合成图形、质量门禁和失败契约 |
 | `--p2-only` | P2 本地算法回归 |
+| `--sfr-only` | SFR V2 纯色/高斯斜边/编码/高位深/噪声/RGB 栅格/错误契约，以及旧 SFR、sfrmat5 和 BMW 接口回归；须从仓库根运行以定位夹具 |
 | `--native-log` | 原生日志桥接测试 |
 | `--pseudo-color` | 伪彩回归 |
 | `--calibration-smoke` | 校准 Context、合成校准和 POI V2；设置 `COLORVISION_POI_BATCH_BASELINE_DLL` 时还执行该 DLL 的基线比较 |

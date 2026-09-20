@@ -4,6 +4,7 @@ using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
@@ -13,6 +14,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -80,13 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
                 MinWidth = 70,
             };
 
-            RelayCommand relayCommand = new RelayCommand((o) =>
-            {
-                LicenseManagerWindow licenseManagerWindow = new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                licenseManagerWindow.ShowDialog();
-            });
-
-            button.Command = relayCommand;
             DockPanel.SetDock(button, Dock.Right);
             dockPanel.Children.Add(button);
 
@@ -98,8 +93,36 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
 
-            combo.ItemsSource = PhyLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type", 1 } });
-            combo.DisplayMemberPath = "MacAddress";
+            async Task RefreshChoicesAsync()
+            {
+                try
+                {
+                    bool useLocal = SysResourceDao.Instance.UseLocal;
+                    var items = await Task.Run(() => PhySpectrumStore.Load(useLocal));
+                    string text = combo.Text;
+                    combo.ItemsSource = items;
+                    combo.SetCurrentValue(ComboBox.TextProperty, text);
+                    combo.ToolTip = null;
+                }
+                catch (Exception ex) { combo.ToolTip = ex.Message; }
+            }
+            combo.Loaded += async (_, _) => await RefreshChoicesAsync();
+            button.Command = new RelayCommand(async _ =>
+            {
+                int port = obj is ConfigSpectrum config && int.TryParse(config.ComPort, out int parsed) ? parsed : 0;
+                new PhySpectrumManagerWindow(property.GetValue(obj) as string, port) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                await RefreshChoicesAsync();
+            });
+            System.Windows.Controls.TextSearch.SetTextPath(combo, nameof(PhySpectrum.SN));
+
+            DataTemplate itemTemplate = TextSNPropertiesEditor.CreateDeviceSnItemTemplate(
+                nameof(PhySpectrum.DisplayModel),
+                nameof(PhySpectrum.SN),
+                nameof(PhySpectrum.LicenseStatus),
+                nameof(PhySpectrum.LicenseBrush),
+                statusForegroundPath: nameof(PhySpectrum.LicenseBrush));
+            combo.ItemTemplate = itemTemplate;
+            combo.ItemContainerStyle = TextSNPropertiesEditor.CreateCameraSnItemContainerStyle(itemTemplate);
             dockPanel.Children.Add(combo);
             return dockPanel;
         }

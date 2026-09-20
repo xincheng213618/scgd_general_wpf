@@ -5,7 +5,7 @@ status: "current"
 summary: "主程序的图像、色彩与测量展示，以及 Spectrum 的光谱关于页：独立品牌和版本、中英文与繁体资源、不透明深浅配色、原生圆角对齐与关闭释放约束。"
 aliases: ["关于页面", "关于窗口", "炫技界面", "光谱之间", "关于窗口黑边", "关于页中英文", "AboutMsg", "AboutMsgWindow", "AboutArtScene", "AboutArtwork", "AboutWindowChrome", "AboutText", "AboutResources", "VisionImageStudy", "SpectrumAboutWindow", "光谱粒子", "NOCTURNE", "OPALINE"]
 code_paths: ["ColorVision/AboutMsg.xaml", "ColorVision/AboutMsg.xaml.cs", "UI/ColorVision.UI/Views/About/AboutArtScene.cs", "UI/ColorVision.UI/Views/About/VisionImageStudy.cs", "UI/ColorVision.UI/Views/About/AboutWindowChrome.cs", "UI/ColorVision.UI/Views/About/AboutText.cs", "UI/ColorVision.UI/Views/About/AboutResources.resx", "UI/ColorVision.UI/Views/About/AboutResources.en.resx", "UI/ColorVision.UI/Views/About/AboutResources.zh-Hant.resx", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml", "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs", "Test/ColorVision.UI.Tests/AboutWindowChromeTests.cs", "Test/ColorVision.UI.Tests/AboutMsgWindowTests.cs", "Test/ColorVision.UI.Tests/AboutTextTests.cs", "Test/Spectrum.Tests/SpectrumAboutWindowTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"]
 related: ["ui.themes", "ui.hotkeys", "plugins.spectrum"]
 ---
 
@@ -30,9 +30,9 @@ XAML 通过 `x:Static` 在窗口构造时取值，不订阅额外的即时语言
 ## 配色与窗口行为
 
 - 每次打开采用 `ThemeManager.Current.CurrentUITheme`：软件当前为深色则进入深色，当前为浅色则进入浅色。右上角半圆按钮仅切换本窗口的深浅配色，不修改全局主题或保存配置；关闭后不保留局部配色，重新打开时再次跟随软件当前主题。窗口打开期间收到应用实际主题变更时也重新跟随。只有 Spectrum 展示深夜（NOCTURNE）和珠光（OPALINE）名称，主程序不显示作品编号或配色标签。
-- 展示窗口固定使用不透明表面，`IsBlurEnabled=False`、`GlassFrameThickness=0`，不跟随全局 `ThemeConfig.TransparentWindow`。光晕只在页面内部混合，避免背后窗口改变底色和文字对比度。公共窗口机制见[窗口主题契约](./ColorVision.Themes.md)。
+- 两个展示窗口直接继承 WPF `Window`，使用自己的模板和 `WindowChrome`，不依赖 `BaseWindow` 的标题栏、模糊与窗口命令。表面固定不透明，`GlassFrameThickness=0`，不跟随全局 `ThemeConfig.TransparentWindow`。光晕只在页面内部混合，避免背后窗口改变底色和文字对比度。公共窗口机制见[窗口主题契约](./ColorVision.Themes.md)。
 - 主程序采用 880 × 530 的紧凑逻辑布局，Spectrum 保持 880 × 590。两个窗口构造时调用 `AboutWindowChrome.FitToWorkArea(this, 16)`，按工作区限制等比缩小，内部 `Viewbox` 保持构图。该 helper 将视觉半径转换为 `WindowChrome` 传给原生圆角区域的椭圆直径，并同步布局缩放；DPI 转换由 WPF 处理。窗口模板保持完整的不透明底色，内层作品单独裁切圆角，避免原生窗口区域与可见圆角不一致时露出黑角。
-- 拖动空白区域移动窗口；右上角关闭按钮和 Esc 关闭窗口。按钮使用自身焦点边框，不叠加默认虚线焦点框。失焦保留画面并暂停运动，重新激活继续。
+- 拖动空白区域移动窗口；右上角关闭按钮和 Esc 关闭窗口，关闭时激活父窗口。拖动由窗口处理未被子控件消费的鼠标按下事件，不影响按钮点击。按钮使用自身焦点边框，不叠加默认虚线焦点框。失焦保留画面并暂停运动，重新激活继续。
 - 版本和构建信息位于下沿。主程序的光学图像、像素与测量标记，以及 Spectrum 的光谱刻度与波长范围，均为艺术构图，不表示当前设备图像、测量数据或流程执行状态。
 
 ## 渲染和资源生命周期

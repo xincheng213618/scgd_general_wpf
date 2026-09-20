@@ -271,7 +271,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
         bool loaded = false;
         try
         {
-            await using var host = new FlowRuntimeHost();
+            await using var host = new FlowRuntimeHost { PersistResults = ColorVision.Database.MySqlSetting.IsConnect };
             CVCommonNode[] observedNodes = [];
             MQTTServiceInfo[] services =
                 request.CreateServices();
@@ -286,7 +286,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                 if (services.Length == 0
                     && host.Nodes
                         .OfType<CVBaseServerNode>()
-                        .Any())
+                        .Any(node => node.RequiresRemoteService))
                 {
                     stopwatch.Stop();
                     return CreateFailure(

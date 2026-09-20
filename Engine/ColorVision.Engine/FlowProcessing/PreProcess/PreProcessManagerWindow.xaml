@@ -11,6 +11,7 @@
         MinWidth="940"
         MinHeight="540"
         Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}"
         d:DataContext="{d:DesignInstance local:PreProcessManager}"
         mc:Ignorable="d">
     <Window.Resources>

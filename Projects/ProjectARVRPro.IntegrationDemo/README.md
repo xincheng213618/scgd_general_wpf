@@ -2,7 +2,7 @@
 
 这个目录是给外部系统、客户 MES、PLC 上位机或自动化中控使用的最小对接示例。它是 .NET Framework 4.8 + WPF 窗口项目，不依赖 ColorVision、ARVRPro 内部项目、算法 DLL、数据库、流程配置或 NuGet 包，只保留可以公开给客户的通信和结果契约。
 
-Demo 产品版本为 `1.0.0`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
+Demo 产品版本为 `1.0.1`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
 
 它演示五件事：
 
@@ -18,6 +18,7 @@ Demo 产品版本为 `1.0.0`，独立于 ColorVision 主程序和 ProjectARVRPro
 
 - [Contracts/ObjectiveTestResult.cs](Contracts/ObjectiveTestResult.cs)
 - [Contracts/ObjectiveTestItem.cs](Contracts/ObjectiveTestItem.cs)
+- [Contracts/Process/OpticCenter/RgbCrossViewResult.cs](Contracts/Process/OpticCenter/RgbCrossViewResult.cs)
 - [Contracts/Process/W51/W51TestResult.cs](Contracts/Process/W51/W51TestResult.cs)
 - [Contracts/Process](Contracts/Process)
 - [Contracts/Socket](Contracts/Socket)
@@ -41,7 +42,7 @@ public class W51TestResult : ViewModelBase
 | 类型 | 顶层字段 | 说明 |
 | --- | --- | --- |
 | 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults` | 第一层 Key 是流程配置的输出名称，例如 `White`、`YW`、`Chessboard`、`MTFH07`、`MTFV07` 或客户自定义名称；客户端不能把 Key 集合写死。YW 结果内分别保存 12X7、8X7 两组 POI，以及各组平均亮度、亮度均匀性和色度均匀性。 |
-| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态 `ObjectiveTestItem`、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
+| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`、`DynamicRgbCrossResults` | 分别承载动态 `ObjectiveTestItem`、POI 光色数据、屏幕缺陷汇总/缺陷框，以及十字 RGB 边缘和 G 基准通道对比结果。 |
 | 固定与兼容结果 | `W51TestResult`、`W255TestResult`、`BlackTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult` | `FieldOfViewTestResults["White"]` 和 `LuminanceChromaticityTestResults["White"]` 会同时保留 W51/W255 兼容字段。 |
 
 `ChessboardTestResult` 当前包含 `ChessboardContrast` 和 `AverageBlackLuminance`。`DistortionTestResult.OpticDistortion` 在 JSON 中实际字段名是 `Optic_Distortion`，契约里保留了 `Optic_Distortion` 字段，并提供 `OpticDistortion` 便捷属性。
@@ -108,7 +109,7 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --parse-file Pro
 - `ProjectARVRResult_*.json`：保存后的原始响应
 - `ProjectARVRResult_*_items.csv`：扁平化后的测试项清单，包含 `Description` 字段说明列
 
-随项目提供的样例包含以下键化/动态顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、YW 两组 POI 光色项、动态 POI、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`。
+随项目提供的样例包含以下键化/动态顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`、`DynamicRgbCrossResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、YW 两组 POI 光色项、动态 POI、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`；十字结果按强类型模型保留在 `ObjectiveTestResult.DynamicRgbCrossResults`。
 
 ## 光学参数说明
 
@@ -136,6 +137,7 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --parse-file Pro
 | `MTF_*` | 调制传递函数，描述成像清晰度/解析力；H/V 表示方向，0F/0.3F/0.6F/0.7F/0.8F 表示视场位置。 | % |
 | `DynamicPoixyuvDatas` | 按输出名称分组的 POI 光色数据，包含 XYZ、xy、uv、CCT 和波长。 | 按子字段 |
 | `DynamicScreenDefectResults` | 按输出名称分组的屏幕缺陷汇总和缺陷框参数。 | 像素/算法值 |
+| `DynamicRgbCrossResults` | 按输出名称分组的十字 RGB 分离结果；`Comparisons` 使用 `R-G`、`B-G` 表示相对 G 基准的边缘偏移和判定。 | pixel |
 
 `ObjectiveTestItem` 的通用字段：`Value` 是数值型测试值，`TestValue` 是格式化显示值，`LowLimit` / `UpLimit` 是判定上下限，`Unit` 是单位，`TestResult` 是单项判定结果。
 
@@ -207,12 +209,12 @@ dotnet run --project Projects/ProjectARVRPro.IntegrationDemo -- --host 127.0.0.1
 dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.IntegrationDemo.csproj -f net48 -c Release -p:Platform=x64 -o artifacts/ProjectARVRPro.IntegrationDemo
 ```
 
-把输出目录发给客户即可。发布目录里包含产品版本为 `1.0.0` 的 exe 和 `Samples`。如果客户要把代码复制到自己的老软件里，优先复制：
+把输出目录发给客户即可。发布目录里包含产品版本为 `1.0.1` 的 exe 和 `Samples`。如果客户要把代码复制到自己的老软件里，优先复制：
 
 - `Contracts` 整个文件夹
 - `Program.cs` 中完整的通信/解析辅助类型：`DemoOptions`、`ArvrClient`、`JsonStreamMessageReader`、`PoixyuvDataJavaScriptConverter`、`ResultParser`、`ParsedProjectArvrResult`、`ResultItem`、`OpticalParameterDescriptions`。不要只摘取 `ResultParser`；它依赖 POI converter 及后面的解析结果、行模型和字段说明类型。
 
-这些代码不依赖本仓库其他文件。WPF 窗口只是演示壳，客户自己的 WinForms 软件可以只复用通信和解析部分。
+这些代码不依赖本仓库其他文件。十字结果还会用到 `Contracts/Recipe/RecipeBase.cs` 中的判定参数快照，该文件已经包含在整个 `Contracts` 目录内。WPF 窗口只是演示壳，客户自己的 WinForms 软件可以只复用通信和解析部分。
 
 ### 发布到 ColorVision 下载服务
 

@@ -8,28 +8,28 @@ namespace ColorVision.ImageEditor.Cie
 {
     public static class CieBackgroundCache
     {
-        private const string CacheVersion = "v3";
+        private const string CacheVersion = "v6";
         private static readonly object SyncRoot = new();
-        private static readonly Dictionary<CieDiagramKind, BitmapSource> MemoryCache = new();
+        private static readonly Dictionary<(CieDiagramKind Kind, bool Dark), BitmapSource> MemoryCache = new();
 
-        public static BitmapSource Get(CieDiagramProfile profile)
+        public static BitmapSource Get(CieDiagramProfile profile, bool dark = false)
         {
             lock (SyncRoot)
             {
-                if (MemoryCache.TryGetValue(profile.Kind, out BitmapSource? cached))
+                if (MemoryCache.TryGetValue((profile.Kind, dark), out BitmapSource? cached))
                 {
                     return cached;
                 }
 
-                BitmapSource bitmap = TryLoadDiskCache(profile) ?? RenderAndSave(profile);
-                MemoryCache[profile.Kind] = bitmap;
+                BitmapSource bitmap = TryLoadDiskCache(profile, dark) ?? RenderAndSave(profile, dark);
+                MemoryCache[(profile.Kind, dark)] = bitmap;
                 return bitmap;
             }
         }
 
-        private static BitmapSource? TryLoadDiskCache(CieDiagramProfile profile)
+        private static BitmapSource? TryLoadDiskCache(CieDiagramProfile profile, bool dark)
         {
-            string path = GetCachePath(profile);
+            string path = GetCachePath(profile, dark);
             if (!File.Exists(path))
             {
                 return null;
@@ -51,14 +51,14 @@ namespace ColorVision.ImageEditor.Cie
             }
         }
 
-        private static BitmapSource RenderAndSave(CieDiagramProfile profile)
+        private static BitmapSource RenderAndSave(CieDiagramProfile profile, bool dark)
         {
-            BitmapSource bitmap = CieBackgroundRenderer.Render(profile);
+            BitmapSource bitmap = CieBackgroundRenderer.Render(profile, dark);
 
             try
             {
                 Directory.CreateDirectory(GetCacheDirectory());
-                using FileStream stream = new(GetCachePath(profile), FileMode.Create, FileAccess.Write, FileShare.None);
+                using FileStream stream = new(GetCachePath(profile, dark), FileMode.Create, FileAccess.Write, FileShare.None);
                 PngBitmapEncoder encoder = new();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 encoder.Save(stream);
@@ -76,9 +76,9 @@ namespace ColorVision.ImageEditor.Cie
             return Path.Combine(localApplicationData, "ColorVision", "ImageEditor", "CieCache");
         }
 
-        private static string GetCachePath(CieDiagramProfile profile)
+        private static string GetCachePath(CieDiagramProfile profile, bool dark)
         {
-            return Path.Combine(GetCacheDirectory(), $"{profile.Kind}_{CacheVersion}.png");
+            return Path.Combine(GetCacheDirectory(), $"{profile.Kind}_{CacheVersion}_{(dark ? "dark" : "light")}.png");
         }
     }
 }

@@ -84,7 +84,7 @@ next: false
   共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。
 
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
-  ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
+  应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
 - [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
@@ -130,6 +130,12 @@ next: false
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
 
+- [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
+  本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
+
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
+
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
   ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
@@ -140,7 +146,7 @@ next: false
   位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
-  景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。
+  景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
 
 - [系统要求与首次构建](../../00-getting-started/prerequisites.md) — `delivery.prerequisites`
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
@@ -175,10 +181,10 @@ next: false
   MySQL 结果表的手动关联索引优化、历史删除、整表截断和SQL备份；在线DDL、并发、部分成功、备份与恢复边界分别说明。
 
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
-  MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
+  MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
 - [数据库连接、DAO 与旧插件兼容](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
-  MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。
+  MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。
@@ -197,11 +203,20 @@ next: false
 - [UI 知识入口](../../04-api-reference/ui-components/README.md) — `ui.index`
   按问题路由到 UI 模块、属性编辑契约、运行时发现与 DLL 发布证据。
 
+- [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
+  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
   发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
+
+- [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
+  本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
+
+- [本地点阵畸变 V2](../../04-api-reference/algorithms/detectors/grid-distortion-v2.md) — `algorithms.grid-distortion`
+  本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。
 
 - [本地灯珠与 P2 分析](../../04-api-reference/algorithms/local-native-analysis.md) — `algorithms.local-native-analysis`
   ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
@@ -212,17 +227,26 @@ next: false
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
 
+- [CVRAW / CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md) — `engine.cv-image-export`
+  CVRAW/CVCIE 原生导出的窗口、命令行参数、通道和命名规则，以及覆盖、部分失败和退出码边界。
+
 - [CVCIE POI 结果数值](../../04-api-reference/engine-components/cvcie-results.md) — `engine.cvcie-results`
-  ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
+  ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。
 
 - [CV 文件读取、通道与写回契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) — `engine.file-io`
-  CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。
+  CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
 
+- [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
+  本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
+
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
+
+- [CIE 色度与样品分析](../../04-api-reference/ui-components/cie-analysis.md) — `ui.cie-analysis`
+  统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。
 
 - [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
@@ -231,7 +255,7 @@ next: false
   图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
-  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。
+  ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。
 
 - [源图像帧：租约、位图复制与缓存失效](../../04-api-reference/ui-components/image-frame-lifetime.md) — `ui.image-frames`
   位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。
@@ -240,7 +264,7 @@ next: false
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
-  按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。
+  按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
 
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
@@ -264,7 +288,7 @@ next: false
   图像比较的操作、参数范围、ROI、差分/SSIM/对齐结果和PNG/JSON/CSV导出；预检不校正图像，192MiB仅限制图像输出，采样数存在狭长区域上限缺口。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
-  灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。
+  灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
 
 - [图像配准 V1](../../02-developer-guide/core-concepts/image-registration-v1.md) — `algorithms.image-registration`
   ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。
@@ -287,6 +311,9 @@ next: false
 - [亚像素边缘 V1](../../02-developer-guide/core-concepts/subpixel-edge-v1.md) — `algorithms.subpixel-edge`
   SubpixelEdge 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
 
+- [opencv\_helper.dll API 参考](../../04-api-reference/engine-components/opencv-helper-api.md) — `engine.opencv-helper-api`
+  opencv\_helper 英文 API 参考：校准/POI、图像处理、SFR、检测、视频与内存释放；核对真实参数单位和函数族错误码，声明的选项不等于当前 Engine 提供操作入口。
+
 - [ColorVision 概览](../../00-getting-started/what-is-colorvision.md) — `platform.product`
   ColorVision 的设备、流程、图像分析、结果、插件与客户项目能力，以及从任务进入文档的方法。
 
@@ -297,7 +324,7 @@ next: false
   尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。
 
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。
+  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
   图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
@@ -305,7 +332,7 @@ next: false
 ## UI/ColorVision.ImageTools {#module-55492f436f6c6f72566973696f6e2e496d616765546f6f6c73}
 
 - [景深融合：输入、执行与结果生命周期](../../04-api-reference/ui-components/image-fusion.md) — `ui.image-fusion`
-  景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。
+  景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。
 
 - [多图查看、刷新与缩略图缓存](../../04-api-reference/ui-components/ColorVision.ImageTools.md) — `ui.image-tools`
   ImageTools内置注册、多图列表中的单张预览、刷新与SQLite缩略图缓存；重选不保证重载，关窗不清缓存，缓存关闭也不等于零数据库访问。
@@ -317,6 +344,9 @@ next: false
   UI类库的职责、依赖与目标框架/版本兼容；包版本可独立于主程序，ScottPlot与SkiaSharp保持已验证的资产组合。
 
 ## UI/ColorVision.Rbac {#module-55492f436f6c6f72566973696f6e2e52626163}
+
+- [文件中转、覆盖与公开分享](../../02-developer-guide/backend/file-transfer.md) — `delivery.file-transfer`
+  Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。
 
 - [RBAC：登录缓存、会话与权限边界](../../03-architecture/security/rbac.md) — `platform.rbac`
   本地RBAC的登录缓存、会话校验和权限同步限制，以及自动登录失败、登出撤销和用户中心统计的实际边界。
@@ -476,7 +506,7 @@ next: false
   设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。
 
 - [MySQL SQL 恢复、重置与资源保留](../../04-api-reference/engine-components/mysql-recovery.md) — `engine.mysql-recovery`
-  MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。
+  MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
 - [Explorer 缩略图读取与 COM 注册](../../04-api-reference/engine-components/ColorVision.ShellExtension.md) — `engine.shell-extension`
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
@@ -524,7 +554,7 @@ next: false
   共享接口的宿主接入、属性通知与命令的同步执行限制、粗粒度权限判据，以及第三方工具发现和启动边界。
 
 - [配置持久化、重载与对象所有权](../../04-api-reference/ui-components/configuration.md) — `ui.configuration`
-  ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。
+  应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。
 
 - [UI 运行时扩展发现与排查](../../04-api-reference/ui-components/ui-runtime-handoff.md) — `ui.discovery`
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
@@ -536,7 +566,7 @@ next: false
   快捷键的发现、多组绑定、窗口/全局注册与搜索编辑；同一操作共享作用域，未分配操作保留展示，确认后立即保存，注册或持久化失败按结果补偿。
 
 - [ImageEditor：上下文、工具装配与临时选区](../../04-api-reference/ui-components/image-editor-context.md) — `ui.image-editor-context`
-  ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。
+  ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。
 
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
@@ -572,7 +602,7 @@ next: false
   配置向导的步骤发现、初始化时序、前进应用和完成标记；关闭不回滚，完成标记不证明组件健康或重启成功。
 
 - [设置、流程与结果的导入导出边界](../../01-user-guide/data-management/export-import.md) — `operations.exports`
-  按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。
+  按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。
 
 - [主程序启动与最小图像验证](../../00-getting-started/first-steps.md) — `operations.first-run`
   主程序启动的配置、实例和服务副作用，远程白屏的软件渲染兼容入口，以及隔离测试环境中的最小本地图像验证。
@@ -593,6 +623,9 @@ next: false
 
 - [Android 运维伴侣](../../02-developer-guide/backend/android-operations.md) — `delivery.android-operations`
   Android原生运维入口、现场HTTPS与固定签名中继的职责边界；连接、可见证据和操作授权不能互相替代。
+
+- [反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md) — `delivery.backend-feedback`
+  反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。
 
 - [Backend Operations 中继与只读概览](../../02-developer-guide/backend/operations-relay.md) — `delivery.backend-operations`
   Backend Operations 的接口、身份与任务回执；区分在线、排队和执行完成，并说明加密快照的下载、消费与过期清理。

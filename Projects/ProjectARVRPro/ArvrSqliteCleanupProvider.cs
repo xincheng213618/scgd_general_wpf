@@ -27,6 +27,13 @@ namespace ProjectARVRPro
             Environment.NewLine +
             "迁移后旧版插件不能读取这些历史 JSON；迁移过程中请勿执行 ARVR 测试。此按钮仅用于现场数据库过渡，全部迁移完成后可移除。";
 
+        public bool HasPendingMigration()
+        {
+            string databasePath = ViewResultManager.SqliteDbPath;
+            return File.Exists(databasePath)
+                && ResultJsonPayloadStorage.RunDatabaseMaintenance(() => LegacyResultJsonMigration.HasPendingMigration(databasePath));
+        }
+
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
             var resultTable = new DatabaseCleanupTableInfo

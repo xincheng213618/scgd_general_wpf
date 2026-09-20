@@ -420,6 +420,7 @@ build/
 /_codeql_detected_source_root
 /.claude/settings.local.json
 /Test/opencv_helper_test/out.png
+/outputs/
 
 # The OpenCV SDK is vendored and must remain visible when versioned binaries are replaced.
 !packages/opencv/

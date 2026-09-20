@@ -27,23 +27,23 @@
             <Setter Property="Padding" Value="12"/>
         </Style>
 
-        <Style x:Key="MessageMetricLabelStyle" TargetType="{x:Type TextBlock}">
+        <Style x:Key="MessageMetricLabelStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
 
-        <Style x:Key="MessageMetricValueStyle" TargetType="{x:Type TextBlock}">
+        <Style x:Key="MessageMetricValueStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
 
-        <Style x:Key="MessageSectionTitleStyle" TargetType="{x:Type TextBlock}">
+        <Style x:Key="MessageSectionTitleStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
-        <Style x:Key="MessagePrimaryButtonStyle" TargetType="{x:Type Button}">
+        <Style x:Key="MessagePrimaryButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
@@ -52,6 +52,8 @@
         </Style>
 
         <Style x:Key="PayloadTextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="AcceptsReturn" Value="True"/>
             <Setter Property="TextWrapping" Value="NoWrap"/>
@@ -271,7 +273,7 @@
                                             <DataTemplate>
                                                 <TextBlock TextTrimming="CharacterEllipsis">
                                                     <TextBlock.Style>
-                                                        <Style TargetType="{x:Type TextBlock}">
+                                                        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
                                                             <Setter Property="Text" Value="{Binding NodeName}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding NodeName}" Value="{x:Null}">
@@ -306,7 +308,7 @@
                                             <DataTemplate>
                                                 <TextBlock>
                                                     <TextBlock.Style>
-                                                        <Style TargetType="{x:Type TextBlock}">
+                                                        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
                                                             <Setter Property="Text" Value="{Binding ElapsedMs, StringFormat={}{0:N0}}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding ElapsedMs}" Value="-1">
@@ -324,7 +326,7 @@
                                             <DataTemplate>
                                                 <TextBlock FontWeight="SemiBold">
                                                     <TextBlock.Style>
-                                                        <Style TargetType="{x:Type TextBlock}">
+                                                        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
                                                             <Setter Property="Text" Value="{Binding State}"/>
                                                             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                                                             <Style.Triggers>

@@ -16,7 +16,8 @@ namespace ColorVision.Copilot
             string taskId,
             MessageInjectingChatClient messageInjector,
             AgentSession session,
-            CopilotAgentTaskEventJournalBuilder taskEventJournal)
+            CopilotAgentTaskEventJournalBuilder taskEventJournal,
+            Action onInputAccepted)
         {
             private readonly object _syncRoot = new();
             private readonly List<TrackedSteeringMessage> _undeliveredSteeringMessages = new();
@@ -59,6 +60,7 @@ namespace ColorVision.Copilot
                     _undeliveredSteeringMessages.Add(new TrackedSteeringMessage(
                         messageId,
                         normalizedText));
+                    onInputAccepted();
                     return true;
                 }
             }

@@ -47,6 +47,18 @@ test('existing administrators retain full access independently of the role matri
   }, '/admin/cache'), false)
 })
 
+test('read-only developers can open feedback without status-management permission', () => {
+  const developer = {
+    authenticated: true,
+    role: 'developer',
+    permissions: ['admin:access', 'feedback:read'],
+  }
+  assert.equal(canOpenAdminRoute(developer, '/admin/feedback'), true)
+  assert.equal(hasPermission(developer, 'feedback:manage'), false)
+  assert.equal(getAdminDashboardCapabilities(developer).readFeedback, true)
+  assert.equal(getAdminDashboardCapabilities({ authenticated: true, permissions: [] }).readFeedback, false)
+})
+
 test('dashboard capabilities expose only data the current role may request', () => {
   assert.deepEqual(getAdminDashboardCapabilities({
     authenticated: true,
@@ -57,6 +69,10 @@ test('dashboard capabilities expose only data the current role may request', () 
     readDeployments: false,
     readStats: false,
     readUsers: false,
+    readFeedback: false,
+    readJobs: false,
+    readBackups: false,
+    readOperations: false,
   })
 
   assert.deepEqual(getAdminDashboardCapabilities({
@@ -68,6 +84,10 @@ test('dashboard capabilities expose only data the current role may request', () 
     readDeployments: true,
     readStats: true,
     readUsers: true,
+    readFeedback: true,
+    readJobs: true,
+    readBackups: true,
+    readOperations: true,
   })
 
   assert.deepEqual(getAdminDashboardCapabilities({
@@ -79,6 +99,10 @@ test('dashboard capabilities expose only data the current role may request', () 
     readDeployments: false,
     readStats: false,
     readUsers: true,
+    readFeedback: false,
+    readJobs: false,
+    readBackups: false,
+    readOperations: false,
   })
 })
 

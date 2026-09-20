@@ -1,4 +1,4 @@
-﻿using ColorVision.Database;
+using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Types
     public partial class CreateType : Window
     {
         public TypeService TypeService { get; set; }
+        public TerminalService? CreatedTerminal { get; private set; }
         public CreateType(TypeService typeService)
         {
             TypeService = typeService;
@@ -54,19 +55,18 @@ namespace ColorVision.Engine.Services.Types
             terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            int pkId = Db.Insertable(sysResource).ExecuteReturnIdentity();
+            int pkId = SysResourceDao.Instance.SaveAndReturnId(sysResource);
             sysResource.Id = pkId;
 
-            if (pkId > 0)
+            if (pkId > 0 || SysResourceDao.IsLocalId(pkId))
             {
                 TerminalService terminalService = new TerminalService(sysResource);
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
+                CreatedTerminal = terminalService;
 
-                MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.CreationSuccessRestartingService, "ColorVision");
+                if (!SysResourceDao.IsLocalId(pkId)) MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), SysResourceDao.IsLocalId(pkId) ? "本地配置已创建。" : Properties.Resources.CreationSuccessRestartingService, "ColorVision");
                 Close();
             }
             else

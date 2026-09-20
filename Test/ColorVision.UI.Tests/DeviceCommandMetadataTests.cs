@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 
 namespace ColorVision.UI.Tests;
@@ -47,5 +48,18 @@ public sealed class DeviceCommandMetadataTests
         var command = typeof(DeviceSpectrum).GetProperty(nameof(DeviceSpectrum.RefreshDeviceIdCommand))!;
         Assert.Equal("RefreshDeviceList", command.GetCustomAttribute<CommandDisplayAttribute>()!.DisplayName);
         Assert.Equal("DeviceConnection", command.GetCustomAttribute<CategoryAttribute>()!.Category);
+    }
+
+    [Fact]
+    public void SpectrumDriverTool_IsBundledAndUsesDeviceConnectionMetadata()
+    {
+        var command = typeof(DeviceSpectrum).GetProperty(nameof(DeviceSpectrum.OpenSpectrumDriverToolCommand))!;
+        Assert.Equal("SpectrumDriverTool", command.GetCustomAttribute<CommandDisplayAttribute>()!.DisplayName);
+        Assert.Equal("DeviceConnection", command.GetCustomAttribute<CategoryAttribute>()!.Category);
+        Assert.Equal("SpectrumDriverToolHint", command.GetCustomAttribute<DescriptionAttribute>()!.Description);
+
+        string toolPath = DeviceSpectrum.GetSpectrumDriverToolPath(AppContext.BaseDirectory);
+        Assert.True(File.Exists(toolPath), $"Missing bundled Spectrum driver tool: {toolPath}");
+        Assert.True(DeviceSpectrum.HasExpectedSpectrumDriverToolHash(toolPath));
     }
 }

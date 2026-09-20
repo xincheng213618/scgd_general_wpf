@@ -1,0 +1,89 @@
+<Window x:Class="Spectrum.PropertyEditor.FilterWheelHoleMappingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="编辑滤光轮配置" Width="680" Height="570" MinWidth="480" MinHeight="340"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="16" Margin="0,0,0,14" CornerRadius="8" BorderThickness="1"
+                BorderBrush="{DynamicResource GlobalBorderBrush1}" Background="{DynamicResource GlobalBorderBrush}">
+            <DockPanel>
+                <Button x:Name="AddButton" DockPanel.Dock="Right" Content="添加" Padding="20,6"
+                        MinWidth="80" VerticalAlignment="Center" Click="Add_Click" />
+                <StackPanel>
+                    <TextBlock Text="滤色轮" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" />
+                    <TextBlock Text="孔位映射" Margin="0,4,0,0" Foreground="{DynamicResource SecondaryTextBrush}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="10" CornerRadius="8" BorderThickness="1"
+                BorderBrush="{DynamicResource GlobalBorderBrush1}" Background="{DynamicResource GlobalBorderBrush}">
+            <Grid>
+                <DataGrid x:Name="MappingGrid" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
+                          CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False"
+                          CanUserReorderColumns="False" CanUserResizeRows="False" HeadersVisibility="Column"
+                          SelectionMode="Single" GridLinesVisibility="None" RowHeight="56" ColumnHeaderHeight="36"
+                          BorderThickness="0" Background="{DynamicResource GlobalBorderBrush}"
+                          Foreground="{DynamicResource GlobalTextBrush}" RowBackground="{DynamicResource GlobalBackground}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="孔位索引" Width="110" MinWidth="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding IndexText, UpdateSourceTrigger=PropertyChanged}" Margin="8"
+                                             Padding="6,4" VerticalContentAlignment="Center" TextAlignment="Center"
+                                             AutomationProperties.Name="孔位索引" TextChanged="Input_Changed" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="孔位名称" Width="*" MinWidth="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Hole.HoleName, UpdateSourceTrigger=PropertyChanged}" Margin="8"
+                                             Padding="8,4" VerticalContentAlignment="Center"
+                                             AutomationProperties.Name="孔位名称" TextChanged="Input_Changed" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="删除" Width="100" CanUserResize="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="删除" Margin="8" Padding="8,4" Click="Delete_Click" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="暂无孔位映射，点击“添加”创建。" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource SecondaryTextBrush}" IsHitTestVisible="False">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Rows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <TextBlock x:Name="ValidationMessage" Grid.Row="2" Margin="2,8,2,0" TextWrapping="Wrap"
+                   Foreground="{DynamicResource DangerBrush}" AutomationProperties.LiveSetting="Assertive" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="SubmitButton" Content="提交" Width="96" Padding="16,7" IsDefault="True"
+                    Background="{DynamicResource PrimaryBrush}" Foreground="White" Click="Submit_Click" />
+            <Button x:Name="CancelButton" Content="取消" Width="96" Padding="16,7" Margin="10,0,0,0" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

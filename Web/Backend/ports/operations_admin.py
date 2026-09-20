@@ -13,4 +13,5 @@ class OperationsAdminQuery(Protocol):
         now: datetime,
         host_limit: int,
         activity_limit: int,
+        host_id: str | None = None,
     ) -> dict[str, Any]: ...

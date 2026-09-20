@@ -61,6 +61,7 @@ namespace ColorVision
             log.Info($"Main window XAML construction took {constructionStopwatch.ElapsedMilliseconds} ms (includes Initialized event).");
             DockingManager1.PreviewMouseRightButtonDown += DockingManager1_PreviewMouseRightButtonDown;
             Config.SetWindow(this);
+            ConfigureFullScreenLayout();
 
             var IsAdministrator = Tool.IsAdministrator();
             //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";

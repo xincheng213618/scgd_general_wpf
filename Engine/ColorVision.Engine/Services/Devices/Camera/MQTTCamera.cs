@@ -29,6 +29,47 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DeviceStatus = DeviceStatusType.UnInit;
         }
 
+        public override DeviceStatusType DeviceStatus
+        {
+            get => Device?.CameraBackend.Status ?? base.DeviceStatus;
+            set
+            {
+                if (Device == null) base.DeviceStatus = value;
+                else { Device.CameraBackend.ObserveService(value); RefreshBackendStatus(); }
+            }
+        }
+
+        internal void RefreshBackendStatus() => base.DeviceStatus = Device.CameraBackend.Status;
+
+        internal override MsgRecord PublishAsyncClient(MsgSend msg, double timeout = 30000)
+        {
+            lock (Local.CameraBackendState.OwnershipSync)
+            {
+                Device.CameraBackend.EnsureServiceAvailable();
+                Device.EnsureServiceCameraAvailable();
+                Device.CameraBackend.BeginServiceCommand(msg.EventName);
+            }
+            try
+            {
+                MsgRecord record = base.PublishAsyncClient(msg, timeout);
+                bool completed = false;
+                void Complete(object? sender, MsgRecordState state)
+                {
+                    if (completed || state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)) return;
+                    completed = true;
+                    record.MsgRecordStateChanged -= Complete;
+                    Device.CameraBackend.EndServiceCommand();
+                    if (state == MsgRecordState.Success && msg.EventName is "Open" or "Close")
+                        DeviceStatus = msg.EventName == "Close" ? DeviceStatusType.Closed
+                            : Config.TakeImageMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened;
+                }
+                record.MsgRecordStateChanged += Complete;
+                Complete(record, record.MsgRecordState);
+                return record;
+            }
+            catch { Device.CameraBackend.EndServiceCommand(); throw; }
+        }
+
         public override void Dispose()
         {
             base.Dispose();
@@ -51,6 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;
+            if (Device.RoutesLocally) return;
 
             if (msg.Code == 0)
             {
@@ -193,6 +235,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
+            if (Device.CameraBackend.OpensLocally) return Device.OpenLocalCamera(CameraID, TakeImageMode, ImageBpp);
             MsgSend msg = new()
             {
                 EventName = "Open",
@@ -230,6 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord GetData(double[] expTime, CalibrationParam param, ParamBase autoExpTimeParam, ParamBase HDRparamBase)
         {
+            if (Device.RoutesLocally) return Device.CaptureLocally(expTime, param, autoExpTimeParam, HDRparamBase);
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
@@ -305,6 +349,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord GetAutoExpTime(ParamBase autoExpTimeParam)
         {
+            if (Device.RoutesLocally) return Device.AutoExposeLocally();
             var Params = new Dictionary<string, object>() { };
             Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
             Params.Add("IsAutoExpWithND",  Config.IsAutoExpWithND);
@@ -321,6 +366,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord Close()
         {
+            if (Device.RoutesLocally) return Device.CloseLocalCamera();
             MsgSend msg = new() {  EventName = "Close" };
             return PublishAsyncClient(msg);
         }

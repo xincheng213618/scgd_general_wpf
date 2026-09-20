@@ -1,4 +1,4 @@
-using ColorVision.Algorithms;
+﻿using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.BatchProcessing;
@@ -102,10 +102,18 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 new()
                 {
                     OwnerGuid = "AlgorithmsCall",
+                    GuidId = "BmwSfr",
+                    Order = 2,
+                    Header = "BMW 四边 SFR",
+                    Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
+                },
+                new()
+                {
+                    OwnerGuid = "AlgorithmsCall",
                     GuidId = "SFR",
                     Order = 1,
                     Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SfrMtfAnalysis,
-                    Command = new RelayCommand(_ => new SFREditorTool(imageContext).Execute()),
+                    Command = new RelayCommand(_ => new SFREditorTool(imageContext, _drawContext).Execute()),
                 },
                 new()
                 {
@@ -127,6 +135,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 .OrderBy(group => group.Order)
                 .ThenBy(group => group.Id, StringComparer.Ordinal))
             {
+                if (items.Any(item => string.Equals(item.GuidId, group.Id, StringComparison.OrdinalIgnoreCase))) continue;
                 items.Add(new MenuItemMetadata
                 {
                     OwnerGuid = "Algorithms",
@@ -175,6 +184,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         private RelayCommand CreateCommand(AlgorithmInteractiveCatalogEntry entry)
         {
             string compatibilityId = entry.Presentation.CompatibilityId;
+            if (DisplayMetrologyIds.All.Contains(entry.Descriptor.Id) && UsesSpecializedAdapter(entry.Descriptor))
+                return new RelayCommand(_ => _ = new DisplayMetrologyEditorTool(imageContext, _drawContext).ExecuteAsync(entry.Descriptor),
+                    _ => CanExecuteDescriptor(entry.Descriptor));
             AlgorithmId id = entry.Descriptor.Id;
             if (!UsesSpecializedAdapter(entry.Descriptor))
                 return new RelayCommand(
@@ -218,7 +230,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             int plannedInputCount = UsesSpecializedAdapter(descriptor)
                 && descriptor.Id == StandardAlgorithmIds.ImageRegistration
                 ? 2
-                : 1;
+                : DisplayMetrologyIds.All.Contains(descriptor.Id) ? descriptor.MinimumInputCount : 1;
             return StandardAlgorithmAdapterContract.TryGetInteractiveRequiredCapabilities(
                     descriptor,
                     plannedInputCount,

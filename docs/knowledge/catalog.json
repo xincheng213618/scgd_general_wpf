@@ -40,7 +40,7 @@
         "Engine/ColorVision.Engine/Templates/Jsons/FindCross",
         "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs",
-        "Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs",
         "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs",
@@ -58,6 +58,7 @@
         "algorithms.json-templates",
         "algorithms.template-menus",
         "algorithms.find-cross",
+        "algorithms.grid-distortion",
         "engine.results"
       ],
       "code_scopes": [
@@ -185,7 +186,7 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/DataLoad/TemplateDataLoad.cs",
         "Engine/ColorVision.Engine/Templates/DataLoad/DataLoadParam.cs",
-        "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgDataLoadNode.cs",
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs",
         "Engine/FlowEngineLib/Node/Algorithm/DataLoadData.cs",
         "Engine/FlowEngineLib/Node/Algorithm/DataLoadData2.cs",
@@ -194,7 +195,7 @@
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Base/CVMQTTRequest.cs",
         "Engine/FlowEngineLib/CVTemplateParam.cs",
-        "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
         "Engine/ColorVision.Engine/Templates/ModelBase.cs"
       ],
@@ -214,6 +215,52 @@
       "title": "DataLoad 数据加载模板",
       "source": "docs/04-api-reference/algorithms/templates/data-load-template.md",
       "url": "/04-api-reference/algorithms/templates/data-load-template",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "algorithms.display-metrology",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
+      "aliases": [
+        "RGB套色",
+        "RGB分通道",
+        "九点十字",
+        "RGB分离",
+        "横向色差",
+        "Eyebox",
+        "眼盒",
+        "低灰阶Mura",
+        "显示计量",
+        "全视场清晰度",
+        "左右眼对准",
+        "DisplayMetrologyProvider",
+        "generate_display_metrology_samples"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs",
+        "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
+        "Scripts/generate_display_metrology_samples.py"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
+      ],
+      "related": [
+        "algorithms.platform",
+        "algorithms.local-native-analysis",
+        "algorithms.fov-local"
+      ],
+      "code_scopes": [
+        "Scripts",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "显示图案计量",
+      "source": "docs/04-api-reference/algorithms/detectors/display-metrology.md",
+      "url": "/04-api-reference/algorithms/detectors/display-metrology",
       "searchable": true
     },
     {
@@ -391,6 +438,51 @@
       "searchable": true
     },
     {
+      "knowledge_id": "algorithms.fov-local",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。",
+      "aliases": [
+        "本地FOV计算(V2)",
+        "FOV 计算 (V2)",
+        "FovDist",
+        "cameraDegrees",
+        "LocalFovNode",
+        "FovCalculator",
+        "FovImageViewRunner",
+        "HorizontalFieldOfViewAngle",
+        "DiagonalFieldOfViewAngle"
+      ],
+      "code_paths": [
+        "UI/ColorVision.Core/FovCalculation.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs",
+        "UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/FovCalculationTests.cs",
+        "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"
+      ],
+      "related": [
+        "algorithms.find-light-area",
+        "algorithms.roi-routes",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地 FOV V2",
+      "source": "docs/04-api-reference/algorithms/detectors/fov-v2-local.md",
+      "url": "/04-api-reference/algorithms/detectors/fov-v2-local",
+      "searchable": true
+    },
+    {
       "knowledge_id": "algorithms.frequency-spectrum",
       "knowledge_type": "reference",
       "status": "current",
@@ -481,9 +573,7 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "UI/ColorVision.Database/BaseTableDao.cs"
       ],
-      "test_paths": [
-        "Test/ColorVision.UI.Tests/VectorizedSelectVisualTests.cs"
-      ],
+      "test_paths": [],
       "related": [
         "algorithms.arvr",
         "algorithms.json-templates",
@@ -500,6 +590,71 @@
       "title": "Ghost1.0 鬼影检测",
       "source": "docs/04-api-reference/algorithms/detectors/ghost-detection.md",
       "url": "/04-api-reference/algorithms/detectors/ghost-detection",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "algorithms.grid-distortion",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。",
+      "aliases": [
+        "点阵畸变分析(V2)",
+        "本地点阵畸变(V2)",
+        "漏光畸变失败",
+        "7x7畸变",
+        "GridDistortionAnalysis",
+        "LocalGridDistortionNode",
+        "M_CalDistortionGridV2",
+        "HorizontalTVDistortion",
+        "VerticalTVDistortion",
+        "Optic_Distortion",
+        "KeystoneHoriz",
+        "KeystoneVert",
+        "DIFF_H",
+        "DIFF_V"
+      ],
+      "code_paths": [
+        "Native/opencv_helper/algorithm/distortion",
+        "Native/include/opencv_media_export.h",
+        "Native/opencv_helper/opencv_media_export.cpp",
+        "UI/ColorVision.Core/GridDistortion.cs",
+        "UI/ColorVision.Core/GridDistortionAnalysis.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs",
+        "Engine/ColorVision.Engine/Templates/ARVR/Distortion/ViewHandleDistortion.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/Distortion2",
+        "Projects/ProjectARVRPro/Process/Distortion"
+      ],
+      "test_paths": [
+        "Test/opencv_helper_test/test_grid_distortion_v2.cpp",
+        "Test/opencv_helper_test/benchmark_grid_distortion.py",
+        "Test/opencv_helper_test/benchmark_public_grid_distortion.py",
+        "Test/ColorVision.UI.Tests/GridDistortionTests.cs",
+        "Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs",
+        "Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs",
+        "Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"
+      ],
+      "related": [
+        "algorithms.arvr",
+        "algorithms.find-light-area",
+        "algorithms.find-cross",
+        "engine.native-integration",
+        "engine.results",
+        "flow.node-extension"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Native/include",
+        "Native/opencv_helper",
+        "Projects/ProjectARVRPro",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "algorithms",
+      "title": "本地点阵畸变 V2",
+      "source": "docs/04-api-reference/algorithms/detectors/grid-distortion-v2.md",
+      "url": "/04-api-reference/algorithms/detectors/grid-distortion-v2",
       "searchable": true
     },
     {
@@ -559,8 +714,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageComparisonV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/ImageComparisonAdvancedV1Tests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -592,7 +746,7 @@
         "Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs",
         "Engine/ColorVision.Engine/Templates/ImageCropping/AlgorithmImageCropping.cs",
         "Engine/ColorVision.Engine/Templates/ImageCropping/ViewHandleImageCropping.cs",
-        "Engine/FlowEngineLib/Node/OLED/OLEDImageCroppingNode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/OLEDImageCroppingNode.cs"
       ],
       "test_paths": [],
       "related": [
@@ -601,8 +755,7 @@
         "engine.results"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/ColorVision.Engine"
       ],
       "domain": "algorithms",
       "title": "ImageCropping 图像裁剪模板",
@@ -614,8 +767,12 @@
       "knowledge_id": "algorithms.image-profile",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "灰度与颜色剖面的操作、采样/越界规则、2000行预览和完整JSON/CSV导出；多点入口受多边形选择器限制，MaximumSamples还受执行/字节预算限制，旧接口参数不同。",
+      "summary": "灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。",
       "aliases": [
+        "CIE Y",
+        "CIE Yxy",
+        "CIE x/y",
+        "原始亮度剖面",
         "灰度与颜色剖面",
         "水平剖面",
         "垂直剖面",
@@ -655,6 +812,11 @@
         "profile_no_samples"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs",
+        "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CvRawProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CombinedProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
@@ -675,6 +837,9 @@
         "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CvcieProfileTests.cs",
+        "Test/ColorVision.UI.Tests/CvRawProfileTests.cs",
+        "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
         "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs",
         "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
@@ -798,8 +963,7 @@
         "Native/opencv_helper/algorithm/calibration/calibration_basic.cpp"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/ImagingCorrectionV1Tests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/ImagingCorrectionV1Tests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -1057,7 +1221,6 @@
         "Native/opencv_helper/exports/p2_export.cpp"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmCircleOverlayRenderOptimizationTests.cs",
         "Test/opencv_helper_test/test_p2_algorithms.cpp"
       ],
       "related": [
@@ -1226,7 +1389,9 @@
         "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs",
         "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs",
         "ColorVision/Copilot/Skills/colorvision-batch-image-conversion",
-        "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs",
+        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs",
+        "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
@@ -1281,8 +1446,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
-        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs",
-        "Test/ColorVision.UI.Tests/PoiEditorLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/PoiLayoutGeometryTests.cs"
       ],
       "related": [
         "algorithms.index",
@@ -1433,8 +1597,7 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/RoiStatisticsV1Tests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
-        "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs"
+        "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -1791,12 +1954,20 @@
         "CopilotAgentExecutionContract"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotWebEvidenceSourceLedger.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspaceValidationTool.cs",
         "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.cs",
         "ColorVision/Copilot/Agent/CopilotToolIntentPolicy.Local.cs",
         "ColorVision/Copilot/Agent/CopilotAgentRequestFactory.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotReadLocalFileTool.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLocalFileToolSupport.cs",
+        "ColorVision/Copilot/Capabilities/CopilotLocalFileCapabilities.cs",
+        "ColorVision/Copilot/Capabilities/CopilotGrepTextCapability.cs",
+        "ColorVision/Copilot/Capabilities/CopilotWorkspaceSearchSupport.cs",
+        "ColorVision/Copilot/Capabilities/CopilotSearchFilesCapability.cs",
+        "ColorVision/Copilot/Capabilities/CopilotListDirectoryCapability.cs",
+        "ColorVision/Copilot/Mcp/CopilotMcpToolDispatcher.Search.cs",
         "ColorVision/Copilot/Agent/Tools/Files/CopilotListDirectoryTool.cs",
         "ColorVision/Copilot/Agent/Tools/Search/CopilotSearchFilesTool.cs",
         "ColorVision/Copilot/Agent/Tools/Search/CopilotGrepTextTool.cs",
@@ -1818,6 +1989,11 @@
         "ColorVision/Copilot/CopilotConversationUsageDiagnostics.cs",
         "ColorVision/Copilot/CopilotConversationStatistics.cs",
         "ColorVision/Copilot/Agent/CopilotOpenAiAgentChatClientFactory.cs",
+        "ColorVision/Copilot/Agent/CopilotOpenAiPromptCacheChatClient.cs",
+        "ColorVision/Copilot/Agent/CopilotDeepSeekAnthropicChatClient.cs",
+        "ColorVision/Copilot/Capabilities/CopilotWorkspacePatchScope.cs",
+        "Scripts/evaluate_copilot.ps1",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.ProviderClientPipeline.cs",
         "ColorVision/Copilot/Agent/CopilotCancellationGuardChatClient.cs",
         "ColorVision/Copilot/Agent/CopilotOpenAiRequestIdChatClient.cs",
         "ColorVision/Copilot/CopilotProviderRequestId.cs",
@@ -1826,6 +2002,7 @@
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotWebEvidenceOutputFormatTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceValidationAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPatchToolAvailabilityTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAgentTaskHostQueueDispatchTests.cs",
@@ -1838,6 +2015,14 @@
         "Test/ColorVision.Copilot.Tests/CopilotAgentExecutionContractRetryTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiProviderRetryTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotOpenAiPromptCacheDiagnosticsTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotDeepSeekAnthropicChatClientTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceReadInvalidationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotUnicodeFileReadTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTextSearchCoverageTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTextFileCoordinateTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspacePatchScopeTests.cs",
+        "Test/ColorVision.Copilot.Tests/Evaluation",
         "Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProviderStreamCleanupTimeoutTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotOpenAiRequestIdTests.cs",
@@ -1854,7 +2039,8 @@
         "copilot.session-tools"
       ],
       "code_scopes": [
-        "ColorVision/Copilot"
+        "ColorVision/Copilot",
+        "Scripts"
       ],
       "domain": "copilot",
       "title": "Copilot Agent 执行链",
@@ -2010,7 +2196,9 @@
         "Test/ColorVision.Copilot.Tests/CopilotComposerMentionRangeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatPanelScrollLifetimeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMarkdownRenderSchedulingTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotMarkdownScrollIntegrationTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotMarkdownScrollIntegrationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotLocalFileLinkNavigationTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2241,7 +2429,10 @@
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs",
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs",
-        "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs"
+        "ColorVision/Copilot/CopilotChatViewModel.MessageInteraction.cs",
+        "ColorVision/Copilot/Agent/CopilotAgentTraceEntry.WorkspaceState.cs",
+        "ColorVision/Copilot/CopilotChatMessage.Validation.cs",
+        "ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs"
       ],
       "test_paths": [
         "Test/ColorVision.Copilot.Tests/CopilotAgentSessionCheckpointTests.cs",
@@ -2262,7 +2453,9 @@
         "Test/ColorVision.Copilot.Tests/CopilotExternalMcpToolOutcomeTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotFinalAnswerRecoverySafetyTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotQueuedLocalCommandSnapshotTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotDatabaseSqlPolicyTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRestartRecoveryTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2376,7 +2569,18 @@
         "colorvision-flow-authoring"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/Tools/Files/CopilotWorkspacePatchEnvelopeTools.cs",
+        "ColorVision/Copilot/Agent/CopilotToolExecution.Support.cs",
+        "ColorVision/Copilot/State/CopilotChatState.cs",
+        "ColorVision/Copilot/CopilotChatPanel.xaml",
+        "ColorVision/Copilot/CopilotChatMessage.WorkspaceDiff.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnEventReducer.cs",
+        "ColorVision/Copilot/Runtime/CopilotTurnWorkspaceDiffAccumulator.cs",
+        "ColorVision/Copilot/Capabilities/CopilotWorkspaceChangeSetCapability.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.SteeringState.cs",
+        "ColorVision/Copilot/Agent/CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.Attempts.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecutionContracts.cs",
+        "ColorVision/Copilot/Capabilities/CopilotCapabilityResult.cs",
         "ColorVision/Copilot/Agent/CopilotToolExecution.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournal.cs",
         "ColorVision/Copilot/Agent/CopilotAgentTaskEventJournalRegistry.cs",
@@ -2399,6 +2603,11 @@
         "Engine/ColorVision.Engine/Templates/Jsons/EditTemplateJson.xaml.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceCancellationEvidenceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotTurnWorkspaceDiffTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceDiffPresentationTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceRecoveryEvidenceTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotWorkspaceReadInvalidationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWriteToolAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotToolResultContractTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotTurnEventProtocolTests.cs",
@@ -2406,7 +2615,8 @@
         "Test/ColorVision.Copilot.Tests/CopilotCodexApprovalsReviewerTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotAutomaticApprovalOverrideTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs"
+        "Test/ColorVision.Copilot.Tests/CopilotPlanModeTests.cs",
+        "Test/ColorVision.Copilot.Tests/CopilotPartialEvidencePresentationTests.cs"
       ],
       "related": [
         "copilot.runtime",
@@ -2922,59 +3132,58 @@
       "knowledge_id": "delivery.backend-feedback",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Backend公开反馈提交、文件目录收件箱、状态sidecar和受控附件响应；上传与管理校验不同，201、resolved及下载审计各有完成边界。",
+      "summary": "反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。",
       "aliases": [
         "反馈收件箱",
+        "我的反馈",
         "Feedback Inbox",
         "反馈上传",
-        "save_feedback",
-        "FeedbackSaveResult",
-        "FeedbackValidationError",
-        "feedback_admin",
-        "query_feedback",
-        "resolve_feedback_attachment",
-        "update_feedback_status",
-        "feedback_attachment_download",
-        "feedback.json",
-        ".admin.json",
+        "feedback:read",
         "feedback:manage",
-        "FeedbackPage"
+        "feedback_attachment_download",
+        "download_feedback.ps1",
+        "ownerUserId",
+        "machineName",
+        "serverReceivedAt",
+        "feedback.json",
+        ".admin.json"
       ],
       "code_paths": [
         "Web/Backend/feedback_service.py",
         "Web/Backend/services/feedback_admin.py",
         "Web/Backend/routes/public_api.py",
         "Web/Backend/routes/admin_api.py",
-        "Web/Backend/storage_paths.py",
-        "Web/Backend/config_loader.py",
-        "Web/Backend/app_setup.py",
-        "Web/Backend/app.py",
-        "Web/Backend/context.py",
-        "Web/Backend/download_stats.py",
-        "Web/Backend/db_cache.py",
-        "Web/Backend/services/http_method_safety.py",
+        "Web/Backend/services/permission_service.py",
+        "Web/Backend/services/api_key_service.py",
         "Web/Frontend/src/pages/FeedbackPage.tsx",
         "Web/Frontend/src/services/admin.ts",
-        "Web/Frontend/src/utils/feedback.ts"
+        "Scripts/download_feedback.ps1",
+        "Scripts/configure_feedback.ps1",
+        "UI/ColorVision.UI.Desktop/Feedback"
       ],
       "test_paths": [
-        "Web/Backend/test_app.py",
+        "Web/Backend/test_feedback_service.py",
         "Web/Backend/test_feedback_admin.py",
-        "Web/Backend/test_contracts.py",
-        "Web/Frontend/tests/feedback.test.ts"
+        "Web/Backend/test_feedback_routes.py",
+        "Web/Backend/test_feedback_download_script.py",
+        "Web/Frontend/tests/feedback.test.ts",
+        "Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs"
       ],
       "related": [
         "delivery.backend",
         "delivery.backend-auth",
+        "delivery.backend-accounts",
         "delivery.artifact-delivery",
         "ui.desktop"
       ],
       "code_scopes": [
+        "Scripts",
+        "UI/ColorVision.UI.Desktop",
         "Web/Backend",
         "Web/Frontend"
       ],
       "domain": "delivery",
-      "title": "Backend反馈提交、处理状态与附件访问",
+      "title": "反馈归属、查询与诊断附件下载",
       "source": "docs/02-developer-guide/backend/feedback.md",
       "url": "/02-developer-guide/backend/feedback",
       "searchable": true
@@ -3368,7 +3577,7 @@
       "knowledge_id": "delivery.code-statistics",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "统计工作区代码行数与 Git 提交历史，说明文件筛选、变更量口径、缓存和图表生成依赖；历史快照不包含未提交修改，HTML 构建依赖外部构建器。",
+      "summary": "统计当前工作区的项目、目录和文件规模，并分析 Git 提交历史与时段；内置离线网页模板，工作区含未提交修改，历史快照不含。",
       "aliases": [
         "代码行数",
         "代码统计",
@@ -3385,16 +3594,22 @@
       "code_paths": [
         "Scripts/count_code_lines.py",
         "Scripts/generate_code_history_dashboard.py",
+        "Scripts/code_history_analysis.py",
+        "Scripts/code_history_dashboard",
         ".gitignore"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Scripts/tests/test_code_history_analysis.py",
+        "Scripts/tests/test_code_history_dashboard.mjs"
+      ],
       "related": [
         "delivery.scripts",
         "governance.maintenance"
       ],
       "code_scopes": [
         ".",
-        "Scripts"
+        "Scripts",
+        "Scripts/code_history_dashboard"
       ],
       "domain": "delivery",
       "title": "代码行数与 Git 历史统计",
@@ -3512,8 +3727,13 @@
       "knowledge_id": "delivery.file-transfer",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Web文件中转的上传、取消与续传、完成判定、权限、覆盖和公开分享；队列不持久化，分享绑定当前文件名。",
+      "summary": "Web文件中转与桌面云盘的匿名上传、续传、公开分享及过期规则；桌面保存本机队列，网页队列不持久化。",
       "aliases": [
+        "云盘",
+        "CloudDriveWindow",
+        "TransferClient",
+        "文件夹分享",
+        "二维码分享",
         "文件中转",
         "Transfer",
         "file:transfer",
@@ -3533,6 +3753,7 @@
         "colorvision.transfer.client-id"
       ],
       "code_paths": [
+        "UI/ColorVision.Rbac/CloudDrive",
         "Web/Backend/routes/transfer.py",
         "Web/Backend/transfer_files.py",
         "Web/Backend/app_setup.py",
@@ -3552,14 +3773,17 @@
       "test_paths": [
         "Web/Backend/test_transfer_files.py",
         "Web/Backend/test_auth_policy.py",
-        "Web/Frontend/tests/transferAccess.test.ts"
+        "Web/Frontend/tests/transferAccess.test.ts",
+        "Test/ColorVision.UI.Tests/CloudDriveTransferTests.cs"
       ],
       "related": [
         "delivery.backend",
         "operations.file-server",
-        "operations.exports"
+        "operations.exports",
+        "platform.rbac"
       ],
       "code_scopes": [
+        "UI/ColorVision.Rbac",
         "Web/Backend",
         "Web/Frontend"
       ],
@@ -3947,7 +4171,6 @@
         "Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj",
         "Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj",
         "Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj",
-        "Test/ColorVision.UI.Tests/ImageAlgorithmPerformanceGateTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"
       ],
       "related": [
@@ -4273,7 +4496,7 @@
       "knowledge_id": "engine.camera-preview-plan",
       "knowledge_type": "decision",
       "status": "planned",
-      "summary": "待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。",
+      "summary": "设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。",
       "aliases": [
         "本地相机内存预览设计",
         "不保存文件能在设备视图预览吗",
@@ -4332,6 +4555,7 @@
       "aliases": [
         "CVRAW转TIFF",
         "CVCIE导出",
+        "TIFF参数元数据",
         "ColorVision命令行导出",
         "Python批量转换CVRAW",
         "导出返回0但没有文件",
@@ -4344,8 +4568,11 @@
         "Engine/ColorVision.Engine/Media/FileProcessorCVRaw.cs",
         "Engine/ColorVision.Engine/Media/FileCVCIE.cs",
         "Engine/ColorVision.Engine/Media/Export/VExportCIE.cs",
+        "Engine/ColorVision.Engine/Media/Export/TiffImageDescriptionWriter.cs",
         "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/Export/ExportCVCIE.xaml.cs",
+        "UI/ColorVision.ImageEditor/Tif/ColorVisionTiffParameters.cs",
+        "UI/ColorVision.ImageEditor/Tif/Opentif.cs",
         "UI/ColorVision.UI/FileProcessorFactory.cs",
         "UI/ColorVision.UI/Shell/ArgumentParser.cs",
         "ColorVision/App.xaml.cs",
@@ -4364,6 +4591,7 @@
         "ColorVision",
         "ColorVision/Copilot",
         "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor",
         "UI/ColorVision.UI"
       ],
       "domain": "engine",
@@ -4376,7 +4604,7 @@
       "knowledge_id": "engine.cvcie-results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageView 封闭区域 POI、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。",
+      "summary": "ImageView 封闭区域 POI、D65 色彩中心 RMS、椭圆探针、结果显示精度与非正值重算；保留传统节点和导出边界。",
       "aliases": [
         "CVCIE计算负值",
         "CVCIEShowConfig",
@@ -4393,6 +4621,9 @@
         "结果数值替换",
         "NormalizeXyz",
         "CalculateColorMetrics",
+        "色彩中心",
+        "D65 RMS",
+        "ColorCenterRmsToD65",
         "椭圆POI",
         "多边形POI",
         "自由套索",
@@ -4411,18 +4642,22 @@
         "Engine/ColorVision.Engine/Media/WindowCVCIE.xaml",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ChromaticityCenterMetrics.cs",
+        "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/CIEStatistics.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultCIExyuvData.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/PoiResultData.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIXZY.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/ViewHanlePOIY.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ChromaticityCenterMetricsTests.cs",
         "Test/ColorVision.UI.Tests/CvcieTemplateEditorTests.cs",
         "Test/ColorVision.UI.Tests/CvcieRegionTests.cs",
         "Test/ColorVision.UI.Tests/CvcieResultValueTests.cs",
         "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"
       ],
       "related": [
+        "ui.cie-analysis",
         "engine.file-io",
         "algorithms.poi-routes",
         "engine.opencv-helper-api",
@@ -4482,8 +4717,7 @@
         "Projects/ProjectKB/KbSqliteCleanupProvider.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs",
-        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs"
       ],
       "related": [
         "engine.index",
@@ -4554,6 +4788,7 @@
         "Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs",
         "Engine/ColorVision.Engine/Dao/VSysResourceDao.cs",
         "UI/ColorVision.Database/BaseTableDao.cs",
+        "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
         "Engine/ColorVision.Engine/Services/WindowService.xaml.cs",
@@ -4584,9 +4819,9 @@
         "UI/ColorVision.Solution/Workspace/DockViewManager.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs",
         "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
-        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs",
-        "Test/ColorVision.UI.Tests/WindowServicePresentationTests.cs"
+        "Test/ColorVision.UI.Tests/DockViewManagerTests.cs"
       ],
       "related": [
         "engine.index",
@@ -4622,8 +4857,12 @@
       "knowledge_id": "engine.file-io",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "CVRAW/CVCIE 读取、内嵌 XYZ 真彩显示与原图回退、四色校正采集与数值校验，以及版本写回和失败边界。",
+      "summary": "CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。",
       "aliases": [
+        "CVFileMetadata",
+        "RAW色度参数",
+        "动态参数覆盖",
+        "HasCieMeasurements",
         "用户校正",
         "LumFourColorRecentImages",
         "CVCIE文件为什么打不开",
@@ -4650,6 +4889,11 @@
         "校正文件备份"
       ],
       "code_paths": [
+        "Engine/ColorVision.FileIO/CVFileMetadata.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/ColorCalibrationSnapshot.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
+        "Engine/ColorVision.Engine/Services/POI/RawColorMeasurementSource.cs",
+        "Native/opencv_helper/algorithm/calibration/calibration_raw_color.cpp",
         "Engine/ColorVision.FileIO/CVFileUtil.cs",
         "Engine/ColorVision.FileIO/CVCIEFile.cs",
         "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj",
@@ -4681,6 +4925,10 @@
         "Plugins/Conoscope/ConoscopeDocument.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CVFileMetadataTests.cs",
+        "Test/ColorVision.UI.Tests/RawColorCalibrationTests.cs",
+        "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
+        "Test/opencv_helper_test/test_calibration.cpp",
         "Test/ColorVision.UI.Tests/ExportCieTests.cs",
         "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
         "Test/ColorVision.UI.Tests/CvcieSrgbRendererTests.cs",
@@ -4705,6 +4953,7 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/ColorVision.FileIO",
+        "Native/opencv_helper",
         "Plugins/Conoscope",
         "UI/ColorVision.ImageEditor"
       ],
@@ -4905,7 +5154,7 @@
       "knowledge_id": "engine.mysql-recovery",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL手动SQL恢复、数据库重置与资源保留：导入后才同步配置和重启注册中心，失败不回滚；迁移备份不含结果，配置更新计数不证明键完整。",
+      "summary": "MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。",
       "aliases": [
         "MySQL数据库恢复",
         "加载SQL备份",
@@ -4913,6 +5162,9 @@
         "资源迁移备份",
         "恢复失败但数据已改变",
         "恢复后重启",
+        "更新流程节点",
+        "UpdateRestoredFlowNodes",
+        "FlowNodeIdentityNormalizer",
         "Sensor字典ID重映射",
         "MySqlDatabaseMaintenanceService",
         "RestoreAndRestartAsync",
@@ -4932,6 +5184,8 @@
         "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml",
         "Engine/ColorVision.Engine/Mysql/MySqlRestoreProgressWindow.xaml.cs",
         "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml",
+        "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/FlowNodeIdentityNormalizer.cs",
         "Engine/ColorVision.Engine/Mysql/SensorTemplateMigrationSqlBuilder.cs",
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
         "UI/ColorVision.Database/MySqlControl.cs",
@@ -4942,7 +5196,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs",
         "Test/ColorVision.UI.Tests/MySqlMigrationBackupTableTests.cs",
-        "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs"
+        "Test/ColorVision.UI.Tests/SensorTemplateMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"
       ],
       "related": [
         "engine.mysql-maintenance",
@@ -5132,6 +5387,12 @@
         "M_ApplyCannyEdgeDetection",
         "M_ApplyHistogramEqualization",
         "M_CalSFRMultiChannel",
+        "M_AnalyzeSfrV2",
+        "斜边清晰度",
+        "ESF",
+        "MTF50",
+        "MTF10",
+        "RGB 子像素",
         "M_CalArtculation",
         "M_FindLuminousArea",
         "M_FindLuminousAreaV2",
@@ -5167,11 +5428,15 @@
         "Native/opencv_helper/algorithm/sfr/sfr_slanted.cpp",
         "Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp",
         "UI/ColorVision.Core/OpenCVMediaHelper.cs",
+        "UI/ColorVision.Core/SfrAnalysis.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/SFR",
         "UI/ColorVision.Core/OpenCVCalibration.cs",
         "UI/ColorVision.Core/HImage.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs"
       ],
       "test_paths": [
+        "Test/opencv_helper_test/test_sfr_analysis.cpp",
+        "Test/ColorVision.UI.Tests/SfrAnalysisTests.cs",
         "Test/opencv_helper_test/test_find_luminous_area.cpp",
         "Test/opencv_helper_test/test_calibration.cpp",
         "Test/opencv_helper_test/test_pseudo_color.cpp",
@@ -5191,7 +5456,8 @@
         "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_helper",
-        "UI/ColorVision.Core"
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
       "title": "opencv_helper.dll API 参考",
@@ -5258,7 +5524,8 @@
         "ColorVision/StartWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs"
+        "Test/ColorVision.UI.Tests/PendingServiceUpdateBufferTests.cs",
+        "Test/ColorVision.UI.Tests/RCConnectionWaiterTests.cs"
       ],
       "related": [
         "engine.index",
@@ -5333,14 +5600,14 @@
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs",
         "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
-        "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs",
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs",
         "Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs",
-        "Test/ColorVision.UI.Tests/ResultImagePresentationTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs",
         "Test/ColorVision.UI.Tests/ResultMessageBusTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"
@@ -5433,7 +5700,7 @@
       "knowledge_id": "engine.spectrum-device",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "主程序光谱仪的全连接方式搜索、设备配置、许可证读取和四色校正单次采集入口；区分本机搜索、服务端刷新与实际连接。",
+      "summary": "主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。",
       "aliases": [
         "光谱仪搜不到",
         "光谱仪连接方式",
@@ -5446,15 +5713,23 @@
         "SpectrumDeviceDiscovery",
         "CMvSpectra",
         "Gaolitong",
-        "光谱仪配置分类"
+        "光谱仪配置分类",
+        "物理光谱仪管理",
+        "PhySpectrumManager",
+        "SpectrumLicenseUpdateService",
+        "光谱仪联网更新许可证"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Spectrum",
+        "Engine/ColorVision.Engine/Services/PhySpectrums",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/LicenseManagerWindow.xaml.cs"
       ],
       "test_paths": [
         "Test/Spectrum.Tests/SpectrumDeviceDiscoveryTests.cs",
-        "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs"
+        "Test/Spectrum.Tests/SpectrumCalibrationGroupConfigTests.cs",
+        "Test/Spectrum.Tests/PhySpectrumManagerTests.cs",
+        "Test/Spectrum.Tests/LocalSpectrumTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -5585,12 +5860,12 @@
         "找不到图像转换或校准模板",
         "AlgDataConvertNode",
         "Calibration2InNode",
-        "FlowCalibrationTemplateEditor"
+        "CalibrationTemplatePropertiesEditor"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/Node/Algorithm/AlgDataConvertNode.cs",
-        "Engine/FlowEngineLib/Algorithm/CalibrationNode.cs",
-        "Engine/FlowEngineLib/Node/OLED/Calibration2InNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/CalibrationNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Calibration/Calibration2InNode.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
@@ -5617,6 +5892,8 @@
       "status": "current",
       "summary": "Flow本地诊断SQLite快照、节点尝试与Incident事件列表的读写边界；快照不保证包含未保存画布，终态持久化与业务结果分开，中断恢复不续跑节点，心跳不是判死条件。",
       "aliases": [
+        "离线节点分析",
+        "FlowAnalysisDataSource",
         "流程运行诊断",
         "流程 Incident 管理",
         "复制稳定标识",
@@ -5641,9 +5918,13 @@
         "FlowIncidentService",
         "FlowIncidentManagementWindow",
         "FlowOwnerProcessState",
-        "RunRecovered"
+        "RunRecovered",
+        "流程执行分析",
+        "阶段耗时",
+        "FlowNodeTiming"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowAnalysisDataSource.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournal.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/IFlowExecutionJournal.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowExecutionJournalCoordinator.cs",
@@ -5662,7 +5943,13 @@
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAttempt.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowIncident.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeAnalysisPage.xaml.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeTiming.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/FlowExecutionJournalTests.cs",
@@ -5670,7 +5957,10 @@
         "Test/ColorVision.UI.Tests/FlowExecutionRecoveryTests.cs",
         "Test/ColorVision.UI.Tests/FlowIncidentServiceTests.cs",
         "Test/ColorVision.UI.Tests/FlowDiagnosticsSchemaTests.cs",
-        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
+        "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs",
+        "Test/ColorVision.UI.Tests/FlowNodeTimingTests.cs",
+        "Test/ColorVision.UI.Tests/FlowNodeAnalysisPageTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs"
       ],
       "related": [
         "flow.session",
@@ -5700,12 +5990,16 @@
         "EnableWindowResizeDiagnostics",
         "BeginResizeDiagnosticCapture",
         "STNodeTypeRegistry",
-        "CVNodeContainer"
+        "CVNodeContainer",
+        "SerializationModel"
       ],
       "code_paths": [
         "Engine/ST.Library.UI/README.md",
         "Engine/ST.Library.UI/ST.Library.UI.csproj",
         "Engine/ST.Library.UI/NodeEditor/STNode.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeSerializationModelAttribute.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeTypeRegistry.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs",
         "Engine/ST.Library.UI/NodeEditor/STNodeEditor.ResizeDiagnostics.cs",
@@ -5713,10 +6007,12 @@
         "Engine/ST.Library.UI/NodeContainer/CVNodeContainer.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorWpfTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
         "Test/ColorVision.UI.Tests/STNodeEditorResizeDiagnosticsTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeTypeRegistryConcurrencyTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -5799,7 +6095,7 @@
         "Flow有哪些节点在哪里定义",
         "NodeType",
         "STNode",
-        "FlowNodePropertyEditorAttribute"
+        "PropertyEditorTypeAttribute"
       ],
       "code_paths": [
         "Engine/FlowEngineLib/Node",
@@ -5816,7 +6112,8 @@
         "flow.workspace",
         "flow.headless",
         "flow.conversion-calibration",
-        "algorithms.find-cross"
+        "algorithms.find-cross",
+        "algorithms.grid-distortion"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
@@ -5834,6 +6131,8 @@
       "status": "current",
       "summary": "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。",
       "aliases": [
+        "FlowLocalExecution",
+        "CreateLocalExecution",
         "如何新增Flow节点",
         "CVCommonNode",
         "CVBaseServerNode",
@@ -5843,14 +6142,18 @@
         "CVEndNode"
       ],
       "code_paths": [
+        "Engine/FlowEngineLib/Base/FlowLocalExecution.cs",
         "Engine/FlowEngineLib/Base/CVCommonNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Start/BaseStartNode.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"
@@ -5877,6 +6180,11 @@
       "status": "current",
       "summary": "节点图加载、服务绑定、弃用节点兼容、完成事件和隔离 RuntimeHost 的执行边界。",
       "aliases": [
+        "上游DLL更新",
+        "反编译比对",
+        "只提供DLL",
+        "节点类型映射",
+        "跨程序集节点名称匹配",
         "流程节点结束为什么业务还没完成",
         "FlowEngineLib",
         "FlowEngineAPI",
@@ -5915,6 +6223,8 @@
         "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/LvCameraNodeMigrationTests.cs",
         "Test/ColorVision.UI.Tests/FlowEngineControlLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeHostTests.cs"
@@ -5942,14 +6252,21 @@
       "knowledge_id": "flow.session",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "流程启动、分阶段停止与后处理完成判据；区分当前画布、诊断快照、执行耗时和结果落库。",
+      "summary": "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。",
       "aliases": [
+        "工作流程",
+        "流程编辑器",
+        "流程启动",
         "流程运行",
+        "流程卡住",
         "流程没结束",
         "执行流程",
         "停止流程",
+        "已经取消执行",
         "执行耗时",
         "流程后处理",
+        "RunFlowCommand",
+        "StopFlowCommand",
         "RunFinalized",
         "执行调试",
         "StopFlow",
@@ -5958,6 +6275,9 @@
         "FlowJob"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs",
@@ -5966,6 +6286,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs",
         "Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs",
         "Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"
       ],
@@ -5980,7 +6301,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "flow",
-      "title": "Flow 启动、停止与最终化",
+      "title": "流程执行：启动、停止与最终化",
       "source": "docs/01-user-guide/workflow/execution.md",
       "url": "/01-user-guide/workflow/execution",
       "searchable": true
@@ -5989,7 +6310,7 @@
       "knowledge_id": "flow.templates",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Flow 模板的保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
+      "summary": "Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。",
       "aliases": [
         "Flow模板保存后参数为什么丢失",
         "TemplateFlow",
@@ -6005,11 +6326,15 @@
         "模板勾选项",
         "StnV1NeutralCodec",
         "动态端口索引",
-        "逻辑与索引警告"
+        "逻辑与索引警告",
+        "本地流程",
+        "离线流程模板",
+        "LocalFlowTemplateStorage"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs",
@@ -6018,6 +6343,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs",
         "Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs",
@@ -6077,8 +6403,7 @@
         "Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs",
         "Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs",
         "Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs",
-        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs",
-        "Test/ColorVision.UI.Tests/FlowNodeMenuPathTests.cs"
+        "Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"
       ],
       "related": [
         "flow.architecture",
@@ -6092,7 +6417,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "flow",
-      "title": "Flow 编辑工作区与文档命令",
+      "title": "流程编辑器：画布与工作区文档命令",
       "source": "docs/01-user-guide/workflow/design.md",
       "url": "/01-user-guide/workflow/design",
       "searchable": true
@@ -6345,8 +6670,12 @@
       "knowledge_id": "operations.camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "远程取图、本地手动/流程采集与结果视图；明确SaveFiles=false文件显示限制、RAW/CIE帧租约与校正读写、命令完成和设备释放边界。",
+      "summary": "本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。",
       "aliases": [
+        "BV/LV本地转发",
+        "LVCameraNode",
+        "使用本地相机",
+        "本地相机优先",
         "相机拍图",
         "相机服务",
         "手动采集成功流程失败",
@@ -6378,16 +6707,27 @@
         "本地帧租约",
         "流程帧内存",
         "SaveFiles=false",
-        "CIE重新分配"
+        "CIE重新分配",
+        "CameraFocusFrameProcessor",
+        "CameraRealtimeFramePipeline"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/LVCameraNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Local.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.Commands.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CameraBackendState.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraNative.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraAutoExposure.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraPreview.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraResultService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/MQTTCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraRealtimeFramePipeline.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/VideoFrameProcessor.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Video/CameraFocusFrameProcessor.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml",
@@ -6403,27 +6743,37 @@
         "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs",
         "Engine/FlowEngineLib/Base/CVStartCFC.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs"
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
+        "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
+        "Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs",
+        "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraResultTests.cs",
         "Test/ColorVision.UI.Tests/CameraViewLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs",
-        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"
+        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"
       ],
       "related": [
         "engine.devices",
         "operations.device-configuration",
         "operations.physical-camera",
         "operations.camera-configuration",
-        "engine.camera-preview-plan"
+        "engine.camera-preview-plan",
+        "ui.image-editor-context"
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "operations",
       "title": "相机服务、采集与结果视图",
@@ -6555,7 +6905,7 @@
       "knowledge_id": "operations.device-configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "终端与设备配置引用、创建、保存、重启和删除清理；未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。",
+      "summary": "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。",
       "aliases": [
         "添加设备",
         "保存设备",
@@ -6588,7 +6938,9 @@
         "Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowServiceConfigurationTests.cs"
+      ],
       "related": [
         "engine.devices",
         "engine.mqtt",
@@ -6609,7 +6961,7 @@
       "knowledge_id": "operations.exports",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "按配置备份、流程、图像和项目结果定位入口，说明文件验收与迁移边界。",
+      "summary": "按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。",
       "aliases": [
         "导入导出",
         "CSV",
@@ -6618,10 +6970,15 @@
         "导出图片",
         "SaveSnapshotExportsAsync",
         "配置备份",
+        "设置备份",
+        "配置恢复点",
+        "MaintenanceBackups",
         "打开配置文件夹"
       ],
       "code_paths": [
         "UI/ColorVision.UI/ConfigHandler.cs",
+        "UI/ColorVision.UI/ConfigMaintenanceResetService.cs",
+        "ColorVision/Settings/Maintenance/StorageMaintenanceControl.xaml.cs",
         "Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs",
         "UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"
       ],
@@ -6641,6 +6998,7 @@
         "delivery.file-transfer"
       ],
       "code_scopes": [
+        "ColorVision/Settings",
         "Engine/ColorVision.Engine",
         "UI/ColorVision.ImageEditor",
         "UI/ColorVision.UI"
@@ -6673,7 +7031,8 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
-        "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs"
+        "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"
       ],
       "test_paths": [],
       "related": [
@@ -6903,7 +7262,6 @@
         "Test/ColorVision.UI.Tests/LogEntryParserTests.cs",
         "Test/ColorVision.UI.Tests/LogViewConfigTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogPendingBufferTests.cs",
-        "Test/ColorVision.UI.Tests/NativeLogWindowTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs"
       ],
@@ -6991,6 +7349,7 @@
         "HasShownNewUserGuide"
       ],
       "code_paths": [
+        "ColorVision/MainWindow.FullScreen.cs",
         "ColorVision/MainWindow.xaml",
         "ColorVision/MainWindow.xaml.cs",
         "ColorVision/MainWindow.NewUserGuide.cs",
@@ -7028,13 +7387,11 @@
         "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs",
-        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs",
-        "Test/ColorVision.UI.Tests/MenuThemeTests.cs",
         "Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs",
         "Test/ColorVision.UI.Tests/NewUserGuideTests.cs",
         "Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs",
-        "Test/ColorVision.UI.Tests/CompactTitleBarChromeTests.cs",
         "Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs",
         "Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs",
         "Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs",
@@ -7096,7 +7453,7 @@
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/MotorConfig.cs",
         "Engine/FlowEngineLib/MotorNode.cs",
-        "Engine/FlowEngineLib/CamMotorNode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CamMotorNode.cs"
       ],
       "test_paths": [],
       "related": [
@@ -7155,7 +7512,6 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraRestoreArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml",
@@ -7166,18 +7522,21 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
+        "Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs",
         "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
-        "Test/ColorVision.UI.Tests/PhyCameraRestoreArchiveTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs",
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
-        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs"
+        "Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"
       ],
       "related": [
         "operations.camera",
@@ -7219,12 +7578,11 @@
         "Engine/ColorVision.Engine/Services/Devices/SMU/SMUParam.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SMUResultModel.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SmuScanModel.cs",
-        "Engine/FlowEngineLib/SMUNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU/SMUNode.cs",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
         "Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/NodeConfiguratorBindingTests.cs",
         "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"
       ],
       "related": [
@@ -7380,8 +7738,7 @@
         "UI/ColorVision.UI.Desktop/Download/DownloadWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs",
-        "Test/ColorVision.UI.Tests/DeveloperToolsWindowTests.cs"
+        "Test/ColorVision.UI.Tests/DeveloperToolSafetyTests.cs"
       ],
       "related": [
         "ui.common",
@@ -7693,12 +8050,9 @@
         "Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs",
         "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs",
         "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs",
-        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupWindowTests.cs",
-        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
         "Test/ColorVision.UI.Tests/StartupSceneLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/StartupRecoveryPluginScannerTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
@@ -8026,6 +8380,47 @@
       "searchable": true
     },
     {
+      "knowledge_id": "plugins.camera-test",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不主动连接 MySQL 或服务，POI 支持 SQLite 本地模板。",
+      "aliases": [
+        "CameraTest",
+        "相机生产调试",
+        "相机出厂检测",
+        "BMW 四边实时分析",
+        "独立相机测试",
+        "StandaloneCameraSession"
+      ],
+      "code_paths": [
+        "Plugins/CameraTest",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/StandaloneCameraSession.cs",
+        "Scripts/package_camera_test.ps1"
+      ],
+      "test_paths": [
+        "Test/CameraTest.Tests/CameraTestContractsTests.cs",
+        "Test/CameraTest.Tests/CameraTestWindowTests.cs",
+        "Test/CameraTest.Tests/ProductionArchiveTests.cs",
+        "Test/CameraTest.Tests/ChromaticAberrationTests.cs",
+        "Test/CameraTest.Tests/JudgmentAndFocusTests.cs",
+        "Scripts/tests/test_package_camera_test.ps1"
+      ],
+      "related": [
+        "operations.camera",
+        "engine.opencv-helper-api"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Plugins/CameraTest",
+        "Scripts"
+      ],
+      "domain": "plugins",
+      "title": "相机生产调试",
+      "source": "docs/04-api-reference/plugins/standard-plugins/camera-test.md",
+      "url": "/04-api-reference/plugins/standard-plugins/camera-test",
+      "searchable": true
+    },
+    {
       "knowledge_id": "plugins.capabilities",
       "knowledge_type": "reference",
       "status": "current",
@@ -8042,8 +8437,7 @@
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
         "Plugins/WindowsServicePlugin",
-        "Plugins/Pattern",
-        "Plugins/ImageProjector"
+        "Plugins/Pattern"
       ],
       "test_paths": [],
       "related": [
@@ -8058,7 +8452,6 @@
       ],
       "code_scopes": [
         "Plugins/Conoscope",
-        "Plugins/ImageProjector",
         "Plugins/Pattern",
         "Plugins/Spectrum",
         "Plugins/SystemMonitor",
@@ -8074,7 +8467,7 @@
       "knowledge_id": "plugins.conoscope",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
+      "summary": "Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
       "aliases": [
         "锥镜图像怎么看",
         "Conoscope 依赖哪些 DLL",
@@ -8115,6 +8508,7 @@
         "Plugins/Conoscope/ConoscopeWindow.xaml.cs",
         "Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs",
         "Plugins/Conoscope/ConoscopeDocument.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CalibratedRawFileReader.cs",
         "Plugins/Conoscope/ConoscopeView.xaml",
         "Plugins/Conoscope/ConoscopeView.xaml.cs",
         "Plugins/Conoscope/ConoscopeImageHost.xaml.cs",
@@ -8140,6 +8534,7 @@
       "test_paths": [
         "Test/Conoscope.Tests/Conoscope.Tests.csproj",
         "Test/Conoscope.Tests/ConoscopeDocumentTests.cs",
+        "Test/Conoscope.Tests/CalibratedRawDocumentTests.cs",
         "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
         "Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs",
         "Test/Conoscope.Tests/ConoscopeHorizontalVerticalProjectionTests.cs",
@@ -8161,6 +8556,7 @@
       ],
       "code_scopes": [
         ".",
+        "Engine/ColorVision.Engine",
         "Engine/cvColorVision",
         "Plugins/Conoscope"
       ],
@@ -8343,7 +8739,7 @@
       "knowledge_id": "plugins.pattern",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Pattern 图卡、用户默认值与模板文件管理，以及 ImageProjector 预览、全屏切换和独立交付；区分当前参数、已生成图片和实际投影。",
+      "summary": "Pattern 图卡、用户默认值、模板文件管理，以及内置图片投影的预览和全屏切换；区分当前参数、已生成图片和实际投影。",
       "aliases": [
         "Pattern",
         "ImageProjector",
@@ -8367,7 +8763,6 @@
       ],
       "code_paths": [
         "Plugins/Pattern",
-        "Plugins/ImageProjector",
         "scgd_general_wpf.sln"
       ],
       "test_paths": [
@@ -8383,7 +8778,6 @@
       ],
       "code_scopes": [
         ".",
-        "Plugins/ImageProjector",
         "Plugins/Pattern"
       ],
       "domain": "plugins",
@@ -8453,6 +8847,9 @@
       "status": "current",
       "summary": "光谱仪软件 Spectrum 的连接、标定、单次测量和 CSV 导出；标定状态与测量前文件复核、EQE 输入及独立 ZIP/cvxp 发布版本来源。",
       "aliases": [
+        "HoleMapping",
+        "孔位映射",
+        "编辑滤光轮配置",
         "Spectrum 如何校准和发布",
         "光谱测量结果不一致",
         "Spectrum",
@@ -8483,6 +8880,7 @@
         "Plugins/Spectrum/SpectrometerManager.cs",
         "Plugins/Spectrum/Calibration",
         "Plugins/Spectrum/Configs",
+        "Plugins/Spectrum/PropertyEditor",
         "Plugins/Spectrum/Data",
         "Plugins/Spectrum/Models/ViewResultSpectrum.cs",
         "Plugins/Spectrum/SpectrumCsvExporter.cs",
@@ -8495,6 +8893,7 @@
       ],
       "test_paths": [
         "Test/Spectrum.Tests/Spectrum.Tests.csproj",
+        "Test/Spectrum.Tests/FilterWheelHoleMappingEditSessionTests.cs",
         "Test/Spectrum.Tests/ViewResultSpectrumTests.cs",
         "Test/Spectrum.Tests/SpectrumArchitectureBoundaryTests.cs",
         "Test/Spectrum.Tests/SpectrumCalibrationStateTests.cs",
@@ -8727,6 +9126,9 @@
       "status": "current",
       "summary": "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。",
       "aliases": [
+        "现场数据库离线查看",
+        "打开现场数据",
+        "ArvrOfflineDataSource",
         "ARVR 历史原图删了还能看结果吗",
         "保存结果图会不会重复画标记",
         "ProjectARVRPro",
@@ -8739,6 +9141,7 @@
         "ARVR 项目"
       ],
       "code_paths": [
+        "Projects/ProjectARVRPro/Offline",
         "Projects/ProjectARVRPro/ARVRWindow.xaml",
         "Projects/ProjectARVRPro/TestResultViewWindow.xaml",
         "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml",
@@ -8759,6 +9162,7 @@
         "Projects/ProjectARVRPro/ProjectARVRProConfig.cs"
       ],
       "test_paths": [
+        "Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs",
         "Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj",
         "Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs",
         "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs",
@@ -8888,6 +9292,7 @@
         "ProcessWithRecipeBase",
         "ResultParserMetas",
         "ResultProcessResolver",
+        "ProjectARVRProProcessGroups.json",
         "ProcessGroups.json",
         "MTFH07",
         "MTFV07",
@@ -8908,7 +9313,8 @@
         "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs",
         "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs",
-        "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs"
+        "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs",
+        "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"
       ],
       "related": [
         "projects.arvr-pro",
@@ -8981,6 +9387,44 @@
       "title": "ARVRPro TCP 通讯协议",
       "source": "docs/04-api-reference/projects/project-arvr-pro-protocol.md",
       "url": "/04-api-reference/projects/project-arvr-pro-protocol",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "projects.arvr-pro-semi-auto",
+      "knowledge_type": "reference",
+      "status": "current",
+      "summary": "独立 ProjectARVRPro SemiAuto 软件的 ARVR/GECS 双 Socket、可配置指令映射、PG 成功门禁、四页签操作界面、结果解析及客户 ZIP 验证边界。",
+      "aliases": [
+        "ProjectARVRPro.SemiAuto",
+        "ARVR 半自动软件",
+        "GECS 半自动",
+        "SemiAutomaticWorkflow",
+        "semi-auto-profile.json",
+        "GecsPacketCodec",
+        "GecsClient"
+      ],
+      "code_paths": [
+        "Projects/ProjectARVRPro.SemiAuto",
+        "Scripts/publish_project_arvrpro_semi_auto.py",
+        "Scripts/publish_project_arvrpro_semi_auto.bat"
+      ],
+      "test_paths": [
+        "Test/ProjectARVRPro.SemiAuto.Tests"
+      ],
+      "related": [
+        "projects.arvr-pro-demo",
+        "projects.arvr-pro",
+        "projects.arvr-pro-protocol",
+        "projects.index"
+      ],
+      "code_scopes": [
+        "Projects/ProjectARVRPro.SemiAuto",
+        "Scripts"
+      ],
+      "domain": "projects",
+      "title": "ProjectARVRPro SemiAuto",
+      "source": "docs/04-api-reference/projects/project-arvr-pro-semi-auto.md",
+      "url": "/04-api-reference/projects/project-arvr-pro-semi-auto",
       "searchable": true
     },
     {
@@ -9141,6 +9585,8 @@
         "ProjectLUX",
         "LUXWindow",
         "ProcessMeta.SocketCode",
+        "ProjectLUXProcessGroups.json",
+        "ProcessGroups.json",
         "ARVRRecipe.json",
         "ProjectARVRProFixConfig.json",
         "ProjectLUXSummary.json",
@@ -9166,6 +9612,7 @@
       ],
       "test_paths": [
         "Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj",
+        "Test/ProjectLUX.Tests/ProcessManagerPersistenceTests.cs",
         "Test/ProjectLUX.Tests/ResultJsonPayloadStorageTests.cs"
       ],
       "related": [
@@ -9273,11 +9720,7 @@
         "Plugins/Spectrum/Help/SpectrumAboutWindow.xaml.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/AboutWindowChromeTests.cs",
-        "Test/ColorVision.UI.Tests/AboutMsgWindowTests.cs",
-        "Test/ColorVision.UI.Tests/AboutTextTests.cs",
-        "Test/Spectrum.Tests/SpectrumAboutWindowTests.cs"
+        "Test/ColorVision.UI.Tests/AboutSpectralSceneLifecycleTests.cs"
       ],
       "related": [
         "ui.themes",
@@ -9293,6 +9736,47 @@
       "title": "关于窗口：视觉展示与光谱展示",
       "source": "docs/04-api-reference/ui-components/about-exhibition.md",
       "url": "/04-api-reference/ui-components/about-exhibition",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "ui.cie-analysis",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。",
+      "aliases": [
+        "色度分析",
+        "色度分析工作台",
+        "CIE 色度图",
+        "色差计算",
+        "色域覆盖率",
+        "CIEDE2000",
+        "JNCD",
+        "CieSampleAnalysisView",
+        "CieAnalysisMath",
+        "CieGamutGeometry",
+        "WindowCIE",
+        "ManualColorGamutView"
+      ],
+      "code_paths": [
+        "UI/ColorVision.ImageEditor/Cie",
+        "Engine/ColorVision.Engine/Media/CvcieDiagramEditorTool.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/CieAnalysisTests.cs",
+        "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"
+      ],
+      "related": [
+        "ui.image-editor",
+        "engine.cvcie-results"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "UI/ColorVision.ImageEditor"
+      ],
+      "domain": "ui",
+      "title": "CIE 色度与样品分析",
+      "source": "docs/04-api-reference/ui-components/cie-analysis.md",
+      "url": "/04-api-reference/ui-components/cie-analysis",
       "searchable": true
     },
     {
@@ -9345,6 +9829,7 @@
         "UI/ColorVision.Rbac/Services/PermissionChecker.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs",
         "Test/ColorVision.UI.Tests/ModuleCatalogTests.cs",
         "Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs",
@@ -9374,8 +9859,12 @@
       "knowledge_id": "ui.configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ConfigHandler的配置路径、延迟实例、文件合并保存和重载契约；单文件替换不等于内存发布成功，重载会使旧配置引用失效。",
+      "summary": "应用设置 JSON 的备份恢复、配置路径、延迟实例、合并保存与重载；ConfigHandler单文件替换不等于内存发布成功，重载会使旧配置引用失效。",
       "aliases": [
+        "应用设置",
+        "软件设置",
+        "设置备份",
+        "备份恢复",
         "配置文件在哪里",
         "改了配置文件为什么没生效",
         "配置导出缺少项目",
@@ -9386,6 +9875,9 @@
         "ConfigHandler",
         "ConfigService",
         "SaveConfigs",
+        "BackupConfigs",
+        "LoadConfigs",
+        "LoadDefaultConfigs",
         "Reload",
         "ReloadFromDisk",
         "ConfigsReloaded",
@@ -9413,6 +9905,7 @@
         "ui.wizards",
         "ui.menus",
         "ui.property-grid",
+        "ui.storage-maintenance",
         "operations.exports",
         "operations.device-configuration"
       ],
@@ -9480,7 +9973,9 @@
         "OpenCVMediaHelper",
         "ImageCompute",
         "NativeLogBridge",
-        "原生日志初始化"
+        "原生日志初始化",
+        "BmwSfrAnalyzer",
+        "SfrChromaticAberration"
       ],
       "code_paths": [
         "UI/ColorVision.Core/HImage.cs",
@@ -9490,14 +9985,18 @@
         "UI/ColorVision.Core/ImageCompute.cs",
         "UI/ColorVision.Core/NativeLogBridge.cs",
         "UI/ColorVision.Core/ColorVision.Core.csproj",
-        "UI/ColorVision.Core/README.md"
+        "UI/ColorVision.Core/README.md",
+        "UI/ColorVision.Core/BmwSfrAnalyzer.cs",
+        "UI/ColorVision.Core/SfrChromaticAberration.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/HImageAbiTests.cs",
         "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs",
         "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
-        "Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"
+        "Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs",
+        "Test/ColorVision.UI.Tests/BmwSfrAnalysisTests.cs",
+        "Test/CameraTest.Tests/ChromaticAberrationTests.cs"
       ],
       "related": [
         "ui.index",
@@ -9519,7 +10018,7 @@
       "knowledge_id": "ui.database",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL 连接配置、业务 DAO 与批 SQL 的失败边界，以及旧插件注册的二进制兼容。",
+      "summary": "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。",
       "aliases": [
         "数据库操作",
         "数据库浏览器",
@@ -9532,15 +10031,21 @@
         "MySqlControl",
         "BatchExecuteNonQuery",
         "数据库事务回滚",
-        "LegacyDatabaseBrowserRegistration"
+        "LegacyDatabaseBrowserRegistration",
+        "ColorVision.Local.db",
+        "POI 本地模板",
+        "PoiTemplateStorage"
       ],
       "code_paths": [
         "UI/ColorVision.Database",
-        "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs"
+        "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs",
+        "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs",
+        "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs",
-        "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs"
+        "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs",
+        "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs"
       ],
       "related": [
         "ui.database-query",
@@ -9552,6 +10057,7 @@
         "flow.session"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.Database"
       ],
       "domain": "ui",
@@ -9854,8 +10360,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs",
-        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs",
-        "Test/ColorVision.UI.Tests/AvalonDockThemeBindingTests.cs"
+        "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"
       ],
       "related": [
         "ui.solution",
@@ -10044,9 +10549,17 @@
         "ModelViewer3DControl",
         "ModelViewer3DModel",
         "Window3D",
-        "HeightMapPixelSampler"
+        "HeightMapPixelSampler",
+        "ImageGroupNavigation",
+        "VideoPlaybackSession",
+        "ImageSnapshotCapture",
+        "ImageDrawingPresentation",
+        "ImageContextMenuComposer"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Cie",
+        "UI/ColorVision.ImageEditor/Zoombox.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/FullScreen",
         "UI/ColorVision.ImageEditor/ImageView.xaml",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
         "UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs",
@@ -10073,9 +10586,20 @@
         "UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs",
         "UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs",
-        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs"
+        "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
+        "UI/ColorVision.ImageEditor/ImageEditorSession.cs",
+        "UI/ColorVision.ImageEditor/Documents",
+        "UI/ColorVision.ImageEditor/Presentation",
+        "UI/ColorVision.ImageEditor/Output",
+        "UI/ColorVision.ImageEditor/Navigation",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs",
+        "UI/ColorVision.ImageEditor/Tooling/ImageContextMenuComposer.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoPlaybackSession.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoPlaybackBackend.cs",
+        "UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/WindowFullScreenTests.cs",
         "Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs",
@@ -10087,7 +10611,14 @@
         "Test/ColorVision.UI.Tests/VideoLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs",
         "Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs",
-        "Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs"
+        "Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs",
+        "Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs",
+        "Test/HeightMap.Validation/Program.cs",
+        "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
+        "Test/ColorVision.UI.Tests/VideoPlaybackSessionTests.cs",
+        "Test/ColorVision.UI.Tests/DrawCanvasTests.cs"
       ],
       "related": [
         "ui.discovery",
@@ -10113,9 +10644,11 @@
       "knowledge_id": "ui.image-editor-context",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "ImageEditor 的状态归属、扩展构造、工具刷新与临时 ROI 有效期；手动选区支持白色/矢量画布，像素算法仍需真实图像。",
+      "summary": "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。",
       "aliases": [
         "图像编辑器上下文",
+        "ImageView重构",
+        "状态归属",
         "工具栏刷新",
         "配置作用域",
         "临时ROI",
@@ -10126,6 +10659,14 @@
         "矢量画布布点",
         "EditorContext",
         "ImageProcessingContext",
+        "ImageDocument",
+        "ImageEditorSession",
+        "ImagePresentation",
+        "ImageStreamPresentation",
+        "ImageDisplayEffects",
+        "ImageShaderPresentation",
+        "ImageOperationCoordinator",
+        "CommitSourcePixels",
         "ImageViewConfig",
         "ImageViewPropertyScope",
         "IEditorToolFactory",
@@ -10138,7 +10679,14 @@
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/ARCHITECTURE.md",
-        "UI/ColorVision.ImageEditor/Abstractions/IRealtimePseudoColorService.cs",
+        "UI/ColorVision.ImageEditor/Documents",
+        "UI/ColorVision.ImageEditor/ImageEditorSession.cs",
+        "UI/ColorVision.ImageEditor/Presentation",
+        "UI/ColorVision.ImageEditor/Operations",
+        "UI/ColorVision.ImageEditor/Output",
+        "UI/ColorVision.ImageEditor/Tooling",
+        "UI/ColorVision.ImageEditor/Navigation",
+        "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs",
         "UI/ColorVision.ImageEditor/EditorContext.cs",
         "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs",
         "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
@@ -10147,11 +10695,16 @@
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
         "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs",
         "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",
-        "UI/ColorVision.UI/AssemblyHandler.cs"
+        "UI/ColorVision.UI/AssemblyHandler.cs",
+        "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs",
+        "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs",
         "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
       ],
       "related": [
@@ -10202,14 +10755,14 @@
         "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs",
         "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs",
         "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs",
-        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs"
+        "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageSettingsScopeTests.cs",
         "Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs",
-        "Test/ColorVision.UI.Tests/DrawingVisualScaleHostTests.cs",
-        "Test/ColorVision.UI.Tests/RealtimePseudoColorServiceTests.cs",
-        "Test/ColorVision.UI.Tests/SelectEditorRenderOptimizationTests.cs"
+        "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"
       ],
       "related": [
         "ui.image-editor",
@@ -10246,17 +10799,23 @@
         "HImageExtension",
         "ForHImage",
         "ToHImage",
-        "NotifySourcePixelsChanged"
+        "NotifySourcePixelsChanged",
+        "ImageDocument",
+        "CommitSourcePixels"
       ],
       "code_paths": [
         "UI/ColorVision.Core/SourceImageFrame.cs",
         "UI/ColorVision.Core/HImage.cs",
         "UI/ColorVision.Core/HImageExtension.cs",
-        "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
+        "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs",
+        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs",
-        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"
+        "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
+        "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs",
+        "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"
       ],
       "related": [
         "ui.core",
@@ -10278,7 +10837,7 @@
       "knowledge_id": "ui.image-fusion",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "景深融合的文件准备、CPU/CUDA执行、结果另存与计时；自动模式不做失败回退，关窗不取消计算，GPU的2–4张输入存在越界风险。",
+      "summary": "景深融合窗口与本地流程节点共用文件执行器；输入顺序、CPU/CUDA门禁、取消、结果保存及下游图像交接。",
       "aliases": [
         "景深融合",
         "执行融合",
@@ -10293,9 +10852,16 @@
         "M_Fusion",
         "CM_Fusion",
         "CM_Fusion_Async",
-        "融合耗时"
+        "融合耗时",
+        "FileFusion",
+        "LocalFileFusionNode",
+        "流程景深融合",
+        "有序文件列表"
       ],
       "code_paths": [
+        "UI/ColorVision.Core/FileFusion.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFileFusionNode.cs",
+        "Engine/ColorVision.Engine/Services/Images/FileFusion/FileFusionServices.cs",
         "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml",
         "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml.cs",
         "UI/ColorVision.ImageTools/Fusion/FusionFolderMenuContribution.cs",
@@ -10312,6 +10878,8 @@
         "Native/opencv_cuda/cudamath.h"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/FileFusionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFileFusionNodeTests.cs",
         "Test/opencv_helper_test/test_find_luminous_area.cpp",
         "Test/opencv_helper_test/test_cuda_fusion.cpp"
       ],
@@ -10323,6 +10891,7 @@
         "engine.native-integration"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "Native/include",
         "Native/opencv_cuda",
         "Native/opencv_helper",
@@ -10458,6 +11027,12 @@
         "卫星资源"
       ],
       "code_paths": [
+        "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs",
+        "Engine/ST.Library.UI/Lang.cs",
+        "Engine/FlowEngineLib/FlowEngineLocalization.cs",
+        "Engine/ColorVision.Engine/EngineLocalization.cs",
+        "Engine/ColorVision.Engine/Properties/Resources.en.resx",
+        "Engine/ColorVision.Engine/Properties/Resources.zh-Hant.resx",
         "UI/ColorVision.UI/Languages",
         "UI/ColorVision.UI/Properties/Resources.resx",
         "UI/ColorVision.UI/Properties/Resources.en.resx",
@@ -10486,6 +11061,9 @@
       "code_scopes": [
         "ColorVision",
         "ColorVision/Copilot",
+        "Engine/ColorVision.Engine",
+        "Engine/FlowEngineLib",
+        "Engine/ST.Library.UI",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"
       ],
@@ -10671,7 +11249,7 @@
         "PropertyEditorWindow",
         "FlowPropertyEditorRegistry",
         "FlowNodePropertyEditorRegistration",
-        "FlowNodePropertyEditorAttribute",
+        "FlowTemplatePropertiesEditors",
         "取消修改",
         "关闭回滚",
         "枚举下拉显示英文",
@@ -10693,17 +11271,21 @@
         "UI/ColorVision.Common/Utilities/EnumUtils.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs",
         "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs",
+        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
+        "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs",
         "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs",
-        "Test/ColorVision.UI.Tests/PropertyEditorWindowTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/ListEditorTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/CommandPanelTests.cs",
         "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"
       ],
@@ -10929,7 +11511,6 @@
         "Test/ColorVision.UI.Tests/SearchWindowHostTests.cs",
         "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs",
         "Test/ColorVision.UI.Tests/TemplateSearchProviderTests.cs",
-        "Test/ColorVision.UI.Tests/WpfResourceEmbeddingTests.cs",
         "Test/ColorVision.UI.Tests/FlowSafeSearchSidecarTests.cs",
         "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceSearchTests.cs",
@@ -11076,8 +11657,7 @@
         "Test/ColorVision.UI.Tests/SocketShutdownTests.cs",
         "Test/ColorVision.UI.Tests/SocketManagerProjectionTests.cs",
         "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs",
-        "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs",
-        "Test/ColorVision.UI.Tests/SocketManagerWindowLayoutTests.cs"
+        "Test/ColorVision.UI.Tests/SocketMessageAsyncProjectionTests.cs"
       ],
       "related": [
         "ui.index",
@@ -11206,6 +11786,8 @@
       "status": "current",
       "summary": "Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。",
       "aliases": [
+        "ReadOnlySqliteDatabase",
+        "现场SQLite只读",
         "SQLite文本压缩",
         "gzip正文",
         "明文迁移",
@@ -11227,6 +11809,7 @@
         "FlowDiagnosticsSqliteCleanupProvider"
       ],
       "code_paths": [
+        "UI/ColorVision.Database/ReadOnlySqliteDatabase.cs",
         "UI/ColorVision.Database/GzipTextPayloadCodec.cs",
         "UI/ColorVision.Database/SqliteGzipTextPayloadStore.cs",
         "UI/ColorVision.Database/SqliteGzipTextMigration.cs",
@@ -11241,6 +11824,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Diagnostics/FlowNodeRecordDataBaseHelper.cs"
       ],
       "test_paths": [
+        "Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs",
         "Test/ColorVision.UI.Tests/SqliteGzipTextMigrationTests.cs",
         "Test/ColorVision.UI.Tests/SocketMessageStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowNodeMessageStorageTests.cs",
@@ -11525,17 +12109,8 @@
         "ColorVision/CompactMainWindow.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/StartupThemeBootstrapTests.cs",
-        "Test/ColorVision.Themes.Tests/ThemeResourceTests.cs",
         "Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs",
-        "Test/ColorVision.UI.Tests/ThemeSettingsTests.cs",
-        "Test/ColorVision.UI.Tests/StartupThemeSettingsTests.cs",
-        "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartWindowThemeLifecycleTests.cs",
-        "Test/ColorVision.UI.Tests/StartupPresentationTests.cs",
-        "Test/ColorVision.UI.Tests/GridViewColumnHeaderBindingTests.cs",
-        "Test/ColorVision.UI.Tests/ComboBoxItemBindingTests.cs",
-        "Test/ColorVision.UI.Tests/MenuThemeTests.cs"
+        "Test/ColorVision.UI.Tests/ThemeSubscriptionLifecycleTests.cs"
       ],
       "related": [
         "ui.index",
@@ -11586,9 +12161,13 @@
         "UI/ColorVision.Common/Interfaces/Window/WindowConfig.cs",
         "UI/ColorVision.UI/AssemblyHandler.cs",
         "ColorVision/App.xaml.cs",
-        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs"
+        "ColorVision/Wizards/RecommendedSoftwareWizardStep.cs",
+        "ColorVision/Wizards/CameraDriverWizardStep.cs",
+        "ColorVision/ToolPlugins/CameraDriver",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/CameraDriverInstallationService.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CameraDriverWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/RecommendedSoftwareWizardStepTests.cs",
         "Test/ColorVision.UI.Tests/StartupMaintenanceLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/WizardWindowRuntimeTests.cs"
@@ -11602,7 +12181,9 @@
       ],
       "code_scopes": [
         "ColorVision",
+        "ColorVision/ToolPlugins",
         "ColorVision/Wizards",
+        "Engine/ColorVision.Engine",
         "UI/ColorVision.Common",
         "UI/ColorVision.UI",
         "UI/ColorVision.UI.Desktop"

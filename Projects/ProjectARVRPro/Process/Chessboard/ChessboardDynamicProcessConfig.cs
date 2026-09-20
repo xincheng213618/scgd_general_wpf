@@ -1,3 +1,4 @@
+using ColorVision.Engine.Media;
 using System.ComponentModel;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.KeyedResults;
@@ -47,6 +48,13 @@ namespace ProjectARVRPro.Process.Chessboard
         [Description("棋盘格结果显示格式")]
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";
+
+        [Category("显示配置")]
+        [DisplayName("显示内容")]
+        [Description("选择棋盘格关注点图层显示的字段和小数位；仅影响结果图绘制。")]
+        [PropertyEditorType(typeof(CvcieTemplatePropertiesEditor))]
+        public string DisplayTemplate { get => _DisplayTemplate; set { _DisplayTemplate = value ?? string.Empty; OnPropertyChanged(); } }
+        private string _DisplayTemplate = PoiDisplayTemplateDefaults.Luminance;
 
         [Category("输出配置")]
         [DisplayName("输出Key")]

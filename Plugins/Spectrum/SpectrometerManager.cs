@@ -20,6 +20,12 @@ using System.Text;
 
 namespace Spectrum
 {
+    public enum AutoDarkControlMode
+    {
+        Shutter,
+        FilterWheel
+    }
+
     [DisplayName("EmissionSP100设置")]
     public class SetEmissionSP100Config : ViewModelBase, IConfig
     {
@@ -104,6 +110,23 @@ namespace Spectrum
 
     public class AutodarkParam : ViewModelBase,IConfig
     {
+        [DisplayName("AutoDarkControlMode")]
+        public AutoDarkControlMode ControlMode
+        {
+            get => _ControlMode;
+            set { _ControlMode = value; OnPropertyChanged(); }
+        }
+        private AutoDarkControlMode _ControlMode = AutoDarkControlMode.Shutter;
+
+        [DisplayName("FilterWheelDarkPosition")]
+        [PropertyVisibility(nameof(ControlMode), AutoDarkControlMode.FilterWheel)]
+        public int FilterWheelDarkPosition
+        {
+            get => _FilterWheelDarkPosition;
+            set { _FilterWheelDarkPosition = value; OnPropertyChanged(); }
+        }
+        private int _FilterWheelDarkPosition = -1;
+
         [DisplayName("起始时间(ms)")]
         public float fTimeStart { get => _fTimeStart; set { _fTimeStart = value; OnPropertyChanged(); OnPropertyChanged(nameof(nEndTime)); } }
         private float _fTimeStart = 50f;
@@ -208,6 +231,7 @@ namespace Spectrum
         private int calibrationRequestVersion;
         private bool calibrationLoadInProgress;
         private int pendingCalibrationConfigurationVersion;
+        private int suppressFilterWheelCalibrationSwitchCount;
 
         public const int CalibrationUnavailable = int.MinValue + 1;
 
@@ -267,10 +291,11 @@ namespace Spectrum
         private string _LastOperationError = string.Empty;
 
         public const int ShutterOperationFailed = int.MinValue + 2;
+        public const int FilterWheelOperationFailed = int.MinValue + 3;
 
         public string GetOperationErrorMessage(int resultCode)
         {
-            return resultCode is CalibrationUnavailable or ShutterOperationFailed
+            return resultCode is CalibrationUnavailable or ShutterOperationFailed or FilterWheelOperationFailed
                 ? LastOperationError
                 : Spectrometer.GetErrorMessage(resultCode);
         }
@@ -1023,6 +1048,12 @@ namespace Spectrum
         /// </summary>
         private void OnFilterWheelPositionChanged(int position)
         {
+            if (Volatile.Read(ref suppressFilterWheelCalibrationSwitchCount) > 0)
+            {
+                log.Debug($"滤光轮临时切换至 {position}，保持当前测量标定组不变");
+                return;
+            }
+
             // First try to find a group by FilterWheelPosition
             string? groupName;
             string? ndName;
@@ -1499,12 +1530,12 @@ namespace Spectrum
         }
 
         /// <summary>
-        /// 执行校零操作，自动处理快门控制
+        /// 执行校零操作，按配置自动处理快门或滤色轮遮光控制
         /// 可被定时任务和Socket指令共享调用
         /// </summary>
         /// <returns>校零结果：1=成功，其他=失败</returns>
         public async Task<int> PerformDarkCalibrationAsync(
-            bool requireShutter = false,
+            bool requireAutomaticControl = false,
             CancellationToken cancellationToken = default)
         {
             var operation = await TryRunExclusiveAsync(
@@ -1514,7 +1545,10 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
-                    (int result, string error) = await CaptureDarkWithShutterCoreAsync(requireShutter, token).ConfigureAwait(false);
+                    (int result, string error) = await ExecuteDarkOperationWithConfiguredControlCoreAsync(
+                        requireAutomaticControl,
+                        token,
+                        () => Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData)).ConfigureAwait(false);
                     LastOperationError = error;
                     return result;
                 }, CancellationToken.None),
@@ -1523,12 +1557,52 @@ namespace Spectrum
             return operation.Entered ? operation.Result : OperationBusy;
         }
 
-        private async Task<(int Result, string Error)> CaptureDarkWithShutterCoreAsync(
-            bool requireShutter,
-            CancellationToken cancellationToken)
+        public bool TryGetAutomaticDarkControlReady(out string errorMessage)
+        {
+            if (AutodarkParam.ControlMode == AutoDarkControlMode.FilterWheel)
+            {
+                if (!FilterWheelController.IsConnected)
+                {
+                    errorMessage = "滤色轮未连接，无法自动校零";
+                    return false;
+                }
+                if (AutodarkParam.FilterWheelDarkPosition is < 0 or > 4)
+                {
+                    errorMessage = "请在自动校零参数中设置滤色轮遮光孔位（0-4）";
+                    return false;
+                }
+
+                errorMessage = string.Empty;
+                return true;
+            }
+
+            if (!ShutterController.IsConnected)
+            {
+                errorMessage = Properties.Resources.NoShutterAutoZero;
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        private Task<(int Result, string Error)> ExecuteDarkOperationWithConfiguredControlCoreAsync(
+            bool requireAutomaticControl,
+            CancellationToken cancellationToken,
+            Func<int> darkOperation)
+        {
+            return AutodarkParam.ControlMode == AutoDarkControlMode.FilterWheel
+                ? ExecuteDarkOperationWithFilterWheelCoreAsync(requireAutomaticControl, cancellationToken, darkOperation)
+                : ExecuteDarkOperationWithShutterCoreAsync(requireAutomaticControl, cancellationToken, darkOperation);
+        }
+
+        private async Task<(int Result, string Error)> ExecuteDarkOperationWithShutterCoreAsync(
+            bool requireAutomaticControl,
+            CancellationToken cancellationToken,
+            Func<int> darkOperation)
         {
             bool shouldControlShutter = ShutterController.IsConnected;
-            if (requireShutter && !shouldControlShutter)
+            if (requireAutomaticControl && !shouldControlShutter)
                 return (ShutterOperationFailed, Properties.Resources.NoShutterAutoZero);
 
             if (shouldControlShutter)
@@ -1555,7 +1629,7 @@ namespace Spectrum
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                result = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+                result = darkOperation();
             }
             finally
             {
@@ -1573,6 +1647,88 @@ namespace Spectrum
             return result == 1
                 ? (1, string.Empty)
                 : (result, $"校零失败: {Spectrometer.GetErrorMessage(result)}");
+        }
+
+        internal async Task<(int Result, string Error)> ExecuteDarkOperationWithFilterWheelCoreAsync(
+            bool requireAutomaticControl,
+            CancellationToken cancellationToken,
+            Func<int> darkOperation)
+        {
+            bool shouldControlFilterWheel = FilterWheelController.IsConnected;
+            if (requireAutomaticControl && !shouldControlFilterWheel)
+                return (FilterWheelOperationFailed, "滤色轮未连接，无法自动校零");
+            if (!shouldControlFilterWheel)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int manualResult = darkOperation();
+                return manualResult == 1
+                    ? (1, string.Empty)
+                    : (manualResult, $"校零失败: {Spectrometer.GetErrorMessage(manualResult)}");
+            }
+
+            int darkPosition = AutodarkParam.FilterWheelDarkPosition;
+            if (darkPosition is < 0 or > 4)
+                return (FilterWheelOperationFailed, "请在自动校零参数中设置滤色轮遮光孔位（0-4）");
+
+            int originalPosition = FilterWheelController.CurrentPosition;
+            if (originalPosition < 0)
+                originalPosition = await FilterWheelController.QueryPositionAsync().ConfigureAwait(false);
+            if (originalPosition is < 0 or > 4)
+                return (FilterWheelOperationFailed, "无法读取滤色轮当前孔位，校零已取消");
+            if (requireAutomaticControl && originalPosition == darkPosition)
+                return (FilterWheelOperationFailed, "滤色轮当前已在遮光孔位，无法确定校零后要恢复的测量孔位");
+
+            bool restoreRequired = originalPosition != darkPosition;
+            bool switchedToDark = !restoreRequired;
+            bool restored = true;
+            int result = FilterWheelOperationFailed;
+            string error = string.Empty;
+
+            Interlocked.Increment(ref suppressFilterWheelCalibrationSwitchCount);
+            try
+            {
+                if (restoreRequired)
+                {
+                    log.Debug($"滤色轮从测量孔位 {originalPosition} 切换到遮光孔位 {darkPosition} 进行校零");
+                    switchedToDark = await FilterWheelController.SetPositionAsync(darkPosition).ConfigureAwait(false);
+                    if (!switchedToDark)
+                    {
+                        error = string.IsNullOrWhiteSpace(FilterWheelController.LastErrorMessage)
+                            ? $"滤色轮未能切换到遮光孔位 {darkPosition}"
+                            : FilterWheelController.LastErrorMessage;
+                    }
+                }
+
+                if (switchedToDark)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    result = darkOperation();
+                    if (result != 1)
+                        error = $"校零失败: {Spectrometer.GetErrorMessage(result)}";
+                }
+            }
+            finally
+            {
+                if (restoreRequired)
+                {
+                    log.Debug($"滤色轮恢复测量孔位 {originalPosition}");
+                    restored = await FilterWheelController.SetPositionAsync(originalPosition).ConfigureAwait(false);
+                    if (!restored)
+                        log.Error($"滤色轮未能恢复测量孔位 {originalPosition}: {FilterWheelController.LastErrorMessage}");
+                }
+                Interlocked.Decrement(ref suppressFilterWheelCalibrationSwitchCount);
+            }
+
+            if (!restored)
+            {
+                string restoreError = string.IsNullOrWhiteSpace(FilterWheelController.LastErrorMessage)
+                    ? $"滤色轮未能恢复测量孔位 {originalPosition}，请检查光路"
+                    : $"{FilterWheelController.LastErrorMessage}，请检查光路";
+                return (FilterWheelOperationFailed, string.IsNullOrWhiteSpace(error) ? restoreError : $"{error}；{restoreError}");
+            }
+            if (!switchedToDark)
+                return (FilterWheelOperationFailed, $"{error}，校零已取消");
+            return result == 1 ? (1, string.Empty) : (result, error);
         }
 
         /// <summary>
@@ -1782,14 +1938,20 @@ namespace Spectrum
         public async Task<int> PerformAdaptiveDarkCalibrationAsync(CancellationToken cancellationToken = default)
         {
             var operation = await TryRunExclusiveAsync(
-                token => Task.Run(() =>
+                token => Task.Run(async () =>
                 {
                     token.ThrowIfCancellationRequested();
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
-                    return Spectrometer.CM_Emission_Init_Auto_Dark(
-                        Handle, AutodarkParam.fTimeStart, AutodarkParam.nStepTime,
-                        AutodarkParam.nStepCount, Average);
+
+                    (int result, string error) = await ExecuteDarkOperationWithConfiguredControlCoreAsync(
+                        requireAutomaticControl: false,
+                        token,
+                        () => Spectrometer.CM_Emission_Init_Auto_Dark(
+                            Handle, AutodarkParam.fTimeStart, AutodarkParam.nStepTime,
+                            AutodarkParam.nStepCount, Average)).ConfigureAwait(false);
+                    LastOperationError = error;
+                    return result;
                 }, CancellationToken.None),
                 cancellationToken).ConfigureAwait(false);
 
@@ -1913,7 +2075,10 @@ namespace Spectrum
             if (EnableAutodark)
             {
                 Stopwatch stepStopwatch = Stopwatch.StartNew();
-                (int darkResult, string darkError) = await CaptureDarkWithShutterCoreAsync(requireShutter: true, cancellationToken).ConfigureAwait(false);
+                (int darkResult, string darkError) = await ExecuteDarkOperationWithConfiguredControlCoreAsync(
+                    requireAutomaticControl: true,
+                    cancellationToken,
+                    () => Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData)).ConfigureAwait(false);
                 profile.AutoDarkDurationMs = stepStopwatch.ElapsedMilliseconds;
                 if (darkResult != 1)
                     return Failure(darkResult, darkError);
@@ -2074,6 +2239,8 @@ namespace Spectrum
                 Average,
                 GetDataConfig.FilterBW,
                 EnableAutodark,
+                AutodarkParam.ControlMode,
+                AutodarkParam.FilterWheelDarkPosition,
                 EnableAdaptiveAutoDark,
                 EnableAutoIntegration,
                 GetDataConfig.IsSyncFrequencyEnabled,

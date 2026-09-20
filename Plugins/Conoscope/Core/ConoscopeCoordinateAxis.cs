@@ -1,4 +1,4 @@
-#pragma warning disable CA1859
+﻿#pragma warning disable CA1859
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -19,7 +19,13 @@ namespace Conoscope.Core
         AzimuthLine = 0,
 
         [Display(Name = "Con_Axis_PolarCircle", ResourceType = typeof(Properties.Resources))]
-        PolarCircle = 1
+        PolarCircle = 1,
+
+        [Display(Name = "Con_Axis_FixedH", ResourceType = typeof(Properties.Resources))]
+        FixedHorizontal = 2,
+
+        [Display(Name = "Con_Axis_FixedV", ResourceType = typeof(Properties.Resources))]
+        FixedVertical = 3
     }
 
     public class ConoscopeCoordinateReferenceChangedEventArgs : EventArgs
@@ -46,7 +52,7 @@ namespace Conoscope.Core
     {
         [Browsable(false), JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
-        private Pen _Pen = new Pen(Brushes.Yellow, 1.0);
+        private Pen _Pen = new Pen(new SolidColorBrush(Color.FromArgb(112, 226, 232, 240)), 0.75);
 
         [Display(Name = "Con_Axis_EnableInteract", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public bool IsInteractionEnabled { get => _IsInteractionEnabled; set { _IsInteractionEnabled = value; OnPropertyChanged(); } }
@@ -86,11 +92,11 @@ namespace Conoscope.Core
 
         [Display(Name = "Con_Axis_LineWidth", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources))]
         public double LineWidth { get => _LineWidth; set { _LineWidth = Math.Max(0.1, value); OnPropertyChanged(); } }
-        private double _LineWidth = 1.0;
+        private double _LineWidth = 0.75;
 
         [Display(Name = "Con_Axis_Color", GroupName = "Con_Category_CoordAxis", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush AxisBrush { get => _AxisBrush; set { _AxisBrush = value; OnPropertyChanged(); if (Pen != null) Pen.Brush = value; } }
-        private Brush _AxisBrush = Brushes.Yellow;
+        private Brush _AxisBrush = new SolidColorBrush(Color.FromArgb(112, 226, 232, 240));
 
         [Display(Name = "Con_Axis_RefMode", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public ConoscopeCoordinateReferenceMode ReferenceMode { get => _ReferenceMode; set { _ReferenceMode = value; OnPropertyChanged(); } }
@@ -104,13 +110,21 @@ namespace Conoscope.Core
         public double ReferenceRadiusAngle { get => _ReferenceRadiusAngle; set { _ReferenceRadiusAngle = value; OnPropertyChanged(); } }
         private double _ReferenceRadiusAngle = 30;
 
+        [Display(Name = "Con_Axis_RefH", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
+        public double ReferenceHorizontalAngle { get => _ReferenceHorizontalAngle; set { _ReferenceHorizontalAngle = value; OnPropertyChanged(); } }
+        private double _ReferenceHorizontalAngle;
+
+        [Display(Name = "Con_Axis_RefV", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
+        public double ReferenceVerticalAngle { get => _ReferenceVerticalAngle; set { _ReferenceVerticalAngle = value; OnPropertyChanged(); } }
+        private double _ReferenceVerticalAngle;
+
         [Display(Name = "Con_Axis_RefLineWidth", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources))]
         public double ReferenceLineWidth { get => _ReferenceLineWidth; set { _ReferenceLineWidth = Math.Max(0.1, value); OnPropertyChanged(); } }
-        private double _ReferenceLineWidth = 2.0;
+        private double _ReferenceLineWidth = 1.5;
 
         [Display(Name = "Con_Axis_RefColor", GroupName = "Con_Category_RefLine", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush ReferenceBrush { get => _ReferenceBrush; set { _ReferenceBrush = value; OnPropertyChanged(); } }
-        private Brush _ReferenceBrush = Brushes.Red;
+        private Brush _ReferenceBrush = new SolidColorBrush(Color.FromRgb(242, 139, 130));
 
         [Display(Name = "Con_Axis_ShowMask", GroupName = "Con_Category_Mask", ResourceType = typeof(Properties.Resources))]
         public bool IsMaskVisible { get => _IsMaskVisible; set { _IsMaskVisible = value; OnPropertyChanged(); } }
@@ -130,11 +144,11 @@ namespace Conoscope.Core
 
         [Display(Name = "Con_Axis_TextSize", GroupName = "Con_Category_Text", ResourceType = typeof(Properties.Resources))]
         public double FontSize { get => _FontSize; set { _FontSize = Math.Max(1, value); OnPropertyChanged(); } }
-        private double _FontSize = 24;
+        private double _FontSize = 12;
 
         [Display(Name = "Con_Axis_TextColor", GroupName = "Con_Category_Text", ResourceType = typeof(Properties.Resources)), JsonIgnore]
         public Brush TextBrush { get => _TextBrush; set { _TextBrush = value; OnPropertyChanged(); } }
-        private Brush _TextBrush = Brushes.Yellow;
+        private Brush _TextBrush = Brushes.WhiteSmoke;
 
         public static double NormalizeAzimuthAngle(double angle)
         {
@@ -203,6 +217,8 @@ namespace Conoscope.Core
             Attribute.MaxAngle = maxAngle;
             Attribute.ConoscopeCoefficient = coefficient;
             Attribute.ReferenceRadiusAngle = Clamp(Attribute.ReferenceRadiusAngle, 0, maxAngle);
+            Attribute.ReferenceHorizontalAngle = Clamp(Attribute.ReferenceHorizontalAngle, -maxAngle, maxAngle);
+            Attribute.ReferenceVerticalAngle = Clamp(Attribute.ReferenceVerticalAngle, -maxAngle, maxAngle);
             Render();
         }
 
@@ -230,6 +246,7 @@ namespace Conoscope.Core
                 DrawHorizontalVerticalReference(dc, center, referencePen);
                 dc.Pop();
                 DrawHorizontalVerticalLabels(dc, center);
+                DrawFixedReferenceLabel(dc, center);
             }
             else
             {
@@ -280,9 +297,36 @@ namespace Conoscope.Core
                 {
                     return false;
                 }
+
+                if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedHorizontal)
+                {
+                    if (Math.Abs(Attribute.ReferenceHorizontalAngle - horizontalAngle) < 0.05)
+                    {
+                        return false;
+                    }
+
+                    Attribute.ReferenceHorizontalAngle = horizontalAngle;
+                    return true;
+                }
+
+                if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedVertical)
+                {
+                    if (Math.Abs(Attribute.ReferenceVerticalAngle - verticalAngle) < 0.05)
+                    {
+                        return false;
+                    }
+
+                    Attribute.ReferenceVerticalAngle = verticalAngle;
+                    return true;
+                }
             }
             else
             {
+                if (Attribute.ReferenceMode is ConoscopeCoordinateReferenceMode.FixedHorizontal or ConoscopeCoordinateReferenceMode.FixedVertical)
+                {
+                    return false;
+                }
+
                 angle = GetAzimuthAngle(Center, point);
                 radiusAngle = Clamp((point - Center).Length / AxisRadius * Attribute.MaxAngle, 0, Attribute.MaxAngle);
             }
@@ -374,6 +418,20 @@ namespace Conoscope.Core
 
         private void DrawHorizontalVerticalReference(DrawingContext dc, Point center, Pen referencePen)
         {
+            if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedHorizontal)
+            {
+                double x = center.X + AxisRadius * Attribute.ReferenceHorizontalAngle / Attribute.MaxAngle;
+                dc.DrawLine(referencePen, new Point(x, center.Y - AxisRadius), new Point(x, center.Y + AxisRadius));
+                return;
+            }
+
+            if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedVertical)
+            {
+                double y = center.Y - AxisRadius * Attribute.ReferenceVerticalAngle / Attribute.MaxAngle;
+                dc.DrawLine(referencePen, new Point(center.X - AxisRadius, y), new Point(center.X + AxisRadius, y));
+                return;
+            }
+
             StreamGeometry geometry = new StreamGeometry();
             using (StreamGeometryContext context = geometry.Open())
             {
@@ -424,7 +482,7 @@ namespace Conoscope.Core
                 return;
             }
 
-            double ratio = Math.Max(Ratio, 1);
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
             double step = Math.Max(1, Attribute.PolarStep);
             for (double angle = -Attribute.MaxAngle; angle <= Attribute.MaxAngle + 0.001; angle += step)
             {
@@ -436,29 +494,40 @@ namespace Conoscope.Core
                 double offset = AxisRadius * angle / Attribute.MaxAngle;
                 string text = $"{angle:F0}°";
                 FormattedText formattedText = CreateFormattedText(text, Attribute.TextBrush);
-                DrawOutlinedTextClamped(
+                DrawOutlinedText(
                     dc,
                     text,
                     new Point(center.X + offset - formattedText.Width / 2, center.Y + 4 / ratio),
-                    formattedText);
-                DrawOutlinedTextClamped(
+                    Attribute.TextBrush);
+                DrawOutlinedText(
                     dc,
                     text,
                     new Point(center.X + 4 / ratio, center.Y - offset - formattedText.Height / 2),
-                    formattedText);
+                    Attribute.TextBrush);
             }
 
             DrawOutlinedText(dc, "H", new Point(center.X + AxisRadius - 22 / ratio, center.Y - 26 / ratio), Attribute.TextBrush);
             DrawOutlinedText(dc, "V", new Point(center.X - 26 / ratio, center.Y - AxisRadius + 4 / ratio), Attribute.TextBrush);
         }
 
-        private void DrawOutlinedTextClamped(DrawingContext dc, string text, Point desiredOrigin, FormattedText formattedText)
+        private void DrawFixedReferenceLabel(DrawingContext dc, Point center)
         {
-            double margin = 3 / Math.Max(Ratio, 1);
-            Point origin = new Point(
-                Clamp(desiredOrigin.X, margin, Math.Max(margin, ActualWidth - formattedText.Width - margin)),
-                Clamp(desiredOrigin.Y, margin, Math.Max(margin, ActualHeight - formattedText.Height - margin)));
-            DrawOutlinedText(dc, text, origin, Attribute.TextBrush);
+            if (!Attribute.IsTextVisible)
+            {
+                return;
+            }
+
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
+            if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedHorizontal)
+            {
+                double x = center.X + AxisRadius * Attribute.ReferenceHorizontalAngle / Attribute.MaxAngle;
+                DrawOutlinedText(dc, $"H={Attribute.ReferenceHorizontalAngle:F1}°", new Point(x + 12 / ratio, center.Y - 26 / ratio), Attribute.ReferenceBrush);
+            }
+            else if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.FixedVertical)
+            {
+                double y = center.Y - AxisRadius * Attribute.ReferenceVerticalAngle / Attribute.MaxAngle;
+                DrawOutlinedText(dc, $"V={Attribute.ReferenceVerticalAngle:F1}°", new Point(center.X + 12 / ratio, y + 12 / ratio), Attribute.ReferenceBrush);
+            }
         }
 
         private Point GetHorizontalVerticalPoint(Point center, double polarAngle, double azimuthAngle)
@@ -520,6 +589,11 @@ namespace Conoscope.Core
 
         private void DrawReference(DrawingContext dc, Point center, Pen referencePen)
         {
+            if (Attribute.ReferenceMode is ConoscopeCoordinateReferenceMode.FixedHorizontal or ConoscopeCoordinateReferenceMode.FixedVertical)
+            {
+                return;
+            }
+
             if (Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine)
             {
                 var endpoints = GetAzimuthLineEndpoints(center, AxisRadius, Attribute.ReferenceAngle);
@@ -537,23 +611,24 @@ namespace Conoscope.Core
             }
 
             string text = Attribute.ReferenceMode == ConoscopeCoordinateReferenceMode.AzimuthLine
-                ? $"{Attribute.ReferenceAngle:F1}(A)"
-                : $"{Attribute.ReferenceRadiusAngle:F1}(R)";
-            DrawText(dc, text, center + new Vector(12 / Math.Max(Ratio, 1), 12 / Math.Max(Ratio, 1)), Attribute.ReferenceBrush);
+                ? $"φ {Attribute.ReferenceAngle:F1}°"
+                : $"θ {Attribute.ReferenceRadiusAngle:F1}°";
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
+            DrawOutlinedText(dc, text, center + new Vector(12 / ratio, 12 / ratio), Attribute.ReferenceBrush);
         }
 
         private void DrawAngleLabel(DrawingContext dc, Point center, double angle)
         {
-            Point labelPoint = GetPointOnAxis(center, AxisRadius + 18 / Math.Max(Ratio, 1), angle);
-            string text = $"{angle:F0}(A)";
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
+            double radians = angle * Math.PI / 180;
+            Point labelPoint = GetPointOnAxis(center, Math.Max(0, AxisRadius - 8 / ratio), angle);
+            string text = $"{angle:F0}°";
             FormattedText formattedText = CreateFormattedText(text, Attribute.TextBrush);
-            Point origin = new Point(labelPoint.X - formattedText.Width / 2, labelPoint.Y - formattedText.Height / 2);
+            // Anchor the label toward the circle interior so a fitted image keeps cardinal labels visible.
+            Point origin = new Point(
+                labelPoint.X - formattedText.Width * (1 + Math.Cos(radians)) / 2,
+                labelPoint.Y - formattedText.Height * (1 - Math.Sin(radians)) / 2);
             DrawOutlinedText(dc, text, origin, Attribute.TextBrush);
-        }
-
-        private void DrawText(DrawingContext dc, string text, Point point, Brush brush)
-        {
-            DrawOutlinedText(dc, text, point, brush);
         }
 
         private void DrawOutlinedText(DrawingContext dc, string text, Point origin, Brush brush)
@@ -563,14 +638,19 @@ namespace Conoscope.Core
                 return;
             }
 
+            double ratio = Ratio <= double.Epsilon ? 1 : Ratio;
+            FormattedText mainText = CreateFormattedText(text, brush);
+            double margin = 3 / ratio;
+            origin = new Point(
+                Clamp(origin.X, margin, Math.Max(margin, ActualWidth - mainText.Width - margin)),
+                Clamp(origin.Y, margin, Math.Max(margin, ActualHeight - mainText.Height - margin)));
             FormattedText outlineText = CreateFormattedText(text, TextOutlineBrush);
-            double offset = 1.25 / Math.Max(Ratio, 1);
+            double offset = 0.65 / ratio;
             foreach (Vector direction in TextOutlineDirections)
             {
                 dc.DrawText(outlineText, origin + direction * offset);
             }
 
-            FormattedText mainText = CreateFormattedText(text, brush);
             dc.DrawText(mainText, origin);
         }
 

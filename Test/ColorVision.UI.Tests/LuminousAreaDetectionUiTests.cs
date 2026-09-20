@@ -43,7 +43,7 @@ public sealed class LuminousAreaDetectionUiTests
     }
 
     [Fact]
-    public void ImageEditorAndPoiConfigurationsRoundTripBothDetectionModes()
+    public void ImageEditorAndPoiConfigurationsRoundTripDetectionModes()
     {
         GraphicEditingConfig editor = new();
         editor.FindLuminousArea.Algorithm = LuminousAreaDetectionMode.Legacy;
@@ -58,6 +58,8 @@ public sealed class LuminousAreaDetectionUiTests
         poi.FindLuminousAreaCorner.Algorithm = LuminousAreaDetectionMode.Legacy;
         poi.FindLuminousAreaCorner.Threshold = 42;
         poi.FindLuminousAreaCorner.UseRotatedRect = true;
+        editor.FindLuminousAreaCorner.Algorithm = LuminousAreaDetectionMode.FovLuminanceBoundary;
+        editor.FindLuminousAreaCorner.LuminanceBoundaryRatio = 0.42;
 
         GraphicEditingConfig restoredEditor = JsonConvert.DeserializeObject<GraphicEditingConfig>(
             JsonConvert.SerializeObject(editor))!;
@@ -67,8 +69,9 @@ public sealed class LuminousAreaDetectionUiTests
         Assert.Equal(LuminousAreaDetectionMode.Legacy, restoredEditor.FindLuminousArea.Algorithm);
         Assert.Equal(31, restoredEditor.FindLuminousArea.Threshold);
         Assert.False(restoredEditor.FindLuminousArea.UseRotatedRect);
-        Assert.Equal(LuminousAreaDetectionMode.RobustV2, restoredEditor.FindLuminousAreaCorner.Algorithm);
+        Assert.Equal(LuminousAreaDetectionMode.FovLuminanceBoundary, restoredEditor.FindLuminousAreaCorner.Algorithm);
         Assert.Equal(0.63, restoredEditor.FindLuminousAreaCorner.MinConfidence, 8);
+        Assert.Equal(0.42, restoredEditor.FindLuminousAreaCorner.LuminanceBoundaryRatio, 8);
         Assert.Equal(LuminousAreaDetectionMode.RobustV2, restoredPoi.FindLuminousArea.Algorithm);
         Assert.Equal(0.71, restoredPoi.FindLuminousArea.MinConfidence, 8);
         Assert.Equal(LuminousAreaDetectionMode.Legacy, restoredPoi.FindLuminousAreaCorner.Algorithm);
@@ -141,11 +144,13 @@ public sealed class LuminousAreaDetectionUiTests
         PropertyVisibilityAttribute thresholdVisibility = GetVisibility(nameof(FindLuminousAreaCorner.Threshold));
         PropertyVisibilityAttribute rotatedRectVisibility = GetVisibility(nameof(FindLuminousAreaCorner.UseRotatedRect));
         PropertyVisibilityAttribute confidenceVisibility = GetVisibility(nameof(FindLuminousAreaCorner.MinConfidence));
+        PropertyVisibilityAttribute boundaryRatioVisibility = GetVisibility(nameof(FindLuminousAreaCorner.LuminanceBoundaryRatio));
 
         Assert.Equal(nameof(FindLuminousAreaCorner.Algorithm), thresholdVisibility.PropertyName);
         Assert.Equal(LuminousAreaDetectionMode.Legacy, thresholdVisibility.ExpectedValue);
         Assert.Equal(LuminousAreaDetectionMode.Legacy, rotatedRectVisibility.ExpectedValue);
         Assert.Equal(LuminousAreaDetectionMode.RobustV2, confidenceVisibility.ExpectedValue);
+        Assert.Equal(LuminousAreaDetectionMode.FovLuminanceBoundary, boundaryRatioVisibility.ExpectedValue);
     }
 
     [Fact]
@@ -155,6 +160,7 @@ public sealed class LuminousAreaDetectionUiTests
         [
             nameof(FindLuminousAreaCorner.Algorithm),
             nameof(FindLuminousAreaCorner.MinConfidence),
+            nameof(FindLuminousAreaCorner.LuminanceBoundaryRatio),
             nameof(FindLuminousAreaCorner.Threshold),
             nameof(FindLuminousAreaCorner.UseRotatedRect)
         ];

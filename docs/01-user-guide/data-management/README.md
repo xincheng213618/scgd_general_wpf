@@ -22,6 +22,7 @@ ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消�
 | 软件设置与界面配置 | `ConfigHandler.ConfigFilePath` 指向配置 JSON；`ConfigService` 提供配置对象 | [配置持久化与重载](../../04-api-reference/ui-components/configuration.md)、[设置导入导出](./export-import.md) |
 | Engine 设备资源与配置 | MySQL `t_scgd_sys_resource`；`SysResourceModel.Value` 对应 `txt_value` | [资源配置、保存与重启](../devices/configuration.md) |
 | 流程与关联模板 | Engine 的 `TemplateFlow` 及模板 DAO；运行图、保存模板和导出包不是一份对象 | [Flow 模板与持久化](../../04-api-reference/engine-components/template-flow-chain.md) |
+| POI 本地模板 | MySQL 未连接或列表查询失败时，`PoiTemplateStorage` 自动使用 `ColorVision.Local.db`；与服务器库独立 | [数据库基础契约](../../04-api-reference/ui-components/ColorVision.Database.md) |
 | Engine 算法历史结果 | MySQL `t_scgd_algorithm_result_master` 与所属明细 DAO；`ImgFile` / `ResultImagFile` 是路径字段 | [结果展示链路](../../04-api-reference/engine-components/result-handoff-chain.md) |
 | Engine MQTT 消息记录 | `MessagesListManager` / `MsgRecordDataBaseHelper`，路径取 `MsgRecordManagerConfig.SqliteDbPath` | [MQTT 消息契约](../../02-developer-guide/engine-development/mqtt.md) |
 | Flow 运行与节点诊断 | 旧节点写队列与 `FlowExecutionJournal` 共用 `FlowNodeRecordConfig.SqliteDbPath`，不是业务 MySQL | [Flow 运行诊断与中断恢复](../../04-api-reference/engine-components/flow-diagnostics.md) |
@@ -40,6 +41,7 @@ ColorVision 没有一个覆盖软件设置、设备资源、流程模板、消�
 
 | 模块 | 默认路径，`ApplicationData` 指 Windows 当前用户的漫游应用数据目录 |
 | --- | --- |
+| 本地模板库（当前接入 POI） | `ApplicationData/ColorVision/Config/ColorVision.Local.db` |
 | Engine MQTT 消息 | `ApplicationData/ColorVision/Config/MsgRecords.db` |
 | Flow 节点诊断 | `ApplicationData/ColorVision/Config/FlowNodeRecords.db` |
 | Socket 消息 | `ApplicationData/ColorVision/Config/SocketMessages.db` |

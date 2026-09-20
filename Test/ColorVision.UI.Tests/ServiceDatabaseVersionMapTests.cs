@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using ColorVision.Database;
 using WindowsServicePlugin.ServiceManager;
 
 namespace ColorVision.UI.Tests;
@@ -66,5 +67,23 @@ public class ServiceDatabaseVersionMapTests
         Version? version = versionText == null ? null : Version.Parse(versionText);
 
         Assert.Equal(expectedDatabase, ServiceDatabaseVersionMap.ResolveDatabaseName(version, configuredDatabase));
+    }
+
+    [Theory]
+    [InlineData(true, "color_vision_4xx", "color_vision_4xx", "ResetExisting")]
+    [InlineData(false, "color_vision_4xx", "color_vision_4xx", "InitializeMissing")]
+    [InlineData(false, "color_vision", "color_vision_4xx", "RejectMissingCrossDatabase")]
+    public void ResolveDatabaseResetPlan_InitializesOnlyMissingSameDatabase(
+        bool sourceDatabaseAvailable,
+        string sourceDatabase,
+        string targetDatabase,
+        string expected)
+    {
+        Assert.Equal(
+            expected,
+            MySqlDatabaseMaintenanceService.ResolveDatabaseResetPlan(
+                sourceDatabase,
+                targetDatabase,
+                sourceDatabaseAvailable).ToString());
     }
 }

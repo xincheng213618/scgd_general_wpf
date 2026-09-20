@@ -46,6 +46,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DisplayCameraConfig : IDisplayConfigBase
     {
+        [Category("AcquisitionDisplay"), DisplayName("使用本地相机")]
+        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光和关闭始终使用当前已打开的相机。本地自动曝光使用原生参数，不应用服务曝光模板。")]
+        public bool UseLocalCamera
+        {
+            get => _useLocalCamera;
+            set { if (_useLocalCamera == value) return; _useLocalCamera = value; OnPropertyChanged(); }
+        }
+        private bool _useLocalCamera;
+
+        [Category("AcquisitionDisplay"), DisplayName("本地取图保存文件")]
+        [Description("默认开启。主面板本地取图及 L/BV 节点本地转发保存 CVRAW；存在校正数据且启用 CIE 保存时，同时保存 CVCIE。关闭后仍显示图像并保存结果记录。")]
+        public bool SaveLocalCaptureFiles { get; set; } = true;
+
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
@@ -144,6 +157,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public float Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
         private float _Gain = 10;
 
+        [Browsable(false), JsonIgnore]
+        public bool IsGainControlledByCalibrationGroup { get => _IsGainControlledByCalibrationGroup; set { if (_IsGainControlledByCalibrationGroup == value) return; _IsGainControlledByCalibrationGroup = value; OnPropertyChanged(); } }
+        private bool _IsGainControlledByCalibrationGroup;
+
+        [Browsable(false), JsonIgnore]
+        public string GainSourceHint { get => _GainSourceHint; set { if (_GainSourceHint == value) return; _GainSourceHint = value; OnPropertyChanged(); } }
+        private string _GainSourceHint = string.Empty;
+
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
@@ -219,6 +240,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             set => _view = value;
         }
         public string DisPlayName => Device.Config.Name;
+        public string PersistenceKey => Device.Config.Code;
 
         private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptions = new();
         private readonly ObservableCollection<AutoExpTimeTemplateOption> _autoExpTimeTemplateOptionsWithEmpty = new();
@@ -334,8 +356,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed) return;
 
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+            ComboxCalibrationTemplate.ItemsSource = (Device.PhyCamera?.CalibrationParams).CreateEmpty();
             ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+        private void ComboxCalibrationTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            IEnumerable<GroupResource> groups = Device.PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>();
+            CalibrationGroupGainResolver.Synchronize(DisplayCameraConfig, ComboxCalibrationTemplate.SelectedValue as CalibrationParam, groups);
         }
 
         private void BindAutoExpTimeTemplateSources()
@@ -884,6 +912,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 default:
                     break;
             }
+            // Offer local opening while the remote service is unavailable without changing its displayed status.
+            if (!Device.CameraBackend.LocalOwned && !Device.CameraBackend.VideoOwned && Device.CameraBackend.OpensLocally
+                && e is DeviceStatusType.UnInit or DeviceStatusType.OffLine or DeviceStatusType.Unknown or DeviceStatusType.Unauthorized)
+                SetVisibility(ButtonOpen, Visibility.Visible);
         }
 
         public event RoutedEventHandler Selected;
@@ -903,7 +935,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
-                var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                MsgRecord msgRecord;
+                try { msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp); }
+                catch (InvalidOperationException ex)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                    return;
+                }
                 ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                 {
                     if (state == MsgRecordState.Success)
@@ -926,13 +964,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void GetData_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
-
-            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param)
+            if (Device.RoutesLocally)
             {
-                param = new CalibrationParam() { Id = -1, Name = "Empty" };
+                MsgRecord? local = TakePhoto();
+                if (local == null) return;
+                EnsureTimedButtonOperations();
+                Device.SetMsgRecordChanged(local);
+                ServicesHelper.SendTimedCommand(this, TakePhotoButton, local, onTerminalStateChanged: (record, state) =>
+                {
+                    if (state == MsgRecordState.Fail) MessageBox1.Show(Application.Current.GetActiveWindow(), record.MsgReturn.Message, "ColorVision");
+                });
+                return;
             }
-            else if (param.Id != -1)
+            ParamBase autoExpTimeParam = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboxAutoExpTimeParamTemplate1.SelectedValue);
+
+            CalibrationParam param = CameraTemplateSelection.ResolveOptional<CalibrationParam>(ComboxCalibrationTemplate.SelectedValue);
+            if (param.Id != -1)
             {
                 if (Device.PhyCamera == null)
                 {
@@ -1076,7 +1123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboBoxHDRTemplate.SelectedValue);
 
             int latestMeasureResultId = MeasureImgResultDao.Instance.GetLatestId(Device.Config.Code);
             EnsureTimedButtonOperations();
@@ -1161,22 +1208,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? TakePhoto(double exp = 0)
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
+            ParamBase autoExpTimeParam = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboxAutoExpTimeParamTemplate1.SelectedValue);
 
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            CalibrationParam param = CameraTemplateSelection.ResolveOptional<CalibrationParam>(ComboxCalibrationTemplate.SelectedValue);
+            if (param.Id != -1)
             {
-                if (param.Id != -1)
+                if (!Device.RoutesLocally && Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
                 {
-                    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CalibrationServiceRequiredForTemplate, "ColorVision");
-                        return null;
-                    }
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CalibrationServiceRequiredForTemplate, "ColorVision");
+                    return null;
                 }
-            }
-            else
-            {
-                param = new CalibrationParam() { Id = -1, Name = "Empty" };
             }
 
             double[] expTime = null;
@@ -1191,7 +1232,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 else expTime = new double[] { exp };
             }
 
-            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
+            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboBoxHDRTemplate.SelectedValue);
 
             return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
 
@@ -1200,45 +1241,60 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord? GetData()
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return null;
-            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
+            ParamBase autoExpTimeParam = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboxAutoExpTimeParamTemplate1.SelectedValue);
+            CalibrationParam param = CameraTemplateSelection.ResolveOptional<CalibrationParam>(ComboxCalibrationTemplate.SelectedValue);
 
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
             else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
 
-            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
+            ParamBase HDRparamBase = CameraTemplateSelection.ResolveOptional<ParamBase>(ComboBoxHDRTemplate.SelectedValue);
 
             return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.RoutesLocally)
+            {
+                MsgRecord local = Device.AutoExposeLocally();
+                local.MsgRecordStateChanged += (_, state) =>
+                {
+                    if (state == MsgRecordState.Fail) MessageBox1.Show(Application.Current.GetActiveWindow(), local.MsgReturn.Message, "ColorVision");
+                };
+                ServicesHelper.SendCommand(sender, local);
+                return;
+            }
             if (sender is Button button)
             {
-                if (ComboxAutoExpTimeParamTemplate.SelectedValue is ParamBase param && param.Id != -1)
+                if (!CameraTemplateSelection.TryResolveRequired(ComboxAutoExpTimeParamTemplate.SelectedValue, out ParamBase param))
                 {
-                    var msgRecord = DService.GetAutoExpTime(param);
-                    msgRecord.MsgRecordStateChanged += (s, e) =>
-                    {
-                        if (IsDisposed) return;
-
-                        if (e == MsgRecordState.Timeout)
-                        {
-                            MessageBox1.Show(Properties.Resources.AutoExposureTimeoutCheckLog, "ColorVision");
-                        }
-                        ;
-                        if (e == MsgRecordState.Fail)
-                        {
-                            MessageBox1.Show(string.Format(Properties.Resources.AutoExposureFailedCheckLog, Environment.NewLine, msgRecord.MsgReturn.Message), "ColorVision");
-                        }
-                        ;
-                    };
-                    ServicesHelper.SendCommand(button, msgRecord);
-
+                    ShowRequiredTemplateMessage(Properties.Resources.AutoExploreTemplate);
+                    return;
                 }
+
+                var msgRecord = DService.GetAutoExpTime(param);
+                msgRecord.MsgRecordStateChanged += (s, e) =>
+                {
+                    if (IsDisposed) return;
+
+                    if (e == MsgRecordState.Timeout)
+                    {
+                        MessageBox1.Show(Properties.Resources.AutoExposureTimeoutCheckLog, "ColorVision");
+                    }
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox1.Show(string.Format(Properties.Resources.AutoExposureFailedCheckLog, Environment.NewLine, msgRecord.MsgReturn.Message), "ColorVision");
+                    }
+                };
+                ServicesHelper.SendCommand(button, msgRecord);
             }
+        }
+
+        private static void ShowRequiredTemplateMessage(string templateName)
+        {
+            MessageBox1.Show(Application.Current.GetActiveWindow(), $"{templateName}: {Properties.Resources.Flow_NoTemplateAvailable}", "ColorVision");
         }
 
 
@@ -1257,6 +1313,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             cvCameraCSLib.CM_Close(m_hCamHandle);
                         }
 
+                        if (m_hCamHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+                            return (false, "本地视频关闭失败，相机仍被占用。");
+                        Device.CameraBackend.EndVideo();
                         return (true, string.Empty);
                     }
                     catch (Exception ex)
@@ -1270,7 +1329,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
+            if (!CameraTemplateSelection.TryResolveRequired(ComboxAutoFocus.SelectedValue, out AutoFocusParam param))
+            {
+                ShowRequiredTemplateMessage(Properties.Resources.AutoFocusTemplate);
+                return;
+            }
             MsgRecord msgRecord = DService.AutoFocus(param);
             msgRecord.MsgRecordStateChanged += (s, e) =>
             {
@@ -1297,7 +1360,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
 
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+            ComboxCalibrationTemplate.ItemsSource = (Device.PhyCamera?.CalibrationParams).CreateEmpty();
         }
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
@@ -1394,9 +1457,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         return;
                     }
 
-                    ButtonOpen.Visibility = Visibility.Visible;
-                    ButtonClose.Visibility = Visibility.Collapsed;
-                    StackPanelOpen.Visibility = Visibility.Collapsed;
+                    if (state != MsgRecordState.Success)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn?.Message ?? "相机关闭失败。", "ColorVision");
+                        return;
+                    }
+                    DService_DeviceStatusChanged(this, DService.DeviceStatus);
                 });
             }
         }
@@ -1413,9 +1479,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void ComboxAutoExpTimeParamTemplate1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsDisposed) return;
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
-
-            Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
+            Device.Config.IsAutoExpose = CameraTemplateSelection.TryResolveRequired(ComboxAutoExpTimeParamTemplate1.SelectedValue, out ParamBase _);
         }
 
         private void EditHDRTemplate(object sender, RoutedEventArgs e)
@@ -1527,22 +1591,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public IntPtr m_hCamHandle;
         public string strPathSysCfg = "cfg\\sys.cfg";
-        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
-        {
-            if (channels == 3)
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Rgb48
-                    : System.Windows.Media.PixelFormats.Bgr24;
-            }
-            else
-            {
-                return bpp == 16
-                    ? System.Windows.Media.PixelFormats.Gray16
-                    : System.Windows.Media.PixelFormats.Gray8;
-            }
-        }
-
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
@@ -1614,7 +1662,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return 0;
             }
 
-            var pixelFormat = GetPixelFormat(channels, bpp);
+            var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int sourceStride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
             int frameBytes = sourceStride * height;
 
@@ -1631,6 +1679,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.RoutesLocally) return;
             if (IsDisposed || sender is not Button button) return;
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
@@ -1656,6 +1705,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (!IsDisposed)
                     {
                         localVideoCloseScope?.Complete(false);
+                        operations.RefreshIdleState(LocalVideoButton);
+                        Device.DisplayConfig.IsLocalVideoOpen = !closeSucceeded;
                         operations.RefreshIdleState(LocalVideoButton);
                         OpenButton.Visibility = closeSucceeded ? Visibility.Visible : Visibility.Collapsed;
                     }
@@ -1724,8 +1775,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             lock (_localVideoHandleSync)
             {
                 if (IsDisposed) return (false, string.Empty);
-                return OpenLocalVideoInternalCore();
+                try
+                {
+                    lock (CameraBackendState.OwnershipSync)
+                    {
+                        Device.EnsureLocalCameraAvailable();
+                        Device.CameraBackend.BeginLocalOpen(video: true);
+                    }
+                    var result = OpenLocalVideoInternalCore();
+                    if (!result.isSuccess) ReleaseFailedLocalVideo();
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    ReleaseFailedLocalVideo();
+                    return (false, ex.Message);
+                }
             }
+        }
+
+        private void ReleaseFailedLocalVideo()
+        {
+            if (m_hCamHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+            {
+                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+            }
+            if (m_hCamHandle == IntPtr.Zero || !cvCameraCSLib.CM_IsOpen(m_hCamHandle)) Device.CameraBackend.EndVideo();
+            else Dispatcher.BeginInvoke(() => Device.DisplayConfig.IsLocalVideoOpen = true);
         }
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternalCore()

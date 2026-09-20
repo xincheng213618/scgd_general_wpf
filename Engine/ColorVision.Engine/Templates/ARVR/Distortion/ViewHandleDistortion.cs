@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public override bool CanHandle1(ViewResultAlg result)
         {
-            return base.CanHandle1(result);
+            return result.Version != "2.0" && base.CanHandle1(result);
         }
 
         public override void SideSave(ViewResultAlg result, string selectedPath)

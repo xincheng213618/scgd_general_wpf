@@ -6,6 +6,9 @@ import {
   formatJobInterval,
   jobTypeLabels,
   summarizeJobs,
+  filterJobs,
+  jobHistoryPath,
+  jobViewFromSearch,
 } from '../src/utils/jobOperations.ts'
 
 function job(overrides: Partial<ScheduledJob> = {}): ScheduledJob {
@@ -19,6 +22,22 @@ function job(overrides: Partial<ScheduledJob> = {}): ScheduledJob {
     ...overrides,
   }
 }
+
+test('current job attention clears after recovery while historical failures remain available', () => {
+  const recovered = job({ latest_run: { id: 7, job_id: 'cache_cleanup', status: 'success' } })
+  const failed = job({ id: 'database_backup', latest_run: { id: 8, job_id: 'database_backup', status: 'error' } })
+  const interrupted = job({ id: 'tool_index', enabled: false, latest_run: { id: 9, job_id: 'tool_index', status: 'interrupted' } })
+  assert.deepEqual(filterJobs([recovered, failed, interrupted], 'attention').map((item) => item.id), ['database_backup', 'tool_index'])
+  assert.deepEqual(filterJobs([recovered, failed, interrupted], 'disabled'), [interrupted])
+  assert.equal(summarizeJobs([recovered]).failed, 1)
+})
+
+test('job links preserve the exact identifier and invalid filters fall back to all', () => {
+  const path = jobHistoryPath('backup / daily&new')
+  assert.equal(new URL(path, 'https://example.test').searchParams.get('job'), 'backup / daily&new')
+  assert.equal(jobViewFromSearch('?view=attention&job=database_backup'), 'attention')
+  assert.equal(jobViewFromSearch('?view=other'), 'all')
+})
 
 test('job intervals use readable operational units', () => {
   assert.equal(formatJobInterval(0), '仅启动时')

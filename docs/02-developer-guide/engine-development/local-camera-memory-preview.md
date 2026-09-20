@@ -2,7 +2,7 @@
 knowledge_id: "engine.camera-preview-plan"
 knowledge_type: "decision"
 status: "planned"
-summary: "待实施的设备视图无文件预览：明确与本地手动窗口的区别、发布租约之外的读写同步、latest-wins、RAW/CIE显示副本及验收缺口。"
+summary: "设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。"
 aliases: ["本地相机内存预览设计", "不保存文件能在设备视图预览吗", "相机内存预览怎样验收", "内存预览租约何时释放", "设备级Preview Publisher", "LocalFrameImagePresenter", "latest-wins", "FullCie", "RAW预览行步长", "预览与校正并发", "内存帧过期"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowFrame.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/CameraLocalWindow.xaml.cs", "Engine/FlowEngineLib/Base/CVStartCFC.cs", "Engine/FlowEngineLib/Base/FlowRuntimeResources.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "Engine/ColorVision.Engine/Media/CvRawLayerController.cs", "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs", "Engine/cvColorVision/Color/ConvertXYZ.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs", "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs", "Test/ColorVision.UI.Tests/PoiMeasurementServiceTests.cs"]
@@ -13,7 +13,9 @@ related: ["engine.index", "operations.camera"]
 
 本方案的目标是：本地相机流程节点在 `SaveFiles=false` 时，也能把当前帧显示到所绑定设备的 `ViewCamera`，不借助临时 CVRAW/CVCIE 文件，不永久保留每帧，也不承诺重新打开无文件历史结果。
 
-**该功能尚未实现。** 下文的设备级 Preview Publisher、LocalFrameImagePresenter、Off/Raw/FullCie 模式和 latest-wins 调度是设计要求，当前没有对应设置或完整执行链。现有本地帧 API 与手动窗口不能作为本方案已交付的证明。
+**基础无文件预览已接入，本文仍保留后续优化设计。** 相机结果视图的 `AutoRefreshView` 开启时，`LocalCameraPreview` 在本地节点交接下游前复制 RAW/CIE，生成冻结位图；关闭时直接跳过快照创建，不执行这份 RAW/CIE 复制或位图转换。主面板手动取图的显式显示请求仍创建快照并立即显示。`ViewCamera` 只保存最新本地快照；快照不持有流程帧租约，RAW 显示方向只作用于副本，CIE 沿现有 `AttachLiveCvcie` 接口挂载。没有保存文件也没有生成快照的结果不能在流程结束后重开。
+
+下文的独立 Preview Publisher、Off/Raw/FullCie 模式、可取消的后台转换调度和零拷贝优化仍未实现，不能视为现有功能。当前同步复制/位图转换仍增加节点耗时，Dispatcher 按设备仅保留一个最新待显示快照；高分辨率连续流程的内存和延迟仍需硬件验收。
 
 ## 现有入口与设计缺口
 
@@ -21,10 +23,10 @@ related: ["engine.index", "operations.camera"]
 | --- | --- |
 | `CameraLocalWindow` 手动测量 | 能直接显示内存 RAW，并在有 CIE 时挂载数据；不需要保存文件 |
 | `LocalCameraNode` 流程取图 | 可向下游交接内存帧；SaveFiles=false 仍写测量主记录、设置 MasterId 并发布持久化结果通知 |
-| `ViewCamera` 设备结果视图 | 收到通知后按 MasterId 查主记录，经 ViewResultImage.FileUrl 打开文件；空路径清空显示，没有取得 LocalFlowFrame 的分支 |
+| `ViewCamera` 设备结果视图 | 收到本地快照后显示内存图；持久化通知用于结果身份，同一记录去重；其它历史记录仍依赖 FileUrl |
 | 本地 Live 视频 | 有独立实时帧处理与伪彩链，不是本地测量流程帧的设备视图路由 |
 
-操作、文件与数据库完成判据由[相机服务](../../01-user-guide/devices/camera.md)维护。本方案补设备视图的当前帧显示，不改变文件保存和历史重开的责任。
+操作、文件与数据库完成判据由[相机服务](../../01-user-guide/devices/camera.md)维护。本方案继续优化设备视图的当前帧显示，不改变文件保存和历史重开的责任。
 
 当前流程帧的根引用、多个 FrameId、校正修改与翻转规则见同页“流程帧的寿命与读写限制”。**Acquire 解决引用寿命，不解决下游同时改写 RAW 或替换 CIE 的问题。** 异步发布必须先确定可安全读取的一致帧，再讨论 Dispatcher 排队；不能简单把裸指针换成租约后认为并发问题已经解决。
 
@@ -62,7 +64,7 @@ flowchart LR
 
 同一设备最多保留一个待显示请求；新请求原子替换旧请求，立即释放被替换请求。另有正在转换/提交的请求时，它仍需要序号或 generation 检查，旧转换完成不得覆盖新图。
 
-View 未加载、不可见、已释放或关闭自动刷新时应按明确策略跳过或只保留约定副本；当前设计倾向无效视图不额外持有帧。视图重新创建、设备切换、用户手动打开历史图和暂停刷新，也要防止旧回调回写。是否由 AutoRefreshView 控制、是否另设开关，仍待确定。
+关闭自动刷新时，当前实现已经跳过自动采集预览的快照创建；显式手动显示仍生效。View 未加载或不可见时是否进一步跳过仍属后续策略；当前设计倾向无效视图不额外持有帧。视图重新创建、设备切换、用户手动打开历史图和暂停刷新，也要防止旧回调回写。
 
 这个队列界限仅约束预览请求，不能保证整个流程只占一帧内存：流程 RuntimeResources 可按不同 FrameId 保留多个根引用。
 
@@ -76,13 +78,13 @@ View 未加载、不可见、已释放或关闭自动刷新时应按明确策略
 
 默认 Raw 或 Off、FullCie 是否进入首版仍未定。模式名称不是已经存在的配置项。
 
-### RAW 转换不能原样复用现有实现
+### RAW 转换与源像素一致性
 
-`CameraLocalWindow.CaptureAndPrepareDisplay` 当前把 RAW/CIE 复制为托管数组，用 CreateDisplayBitmap 生成并 Freeze 位图，在后台完成这些独立数据后释放流程帧，再把结果交给 UI。ShowImageInView 负责重置 opener、工具、图层和属性，随后打开位图；像素转换并不在 ShowImageInView 中。
+`CameraLocalWindow.CaptureAndPrepareDisplay` 当前把 RAW/CIE 复制为托管数组，用 `LocalCameraPreview.CreateRawBitmap` 生成并 Freeze 位图，在后台完成这些独立数据后释放流程帧，再把结果交给 UI。ShowImageInView 负责重置 opener、工具、图层和属性，随后打开位图；像素转换并不在 ShowImageInView 中。
 
-当前映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48，但 GetPixelFormat 本身没有严格拒绝其它组合。三通道 16-bit 分支实际把三个源分量按 `0,2,1` 写入目标，不能只依据旁边 RGB/GRB 注释推断颜色正确。
+当前主面板与本地管理窗口共用 RAW 位图 helper，映射为单通道 8/16-bit → Gray8/Gray16、三通道 8/16-bit → Bgr24/Rgb48。helper 拒绝其它组合和长度不匹配，使用紧凑源 stride 和 CVRAW 解码链相同的 OpenCV 位图转换；16 位三通道 BGR 在显示副本中转为 RGB48，不交换第 2、3 通道，不修改源分量顺序或数值。`LocalCameraResultTests` 对照 CVRAW 解码链检查位图格式和像素，并覆盖奇数宽度多行；实机颜色仍需核对。
 
-CreateDisplayBitmap 用目标 BackBufferStride 计算该分支的源行偏移；其它格式直接连续 Marshal.Copy，没有逐行处理目标 padding。紧凑 RAW 行字节数与 WPF stride 不同时会造成错行，指针分支还可能越过源数组。后续 Presenter 必须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例，不能把该方法直接抽取为“已验证转换器”。
+后续指针 Presenter 仍须分别使用源/目标行步长，验证长度、通道排列、非对齐宽度和单/多行样例。当前 helper 复制托管数组的行为不能证明零拷贝指针寿命、并发读写或硬件通道含义正确；不要在新显示路径中重新加入没有采集协议依据的颜色转换。
 
 RAW 与 CIE 可能处于不同翻转状态：只翻转最终 CIE 的流程，原 RAW 不一定与 POI 坐标同向；无校正帧还可能延迟翻转。预览要选择对应方向的显示副本并明确坐标映射，不为显示提前改写下游还需使用的传感器数据。
 

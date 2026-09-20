@@ -63,6 +63,8 @@ related: ["algorithms.index","algorithms.json-templates","engine.results"]
 
 `ViewHandleLedCheck.CanHandle` 当前为空列表。如果现场出现“算法执行成功但结果页不接管展示”，要先检查结果类型是否注册到这个 handler，而不是只排查绘图代码。
 
+`ViewHandleMTF.cs` 中的 native 画点结果复制为独立冻结位图，通过 `ImagePresentation.Publish` 更新显示；不借用已有 `FunctionImage` 作为可写缓冲，也不把显示画点提交成文档源。源/显示责任见[编辑器上下文](../../ui-components/image-editor-context.md)。
+
 ## JSON V2 入口
 
 `Jsons/LEDStripDetectionV2/` 和 `Jsons/LedCheck2/` 使用 `ITemplateJson`，参数由 JSON 文本和 `EditTemplateJson` 承载。它们更适合复杂参数和后续扩展：

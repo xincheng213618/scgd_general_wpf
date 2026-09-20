@@ -61,15 +61,16 @@ public sealed class LuminanceChromaticityYWProcessTests
     }
 
     [Fact]
-    public void LuminanceDisplayPointCentersYWithoutChangingTheSavedPointName()
+    public void LuminanceDisplayTemplatePreservesTheCurrentCenteredYDefault()
     {
+        var config = new LuminanceChromaticityYWProcessConfig();
         var poi = new PoiResultCIExyuvData
         {
             Y = 123.456,
             Point = new PoiPoint(7, 8, "P_7", PoiShape.Circle, 100, 200, 32, 32)
         };
 
-        PoiPoint displayPoint = LuminanceChromaticityYWProcess.CreateLuminanceDisplayPoint(poi);
+        PoiPoint displayPoint = LuminanceChromaticityYWProcess.CreateDisplayPoint(poi, config.DisplayTemplate);
 
         Assert.Equal("Y:123.46", displayPoint.Name);
         Assert.Equal("P_7", poi.Point.Name);

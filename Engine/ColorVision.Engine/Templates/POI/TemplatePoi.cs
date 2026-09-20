@@ -6,8 +6,8 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 
@@ -19,8 +19,11 @@ namespace ColorVision.Engine.Templates.POI
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
-        public TemplatePoi()
+        private readonly PoiTemplateStorage storage;
+        public TemplatePoi() : this(PoiTemplateStorage.Default) { }
+        public TemplatePoi(PoiTemplateStorage storage)
         {
+            this.storage = storage;
             IsSideHide = true;
             TemplateDicId = -1;
             Title = ColorVision.Engine.Properties.Resources.POISetting;
@@ -36,48 +39,42 @@ namespace ColorVision.Engine.Templates.POI
 
         public override void Load()
         {
-            var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.IsConnect)
+            var values = storage.Load();
+            var ids = values.Select(x => x.Id).ToHashSet();
+            foreach (var removed in Params.Where(x => !ids.Contains(x.Id)).ToList()) Params.Remove(removed);
+            for (int i = 0; i < values.Count; i++)
             {
-                List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", 0}, { "is_delete", 0 } });
-                foreach (var dbModel in poiMasters)
+                var value = values[i];
+                var existing = Params.FirstOrDefault(x => x.Id == value.Id);
+                if (existing == null) Params.Insert(i, new TemplateModel<PoiParam>(value.Name, value));
+                else
                 {
-                    var poiparam = new PoiParam(dbModel);
-                    if (backup.TryGetValue(poiparam.Id, out var model))
-                    {
-                        model.Value = poiparam;
-                        model.Key = poiparam.Name;
-                    }
-                    else
-                    {
-                        Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", poiparam));
-                    }
+                    existing.Value = value;
+                    existing.Key = value.Name;
+                    Params.Move(Params.IndexOf(existing), i);
                 }
             }
+            Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? " · 本地" : " · MySQL");
             SaveIndex.Clear();
         }
 
         public override void Save()
         {
-            if (SaveIndex.Count == 0) return;
             foreach (var index in SaveIndex)
-            {
-                if (index > -1 && index < TemplateParams.Count)
+                if (index >= 0 && index < TemplateParams.Count)
                 {
-                    var item = TemplateParams[index];
-                    PoiMasterDao.Instance.Save(new PoiMasterModel(item.Value));
+                    var value = TemplateParams[index].Value;
+                    (value.Storage ?? storage).SaveMetadata(value);
                 }
-            }
             SaveIndex.Clear();
         }
+
         public override void Delete(int index)
         {
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            Db.Deleteable<PoiMasterModel>().Where(it => it.Id == TemplateParams[index].Value.Id).ExecuteCommand();
+            var value = TemplateParams[index].Value;
+            (value.Storage ?? storage).Delete(value.Id);
             TemplateParams.RemoveAt(index);
         }
-
 
         public override bool CopyTo(int index)
         {
@@ -98,108 +95,58 @@ namespace ColorVision.Engine.Templates.POI
 
         public override void Create(string templateName)
         {
-            PoiParam? AddPoiParam(string templateName)
-            {
-                if(ImportTemp != null)
-                {
-                    ImportTemp.Name = templateName;
-                    PoiMasterModel poiMasterModel = new PoiMasterModel(ImportTemp);
-                    PoiMasterDao.Instance.Save(poiMasterModel);
-                    List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
-                    foreach (PoiPoint pt in ImportTemp.PoiPoints)
-                    {
-                        PoiDetailModel poiDetail = new PoiDetailModel(poiMasterModel.Id, pt);
-                        poiDetails.Add(poiDetail);
-                    }
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                    Stopwatch sw2 = Stopwatch.StartNew();
-                    Db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiMasterModel.Id).ExecuteCommand();
-                    int count = Db.Insertable(poiDetails).ExecuteCommand();
-                    sw2.Stop();
-
-
-                    ImportTemp.Id = poiMasterModel.Id;
-                    return ImportTemp;
-                }
-                else
-                {
-                    PoiMasterModel poiMasterModel = new PoiMasterModel() { Name =templateName, TenantId = 0};
-                    PoiMasterDao.Instance.Save(poiMasterModel);
-
-                    int pkId = poiMasterModel.Id;
-                    if (pkId > 0)
-                    {
-                        PoiMasterModel model = PoiMasterDao.Instance.GetById(pkId);
-                        if (model != null) return new PoiParam(model);
-                        else return null;
-                    }
-                    return null;
-                }
-
-
-            }
-
-
-            PoiParam? param = AddPoiParam(templateName);
-            if (param != null)
-            {
-                var a = new TemplateModel<PoiParam>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(PoiParam)}模板失败", "ColorVision");
-            }
+            var value = ImportTemp != null ? CreatePortableSnapshot(ImportTemp) : new PoiParam { Id = -1 };
+            value.Name = templateName;
+            value.DetailsLoaded = true;
+            storage.Save(value);
+            TemplateParams.Add(new TemplateModel<PoiParam>(templateName, value));
         }
 
+        public override object CreateDefault() => CreateTemp = new PoiParam { Id = -1 };
+
+        public override bool ImportFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            ImportName = Path.GetFileNameWithoutExtension(filePath);
+            return TryPrepareFlowPackageImport(ImportName, File.ReadAllText(filePath));
+        }
 
         public override void Export(int index)
         {
-            PoiParam.LoadPoiDetailFromDB(TemplateParams[index].Value);
-            base.Export(index);
+            var selected = TemplateParams.Where(x => x.IsSelected).ToList();
+            if (selected.Count == 0) selected.Add(TemplateParams[index]);
+            bool multiple = selected.Count > 1;
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = multiple ? "POI 模板包 (*.zip)|*.zip" : "POI 模板 (*.cfg)|*.cfg",
+                FileName = multiple ? "POI.zip" : ColorVision.Common.Utilities.Tool.SanitizeFileName(selected[0].Key) + ".cfg",
+                AddExtension = true,
+                DefaultExt = multiple ? ".zip" : ".cfg"
+            };
+            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true) return;
+            var snapshots = selected.Select(x => CreatePortableSnapshot(x.Value, (x.Value.Storage ?? storage).ReadPoints(x.Id))).ToList();
+            if (!multiple)
+            {
+                File.WriteAllText(dialog.FileName, JsonConvert.SerializeObject(snapshots[0], Formatting.Indented));
+                return;
+            }
+            using var stream = File.Create(dialog.FileName);
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
+            for (int i = 0; i < snapshots.Count; i++)
+            {
+                var entry = archive.CreateEntry($"{i + 1}_{ColorVision.Common.Utilities.Tool.SanitizeFileName(snapshots[i].Name)}.cfg");
+                using var writer = new StreamWriter(entry.Open());
+                writer.Write(JsonConvert.SerializeObject(snapshots[i], Formatting.Indented));
+            }
         }
 
         public object CaptureFlowPackageValue(int index)
         {
             PoiParam value = TemplateParams[index].Value;
+            if (value.Id == -1 || value.Id == 0) throw new InvalidDataException("POI 模板尚未保存，无法确认模板明细是否完整。");
             IReadOnlyList<PoiPoint> persistedPoints =
-                ReadPoiPointsForFlowPackage(value.Id);
+                (value.Storage ?? storage).ReadPoints(value.Id);
             return CreatePortableSnapshot(value, persistedPoints);
-        }
-
-        private static IReadOnlyList<PoiPoint> ReadPoiPointsForFlowPackage(
-            int templateId)
-        {
-            if (templateId <= 0)
-                throw new InvalidDataException(
-                    $"POI 模板 ID {templateId} 无效，无法确认模板明细是否完整。");
-
-            try
-            {
-                using var db = new SqlSugarClient(
-                    new ConnectionConfig
-                    {
-                        ConnectionString =
-                            MySqlControl.GetConnectionString(),
-                        DbType = SqlSugar.DbType.MySql,
-                        IsAutoCloseConnection = true
-                    });
-                List<PoiDetailModel> details = db
-                    .Queryable<PoiDetailModel>()
-                    .Where(item => item.Pid == templateId)
-                    .OrderBy(item => item.Id)
-                    .ToList();
-                return details
-                    .Select(detail => new PoiPoint(detail))
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidDataException(
-                    $"读取 POI 模板 {templateId} 的明细失败，已中止流程包导出。",
-                    ex);
-            }
         }
 
         internal static PoiParam CreatePortableSnapshot(
@@ -255,25 +202,9 @@ namespace ColorVision.Engine.Templates.POI
             ofd.Title = ColorVision.Engine.Properties.Resources.Engine_Dlg_ImportTemplate;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
-            //{
-            //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
-            //    return false;
-            //}
-            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
-            string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
             try
             {
-                ImportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
-                if (ImportTemp !=null)
-                {
-                    ImportTemp.Id = -1;
-                    foreach (var item in ImportTemp.PoiPoints)
-                    {
-                        item.Id = -1;
-                    }
-                }
-                return true;
+                return ImportFile(ofd.FileName);
             }
             catch (JsonException ex)
             {
@@ -298,6 +229,15 @@ namespace ColorVision.Engine.Templates.POI
                 // Get the IDs from database
                 int id1 = template1.Value.Id;
                 int id2 = template2.Value.Id;
+
+                if (PoiTemplateStorage.IsLocalId(id1) || PoiTemplateStorage.IsLocalId(id2))
+                {
+                    if (!PoiTemplateStorage.IsLocalId(id1) || !PoiTemplateStorage.IsLocalId(id2)) return false;
+                    (template1.Value.Storage ?? storage).SwapLocalOrder(id1, id2);
+                    (TemplateParams[index1], TemplateParams[index2]) = (TemplateParams[index2], TemplateParams[index1]);
+                    return true;
+                }
+                if (!MySqlSetting.IsConnect) return false;
 
                 // Swap the IDs in the database using a three-step process to avoid constraint violations
                 // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk

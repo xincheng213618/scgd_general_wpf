@@ -202,7 +202,7 @@ export function AdminLayout({
 
   if (session === null) return <Spin tip="正在验证登录状态…" />
   if (!session.authenticated) {
-    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`} replace />
   }
   if (!session.can_access_admin || !canOpenAdminRoute(session, location.pathname)) {
     return <Navigate to="/account?access=updated" replace />

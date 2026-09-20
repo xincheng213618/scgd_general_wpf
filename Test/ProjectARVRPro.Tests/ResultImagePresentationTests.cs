@@ -190,12 +190,13 @@ public sealed class ResultImagePresentationTests
         {
             using ProjectImageExportAttempt exportAttempt = new(renderedFile, sourceFile);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 ImageView.SaveSnapshotExportsAsync(
                     CreateRenderedOnlySnapshot(),
                     exportAttempt.CreateOptions(
                         ImageViewSnapshotSaveOptions.Default,
                         ImageViewSourceSaveOptions.Default)));
+            Assert.True(File.Exists(exportAttempt.RenderedStagingFileName), exception.ToString());
             ProjectImageExportAttemptResult exportResult = exportAttempt.CommitSuccessfulChannels();
 
             ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(

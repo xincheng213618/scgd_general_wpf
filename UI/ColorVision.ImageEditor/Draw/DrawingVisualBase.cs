@@ -61,13 +61,7 @@ namespace ColorVision.ImageEditor.Draw
 
             if (currentFontSize is double fontSize && assignFontSize != null)
             {
-                LayoutBaseFontSize ??= double.IsFinite(fontSize) && fontSize > 0
-                    ? TextRenderCore.NormalizeFontSize(fontSize)
-                    : TextRenderCore.NormalizeFontSize((LayoutBasePenThickness ?? 1) * 10);
-
-                double targetFontSize = TextRenderCore.NormalizeFontSize(context.IsLayoutUpdated
-                    ? layoutScale * 10
-                    : fontSizeOverride > 0 ? fontSizeOverride : LayoutBaseFontSize.Value);
+                double targetFontSize = ResolveLayoutFontSize(context, fontSize);
                 if (fontSize != targetFontSize)
                 {
                     assignFontSize(targetFontSize);
@@ -79,6 +73,23 @@ namespace ColorVision.ImageEditor.Draw
                 Render();
 
             return isRender;
+        }
+
+        protected double ResolveLayoutFontSize(DrawingVisualScaleContext context, double currentFontSize)
+        {
+            LayoutBaseFontSize ??= double.IsFinite(currentFontSize) && currentFontSize > 0
+                ? TextRenderCore.NormalizeFontSize(currentFontSize)
+                : TextRenderCore.NormalizeFontSize((LayoutBasePenThickness ?? 1) * 10);
+
+            double layoutScale = double.IsFinite(context.Scale) && context.Scale > 0
+                ? TextRenderCore.NormalizeFontSize(context.Scale * 10) / 10
+                : 1;
+            double fontSizeOverride = double.IsFinite(context.TextFontSizeOverride) && context.TextFontSizeOverride > 0
+                ? TextRenderCore.NormalizeFontSize(context.TextFontSizeOverride)
+                : 0;
+            return TextRenderCore.NormalizeFontSize(context.IsLayoutUpdated
+                ? layoutScale * 10
+                : fontSizeOverride > 0 ? fontSizeOverride : LayoutBaseFontSize.Value);
         }
 
         private static double NormalizePenThickness(double thickness)

@@ -371,6 +371,13 @@ namespace ColorVision.ImageEditor
             ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        /// <summary>Restore a saved viewport and refresh tools and drawing-scale dependents.</summary>
+        public void RestoreView(Matrix matrix)
+        {
+            SetCurrentValue(ContentMatrixProperty, matrix);
+            ContentMatrixChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         /// <inheritdoc />
         protected override Visual GetVisualChild(int index)
         {

@@ -7,6 +7,46 @@ namespace ProjectARVRPro.Tests;
 public sealed class ViewResultManagerConfigTests
 {
     [Fact]
+    public void RuntimeUiState_IsBoundButNotUserEditable()
+    {
+        ProjectARVRProConfig config = new();
+        List<string?> propertyChanges = [];
+        string? changedSerialNumber = null;
+        config.PropertyChanged += (_, args) => propertyChanges.Add(args.PropertyName);
+        config.SNChanged += (_, value) => changedSerialNumber = value;
+
+        PropertyDescriptor stepIndex = TypeDescriptor.GetProperties(typeof(ProjectARVRProConfig))[nameof(ProjectARVRProConfig.StepIndex)]!;
+        PropertyDescriptor serialNumber = TypeDescriptor.GetProperties(typeof(ProjectARVRProConfig))[nameof(ProjectARVRProConfig.SN)]!;
+
+        Assert.False(stepIndex.IsBrowsable);
+        Assert.False(serialNumber.IsBrowsable);
+
+        config.StepIndex = 2;
+        config.SN = "SN-BOUND";
+
+        Assert.Equal(2, config.StepIndex);
+        Assert.Equal("SN-BOUND", config.SN);
+        Assert.Equal("SN-BOUND", changedSerialNumber);
+        Assert.Contains(nameof(ProjectARVRProConfig.StepIndex), propertyChanges);
+        Assert.Contains(nameof(ProjectARVRProConfig.SN), propertyChanges);
+
+        string json = JsonConvert.SerializeObject(config);
+        Assert.Contains($"\"{nameof(ProjectARVRProConfig.StepIndex)}\":2", json, StringComparison.Ordinal);
+        Assert.DoesNotContain($"\"{nameof(ProjectARVRProConfig.SN)}\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProjectResultOverlayDefaultsMatchProductionDisplay()
+    {
+        ProjectARVRProConfig config = new();
+
+        Assert.True(config.ResultOverlayShowName);
+        Assert.True(config.ResultOverlayShowDetail);
+        Assert.Equal(80, config.ResultOverlayFontSize);
+        Assert.False(config.ResultOverlayAutoRefresh);
+    }
+
+    [Fact]
     public void ImageExportSettings_DefaultToIndependentDisabledLanes()
     {
         ViewResultManagerConfig config = new();
@@ -115,6 +155,21 @@ public sealed class ViewResultManagerConfigTests
             .Browsable);
         legacyDelay.SetValue(config, 1000);
         Assert.Equal(0, legacyDelay.GetValue(config));
+    }
+
+    [Fact]
+    public void ResultPaneHeight_IsPersistedButNotUserEditable()
+    {
+        PropertyDescriptor height = TypeDescriptor.GetProperties(typeof(ViewResultManagerConfig))[nameof(ViewResultManagerConfig.Height)]!;
+        ViewResultManagerConfig original = new() { Height = 321 };
+
+        Assert.False(height.IsBrowsable);
+
+        string json = JsonConvert.SerializeObject(original);
+        ViewResultManagerConfig restored = JsonConvert.DeserializeObject<ViewResultManagerConfig>(json)!;
+
+        Assert.Contains($"\"{nameof(ViewResultManagerConfig.Height)}\":321", json, StringComparison.Ordinal);
+        Assert.Equal(321, restored.Height);
     }
 
     [Fact]

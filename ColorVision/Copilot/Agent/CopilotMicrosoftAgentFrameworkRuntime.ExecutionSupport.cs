@@ -41,6 +41,7 @@ namespace ColorVision.Copilot
             {
                 return CopilotAgentStopReason.BudgetExhausted;
             }
+            steps = CopilotAgentBlockerDetector.ExcludeResolvedReadFailures(steps);
             if (requestMode == CopilotAgentMode.Plan)
             {
                 var denied = steps.LastOrDefault(

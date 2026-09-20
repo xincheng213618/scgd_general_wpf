@@ -10,6 +10,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
@@ -90,30 +91,34 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 Lv = safeLuminance.ToString();
                 LuminousFlux = safeLuminance;
 
-                double sum1 = 0, sum2 = 0;
-                for (int i = 35; i <= 75; i++)
-                    sum1 += fPL[i * 10];
-                for (int i = 20; i <= 120; i++)
-                    sum2 += fPL[i * 10];
-                Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
-                for (int i = 0; i <= (780 - 380) * 10; i += 10)
+                if (fPL == null || fPL.Length == 0) return;
+                if (!float.IsFinite(fSpect1) || !float.IsFinite(fSpect2) || !float.IsFinite(fInterval)
+                    || fSpect2 <= fSpect1 || fInterval <= 0)
+                {
+                    fSpect1 = 380; fSpect2 = 780; fInterval = fPL.Length >= 4001 ? 0.1f : 1f;
+                }
+                int length = (int)Math.Min(fPL.Length, Math.Round((fSpect2 - fSpect1) / (double)fInterval) + 1);
+                fPL = fPL.Take(length).ToArray();
+                int step = Math.Max(1, (int)Math.Round(1d / fInterval));
+                SpectralDatas.Clear();
+                for (int i = 0; i < length; i += step)
                 {
                     SpectralData SpectralData = new();
-                    SpectralData.Wavelength = i / 10 + 380;
+                    SpectralData.Wavelength = fSpect1 + i * fInterval;
                     SpectralData.RelativeSpectrum = fPL[i] > 0 ? fPL[i] : 0;
                     SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;
                     SpectralDatas.Add(SpectralData);
                 }
 
-                fSpect1 = 380;
-                fSpect2 = 780;
-                int length = fPL.Length>4000 ?4000:fPL.Length;
+                double sum1 = SpectralDatas.Where(p => p.Wavelength >= 415 && p.Wavelength <= 455).Sum(p => (double)p.RelativeSpectrum);
+                double sum2 = SpectralDatas.Where(p => p.Wavelength >= 400 && p.Wavelength <= 500).Sum(p => (double)p.RelativeSpectrum);
+                Blue = sum2 == 0 ? "0" : Math.Round(sum1 / sum2 * 100, 2).ToString();
                 double[] xs = new double[length];
                 double[] ys = new double[length];
                 double[] ysAbsolute = new double[length];
                 for (int i = 0; i < length; i++)
                 {
-                    xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
+                    xs[i] = fSpect1 + (double)fInterval * i;
                     ys[i] = fPL[i];
                     ysAbsolute[i] = fPL[i] * fPlambda;
                 }
@@ -192,11 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             const double h = 6.62607015e-34;
             const double c = 299792458.0;
             const double q = 1.602176634e-19; // Elementary charge
-            double step_nm = 1.0;
-            if (fPL.Length > 2000)
-            {
-                step_nm = 0.1;
-            }
+            double step_nm = fInterval;
 
             double sum_P_times_Lambda = 0.0;
 
@@ -206,7 +207,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 double val = fPL[i];
 
                 // 当前波长
-                double lambda_nm = 380.0 + step_nm * i;
+                double lambda_nm = fSpect1 + step_nm * i;
 
                 // 积分累加项：归一化光谱 * 波长
                 sum_P_times_Lambda += val * lambda_nm;
