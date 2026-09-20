@@ -767,7 +767,7 @@
       "knowledge_id": "algorithms.image-profile",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "灰度/RGB 与 CVCIE 原始 Y、色度 x/y、Yxy 剖面的采样、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预览/执行预算。",
+      "summary": "灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。",
       "aliases": [
         "CIE Y",
         "CIE Yxy",
@@ -814,6 +814,8 @@
       "code_paths": [
         "UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs",
         "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CvRawProfileSource.cs",
+        "Engine/ColorVision.Engine/Media/CombinedProfileSource.cs",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs",
         "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs",
@@ -836,6 +838,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CvcieProfileTests.cs",
+        "Test/ColorVision.UI.Tests/CvRawProfileTests.cs",
+        "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
         "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs",
         "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs",
         "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"
@@ -8319,6 +8323,47 @@
       "searchable": true
     },
     {
+      "knowledge_id": "plugins.camera-test",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "CameraTest 相机生产调试：直接 SDK 取图、BMW 四边 SFR、RGB 位移、调焦趋势、可选判定与按设备编号存档；不初始化数据库或服务。",
+      "aliases": [
+        "CameraTest",
+        "相机生产调试",
+        "相机出厂检测",
+        "BMW 四边实时分析",
+        "独立相机测试",
+        "StandaloneCameraSession"
+      ],
+      "code_paths": [
+        "Plugins/CameraTest",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/StandaloneCameraSession.cs",
+        "Scripts/package_camera_test.ps1"
+      ],
+      "test_paths": [
+        "Test/CameraTest.Tests/CameraTestContractsTests.cs",
+        "Test/CameraTest.Tests/CameraTestWindowTests.cs",
+        "Test/CameraTest.Tests/ProductionArchiveTests.cs",
+        "Test/CameraTest.Tests/ChromaticAberrationTests.cs",
+        "Test/CameraTest.Tests/JudgmentAndFocusTests.cs",
+        "Scripts/tests/test_package_camera_test.ps1"
+      ],
+      "related": [
+        "operations.camera",
+        "engine.opencv-helper-api"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Plugins/CameraTest",
+        "Scripts"
+      ],
+      "domain": "plugins",
+      "title": "相机生产调试",
+      "source": "docs/04-api-reference/plugins/standard-plugins/camera-test.md",
+      "url": "/04-api-reference/plugins/standard-plugins/camera-test",
+      "searchable": true
+    },
+    {
       "knowledge_id": "plugins.capabilities",
       "knowledge_type": "reference",
       "status": "current",
@@ -8365,7 +8410,7 @@
       "knowledge_id": "plugins.conoscope",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "Conoscope 的采集、CVCIE 首屏/XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
+      "summary": "Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。",
       "aliases": [
         "锥镜图像怎么看",
         "Conoscope 依赖哪些 DLL",
@@ -8406,6 +8451,7 @@
         "Plugins/Conoscope/ConoscopeWindow.xaml.cs",
         "Plugins/Conoscope/Application/Capture/ConoscopeCaptureWorkflow.cs",
         "Plugins/Conoscope/ConoscopeDocument.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/CalibratedRawFileReader.cs",
         "Plugins/Conoscope/ConoscopeView.xaml",
         "Plugins/Conoscope/ConoscopeView.xaml.cs",
         "Plugins/Conoscope/ConoscopeImageHost.xaml.cs",
@@ -8431,6 +8477,7 @@
       "test_paths": [
         "Test/Conoscope.Tests/Conoscope.Tests.csproj",
         "Test/Conoscope.Tests/ConoscopeDocumentTests.cs",
+        "Test/Conoscope.Tests/CalibratedRawDocumentTests.cs",
         "Test/Conoscope.Tests/CvcieChannelReaderTests.cs",
         "Test/Conoscope.Tests/ConoscopeViewBoundaryTests.cs",
         "Test/Conoscope.Tests/ConoscopeHorizontalVerticalProjectionTests.cs",
@@ -8452,6 +8499,7 @@
       ],
       "code_scopes": [
         ".",
+        "Engine/ColorVision.Engine",
         "Engine/cvColorVision",
         "Plugins/Conoscope"
       ],
@@ -9868,7 +9916,9 @@
         "OpenCVMediaHelper",
         "ImageCompute",
         "NativeLogBridge",
-        "原生日志初始化"
+        "原生日志初始化",
+        "BmwSfrAnalyzer",
+        "SfrChromaticAberration"
       ],
       "code_paths": [
         "UI/ColorVision.Core/HImage.cs",
@@ -9878,14 +9928,18 @@
         "UI/ColorVision.Core/ImageCompute.cs",
         "UI/ColorVision.Core/NativeLogBridge.cs",
         "UI/ColorVision.Core/ColorVision.Core.csproj",
-        "UI/ColorVision.Core/README.md"
+        "UI/ColorVision.Core/README.md",
+        "UI/ColorVision.Core/BmwSfrAnalyzer.cs",
+        "UI/ColorVision.Core/SfrChromaticAberration.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/HImageAbiTests.cs",
         "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs",
         "Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs",
         "Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs",
-        "Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs"
+        "Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs",
+        "Test/ColorVision.UI.Tests/BmwSfrAnalysisTests.cs",
+        "Test/CameraTest.Tests/ChromaticAberrationTests.cs"
       ],
       "related": [
         "ui.index",

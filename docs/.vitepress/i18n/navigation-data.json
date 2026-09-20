@@ -2579,6 +2579,18 @@
             },
             {
               "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
+            },
+            {
+              "text": {
+                "root": "Conoscope 图像、采集与分析"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/conoscope"
+            },
+            {
+              "text": {
                 "root": "WindowsServicePlugin：选包、本机安装与恢复"
               },
               "link": "/04-api-reference/plugins/standard-plugins/windows-service"
@@ -3241,6 +3253,21 @@
         },
         {
           "text": {
+            "root": "Plugins/CameraTest"
+          },
+          "link": "/knowledge/code/source-Plugins#module-506c7567696e732f43616d65726154657374",
+          "collapsed": true,
+          "items": [
+            {
+              "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
+            }
+          ]
+        },
+        {
+          "text": {
             "root": "Plugins/Conoscope"
           },
           "link": "/knowledge/code/source-Plugins#module-506c7567696e732f436f6e6f73636f7065",
@@ -3860,6 +3887,12 @@
                 "root": "构建平台与制品边界"
               },
               "link": "/02-developer-guide/README"
+            },
+            {
+              "text": {
+                "root": "相机生产调试"
+              },
+              "link": "/04-api-reference/plugins/standard-plugins/camera-test"
             },
             {
               "text": {
