@@ -51,7 +51,7 @@ public sealed class CopilotWorkspacePatchScopeTests
         var request = new CopilotAgentRequest { WorkspacePath = fixture.Workspace, WritableLocalFilePaths = [outside] };
 
         Assert.False(CopilotWorkspacePatchScope.TryResolve(request, "..\\outside.json", 20_000, out _, out var error));
-        Assert.Contains("escapes", error, StringComparison.Ordinal);
+        Assert.Contains("outside the allowed workspace roots", error, StringComparison.Ordinal);
         Assert.True(CopilotWorkspacePatchScope.TryResolve(request, outside, 20_000, out _, out error), error);
     }
 

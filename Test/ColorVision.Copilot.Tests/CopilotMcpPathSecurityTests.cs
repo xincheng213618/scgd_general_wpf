@@ -7,6 +7,40 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotMcpPathSecurityTests
 {
+    [Theory]
+    [InlineData("list_allowed_directory")]
+    [InlineData("grep_text")]
+    public async Task MissingNestedPathDoesNotClaimAReparsePointOrAnEscape(string toolName)
+    {
+        var root = CreateRoot();
+        try
+        {
+            var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+            {
+                WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot
+                {
+                    SolutionDirectoryPath = root,
+                    SearchRootPaths = [root],
+                },
+            });
+            var arguments = new Dictionary<string, JsonElement> { ["path"] = JsonSerializer.SerializeToElement("missing/deeper") };
+            if (toolName == "grep_text") arguments["query"] = JsonSerializer.SerializeToElement("camera");
+            var result = await dispatcher.CallAsync(toolName, arguments, CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Contains("does not exist", result.Text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("reparse point", result.Text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("outside", result.Text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            var fullPath = Path.GetFullPath(root);
+            Assert.StartsWith(Path.GetFullPath(Path.GetTempPath()), fullPath, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(nameof(CopilotMcpPathSecurityTests), Path.GetFileName(Path.GetDirectoryName(fullPath)));
+            Directory.Delete(fullPath, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task FileToolsRejectWorkspaceDriftWithinOneCall()
     {

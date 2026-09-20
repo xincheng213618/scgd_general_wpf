@@ -42,6 +42,8 @@ Agent `CopilotToolInputSchema.TryBind` 与本机 MCP dispatcher 共用 `CopilotT
 
 `ApprovalMode.Always` 的工具应实现 `ICopilotFrameworkApprovedTool`，获准后通过 `ExecuteApprovedAsync` 进入工具。Framework 是否包装 `ApprovalRequiredAIFunction` 由 `CopilotCodexApprovalPolicySelection.RequiresNativeApproval` 判断：工具自身的原生审批声明始终生效，冻结的 `untrusted` 策略还会把写能力升级到原生审批。普通 `ExecuteAsync` 必须继续保留直接调用和业务入口所需的确认，不能把“来自模型”本身视为授权。
 
+Harness 的审批绑定保持启用：待审批回应必须匹配 SDK 在该会话中实际发出并保存的请求，调用方在历史消息中拼出的请求／回应不能替代这一记录；回应中的工具或参数被替换时，SDK 仍绑定原请求。已完成调用的历史审批不再次触发执行，ColorVision 的任务作用域、精确参数与执行前复核继续独立生效。`CopilotApprovalCheckpointTests` 使用公开 Harness API 覆盖流式与非流式的保存恢复、参数替换、重复回应和伪造历史，并用真实 1.21 SDK 生成的合成待审批会话检查升级后的绑定兼容性；该夹具只验证 SDK 会话协议，不代表所有历史工程或桌面恢复流程均已验收。
+
 “原生审批”是精确调用协议，不等于每次必须由人点击。`RouteFrameworkApprovalsAsync` 的当前决定路径是：
 
 - `CopilotCodexExecPolicyEvaluator` 当前只评估 `RunShellCommand` 的冻结执行规则。若给出 `Forbidden`，拒绝调用；`Allow` 是单独的批准来源，执行前再次核对；`Prompt` 进入对应规则审批类别，不走临时补丁直接批准分支。

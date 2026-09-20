@@ -497,13 +497,13 @@ namespace ColorVision.Copilot
                     var candidate = Path.GetFullPath(requestedPath);
                     if (!IsPathWithinRoots(candidate, searchRoots))
                     {
-                        errorMessage = $"The {pathKind} path is outside the allowed workspace roots: {candidate}";
+                        errorMessage = DescribePathResolutionFailure(candidate, searchRoots, pathKind);
                         return false;
                     }
 
                     if (!exists(candidate))
                     {
-                        errorMessage = $"The {pathKind} does not exist: {candidate}";
+                        errorMessage = DescribePathResolutionFailure(candidate, searchRoots, pathKind);
                         return false;
                     }
 
@@ -518,7 +518,7 @@ namespace ColorVision.Copilot
             }
 
             var matches = new List<string>();
-            var escapedWorkspace = false;
+            var unresolvedPaths = new List<(string Path, string Root)>();
             foreach (var root in searchRoots)
             {
                 string candidate;
@@ -534,12 +534,14 @@ namespace ColorVision.Copilot
 
                 if (!IsPathWithinRoots(candidate, [root]))
                 {
-                    escapedWorkspace = true;
+                    unresolvedPaths.Add((candidate, root));
                     continue;
                 }
 
                 if (exists(candidate))
                     matches.Add(candidate);
+                else
+                    unresolvedPaths.Add((candidate, root));
             }
 
             var distinctMatches = matches.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -555,10 +557,59 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            errorMessage = escapedWorkspace
-                ? $"The workspace-relative {pathKind} path escapes the allowed workspace roots: {requestedPath}"
-                : $"The {pathKind} does not exist in the allowed workspace roots: {requestedPath}";
+            errorMessage = string.Join(Environment.NewLine, unresolvedPaths.Take(3)
+                .Select(candidate => DescribePathResolutionFailure(candidate.Path, [candidate.Root], pathKind)));
+            if (unresolvedPaths.Count > 3)
+                errorMessage += $" No accessible match was found in {unresolvedPaths.Count - 3} additional roots.";
             return false;
+        }
+
+        // Diagnostics only: the existing path resolution has already failed.
+        // Inspect from the allowed root outwards, stopping before following a link.
+        internal static string DescribePathResolutionFailure(string fullPath, IReadOnlyList<string> roots, string pathKind)
+        {
+            var root = roots.FirstOrDefault(candidate => string.Equals(fullPath, candidate, StringComparison.OrdinalIgnoreCase)
+                || IsSubPathOf(fullPath, candidate));
+            if (root == null)
+                return $"The {pathKind} path is outside the allowed workspace roots: {fullPath}";
+
+            var components = new List<string> { root };
+            var current = root;
+            foreach (var segment in Path.GetRelativePath(root, fullPath)
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (segment == ".") continue;
+                current = Path.Combine(current, segment);
+                components.Add(current);
+            }
+
+            foreach (var component in components)
+            {
+                FileAttributes attributes;
+                try { attributes = File.GetAttributes(component); }
+                catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+                {
+                    return $"The {pathKind} does not exist: {fullPath}. Relative paths start at an allowed workspace root; '.' refers to that root. Inspect a root with the directory-listing tool and use an exact listed path.";
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+                {
+                    return $"The {pathKind} path could not be verified safely: {fullPath}. {ex.Message}";
+                }
+
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    return $"The {pathKind} path crosses a file-system reparse point and is not allowed: {fullPath}";
+                if ((attributes & FileAttributes.Directory) == 0 && !string.Equals(component, fullPath, StringComparison.OrdinalIgnoreCase))
+                    return $"The {pathKind} path cannot be resolved because a parent component is a file: {component}";
+                if (string.Equals(component, fullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (pathKind == "directory" && (attributes & FileAttributes.Directory) == 0)
+                        return $"The path refers to a file; a directory is required: {fullPath}";
+                    if (pathKind == "file" && (attributes & FileAttributes.Directory) != 0)
+                        return $"The path refers to a directory; a file is required: {fullPath}";
+                }
+            }
+
+            return $"The {pathKind} path could not be verified as accessible: {fullPath}. Re-list the allowed workspace root before choosing another path.";
         }
 
         private static string NormalizeToExistingDirectory(string? path)

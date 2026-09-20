@@ -220,13 +220,7 @@ namespace ColorVision.Copilot.Mcp
             var resolvedFullPath = fullPath;
             if (!CopilotWorkspaceSearchSupport.IsPathWithinRoots(resolvedFullPath, roots))
             {
-                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedFullPath))
-                {
-                    error = $"The path crosses a file-system reparse point and is not allowed: {fullPath}";
-                    return false;
-                }
-
-                error = $"The path is outside the allowed ColorVision workspace roots: {fullPath}";
+                error = CopilotWorkspaceSearchSupport.DescribePathResolutionFailure(resolvedFullPath, roots, "target");
                 return false;
             }
 
