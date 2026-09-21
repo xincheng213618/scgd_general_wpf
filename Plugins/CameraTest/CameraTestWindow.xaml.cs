@@ -9,6 +9,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using Microsoft.Win32;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -24,7 +25,9 @@ public partial class CameraTestWindow : Window
     private readonly ArchiveSettings _archiveSettings = new();
     private readonly FocusHistory _focusHistory = new();
     private readonly StandaloneCameraSession _camera = new();
-    private readonly DispatcherTimer _timer;
+    private Task? _videoTask;
+    private Task<bool>? _frameTask;
+    private bool _processingFrame;
     private TestFrame? _frame;
     private FrameAnalysis? _result;
     private IDisposable? _overlays;
@@ -34,22 +37,25 @@ public partial class CameraTestWindow : Window
     private Task? _analysisTask;
     private Task? _archiveTask;
 
-    public CameraTestWindow()
+    public CameraTestWindow() : this(CameraOperationSettingsStore.DefaultPath) { }
+
+    public CameraTestWindow(string settingsPath)
     {
+        _settingsStore = new CameraOperationSettingsStore(settingsPath);
         InitializeComponent();
+        LoadOperationSettings();
         ImageView.AllowDrop = false;
-        ImageView.Config.IsToolBarLeftVisible = false;
-        ImageView.Config.IsToolBarRightVisible = false;
+        if (ImageView.FindName("ZoomGrid") is Panel imageBackground)
+            imageBackground.SetResourceReference(Panel.BackgroundProperty, "CV.Surface.Alternate");
         ImageView.ImageSourceLoaded += ImageSourceChanged;
         ImageView.EditorContext.DrawEditorContext.DrawingVisualLists.CollectionChanged += DrawingsChanged;
         ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrixChanged += OverlayZoomChanged;
         ImageView.EditorContext.DrawEditorContext.Zoombox.PreviewMouseDown += MeasurementEdge_MouseDown;
         ImageView.EditorContext.DrawEditorContext.SelectionVisual.SelectionChanged += DrawingSelectionChanged;
         ImageView.EditorContext.DrawEditorContext.Zoombox.AddHandler(ContextMenuService.ContextMenuOpeningEvent, new ContextMenuEventHandler(MeasurementEdge_ContextMenuOpening), true);
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(_profile.Analysis.LiveIntervalMilliseconds) };
-        _timer.Tick += Live_Tick;
         _ready = true;
         InitializeCameraControls();
+        _themeManager.CurrentUIThemeChanged += OnWorkbenchThemeChanged;
         Refresh();
     }
 
@@ -68,15 +74,13 @@ public partial class CameraTestWindow : Window
 
     private void Refresh()
     {
-        if (!_ready) return;
+        if (!_ready || _closed) return;
         RefreshCameraControls();
         _regionError = GetRegionError();
-        bool idle = !_busy && !_closing;
-        CameraSummary.Text = $"{_profile.Camera.Model} · {_profile.Camera.Mode}\n{(_camera.IsConnected ? "已连接" : "未连接")} · {_profile.Camera.BitDepth} bit\n曝光 {_profile.Camera.ExposureMilliseconds:G} ms · 增益 {_profile.Camera.Gain:G}";
-        SignalSummary.Text = $"输入编码：{_profile.Sfr.InputEncoding}\n目标频率：{_profile.Analysis.TargetFrequency:G} cycles/pixel";
+        bool idle = !_busy && !_closing && !_stopping;
+        CameraSummary.Text = _camera.IsConnected ? "已连接" : "未连接";
+        RefreshOperationControls();
         ResponseColumn.Header = $"MTF@{_profile.Analysis.TargetFrequency:G}";
-        ModeText.Text = _live ? "实时调试" : "单帧调试";
-        ArchiveSummary.Text = string.IsNullOrWhiteSpace(_archiveSettings.DeviceSerial) ? "设备编号 / SN 未填写" : $"设备编号：{_archiveSettings.DeviceSerial}\n批次：{_archiveSettings.Batch}";
         RegionCountText.Text = _profile.Regions.Count.ToString();
         DisplaySettingsMenuItem.IsEnabled = idle && !_live;
         VideoSettingsMenuItem.IsEnabled = idle && !_live;
@@ -96,29 +100,34 @@ public partial class CameraTestWindow : Window
         ExportMenuItem.IsEnabled = idle && !_live && _result != null && _result.FrameId == _frame?.Id;
         SaveImageMenuItem.IsEnabled = idle && !_live && _frame != null;
         ConnectButton.IsEnabled = idle && !_camera.IsConnected;
-        DisconnectButton.IsEnabled = idle && _camera.IsConnected;
+        DisconnectButton.IsEnabled = !_closing && !_stopping && (!_busy || _live) && _camera.IsConnected;
         CameraSettingsButton.IsEnabled = DiscoverButton.IsEnabled = CameraIds.IsEnabled = idle && !_camera.IsConnected;
         SignalSettingsMenuItem.IsEnabled = MetricSettingsMenuItem.IsEnabled = LoadProfileMenuItem.IsEnabled = idle && !_live;
         SaveProfileMenuItem.IsEnabled = idle && !_live;
         AddRegionButton.IsEnabled = idle && !_live && _frame != null;
-        string? selectedRegion = (RegionList.SelectedItem as SearchRegion)?.Id;
-        RegionList.ItemsSource = _profile.Regions.ToArray();
-        RegionList.SelectedItem = _profile.Regions.FirstOrDefault(r => r.Id == selectedRegion);
+        if (!RegionList.Items.OfType<SearchRegion>().SequenceEqual(_profile.Regions))
+        {
+            string? selectedRegion = (RegionList.SelectedItem as SearchRegion)?.Id;
+            RegionList.ItemsSource = _profile.Regions.ToArray();
+            RegionList.SelectedItem = _profile.Regions.FirstOrDefault(r => r.Id == selectedRegion);
+        }
         RemoveRegionMenuItem.IsEnabled = idle && !_live && RegionList.SelectedItem != null;
+        RefreshWorkbenchState();
     }
 
     private async Task PerformAsync(Func<Task> operation)
     {
-        if (_busy || _closing) return;
+        if (_busy || _closing || _stopping) return;
         _busy = true;
         Refresh();
-        try { await operation(); }
+        try { _operationTask = operation(); await _operationTask; }
         catch (Exception exception) { StatusText.Text = exception.Message; }
         finally { _busy = false; Refresh(); }
     }
 
     private async Task EnsureCameraAsync(bool live)
     {
+        await ApplyPendingAcquisitionAsync();
         if (_camera.IsConnected && _camera.IsLive != live) await _camera.DisconnectAsync();
         if (!_camera.IsConnected) await _camera.ConnectAsync(_profile.Camera, live);
     }
@@ -129,31 +138,55 @@ public partial class CameraTestWindow : Window
         StatusText.Text = "相机已连接，可以取图分析。";
     });
 
-    private async void Disconnect_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
+    private async void Disconnect_Click(object sender, RoutedEventArgs e)
     {
-        StopLive();
-        await _camera.DisconnectAsync();
-        StatusText.Text = "相机已断开，当前图像保留。";
-    });
+        if (_live) { await StopVideoAsync(); return; }
+        await PerformAsync(async () =>
+        {
+            try { await ApplyPendingAcquisitionAsync(); }
+            finally { await _camera.DisconnectAsync(); }
+            StatusText.Text = "相机已断开，当前图像保留。";
+        });
+    }
 
     private async void Discover_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
     {
         var result = await StandaloneCameraSession.DiscoverAsync(_profile.Camera.Model);
-        CameraIds.ItemsSource = result.Cameras.Select(c => c.CameraId).ToArray();
-        if (result.Cameras.Count > 0) CameraIds.SelectedIndex = 0;
+        string remembered = _profile.Camera.CameraId;
+        var ids = result.Cameras.Select(c => c.CameraId).ToArray();
+        CameraIds.ItemsSource = ids;
+        CameraIds.SelectedItem = ids.FirstOrDefault(id => id == remembered) ?? ids.FirstOrDefault();
         StatusText.Text = result.Cameras.Count > 0 ? $"发现 {result.Cameras.Count} 台相机。" : string.Join("；", result.Models.Select(m => m.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m))) is { Length: > 0 } error ? error : "未发现相机，请核对驱动和连接。";
     });
 
     private void CameraIds_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_ready && CameraIds.SelectedItem is string id) _profile.Camera.CameraId = id;
+        if (_ready && CameraIds.SelectedItem is string id)
+        {
+            _profile.Camera.CameraId = id;
+            ScheduleSettingsSave();
+        }
     }
 
     private async void Capture_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
     {
-        await EnsureCameraAsync(false);
-        var data = await _camera.CaptureAsync();
-        await AcceptAndAnalyzeAsync(new TestFrame(data, $"Camera:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Capture, _profile.Camera));
+        var total = Stopwatch.StartNew();
+        CaptureTimingText.Text = "正在取图…";
+        var capture = new Stopwatch();
+        StandaloneCameraFrame data;
+        try
+        {
+            await EnsureCameraAsync(false);
+            capture.Start();
+            data = await _camera.CaptureAsync();
+            capture.Stop();
+        }
+        catch
+        {
+            CaptureTimingText.Text = $"取图失败 · 已等待 {total.Elapsed.TotalMilliseconds:F0} ms";
+            throw;
+        }
+        await AcceptCaptureAsync(new TestFrame(data, $"Camera:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Capture, _camera.RequestedSettings), capture.Elapsed.TotalMilliseconds, total);
     });
 
     private async void Open_Click(object sender, RoutedEventArgs e)
@@ -177,7 +210,7 @@ public partial class CameraTestWindow : Window
         {
             _profile.ImageWidth = frame.Data.Width;
             _profile.ImageHeight = frame.Data.Height;
-            StatusText.Text = "图像已加载。请框选一个完整 BMW 靶标；可重复添加多个搜索区域。";
+            StatusText.Text = $"图像已加载。{ChartSelectionHint}";
         }
         else if (_regionError != null) StatusText.Text = _regionError;
         else await AnalyzeFrameAsync(frame, _generation);
@@ -195,6 +228,7 @@ public partial class CameraTestWindow : Window
         try { ImageView.OpenImage(new WriteableBitmap(frame.CreateBitmap())); }
         finally { _presenting = false; }
         _frame = frame;
+        UpdateFrameSaveState(frame);
         if (sameSize) ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrix = matrix;
         else Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
@@ -220,7 +254,7 @@ public partial class CameraTestWindow : Window
         var selected = Metrics.SelectedItem as MetricRow;
         var selectedColor = ColorMetrics.SelectedItem as ColorShiftRow;
         if (!_live) InvalidateResult();
-        StatusText.Text = "正在定位 BMW 并计算四边 SFR…";
+        if (!_live) StatusText.Text = "正在定位并计算四边 SFR…";
         var snapshot = JsonSerializer.Deserialize<TestProfile>(JsonSerializer.Serialize(_profile, ProfileStore.JsonOptions), ProfileStore.JsonOptions)!;
         var job = Task.Run(() => FrameAnalysis.Run(frame, snapshot));
         _analysisTask = job;
@@ -236,7 +270,13 @@ public partial class CameraTestWindow : Window
             throw;
         }
         if (_closing || generation != _generation || (!_live && _frame?.Id != frame.Id)) return;
-        if (_live) ShowFrame(frame);
+        if (_live)
+        {
+            // Preserve selections made while the background calculation was running.
+            selected = Metrics.SelectedItem as MetricRow;
+            selectedColor = ColorMetrics.SelectedItem as ColorShiftRow;
+            ShowFrame(frame);
+        }
         _result = result;
         RefreshMetricRows(selected);
         var colors = ColorShiftPresentation.Rows(result);
@@ -257,40 +297,81 @@ public partial class CameraTestWindow : Window
         }
         int located = result.Targets.Count(t => t.Located);
         var channels = result.Targets.SelectMany(t => t.Edges).Where(edge => edge.Analysis != null).SelectMany(edge => edge.Analysis!.Channels).ToArray();
-        StatusText.Text = $"定位 {located}/{result.Targets.Count} 个靶标 · 有效通道结果 {channels.Count(channel => channel.Valid)}/{channels.Length} · {result.ElapsedMilliseconds:F0} ms · {result.Judgment.Status}";
+        string chartTypes = string.Join(" / ", result.Targets.Where(t => t.Located).Select(GetChartTypeText).Distinct());
+        string elapsed = _live ? "" : $" · {result.ElapsedMilliseconds:F0} ms";
+        StatusText.Text = $"定位 {located}/{result.Targets.Count} 个测量点 {chartTypes} · 有效通道结果 {channels.Count(channel => channel.Valid)}/{channels.Length}{elapsed} · {result.Judgment.Status}";
         RenderOverlays();
     }
 
-    private async void Live_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
+    private async void Live_Click(object sender, RoutedEventArgs e)
     {
-        await EnsureCameraAsync(true);
-        ResetFocus();
-        _generation++;
-        _live = true;
-        _timer.Interval = TimeSpan.FromMilliseconds(_profile.Analysis.LiveIntervalMilliseconds);
-        _timer.Start();
-        StatusText.Text = _profile.Regions.Count == 0 ? "实时预览中。停止并冻结后框选靶标，再开始实时分析。" : "实时分析已启动，等待相机帧。";
-    });
-
-    private async void Live_Tick(object? sender, EventArgs e)
-    {
-        if (!_live || _busy || _closing) return;
+        if (_live) return;
         await PerformAsync(async () =>
         {
-            var pixels = _camera.TakeLatestFrame();
-            if (pixels == null) return;
-            var frame = new TestFrame(pixels, $"Live:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Live, _profile.Camera);
+            await EnsureCameraAsync(true);
+            ResetFocus();
+            _generation++;
+            _live = true;
+            _videoMetrics.Reset();
+            _videoClock.Restart();
+            RefreshVideoReadouts();
+            StatusText.Text = "视频已启动，等待相机帧。";
+        });
+        if (_live && !_closing) _videoTask = RunVideoAsync(_generation);
+    }
+
+    private async Task RunVideoAsync(long generation)
+    {
+        try
+        {
+            while (_live && !_closing && generation == _generation)
+            {
+                // Completed analysis immediately releases the consumer; only idle input is polled.
+                if (!await ProcessLatestFrameAsync()) await Task.Delay(8);
+                else await Dispatcher.Yield(DispatcherPriority.Background);
+            }
+        }
+        catch (Exception exception)
+        {
+            if (!_closing && generation == _generation)
+            {
+                StopLive();
+                StatusText.Text = $"视频分析已停止：{exception.Message}";
+                Refresh();
+            }
+        }
+    }
+
+    private Task<bool> ProcessLatestFrameAsync()
+    {
+        if (_live) RefreshVideoReadouts();
+        if (!_live || _busy || _closing || _processingFrame) return Task.FromResult(false);
+        var pixels = _camera.TakeLatestFrame();
+        if (pixels == null) return Task.FromResult(false);
+        _processingFrame = true;
+        return _frameTask = AnalyzeVideoFrameAsync(pixels, _generation);
+    }
+
+    private async Task<bool> AnalyzeVideoFrameAsync(StandaloneCameraFrame pixels, long generation)
+    {
+        try
+        {
+            var frame = new TestFrame(pixels, $"Live:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Live, _camera.RequestedSettings ?? _profile.Camera);
+            var analysis = Stopwatch.StartNew();
+            double? sharpness = null;
+            bool calculateSharpness = _profile.Video.Mode == VideoAnalysisMode.Sharpness || _profile.Video.Mode == VideoAnalysisMode.BmwSfr && _profile.Video.IncludeSharpnessWithSfr;
+            if (calculateSharpness)
+            {
+                var roi = _profile.Video.ResolveRoi(frame.Data.Width, frame.Data.Height);
+                var algorithm = _profile.Video.Algorithm;
+                var job = Task.Run(() => frame.Read(image => OpenCVMediaHelper.M_CalArtculation(image, algorithm, roi)));
+                _analysisTask = job;
+                sharpness = await job;
+                if (!_live || _closing || generation != _generation) return false;
+            }
             if (_profile.Video.Mode != VideoAnalysisMode.BmwSfr || _profile.Regions.Count == 0)
             {
-                long generation = _generation;
-                double? sharpness = null;
-                if (_profile.Video.Mode == VideoAnalysisMode.Sharpness)
-                {
-                    var roi = _profile.Video.ResolveRoi(frame.Data.Width, frame.Data.Height);
-                    var algorithm = _profile.Video.Algorithm;
-                    sharpness = await Task.Run(() => frame.Read(image => OpenCVMediaHelper.M_CalArtculation(image, algorithm, roi)));
-                }
-                if (!_live || _closing || generation != _generation) return;
+                if (!_live || _closing || generation != _generation) return false;
                 ShowFrame(frame);
                 InvalidateResult();
                 if (_profile.Regions.Count == 0)
@@ -298,27 +379,60 @@ public partial class CameraTestWindow : Window
                     _profile.ImageWidth = frame.Data.Width;
                     _profile.ImageHeight = frame.Data.Height;
                 }
-                StatusText.Text = sharpness.HasValue ? $"实时清晰度 · {_profile.Video.Algorithm}：{sharpness.Value:G7}" : "实时预览 · 停止后可框选测量点。";
+                StatusText.Text = _profile.Video.Mode == VideoAnalysisMode.BmwSfr ? "SFR · 未设置测量点" : "视频运行中";
             }
-            else await AnalyzeFrameAsync(frame, _generation);
-        });
+            else await AnalyzeFrameAsync(frame, generation);
+            if (!_live || _closing || generation != _generation) return false;
+            _videoMetrics.Presented(_videoClock.Elapsed, sharpness, _profile.Video.Mode == VideoAnalysisMode.Preview ? null : analysis.Elapsed.TotalMilliseconds);
+            return true;
+        }
+        finally
+        {
+            _processingFrame = false;
+            if (_live) RefreshVideoReadouts();
+        }
     }
 
     private void StopLive()
     {
-        _timer.Stop();
+        if (_live) VideoFpsText.Text = "视频已停止";
         _live = false;
+        _videoClock.Stop();
         _generation++;
     }
 
-    private async void Stop_Click(object sender, RoutedEventArgs e)
+    private async void Stop_Click(object sender, RoutedEventArgs e) => await StopVideoAsync();
+
+    private async Task StopVideoAsync()
     {
-        if (!_live || _closing) return;
+        if (!_live || _closing || _stopping) return;
         StopLive();
+        _stopping = true;
         Refresh();
-        try { await _camera.DisconnectAsync(); StatusText.Text = "实时分析已停止，画面已冻结。"; }
+        try
+        {
+            _stopTask = StopCameraAsync();
+            await _stopTask;
+        }
         catch (Exception exception) { StatusText.Text = exception.Message; }
-        Refresh();
+        finally { _stopping = false; Refresh(); }
+    }
+
+    private async Task StopCameraAsync()
+    {
+        await WaitForVideoAsync();
+        if (_operationTask != null)
+            try { await _operationTask; }
+            catch (Exception exception) { Trace.TraceError(exception.ToString()); }
+        try { await ApplyPendingAcquisitionAsync(); }
+        finally { await _camera.DisconnectAsync(); }
+        StatusText.Text = "相机已断开，画面已冻结。";
+    }
+
+    private async Task WaitForVideoAsync()
+    {
+        if (_videoTask != null) try { await _videoTask; } catch (Exception exception) { Trace.TraceError(exception.ToString()); }
+        if (_frameTask != null) try { await _frameTask; } catch (Exception exception) { Trace.TraceError(exception.ToString()); }
     }
 
     private async void AddRegion_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
@@ -328,7 +442,7 @@ public partial class CameraTestWindow : Window
         if (_profile.Regions.Count > 0 && (_profile.ImageWidth != _frame.Data.Width || _profile.ImageHeight != _frame.Data.Height))
             throw new InvalidOperationException("请先移除尺寸不匹配的旧搜索区域。");
         Guid sourceId = _frame.Id;
-        StatusText.Text = "在图中拖出矩形包住一个完整 BMW 靶标；Esc 取消。";
+        StatusText.Text = $"{ChartSelectionHint} Esc 取消。";
         SelectResult? selected;
         _selectingRegion = true;
         Refresh();
@@ -361,6 +475,8 @@ public partial class CameraTestWindow : Window
         CloseEdgeMenu();
         _result = null;
         Metrics.ItemsSource = null;
+        RefreshOverview();
+        EmptyPlot.Visibility = Visibility.Visible;
         ColorMetrics.ItemsSource = null;
         ColorSummary.Text = ColorShiftPresentation.Summary([]);
         JudgmentMetrics.ItemsSource = null;
@@ -382,22 +498,25 @@ public partial class CameraTestWindow : Window
 
     private void RefreshMetricRows(MetricRow? selected)
     {
+        RefreshTargetFilter();
         var channels = SelectedPlotChannels();
+        string? target = TargetFilter.SelectedItem as string;
         // Channel-less rows report failed edges and remain visible while any channel is enabled.
-        var rows = (_result?.Rows() ?? []).Where(row => channels.Count > 0 &&
+        var rows = (_result?.Rows() ?? []).Where(row => (target == null || target == AllTargets || row.Target == target) && channels.Count > 0 &&
             (row.Channel == "—" || channels.Contains(row.Channel == "Y (L)" ? "L" : row.Channel))).ToArray();
         Metrics.ItemsSource = rows;
         Metrics.SelectedItem = rows.FirstOrDefault(row => row.Target == selected?.Target && row.Edge == selected.Edge && row.Channel == selected.Channel)
             ?? rows.FirstOrDefault(row => row.Target == selected?.Target && row.Edge == selected.Edge)
             ?? rows.FirstOrDefault(row => row.Target == selected?.Target)
             ?? rows.FirstOrDefault();
+        RefreshOverview();
     }
 
     private void UpdatePlot()
     {
         if (!_ready) return;
         var selected = Metrics.SelectedItem as MetricRow;
-        CurveSelectionText.Text = selected == null ? "请选择结果行"
+        CurveSelectionText.Text = selected == null ? "等待选择"
             : $"{selected.Target} · {(Enum.TryParse<BmwEdgeId>(selected.Edge, out var edge) ? EdgeName(edge) : selected.Edge)}边";
         if (selected is not { Analysis: { } analysis })
         {
@@ -406,9 +525,10 @@ public partial class CameraTestWindow : Window
             return;
         }
         EmptyPlot.Visibility = Visibility.Collapsed;
+        CurvePlot.SetDarkTheme(_themeManager.CurrentUITheme == ColorVision.Themes.Theme.Dark);
         CurvePlot.ShowResult(analysis, PlotMode.SelectedIndex, SelectedPlotChannels(), false);
     }
-    private void Metrics_SelectionChanged(object sender, SelectionChangedEventArgs e) { UpdatePlot(); if (_ready) RenderOverlays(); }
+    private void Metrics_SelectionChanged(object sender, SelectionChangedEventArgs e) { UpdatePlot(); SynchronizeOverviewSelection(); if (_ready) RenderOverlays(); }
     private void PlotMode_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePlot();
     private void PlotSettings_Click(object sender, RoutedEventArgs e)
     {
@@ -495,7 +615,7 @@ public partial class CameraTestWindow : Window
     private void EditSettings(object settings, string title)
     {
         var window = new PropertyEditorWindow(settings, PropertyEditorEditMode.Transactional) { Owner = this, Title = title, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        window.Submitted += (_, _) => { InvalidateResult(); ResetFocus(); };
+        window.Submitted += (_, _) => { InvalidateResult(); ResetFocus(); ScheduleSettingsSave(); };
         window.ShowDialog();
         Refresh();
         RenderOverlays();
@@ -503,7 +623,7 @@ public partial class CameraTestWindow : Window
     private void CameraSettings_Click(object sender, RoutedEventArgs e) => CameraModels.Focus();
     private void VideoSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Video, "视频分析设置");
     private void SignalSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Sfr, "输入信号与质量检查");
-    private void MetricSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Analysis, "指标与实时刷新");
+    private void MetricSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Analysis, "分析指标");
     private void JudgmentSettings_Click(object sender, RoutedEventArgs e) => EditSettings(_profile.Judgment, "可选判定标准（留空不检查）");
 
     private bool EditArchiveSettings()
@@ -533,6 +653,7 @@ public partial class CameraTestWindow : Window
             var job = Task.Run(() => ProductionArchive.Save(frame, result, profile, settings, _focusHistory));
             _archiveTask = job;
             string folder = await job;
+            if (_frame?.Id == frame.Id) MarkFrameSaved(folder);
             StatusText.Text = $"设备 {settings.DeviceSerial} 已存档：{folder}";
             StatusText.ToolTip = folder;
         });
@@ -561,6 +682,8 @@ public partial class CameraTestWindow : Window
     {
         if (_busy || _closing || _camera.IsConnected) throw new InvalidOperationException("请先完成当前操作并断开相机，再加载配置。");
         _profile = ProfileStore.Load(path);
+        ScheduleSettingsSave();
+        SynchronizeDisplayMetric();
         RestoreRegionDrawings();
         ResetFocus();
         InvalidateResult();
@@ -586,20 +709,18 @@ public partial class CameraTestWindow : Window
         catch (Exception exception) { StatusText.Text = exception.Message; }
     }
 
-    private void SaveImage_Click(object sender, RoutedEventArgs e)
+    private async void SaveImage_Click(object sender, RoutedEventArgs e)
     {
-        if (_frame == null) return;
+        if (_frame == null || _live || _busy || _closing) return;
         var dialog = new SaveFileDialog { Filter = "无损 PNG|*.png", FileName = $"CameraTest-{DateTime.Now:yyyyMMdd-HHmmss}.png" };
         if (dialog.ShowDialog(this) != true) return;
-        try
+        await PerformAsync(async () =>
         {
-            using var stream = File.Create(dialog.FileName);
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(_frame.CreateBitmap()));
-            encoder.Save(stream);
+            var frame = _frame;
+            await Task.Run(() => CaptureFileStore.SavePng(frame, dialog.FileName));
+            if (_frame?.Id == frame.Id) MarkFrameSaved(dialog.FileName);
             StatusText.Text = "当前原始像素已保存为 PNG（不包含叠图或显示滤镜）。";
-        }
-        catch (Exception exception) { StatusText.Text = exception.Message; }
+        });
     }
 
     private async void Window_Closing(object? sender, CancelEventArgs e)
@@ -607,17 +728,25 @@ public partial class CameraTestWindow : Window
         if (_closed) return;
         e.Cancel = true;
         if (_closing) return;
+        QueueAcquisitionInput(ExposureInput);
+        QueueAcquisitionInput(GainInput);
         _closing = true;
+        _themeManager.CurrentUIThemeChanged -= OnWorkbenchThemeChanged;
         _acquisitionTimer.Stop();
         _acquisitionTimer.Tick -= ApplyAcquisition_Tick;
         StopLive();
         Refresh();
         try
         {
+            if (_stopTask != null) try { await _stopTask; } catch (Exception) { }
+            await WaitForVideoAsync();
+            if (_operationTask != null) try { await _operationTask; } catch (Exception) { }
+            try { await ApplyPendingAcquisitionAsync(); } catch (Exception exception) { System.Diagnostics.Trace.TraceError(exception.ToString()); }
+            SaveOperationSettings();
+            _settingsTimer.Tick -= SaveSettings_Tick;
             if (_archiveTask != null) try { await _archiveTask; } catch (Exception exception) { System.Diagnostics.Trace.TraceError(exception.ToString()); }
             await _camera.DisposeAsync();
             if (_analysisTask != null) try { await _analysisTask; } catch (Exception) { }
-            _timer.Tick -= Live_Tick;
             ImageView.ImageSourceLoaded -= ImageSourceChanged;
             ImageView.EditorContext.DrawEditorContext.DrawingVisualLists.CollectionChanged -= DrawingsChanged;
             ImageView.EditorContext.DrawEditorContext.Zoombox.ContentMatrixChanged -= OverlayZoomChanged;

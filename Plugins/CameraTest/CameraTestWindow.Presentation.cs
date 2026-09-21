@@ -18,6 +18,42 @@ public partial class CameraTestWindow
 {
     private double _overlayZoom = double.NaN;
     private ContextMenu? _edgeMenu;
+    private bool _syncingChartType;
+
+    private string ChartSelectionHint => ChartTypeSupport.Selection(_profile.MeasurementRoi) switch
+    {
+        1 => "以一个棋盘交叉点为中心框选，四侧保留格面。",
+        2 => "每框包含一个 BMW 靶标，或以一个棋盘交叉点为中心。",
+        _ => "每框包含一个完整 BMW 靶标，并保留周围白边。"
+    };
+
+    private void RefreshChartTypeSelector()
+    {
+        _syncingChartType = true;
+        try
+        {
+            if (ChartTypeSelector.Items.Count == 0)
+                ChartTypeSelector.ItemsSource = ChartTypeSupport.SupportsCheckerboard ? new[] { "BMW", "棋盘格交叉点", "自动识别" } : new[] { "BMW" };
+            ChartTypeSelector.SelectedIndex = ChartTypeSupport.Selection(_profile.MeasurementRoi);
+            ChartTypeSelector.IsEnabled = ChartTypeSupport.SupportsCheckerboard && !_busy && !_live && !_closing && !_stopping;
+            ChartTypeSelector.ToolTip = ChartTypeSupport.SupportsCheckerboard ? ChartSelectionHint : "当前宿主仅支持 BMW；棋盘格需要更新 ColorVision 宿主及原生组件。";
+        }
+        finally { _syncingChartType = false; }
+    }
+
+    private async void ChartType_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || _syncingChartType || ChartTypeSelector.SelectedIndex < 0) return;
+        if (_busy || _live || _closing || _stopping) { RefreshChartTypeSelector(); return; }
+        _profile.MeasurementRoi = ChartTypeSupport.Select(_profile.MeasurementRoi, ChartTypeSelector.SelectedIndex);
+        InvalidateResult();
+        ResetFocus();
+        Refresh();
+        RenderOverlays();
+        StatusText.Text = ChartSelectionHint;
+        if (_frame != null && _profile.Regions.Count > 0 && GetRegionError() == null)
+            await PerformAsync(() => AnalyzeFrameAsync(_frame, _generation));
+    }
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
     private void FitImage_Click(object sender, RoutedEventArgs e) => ImageView.UpdateZoomAndScale();
@@ -27,7 +63,7 @@ public partial class CameraTestWindow
         if (_busy || _live || _closing) return;
         var edited = new BmwSfrViewSettings { Display = _profile.Display.Copy(), MeasurementRoi = _profile.MeasurementRoi with { } };
         var window = new PropertyEditorWindow(edited, PropertyEditorEditMode.Transactional)
-        { Owner = this, Title = "BMW 测量与显示", Width = 820, Height = 680, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        { Owner = this, Title = "SFR 测量与显示", Width = 820, Height = 680, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         bool submitted = false;
         window.Submitted += (_, _) => submitted = true;
         window.ShowDialog();
@@ -37,6 +73,8 @@ public partial class CameraTestWindow
         bool geometryChanged = edited.MeasurementRoi != _profile.MeasurementRoi;
         _profile.Display = edited.Display;
         _profile.MeasurementRoi = edited.MeasurementRoi;
+        RefreshChartTypeSelector();
+        SynchronizeDisplayMetric();
         if (geometryChanged) { InvalidateResult(); ResetFocus(); Refresh(); }
         RenderOverlays();
         if (geometryChanged && _frame != null && _profile.Regions.Count > 0 && GetRegionError() == null)
@@ -49,6 +87,7 @@ public partial class CameraTestWindow
         if (!_ready || _syncingRegions) return;
         RemoveRegionMenuItem.IsEnabled = !_busy && !_live && !_closing && RegionList.SelectedItem != null;
         if (RegionList.SelectedItem is not SearchRegion region) return;
+        EnsureTargetVisible(region.Id);
         var draw = ImageView.EditorContext.DrawEditorContext;
         var visual = draw.DrawingVisualLists.FirstOrDefault(v => _regionIdentities.TryGetValue(v, out var identity) && identity.Id == region.Id);
         if (visual is ISelectVisual selected && !_busy && !_live && !ReferenceEquals(draw.SelectionVisual.PrimarySelectedVisual, selected)) draw.SelectionVisual.SetRender(selected);
@@ -91,7 +130,23 @@ public partial class CameraTestWindow
                 var target = _result?.Targets.FirstOrDefault(t => t.Id == region.Id)
                     ?? new BmwTargetAnalysis(region.Id, region.Roi, false, "", default, 0, 0, []);
                 BmwEdgeId? selectedEdge = target.Id == selected?.Target && Enum.TryParse<BmwEdgeId>(selected.Edge, out var edge) ? edge : null;
-                dc.DrawDrawing(BmwSfrOverlayRenderer.CreateVisual(target, scope, _overlayZoom, channel, _profile.Display, selectedEdge, false).Drawing);
+                var display = _profile.Display;
+                if (FocusLabels.IsChecked == true)
+                {
+                    display = display.Copy();
+                    // Released hosts without this optional setting retain their normal labels.
+                    typeof(BmwSfrOverlaySettings).GetProperty("CompactMetricLabels")?.SetValue(display, true);
+                    if (selected != null && target.Id != selected.Target)
+                    {
+                        display.ShowEdgeNames = false;
+                        display.ShowValues = false;
+                        display.ShowRoiDimensions = false;
+                        display.ShowCenterDistance = false;
+                    }
+                }
+                dc.DrawDrawing(BmwSfrOverlayRenderer.CreateVisual(target, scope, _overlayZoom, channel, display, selectedEdge, false).Drawing);
+                if (!target.Located && selected?.Target == target.Id)
+                    dc.DrawRectangle(null, new Pen(Brushes.DeepSkyBlue, 2 / Math.Max(_overlayZoom, .001)) { DashStyle = DashStyles.Dash }, new Rect(region.X, region.Y, region.Width, region.Height));
             }
         _overlays = AlgorithmOverlayRenderer.RegisterVisual(image,
             new AlgorithmOverlayArtifact("camera-test-overlay", AlgorithmOverlayLifetime.Transient, []), visual);
@@ -105,8 +160,13 @@ public partial class CameraTestWindow
         return null;
     }
 
+    // Older released hosts only report BMW and do not expose the optional chart label.
+    private static readonly System.Reflection.PropertyInfo? ChartTypeTextProperty = typeof(BmwTargetAnalysis).GetProperty("ChartTypeText");
+    private static string GetChartTypeText(BmwTargetAnalysis? target) => target == null ? "" : ChartTypeTextProperty?.GetValue(target) as string ?? (target.Located ? "BMW" : "未识别");
+
     private void SelectMeasurementEdge(string target, BmwEdgeId edge)
     {
+        EnsureTargetVisible(target);
         RegionList.SelectedItem = _profile.Regions.FirstOrDefault(r => r.Id == target);
         ImageView.EditorContext.DrawEditorContext.SelectionVisual.ClearRender();
         var current = Metrics.SelectedItem as MetricRow;
@@ -117,7 +177,7 @@ public partial class CameraTestWindow
         ColorMetrics.SelectedItem = ColorMetrics.Items.OfType<ColorShiftRow>().FirstOrDefault(row => row.Target == target && row.Edge == edge.ToString() && row.Pair == colorPair)
             ?? ColorMetrics.Items.OfType<ColorShiftRow>().FirstOrDefault(row => row.Target == target && row.Edge == edge.ToString());
         if (AnalysisTabs.SelectedIndex != 1) AnalysisTabs.SelectedIndex = 0;
-        StatusText.Text = $"{target} · {EdgeName(edge)}边；右键可独立分析此矩形。";
+        StatusText.Text = $"{target} · {GetChartTypeText(_result?.Targets.FirstOrDefault(t => t.Id == target))} · {EdgeName(edge)}边；右键可独立分析此矩形。";
         RenderOverlays();
     }
 

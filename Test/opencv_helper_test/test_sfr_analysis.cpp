@@ -237,6 +237,112 @@ bool RunBmwLocalizationTests()
         char* output=reinterpret_cast<char*>(1);
         require(M_LocateBmwTargetV1(borrow(target),{},&output)<0&&output==nullptr,"BMW full-frame sentinel prohibited");
         require(M_LocateBmwTargetV1(borrow(target),{-1,0,100,100},&output)<0&&output==nullptr,"BMW invalid ROI clears output");
+        auto locateChart=[](const cv::Mat& image, RoiRect roi, int type) {
+            char* output=nullptr;
+            int code=M_LocateSfrTargetV1(borrow(image),roi,type,&output);
+            if(code<=0||!output) throw std::runtime_error("chart localization export failed");
+            auto data=json::parse(std::string(output,code-1)); FreeResult(output); return data;
+        };
+        require(locateChart(target,{0,0,480,480},2)["chartType"]=="bmw","automatic mode preserves BMW shape recognition");
+        require(locateChart(two,{0,0,960,480},2)["reason"]=="multiple_targets_in_search_roi","automatic mode does not reinterpret ambiguous BMW targets");
+        auto checker=[](double degrees, int size=720, double spacing=180) {
+            cv::Mat1b image(size,size);
+            double angle=degrees*CV_PI/180;
+            for(int y=0;y<image.rows;++y) for(int x=0;x<image.cols;++x) {
+                double dx=x-size*.5,dy=y-size*.5;
+                int u=static_cast<int>(std::floor((dx*std::cos(angle)+dy*std::sin(angle))/spacing)),
+                    v=static_cast<int>(std::floor((-dx*std::sin(angle)+dy*std::cos(angle))/spacing));
+                image(y,x)=(u+v)%2==0?40:200;
+            }
+            cv::GaussianBlur(image,image,{7,7},1.2);
+            return image;
+        };
+        for(double degrees : {-5.,5.,12.}) {
+            auto image=checker(degrees), before=image.clone();
+            auto board=locateChart(image,{60,60,600,600},1);
+            require(board["located"] && board["chartType"]=="checkerboard","checkerboard junction located at positive and negative chart rotations");
+            require(std::abs(board["centerX"].get<double>()-360)<3 && std::abs(board["centerY"].get<double>()-360)<3,"checkerboard coordinates retain original-image offset");
+            require(locateChart(image,{60,60,600,600},2)["chartType"]=="checkerboard","automatic mode recognizes checkerboard after BMW shape validation fails");
+            for(int id=0;id<4;++id) {
+                const auto e=board["edges"][id], r=e["roi"], s=e["supportRoi"];
+                require(e["id"]==id,"checkerboard four-edge identity is stable");
+                cv::Rect roi(r["x"],r["y"],r["width"],r["height"]), support(s["x"],s["y"],s["width"],s["height"]);
+                require((roi&support)==roi,"checkerboard automatic ROI stays between junctions");
+                auto result=analyze(image,{{"encoding","linear"}},{roi.x,roi.y,roi.width,roi.height});
+                require(result["channels"].size()==1 && result["channels"][0]["valid"],"checkerboard uses unchanged original-pixel single-channel SFR");
+            }
+            require(cv::norm(image,before,cv::NORM_INF)==0,"checkerboard localization and measurement never modify source pixels");
+            cv::Mat wide; image.convertTo(wide,CV_16U,257);
+            require(locateChart(wide,{60,60,600,600},1)["located"],"16-bit checkerboard localization");
+        }
+        auto large=checker(5,1920,480);
+        // A clear junction does not need 100 pixels on each branch: measurement
+        // availability is determined independently for each safe 40x32 ROI.
+        for (double degrees : {-5., 5., 12.}) {
+            auto image = checker(degrees);
+            auto compact = locateChart(image, {260,260,200,200}, 1);
+            require(compact["located"] && std::abs(compact["centerX"].get<double>()-360)<3
+                && std::abs(compact["centerY"].get<double>()-360)<3, "compact checkerboard crop retains the identified junction");
+            for (auto e : compact["edges"]) {
+                auto r=e["roi"], s=e["supportRoi"];
+                cv::Rect roi(r["x"],r["y"],r["width"],r["height"]), support(s["x"],s["y"],s["width"],s["height"]);
+                require(e["reason"]=="" && (roi&support)==roi
+                    && analyze(image,{{"encoding","linear"}},{roi.x,roi.y,roi.width,roi.height})["channels"][0]["valid"],
+                    "compact checkerboard keeps original SFR size and quality requirements");
+            }
+        }
+        auto partial = locateChart(checker(5), {293,250,160,230}, 1);
+        require(partial["located"], "a short branch does not hide a located checkerboard junction");
+        int supported=0, unsupported=0;
+        for (auto e : partial["edges"]) {
+            if (e["reason"]=="checkerboard_insufficient_edge_support") {
+                ++unsupported;
+                require(e["roi"]["width"]==0 && e["roi"]["height"]==0, "unsupported branch never supplies a measurement rectangle");
+            } else {
+                ++supported;
+                auto r=e["roi"];
+                require(analyze(checker(5),{{"encoding","linear"}},{r["x"],r["y"],r["width"],r["height"]})["channels"][0]["valid"],
+                    "supported branches still calculate when another branch is short");
+            }
+        }
+        require(supported>0 && unsupported>0, "narrow off-center crop reports per-edge support instead of losing all four edges");
+        auto largeBoard=locateChart(large,{120,120,1680,1680},1);
+        require(largeBoard["located"] && std::abs(largeBoard["centerX"].get<double>()-960)<3 && std::abs(largeBoard["centerY"].get<double>()-960)<3,"downsampled detection maps checkerboard center back to original pixels");
+        for(auto e:largeBoard["edges"]) {
+            auto r=e["roi"], s=e["supportRoi"];
+            cv::Rect roi(r["x"],r["y"],r["width"],r["height"]), support(s["x"],s["y"],s["width"],s["height"]);
+            require((roi&support)==roi && analyze(large,{{"encoding","linear"}},{roi.x,roi.y,roi.width,roi.height})["channels"][0]["valid"],"large checkerboard uses original-pixel supported measurement boxes");
+        }
+        auto aligned=checker(0);
+        auto board=locateChart(aligned,{60,60,600,600},1);
+        require(board["located"],"aligned checkerboard may locate without passing SFR quality");
+        for(auto e:board["edges"]) {
+            auto r=e["roi"], c=analyze(aligned,{{"encoding","linear"}},{r["x"],r["y"],r["width"],r["height"]})["channels"][0];
+            require(invalid(c)&&c["reason"]=="edge_angle_out_of_range","aligned checkerboard is not digitally rotated or given fabricated MTF");
+        }
+        auto ambiguousBoard=locateChart(aligned,{180,60,540,600},1);
+        require(!ambiguousBoard["located"]&&ambiguousBoard["reason"]=="ambiguous_checkerboard_corners","equidistant checkerboard junctions require explicit placement");
+        auto mono=checker(5);
+        cv::Mat red, blue, color;
+        cv::GaussianBlur(mono,red,{13,13},2.0); cv::GaussianBlur(mono,blue,{9,9},1.0);
+        cv::merge(std::vector<cv::Mat>{blue,mono,red},color);
+        auto colorBoard=locateChart(color,{60,60,600,600},2);
+        require(colorBoard["located"],"RGB checkerboard locates through the same geometry path");
+        for(auto e:colorBoard["edges"]) {
+            auto r=e["roi"], channels=analyze(color,{{"encoding","linear"}},{r["x"],r["y"],r["width"],r["height"]})["channels"];
+            require(channels.size()==4 && std::all_of(channels.begin(),channels.end(),[](const auto& c){return c["valid"].template get<bool>();}),"RGB checkerboard retains four independently calculated channels");
+            require(channels[1]["mtf50"].get<double>()<channels[3]["mtf50"].get<double>() && channels[3]["mtf50"].get<double>()<channels[2]["mtf50"].get<double>(),"different RGB blur remains visible in channel MTF50");
+        }
+        for(int type : {1,2}) {
+            cv::Mat1b negative(480,480,uchar(200));
+            require(!locateChart(negative,{0,0,480,480},type)["located"],"blank image cannot become a checkerboard");
+            cv::rectangle(negative,{80,80,320,320},cv::Scalar(40),-1);
+            require(!locateChart(negative,{0,0,480,480},type)["located"],"single rectangle cannot become a checkerboard junction");
+            negative.setTo(200); cv::line(negative,{40,240},{440,240},40,20); cv::line(negative,{240,40},{240,440},40,20);
+            require(!locateChart(negative,{0,0,480,480},type)["located"],"ordinary cross cannot become alternating checkerboard quadrants");
+        }
+        output=reinterpret_cast<char*>(1);
+        require(M_LocateSfrTargetV1(borrow(target),{0,0,480,480},3,&output)<0&&output==nullptr,"unknown chart type rejected and output cleared");
         return true;
     } catch(const std::exception& ex) { std::cerr<<"BMW failure: "<<ex.what()<<'\n'; return false; }
 }

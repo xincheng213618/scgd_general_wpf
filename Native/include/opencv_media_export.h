@@ -43,6 +43,8 @@ extern "C" COLORVISIONCORE_API int M_AnalyzeSfrV2(HImage img, RoiRect roi, const
 
 // Explicit search rectangle only; JSON buffer is released with FreeResult.
 extern "C" COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result);
+// chartType: 0 BMW, 1 checkerboard junction, 2 automatic (BMW shape first).
+extern "C" COLORVISIONCORE_API int M_LocateSfrTargetV1(HImage img, RoiRect roi, int chartType, char** result);
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);

@@ -3,9 +3,19 @@ using System.ComponentModel;
 
 namespace ColorVision.Core;
 
+public enum SfrChartType
+{
+    [Description("BMW / 宝马靶标")] Bmw,
+    [Description("棋盘格交叉点")] Checkerboard,
+    [Description("自动识别")] Auto
+}
+
 /// <summary>Original-pixel dimensions. Zero retains the locator's automatic geometry.</summary>
 public sealed record BmwSfrRoiSettings
 {
+    [Category("图卡"), DisplayName("图卡类型"), Description("BMW：外框包含一个完整靶标。棋盘格：将所需交叉点置于外框中心，四侧保留足够格面。自动：优先验证 BMW 形状，再检测棋盘格。")]
+    public SfrChartType ChartType { get; set; } = SfrChartType.Bmw;
+
     [Category("四边测量框"), DisplayName("沿刃边长度 (px，0=自动)"), Description("左/右边框的宽、上/下边框的高；非零时至少 40 px。")]
     public int AlongEdgePixels { get; set; }
     [Category("四边测量框"), DisplayName("跨刃边宽度 (px，0=自动)"), Description("左/右边框的高、上/下边框的宽；非零时至少 40 px。")]
@@ -15,6 +25,7 @@ public sealed record BmwSfrRoiSettings
 
     public void Validate()
     {
+        if (!Enum.IsDefined(ChartType)) throw new ArgumentException("图卡类型无效。");
         if (AlongEdgePixels != 0 && (AlongEdgePixels < 40 || AlongEdgePixels > 8192)
             || AcrossEdgePixels != 0 && (AcrossEdgePixels < 40 || AcrossEdgePixels > 8192)
             || !double.IsFinite(CenterDistancePixels) || CenterDistancePixels < 0 || CenterDistancePixels > 8192)

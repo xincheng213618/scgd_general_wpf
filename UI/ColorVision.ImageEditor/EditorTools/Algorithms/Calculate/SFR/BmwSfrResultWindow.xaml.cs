@@ -105,7 +105,7 @@ public partial class BmwSfrResultWindow : Window
     private void ShowSelected()
     {
         if (Selected is not { } row || Plot == null) return;
-        SelectionText.Text = $"{row.TargetId} · {row.EdgeName}边";
+        SelectionText.Text = $"{row.TargetId} · {row.Target.ChartTypeText} · {row.EdgeName}边";
         Mtf50Text.Text = $"{DisplayChannel} MTF50  {row.Mtf50} cy/px";
         EditRoiButton.IsEnabled = !_busy && row.Target.Located && row.Edge.Roi.Width > 0;
         RenderPreview(row);
@@ -195,7 +195,7 @@ public partial class BmwSfrResultWindow : Window
         if(_busy || _closed)return;
         var next=new BmwSfrViewSettings { Display=DisplaySettings.Copy(),MeasurementRoi=MeasurementRoi with { } };
         bool submitted=false;
-        var dialog=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="BMW 测量与显示",Width=820,Height=680,WindowStartupLocation=WindowStartupLocation.CenterOwner };
+        var dialog=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="SFR 测量与显示",Width=820,Height=680,WindowStartupLocation=WindowStartupLocation.CenterOwner };
         dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
         try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,"设置无效"); return; }
         DisplaySettings=next.Display;
@@ -247,6 +247,8 @@ public partial class BmwSfrResultWindow : Window
         && roi.Width<=parent.Width&&roi.Height<=parent.Height&&(long)roi.X+roi.Width<=(long)parent.X+parent.Width&&(long)roi.Y+roi.Height<=(long)parent.Y+parent.Height;
     internal static BmwEdgeAnalysis AnalyzeEdge(HImage image,BmwEdgeAnalysis edge,SfrAnalysisOptions options)
     {
+        if (edge.SupportRoi.Width > 0 && !IsInside(edge.Roi, edge.SupportRoi))
+            return edge with { Analysis = null, Valid = false, Reason = "checkerboard_roi_crosses_junction" };
         try
         {
             var analysis=SfrAnalyzer.Analyze(image,edge.Roi,options);
@@ -265,6 +267,7 @@ public partial class BmwSfrResultWindow : Window
         var dialog=new PropertyEditorWindow(edit,PropertyEditorEditMode.Transactional) { Owner=this,Title=$"{row.TargetId} · {row.EdgeName}边 SFR 矩形" };
         bool submitted=false; dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
         if(!IsInside(edit.ToRoi(),row.Target.SearchRoi)) { MessageBox.Show(this,"测量框必须完整位于当前搜索外框内，宽高须大于零。","矩形范围无效"); return; }
+        if(row.Edge.SupportRoi.Width>0 && !IsInside(edit.ToRoi(),row.Edge.SupportRoi)) { MessageBox.Show(this,BmwSfrPresentation.Reason("checkerboard_roi_crosses_junction"),"矩形范围无效"); return; }
         _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
         int version=_resultVersion;
         try

@@ -8,9 +8,16 @@ namespace ColorVision.Core;
 
 public enum BmwEdgeId { Left, Top, Right, Bottom }
 public sealed record BmwSearchRegion(string Id, RoiRect Roi);
-public sealed record BmwEdgeAnalysis(BmwEdgeId Id, RoiRect Roi, bool Valid, string Reason, SfrAnalysisResult? Analysis);
+public sealed record BmwEdgeAnalysis(BmwEdgeId Id, RoiRect Roi, bool Valid, string Reason, SfrAnalysisResult? Analysis)
+{
+    public RoiRect SupportRoi { get; init; }
+}
 public sealed record BmwTargetAnalysis(string Id, RoiRect SearchRoi, bool Located, string Reason,
-    RoiRect TargetRoi, double CenterX, double CenterY, IReadOnlyList<BmwEdgeAnalysis> Edges);
+    RoiRect TargetRoi, double CenterX, double CenterY, IReadOnlyList<BmwEdgeAnalysis> Edges)
+{
+    public SfrChartType? DetectedChartType { get; init; }
+    public string ChartTypeText => DetectedChartType switch { SfrChartType.Checkerboard => "棋盘格", SfrChartType.Bmw => "BMW", _ => Located ? "BMW" : "未识别" };
+}
 
 /// <summary>One explicit search region per target. Coordinates and frequencies refer to original pixels.
 /// Caller retains image ownership for the entire synchronous call. No resizing or automatic encoding inference.</summary>
@@ -41,7 +48,9 @@ public static class BmwSfrAnalyzer
             IntPtr pointer = IntPtr.Zero;
             try
             {
-                int code = OpenCVMediaHelper.M_LocateBmwTargetV1(image, roi, out pointer);
+                int code = roiSettings.ChartType == SfrChartType.Bmw
+                    ? OpenCVMediaHelper.M_LocateBmwTargetV1(image, roi, out pointer)
+                    : OpenCVMediaHelper.M_LocateSfrTargetV1(image, roi, (int)roiSettings.ChartType, out pointer);
                 if (code <= 0 || pointer == IntPtr.Zero) { results.Add(Failed(request, $"localization_error_{code}")); continue; }
                 using var json = JsonDocument.Parse(Marshal.PtrToStringUTF8(pointer, code - 1)!);
                 var root = json.RootElement;
@@ -52,9 +61,16 @@ public static class BmwSfrAnalyzer
                 {
                     var id = (BmwEdgeId)entry.GetProperty("id").GetInt32();
                     var edgeRoi = roiSettings.Resolve(id, ReadRect(entry.GetProperty("roi")), centerX, centerY);
+                    var support = entry.TryGetProperty("supportRoi", out var supportJson) ? ReadRect(supportJson) : default;
+                    string localizationReason = entry.TryGetProperty("reason", out var edgeReason) ? edgeReason.GetString() ?? "" : "";
+                    if (localizationReason.Length > 0)
+                    {
+                        edges.Add(new(id, edgeRoi, false, localizationReason, null) { SupportRoi = support });
+                        continue;
+                    }
                     SfrAnalysisResult? analysis = null;
                     string reason = "edge_roi_out_of_bounds";
-                    if (BmwSfrRoiSettings.IsInside(edgeRoi, roi))
+                    if (BmwSfrRoiSettings.IsInside(edgeRoi, roi) && (support.Width == 0 || BmwSfrRoiSettings.IsInside(edgeRoi, support)))
                     {
                         try
                         {
@@ -63,11 +79,13 @@ public static class BmwSfrAnalyzer
                         }
                         catch (InvalidOperationException ex) { reason = ex.Message; }
                     }
-                    edges.Add(new(id, edgeRoi, analysis != null && analysis.Channels.All(c => c.Valid), reason, analysis));
+                    else if (support.Width > 0) reason = "checkerboard_roi_crosses_junction";
+                    edges.Add(new(id, edgeRoi, analysis != null && analysis.Channels.All(c => c.Valid), reason, analysis) { SupportRoi = support });
                 }
-                results.Add(new(request.Id, roi, true, "", ReadRect(root.GetProperty("targetRoi")), root.GetProperty("centerX").GetDouble(), root.GetProperty("centerY").GetDouble(), edges));
+                results.Add(new(request.Id, roi, true, "", ReadRect(root.GetProperty("targetRoi")), root.GetProperty("centerX").GetDouble(), root.GetProperty("centerY").GetDouble(), edges)
+                { DetectedChartType = root.TryGetProperty("chartType", out var type) && type.GetString() == "checkerboard" ? SfrChartType.Checkerboard : SfrChartType.Bmw });
             }
-            catch (EntryPointNotFoundException ex) { throw new InvalidOperationException("原生 DLL 缺少 BMW 定位接口，请使用配套版本。", ex); }
+            catch (EntryPointNotFoundException ex) { throw new InvalidOperationException("原生 DLL 缺少所选图卡定位接口，请使用配套版本。", ex); }
             finally { if (pointer != IntPtr.Zero) _ = OpenCVMediaHelper.FreeResult(pointer); }
         }
         return results;

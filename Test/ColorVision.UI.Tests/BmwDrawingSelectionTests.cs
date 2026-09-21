@@ -1,6 +1,7 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
+using ColorVision.ImageEditor.EditorTools.Algorithms;
 using System.Windows;
 
 namespace ColorVision.UI.Tests;
@@ -40,7 +41,7 @@ public sealed class BmwDrawingSelectionTests
     }
 
     [Fact]
-    public void SingleAndMultipleSelectionExposeDistinctDirectCommands()
+    public void SingleAndMultipleSelectionKeepOneConfigurationCommand()
     {
         WpfTestHost.Invoke(() =>
         {
@@ -55,7 +56,15 @@ public sealed class BmwDrawingSelectionTests
             selection.SelectVisuals.Add(rectangle);
             Assert.Single(BmwDrawingAnalysisRunner.SelectRectangles(draw));
             var provider=new BmwSfrRectangleContextMenu(null!,draw);
-            Assert.Equal("BMW 四边 SFR",Assert.Single(provider.GetContextMenuItems(rectangle)).Header);
+            var commands = provider.GetContextMenuItems(rectangle).ToArray();
+            Assert.Equal("四边 SFR…", Assert.Single(commands).Header);
+            System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
+            using var view = new ImageView();
+            var backgroundCommands = new AlgorithmsContextMenu(view.EditorContext.ProcessingContext).GetContextMenuItems()
+                .Where(item => item.GuidId is "BmwSfr" or "CheckerboardSfr" or "AutoSfr").ToArray();
+            Assert.Equal(commands.Select(item => item.Header), backgroundCommands.Select(item => item.Header));
+            Assert.Equal("BmwSfr", Assert.Single(backgroundCommands).GuidId);
+            Assert.All(backgroundCommands, item => { Assert.Equal("AlgorithmsCall", item.OwnerGuid); Assert.NotNull(item.Command); });
             selection.SelectVisuals.Add(second);
             Assert.Equal(2,BmwDrawingAnalysisRunner.SelectRectangles(draw,rectangle).Length);
             Assert.Single(BmwDrawingAnalysisRunner.SelectRectangles(draw,new DVRectangle()));

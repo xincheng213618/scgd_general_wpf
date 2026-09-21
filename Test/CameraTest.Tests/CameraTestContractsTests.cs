@@ -15,6 +15,7 @@ public sealed class CameraTestContractsTests
     {
         var old = JsonSerializer.Deserialize<TestProfile>("{\"SchemaVersion\":1}", ProfileStore.JsonOptions)!;
         old.Validate();
+        Assert.Equal(SfrChartType.Bmw, old.MeasurementRoi.ChartType);
         Assert.True(old.Display.ShowValues);
         Assert.True(old.Display.FixedScreenSize);
         old.Display.FontSize = 18;
@@ -22,7 +23,7 @@ public sealed class CameraTestContractsTests
         old.Display.Frequency = .3;
         old.Display.ShowTargetCenter = false;
         old.Display.ShowCenterCoordinates = old.Display.ShowRoiDimensions = old.Display.ShowCenterDistance = true;
-        old.MeasurementRoi = new() { AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 100 };
+        old.MeasurementRoi = new() { ChartType = SfrChartType.Checkerboard, AlongEdgePixels = 80, AcrossEdgePixels = 60, CenterDistancePixels = 100 };
         old.Video = new() { Mode = VideoAnalysisMode.Sharpness, Algorithm = FocusAlgorithm.Tenengrad, X = 20, Y = 30, Width = 80, Height = 90 };
         var restored = JsonSerializer.Deserialize<TestProfile>(JsonSerializer.Serialize(old, ProfileStore.JsonOptions), ProfileStore.JsonOptions)!;
         Assert.Equal(18, restored.Display.FontSize);

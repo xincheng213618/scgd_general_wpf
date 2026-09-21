@@ -293,21 +293,29 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
         });
 }
 
-COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result)
+COLORVISIONCORE_API int M_LocateSfrTargetV1(HImage img, RoiRect roi, int chartType, char** result)
 {
     if (!result) return -1;
     *result=nullptr;
     try {
         auto image=HImageToMatView(img);
         if(image.empty()) return -2;
-        if(roi.x<0||roi.y<0||roi.width<=0||roi.height<=0||roi.width>image.cols||roi.height>image.rows||
+        if(chartType<0||chartType>2||roi.x<0||roi.y<0||roi.width<=0||roi.height<=0||roi.width>image.cols||roi.height>image.rows||
             roi.x>image.cols-roi.width||roi.y>image.rows-roi.height||roi.width>8192||roi.height>8192||
             static_cast<int64_t>(roi.width)*roi.height>16000000) return -1;
-        auto target=sfr::locateBmwTarget(image(cv::Rect(roi.x,roi.y,roi.width,roi.height)));
+        auto crop=image(cv::Rect(roi.x,roi.y,roi.width,roi.height));
+        auto target=chartType==1 ? sfr::locateCheckerboardTarget(crop) : sfr::locateBmwTarget(crop);
+        // Multiple BMW targets are an ambiguous user selection, not a reason to
+        // silently reinterpret the crop as a checkerboard.
+        if(chartType==2 && !target.located && target.reason=="target_not_found") {
+            target=sfr::locateCheckerboardTarget(crop);
+            if(!target.located && target.reason=="checkerboard_corner_not_found") target.reason="target_not_found";
+        }
         auto rect=[&](cv::Rect r) { return nlohmann::json{{"x",r.empty()?0:r.x+roi.x},{"y",r.empty()?0:r.y+roi.y},{"width",r.width},{"height",r.height}}; };
         nlohmann::json data={{"located",target.located},{"reason",target.reason},{"targetRoi",rect(target.target)},
+            {"chartType",target.located?nlohmann::json(target.chartType):nlohmann::json(nullptr)},
             {"centerX",target.located?target.center.x+roi.x:0},{"centerY",target.located?target.center.y+roi.y:0},{"edges",nlohmann::json::array()}};
-        for(int id=0;id<4;++id) data["edges"].push_back({{"id",id},{"roi",rect(target.edges[id])}});
+        for(int id=0;id<4;++id) data["edges"].push_back({{"id",id},{"roi",rect(target.edges[id])},{"supportRoi",rect(target.supports[id])},{"reason",target.edgeReasons[id]}});
         auto text=data.dump();
         auto buffer=static_cast<char*>(CoTaskMemAlloc(text.size()+1));
         if(!buffer) return -3;
@@ -315,4 +323,9 @@ COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** resu
         return static_cast<int>(text.size()+1);
     } catch(const std::exception& ex) { cvnative::LogException("sfr.bmw",__func__,-4,"std::exception",ex.what()); return -4; }
     catch(...) { return -6; }
+}
+
+COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result)
+{
+    return M_LocateSfrTargetV1(img, roi, 0, result);
 }

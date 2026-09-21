@@ -102,14 +102,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 new()
                 {
                     OwnerGuid = "AlgorithmsCall",
-                    GuidId = "BmwSfr",
-                    Order = 2,
-                    Header = "BMW 四边 SFR",
-                    Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
-                },
-                new()
-                {
-                    OwnerGuid = "AlgorithmsCall",
                     GuidId = "SFR",
                     Order = 1,
                     Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SfrMtfAnalysis,
@@ -124,6 +116,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     Command = new RelayCommand(_ => new ArtculationEditorTool(imageContext).Execute()),
                 },
             ];
+
+            items.Add(new MenuItemMetadata
+            {
+                OwnerGuid = "AlgorithmsCall",
+                GuidId = "BmwSfr",
+                Order = 2,
+                Header = "四边 SFR…",
+                Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
+            });
 
             AlgorithmInteractiveCatalogEntry[] interactiveEntries = AlgorithmCatalogProjection.ForInteractiveMenu(Runtime.Catalog)
                 .Where(entry => CanExecuteDescriptor(entry.Descriptor))

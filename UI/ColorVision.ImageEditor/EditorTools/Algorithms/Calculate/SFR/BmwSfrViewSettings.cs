@@ -10,7 +10,7 @@ public sealed class BmwSfrViewSettings
     [Category("显示与指标"), DisplayName("图像标注与指标")]
     public BmwSfrOverlaySettings Display { get; set; } = new();
 
-    [Category("四边测量框"), DisplayName("测量框尺寸与位置"), Description("修改后重新定位并计算四边；各项为 0 时保留自动值。")]
+    [Category("图卡与测量框"), DisplayName("图卡、框尺寸与位置"), Description("选择 BMW、棋盘格或自动识别。修改后重新定位并计算四边；尺寸与距离为 0 时保留自动值。")]
     public BmwSfrRoiSettings MeasurementRoi { get; set; } = new();
 
     public void Validate()

@@ -16,6 +16,8 @@ namespace CameraTest.Tests;
 
 public sealed class LocalPoiIntegrationTests
 {
+    private static string TestSettingsPath() => System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CameraTest-tests", Guid.NewGuid().ToString("N"), "settings.json");
+
     [Fact]
     public async Task CameraTestPoiManagerEditsAndPersistsWithoutDatabaseService()
     {
@@ -37,7 +39,7 @@ public sealed class LocalPoiIntegrationTests
                 ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
                 System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
                 previous = TemplatePoi.Params.ToArray();
-                window = new CameraTestWindow { ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
+                window = new CameraTestWindow(TestSettingsPath()) { ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
                 view = (ImageView)window.FindName("ImageView");
                 PoiImageViewComponent.SetIsTemplateSelectorEnabled(view, false);
                 window.Show();

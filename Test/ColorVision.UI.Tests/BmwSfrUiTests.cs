@@ -15,6 +15,20 @@ namespace ColorVision.UI.Tests;
 public sealed class BmwSfrUiTests
 {
     [Fact]
+    public void CompactLabelsKeepTheRequestedMetricAndPreserveInvalidChannels()
+    {
+        var edge = new BmwEdgeAnalysis(BmwEdgeId.Top, new(0, 0, 60, 80), true, "", new SfrAnalysisResult
+        { Channels = [new() { Channel = "G", Valid = true, Mtf50 = .25, Frequencies = [0, .25, .5], Mtf = [1, .4, .05] }] });
+        var settings = new BmwSfrOverlaySettings { CompactMetricLabels = true };
+        Assert.Equal($"上  {.25:F4}", BmwSfrPresentation.OverlayLabel(edge, "G", settings));
+        Assert.Equal("上  INVALID", BmwSfrPresentation.OverlayLabel(edge, "R", settings));
+        settings.Metric = BmwSfrDisplayMetric.AtFrequency;
+        Assert.Equal($"上  {.4:P1}", BmwSfrPresentation.OverlayLabel(edge, "G", settings));
+        settings.CompactMetricLabels = false;
+        Assert.Contains("G MTF@0.25", BmwSfrPresentation.OverlayLabel(edge, "G", settings));
+    }
+
+    [Fact]
     public void TargetCenterUsesDetectedCoordinatesAndFixedScreenSizeWithIndependentVisibility()
     {
         WpfTestHost.Invoke(() =>

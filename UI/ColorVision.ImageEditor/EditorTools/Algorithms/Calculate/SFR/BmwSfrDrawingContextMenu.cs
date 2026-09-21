@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -181,17 +182,24 @@ internal static class BmwDrawingAnalysisRunner
             var scope=TransientRoiSelectionSession.CaptureSourceScope(image); if(scope==null)return;
             state.Bind(draw);
             var regions=state.Capture(rectangles,scope);
-            if(regions.Count==0) { MessageBox.Show("请先在图像上绘制矩形，每框包含一个完整 BMW 靶标。", "BMW 四边 SFR"); return; }
+            if(regions.Count==0) { MessageBox.Show("请先在图像上绘制矩形，每框包含一个完整 BMW 靶标或一个居中的棋盘格交叉点。", "四边 SFR"); return; }
             var options=state.Options with { };
             var roiSettings=state.MeasurementRoi with { };
             lease=image.AcquireImageFrame(); if(lease==null)return;
             state.Busy=true;
+            bool submitted=false;
+            var dialog=new PropertyEditorWindow(roiSettings,PropertyEditorEditMode.Transactional)
+                { Owner=Application.Current.GetActiveWindow(),Title="四边 SFR · 图卡与测量框",Width=720,Height=560,WindowStartupLocation=WindowStartupLocation.CenterOwner };
+            dialog.Submitted+=(_,_)=>submitted=true;
+            dialog.ShowDialog(); if(!submitted)return;
+            roiSettings.Validate();
+            state.MeasurementRoi=roiSettings with { };
             var snapshot=lease;
             var results=await Task.Run(()=>BmwSfrAnalyzer.Analyze(snapshot.Image,regions,options,roiSettings));
             state.ShowOverlays(image,scope,results);
             OpenWindow(image,state,scope,results,null,null,snapshot); lease=null;
         }
-        catch(Exception ex) { MessageBox.Show(ex.Message,"BMW 四边 SFR",MessageBoxButton.OK,MessageBoxImage.Error); }
+        catch(Exception ex) { MessageBox.Show(ex.Message,"四边 SFR",MessageBoxButton.OK,MessageBoxImage.Error); }
         finally { state.Busy=false; lease?.Dispose(); }
     }
     internal static void OpenWindow(ImageProcessingContext image,BmwDrawingAnalysisState state,ImageSelectionScope scope,
@@ -222,7 +230,7 @@ public sealed class BmwSfrRectangleContextMenu(ImageProcessingContext image,Draw
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if(obj is not IRectangle rectangle)return [];
-        var run=new MenuItem { Header="BMW 四边 SFR" };
+        var run=new MenuItem { Header="四边 SFR…" };
         run.Click+=(_,_)=>BmwDrawingAnalysisRunner.Run(image,draw,BmwDrawingAnalysisRunner.SelectRectangles(draw,rectangle));
         return [run];
     }

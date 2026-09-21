@@ -21,6 +21,10 @@
             <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="8,4"/><Setter Property="Margin" Value="0"/>
         </Style>
+        <Style x:Key="CameraCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Height" Value="26"/><Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="6,2"/><Setter Property="FontSize" Value="12"/>
+        </Style>
         <Style x:Key="ResultGrid" TargetType="DataGrid">
             <Setter Property="Background" Value="{DynamicResource CV.Surface.Control}"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
@@ -53,6 +57,24 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
+        <Style x:Key="ChannelMetricText" TargetType="TextBlock" BasedOn="{StaticResource MetricText}">
+            <Style.Triggers>
+                <Trigger Property="Text" Value="未通过"><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="YMetricText" TargetType="TextBlock" BasedOn="{StaticResource ChannelMetricText}"><Setter Property="ToolTip" Value="{Binding YHint}"/></Style>
+        <Style x:Key="RMetricText" TargetType="TextBlock" BasedOn="{StaticResource ChannelMetricText}"><Setter Property="ToolTip" Value="{Binding RHint}"/></Style>
+        <Style x:Key="GMetricText" TargetType="TextBlock" BasedOn="{StaticResource ChannelMetricText}"><Setter Property="ToolTip" Value="{Binding GHint}"/></Style>
+        <Style x:Key="BMetricText" TargetType="TextBlock" BasedOn="{StaticResource ChannelMetricText}"><Setter Property="ToolTip" Value="{Binding BHint}"/></Style>
+        <Style x:Key="EdgeButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
+            <Setter Property="Padding" Value="6,5"/><Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Background" Value="{DynamicResource CV.Surface.Alternate}"/>
+            <Setter Property="ToolTip" Value="查看此边的曲线与数值"/>
+        </Style>
+        <Style x:Key="EdgeReadout" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
     <DockPanel Background="{DynamicResource GlobalBackground}">
         <StackPanel DockPanel.Dock="Top">
@@ -83,7 +105,7 @@
                         <MenuItem x:Name="RemoveRegionMenuItem" Header="移除所选测量点" Click="RemoveRegion_Click"/>
                         <Separator/>
                         <MenuItem x:Name="SignalSettingsMenuItem" Header="输入信号与质量…" Click="SignalSettings_Click"/>
-                        <MenuItem x:Name="MetricSettingsMenuItem" Header="指标与刷新频率…" Click="MetricSettings_Click"/>
+                        <MenuItem x:Name="MetricSettingsMenuItem" Header="分析指标…" Click="MetricSettings_Click"/>
                         <MenuItem x:Name="JudgmentSettingsMenuItem" Header="判定标准…" Click="JudgmentSettings_Click"/>
                     </MenuItem>
                     <MenuItem Header="存档(_R)">
@@ -93,62 +115,94 @@
                     </MenuItem>
                     <MenuItem Header="视图(_V)">
                         <MenuItem Header="适合窗口" Click="FitImage_Click"/>
-                        <MenuItem x:Name="DisplaySettingsMenuItem" Header="BMW 测量与显示…" Click="DisplaySettings_Click"/>
+                        <MenuItem x:Name="DisplaySettingsMenuItem" Header="SFR 测量与显示…" Click="DisplaySettings_Click"/>
                     </MenuItem>
                 </Menu>
             </Border>
             <WrapPanel Margin="12,8,12,10">
                 <Button x:Name="OpenButton" Content="打开图像" Style="{StaticResource ActionButton}" Click="Open_Click"/>
+                <Button x:Name="CameraPaneButton" Content="收起相机" Style="{StaticResource QuietButton}" Click="ToggleCameraPane_Click" Margin="0,0,16,0"/>
                 <Button x:Name="AddRegionButton" Content="添加测量点" Click="AddRegion_Click" Style="{StaticResource ActionButton}"/>
-                <Button x:Name="AnalyzeButton" Content="开始分析" Style="{StaticResource ActionButton}" Click="Analyze_Click" Margin="12,0,6,0"/>
-                <Button Content="BMW 设置" Style="{StaticResource ActionButton}" Click="DisplaySettings_Click" IsEnabled="{Binding IsEnabled, ElementName=DisplaySettingsMenuItem}"/>
+                <Button x:Name="AnalyzeButton" Content="开始分析" Style="{StaticResource ActionButton}" Background="{DynamicResource PrimaryBrush}" Foreground="White" Click="Analyze_Click" Margin="6,0,12,0"/>
                 <Button x:Name="ArchiveButton" Content="记录并存档" Style="{StaticResource ActionButton}" Click="Archive_Click"/>
+                <TextBlock Text="图卡" Margin="14,0,6,0"/>
+                <ComboBox x:Name="ChartTypeSelector" Width="130" Style="{StaticResource CameraCombo}" SelectionChanged="ChartType_Changed" ToolTip="选择 BMW 靶标、棋盘格交叉点或自动识别"/>
+                <Button Content="测量设置" Style="{StaticResource QuietButton}" Click="DisplaySettings_Click" IsEnabled="{Binding IsEnabled, ElementName=DisplaySettingsMenuItem}"/>
             </WrapPanel>
         </StackPanel>
         <Border x:Name="StatusBar" DockPanel.Dock="Bottom" BorderBrush="{DynamicResource CV.Border.Weak}" BorderThickness="0,1,0,0" Padding="12,7" Margin="0,8,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="打开图像，或连接相机开始。" FontSize="11" Margin="0,0,16,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                <TextBlock x:Name="FrameText" Grid.Column="1" Text="尚未加载图像" FontSize="11" MaxWidth="580" Opacity="0.7"/>
-                <TextBlock x:Name="ModeText" Grid.Column="2" Text="单帧调试" FontSize="11" Margin="16,0,0,0" Opacity="0.7"/>
+            <Grid x:Name="StatusLine">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Text="打开图像，或连接相机开始。" FontSize="11" Margin="0,0,12,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock x:Name="CameraSummary" FontSize="11" Opacity="0.7" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="CaptureTimingText" FontSize="11" MaxWidth="160" Margin="0,0,12,0"/>
+                    <StackPanel x:Name="VideoReadoutBar" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock x:Name="VideoFpsText" Text="显示 — FPS" FontSize="11" Margin="0,0,12,0" ToolTip="实际显示帧率，包含分析和绘图开销。"/>
+                        <TextBlock x:Name="VideoSharpnessText" Text="清晰度 —" FontSize="11" Margin="0,0,12,0"/>
+                        <TextBlock x:Name="VideoAnalysisText" FontSize="11" Margin="0,0,12,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock x:Name="CaptureStampText" Grid.Column="2" FontSize="11" Opacity="0.7" Margin="0,0,12,0"/>
+                <TextBlock x:Name="FrameSaveText" Grid.Column="3" FontSize="11" Opacity="0.7" Margin="0,0,12,0"/>
+                <TextBlock x:Name="FrameText" Grid.Column="4" Text="尚未加载图像" FontSize="11" MaxWidth="220" Opacity="0.7"/>
             </Grid>
         </Border>
         <Grid Margin="12,0,12,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="220" MinWidth="180" MaxWidth="320"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*" MinWidth="200"/><ColumnDefinition Width="10"/><ColumnDefinition Width="490" MinWidth="360"/></Grid.ColumnDefinitions>
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid.ColumnDefinitions><ColumnDefinition x:Name="CameraPaneColumn" Width="200" MinWidth="180" MaxWidth="300"/><ColumnDefinition x:Name="CameraSplitterColumn" Width="10"/><ColumnDefinition Width="*" MinWidth="200"/><ColumnDefinition Width="10"/><ColumnDefinition Width="540" MinWidth="400"/></Grid.ColumnDefinitions>
+            <ScrollViewer x:Name="CameraPane" Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top">
-                    <TextBlock Text="相机" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <TextBlock Text="相机型号" FontSize="11" Opacity="0.7"/>
-                    <ComboBox x:Name="CameraModels" SelectionChanged="ConnectionSelection_Changed" Margin="0,4,0,10" MinHeight="28"/>
-                    <TextBlock Text="相机模式" FontSize="11" Opacity="0.7"/>
-                    <ComboBox x:Name="CameraModes" SelectionChanged="ConnectionSelection_Changed" Margin="0,4,0,10" MinHeight="28"/>
-                    <TextBlock Text="相机 ID" FontSize="11" Opacity="0.7"/>
-                    <DockPanel Margin="0,4,0,10">
-                        <Button x:Name="DiscoverButton" DockPanel.Dock="Right" Content="刷新" ToolTip="查找相机" Style="{StaticResource QuietButton}" Click="Discover_Click" Margin="4,0,0,0"/>
-                        <ComboBox x:Name="CameraIds" SelectionChanged="CameraIds_SelectionChanged" ToolTip="点击刷新后选择相机。" MinHeight="28"/>
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock Text="型号" Width="40" FontSize="11" Opacity="0.7"/>
+                        <ComboBox x:Name="CameraModels" SelectionChanged="ConnectionSelection_Changed" Style="{StaticResource CameraCombo}"/>
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,12"><TextBlock Text="像素位数" VerticalAlignment="Center" Margin="0,0,12,0"/><ComboBox x:Name="CameraDepths" SelectionChanged="ConnectionSelection_Changed" MinHeight="28"/></DockPanel>
-                    <WrapPanel Margin="0,0,0,12">
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock Text="ID" Width="40" FontSize="11" Opacity="0.7"/>
+                        <Button x:Name="DiscoverButton" DockPanel.Dock="Right" Content="↻" ToolTip="刷新相机 ID" Style="{StaticResource QuietButton}" Click="Discover_Click" Padding="5,0" MinHeight="26" Margin="2,0,0,0"/>
+                        <ComboBox x:Name="CameraIds" SelectionChanged="CameraIds_SelectionChanged" ToolTip="刷新后选择相机" Style="{StaticResource CameraCombo}"/>
+                    </DockPanel>
+                    <Expander Header="采集参数" Margin="0,0,0,12">
+                        <StackPanel Margin="0,8,0,0">
+                            <DockPanel Margin="0,0,0,8"><TextBlock Text="模式" Width="40" FontSize="11"/><ComboBox x:Name="CameraModes" SelectionChanged="ConnectionSelection_Changed" Style="{StaticResource CameraCombo}"/></DockPanel>
+                            <DockPanel><TextBlock Text="位深" Width="40" FontSize="11"/><ComboBox x:Name="CameraDepths" SelectionChanged="ConnectionSelection_Changed" Style="{StaticResource CameraCombo}"/></DockPanel>
+                        </StackPanel>
+                    </Expander>
+                    <WrapPanel Margin="0,0,0,8">
                         <Button x:Name="ConnectButton" Content="连接" Style="{StaticResource ActionButton}" Click="Connect_Click"/>
                         <Button x:Name="DisconnectButton" Content="断开" Style="{StaticResource ActionButton}" Click="Disconnect_Click"/>
                     </WrapPanel>
-                    <TextBlock x:Name="CameraSummary" TextWrapping="Wrap" FontSize="11" Opacity="0.65"/>
-                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,14"/>
-                    <TextBlock Text="曝光 (ms)" FontSize="11" Opacity="0.7"/>
-                    <TextBox x:Name="ExposureInput" Text="100" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown" Margin="0,4,0,5"/>
-                    <Slider x:Name="ExposureSlider" Minimum="0" Maximum="11.0021" SmallChange="0.05" Value="4.60517" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整曝光" Margin="0,0,0,12"/>
-                    <TextBlock Text="增益" FontSize="11" Opacity="0.7"/>
-                    <TextBox x:Name="GainInput" Text="0" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown" Margin="0,4,0,5"/>
-                    <Slider x:Name="GainSlider" Minimum="0" Maximum="100" SmallChange="1" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整增益" Margin="0,0,0,14"/>
-                    <WrapPanel><Button x:Name="CaptureButton" Content="取图" Style="{StaticResource ActionButton}" Click="Capture_Click"/><Button x:Name="LiveButton" Content="视频模式" Style="{StaticResource QuietButton}" Click="Live_Click"/><Button x:Name="StopButton" Content="停止" ToolTip="停止实时分析并冻结当前画面" Style="{StaticResource QuietButton}" Click="Stop_Click" IsEnabled="False"/><Button Content="视频设置…" Click="VideoSettings_Click" IsEnabled="{Binding IsEnabled, ElementName=VideoSettingsMenuItem}" Style="{StaticResource QuietButton}"/></WrapPanel>
+                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,4,0,10"/>
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBlock DockPanel.Dock="Left" Text="曝光 (ms)" Width="68" FontSize="11" Opacity="0.7"/>
+                        <TextBox x:Name="ExposureInput" Text="100" TextChanged="AcquisitionInput_Changed" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown"/>
+                    </DockPanel>
+                    <Slider x:Name="ExposureSlider" Minimum="0" Maximum="11.0021" SmallChange="0.05" Value="4.60517" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整曝光" Margin="0,0,0,10"/>
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBlock DockPanel.Dock="Left" Text="增益" Width="68" FontSize="11" Opacity="0.7"/>
+                        <TextBox x:Name="GainInput" Text="0" TextChanged="AcquisitionInput_Changed" LostKeyboardFocus="AcquisitionInput_Commit" KeyDown="AcquisitionInput_KeyDown"/>
+                    </DockPanel>
+                    <Slider x:Name="GainSlider" Minimum="0" Maximum="100" SmallChange="1" ValueChanged="AcquisitionSlider_Changed" ToolTip="拖动调整增益" Margin="0,0,0,4"/>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button x:Name="CaptureButton" DockPanel.Dock="Left" Content="取图" Style="{StaticResource ActionButton}" Click="Capture_Click"/>
+                        <CheckBox x:Name="SaveCaptureCheck" Content="取图后保存" Click="SaveCapture_Click" VerticalAlignment="Center" ToolTip="自动保存无损 PNG 原图及相机参数 JSON；视频帧不自动写入磁盘。"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4,0,0">
+                        <Button DockPanel.Dock="Right" Content="目录" ToolTip="打开保存目录" Click="OpenCaptureDirectory_Click" Style="{StaticResource QuietButton}" FontSize="11" Padding="4,4" Margin="4,0,0,0"/>
+                        <Button x:Name="CaptureDirectoryButton" DockPanel.Dock="Right" Content="位置…" Click="CaptureDirectory_Click" Style="{StaticResource QuietButton}" FontSize="11" Padding="4,4" Margin="4,0,0,0"/>
+                        <TextBlock Text="保存位置" FontSize="11" Opacity="0.7"/>
+                    </DockPanel>
+                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,12"/>
+                    <DockPanel Margin="0,0,0,6">
+                        <Button DockPanel.Dock="Right" Content="设置" Click="VideoSettings_Click" IsEnabled="{Binding IsEnabled, ElementName=VideoSettingsMenuItem}" Style="{StaticResource QuietButton}" FontSize="11"/>
+                        <TextBlock Text="视频分析" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <ComboBox x:Name="VideoModeSelector" SelectionChanged="VideoMode_Changed" Style="{StaticResource CameraCombo}" Margin="0,0,0,8">
+                        <ComboBoxItem Content="仅预览"/><ComboBoxItem Content="基础清晰度"/><ComboBoxItem Content="四边 SFR"/>
+                    </ComboBox>
+                    <WrapPanel><Button x:Name="LiveButton" Content="开始视频" Style="{StaticResource ActionButton}" Click="Live_Click"/><Button x:Name="StopButton" Content="停止" ToolTip="停止实时分析并冻结当前画面" Style="{StaticResource QuietButton}" Click="Stop_Click" IsEnabled="False"/></WrapPanel>
                     <Button x:Name="CameraSettingsButton" Visibility="Collapsed"/>
                     <TextBlock x:Name="RegionCountText" Visibility="Collapsed"/>
-                </StackPanel>
-                <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                    <Border Height="1" Background="{DynamicResource CV.Border.Weak}" Margin="0,0,0,10"/>
-                    <TextBlock x:Name="SignalSummary" FontSize="11" TextWrapping="Wrap" Opacity="0.65"/>
-                    <TextBlock x:Name="ArchiveSummary" FontSize="11" TextWrapping="Wrap" Opacity="0.65" Margin="0,8,0,0"/>
                 </StackPanel>
                 <Grid>
                     <ListBox x:Name="RegionList" Visibility="Collapsed" BorderThickness="0" Background="Transparent" SelectionChanged="RegionList_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -162,34 +216,82 @@
                 </Grid>
             </DockPanel>
             </ScrollViewer>
-            <GridSplitter Grid.Column="1" Width="4" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
-            <images:ImageView x:Name="ImageView" Grid.Column="2"/>
+            <GridSplitter x:Name="CameraSplitter" Grid.Column="1" Width="3" Background="{DynamicResource CV.Border.Weak}" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+            <Grid Grid.Column="2">
+                <images:ImageView x:Name="ImageView"/>
+                <Border x:Name="StartGuide" Background="{DynamicResource CV.Surface.Alternate}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24">
+                        <TextBlock Text="从一张图开始" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="打开图像，或连接相机取图" Margin="0,10,0,24" Opacity="0.65" HorizontalAlignment="Center"/>
+                        <Button Content="打开图像…" Click="Open_Click" Style="{StaticResource ActionButton}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="选择图卡类型并添加测量点" TextWrapping="Wrap" TextAlignment="Center" FontSize="12" Opacity="0.65" Margin="0,24,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
             <GridSplitter Grid.Column="3" Width="4" Background="{DynamicResource GlobalBorderBrush}" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
             <TabControl x:Name="AnalysisTabs" Grid.Column="4">
-            <TabItem Header="SFR" ToolTip="MTF50 / MTF10 单位为 cycles/pixel。Y 为相对亮度组合信号，曲线中记为 L。">
+            <TabItem Header="清晰度" ToolTip="SFR · MTF50 / MTF10 单位为 cycles/pixel。Y 为相对亮度组合信号，曲线中记为 L。">
             <Grid Margin="6">
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="260"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <WrapPanel Margin="0,0,0,8">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="0.85*" MinHeight="140"/><RowDefinition Height="Auto"/><RowDefinition Height="*" MinHeight="80"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <StackPanel>
+                <DockPanel Margin="0,4,0,8">
+                    <StackPanel DockPanel.Dock="Right" Margin="8,0,0,0" HorizontalAlignment="Right">
+                        <TextBlock x:Name="SelectedMetricValue" Text="—" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="SelectedMetricCaption" Text="MTF50 · cycles/pixel" FontSize="10" Opacity="0.65"/>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="CurveSelectionText" Text="等待分析" FontSize="16" FontWeight="SemiBold"/>
+                        <WrapPanel Margin="0,5,0,0">
+                            <TextBlock x:Name="ResultSummary" Text="每条边一行，通道横向对比" FontSize="11" Opacity="0.65"/>
+                            <Button x:Name="FailedTargetsButton" Content="处理未定位" Visibility="Collapsed" Click="FailedTarget_Click" Style="{StaticResource QuietButton}" Padding="4,0" FontSize="11" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <Button x:Name="MissingResultsButton" Content="查看缺值" Visibility="Collapsed" Click="MissingResult_Click" Style="{StaticResource QuietButton}" Padding="4,0" FontSize="11" Foreground="{DynamicResource PrimaryBrush}" ToolTip="按当前点位、通道和指标筛选，逐项定位缺值及原因；测量质量检查与产品合格判定不同。"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </DockPanel>
+                <UniformGrid Rows="1" Margin="0,0,0,10">
+                    <Button x:Name="LeftEdgeButton" Tag="Left" Click="Direction_Click" Style="{StaticResource EdgeButton}"><StackPanel><TextBlock Text="左边" FontSize="10" Opacity="0.7" Style="{StaticResource EdgeReadout}"/><TextBlock x:Name="LeftEdgeValue" Text="—" FontSize="15" FontWeight="SemiBold" Style="{StaticResource EdgeReadout}"/></StackPanel></Button>
+                    <Button x:Name="TopEdgeButton" Tag="Top" Click="Direction_Click" Style="{StaticResource EdgeButton}"><StackPanel><TextBlock Text="上边" FontSize="10" Opacity="0.7" Style="{StaticResource EdgeReadout}"/><TextBlock x:Name="TopEdgeValue" Text="—" FontSize="15" FontWeight="SemiBold" Style="{StaticResource EdgeReadout}"/></StackPanel></Button>
+                    <Button x:Name="RightEdgeButton" Tag="Right" Click="Direction_Click" Style="{StaticResource EdgeButton}"><StackPanel><TextBlock Text="右边" FontSize="10" Opacity="0.7" Style="{StaticResource EdgeReadout}"/><TextBlock x:Name="RightEdgeValue" Text="—" FontSize="15" FontWeight="SemiBold" Style="{StaticResource EdgeReadout}"/></StackPanel></Button>
+                    <Button x:Name="BottomEdgeButton" Tag="Bottom" Click="Direction_Click" Style="{StaticResource EdgeButton}" Margin="0"><StackPanel><TextBlock Text="下边" FontSize="10" Opacity="0.7" Style="{StaticResource EdgeReadout}"/><TextBlock x:Name="BottomEdgeValue" Text="—" FontSize="15" FontWeight="SemiBold" Style="{StaticResource EdgeReadout}"/></StackPanel></Button>
+                </UniformGrid>
+                </StackPanel>
+                <WrapPanel Grid.Row="1" Margin="0,0,0,4">
                     <TextBlock Text="通道" Margin="0,0,12,0"/>
                     <CheckBox x:Name="ShowY" Content="Y" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
                     <CheckBox x:Name="ShowR" Content="R" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
                     <CheckBox x:Name="ShowG" Content="G" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
                     <CheckBox x:Name="ShowB" Content="B" IsChecked="True" Margin="0,0,12,0" Click="PlotSettings_Click"/>
                     <ComboBox x:Name="PlotMode" Width="90" SelectedIndex="0" SelectionChanged="PlotMode_SelectionChanged"><ComboBoxItem Content="MTF"/><ComboBoxItem Content="ESF"/><ComboBoxItem Content="LSF"/></ComboBox>
-                    <TextBlock x:Name="CurveSelectionText" Text="请选择结果行" Margin="12,0,0,0" ToolTip="点击下方结果行切换点位和刃边；通道勾选决定显示的曲线。"/>
+                    <CheckBox x:Name="FocusLabels" Content="专注当前点" IsChecked="True" Click="FocusLabels_Click" Margin="12,0,0,0" ToolTip="当前点用简短标签显示四边数值；其他点保留名称和测量框。取消后显示完整标注。"/>
                 </WrapPanel>
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2">
                     <sfr:SfrSimplePlotControl x:Name="CurvePlot"/>
                     <Border x:Name="EmptyPlot" Background="{DynamicResource GlobalBackground}">
-                        <TextBlock Text="选择一条边查看 RGB/Y 曲线" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/>
+                        <TextBlock x:Name="EmptyPlotText" Text="分析后，点击结果或图上的刃边查看曲线" TextWrapping="Wrap" TextAlignment="Center" Margin="20" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"/>
                     </Border>
                 </Grid>
-                <DataGrid Grid.Row="2" x:Name="Metrics" Style="{StaticResource ResultGrid}" Margin="0,10,0,0" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Metrics_SelectionChanged" EnableRowVirtualization="True">
+                <WrapPanel Grid.Row="3" Margin="0,8,0,8">
+                    <ComboBox x:Name="TargetFilter" Width="112" SelectionChanged="TargetFilter_Changed" ToolTip="按点位筛选" Margin="0,0,6,4"/>
+                    <ComboBox x:Name="OverviewMetric" Width="112" SelectedIndex="0" SelectionChanged="OverviewMetric_Changed" Margin="0,0,6,4" ToolTip="图上标注、四边读数与概览使用同一指标；显示频率可在测量设置中修改，只查询已有曲线。"><ComboBoxItem Content="MTF50"/><ComboBoxItem Content="MTF10"/><ComboBoxItem x:Name="TargetFrequencyOption" Content="MTF@0.25"/><ComboBoxItem Content="MTF@0.5"/></ComboBox>
+                    <Button x:Name="LowestButton" Content="定位最低值" Click="Lowest_Click" Style="{StaticResource QuietButton}" ToolTip="定位本帧当前筛选范围内、当前指标的最低可用数值；不代表判定不合格。" Margin="0,0,6,4"/>
+                    <CheckBox x:Name="ShowDetails" Content="明细" Click="ShowDetails_Click" Margin="0,0,0,4"/>
+                </WrapPanel>
+                <DataGrid Grid.Row="4" x:Name="Overview" Style="{StaticResource ResultGrid}" CellStyle="{Binding CellStyle, ElementName=Metrics}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Overview_SelectionChanged" SizeChanged="Overview_SizeChanged" PreviewMouseLeftButtonUp="Overview_MouseUp" ToolTip="点击一行切换刃边，点击通道数值切换图上标注；方向键也可切换结果。">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="点位" Binding="{Binding Target}" Width="*" MinWidth="64" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="边" Binding="{Binding EdgeLabel}" Width="32" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn x:Name="OverviewY" Header="Y" Binding="{Binding Y}" SortMemberPath="YValue" Width="62" ElementStyle="{StaticResource YMetricText}"/>
+                        <DataGridTextColumn x:Name="OverviewR" Header="R" Binding="{Binding R}" SortMemberPath="RValue" Width="62" ElementStyle="{StaticResource RMetricText}"/>
+                        <DataGridTextColumn x:Name="OverviewG" Header="G" Binding="{Binding G}" SortMemberPath="GValue" Width="62" ElementStyle="{StaticResource GMetricText}"/>
+                        <DataGridTextColumn x:Name="OverviewB" Header="B" Binding="{Binding B}" SortMemberPath="BValue" Width="62" ElementStyle="{StaticResource BMetricText}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <DataGrid Grid.Row="4" x:Name="Metrics" Visibility="Collapsed" Style="{StaticResource ResultGrid}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Metrics_SelectionChanged" EnableRowVirtualization="True">
                     <DataGrid.CellStyle>
                         <Style TargetType="DataGridCell">
                             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                             <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="ToolTip" Value="{Binding Status}"/>
+                            <Setter Property="ToolTip" Value="{Binding DiagnosticText}"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="DataGridCell">
@@ -214,10 +316,21 @@
                         <DataGridTextColumn Header="MTF50" Binding="{Binding Mtf50, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
                         <DataGridTextColumn Header="MTF10" Binding="{Binding Mtf10, StringFormat=F4}" Width="65" ElementStyle="{StaticResource MetricText}"/>
                         <DataGridTextColumn x:Name="ResponseColumn" Header="MTF@0.25" Binding="{Binding Response, StringFormat=P1}" Width="80" ElementStyle="{StaticResource MetricText}"/>
-                        <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="*" MinWidth="90" ElementStyle="{StaticResource MetricText}"/>
+                        <DataGridTextColumn Header="状态" Binding="{Binding StatusText}" Width="*" MinWidth="90" ElementStyle="{StaticResource MetricText}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <TextBlock Grid.Row="3" Text="{Binding SelectedItem.Status, ElementName=Metrics}" FontSize="11" Opacity="0.65" Margin="0,8,0,0" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                <Border Grid.Row="5" Background="{DynamicResource CV.Surface.Alternate}" Padding="10,8" Margin="0,10,0,0" CornerRadius="4">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button x:Name="CheckSignalButton" DockPanel.Dock="Right" Content="检查信号" Style="{StaticResource QuietButton}" Visibility="Collapsed" Click="SignalSettings_Click" IsEnabled="{Binding IsEnabled, ElementName=SignalSettingsMenuItem}" Padding="6,0" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <TextBlock x:Name="ResultHint" Text="先框选完整靶标，再开始分析。" TextWrapping="Wrap" FontSize="11"/>
+                        </DockPanel>
+                        <WrapPanel x:Name="RecoveryActions" Visibility="Collapsed" Margin="0,6,0,0">
+                            <Button x:Name="ExpandRegionButton" Content="扩大选框重试" Click="ExpandRegion_Click" Style="{StaticResource QuietButton}" ToolTip="选框宽高各增加 50%，限制在原图内并重新分析。可用 Ctrl+Z 撤销。"/>
+                            <Button Content="测量设置…" Click="DisplaySettings_Click" Style="{StaticResource QuietButton}" IsEnabled="{Binding IsEnabled, ElementName=DisplaySettingsMenuItem}"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
             </TabItem>
             <TabItem Header="色差" ToolTip="RGB 50% 边缘位移，单位 px。包括镜头、传感器和图像处理的综合偏移，不等同于 ΔE 或纯镜头径向色差。">

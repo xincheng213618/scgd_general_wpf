@@ -26,6 +26,44 @@ public sealed class BmwSfrAnalysisTests
         Assert.Throws<ArgumentException>(() => BmwSfrAnalyzer.Analyze(default,[new("a",default),new("a",default)],new()));
         Assert.Throws<ArgumentException>(() => BmwSfrAnalyzer.Analyze(default,[new(" ",default)],new()));
         Assert.Throws<ArgumentException>(() => BmwSfrAnalyzer.Analyze(default,[],new() { MaximumFitRms = double.NaN }));
+        Assert.Throws<ArgumentException>(() => BmwSfrAnalyzer.Analyze(default,[],new(),new() { ChartType = (SfrChartType)99 }));
+    }
+
+    [SfrNativeFact]
+    public void CheckerboardTypeAndSupportLimitsSurviveManagedAnalysis()
+    {
+        const int size = 720;
+        byte[] pixels = new byte[size * size];
+        double angle = 5 * Math.PI / 180;
+        for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
+        {
+            double dx = x - 360, dy = y - 360;
+            int u = (int)Math.Floor((dx * Math.Cos(angle) + dy * Math.Sin(angle)) / 180), v = (int)Math.Floor((-dx * Math.Sin(angle) + dy * Math.Cos(angle)) / 180);
+            pixels[y * size + x] = (byte)((u + v) % 2 == 0 ? 40 : 200);
+        }
+        IntPtr ptr = Marshal.AllocHGlobal(pixels.Length);
+        try
+        {
+            Marshal.Copy(pixels,0,ptr,pixels.Length);
+            var image = new HImage { rows=size,cols=size,channels=1,depth=8,stride=size,pData=ptr,isDispose=true };
+            var regions = new BmwSearchRegion[] { new("chess",new(60,60,600,600)) };
+            foreach (var type in new[] { SfrChartType.Checkerboard, SfrChartType.Auto })
+            {
+                var result = Assert.Single(BmwSfrAnalyzer.Analyze(image,regions,new(),new() { ChartType=type }));
+                Assert.True(result.Located);
+                Assert.Equal(SfrChartType.Checkerboard,result.DetectedChartType);
+                Assert.All(result.Edges,e => { Assert.True(e.SupportRoi.Width>0); Assert.Single(e.Analysis!.Channels); });
+            }
+            var oversized = Assert.Single(BmwSfrAnalyzer.Analyze(image,regions,new(),new() { ChartType=SfrChartType.Checkerboard,AlongEdgePixels=400 }));
+            Assert.All(oversized.Edges,e => { Assert.Null(e.Analysis); Assert.Equal("checkerboard_roi_crosses_junction",e.Reason); });
+            var partial = Assert.Single(BmwSfrAnalyzer.Analyze(image, [new("narrow",new(293,250,160,230))], new(), new() { ChartType=SfrChartType.Checkerboard }));
+            Assert.True(partial.Located);
+            Assert.Equal(SfrChartType.Checkerboard, partial.DetectedChartType);
+            Assert.Equal(4, partial.Edges.Count);
+            Assert.Contains(partial.Edges, e => e.Analysis != null);
+            Assert.Contains(partial.Edges, e => e.Analysis == null && !e.Valid && e.Reason == "checkerboard_insufficient_edge_support");
+        }
+        finally { Marshal.FreeHGlobal(ptr); }
     }
 
     [SfrNativeFact]
