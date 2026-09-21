@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -146,7 +147,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
             FindCrossLocalOptions options = uiOptions.ToOptions();
             if (!options.TryValidate(out string validationError))
             {
-                MessageBox.Show(validationError, "本地 FindCross 参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(validationError, ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -158,7 +159,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
             if (!TryNormalizeRoi(requestedRoi, lease.Image, out RoiRect roi))
             {
                 lease.Dispose();
-                MessageBox.Show("所选 ROI 与当前图像没有有效交集。", "本地 FindCross", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("所选 ROI 与当前图像没有有效交集。", ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -180,7 +181,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
 
                         if (!result.Success || result.Items.Count == 0)
                         {
-                            MessageBox.Show(GetFailureMessage(result), "本地 FindCross", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(GetFailureMessage(result), ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
 
@@ -198,7 +199,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
                         if (!imageContext.IsCurrentImageRevision(revision) ||
                             !AlgorithmResultOverlay.IsCurrentRequest(drawContext, AlgorithmResultOverlay.FindCrossTag, requestId)) return;
 
-                        MessageBox.Show($"本地 FindCross 计算异常：{ex.Message}", "本地 FindCross", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"本地 FindCross 计算异常：{ex.Message}", ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Error);
                     });
                 }
             });
@@ -439,7 +440,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
                 return Array.Empty<MenuItem>();
             }
 
-            MenuItem menuItem = new() { Header = "本地 FindCross..." };
+            MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross + "..." };
             menuItem.Click += (_, _) => ShowOptionsAndRun(roi);
             return new[] { menuItem };
         }
@@ -470,7 +471,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
         {
             PropertyEditorWindow window = new(_options)
             {
-                Title = "本地 FindCross 参数",
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -498,7 +499,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
             {
                 PropertyEditorWindow window = new(_options)
                 {
-                    Title = "本地 FindCross 参数",
+                    Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross,
                     Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
@@ -510,10 +511,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                     GuidId = "FindCrossLocal",
-                    Order = 2,
-                    Header = "本地 FindCross...",
+                    Order = 1,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross + "...",
                     Command = command
                 }
             };

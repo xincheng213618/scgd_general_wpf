@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -19,10 +20,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Stereo.Id,
                     GuidId = "P2StereoBinocularLocalAnalysis",
-                    Order = 7,
-                    Header = "双目标定融合",
+                    Order = 1,
+                    Header = "双目标定融合...",
                     Command = command
                 }
             };

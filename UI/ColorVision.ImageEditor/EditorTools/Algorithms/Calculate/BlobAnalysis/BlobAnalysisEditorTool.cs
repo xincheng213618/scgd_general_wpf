@@ -181,7 +181,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.BlobAnalysis
             BlobAnalysisEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "BlobAnalysis", Order = 3, Header = "Blob / 连通域" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "BlobAnalysis", Order = 5, Header = "Blob / 连通域" },
                 Item("BlobAnalysisWholeImage", "整图...", 0, tool.Execute, hasRoi: false),
                 Item("BlobAnalysisRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle), hasRoi: true),
                 Item("BlobAnalysisCircle", "圆形 ROI...", 2, () => tool.Execute(SelectShapeType.Circle), hasRoi: true),

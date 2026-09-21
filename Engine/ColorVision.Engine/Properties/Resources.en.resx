@@ -4171,7 +4171,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Camera_DatabaseFailureRecord" xml:space="preserve"><value>Database failure record Id:{0}, ResultCode:{1}, Message:{2}</value></data>
   <data name="Camera_LocalVideoPoiTemplateSupport" xml:space="preserve"><value>Whether POI templates can be selected in local video mode</value></data>
   <data name="VideoCrossGuide_MetricsWithClarity" xml:space="preserve"><value>fps:{0:F1}  clarity:{1:F5}</value></data>
-  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>The width and height of an HK camera ROI must use {0}-pixel increments; integer values alone are not sufficient.&#xD;&#xA;&#xD;&#xA;Current ROI: Width={1}, Height={2}&#xD;&#xA;Invalid fields: {3}&#xD;&#xA;&#xD;&#xA;Adjust these values to multiples of {0} before saving.</value></data>
+  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>It is recommended to set the width and height of an HK camera ROI to multiples of {0}.&#xD;&#xA;&#xD;&#xA;Current ROI: Width={1}, Height={2}&#xD;&#xA;Unaligned fields: {3}&#xD;&#xA;&#xD;&#xA;Continue saving with the current values?</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>File not found in the calibration package: {0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistics</value></data>
   <data name="CommonTools" xml:space="preserve"><value>Common Tools</value></data>

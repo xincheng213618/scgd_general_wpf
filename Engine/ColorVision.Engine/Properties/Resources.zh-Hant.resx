@@ -2979,7 +2979,7 @@
   <data name="Camera_DatabaseFailureRecord" xml:space="preserve"><value>資料庫失敗記錄 Id:{0}, ResultCode:{1}, Message:{2}</value></data>
   <data name="Camera_LocalVideoPoiTemplateSupport" xml:space="preserve"><value>本機視訊模式是否允許選擇 POI 模板</value></data>
 
-  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>HK 相機 ROI 的寬高必須以 {0} 像素為步進設定。&#xD;&#xA;&#xD;&#xA;目前 ROI：Width={1}, Height={2}&#xD;&#xA;不符合項目：{3}&#xD;&#xA;&#xD;&#xA;儲存前請將上述值調整為 {0} 的倍數。</value></data>
+  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>建議將 HK 相機 ROI 的寬高設定為 {0} 的倍數。&#xD;&#xA;&#xD;&#xA;目前 ROI：Width={1}, Height={2}&#xD;&#xA;未對齊項目：{3}&#xD;&#xA;&#xD;&#xA;是否仍按目前值繼續儲存？</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>校正套件中找不到檔案：{0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>統計資訊</value></data>
 

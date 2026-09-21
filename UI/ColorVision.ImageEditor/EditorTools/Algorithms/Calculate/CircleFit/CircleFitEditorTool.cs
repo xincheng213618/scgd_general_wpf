@@ -163,9 +163,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.CircleFit
             [
                 new MenuItemMetadata
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                     GuidId = "CircleFit",
-                    Order = 7,
+                    Order = 9,
                     Header = "圆拟合...",
                     Command = new RelayCommand(_ => tool.Execute()),
                 },

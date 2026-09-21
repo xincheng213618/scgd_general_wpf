@@ -971,7 +971,7 @@
   <data name="Camera_DatabaseFailureRecord" xml:space="preserve"><value>数据库失败记录 Id:{0}, ResultCode:{1}, Message:{2}</value></data>
   <data name="Camera_LocalVideoPoiTemplateSupport" xml:space="preserve"><value>本地视频模式是否允许选择 POI 模板</value></data>
   <data name="VideoCrossGuide_MetricsWithClarity" xml:space="preserve"><value>fps:{0:F1}  清晰度:{1:F5}</value></data>
-  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>HK 相机 ROI 的宽高必须按 {0} 像素步进设置，不能只保证为整数。&#xD;&#xA;&#xD;&#xA;当前 ROI：Width={1}, Height={2}&#xD;&#xA;不符合项：{3}&#xD;&#xA;&#xD;&#xA;请将上述值调整为 {0} 的倍数后再保存。</value></data>
+  <data name="Camera_HkRoiAlignmentWarning" xml:space="preserve"><value>建议将 HK 相机 ROI 的宽高设置为 {0} 的倍数。&#xD;&#xA;&#xD;&#xA;当前 ROI：Width={1}, Height={2}&#xD;&#xA;未对齐项：{3}&#xD;&#xA;&#xD;&#xA;是否仍按当前值继续保存？</value></data>
   <data name="Calibration_PackageFileNotFound" xml:space="preserve"><value>校正包中找不到文件：{0}&#xD;&#xA;{1}</value></data>
   <data name="Statistics" xml:space="preserve"><value>统计信息</value></data>
   <data name="CommonTools" xml:space="preserve"><value>常用工具</value></data>

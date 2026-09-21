@@ -181,7 +181,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             ContourAnalysisEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "ContourAnalysis", Order = 4, Header = "轮廓提取" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "ContourAnalysis", Order = 6, Header = "轮廓提取" },
                 Item("ContourAnalysisWholeImage", "整图...", 0, tool.Execute, hasRoi: false),
                 Item("ContourAnalysisRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle), hasRoi: true),
                 Item("ContourAnalysisCircle", "圆形 ROI...", 2, () => tool.Execute(SelectShapeType.Circle), hasRoi: true),

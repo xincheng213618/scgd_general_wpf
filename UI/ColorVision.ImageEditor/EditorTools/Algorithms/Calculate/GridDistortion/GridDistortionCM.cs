@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -27,7 +28,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             GridDistortionOptions options = Options.GetValue(imageContext, static _ => new());
             PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
             {
-                Title = "点阵畸变分析 (V2) 参数",
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -124,7 +125,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
         {
             new()
             {
-                OwnerGuid = "AlgorithmsCall", GuidId = "GridDistortionV2", Order = 3, Header = "点阵畸变分析 (V2)...",
+                OwnerGuid = AlgorithmMenuGroups.FieldGeometry.Id, GuidId = "GridDistortionV2", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion + "...",
                 Command = new RelayCommand(_ => GridDistortionImageViewRunner.ShowOptions(_imageContext, _drawContext, new RoiRect()))
             }
         };
@@ -149,7 +150,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             if (!double.IsFinite(left) || !double.IsFinite(top) || !double.IsFinite(right) || !double.IsFinite(bottom) ||
                 left < 0 || top < 0 || right > int.MaxValue || bottom > int.MaxValue || right <= left || bottom <= top) return Array.Empty<MenuItem>();
             RoiRect roi = new((int)left, (int)top, (int)(right - left), (int)(bottom - top));
-            MenuItem item = new() { Header = "点阵畸变分析 (V2)..." };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GridDistortion + "..." };
             item.Click += (_, _) => GridDistortionImageViewRunner.ShowOptions(_imageContext, _drawContext, roi);
             return new[] { item };
         }

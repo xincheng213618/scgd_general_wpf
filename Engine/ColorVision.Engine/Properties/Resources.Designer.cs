@@ -1250,12 +1250,12 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 HK 相机 ROI 的宽高必须按 {0} 像素步进设置，不能只保证为整数。
+        ///   查找类似 建议将 HK 相机 ROI 的宽高设置为 {0} 的倍数。
         ///
         ///当前 ROI：Width={1}, Height={2}
-        ///不符合项：{3}
+        ///未对齐项：{3}
         ///
-        ///请将上述值调整为 {0} 的倍数后再保存。 的本地化字符串。
+        ///是否仍按当前值继续保存？ 的本地化字符串。
         /// </summary>
         public static string Camera_HkRoiAlignmentWarning {
             get {

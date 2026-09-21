@@ -188,7 +188,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             SubpixelEdgeEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "SubpixelEdge", Order = 5, Header = "亚像素边缘" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "SubpixelEdge", Order = 7, Header = "亚像素边缘" },
                 Item("SubpixelEdgeHorizontal", "水平卡尺...", 0, tool.ExecuteHorizontal),
                 Item("SubpixelEdgeVertical", "垂直卡尺...", 1, tool.ExecuteVertical),
                 Item("SubpixelEdgePolyline", "折线卡尺组...", 2, tool.ExecutePolyline),

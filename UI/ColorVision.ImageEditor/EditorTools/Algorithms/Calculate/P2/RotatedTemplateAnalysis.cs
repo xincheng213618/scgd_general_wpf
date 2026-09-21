@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -27,10 +28,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                     GuidId = "P2RotatedTemplateLocalAnalysis",
-                    Order = 6,
-                    Header = "旋转模板本地匹配",
+                    Order = 4,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate + "...",
                     Command = command
                 }
             };
@@ -81,7 +82,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 session.Description = $"当前图像 ROI: {P2RoiHelper.Describe(roi)}";
                 MessageBox.Show(
                     $"模板已设置：{template.PixelWidth} x {template.PixelHeight}\n{session.Description}",
-                    "旋转模板本地匹配",
+                    ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
@@ -117,7 +118,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             using ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("当前没有可匹配的图像。", "旋转模板本地匹配", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("当前没有可匹配的图像。", ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -134,7 +135,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
             RoiRect roi = P2RoiHelper.Normalize(requestedRoi, lease.Image);
             P2JsonAnalysisWindow window = new(
-                "旋转模板本地匹配",
+                ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
                 $"Search ROI: {P2RoiHelper.Describe(roi)}    Template: {session.Template.PixelWidth} x {session.Template.PixelHeight} ({session.Description})",
                 CreateDefaultConfig(),
                 imageContext,
@@ -164,7 +165,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             long revision = lease.Revision;
             using P2ImageSnapshot templateSnapshot = P2ImageSnapshot.FromBitmap(template);
             P2NativeResult result = await Task.Run(() => P2NativeJson.Invoke(
-                "旋转模板本地匹配",
+                ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
                 (out IntPtr result) => OpenCVMediaHelper.M_MatchRotatedTemplate(
                     lease.Image,
                     templateSnapshot.Image,

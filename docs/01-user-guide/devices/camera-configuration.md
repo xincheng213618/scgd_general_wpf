@@ -59,7 +59,7 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 物理 ROI 是 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height`（经 `PhyCameraCfg.ROI` 编辑）；`DisplayCameraConfig.LocalVideoRoi` 则用于实时分析/画面 ROI，由 `ApplyLocalVideoRoiToRealtimeConfig` 传给实时配置，不等于修改传感器采集 ROI。
 
-`EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐，失败则停留在配置窗口。此检查不包含所有型号/坐标合法性，也不应宣称每个保存入口都执行了它。
+`EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 
 创建与编辑物理配置的 `PhyCameraConfigEditor` 按相同规则约束可选通道：BV 可选单通道或三通道，CV 固定三通道，LV 固定单通道并隐藏通道选择。切换到 CV 模式启用 `CFW.IsUseCFW` 并选中 CFW 分类，切换到其他模式关闭该开关并返回可用分类；初次载入保留原有 CFW 开关。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。
 

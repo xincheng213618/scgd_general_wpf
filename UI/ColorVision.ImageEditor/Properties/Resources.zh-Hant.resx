@@ -116,7 +116,7 @@
     <value>切割面圖</value>
   </data>
   <data name="ImageAlgorithm" xml:space="preserve">
-    <value>影像演算法</value>
+    <value>影像處理</value>
   </data>
   <data name="LineOn" xml:space="preserve">
     <value>線上</value>
@@ -466,7 +466,7 @@
   <data name="Draw_Edit" xml:space="preserve">
     <value>編輯</value>
   </data>
-  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>Algorithm Calls</value></data>
+  <data name="Algorithm_AlgorithmCalls" xml:space="preserve"><value>分析量測</value></data>
   <data name="ThreeD_ModelViewer" xml:space="preserve">
     <value>3D模型查看器</value>
   </data>
@@ -726,7 +726,7 @@
     <value>錯誤</value>
   </data>
   <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
-    <value>SFR/MTF 分析</value>
+    <value>斜邊清晰度（SFR/MTF）</value>
   </data>
   <data name="Histogram_Title" xml:space="preserve">
     <value>直方圖 (Histogram)</value>
@@ -1041,11 +1041,37 @@
     <value>線框</value>
   </data>
   <data name="Algorithm_FilterCategory" xml:space="preserve">
-    <value>濾波</value>
+    <value>濾波與增強</value>
   </data>
   <data name="Cie_Chromaticity" xml:space="preserve"><value>色度圖</value></data>
   <data name="Cie_GamutCalculation" xml:space="preserve"><value>色域計算</value></data>
   <data name="Cie_DisplayOptions" xml:space="preserve"><value>顯示選項</value></data>
   <data name="Cie_Parameters" xml:space="preserve"><value>參數</value></data>
   <data name="Cie_Results" xml:space="preserve"><value>計算結果</value></data>
+  <data name="Algorithm_GroupTone" xml:space="preserve"><value>灰階與色彩</value></data>
+  <data name="Algorithm_GroupMorphology" xml:space="preserve"><value>閾值與形態學</value></data>
+  <data name="Algorithm_GroupCorrection" xml:space="preserve"><value>幾何變換與校正</value></data>
+  <data name="Algorithm_GroupLocalization" xml:space="preserve"><value>定位與幾何</value></data>
+  <data name="Algorithm_GroupFieldGeometry" xml:space="preserve"><value>視場與畸變</value></data>
+  <data name="Algorithm_GroupImageQuality" xml:space="preserve"><value>清晰度與頻域</value></data>
+  <data name="Algorithm_GroupColorRegistration" xml:space="preserve"><value>色彩與套色</value></data>
+  <data name="Algorithm_GroupDefects" xml:space="preserve"><value>缺陷與鬼影</value></data>
+  <data name="Algorithm_GroupStatistics" xml:space="preserve"><value>灰階與統計</value></data>
+  <data name="Algorithm_GroupStereo" xml:space="preserve"><value>雙目與視區</value></data>
+  <data name="Algorithm_FindCross" xml:space="preserve"><value>十字中心與傾角</value></data>
+  <data name="Algorithm_FindLuminousArea" xml:space="preserve"><value>發光區域定位</value></data>
+  <data name="Algorithm_FindLightBeads" xml:space="preserve"><value>燈珠定位</value></data>
+  <data name="Algorithm_FieldOfView" xml:space="preserve"><value>視場角量測（FOV）</value></data>
+  <data name="Algorithm_GridDistortion" xml:space="preserve"><value>點陣畸變量測</value></data>
+  <data name="Algorithm_NinePointDistortion" xml:space="preserve"><value>九點畸變量測</value></data>
+  <data name="Algorithm_GhostDetection" xml:space="preserve"><value>鬼影檢測（Ghost）</value></data>
+  <data name="Algorithm_RotatedTemplate" xml:space="preserve"><value>旋轉模板匹配</value></data>
+  <data name="Algorithm_SurfaceDefects" xml:space="preserve"><value>表面缺陷檢測（Mura）</value></data>
+  <data name="Algorithm_RgbCross" xml:space="preserve"><value>十字 RGB 分離量測...</value></data>
+  <data name="Algorithm_RgbRegistration" xml:space="preserve"><value>RGB 圖案套色量測...</value></data>
+  <data name="Algorithm_GhostMetrology" xml:space="preserve"><value>鬼影與雜散光評估...</value></data>
+  <data name="Algorithm_DisplayDefects" xml:space="preserve"><value>顯示缺陷檢測（亮暗點 / 線 / Mura）...</value></data>
+  <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>左右眼對準與訊號一致性...</value></data>
+  <data name="Algorithm_Eyebox" xml:space="preserve"><value>眼盒掃描評估（Eyebox）...</value></data>
+  <data name="Algorithm_FieldSfr" xml:space="preserve"><value>全視場斜邊 SFR...</value></data>
 </root>

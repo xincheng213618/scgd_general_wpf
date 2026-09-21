@@ -257,9 +257,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             [
                 new MenuItemMetadata
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Statistics.Id,
                     GuidId = "ImageComparison",
-                    Order = 2,
+                    Order = 3,
                     Header = "图像比较",
                 },
                 Item("ImageComparisonWhole", "全图比较...", 0, tool.Execute, hasRoi: false),

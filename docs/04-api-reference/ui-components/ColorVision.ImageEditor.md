@@ -114,6 +114,10 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 应用需要自行布局标签时可通过 `AlgorithmOverlayRenderer.RegisterVisual` 注册 DrawingVisual，继续使用同一文档、source revision 与注册 token 的生命周期；应用负责字号、缩放重绘和交互命中。BMW 主图回显与 CameraTest 使用同一个 `BmwSfrOverlayRenderer`，避免两个入口的框线和数值标签分叉。共享显示设置支持 MTF50、MTF10、指定频率 MTF 与 Nyquist 响应；按原图测量拟合生成刃边虚线，再转换到当前 DPI/缩放的画布坐标，绘制范围限定在对应 ROI 内。中心十字使用识别出的靶标中心，默认显示且可关闭；可选显示中心原图坐标、内部矩形实际尺寸和距中心距离。中心只在定位成功且坐标有效时出现，标注数值使用原图像素，中心十字保持固定屏幕大小。显示切换只查询结果，不触发测量。
 
+图像右键仍使用两个算法外层入口：Algorithms 显示为“图像处理”，AlgorithmsCall 显示为“分析测量”。图像处理内部依次为灰度与色彩、滤波与增强、阈值与形态学、几何变换与校正，批量执行算法保留在该入口内。分析测量内部依次为定位与几何、视场与畸变、清晰度与频域、色彩与套色、缺陷与鬼影、灰度与统计、双目与视区。
+
+菜单以测量用途命名：十字中心与倾角、发光区域定位、灯珠定位、视场角测量（FOV）、点阵畸变测量、九点畸变测量和鬼影检测（Ghost）。十字中心与倾角排在定位与几何首位，十字 RGB 分离测量归入色彩与套色。AlgorithmMenuGroups 统一 Catalog 与独立分析工具的分组；Catalog 的组内 Order 直接参与排序，不重新压缩序号，避免与独立工具的顺序冲突。菜单兼容 ID、算法 ID、参数及结果协议保持稳定。
+
 统一算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。[本地 Native 分析](../algorithms/local-native-analysis.md)等直接入口不自动受这套门禁控制。工具构造、刷新与临时 ROI 见[编辑器上下文](./image-editor-context.md)。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
 
 CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，多样品、色差、色域覆盖与导出契约见 [CIE 色度与样品分析](./cie-analysis.md)。选中样品可直接设为色域 R、G 或 B；实测 XYZ、RGB 推算和仅色坐标分别处理。

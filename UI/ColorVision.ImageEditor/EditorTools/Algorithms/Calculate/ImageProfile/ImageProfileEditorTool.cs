@@ -237,7 +237,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             ImageProfileEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "ImageProfile", Order = 1, Header = "灰度与颜色剖面" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Statistics.Id, GuidId = "ImageProfile", Order = 2, Header = "灰度与颜色剖面" },
                 Item("ImageProfileHorizontal", "水平剖面...", 0, tool.ExecuteHorizontal),
                 Item("ImageProfileVertical", "垂直剖面...", 1, tool.ExecuteVertical),
                 Item("ImageProfilePolyline", "任意折线剖面...", 2, tool.ExecutePolyline),

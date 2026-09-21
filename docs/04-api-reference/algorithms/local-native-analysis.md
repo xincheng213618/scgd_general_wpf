@@ -21,11 +21,11 @@ ImageEditor 提供本地灯珠检测、Ghost 分析、旋转模板匹配与双�
 
 ## 执行灯珠检测
 
-1. 在图像右键菜单选择“算法调用” → `FindLightBeads`，分析全图；只分析局部时，绘制矩形并右键该矩形，选择 `FindLightBeads`。矩形与图像无有效交集时不提供该命令。
+1. 在图像右键菜单选择“分析测量 → 定位与几何 → 灯珠定位...”，分析全图；只分析局部时，绘制矩形并右键该矩形，选择“灯珠定位...”。矩形与图像无有效交集时不提供该命令。
 2. 在参数窗口调整阈值、尺寸和行列数，点击“确定”。参数窗口使用临时配置；关闭窗口而未提交不会发起检测，参数不在此保存。
 3. 结果以红色亮点圆和黄色暗区候选圆追加到画布。当前不显示统计对话框，也不自动保存；参数窗口关闭和 `Execute` 返回均不代表后台标注已经完成。需要输出标注时，先确认本次结果已绘制，再使用[图像编辑器输出](../ui-components/ColorVision.ImageEditor.md#保存前分清输出语义)。
 
-`FindLightBeadsCM.cs` 的 `CMFindLightBeads` 提供全图命令（父项 `AlgorithmsCall` 即“算法调用”），`DVCMFindLightBeads` 提供 `IRectangle` 右键命令；两者在属性窗口 `Submitted` 事件中调用 `FindLightBeads.Execute`。
+`FindLightBeadsCM.cs` 的 `CMFindLightBeads` 提供全图命令（父项 `AnalysisLocalization` 即“定位与几何”），`DVCMFindLightBeads` 提供 `IRectangle` 右键命令；两者在属性窗口 `Submitted` 事件中调用 `FindLightBeads.Execute`。
 
 发现由 `EditorToolFactory.cs` 扫描其实际程序集集合并构造上下文实例。这两个菜单不实现 `IAlgorithmCatalogBoundMenu`，因此 `IsAlgorithmMenuExecutable` 不对它们执行统一 Runtime 的 provider 检查；实际发现集合仍限制哪些类可以显示。
 
@@ -88,7 +88,7 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 
 ## P2：Ghost、旋转模板和双目调试
 
-`EditorTools/Algorithms/Calculate/P2/` 是同类直接 native 适配器，但不是灯珠算法的另一组参数。三个全图菜单都挂在 `AlgorithmsCall` 下，没有实现 `IAlgorithmCatalogBoundMenu`；它们不自动继承统一 Runtime 的实验 provider 门禁。实际绑定的三个导出实现位于 `Native/opencv_helper/exports/p2_export.cpp`。
+`EditorTools/Algorithms/Calculate/P2/` 是同类直接 native 适配器，但不是灯珠算法的另一组参数。三个全图菜单分别位于“分析测量”的“缺陷与鬼影”“定位与几何”“双目与视区”分组，没有实现 `IAlgorithmCatalogBoundMenu`；它们不自动继承统一 Runtime 的实验 provider 门禁。实际绑定的三个导出实现位于 `Native/opencv_helper/exports/p2_export.cpp`。
 
 | 工具与源码 | 当前输入及执行链 | 结果边界 |
 | --- | --- | --- |
@@ -100,8 +100,8 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 
 按所需工具选择入口：
 
-- Ghost 分析：在图像右键菜单选择“算法调用” → “Ghost 本地分析”；局部分析则右键矩形，选择“在此 ROI 执行 Ghost 本地分析”。
-- 旋转模板匹配：先绘制模板区域矩形，右键选择“设为旋转匹配模板”；再选择“算法调用” → “旋转模板本地匹配”，或右键搜索区域矩形选择“在此 ROI 执行旋转模板匹配”。
+- Ghost 分析：在图像右键菜单选择“分析测量 → 缺陷与鬼影 → 鬼影检测（Ghost）...”；局部分析则右键矩形，选择“鬼影检测（Ghost）...”。
+- 旋转模板匹配：先绘制模板区域矩形，右键选择“设为旋转匹配模板”；再选择“分析测量 → 定位与几何 → 旋转模板匹配...”，或右键搜索区域矩形选择“在此 ROI 执行旋转模板匹配”。
 
 打开参数窗口后：
 
@@ -111,7 +111,7 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 
 ### 执行双目标定融合
 
-1. 在编辑器打开左图，从图像右键菜单选择“算法调用” → “双目标定融合”。
+1. 在编辑器打开左图，从图像右键菜单选择“分析测量 → 双目与视区 → 双目标定融合...”。
 2. 点击“选择右图...”，再点击“加载标定 JSON...”，核对标定与这对图像、尺寸和单位匹配。窗口生成的示例标定不能用于测量。
 3. 检查“融合配置 JSON”，点击“运行融合”。查看“三维点”、结果 JSON、状态和警告；毫米坐标需结合点的 `valid`、视差和重投影误差判断。
 4. 需要文本结果时点击“复制结果”。更换左图后重新打开窗口核对输入；加载右图、加载配置或复制文本均不代表新一轮融合已完成。

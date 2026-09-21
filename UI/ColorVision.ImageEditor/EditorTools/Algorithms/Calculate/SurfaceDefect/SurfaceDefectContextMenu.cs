@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -41,6 +42,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
         {
             SurfaceDefectDebugWindow window = new(_imageContext, _drawContext, roi)
             {
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects,
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -62,10 +64,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Defects.Id,
                     GuidId = "SurfaceDefectMura",
-                    Order = 4,
-                    Header = "表面缺陷/Mura 检测",
+                    Order = 1,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "...",
                     Command = command
                 }
             };
@@ -101,7 +103,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
                 return menuItems;
             }
 
-            MenuItem item = new() { Header = "表面缺陷/Mura 检测" };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "..." };
             item.Click += (_, _) => new SurfaceDefectEditorTool(_imageContext, _drawContext).Execute(roi);
             menuItems.Add(item);
             return menuItems;

@@ -1,4 +1,5 @@
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
@@ -64,7 +65,7 @@ public sealed class BmwDrawingSelectionTests
                 .Where(item => item.GuidId is "BmwSfr" or "CheckerboardSfr" or "AutoSfr").ToArray();
             Assert.Equal(commands.Select(item => item.Header), backgroundCommands.Select(item => item.Header));
             Assert.Equal("BmwSfr", Assert.Single(backgroundCommands).GuidId);
-            Assert.All(backgroundCommands, item => { Assert.Equal("AlgorithmsCall", item.OwnerGuid); Assert.NotNull(item.Command); });
+            Assert.All(backgroundCommands, item => { Assert.Equal(AlgorithmMenuGroups.ImageQuality.Id, item.OwnerGuid); Assert.NotNull(item.Command); });
             selection.SelectVisuals.Add(second);
             Assert.Equal(2,BmwDrawingAnalysisRunner.SelectRectangles(draw,rectangle).Length);
             Assert.Single(BmwDrawingAnalysisRunner.SelectRectangles(draw,new DVRectangle()));

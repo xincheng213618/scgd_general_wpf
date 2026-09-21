@@ -28,16 +28,16 @@ internal static class DisplayMetrologyCatalog
 
     internal static void Register(AlgorithmCatalog catalog)
     {
-        Add(catalog, DisplayMetrologyIds.RgbRegistration, "RGB 图案套色", new RgbRegistrationParameters(), 1, 1, 1);
-        Add(catalog, DisplayMetrologyIds.RgbCrossRegistration, "十字 RGB 分离", new RgbCrossRegistrationParameters(), 1, 1, 2);
-        Add(catalog, DisplayMetrologyIds.Ghost, "鬼影与杂散光评价", new GhostMeasurementParameters(), 1, 1, 3);
-        Add(catalog, DisplayMetrologyIds.Defects, "亮暗点 / 线缺陷 / Mura", new DisplayDefectParameters(), 1, 1, 4);
-        Add(catalog, DisplayMetrologyIds.Binocular, "左右眼对准与信号一致性", new BinocularQualityParameters(), 2, 2, 5);
-        Add(catalog, DisplayMetrologyIds.Eyebox, "Eyebox 扫描评价", new EyeboxScanParameters(), 4, 81, 6);
-        Add(catalog, DisplayMetrologyIds.FieldSfr, "全视场斜边 SFR", new FieldSfrParameters(), 1, 1, 7);
+        Add(catalog, DisplayMetrologyIds.RgbRegistration, "RGB 图案套色", new RgbRegistrationParameters(), 1, 1, 2, AlgorithmMenuGroups.ColorRegistration, "Algorithm_RgbRegistration");
+        Add(catalog, DisplayMetrologyIds.RgbCrossRegistration, "十字 RGB 分离", new RgbCrossRegistrationParameters(), 1, 1, 1, AlgorithmMenuGroups.ColorRegistration, "Algorithm_RgbCross");
+        Add(catalog, DisplayMetrologyIds.Ghost, "鬼影与杂散光评价", new GhostMeasurementParameters(), 1, 1, 4, AlgorithmMenuGroups.Defects, "Algorithm_GhostMetrology");
+        Add(catalog, DisplayMetrologyIds.Defects, "亮暗点 / 线缺陷 / Mura", new DisplayDefectParameters(), 1, 1, 2, AlgorithmMenuGroups.Defects, "Algorithm_DisplayDefects");
+        Add(catalog, DisplayMetrologyIds.Binocular, "左右眼对准与信号一致性", new BinocularQualityParameters(), 2, 2, 2, AlgorithmMenuGroups.Stereo, "Algorithm_BinocularQuality");
+        Add(catalog, DisplayMetrologyIds.Eyebox, "Eyebox 扫描评价", new EyeboxScanParameters(), 4, 81, 3, AlgorithmMenuGroups.Stereo, "Algorithm_Eyebox");
+        Add(catalog, DisplayMetrologyIds.FieldSfr, "全视场斜边 SFR", new FieldSfrParameters(), 1, 1, 3, AlgorithmMenuGroups.ImageQuality, "Algorithm_FieldSfr");
     }
 
-    private static void Add(AlgorithmCatalog catalog, AlgorithmId id, string name, IAlgorithmParameters parameters, int minimum, int maximum, int order)
+    private static void Add(AlgorithmCatalog catalog, AlgorithmId id, string name, IAlgorithmParameters parameters, int minimum, int maximum, int order, AlgorithmInteractiveGroupPresentation group, string resourceKey)
     {
         var fields = parameters.GetType().GetProperties().Where(p => p.CanWrite).Select(p => new AlgorithmParameterField(
             p.Name, p.PropertyType.Name, AlgorithmJson.ToElement(p.GetValue(parameters)),
@@ -52,11 +52,8 @@ internal static class DisplayMetrologyCatalog
             OutputFormats: new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Gray8 }, OutputFormatPolicy: "analysis-only; masks=gray8")
         {
             ResultSemantics = AlgorithmResultSemantics.Analysis,
-            Presentation = new AlgorithmPresentationMetadata(InteractiveEntries: id == DisplayMetrologyIds.RgbCrossRegistration
-                ? [new AlgorithmInteractivePresentation(id.Value, order, name + "...")
-                    { Group = new AlgorithmInteractiveGroupPresentation("AlgorithmsCall", 104, "算法调用", "Algorithm_AlgorithmCalls") }]
-                : [new AlgorithmInteractivePresentation(id.Value, order, name)
-                    { Group = new AlgorithmInteractiveGroupPresentation("DisplayMetrology", 45, "显示计量") }]),
+            Presentation = new AlgorithmPresentationMetadata(InteractiveEntries:
+                [new AlgorithmInteractivePresentation(id.Value, order, name + "...", resourceKey) { Group = group }]),
         });
     }
 }

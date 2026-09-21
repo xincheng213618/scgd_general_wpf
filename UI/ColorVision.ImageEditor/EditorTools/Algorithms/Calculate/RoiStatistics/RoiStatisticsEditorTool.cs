@@ -229,7 +229,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             RoiStatisticsEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "RoiStatistics", Order = 0, Header = "ROI 统计" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Statistics.Id, GuidId = "RoiStatistics", Order = 1, Header = "ROI 统计" },
                 Item("RoiStatisticsRectangle", "矩形 ROI...", 0, () => tool.Execute(SelectShapeType.Rectangle)),
                 Item("RoiStatisticsCircle", "圆形 ROI...", 1, () => tool.Execute(SelectShapeType.Circle)),
                 Item("RoiStatisticsPolygon", "多边形 ROI...", 2, () => tool.Execute(SelectShapeType.Polygon)),

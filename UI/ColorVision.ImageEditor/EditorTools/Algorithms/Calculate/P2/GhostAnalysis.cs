@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -25,10 +26,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Defects.Id,
                     GuidId = "P2GhostLocalAnalysis",
-                    Order = 5,
-                    Header = "Ghost 本地分析",
+                    Order = 3,
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection + "...",
                     Command = command
                 }
             };
@@ -62,7 +63,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 return Array.Empty<MenuItem>();
             }
 
-            MenuItem item = new() { Header = "在此 ROI 执行 Ghost 本地分析" };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection + "..." };
             item.Click += (_, _) => GhostLocalAnalysis.Open(_imageContext, _drawContext, _config, roi);
             return new[] { item };
         }
@@ -79,14 +80,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             using ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("当前没有可分析的图像。", "Ghost 本地分析", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("当前没有可分析的图像。", ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             HImage image = lease.Image;
             RoiRect roi = P2RoiHelper.Normalize(requestedRoi, image);
             P2JsonAnalysisWindow window = new(
-                "Ghost 本地分析",
+                ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection,
                 $"Image: {image.cols} x {image.rows}    ROI: {P2RoiHelper.Describe(roi)}",
                 CreateDefaultConfig(),
                 imageContext,
@@ -111,7 +112,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
 
             long revision = lease.Revision;
             P2NativeResult result = await Task.Run(() => P2NativeJson.Invoke(
-                "Ghost 本地分析",
+                ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection,
                 (out IntPtr result) => OpenCVMediaHelper.M_DetectGhosts(lease.Image, roi, config, out result)));
             if (!context.IsCurrentImageRevision(revision))
             {

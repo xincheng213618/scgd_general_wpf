@@ -389,7 +389,7 @@ public sealed partial class DisplayMetrologyTests
                 foreach (var id in DisplayMetrologyIds.All) Assert.Contains(entries, e => e.GuidId == id.Value);
                 Assert.Single(entries.Where(e => e.GuidId == "AlgorithmsCall"));
                 Assert.All(entries.Where(e => e.GuidId.StartsWith(DisplayMetrologyIds.RgbCrossRegistration.Value, StringComparison.Ordinal)),
-                    entry => Assert.Equal("AlgorithmsCall", entry.OwnerGuid));
+                    entry => Assert.Equal(AlgorithmMenuGroups.ColorRegistration.Id, entry.OwnerGuid));
                 using var window = new DisplayMetrologyResultWindow(result, "显示计量结果测试", view.EditorContext.ProcessingContext, null);
                 window.Show();
                 Assert.NotNull(window.Content);

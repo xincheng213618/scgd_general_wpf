@@ -168,9 +168,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             [
                 new MenuItemMetadata
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                     GuidId = "LineFit",
-                    Order = 6,
+                    Order = 8,
                     Header = "直线拟合...",
                     Command = new RelayCommand(_ => tool.Execute()),
                 },

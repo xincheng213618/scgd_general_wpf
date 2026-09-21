@@ -166,12 +166,12 @@ public sealed partial class DisplayMetrologyTests
     }
 
     [Fact]
-    public void RgbCrossEntriesBelongToAlgorithmCallsAndAdvertiseRoi()
+    public void RgbCrossEntriesBelongToColorRegistrationAndAdvertiseRoi()
     {
         Assert.True(ImageAlgorithmPlatform.Catalog.TryResolve(DisplayMetrologyIds.RgbCrossRegistration, out var descriptor));
         Assert.True(descriptor!.Capabilities.HasFlag(AlgorithmHostCapabilities.Roi));
         Assert.Single(descriptor.Presentation!.InteractiveEntries!);
-        Assert.All(descriptor.Presentation.InteractiveEntries, entry => Assert.Equal("AlgorithmsCall", entry.Group!.Id));
+        Assert.All(descriptor.Presentation.InteractiveEntries, entry => Assert.Equal(AlgorithmMenuGroups.ColorRegistration.Id, entry.Group!.Id));
     }
 
     [Theory]

@@ -97,7 +97,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 算法调用 的本地化字符串。
+        ///   查找类似 分析测量 的本地化字符串。
         /// </summary>
         public static string Algorithm_AlgorithmCalls {
             get {
@@ -111,6 +111,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Algorithm_Apply {
             get {
                 return ResourceManager.GetString("Algorithm_Apply", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 左右眼对准与信号一致性... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_BinocularQuality {
+            get {
+                return ResourceManager.GetString("Algorithm_BinocularQuality", resourceCulture);
             }
         }
         
@@ -160,6 +169,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 显示缺陷检测（亮暗点 / 线 / Mura）... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_DisplayDefects {
+            get {
+                return ResourceManager.GetString("Algorithm_DisplayDefects", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 边缘检测 (Canny) 的本地化字符串。
         /// </summary>
         public static string Algorithm_EdgeDetectionTitle {
@@ -178,11 +196,65 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 滤波 的本地化字符串。
+        ///   查找类似 眼盒扫描评价（Eyebox）... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Eyebox {
+            get {
+                return ResourceManager.GetString("Algorithm_Eyebox", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 视场角测量（FOV） 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FieldOfView {
+            get {
+                return ResourceManager.GetString("Algorithm_FieldOfView", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 全视场斜边 SFR... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FieldSfr {
+            get {
+                return ResourceManager.GetString("Algorithm_FieldSfr", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 滤波与增强 的本地化字符串。
         /// </summary>
         public static string Algorithm_FilterCategory {
             get {
                 return ResourceManager.GetString("Algorithm_FilterCategory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 十字中心与倾角 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FindCross {
+            get {
+                return ResourceManager.GetString("Algorithm_FindCross", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灯珠定位 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FindLightBeads {
+            get {
+                return ResourceManager.GetString("Algorithm_FindLightBeads", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 发光区域定位 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FindLuminousArea {
+            get {
+                return ResourceManager.GetString("Algorithm_FindLuminousArea", resourceCulture);
             }
         }
         
@@ -205,11 +277,128 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 鬼影检测（Ghost） 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GhostDetection {
+            get {
+                return ResourceManager.GetString("Algorithm_GhostDetection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 鬼影与杂散光评价... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GhostMetrology {
+            get {
+                return ResourceManager.GetString("Algorithm_GhostMetrology", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 绿色 的本地化字符串。
         /// </summary>
         public static string Algorithm_Green {
             get {
                 return ResourceManager.GetString("Algorithm_Green", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 点阵畸变测量 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GridDistortion {
+            get {
+                return ResourceManager.GetString("Algorithm_GridDistortion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 色彩与套色 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupColorRegistration {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupColorRegistration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 几何变换与校正 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupCorrection {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupCorrection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 缺陷与鬼影 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupDefects {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupDefects", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 视场与畸变 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupFieldGeometry {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupFieldGeometry", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 清晰度与频域 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupImageQuality {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupImageQuality", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 定位与几何 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupLocalization {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupLocalization", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 阈值与形态学 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupMorphology {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupMorphology", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灰度与统计 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupStatistics {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupStatistics", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 双目与视区 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupStereo {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupStereo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 灰度与色彩 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GroupTone {
+            get {
+                return ResourceManager.GetString("Algorithm_GroupTone", resourceCulture);
             }
         }
         
@@ -250,6 +439,15 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
+        ///   查找类似 九点畸变测量 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_NinePointDistortion {
+            get {
+                return ResourceManager.GetString("Algorithm_NinePointDistortion", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 预览 的本地化字符串。
         /// </summary>
         public static string Algorithm_Preview {
@@ -277,7 +475,34 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 框选斜边测清晰度（SFR/MTF）... 的本地化字符串。
+        ///   查找类似 十字 RGB 分离测量... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_RgbCross {
+            get {
+                return ResourceManager.GetString("Algorithm_RgbCross", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 RGB 图案套色测量... 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_RgbRegistration {
+            get {
+                return ResourceManager.GetString("Algorithm_RgbRegistration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 旋转模板匹配 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_RotatedTemplate {
+            get {
+                return ResourceManager.GetString("Algorithm_RotatedTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 斜边清晰度（SFR/MTF） 的本地化字符串。
         /// </summary>
         public static string Algorithm_SfrMtfAnalysis {
             get {
@@ -291,6 +516,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Algorithm_SigmaStdDev {
             get {
                 return ResourceManager.GetString("Algorithm_SigmaStdDev", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 表面缺陷检测（Mura） 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_SurfaceDefects {
+            get {
+                return ResourceManager.GetString("Algorithm_SurfaceDefects", resourceCulture);
             }
         }
         
@@ -1114,7 +1348,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 图像算法 的本地化字符串。
+        ///   查找类似 图像处理 的本地化字符串。
         /// </summary>
         public static string ImageAlgorithm {
             get {

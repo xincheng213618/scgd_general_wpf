@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8602,CS8604
+﻿using ColorVision.ImageEditor.Algorithms;
+#pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
@@ -225,11 +226,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
                 return menuItems;
             }
 
-            var menuItem = new MenuItem { Header = "FindLuminousArea" };
+            var menuItem = new MenuItem { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLuminousArea + "..." };
             menuItem.Click += (s, e) =>
             {
                 FindLuminousAreaCorner findLuminousAreaCorner = new FindLuminousAreaCorner();
-                var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLuminousArea, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLuminousArea(_imageContext, _drawContext).Execute(findLuminousAreaCorner, new RoiRect(roiX, roiY, roiW,roiH));
@@ -250,7 +251,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             RelayCommand FindLuminousAreaCommand = new(o =>
             {
                 FindLuminousAreaCorner findLuminousAreaCorner = new FindLuminousAreaCorner();
-                var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLuminousArea, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLuminousArea(ImageContext, DrawContext).Execute(findLuminousAreaCorner, new RoiRect());
@@ -259,10 +260,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             });
             MenuItemMetadatas.Add(new MenuItemMetadata()
             {
-                OwnerGuid = "AlgorithmsCall",
+                OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                 GuidId = "FindLuminousAreaCorner",
-                Order = 1,
-                Header = "FindLuminousAreaCorner",
+                Order = 2,
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLuminousArea + "...",
                 Command = FindLuminousAreaCommand
             });
             return MenuItemMetadatas;

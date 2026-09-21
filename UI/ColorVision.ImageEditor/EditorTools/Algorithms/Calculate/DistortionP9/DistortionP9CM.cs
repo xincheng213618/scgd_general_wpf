@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -329,7 +330,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
                 return menuItems;
             }
 
-            MenuItem item = new() { Header = "9点畸变分析" };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_NinePointDistortion + "..." };
             item.Click += (_, _) => DistortionP9AnalysisRunner.Run(_imageContext, roi, _drawContext);
             menuItems.Add(item);
             return menuItems;
@@ -404,10 +405,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             {
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.FieldGeometry.Id,
                     GuidId = "DistortionP9",
                     Order = 3,
-                    Header = "9点畸变分析",
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_NinePointDistortion + "...",
                     Command = command
                 }
             };

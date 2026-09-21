@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Engine.PropertyEditor;
@@ -91,7 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             FovImageViewOptions options = Options.GetValue(imageContext, static _ => new FovImageViewOptions());
             PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
             {
-                Title = "FOV 计算 (V2)",
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView,
                 Owner = editorContext.OwnerWindow,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -217,10 +218,10 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         [
             new MenuItemMetadata
             {
-                OwnerGuid = "AlgorithmsCall",
+                OwnerGuid = AlgorithmMenuGroups.FieldGeometry.Id,
                 GuidId = "FOV2.Local",
-                Order = 2,
-                Header = "FOV 计算 (V2)...",
+                Order = 1,
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView + "...",
                 Command = new RelayCommand(_ => FovImageViewRunner.ShowOptions(editorContext, new RoiRect()))
             }
         ];
@@ -243,7 +244,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                 || left < 0 || top < 0 || right > int.MaxValue || bottom > int.MaxValue || right <= left || bottom <= top)
                 return Array.Empty<MenuItem>();
             RoiRect roi = new((int)left, (int)top, (int)(right - left), (int)(bottom - top));
-            MenuItem item = new() { Header = "FOV 计算 (V2)..." };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView + "..." };
             item.Click += (_, _) => FovImageViewRunner.ShowOptions(editorContext, roi);
             return new[] { item };
         }

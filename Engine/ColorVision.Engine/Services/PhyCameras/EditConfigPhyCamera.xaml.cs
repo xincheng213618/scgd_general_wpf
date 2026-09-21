@@ -38,8 +38,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (EditConfig.TryGetHkRoiAlignmentWarning(out string warning))
             {
                 ConfigEditor.SelectCameraParameters();
-                MessageBox1.Show(this, warning, Properties.Resources.TitleEditCameraConfig, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                if (MessageBox1.Show(this, warning, Properties.Resources.TitleEditCameraConfig, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
             }
 
             EditConfig.CFW.NormalizeChannelCfgsForSave();
