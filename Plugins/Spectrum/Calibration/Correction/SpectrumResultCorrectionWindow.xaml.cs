@@ -68,6 +68,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         _sourceFile = MagnitudeCalibrationFile.Load(manager.MaguideFile);
 
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = this;
         InitializeResult();
         InitializePlot();

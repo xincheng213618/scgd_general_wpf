@@ -431,6 +431,10 @@ namespace ColorVision.Copilot
             if (_attachedViewModel == null)
                 return;
 
+            if (e.PropertyName == nameof(CopilotChatViewModel.IsComposerFullAccess))
+                AccessModeLabelTextBlock.Visibility = ActualWidth >= CompactComposerThreshold || _attachedViewModel.IsComposerFullAccess
+                    ? Visibility.Visible : Visibility.Collapsed;
+
             if (e.PropertyName == nameof(CopilotChatViewModel.ComposerReferenceCaretIndex))
                 ApplyPromptCaret(_attachedViewModel.ComposerReferenceCaretIndex);
 
@@ -679,7 +683,8 @@ namespace ColorVision.Copilot
             ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
-            AccessModeLabelTextBlock.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
+            AccessModeLabelTextBlock.Visibility = isCompactComposer && _attachedViewModel?.IsComposerFullAccess != true
+                ? Visibility.Collapsed : Visibility.Visible;
 
             UpdateEmptyStateVisibility();
         }

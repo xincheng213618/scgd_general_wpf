@@ -64,6 +64,32 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void InstallScriptRecreatesStaleServiceRegistrationAfterConfigurationError2()
+        {
+            string script = ColorVisionServiceHostManager.CreateInstallScript();
+
+            int initialDisposeIndex = script.IndexOf("$service.Dispose()", StringComparison.Ordinal);
+            int copyIndex = script.IndexOf("Copy-Item", StringComparison.Ordinal);
+            int configureIndex = script.IndexOf("& sc.exe config", StringComparison.Ordinal);
+            int recoveryConditionIndex = script.IndexOf("$serviceConfigExitCode -eq 2", StringComparison.Ordinal);
+            int configureDisposeIndex = script.IndexOf("$service.Dispose()", configureIndex, StringComparison.Ordinal);
+            int deleteIndex = script.IndexOf("& sc.exe delete", StringComparison.Ordinal);
+            int recreateIndex = script.IndexOf("Existing service registration was recreated", StringComparison.Ordinal);
+
+            Assert.True(initialDisposeIndex >= 0);
+            Assert.True(copyIndex > initialDisposeIndex);
+            Assert.True(configureIndex >= 0);
+            Assert.True(configureDisposeIndex > configureIndex);
+            Assert.True(recoveryConditionIndex > configureDisposeIndex);
+            Assert.True(deleteIndex > recoveryConditionIndex);
+            Assert.True(recreateIndex > deleteIndex);
+            Assert.Contains("$deleteExitCode -ne 1060", script, StringComparison.Ordinal);
+            Assert.Contains("$deleteExitCode -ne 1072", script, StringComparison.Ordinal);
+            Assert.Contains("pending deletion. Restart Windows", script, StringComparison.Ordinal);
+            Assert.Contains("Failed to configure service: $serviceConfigExitCode", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void StoppedCurrentServiceStartsBeforeRepair()
         {
             ServiceHostStatus status = new()

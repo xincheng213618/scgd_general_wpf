@@ -59,6 +59,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
         public DictionaryItemEditorWindow(Type keyType, Type valueType, object? initialKey, object? initialValue, ICollection existingKeys, Type? keyEditorType = null, Type? valueEditorType = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _keyType = keyType;
             _valueType = valueType;
             _keyEditorType = keyEditorType;

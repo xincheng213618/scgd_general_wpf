@@ -232,6 +232,7 @@ namespace ColorVision.Engine
                 {
                     AlgorithmView = new AlgorithmView();
                     Window window = new Window() { Content = AlgorithmView ,Owner =Application.Current.GetActiveWindow() };
+                    ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                     window.Closed += (s, args) =>
                     {
                         AlgorithmView?.Dispose();

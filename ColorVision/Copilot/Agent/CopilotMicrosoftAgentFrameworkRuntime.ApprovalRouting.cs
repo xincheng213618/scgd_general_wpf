@@ -68,6 +68,7 @@ namespace ColorVision.Copilot
                             $"{reservation.Tool.Name} was approved by the submitted turn's frozen Codex exec policy."));
                     }
                     else if (!requiresExecPolicyPrompt
+                        && request.AccessContext.Mode != CopilotAgentAccessMode.UnrestrictedFullAccess
                         && CopilotAgentAccessPolicy.CanAutoApprove(
                             request,
                             reservation.Tool,
@@ -99,6 +100,14 @@ namespace ColorVision.Copilot
                                 permissionOutcome.Decision.Reason,
                                 permissionOutcome.Decision.FailureCode);
                             bridge.Reject(reservation, decision);
+                        }
+                        else if (request.AccessContext.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                            && CopilotAgentAccessPolicy.CanAutoApprove(request, reservation.Tool, GetCurrentWorkspacePath()))
+                        {
+                            decision = CopilotFrameworkApprovalDecision.ApprovedByConversationFullAccess();
+                            reservation.ApprovedByFullAccess = true;
+                            bridge.Approve(reservation);
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by this conversation's full access setting."));
                         }
                         else
                         {

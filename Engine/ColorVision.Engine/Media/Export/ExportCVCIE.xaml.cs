@@ -27,12 +27,14 @@ namespace ColorVision.Engine.Media
         {
             VExportCIE = new VExportCIE(filePath);
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         public ExportCVCIE(VExportCIE  vExportCIE)
         {
             VExportCIE = vExportCIE;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
         private void Window_Initialized(object sender, EventArgs e)
         {

@@ -220,6 +220,8 @@ namespace ColorVision.Copilot
             if (requestMessages.Length == 0)
                 throw new InvalidOperationException("At least one non-empty user or assistant message is required.");
             var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
+            if (config.IsLocalCodex)
+                return await StreamCodexReplyAsync(config, requestMessages, imagePayloads, requestSystemContext, onDelta, onUsageChanged, cancellationToken).ConfigureAwait(false);
             var inactivityTimeouts = CopilotProviderInactivityPolicy.Resolve(
                 config,
                 _firstResponseTimeoutOverride,

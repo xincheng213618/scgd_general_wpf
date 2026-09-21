@@ -2548,10 +2548,16 @@
                                               ToolTip="受保护操作执行前逐次确认。" />
                                     <MenuItem Header="临时自动复核（仅下一任务/本任务）"
                                               IsCheckable="True"
-                                              IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
+                                              IsChecked="{Binding IsComposerTemporaryAutoReview, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
                                               ToolTip="最长 15 分钟并绑定任务与工作区。结构化补丁走确定性范围规则；其他受保护调用仅在提供完整原生审批详情时由独立模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险自动批准，无法判断或较高风险仍等待用户。" />
+                                    <MenuItem Header="完全访问（当前会话）"
+                                              IsCheckable="True"
+                                              IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
+                                              Command="{Binding SetComposerAccessModeCommand}"
+                                              CommandParameter="{x:Static local:CopilotAgentAccessMode.UnrestrictedFullAccess}"
+                                              ToolTip="受保护工具直接执行，无需逐次确认或模型复核。手动关闭、工作区变化或重启后撤销；已有待审批操作仍需单独决定。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">
@@ -2563,7 +2569,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsComposerFullAccess}" Value="True">
+                                                <DataTrigger Binding="{Binding IsComposerElevatedAccess}" Value="True">
                                                     <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -2580,7 +2586,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsComposerFullAccess}" Value="True">
+                                                <DataTrigger Binding="{Binding IsComposerElevatedAccess}" Value="True">
                                                     <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
                                                 </DataTrigger>
                                             </Style.Triggers>

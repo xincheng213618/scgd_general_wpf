@@ -41,6 +41,7 @@ namespace ColorVision.Solution.Fusion
         public FusionWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             FileListBox.ItemsSource = FilePaths;
             TimingListView.ItemsSource = TimingRecords;
             FilePaths.CollectionChanged += (s, e) => UpdateExecuteButton();
@@ -226,6 +227,7 @@ namespace ColorVision.Solution.Fusion
                     Owner = Application.Current.MainWindow,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 window.Closed += (s, e) =>
                 {
                     imageView.Clear();

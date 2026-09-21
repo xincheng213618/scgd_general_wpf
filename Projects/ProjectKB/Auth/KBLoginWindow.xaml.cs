@@ -13,6 +13,7 @@ namespace ProjectKB.Auth
         public KBLoginWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             UserNameTextBox.Text = KBAuthManager.GetInstance().AdminUserName;
             Loaded += (s, e) => PasswordBox.Focus();
         }

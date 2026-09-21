@@ -1860,6 +1860,9 @@
       "status": "current",
       "summary": "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。",
       "aliases": [
+        "本机 Codex",
+        "Codex 桌面版接入",
+        "LocalCodex",
         "有效配置诊断",
         "/debug-config",
         "/debug config",
@@ -1878,6 +1881,7 @@
         "config.toml不生效"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Codex",
         "ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs",
         "ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs",
         "ColorVision/Copilot/CopilotContextDiagnostics.cs",
@@ -1908,6 +1912,7 @@
         "UI/ColorVision.UI/ConfigHandler.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotCodexTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs",
@@ -2002,6 +2007,7 @@
         "ColorVision/Copilot/CopilotChatViewModel.WorkspaceCommands.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotConversationFullAccessTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWebEvidenceOutputFormatTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotWorkspaceValidationAdmissionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPatchToolAvailabilityTests.cs",
@@ -2132,6 +2138,8 @@
         "/follow-up"
       ],
       "code_paths": [
+        "ColorVision/Copilot/Agent/CopilotWebPageBrowserRenderer.cs",
+        "ColorVision/Copilot/Agent/CopilotWebPageToolSupport.Rendering.cs",
         "ColorVision/Copilot/CopilotChatPanel.xaml.cs",
         "ColorVision/Copilot/CopilotChatViewModel.Conversations.cs",
         "ColorVision/Copilot/CopilotLocalCommandCatalog.cs",
@@ -2171,6 +2179,7 @@
         "ColorVision/Copilot/CopilotChatPanel.AttachmentsAndScroll.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.Copilot.Tests/CopilotWebPageRenderingTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConversationFindNavigationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPromptHistorySearchBehaviorTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotPromptHistoryProjectionTests.cs",

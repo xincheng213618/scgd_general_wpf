@@ -27,6 +27,9 @@ namespace ColorVision.Copilot
     {
         internal static IChatClient CreateChatClient(CopilotProfileConfig profile)
         {
+            if (profile.IsLocalCodex)
+                return new CopilotCodexChatClient(profile);
+
             if (profile.ProviderType == CopilotProviderType.AnthropicCompatible)
             {
                 var anthropicClient = new AnthropicClient(new ClientOptions
@@ -91,7 +94,7 @@ namespace ColorVision.Copilot
                 .Select(content => content.Text));
         }
 
-        private static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)
+        internal static ReasoningOptions? BuildReasoningOptions(CopilotProfileConfig profile)
         {
             return CopilotReasoningCapabilities.GetEffectiveMode(profile) switch
             {

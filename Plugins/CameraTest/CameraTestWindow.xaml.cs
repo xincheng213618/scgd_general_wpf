@@ -44,6 +44,7 @@ public partial class CameraTestWindow : Window
         _settingsStore = new CameraOperationSettingsStore(settingsPath);
         InitializeComponent();
         LoadOperationSettings();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         ImageView.AllowDrop = false;
         if (ImageView.FindName("ZoomGrid") is Panel imageBackground)
             imageBackground.SetResourceReference(Panel.BackgroundProperty, "CV.Surface.Alternate");

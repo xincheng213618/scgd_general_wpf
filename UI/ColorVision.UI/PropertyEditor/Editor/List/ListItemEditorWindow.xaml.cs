@@ -41,6 +41,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         public ListItemEditorWindow(Type elementType, object? initialValue, Type? preferredEditorType = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _preferredEditorType = preferredEditorType;
             _valueWrapper = new ValueWrapper { Value = initialValue ?? CreateEditableClassInstance(elementType) };

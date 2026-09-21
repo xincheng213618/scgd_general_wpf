@@ -553,6 +553,7 @@ namespace ColorVision.ImageEditor
                 Width = 250,
                 Height = 400,
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
 
             colorPicker.Confirmed += (_, __) =>
             {

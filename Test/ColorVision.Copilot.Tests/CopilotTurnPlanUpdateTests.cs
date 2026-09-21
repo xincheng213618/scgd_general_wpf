@@ -1,9 +1,108 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotTurnPlanUpdateTests
 {
+    [Fact]
+    public void PersistedAssistantTaskLedgerRoundTripsWithoutMutatingItsDefaultSnapshot()
+    {
+        var source = CreateAssistantWithTaskLedger();
+
+        var restored = Assert.IsType<CopilotChatMessage>(
+            JsonConvert.DeserializeObject<CopilotChatMessage>(JsonConvert.SerializeObject(source)));
+
+        AssertRestoredTaskLedger(source, restored);
+    }
+
+    [Fact]
+    public void StateStoreSavesAndReopensAssistantTaskLedger()
+    {
+        var root = Path.Combine(Path.GetTempPath(), nameof(CopilotTurnPlanUpdateTests), Guid.NewGuid().ToString("N"));
+        var store = new CopilotChatStateStore(root);
+        var source = CreateAssistantWithTaskLedger();
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(source);
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = "profile",
+            ActiveConversationId = conversation.Id,
+            Conversations = [conversation],
+        };
+
+        try
+        {
+            store.Save(state);
+            var reopenedStore = new CopilotChatStateStore(root);
+            var restored = reopenedStore.Load();
+
+            Assert.Equal(CopilotChatStateLoadSource.Primary, reopenedStore.LastLoadStatus.Source);
+            AssertRestoredTaskLedger(source, Assert.Single(Assert.Single(restored.Conversations).Messages));
+        }
+        finally
+        {
+            // Remove only the test's named state file; leave any diagnostic or recovery artifacts intact.
+            File.Delete(store.StateFilePath);
+        }
+    }
+
+    [Fact]
+    public void ConversationBranchCopiesAssistantTaskLedgerAsAnIndependentSnapshot()
+    {
+        var source = CreateAssistantWithTaskLedger();
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Inspect and verify")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        });
+        conversation.Messages.Add(source);
+
+        var branch = CopilotConversationBranchService.CreateBranch(conversation, source);
+
+        Assert.Equal(2, branch.Messages.Count);
+        AssertRestoredTaskLedger(source, branch.Messages[1]);
+        Assert.NotEqual(source.Id, branch.Messages[1].Id);
+        Assert.Equal(2, conversation.Messages.Count);
+    }
+
+    private static CopilotChatMessage CreateAssistantWithTaskLedger() => new(CopilotChatRole.Assistant, "Inspection complete; verification pending.")
+    {
+        RequestMode = CopilotAgentMode.Auto,
+        AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "plan",
+            ResumedFromCheckpoint = true,
+            Items =
+            [
+                new() { Id = 3, Title = "Inspect", Description = "Read the current state.", IsComplete = true },
+                new() { Id = 8, Title = "Verify", Description = "Check the result." },
+            ],
+        },
+    };
+
+    private static void AssertRestoredTaskLedger(CopilotChatMessage source, CopilotChatMessage restored)
+    {
+        var ledger = restored.AgentTaskLedger;
+        Assert.NotSame(source.AgentTaskLedger, ledger);
+        Assert.Equal("plan", ledger.Mode);
+        Assert.True(ledger.ResumedFromCheckpoint);
+        Assert.Equal(2, ledger.TotalCount);
+        Assert.Equal(1, ledger.CompletedCount);
+        Assert.Equal(1, ledger.RemainingCount);
+        for (var index = 0; index < ledger.Items.Count; index++)
+        {
+            Assert.NotSame(source.AgentTaskLedger.Items[index], ledger.Items[index]);
+            Assert.Equal(source.AgentTaskLedger.Items[index].Id, ledger.Items[index].Id);
+            Assert.Equal(source.AgentTaskLedger.Items[index].Title, ledger.Items[index].Title);
+            Assert.Equal(source.AgentTaskLedger.Items[index].Description, ledger.Items[index].Description);
+            Assert.Equal(source.AgentTaskLedger.Items[index].IsComplete, ledger.Items[index].IsComplete);
+        }
+        Assert.Throws<InvalidOperationException>(() => ledger.Mode = "execute");
+        Assert.Throws<InvalidOperationException>(() => ledger.Items[1].IsComplete = true);
+    }
+
     [Fact]
     public void PublishedAgentSnapshotsOwnTheirTaskLedgerPayloads()
     {

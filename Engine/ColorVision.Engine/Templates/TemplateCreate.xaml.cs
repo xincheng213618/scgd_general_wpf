@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Templates
         internal TemplateCreate(ITemplate template, bool isImport, bool allowSourceSelection)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
 
             Title = $"{(isImport ? Properties.Resources.Import : Properties.Resources.Create)} {template.Title}";
             CreateView.Initialize(template, new TemplateCreateOptions

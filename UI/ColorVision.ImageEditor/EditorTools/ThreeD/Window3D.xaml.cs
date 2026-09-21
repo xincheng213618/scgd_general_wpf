@@ -78,6 +78,7 @@ namespace ColorVision.ImageEditor
             colorBitmap = writeableBitmap;
             this.initialHeightScaleOverride = initialHeightScaleOverride;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)

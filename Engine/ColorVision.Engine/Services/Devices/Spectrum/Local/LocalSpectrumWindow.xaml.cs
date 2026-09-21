@@ -21,6 +21,7 @@ public partial class LocalSpectrumWindow : Window
     {
         this.device = device;
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = device;
         results = new ViewSpectrum(device);
         ResultHost.Content = results;

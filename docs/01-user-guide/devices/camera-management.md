@@ -26,6 +26,8 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 工具栏的“添加未创建的相机”在 MySQL 模式先查 `Type == 101` 且 `Value` 为空的候选，没有则提示并转入扫描；本地模式允许直接填写相机代码与 ID。`CreateWindow` 保存失败时不继续创建流程；窗口关闭或行显示已创建仍不能代替硬件与绑定验收。
 
+创建窗口与“修改配置”复用同一参数面板：顶部设置型号、模式、位深与通道，左侧切换相机参数、电机配置、参数限制和文件服务；CV 模式另有 CFW 分类。创建窗口额外保留相机代码选择和默认取图模式，底部提供属性编辑、提交与取消。两处使用相同的深浅主题文字、背景、边框和选中颜色，分类内容独立滚动；取消不会执行创建保存。
+
 ## 管理列表与扫描结果的含义
 
 `PhyCameraManager.LoadPhyCamera` 查询当前配置库中的 `ServiceTypes.PhyCamera` 资源，有非空配置的记录才新建物理对象。`PhyCamera` 持有配置、许可证、校准资源和逻辑设备关联。

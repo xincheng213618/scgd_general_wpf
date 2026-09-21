@@ -348,6 +348,7 @@ namespace ColorVision.ImageEditor.Algorithms
         public ImageAlgorithmProgressWindow(string title, CancellationTokenSource cancellation)
         {
             _cancellation = cancellation;
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Title = title;
             Width = 380;
             Height = 155;

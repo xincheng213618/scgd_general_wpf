@@ -41,6 +41,7 @@ namespace Conoscope.Presentation
         public ConoscopeCurveSnapshotWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             SnapshotList.ItemsSource = rows;
             initialized = true;
             themeManager.CurrentUIThemeChanged += CurrentUIThemeChanged;

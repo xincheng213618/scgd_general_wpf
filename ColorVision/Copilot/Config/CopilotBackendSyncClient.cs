@@ -422,7 +422,7 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException($"Profile '{remoteId}' has an invalid vendorType.");
             }
             if (!Enum.TryParse<CopilotProviderType>(item.ProviderType, ignoreCase: true, out var providerType)
-                || !Enum.IsDefined(providerType))
+                || !Enum.IsDefined(providerType) || providerType == CopilotProviderType.LocalCodex)
             {
                 throw new InvalidOperationException($"Profile '{remoteId}' has an invalid providerType.");
             }

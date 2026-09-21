@@ -32,6 +32,7 @@ namespace ProjectARVRPro.Process
             ProcessMetaEditTarget editTarget = ProcessMetaEditTarget.Choice)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Title = title;
             _viewModel = new ProcessMetaEditViewModel(
                 templates,

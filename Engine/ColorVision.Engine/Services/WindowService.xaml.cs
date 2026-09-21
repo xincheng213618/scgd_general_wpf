@@ -249,6 +249,7 @@ namespace ColorVision.Engine.Services
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Background = (System.Windows.Media.Brush)FindResource("GlobalBackground")
             };
+            window.ApplyCaption();
             var frame = new System.Windows.Controls.Frame();
             window.Content = frame;
             frame.Navigate(new Archive.Dao.ArchivePage(frame));

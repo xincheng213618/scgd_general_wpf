@@ -8,12 +8,13 @@ namespace ColorVision.Copilot
         ShowStatus,
         UseConfirmProtectedActions,
         UseTemporaryAutoReview,
+        UseFullAccess,
         Invalid,
     }
 
     internal static class CopilotPermissionCommand
     {
-        public const string Usage = "用法：/permissions [status|ask|auto]。省略参数时打开权限模式菜单。";
+        public const string Usage = "用法：/permissions [status|ask|auto|full]。省略参数时打开权限模式菜单。";
 
         public static CopilotPermissionCommandAction Resolve(string? arguments)
         {
@@ -29,6 +30,7 @@ namespace ColorVision.Copilot
                     CopilotPermissionCommandAction.UseConfirmProtectedActions,
                 "auto" or "automatic" or "自动" =>
                     CopilotPermissionCommandAction.UseTemporaryAutoReview,
+                "full" or "完全访问" => CopilotPermissionCommandAction.UseFullAccess,
                 _ => CopilotPermissionCommandAction.Invalid,
             };
         }

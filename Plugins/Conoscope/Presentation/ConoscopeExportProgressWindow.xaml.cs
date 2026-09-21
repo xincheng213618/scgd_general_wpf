@@ -29,6 +29,7 @@ namespace Conoscope.Presentation
             this.source = source;
             this.jobs = jobs;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             StatusText.Text = Properties.Resources.ExportRunning;
             Loaded += Run;
         }

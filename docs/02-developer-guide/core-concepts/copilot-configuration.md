@@ -3,9 +3,9 @@ knowledge_id: "copilot.configuration"
 knowledge_type: "topic"
 status: "current"
 summary: "ColorVision内置Copilot的设置草稿、配置保存与运行态发布、模型选择和联网诊断；保存失败可能已落盘，Local MCP测试核验会话握手与只读状态调用。"
-aliases: ["有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
-code_paths: ["ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotContextDiagnostics.cs","ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs","ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config","ColorVision/Copilot/CopilotSettingsWindow.xaml","ColorVision/Copilot/CopilotSettingsWindow.xaml.cs","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs","ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs","ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs","ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs","ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs","ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs","ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs","UI/ColorVision.UI/ConfigHandler.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs","Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
+aliases: ["本机 Codex","Codex 桌面版接入","LocalCodex","有效配置诊断","/debug-config","/debug config","/context","/memory","Copilot配置","Copilot 设置 Save / Apply / Cancel","聊天配置","模型设置","Test Model","Apply to Chat","CopilotSettingsViewModel","CopilotConfig","推理模式保存失败","MCP连接测试","config.toml不生效"]
+code_paths: ["ColorVision/Copilot/Codex","ColorVision/Copilot/Config/CopilotEffectiveConfigDiagnostics.cs","ColorVision/Copilot/CopilotChatViewModel.DiagnosticsCommands.cs","ColorVision/Copilot/CopilotContextDiagnostics.cs","ColorVision/Copilot/CopilotProjectInstructionDiagnostics.cs","ColorVision/Copilot/Agent/CopilotProjectInstructionDiscoveryConfig.cs","ColorVision/Copilot/Agent/CopilotCodexExecPolicy.cs","ColorVision/Copilot/Config","ColorVision/Copilot/CopilotSettingsWindow.xaml","ColorVision/Copilot/CopilotSettingsWindow.xaml.cs","ColorVision/Copilot/CopilotSettingsViewModel.cs","ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs","ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs","ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs","ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs","ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs","ColorVision/Copilot/CopilotSettingsViewModel.WebPageNetwork.cs","ColorVision/Copilot/CopilotChatViewModel.ControlAndSettings.cs","ColorVision/Copilot/CopilotChatViewModel.Composer.cs","ColorVision/Copilot/CopilotChatViewModel.ConfigPersistence.cs","ColorVision/Copilot/CopilotChatViewModel.ConversationCommands.cs","ColorVision/Copilot/CopilotChatViewModel.Conversations.cs","ColorVision/Copilot/CopilotChatViewModel.Lifecycle.cs","ColorVision/Copilot/State/CopilotConversationSession.cs","ColorVision/Copilot/State/CopilotChatStatePersistenceCoordinator.cs","ColorVision/Copilot/CopilotModelConnectionDiagnostic.cs","ColorVision/Copilot/CopilotMcpConnectionDiagnostic.cs","ColorVision/Copilot/Mcp/CopilotMcpRequestHandler.cs","UI/ColorVision.UI/ConfigHandler.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotCodexTests.cs","Test/ColorVision.Copilot.Tests/CopilotEffectiveConfigDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs","Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs","Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotLocalMcpDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotExternalMcpDiagnosticDraftTests.cs","Test/ColorVision.Copilot.Tests/CopilotModelConnectionDiagnosticLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotProfileConfigTests.cs","Test/ColorVision.Copilot.Tests/CopilotConfigWebPageNetworkTests.cs"]
 related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copilot.extensions", "copilot.mcp-server", "copilot.view-model", "ui.configuration"]
 ---
 
@@ -15,7 +15,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 
 ## 配置来源与责任
 
-运行时使用 `ConfigHandler` 提供的 `CopilotConfig`，不加载全局或项目 `config.toml` 来选择 provider、model、tools 或 approval。仍会发现有作用域的 `AGENTS.md` / `CLAUDE.md`，其顺序、预算和权限边界见[项目指令](./copilot-agent-lifecycle.md)；技能来源与调用见 [Copilot 技能](./copilot-skills.md)。源码中的 `CopilotCodex*` 兼容类型、来源标签或设置页生成的 TOML 片段，不表示内置 Copilot 会读取外部 Codex 配置。
+运行时使用 `ConfigHandler` 提供的 `CopilotConfig`，不加载全局或项目 `config.toml` 来覆盖 ColorVision 的 provider、model、tools 或 approval。仍会发现有作用域的 `AGENTS.md` / `CLAUDE.md`，其顺序、预算和权限边界见[项目指令](./copilot-agent-lifecycle.md)；技能来源与调用见 [Copilot 技能](./copilot-skills.md)。选择本机 Codex 时，外部 Codex 进程自行管理账户和默认模型；ColorVision 不读取、复制登录令牌，也不把外部配置导入自己的设置。
 
 `CopilotProjectInstructionDiscoveryConfig` 提供默认快照、预算上限和项目根标记校验；执行策略判断与 Shell 环境过滤直接消费请求快照。`CopilotConfigurationIsolationTests` 验证外部配置不会覆盖 ColorVision 设置，同时仍能发现指令文档。
 
@@ -38,13 +38,32 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 | `/context` | 当前输入模式、历史与工具结果预算、压缩状态、持续目标、指令与 Skill 数量、业务扩展及当前策略；Chat 模式保留会话相关信息，省略不参与该模式的 Agent 扩展详情 |
 | `/memory [open N]` | 个人与项目指令的发现目标、文件顺序、截断与预算；`open N` 打开对应源文件，发现清单不是当前任务已经注入的回执 |
 
-这些输出不列出外部 `config.toml` 的模型或功能覆盖来源。Profile 模型与提示主体来自 ColorVision 配置，会话回答风格来自会话状态；内部策略快照仍用于说明实际权限，但不表示存在可编辑的外部 Codex 配置层。`/context` 的指令预览与 `/memory` 的发现结果，是否注入还取决于后续请求的本地证据需求、工作区补丁能力与模式。
+这些输出不列出外部 `config.toml` 的模型或功能覆盖来源。Profile 模型与提示主体来自 ColorVision 配置，本机 Codex 的空模型字段表示采用外部运行时默认模型；会话回答风格来自会话状态。内部策略快照仍用于说明实际权限，但不表示存在可编辑的外部 Codex 配置层。`/context` 的指令预览与 `/memory` 的发现结果，是否注入还取决于后续请求的本地证据需求、工作区补丁能力与模式。
 
 `/debug-config` 只探测主配置 JSON 的 `CopilotConfig` 节、schema、属性存在性及 Profile ID，文件大于 16 MiB 时不解析。文件缺失、节缺失、损坏或不可读取时保留运行期值，标明“当前文件来源未证实”；更高版本 schema 会报告写入被阻止。文件元数据只说明命令执行时的文件状态，不能证明每个运行期键的启动来源。状态来源保留主文件、临时快照、备份、恢复快照和未来版本等区别。
 
 诊断不输出 API Key、MCP token、系统提示或自动复核策略正文、Shell 环境变量值、后台／外部 MCP 地址及 Pref64 前缀。模型端点仅显示 origin，去掉用户信息、路径、查询和 fragment。设置变更后的诊断重新读取当前对象与文件元数据，不更改原配置文件；完整权限与审批执行边界见[工具契约](./copilot-agent-tool-contracts.md)。
 
 ## 设置窗口中的草稿与按钮
+
+### 使用本机 Codex
+
+打开模型设置时会异步检测 Windows Codex 桌面版自带的运行时、PATH 中的原生 CLI 和 npm 包内的原生可执行程序。桌面版的版本目录动态发现；不依赖终端已注册 `codex` 命令，不执行 `.cmd` / `.ps1` 包装脚本。仅安装 Store 应用但尚未完成首次启动时，可能需要先打开 Codex，使其释放可执行运行时。
+
+- 检测到运行时后显示“本机 Codex”卡片；通过 App Server 握手、账户查询及历史接口兼容性检查后才允许使用。已有 API Key 配置保留，检测本身不会切换当前 Profile。
+- 已登录时点击“使用本机 Codex”，再 Apply / Save；“添加模型”窗口内的同名按钮直接走既有保存与发布流程。没有安装时仍使用原来的 Key 配置，也可在模型列表上方重新检测。
+- 未登录时点击“登录 Codex”，通过 Codex 管理的官方浏览器登录完成认证；也可先在桌面版登录，再重新检测。关闭设置会取消等待。登录只改变 Codex 自己的登录状态，不在 ColorVision 配置中保存密码或 token。
+- 本机 Profile 不需要 API Key 或 Base URL。模型可从 Codex 返回的列表选择，留空使用其默认值；图片能力仍按模型声明。连接测试会发送一条短请求并消耗该账户额度，普通检测不启动模型推理。
+
+该接入使用实验性的 `codex app-server` stdio 协议，要求运行时支持动态工具及 `thread/inject_items`。不兼容、未登录、连接退出或额度不足时明确报错，不自动切换到另一账户或 Key。运行时文件路径和账户凭据不随 Profile 保存，不通过后台同步下发本机 Codex Profile。
+
+`CopilotCodexChatClient` 将模型输出转换成现有聊天事件，将动态工具调用交回 Agent Framework 和 ColorVision 的权限、审批、预算与执行链；不会调用 Codex 中的工具来代替宿主审批。独立子进程关闭内置 Shell、外部 MCP、插件、Hook 和网页搜索，并使用只读沙箱。收到独立权限申请或非宿主管理的工具事件时停止本次调用。
+
+每次模型请求建立临时 Codex 会话，使用 ColorVision 保存的角色消息和真实工具结果重建历史；不把用户已有的 Codex 任务接管为当前聊天。工具请求发出后先结束该临时会话，再由宿主执行，下一次请求带上实际结果。因此每个工具后续推理有额外启动与历史传输开销。取消、超时和释放只结束本次创建的子进程，不关闭用户的 Codex 桌面应用。
+
+工具交接可能早于 Codex 最终用量事件；这些步骤不伪造服务端 token 数，Agent 预算沿用现有的显式估算补足并显示估算状态。面板中已收到的用量不能当作 Codex 账户完整账单。生成参数以 App Server 支持范围为准：传递模型和推理强度，HTTP Profile 的温度及输出 token 上限不作为 Codex 服务端的限制；宿主仍执行整体时间、累计预算和工具次数门禁。
+
+### 通用设置操作
 
 `/settings [models|agent|web|mcp|sync]` 由 `Config/CopilotSettingsCommand.cs` 路由到同一个 `CopilotSettingsWindow`；聊天 ViewModel 的 `OpenSettings` 在 `IsBusy` 时不打开窗口。窗口创建 `CopilotSettingsViewModel`，从配置克隆 Profiles，并将其它字段复制为草稿。选择、添加、复制、删除 Profile 或编辑字段，通常只改变这份窗口草稿。
 
@@ -58,7 +77,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 | Add and Use / Apply to Chat | 最终调用同一个 `Save()`，会提交整个设置候选，不只是被选中的模型 |
 | Cancel / Close / 关闭窗口 | 不调用该按钮保存，也不回滚之前 Apply、后台同步或初始化已经产生的写入；关闭时取消窗口持有的异步操作 |
 
-保存按钮的前置有效性主要约束 MCP 端口、外部 MCP 文本和 Web Pref64 语法，不要求每个 Profile 都能连接。`CopilotProfileConfig.IsConfigured` 只检查 API Key、Base URL、Model 和端点规则；“Ready”不是网络测试结果。模型的图像输入声明也不是自动探测：改变模型、地址或协议会清除 `SupportsImageInput`，不能把旧端点能力沿用给新端点。
+保存按钮的前置有效性主要约束 MCP 端口、外部 MCP 文本和 Web Pref64 语法，不要求每个 Profile 都能连接。API Profile 的 `CopilotProfileConfig.IsConfigured` 检查 API Key、Base URL、Model 和端点规则；本机 Codex Profile 不要求这些字段，调用时重新验证运行时与登录状态。“Ready”不是网络测试结果。模型的图像输入声明也不是自动探测：改变模型、地址或协议会清除 `SupportsImageInput`，不能把旧端点能力沿用给新端点。
 
 第三方服务需要 Responses 协议时，选择 `OpenAI Compatible` 并在 `Base URL` 填写完整的 `/responses` 端点，例如 `https://api.deepseek.com/responses`；路径前缀会原样保留。普通兼容 Base URL 仍选择 Chat Completions，官方 OpenAI 地址仍自动使用 Responses。该选择同时用于普通聊天、Agent 和连接诊断；服务是否支持对应模型、工具和输入类型仍需实际验证，不能只凭 URL 判断。
 

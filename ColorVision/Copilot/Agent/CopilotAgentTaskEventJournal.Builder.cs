@@ -222,7 +222,8 @@ namespace ColorVision.Copilot
 
             var implicitApproval = decisionSourceKind is
                 CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
-                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant;
+                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant
+                or CopilotFrameworkApprovalDecisionSource.ConversationFullAccess;
             if (implicitApproval && !approved)
             {
                 throw new ArgumentException(
@@ -261,7 +262,9 @@ namespace ColorVision.Copilot
                         ? source.Length == 0 ? "approved" : "approved:" + source
                         : "denied",
                     approved
-                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.ConversationFullAccess
+                            ? "Protected tool call was approved by the conversation's full access setting."
+                            : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
                             ? "Protected tool call was approved by automatic permission review."
                             : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.TemporaryGrant
                                 ? "Protected tool call was approved by the temporary task grant."

@@ -183,6 +183,9 @@ namespace ColorVision.Copilot
             if (profile == null || !profile.IsConfigured)
                 throw new NotSupportedException("Agent Framework is unavailable for this profile: profile configuration is incomplete.");
 
+            if (profile.IsLocalCodex)
+                return;
+
             if (profile.ProviderType is not (CopilotProviderType.OpenAICompatible or CopilotProviderType.AnthropicCompatible))
                 throw new NotSupportedException("Agent Framework is unavailable for this profile: provider protocol is unsupported.");
 

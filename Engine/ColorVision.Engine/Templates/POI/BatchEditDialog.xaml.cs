@@ -9,6 +9,7 @@ namespace ColorVision.Engine.Templates.POI
         public BatchEditDialog(string title, string prompt, string defaultValue = "")
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Title = title;
             PromptText.Text = prompt;
             InputTextBox.Text = defaultValue;

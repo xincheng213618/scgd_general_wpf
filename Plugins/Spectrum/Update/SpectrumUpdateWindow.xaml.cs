@@ -96,6 +96,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
     {
         checkResult = initialResult;
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         ApplyText();
         Loaded += SpectrumUpdateWindow_Loaded;
         Closing += SpectrumUpdateWindow_Closing;

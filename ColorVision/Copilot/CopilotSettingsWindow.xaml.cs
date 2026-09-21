@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
             this.ApplyCaption();
             DataContext = new CopilotSettingsViewModel();
             SettingsTabs.SelectedIndex = GetTabIndex(initialPage);
+            Loaded += async (_, _) => await ViewModel.DetectLocalCodexAsync();
         }
 
         internal static int GetTabIndex(CopilotSettingsPage page)

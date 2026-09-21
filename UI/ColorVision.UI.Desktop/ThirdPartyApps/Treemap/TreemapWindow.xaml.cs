@@ -24,6 +24,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps.Treemap
         public TreemapWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Loaded += OnLoaded;
         }
 

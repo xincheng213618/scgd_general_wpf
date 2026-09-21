@@ -214,6 +214,10 @@ namespace ColorVision.Copilot
                     DismissLocalCommandResult();
                     SetComposerAccessMode(CopilotAgentAccessMode.FullAccess);
                     break;
+                case CopilotPermissionCommandAction.UseFullAccess:
+                    DismissLocalCommandResult();
+                    SetComposerAccessMode(CopilotAgentAccessMode.UnrestrictedFullAccess);
+                    break;
                 default:
                     ShowLocalCommandResult(command, CopilotPermissionCommand.Usage);
                     break;

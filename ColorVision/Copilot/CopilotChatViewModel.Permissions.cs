@@ -77,14 +77,14 @@ namespace ColorVision.Copilot
                 OnComposerAccessModeChanged();
                 SetPendingActionFeedback("临时自动复核授权已到期，受保护操作恢复按需确认。");
             }
-            else if (conversation?.AccessMode == CopilotAgentAccessMode.FullAccess)
+            else if (conversation != null && conversation.AccessMode != CopilotAgentAccessMode.ConfirmProtectedActions)
             {
                 var currentWorkspacePath = CaptureHostedTurnSnapshot(conversation.Attachments).SolutionDirectoryPath;
                 if (!AccessWorkspacePathsMatch(conversation.FullAccessWorkspacePath, currentWorkspacePath)
                     && conversation.RevokeFullAccessGrant())
                 {
                     OnComposerAccessModeChanged();
-                    SetPendingActionFeedback("工作区已变化，临时自动复核授权已撤销。");
+                    SetPendingActionFeedback("工作区已变化，访问授权已撤销，恢复按需确认。");
                 }
             }
             RefreshProviderRateLimitStatus();
@@ -193,11 +193,11 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (conversation.AccessMode == CopilotAgentAccessMode.FullAccess)
+            if (conversation.AccessMode == mode)
                 return;
 
             var turnSnapshot = CaptureHostedTurnSnapshot(conversation.Attachments);
-            if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath))
+            if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath) && mode != CopilotAgentAccessMode.UnrestrictedFullAccess)
             {
                 SetPendingActionFeedback("请先打开一个项目工作区，再启用临时自动复核。");
                 return;
@@ -208,6 +208,14 @@ namespace ColorVision.Copilot
                 && string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
                 ? activeRun?.Id ?? string.Empty
                 : string.Empty;
+            if (mode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                conversation.PrepareUnrestrictedFullAccessGrant(turnSnapshot.SolutionDirectoryPath, taskId);
+                OnComposerAccessModeChanged();
+                SetPendingActionFeedback("已启用完全访问：当前会话的受保护工具直接执行。手动关闭、工作区变化或重启后撤销；已有待审批操作仍需单独决定。");
+                PersistState(immediate: true);
+                return;
+            }
             conversation.PrepareFullAccessGrant(
                 turnSnapshot.SolutionDirectoryPath,
                 taskId,
@@ -381,6 +389,8 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(ComposerAccessMode));
             OnPropertyChanged(nameof(IsComposerFullAccess));
+            OnPropertyChanged(nameof(IsComposerTemporaryAutoReview));
+            OnPropertyChanged(nameof(IsComposerElevatedAccess));
             OnPropertyChanged(nameof(IsComposerConfirmAccess));
             OnPropertyChanged(nameof(ComposerAccessModeLabel));
             OnPropertyChanged(nameof(ComposerAccessModeToolTip));

@@ -1243,6 +1243,7 @@ namespace ColorVision.UI
                 Owner = owner,
                 Background = Application.Current.FindResource("GlobalBackground") as Brush
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
 
             var root = new Grid { Margin = new Thickness(12) };
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });

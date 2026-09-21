@@ -748,6 +748,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Content = CreateContent(presentation),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.Closed += (_, _) => presentation.Dispose();
             try { window.ShowDialog(); }
             finally { presentation.Dispose(); }

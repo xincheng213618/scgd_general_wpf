@@ -246,7 +246,7 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AvailableModelPresets => SelectedProfile == null
             ? Array.Empty<string>()
-            : CopilotVendorCatalog.GetModelPresets(SelectedProfile.VendorType);
+            : SelectedProfile.IsLocalCodex ? LocalCodexModels : CopilotVendorCatalog.GetModelPresets(SelectedProfile.VendorType);
 
     }
 }

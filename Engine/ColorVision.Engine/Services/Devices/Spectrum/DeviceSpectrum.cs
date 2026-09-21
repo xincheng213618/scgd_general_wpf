@@ -254,6 +254,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
+            ContextMenu.Items.Add(new MenuItem() { Header = "本地光谱仪", Command = OpenLocalSpectrumManagerCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SpectrumLog, Command = OpenSpectrumLogCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CalibrationGroup, Command = OpenCalibrationGroupWindowCommand });
         }

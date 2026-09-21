@@ -25,6 +25,7 @@ namespace ProjectARVRPro
         public ThunderbirdSerialDebugWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             InitializeBrightnessLevels();
             RefreshPortList();
             SyncUiFromController();

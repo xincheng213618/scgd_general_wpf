@@ -25,14 +25,16 @@ namespace ColorVision.Copilot
         string Content,
         IReadOnlyList<string>? RelatedResourceUrls = null,
         bool IsSparseExtraction = false,
-        IReadOnlyList<CopilotWebPageLink>? RelatedPageLinks = null)
+        IReadOnlyList<CopilotWebPageLink>? RelatedPageLinks = null,
+        bool BrowserRendered = false,
+        string? RenderingNotice = null)
     {
         public IReadOnlyList<string> DiscoveredResourceUrls => RelatedResourceUrls ?? Array.Empty<string>();
 
         public IReadOnlyList<CopilotWebPageLink> DiscoveredPageLinks => RelatedPageLinks ?? Array.Empty<CopilotWebPageLink>();
     }
 
-    public static class CopilotWebPageToolSupport
+    public static partial class CopilotWebPageToolSupport
     {
         public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
@@ -94,7 +96,8 @@ namespace ColorVision.Copilot
                 static (host, token) => Dns.GetHostAddressesAsync(host, token),
                 static () => CreateHttpHandler(),
                 static () => CopilotConfig.Instance.WebPagePref64Prefixes,
-                cancellationToken);
+                cancellationToken,
+                CopilotWebPageBrowserRenderer.RenderAsync);
         }
 
         internal static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(
@@ -102,13 +105,14 @@ namespace ColorVision.Copilot
             Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
             Func<HttpMessageHandler> createHttpHandler,
             Func<string?> getConfiguredPref64Prefixes,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Func<Uri, CancellationToken, Task<CopilotFetchedWebPageContent>>? renderPage = null)
         {
             ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
             ArgumentNullException.ThrowIfNull(createHttpHandler);
             ArgumentNullException.ThrowIfNull(getConfiguredPref64Prefixes);
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            deadline.CancelAfter(TimeSpan.FromSeconds(20));
+            deadline.CancelAfter(TimeSpan.FromSeconds(renderPage == null ? 20 : 40));
             cancellationToken = deadline.Token;
             var currentUri = NormalizeAndValidateWebPageUri(url);
             for (var redirectCount = 0; ; redirectCount++)
@@ -136,7 +140,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
 
                 var content = await ReadWebPageContentAsync(response, cancellationToken);
-                return ExtractDownloadedContent(currentUri, mediaType, content);
+                return await ExtractWithBrowserFallbackAsync(currentUri, mediaType, content, renderPage, cancellationToken);
             }
         }
 
@@ -161,6 +165,9 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             builder.AppendLine($"[Web Page Fetched] {page.Url}");
             builder.AppendLine($"Title: {page.Title}");
+            builder.AppendLine(page.BrowserRendered ? "Extraction method: browser-rendered DOM (JavaScript executed; no user interactions)." : "Extraction method: static HTTP content.");
+            if (!string.IsNullOrWhiteSpace(page.RenderingNotice))
+                builder.AppendLine($"Rendering note: {page.RenderingNotice}");
 
             if (!string.IsNullOrWhiteSpace(page.Description))
                 builder.AppendLine($"Description: {page.Description}");
@@ -259,7 +266,7 @@ namespace ColorVision.Copilot
 
             var content = string.Join(Environment.NewLine, lines).Trim();
             if (string.IsNullOrWhiteSpace(content))
-                throw new InvalidOperationException("Could not extract readable web page body text. The page may require script rendering.");
+                throw new CopilotWebPageRenderingRequiredException();
 
             if (content.Length > MaxWebPageContentChars)
                 content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";

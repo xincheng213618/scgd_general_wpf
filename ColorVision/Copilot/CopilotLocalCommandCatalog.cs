@@ -166,11 +166,12 @@ namespace ColorVision.Copilot
             [
                 new("open", "在内置编辑器中打开第 N 个生效指令文件", AcceptsArguments: true),
             ]) { Aliases = ["/instructions"] },
-            new("/permissions", "选择按需确认/临时自动复核，或查看权限状态", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/permissions [status|ask|auto]", Arguments:
+            new("/permissions", "选择按需确认、自动复核或完全访问", CopilotLocalCommandKind.Permissions, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: CopilotPermissionCommand.Usage, Arguments:
             [
                 new("status", "显示当前文件范围、能力与审批策略"),
                 new("ask", "恢复受保护操作逐次确认"),
                 new("auto", "为下一任务或当前任务临时启用自动复核"),
+                new("full", "为当前会话启用完全访问"),
             ]),
             new("/add-dir", "管理当前会话后续 Agent 请求可读取的附加目录", CopilotLocalCommandKind.AdditionalDirectories, AcceptsArguments: true, Usage: CopilotAdditionalDirectoryCommand.Usage, Arguments:
             [

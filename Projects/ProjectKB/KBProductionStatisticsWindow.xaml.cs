@@ -33,6 +33,7 @@ namespace ProjectKB
         public KBProductionStatisticsWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             RestoreState();
             HourlyGrid.ItemsSource = _hourlyRows;
             DailyGrid.ItemsSource = _dailyRows;

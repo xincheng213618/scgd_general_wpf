@@ -72,6 +72,7 @@ namespace ProjectLUX
             Frame frame = new Frame();
             MeasureBatchPage batchDataHistory = new MeasureBatchPage(frame, Batch);
             Window window = new Window() { Owner = Application.Current.GetActiveWindow() };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.Content = batchDataHistory;
             window.Show();
         }

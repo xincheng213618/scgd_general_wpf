@@ -52,6 +52,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
     public DirectSpectrometerWindow()
     {
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         Instance = this;
         var logPath = Path.Combine(AppContext.BaseDirectory, "logs", $"spectrometer_direct_{DateTime.Now:yyyyMMdd_HHmmss}.log");
         DirectSpectrometerLogger.Initialize(logPath);

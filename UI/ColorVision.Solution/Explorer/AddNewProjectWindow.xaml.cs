@@ -17,6 +17,7 @@ namespace ColorVision.Solution.Explorer
         public AddNewProjectWindow(string targetDirectory)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _targetDirectory = targetDirectory;
             RefreshTemplates();
             ProjectTemplateRegistry.TemplatesChanged += ProjectTemplateRegistry_TemplatesChanged;

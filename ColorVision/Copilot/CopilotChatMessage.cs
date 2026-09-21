@@ -381,6 +381,8 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeUsesResponseTimeline() => UsesResponseTimeline;
 
+        // Deserialize a new ledger before the setter freezes it; the existing snapshot is immutable.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public CopilotAgentTaskLedgerSnapshot AgentTaskLedger
         {
             get => _agentTaskLedger;

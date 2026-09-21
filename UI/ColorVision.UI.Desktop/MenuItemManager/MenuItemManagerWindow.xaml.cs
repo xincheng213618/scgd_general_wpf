@@ -57,6 +57,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         public MenuItemManagerWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         public List<OwnerGuidOption> AvailableOwnerGuids { get; set; } = new();

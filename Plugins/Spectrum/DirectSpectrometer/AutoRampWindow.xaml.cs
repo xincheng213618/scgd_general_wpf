@@ -34,6 +34,7 @@ public partial class AutoRampWindow : Window, IDisposable
     public AutoRampWindow(int spectrometerIndex)
     {
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         _spectrometerIndex = spectrometerIndex;
         ResultsDataGrid.ItemsSource = _results;
         StatusTextBlock.Text = "就绪";

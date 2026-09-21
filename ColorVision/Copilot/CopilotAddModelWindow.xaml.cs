@@ -36,6 +36,17 @@ namespace ColorVision.Copilot
 
         private CopilotSettingsViewModel ViewModel => (CopilotSettingsViewModel)DataContext;
 
+        private void UseLocalCodex_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ViewModel.AddLocalCodexCommand.CanExecute(null)) return;
+            ViewModel.AddLocalCodexProfile();
+            if (ViewModel.SelectedProfile?.IsLocalCodex == true && ViewModel.Save())
+            {
+                _committed = true;
+                DialogResult = true;
+            }
+        }
+
         private void CopilotAddModelWindow_Loaded(object sender, RoutedEventArgs e)
         {
             ApplyOwnerThemeResources();

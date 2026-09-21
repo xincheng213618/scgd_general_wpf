@@ -289,12 +289,12 @@ namespace ColorVision.Copilot
             if (_isApplyingPreset)
                 return;
 
-            if (e.PropertyName == nameof(CopilotProfileConfig.VendorType))
+            if (!profile.IsLocalCodex && e.PropertyName == nameof(CopilotProfileConfig.VendorType))
             {
                 ApplyVendorPreset(profile, resetName: false);
                 OnPropertyChanged(nameof(AvailableModelPresets));
             }
-            else if (e.PropertyName == nameof(CopilotProfileConfig.ProviderType))
+            else if (!profile.IsLocalCodex && e.PropertyName == nameof(CopilotProfileConfig.ProviderType))
             {
                 ApplyProviderPreset(profile);
             }

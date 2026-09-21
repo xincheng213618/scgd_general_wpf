@@ -30,6 +30,7 @@ namespace Conoscope.Core
             CopyEditableSettings(config, workingConfig);
 
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             InitializeLocalizedText();
             InitializeOptions();
 

@@ -18,6 +18,7 @@ namespace ColorVision.Solution.Explorer
         public AddNewItemWindow(string targetDirectory)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _targetDirectory = targetDirectory;
             _allTemplates = NewItemTemplateRegistry.GetTemplates().ToList();
 

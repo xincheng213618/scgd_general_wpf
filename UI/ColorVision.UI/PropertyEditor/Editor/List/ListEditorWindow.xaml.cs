@@ -48,6 +48,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         public ListEditorWindow(IList items, Type elementType, Type? itemEditorType = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _itemEditorType = itemEditorType;
             _originalItems = items;

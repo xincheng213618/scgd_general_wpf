@@ -14,6 +14,7 @@ namespace ProjectLUX
         public ObjectiveTestResultRecordWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             RecordDataGrid.ItemsSource = Records;
             LoadRecords();
         }
@@ -66,6 +67,7 @@ namespace ProjectLUX
                 Height = 650,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.ShowDialog();
         }
 

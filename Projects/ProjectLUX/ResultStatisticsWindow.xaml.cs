@@ -18,6 +18,7 @@ public partial class ResultStatisticsWindow : Window
     {
         _refreshOnLoad = refreshOnLoad;
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         Anchor.SelectedDate = DateTime.Today;
         Closed += (_, _) => _loadVersion++;
     }

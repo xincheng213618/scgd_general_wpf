@@ -26,6 +26,7 @@ namespace Spectrum.Calibration
             WorkingConfig = Manager.CalibrationGroupConfig.Clone();
 
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             RefreshGroupList();
             UpdateConfigPathDisplay();
             _hasUnsavedChanges = false;

@@ -27,6 +27,7 @@ namespace ColorVision.Solution.MultiImageViewer
                     RelayCommand OpenMultiImageViewerEditorCommand = new RelayCommand((o) =>
                     {
                         Window window = new Window();
+                        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                         MultiImageViewer multiImageViewer = new MultiImageViewer();
                         multiImageViewer.FilePath = filepath;
                         window.Content = multiImageViewer;

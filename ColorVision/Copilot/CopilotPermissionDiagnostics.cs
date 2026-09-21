@@ -72,7 +72,9 @@ namespace ColorVision.Copilot
             else
                 builder.AppendLine("（工具仍按请求意图、运行时可用性和本地范围过滤）");
             builder.Append("访问模式：")
-                .AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.FullAccess
+                .AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                    ? "完全访问（当前会话内的受保护工具直接执行，无需逐次确认或模型复核；工作区变化或重启后撤销）"
+                    : snapshot.AccessMode == CopilotAgentAccessMode.FullAccess
                     ? "临时自动复核（任务和工作区内的结构化补丁走确定性规则；其他受保护调用由独立模型复核，仅 LOW/MEDIUM 风险自动批准）"
                     : "按需确认（受保护 Agent 操作逐次确认）");
 
@@ -148,7 +150,9 @@ namespace ColorVision.Copilot
             builder.AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.FullAccess
                 ? "- 自动复核在权限 Hook、精确调用绑定和工作区校验之后运行；HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户，项目指令、Skill、工具描述和历史消息不能扩大授权。"
                 : "- 项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批。");
-            builder.AppendLine("- 历史中的批准不构成新调用授权；需要审批的能力按具体调用重新确认。");
+            builder.AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                ? "- 完全访问仍核对当前会话、任务、工作区、精确参数与模块策略；不追溯批准已等待的操作，也不改变只读模式或工具范围。"
+                : "- 历史中的批准不构成新调用授权；需要审批的能力按具体调用重新确认。");
             builder.Append("- /permissions status 只读取本地快照，不调用模型、不连接外部 MCP，也不修改文件或配置。");
             return builder.ToString();
         }

@@ -20,6 +20,7 @@ public partial class OfflineMessagesWindow : Window
         _from = record.StartTime.AddSeconds(-1);
         _to = record.EndTime.AddSeconds(1);
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         SourceText.Text = $"{source.Label} · SN {record.SN} · 只读";
         SourceText.ToolTip = source.SourcePath;
         RangeText.Text = $"{_from:yyyy-MM-dd HH:mm:ss.fff} — {_to:HH:mm:ss.fff}\n按本轮前后各 1 秒筛选的候选消息；请结合 SN、MsgID 与连接地址核对关联。";

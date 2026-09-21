@@ -145,6 +145,8 @@
                     </Grid>
 
                     <DockPanel Grid.Row="1" Margin="8,0,8,8">
+                        <Button DockPanel.Dock="Top" Margin="0,0,0,8" Padding="8,4" Content="检测本机 Codex"
+                                Command="{Binding DetectLocalCodexCommand}" ToolTip="{Binding LocalCodexStatus}" />
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                 <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding DuplicateProfileCommand}" Content="{x:Static properties:Resources.Copy}" IsEnabled="{Binding CanEditSelectedProfile}" />
@@ -190,6 +192,7 @@
             <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="14">
+                        <local:CopilotCodexConnectionControl />
                         <StackPanel IsEnabled="{Binding CanEditSelectedProfile}">
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -218,7 +221,23 @@
                                            TextWrapping="Wrap" />
                             </Border>
 
-                            <Grid>
+                            <StackPanel Visibility="{Binding SelectedProfile.IsLocalCodex, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Style="{StaticResource SettingsFieldLabelStyle}" Text="名称" />
+                                <TextBox Margin="0,0,0,10" Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource SettingsFieldLabelStyle}" Text="Codex 模型" />
+                                <ComboBox IsEditable="True" Margin="0,0,0,6" ItemsSource="{Binding LocalCodexModels}"
+                                          Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Style="{StaticResource SettingsHintTextStyle}" TextWrapping="Wrap"
+                                           Text="留空使用 Codex 默认模型；账户、可用模型与额度由本机 Codex 管理。" />
+                                <CheckBox Margin="0,8,0,0" Content="此模型支持图片输入"
+                                          IsChecked="{Binding SelectedProfile.SupportsImageInput, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Margin="0,10,0,0" HorizontalAlignment="Left" Padding="10,5"
+                                        Content="{Binding SelectedProfileConnectionTestActionText}" Command="{Binding TestSelectedProfileCommand}" />
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource SettingsHintTextStyle}"
+                                           TextWrapping="Wrap" Text="{Binding SelectedProfileConnectionTestText}" />
+                            </StackPanel>
+
+                            <Grid Visibility="{Binding SelectedProfile.IsApiProfile, Converter={StaticResource BoolToVisibility}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />

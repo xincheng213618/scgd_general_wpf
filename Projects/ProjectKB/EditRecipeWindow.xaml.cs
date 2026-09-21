@@ -23,6 +23,7 @@ namespace ProjectKB
         public EditRecipeWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)

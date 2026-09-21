@@ -35,6 +35,7 @@ namespace Spectrum.Help
         public HelpWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _allEntries = HelpData.GetAllEntries();
             _filteredEntries = new List<HelpEntry>(_allEntries);
             HelpList.ItemsSource = _filteredEntries;

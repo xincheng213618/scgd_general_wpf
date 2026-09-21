@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.FlowProcessing.PreProcess
@@ -50,18 +51,46 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcessor));
         private static readonly char[] ExtensionSeparators = { ',', ';', ' ' };
         private const long OneMb = 1024L * 1024L;
+        private readonly SemaphoreSlim _executionGate = new(1, 1);
+        private readonly Func<Func<bool>, Task<bool>> _runInBackground;
 
-        public override Task<bool> PreProcess(PreProcessContext ctx)
+        public FolderSizePreProcessor() : this(work => Task.Run(work))
+        {
+        }
+
+        internal FolderSizePreProcessor(Func<Func<bool>, Task<bool>> runInBackground)
+        {
+            _runInBackground = runInBackground ?? throw new ArgumentNullException(nameof(runInBackground));
+        }
+
+        public override async Task<bool> PreProcess(PreProcessContext ctx)
         {
             var (triggerBytes, targetBytes) = NormalizeThresholds();
 
             if (triggerBytes <= 0)
             {
                 log.Warn("FolderSizePreProcessor: 触发上限必须大于 0");
-                return Task.FromResult(true);
+                return true;
             }
 
-            foreach (var cachePath in Config.FolderPaths)
+            string[] folderPaths = Config.FolderPaths?.ToArray() ?? Array.Empty<string>();
+            string fileExtensions = Config.FileExtensions;
+            bool includeSubfolders = Config.IncludeSubfolders;
+
+            await _executionGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                return await _runInBackground(() => ExecuteCleanup(folderPaths, fileExtensions, includeSubfolders, triggerBytes, targetBytes)).ConfigureAwait(false);
+            }
+            finally
+            {
+                _executionGate.Release();
+            }
+        }
+
+        private static bool ExecuteCleanup(string[] folderPaths, string fileExtensions, bool includeSubfolders, long triggerBytes, long targetBytes)
+        {
+            foreach (var cachePath in folderPaths)
             {
                 if (string.IsNullOrWhiteSpace(cachePath))
                 {
@@ -78,10 +107,10 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                 try
                 {
                     // Parse file extensions
-                    var extensions = ParseExtensions(Config.FileExtensions);
+                    var extensions = ParseExtensions(fileExtensions);
 
                     // Get all files matching the criteria
-                    var searchOption = Config.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                    var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
                     var allFiles = Directory.GetFiles(cachePath, "*.*", searchOption);
 
                     // Filter by extensions if specified
@@ -160,11 +189,11 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                 catch (Exception ex)
                 {
                     log.Error("CacheCleanupPreProcess 执行失败", ex);
-                    return Task.FromResult(false);
+                    return false;
 
                 }
             }
-            return Task.FromResult(true);
+            return true;
         }
 
         private (long TriggerBytes, long TargetBytes) NormalizeThresholds()

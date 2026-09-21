@@ -8,6 +8,7 @@ namespace ProjectKB.Auth
         public KBChangePasswordWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Loaded += (s, e) => OldPasswordBox.Focus();
         }
 

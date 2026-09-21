@@ -228,6 +228,7 @@ namespace ColorVision.Engine.Messages
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Background = FindResource("GlobalBackground") as System.Windows.Media.Brush
             };
+            window.ApplyCaption();
 
             TextBox textBox = new()
             {

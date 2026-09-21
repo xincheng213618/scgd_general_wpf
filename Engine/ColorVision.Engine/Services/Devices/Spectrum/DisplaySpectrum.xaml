@@ -29,10 +29,6 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <WrapPanel Margin="0,0,0,5">
-                    <CheckBox Content="启用本地" IsChecked="{Binding DisplayConfig.UseLocalSpectrum}" Margin="0,0,8,0" ToolTip="下次打开时使用本机 SDK；已打开连接需先关闭再切换。"/>
-                    <Button Content="本地光谱仪" Command="{Binding OpenLocalSpectrumManagerCommand}"/>
-                </WrapPanel>
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <Button x:Name="TextBlockOffLine"  HorizontalAlignment="Left" Margin="0,0,0,3" Click="Button_Click_Open" Content="OffLine" />
                 <Button x:Name="ButtonUnauthorized"  HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />

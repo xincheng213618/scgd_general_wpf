@@ -37,6 +37,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
         public IVPlotWindow(ObservableCollection<ViewResultSMU> scanResults)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _groupedData = new Dictionary<string, List<IVDataPoint>>();
             _scatterPlots = new Dictionary<string, Scatter>();
             _seriesNames = new List<string>();

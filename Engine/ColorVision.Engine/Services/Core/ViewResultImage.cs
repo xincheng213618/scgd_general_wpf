@@ -151,6 +151,7 @@ namespace ColorVision.Engine.Services
             {
                 ImageView imageView = new();
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 window.Content = imageView;
                 imageView.OpenImage(FileUrl);
                 window.Show();

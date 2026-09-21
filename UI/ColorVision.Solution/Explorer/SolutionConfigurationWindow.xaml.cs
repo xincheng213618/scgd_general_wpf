@@ -10,6 +10,7 @@ namespace ColorVision.Solution.Explorer
         public SolutionConfigurationWindow(SolutionExplorer solutionExplorer)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _solutionExplorer = solutionExplorer;
             _model = new SolutionConfigurationEditorModel(
                 solutionExplorer.DirectoryInfo.FullName,

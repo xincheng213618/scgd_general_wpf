@@ -23,6 +23,7 @@ namespace Conoscope.Presentation
             new ConoscopeAngularAnalysisOptions().Validate(source.MaxAngle);
             maximum = source.MaxAngle;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             // The dialog retains only a small frozen preview, never the source callbacks or full XYZ buffers.
             SourcePreview.Source = CreatePreview(source);
             EmitterSize.Text = 0.5.ToString(CultureInfo.CurrentCulture);

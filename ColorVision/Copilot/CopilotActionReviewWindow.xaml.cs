@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
             _action = action ?? throw new ArgumentNullException(nameof(action));
             DataContext = action;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             ApproveButton.IsEnabled = action.IsPending && !action.HasReviewDetails;
             _action.PropertyChanged += Action_PropertyChanged;
             Closed += CopilotActionReviewWindow_Closed;

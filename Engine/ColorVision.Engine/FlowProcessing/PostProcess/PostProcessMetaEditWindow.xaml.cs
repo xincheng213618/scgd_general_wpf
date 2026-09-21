@@ -33,6 +33,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             PostProcessFailurePolicy failurePolicy = PostProcessFailurePolicy.Warning)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Title = title;
             _viewModel = new PostProcessMetaEditViewModel(
                 templates,

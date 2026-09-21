@@ -79,6 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _isInitializingNodeSettings = sourceNode != null;
             ApplyNodeSettingsToWindow();
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = Device;
             Device.CameraBackend.Changed += Backend_Changed;
             if (_sourceNode != null)

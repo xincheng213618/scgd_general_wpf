@@ -221,7 +221,8 @@ namespace ColorVision.Copilot
             {
                 if (approval.State is
                     "approved:ExecutionPolicy"
-                    or "approved:TemporaryGrant")
+                    or "approved:TemporaryGrant"
+                    or "approved:ConversationFullAccess")
                 {
                     continue;
                 }

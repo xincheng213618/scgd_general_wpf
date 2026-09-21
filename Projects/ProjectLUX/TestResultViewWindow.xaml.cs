@@ -57,6 +57,7 @@ namespace ProjectLUX
         {
             ViewResultJson = viewResultJson;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             ParseAndDisplayTestResult(viewResultJson);
             dataGrid.ItemsSource = TestItems;
         }
@@ -71,6 +72,7 @@ namespace ProjectLUX
                 Width = 800,
                 Height = 600
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.Show();
         }
         private void ParseAndDisplayTestResult(string viewResultJson)

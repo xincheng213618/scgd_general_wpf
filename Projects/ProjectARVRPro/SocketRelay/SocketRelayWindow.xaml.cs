@@ -36,6 +36,7 @@ namespace ProjectARVRPro.SocketRelay
         {
             _isInitializing = true;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             LoadConfig();
             MessageListView.ItemsSource = _relayManager.Messages;
             SendToFlowTextBox.Text = "{\"EventName\":\"AOITestSwitchImageComplete\",\"MsgID\":\"1\",\"Code\":0,\"Msg\":\"OK\"}";

@@ -309,7 +309,7 @@ namespace ColorVision.Copilot
 
         private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
         {
-            if (conversation.RevokeFullAccessGrant())
+            if (conversation.EndFullAccessTask())
                 OnComposerAccessModeChanged();
             CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
@@ -443,11 +443,12 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    if (conversation.RevokeFullAccessGrant(hostedRun.Id)
+                    if (conversation.EndFullAccessTask(hostedRun.Id)
                         && ReferenceEquals(SelectedConversation, conversation))
                     {
                         OnComposerAccessModeChanged();
-                        SetPendingActionFeedback("本任务的临时自动复核授权已结束，后续受保护操作恢复按需确认。");
+                        if (conversation.AccessMode == CopilotAgentAccessMode.ConfirmProtectedActions)
+                            SetPendingActionFeedback("本任务的临时自动复核授权已结束，后续受保护操作恢复按需确认。");
                     }
                 });
                 RefreshAgentTasks();

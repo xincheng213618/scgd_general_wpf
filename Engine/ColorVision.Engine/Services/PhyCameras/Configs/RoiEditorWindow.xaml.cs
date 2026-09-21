@@ -38,6 +38,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             NormalizeFields(false);
 
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = this;
             Loaded += (_, _) =>
             {

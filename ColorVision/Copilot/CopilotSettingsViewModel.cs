@@ -232,6 +232,7 @@ namespace ColorVision.Copilot
             SelectConnectProviderCommand = new RelayCommand(parameter => SelectConnectProvider(parameter as CopilotConnectProviderOption));
             BackToConnectProviderPickerCommand = new RelayCommand(_ => IsConnectProviderPickerVisible = true);
             ClearConnectProviderSearchCommand = new RelayCommand(_ => ConnectProviderSearchText = string.Empty);
+            InitializeLocalCodexCommands();
             AddAgentSkillOverrideCommand = new RelayCommand(_ => AddAgentSkillOverride(), _ => CanAddAgentSkillOverride);
             RemoveAgentSkillOverrideCommand = new RelayCommand<CopilotAgentSkillSetting>(RemoveAgentSkillOverride, setting => setting != null);
 
@@ -547,6 +548,7 @@ namespace ColorVision.Copilot
 
         private static string FormatProviderLabel(CopilotProviderType providerType)
         {
+            if (providerType == CopilotProviderType.LocalCodex) return "本机 Codex";
             return providerType == CopilotProviderType.AnthropicCompatible
                 ? "Anthropic Compatible"
                 : "OpenAI Compatible";

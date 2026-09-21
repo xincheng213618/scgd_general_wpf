@@ -39,6 +39,7 @@ namespace ColorVision.Copilot
     {
         ConfirmProtectedActions,
         FullAccess,
+        UnrestrictedFullAccess,
     }
 
     public sealed class CopilotAgentAccessContext
@@ -53,7 +54,7 @@ namespace ColorVision.Copilot
             {
                 lock (_syncRoot)
                     return IsGrantCurrentNoLock(DateTimeOffset.UtcNow)
-                        ? CopilotAgentAccessMode.FullAccess
+                        ? _grant!.Mode
                         : CopilotAgentAccessMode.ConfirmProtectedActions;
             }
         }
@@ -91,7 +92,8 @@ namespace ColorVision.Copilot
             get
             {
                 lock (_syncRoot)
-                    return IsGrantCurrentNoLock(DateTimeOffset.UtcNow) ? _grant!.ExpiresAtUtc : null;
+                    return IsGrantCurrentNoLock(DateTimeOffset.UtcNow) && _grant!.Mode != CopilotAgentAccessMode.UnrestrictedFullAccess
+                        ? _grant!.ExpiresAtUtc : null;
             }
         }
 
@@ -157,6 +159,33 @@ namespace ColorVision.Copilot
                     return string.Equals(_grant.TaskId, normalizedTaskId, StringComparison.Ordinal);
 
                 _grant = _grant with { TaskId = normalizedTaskId };
+                return true;
+            }
+        }
+
+        internal void PrepareUnrestrictedFullAccess(string conversationId, string workspacePath, string? taskId)
+        {
+            var conversation = NormalizeIdentifier(conversationId);
+            var workspace = NormalizeWorkspacePath(workspacePath);
+            lock (_syncRoot)
+            {
+                _grant = string.IsNullOrWhiteSpace(conversation)
+                    ? null
+                    : new FullAccessGrant(conversation, NormalizeIdentifier(taskId), workspace,
+                        DateTimeOffset.MaxValue, CopilotAgentAccessMode.UnrestrictedFullAccess);
+            }
+        }
+
+        internal bool EndTask(string? taskId)
+        {
+            lock (_syncRoot)
+            {
+                if (_grant == null || !string.Equals(_grant.TaskId, NormalizeIdentifier(taskId), StringComparison.Ordinal))
+                    return false;
+                if (_grant.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+                    _grant = _grant with { TaskId = string.Empty };
+                else
+                    _grant = null;
                 return true;
             }
         }
@@ -261,7 +290,8 @@ namespace ColorVision.Copilot
             string ConversationId,
             string TaskId,
             string WorkspacePath,
-            DateTimeOffset ExpiresAtUtc);
+            DateTimeOffset ExpiresAtUtc,
+            CopilotAgentAccessMode Mode = CopilotAgentAccessMode.FullAccess);
     }
 
     internal static class CopilotAgentAccessPolicy
@@ -275,6 +305,17 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(tool);
             if (request.AccessContext.RevokeIfWorkspaceChanged(currentWorkspacePath))
                 return false;
+            if (request.AccessContext.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                var noWorkspace = string.IsNullOrWhiteSpace(currentWorkspacePath) && string.IsNullOrWhiteSpace(request.WorkspacePath);
+                return (noWorkspace || WorkspacePathsMatch(request.WorkspacePath, currentWorkspacePath))
+                    && request.AccessContext.AllowsUnattendedProtectedActionsFor(request.ConversationId, request.TaskId, currentWorkspacePath)
+                    && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
+                    && tool.Capability.RequiresNativeApproval
+                    && (noWorkspace
+                        ? !request.WritableLocalRootPaths.Any() && !request.WritableLocalFilePaths.Any()
+                        : IsWriteScopeContainedByWorkspace(request, currentWorkspacePath));
+            }
             if (string.IsNullOrWhiteSpace(currentWorkspacePath)
                 || !WorkspacePathsMatch(request.WorkspacePath, currentWorkspacePath))
             {
@@ -299,6 +340,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(tool);
+            if (request.AccessContext.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+                return false;
             var revokedMismatchedGrant = request.AccessContext.RevokeIfWorkspaceChanged(
                 currentWorkspacePath);
             if (string.IsNullOrWhiteSpace(currentWorkspacePath)

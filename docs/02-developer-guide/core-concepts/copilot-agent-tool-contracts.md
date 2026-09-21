@@ -47,7 +47,8 @@ Harness 的审批绑定保持启用：待审批回应必须匹配 SDK 在该会�
 “原生审批”是精确调用协议，不等于每次必须由人点击。`RouteFrameworkApprovalsAsync` 的当前决定路径是：
 
 - `CopilotCodexExecPolicyEvaluator` 当前只评估 `RunShellCommand` 的冻结执行规则。若给出 `Forbidden`，拒绝调用；`Allow` 是单独的批准来源，执行前再次核对；`Prompt` 进入对应规则审批类别，不走临时补丁直接批准分支。
-- `CanAutoApprove` 只对有效 `FullAccess` grant 下、非只读模式、当前 workspace 与可写范围匹配且声明 `AllowsTemporaryFullAccess` 的工具直接批准。目前只有 `ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 声明此标志；直接批准仍绑定原生 reservation，不是任意工具免审。
+- 用户显式启用「完全访问（当前会话）」时，`UnrestrictedFullAccess` 在审批策略与 `PermissionRequest` Hook 允许后直接批准受保护工具，不调用自动审查模型。执行前复核 grant、当前任务、工作区、精确参数和能力版本；只读模式与明确禁止规则仍生效。任务结束只解除任务绑定，手动关闭、工作区变化或重启撤销授权；已有待审批动作不会被追溯批准。
+- 临时自动复核仍使用兼容枚举 `FullAccess`。`CanAutoApprove` 在此模式下只允许当前 workspace 与可写范围匹配且声明 `AllowsTemporaryFullAccess` 的工具。目前只有 `ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 声明此标志；直接批准仍绑定原生 reservation。
 - 其余请求先通过审批策略与 `PermissionRequest` Hook，允许提示才创建 Pending Action。`CanAutoReview` 另行决定是否启用独立 reviewer：`guardian_approval` 必须启用、不能是只读模式且必须是原生受保护能力。显式 `approvals_reviewer=auto_review` 不要求临时 grant，但受当前审批类别与策略限制（`never`、`untrusted` 不允许此自动复核）；未显式选择 reviewer 时，兼容路径要求有效的任务/工作区临时 grant，且工具不属于补丁直接批准集合。显式 `user` 禁止独立自动复核，不代表撤销其他已成立的精确批准来源。
 - `CopilotAutomaticApprovalReviewer` 用同一 Profile 的独立模型请求读取有界任务、近期 user/assistant 文本及完整审批详情，`Tools` 为空，不执行提议动作。默认策略允许清晰、任务内普通本地开发的 LOW/MEDIUM 判断；有效的 `CodexAutoReviewPolicy` 可以替换默认审查策略，但不替换无工具和结构化输出协议。即使模型输出 APPROVE，HIGH/CRITICAL 仍由代码强制拒绝。缺少完整详情或超出 24,000 字符会拒绝；供应商失败、超时或无效判断是 `Unavailable`，不能当作批准。
 - 兼容的临时任务复核未批准时，动作仍可等待人工确认；显式 `auto_review` 的动作不出现在人工 Pending 列表，DENY 关闭为 `automatic_review_denied`，Unavailable 关闭为 `automatic_review_unavailable`，不会静默回退人工窗口。Unavailable 只表示没有可用决定，不证明操作本身危险。自动批准落账前还会重查作用域；执行时仍检查精确输入、能力 revision、任务/工作区与动作状态。

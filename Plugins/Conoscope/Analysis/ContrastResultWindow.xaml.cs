@@ -12,6 +12,7 @@ namespace Conoscope.Analysis
         public ContrastResultWindow(ContrastComputationResult result)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             this.result = result;
             ResultGrid.ItemsSource = result.Points.Select(item => new ContrastRowViewModel(item)).ToList();
             tbSummary.Text = Conoscope.Core.CompositeFormatCache.Format(Properties.Resources.FocusPointCountAndAverageContrast, result.Points.Count, result.AverageRatio.ToString("F3"), result.MinimumRatio.ToString("F3"), result.MaximumRatio.ToString("F3"));

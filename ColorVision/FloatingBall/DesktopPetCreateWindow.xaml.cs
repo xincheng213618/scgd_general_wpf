@@ -16,6 +16,7 @@ namespace ColorVision.FloatingBall
         public DesktopPetCreateWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         public string? CreatedAssetId { get; private set; }

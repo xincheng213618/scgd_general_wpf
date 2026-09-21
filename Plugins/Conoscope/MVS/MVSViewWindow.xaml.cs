@@ -77,6 +77,7 @@ namespace Conoscope.MVS
                 CloseDeviceAndFinalizeSdk,
                 ex => log.Error("Observation camera deferred cleanup failed", ex));
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             this.Closing += Window_Closing;
             this.Loaded += new RoutedEventHandler(BasicDemoWindow_Load);
         }

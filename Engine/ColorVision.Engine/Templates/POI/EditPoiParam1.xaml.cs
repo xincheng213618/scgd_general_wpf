@@ -1931,6 +1931,7 @@ namespace ColorVision.Engine.Templates.POI
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
+            window.ApplyCaption();
             window.ContentRendered += (_, _) => preview.UpdateZoomAndScale();
             window.Show();
             window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(preview.Clear));

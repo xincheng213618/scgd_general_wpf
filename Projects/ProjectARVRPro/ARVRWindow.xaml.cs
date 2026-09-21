@@ -551,6 +551,7 @@ namespace ProjectARVRPro
             var frame = new Frame();
             var batchDataHistory = new MeasureBatchPage(frame, batch);
             var window = new Window() { Owner = Application.Current.GetActiveWindow() };
+            window.ApplyCaption();
             window.Content = batchDataHistory;
             window.Show();
         }

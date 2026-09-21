@@ -28,6 +28,7 @@ namespace ColorVision.Copilot
         TemporaryGrant,
         AutomaticReview,
         ExecutionPolicy,
+        ConversationFullAccess,
     }
 
     internal sealed record CopilotFrameworkApprovalDecision
@@ -59,6 +60,9 @@ namespace ColorVision.Copilot
             var name = string.IsNullOrWhiteSpace(toolName) ? "The protected tool" : toolName.Trim();
             return Kind switch
             {
+                CopilotFrameworkApprovalDecisionKind.Approved
+                    when Source == CopilotFrameworkApprovalDecisionSource.ConversationFullAccess =>
+                    $"{name} was approved by this conversation's full access setting. Agent Framework is resuming the same session.",
                 CopilotFrameworkApprovalDecisionKind.Approved
                     when Source == CopilotFrameworkApprovalDecisionSource.AutomaticReview =>
                     $"{name} was approved by the automatic permission reviewer. Agent Framework is resuming the same session.",
@@ -211,6 +215,12 @@ namespace ColorVision.Copilot
                 string.Empty,
                 CopilotFrameworkApprovalDecisionSource.TemporaryGrant);
         }
+
+        public static CopilotFrameworkApprovalDecision ApprovedByConversationFullAccess() => new(
+            CopilotFrameworkApprovalDecisionKind.Approved,
+            "Approved by the current ColorVision conversation's full access setting.",
+            string.Empty,
+            CopilotFrameworkApprovalDecisionSource.ConversationFullAccess);
 
         public static CopilotFrameworkApprovalDecision ApprovedByExecPolicy(string reason)
         {

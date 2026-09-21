@@ -15,6 +15,7 @@ namespace ProjectKB
         public TestWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

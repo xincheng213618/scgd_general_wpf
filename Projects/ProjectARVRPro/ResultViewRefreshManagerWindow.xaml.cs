@@ -28,6 +28,7 @@ public partial class ResultViewRefreshManagerWindow : Window, INotifyPropertyCha
             item.PropertyChanged += Item_PropertyChanged;
 
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = this;
     }
 
