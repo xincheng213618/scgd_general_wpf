@@ -180,13 +180,12 @@ namespace ColorVision.Copilot
                 new("remove", "按编号移除附加目录", AcceptsArguments: true),
                 new("clear", "清空全部附加目录"),
             ]),
-            new("/settings", "打开模型、Agent、公网 Web、MCP 或后端同步设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|web|mcp|sync]", Arguments:
+            new("/settings", "打开模型、Agent、公网 Web 或 MCP 设置", CopilotLocalCommandKind.Settings, AcceptsArguments: true, Usage: "/settings [models|agent|web|mcp]", Arguments:
             [
                 new("models", "模型 Profile、Endpoint 与推理设置"),
                 new("agent", "Agent 默认行为与上下文预算"),
                 new("web", "公网 Web 与 NAT64 Pref64 安全后备"),
                 new("mcp", "MCP 服务与控制能力"),
-                new("sync", "后端配置同步"),
             ]) { Aliases = ["/config", "/preferences", "/prefs"] },
             new("/init", "为当前项目生成根级 AGENTS.md，不覆盖已有项目指令", CopilotLocalCommandKind.InitializeProject, Usage: "/init"),
             new("/hooks", "查看生效 Hook、模块来源与最近运行健康度", CopilotLocalCommandKind.Hooks, AvailableWhileAgentRuns: true, Usage: "/hooks"),

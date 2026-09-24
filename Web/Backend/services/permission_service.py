@@ -48,7 +48,6 @@ PERMISSION_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {"code": "users:manage", "name": "用户管理", "description": "创建、启停用户并调整账号角色。", "category": "安全", "sort_order": 160},
     {"code": "permissions:manage", "name": "权限管理", "description": "查看和调整角色权限。", "category": "安全", "sort_order": 170},
     {"code": "api_keys:manage", "name": "API Key 管理", "description": "创建、轮换和撤销 API Key。", "category": "安全", "sort_order": 180},
-    {"code": "copilot:manage", "name": "Copilot 配置", "description": "管理 Web 端 Copilot 配置。", "category": "配置", "sort_order": 190},
     {"code": "settings:manage", "name": "系统设置", "description": "调整注册、保留策略等系统设置。", "category": "配置", "sort_order": 200},
 )
 

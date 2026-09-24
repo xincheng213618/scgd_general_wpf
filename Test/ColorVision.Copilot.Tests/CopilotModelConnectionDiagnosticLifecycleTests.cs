@@ -77,7 +77,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         }
         else
         {
-            viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+            viewModel.AgentTimeoutSeconds++;
             Assert.True(viewModel.HasUnsavedSettings);
         }
         var notice = viewModel.SettingsStatusText;
@@ -151,14 +151,14 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
             case "clear":
             case "clear-with-notice":
                 if (change == "clear-with-notice")
-                    viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+                    viewModel.AgentTimeoutSeconds++;
                 viewModel.SelectedProfile = null;
                 break;
             case "cancel":
             case "cancel-with-notice":
                 viewModel.TestSelectedProfileCommand.Execute(null);
                 if (change == "cancel-with-notice")
-                    viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+                    viewModel.AgentTimeoutSeconds++;
                 break;
             default:
                 throw new InvalidOperationException("Unknown diagnostic transition.");
@@ -170,7 +170,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         if (change == "clear")
             Assert.Contains("Model profile changed", noticeAfterChange, StringComparison.Ordinal);
         if (change is "clear-with-notice" or "cancel-with-notice")
-            Assert.Contains("Backend sync settings changed", noticeAfterChange, StringComparison.Ordinal);
+            Assert.Contains("Agent timeout changed", noticeAfterChange, StringComparison.Ordinal);
 
         context.RunPending();
         await diagnostic.WaitAsync(TimeSpan.FromSeconds(5));
@@ -241,7 +241,7 @@ public sealed class CopilotModelConnectionDiagnosticLifecycleTests : IDisposable
         var configHandler = new ConfigHandler { ConfigFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json") };
         configHandler.Configs[typeof(CopilotConfig)] = config;
         var chatService = new CopilotChatService(client, maximumAttempts: 1, _ => TimeSpan.Zero, Task.Delay);
-        return new CopilotSettingsViewModel(configHandler, new CopilotBackendSyncClient(client),
+        return new CopilotSettingsViewModel(configHandler,
             new CopilotChatState { ActiveProfileId = config.Profiles[0].Id }, new CopilotModelConnectionDiagnostic(chatService));
     }
 

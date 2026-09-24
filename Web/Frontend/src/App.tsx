@@ -36,7 +36,6 @@ const documentTitles: Record<string, string> = {
   '/admin/login-security': '账号安全 - ColorVision',
   '/admin/permissions': '权限管理 - ColorVision',
   '/admin/api-keys': 'API Key - ColorVision',
-  '/admin/copilot': 'Copilot 配置 - ColorVision',
   '/admin/audit': '审计日志 - ColorVision',
   '/admin/traffic': '访问统计 - ColorVision',
   '/admin/settings': '系统设置 - ColorVision',
@@ -83,7 +82,6 @@ const AuditPage = lazy(() => import('./pages/AuditPage').then((module) => ({ def
 const BrowsePage = lazy(() => import('./pages/BrowsePage').then((module) => ({ default: module.BrowsePage })))
 const CachePage = lazy(() => import('./pages/CachePage').then((module) => ({ default: module.CachePage })))
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage })))
-const CopilotConfigPage = lazy(() => import('./pages/CopilotConfigPage').then((module) => ({ default: module.CopilotConfigPage })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
 const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage').then((module) => ({ default: module.DeploymentHistoryPage })))
 const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })))
@@ -323,7 +321,6 @@ function App() {
               <Route path="login-security" element={<LoginSecurityPage />} />
               <Route path="permissions" element={<PermissionsPage onPermissionsChanged={refreshSession} />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
-              <Route path="copilot" element={<CopilotConfigPage />} />
               <Route path="audit" element={<AuditPage />} />
               <Route path="traffic" element={<TrafficPage />} />
               <Route

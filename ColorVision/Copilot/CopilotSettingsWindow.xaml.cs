@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,19 +10,23 @@ namespace ColorVision.Copilot
         Models = 0,
         Agent = 1,
         Mcp = 2,
-        BackendSync = 3,
-        Web = 4,
+        Web = 3,
     }
 
     public partial class CopilotSettingsWindow : Window
     {
         public CopilotSettingsWindow(CopilotSettingsPage initialPage = CopilotSettingsPage.Models)
+            : this(new CopilotSettingsViewModel(), initialPage)
+        {
+            Loaded += async (_, _) => await ViewModel.DetectLocalCodexAsync();
+        }
+
+        internal CopilotSettingsWindow(CopilotSettingsViewModel viewModel, CopilotSettingsPage initialPage)
         {
             InitializeComponent();
             this.ApplyCaption();
-            DataContext = new CopilotSettingsViewModel();
+            DataContext = viewModel;
             SettingsTabs.SelectedIndex = GetTabIndex(initialPage);
-            Loaded += async (_, _) => await ViewModel.DetectLocalCodexAsync();
         }
 
         internal static int GetTabIndex(CopilotSettingsPage page)
@@ -32,7 +36,6 @@ namespace ColorVision.Copilot
                 CopilotSettingsPage.Agent => 1,
                 CopilotSettingsPage.Web => 2,
                 CopilotSettingsPage.Mcp => 3,
-                CopilotSettingsPage.BackendSync => 4,
                 _ => 0,
             };
         }
@@ -51,12 +54,7 @@ namespace ColorVision.Copilot
         private void OpenAddModelButton_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.PrepareAddModelDialog();
-            var window = new CopilotAddModelWindow(ViewModel)
-            {
-                Owner = this,
-            };
-
-            window.ShowDialog();
+            ViewModel.IsAddingModel = true;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)

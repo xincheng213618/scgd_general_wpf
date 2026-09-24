@@ -101,7 +101,7 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
         Assert.Equal(expectedNotice, viewModel.SettingsStatusText);
         if (change == "new-notice")
         {
-            Assert.Contains("Backend sync settings changed", viewModel.SettingsStatusText, StringComparison.Ordinal);
+            Assert.Contains("Agent timeout changed", viewModel.SettingsStatusText, StringComparison.Ordinal);
             Assert.StartsWith(succeeds ? "Connected." : "Connection failed:", viewModel.McpConnectionTestText, StringComparison.Ordinal);
         }
         else
@@ -177,7 +177,7 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
         config.EnsureInitialized();
         var configHandler = new ConfigHandler { ConfigFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json") };
         configHandler.Configs[typeof(CopilotConfig)] = config;
-        return new CopilotSettingsViewModel(configHandler, new CopilotBackendSyncClient(client),
+        return new CopilotSettingsViewModel(configHandler,
             new CopilotChatState { ActiveProfileId = config.Profiles[0].Id }, mcpHttpClient: client);
     }
 
@@ -217,7 +217,7 @@ public sealed class CopilotLocalMcpDiagnosticLifecycleTests : IDisposable
                 viewModel.Dispose();
                 break;
             case "new-notice":
-                viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+                viewModel.AgentTimeoutSeconds++;
                 break;
             default:
                 throw new InvalidOperationException("Unknown MCP draft transition.");

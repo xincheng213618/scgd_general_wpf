@@ -58,10 +58,6 @@ const actionDefinitions: Record<string, AuditActionMeta> = {
   transfer_delete: { label: '删除中转文件', category: '文件', color: 'volcano', security: false },
   feedback_attachment_download: { label: '下载反馈附件', category: '反馈', color: 'blue', security: false },
   feedback_status_update: { label: '更新反馈状态', category: '反馈', color: 'cyan', security: false },
-  copilot_profile_create: { label: '创建 Copilot 配置', category: 'Copilot', color: 'blue', security: false },
-  copilot_profile_update: { label: '更新 Copilot 配置', category: 'Copilot', color: 'cyan', security: false },
-  copilot_profile_delete: { label: '删除 Copilot 配置', category: 'Copilot', color: 'volcano', security: false },
-  copilot_config_sync: { label: '同步 Copilot 配置', category: 'Copilot', color: 'purple', security: false },
   'operations.heartbeat': { label: '运维终端心跳', category: '终端运维', color: 'green', security: false },
   'operations.task.create': { label: '创建运维任务', category: '终端运维', color: 'purple', security: false },
   'operations.device_relay.sync': { label: '同步签名 Relay', category: '终端运维', color: 'geekblue', security: false },
@@ -101,7 +97,6 @@ const targetLabels: Record<string, string> = {
   scheduled_job: '计划任务',
   transfer_file: '中转文件',
   feedback: '反馈',
-  copilot_profile: 'Copilot 配置',
   operations_host: '运维终端',
   operations_task: '运维任务',
 }

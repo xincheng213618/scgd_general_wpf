@@ -975,6 +975,59 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v28_removes_retired_copilot_profiles(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 27);
+                CREATE TABLE copilot_profiles (
+                    id TEXT PRIMARY KEY,
+                    api_key_encrypted TEXT NOT NULL
+                );
+                INSERT INTO copilot_profiles VALUES ('retired', 'encrypted-secret');
+                CREATE TABLE permissions (code TEXT PRIMARY KEY);
+                INSERT INTO permissions VALUES ('copilot:manage');
+                CREATE TABLE role_permissions (
+                    role_code TEXT NOT NULL,
+                    permission_code TEXT NOT NULL
+                );
+                INSERT INTO role_permissions VALUES ('admin', 'copilot:manage');
+                CREATE TABLE api_keys (
+                    id INTEGER PRIMARY KEY,
+                    scopes TEXT
+                );
+                INSERT INTO api_keys VALUES
+                    (1, 'stats:read,copilot:config:read'),
+                    (2, 'copilot:config:read');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='copilot_profiles'"
+                ).fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM permissions").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM role_permissions").fetchone()[0],
+                0,
+            )
+            self.assertEqual(
+                [row["scopes"] for row in db.execute("SELECT scopes FROM api_keys ORDER BY id")],
+                ["stats:read", ""],
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

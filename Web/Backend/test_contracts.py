@@ -1370,7 +1370,7 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(set(data["limits"]), set(OPERATIONAL_RETENTION_SETTINGS))
         self.assertFalse(data["restart_required"])
         serialized = json.dumps(data)
-        for forbidden in ("secret", "password", "storage_path", "upload_auth", "copilot_sync"):
+        for forbidden in ("secret", "password", "storage_path", "upload_auth"):
             self.assertNotIn(forbidden, serialized)
 
     def test_retention_settings_put_preserves_secrets_and_updates_live_config(self):
@@ -1381,7 +1381,6 @@ class AdminApiContracts(ContractTestBase):
             "secret_key": "preserved-secret",
             "storage_path": str(self.storage),
             "upload_auth": {"username": "admin", "password": "preserved-password"},
-            "copilot_sync": {"version_keys": ["stable"]},
             "unrelated": {"enabled": True},
         }), encoding="utf-8")
         values = {
@@ -1403,7 +1402,6 @@ class AdminApiContracts(ContractTestBase):
         persisted = json.loads(config_path.read_text(encoding="utf-8"))
         self.assertEqual(persisted["secret_key"], "preserved-secret")
         self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
-        self.assertEqual(persisted["copilot_sync"], {"version_keys": ["stable"]})
         self.assertEqual(persisted["unrelated"], {"enabled": True})
         audit = self.client.get(
             "/api/admin/audit-log?action=retention_settings_update",

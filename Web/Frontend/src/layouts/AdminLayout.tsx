@@ -14,7 +14,6 @@ import {
   LockOutlined,
   MoonOutlined,
   ReloadOutlined,
-  RobotOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   SunOutlined,
@@ -44,7 +43,6 @@ const routeTitles: Record<string, string> = {
   '/admin/login-security': '账号安全',
   '/admin/permissions': '权限管理',
   '/admin/api-keys': 'API Key',
-  '/admin/copilot': 'Copilot 配置',
   '/admin/audit': '审计日志',
   '/admin/traffic': '访问统计',
   '/admin/settings': '系统设置',
@@ -109,11 +107,6 @@ const route = {
           path: '/admin/api-keys',
           name: 'API Key',
           icon: <ApiOutlined />,
-        },
-        {
-          path: '/admin/copilot',
-          name: 'Copilot 配置',
-          icon: <RobotOutlined />,
         },
         {
           path: '/admin/audit',

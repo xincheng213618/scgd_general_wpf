@@ -248,34 +248,6 @@ namespace ColorVision.Copilot
         }
         private CopilotReasoningMode _reasoningMode = CopilotReasoningMode.Default;
 
-        [Browsable(false)]
-        public string SyncSource
-        {
-            get => _syncSource;
-            set
-            {
-                if (SetProperty(ref _syncSource, NormalizeText(value)))
-                {
-                    OnPropertyChanged(nameof(IsBackendSynced));
-                    OnPropertyChanged(nameof(SecondaryLabel));
-                }
-            }
-        }
-        private string _syncSource = string.Empty;
-
-        [Browsable(false)]
-        public string SyncProfileId
-        {
-            get => _syncProfileId;
-            set => SetProperty(ref _syncProfileId, NormalizeText(value));
-        }
-        private string _syncProfileId = string.Empty;
-
-        [JsonIgnore]
-        [Browsable(false)]
-        public bool IsBackendSynced => !string.IsNullOrWhiteSpace(SyncSource)
-            && !string.IsNullOrWhiteSpace(SyncProfileId);
-
         [JsonIgnore]
         public bool IsLocalCodex => ProviderType == CopilotProviderType.LocalCodex;
 
@@ -365,8 +337,7 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string SecondaryLabel => IsLocalCodex ? $"本机 Codex · {(string.IsNullOrWhiteSpace(Model) ? "默认模型" : Model)}" : $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "Model not set" : Model)}"
-            + (IsBackendSynced ? " · Backend" : string.Empty);
+        public string SecondaryLabel => IsLocalCodex ? $"本机 Codex · {(string.IsNullOrWhiteSpace(Model) ? "默认模型" : Model)}" : $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "Model not set" : Model)}";
 
         public bool EnsureValid()
         {
@@ -435,8 +406,6 @@ namespace ColorVision.Copilot
                 FirstContentTimeoutSeconds = FirstContentTimeoutSeconds,
                 StreamingInactivityTimeoutSeconds = StreamingInactivityTimeoutSeconds,
                 ReasoningMode = ReasoningMode,
-                SyncSource = SyncSource,
-                SyncProfileId = SyncProfileId,
             };
 
             if (!string.IsNullOrWhiteSpace(_systemPromptOverride))

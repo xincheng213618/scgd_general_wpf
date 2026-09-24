@@ -21,10 +21,5 @@
     "upload_auth": {
         "username": "admin",
         "password": "change-this-password"
-    },
-    "copilot_sync": {
-        "version_keys": [
-            "replace-with-the-desktop-version-key"
-        ]
     }
 }

@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 
@@ -14,15 +15,13 @@ public sealed class CopilotConfigWebPageNetworkTests
     {
         Assert.True(CopilotSettingsCommand.TryResolvePage(argument, out var page));
         Assert.Equal(CopilotSettingsPage.Web, page);
-        Assert.Equal(4, (int)page);
+        Assert.Equal(3, (int)page);
         Assert.Equal(2, (int)CopilotSettingsPage.Mcp);
-        Assert.Equal(3, (int)CopilotSettingsPage.BackendSync);
         Assert.Equal(2, CopilotSettingsWindow.GetTabIndex(page));
         Assert.Equal(3, CopilotSettingsWindow.GetTabIndex(CopilotSettingsPage.Mcp));
-        Assert.Equal(4, CopilotSettingsWindow.GetTabIndex(CopilotSettingsPage.BackendSync));
 
         var command = Assert.IsType<CopilotLocalCommand>(CopilotLocalCommandCatalog.FindExact("/settings"));
-        Assert.Equal("/settings [models|agent|web|mcp|sync]", command.Usage);
+        Assert.Equal("/settings [models|agent|web|mcp]", command.Usage);
         Assert.Contains(command.Arguments!, candidate => candidate.Value == "web");
     }
 
@@ -39,6 +38,36 @@ public sealed class CopilotConfigWebPageNetworkTests
 
         Assert.Equal(CopilotConfig.CurrentSchemaVersion, config.SchemaVersion);
         Assert.Empty(config.WebPagePref64Prefixes);
+    }
+
+    [Fact]
+    public void RetiredBackendSyncMetadataIsDiscardedWithoutDeletingTheLocalProfile()
+    {
+        var config = JsonConvert.DeserializeObject<CopilotConfig>("""
+            {
+              "SchemaVersion": 8,
+              "BackendSyncUrl": "https://retired.example.test",
+              "Profiles": [
+                {
+                  "Id": "preserved-profile",
+                  "Name": "Preserved",
+                  "BaseUrl": "https://model.example.test/v1",
+                  "Model": "model-1",
+                  "SyncSource": "https://retired.example.test/api/copilot/config",
+                  "SyncProfileId": "managed-1"
+                }
+              ]
+            }
+            """)!;
+
+        Assert.True(config.EnsureInitialized());
+        Assert.Equal(CopilotConfig.CurrentSchemaVersion, config.SchemaVersion);
+        Assert.Equal("preserved-profile", Assert.Single(config.Profiles).Id);
+
+        var migratedJson = JsonConvert.SerializeObject(config);
+        Assert.DoesNotContain("BackendSyncUrl", migratedJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("SyncSource", migratedJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("SyncProfileId", migratedJson, StringComparison.Ordinal);
     }
 
     [Fact]

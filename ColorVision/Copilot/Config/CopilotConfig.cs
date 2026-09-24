@@ -30,9 +30,7 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 8;
-        public const string DefaultBackendSyncUrl = "";
-        internal const string LegacyInsecureBackendSyncUrl = "http://xc213618.ddns.me:9998";
+        public const int CurrentSchemaVersion = 9;
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -41,24 +39,6 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotMcpClientServerConfig> ExternalMcpServers { get; set; } = new();
 
         public CopilotAgentDefaultsConfig AgentDefaults { get; set; } = new();
-
-        [Browsable(false)]
-        public string BackendSyncUrl
-        {
-            get => _backendSyncUrl;
-            set => SetProperty(ref _backendSyncUrl, value?.Trim() ?? string.Empty);
-        }
-        private string _backendSyncUrl = DefaultBackendSyncUrl;
-
-        [Browsable(false)]
-        public bool AllowInsecureBackendSync
-        {
-            get => _allowInsecureBackendSync;
-            set => SetProperty(ref _allowInsecureBackendSync, value);
-        }
-        private bool _allowInsecureBackendSync;
-
-        public bool ShouldSerializeAllowInsecureBackendSync() => false;
 
         [Browsable(false)]
         public string WebPagePref64Prefixes
@@ -157,37 +137,9 @@ namespace ColorVision.Copilot
 
             changed |= CopilotTemporaryProfileSource.Sync(Profiles);
 
-            for (var index = Profiles.Count - 1; index >= 0; index--)
-            {
-                var profile = Profiles[index];
-                if (IsUntrustedBackendProfile(profile))
-                {
-                    Profiles.RemoveAt(index);
-                    changed = true;
-                    continue;
-                }
-                if (profile.IsBackendSynced && profile.AllowInsecureHttp)
-                {
-                    profile.AllowInsecureHttp = false;
-                    changed = true;
-                }
-            }
-
-            if (IsLegacyInsecureBackendSyncUrl(BackendSyncUrl))
-            {
-                BackendSyncUrl = DefaultBackendSyncUrl;
-                changed = true;
-            }
-
             if (Profiles.Count == 0)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
-                changed = true;
-            }
-
-            if (AllowInsecureBackendSync)
-            {
-                AllowInsecureBackendSync = false;
                 changed = true;
             }
 
@@ -238,34 +190,6 @@ namespace ColorVision.Copilot
             return changed;
         }
 
-        private static bool IsUntrustedBackendProfile(CopilotProfileConfig profile)
-        {
-            var hasSyncSource = !string.IsNullOrWhiteSpace(profile.SyncSource);
-            var hasSyncProfileId = !string.IsNullOrWhiteSpace(profile.SyncProfileId);
-            if (!hasSyncSource && !hasSyncProfileId)
-                return false;
-            if (!hasSyncSource || !hasSyncProfileId)
-                return true;
-
-            return !CopilotBackendSyncClient.IsTrustedSyncSource(profile.SyncSource)
-                || !CopilotProviderEndpoint.Validate(
-                    profile.BaseUrl,
-                    profile.ProviderType,
-                    allowInsecureHttp: false).IsValid;
-        }
-
-        private static bool IsLegacyInsecureBackendSyncUrl(string? value)
-        {
-            return Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var candidate)
-                && Uri.TryCreate(LegacyInsecureBackendSyncUrl, UriKind.Absolute, out var legacy)
-                && string.Equals(candidate.Scheme, legacy.Scheme, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(
-                    candidate.IdnHost.TrimEnd('.'),
-                    legacy.IdnHost.TrimEnd('.'),
-                    StringComparison.OrdinalIgnoreCase)
-                && candidate.Port == legacy.Port;
-        }
-
         public CopilotProfileConfig? FindProfile(string? profileId)
         {
             if (string.IsNullOrWhiteSpace(profileId))
@@ -296,8 +220,6 @@ namespace ColorVision.Copilot
                 Profiles = new ObservableCollection<CopilotProfileConfig>(profileSnapshot),
                 ExternalMcpServers = new ObservableCollection<CopilotMcpClientServerConfig>(externalMcpServerSnapshot),
                 AgentDefaults = AgentDefaults?.Clone() ?? new CopilotAgentDefaultsConfig(),
-                BackendSyncUrl = BackendSyncUrl,
-                AllowInsecureBackendSync = AllowInsecureBackendSync,
                 WebPagePref64Prefixes = WebPagePref64Prefixes,
                 SchemaVersion = SchemaVersion,
                 McpEnabled = McpEnabled,
@@ -328,8 +250,6 @@ namespace ColorVision.Copilot
             Profiles = profiles;
             ExternalMcpServers = externalMcpServers;
             AgentDefaults = agentDefaults;
-            _backendSyncUrl = snapshot.BackendSyncUrl;
-            _allowInsecureBackendSync = snapshot.AllowInsecureBackendSync;
             _webPagePref64Prefixes = snapshot.WebPagePref64Prefixes;
             SchemaVersion = snapshot.SchemaVersion;
             _mcpEnabled = snapshot.McpEnabled;
@@ -343,8 +263,6 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Profiles));
             OnPropertyChanged(nameof(ExternalMcpServers));
             OnPropertyChanged(nameof(AgentDefaults));
-            OnPropertyChanged(nameof(BackendSyncUrl));
-            OnPropertyChanged(nameof(AllowInsecureBackendSync));
             OnPropertyChanged(nameof(WebPagePref64Prefixes));
             OnPropertyChanged(nameof(SchemaVersion));
             OnPropertyChanged(nameof(IsPersistenceBlocked));

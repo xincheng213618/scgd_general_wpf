@@ -11,8 +11,6 @@ import type {
   CacheStatus,
   DatabaseBackupInventory,
   DatabaseBackupResult,
-  CopilotProfile,
-  CopilotProfilePayload,
   CreateUserPayload,
   CreateApiKeyPayload,
   CreateApiKeyResult,
@@ -426,22 +424,4 @@ export function updateRolePermissions(role: UserRole, permissions: string[], exp
     permissions,
     expected_revision: expectedRevision,
   })
-}
-
-export function listCopilotProfiles() {
-  return getJson<CopilotProfile[]>('/api/admin/copilot/profiles')
-}
-
-export function createCopilotProfile(payload: CopilotProfilePayload) {
-  return postJson<CopilotProfile>('/api/admin/copilot/profiles', payload)
-}
-
-export function updateCopilotProfile(id: string, payload: CopilotProfilePayload) {
-  return putJson<CopilotProfile>(`/api/admin/copilot/profiles/${encodeURIComponent(id)}`, payload)
-}
-
-export function deleteCopilotProfile(id: string) {
-  return deleteJson<{ status: string; id: string }>(
-    `/api/admin/copilot/profiles/${encodeURIComponent(id)}`,
-  )
 }

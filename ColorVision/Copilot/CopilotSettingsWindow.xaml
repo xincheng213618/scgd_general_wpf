@@ -1,109 +1,21 @@
-<Window x:Class="ColorVision.Copilot.CopilotSettingsWindow"
+﻿<Window x:Class="ColorVision.Copilot.CopilotSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:ColorVision.Copilot"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        Title="{x:Static properties:Resources.CopilotLanguageModel}"
-        Width="920"
-        Height="640"
-        MinWidth="780"
-        MinHeight="540"
+        Title="Copilot 设置"
+        Width="1180"
+        Height="780"
+        MinWidth="960"
+        MinHeight="620"
         Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}" FontSize="13"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:CopilotSettingsViewModel}">
     <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="CopilotStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-
-        <Style x:Key="SettingsSurfaceBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotCardBorderStyle}">
-            <Setter Property="CornerRadius" Value="6" />
-        </Style>
-
-        <Style x:Key="SettingsPanelTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotSectionTitleTextStyle}" />
-
-        <Style x:Key="SettingsHintTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotMutedTextStyle}">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="TextTrimming" Value="None" />
-        </Style>
-
-        <Style x:Key="SettingsSummaryLabelStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-
-        <Style x:Key="SettingsSummaryValueStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,3,0,0" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-
-        <Style x:Key="SettingsFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource CopilotFieldLabelTextStyle}" />
-
-        <Style x:Key="SettingsDividerStyle" TargetType="Border">
-            <Setter Property="Height" Value="1" />
-            <Setter Property="Margin" Value="0,14,0,14" />
-            <Setter Property="Background" Value="{DynamicResource ButtonBorderBrush}" />
-            <Setter Property="Opacity" Value="0.72" />
-        </Style>
-
-        <Style x:Key="SettingsQuickAddPreviewBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSubtleSurfaceBorderStyle}">
-            <Setter Property="Padding" Value="10,8" />
-            <Setter Property="CornerRadius" Value="6" />
-        </Style>
-
-        <Style x:Key="SettingsUsageBandBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSubtleSurfaceBorderStyle}">
-            <Setter Property="Margin" Value="0,0,0,12" />
-            <Setter Property="Padding" Value="10,7" />
-        </Style>
-
-        <Style x:Key="SettingsFooterStatusTextStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="0,3,0,0" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="Opacity" Value="0.62" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding HasUnsavedSettings}" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
-                    <Setter Property="FontWeight" Value="SemiBold" />
-                    <Setter Property="Opacity" Value="0.92" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource CopilotPrimaryButtonStyle}" />
-
-        <Style x:Key="ProfileStatusPillBorderStyle" TargetType="Border">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Opacity" Value="0.68" />
-        </Style>
-
-        <Style x:Key="ProfileStatusTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsConfigured}" Value="False">
-                    <Setter Property="Opacity" Value="0.74" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        </ResourceDictionary>
+        <ResourceDictionary Source="CopilotSettingsStyles.xaml" />
     </Window.Resources>
 
     <Grid>
@@ -112,12 +24,12 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TabControl x:Name="SettingsTabs" Grid.Row="0" Margin="12,12,12,10">
-            <TabItem Header="Models">
+        <TabControl x:Name="SettingsTabs" Grid.Row="0" Style="{StaticResource SettingsNavigationShellStyle}">
+            <TabItem Header="模型与连接" Tag="管理模型连接；选择供应商预设，或使用本机 Codex。">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280" />
-                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="224" />
+                <ColumnDefinition Width="18" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -136,15 +48,15 @@
 
                         <TextBlock VerticalAlignment="Center"
                                    Style="{StaticResource SettingsPanelTitleStyle}"
-                                   Text="{x:Static properties:Resources.CopilotLanguageModel}" />
+                                   Text="模型连接" />
                         <Button Grid.Column="1"
                                 Padding="12,5"
-                                Click="OpenAddModelButton_Click"
-                                Content="{x:Static properties:Resources.CopilotAddModel}"
+                                Click="OpenAddModelButton_Click" IsEnabled="{Binding IsEditingModel}"
+                                Content="添加"
                                 Style="{StaticResource PrimaryActionButtonStyle}" />
                     </Grid>
 
-                    <DockPanel Grid.Row="1" Margin="8,0,8,8">
+                    <DockPanel Grid.Row="1" Margin="8,0,8,8" IsEnabled="{Binding IsEditingModel}">
                         <Button DockPanel.Dock="Top" Margin="0,0,0,8" Padding="8,4" Content="检测本机 Codex"
                                 Command="{Binding DetectLocalCodexCommand}" ToolTip="{Binding LocalCodexStatus}" />
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
@@ -154,10 +66,10 @@
                             </StackPanel>
                         </DockPanel>
 
-                        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource SettingsModelItemStyle}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type local:CopilotProfileConfig}">
-                                    <Border Padding="9,7">
+                                    <Border Padding="0">
                                         <StackPanel>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -178,8 +90,8 @@
                                                                Text="{Binding ConfigurationStatusText}" />
                                                 </Border>
                                             </Grid>
-                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.72" Text="{Binding SecondaryLabel}" />
-                                            <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" Opacity="0.55" Text="{Binding BaseUrl}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Margin="0,6,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.64" FontSize="11" Text="{Binding Model}" TextTrimming="CharacterEllipsis" />
+
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -190,9 +102,11 @@
             </Border>
 
             <Border Grid.Column="2" Style="{StaticResource SettingsSurfaceBorderStyle}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="14">
-                        <local:CopilotCodexConnectionControl />
+                <Grid>
+                <local:CopilotAddModelControl Visibility="{Binding IsAddingModel, Converter={StaticResource BoolToVisibility}}" />
+                <ScrollViewer Visibility="{Binding IsEditingModel, Converter={StaticResource BoolToVisibility}}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="24">
+                        <local:CopilotCodexConnectionControl Visibility="{Binding SelectedProfile.IsLocalCodex, Converter={StaticResource BoolToVisibility}}" />
                         <StackPanel IsEnabled="{Binding CanEditSelectedProfile}">
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -201,17 +115,11 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                                    <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Connection" />
+                                    <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="连接配置" />
                                     <TextBlock Margin="0,6,0,0" Style="{StaticResource SettingsHintTextStyle}" Text="{Binding SelectedProfile.SecondaryLabel}" />
                                 </StackPanel>
 
-                                <Button Grid.Column="1"
-                                        MinWidth="96"
-                                        Padding="12,5"
-                                        VerticalAlignment="Top"
-                                        Command="{Binding UseSelectedProfileInChatCommand}"
-                                        Content="{Binding SelectedProfileUsageActionText}"
-                                        IsEnabled="{Binding CanUseSelectedProfileInChat}" />
+
                             </Grid>
 
                             <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
@@ -237,125 +145,45 @@
                                            TextWrapping="Wrap" Text="{Binding SelectedProfileConnectionTestText}" />
                             </StackPanel>
 
-                            <Grid Visibility="{Binding SelectedProfile.IsApiProfile, Converter={StaticResource BoolToVisibility}}">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="104" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotName}" />
-                                <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" />
-
-                                <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotVendor}" />
-                                <ComboBox Grid.Row="1"
-                                          Grid.Column="1"
-                                          Margin="0,0,0,10"
-                                          ItemsSource="{Binding VendorOptions}"
-                                          DisplayMemberPath="Label"
-                                          SelectedValuePath="Value"
-                                          SelectedValue="{Binding SelectedProfile.VendorType, UpdateSourceTrigger=PropertyChanged}" />
-
-                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotApiKey}" />
-                                <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="8" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <PasswordBox Grid.Column="0"
-                                                 local:PasswordBoxBinding.BindPassword="True"
+                            <StackPanel Visibility="{Binding SelectedProfile.IsApiProfile, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="API Key" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <Grid Margin="0,6,0,18">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <PasswordBox local:PasswordBoxBinding.BindPassword="True"
                                                  local:PasswordBoxBinding.BoundPassword="{Binding SelectedProfile.ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Visibility="{Binding IsSelectedProfileApiKeyHidden, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding SelectedProfile.ApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                             Visibility="{Binding IsSelectedProfileApiKeyVisible, Converter={StaticResource BoolToVisibility}}" />
-                                    <Button Grid.Column="2"
-                                            Width="48"
-                                            Padding="6,2"
-                                            Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}"
-                                            Content="{Binding SelectedProfileApiKeyVisibilityText}" />
-                                    <TextBlock Grid.Row="1"
-                                               Grid.ColumnSpan="3"
-                                               Margin="0,5,0,0"
-                                               FontSize="11"
-                                               Foreground="#E6A23C"
-                                               Text="The saved API key could not be decrypted for this Windows user. Enter it again to continue."
-                                               TextWrapping="Wrap"
-                                               Visibility="{Binding SelectedProfile.CredentialNeedsReentry, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBox Text="{Binding SelectedProfile.ApiKey, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsSelectedProfileApiKeyVisible, Converter={StaticResource BoolToVisibility}}" />
+                                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,5" Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}" Content="{Binding SelectedProfileApiKeyVisibilityText}" />
                                 </Grid>
-
-                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotModel}" />
-                                <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,10">
-                                    <ComboBox IsEditable="True"
-                                              IsTextSearchEnabled="False"
-                                              ItemsSource="{Binding AvailableModelPresets}"
-                                              Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <CheckBox Margin="0,8,0,0"
-                                              Content="Supports image input"
-                                              IsChecked="{Binding SelectedProfile.SupportsImageInput, UpdateSourceTrigger=PropertyChanged}"
-                                              ToolTip="Enable only when this exact model endpoint accepts image inputs. ColorVision cannot discover this capability automatically." />
-                                </StackPanel>
-
-                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotProtocol}" />
-                                <ComboBox Grid.Row="4"
-                                          Grid.Column="1"
-                                          Margin="0,0,0,10"
-                                          ItemsSource="{Binding ProviderOptions}"
-                                          DisplayMemberPath="Label"
-                                          SelectedValuePath="Value"
-                                          SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
-
-                                <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
-                                <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,10">
-                                    <TextBox Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}"
-                                             ToolTip="For an OpenAI-compatible Responses service, enter its complete endpoint ending in /responses. Other compatible base URLs use Chat Completions." />
-                                    <TextBlock Margin="0,5,0,0"
-                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                               FontSize="11"
-                                               Opacity="0.72"
-                                               Text="{Binding SelectedProfile.EndpointStatusText}"
-                                               TextWrapping="Wrap" />
-                                    <CheckBox Margin="0,8,0,0"
-                                              Content="Allow API key over non-loopback HTTP"
-                                              IsChecked="{Binding SelectedProfile.AllowInsecureHttp, UpdateSourceTrigger=PropertyChanged}"
-                                              ToolTip="Use only for a trusted private model server when HTTPS is unavailable. The API key and prompt content will not be encrypted in transit." />
-                                </StackPanel>
-
-                                <TextBlock Grid.Row="6" Style="{StaticResource SettingsFieldLabelStyle}" Text="Test" />
-                                <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,0,0,10">
-                                    <Button DockPanel.Dock="Right"
-                                            Margin="8,0,0,0"
-                                            Padding="10,4"
-                                            Command="{Binding TestSelectedProfileCommand}"
-                                            Content="{Binding SelectedProfileConnectionTestActionText}"
-                                            IsEnabled="{Binding CanTestSelectedProfile}" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                               Opacity="0.72"
-                                               Text="{Binding SelectedProfileConnectionTestText}"
-                                               TextWrapping="Wrap" />
+                                <TextBlock Text="当前 Windows 用户无法解密已保存的密钥，请重新输入。" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="{Binding SelectedProfile.CredentialNeedsReentry, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="模型" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <ComboBox IsEditable="True" IsTextSearchEnabled="False" ItemsSource="{Binding AvailableModelPresets}" Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,10" />
+                                <CheckBox Content="支持图片输入" IsChecked="{Binding SelectedProfile.SupportsImageInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="仅在此模型和接口支持图片时开启。" Margin="0,0,0,18" />
+                                <TextBlock Text="API 格式" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <ComboBox ItemsSource="{Binding ProviderOptions}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,18" />
+                                <TextBlock Text="接口地址 / Base URL" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                <TextBox Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,6" ToolTip="Responses 兼容服务可填写以 /responses 结尾的完整地址；普通兼容地址使用 Chat Completions。" />
+                                <TextBlock Text="{Binding SelectedProfile.EndpointStatusText}" Style="{StaticResource SettingsHintTextStyle}" />
+                                <DockPanel Margin="0,18,0,6">
+                                    <Button DockPanel.Dock="Right" Margin="12,0,0,0" Padding="12,6" Command="{Binding TestSelectedProfileCommand}" Content="{Binding SelectedProfileConnectionTestActionText}" />
+                                    <TextBlock Text="{Binding SelectedProfileConnectionTestText}" Style="{StaticResource SettingsHintTextStyle}" VerticalAlignment="Center" />
                                 </DockPanel>
-                            </Grid>
+                                <Expander Header="连接选项" Margin="0,16,0,0">
+                                    <StackPanel Margin="0,12,0,0">
+                                        <TextBlock Text="显示名称" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                        <TextBox Text="{Binding SelectedProfile.Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12" />
+                                        <TextBlock Text="供应商预设" Style="{StaticResource SettingsFieldLabelStyle}" />
+                                        <ComboBox ItemsSource="{Binding VendorOptions}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding SelectedProfile.VendorType, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12" />
+                                        <CheckBox Content="允许向非本机 HTTP 服务发送密钥" IsChecked="{Binding SelectedProfile.AllowInsecureHttp, UpdateSourceTrigger=PropertyChanged}" ToolTip="仅用于受信的内网服务；HTTP 不加密密钥和对话内容。" />
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
 
                             <Expander Margin="0,8,0,0"
-                                      Header="Provider reliability">
+                                      Header="高级 · 超时设置">
                                 <StackPanel Margin="0,10,0,0">
                                     <TextBlock Style="{StaticResource SettingsHintTextStyle}"
-                                               Text="Applied only to this model connection. Increase these limits for local models or providers that pause during long reasoning."
+                                               Text="仅影响当前模型连接；响应较慢时可增加等待时间。"
                                                TextWrapping="Wrap" />
                                     <Grid Margin="0,10,0,0">
                                         <Grid.RowDefinitions>
@@ -368,7 +196,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="First content timeout" />
+                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="首段内容超时" />
                                         <TextBox Grid.Row="0"
                                                  Grid.Column="1"
                                                  Margin="0,0,12,10"
@@ -377,9 +205,9 @@
                                         <TextBlock Grid.Row="0"
                                                    Grid.Column="2"
                                                    Style="{StaticResource SettingsHintTextStyle}"
-                                                   Text="seconds · 15–3,600 · default 180" />
+                                                   Text="秒 · 15–3,600 · 默认 180" />
 
-                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Stream inactivity" />
+                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="流式响应间隔" />
                                         <TextBox Grid.Row="1"
                                                  Grid.Column="1"
                                                  Margin="0,0,12,0"
@@ -388,7 +216,7 @@
                                         <TextBlock Grid.Row="1"
                                                    Grid.Column="2"
                                                    Style="{StaticResource SettingsHintTextStyle}"
-                                                   Text="seconds · 15–3,600 · default 120" />
+                                                   Text="秒 · 15–3,600 · 默认 120" />
                                     </Grid>
                                 </StackPanel>
                             </Expander>
@@ -397,15 +225,16 @@
 
                     </StackPanel>
                 </ScrollViewer>
+                </Grid>
             </Border>
         </Grid>
             </TabItem>
 
-            <TabItem Header="Agent">
+            <TabItem Header="Agent 与工具" Tag="调整任务预算、上下文整理和技能策略。">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                    <Border Margin="0,0,0,12" Padding="24" Style="{StaticResource SettingsSurfaceBorderStyle}">
                         <StackPanel MaxWidth="760">
-                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Agent defaults" />
+                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="任务默认值" />
                             <TextBlock Margin="0,6,0,16"
                                        Style="{StaticResource SettingsHintTextStyle}"
                                        Text="Shared by every model connection. These values bound a complete Agent task; model connection and generation settings stay independent."
@@ -435,15 +264,15 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="Context window" />
+                                <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="上下文窗口" />
                                 <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentContextWindowTokens, UpdateSourceTrigger=PropertyChanged}" ToolTip="Context window used by Agent compaction and Skill metadata budgeting." />
                                 <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="32,768–1,048,576; default 1,048,576" />
 
-                                <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Request tokens" />
+                                <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="累计请求 Token" />
                                 <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentRequestTokenBudget, UpdateSourceTrigger=PropertyChanged}" ToolTip="Cumulative provider-token budget across one Agent task." />
                                 <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="4,096–1,048,576; default 1,048,576" />
 
-                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="Auto compact" />
+                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="自动整理上下文" />
                                 <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,12,10" Orientation="Horizontal">
                                     <CheckBox VerticalAlignment="Center"
                                               IsChecked="{Binding AutoCompactConversationHistory}"
@@ -457,7 +286,7 @@
                                 </StackPanel>
                                 <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="50–95%; default 85%. The pending request is sent only after compaction succeeds." TextWrapping="Wrap" />
 
-                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Auto-compact focus" />
+                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="上下文整理重点" />
                                 <TextBox Grid.Row="3"
                                          Grid.Column="1"
                                          Grid.ColumnSpan="2"
@@ -589,9 +418,9 @@
                     </Border>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Web">
+            <TabItem Header="网页与网络" Tag="配置网页访问与网络兼容选项。">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                    <Border Margin="0,0,0,12" Padding="24" Style="{StaticResource SettingsSurfaceBorderStyle}">
                         <StackPanel MaxWidth="760">
                             <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Public web access" />
                             <TextBlock Margin="0,6,0,16"
@@ -637,74 +466,17 @@
                     </Border>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="MCP">
+            <TabItem Header="MCP 服务" Tag="连接外部工具，管理 ColorVision 本地 MCP 服务。">
                 <ScrollViewer Padding="10"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <local:CopilotMcpSettingsControl DataContext="{Binding}"/>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Backend Sync">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
-                        <StackPanel MaxWidth="760">
-                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Backend model configuration" />
-                            <TextBlock Margin="0,6,0,16"
-                                       Style="{StaticResource SettingsHintTextStyle}"
-                                       Text="Download centrally managed model profiles from the ColorVision Web backend. Local profiles are preserved, and synchronized profiles are saved immediately."
-                                       TextWrapping="Wrap" />
-
-                            <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
-                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                                           Opacity="0.82"
-                                           Text="ColorVision verifies this device automatically with the installed version key and local device information. Remote backends must use HTTPS; HTTP is allowed only for a service on this computer."
-                                           TextWrapping="Wrap" />
-                            </Border>
-
-                            <TextBlock Margin="0,18,0,6"
-                                       Style="{StaticResource SettingsFieldLabelStyle}"
-                                       Text="Backend URL" />
-                            <TextBox Text="{Binding BackendSyncUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Use an HTTPS origin. The fixed /api/copilot/config path is added automatically." />
-                            <TextBlock Margin="0,7,0,0"
-                                       FontSize="11"
-                                       Text="{Binding BackendSyncEndpointStatusText}"
-                                       TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHintTextStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsBackendSyncEndpointValid}" Value="False">
-                                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-                                                <Setter Property="FontWeight" Value="SemiBold" />
-                                                <Setter Property="Opacity" Value="0.95" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-
-                            <DockPanel Margin="0,18,0,0">
-                                <Button DockPanel.Dock="Right"
-                                        MinWidth="132"
-                                        Padding="14,6"
-                                        Command="{Binding SyncBackendConfigCommand}"
-                                        Content="Download and sync"
-                                        IsEnabled="{Binding CanSyncBackendConfig}"
-                                        Style="{StaticResource CopilotPrimaryButtonStyle}" />
-                                <TextBlock Margin="0,0,16,0"
-                                           VerticalAlignment="Center"
-                                           Style="{StaticResource SettingsHintTextStyle}"
-                                           Text="{Binding BackendSyncStatusText}"
-                                           TextWrapping="Wrap" />
-                            </DockPanel>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
         </TabControl>
 
         <Border Grid.Row="1"
-                Margin="12,0,12,12"
+                Margin="224,16,28,20"
                 Padding="0,10,0,0"
                 Background="Transparent"
                 BorderBrush="{DynamicResource ButtonBorderBrush}"
@@ -725,7 +497,7 @@
                         Margin="0,0,8,0"
                         Padding="14,6"
                         Click="ApplyButton_Click"
-                        Content="Apply"
+                        Content="应用"
                         IsEnabled="{Binding CanApplySettings}" />
                 <Button Grid.Column="3"
                         Padding="14,6"

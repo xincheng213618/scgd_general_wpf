@@ -1,0 +1,89 @@
+<UserControl x:Class="ColorVision.Copilot.CopilotAddModelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ColorVision.Copilot">
+    <UserControl.Resources><ResourceDictionary Source="CopilotSettingsStyles.xaml" /></UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24" MaxWidth="820">
+            <DockPanel Margin="0,0,0,22">
+                <Button DockPanel.Dock="Left" Content="返回模型列表" Click="Cancel_Click" Padding="10,5" />
+                <TextBlock Text="添加模型连接" FontSize="20" FontWeight="SemiBold" Margin="16,0,0,0" VerticalAlignment="Center" />
+            </DockPanel>
+            <StackPanel Visibility="{Binding IsConnectProviderPickerVisible, Converter={StaticResource BoolToVisibility}}">
+                <Border Style="{StaticResource SettingsQuickAddPreviewBorderStyle}" Margin="0,0,0,20">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Command="{Binding DetectLocalCodexCommand}" Content="检测本机" Padding="10,5" />
+                            <TextBlock Text="本机 Codex" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding LocalCodexStatus}" Style="{StaticResource SettingsHintTextStyle}" Margin="0,8,0,10" />
+                        <WrapPanel>
+                            <Button Content="使用本机 Codex" Click="UseLocalCodex_Click" Command="{Binding AddLocalCodexCommand}" Padding="12,6" Margin="0,0,8,0" />
+                            <Button Content="登录 Codex" Command="{Binding LoginLocalCodexCommand}" Padding="12,6" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="选择供应商" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="选择预设后填写密钥，或使用自定义兼容接口。" Style="{StaticResource SettingsHintTextStyle}" Margin="0,6,0,12" />
+                <TextBox Text="{Binding ConnectProviderSearchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="搜索供应商" ToolTip="搜索供应商" Margin="0,0,0,14" />
+                <ItemsControl ItemsSource="{Binding VisibleConnectProviderOptions}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Margin="0,0,10,10" Padding="16" HorizontalContentAlignment="Stretch"
+                                    Command="{Binding DataContext.SelectConnectProviderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" FontSize="15" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Description}" Margin="0,6,0,0" Style="{StaticResource SettingsHintTextStyle}" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="没有匹配的供应商，请尝试其他名称。">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHintTextStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding HasVisibleConnectProviders}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+            <StackPanel Visibility="{Binding IsConnectProviderFormVisible, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel Margin="0,0,0,20">
+                    <Button DockPanel.Dock="Right" Content="更换供应商" Command="{Binding BackToConnectProviderPickerCommand}" Padding="10,5" />
+                    <TextBlock Text="{Binding SelectedConnectProvider.Label}" FontSize="22" FontWeight="SemiBold" />
+                </DockPanel>
+                <TextBlock Text="API Key" Style="{StaticResource SettingsFieldLabelStyle}" />
+                <Grid Margin="0,6,0,18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <PasswordBox local:PasswordBoxBinding.BindPassword="True" local:PasswordBoxBinding.BoundPassword="{Binding NewProfileApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsNewProfileApiKeyHidden, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBox Text="{Binding NewProfileApiKey, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsNewProfileApiKeyVisible, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" Content="{Binding NewProfileApiKeyVisibilityText}" Command="{Binding ToggleNewProfileApiKeyVisibilityCommand}" Padding="12,5" />
+                </Grid>
+                <TextBlock Text="模型" Style="{StaticResource SettingsFieldLabelStyle}" />
+                <ComboBox IsEditable="True" IsTextSearchEnabled="False" ItemsSource="{Binding NewProfileModelPresets}" Text="{Binding NewProfileDraft.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,6" />
+                <TextBlock Text="从预设中选择，也可以直接输入模型 ID。" Style="{StaticResource SettingsHintTextStyle}" />
+                <CheckBox Content="支持图片输入" IsChecked="{Binding NewProfileDraft.SupportsImageInput}" Margin="0,12,0,18" />
+                <TextBlock Text="API 格式" Style="{StaticResource SettingsFieldLabelStyle}" />
+                <ComboBox ItemsSource="{Binding ProviderOptions}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding NewProfileDraft.ProviderType, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,18" />
+                <TextBlock Text="接口地址 / Base URL" Style="{StaticResource SettingsFieldLabelStyle}" />
+                <TextBox Text="{Binding NewProfileDraft.BaseUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,6" />
+                <TextBlock Text="{Binding NewProfileDraft.EndpointStatusText}" Style="{StaticResource SettingsHintTextStyle}" />
+                <TextBlock Text="Responses 兼容服务可填写以 /responses 结尾的完整地址。" Style="{StaticResource SettingsHintTextStyle}" Margin="0,6,0,0" />
+                <Expander Header="更多选项" Margin="0,18,0,0">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="显示名称" Style="{StaticResource SettingsFieldLabelStyle}" />
+                        <TextBox Text="{Binding NewProfileDraft.Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12" />
+                        <CheckBox Content="允许向非本机 HTTP 服务发送密钥" IsChecked="{Binding NewProfileDraft.AllowInsecureHttp}" ToolTip="仅用于受信的内网服务；HTTP 不加密密钥和对话内容。" />
+                    </StackPanel>
+                </Expander>
+                <Border Style="{StaticResource SettingsDividerStyle}" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="添加到列表" Click="Add_Click" IsEnabled="{Binding CanAddProfile}" Style="{StaticResource PrimaryActionButtonStyle}" Margin="16,0,0,0" />
+                    <TextBlock Text="添加后可测试连接，点击底部保存后生效。" Style="{StaticResource SettingsHintTextStyle}" VerticalAlignment="Center" />
+                </DockPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

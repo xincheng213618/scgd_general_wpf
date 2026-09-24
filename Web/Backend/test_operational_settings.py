@@ -61,7 +61,6 @@ class OperationalSettingsTests(unittest.TestCase):
                 "secret_key": "keep-me",
                 "storage_path": "D:/ColorVision",
                 "upload_auth": {"username": "admin", "password": "keep-me-too"},
-                "copilot_sync": {"version_keys": ["stable"]},
                 "future_option": {"enabled": True},
                 **self.values,
             }
@@ -76,7 +75,6 @@ class OperationalSettingsTests(unittest.TestCase):
             self.assertEqual(active["job_run_retention_days"], 45)
             self.assertEqual(persisted["secret_key"], "keep-me")
             self.assertEqual(persisted["upload_auth"]["password"], "keep-me-too")
-            self.assertEqual(persisted["copilot_sync"], {"version_keys": ["stable"]})
             self.assertEqual(persisted["future_option"], {"enabled": True})
             self.assertEqual(persisted["job_run_retention_days"], 45)
             self.assertEqual(list(Path(directory).glob("*.tmp")), [])

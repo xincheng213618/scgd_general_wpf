@@ -1,4 +1,4 @@
-#pragma warning disable CA1822
+﻿#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
@@ -79,8 +79,6 @@ namespace ColorVision.Copilot
                 foreach (var server in externalMcpServers)
                     candidate.ExternalMcpServers.Add(server.Clone());
                 candidate.WebPagePref64Prefixes = CopilotWebPagePref64Configuration.Format(webPagePref64Prefixes);
-                candidate.BackendSyncUrl = BackendSyncUrl.Trim();
-
                 candidate.EnsureInitialized();
                 var persistenceStatus = _configHandler.TrySaveAndPublish(
                         candidate,
@@ -115,7 +113,6 @@ namespace ColorVision.Copilot
                 McpEndpoint = BuildMcpEndpoint();
                 McpBearerToken = config.McpBearerToken;
                 WebPagePref64PrefixesText = config.WebPagePref64Prefixes;
-                BackendSyncUrl = config.BackendSyncUrl;
                 CopilotMcpServer.Instance.ApplySettings(new CopilotMcpRuntimeSettings
                 {
                     Enabled = config.McpEnabled,
@@ -175,6 +172,7 @@ namespace ColorVision.Copilot
         {
             ClearQuickAddFeedback();
             ClearQuickAddCredentialDraft();
+            ResetNewProfileDraft();
             ConnectProviderSearchText = string.Empty;
             IsConnectProviderPickerVisible = true;
         }
@@ -183,6 +181,11 @@ namespace ColorVision.Copilot
         {
             ClearQuickAddFeedback();
             ClearQuickAddCredentialDraft();
+            if (_newProfileDraft != null)
+                _newProfileDraft.PropertyChanged -= NewProfileDraft_PropertyChanged;
+            _newProfileDraft = null;
+            OnPropertyChanged(nameof(NewProfileDraft));
+            OnPropertyChanged(nameof(CanAddProfile));
         }
 
         private void SelectConnectProvider(CopilotConnectProviderOption? option)
@@ -213,7 +216,7 @@ namespace ColorVision.Copilot
             if (!useNow)
             {
                 NewProfileAddFeedbackText = $"Added {profile.DisplayLabel}. It is saved after Apply or Save.";
-                MarkSettingsPending($"Added {profile.DisplayLabel}. Click Apply to use it in chat, or Save to close.");
+                MarkSettingsPending($"已添加 {profile.DisplayLabel}。点击应用或保存后生效。");
                 return true;
             }
 
@@ -241,7 +244,8 @@ namespace ColorVision.Copilot
             if (!CanAddProfile)
                 return null;
 
-            var profile = CreateProfileForVendor(NewProfileVendorType);
+            var profile = NewProfileDraft!.Clone();
+            profile.Id = Guid.NewGuid().ToString("N");
             profile.ApiKey = NewProfileApiKey.Trim();
             Profiles.Add(profile);
             SelectedProfile = profile;
@@ -258,8 +262,6 @@ namespace ColorVision.Copilot
             var profile = SelectedProfile.Clone();
             profile.Id = Guid.NewGuid().ToString("N");
             profile.Name = $"{SelectedProfile.DisplayLabel} Copy";
-            profile.SyncSource = string.Empty;
-            profile.SyncProfileId = string.Empty;
             Profiles.Add(profile);
             SelectedProfile = profile;
             MarkSettingsPending($"Duplicated {SelectedProfile.DisplayLabel}. Click Apply or Save to keep it.");
@@ -301,7 +303,7 @@ namespace ColorVision.Copilot
 
             RefreshSelectedProfileTestState("Profile details changed. Test uses the current unsaved values.");
             OnSelectedProfileUsageChanged();
-            MarkSettingsPending("Profile details changed. Click Apply or Save to use them.");
+            MarkSettingsPending("模型配置已修改，点击应用或保存后生效。");
         }
 
         private void RefreshSelectedProfileTestState(string? configuredMessage = null)
@@ -314,7 +316,7 @@ namespace ColorVision.Copilot
 
             SelectedProfileConnectionTestText = SelectedProfile?.IsConfigured == true
                 ? string.IsNullOrWhiteSpace(configuredMessage)
-                    ? "Test sends one short request using the selected profile."
+                    ? "测试会发送一条简短请求，使用此模型的额度。"
                     : configuredMessage
                 : "Complete API key, endpoint, and model before testing.";
         }

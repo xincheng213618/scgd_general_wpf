@@ -341,10 +341,6 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.cvws_api import register_cvws_api
     from routes.spectrum_api import register_spectrum_api
     from routes.admin_api import AdminApiContext, register_admin_api_routes
-    from routes.copilot_config_api import (
-        CopilotConfigApiContext,
-        register_copilot_config_api_routes,
-    )
     from routes.docs_site import register_docs_site
     from routes.frontend_spa import FrontendSpaContext, register_frontend_spa
     from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
@@ -465,11 +461,6 @@ def register_all_blueprints(app, ctx, services, helpers):
         slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,
         process_started_at=ctx.process_started_at,
     ))
-    register_copilot_config_api_routes(app, CopilotConfigApiContext(
-        cache=cache,
-        config_getter=lambda: ctx.active_config,
-    ))
-
     from db.repositories.operations_support import SqliteOperationsSupportStore
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
     from services.operations_device_relay import OperationsDeviceRelayService
