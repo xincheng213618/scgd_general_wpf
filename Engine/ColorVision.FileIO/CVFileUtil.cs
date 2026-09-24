@@ -130,12 +130,32 @@ namespace ColorVision.FileIO
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
-                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    int index = ReadCIEFileHeader(fs, out cvcie);
+                    cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+                    if (index > 0) cvcie.FilePath = filePath;
+                    return index;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReadCIEFileHeader] Exception: {ex}");
+                return -1;
+            }
+        }
+
+        /// <summary>读取文件头并保留流，由调用方继续读取同一文件快照的像素。流必须可定位；返回长度前缀的偏移。</summary>
+        public static int ReadCIEFileHeader(Stream fs, out CVCIEFile cvcie)
+        {
+            cvcie = new CVCIEFile();
+            try
+            {
+                fs.Position = 0;
+                using (BinaryReader br = new BinaryReader(fs, Encoding.UTF8, leaveOpen: true))
                 {
                     if (fs.Length < 9) return -1;
                     string fileHeader = new string(br.ReadChars(HeaderSize));
                     if (fileHeader != MagicHeader) return -1;
-                    cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
                     uint ver = (cvcie.Version = br.ReadUInt32());
                     if (ver ==1 ||ver == 2)
                     {
@@ -151,7 +171,6 @@ namespace ColorVision.FileIO
                         cvcie.Cols = (int)br.ReadUInt32();
                         cvcie.Rows = (int)br.ReadUInt32();
                         cvcie.Bpp = (int)br.ReadUInt32();
-                        cvcie.FilePath = filePath;
                         return (int)fs.Position;
                     }
                     else if (ver == 3)
@@ -169,7 +188,6 @@ namespace ColorVision.FileIO
                         cvcie.Cols = br.ReadInt32();
                         cvcie.Rows = br.ReadInt32();
                         cvcie.Bpp = br.ReadInt32();
-                        cvcie.FilePath = filePath;
                         return (int)fs.Position;
                     }
                 }

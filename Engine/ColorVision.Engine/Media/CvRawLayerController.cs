@@ -292,8 +292,7 @@ namespace ColorVision.Engine.Media
             if (_liveSource != null) return _liveSource;
             if (_rawColor != null)
             {
-                using CVCIEFile raw = _rawColor.GetRawFile();
-                return ConvertForDisplay(raw, token);
+                return _rawColor.BorrowRaw(raw => ConvertForDisplay(raw, token));
             }
             using CVCIEFile source = LoadSourceFile(_filePath, out usesLuminance, token);
             return ConvertForDisplay(source, token);

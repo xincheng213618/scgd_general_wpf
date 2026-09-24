@@ -35,6 +35,9 @@ namespace ColorVision.Engine.Media
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
         private readonly object _bufferSync = new();
+        private readonly CvRawPixelBuffer _rawPixels = new();
+        private readonly SemaphoreSlim _rawOpenGate = new(1, 1);
+        private bool _rawLifetimeRegistered;
         private long _latestOpenRequest;
         private CvcieMouseMagnifierManager? _cvcieMouseMagnifierManager;
         private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
@@ -815,6 +818,16 @@ namespace ColorVision.Engine.Media
         }
 
 
+        private async void ClearRawPixels(object? sender, EventArgs e)
+        {
+            Interlocked.Increment(ref _latestOpenRequest);
+            ReplaceMeasurementBuffer(null);
+            // Never block the UI waiting for a load that may itself be waiting to publish on the UI.
+            await _rawOpenGate.WaitAsync();
+            try { _rawPixels.Clear(); }
+            finally { _rawOpenGate.Release(); }
+        }
+
         public async void OpenImage(EditorContext context, string? filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
@@ -822,13 +835,28 @@ namespace ColorVision.Engine.Media
 
             string requestedFilePath = filePath;
             long requestId = Interlocked.Increment(ref _latestOpenRequest);
+            bool isRaw = string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase);
+            if (!_rawLifetimeRegistered)
+            {
+                context.ImageView.ClearImageEventHandler += ClearRawPixels;
+                _rawLifetimeRegistered = true;
+            }
+            // Config.ClearProperties normally does this first. Also protect callers that invoke the opener directly.
+            ReplaceMeasurementBuffer(null);
+            _loadBuffer = null;
             CvcieDisplayConfig displayConfig = CvcieDisplayConfig.Current;
             bool preferSrgb = displayConfig.EnableTrueColor
                 && string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
             CvcieBrightnessMode brightnessMode = displayConfig.BrightnessMode;
             double referenceWhite = displayConfig.ReferenceWhiteLuminance;
+            bool rawGateEntered = false;
             try
             {
+                if (isRaw)
+                {
+                    await _rawOpenGate.WaitAsync();
+                    rawGateEntered = true;
+                }
                 await Task.Run(() =>
                 {
                     if (requestId != Volatile.Read(ref _latestOpenRequest)) return;
@@ -847,6 +875,7 @@ namespace ColorVision.Engine.Media
                     bool usesLuminance = false;
                     // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
                     using CVCIEFile cVCIEFile = srgb != null ? ReadDisplayHeader(requestedFilePath)
+                        : isRaw ? _rawPixels.Read(requestedFilePath)
                         : CvRawLayerController.LoadSourceFile(requestedFilePath, out usesLuminance);
                     WriteableBitmap? displayBitmap = srgb;
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
@@ -913,8 +942,6 @@ namespace ColorVision.Engine.Media
                                 // Publish the reused source before revision callbacks observe the update.
                                 context.ProcessingContext.Presentation.Publish(writeableBitmap, context.FunctionImage);
                                 context.CommitSourcePixels(writeableBitmap);
-                                context.ProcessingContext.ProfileMeasurementSources = string.Equals(Path.GetExtension(requestedFilePath), ".cvcie", StringComparison.OrdinalIgnoreCase)
-                                    ? CvcieProfileSource.CreateOptions(requestedFilePath, cVCIEFile.Channels) : null;
                                 context.ImageView.NotifyImageSourceLoaded();
                             }
                         }
@@ -931,6 +958,7 @@ namespace ColorVision.Engine.Media
             {
                 log.Error($"打开 CVCIE 图像失败：{requestedFilePath}", ex);
             }
+            finally { if (rawGateEntered) _rawOpenGate.Release(); }
         }
 
         private static CVCIEFile ReadDisplayHeader(string filePath)
