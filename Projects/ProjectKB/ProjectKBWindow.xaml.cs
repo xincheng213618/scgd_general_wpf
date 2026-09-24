@@ -17,6 +17,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Controls;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -194,7 +195,7 @@ namespace ProjectKB
         private void AuthManager_AutoLoggedOut(object? sender, EventArgs e)
         {
             CloseOwnedAdminWindows();
-            logTextBox.Text = "空闲超时，已自动退出管理员模式";
+            ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("空闲超时，已自动退出管理员模式");
             MessageBox.Show(this, $"空闲超时（{AuthManager.IdleTimeoutMinutes}分钟），已自动退出管理员模式。\n如需编辑配置请重新登录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -276,7 +277,7 @@ namespace ProjectKB
                     {
                         const string message = "PLC自动触发已忽略：SN为空，未执行流程。";
                         log.Warn(message);
-                        logTextBox.Text = message;
+                        ExecutionStatus.Status = FlowExecutionStatusInfo.Notice(message);
                         _ = ModbusControl.GetInstance().SetRegisterValue(0);
                         return;
                     }
@@ -335,31 +336,31 @@ namespace ProjectKB
             bool success = false;
             try
             {
-                logTextBox.Text = "正在重启ColorVision服务...";
+                ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("正在重启ColorVision服务...");
                 await DisplayFlow.RestartColorVisionServicesAsync().WaitAsync(RestartServicesTimeout);
                 success = true;
 
                 try
                 {
                     await Refresh().WaitAsync(RefreshAfterRestartTimeout);
-                    logTextBox.Text = "服务重启完成，当前流程已刷新";
+                    ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("服务重启完成，当前流程已刷新");
                 }
                 catch (TimeoutException ex)
                 {
                     log.Warn("服务重启完成，但刷新当前流程超时", ex);
-                    logTextBox.Text = "服务重启完成，刷新当前流程超时，可手动切换流程刷新";
+                    ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("服务重启完成，刷新当前流程超时，可手动切换流程刷新", isError: true);
                 }
             }
             catch (TimeoutException ex)
             {
                 log.Error("重启ColorVision服务超时", ex);
-                logTextBox.Text = "重启服务超时，已恢复按钮，可稍后重试";
+                ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("重启服务超时，已恢复按钮，可稍后重试", isError: true);
                 MessageBox.Show(this, $"重启服务超过 {RestartServicesTimeout.TotalMinutes:F0} 分钟未完成，请检查服务状态后重试。", "重启服务超时", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
                 log.Error("重启ColorVision服务失败", ex);
-                logTextBox.Text = $"服务重启失败：{ex.Message}";
+                ExecutionStatus.Status = FlowExecutionStatusInfo.Notice($"服务重启失败：{ex.Message}", isError: true);
                 MessageBox.Show(this, ex.Message, "重启服务失败", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -554,23 +555,6 @@ namespace ProjectKB
             if (Interlocked.CompareExchange(ref _pendingUiUpdate, 1, 0) != 0)
                 return;
 
-            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-            TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-            string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-            string msg;
-            if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-            {
-                msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
-            }
-            else
-            {
-                long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                msg = $"{FlowName} 上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
-            }
-
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
             {
@@ -582,8 +566,8 @@ namespace ProjectKB
             {
                 try
                 {
-                    if (flowControl != null && flowControl.IsFlowRun)
-                        logTextBox.Text = msg;
+                    if (!_isDisposed && flowControl?.IsFlowRun == true && stopwatch.IsRunning)
+                        ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, Msg1, stopwatch.ElapsedMilliseconds, LastFlowTime);
                 }
                 catch (Exception ex)
                 {
@@ -637,6 +621,7 @@ namespace ProjectKB
             {
                 _currentFlowTemplateId = template.Id;
                 FlowName = template.Key;
+                PrepareExecutionStatus();
                 string serialNumber = SNtextBox.Text;
                 LastFlowTime = await Task.Run(
                     () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
@@ -667,7 +652,7 @@ namespace ProjectKB
                 {
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     CurrentFlowResult.Msg = "PreProcessFailed";
-                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                    ShowExecutionResult("Failed", CurrentFlowResult.Msg);
                     return;
                 }
 
@@ -677,6 +662,7 @@ namespace ProjectKB
                 Interlocked.Exchange(ref _pendingUiUpdate, 0);
                 stopwatch.Reset();
                 stopwatch.Start();
+                _hasExecutionTiming = true;
                 CreateCurrentFlowBatch();
                 _isFlowLifecycleActive = true;
 
@@ -724,7 +710,7 @@ namespace ProjectKB
                         Params = ex.Message,
                     });
                 }
-                logTextBox.Text = $"{FlowName}{Environment.NewLine}流程启动失败：{ex.Message}";
+                ShowExecutionResult("Failed", $"流程启动失败：{ex.Message}");
                 _isFlowLifecycleActive = false;
             }
             finally
@@ -859,7 +845,7 @@ namespace ProjectKB
                 Interlocked.Exchange(ref _pendingUiUpdate, 0);
 
                 log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-                logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName;
+                ShowExecutionResult(flowControlData.EventName, flowControlData.Params ?? flowControlData.Message);
                 CurrentFlowResult.Msg = flowControlData.EventName;
 
                 ProjectKBConfig.Instance.SNlocked = false;
@@ -893,7 +879,7 @@ namespace ProjectKB
 
                     CurrentFlowResult.RunTime = Math.Max(0, stopwatch.ElapsedMilliseconds);
                     ViewResultManager.Save(CurrentFlowResult);
-                    logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName + Environment.NewLine + failureMessage;
+                    ShowExecutionResult(flowControlData.EventName, failureMessage);
 
                     // 先让失败状态完成一次 UI 渲染，再等待节点统计写入和批次落库。
                     await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
@@ -1173,7 +1159,7 @@ namespace ProjectKB
                     log.Info($"Collect_test{Summary.Stage},Barcode_NO:{ProjectKBConfig.Instance.SN}Barcode_Result：{Barcode_Result}MachineNO:{Summary.MachineNO}");
                     IntPtr a = MesDll.Collect_test(Summary.Stage, ProjectKBConfig.Instance.SN, Barcode_Result, Summary.MachineNO, Summary.LineNO, Summary.Opno, Barcode_Result, string.Empty);
                     var Collect_test = MesDll.PtrToString(a);
-                    logTextBox.Text += Collect_test;
+                    ExecutionStatus.Status = ExecutionStatus.Status.WithAdditionalMessage("MES 返回", Collect_test);
                     log.Info("Collect_test result" + Collect_test);
                 }
                 catch (Exception ex)
