@@ -102,6 +102,11 @@ namespace ProjectARVRPro
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
+        [DisplayName("提前准备 PG"), Category("流程执行"), DefaultValue(false)]
+        [Description("默认关闭。开启后，外部 Socket 流程在解析完成、保存结果前准备下一项 PG，使切图与保存重叠；最终结果仍等待本轮处理完成。RunAll 不受影响。")]
+        public bool EnableEarlyPgPreparation { get => _EnableEarlyPgPreparation; set { _EnableEarlyPgPreparation = value; OnPropertyChanged(); } }
+        private bool _EnableEarlyPgPreparation;
+
         [DisplayName("雷鸟串口")]
         public string ThunderbirdPortName { get => _ThunderbirdPortName; set { _ThunderbirdPortName = value; OnPropertyChanged(); } }
         private string _ThunderbirdPortName = string.Empty;

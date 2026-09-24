@@ -852,7 +852,7 @@ namespace ProjectARVRPro
 
                 flowStarted = true;
                 SetStepProgress(CurrentFlowResult.TestType, completed: false);
-                timer.Change(0, 500); // 启动定时器
+                timer.Change(0, 200); // 启动定时器
                 return true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -1255,6 +1255,7 @@ namespace ProjectARVRPro
                 _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                 CurrentFlowResult.Msg = "Completed";
                 bool processingSucceeded;
+                bool preparePgEarly = ProjectARVRProConfig.Instance.EnableEarlyPgPreparation;
                 bool pgRequested = false;
                 string? pgRequestFailure = null;
                 void RequestNextPg()
@@ -1272,10 +1273,10 @@ namespace ProjectARVRPro
                 }
                 try
                 {
-                    processingSucceeded = await Processing(FlowControlData.SerialNumber, () =>
+                    processingSucceeded = await Processing(FlowControlData.SerialNumber, preparePgEarly ? () =>
                     {
                         if (!IsTestTypeCompleted()) RequestNextPg();
-                    });
+                    } : null);
                 }
                 catch (Exception ex)
                 {
@@ -1289,7 +1290,7 @@ namespace ProjectARVRPro
 
                 TryCount = 0;
                 bool continueToNext = (processingSucceeded || ProjectARVRProConfig.Instance.AllowTestFailures) && !IsTestTypeCompleted();
-                if (continueToNext && !pgRequested) RequestNextPg();
+                if (preparePgEarly && continueToNext && !pgRequested) RequestNextPg();
                 if (pgRequestFailure != null)
                 {
                     AbortCurrentTestSession(pgRequestFailure);
@@ -1300,6 +1301,10 @@ namespace ProjectARVRPro
                 if (!continueToNext)
                 {
                     TestCompleted();
+                }
+                else if (!preparePgEarly)
+                {
+                    SwitchPG();
                 }
                 else if (_pendingSwitchAcknowledgedAt.HasValue)
                 {
