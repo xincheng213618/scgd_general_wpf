@@ -23,7 +23,6 @@ namespace ProjectARVRPro
         public DateTime RecordAnchorDate { get; set; } = DateTime.Today;
         public string RecordSn { get; set; } = string.Empty;
         public int RecordResultIndex { get; set; }
-        public bool EnableCombinedStatistics { get; set; }
         public ResultStatisticsPeriodMode CombinedPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
         public DateTime CombinedAnchorDate { get; set; } = DateTime.Today;
         public string CombinedSn { get; set; } = string.Empty;

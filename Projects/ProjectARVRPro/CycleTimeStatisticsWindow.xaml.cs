@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using ProjectARVRPro.LegacyARVR;
 using SqlSugar;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,16 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
+    public sealed class CycleTimeStatisticsWindowConfig : WindowConfig
+    {
+        public static CycleTimeStatisticsWindowConfig Instance => ConfigService.Instance.GetRequiredService<CycleTimeStatisticsWindowConfig>();
+
+        [DisplayName("启用 L/R 联合统计")]
+        [Description("在结果统计窗口中启用相邻 L→R 全批次统计。")]
+        public bool EnableCombinedStatistics { get => _enableCombinedStatistics; set { _enableCombinedStatistics = value; OnPropertyChanged(); } }
+        private bool _enableCombinedStatistics;
+    }
+
     public partial class CycleTimeStatisticsWindow : Window
     {
         private const int RecordPageSize = 1000;
@@ -29,6 +40,7 @@ namespace ProjectARVRPro
         private readonly ViewResultManager? _viewResultManager;
         private readonly ResultStatisticsDataStore _statisticsStore;
         private readonly ResultStatisticsWindowState _windowState;
+        private readonly CycleTimeStatisticsWindowConfig? _windowConfig;
         private readonly Offline.ArvrOfflineDataSource? _offlineSource;
         private bool _openingOffline;
         private bool _closed;
@@ -78,6 +90,7 @@ namespace ProjectARVRPro
             {
                 _viewResultManager = ViewResultManager.GetInstance();
                 _statisticsStore = ResultStatisticsDataStore.Instance;
+                _windowConfig = CycleTimeStatisticsWindowConfig.Instance;
                 _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
             }
             else
@@ -91,6 +104,7 @@ namespace ProjectARVRPro
             }
             InitializeComponent();
             this.ApplyCaption();
+            _windowConfig?.SetWindow(this);
             if (offlineSource != null)
             {
                 Title = $"结果统计 · {offlineSource.Label} · 只读";
@@ -136,6 +150,12 @@ namespace ProjectARVRPro
             CaptureSearchState();
             if (_restoringSearchState || !_windowLoaded)
                 return;
+
+            if (_windowConfig != null && _windowConfig.EnableCombinedStatistics != IsCombinedStatisticsEnabled)
+            {
+                _windowConfig.EnableCombinedStatistics = IsCombinedStatisticsEnabled;
+                ConfigService.Instance.Save<CycleTimeStatisticsWindowConfig>();
+            }
 
             ++_homeLoadVersion;
             if (IsCombinedStatisticsEnabled)
@@ -419,7 +439,7 @@ namespace ProjectARVRPro
             RecordAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.RecordAnchorDate);
             SnFilter.Text = _windowState.RecordSn ?? string.Empty;
             ResultFilter.SelectedIndex = Math.Clamp(_windowState.RecordResultIndex, 0, 2);
-            EnableCombinedStatisticsCheckBox.IsChecked = _windowState.EnableCombinedStatistics;
+            EnableCombinedStatisticsCheckBox.IsChecked = _windowConfig?.EnableCombinedStatistics == true;
             CombinedPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.CombinedPeriodMode);
             CombinedAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.CombinedAnchorDate);
             CombinedSnFilter.Text = _windowState.CombinedSn ?? string.Empty;
@@ -447,7 +467,6 @@ namespace ProjectARVRPro
             _windowState.RecordAnchorDate = (RecordAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
             _windowState.RecordSn = SnFilter.Text?.Trim() ?? string.Empty;
             _windowState.RecordResultIndex = Math.Clamp(ResultFilter.SelectedIndex, 0, 2);
-            _windowState.EnableCombinedStatistics = IsCombinedStatisticsEnabled;
             _windowState.CombinedPeriodMode = GetSelectedPeriodMode(CombinedPeriodMode);
             _windowState.CombinedAnchorDate = (CombinedAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
             _windowState.CombinedSn = CombinedSnFilter.Text?.Trim() ?? string.Empty;

@@ -13,6 +13,7 @@ using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Controls;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -680,22 +681,10 @@ namespace ProjectARVRPro
             {
                 try
                 {
-                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                    string msg;
-                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                    {
-                        msg = $"正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
-                    }
-                    else
-                    {
-                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        msg = $"上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
-                    }
-                    logTextBox.Text = msg;
+                    // A timer callback already queued on the dispatcher must not replace a final error.
+                    if (_isDisposed || !stopwatch.IsRunning || ExecutionStatus.Status.Kind != FlowExecutionStatusKind.Running)
+                        return;
+                    ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, Msg1, stopwatch.ElapsedMilliseconds, LastFlowTime);
                 }
                 catch
                 {
@@ -786,6 +775,7 @@ namespace ProjectARVRPro
 
 
                 FlowName = flowTemplate.Key;
+                PrepareExecutionStatus();
 
                 string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                 CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
@@ -817,7 +807,6 @@ namespace ProjectARVRPro
                     RecordFlowFailure(CurrentFlowResult.Msg);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
                     TestCompleted();
                     TryCount = 0;
                     return false;
@@ -837,7 +826,6 @@ namespace ProjectARVRPro
                     RecordFlowFailure(CurrentFlowResult.Msg);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                     TestCompleted();
                     TryCount = 0;
                     return false;
@@ -1103,7 +1091,6 @@ namespace ProjectARVRPro
                 SaveObjectiveTestResultRecord(CurrentFlowResult);
             }
 
-            logTextBox.Text = FlowName + Environment.NewLine + message;
             log.ErrorFormat("流程启动失败 => flow={0}, code={1}, reason={2}", FlowName, CurrentFlowResult.Code, message);
             if (persistResult)
             {
@@ -1174,6 +1161,7 @@ namespace ProjectARVRPro
             }
             ObjectiveTestResult.TotalResult = false;
             ObjectiveTestResult.Msg = _firstFlowFailure?.Message ?? failureMessage;
+            ShowExecutionResult(code == -2 ? "OverTime" : failureMessage == "测试已取消" ? "Canceled" : "Failed", failureMessage);
         }
 
         private void TryAttachCapturedImage(ProjectARVRReuslt result)
@@ -1260,7 +1248,7 @@ namespace ProjectARVRPro
             await FinalizeCurrentFlowRunAsync(FlowControlData);
             flowFinalizeStopwatch.Stop();
             _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
-            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+            ShowExecutionResult(FlowControlData.EventName, FlowControlData.Params);
 
             if (FlowControlData.EventName == "Completed")
             {
@@ -1338,7 +1326,7 @@ namespace ProjectARVRPro
 
                 ViewResultManager.Save(CurrentFlowResult);
                 SaveObjectiveTestResultRecord(CurrentFlowResult);
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + CurrentFlowResult.Msg;
+                ShowExecutionResult(FlowControlData.EventName, CurrentFlowResult.Msg);
 
                 TryCount = 0;
 
@@ -2372,6 +2360,11 @@ namespace ProjectARVRPro
             log.Info("结果截图缓存已释放；若正在后台使用，将在归还时释放。");
         }
 
+        private void OpenLocalCacheManager_Click(object sender, RoutedEventArgs e)
+        {
+            ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow();
+        }
+
         private async Task ExportImagesAsync(
             ImageViewSnapshot? snapshot,
             bool saveResultImage,
@@ -2675,6 +2668,7 @@ namespace ProjectARVRPro
                     };
                     ApplyPendingSwitchTiming(CurrentFlowResult);
                     FlowName = CurrentFlowResult.Model;
+                    PrepareExecutionStatus();
                     string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
@@ -2714,7 +2708,6 @@ namespace ProjectARVRPro
                         CurrentFlowResult.Msg = "PictureSwitchFailed";
                         await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
-                        logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
                         ViewResultManager.Save(CurrentFlowResult);
                         SaveObjectiveTestResultRecord(CurrentFlowResult);
                         lastPersistedRunAllResult = CurrentFlowResult;
@@ -2739,7 +2732,6 @@ namespace ProjectARVRPro
                         CurrentFlowResult.Msg = "PreProcessFailed";
                         await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg);
-                        logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
                         ViewResultManager.Save(CurrentFlowResult);
                         SaveObjectiveTestResultRecord(CurrentFlowResult);
                         lastPersistedRunAllResult = CurrentFlowResult;
@@ -2818,7 +2810,7 @@ namespace ProjectARVRPro
                     await FinalizeCurrentFlowRunAsync(flowResult);
                     flowFinalizeStopwatch.Stop();
                     _currentFlowFinalizeMilliseconds = Math.Max(0, flowFinalizeStopwatch.ElapsedMilliseconds);
-                    logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName;
+                    ShowExecutionResult(flowResult.EventName, flowResult.Params);
 
                     if (flowResult.EventName == "Completed")
                     {
@@ -2839,7 +2831,7 @@ namespace ProjectARVRPro
                         await ExecuteProcessFailureAsync(meta.Process);
                         RecordFlowFailure(CurrentFlowResult.Msg, flowResult.EventName == "OverTime" ? -2 : -1);
                         TryAttachCapturedImage(CurrentFlowResult);
-                        logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName + Environment.NewLine + CurrentFlowResult.Msg;
+                        ShowExecutionResult(flowResult.EventName, CurrentFlowResult.Msg);
                         ViewResultManager.Save(CurrentFlowResult);
                         SaveObjectiveTestResultRecord(CurrentFlowResult);
                         lastPersistedRunAllResult = CurrentFlowResult;

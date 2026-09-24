@@ -264,7 +264,6 @@ public sealed class ResultStatisticsTests
             RecordAnchorDate = new DateTime(2026, 7, 20),
             RecordSn = "SN-123",
             RecordResultIndex = 2,
-            EnableCombinedStatistics = true,
             CombinedPeriodMode = ResultStatisticsPeriodMode.Month,
             CombinedAnchorDate = new DateTime(2026, 5, 1),
             CombinedSn = "BODY-123",
@@ -284,7 +283,6 @@ public sealed class ResultStatisticsTests
         Assert.Equal(state.RecordAnchorDate, restored.RecordAnchorDate);
         Assert.Equal(state.RecordSn, restored.RecordSn);
         Assert.Equal(state.RecordResultIndex, restored.RecordResultIndex);
-        Assert.Equal(state.EnableCombinedStatistics, restored.EnableCombinedStatistics);
         Assert.Equal(state.CombinedPeriodMode, restored.CombinedPeriodMode);
         Assert.Equal(state.CombinedAnchorDate, restored.CombinedAnchorDate);
         Assert.Equal(state.CombinedSn, restored.CombinedSn);
@@ -387,6 +385,19 @@ public sealed class ResultStatisticsTests
         ProjectARVRProConfig recreated = JsonConvert.DeserializeObject<ProjectARVRProConfig>(savedConfiguration, settings)!;
         Assert.NotSame(firstAccess, recreated.ResultStatisticsWindowState);
         AssertDefaultStatisticsState(recreated.ResultStatisticsWindowState, today);
+    }
+
+    [Fact]
+    public void StatisticsWindowConfigPersistsCombinedPreferenceIndependently()
+    {
+        var configuration = new CycleTimeStatisticsWindowConfig { EnableCombinedStatistics = true };
+
+        string json = JsonConvert.SerializeObject(configuration);
+        CycleTimeStatisticsWindowConfig restored = JsonConvert.DeserializeObject<CycleTimeStatisticsWindowConfig>(json)!;
+
+        Assert.True(restored.EnableCombinedStatistics);
+        Assert.DoesNotContain(nameof(ProjectARVRProConfig.ResultStatisticsWindowState), json, StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(CycleTimeStatisticsWindowConfig.EnableCombinedStatistics), JsonConvert.SerializeObject(new ResultStatisticsWindowState()), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1092,7 +1103,6 @@ public sealed class ResultStatisticsTests
         Assert.Equal(today, state.RecordAnchorDate);
         Assert.Empty(state.RecordSn);
         Assert.Equal(0, state.RecordResultIndex);
-        Assert.False(state.EnableCombinedStatistics);
         Assert.Equal(ResultStatisticsPeriodMode.Day, state.CombinedPeriodMode);
         Assert.Equal(today, state.CombinedAnchorDate);
         Assert.Empty(state.CombinedSn);

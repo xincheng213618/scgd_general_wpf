@@ -560,7 +560,6 @@ namespace ProjectARVRPro
 
     public sealed class ResultStatisticsDataStore
     {
-        private const string TableName = "ObjectiveTestResultRecord";
         private static readonly Lazy<ResultStatisticsDataStore> LazyInstance = new(() => new ResultStatisticsDataStore());
         private readonly string? _databasePath;
         private readonly ReadOnlySqliteDatabase? _readOnlyDatabase;
@@ -599,17 +598,7 @@ namespace ProjectARVRPro
                 using SqlSugarClient db = CreateClient();
                 db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
                 db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
-                db.CodeFirst.InitTables<ObjectiveTestResultRecord, ProjectARVRReuslt>();
-                ResultJsonPayloadStorage.EnsureSchema(db);
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_SN\" ON \"{TableName}\" (\"SN\");");
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_CreateTime\" ON \"{TableName}\" (\"CreateTime\");");
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_UpdateTime\" ON \"{TableName}\" (\"UpdateTime\");");
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_TotalResult\" ON \"{TableName}\" (\"TotalResult\");");
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_IsFinalized_UpdateTime\" ON \"{TableName}\" (\"IsFinalized\", \"UpdateTime\");");
-                db.Ado.ExecuteCommand($"CREATE INDEX IF NOT EXISTS \"IX_{TableName}_Statistics\" ON \"{TableName}\" (\"IsFinalized\", \"UpdateTime\", \"CreateTime\", \"TotalResult\");");
-                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_CreateTime\" ON \"ARVRReuslt\" (\"CreateTime\");");
-                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_CreateTime\" ON \"ARVRReuslt\" (\"SN\", \"CreateTime\");");
-                db.Ado.ExecuteCommand("CREATE INDEX IF NOT EXISTS \"IX_ARVRReuslt_SN_Id\" ON \"ARVRReuslt\" (\"SN\", \"Id\");");
+                ResultSqliteSchema.EnsureCreated(db);
                 _schemaInitialized = true;
             }
         }

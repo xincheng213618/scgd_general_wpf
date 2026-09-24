@@ -152,7 +152,7 @@
                 <Button Content="打开现场数据" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="OpenOfflineData_Click" ToolTip="打开反馈 ZIP 或 ProjectARVRPro.db，自动加载配套数据库"/>
                 <Button Content="打开资料文件夹" Margin="6,0,0,0" Style="{StaticResource CompactQueryButton}" Click="OpenOfflineFolder_Click"/>
             </StackPanel>
-            <TextBlock x:Name="DataSourceText" Text="数据来源：本机运行数据" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            <TextBlock x:Name="DataSourceText" Text="本机运行数据" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </DockPanel>
         <TabControl Grid.Row="1" x:Name="StatisticsTabs" Background="Transparent" BorderThickness="0" SelectionChanged="StatisticsTabs_SelectionChanged">
             <TabItem Header="首页">

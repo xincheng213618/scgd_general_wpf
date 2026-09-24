@@ -323,9 +323,7 @@ namespace ProjectARVRPro
             });
             _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
             _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
-            // 确保表存在
-            _db.CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>();
-            ResultJsonPayloadStorage.EnsureSchema(_db);
+            ResultSqliteSchema.EnsureCreated(_db);
             LoadAll(Config.Count);
         }
         public void Query()

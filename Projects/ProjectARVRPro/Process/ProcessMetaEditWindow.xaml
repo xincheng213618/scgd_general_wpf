@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="流程项" Height="660" Width="1180" MinHeight="580" MinWidth="980"
-        Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
+        Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}" Loaded="Window_Loaded">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
@@ -14,11 +15,13 @@
         </Style>
 
         <Style x:Key="PanelTitleStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
 
         <Style x:Key="TemplateItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Margin" Value="0 2"/>
@@ -46,6 +49,7 @@
         </Style>
 
         <Style x:Key="FilterItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Margin" Value="0 0 7 7"/>
@@ -72,6 +76,7 @@
         </Style>
 
         <Style x:Key="TypeCardItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
@@ -99,6 +104,7 @@
         </Style>
 
         <Style x:Key="EditChoiceButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="Width" Value="238"/>
             <Setter Property="MinHeight" Value="112"/>
             <Setter Property="Margin" Value="7"/>
@@ -268,7 +274,8 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel ToolTip="{Binding Description}">
-                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource GlobalTextBrush}"
+                                                   FontWeight="SemiBold" FontSize="14"/>
                                         <TextBlock Text="{Binding Capabilities}"
                                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                                    FontSize="11" Margin="0 7 0 0" TextWrapping="Wrap" MaxHeight="32"/>

@@ -1,0 +1,88 @@
+<UserControl x:Class="ColorVision.UI.Controls.FlowExecutionStatus"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ColorVision.UI.Controls"
+             x:Name="StatusControl" MinHeight="36" FontSize="13"
+             Foreground="{DynamicResource GlobalTextBrush}">
+    <UserControl.Resources>
+        <Style x:Key="StatusAction" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ActionBorder" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ActionBorder" Property="Background" Value="{DynamicResource ButtonBackground}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ActionBorder" Property="Background" Value="{DynamicResource ButtonBackground}" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="LayoutRoot" DataContext="{Binding Status, ElementName=StatusControl}" SizeChanged="LayoutRoot_SizeChanged">
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10,3,4,3" MinHeight="36">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="0,0,10,0" ToolTip="{Binding Label}">
+                        <TextBlock x:Name="StateIcon" FontFamily="Segoe MDL2 Assets" FontSize="14" Width="16" TextAlignment="Center" Margin="0,0,6,0" VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="&#xE9F5;" />
+                                    <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:FlowExecutionStatusKind.Running}"><Setter Property="Text" Value="&#xE916;" /><Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:FlowExecutionStatusKind.Completed}"><Setter Property="Text" Value="&#xE73E;" /><Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:FlowExecutionStatusKind.Failed}"><Setter Property="Text" Value="&#xEA39;" /><Setter Property="Foreground" Value="{DynamicResource DangerBrush}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:FlowExecutionStatusKind.Canceled}"><Setter Property="Text" Value="&#xE711;" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="StateLabel" Text="{Binding Label}" FontWeight="SemiBold" Foreground="{Binding Foreground, ElementName=StateIcon}" VerticalAlignment="Center" LineHeight="20" LineStackingStrategy="BlockLineHeight" />
+                    </StackPanel>
+                    <TextBlock x:Name="MessageText" Grid.Column="1" Text="{Binding Message}" ToolTip="{Binding Details}" VerticalAlignment="Top" TextTrimming="CharacterEllipsis" LineHeight="20" LineStackingStrategy="BlockLineHeight">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="NoWrap" />
+                                <Setter Property="MaxHeight" Value="40" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static local:FlowExecutionStatusKind.Failed}"><Setter Property="TextWrapping" Value="Wrap" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+                <TextBlock x:Name="ElapsedText" Grid.Column="1" Text="{Binding ElapsedText}" Opacity="0.65" FontSize="12" Margin="14,0,6,0" VerticalAlignment="Center" />
+                <Button x:Name="DetailsButton" Grid.Column="2" Content="详情" Style="{StaticResource StatusAction}" Click="Details_Click" Margin="4,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="查看完整执行信息" />
+            </Grid>
+        </Border>
+        <Popup x:Name="DetailsPopup" PlacementTarget="{Binding ElementName=LayoutRoot}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" Opened="DetailsPopup_Opened" Closed="DetailsPopup_Closed">
+            <Border x:Name="DetailsSurface" Width="460" Margin="0,4,0,0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14" PreviewKeyDown="Details_PreviewKeyDown" DataContext="{Binding Status, ElementName=StatusControl}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Content="关闭" Style="{StaticResource StatusAction}" Click="CloseDetails_Click" />
+                        <Button x:Name="CopyButton" DockPanel.Dock="Right" Content="复制" Style="{StaticResource StatusAction}" Click="CopyDetails_Click" />
+                        <TextBlock Text="执行详情" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" />
+                    </DockPanel>
+                    <TextBox x:Name="DetailsText" Text="{Binding Details, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MinHeight="80" MaxHeight="240" Padding="0" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" />
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>
