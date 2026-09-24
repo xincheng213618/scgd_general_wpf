@@ -510,4 +510,14 @@
   <data name="ClearAllServiceLogsToolTip" xml:space="preserve">
     <value>清空全部 CVWindowsService 日誌；執行中的服務會短暫停止並恢復</value>
   </data>
+  <data name="MySqlPrerequisiteTitle" xml:space="preserve">
+    <value>MySQL 執行環境檢查</value>
+  </data>
+  <data name="MySqlVc2013Required" xml:space="preserve">
+    <value>MySQL {0} 需要 Microsoft Visual C++ 2013 x64 執行階段，但此電腦未偵測到。
+請在「服務安裝管理」視窗下載或選擇 VC++ 2013 x64 安裝程式並安裝，然後重試。僅安裝 x86 版本無法滿足需求。</value>
+  </data>
+  <data name="MySqlVersionUnreadable" xml:space="preserve">
+    <value>無法讀取所選 MySQL 的版本，已停止操作。請選擇原安裝目錄中的 bin\mysqld.exe，或包含該程式的有效 MySQL ZIP 安裝套件。</value>
+  </data>
 </root>

@@ -224,7 +224,7 @@ namespace WindowsServicePlugin.ServiceManager
             manager.RefreshAll();
             IsMySqlInstallVisible = !manager.MySqlManager.Config.IsInstalled;
             IsMqttInstallVisible = !manager.MqttManager.Config.IsInstalled;
-            IsVc2013InstallVisible = !IsVc2013RuntimeInstalled();
+            IsVc2013InstallVisible = !MySqlRuntimePrerequisite.IsVc2013Installed();
             if (!IsMySqlInstallVisible) InstallMySqlChecked = false;
             if (!IsMqttInstallVisible) InstallMqttChecked = false;
             if (!IsVc2013InstallVisible) InstallVc2013Checked = false;

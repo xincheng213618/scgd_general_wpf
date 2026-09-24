@@ -27,6 +27,9 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在安装 MySQL...");
             try
             {
+                if (!await CheckMySqlRuntimeAsync(dlg.FileName))
+                    return;
+
                 bool result = await MySqlManager.InstallFromZipViaServiceHostAsync(dlg.FileName, basePath, log.Info);
                 if (result)
                 {
@@ -50,6 +53,10 @@ namespace WindowsServicePlugin.ServiceManager
             SetBusy(true, "正在通过后台服务注册 MySQL 服务...");
             try
             {
+                if (!MySqlManager.ResolveSavedMySqlBasePath(log.Info)
+                    || !await CheckMySqlRuntimeAsync(MySqlManager.Helper.MysqldExePath))
+                    return;
+
                 bool ok = await MySqlManager.RegisterExistingServiceViaServiceHostAsync(log.Info).ConfigureAwait(true);
                 if (ok)
                 {
@@ -66,6 +73,18 @@ namespace WindowsServicePlugin.ServiceManager
                 SetBusy(false);
                 RefreshAll();
             }
+        }
+
+        private async Task<bool> CheckMySqlRuntimeAsync(string mysqlPath)
+        {
+            string? message = await Task.Run(() => MySqlRuntimePrerequisite.GetValidationMessage(
+                MySqlRuntimePrerequisite.ReadVersion(mysqlPath), MySqlRuntimePrerequisite.IsVc2013Installed()));
+            if (message == null)
+                return true;
+
+            log.Info(message);
+            ShowUiMessage(message, Properties.Resources.MySqlPrerequisiteTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
         }
 
         private async Task StartMySqlAsync()

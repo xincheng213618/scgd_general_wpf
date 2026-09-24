@@ -510,4 +510,14 @@
   <data name="ClearAllServiceLogsToolTip" xml:space="preserve">
     <value>Clear all CVWindowsService logs; running services are briefly stopped and restored</value>
   </data>
+  <data name="MySqlPrerequisiteTitle" xml:space="preserve">
+    <value>MySQL prerequisites</value>
+  </data>
+  <data name="MySqlVc2013Required" xml:space="preserve">
+    <value>MySQL {0} requires Microsoft Visual C++ 2013 x64, which was not detected on this computer.
+Download or select and install the VC++ 2013 x64 runtime in the service installation window, then retry. The x86 runtime alone is not sufficient.</value>
+  </data>
+  <data name="MySqlVersionUnreadable" xml:space="preserve">
+    <value>The selected MySQL version could not be read. The operation has stopped. Select bin\mysqld.exe in the existing installation, or a valid MySQL ZIP package containing it.</value>
+  </data>
 </root>

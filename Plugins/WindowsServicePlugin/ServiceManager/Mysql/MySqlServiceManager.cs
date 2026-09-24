@@ -459,7 +459,7 @@ namespace WindowsServicePlugin.ServiceManager
             SaveConfig();
         }
 
-        private bool ResolveSavedMySqlBasePath(Action<string> logCallback)
+        internal bool ResolveSavedMySqlBasePath(Action<string> logCallback)
         {
             if (!string.IsNullOrWhiteSpace(Config.InstallBasePath)
                 && File.Exists(Path.Combine(Config.InstallBasePath, "bin", "mysqld.exe")))
