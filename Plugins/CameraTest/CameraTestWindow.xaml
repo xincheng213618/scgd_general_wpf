@@ -276,7 +276,7 @@
                     <Button x:Name="LowestButton" Content="定位最低值" Click="Lowest_Click" Style="{StaticResource QuietButton}" ToolTip="定位本帧当前筛选范围内、当前指标的最低可用数值；不代表判定不合格。" Margin="0,0,6,4"/>
                     <CheckBox x:Name="ShowDetails" Content="明细" Click="ShowDetails_Click" Margin="0,0,0,4"/>
                 </WrapPanel>
-                <DataGrid Grid.Row="4" x:Name="Overview" Style="{StaticResource ResultGrid}" CellStyle="{Binding CellStyle, ElementName=Metrics}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Overview_SelectionChanged" SizeChanged="Overview_SizeChanged" PreviewMouseLeftButtonUp="Overview_MouseUp" ToolTip="点击一行切换刃边，点击通道数值切换图上标注；方向键也可切换结果。">
+                <DataGrid Grid.Row="4" x:Name="Overview" Style="{StaticResource ResultGrid}" CellStyle="{Binding CellStyle, ElementName=Metrics}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" MouseDoubleClick="Result_MouseDoubleClick" PreviewKeyDown="Result_PreviewKeyDown" SelectionChanged="Overview_SelectionChanged" SizeChanged="Overview_SizeChanged" PreviewMouseLeftButtonUp="Overview_MouseUp" ToolTip="点击一行切换刃边，点击通道数值切换图上标注；方向键切换结果，双击或 Enter 查看原图、曲线与测量诊断。">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="点位" Binding="{Binding Target}" Width="*" MinWidth="64" ElementStyle="{StaticResource MetricText}"/>
                         <DataGridTextColumn Header="边" Binding="{Binding EdgeLabel}" Width="32" ElementStyle="{StaticResource MetricText}"/>
@@ -286,7 +286,7 @@
                         <DataGridTextColumn x:Name="OverviewB" Header="B" Binding="{Binding B}" SortMemberPath="BValue" Width="62" ElementStyle="{StaticResource BMetricText}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <DataGrid Grid.Row="4" x:Name="Metrics" Visibility="Collapsed" Style="{StaticResource ResultGrid}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="Metrics_SelectionChanged" EnableRowVirtualization="True">
+                <DataGrid Grid.Row="4" x:Name="Metrics" Visibility="Collapsed" Style="{StaticResource ResultGrid}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" MouseDoubleClick="Result_MouseDoubleClick" PreviewKeyDown="Result_PreviewKeyDown" ToolTip="双击或 Enter 查看本次结果详情，不重新计算。" SelectionChanged="Metrics_SelectionChanged" EnableRowVirtualization="True">
                     <DataGrid.CellStyle>
                         <Style TargetType="DataGridCell">
                             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>

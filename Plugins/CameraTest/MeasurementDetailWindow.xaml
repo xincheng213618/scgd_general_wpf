@@ -1,0 +1,62 @@
+<Window x:Class="CameraTest.MeasurementDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sfr="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;assembly=ColorVision.ImageEditor"
+        Title="SFR 结果详情" Width="1180" Height="850" MinWidth="960" MinHeight="700"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource PrimaryTextBrush}">
+    <Window.Resources>
+        <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/></Style>
+        <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="{DynamicResource CV.Surface.Alternate}"/><Setter Property="Padding" Value="12,8"/><Setter Property="Margin" Value="0,0,8,0"/><Setter Property="CornerRadius" Value="4"/></Style>
+        <Style x:Key="Value" TargetType="TextBlock"><Setter Property="FontSize" Value="23"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+        <Style x:Key="Label" TargetType="TextBlock"><Setter Property="FontSize" Value="11"/><Setter Property="Opacity" Value="0.7"/></Style>
+    </Window.Resources>
+    <Grid Margin="16">
+        <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid MinHeight="{Binding ViewportHeight, ElementName=DetailScroll}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="查看通道" VerticalAlignment="Center" Margin="0,0,8,0"/><ComboBox x:Name="ChannelSelector" Width="92" SelectionChanged="Channel_Changed"/></StackPanel>
+            <StackPanel><TextBlock x:Name="IdentityText" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="本次结果快照 · 切换通道只查看已有结果" Style="{StaticResource Label}" Margin="0,4,0,0"/></StackPanel>
+        </DockPanel>
+        <UniformGrid Grid.Row="1" Rows="1" Margin="0,0,0,10">
+            <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="MTF50 · cy/pixel" Style="{StaticResource Label}"/><TextBlock x:Name="Mtf50Value" Style="{StaticResource Value}"/></StackPanel></Border>
+            <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="MTF10 · cy/pixel" Style="{StaticResource Label}"/><TextBlock x:Name="Mtf10Value" Style="{StaticResource Value}"/></StackPanel></Border>
+            <Border Style="{StaticResource Card}"><StackPanel><TextBlock x:Name="FrequencyLabel" Style="{StaticResource Label}"/><TextBlock x:Name="FrequencyValue" Style="{StaticResource Value}"/></StackPanel></Border>
+            <Border Style="{StaticResource Card}" Margin="0"><StackPanel><TextBlock Text="MTF @ Nyquist · 0.5 cy/pixel" Style="{StaticResource Label}"/><TextBlock x:Name="NyquistValue" Style="{StaticResource Value}"/></StackPanel></Border>
+        </UniformGrid>
+        <Border Grid.Row="2" Background="{DynamicResource CV.Surface.Alternate}" CornerRadius="4" Padding="10,7" Margin="0,0,0,10"><TextBlock x:Name="DiagnosticText" TextWrapping="Wrap"/></Border>
+        <Grid Grid.Row="3" MinHeight="330">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock x:Name="PreviewTitle" FontWeight="SemiBold" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <Border Grid.Row="1" Background="#202328" CornerRadius="4" ClipToBounds="True">
+                    <Viewbox Margin="8" Stretch="Uniform"><Canvas x:Name="RoiCanvas" ClipToBounds="True"><Image x:Name="RoiImage" RenderOptions.BitmapScalingMode="NearestNeighbor"/><Line x:Name="FitLine" Stroke="OrangeRed" Visibility="Collapsed"/></Canvas></Viewbox>
+                </Border>
+                <TextBlock x:Name="ConditionsText" Grid.Row="2" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="11"/>
+            </Grid>
+            <Grid Grid.Column="2"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid Margin="0,0,0,8"><sfr:SfrSimplePlotControl x:Name="MtfPlot"/><Border x:Name="UnavailablePlot" Background="{DynamicResource GlobalBackground}" Visibility="Collapsed"><TextBlock Text="该通道没有可用曲线&#10;原因见上方诊断，可展开查看测量质量" TextAlignment="Center" TextWrapping="Wrap" VerticalAlignment="Center" Margin="24"/></Border></Grid>
+                <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <sfr:SfrSimplePlotControl x:Name="EsfPlot" Margin="0,0,4,0"/><sfr:SfrSimplePlotControl Grid.Column="1" x:Name="LsfPlot" Margin="4,0,0,0"/>
+                </Grid>
+            </Grid>
+        </Grid>
+        <Expander x:Name="QualityExpander" Grid.Row="4" Header="测量质量与计算条件" Margin="0,10,0,0">
+            <StackPanel><DataGrid x:Name="QualityGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="None" MaxHeight="150" Margin="0,8,0,6">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="通道" Binding="{Binding Channel}" Width="65"/>
+                    <DataGridTextColumn Header="跨度" Binding="{Binding Contrast}" Width="90"/>
+                    <DataGridTextColumn Header="信噪比" Binding="{Binding Snr}" Width="90"/>
+                    <DataGridTextColumn Header="倾角 (°)" Binding="{Binding Angle}" Width="90"/>
+                    <DataGridTextColumn Header="拟合残差 (px)" Binding="{Binding FitRms}" Width="115"/>
+                    <DataGridTextColumn Header="采样覆盖率" Binding="{Binding Coverage}" Width="100"/>
+                    <DataGridTextColumn Header="端点像素" Binding="{Binding Clipped}" Width="95"/>
+                    <DataGridTextColumn Header="状态" Binding="{Binding State}" Width="*" MinWidth="160"/>
+                </DataGrid.Columns>
+            </DataGrid><TextBlock x:Name="LimitsText" TextWrapping="Wrap" FontSize="11"/></StackPanel>
+        </Expander>
+        <DockPanel Grid.Row="5" Margin="0,10,0,0"><Button DockPanel.Dock="Right" Content="关闭" Click="Close_Click" IsCancel="True" Padding="20,5"/><TextBlock Text="MTF50 / MTF10 为阈值交点频率。ESF 为边缘过渡，LSF 为计算使用的加窗导数。质量有效不等于产品合格。" Style="{StaticResource Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/></DockPanel>
+        </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>
