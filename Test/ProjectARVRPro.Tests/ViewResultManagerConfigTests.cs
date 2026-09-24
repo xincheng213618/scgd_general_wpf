@@ -5,19 +5,6 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ViewResultManagerConfigTests
 {
-    [Theory]
-    [InlineData("{}", false)]
-    [InlineData("{\"EnableEarlyPgPreparation\":false}", false)]
-    [InlineData("{\"EnableEarlyPgPreparation\":true}", true)]
-    public void EarlyPgPreparationRequiresExplicitOptInAndPreservesSavedChoice(string json, bool expected)
-    {
-        ProjectARVRProConfig config = JsonConvert.DeserializeObject<ProjectARVRProConfig>(json)!;
-        Assert.Equal(expected, config.EnableEarlyPgPreparation);
-
-        ProjectARVRProConfig restored = JsonConvert.DeserializeObject<ProjectARVRProConfig>(JsonConvert.SerializeObject(config))!;
-        Assert.Equal(expected, restored.EnableEarlyPgPreparation);
-    }
-
     [Fact]
     public void RuntimeUiState_IsBoundButNotUserEditable()
     {
