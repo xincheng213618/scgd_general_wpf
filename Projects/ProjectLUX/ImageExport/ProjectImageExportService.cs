@@ -142,15 +142,21 @@ internal static class ProjectImageExportService
         return directory;
     }
 
-    internal static string BuildResultFileStem(string sourceFileName, string? model)
+    internal static string BuildResultFileStem(string sourceFileName, string? model, bool useFlowName)
     {
+        if (useFlowName)
+            return SanitizePathSegment(model, "image");
+
         string sourceStem = SanitizePathSegment(Path.GetFileNameWithoutExtension(sourceFileName), "image");
         string modelStem = SanitizePathSegment(model);
         return $"{sourceStem}_{modelStem}result";
     }
 
-    internal static string BuildSourceFileStem(string sourceFileName, string? model)
+    internal static string BuildSourceFileStem(string sourceFileName, string? model, bool useFlowName)
     {
+        if (useFlowName)
+            return $"{SanitizePathSegment(model, "image")}_source";
+
         string sourceStem = SanitizePathSegment(Path.GetFileNameWithoutExtension(sourceFileName), "image");
         string modelStem = SanitizePathSegment(model);
         return $"{sourceStem}_{modelStem}source";

@@ -35,34 +35,31 @@ namespace ProjectLUX.Process.OpticCenter
                         if (details.Count == 1)
                         {
                             var find = new FindCrossDetailViewReslut(details[0]);
-                            if (master.TName == "optCenter")
-                            {
-                                // 先应用修正系数（保留你原有的三行）
-                                find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.OptCenterXTilt;
-                                find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
-                                find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
+                            // 先应用修正系数（保留你原有的三行）
+                            find.FindCrossResult.result[0].tilt.tilt_x *= fixConfig.OptCenterXTilt;
+                            find.FindCrossResult.result[0].tilt.tilt_y *= fixConfig.OptCenterYTilt;
+                            find.FindCrossResult.result[0].rotationAngle *= fixConfig.OptCenterRotation;
 
-                                // OptCenterXTilt
-                                testResult.OptCenterXTilt.Value = find.FindCrossResult.result[0].tilt.tilt_x;
-                                testResult.OptCenterXTilt.LowLimit = recipeConfig.OptCenterXTilt.Min;
-                                testResult.OptCenterXTilt.UpLimit = recipeConfig.OptCenterXTilt.Max;
-                                testResult.OptCenterXTilt.TestValue = testResult.OptCenterXTilt.Value.ToString("F4");
-                                ctx.Result.Result &= testResult.OptCenterXTilt.TestResult;
+                            // OptCenterXTilt
+                            testResult.OptCenterXTilt.Value = find.FindCrossResult.result[0].tilt.tilt_x;
+                            testResult.OptCenterXTilt.LowLimit = recipeConfig.OptCenterXTilt.Min;
+                            testResult.OptCenterXTilt.UpLimit = recipeConfig.OptCenterXTilt.Max;
+                            testResult.OptCenterXTilt.TestValue = testResult.OptCenterXTilt.Value.ToString("F4");
+                            ctx.Result.Result &= testResult.OptCenterXTilt.TestResult;
 
-                                // OptCenterYTilt
-                                testResult.OptCenterYTilt.Value = find.FindCrossResult.result[0].tilt.tilt_y;
-                                testResult.OptCenterYTilt.LowLimit = recipeConfig.OptCenterYTilt.Min;
-                                testResult.OptCenterYTilt.UpLimit = recipeConfig.OptCenterYTilt.Max;
-                                testResult.OptCenterYTilt.TestValue = testResult.OptCenterYTilt.Value.ToString("F4");
-                                ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
+                            // OptCenterYTilt
+                            testResult.OptCenterYTilt.Value = find.FindCrossResult.result[0].tilt.tilt_y;
+                            testResult.OptCenterYTilt.LowLimit = recipeConfig.OptCenterYTilt.Min;
+                            testResult.OptCenterYTilt.UpLimit = recipeConfig.OptCenterYTilt.Max;
+                            testResult.OptCenterYTilt.TestValue = testResult.OptCenterYTilt.Value.ToString("F4");
+                            ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
 
-                                // OptCenterRotation
-                                testResult.OptCenterRotation.Value = find.FindCrossResult.result[0].rotationAngle;
-                                testResult.OptCenterRotation.LowLimit = recipeConfig.OptCenterRotation.Min;
-                                testResult.OptCenterRotation.UpLimit = recipeConfig.OptCenterRotation.Max;
-                                testResult.OptCenterRotation.TestValue = testResult.OptCenterRotation.Value.ToString("F4");
-                                ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
-                            }
+                            // OptCenterRotation
+                            testResult.OptCenterRotation.Value = find.FindCrossResult.result[0].rotationAngle;
+                            testResult.OptCenterRotation.LowLimit = recipeConfig.OptCenterRotation.Min;
+                            testResult.OptCenterRotation.UpLimit = recipeConfig.OptCenterRotation.Max;
+                            testResult.OptCenterRotation.TestValue = testResult.OptCenterRotation.Value.ToString("F4");
+                            ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
                         }
                     }
                 }

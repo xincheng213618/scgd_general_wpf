@@ -14,6 +14,7 @@ using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Controls;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -308,23 +309,9 @@ namespace ProjectLUX
 
                 try
                 {
-                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                    string msg;
-                    if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
-                    {
-                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
-                    }
-                    else
-                    {
-                        long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
-                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                        msg = $"{FlowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
-                    }
-                    logTextBox.Text = msg;
+                    if (!stopwatch.IsRunning || ExecutionStatus.Status.Kind != FlowExecutionStatusKind.Running)
+                        return;
+                    ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, Msg1, stopwatch.ElapsedMilliseconds, LastFlowTime);
                 }
                 catch
                 {
@@ -389,6 +376,7 @@ namespace ProjectLUX
                 });
 
                 FlowName = flowName;
+                PrepareExecutionStatus();
 
                 ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
                 if (processMeta != null)
@@ -411,7 +399,7 @@ namespace ProjectLUX
                 {
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     CurrentFlowResult.Msg = "PreProcessFailed";
-                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                    ShowExecutionResult("Failed", CurrentFlowResult.Msg);
                     TryCount = 0;
                     return;
                 }
@@ -423,6 +411,7 @@ namespace ProjectLUX
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 stopwatch.Reset();
                 stopwatch.Start();
+                _hasExecutionTiming = true;
                 MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
@@ -493,7 +482,7 @@ namespace ProjectLUX
                 FlowControlData.SerialNumber,
                 FlowControlData.FlowStatus,
                 CurrentFlowResult.RunTime);
-            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+            ShowExecutionResult(FlowControlData.EventName, FlowControlData.Params);
 
             if (FlowControlData.EventName == "Completed")
             {
@@ -515,7 +504,8 @@ namespace ProjectLUX
             {
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                CurrentFlowResult.Msg = logTextBox.Text;
+                // Keep the persisted timeout message independent of the UI's localized summary.
+                CurrentFlowResult.Msg = FlowName + Environment.NewLine + FlowControlData.EventName;
                 ViewResultManager.Save(CurrentFlowResult);
 
                 flowEngine.LoadFromBase64(string.Empty);
@@ -582,7 +572,7 @@ namespace ProjectLUX
                         }
                     }
                 }
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+                ShowExecutionResult(FlowControlData.EventName, FlowControlData.Params);
                 ViewResultManager.Save(CurrentFlowResult);
                 TryCount = 0;
             }
@@ -1038,6 +1028,7 @@ namespace ProjectLUX
             SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
             string outputRoot = config.CsvSavePath;
             bool saveByDate = config.SaveByDate;
+            bool useFlowName = config.UseFlowNameForImageFiles;
             DateTime requestedAt = result.CreateTime == default ? DateTime.Now : result.CreateTime;
 
             ImageViewSnapshot? snapshot = null;
@@ -1096,6 +1087,7 @@ namespace ProjectLUX
                     result,
                     outputRoot,
                     saveByDate,
+                    useFlowName,
                     requestedAt);
                 snapshot = null;
             }
@@ -1121,6 +1113,7 @@ namespace ProjectLUX
             ProjectLUXReuslt result,
             string outputRoot,
             bool saveByDate,
+            bool useFlowName,
             DateTime requestedAt)
         {
             string? renderedFilePath = null;
@@ -1148,7 +1141,7 @@ namespace ProjectLUX
                     : result.FileName;
                 if (saveResultImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildResultFileStem(sourceName, result.Model);
+                    string fileStem = ProjectImageExportService.BuildResultFileStem(sourceName, result.Model, useFlowName);
                     renderedFilePath = ProjectImageExportService.BuildFilePath(
                         outputDirectory,
                         fileStem,
@@ -1160,7 +1153,7 @@ namespace ProjectLUX
                 }
                 if (saveSourceImage)
                 {
-                    string fileStem = ProjectImageExportService.BuildSourceFileStem(sourceName, result.Model);
+                    string fileStem = ProjectImageExportService.BuildSourceFileStem(sourceName, result.Model, useFlowName);
                     sourceFilePath = ProjectImageExportService.BuildFilePath(
                         outputDirectory,
                         fileStem,
