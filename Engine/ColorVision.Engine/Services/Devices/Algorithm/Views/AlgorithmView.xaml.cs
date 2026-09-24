@@ -368,6 +368,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var listView = IsExchange ? listView1 : listViewSide;
 
             listView.Width = ListCol2.ActualWidth;
+            SideTextBox.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
