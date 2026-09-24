@@ -20,7 +20,9 @@ namespace ProjectARVRPro.Process.W255
         /// <summary>亮度均匀性，通常按最小亮度/最大亮度*100% 计算，单位 %，越高越均匀。</summary>
         public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem { Name = "Luminance_Uniformity(min/max*100%)", Unit = "%" };
         /// <summary>色度均匀性，通常取最大 Delta u'v'，越小越均匀。</summary>
-        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem { Name = "Color_Uniformity(Δu'v'max)" };
+        public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem { Name = "Conlor_Uniformity(Δu'v'max)" };
+        /// <summary>有效 POI 相对 D65 的均方根色度距离。</summary>
+        public ObjectiveTestItem ColorCenterRmsToD65 { get; set; } = new ObjectiveTestItem { Name = "Color_Center_RMS_To_D65(Δu'v')" };
         /// <summary>中心相关色温 CCT，单位 K。</summary>
         public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem { Name = "Center_Correlated_Color_Temperature", Unit = "K" };
         /// <summary>中心点亮度，单位 cd/m^2。</summary>

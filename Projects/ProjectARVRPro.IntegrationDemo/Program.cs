@@ -1038,6 +1038,8 @@ namespace ProjectARVRPro.IntegrationDemo
                 return "亮度均匀性，通常按最小亮度/最大亮度*100% 计算，数值越高表示亮度越均匀。";
             if (Contains(key, itemKey, "ColorUniformity", "Color_Uniformity"))
                 return "色度均匀性，通常取各测点与中心或参考点的最大 Delta u'v'，数值越小表示颜色越均匀。";
+            if (Contains(key, itemKey, "ColorCenterRmsToD65", "Color_Center_RMS_To_D65"))
+                return "有效 POI 相对 D65 的均方根色度距离 Delta u'v'，数值越小表示色彩中心越接近 D65。";
             if (Contains(key, itemKey, "CenterCorrelatedColorTemperature", "Correlated_Color_Temperature"))
                 return "中心相关色温 CCT，表示中心点白光色温，单位 K。";
             if (Contains(key, itemKey, "CenterLunimance", "CenterLuminance", "Center_Lunimance", "CenterLuminace"))
@@ -1113,6 +1115,7 @@ namespace ProjectARVRPro.IntegrationDemo
                    "FOV / Field Of View: 视场角，Horizontal/Vertical/Diagonal 分别表示水平、垂直、对角方向，单位 degree。\r\n" +
                    "LuminanceUniformity: 亮度均匀性，通常为最小亮度/最大亮度*100%，越高越均匀。\r\n" +
                    "ColorUniformity: 色度均匀性，通常为最大 Delta u'v'，越小越均匀。\r\n" +
+                   "ColorCenterRmsToD65: 有效 POI 相对 D65 的 RMS Delta u'v'，越小越接近 D65。\r\n" +
                    "CenterLuminance: 中心点亮度，单位通常为 nit 或 cd/m^2；旧兼容字段可能拼写为 CenterLunimance。\r\n" +
                    "CIE1931 x/y: CIE 1931 色品坐标，无单位。\r\n" +
                    "CIE1976 u'/v': CIE 1976 UCS 色品坐标，无单位。\r\n" +

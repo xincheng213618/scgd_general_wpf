@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>1.0.2</VersionPrefix>
     <Product>ProjectARVRPro Integration Demo</Product>
   </PropertyGroup>
 
