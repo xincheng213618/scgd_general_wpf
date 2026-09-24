@@ -50,7 +50,7 @@
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="runtimes\win-x64\native\opencv_world401.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>	
 		</None>
