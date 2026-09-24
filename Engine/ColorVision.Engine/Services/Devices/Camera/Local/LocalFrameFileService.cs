@@ -144,7 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             float[]? exposureOverride,
             float? gainOverride)
         {
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using Stream stream = CVFileReadCache.OpenRead(filePath);
             using BinaryReader reader = new(stream);
             stream.Position = dataOffset;
             long dataLength = fileInfo.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
@@ -154,6 +154,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
+            fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
+            ColorCalibrationSnapshot? snapshot = isCie ? null : ColorCalibrationSnapshot.Read(filePath, fileInfo);
             LocalFrameMetadata metadata = new()
             {
                 Width = fileInfo.Cols,
@@ -164,6 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Gain = gainOverride ?? fileInfo.Gain,
                 Exposure = CloneExposure(exposureOverride ?? fileInfo.Exp),
                 SourceFilePath = filePath,
+                CalibrationTemplate = snapshot?.Template ?? string.Empty,
                 CaptureTime = File.GetLastWriteTime(filePath),
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
@@ -173,7 +176,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using LocalFlowFrameLease lease = frame.Acquire();
                 FlowNodeTiming.Run("ReadImageBuffer", () => CopyStreamToPointer(stream, isCie ? lease.CiePointer : lease.RawPointer, (int)dataLength));
                 if (isCie) frame.CvCieFilePath = filePath;
-                else frame.CvRawFilePath = filePath;
+                else
+                {
+                    frame.CvRawFilePath = filePath;
+                    frame.ColorCalibration = snapshot;
+                }
                 return frame;
             }
             catch

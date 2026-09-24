@@ -86,6 +86,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         private string calibTempName = string.Empty;
         private bool saveFiles;
+        private bool allowAcceleration;
 
         [Category("本地校正")]
         [STNodeProperty("校正模板", "对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传", true)]
@@ -93,8 +94,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string CalibTempName { get => calibTempName; set { calibTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
         [Category("本地校正")]
-        [STNodeProperty("保存校正文件", "默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE", true)]
+        [PropertyVisibility(nameof(AllowAcceleration), true)]
+        [STNodeProperty("保存 CIE 文件", "默认关闭；保存完整 CVCIE 文件。色度参数仍默认写入已有 CVRAW，不受此选项影响；加速模式下不保存 CIE。", true)]
         public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
+
+        [Category("本地校正")]
+        [STNodeProperty("允许加速", "开启后保留 RAW 和色度校正参数，不生成整幅 CIE 内存。本地 POI 按关注点区域计算；需要完整 CIE 的下游应关闭此项。", true)]
+        public bool AllowAcceleration { get => allowAcceleration; set { allowAcceleration = value; OnPropertyChanged(); } }
 
         [JsonIgnore]
         [CommandDisplay("校正缓存", Order = -100)]
@@ -124,7 +130,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             else
             {
-                string sourceFilePath = ResolveSourceFilePath(action, SourceImageFilePath);
+                string sourceFilePath = ResolveInputImageFilePath(action, 0, SourceImageFilePath);
                 if (string.IsNullOrWhiteSpace(sourceFilePath))
                 {
                     throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或图像节点。");
@@ -146,19 +152,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     && (!sourceFrame.HasRaw
                         || string.IsNullOrWhiteSpace(CalibTempName)
                         || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
-                if (canReuseExistingCie)
+                bool canReuseCalibratedRaw = !sourceFrame.HasCie && sourceFrame.HasRaw
+                    && sourceFrame.Metadata.IsMirrorReady && sourceFrame.ColorCalibration?.CanReplay == true
+                    && (string.IsNullOrWhiteSpace(CalibTempName)
+                        || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
+                if (canReuseExistingCie || canReuseCalibratedRaw)
                 {
+                    if (AllowAcceleration || !sourceFrame.HasCie)
+                        LocalFrameCalibrationService.ReuseColorCalibration(sourceFrame, AllowAcceleration);
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
-                    if (!outputFrame.IsCieFlipApplied)
+                    if (!outputFrame.IsFlipApplied)
                     {
                         throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
                     }
-                    if (SaveFiles && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
+                    if (SaveFiles && !AllowAcceleration && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
                     {
                         DeviceCamera device = ResolveDevice(sourceFrame.Metadata.DeviceCode);
-                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
+                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw: false);
                     }
                 }
                 else if (sourceFrame.HasRaw)
@@ -169,22 +181,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                     }
-                    bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
                     LocalFrameCalibrationService.CalibrateInPlace(
                         sourceFrame,
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         calibration.Name,
                         LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, sourceFrame.Metadata.Width, sourceFrame.Metadata.Height),
-                        ResolveZeroExposureFallback(action, sourceFrame));
+                        ResolveZeroExposureFallback(action, sourceFrame),
+                        AllowAcceleration);
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
                     calibrated = true;
-                    if (SaveFiles)
+                    if (SaveFiles && !AllowAcceleration && outputFrame.HasCie)
                     {
-                        bool includeRaw = hasBasicCalibration || string.IsNullOrWhiteSpace(outputFrame.Metadata.SourceFilePath);
-                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw);
+                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw: false);
                     }
                 }
                 else
@@ -226,9 +237,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CameraFileType? outputFileType = cieFilePath != null
                 ? CameraFileType.CIEFile
                 : rawFilePath != null ? CameraFileType.RawFile : null;
-            if (SaveFiles && outputFilePath == null)
+            if (SaveFiles && !AllowAcceleration && frame.HasCie && cieFilePath == null)
             {
-                throw new InvalidOperationException("已启用“保存校正文件”，但本地校正没有生成输出文件。");
+                throw new InvalidOperationException("已启用“保存 CIE 文件”，但本地校正没有生成 CVCIE 文件。");
             }
 
             MeasureResultImgModel model = new()
@@ -244,6 +255,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     execution.Calibrated,
                     MemoryOnly = outputFilePath == null,
                     OutputBuffer = frame.HasCie ? "CIE" : "RAW",
+                    AllowAcceleration,
                     frame.Metadata.Width,
                     frame.Metadata.Height,
                     frame.Metadata.SourceBpp,
@@ -289,6 +301,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 CalibTempName,
                 SaveFiles,
+                AllowAcceleration,
                 InputMode = "CurrentFrameThenInputFile"
             });
         }
@@ -324,35 +337,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return string.IsNullOrWhiteSpace(calibrationDeviceCode)
                 ? (ResultRoutes.Camera, cameraDeviceCode)
                 : (ResultRoutes.Calibration, calibrationDeviceCode);
-        }
-
-        private string ResolveSourceFilePath(CVStartCFC action, string imageFilePath)
-        {
-            if (!string.IsNullOrWhiteSpace(imageFilePath))
-            {
-                return Path.GetFullPath(imageFilePath.Trim());
-            }
-            if (!TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _) || masterId <= 0)
-            {
-                return string.Empty;
-            }
-            if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img
-                and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
-            {
-                throw new InvalidOperationException($"IN_IMG 接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请将图像节点连接到 IN_IMG。");
-            }
-
-            MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(masterId);
-            if (imageResult == null) return string.Empty;
-            string? firstCandidate = null;
-            foreach (string? candidate in new[] { imageResult.FileUrl, imageResult.RawFile })
-            {
-                if (string.IsNullOrWhiteSpace(candidate)) continue;
-                firstCandidate ??= candidate;
-                string fullPath = Path.GetFullPath(candidate);
-                if (File.Exists(fullPath)) return fullPath;
-            }
-            return string.IsNullOrWhiteSpace(firstCandidate) ? string.Empty : Path.GetFullPath(firstCandidate);
         }
 
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

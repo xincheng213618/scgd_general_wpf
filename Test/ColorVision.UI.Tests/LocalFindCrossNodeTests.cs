@@ -423,6 +423,7 @@ public sealed class LocalFindCrossNodeTests
         JObject detailJson = JObject.Parse(detail.ResultJson);
 
         Assert.Equal(ViewResultAlgType.FindCross, master.ImgFileType);
+        Assert.Equal("optCenter", master.TName);
         Assert.Equal("1.0", master.version);
         Assert.Equal(0, master.ResultCode);
         Assert.Equal("ok", master.Result);
@@ -434,6 +435,27 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal(4712, persistedItem["center"]?.Value<int>("x"));
         Assert.Equal(3199, persistedItem["center"]?.Value<int>("y"));
         Assert.Equal(-0.60909968614578247, persistedItem["tilt"]!.Value<double>("tilt_x"), 14);
+    }
+
+    [Theory]
+    [InlineData("Point_1")]
+    [InlineData("ImageCenter")]
+    public void SuccessfulCrossPersistenceUsesOptCenterContractWithoutRenamingTheItem(string resultName)
+    {
+        LocalFindCrossNodeItem item = new() { Name = resultName };
+        LocalFindCrossPersistenceRequest request = new()
+        {
+            Action = new CVStartCFC("cross-center"),
+            Parameters = new { Algorithm = "LocalFindCross" },
+            Result = item
+        };
+
+        AlgResultMasterModel master = LocalFindCrossResultPersistence.CreateMasterModel(request, 9);
+        JObject json = JObject.Parse(LocalFindCrossResultPersistence.BuildLegacyResultJson(item));
+
+        Assert.Equal("optCenter", master.TName);
+        Assert.Equal(resultName, Assert.Single(json["result"]!).Value<string>("name"));
+        Assert.Contains("LocalFindCross", master.Params);
     }
 
     [Fact]
@@ -461,6 +483,7 @@ public sealed class LocalFindCrossNodeTests
         Assert.Equal(308, masterId);
         Assert.Same(master, saved);
         Assert.Equal(ViewResultAlgType.FindCross, master.ImgFileType);
+        Assert.Equal("LocalFindCross", master.TName);
         Assert.Equal("1.0", master.version);
         Assert.Equal(LocalFindCrossNode.DetectionFailureResultCode, master.ResultCode);
         Assert.Equal(request.ResultDescription, master.Result);

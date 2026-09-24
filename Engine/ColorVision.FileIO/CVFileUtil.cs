@@ -66,7 +66,7 @@ namespace ColorVision.FileIO
             if (!File.Exists(filePath)) return false;
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
                     if (fs.Length < HeaderSize) return false;
@@ -85,7 +85,7 @@ namespace ColorVision.FileIO
             if (!File.Exists(filePath)) return false;
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
                     if (fs.Length < HeaderSize) return false;
@@ -129,7 +129,7 @@ namespace ColorVision.FileIO
             if (!File.Exists(filePath)) return -1;
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
                     if (fs.Length < 9) return -1;
@@ -273,7 +273,7 @@ namespace ColorVision.FileIO
         {
             try
             {
-                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (Stream fs = CVFileReadCache.OpenRead(filePath))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
                     if (fs.Length < dataStartIndex) return false;
@@ -430,7 +430,7 @@ namespace ColorVision.FileIO
         /// Header metadata is preserved in <paramref name="fileInfo"/> while
         /// <see cref="CVCIEFile.Data"/> contains only the requested channel.
         /// Unlike <see cref="Read(string, out CVCIEFile)"/>, this method does not
-        /// allocate or read the complete multi-channel payload.
+        /// allocate a complete multi-channel result. A cache miss may warm the shared file slot.
         /// </summary>
         /// <param name="filePath">Path to the CVCIE/CVRAW file.</param>
         /// <param name="channelIndex">Zero-based embedded channel index.</param>
@@ -465,7 +465,7 @@ namespace ColorVision.FileIO
                     return false;
                 }
 
-                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (Stream stream = CVFileReadCache.OpenRead(filePath))
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
                     int lengthPrefixSize = fileInfo.Version == 2 ? sizeof(long) : sizeof(int);
@@ -746,76 +746,78 @@ namespace ColorVision.FileIO
                     encoding = Encoding.UTF8;
                 }
 
-                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (BinaryWriter bw = new BinaryWriter(fs))
+                byte[] srcFileNameBytes = encoding.GetBytes(fileInfo.SrcFileName ?? string.Empty);
+                long fileLength = checked(5L + 4 + 4 + srcFileNameBytes.Length + 4 + 4 + 4L * fileInfo.Channels + 12
+                    + (fileInfo.Version == 2 ? 8 : 4) + dataLength);
+                return CVFileReadCache.WriteFile(filePath, fileLength, fs =>
                 {
-                    // Write magic header
-                    bw.Write(MagicHeader.ToCharArray());
-
-                    // Write Version
-                    bw.Write(fileInfo.Version);
-
-                    // Write source file name
-                    string srcFileName = fileInfo.SrcFileName ?? string.Empty;
-                    byte[] srcFileNameBytes = encoding.GetBytes(srcFileName);
-                    bw.Write(srcFileNameBytes.Length);
-                    if (srcFileNameBytes.Length > 0)
+                    using (BinaryWriter bw = new BinaryWriter(fs, Encoding.UTF8, true))
                     {
-                        bw.Write(srcFileNameBytes);
-                    }
+                        // Write magic header
+                        bw.Write(MagicHeader.ToCharArray());
 
-                    // Write Gain
-                    bw.Write(fileInfo.Gain);
+                        // Write Version
+                        bw.Write(fileInfo.Version);
 
-                    // Write Channels and exposure values
-                    bw.Write((uint)fileInfo.Channels);
-                    if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
-                    {
-                        for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                        // Write source file name
+                        bw.Write(srcFileNameBytes.Length);
+                        if (srcFileNameBytes.Length > 0)
                         {
-                            bw.Write(fileInfo.Exp[i]);
+                            bw.Write(srcFileNameBytes);
                         }
-                        // Fill remaining Channels with 0 if Exp array is shorter
-                        for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+
+                        // Write Gain
+                        bw.Write(fileInfo.Gain);
+
+                        // Write Channels and exposure values
+                        bw.Write((uint)fileInfo.Channels);
+                        if (fileInfo.Exp != null && fileInfo.Exp.Length > 0)
                         {
-                            bw.Write(0f);
+                            for (int i = 0; i < Math.Min(fileInfo.Channels, fileInfo.Exp.Length); i++)
+                            {
+                                bw.Write(fileInfo.Exp[i]);
+                            }
+                            // Fill remaining Channels with 0 if Exp array is shorter
+                            for (int i = fileInfo.Exp.Length; i < fileInfo.Channels; i++)
+                            {
+                                bw.Write(0f);
+                            }
                         }
-                    }
-                    else
-                    {
-                        // No exposure Data, write zeros
-                        for (int i = 0; i < fileInfo.Channels; i++)
+                        else
                         {
-                            bw.Write(0f);
+                            // No exposure Data, write zeros
+                            for (int i = 0; i < fileInfo.Channels; i++)
+                            {
+                                bw.Write(0f);
+                            }
+                        }
+
+                        // The CV file header stores width (Cols) before height (Rows).
+                        bw.Write((uint)fileInfo.Cols);
+                        bw.Write((uint)fileInfo.Rows);
+                        bw.Write((uint)fileInfo.Bpp);
+
+                        // Write Data length before allowing the caller to stream the payload.
+                        if (fileInfo.Version == 2)
+                        {
+                            bw.Write(dataLength);
+                        }
+                        else
+                        {
+                            bw.Write((int)dataLength);
+                        }
+
+                        bw.Flush();
+                        long dataStart = fs.Position;
+                        writeData(fs);
+                        bw.Flush();
+                        if (fs.Position - dataStart != dataLength)
+                        {
+                            throw new InvalidDataException(
+                                $"The CVCIE payload writer produced {fs.Position - dataStart} bytes; expected {dataLength} bytes.");
                         }
                     }
-
-                    // The CV file header stores width (Cols) before height (Rows).
-                    bw.Write((uint)fileInfo.Cols);
-                    bw.Write((uint)fileInfo.Rows);
-                    bw.Write((uint)fileInfo.Bpp);
-
-                    // Write Data length before allowing the caller to stream the payload.
-                    if (fileInfo.Version == 2)
-                    {
-                        bw.Write(dataLength);
-                    }
-                    else
-                    {
-                        bw.Write((int)dataLength);
-                    }
-
-                    bw.Flush();
-                    long dataStart = fs.Position;
-                    writeData(fs);
-                    bw.Flush();
-                    if (fs.Position - dataStart != dataLength)
-                    {
-                        throw new InvalidDataException(
-                            $"The CVCIE payload writer produced {fs.Position - dataStart} bytes; expected {dataLength} bytes.");
-                    }
-                    return true;
-                }
+                });
             }
             catch (Exception ex)
             {

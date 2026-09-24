@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -10,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -219,6 +221,35 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
             LocalFlowInputSnapshot input = CaptureInput(start);
             BeginExecution(input.Action, new[] { input });
+        }
+
+        protected string ResolveInputImageFilePath(CVStartCFC action, int inputIndex, string imageFilePath)
+        {
+            if (!string.IsNullOrWhiteSpace(imageFilePath))
+            {
+                return Path.GetFullPath(imageFilePath.Trim());
+            }
+            if (!TryGetInputMasterResult(action, inputIndex, out int masterId, out int masterResultType, out _) || masterId <= 0)
+            {
+                return string.Empty;
+            }
+            if (masterResultType is not (int)CVCommCore.CVResultType.Camera_Img
+                and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
+            {
+                throw new InvalidOperationException($"图像输入端接收到的不是图像结果：MasterId={masterId}，ResultType={masterResultType}。请检查图像节点的连接。");
+            }
+
+            MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(masterId);
+            if (imageResult == null) return string.Empty;
+            string? firstCandidate = null;
+            foreach (string? candidate in new[] { imageResult.FileUrl, imageResult.RawFile })
+            {
+                if (string.IsNullOrWhiteSpace(candidate)) continue;
+                firstCandidate ??= candidate;
+                string fullPath = Path.GetFullPath(candidate);
+                if (File.Exists(fullPath)) return fullPath;
+            }
+            return string.IsNullOrWhiteSpace(firstCandidate) ? string.Empty : Path.GetFullPath(firstCandidate);
         }
 
         protected bool TryGetInputMasterResult(CVStartCFC action, int inputIndex, out int masterId, out int masterResultType, out string? masterValue)

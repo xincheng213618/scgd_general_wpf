@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
             storage.AddReference();
-            return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId);
+            return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId, ColorCalibration);
         }
 
         internal void ApplyPendingFlip(Action<LocalFlowFrameLease, LocalFrameBufferKind, CVImageFlipMode> apply)
@@ -255,17 +255,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     {
         private LocalFlowFrame.SharedFrameStorage? storage;
 
-        internal LocalFlowFrameLease(LocalFlowFrame.SharedFrameStorage storage, LocalFrameMetadata metadata, Guid frameId, int masterId)
+        internal LocalFlowFrameLease(LocalFlowFrame.SharedFrameStorage storage, LocalFrameMetadata metadata, Guid frameId, int masterId, ColorCalibrationSnapshot? colorCalibration)
         {
             this.storage = storage;
             Metadata = metadata;
             FrameId = frameId;
             MasterId = masterId;
+            ColorCalibration = colorCalibration;
         }
 
         public Guid FrameId { get; }
         public int MasterId { get; }
         public LocalFrameMetadata Metadata { get; }
+        internal ColorCalibrationSnapshot? ColorCalibration { get; }
         public IntPtr RawPointer => GetStorage().RawPointer;
         public int RawLength => GetStorage().RawLength;
         public IntPtr CiePointer => GetStorage().CiePointer;

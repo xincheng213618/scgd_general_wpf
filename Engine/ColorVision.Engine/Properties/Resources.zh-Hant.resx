@@ -3148,7 +3148,7 @@
   <data name="CommandSavePathHint" xml:space="preserve"><value>設定資料與檔案的儲存位置</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>刪除目前裝置資源</value></data>
   <data name="CommandCameraLogHint" xml:space="preserve"><value>檢視相機服務執行日誌</value></data>
-  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>檢視和釋放本機校正快取</value></data>
+  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>檢視和釋放校正與影像檔案快取</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>設定相機關聯的校正檔案</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>管理自動曝光參數範本</value></data>
   <data name="CommandAutoFocusHint" xml:space="preserve"><value>管理自動聚焦參數範本</value></data>
@@ -3268,4 +3268,25 @@
   <data name="LicenseListEmpty" xml:space="preserve">
     <value>暫無授權，點選「授權匯入」新增。</value>
   </data>
+  <data name="保存 CIE 文件" xml:space="preserve"><value>儲存 CIE 檔案</value></data>
+  <data name="允许加速" xml:space="preserve"><value>允許加速</value></data>
+  <data name="本地缓存管理" xml:space="preserve"><value>本機快取管理</value></data>
+  <data name="缓存管理" xml:space="preserve"><value>快取管理</value></data>
+  <data name="校正缓存" xml:space="preserve"><value>校正快取</value></data>
+  <data name="图像文件缓存" xml:space="preserve"><value>影像檔案快取</value></data>
+  <data name="统一管理当前进程的校正缓存和图像文件缓存。" xml:space="preserve"><value>統一管理目前處理程序的校正快取和影像檔案快取。</value></data>
+  <data name="等待校正与图像复制完成，然后释放两类缓存" xml:space="preserve"><value>等待校正與影像複製完成，然後釋放兩類快取</value></data>
+  <data name="默认开启 · 全局 1 个 CVRAW 槽位" xml:space="preserve"><value>預設開啟 · 全域 1 個 CVRAW 槽位</value></data>
+  <data name="不同路径复用同一槽位；容量足够时只复制内容。释放全部会同时清理两类缓存，保留磁盘文件。" xml:space="preserve"><value>不同路徑重用同一槽位；容量足夠時只複製內容。釋放全部會同時清理兩類快取，保留磁碟檔案。</value></data>
+  <data name="槽位" xml:space="preserve"><value>槽位</value></data>
+  <data name="尚未缓存图像" xml:space="preserve"><value>尚未快取影像</value></data>
+  <data name="正在读取（{0} 个引用）" xml:space="preserve"><value>正在讀取（{0} 個參照）</value></data>
+  <data name="图像文件缓存槽位已释放 {0}，磁盘文件保留。" xml:space="preserve"><value>影像檔案快取槽位已釋放 {0}，磁碟檔案保留。</value></data>
+  <data name="正在等待校正与图像复制完成并释放缓存…" xml:space="preserve"><value>正在等待校正與影像複製完成並釋放快取…</value></data>
+  <data name="读取本地缓存失败：{0}" xml:space="preserve"><value>讀取本機快取失敗：{0}</value></data>
+  <data name="释放本地缓存失败：{0}" xml:space="preserve"><value>釋放本機快取失敗：{0}</value></data>
+  <data name="查看校正文件与图像文件缓存，并统一释放内存" xml:space="preserve"><value>檢視校正檔案與影像檔案快取，並統一釋放記憶體</value></data>
+  <data name="将释放当前进程所有相机的校正缓存和图像文件缓存槽位。&#xA;&#xA;等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？" xml:space="preserve"><value>將釋放目前處理程序所有相機的校正快取和影像檔案快取槽位。
+
+等待正在執行的校正與影像複製完成，不刪除磁碟檔案。後續使用時會重新載入。是否繼續？</value></data>
 </root>

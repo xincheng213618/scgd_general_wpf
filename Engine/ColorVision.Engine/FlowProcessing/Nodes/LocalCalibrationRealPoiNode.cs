@@ -199,6 +199,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public LocalCalibrationRealPoiNode() : base("校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
+            AllowAcceleration = true;
         }
 
         private protected override string SourceImageFilePath => ImageFilePath;
@@ -254,9 +255,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 POIWidth,
                 POIHeight);
             using LocalCalibrationExecution execution = ExecuteCalibration(action);
-            if (!execution.Frame.HasCie)
+            if (!execution.Frame.HasCie && execution.Frame.ColorCalibration == null)
             {
-                throw new InvalidOperationException("实时 POI 需要 CIE 数据，请在校正模板中选择一个亮度或颜色校正文件。");
+                throw new InvalidOperationException("实时 POI 需要 CIE 或带色度校正参数的 RAW，请在校正模板中选择一个亮度或颜色校正文件。");
             }
             LocalPoiRoiAdjustment? roiAdjustment = null;
             PoiParam calculationPoi = parameters.Poi;
@@ -291,7 +292,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     resultType,
                     parameters.Poi.Id,
                     parameters.Poi.Name,
-                    execution.Frame.CvCieFilePath,
+                    NullIfEmpty(execution.Frame.CvCieFilePath) ?? NullIfEmpty(execution.Frame.CvRawFilePath),
                     algorithmDeviceCode,
                     ZIndex,
                     poiTime,
@@ -304,7 +305,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         UseROI = UseROI,
                         RoiOffsetX = roiAdjustment?.OffsetX,
                         RoiOffsetY = roiAdjustment?.OffsetY,
-                        MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath)
+                        AllowAcceleration,
+                        MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath) && string.IsNullOrWhiteSpace(execution.Frame.CvRawFilePath)
                     });
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
 
@@ -368,6 +370,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 POIHeight,
                 UseROI,
                 SaveFiles,
+                AllowAcceleration,
                 InputPriority = "CurrentFrameThenFile",
                 InputPorts = InputPortNames
             });

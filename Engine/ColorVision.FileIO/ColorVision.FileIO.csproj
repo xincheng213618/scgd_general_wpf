@@ -9,6 +9,7 @@
 	  <TargetFrameworks>net10.0;net8.0;net6.0;net461</TargetFrameworks>
 	  <VersionPrefix>1.5.1.1</VersionPrefix>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <IncludeSymbols>True</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>

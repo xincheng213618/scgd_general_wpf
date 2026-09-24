@@ -1,4 +1,5 @@
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
@@ -52,61 +53,78 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             PoiParam poi = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, POITempName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到 POI 模板：{POITempName}");
 
-            if (!action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null)
+            bool loadedFromFile = !action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null;
+            if (loadedFromFile)
             {
-                throw new InvalidOperationException("流程中没有可用的本地图像内存帧。");
+                string path = ResolveInputImageFilePath(action, 0, string.Empty);
+                if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("流程中没有可用的本地图像帧或 CVRAW/CVCIE 图像结果。");
+                currentFrame = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(path));
+                _ = TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _);
+                currentFrame.MasterId = imageMasterId;
             }
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using (LocalFlowFrameLease frame = currentFrame.Acquire())
+            try
             {
-                LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi);
-                stopwatch.Stop();
-                int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
-                ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
-                int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
-                    action,
-                    resultType,
-                    poi.Id,
-                    poi.Name,
-                    currentFrame.CvCieFilePath,
-                    null,
-                    ZIndex,
-                    totalTime,
-                    new
-                    {
-                        CieMasterId = frame.MasterId,
-                        POITemplate = poi.Name,
-                        FlipMode = frame.Metadata.FlipMode.ToString(),
-                        FlipApplied = frame.IsCieFlipApplied,
-                        MemoryOnly = string.IsNullOrWhiteSpace(currentFrame.CvCieFilePath)
-                    });
-                try
+                string? imagePath = string.IsNullOrWhiteSpace(currentFrame!.CvCieFilePath) ? currentFrame.CvRawFilePath : currentFrame.CvCieFilePath;
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                using (LocalFlowFrameLease frame = currentFrame.Acquire())
                 {
-                    LocalPoiCalculator.SaveDetails(masterId, result);
-                    action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
-                    action.Data["LocalPoiCount"] = result.Points.Count;
-                    action.MasterValue(null, masterId, (int)resultType);
-                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
-                    return new LocalNodeExecutionResult
-                    {
-                        Data = new LocalPoiNodeResultData
+                    LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi);
+                    stopwatch.Stop();
+                    int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+                    ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
+                    int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
+                        action,
+                        resultType,
+                        poi.Id,
+                        poi.Name,
+                        imagePath,
+                        null,
+                        ZIndex,
+                        totalTime,
+                        new
                         {
-                            FrameId = result.FrameId,
-                            TemplateName = result.TemplateName,
-                            MasterId = masterId,
-                            MasterResultType = (int)resultType,
-                            PointCount = result.Points.Count,
-                            TotalTime = totalTime,
-                            POIResult = result.Points
-                        }
-                    };
+                            CieMasterId = frame.MasterId,
+                            POITemplate = poi.Name,
+                            FlipMode = frame.Metadata.FlipMode.ToString(),
+                            FlipApplied = frame.IsFlipApplied,
+                            LoadedFromFile = loadedFromFile,
+                            InputBuffer = frame.HasCie ? "CIE" : "RAW",
+                            MemoryOnly = string.IsNullOrWhiteSpace(imagePath)
+                        });
+                    try
+                    {
+                        LocalPoiCalculator.SaveDetails(masterId, result);
+                        action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
+                        action.Data["LocalPoiCount"] = result.Points.Count;
+                        action.MasterValue(null, masterId, (int)resultType);
+                        ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
+                        action.SetCurrentFrame(currentFrame);
+                        loadedFromFile = false;
+                        return new LocalNodeExecutionResult
+                        {
+                            Data = new LocalPoiNodeResultData
+                            {
+                                FrameId = result.FrameId,
+                                TemplateName = result.TemplateName,
+                                MasterId = masterId,
+                                MasterResultType = (int)resultType,
+                                PointCount = result.Points.Count,
+                                TotalTime = totalTime,
+                                POIResult = result.Points
+                            }
+                        };
+                    }
+                    catch
+                    {
+                        LocalPoiCalculator.DeleteDetails(masterId);
+                        LocalFlowResultPersistence.DeleteAlgorithmResult(masterId);
+                        throw;
+                    }
                 }
-                catch
-                {
-                    LocalPoiCalculator.DeleteDetails(masterId);
-                    LocalFlowResultPersistence.DeleteAlgorithmResult(masterId);
-                    throw;
-                }
+            }
+            finally
+            {
+                if (loadedFromFile) currentFrame?.Dispose();
             }
         }
     }

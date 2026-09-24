@@ -42,7 +42,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             string calibrationTemplate,
             LocalCalibrationRoi calibrationRoi,
-            IReadOnlyList<float>? zeroExposureFallback = null)
+            IReadOnlyList<float>? zeroExposureFallback = null,
+            bool allowAcceleration = false)
         {
             using var calibrationStage = FlowNodeTiming.Measure("Calibration");
             ArgumentNullException.ThrowIfNull(frame);
@@ -65,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ? ResolveExposureForCalibration(frame.Metadata.Exposure, zeroExposureFallback)
                 : frame.Metadata.Exposure;
             float[] normalizedExposure = plan.GeneratesCie ? NormalizeExposure(effectiveExposure) : Array.Empty<float>();
-            frame.PrepareForCalibration(calibrationTemplate, plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
+            frame.PrepareForCalibration(calibrationTemplate, allowAcceleration ? 0 : plan.CieLength, plan.HasBasicCalibration, effectiveExposure);
             RawColorTransformV1? colorTransform;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
@@ -79,8 +80,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     lease.RawPointer,
                     plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
                     normalizedExposure,
-                    calibrationRoi);
-                if (plan.GeneratesCie && sourceRawAlreadyMirrored)
+                    calibrationRoi,
+                    allowAcceleration);
+                if (plan.GeneratesCie && !allowAcceleration && sourceRawAlreadyMirrored)
                 {
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
                 }
@@ -108,6 +110,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             string calibrationTemplate)
             => CreatePlan(width, height, sourceChannels, calibrationFiles, calibrationTemplate).CieLength;
+
+        internal static void ReuseColorCalibration(LocalFlowFrame frame, bool allowAcceleration)
+        {
+            ColorCalibrationSnapshot snapshot = frame.ColorCalibration
+                ?? throw new InvalidOperationException("切换色度输出模式需要带校正参数的 RAW 输入，不能使用仅有 CIE 的帧。");
+            if (!frame.HasRaw || !snapshot.CanReplay)
+                throw new InvalidOperationException("切换色度输出模式需要可回放的 RAW 输入。");
+            bool rawAlreadyMirrored = frame.IsRawFlipApplied;
+            int cieLength = allowAcceleration ? 0 : checked(4 * frame.Metadata.Width * frame.Metadata.Height * frame.Metadata.Channels);
+            frame.PrepareForCalibration(snapshot.Template, cieLength, false);
+            if (!allowAcceleration)
+            {
+                using LocalFlowFrameLease lease = frame.Acquire();
+                RawColorTransformV1 transform = snapshot.ToNative();
+                int result = OpenCVMediaHelper.M_TransformRawColorV1(lease.Metadata.Width, lease.Metadata.Height, lease.Metadata.SourceBpp,
+                    lease.RawPointer, checked((ulong)lease.RawLength), in transform, -1, lease.CiePointer, checked((ulong)lease.CieLength / 4));
+                if (result != OpenCVCalibration.PoiOk) throw new InvalidOperationException($"生成本地 CIE 内存失败，错误码：{result}。");
+                if (rawAlreadyMirrored) lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
+            }
+            LocalFrameMirrorService.ApplyPending(frame);
+            frame.ColorCalibration = snapshot;
+        }
 
         private static void ValidateSource(LocalFlowFrameLease source)
         {

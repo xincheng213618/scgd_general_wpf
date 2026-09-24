@@ -43,6 +43,7 @@ public sealed class FindCrossResultOverlayTests
         });
         AlgResultMasterModel master = new()
         {
+            TName = "optCenter",
             Params = JsonConvert.SerializeObject(new
             {
                 Algorithm = "LocalFindCross",

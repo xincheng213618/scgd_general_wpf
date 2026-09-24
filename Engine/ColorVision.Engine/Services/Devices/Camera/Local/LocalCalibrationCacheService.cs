@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.FileIO;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using System;
@@ -10,24 +11,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal sealed record LocalCalibrationCacheReleaseFailure(string DeviceCode, string Message);
 
+    internal sealed record LocalCacheSnapshot(CalibrationSharedCacheSnapshot Calibration, CVFileReadCacheSnapshot ImageFile);
+
     internal sealed record LocalCalibrationCacheReleaseSummary(
         int DeviceCount,
         int ContextsReleased,
         CalibrationSharedCacheReleaseResult? NativeRelease,
+        long ImageFileBytesReleased,
         IReadOnlyList<LocalCalibrationCacheReleaseFailure> Errors)
     {
         public bool Succeeded => Errors.Count == 0 && NativeRelease != null;
     }
 
     /// <summary>
-    /// Coordinates the two cache ownership layers for the management UI.
+    /// Coordinates calibration assets and the image file slot for the management UI.
     /// Device contexts are released first (each manager waits for its in-flight
-    /// execution), then the process-wide native asset references are removed.
+    /// execution), then the process-wide native asset references and image file slot are released.
     /// </summary>
     internal static class LocalCalibrationCacheService
     {
-        public static CalibrationSharedCacheSnapshot GetSnapshot()
-            => LocalCalibrationCacheManager.GetEntries();
+        public static LocalCacheSnapshot GetSnapshot()
+            => new(LocalCalibrationCacheManager.GetEntries(), CVFileReadCache.GetSnapshot());
 
         public static Task<LocalCalibrationCacheReleaseSummary> ReleaseAllAsync()
             => ReleaseAllAsync(ServiceManager.GetInstance());
@@ -74,10 +78,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 errors.Add(new LocalCalibrationCacheReleaseFailure("opencv_helper", ex.Message));
             }
 
+            long imageFileBytesReleased = 0;
+            try
+            {
+                imageFileBytesReleased = CVFileReadCache.Release();
+            }
+            catch (Exception ex)
+            {
+                errors.Add(new LocalCalibrationCacheReleaseFailure("CVRAW", ex.Message));
+            }
+
             return new LocalCalibrationCacheReleaseSummary(
                 cameras.Count,
                 contextsReleased,
                 nativeRelease,
+                imageFileBytesReleased,
                 errors.AsReadOnly());
         }
     }

@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             SetBusy(true, EngineLocalization.Get("正在读取缓存状态…"));
             try
             {
-                CalibrationSharedCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
+                LocalCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
                 if (isClosed) return;
                 ApplySnapshot(snapshot);
             }
@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 StatusText.Text = EngineLocalization.Format($"读取缓存状态失败：{ex.Message}");
                 if (showError)
                 {
-                    MessageBox1.Show(this, EngineLocalization.Format($"读取本地校正缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox1.Show(this, EngineLocalization.Format($"读取本地缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -133,13 +133,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             if (isBusy) return;
 
-            string confirmation = EngineLocalization.Get("将释放所有相机的本地校正上下文，并清理 opencv_helper 可释放的共享校正文件缓存。\n\n正在执行的校正会先完成；仍被其他活动上下文使用的内存不会被强制释放。是否继续？");
-            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("本地校正缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+            string confirmation = EngineLocalization.Get("将释放当前进程所有相机的校正缓存和图像文件缓存槽位。\n\n等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？");
+            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
             {
                 return;
             }
 
-            SetBusy(true, EngineLocalization.Get("正在等待校正执行结束并释放缓存…"));
+            SetBusy(true, EngineLocalization.Get("正在等待校正与图像复制完成并释放缓存…"));
             Exception? refreshError = null;
             try
             {
@@ -147,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (isClosed) return;
                 try
                 {
-                    CalibrationSharedCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
+                    LocalCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
                     if (isClosed) return;
                     ApplySnapshot(snapshot);
                 }
@@ -164,14 +164,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     ? MessageBoxImage.Information
                     : MessageBoxImage.Warning;
                 StatusText.Text = message.Replace(Environment.NewLine, " ");
-                MessageBox1.Show(this, message, EngineLocalization.Get("本地校正缓存管理"), MessageBoxButton.OK, image);
+                MessageBox1.Show(this, message, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OK, image);
             }
             catch (Exception ex)
             {
                 log.Error("Release all local calibration caches failed.", ex);
                 if (isClosed) return;
                 StatusText.Text = EngineLocalization.Format($"释放缓存失败：{ex.Message}");
-                MessageBox1.Show(this, EngineLocalization.Format($"释放本地校正缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox1.Show(this, EngineLocalization.Format($"释放本地缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -182,9 +182,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private void ApplySnapshot(CalibrationSharedCacheSnapshot snapshot)
+        private void ApplySnapshot(LocalCacheSnapshot state)
         {
             if (isClosed) return;
+            CalibrationSharedCacheSnapshot snapshot = state.Calibration;
 
             items.Clear();
             foreach (CalibrationSharedCacheEntry entry in snapshot.Entries
@@ -209,8 +210,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : EngineLocalization.Format($"缓存预算：{FormatBytes(statistics.BudgetBytes)}");
             HitSummaryText.Text = EngineLocalization.Format($"命中：{statistics.HitCount:N0} / 未命中：{statistics.MissCount:N0}");
 
-            int activeEntries = snapshot.Entries.Count(entry => entry.ActiveOwnerCount > 0);
-            ulong activeOwners = snapshot.Entries.Aggregate(0UL, (total, entry) => total + entry.ActiveOwnerCount);
+            var image = state.ImageFile;
+            ImageCapacityText.Text = EngineLocalization.Format($"驻留内存：{FormatBytes((ulong)image.CapacityBytes)}");
+            ImageHitSummaryText.Text = EngineLocalization.Format($"命中：{image.HitCount:N0} / 未命中：{image.MissCount:N0}");
+            ImageCacheDataGrid.ItemsSource = new[]
+            {
+                new
+                {
+                    Slot = 1,
+                    FilePath = image.FilePath ?? EngineLocalization.Get("尚未缓存图像"),
+                    Capacity = FormatBytes((ulong)image.CapacityBytes),
+                    Content = FormatBytes((ulong)image.ContentBytes),
+                    image.HitCount,
+                    Usage = image.ActiveReaders > 0
+                        ? EngineLocalization.Format($"正在读取（{image.ActiveReaders} 个引用）")
+                        : EngineLocalization.Get(image.FilePath == null ? "等待加载" : "已缓存（可释放）"),
+                }
+            };
+
+            int activeEntries = snapshot.Entries.Count(entry => entry.ActiveOwnerCount > 0) + (image.ActiveReaders > 0 ? 1 : 0);
+            ulong activeOwners = snapshot.Entries.Aggregate(0UL, (total, entry) => total + entry.ActiveOwnerCount) + (ulong)image.ActiveReaders;
             StatusText.Text = activeEntries == 0
                 ? EngineLocalization.Format($"最后刷新：{DateTime.Now:HH:mm:ss}。当前没有缓存被活动上下文占用。")
                 : EngineLocalization.Format($"最后刷新：{DateTime.Now:HH:mm:ss}。{activeEntries} 个缓存文件仍有 {activeOwners} 个活动引用。");
@@ -221,6 +240,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             List<string> lines = new()
             {
                 EngineLocalization.Format($"已检查 {summary.DeviceCount} 台相机，释放 {summary.ContextsReleased} 个本地校正上下文缓存项。"),
+                EngineLocalization.Format($"图像文件缓存槽位已释放 {FormatBytes((ulong)summary.ImageFileBytesReleased)}，磁盘文件保留。"),
             };
 
             if (summary.NativeRelease is CalibrationSharedCacheReleaseResult nativeRelease)

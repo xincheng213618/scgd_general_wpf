@@ -307,7 +307,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return new AlgResultMasterModel
             {
                 TId = null,
-                TName = "LocalFindCross",
+                TName = request.ResultCode == 0 ? "optCenter" : "LocalFindCross",
                 ImgFile = NullIfWhiteSpace(request.ImageFilePath),
                 ImgFileType = ViewResultAlgType.FindCross,
                 version = ResultVersion,

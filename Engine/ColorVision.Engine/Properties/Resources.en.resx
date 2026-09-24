@@ -4267,6 +4267,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="POI 高度" xml:space="preserve"><value>POI Height</value></data>
   <data name="校正模板" xml:space="preserve"><value>Calibration Template</value></data>
   <data name="保存校正文件" xml:space="preserve"><value>Save Calibrated File</value></data>
+  <data name="保存 CIE 文件" xml:space="preserve"><value>Save CIE File</value></data>
+  <data name="允许加速" xml:space="preserve"><value>Allow Acceleration</value></data>
   <data name="布点 ROI" xml:space="preserve"><value>Layout ROI</value></data>
   <data name="POI 模板(Re)" xml:space="preserve"><value>POI Template (Re)</value></data>
   <data name="名称前缀" xml:space="preserve"><value>Name Prefix</value></data>
@@ -5023,7 +5025,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandSavePathHint" xml:space="preserve"><value>Data and file storage location</value></data>
   <data name="CommandDeleteHint" xml:space="preserve"><value>Delete the current device resource</value></data>
   <data name="CommandCameraLogHint" xml:space="preserve"><value>View camera service logs</value></data>
-  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release local calibration cache</value></data>
+  <data name="CommandCalibrationCacheHint" xml:space="preserve"><value>Inspect and release calibration and image file caches</value></data>
   <data name="CommandCameraCalibrationHint" xml:space="preserve"><value>Configure associated calibration files</value></data>
   <data name="CommandAutoExposureHint" xml:space="preserve"><value>Manage auto exposure templates</value></data>
   <data name="CommandAutoFocusHint" xml:space="preserve"><value>Manage auto focus templates</value></data>
@@ -5142,4 +5144,22 @@ Only license records will be removed. Device settings, exported files and record
   <data name="LicenseListEmpty" xml:space="preserve">
     <value>No licenses yet. Import a license to get started.</value>
   </data>
+  <data name="本地缓存管理" xml:space="preserve"><value>Local Cache Management</value></data>
+  <data name="缓存管理" xml:space="preserve"><value>Cache management</value></data>
+  <data name="图像文件缓存" xml:space="preserve"><value>Image file cache</value></data>
+  <data name="统一管理当前进程的校正缓存和图像文件缓存。" xml:space="preserve"><value>Manage calibration and image file caches in the current process.</value></data>
+  <data name="等待校正与图像复制完成，然后释放两类缓存" xml:space="preserve"><value>Wait for calibration and image copies to finish, then release both caches</value></data>
+  <data name="默认开启 · 全局 1 个 CVRAW 槽位" xml:space="preserve"><value>Enabled by default · 1 shared CVRAW slot</value></data>
+  <data name="不同路径复用同一槽位；容量足够时只复制内容。释放全部会同时清理两类缓存，保留磁盘文件。" xml:space="preserve"><value>Different paths reuse the same slot; sufficient capacity allows copying without reallocating. Release all clears both caches and keeps disk files.</value></data>
+  <data name="槽位" xml:space="preserve"><value>Slot</value></data>
+  <data name="尚未缓存图像" xml:space="preserve"><value>No image cached</value></data>
+  <data name="正在读取（{0} 个引用）" xml:space="preserve"><value>Reading ({0} references)</value></data>
+  <data name="图像文件缓存槽位已释放 {0}，磁盘文件保留。" xml:space="preserve"><value>Released {0} from the image file cache slot. Disk files were kept.</value></data>
+  <data name="正在等待校正与图像复制完成并释放缓存…" xml:space="preserve"><value>Waiting for calibration and image copies to finish, then releasing caches…</value></data>
+  <data name="读取本地缓存失败：{0}" xml:space="preserve"><value>Failed to read local caches: {0}</value></data>
+  <data name="释放本地缓存失败：{0}" xml:space="preserve"><value>Failed to release local caches: {0}</value></data>
+  <data name="查看校正文件与图像文件缓存，并统一释放内存" xml:space="preserve"><value>Inspect calibration and image file caches and release their memory together</value></data>
+  <data name="将释放当前进程所有相机的校正缓存和图像文件缓存槽位。&#xA;&#xA;等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？" xml:space="preserve"><value>Release calibration caches for all cameras and the image file cache slot in the current process?
+
+This waits for calibration and image copies to finish and keeps disk files. Caches reload on next use.</value></data>
 </root>

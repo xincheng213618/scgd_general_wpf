@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             menuItem.Click += (s, e) => OpenLocalCameraWindow();
 
             ContextMenu.Items.Add(menuItem);
-            ContextMenu.Items.Add(new MenuItem() { Header = "本地校正缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "本地缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
 
         }
 
@@ -164,7 +164,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Description("CommandCameraLogHint")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
-        [CommandDisplay("本地校正缓存管理", Order = 1, CategoryOrder = 1)]
+        [CommandDisplay("本地缓存管理", Order = 1, CategoryOrder = 1)]
         [Category("CalibrationCorrection")]
         [Description("CommandCalibrationCacheHint")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; set; }

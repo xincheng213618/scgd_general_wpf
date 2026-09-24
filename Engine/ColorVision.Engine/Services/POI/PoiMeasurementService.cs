@@ -186,6 +186,28 @@ namespace ColorVision.Engine.Services.POI
             IReadOnlyList<PoiMeasurementPoint> points)
             => CalculateCore(cieData, cieByteLength, width, height, bitsPerChannel, channels, points, false);
 
+        internal static PoiMeasurementResult[] CalculateCalibratedRaw(
+            IntPtr rawData, long rawByteLength, ColorCalibrationSnapshot snapshot, IReadOnlyList<PoiMeasurementPoint> points)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            ArgumentNullException.ThrowIfNull(points);
+            snapshot.Validate();
+            if (!snapshot.CanReplay) throw new InvalidOperationException("CVRAW 中的参数对应基础校正后的图像，当前 RAW 不可直接回放；请先执行本地校正。");
+            if (rawData == IntPtr.Zero) throw new ArgumentException("RAW pointer cannot be null.", nameof(rawData));
+            long requiredLength = checked((long)snapshot.Width * snapshot.Height * snapshot.Channels * (snapshot.RawBpp / 8));
+            if (rawByteLength < requiredLength) throw new ArgumentException("RAW buffer is smaller than its calibration layout.", nameof(rawByteLength));
+            if (points.Count == 0) return Array.Empty<PoiMeasurementResult>();
+            PoiRequestV1[] requests = CreateRequests(points, snapshot.Width, snapshot.Height);
+            PoiResultV1[] results = new PoiResultV1[points.Count];
+            PoiOptionsV2 options = PoiOptionsV2.Create();
+            RawColorTransformV1 transform = snapshot.ToNative();
+            int result = OpenCVMediaHelper.M_CalculateRawPoiBatchV1(snapshot.Width, snapshot.Height, snapshot.RawBpp,
+                rawData, checked((ulong)rawByteLength), in transform, requests, checked((uint)requests.Length), in options, results);
+            if (result != OpenCVCalibration.PoiOk)
+                throw new InvalidOperationException($"Native RAW batch POI calculation failed with error code {result}.");
+            return ConvertResults(results);
+        }
+
         private static PoiMeasurementResult[] CalculateCore(
             IntPtr cieData,
             long cieByteLength,
@@ -216,20 +238,7 @@ namespace ColorVision.Engine.Services.POI
                 return mixed;
             }
 
-            PoiRequestV1[] requests = new PoiRequestV1[points.Count];
-            for (int index = 0; index < points.Count; index++)
-            {
-                PoiMeasurementPoint point = points[index];
-                ValidatePoint(point, width, height, index);
-                requests[index] = new PoiRequestV1
-                {
-                    Type = ToNativeType(point.Shape),
-                    X = point.X,
-                    Y = point.Y,
-                    Width = point.Shape == PoiMeasurementShape.Point ? 1 : point.Width,
-                    Height = point.Shape == PoiMeasurementShape.Point ? 1 : point.Height
-                };
-            }
+            PoiRequestV1[] requests = CreateRequests(points, width, height);
 
             PoiResultV1[] nativeResults = new PoiResultV1[points.Count];
             PoiOptionsV2 options = PoiOptionsV2.Create();
@@ -250,6 +259,28 @@ namespace ColorVision.Engine.Services.POI
                 throw new InvalidOperationException($"Native batch POI calculation failed with error code {result}.");
             }
 
+            return ConvertResults(nativeResults);
+        }
+
+        private static PoiRequestV1[] CreateRequests(IReadOnlyList<PoiMeasurementPoint> points, int width, int height)
+        {
+            PoiRequestV1[] requests = new PoiRequestV1[points.Count];
+            for (int index = 0; index < points.Count; index++)
+            {
+                PoiMeasurementPoint point = points[index];
+                ValidatePoint(point, width, height, index);
+                requests[index] = new PoiRequestV1
+                {
+                    Type = ToNativeType(point.Shape), X = point.X, Y = point.Y,
+                    Width = point.Shape == PoiMeasurementShape.Point ? 1 : point.Width,
+                    Height = point.Shape == PoiMeasurementShape.Point ? 1 : point.Height
+                };
+            }
+            return requests;
+        }
+
+        private static PoiMeasurementResult[] ConvertResults(PoiResultV1[] nativeResults)
+        {
             PoiMeasurementResult[] results = new PoiMeasurementResult[nativeResults.Length];
             for (int index = 0; index < nativeResults.Length; index++)
             {

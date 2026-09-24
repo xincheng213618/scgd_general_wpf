@@ -81,7 +81,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IntPtr rawPointer,
             IntPtr ciePointer,
             float[] exposure,
-            LocalCalibrationRoi calibrationRoi)
+            LocalCalibrationRoi calibrationRoi,
+            bool allowAcceleration = false)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
@@ -93,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (!useLegacyCalibration)
                 {
-                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi);
+                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration);
                 }
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
@@ -101,7 +102,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     throw new InvalidOperationException("本地校正一次只能选择一个亮度/颜色校正文件。");
                 }
-                if (colorFiles.Length == 1 && ciePointer == IntPtr.Zero)
+                if (colorFiles.Length == 1 && ciePointer == IntPtr.Zero && !allowAcceleration)
                 {
                     throw new ArgumentException("选择亮度/颜色校正后，CIE 输出指针不能为空。", nameof(ciePointer));
                 }
@@ -142,7 +143,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     EnsureV1Context();
                     ClearSelection();
                     Select(colorFile);
-                    if (cvCameraCSLib.CM_TransformV1(
+                    if (!allowAcceleration && cvCameraCSLib.CM_TransformV1(
                         contextToken,
                         checked((uint)layout.Width),
                         checked((uint)layout.Height),

@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool IsAutoExposure { get; init; }
         public bool SaveFiles { get; init; }
         public bool SaveCieFile { get; init; } = true;
+        public bool AllowAcceleration { get; init; }
     }
 
     internal sealed class LocalCameraCaptureResult
@@ -111,6 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         checked((int)channels),
                         calibrationFiles,
                         request.Calibration?.Name ?? string.Empty);
+                if (request.AllowAcceleration) cieLength = 0;
                 float[] exposure = GetExposureValues(device, cameraParameters, (int)channels);
                 LocalFrameMetadata metadata = new()
                 {
@@ -166,7 +168,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         device.LocalCalibrationCacheManager,
                         calibrationFiles,
                         request.Calibration?.Name ?? string.Empty,
-                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height));
+                        LocalCalibrationRoi.Resolve(device.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height),
+                        allowAcceleration: request.AllowAcceleration);
                     calibrationStopwatch.Stop();
                     calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }

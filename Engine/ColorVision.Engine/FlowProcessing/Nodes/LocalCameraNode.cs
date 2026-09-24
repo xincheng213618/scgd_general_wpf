@@ -58,6 +58,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private bool _AutoConnect = true;
         private bool _IsAutoExp;
         private bool _SaveFiles;
+        private bool _AllowAcceleration;
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
         [Category("本地相机")]
@@ -86,8 +87,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
-        [STNodeProperty("保存文件", "按本地相机规则保存 CVRAW，并在有校正数据时保存 CVCIE", true)]
+        [STNodeProperty("保存文件", "保存 CVRAW（包含已执行的色度校正参数）；未开启加速且有 CIE 数据时同时保存 CVCIE。", true)]
         public bool SaveFiles { get => _SaveFiles; set { _SaveFiles = value; OnPropertyChanged(); } }
+
+        [Category("本地相机")]
+        [STNodeProperty("允许加速", "默认关闭；保留 RAW 和色度校正参数，不生成 CIE 指针或 CVCIE 文件。本地 POI 按关注点区域计算。", true)]
+        public bool AllowAcceleration { get => _AllowAcceleration; set { _AllowAcceleration = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
         [STNodeProperty("图像翻转", "X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。", true)]
@@ -99,8 +104,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public RelayCommand OpenLocalCameraManagerCommand { get; }
 
         [JsonIgnore]
-        [CommandDisplay("校正缓存", Order = -90)]
-        [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
+        [CommandDisplay("缓存管理", Order = -90)]
+        [Description("查看校正文件与图像文件缓存，并统一释放内存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
         public LocalCameraNode() : base("相机取图", "Camera", "GetData")
@@ -142,7 +147,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Calibration = calibration,
                 FlipMode = FlipMode,
                 IsAutoExposure = IsAutoExp,
-                SaveFiles = SaveFiles
+                SaveFiles = SaveFiles,
+                AllowAcceleration = AllowAcceleration
             });
 
             LocalFlowFrame frame = capture.Frame;
@@ -184,7 +190,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles, AllowAcceleration });
         }
 
         internal CameraRunParam BuildCameraParameters()
