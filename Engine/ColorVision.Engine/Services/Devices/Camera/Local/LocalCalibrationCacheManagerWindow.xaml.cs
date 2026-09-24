@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using ColorVision.Engine.Media;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -10,6 +11,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -27,14 +30,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManagerWindow));
         private static LocalCalibrationCacheManagerWindow? instance;
         private readonly ObservableCollection<LocalCalibrationCacheViewItem> items = new();
+        private readonly CvRawFileCacheConfig imageCacheConfig;
         private bool isBusy;
         private bool isClosed;
 
         public LocalCalibrationCacheManagerWindow()
         {
+            imageCacheConfig = CvRawFileCacheConfig.Current;
             InitializeComponent();
             this.ApplyCaption();
             CacheDataGrid.ItemsSource = items;
+            ImageCacheEnabledCheckBox.SetBinding(ToggleButton.IsCheckedProperty,
+                new Binding(nameof(CvRawFileCacheConfig.IsEnabled)) { Source = imageCacheConfig, Mode = BindingMode.TwoWay });
+            imageCacheConfig.PropertyChanged += ImageCacheConfig_PropertyChanged;
         }
 
         public static void OpenWindow()
@@ -79,6 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private void Window_Closed(object? sender, EventArgs e)
         {
+            imageCacheConfig.PropertyChanged -= ImageCacheConfig_PropertyChanged;
             isClosed = true;
             if (ReferenceEquals(instance, this))
             {
@@ -97,6 +106,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             await RefreshAsync(showError: true);
+        }
+
+        private void ImageCacheEnabledCheckBox_Click(object sender, RoutedEventArgs e)
+            => CvRawFileCacheConfig.SaveCurrent();
+
+        private async void ImageCacheConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(CvRawFileCacheConfig.IsEnabled)) await RefreshAsync(showError: false);
         }
 
         private async Task RefreshAsync(bool showError)
@@ -224,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     image.HitCount,
                     Usage = image.ActiveReaders > 0
                         ? EngineLocalization.Format($"正在读取（{image.ActiveReaders} 个引用）")
-                        : EngineLocalization.Get(image.FilePath == null ? "等待加载" : "已缓存（可释放）"),
+                        : EngineLocalization.Get(!image.IsEnabled ? "已关闭（直接读写文件）" : image.FilePath == null ? "等待加载" : "已缓存（可释放）"),
                 }
             };
 
@@ -276,6 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             isBusy = busy;
             RefreshButton.IsEnabled = !busy;
             ReleaseAllButton.IsEnabled = !busy;
+            ImageCacheEnabledCheckBox.IsEnabled = !busy;
             LoadingText.Text = loadingText;
             LoadingOverlay.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         }

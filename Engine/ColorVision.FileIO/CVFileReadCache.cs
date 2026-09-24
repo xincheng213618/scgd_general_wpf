@@ -20,11 +20,30 @@ namespace ColorVision.FileIO
         private static long hits;
         private static long misses;
         private static long allocations;
+        private static bool isEnabled = true;
+
+        /// <summary>Disabling bypasses the slot; its memory is freed when the last current reader returns.</summary>
+        public static bool IsEnabled
+        {
+            get { lock (Sync) return isEnabled; }
+            set
+            {
+                lock (Sync)
+                {
+                    isEnabled = value;
+                    if (!value)
+                    {
+                        ForgetFile();
+                        if (readers == 0) FreeBuffer();
+                    }
+                }
+            }
+        }
 
         public static CVFileReadCacheSnapshot GetSnapshot()
         {
             lock (Sync)
-                return new CVFileReadCacheSnapshot(cachedPath, capacity, length, readers, hits, misses, allocations);
+                return new CVFileReadCacheSnapshot(cachedPath, capacity, length, readers, hits, misses, allocations, isEnabled);
         }
 
         /// <summary>Waits for copies to finish, then frees the slot. Files are never deleted.</summary>
@@ -54,6 +73,7 @@ namespace ColorVision.FileIO
                 FileStream file = OpenFile(path);
                 try
                 {
+                    if (!isEnabled) return file;
                     if (Matches(path, file))
                     {
                         hits++;
@@ -101,7 +121,7 @@ namespace ColorVision.FileIO
                 while (readers != 0) Monitor.Wait(Sync);
                 ForgetFile();
                 bool cacheReady = false;
-                if (fileLength > 0 && fileLength <= int.MaxValue)
+                if (isEnabled && fileLength > 0 && fileLength <= int.MaxValue)
                 {
                     try { EnsureCapacity(fileLength); cacheReady = true; }
                     catch (OutOfMemoryException ex) { Debug.WriteLine("CVRAW saved without cache: " + ex.Message); }
@@ -130,7 +150,7 @@ namespace ColorVision.FileIO
             {
                 while (readers != 0) Monitor.Wait(Sync);
                 bool preserve = false;
-                if (SamePath(path))
+                if (isEnabled && SamePath(path))
                 {
                     using (FileStream file = OpenFile(path)) preserve = Matches(Path.GetFullPath(path), file);
                     if (!preserve) ForgetFile();
@@ -302,7 +322,15 @@ namespace ColorVision.FileIO
                 if (owned != null)
                 {
                     try { memory.Dispose(); owned.Dispose(); }
-                    finally { lock (Sync) { readers--; Monitor.PulseAll(Sync); } }
+                    finally
+                    {
+                        lock (Sync)
+                        {
+                            readers--;
+                            if (!isEnabled && readers == 0) FreeBuffer();
+                            Monitor.PulseAll(Sync);
+                        }
+                    }
                 }
                 base.Dispose(disposing);
             }
@@ -311,8 +339,9 @@ namespace ColorVision.FileIO
 
     public sealed class CVFileReadCacheSnapshot
     {
-        internal CVFileReadCacheSnapshot(string path, long capacity, long length, int readers, long hits, long misses, long allocations)
-        { FilePath = path; CapacityBytes = capacity; ContentBytes = length; ActiveReaders = readers; HitCount = hits; MissCount = misses; AllocationCount = allocations; }
+        internal CVFileReadCacheSnapshot(string path, long capacity, long length, int readers, long hits, long misses, long allocations, bool isEnabled)
+        { FilePath = path; CapacityBytes = capacity; ContentBytes = length; ActiveReaders = readers; HitCount = hits; MissCount = misses; AllocationCount = allocations; IsEnabled = isEnabled; }
+        public bool IsEnabled { get; }
         public string FilePath { get; }
         public long CapacityBytes { get; }
         public long ContentBytes { get; }

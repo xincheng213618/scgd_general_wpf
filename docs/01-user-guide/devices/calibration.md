@@ -85,7 +85,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 | 入口 | 实际作用与安全边界 |
 | --- | --- |
-| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 分为“校正缓存”和“图像文件缓存”两个 Tab；后者默认启用，全进程共用 1 个 CVRAW 槽位，换路径复用容量。“释放全部”等待校正与图像读取完成，统一释放两类缓存，保留磁盘标定和图像文件；仍被其它活动校正上下文引用的内存不强制释放 |
+| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 分为“校正缓存”和“图像文件缓存”两个 Tab；后者默认启用，全进程共用 1 个 CVRAW 槽位，换路径复用容量。Tab 与“全局选项 → 常规 → 文件归档 → 启用 CVRAW 文件缓存”共用一个持久开关；关闭后直接读写文件，在途读取结束后释放槽位，显示内存复用保留。“释放全部”等待校正与图像读取完成，统一释放两类缓存，保留磁盘标定和图像文件；仍被其它活动校正上下文引用的内存不强制释放 |
 | `InfoCalibration.ServiceCache_Click` → `MQTTCalibration.CacheClear` | 界面先提示永久删除，再发远端 `Event_Delete_Data`；必须按远端删除操作授权，不能当作无副作用的排障动作 |
 | `ViewCalibration` 清空列表/删除结果项 | 从当前 `ViewResults` 移除，不代表删除数据库结果、输出文件或校准缓存 |
 

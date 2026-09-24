@@ -249,6 +249,33 @@ public sealed class DeferredDeviceViewTests
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AutomaticLocalSnapshotHonorsCameraViewRefreshSetting(bool autoRefresh)
+    {
+        Run(() =>
+        {
+            using ShellCase item = CreateShell("Camera");
+            var camera = Assert.IsType<ViewCamera>(item.View);
+            camera.EnsureInitialized();
+            ViewCamera.Config.AutoRefreshView = autoRefresh;
+            var previous = new System.Windows.Media.Imaging.WriteableBitmap(2, 1, 96, 96, System.Windows.Media.PixelFormats.Gray8, null);
+            previous.WritePixels(new Int32Rect(0, 0, 2, 1), new byte[] { 3, 7 }, 2, 0);
+            camera.ImageView.OpenImage(previous);
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 2, Height = 1, SourceBpp = 8, Channels = 1 }, 2, 0);
+            using (var lease = frame.Acquire()) Marshal.Copy(new byte[] { 11, 29 }, 0, lease.RawPointer, 2);
+            // A file-backed result must still use the supplied in-memory snapshot, without opening its path.
+            var model = new MeasureResultImgModel { Id = 735, FileUrl = "missing-local-snapshot.cvraw" };
+            camera.ShowLocalResult(model, LocalCameraPreview.Create(frame), forceDisplay: false);
+            Assert.Single(camera.ViewResults);
+            byte[] pixels = new byte[2];
+            Assert.IsAssignableFrom<System.Windows.Media.Imaging.BitmapSource>(camera.ImageView.ViewBitmapSource).CopyPixels(pixels, 2, 0);
+            Assert.Equal(autoRefresh ? new byte[] { 11, 29 } : new byte[] { 3, 7 }, pixels);
+            if (!autoRefresh) Assert.Same(previous, camera.ImageView.ViewBitmapSource);
+        });
+    }
+
     private static ShellCase CreateShell(string kind)
     {
         // Constructors of real devices/MQTT services discover hardware, subscribe to the

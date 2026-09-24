@@ -135,7 +135,10 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <WrapPanel Margin="0,0,0,10">
-                            <TextBlock Text="{engine:EngineLang Key='默认开启 · 全局 1 个 CVRAW 槽位'}" FontWeight="SemiBold" Margin="0,0,22,0"/>
+                            <CheckBox x:Name="ImageCacheEnabledCheckBox" Content="{engine:EngineLang 启用 CVRAW 文件缓存}"
+                                      Click="ImageCacheEnabledCheckBox_Click" Margin="0,0,22,0" VerticalAlignment="Center"
+                                      ToolTip="{engine:EngineLang Key='默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变。'}"/>
+                            <TextBlock Text="{engine:EngineLang Key='全局 1 个 CVRAW 槽位'}" FontWeight="SemiBold" Margin="0,0,22,0"/>
                             <TextBlock x:Name="ImageCapacityText" FontWeight="SemiBold" Margin="0,0,22,0"/>
                             <TextBlock x:Name="ImageHitSummaryText"/>
                         </WrapPanel>

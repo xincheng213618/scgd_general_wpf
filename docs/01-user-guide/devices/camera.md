@@ -120,6 +120,8 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 `CameraRealtimeFramePipeline` 将原始回调帧交给 ImageEditor 的 `RealtimeFramePresenter`。presenter 在 UI Dispatcher 应用 FlipX/FlipY，并把帧交给共用 `ImageStreamPresentation`；颜色表与范围来自每视图 `ImageDisplayEffects`，不从工具栏发现状态。可变源复制并冻结后才进入后台伪彩，最多一帧执行、一帧等待，新输入覆盖等待帧；参数变化、换图、流重置和释放后的结果必须通过有效期检查才能发布。
 
+视频启动先清理上一文件的路径、打开器工具、图层和测量状态，再重置实时帧队列。旧 CVRAW 后台读取即使晚到也不能覆盖视频，旧文件的校正/POI 数据不能继续作用于实时帧；重新启动视频会丢弃上一轮尚未显示的帧。实时输入继续使用 `DispatcherPriority.Background` 调度，给鼠标/键盘输入留出机会。此入口不受结果列表的 `AutoRefreshView` 控制。
+
 帧发布以 `CommitSourcePixels` 登记与显示结果对应的同一帧原图，再经 `ImagePresentation` 发布处理显示。关闭伪彩或处理失败时恢复该帧原图；第一次没有基准源时也先发布原图，随后建立尺寸、像素格式和缩放状态。冻结快照、队列和重入保护的完整契约见[连续帧显示](../../04-api-reference/ui-components/image-editor-context.md#连续帧显示)。这会更新预览文档的源与 revision，不改写相机采集缓冲、流程测量数据或结果文件。
 
 对焦清晰度指标独立由 `CameraFocusFrameProcessor` 计算，输入是原始帧的拥有型副本及 ROI/算法请求；该处理器不生成伪彩图。其双缓冲保留一帧工作和一帧等待，单次处理异常记录日志后继续接收，关闭时等待 worker 退出再释放缓冲。`CameraRealtimeFramePipeline` 以自身 generation 拒绝停流后指标，指标叠加与图像显示分别更新。十字参考线使用独立 `VideoCrossGuideProcessor`，不能把相机指标生命周期等同于视频文件播放的 `VideoPlaybackSession`。
@@ -138,6 +140,8 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，旧的无文件记录无法重新打开。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
+自动流程在 `AutoRefreshView=false` 时跳过内存预览复制，结果仍可加入列表；主面板手动取图的强制显示请求不受此开关阻止。直接快照显示先清理文件状态，带完整 CIE 时继续挂载内存测量数据。实时帧、取图快照和 CVRAW 文件槽位分别拥有自己的像素：覆盖或统一释放文件/校正缓存不会释放已经显示的独立帧。文件读取缓冲复用也不会消除实时流和取图快照现有的复制与冻结成本。
+
 有记录但无图时，先检查选中行、`FileUrl` 和文件加载；出现其它相机记录时，核对是否执行过全表查询。设备右键菜单 `CameraLog` 从配置的主服务目录查找最新相机日志，可结合命令终态及错误消息定位远程失败。
 
 ## 设备关联与资源释放
@@ -152,6 +156,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 - `DeviceCameraAssociationTests` 覆盖关联/解绑对象不改许可证中设备 ID 的断言；不覆盖 `Save()`、数据库写入和服务重启。
 - `CameraViewLifecycleTests` 覆盖结果列表解绑的幂等性、事件/绑定清理；不证明完整视频或硬件生命周期。
+- `CameraPreviewFileHandoffTests` 使用真实 WPF 视图和软件构造的帧检查文件→视频的过期读取拒绝、旧校正/POI 清理、预览重启丢弃待显示帧、8/16 位单/三通道副本独立、统一释放缓存、视频→文件及 RAW/CIE 直接快照→文件切换；`DeferredDeviceViewTests` 检查自动刷新开关及手动强制显示。这些测试不连接真实相机，不覆盖驱动回调时序与现场长时间运行。
 - `LocalCameraSessionTests` 覆盖物理配置 JSON 的 14 个字段映射及全帧零 ROI。`LocalCameraOwnershipTests` 用原生替身检查复用、失败状态、参数冲突及关闭后重开；`CameraBackendRoutingTests` 覆盖软开关、当前会话路由、占用和服务心跳隔离；`LocalCameraResultTests` 覆盖默认保存及关闭保存、独立预览副本、方向、非对齐行、与 CVRAW 解码像素的一致性、结果文件字段和曝光回填。它们不打开真实硬件、不写实际业务数据库。
 - `LocalFlowNodePortTests.LocalFrameLivesAcrossNodeCopiesAndEndsWithFlow` 检查节点副本共享帧及流程结束后不能再 Acquire；该用例在结束前已释放租约。`LocalFrameMirrorTests` 检查 RAW/CIE 各自的方向、校正准备及幂等翻转，不覆盖异步预览与校正并发。
 - `LvCameraLocalForwardingTests` 用真实流程节点及采集/保存替身检查连续 L/BV 转发、参数和批次交接、POI 忽略、服务请求保留、CV 范围隔离、失败不回退和超时/停止后的资源清理；不连接硬件或业务数据库。

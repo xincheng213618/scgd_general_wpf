@@ -17,7 +17,86 @@ namespace ColorVision.UI.Tests;
 public sealed class CVFileReadCacheTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), $"cvraw-cache-{Guid.NewGuid():N}");
-    public CVFileReadCacheTests() { Directory.CreateDirectory(root); CVFileReadCache.Release(); }
+    public CVFileReadCacheTests() { Directory.CreateDirectory(root); CVFileReadCache.IsEnabled = true; CVFileReadCache.Release(); }
+
+    [Theory]
+    [InlineData(8, 1)]
+    [InlineData(8, 3)]
+    [InlineData(16, 1)]
+    [InlineData(16, 3)]
+    public void DisabledCacheUsesFilesIncludingMetadataAndKeepsPixelBufferReuse(int bpp, int channels)
+    {
+        string path = Path.Combine(root, "toggle.cvraw");
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(17, 13, bpp, channels);
+        Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+        CvRawPixelBuffer pixels = new();
+        using CVCIEFile first = pixels.Read(path);
+        byte[] reused = first.Data;
+
+        CVFileReadCache.IsEnabled = false;
+        var disabled = CVFileReadCache.GetSnapshot();
+        Assert.False(disabled.IsEnabled);
+        Assert.Equal(0, disabled.CapacityBytes);
+        raw.Data[0] ^= 255;
+        Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+        CVFileMetadata.SetProperty(path, "test-json", 1, [1, 2, 3]);
+        Assert.Equal(new byte[] { 1, 2, 3 }, CVFileMetadata.Read(path)["test-json"].Value);
+        using (Stream file = CVFileReadCache.OpenRead(path)) Assert.IsType<FileStream>(file);
+        AssertChannels(path, raw);
+        using CVCIEFile disk = pixels.Read(path);
+        Assert.Same(reused, disk.Data);
+        Assert.Equal(raw.Data, disk.Data);
+        var afterReads = CVFileReadCache.GetSnapshot();
+        Assert.Null(afterReads.FilePath);
+        Assert.Equal(0, afterReads.CapacityBytes);
+        Assert.Equal(disabled.AllocationCount, afterReads.AllocationCount);
+        Assert.Equal(disabled.HitCount, afterReads.HitCount);
+
+        CVFileReadCache.IsEnabled = true;
+        using CVCIEFile cached = pixels.Read(path);
+        Assert.Same(reused, cached.Data);
+        Assert.Equal(raw.Data, cached.Data);
+        Assert.Equal(path, CVFileReadCache.GetSnapshot().FilePath);
+        AssertCacheEqualsDisk(path);
+    }
+
+    [Fact]
+    public void DisablingRetainsBorrowedPixelsUntilLastReaderReturnsAndBlocksNewCacheHits()
+    {
+        string path = Path.Combine(root, "borrowed.cvraw");
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(17, 13, 16, 3);
+        Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+        using Stream first = CVFileReadCache.OpenRead(path);
+        using Stream second = CVFileReadCache.OpenRead(path);
+        CVFileReadCache.IsEnabled = false;
+        Assert.True(CVFileReadCache.GetSnapshot().CapacityBytes > 0);
+        Assert.Null(CVFileReadCache.GetSnapshot().FilePath);
+        using (Stream fallback = CVFileReadCache.OpenRead(path)) Assert.IsType<FileStream>(fallback);
+        Assert.Equal(HashFile(path), SHA256.HashData(first));
+        first.Dispose();
+        Assert.True(CVFileReadCache.GetSnapshot().CapacityBytes > 0);
+        Assert.Equal(HashFile(path), SHA256.HashData(second));
+        second.Dispose();
+        Assert.Equal(0, CVFileReadCache.GetSnapshot().CapacityBytes);
+    }
+
+    [Fact]
+    public void ReenablingDuringBorrowDoesNotPublishOldKeyOrReleaseAnActivePointer()
+    {
+        string path = Path.Combine(root, "reenable.cvraw");
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(17, 13, 16, 3);
+        Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+        using Stream borrowed = CVFileReadCache.OpenRead(path);
+        IntPtr pointer = SlotPointer();
+        CVFileReadCache.IsEnabled = false;
+        CVFileReadCache.IsEnabled = true;
+        using (Stream fallback = CVFileReadCache.OpenRead(path)) Assert.IsType<FileStream>(fallback);
+        Assert.Null(CVFileReadCache.GetSnapshot().FilePath);
+        Assert.Equal(HashFile(path), SHA256.HashData(borrowed));
+        borrowed.Dispose();
+        AssertCacheEqualsDisk(path);
+        Assert.Equal(pointer, SlotPointer());
+    }
 
     [Fact]
     public void SavedFilesReuseOneSlotAcrossPathsChannelsAndBitDepths()
@@ -330,6 +409,7 @@ public sealed class CVFileReadCacheTests : IDisposable
     public void Dispose()
     {
         CVFileReadCache.Release();
+        CVFileReadCache.IsEnabled = true;
         // Only this test's newly created, flat directory is touched.
         foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
         Directory.Delete(root);
