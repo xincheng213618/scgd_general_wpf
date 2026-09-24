@@ -1,6 +1,4 @@
-using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Update;
 using System.Windows;
 
 namespace ColorVision.ServiceHost

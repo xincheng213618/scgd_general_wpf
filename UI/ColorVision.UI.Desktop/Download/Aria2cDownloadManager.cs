@@ -3,7 +3,6 @@ using log4net;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
 using ColorVision.Update;
-using ColorVision.UI;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

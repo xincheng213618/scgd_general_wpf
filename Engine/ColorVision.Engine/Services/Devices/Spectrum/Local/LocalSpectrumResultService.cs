@@ -1,6 +1,5 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

@@ -1,6 +1,5 @@
 ﻿using ColorVision.ImageEditor.EditorTools.Algorithms;
 using ColorVision.Algorithms;
-using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Algorithms;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
@@ -8,11 +7,9 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Results;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor.Algorithms;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;

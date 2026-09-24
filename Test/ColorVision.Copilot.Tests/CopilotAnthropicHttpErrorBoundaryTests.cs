@@ -1,6 +1,5 @@
 using Anthropic;
 using Anthropic.Exceptions;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.IO;
 using System.Net;

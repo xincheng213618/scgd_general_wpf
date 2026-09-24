@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1707,CA1852,CS8601
 using ColorVision.Themes;
-using ColorVision.UI.Extension;
 using log4net;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -9,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;

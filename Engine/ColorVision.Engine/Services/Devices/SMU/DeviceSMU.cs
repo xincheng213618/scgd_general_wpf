@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;

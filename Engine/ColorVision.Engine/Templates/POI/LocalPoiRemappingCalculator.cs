@@ -1,6 +1,5 @@
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.Generic;

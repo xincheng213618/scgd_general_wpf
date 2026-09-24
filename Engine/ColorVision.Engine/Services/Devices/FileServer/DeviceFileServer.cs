@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.FlowDevice;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;

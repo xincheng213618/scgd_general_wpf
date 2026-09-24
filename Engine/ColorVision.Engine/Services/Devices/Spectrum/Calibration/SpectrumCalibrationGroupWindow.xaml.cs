@@ -1,6 +1,5 @@
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Documents;

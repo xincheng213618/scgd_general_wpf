@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using Newtonsoft.Json;
-using ProjectARVRPro.Process.MTF.MTF07;
 
 #pragma warning disable CA1707 // 测试点属性名需与既有MTF命名和导出字段保持一致
 

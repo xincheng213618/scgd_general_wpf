@@ -1,5 +1,4 @@
 #pragma warning disable CA1051,CA1805,CA1806,CA1826,CA1859,CS8625
-using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -19,11 +18,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Camera

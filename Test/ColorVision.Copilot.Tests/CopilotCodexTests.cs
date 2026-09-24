@@ -1,7 +1,6 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using AIMessage = Microsoft.Extensions.AI.ChatMessage;
 

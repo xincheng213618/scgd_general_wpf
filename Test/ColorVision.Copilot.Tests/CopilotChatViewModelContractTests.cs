@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Copilot.Tests;

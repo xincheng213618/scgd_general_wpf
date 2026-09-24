@@ -1,6 +1,4 @@
 #pragma warning disable MAAI001
-using ColorVision.Copilot;
-using ColorVision.Copilot.Mcp;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.IO;

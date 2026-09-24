@@ -3,19 +3,13 @@ using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
-using ColorVision.UI;
 using log4net;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.Marketplace

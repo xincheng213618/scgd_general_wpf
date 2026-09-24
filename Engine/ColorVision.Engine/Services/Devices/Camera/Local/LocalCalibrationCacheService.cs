@@ -1,7 +1,5 @@
 using ColorVision.Core;
 using ColorVision.FileIO;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Camera;
 using System;
 using System.Collections.Generic;
 using System.Linq;

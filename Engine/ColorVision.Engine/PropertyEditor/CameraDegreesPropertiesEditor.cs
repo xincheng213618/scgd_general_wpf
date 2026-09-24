@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using System;
 using System.ComponentModel;
 using System.Globalization;

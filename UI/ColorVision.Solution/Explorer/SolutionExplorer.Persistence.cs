@@ -1,20 +1,8 @@
 #pragma warning disable CS4014,CS8602,CS8604
-using ColorVision.Common.MVVM;
-using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
-using ColorVision.UI;
-using ColorVision.UI.Extension;
-using ColorVision.UI.Menus;
-using log4net;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
 
 namespace ColorVision.Solution.Explorer
 {

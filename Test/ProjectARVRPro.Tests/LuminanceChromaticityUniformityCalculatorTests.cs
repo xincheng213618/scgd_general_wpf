@@ -4,7 +4,6 @@ using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Recipe;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

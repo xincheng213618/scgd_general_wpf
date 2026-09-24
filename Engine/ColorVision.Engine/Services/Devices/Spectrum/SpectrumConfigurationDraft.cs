@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;

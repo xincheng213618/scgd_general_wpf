@@ -1,10 +1,6 @@
-using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
-using ColorVision.Copilot;
 
 namespace ColorVision.Copilot.Tests;
 

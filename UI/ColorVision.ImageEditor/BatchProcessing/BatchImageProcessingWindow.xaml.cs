@@ -3,7 +3,6 @@ using ColorVision.UI;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
 using log4net;
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

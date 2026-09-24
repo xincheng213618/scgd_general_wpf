@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System.IO;
 using System.Windows;

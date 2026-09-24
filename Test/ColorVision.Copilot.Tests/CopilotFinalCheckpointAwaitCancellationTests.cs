@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.Collections.Concurrent;

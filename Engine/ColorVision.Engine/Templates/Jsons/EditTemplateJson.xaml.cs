@@ -1,5 +1,4 @@
 #pragma warning disable CA1805,CS8601,CS8604,CS8625
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Utilities;
 using System;

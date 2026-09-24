@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Solution.Editor;
+﻿using ColorVision.Solution.Editor;
 using ColorVision.Solution.Mru;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;

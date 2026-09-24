@@ -1,5 +1,4 @@
 #pragma warning disable CA1822
-using ColorVision.UI;
 using ColorVision.Solution.Editor.AvalonEditor;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;

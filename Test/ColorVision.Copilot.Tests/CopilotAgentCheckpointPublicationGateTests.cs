@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotAgentCheckpointPublicationGateTests

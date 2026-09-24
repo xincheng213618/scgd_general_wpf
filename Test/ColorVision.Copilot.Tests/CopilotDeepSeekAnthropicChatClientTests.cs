@@ -4,7 +4,6 @@ using System.Text;
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Core;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;

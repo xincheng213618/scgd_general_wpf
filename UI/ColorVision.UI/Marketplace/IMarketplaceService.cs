@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace ColorVision.UI.Marketplace
 {
     /// <summary>

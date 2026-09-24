@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Settings;
-using ColorVision.UI;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;

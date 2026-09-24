@@ -1,7 +1,6 @@
 ﻿using ColorVision.Solution.Explorer;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
-using System.IO;
 using System.Windows;
 
 namespace ColorVision.Solution

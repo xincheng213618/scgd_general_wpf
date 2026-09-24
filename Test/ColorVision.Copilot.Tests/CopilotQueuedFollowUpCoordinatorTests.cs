@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-using ColorVision.UI;
 using Newtonsoft.Json.Linq;
 using System.IO;
 

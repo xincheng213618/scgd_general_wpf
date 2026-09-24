@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 

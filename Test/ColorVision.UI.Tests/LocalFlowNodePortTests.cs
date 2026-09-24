@@ -10,11 +10,7 @@ using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.POI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using Xunit;
 
 namespace ColorVision.UI.Tests;
 

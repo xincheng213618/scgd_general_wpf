@@ -1,6 +1,4 @@
 using ColorVision.Themes;
-using System;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.UI.Serach

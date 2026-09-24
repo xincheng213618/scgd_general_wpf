@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;

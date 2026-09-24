@@ -2,7 +2,6 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Logical;
 using ST.Library.UI.NodeEditor;
 using System.Text;
-using Xunit;
 
 namespace ColorVision.UI.Tests;
 

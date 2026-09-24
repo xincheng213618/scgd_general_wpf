@@ -1,7 +1,6 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using ColorVision.Solution.Explorer;
 using Microsoft.Extensions.AI;

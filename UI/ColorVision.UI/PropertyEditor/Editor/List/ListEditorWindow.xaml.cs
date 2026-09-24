@@ -1,5 +1,4 @@
 #pragma warning disable CA1863
-using ColorVision.UI.Properties;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Windows;

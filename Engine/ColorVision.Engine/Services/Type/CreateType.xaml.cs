@@ -1,9 +1,7 @@
-using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using Newtonsoft.Json;
-using SqlSugar;
 using System;
 using System.Windows;
 using System.Windows.Input;

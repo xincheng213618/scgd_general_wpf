@@ -2,7 +2,6 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Diagnostics;
-using System.Threading;
 
 namespace ColorVision.Copilot
 {

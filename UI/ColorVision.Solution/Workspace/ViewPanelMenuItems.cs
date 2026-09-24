@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
-using System;
 using System.Windows;
 
 namespace ColorVision.Solution.Workspace

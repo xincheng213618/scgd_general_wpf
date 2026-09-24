@@ -1,7 +1,6 @@
 using CameraTest.Application;
 using CameraTest.Models;
 using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;

@@ -2,7 +2,6 @@ using ColorVision.Themes;
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Desktop.Properties;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {

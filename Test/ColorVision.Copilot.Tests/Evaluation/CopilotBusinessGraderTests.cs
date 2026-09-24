@@ -1,5 +1,4 @@
 using System.IO;
-using ColorVision.Copilot;
 
 namespace ColorVision.Copilot.Tests.Evaluation;
 

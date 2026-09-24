@@ -5,7 +5,6 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.EditorTools.PseudoColor;
 using ColorVision.ImageEditor.Settings;
-using ColorVision.UI;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

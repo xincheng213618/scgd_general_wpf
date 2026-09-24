@@ -1,10 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Desktop.Operations;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

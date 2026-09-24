@@ -1,9 +1,4 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;

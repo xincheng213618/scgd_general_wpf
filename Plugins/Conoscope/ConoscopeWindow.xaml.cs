@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
-using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -30,7 +29,6 @@ using Conoscope.ApplicationServices.Capture;
 using System.Collections.Generic;
 using System.ComponentModel;
 using ColorVision.Core;
-using ColorVision.ImageEditor;
 using Conoscope.Presentation.Formatters;
 using System.Windows.Input;
 using Conoscope.Presentation.Helpers;

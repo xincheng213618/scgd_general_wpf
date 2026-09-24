@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.PropertyEditor.Editor.List;
-using ColorVision.UI.Properties;
 
 namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
 {

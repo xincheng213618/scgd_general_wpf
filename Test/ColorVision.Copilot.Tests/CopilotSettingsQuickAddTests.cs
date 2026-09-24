@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.Collections.ObjectModel;
 using System.IO;
 

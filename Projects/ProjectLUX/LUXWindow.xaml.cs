@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
-using Azure;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -22,7 +21,6 @@ using log4net;
 using ProjectLUX.Fix;
 using ProjectLUX.ImageExport;
 using ProjectLUX.Process;
-using ProjectLUX.Services;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;

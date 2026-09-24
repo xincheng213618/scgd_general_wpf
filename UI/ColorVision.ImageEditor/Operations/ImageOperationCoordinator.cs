@@ -1,6 +1,5 @@
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
-using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;

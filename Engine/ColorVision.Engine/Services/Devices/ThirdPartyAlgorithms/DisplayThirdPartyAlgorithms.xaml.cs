@@ -1,7 +1,5 @@
 #pragma warning disable CA1816,CA1822,CS0168,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Templates;
@@ -11,11 +9,9 @@ using log4net;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
-using ColorVision.Engine.Services;
 using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms

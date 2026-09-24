@@ -1,7 +1,5 @@
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
-using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 

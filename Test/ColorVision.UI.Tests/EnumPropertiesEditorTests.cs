@@ -1,5 +1,4 @@
 using ColorVision.Engine.Media;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;

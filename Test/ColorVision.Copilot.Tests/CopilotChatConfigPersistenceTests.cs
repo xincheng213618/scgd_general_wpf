@@ -1,6 +1,4 @@
-using ColorVision.Copilot;
 using ColorVision.Solution;
-using ColorVision.UI;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.IO;

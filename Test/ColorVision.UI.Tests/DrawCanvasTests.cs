@@ -1,5 +1,4 @@
 using ColorVision.ImageEditor;
-using System.Threading;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Tests;

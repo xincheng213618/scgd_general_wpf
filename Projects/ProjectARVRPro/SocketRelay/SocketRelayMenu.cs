@@ -1,5 +1,4 @@
 using ColorVision.UI.Menus;
-using System.Windows;
 
 namespace ProjectARVRPro.SocketRelay
 {

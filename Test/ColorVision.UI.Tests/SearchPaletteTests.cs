@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus.Base.File;
 using ColorVision.UI.Serach;
 using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;

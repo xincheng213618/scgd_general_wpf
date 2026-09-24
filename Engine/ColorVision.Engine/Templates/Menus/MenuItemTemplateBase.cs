@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Menus

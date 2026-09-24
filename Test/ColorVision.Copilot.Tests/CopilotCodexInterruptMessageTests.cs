@@ -1,9 +1,4 @@
-using ColorVision.Copilot;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Tests;
 

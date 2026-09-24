@@ -1,7 +1,6 @@
 #pragma warning disable CA1001
 using ColorVision.Engine.Media;
 using ColorVision.Engine.FlowProcessing;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;

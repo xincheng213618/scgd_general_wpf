@@ -8,7 +8,6 @@ using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

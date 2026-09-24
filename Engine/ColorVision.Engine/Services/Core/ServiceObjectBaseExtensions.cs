@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Templates;
 using log4net;

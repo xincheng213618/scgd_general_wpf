@@ -1,5 +1,3 @@
-using System;
-
 namespace ColorVision.Copilot
 {
     internal enum CopilotPermissionCommandAction

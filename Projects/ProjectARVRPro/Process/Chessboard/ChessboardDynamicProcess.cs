@@ -4,16 +4,12 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.KeyedResults;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Chessboard
 {

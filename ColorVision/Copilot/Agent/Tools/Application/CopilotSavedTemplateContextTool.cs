@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ColorVision.Copilot
 {
     public sealed class CopilotInspectSavedTemplateTool : CopilotFlowReadToolBase

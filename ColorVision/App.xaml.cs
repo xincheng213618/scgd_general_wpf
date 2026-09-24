@@ -2,7 +2,6 @@
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
 using ColorVision.Engine.Services.Operations;
-using ColorVision.Properties;
 using ColorVision.Recovery;
 using ColorVision.Themes;
 using ColorVision.UI;

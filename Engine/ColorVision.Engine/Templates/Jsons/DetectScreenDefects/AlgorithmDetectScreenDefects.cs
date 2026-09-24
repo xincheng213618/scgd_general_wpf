@@ -1,11 +1,9 @@
-using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
 using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {

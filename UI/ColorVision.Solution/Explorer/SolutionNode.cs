@@ -2,11 +2,9 @@ using ColorVision.Common.Utilities;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Runtime.Serialization;
 using System.IO;
-using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.Solution.Explorer

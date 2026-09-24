@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;

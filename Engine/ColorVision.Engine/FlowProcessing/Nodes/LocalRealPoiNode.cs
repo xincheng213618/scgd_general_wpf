@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.BuildPoi;
-using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;

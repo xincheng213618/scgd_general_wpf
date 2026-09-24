@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;

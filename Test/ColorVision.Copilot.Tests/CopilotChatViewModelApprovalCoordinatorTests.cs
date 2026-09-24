@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;

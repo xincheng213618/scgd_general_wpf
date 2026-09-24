@@ -1,6 +1,5 @@
 #pragma warning disable CA1822,CA1852,CS8601,CS8603,CS8604,CS8621,CS8625,CS8714
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using log4net;
@@ -16,7 +15,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Properties = ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.FlowProcessing.PreProcess
 {

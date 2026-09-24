@@ -1,7 +1,5 @@
 using ColorVision.FloatingBall;
-using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests
 {

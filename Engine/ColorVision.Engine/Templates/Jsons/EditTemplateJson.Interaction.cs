@@ -1,7 +1,6 @@
 using ColorVision.Themes;
 using ICSharpCode.AvalonEdit.Rendering;
 using ICSharpCode.AvalonEdit.Search;
-using System;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;

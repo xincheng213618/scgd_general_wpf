@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using System;
 using System.IO;
 using System.Windows;

@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;

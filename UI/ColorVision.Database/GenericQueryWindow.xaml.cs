@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1725,CA1863,CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Database.Properties;
 using ColorVision.Themes;
 using log4net;
 using SqlSugar;

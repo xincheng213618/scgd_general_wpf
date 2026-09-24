@@ -4,7 +4,6 @@ using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Rectangle;
 using System;
 using System.Collections.Generic;
 using System.Linq;

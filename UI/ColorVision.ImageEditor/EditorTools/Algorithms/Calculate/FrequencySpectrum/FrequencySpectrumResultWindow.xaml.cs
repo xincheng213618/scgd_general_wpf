@@ -2,7 +2,6 @@ using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
 using Microsoft.Win32;
-using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Data;

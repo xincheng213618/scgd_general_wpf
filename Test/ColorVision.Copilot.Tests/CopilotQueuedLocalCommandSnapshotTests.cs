@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Workspace;

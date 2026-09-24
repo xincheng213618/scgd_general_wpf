@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using Newtonsoft.Json.Linq;
 using System.Runtime.CompilerServices;

@@ -4,7 +4,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;

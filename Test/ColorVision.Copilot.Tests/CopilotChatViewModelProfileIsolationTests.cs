@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 

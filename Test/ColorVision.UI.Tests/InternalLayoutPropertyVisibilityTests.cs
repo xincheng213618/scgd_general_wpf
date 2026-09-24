@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Solution.MultiImageViewer;
-using ColorVision.UI;
 using System.ComponentModel;
 
 namespace ColorVision.UI.Tests;

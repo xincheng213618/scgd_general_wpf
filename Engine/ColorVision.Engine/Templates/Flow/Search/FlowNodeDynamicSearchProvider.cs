@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.FlowProcessing.Editor;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.UI;
 using System;

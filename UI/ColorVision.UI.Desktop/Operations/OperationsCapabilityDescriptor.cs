@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsRiskLevels

@@ -1,4 +1,3 @@
-using ColorVision.Core;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;

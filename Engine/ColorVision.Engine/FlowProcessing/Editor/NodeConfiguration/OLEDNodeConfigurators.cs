@@ -1,5 +1,4 @@
 #pragma warning disable CA1707
-using ColorVision.Engine.Properties;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg;

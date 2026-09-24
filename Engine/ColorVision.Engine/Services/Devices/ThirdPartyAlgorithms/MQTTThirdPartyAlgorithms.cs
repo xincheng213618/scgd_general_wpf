@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
-using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms

@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
-using Xunit;
 using NativeHotkeys = ColorVision.UI.HotKey.GlobalHotKey.GlobalHotKey;
 using RoutedHotkeys = ColorVision.UI.HotKey.WindowHotKey.WindowHotKey;
 

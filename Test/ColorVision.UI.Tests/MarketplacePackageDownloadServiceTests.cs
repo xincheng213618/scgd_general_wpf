@@ -2,13 +2,9 @@
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Marketplace;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests
 {

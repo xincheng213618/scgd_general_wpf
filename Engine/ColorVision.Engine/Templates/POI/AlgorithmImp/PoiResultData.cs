@@ -1,7 +1,6 @@
 #pragma warning disable CA1859,CA2249,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;

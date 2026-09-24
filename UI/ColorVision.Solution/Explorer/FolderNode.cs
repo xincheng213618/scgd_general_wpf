@@ -1,7 +1,6 @@
 #pragma warning disable CA1805,CS4014,CS8602,CS8603,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;

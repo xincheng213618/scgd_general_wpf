@@ -1,9 +1,6 @@
 #pragma warning disable CA1868
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;

@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.Net;
 using System.Net.Http;

@@ -1,7 +1,6 @@
 #pragma warning disable CA1707,CA1711,CA1852
 using System.ComponentModel;
 using System.Globalization;
-using ColorVision.UI.PropertyEditor.Editor.List;
 using FlowEngineLib.Node.Algorithm;
 
 namespace ColorVision.UI.Tests;

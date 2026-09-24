@@ -1,5 +1,3 @@
-using Conoscope.Analysis;
-using Conoscope.Core;
 using System;
 using System.Windows;
 

@@ -1,5 +1,4 @@
 using ColorVision.Algorithms;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparison;

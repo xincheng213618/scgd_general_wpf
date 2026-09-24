@@ -6,7 +6,6 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
-using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;

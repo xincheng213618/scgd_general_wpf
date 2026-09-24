@@ -1,6 +1,4 @@
 using ColorVision.Database;
-using System;
-using System.Collections.Generic;
 
 namespace ColorVision.UI.Tests;
 

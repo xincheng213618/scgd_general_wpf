@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;

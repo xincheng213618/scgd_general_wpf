@@ -1,10 +1,3 @@
-using ColorVision.Copilot;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexShellEnvironmentPolicyTests

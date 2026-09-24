@@ -2,7 +2,6 @@ using Anthropic;
 using Anthropic.Core;
 using Anthropic.Exceptions;
 using Anthropic.Models;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.IO;
 using System.Net;

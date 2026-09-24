@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Themes;
 using ColorVision.UI.Json;
 using ColorVision.UI.Menus;
 using ColorVision.Windowing;

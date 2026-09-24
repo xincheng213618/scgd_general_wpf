@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Copilot.Tests;

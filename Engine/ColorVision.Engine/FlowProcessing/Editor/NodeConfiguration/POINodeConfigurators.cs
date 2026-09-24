@@ -1,4 +1,3 @@
-using ColorVision.Engine.Properties;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
 

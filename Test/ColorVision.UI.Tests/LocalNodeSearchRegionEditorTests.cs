@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.FlowProcessing.Nodes;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;

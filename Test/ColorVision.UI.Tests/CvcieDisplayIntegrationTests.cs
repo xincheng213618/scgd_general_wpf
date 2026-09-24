@@ -2,7 +2,6 @@ using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
-using ColorVision.UI;
 using log4net;
 using log4net.Appender;
 using log4net.Core;

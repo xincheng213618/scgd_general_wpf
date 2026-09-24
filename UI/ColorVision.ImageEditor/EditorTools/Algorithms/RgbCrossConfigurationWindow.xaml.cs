@@ -2,12 +2,10 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ICSharpCode.AvalonEdit.Highlighting;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms;

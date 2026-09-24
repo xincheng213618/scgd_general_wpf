@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ProjectARVRPro.Process.MTF.MTF07;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 

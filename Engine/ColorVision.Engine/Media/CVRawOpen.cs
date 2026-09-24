@@ -2,7 +2,6 @@
 #pragma warning disable CA1001
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates.POI;
@@ -13,7 +12,6 @@ using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;

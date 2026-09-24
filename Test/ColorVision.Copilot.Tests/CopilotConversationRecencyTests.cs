@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 

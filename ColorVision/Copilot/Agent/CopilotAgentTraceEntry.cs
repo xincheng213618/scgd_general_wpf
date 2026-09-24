@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Copilot.Mcp;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

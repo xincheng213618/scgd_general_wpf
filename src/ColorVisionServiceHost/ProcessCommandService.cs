@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Management;
-using Newtonsoft.Json.Linq;
 
 namespace ColorVisionServiceHost;
 

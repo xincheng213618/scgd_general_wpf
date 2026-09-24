@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotHostedTurnCompletionTests

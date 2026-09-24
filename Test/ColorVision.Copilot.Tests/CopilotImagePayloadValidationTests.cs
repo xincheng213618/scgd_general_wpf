@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using ColorVision.Copilot;
 using SkiaSharp;
 
 namespace ColorVision.Copilot.Tests;

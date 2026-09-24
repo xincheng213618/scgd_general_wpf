@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
 using SqlSugar;

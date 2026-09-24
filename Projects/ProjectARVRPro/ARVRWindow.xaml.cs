@@ -25,7 +25,6 @@ using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.LegacyARVR;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
-using ProjectARVRPro.SocketRelay;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.Specialized;
@@ -285,6 +284,7 @@ namespace ProjectARVRPro
         bool IsSwitchRun;
         public async void SwitchPGCompleted()
         {
+            if (_objectiveSessionCompleted) return;
             _pendingSwitchAcknowledgedAt ??= DateTime.Now;
             try
             {
@@ -1255,9 +1255,27 @@ namespace ProjectARVRPro
                 _flowRuntimeEstimates.RecordCompleted(_currentRuntimeEstimateKey, stopwatch.ElapsedMilliseconds);
                 CurrentFlowResult.Msg = "Completed";
                 bool processingSucceeded;
+                bool pgRequested = false;
+                string? pgRequestFailure = null;
+                void RequestNextPg()
+                {
+                    pgRequested = true; // 发送结果不明时，也不能从兜底分支再次尝试。
+                    try
+                    {
+                        if (!SwitchPG()) pgRequestFailure = "PG切图请求发送失败：未连接可用的Socket客户端";
+                    }
+                    catch (Exception ex)
+                    {
+                        pgRequestFailure = $"PG切图请求发送失败：{ex.Message}";
+                        log.Error(pgRequestFailure, ex);
+                    }
+                }
                 try
                 {
-                    processingSucceeded = await Processing(FlowControlData.SerialNumber);
+                    processingSucceeded = await Processing(FlowControlData.SerialNumber, () =>
+                    {
+                        if (!IsTestTypeCompleted()) RequestNextPg();
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -1269,20 +1287,25 @@ namespace ProjectARVRPro
                     processingSucceeded = false;
                 }
 
-                _isFlowLifecycleActive = false;
-                if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
-                {
-                    TestCompleted();
-                }
-                else if (!IsTestTypeCompleted())
-                {
-                    SwitchPG();
-                }
-                else
-                {
-                    TestCompleted();
-                }
                 TryCount = 0;
+                bool continueToNext = (processingSucceeded || ProjectARVRProConfig.Instance.AllowTestFailures) && !IsTestTypeCompleted();
+                if (continueToNext && !pgRequested) RequestNextPg();
+                if (pgRequestFailure != null)
+                {
+                    AbortCurrentTestSession(pgRequestFailure);
+                    _isFlowLifecycleActive = false;
+                    return;
+                }
+                _isFlowLifecycleActive = false;
+                if (!continueToNext)
+                {
+                    TestCompleted();
+                }
+                else if (_pendingSwitchAcknowledgedAt.HasValue)
+                {
+                    // 保存异常弹窗等嵌套消息循环可能已经接收回包；收尾后继续消费。
+                    SwitchPGCompleted();
+                }
             }
             else if (FlowControlData.EventName == "OverTime")
             {
@@ -1352,7 +1375,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task<bool> Processing(string SerialNumber)
+        private async Task<bool> Processing(string SerialNumber, Action? beforeSave = null)
         {
             Stopwatch batchLookupStopwatch = Stopwatch.StartNew();
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
@@ -1414,6 +1437,8 @@ namespace ProjectARVRPro
                     }
                     if (executed)
                     {
+                        // PG 准备与后续同步保存重叠；下一 Flow 仍由切图回包启动。
+                        beforeSave?.Invoke();
                         ViewResultManagerConfig exportConfig = ViewResultManager.Config;
                         if (exportConfig.IsSaveImageReuslt || exportConfig.IsSaveSourceImage)
                         {
@@ -1603,12 +1628,12 @@ namespace ProjectARVRPro
         }
 
 
-        private void SwitchPG()
+        private bool SwitchPG()
         {
             if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
             {
                 log.Info("找不到连接的Socket");
-                return;
+                return false;
             }
             log.Info("Socket已经链接 ");
 
@@ -1660,7 +1685,7 @@ namespace ProjectARVRPro
             SocketMessageManager.GetInstance().AddMessage(sentMsg);
             MarkSwitchRequested();
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-
+            return true;
         }
 
         private void TestCompleted()

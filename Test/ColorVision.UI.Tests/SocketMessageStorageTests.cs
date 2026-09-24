@@ -3,7 +3,6 @@ using ColorVision.SocketProtocol;
 using SqlSugar;
 using System.Data;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.UI.Tests;
 

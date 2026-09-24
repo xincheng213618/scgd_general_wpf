@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;

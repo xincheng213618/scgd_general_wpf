@@ -4,7 +4,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using System;
 using System.Collections.Generic;

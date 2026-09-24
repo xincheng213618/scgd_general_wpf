@@ -1,7 +1,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Tooling;
-using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

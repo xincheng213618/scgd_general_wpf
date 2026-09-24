@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using System.IO;
 using System.Reflection;

@@ -1,10 +1,8 @@
 using CameraTest.Application;
 using CameraTest.Models;
-using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using Microsoft.Win32;

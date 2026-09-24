@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ColorVision.Database;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {

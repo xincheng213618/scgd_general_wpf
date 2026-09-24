@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Mru;
 using ColorVision.Solution.Workspace;
 using ColorVision.Solution.Explorer;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
 using log4net;

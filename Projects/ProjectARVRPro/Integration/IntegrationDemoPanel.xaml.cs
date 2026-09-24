@@ -4,8 +4,6 @@ using ColorVision.UI.Marketplace;
 using log4net;
 using ProjectARVRPro.PluginConfig;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 

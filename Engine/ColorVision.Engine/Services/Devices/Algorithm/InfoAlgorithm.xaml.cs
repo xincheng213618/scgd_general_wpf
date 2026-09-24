@@ -1,7 +1,5 @@
-﻿using ColorVision.Themes.Controls;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm

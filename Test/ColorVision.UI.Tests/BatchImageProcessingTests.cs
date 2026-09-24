@@ -3,10 +3,7 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using OpenCvSharp;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;

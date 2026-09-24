@@ -2,7 +2,6 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Output;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

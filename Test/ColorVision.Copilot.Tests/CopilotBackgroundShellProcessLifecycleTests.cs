@@ -1,10 +1,7 @@
-using ColorVision.Copilot;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Tests;
 

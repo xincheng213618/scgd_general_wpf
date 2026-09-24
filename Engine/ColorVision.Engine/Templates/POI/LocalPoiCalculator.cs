@@ -2,7 +2,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;

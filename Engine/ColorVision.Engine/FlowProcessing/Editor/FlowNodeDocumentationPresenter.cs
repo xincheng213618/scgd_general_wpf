@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {

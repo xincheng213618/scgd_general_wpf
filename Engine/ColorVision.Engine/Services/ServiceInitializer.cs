@@ -2,12 +2,10 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;

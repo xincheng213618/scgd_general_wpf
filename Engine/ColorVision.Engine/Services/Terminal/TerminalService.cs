@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
@@ -8,7 +7,6 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
-using SqlSugar;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;

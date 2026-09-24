@@ -7,7 +7,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Solution;
 using ColorVision.Solution.Explorer;

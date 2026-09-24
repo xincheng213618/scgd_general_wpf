@@ -1,7 +1,6 @@
 using ColorVision.UI;
 using log4net;
 using ProjectARVRPro.Services;
-using System.Threading.Tasks;
 
 namespace ProjectARVRPro.PluginConfig
 {

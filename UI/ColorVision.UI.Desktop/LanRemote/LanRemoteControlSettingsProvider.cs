@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ColorVision.UI.Desktop.LanRemote
 {
     public sealed class LanRemoteControlSettingsProvider : IConfigSettingProvider

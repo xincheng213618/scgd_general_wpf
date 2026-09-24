@@ -3,7 +3,6 @@ using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;

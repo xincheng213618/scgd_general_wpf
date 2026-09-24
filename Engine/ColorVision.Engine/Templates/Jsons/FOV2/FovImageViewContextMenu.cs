@@ -7,7 +7,6 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Rectangle;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,7 +16,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {

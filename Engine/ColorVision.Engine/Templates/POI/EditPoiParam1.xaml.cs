@@ -10,7 +10,6 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Services;
-using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
@@ -36,7 +35,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.Engine.Templates.POI

@@ -1,6 +1,5 @@
 #pragma warning disable CA1822
 using Newtonsoft.Json;
-using System;
 
 namespace ColorVision.Copilot
 {

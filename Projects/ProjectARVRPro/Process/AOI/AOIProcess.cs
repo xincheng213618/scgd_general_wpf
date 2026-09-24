@@ -6,7 +6,6 @@ using ColorVision.FileIO;
 using Newtonsoft.Json;
 using OpenCvSharp;
 using SqlSugar;
-using SqlSugar.Extensions;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;

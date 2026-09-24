@@ -2,7 +2,6 @@ using ColorVision.ImageEditor;
 using ColorVision.Core;
 using OpenCvSharp;
 using System.Reflection;
-using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

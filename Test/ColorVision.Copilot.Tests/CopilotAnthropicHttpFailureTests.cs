@@ -1,5 +1,4 @@
 using Anthropic.Exceptions;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.Globalization;
 using System.IO;

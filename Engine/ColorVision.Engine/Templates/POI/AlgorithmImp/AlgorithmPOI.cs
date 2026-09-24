@@ -1,19 +1,15 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
-using ColorVision.Engine.Services;
 using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {

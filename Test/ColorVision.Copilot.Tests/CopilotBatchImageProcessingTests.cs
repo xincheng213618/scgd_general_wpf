@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.Algorithms;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Algorithms;

@@ -2,8 +2,6 @@ using ColorVision.Database;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests;
 

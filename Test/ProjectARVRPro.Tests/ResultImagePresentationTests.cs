@@ -4,7 +4,6 @@ using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Process;
 using System.IO;
 using System.Windows.Media;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

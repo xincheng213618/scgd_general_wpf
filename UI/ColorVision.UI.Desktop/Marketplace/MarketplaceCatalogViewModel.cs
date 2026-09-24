@@ -2,14 +2,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using log4net;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {

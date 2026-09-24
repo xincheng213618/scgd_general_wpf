@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using log4net;
 using MySqlConnector;

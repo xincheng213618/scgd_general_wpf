@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
-using ColorVision.UI;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;

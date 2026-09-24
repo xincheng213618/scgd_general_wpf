@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
 

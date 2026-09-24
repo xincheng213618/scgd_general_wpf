@@ -1,6 +1,3 @@
-using ColorVision.Common.MVVM;
-using Newtonsoft.Json;
-
 namespace ColorVision.Copilot
 {
     public readonly record struct CopilotRequestMessage(string Role, string Content)

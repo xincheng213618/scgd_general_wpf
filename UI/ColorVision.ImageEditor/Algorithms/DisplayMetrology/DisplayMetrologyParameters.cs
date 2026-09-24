@@ -1,5 +1,4 @@
 using ColorVision.Algorithms;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.ImageEditor.Algorithms;

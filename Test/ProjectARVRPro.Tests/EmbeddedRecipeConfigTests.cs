@@ -21,7 +21,6 @@ using ProjectARVRPro.Process.W51;
 using ProjectARVRPro.Recipe;
 using System.IO;
 using System.Reflection;
-using Xunit;
 using DynamicMTFH07Process = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07Process;
 using DynamicMTFH07ProcessConfig = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07ProcessConfig;
 using DynamicMTFH07RecipeConfig = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07RecipeConfig;

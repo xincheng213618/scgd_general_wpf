@@ -1,5 +1,4 @@
 using ColorVision.Algorithms;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Algorithms;
 using System;
 using System.Threading.Tasks;

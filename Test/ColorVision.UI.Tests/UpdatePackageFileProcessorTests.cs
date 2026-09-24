@@ -1,5 +1,4 @@
 using ColorVision.Update;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
 

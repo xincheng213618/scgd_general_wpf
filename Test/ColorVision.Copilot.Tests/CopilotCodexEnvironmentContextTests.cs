@@ -1,6 +1,3 @@
-using ColorVision.Copilot;
-using System;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexEnvironmentContextTests

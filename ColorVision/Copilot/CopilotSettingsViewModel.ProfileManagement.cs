@@ -1,21 +1,12 @@
 ﻿#pragma warning disable CA1822
-using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Copilot

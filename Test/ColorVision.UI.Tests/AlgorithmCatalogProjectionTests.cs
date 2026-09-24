@@ -5,7 +5,6 @@ using ColorVision.ImageEditor.BatchProcessing;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using System.Collections;
 using System.Text.Json;

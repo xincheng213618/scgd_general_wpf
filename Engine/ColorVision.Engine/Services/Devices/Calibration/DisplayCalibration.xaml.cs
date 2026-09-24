@@ -1,11 +1,9 @@
-﻿using ColorVision.Database;
-#pragma warning disable CS8601
+﻿#pragma warning disable CS8601
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
@@ -18,7 +16,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {

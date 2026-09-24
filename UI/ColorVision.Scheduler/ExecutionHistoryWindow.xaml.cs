@@ -3,7 +3,6 @@ using ColorVision.Scheduler.Data;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 

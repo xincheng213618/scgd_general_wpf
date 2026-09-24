@@ -1,5 +1,4 @@
 using ColorVision.UI;
-using System;
 
 namespace ColorVision.Solution
 {

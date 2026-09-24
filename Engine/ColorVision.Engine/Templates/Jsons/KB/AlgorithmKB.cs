@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;

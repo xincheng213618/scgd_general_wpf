@@ -1,6 +1,5 @@
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -11,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;

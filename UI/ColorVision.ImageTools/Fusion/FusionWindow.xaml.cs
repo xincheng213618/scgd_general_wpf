@@ -4,7 +4,6 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Workspace;
 using Microsoft.Win32;
-using System.Threading;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;

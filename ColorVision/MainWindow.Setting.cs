@@ -1,5 +1,4 @@
-﻿using ColorVision.Solution;
-using System;
+﻿using System;
 using System.Windows.Interop;
 
 namespace ColorVision

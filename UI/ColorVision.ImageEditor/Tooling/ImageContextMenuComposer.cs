@@ -1,6 +1,5 @@
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
 using System;

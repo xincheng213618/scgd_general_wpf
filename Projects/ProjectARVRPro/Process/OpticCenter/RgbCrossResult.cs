@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
 using Newtonsoft.Json.Linq;
-using System.Globalization;
 using System.IO;
 
 namespace ProjectARVRPro.Process.OpticCenter;

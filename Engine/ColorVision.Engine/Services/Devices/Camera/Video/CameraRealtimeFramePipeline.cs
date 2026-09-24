@@ -5,7 +5,6 @@ using ColorVision.ImageEditor.Settings;
 using System;
 using System.ComponentModel;
 using System.Threading;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {

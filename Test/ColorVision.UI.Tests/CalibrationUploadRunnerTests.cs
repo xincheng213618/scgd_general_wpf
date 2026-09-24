@@ -1,7 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests;
 

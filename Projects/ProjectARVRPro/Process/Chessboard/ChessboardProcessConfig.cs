@@ -1,6 +1,5 @@
 using ColorVision.Engine.Media;
 using System.ComponentModel;
-using Newtonsoft.Json;
 
 namespace ProjectARVRPro.Process.Chessboard
 {

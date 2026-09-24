@@ -3,11 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Black
 {

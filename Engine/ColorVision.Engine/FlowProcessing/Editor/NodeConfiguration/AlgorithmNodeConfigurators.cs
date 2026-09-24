@@ -1,5 +1,3 @@
-using ColorVision.Engine.Properties;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;

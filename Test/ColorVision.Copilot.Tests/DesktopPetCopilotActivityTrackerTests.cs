@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using ColorVision.FloatingBall;
 
 namespace ColorVision.Copilot.Tests;
