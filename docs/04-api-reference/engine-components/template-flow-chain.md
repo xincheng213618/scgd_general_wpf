@@ -5,7 +5,7 @@ status: "current"
 summary: "Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。"
 aliases: ["Flow模板保存后参数为什么丢失","TemplateFlow","FlowPackageHelper","cvflow","FlowKey","FlowTemplateSaveCondition","FlowTemplateConcurrencyException","导入流程","关联模板","流程删除范围","流程多选导出","模板勾选项","StnV1NeutralCodec","动态端口索引","逻辑与索引警告","本地流程","离线流程模板","LocalFlowTemplateStorage"]
 code_paths: ["Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs","Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs","Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs","Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs","Engine/ColorVision.Engine/Templates/Flow/Versioning","Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs","Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupFlowTemplateLoadingTests.cs","Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs","Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs","Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"]
 related: ["flow.architecture","flow.workspace","flow.session","flow.headless","engine.template-design","engine.results"]
 ---
 
@@ -20,6 +20,8 @@ related: ["flow.architecture","flow.workspace","flow.session","flow.headless","e
 模板初始化与注册由[模板核心契约](../../03-architecture/components/templates/design.md)维护。列表为空先检查数据库与程序集发现，不先改菜单；以下仅描述 Flow 自己的存储、身份与包行为。
 
 MySQL 未连接时，启动仍加载本地流程；MySQL 流程列表查询失败也会回退到本地。`LocalFlowTemplateStorage` 使用当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db` 的 `local_templates` 表，`kind=flow`，每条记录直接保存名称、稳定 `local-flow:<guid>` 身份和完整 Base64 STN，不创建 MySQL 的主表、明细或资源关系，不保存执行结果。管理器标题标识“本地”或“MySQL”；两库独立，不缓存或同步服务器流程，首次使用本地空库需新建或导入 `.stn`。
+
+启动通过可选的 `IAsyncTemplateLoad.LoadAsync` 读取 Flow：数据库、本地存储和版本查询在后台运行，尚未绑定的参数准备完成后回到 UI 线程更新共享集合。旧模板加载器继续调用同步 `Load()`，按约 32 ms 时间片在加载器之间让出 Dispatcher；运行期间的 MySQL 重连仍按原有同步顺序先发布模板、再更新服务资源。启动尚未完成时收到重载请求会合并并补做一轮，避免两个批次同时发布。
 
 本地支持新建、编辑保存、重命名、复制、删除、排序及 `.stn` 导入导出；多选导出仍为多个 STN 的 ZIP。当前本地管理入口不导入带关联模板的 `.cvflow` 包，也不保证服务节点或其他 MySQL 模板可离线执行。本地 ID 小于 -1，复制生成新 FlowKey，排序保留身份。已经打开的本地流程在重新联网后仍保存到原本地库；服务器流程断线保存会报错，不自动变成本地流程。格式版本不支持或内容损坏时拒绝读取，不能覆盖为空流程。
 

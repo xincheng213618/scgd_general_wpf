@@ -15,7 +15,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 
 ## 项目定位
 
-这是一个不依赖 ColorVision 内部项目的 .NET Framework 4.8 WPF + CLI 示例，Demo 产品版本为独立的 `1.0.0`。每次交付应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取并单独记录插件 `VersionPrefix`，不要从 Demo 版本推断兼容性。
+这是一个不依赖 ColorVision 内部项目的 .NET Framework 4.8 WPF + CLI 示例，Demo 产品版本为独立的 `1.0.2`。每次交付应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取并单独记录插件 `VersionPrefix`，不要从 Demo 版本推断兼容性。
 
 ## 主要能力
 
@@ -34,10 +34,10 @@ related: ["projects.arvr-pro","projects.arvr-pro-protocol","projects.index"]
 | 结果类别 | 顶层字段 | 维护要点 |
 | --- | --- | --- |
 | 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults` | 第一层 Key 来自流程配置，应枚举实际返回值，不能写死为 `White`。 |
-| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态测试项、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
+| 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`、`DynamicRgbCrossResults` | 分别承载动态测试项、POI 光色数据、屏幕缺陷汇总/缺陷框和十字 RGB 分离结果。 |
 | 固定/兼容结果 | W51、W255、Black、Chessboard、MTF、Distortion、OpticCenter 等结果 | Key 为 `White` 的视场角和亮色度流程还会写入 W51/W255 兼容字段。 |
 
-`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例包含键化结果、YW 双 POI 组、动态测试项、动态 POI、屏幕缺陷和棋盘格字段；字段名与结构以样例 JSON 和 `Contracts/` 为准。
+`W255TestResult.ColorCenterRmsToD65` 是有效 POI 相对 D65 的均方根色度距离，与 `ColorUniformity` 独立。当前服务端为兼容历史数据，`ColorUniformity.Name` 可能保留 `Conlor_Uniformity(Δu'v'max)` 拼写；客户程序应按 JSON 属性取值，不要把 `Name` 当固定键。`ChessboardTestResult` 同时包含 `ChessboardContrast` 与 `AverageBlackLuminance`。随 Demo 提供的标准样例包含键化结果、YW 双 POI 组、动态测试项、动态 POI、屏幕缺陷、十字 RGB 结果、W255 D65 RMS 和棋盘格字段；字段名与结构以样例 JSON 和 `Contracts/` 为准。
 
 ### Legacy 输出边界
 

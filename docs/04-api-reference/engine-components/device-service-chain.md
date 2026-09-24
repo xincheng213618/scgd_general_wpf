@@ -17,7 +17,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ## 初始化与资源树
 
-`ServiceInitializer.Order=5`；无论 MySQL 是否连接，都会初始化物理相机管理器、设备集合和显示控件（包括流程面板）。连接时沿用 MySQL 资源树与原有原生资源初始化；未连接时读取本地配置，以 `ServiceTypes` 建立类型列表。`ServiceManager` 构造器通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
+`ServiceInitializer.Order=5`；启动时物理相机、服务层级、待应用服务更新分别调度到 UI；设备卡片在同一次 UI 操作内创建，全部完成后一次性替换显示集合；启动与手工刷新共用同步入口，避免卡片构造之间的重复调度增加等待。详情按需初始化契约见下文。无论 MySQL 是否连接，都会初始化物理相机管理器、设备集合和显示控件（包括流程面板）。连接时沿用 MySQL 资源树与原有原生资源初始化；未连接时读取本地配置，以 `ServiceTypes` 建立类型列表。`ServiceManager` 构造器通过 UI Dispatcher 调用 `LoadServices()`，并订阅后续连接变化；创建单例不是无副作用的只读查询。
 
 本地资源和许可证复用现有字段及窗口，写入 `%APPDATA%/ColorVision/Config/ColorVision.Local.db` 的配置文档。资源 ID 使用小于等于 -2 的本地身份，父子及组引用也使用本地 ID；已打开的本地对象恢复联网后仍保存到本地。MySQL 与本地配置独立，不复制服务器资源、不自动同步，也不修改服务端表结构。结果、图像、运行记录不写入这个配置库。
 

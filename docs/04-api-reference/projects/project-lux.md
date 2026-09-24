@@ -41,6 +41,8 @@ related: ["projects.index","projects.capabilities","projects.lux-protocol","proj
 
 ## 界面主题
 
+测试工具栏下方与 ARVRPro、KB 共用 `ColorVision.UI.Controls.FlowExecutionStatus` 紧凑状态栏。普通提示一行、长错误最多两行，窄窗口隐藏辅助耗时，完整信息通过“详情”查看和复制。状态文字与提示使用相同行高；流程结束后的排队计时回调不得覆盖最终状态。此显示层不改变 Socket 响应和结果持久化：超时记录的 `Msg` 仍按原来的流程名与 `OverTime` 组合保存，不从界面中文摘要反向读取。
+
 主界面分隔线、结果明细表格、流程配置提示和 Recipe/Fix 编辑窗口使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。清空结果或选择未完成记录后，结果区域恢复主题背景；窗口保持打开时切换黑白主题，背景、说明文字和操作按钮仍随主题更新。结果明细的隔行背景保留选中与悬停高亮，选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色。图像标记的业务颜色保持独立。
 
 ## 配置流程与外部命令
@@ -97,6 +99,10 @@ Flow 已运行时，新的流程启动被忽略并记日志，但命令入口此
 | `ProjectLUX.db` | `ViewResultManager`：本地流程与聚合结果 |
 
 CSV 写入 `ProjectLUXConfig.ResultSavePath`，普通流程、VID 和光通量分别使用 `C_<SN>.csv`、`B_<SN>.csv` 和 `D_<SN>.csv`。Engine 原始批次与算法数据仍在 MySQL，保存本地结果不等于备份完整 Engine 数据。
+
+图像自动导出通过主窗口结果列表旁的齿轮配置，保存目录使用 `ViewResultManagerConfig.CsvSavePath`，按配置追加日期目录及非空 SN 目录。“图像导出”中的“按流程模板名称命名”（`UseFlowNameForImageFiles`）默认开启，标记图使用流程模板名（例如 `White51_Test.png`），原图使用流程模板名加 `_source`（例如 `White51_Test_source.tif`）；关闭后使用 `原图名_流程模板名result` / `原图名_流程模板名source` 的文件名。旧配置缺少此字段时升级后默认开启，已保存的开关值仍会保留。名称中的无效路径字符会被移除。流程名称取实际运行的 Flow 模板名，不取 ProcessManager 的显示名称。此开关适用于标记图 PNG/JPEG 和原图 PNG/TIFF/BMP，只改变文件名，不改变目录、像素、位深、尺寸、标记或 CSV；同一目录内同名导出会覆盖已有图片，未提供 SN 时不同测试也会共用该目录。
+
+“保存标记图（8位）”导出渲染后的图像，“混合保存标记”决定是否合入点位与文字；“保存原图（保留位深）”导出已加载的源像素，不混合标记、不缩放。PNG 同时可用于这两种输出，不能仅凭扩展名判断是否原图；同一次导出的标记图和原图通过不同文件名区分。
 
 LUX 与 ARVRPro 使用各自独立的流程文件，不再互相覆盖。`ProjectLUXProcessGroups.json` 不存在时，LUX 只从能明确识别为 LUX 的旧共享 `ProcessGroups.json` 或 `ProcessMetas.json` 复制迁移；旧文件原样保留，无法确认归属时跳过迁移。新格式损坏不会自动回退旧文件。
 

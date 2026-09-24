@@ -221,7 +221,7 @@
       "knowledge_id": "algorithms.display-metrology",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
+      "summary": "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。",
       "aliases": [
         "RGB套色",
         "RGB分通道",
@@ -231,6 +231,9 @@
         "Eyebox",
         "眼盒",
         "低灰阶Mura",
+        "灰尘检测",
+        "脏污检测",
+        "DustDetectionParameters",
         "显示计量",
         "全视场清晰度",
         "左右眼对准",
@@ -245,6 +248,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs",
+        "Test/ColorVision.UI.Tests/DustDetectionTests.cs",
         "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
       ],
@@ -1893,7 +1897,6 @@
         "ColorVision/Copilot/CopilotSettingsWindow.xaml.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.ProfileManagement.cs",
-        "ColorVision/Copilot/CopilotSettingsViewModel.BackendSync.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.ExternalMcp.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.Diagnostics.cs",
         "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs",
@@ -1917,7 +1920,6 @@
         "Test/ColorVision.Copilot.Tests/CopilotContextDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotProjectInstructionDiagnosticsTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs",
-        "Test/ColorVision.Copilot.Tests/CopilotBackendSyncTransactionTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotChatConfigPersistenceTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpClientConfigurationTests.cs",
         "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs",
@@ -2946,7 +2948,6 @@
         "delivery.backend-retention",
         "delivery.backend-records",
         "delivery.backend-feedback",
-        "delivery.backend-copilot-sync",
         "delivery.backend-operations",
         "delivery.cvwindowsservice",
         "platform.web-architecture",
@@ -3080,61 +3081,6 @@
       "title": "HTTP认证、API key与浏览器CSRF",
       "source": "docs/02-developer-guide/backend/authentication.md",
       "url": "/02-developer-guide/backend/authentication",
-      "searchable": true
-    },
-    {
-      "knowledge_id": "delivery.backend-copilot-sync",
-      "knowledge_type": "topic",
-      "status": "current",
-      "summary": "Backend Copilot配置管理、AES-GCM密钥存储与全量同步；版本HMAC不是独立设备身份，nonce不去重，成功读取会交付provider秘密。",
-      "aliases": [
-        "Copilot Desktop Sync",
-        "Copilot后台同步",
-        "CopilotConfigService",
-        "CopilotProfileInput",
-        "CopilotConfigPage",
-        "verify_copilot_device",
-        "CopilotDeviceIdentity",
-        "copilot_sync",
-        "version_keys",
-        "copilot:config:read",
-        "copilot:manage",
-        "X-ColorVision-Signature",
-        "X-ColorVision-Nonce",
-        "defaultProfileId",
-        "hasApiKey",
-        "api_key_encrypted"
-      ],
-      "code_paths": [
-        "Web/Backend/routes/copilot_config_api.py",
-        "Web/Backend/services/copilot_config_service.py",
-        "Web/Backend/services/copilot_device_auth.py",
-        "Web/Backend/routes/admin_api.py",
-        "Web/Backend/services/api_key_service.py",
-        "Web/Backend/services/permission_service.py",
-        "Web/Backend/app_setup.py",
-        "Web/Backend/db/schema_version.py",
-        "Web/Backend/db_cache.py",
-        "Web/Frontend/src/pages/CopilotConfigPage.tsx",
-        "Web/Frontend/src/services/admin.ts",
-        "Web/Frontend/src/types/admin.ts"
-      ],
-      "test_paths": [
-        "Web/Backend/test_copilot_config_api.py"
-      ],
-      "related": [
-        "delivery.backend",
-        "delivery.backend-auth",
-        "copilot.configuration"
-      ],
-      "code_scopes": [
-        "Web/Backend",
-        "Web/Frontend"
-      ],
-      "domain": "delivery",
-      "title": "Backend Copilot配置管理与敏感配置交付",
-      "source": "docs/02-developer-guide/backend/copilot-sync.md",
-      "url": "/02-developer-guide/backend/copilot-sync",
       "searchable": true
     },
     {
@@ -6352,6 +6298,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StartupFlowTemplateLoadingTests.cs",
         "Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs",
@@ -8035,6 +7982,10 @@
         "ColorVision/StartWindow.Presentation.cs",
         "ColorVision/StartupScene.cs",
         "ColorVision/StartupUiTrace.cs",
+        "ColorVision/Startup/StartupSession.cs",
+        "ColorVision/Startup/MainWindowInitializerRunner.cs",
+        "UI/ColorVision.UI/Startup/StartupInitializerRunner.cs",
+        "UI/ColorVision.Common/Interfaces/IInitializer/IInitializerDependencies.cs",
         "ColorVision/Startup/StartupText.cs",
         "ColorVision/Startup/StartupResources.resx",
         "ColorVision/Startup/StartupResources.en.resx",
@@ -8058,6 +8009,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/StartupRenderingModeTests.cs",
         "Test/ColorVision.UI.Tests/StartupInitializerSequenceTests.cs",
+        "Test/ColorVision.UI.Tests/StartupSchedulingTests.cs",
+        "Test/ColorVision.UI.Tests/MainWindowStartupSchedulingTests.cs",
         "Test/ColorVision.UI.Tests/StartupUiTraceTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupTests.cs",
         "Test/ColorVision.UI.Tests/SingleInstanceStartupCoordinatorTests.cs",
@@ -8091,6 +8044,7 @@
         "ColorVision",
         "ColorVision/Recovery",
         "ColorVision/Startup",
+        "UI/ColorVision.Common",
         "UI/ColorVision.UI"
       ],
       "domain": "platform",

@@ -14,7 +14,7 @@ next: false
 
 离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。
 
-共 204 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
+共 203 个主题；默认 CLI 搜索只返回 current，使用 `--all` 明确包含规划与历史。
 
 ## 按源码根与模块定位
 
@@ -28,7 +28,7 @@ next: false
 | [Native](./code/source-Native.md) | 4 | 11 |
 | [Plugins](./code/source-Plugins.md) | 7 | 15 |
 | [Projects](./code/source-Projects.md) | 6 | 15 |
-| [Web](./code/source-Web.md) | 3 | 21 |
+| [Web](./code/source-Web.md) | 3 | 20 |
 | [Scripts](./code/source-Scripts.md) | 3 | 17 |
 | [Test](./code/source-Test.md) | 2 | 2 |
 | [AndroidWebViewApp](./code/source-AndroidWebViewApp.md) | 2 | 1 |
@@ -51,5 +51,5 @@ next: false
 - [Copilot](./domains/copilot.md) — 11 个主题；Agent会话、工具契约、上下文、恢复和MCP边界。
 - [客户项目](./domains/projects.md) — 11 个主题；客户包、业务流程、协议对接与结果留存。
 - [插件与扩展](./domains/plugins.md) — 12 个主题；插件发现、生命周期、已有插件和集成边界。
-- [构建、测试与交付](./domains/delivery.md) — 30 个主题；克隆环境、构建依赖、测试、发布脚本和更新。
+- [构建、测试与交付](./domains/delivery.md) — 29 个主题；克隆环境、构建依赖、测试、发布脚本和更新。
 - [运行与现场排查](./domains/operations.md) — 17 个主题；安装使用、设备配置、现场故障、日志和数据管理。

@@ -38,6 +38,8 @@ related: ["projects.index","projects.capabilities"]
 
 ## 界面主题
 
+测试工具栏下方与 ARVRPro、LUX 共用 `ColorVision.UI.Controls.FlowExecutionStatus` 紧凑状态栏，普通提示一行、长错误最多两行，状态文字和提示保持相同行高。窄窗口优先显示提示，完整内容通过“详情”查看、选择和复制。管理员自动退出、空 SN 触发忽略和服务重启提示继续显示，MES 返回仍追加到当前提示并在详情内保留原文；控件不解释 MES 返回码，也不改变业务判定、上传及结果持久化。流程完成后停止计时，排队刷新不得覆盖最终状态。
+
 主界面的分隔线、搜索框边框和测试按钮，以及 Recipe、登录和密码窗口的操作按钮，使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的主题样式与动态画刷。Recipe 已配置提示在窗口打开期间随黑白主题更新。PASS/FAIL、权限状态和键位图像标记保留原有业务颜色；主题配色不改变检测判定或标记含义。
 
 ## 外部集成

@@ -85,7 +85,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 | 入口 | 实际作用与安全边界 |
 | --- | --- |
-| `ReleaseLocalCalibrationCacheCommand` / 本地校正缓存管理 | 面向所有相机的本地校正上下文与进程级共享文件内存缓存，不是删除磁盘标定文件；等待正在执行的校正结束，仍被其它活动上下文引用的内存不强制释放 |
+| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 分为“校正缓存”和“图像文件缓存”两个 Tab；后者默认启用，全进程共用 1 个 CVRAW 槽位，换路径复用容量。“释放全部”等待校正与图像读取完成，统一释放两类缓存，保留磁盘标定和图像文件；仍被其它活动校正上下文引用的内存不强制释放 |
 | `InfoCalibration.ServiceCache_Click` → `MQTTCalibration.CacheClear` | 界面先提示永久删除，再发远端 `Event_Delete_Data`；必须按远端删除操作授权，不能当作无副作用的排障动作 |
 | `ViewCalibration` 清空列表/删除结果项 | 从当前 `ViewResults` 移除，不代表删除数据库结果、输出文件或校准缓存 |
 
@@ -96,6 +96,12 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 ## Flow 本地校正是独立入口
 
 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs` 消费流程当前内存帧，或从输入结果/文件路径加载帧；不会读取手动显示的 `UseLocalCalibration` 来决定后端。可复用的 CIE 帧可以直接沿流程传递，RAW 帧按模板校正，所以手动文件入口“不含 RAW 的 CVCIE 报错”不能扩展为整个 Flow 都不支持 CIE。
+
+仅“校正+实时 POI”节点的“允许加速”默认开启，普通“校正”和本地“相机取图”节点仍默认关闭。新建节点以及旧流程中未保存 `AllowAcceleration` 字段的节点采用各自默认值；已经明确保存的开启或关闭值仍按原配置恢复。开启后仍按原顺序执行基础/空间校正，从同一次加载的色度资源提取系数和曝光，只保留校正后的 RAW 与参数，不分配整幅 CIE/XYZ 缓冲。POI 按点、圆或矩形覆盖的像素计算，保留逐像素浮点转换及现有色度公式，不固定为九点，也不会因重复测量转为整幅 XYZ 缓存。需要完整 CIE 指针的其它下游须关闭加速；仅有 CIE、没有可回放 RAW 的输入不能转换为加速帧。
+
+两个校正节点的“保存校正文件”现为“保存 CIE 文件”，默认关闭，仍使用原序列化字段 `SaveFiles` 兼容旧流程；它只请求保存 CVCIE，不再请求另存 RAW。开启加速后隐藏并忽略此保存选项。已有 CVRAW 的色度参数尾块仍自动更新，不受保存 CIE 开关影响；若没有 RAW 文件则参数随内存帧传递，并不会为写参数而创建新文件。基础校正改变了源像素而没有保存校正后 RAW 时，原文件的参数标记 `CanReplay=false`，不能把原始像素当成校正后数据回放。本地相机的“保存文件”仍控制 RAW 落盘；加速时保存 CVRAW 与参数，省略 CVCIE。
+
+本地“POI”和“实时 POI”优先使用当前帧，无帧时读取上游图像结果文件；同时接受完整 CIE 与包含 `colorvision.calibration.color` JSON 尾块的 CVRAW。RAW 输入必须具备与图像布局匹配、可回放的参数，并已完成所需翻转；参数缺失、损坏或不可回放时明确报错，不自动用未校正 RAW 计算。此能力不要求外置 JSON 文件。`LocalDeferredColorCalibrationTests` 覆盖完整/加速路径对照、翻转、基础校正组合、旧后端及保存重读；真机取图与长时间现场内存趋势仍需独立验证。
 
 只有“校正+实时 POI”节点兼容外部 CVRAW 把文件头曝光写成全 0 的情况：它按 `IN_IMG` 的结果 ID 读取 `MeasureResultImgModel.Params`，从根级 `ExpTime`（旧相机结果）或 `Exposure`（本地校正结果）恢复全部为有限正数的曝光值。有效文件头始终优先；文件头不是全 0、数据库记录不存在、JSON 无效或记录曝光仍非正时继续按原校正校验报错。普通“校正”节点及手动文件校正不启用该回退，避免把不匹配记录的曝光套到其他输入。
 

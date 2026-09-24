@@ -2,16 +2,16 @@
 knowledge_id: "algorithms.display-metrology"
 knowledge_type: "topic"
 status: "current"
-summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
-aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
+summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
+aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
-test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/DustDetectionTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
 ---
 
 # 显示图案计量
 
-显示计量提供七个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。十字 RGB 分离入口位于图像右键 **算法调用**，其余入口位于 **算法 → 显示计量**，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
+显示计量提供八个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于 ImageView 图像右键的 **分析测量**，按色彩与套色、缺陷与鬼影等已有分组展示，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
 
 当前输出是像素坐标和经指定指数解码的相对设备信号。它们不带亮度/色度标定、角度标定、客户 Recipe、Engine 历史结果落库或硬件扫描。十字 RGB 分离的 OK/NG 只是相对用户输入像素阈值的本次分析判定，不等于客户 Recipe 或量产结果。没有现场图像时，可以用公开原理及已知真值的合成图验证计算。**合成测试不证明真实模组的检出率、重复性、绝对测量精度或标准符合性。**
 
@@ -23,9 +23,9 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 4. 选择图案网格、检测阈值或扫描清单。双目模式将当前图像作为 `left`，再选择 `right`。
 5. 查看汇总和逐项有效状态。无效点以原因及空值输出，不能解释为零误差；十字 RGB 分离即使全部无效也保留诊断表，此时没有分离最大值/RMS；其他模式全部无效时失败。
 
-支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；两种 RGB 几何功能都要求彩色输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
+支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；两种 RGB 几何功能都要求彩色输入。灰尘检测只接收 Gray/BGR，不接受 Alpha 输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
 
-单帧尺寸至少为 32×32。十字 RGB 分离允许单帧最多 67,108,864 像素 / 512 MiB：搜索区域最长边按整数倍率池化到不超过 1600 个采样格，之后逐目标读取原分辨率 ROI，每个 ROI 最多 8,388,608 像素。其他功能单帧最多 8,388,608 像素，总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，候选连通域和累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
+单帧尺寸至少为 32×32。十字 RGB 分离允许单帧最多 67,108,864 像素 / 512 MiB：搜索区域最长边按整数倍率池化到不超过 1600 个采样格，之后逐目标读取原分辨率 ROI，每个 ROI 最多 8,388,608 像素。灰尘检测允许最多 134,217,728 像素 / 512 MiB，并使用有上限的分析分辨率，详见下文。其他功能单帧最多 8,388,608 像素，总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
 
 ## 功能与测量口径
 
@@ -35,6 +35,7 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 | 十字 RGB 分离 | `rgb-cross-registration` | 自动定位指定行列的亮十字；默认 3×3，单个使用 1×1；输出 R/G/B 定位预览、原分辨率臂边缘、通道偏移、逐点质量与可选阈值结果 |
 | 鬼影与杂散光评价 | `ghost-measurement` | 单图与显式主像矩形/背景；输出外部候选位置、面积、峰值比和积分比 |
 | 亮暗点 / 线缺陷 / Mura | `defects` | 均匀场；输出两种空间尺度上的缺陷候选、分析边界与区域框图 |
+| 灰尘 / 脏污检测 | `dust-detection` | 自动识别最大成像区，输出暗斑候选、原图坐标、检测范围与候选掩膜 |
 | 左右眼对准与信号一致性 | `binocular-quality` | 两图；逐格原始视差、相似变换尺度/旋转/残差及各通道相对信号比 |
 | Eyebox 扫描评价 | `eyebox-scan` | 固定姿态下已知 XY 规则位置的多图；输出采样点覆盖率、相对信号和四角满足阈值的网格面积 |
 | 全视场斜边 SFR | `field-sfr` | 每格一条斜边；输出逐格 MTF 曲线、MTF50、边缘拟合质量及格点分布图 |
@@ -84,6 +85,18 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 - 两种残差均分别处理正负极性，阈值为绝对下限与相对背景阈值中的较大值。
 
 排除宽度等于背景尺度的边界，并在结果中记录有效像素数；触及分析边界的候选标记为截断。背景尺度应大于待检异常尺度，过大范围的缓慢不均匀可能被背景模型吸收。输出的候选图是区域包围框图，不是像素分割真值；相邻缺陷可能合并，两尺度也可能对同一异常产生候选。面积单位是相机图像像素，不等于屏体物理像素或子像素数量。低灰阶检测需有合理噪声下限及相机坏点/暗场/平场校正。
+
+### 灰尘与脏污候选
+
+在 **分析测量 → 缺陷与鬼影 → 灰尘 / 脏污检测...** 打开事务式参数编辑器。取消不取图、不运行；提交后只读分析，红框标记候选，青线标记有效检测边界。结果窗口显示数量、范围、原图坐标、面积与相对背景暗差，提供 JSON/CSV 导出；窗口关闭或换图时清除临时叠图，不修补或覆盖原图。
+
+大图用面积插值将最长边限制到默认 3200（可设 256–4096），不放大小图。采样后的选定通道按输入指数解码，采用 σ=0.8 分析像素的高斯滤波抑制噪声。用 σ=3 平滑图第 95 百分位的默认 30% 分割成像区，取最大外轮廓并填充内部孔洞；轮廓保留外部缺口，不用理想圆或凸包替代实际成像范围。默认内缩 65 分析像素，同时排除图像四边。没有成像信号、内缩后范围不足或非法浮点输入会失败，不返回“零灰尘”的成功结论。
+
+在 31、121 和可配置的最大窗口（默认 401）上估计高斯背景，取 `(背景−信号)/max(背景,1e-6)` 的最大值。默认相对暗差阈值为 2.5%，在连通域提取前与有效成像掩膜相交，再进行 3×3 椭圆开运算与 8–200000 分析像素²的面积过滤。先限制成像区可防止暗边与内部斑点合并；不使用通用表面缺陷算法基于外接框的跨尺度去重。触及排除边界的候选被剔除并计数。原始噪声连通域超过 100000 或最终候选超过 2048 时拒绝本次结果，不静默截断。
+
+坐标与叠图转换回原图像素；“原图等效面积”是分析面积乘 X/Y 缩放系数，不能当作原分辨率精确分割。两幅掩膜为分析分辨率，`dust-analysis` 与掩膜元数据保存尺寸和缩放系数。小于分析分辨率、非常宽或浅的污斑、排除边缘和非最大成像区域可能漏检；浅纹理也可能误报。输出仅为暗斑候选，不区别灰尘、划痕、坏点或光学缺陷，不给出产品 PASS/FAIL。
+
+`DustDetectionTests.cs` 覆盖圆形成像、缺口排除、原图坐标映射、8/16/float 输入、无信号与输入只读。现场路径由 `COLORVISION_DUST_SOURCE` 和 `COLORVISION_DUST_OUTPUT` 显式开启，运行 `dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter FullyQualifiedName~DustSiteImages`；输出目录须在样本目录外。该路径逐图通过生产 Runner 执行，保存参数、结果、掩膜、标框预览与前后 SHA-256。默认跳过现场样本，不把未标注图片当作检出率真值。
 
 ### Eyebox
 

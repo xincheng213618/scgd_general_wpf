@@ -21,7 +21,7 @@ related: ["ui.index", "ui.control-catalog", "ui.configuration", "ui.settings", "
 4. **确认消费方已发现并构造条目。** 按下表选择具体 manager，检查接口、构造函数、类型/实例缓存与创建日志。程序集视图变了，不代表菜单、设置或图像工具已重新扫描；构造函数失败也可能仅留下日志。
 5. **确认宿主接入和显示条件。** 检查目标窗口、父级/标识、可见性、宿主资源与命令路由。条目已显示后，再按所属主题区分 `CanExecute`、注册成功、保存成功和业务完成。
 
-正常启动的装配入口是 `ColorVision/App.xaml.cs`：先创建 `ModuleCatalog`、调用 `BuiltInModules.Register` 登记内置模块，再加载主配置；插件阶段按恢复选择装载外部 DLL，随后封存模块目录并进入向导或启动窗口。各消费者在各自被调用时扫描，不是所有扩展在某一个时刻统一实例化。登记和封存规则见[模块登记](../../02-developer-guide/plugin-development/overview.md)。
+正常启动的装配入口是 `ColorVision/App.xaml.cs`：先创建 `ModuleCatalog`、调用 `BuiltInModules.Register` 登记内置模块，再加载主配置；恢复选择后先显示启动窗口，再按选择装载外部 DLL；插件之间让出 UI，随后封存模块目录并进入向导或初始化器。各消费者在各自被调用时扫描，不是所有扩展在某一个时刻统一实例化。登记和封存规则见[模块登记](../../02-developer-guide/plugin-development/overview.md)。
 
 `AssemblyService` 是可设置的 `IAssemblyService` 接口入口；生产 `AssemblyHandler` 构造时将自身设为该服务。`Application.Current.GetAssemblies()` 扩展方法也返回 AssemblyHandler 的过滤视图。隔离宿主可注入其它实现，因此阅读接口名称还不足以判断实际过滤规则。
 

@@ -95,6 +95,10 @@ ImageEditor 的“本地 FindCross...”和 Flow 的“本地十字定位”共�
 
 检测拒绝或结果校验失败时会保存失败主记录并发布到结果页，随后节点仍失败；不会生成成功明细/JSON，也不把失败主记录作为下游有效 `MasterValue`。输入缺失等前置错误可能更早发生。数据库、发布与展示的完整责任见 [Engine 结果链](../../engine-components/result-handoff-chain.md)。
 
+生产入口输出的是单十字中心、相对标准中心的水平/垂直角度偏差和图案旋转角。成功主记录的 `TName` 使用既有 `optCenter` 解析标识，使这组结果进入光轴校准的倾角与旋转结果；失败主记录保持 `LocalFindCross`。参数中的 `Algorithm=LocalFindCross` 保留本地实现身份。`Name` 仅标识 JSON 中的结果项，设置为 `ImageCenter` 也不会增加或切换测量指标；本地十字节点不生成独立的 `ImageCenter` 主记录。
+
+倾角所用的标准中心是配置或整幅图像中心，不是算法独立测得的镜头光轴。要把角度偏差用于光轴校准，需使图卡参考点、标准中心和测量装置标定符合现场测量定义。Flow 画布上未接入执行链的结点不会执行，也不会保存结果。
+
 ## 原生返回值与托管调用
 
 ```cpp
@@ -146,6 +150,8 @@ int M_FindCrossLocalGetLastError(char* buffer, std::uint32_t bufferLength);
 | `NonOrthogonalAxes` / `UnstableRefinement` | 十字形状、两轴关系和粗定位到精定位的一致性 |
 | `InvalidDistortionGeometry` / `InvalidCenterGeometry` | 标定内参、畸变系数、ROI 与坐标空间；不要把诊断几何直接当成功输出 |
 | `LowConfidence` | 综合质量不足；查看 `Confidence`、`ArmQuality` 和 `Warnings`，结合实际样本处理 |
+
+九宫格线条有多个十字交点，整图搜索可能返回 `AmbiguousPattern`。若只需中心交点，配置仅覆盖该交点及足够四臂长度的搜索区域；最终能否稳定检出及角度精度仍需原始相机图像验证。
 
 ## 验证入口与边界
 

@@ -36,6 +36,8 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 
 ## 模块边界
 
+`Controls/FlowExecutionStatus` 是 ARVRPro、KB、LUX 共用的紧凑执行提示控件，`FlowExecutionStatusInfo` 只组织显示内容，不依赖 Engine、不触发流程、不持久化结果。普通状态一行，长错误最多两行；状态文字和主提示使用统一行高，窄窗口优先保留主提示，完整内容在可选择、复制的详情浮层中查看。运行中和结束后的耗时均显示整数毫秒（ms），详情内的历史耗时与预计剩余时间也使用 ms。流程名、当前节点和历史耗时由调用项目传入，计时停止及最终状态防覆盖仍归项目生命周期处理。`Completed` 只表示流程完成，不代表业务检测 PASS；KB 的服务提示与 MES 原始返回可以复用显示模型，但不得由控件解释协议返回码。
+
 通用接口、命令和基础 ViewModel 主要在 `ColorVision.Common`；主题资源在 `ColorVision.Themes`；细粒度本地 RBAC 在 `ColorVision.Rbac`。Engine 的设备控制、客户包的判定/MES/报表以及 ImageEditor 的图像/overlay 责任不应因有 WPF 窗口就移入此项目。
 
 `ColorVision.UI.csproj` 当前启用 WPF，目标为 `net8.0-windows7.0;net10.0-windows7.0`，依赖 Common、Themes、log4net 和 Newtonsoft.Json，并配置生成 NuGet 与符号包。具体目标和版本仍以项目文件及上级构建属性为准；构建产物不等于已发布。

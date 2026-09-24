@@ -974,6 +974,12 @@
             },
             {
               "text": {
+                "root": "启动、初始化与故障恢复"
+              },
+              "link": "/03-architecture/overview/runtime"
+            },
+            {
+              "text": {
                 "root": "权限边界与鉴权入口"
               },
               "link": "/03-architecture/security/overview"
@@ -3683,12 +3689,6 @@
             },
             {
               "text": {
-                "root": "Backend Copilot配置管理与敏感配置交付"
-              },
-              "link": "/02-developer-guide/backend/copilot-sync"
-            },
-            {
-              "text": {
                 "root": "反馈归属、查询与诊断附件下载"
               },
               "link": "/02-developer-guide/backend/feedback"
@@ -3785,12 +3785,6 @@
                 "root": "插件市场后端"
               },
               "link": "/02-developer-guide/backend/README"
-            },
-            {
-              "text": {
-                "root": "Backend Copilot配置管理与敏感配置交付"
-              },
-              "link": "/02-developer-guide/backend/copilot-sync"
             },
             {
               "text": {

@@ -66,7 +66,11 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 
 ## 安装、数据库与配置顺序
 
-`ExecuteInstallAsync` 先解析现有/目标服务版本和数据库，再依选择备份、安装组件、替换文件、注册服务、执行数据库步骤、同步配置、启动服务；不是跨文件、服务注册和数据库的原子事务。
+`ExecuteInstallAsync` 先检查所选MySQL版本与运行库、解析现有/目标服务版本和数据库，再安装所需运行库，依选择备份、安装组件、替换文件、注册服务、执行数据库步骤、同步配置、启动服务；不是跨文件、服务注册和数据库的原子事务。
+
+MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运行库；完整安装窗口也使用同一版本规则。版本读取实际 `mysqld.exe` 文件信息，ZIP只临时提取其中的程序读取版本，不执行它、不依赖ZIP文件名判断。无法读取版本时提示并停止。MySQL 5.7.37及之前的5.7版本需要VC++ 2013 x64，5.7.38/39仍需要2013；5.7.40及之后和MySQL 8不会被这项检查拦截。这只是2013运行库检查，不代表已验证这些版本的全部依赖。
+
+运行库检测沿用x64系统目录中的 `msvcr120.dll` 与 `msvcp120.dll`，两者都存在才通过；仅安装x86运行库不足以通过。MySQL页缺少运行库时会弹窗提示到“服务安装管理”下载或选择VC++ 2013 x64并安装，本次操作停止。完整安装窗口已选择有效运行库安装程序时先安装并复查；未提供安装程序时在备份、停服务或替换目录之前提示并停止。显式勾选VC++ 2013仍按用户选择安装，不因MySQL 8跳过该选择。
 
 | 阶段 | 当前约束与失败边界 |
 | --- | --- |
@@ -121,6 +125,7 @@ dotnet build .\Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj -c Relea
 ```
 
 - `ServiceDatabaseVersionMapTests` 覆盖主版本数据库映射、包名解析、嵌入exe版本优先及配置回退，不执行真库升级或证明远端包可信。
+- `MySqlRuntimePrerequisiteTests` 覆盖5.7与8的运行库差异、已安装/缺失条件、ZIP内实际版本优先及损坏包拒绝；不卸载本机运行库，也不替代干净Windows机器上的安装验收。
 - `InstallToolAsyncCommandTests` 验证旧菜单异步失败可观察、Download返回Task、退出启动初始化发现，以及手动检查的缺失/版本/失败分支；使用替身，不验证旧站点、下载内容或工具运行。
 - `MySqlBackupRestoreSafetyTests` 中插件相关用例检查恢复/重置委托Engine的源码边界，另有恢复阶段失败摘要和临时配置文件测试；不是安装、真库迁移或故障回滚验收。
 - `ThirdPartyAppInfoTests` 包含服务管理器提供器元数据检查，不证明应用角色、Windows权限及后台代理全链可用。

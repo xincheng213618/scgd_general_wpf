@@ -6,12 +6,12 @@ summary: "Flask 后端的组成、配置、CLI 参数、管理入口与探测边
 aliases: ["插件市场后端","上传401","Flask","marketplace.db","api/ready","create_app_and_context","RuntimeOverrides","AuthPolicy","Session权限","角色权限","Backend CLI","命令行参数","--storage","--refresh-all-indexes","--reconcile-history","--reconcile-plugin-history","--prune-updates","--run-job","--create-api-key","cache/status","cache/cleanup","--refresh-index","--refresh-plugin-index","--cleanup-cache","--scopes","--port","--debug","api/stats","后台管理页面"]
 code_paths: ["Web/Backend/app.py","Web/Backend/app_setup.py","Web/Backend/cli.py","Web/Backend/config_loader.py","Web/Backend/runtime_health.py","Web/Backend/routes/health_api.py","Web/Backend/routes/auth_adapters.py","Web/Backend/services/auth_policy.py","Web/Backend/services/auth_middleware.py","Web/Backend/services/permission_service.py","Web/Backend/marketplace_api_routes.py","Web/Backend/services/marketplace_api.py","Web/Backend/services/scheduler.py","Web/Backend/services/storage_events.py","Web/Backend/marketplace_services.py","Web/Backend/app_releases.py","Web/Backend/plugin_marketplace.py","Web/Backend/update_retention.py","Web/Backend/routes/admin_api.py","Web/Backend/db_cache.py","Web/Backend/services/artifact_index.py","Web/Backend/routes/public_api.py","Web/Frontend/src/App.tsx"]
 test_paths: ["Web/Backend/test_app.py","Web/Backend/test_app_releases.py","Web/Backend/test_upload_services.py","Web/Backend/test_config_loader.py","Web/Backend/test_auth_policy.py","Web/Backend/test_artifact_index.py"]
-related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery","delivery.backend-public-data","delivery.backend-observability","delivery.backend-jobs","delivery.backend-retention","delivery.backend-records","delivery.backend-feedback","delivery.backend-copilot-sync","delivery.backend-operations","delivery.cvwindowsservice","platform.web-architecture","delivery.web-deployment","delivery.web-pages"]
+related: ["delivery.scripts","plugins.index","delivery.file-transfer","delivery.plugin-catalog","delivery.backend-accounts","delivery.backend-auth","delivery.artifact-delivery","delivery.backend-public-data","delivery.backend-observability","delivery.backend-jobs","delivery.backend-retention","delivery.backend-records","delivery.backend-feedback","delivery.backend-operations","delivery.cvwindowsservice","platform.web-architecture","delivery.web-deployment","delivery.web-pages"]
 ---
 
 # 插件市场后端
 
-`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用与健康检查。查询与交付分别见[插件目录与索引](./plugin-catalog.md)、[公共站点读模型](./public-data.md)、[HTTP制品交付](./artifact-delivery.md)和[文件中转](./file-transfer.md)；身份见[账号生命周期](./accounts.md)与[HTTP认证/API key/CSRF](./authentication.md)；运行维护见[内置任务](./jobs.md)、[备份与保留](./backup-retention.md)、[访问及性能观测](./observability.md)和[审计/部署记录](./management-records.md)。[反馈收件箱](./feedback.md)、[Copilot后端配置交付](./copilot-sync.md)、[Operations中继](./operations-relay.md)、[CVWindowsService服务包发布](./cvwindowsservice.md)各有独立契约。`Web/Backend/README.md` 保留模块运行前提、代码入口及风险提示，详细规则只在对应主题维护。
+`Web/Backend/` 是插件市场、更新包分发和后台管理门户的 Flask 服务。本页负责组成、配置/路径、启动副作用与健康检查。查询与交付分别见[插件目录与索引](./plugin-catalog.md)、[公共站点读模型](./public-data.md)、[HTTP制品交付](./artifact-delivery.md)和[文件中转](./file-transfer.md)；身份见[账号生命周期](./accounts.md)与[HTTP认证/API key/CSRF](./authentication.md)；运行维护见[内置任务](./jobs.md)、[备份与保留](./backup-retention.md)、[访问及性能观测](./observability.md)和[审计/部署记录](./management-records.md)。[反馈收件箱](./feedback.md)、[Operations中继](./operations-relay.md)、[CVWindowsService服务包发布](./cvwindowsservice.md)各有独立契约。`Web/Backend/README.md` 保留模块运行前提、代码入口及风险提示，详细规则只在对应主题维护。
 
 跨模块依赖、现有持久化接口和演进约束见[Web 架构](../../03-architecture/components/web.md)；本地启动脚本、NAS 更新步骤、备份和失败恢复见[Web 本地启动与 NAS 部署](../deployment/web.md)。React/VitePress 路由、压缩与缓存、文档状态和索引见[Web 页面与文档托管](./web-pages.md)。
 
@@ -52,7 +52,7 @@ python app.py --storage $artifactStorage
 Pop-Location
 ```
 
-`config_loader.py` 固定读取其所在 Backend 目录的 `config.json`，覆盖 `DEFAULT_CONFIG`；`upload_auth` 和 `copilot_sync` 做子字典合并。没有文件时直接使用默认值，不会自动复制 `config.json.example`。示例配置可作为人工配置起点，但不能携带生产凭证进入测试环境。
+`config_loader.py` 固定读取其所在 Backend 目录的 `config.json`，覆盖 `DEFAULT_CONFIG`；`upload_auth` 做子字典合并。没有文件时直接使用默认值，不会自动复制 `config.json.example`。示例配置可作为人工配置起点，但不能携带生产凭证进入测试环境。
 
 `app_setup.py` 默认把数据库设为 Backend 目录下的 `marketplace.db`，而非 `{storage_path}/marketplace.db`。`app.py` 在模块导入时已经调用组成，初始化数据库、schema 和相关服务；随后注册路由及预热缓存。只有进入主入口后才解析 `--storage`、`--port`、`--debug`，并检查启动配置。因此 `--help`、一次性 CLI 操作或生产配置被拒绝前，也可能已经发生组成阶段写入；不要通过导入 `app` 来做无副作用探测。
 
@@ -178,7 +178,6 @@ CLI 在非 debug 模式发现默认 session 密钥、默认或空上传凭证等
 | `/admin/users` / `/admin/login-security` | [账号管理与账号安全](./accounts.md) |
 | `/admin/permissions` | [角色权限](./authentication.md) |
 | `/admin/api-keys` | [API key](./authentication.md) |
-| `/admin/copilot` | [Copilot 配置交付](./copilot-sync.md) |
 | `/admin/audit` | [审计日志](./management-records.md) |
 | `/admin/traffic` | [HTTP/SPA 访问与体验统计](./observability.md) |
 | `/admin/settings` | 浏览器外观、[注册策略](./accounts.md)和[六项保留设置](./backup-retention.md)；受保护或需重启的配置仍由部署配置管理 |

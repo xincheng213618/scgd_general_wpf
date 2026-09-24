@@ -47,8 +47,8 @@ related: ["delivery.prerequisites","platform.runtime","ui.configuration","ui.wiz
 正常桌面启动有条件分支，不能要求每次直接出现主窗口：
 
 1. 上次启动未被标记为健康时，可能先显示启动恢复窗口。按错误与本次授权选择退出或恢复，不默认禁用全部插件或回退版本。
-2. `WizardCompletionKey` 尚未完成或恢复操作要求重新配置时，显示[设置向导](../04-api-reference/ui-components/wizards.md)。按其步骤应用、关闭和完成契约核对测试环境；下一步可能产生安装等副作用，向导不是连接现场设备的授权。
-3. 进入 `StartWindow` 后执行已发现的 `IInitializer`；初始化完成再打开主窗口，异常会显示启动错误。完整启动分支及插件恢复契约见[运行时链路](../03-architecture/overview/runtime.md)。
+2. 恢复选择后先显示启动页并准备宿主和插件；`WizardCompletionKey` 尚未完成或恢复操作要求重新配置时，接着显示[设置向导](../04-api-reference/ui-components/wizards.md)。按其步骤应用、关闭和完成契约核对测试环境；下一步可能产生安装等副作用，向导不是连接现场设备的授权。
+3. 常规启动页执行已发现的 `IInitializer`；初始化完成再打开主窗口，单项失败记录并继续，外层启动异常显示错误。主窗口首帧后完成必要初始化，再独立检查更新；首帧、必要功能就绪和离线/降级状态分别判断。完整启动分支及插件恢复契约见[运行时链路](../03-architecture/overview/runtime.md)。
 
 带文件参数也不等于绕过正常启动：`StartupFileOpenPolicy` 仅让 `.cvraw` / `.cvcie` 进入主窗口前的独立打开分支，普通 PNG、JPEG、TIFF 不属于该分支；独立打开也不应被描述为无副作用沙箱。
 

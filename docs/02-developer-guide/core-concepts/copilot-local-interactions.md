@@ -1,4 +1,4 @@
----
+﻿---
 knowledge_id: "copilot.interactions"
 knowledge_type: "topic"
 status: "current"
@@ -14,6 +14,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 本页对应 `CopilotChatPanel`、ViewModel 的命令路由、`Presentation` 投影和桌宠桥接。完整命令名、别名、参数与运行中可执行标记以 `CopilotLocalCommandCatalog` 为准；输入 `/help [命令]` 查询同一目录，不另维护一份手册式全量清单。
 
 “本地命令”只说明由宿主解析，**不保证只读、不联网或不改变任务**。诊断、草稿、任务控制、模型请求及受保护操作必须按以下边界区分。
+
+聊天面板的设置入口位于停靠标题栏，与设备控制面板共用标题栏动作机制。输入栏保留附件、权限、模型与推理强度、语音和发送动作；模型列表与推理强度在同一个弹出面板选择。窄面板将模型与发送动作移到第二行，权限文字保持可见。当前窗口附件建议保留点击附加行为，但不重复显示加号；历史上下文占用和展开输入编辑不再作为底部常驻按钮，原有诊断命令与快捷键仍可使用。系统提示不在此界面开放编辑。
 
 ## 命令发现、补全与执行门禁
 
