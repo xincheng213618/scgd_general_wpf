@@ -4857,6 +4857,7 @@
         "Engine/ColorVision.Engine/Media/MediaHelper.cs",
         "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs",
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
+        "Engine/ColorVision.Engine/Media/CvRawPixelBuffer.cs",
         "Engine/ColorVision.Engine/Media/CvRawLayerController.cs",
         "Engine/ColorVision.Engine/Media/CvcieSrgbRenderer.cs",
         "Engine/ColorVision.Engine/Media/CvcieDisplayConfig.cs",
@@ -4882,6 +4883,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CVFileMetadataTests.cs",
+        "Test/ColorVision.UI.Tests/CvRawPixelBufferTests.cs",
         "Test/ColorVision.UI.Tests/RawColorCalibrationTests.cs",
         "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs",
         "Test/opencv_helper_test/test_calibration.cpp",

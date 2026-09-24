@@ -941,7 +941,10 @@ namespace ColorVision.Engine.Media
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
                                 // Publish the reused source before revision callbacks observe the update.
                                 context.ProcessingContext.Presentation.Publish(writeableBitmap, context.FunctionImage);
+                                var profileSources = context.ProcessingContext.ProfileMeasurementSources;
                                 context.CommitSourcePixels(writeableBitmap);
+                                // The pixel revision clears derived sources; restore this newly loaded file's measurement options.
+                                context.ProcessingContext.ProfileMeasurementSources = profileSources;
                                 context.ImageView.NotifyImageSourceLoaded();
                             }
                         }
