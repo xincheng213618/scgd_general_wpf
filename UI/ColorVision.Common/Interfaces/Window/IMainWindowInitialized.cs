@@ -12,6 +12,9 @@ namespace ColorVision.UI
         Task Initialize();
     }
 
+    /// <summary>Optional work that must not delay workspace readiness or file opening.</summary>
+    public interface IBackgroundMainWindowInitializer : IMainWindowInitialized { }
+
     public abstract class MainWindowInitializedBase : IMainWindowInitialized
     {
         public virtual string Name => GetType().Name;

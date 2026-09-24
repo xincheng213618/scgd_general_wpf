@@ -279,7 +279,7 @@ namespace ColorVision.FloatingBall
         }
     }
 
-    public class DesktopPetInitializer : MainWindowInitializedBase
+    public class DesktopPetInitializer : MainWindowInitializedBase, IBackgroundMainWindowInitializer
     {
         public override string Name => Properties.Resources.DesktopPetInitializerName;
         public override int Order { get; set; } = 1000;

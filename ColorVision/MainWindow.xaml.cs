@@ -5,6 +5,7 @@ using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.Update;
+using ColorVision.Startup;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
@@ -41,7 +42,6 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private const double RightMenuGlyphFontSize = 15;
-        private const long SlowInitializationLogThresholdMs = 100;
         private const string PinDocumentTabMenuUid = "ColorVision.PinDocumentTab";
         private const string OpenDocumentFolderMenuUid = "ColorVision.OpenDocumentFolder";
         private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
@@ -271,8 +271,6 @@ namespace ColorVision
             ContentRendered += MainWindow_ContentRendered;
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                LoadIMainWindowInitialized();
-
                 FluidMoveBehavior fluidMoveBehavior = new()
                 {
                     AppliesTo = FluidMoveScope.Children,
@@ -436,46 +434,52 @@ namespace ColorVision
             ContentRendered -= MainWindow_ContentRendered;
             ProgramTimer.StopAndReport();
             startupTrace?.WriteReport();
-            StartupRegistryChecker.Clear();
-            Update.ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
-            PluginRecoveryBackupService.Instance.ScheduleHealthyStartupBackups();
-            if (Application.Current is App { CanCreateAutomaticSnapshotAfterHealthyStartup: true })
-                ApplicationSnapshotService.Instance.ScheduleHealthyStartupAutomaticSnapshot();
-            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            if (Application.Current is App app)
+                app.StartupSession.MarkFirstFrame();
+            _ = CompleteStartupAsync();
+        }
+
+        private async Task CompleteStartupAsync()
+        {
+            try
+            {
+                await Dispatcher.Yield(DispatcherPriority.Loaded);
+                await LoadIMainWindowInitialized();
+            }
+            catch (Exception ex) { log.Error("Main-window startup coordination failed.", ex); }
+            if (Dispatcher.HasShutdownStarted)
+                return;
+            _ = Dispatcher.BeginInvoke(new Action(() =>
             {
                 StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
             }), DispatcherPriority.Background);
             ScheduleNewUserGuideAfterFirstRender();
         }
 
-        public static async void LoadIMainWindowInitialized()
+        public static async Task LoadIMainWindowInitialized()
         {
-            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
-            int failures = 0;
-            foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
+            IReadOnlyList<StartupInitializerResult> results = await MainWindowInitializerRunner.RunRequiredAsync(initializers);
+            if (Application.Current is App app)
             {
-                StartupRegistryChecker.MarkStage("MainWindowInitializer", componentInitialize.Name);
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                try
+                app.StartupSession.AddResults(results);
+                app.StartupSession.MarkInitializationCompleted();
+                if (app.StartupSession.TryPublishCompletion())
                 {
-                    await componentInitialize.Initialize();
-                }
-                catch (Exception ex)
-                {
-                    failures++;
-                    log.Error(ex);
-                }
-                finally
-                {
-                    stopwatch.Stop();
-                    if (stopwatch.ElapsedMilliseconds >= SlowInitializationLogThresholdMs)
-                        log.Info($"Slow main-window initializer {componentInitialize.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
+                    StartupRegistryChecker.Clear();
+                    ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
+                    if (app.StartupSession.Readiness == StartupReadiness.Ready)
+                    {
+                        PluginRecoveryBackupService.Instance.ScheduleHealthyStartupBackups();
+                        if (app.CanCreateAutomaticSnapshotAfterHealthyStartup)
+                            ApplicationSnapshotService.Instance.ScheduleHealthyStartupAutomaticSnapshot();
+                    }
+                    log.Info($"Startup readiness={app.StartupSession.Readiness}. Failures={app.StartupSession.Results.Count(item => !item.Succeeded)}.");
                 }
             }
-            log.Info($"Main window initializers completed in {totalStopwatch.ElapsedMilliseconds} ms. Count={initializers.Count}, Failures={failures}.");
-            StartupRegistryChecker.Clear();
+            log.Info($"Main window required initializers completed in {stopwatch.ElapsedMilliseconds} ms. Count={results.Count}, Failures={results.Count(item => !item.Succeeded)}.");
+            _ = MainWindowInitializerRunner.RunBackgroundAsync(initializers);
         }
-
     }
 }

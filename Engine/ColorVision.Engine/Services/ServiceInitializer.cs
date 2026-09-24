@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services
 {
@@ -32,25 +33,33 @@ namespace ColorVision.Engine.Services
             long serviceHierarchyMilliseconds = 0;
             long pendingUpdatesMilliseconds = 0;
             long displayControlsMilliseconds = 0;
-            Application.Current.Dispatcher.Invoke(() =>
+            var dispatcher = Application.Current.Dispatcher;
+            await dispatcher.InvokeAsync(() =>
             {
                 phaseStopwatch.Restart();
                 PhyCameraManager.GetInstance();
                 physicalCameraMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+            }, DispatcherPriority.Background);
 
+            ServiceManager serviceManager = await dispatcher.InvokeAsync(() =>
+            {
                 phaseStopwatch.Restart();
-                ServiceManager serviceManager = ServiceManager.GetInstance();
+                ServiceManager manager = ServiceManager.GetInstance();
                 DisPlayManager.GetInstance().DeviceConfigurationCommand = new ExportWindowService().Command;
                 serviceHierarchyMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+                return manager;
+            }, DispatcherPriority.Background);
 
+            await dispatcher.InvokeAsync(() =>
+            {
                 phaseStopwatch.Restart();
                 MqttRCService.GetInstance().ApplyPendingServiceUpdates(serviceManager);
                 pendingUpdatesMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+            }, DispatcherPriority.Background);
 
-                phaseStopwatch.Restart();
-                serviceManager.GenDeviceDisplayControl();
-                displayControlsMilliseconds = phaseStopwatch.ElapsedMilliseconds;
-            });
+            phaseStopwatch.Restart();
+            await dispatcher.InvokeAsync(serviceManager.GenDeviceDisplayControl, DispatcherPriority.Background);
+            displayControlsMilliseconds = phaseStopwatch.ElapsedMilliseconds;
 
             phaseStopwatch.Restart();
             if (MySqlSetting.IsConnect) cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);

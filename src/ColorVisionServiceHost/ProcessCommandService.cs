@@ -6,6 +6,72 @@ namespace ColorVisionServiceHost;
 
 internal static class ProcessCommandService
 {
+    public static ServiceHostResponse TerminateEarlierApplicationInstances(ServiceHostRequest request, ServiceHostRequestContext context)
+    {
+        if (context.ProcessId <= 0 || !Path.IsPathFullyQualified(context.ProcessPath)
+            || !string.Equals(Path.GetFileName(context.ProcessPath), "ColorVision.exe", StringComparison.OrdinalIgnoreCase))
+            return ServiceHostResponse.FromObject(request.RequestId, false, "application_caller_invalid");
+
+        string callerPath = Path.GetFullPath(context.ProcessPath);
+        Process caller;
+        try { caller = Process.GetProcessById(context.ProcessId); }
+        catch (ArgumentException) { return ServiceHostResponse.FromObject(request.RequestId, false, "application_caller_exited"); }
+
+        using (caller)
+        {
+            _ = caller.SafeHandle;
+            if (caller.HasExited || !string.Equals(caller.MainModule?.FileName, callerPath, StringComparison.OrdinalIgnoreCase))
+                return ServiceHostResponse.FromObject(request.RequestId, false, "application_caller_identity_mismatch");
+
+            int callerSessionId = caller.SessionId;
+            DateTime callerStartTimeUtc = caller.StartTime.ToUniversalTime();
+            List<int> terminated = [];
+            List<int> remaining = [];
+            Process[] candidates = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(callerPath));
+            try
+            {
+                foreach (Process target in candidates)
+                {
+                    bool matchesInstallation = false;
+                    if (target.Id == caller.Id)
+                        continue;
+                    try
+                    {
+                        if (target.HasExited || target.SessionId != callerSessionId)
+                            continue;
+                        _ = target.SafeHandle;
+                        int startComparison = DateTime.Compare(target.StartTime.ToUniversalTime(), callerStartTimeUtc);
+                        if (startComparison > 0 || (startComparison == 0 && target.Id > caller.Id))
+                            continue;
+                        if (!string.Equals(target.MainModule?.FileName, callerPath, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        matchesInstallation = true;
+                        (TerminateProcess(target, entireProcessTree: false, timeoutMilliseconds: 5000) ? terminated : remaining).Add(target.Id);
+                    }
+                    catch (Exception) when (target.HasExited)
+                    {
+                        terminated.Add(target.Id);
+                    }
+                    catch
+                    {
+                        if (matchesInstallation)
+                            remaining.Add(target.Id);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (Process target in candidates) target.Dispose();
+            }
+
+            bool success = remaining.Count == 0;
+            return ServiceHostResponse.FromObject(request.RequestId, success,
+                success ? "earlier_application_processes_terminated" : "earlier_application_processes_remain",
+                new { terminatedCount = terminated.Distinct().Count(), terminated, remaining });
+        }
+    }
+
     public static ServiceHostResponse Terminate(ServiceHostRequest request)
     {
         int processId = request.Data?.Value<int?>("processId") ?? 0;

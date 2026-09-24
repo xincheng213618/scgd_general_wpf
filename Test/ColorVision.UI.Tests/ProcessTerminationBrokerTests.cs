@@ -6,6 +6,47 @@ namespace ColorVision.UI.Tests;
 public sealed class ProcessTerminationBrokerTests
 {
     [Fact]
+    public async Task ForceCloseEarlierApplicationUsesPrivilegeBrokerCommand()
+    {
+        var broker = new ProcessTerminationBroker((command, data, timeout, token) =>
+        {
+            Assert.Equal("process-terminate-earlier-application", command);
+            Assert.Null(data);
+            Assert.True(timeout >= TimeSpan.FromSeconds(15));
+            Assert.False(token.CanBeCanceled);
+            return Task.FromResult(new ServiceHostResponse
+            {
+                Success = true,
+                Data = JObject.FromObject(new { terminatedCount = 2 })
+            });
+        });
+
+        int terminated = await broker.TerminateEarlierApplicationProcessesAsync(new Progress<string>(), CancellationToken.None);
+
+        Assert.Equal(2, terminated);
+    }
+
+    [Fact]
+    public async Task OlderServiceUpdatesBeforeForceClosingEarlierApplication()
+    {
+        List<string> calls = [];
+        var broker = new ProcessTerminationBroker((command, _, _, _) =>
+        {
+            calls.Add(command);
+            return Task.FromResult(calls.Count == 1
+                ? new ServiceHostResponse { Message = "Unsupported command: process-terminate-earlier-application" }
+                : command == "status"
+                    ? new ServiceHostResponse { Success = true, Data = JObject.FromObject(new { supportsEarlierApplicationTermination = true }) }
+                    : new ServiceHostResponse { Success = true, Data = JObject.FromObject(new { terminatedCount = 1 }) });
+        });
+
+        int terminated = await broker.TerminateEarlierApplicationProcessesAsync(new Progress<string>(), CancellationToken.None);
+
+        Assert.Equal(1, terminated);
+        Assert.Equal(["process-terminate-earlier-application", "self-update", "status", "process-terminate-earlier-application"], calls);
+    }
+
+    [Fact]
     public async Task SendsGenericTargetIdentityAndWaitsForAnIssuedCommandAfterCancellation()
     {
         using var cancellation = new CancellationTokenSource();

@@ -194,7 +194,7 @@ public sealed class StartupInitializerSequenceTests
     }
 
     [Fact]
-    public async Task UnknownInitializersKeepTheKnownLanesSerial()
+    public async Task LegacyExtensionsPreserveBarriersWithoutSerializingIndependentSteps()
     {
         var calls = new ConcurrentQueue<string>();
         var mysqlStarted = NewSignal();
@@ -255,7 +255,6 @@ public sealed class StartupInitializerSequenceTests
             try
             {
                 await mysqlStarted.Task.WaitAsync(Timeout);
-                await Task.Delay(100);
                 Assert.False(workspaceStarted.Task.IsCompleted);
 
                 finishMysql.SetResult();
@@ -265,18 +264,24 @@ public sealed class StartupInitializerSequenceTests
                 finishMqtt.SetResult();
                 await sequence.WaitAsync(Timeout);
 
-                Assert.Equal(
-                [
-                    "mysql-start",
-                    "mysql-end",
-                    "database-extension",
-                    "workspace",
-                    "mqtt-start",
-                    "mqtt-end",
-                    "connectivity-extension",
-                    "rc",
-                    "template",
-                ], calls.ToArray());
+                string[] order = calls.ToArray();
+                Assert.Equal(9, order.Length);
+                AssertBefore("mysql-start", "mysql-end");
+                AssertBefore("mysql-end", "database-extension");
+                AssertBefore("database-extension", "workspace");
+                AssertBefore("database-extension", "mqtt-start");
+                AssertBefore("mqtt-start", "mqtt-end");
+                AssertBefore("workspace", "connectivity-extension");
+                AssertBefore("mqtt-end", "connectivity-extension");
+                AssertBefore("connectivity-extension", "rc");
+                AssertBefore("rc", "template");
+
+                void AssertBefore(string first, string second)
+                {
+                    Assert.Contains(first, order);
+                    Assert.Contains(second, order);
+                    Assert.True(Array.IndexOf(order, first) < Array.IndexOf(order, second), $"{first} must complete before {second}.");
+                }
                 WpfTestHost.Invoke(() => AssertCompletedAfterPendingMessages(window, initializers.Count));
             }
             finally
@@ -285,6 +290,88 @@ public sealed class StartupInitializerSequenceTests
                 finishMqtt.TrySetResult();
                 await sequence.WaitAsync(Timeout);
             }
+        });
+    }
+
+    [Fact]
+    public async Task PreparationKeepsProgressEmptyAndAnchoredUntilInitializersStart()
+    {
+        await WithIsolatedWindowAsync([], async window =>
+        {
+            Task? preparation = null;
+            WpfTestHost.Invoke(() => preparation = Assert.IsAssignableFrom<Task>(
+                RequiredMethod("ShowPreparationStageAsync").Invoke(window, ["正在连接基础服务"])));
+            await preparation!.WaitAsync(Timeout);
+
+            WpfTestHost.Invoke(() =>
+            {
+                ProgressBar progress = Assert.IsType<ProgressBar>(window.FindName("startupProgressBar"));
+                // Lay out the real template without showing the window or starting services.
+                progress.Width = 744;
+                void LayoutProgress()
+                {
+                    progress.Measure(new Size(744, 2));
+                    progress.Arrange(new Rect(0, 0, 744, 2));
+                    progress.UpdateLayout();
+                }
+                LayoutProgress();
+                var track = Assert.IsAssignableFrom<FrameworkElement>(progress.Template.FindName("PART_Track", progress));
+                var indicator = Assert.IsAssignableFrom<FrameworkElement>(progress.Template.FindName("PART_Indicator", progress));
+                Assert.False(progress.IsIndeterminate);
+                Assert.Equal(0d, progress.Value);
+                Assert.Equal(0d, indicator.ActualWidth);
+                Assert.False(indicator.RenderTransform.HasAnimatedProperties);
+                Assert.False(ProgressTimer(window).IsEnabled);
+
+                progress.Value = 0.25;
+                LayoutProgress();
+                Assert.Equal(Visibility.Visible, indicator.Visibility);
+                Assert.Equal(track.ActualWidth * 0.25, indicator.ActualWidth, 3);
+                Assert.Equal(new Point(0, 0), indicator.TranslatePoint(new Point(0, 0), track));
+
+                progress.Value = progress.Maximum;
+                LayoutProgress();
+                Assert.Equal(track.ActualWidth, indicator.ActualWidth);
+            });
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LowerStageEstimateDoesNotMoveVisibleProgressBackwards(bool initializerRunning)
+    {
+        List<IInitializer> initializers = Enumerable.Range(0, 4)
+            .Select(index => (IInitializer)new CallbackInitializer($"step-{index}", () => Task.CompletedTask)).ToList();
+        await WithIsolatedWindowAsync(initializers, window =>
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                ProgressBar progress = Assert.IsType<ProgressBar>(window.FindName("startupProgressBar"));
+                progress.Maximum = 4;
+                // A long-running step's estimate has already passed a concurrent short
+                // step's completed weight. Its completion and the next start must not rewind it.
+                progress.Value = 2;
+                MethodInfo update = RequiredMethod("UpdateStartupProgress");
+                MethodInfo tick = RequiredMethod("StartupProgressTimer_Tick");
+                update.Invoke(window, [1d, initializerRunning, 1d, "正在连接基础服务"]);
+                PumpDispatcher();
+                ProgressTimer(window).Stop();
+                tick.Invoke(window, [null, EventArgs.Empty]);
+                Assert.Equal(2d, progress.Value);
+
+                update.Invoke(window, [3d, false, 0d, "正在加载扩展组件"]);
+                PumpDispatcher();
+                ProgressTimer(window).Stop();
+                tick.Invoke(window, [null, EventArgs.Empty]);
+                Assert.True(progress.Value > 2 && progress.Value < progress.Maximum);
+
+                Task completion = Assert.IsAssignableFrom<Task>(RequiredMethod("CompleteStartupProgressAsync").Invoke(window, null));
+                PumpDispatcher();
+                Assert.True(completion.IsCompletedSuccessfully);
+                AssertCompletedAfterPendingMessages(window, initializers.Count);
+            });
+            return Task.CompletedTask;
         });
     }
 
@@ -374,7 +461,7 @@ public sealed class StartupInitializerSequenceTests
                 capturedState = true;
 
                 // MarkStage returns before accessing the registry for a completed attempt.
-                // The only explicit config save writes the startup profile into this temp file.
+                // Isolate configuration and assert that startup does not write it before the first frame.
                 AttemptCompletedField.SetValue(null, true);
                 var config = new ConfigHandler
                 {
@@ -397,6 +484,7 @@ public sealed class StartupInitializerSequenceTests
                 RequiredMethod("LoadStartupProgressProfile").Invoke(window, null);
             });
             await action(window!);
+            Assert.False(File.Exists(Path.Combine(root, "ColorVisionConfig.json")));
         }
         finally
         {

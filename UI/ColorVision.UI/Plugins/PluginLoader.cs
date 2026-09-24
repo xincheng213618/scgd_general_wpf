@@ -85,11 +85,29 @@ namespace ColorVision.UI.Plugins
             LoadPlugins(path, moduleCatalog, null, null);
         }
 
+        public static Task LoadPluginsAsync(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds,
+            Action<string>? onPluginLoading, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LoadPluginsCoreAsync("Plugins", moduleCatalog, skipOncePluginIds, onPluginLoading,
+                async () =>
+                {
+                    await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+                    cancellationToken.ThrowIfCancellationRequested();
+                });
+        }
+
         private static void LoadPlugins(
             string path,
             ModuleCatalog? moduleCatalog,
             IEnumerable<string>? skipOncePluginIds,
             Action<string>? onPluginLoading)
+        {
+            LoadPluginsCoreAsync(path, moduleCatalog, skipOncePluginIds, onPluginLoading, null).GetAwaiter().GetResult();
+        }
+
+        private static async Task LoadPluginsCoreAsync(string path, ModuleCatalog? moduleCatalog,
+            IEnumerable<string>? skipOncePluginIds, Action<string>? onPluginLoading, Func<Task>? yieldToUi)
         {
             Volatile.Write(ref _lastLoadFailureCount, 0);
             if (!Directory.Exists(path))
@@ -103,8 +121,10 @@ namespace ColorVision.UI.Plugins
             var plugins = pluginConfig.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径
                                            // 先收集当前所有的插件目录名（通常以插件Id为key）
+            string[] directories = Directory.GetDirectories(path);
+            var dependencyVersions = new Dictionary<string, Version?>(StringComparer.OrdinalIgnoreCase);
             var validIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var directory in Directory.GetDirectories(path))
+            foreach (var directory in directories)
             {
                 string directoryName = Path.GetFileName(directory);
                 string manifestPath = Path.Combine(directory, "manifest.json");
@@ -136,8 +156,11 @@ namespace ColorVision.UI.Plugins
             }
 
 
-            foreach (var directory in Directory.GetDirectories(path))
+            foreach (var directory in directories)
             {
+                if (yieldToUi != null)
+                    await yieldToUi();
+
                 string manifestPath = Path.Combine(directory, "manifest.json");
                 PluginManifest manifest = null;
                 string dllPath = null;
@@ -253,8 +276,11 @@ namespace ColorVision.UI.Plugins
                                             // 获取dll实际版本
                                             try
                                             {
-                                                var assemblyName = AssemblyName.GetAssemblyName(expectedDll);
-                                                var actualVersion = assemblyName.Version;
+                                                if (!dependencyVersions.TryGetValue(expectedDll, out Version? actualVersion))
+                                                {
+                                                    actualVersion = AssemblyName.GetAssemblyName(expectedDll).Version;
+                                                    dependencyVersions.Add(expectedDll, actualVersion);
+                                                }
                                                 var requiredVersion = new Version(dep.Value);
 
                                                 if (actualVersion == null || actualVersion < requiredVersion)

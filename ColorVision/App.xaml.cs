@@ -62,6 +62,7 @@ namespace ColorVision
         private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
 
         internal bool CanCreateAutomaticSnapshotAfterHealthyStartup { get; private set; }
+        internal Startup.StartupSession StartupSession { get; } = new();
 
         public App()
         {
@@ -301,7 +302,44 @@ namespace ColorVision
                 TryAcquireSingleInstanceMutex,
                 () => ConfigHandler.GetInstance().Save<APPConfig>());
             appConfig.PropertyChanged += AppConfig_PropertyChanged;
-            startupPhaseStopwatch.Restart();
+            bool shouldLoadPlugins = maintenanceMode != StartupMaintenanceMode.SafeStart;
+            bool shouldShowSetupWizard = maintenanceMode == StartupMaintenanceMode.SetupWizard;
+            IReadOnlyList<string> skipOncePluginKeys = maintenanceMode == StartupMaintenanceMode.SkipSelectedPlugins
+                ? requestedSkipPluginKeys : Array.Empty<string>();
+
+            if (StartupMaintenanceController.ShouldShowRecovery(maintenanceMode, startupWasHealthy))
+            {
+                StartupRecoveryResult recoveryResult = ShowStartupRecoveryWindow(maintenanceMode == StartupMaintenanceMode.Recovery);
+                if (Dispatcher.HasShutdownStarted
+                    || Dispatcher.HasShutdownFinished
+                    || recoveryResult.Action == StartupRecoveryAction.Exit)
+                {
+                    if (StartupMaintenanceController.ShouldCompleteCancelledRecovery(maintenanceMode, startupWasHealthy))
+                        StartupRegistryChecker.CompleteForRecoveryRestart();
+                    if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+                        Shutdown();
+                    return;
+                }
+
+                shouldLoadPlugins = recoveryResult.Action != StartupRecoveryAction.SkipAllOnce;
+                shouldShowSetupWizard |= recoveryResult.Action == StartupRecoveryAction.RunSetupWizard;
+                skipOncePluginKeys = recoveryResult.SelectedPluginKeys;
+            }
+
+            var startWindow = new StartWindow();
+            startWindow.PrepareStartupAsync = () => PrepareStartupModulesAsync(
+                shouldLoadPlugins, skipOncePluginKeys, startWindow.ShowPreparationStageAsync, startWindow.StartupCancellationToken);
+            startWindow.ShowSetupWizardAfterPreparation = shouldShowSetupWizard || !WizardWindowConfig.Instance.WizardCompletionKey;
+            _startupWizardWasShown = startWindow.ShowSetupWizardAfterPreparation;
+            startWindow.Show();
+        }
+
+        private async Task PrepareStartupModulesAsync(bool shouldLoadPlugins, IReadOnlyList<string> skipOncePluginKeys,
+            Func<string, Task> showStage, CancellationToken cancellationToken)
+        {
+            ModuleCatalog moduleCatalog = _moduleCatalog ?? throw new InvalidOperationException("Built-in modules have not been registered.");
+            Stopwatch startupPhaseStopwatch = Stopwatch.StartNew();
+            await showStage(global::ColorVision.Startup.StartupText.ConnectingServices);
 
             Stopwatch? startupHostTrace = Environment.GetEnvironmentVariable("COLORVISION_STARTUP_TRACE") == "1"
                 ? Stopwatch.StartNew()
@@ -309,12 +347,18 @@ namespace ColorVision
             Rbac.ApplicationUsageTracker.StartSession();
             TraceStartupHostPhase(startupHostTrace, "RBAC usage tracking");
 
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+            cancellationToken.ThrowIfCancellationRequested();
+            TraceStartupHostPhase(startupHostTrace, "UI checkpoint");
             CopilotMcpServer mcpServer = CopilotMcpServer.Instance;
             TraceStartupHostPhase(startupHostTrace, "MCP singleton construction");
             mcpServer.ApplyConfig();
             TraceStartupHostPhase(startupHostTrace, "MCP configuration");
             FlowOperationsRuntimeStatusProvider flowOperations = new();
             OperationsApplicationRestartHandoff applicationRestartHandoff = new();
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+            cancellationToken.ThrowIfCancellationRequested();
+            TraceStartupHostPhase(startupHostTrace, "UI checkpoint");
             LanRemoteControlService lanRemoteControl = LanRemoteControlService.Instance;
             TraceStartupHostPhase(startupHostTrace, "LAN singleton construction");
             OperationsWorkStore operationsWorkStore = lanRemoteControl.OperationsHost.WorkStore;
@@ -345,38 +389,15 @@ namespace ColorVision
                 $"Architecture={(Environment.Is64BitProcess ? "x64" : "x86")}; Runtime=.NET {Environment.Version}; " +
                 $"Build={File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy-MM-dd}.");
 
-            bool shouldLoadPlugins = maintenanceMode != StartupMaintenanceMode.SafeStart;
-            bool shouldShowSetupWizard = maintenanceMode == StartupMaintenanceMode.SetupWizard;
-            IReadOnlyList<string> skipOncePluginKeys = maintenanceMode == StartupMaintenanceMode.SkipSelectedPlugins
-                ? requestedSkipPluginKeys : Array.Empty<string>();
-
-            if (StartupMaintenanceController.ShouldShowRecovery(maintenanceMode, startupWasHealthy))
-            {
-                StartupRecoveryResult recoveryResult = ShowStartupRecoveryWindow(maintenanceMode == StartupMaintenanceMode.Recovery);
-                if (Dispatcher.HasShutdownStarted
-                    || Dispatcher.HasShutdownFinished
-                    || recoveryResult.Action == StartupRecoveryAction.Exit)
-                {
-                    if (StartupMaintenanceController.ShouldCompleteCancelledRecovery(maintenanceMode, startupWasHealthy))
-                        StartupRegistryChecker.CompleteForRecoveryRestart();
-                    if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
-                        Shutdown();
-                    return;
-                }
-
-                shouldLoadPlugins = recoveryResult.Action != StartupRecoveryAction.SkipAllOnce;
-                shouldShowSetupWizard |= recoveryResult.Action == StartupRecoveryAction.RunSetupWizard;
-                skipOncePluginKeys = recoveryResult.SelectedPluginKeys;
-            }
-
             if (shouldLoadPlugins)
             {
                 startupPhaseStopwatch.Restart();
                 StartupRegistryChecker.MarkStage("LoadingPlugins");
-                PluginLoader.LoadPlugins(
-                    _moduleCatalog,
+                await showStage(global::ColorVision.Startup.StartupText.LoadingExtensions);
+                await PluginLoader.LoadPluginsAsync(
+                    moduleCatalog,
                     skipOncePluginKeys,
-                    pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey));
+                    pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey), cancellationToken);
                 StartupRegistryChecker.MarkStage("PluginsLoaded");
                 log.Info($"Startup plugin loading took {startupPhaseStopwatch.ElapsedMilliseconds} ms.");
             }
@@ -389,31 +410,10 @@ namespace ColorVision
                 && skipOncePluginKeys.Count == 0
                 && PluginLoader.LastLoadCompletedWithoutFailures;
 
-            _moduleCatalog.Seal();
+            moduleCatalog.Seal();
 
-            //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-
-            //这里显示托盘控件
-            //TrayIconManager.GetInstance();
-
-
-            //代码先进入启动窗口
-
-            if (shouldShowSetupWizard || !WizardWindowConfig.Instance.WizardCompletionKey)
-            {
-                _startupWizardWasShown = true;
-                WizardWindow wizardWindow = new WizardWindow();
-                wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                wizardWindow.Show();
-            }
-            else 
-            {
-                ///正常进入窗口
-                StartWindow StartWindow = new StartWindow();
-                StartWindow.Show();
-            }
         }
 
         private static void TraceStartupHostPhase(Stopwatch? stopwatch, string phase)
@@ -482,6 +482,12 @@ namespace ColorVision
 
         private SingleInstanceStartupResult ReplaceEarlierInstancesForStartup(out int closedInstanceCount)
         {
+            if (TryAcquireSingleInstanceMutex())
+            {
+                closedInstanceCount = 0;
+                return SingleInstanceStartupResult.ClosedEarlierInstances;
+            }
+
             Update.ApplicationUpdateProcessCoordinator.StartupReplacement? replacement = null;
             int targetCount = 0;
             try
@@ -489,7 +495,7 @@ namespace ColorVision
                 try { replacement = Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement(); }
                 catch (Exception ex) { log.Warn("Unable to inspect earlier instances; opening startup recovery.", ex); }
 
-                if (replacement?.ProcessIds.Count == 0 && TryAcquireSingleInstanceMutex())
+                if ((replacement?.ProcessIds.Count ?? 0) == 0 && TryAcquireSingleInstanceMutex())
                     return SingleInstanceStartupResult.ClosedEarlierInstances;
 
                 ShutdownMode previousShutdownMode = ShutdownMode;
@@ -499,9 +505,16 @@ namespace ColorVision
                 {
                     var window = new SingleInstanceStartupWindow(async (progress, cancellationToken) =>
                     {
-                        replacement ??= await Task.Run(Update.ApplicationUpdateProcessCoordinator.PrepareStartupReplacement, cancellationToken);
-                        targetCount = replacement.ProcessIds.Count;
-                        await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken), cancellationToken);
+                        if (replacement == null)
+                        {
+                            targetCount = await ColorVision.UI.ServiceHost.ColorVisionServiceHostClient.Default
+                                .TerminateEarlierApplicationProcessesAsync(progress, cancellationToken);
+                        }
+                        else
+                        {
+                            targetCount = replacement.ProcessIds.Count;
+                            await Task.Run(() => replacement.ForceCloseAsync(progress, cancellationToken), cancellationToken);
+                        }
                         cancellationToken.ThrowIfCancellationRequested();
                         // Mutex ownership must stay on the startup UI thread.
                         if (!TryAcquireSingleInstanceMutex())

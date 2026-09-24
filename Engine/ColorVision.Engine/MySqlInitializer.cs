@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine
 {
-    public class MySqlInitializer : InitializerBase
+    public class MySqlInitializer : InitializerBase, IInitializerDependencies
     {
         private const string DefaultMySqlServiceName = "MySQL";
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlInitializer));
 
         public override string Name => nameof(MySqlInitializer);
         public override int Order => 1;
+        public System.Collections.Generic.IReadOnlyCollection<string> Dependencies => [];
 
         public override async Task InitializeAsync()
         {

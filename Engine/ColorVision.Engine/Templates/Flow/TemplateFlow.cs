@@ -18,6 +18,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -32,7 +33,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
-    public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
+    public class TemplateFlow : ITemplate<FlowParam>, IAsyncTemplateLoad
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
 
@@ -67,7 +68,17 @@ namespace ColorVision.Engine.Templates.Flow
             return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public override void Load()
+        public override void Load() => ApplyValues(ReadValues());
+
+        public async Task LoadAsync()
+        {
+            // Only detached parameters and storage reads run on the worker. Collection
+            // publication, bindings and template registration stay on the UI thread.
+            IReadOnlyList<FlowParam> values = await Task.Run(ReadValues).ConfigureAwait(false);
+            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(values));
+        }
+
+        private IReadOnlyList<FlowParam> ReadValues()
         {
             IReadOnlyList<FlowParam> values;
             localReadMode = !isMySqlConnected();
@@ -83,12 +94,18 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else values = localStorage.Load();
 
+            foreach (FlowParam value in values)
+                TryAttachCatalogRevision(value);
+            return values;
+        }
+
+        private void ApplyValues(IReadOnlyList<FlowParam> values)
+        {
             var ids = values.Select(value => value.Id).ToHashSet();
             foreach (var removed in TemplateParams.Where(item => !ids.Contains(item.Id)).ToList()) TemplateParams.Remove(removed);
             for (int index = 0; index < values.Count; index++)
             {
                 FlowParam value = values[index];
-                TryAttachCatalogRevision(value);
                 var existing = TemplateParams.FirstOrDefault(item => item.Id == value.Id);
                 if (existing == null) TemplateParams.Insert(index, new TemplateModel<FlowParam>(value.Name, value));
                 else

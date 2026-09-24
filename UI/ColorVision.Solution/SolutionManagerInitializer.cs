@@ -6,13 +6,14 @@ using System.Windows;
 
 namespace ColorVision.Solution
 {
-    public class SolutionManagerInitializer : InitializerBase
+    public class SolutionManagerInitializer : InitializerBase, IInitializerDependencies
     {
         public SolutionManagerInitializer() { }
 
         public override string Name => nameof(SolutionManagerInitializer);
 
         public override int Order => 1;
+        public System.Collections.Generic.IReadOnlyCollection<string> Dependencies => [];
 
         public override async Task InitializeAsync() 
         {
@@ -33,7 +34,7 @@ namespace ColorVision.Solution
 
             var solutionpath = parser.GetValue("solutionpath");
 
-            _= Application.Current.Dispatcher.BeginInvoke(() =>
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 SolutionManager.GetInstance();
             });

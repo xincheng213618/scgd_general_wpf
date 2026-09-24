@@ -54,6 +54,8 @@ namespace ColorVision.UI.ServiceHost
 
         Task TerminateProcessAsync(int processId, DateTime startTimeUtc, string executablePath, IProgress<string> progress, CancellationToken cancellationToken = default);
 
+        Task<int> TerminateEarlierApplicationProcessesAsync(IProgress<string> progress, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -81,6 +83,9 @@ namespace ColorVision.UI.ServiceHost
             ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
             return new ProcessTerminationBroker(SendAsync).TerminateAsync(processId, startTimeUtc, Path.GetFullPath(executablePath), progress, cancellationToken);
         }
+
+        public Task<int> TerminateEarlierApplicationProcessesAsync(IProgress<string> progress, CancellationToken cancellationToken = default) =>
+            new ProcessTerminationBroker(SendAsync).TerminateEarlierApplicationProcessesAsync(progress, cancellationToken);
 
         public Task<ServiceHostResponse> SendAsync(string command, TimeSpan timeout, CancellationToken cancellationToken = default)
         {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MqttInitializer : InitializerBase
+    public class MqttInitializer : InitializerBase, IInitializerDependencies
     {
         private const string MosquittoServiceName = "mosquitto";
         private static readonly ILog log = LogManager.GetLogger(typeof(MqttInitializer));
@@ -16,6 +16,7 @@ namespace ColorVision.Engine.MQTT
         public MqttInitializer() { }
         public override string Name => nameof(MqttInitializer);
         public override int Order => 2;
+        public System.Collections.Generic.IReadOnlyCollection<string> Dependencies => [];
         public override async Task InitializeAsync()
         {
             bool isConnect = await MQTTControl.GetInstance().Connect();
