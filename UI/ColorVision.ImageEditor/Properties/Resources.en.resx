@@ -1074,4 +1074,5 @@ Double-click object: Focus</value>
   <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>Binocular Alignment and Signal Consistency...</value></data>
   <data name="Algorithm_Eyebox" xml:space="preserve"><value>Eyebox Scan Evaluation...</value></data>
   <data name="Algorithm_FieldSfr" xml:space="preserve"><value>Full-Field Slanted-Edge SFR...</value></data>
+  <data name="Algorithm_DustDetection" xml:space="preserve"><value>Dust / contamination detection...</value></data>
 </root>

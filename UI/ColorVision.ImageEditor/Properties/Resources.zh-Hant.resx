@@ -1074,4 +1074,5 @@
   <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>左右眼對準與訊號一致性...</value></data>
   <data name="Algorithm_Eyebox" xml:space="preserve"><value>眼盒掃描評估（Eyebox）...</value></data>
   <data name="Algorithm_FieldSfr" xml:space="preserve"><value>全視場斜邊 SFR...</value></data>
+  <data name="Algorithm_DustDetection" xml:space="preserve"><value>灰塵 / 髒污檢測...</value></data>
 </root>
