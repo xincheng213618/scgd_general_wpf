@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public static LocalPoiResultSet Calculate(LocalFlowFrameLease frame, PoiParam poi)
         {
-            ValidateCieFrame(frame);
+            ValidateFrame(frame);
             ArgumentNullException.ThrowIfNull(poi);
             if (poi.PoiPoints.Count == 0 && poi.Id > 0) PoiParam.LoadPoiDetailFromDB(poi);
             if (poi.PoiPoints.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{poi.Name}");
@@ -55,14 +55,14 @@ namespace ColorVision.Engine.Templates.POI
                 requests[index] = new PoiMeasurementPoint(x, y, width, height, ToMeasurementShape(type));
             }
 
-            PoiMeasurementResult[] measurements = PoiMeasurementService.Calculate(
+            PoiMeasurementResult[] measurements = frame.HasCie ? PoiMeasurementService.Calculate(
                 frame.CiePointer,
                 frame.CieLength,
                 frame.Metadata.Width,
                 frame.Metadata.Height,
                 frame.Metadata.CieBpp,
                 frame.Metadata.Channels,
-                requests);
+                requests) : PoiMeasurementService.CalculateCalibratedRaw(frame.RawPointer, frame.RawLength, frame.ColorCalibration!, requests);
 
             LocalPoiResultSet result = new()
             {
@@ -132,12 +132,19 @@ namespace ColorVision.Engine.Templates.POI
             if (masterId > 0) _ = PoiPointResultDao.Instance.Delete(item => item.Pid == masterId);
         }
 
-        private static void ValidateCieFrame(LocalFlowFrameLease frame)
+        private static void ValidateFrame(LocalFlowFrameLease frame)
         {
             ArgumentNullException.ThrowIfNull(frame);
-            if (!frame.HasCie || frame.CiePointer == IntPtr.Zero)
+            if (!frame.HasCie)
             {
-                throw new InvalidOperationException("当前内存帧没有 CIE 数据，无法计算 POI。");
+                ColorCalibrationSnapshot? snapshot = frame.ColorCalibration;
+                if (!frame.HasRaw || snapshot == null)
+                    throw new InvalidOperationException("当前帧没有 CIE 或带色度校正参数的 RAW，无法计算 POI。请先执行亮度/颜色校正。");
+                if (snapshot.Width != frame.Metadata.Width || snapshot.Height != frame.Metadata.Height
+                    || snapshot.Channels != frame.Metadata.Channels || snapshot.RawBpp != frame.Metadata.SourceBpp)
+                    throw new InvalidOperationException("RAW 色度校正参数与当前帧布局不一致。");
+                if (!frame.IsRawFlipApplied) throw new InvalidOperationException("RAW 镜像操作必须在 POI 计算前完成。");
+                return;
             }
             if (!frame.IsCieFlipApplied)
             {
