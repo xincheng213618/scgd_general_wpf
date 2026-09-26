@@ -1,0 +1,608 @@
+--- a/cvCameraItem/cvCameraItem/colorVisionSimple.cpp
++++ b/cvCameraItem/cvCameraItem/colorVisionSimple.cpp
+@@ -14,8 +14,6 @@
+ #include "cvOpencvHandle.h"
+ #include"cvSensorComm.h"
+ #include "LedCheck.h"
+-#include "cvOled.h"
+-//#include "CvOledInterface.h"
+ #include "zip.h"
+ #include "ZipHelper.h"
+ #include "cvSpectrometer.h"
+@@ -168,18 +166,6 @@
+ 		delete[]caliDataInputArr;
+ 		delete[]caliImageArr;
+ 	}
+-	/*std::map<int, rebuiltData*>::iterator it = map_ledData_Y.begin();
+-
+-	while (it != map_ledData_Y.end())
+-	{
+-
+-		delete[] it->second->m_data;
+-		map_ledData_Y.erase(it);
+-
+-		it++;
+-	}
+-	map_ledData_Y.clear();*/
+-	CvOledRealse();
+ 	LOGI("~colorVisionSimple\n");
+ }
+ 
+@@ -1448,268 +1434,6 @@
+ 	return taskNum;
+ }
+ 
+-void colorVisionSimple::findLedInitial_s(const char* cfgFn) {
+-	ledParameters = string(cfgFn);
+-	CvOledInit();
+-	/*std::ifstream fs(cfgFn, std::ios::binary | std::ios::ate);
+-	if (!fs.is_open()) {
+-
+-		return;
+-	}
+-	else
+-	{
+-
+-		std::streamsize size = fs.tellg();
+-
+-		fs.seekg(0, std::ios::beg);
+-
+-		char *jsonCfg = new char[size];
+-
+-		if (fs.read(jsonCfg, size))
+-		{
+-			CvLoadParam(jsonCfg);
+-		}
+-		delete[]jsonCfg;
+-
+-	}*/
+-
+-}
+-
+-int colorVisionSimple::findDotsArray_s(/*int w, int h, BYTE* imgdata,  CVLED_COLOR color,*/ int index) {
+-	int type = CV_MAKE_TYPE(CV_16U, m_channels);
+-	/*cv::Mat src(m_h, m_w, type, tSrcData);
+-	m_w = src.cols;
+-	m_h = src.rows;*/
+-
+-
+-	/*cv::Mat mArr[3];
+-	cv::split(src, mArr);*/
+-	string postion = "ledPartPosition.dat";
+-
+-	int res = findDotsArrayMemImp(m_w, m_h, tSrcData, type, (CVLED_COLOR)1, ledParameters.c_str(), postion.c_str());
+-	if (res != 0)
+-	{
+-		return -99;
+-	}
+-	uint32_t w_rebuilt = 0;
+-	uint32_t h_rebuilt = 0;
+-	BYTE* reData = new BYTE[m_h * m_w];
+-	BYTE* tempXYZ = nullptr;
+-	if (m_channels == 1)
+-	{
+-		tempXYZ = tXyzData;
+-	}
+-	else {
+-		tempXYZ = tXyzData + m_w * m_h * 4;
+-	}
+-
+-
+-	res = rebuildPixelsMemImp(m_w, m_h, tempXYZ, CV_32FC1, (CVLED_COLOR)1, ledParameters.c_str(), postion.c_str(), &w_rebuilt, &h_rebuilt, reData);
+-	if (res != 0)
+-	{
+-		LOGE("rebuildPixelsMemImp channel Y FAIL!");
+-		return -99;
+-	}
+-	std::map<int, rebuiltData*>::iterator it = map_ledData_Y.begin();
+-
+-	while (it != map_ledData_Y.end())
+-	{
+-		if (it->first == index) {
+-			delete[] it->second->m_data;
+-			map_ledData_Y.erase(it);
+-			break;
+-		}
+-		it++;
+-	}
+-	BYTE* dstRebuiltData = new BYTE[w_rebuilt * h_rebuilt * 4];
+-	memcpy(dstRebuiltData, reData, w_rebuilt * h_rebuilt * 4);
+-
+-	rebuiltData* pr = new rebuiltData(w_rebuilt, h_rebuilt, dstRebuiltData);
+-	map_ledData_Y.insert(std::pair<int, rebuiltData*>(index, pr));
+-
+-	if (m_channels == 3)
+-	{
+-		res = rebuildPixelsMemImp(m_w, m_h, tXyzData, CV_32FC1, (CVLED_COLOR)1, ledParameters.c_str(), postion.c_str(), &w_rebuilt, &h_rebuilt, reData);
+-		if (res != 0)
+-		{
+-			LOGE("rebuildPixelsMemImp channel X FAIL!");
+-			return -99;
+-		}
+-		it = map_ledData_X.begin();
+-
+-		while (it != map_ledData_X.end())
+-		{
+-			if (it->first == index) {
+-				delete[] it->second->m_data;
+-				map_ledData_X.erase(it);
+-				break;
+-			}
+-			it++;
+-		}
+-		dstRebuiltData = new BYTE[w_rebuilt * h_rebuilt * 4];
+-		memcpy(dstRebuiltData, reData, w_rebuilt * h_rebuilt * 4);
+-
+-		rebuiltData* pr = new rebuiltData(w_rebuilt, h_rebuilt, dstRebuiltData);
+-		map_ledData_X.insert(std::pair<int, rebuiltData*>(index, pr));
+-
+-		//Z
+-		res = rebuildPixelsMemImp(m_w, m_h, tXyzData + m_w * m_h * 8, CV_32FC1, (CVLED_COLOR)1, ledParameters.c_str(), postion.c_str(), &w_rebuilt, &h_rebuilt, reData);
+-		if (res != 0)
+-		{
+-			LOGE("rebuildPixelsMemImp channel Z FAIL!");
+-			return -99;
+-		}
+-		it = map_ledData_Z.begin();
+-
+-		while (it != map_ledData_Z.end())
+-		{
+-			if (it->first == index) {
+-				delete[] it->second->m_data;
+-				map_ledData_Z.erase(it);
+-				break;
+-			}
+-			it++;
+-		}
+-		dstRebuiltData = new BYTE[w_rebuilt * h_rebuilt * 4];
+-		memcpy(dstRebuiltData, reData, w_rebuilt * h_rebuilt * 4);
+-
+-		pr = new rebuiltData(w_rebuilt, h_rebuilt, dstRebuiltData);
+-		map_ledData_Z.insert(std::pair<int, rebuiltData*>(index, pr));
+-	}
+-	delete[]reData;
+-	return TRUE;
+-}
+-
+-
+-
+-int colorVisionSimple::combinespadingData_s(/*int w, int h, BYTE* imadata, int type, */ int n_pic, uint32_t* w_comb, uint32_t* h_comb, BYTE* rst) {
+-
+-	int dataLength = 0;
+-	std::map<int, rebuiltData*>::iterator it = map_ledData_Y.begin();
+-	dataLength = (it->second->m_w * it->second->m_h * 4);
+-	*w_comb = it->second->m_w;
+-	*h_comb = it->second->m_h;
+-	//»Áπ˚÷ª”–“ª’≈Õº
+-	if (n_pic == 1)
+-	{
+-		if (m_channels == 1)
+-		{
+-			memcpy(rst, it->second->m_data, dataLength);
+-			delete[]it->second->m_data;
+-		}
+-		else
+-		{
+-			memcpy(rst, map_ledData_X[0]->m_data, dataLength);
+-			delete[] map_ledData_X[0]->m_data;
+-
+-			memcpy(rst + dataLength, map_ledData_Y[0]->m_data, dataLength);
+-			delete[] map_ledData_Y[0]->m_data;
+-
+-			memcpy(rst + dataLength * 2, map_ledData_Z[0]->m_data, dataLength);
+-			delete[] map_ledData_Z[0]->m_data;
+-		}
+-		CM_SetBufferXYZ(cameraHandle, it->second->m_w, it->second->m_h, 32, m_channels, rst);
+-		return TRUE;
+-	}
+-
+-	int tempPicNum = 0;
+-	while (it != map_ledData_Y.end())
+-	{
+-		//
+-		tempPicNum++;
+-		it++;
+-	}
+-
+-	if (tempPicNum != n_pic)
+-	{
+-		LOGFMTI("the LED image num£∫%d is wrong!", tempPicNum);
+-		return FALSE;
+-	}
+-
+-	BYTE* dstData = new BYTE[dataLength * n_pic];
+-
+-	int dataIndex = 0;
+-	for (int i = 0; i < n_pic; i++)
+-	{
+-		//int tLength = map_ledData_Y[i]->m_w * map_ledData_Y[i]->m_h * 4 ;
+-		memcpy(dstData + dataIndex, map_ledData_Y[i]->m_data, dataLength);
+-		delete[]map_ledData_Y[i]->m_data;
+-		/*cv::Mat t(map_ledData[i]->m_h, map_ledData[i]->m_w, )
+-		cv::imwrite("pic\\map_"+to_string(i)+".tif",)*/
+-		dataIndex += dataLength;
+-	}
+-	BYTE* pCutXyz = new BYTE[dataLength * n_pic];
+-	int ledSpace = sqrt(n_pic);
+-	int res = combineSpacingDataMemImp(map_ledData_Y[0]->m_w, map_ledData_Y[0]->m_h, dstData, CV_32FC1, dataLength, n_pic, ledSpace, ledSpace, w_comb, h_comb, pCutXyz);
+-	if (res != 0)
+-	{
+-		LOGE("combineSpacingDataMemImp channel Y FAIL!");
+-		return -99;
+-	}
+-	if (m_channels == 1)
+-	{
+-		memcpy(rst, pCutXyz, dataLength * n_pic);
+-	}
+-	else
+-	{
+-		memcpy(rst + dataLength * n_pic, pCutXyz, dataLength * n_pic);
+-	}
+-	delete[]pCutXyz;
+-	if (m_channels == 3)
+-	{
+-		dataIndex = 0;
+-		for (int i = 0; i < n_pic; i++)
+-		{
+-			memcpy(dstData + dataIndex, map_ledData_X[i]->m_data, dataLength);
+-			delete[]map_ledData_X[i]->m_data;
+-			/*cv::Mat t(map_ledData[i]->m_h, map_ledData[i]->m_w, )
+-			cv::imwrite("pic\\map_"+to_string(i)+".tif",)*/
+-			dataIndex += dataLength;
+-		}
+-		res = combineSpacingDataMemImp(map_ledData_X[0]->m_w, map_ledData_X[0]->m_h, dstData, CV_32FC1, dataLength, n_pic, ledSpace, ledSpace, w_comb, h_comb, rst);
+-		if (res != 0)
+-		{
+-			LOGE("combineSpacingDataMemImp channel X FAIL!");
+-			return -99;
+-		}
+-		//Z
+-
+-		dataIndex = 0;
+-		for (int i = 0; i < n_pic; i++)
+-		{
+-			memcpy(dstData + dataIndex, map_ledData_Z[i]->m_data, dataLength);
+-			delete[]map_ledData_Z[i]->m_data;
+-			/*cv::Mat t(map_ledData[i]->m_h, map_ledData[i]->m_w, )
+-			cv::imwrite("pic\\map_"+to_string(i)+".tif",)*/
+-			dataIndex += dataLength;
+-		}
+-		res = combineSpacingDataMemImp(map_ledData_Z[0]->m_w, map_ledData_Z[0]->m_h, dstData, CV_32FC1, dataLength, n_pic, ledSpace, ledSpace, w_comb, h_comb, rst + dataLength * 2 * n_pic);
+-		if (res != 0)
+-		{
+-			LOGE("combineSpacingDataMemImp channel Z FAIL!");
+-			return -99;
+-		}
+-	}
+-
+-	CM_SetBufferXYZ(cameraHandle, *w_comb, *h_comb, 32, m_channels, rst);
+-	delete[]dstData;
+-	map_ledData_X.clear();
+-	map_ledData_Y.clear();
+-	map_ledData_Z.clear();
+-	return TRUE;
+-}
+-
+-
+-int colorVisionSimple::findLedHighDensity(int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY) {
+-	int type = CV_MAKE_TYPE(CV_16U, m_channels);
+-
+-	int res = findDotsArrayLowPitchMemPtsMemReturnMemImp(m_w, m_h, tSrcData, type, (CVLED_COLOR)1, ledParameters.c_str(), col, row, x_interval, y_interval, angle, pX, pY);
+-	if (res != 0) {
+-		return FALSE;
+-	}
+-	return TRUE;
+-}
+-
+ int colorVisionSimple::ledPickFiltrate(int channelType, int aligrithFlag, int saveLedPic, int useFixRadius, int fixRadius, int contoursSquare, /*int LEDnum,*/ double acceptanceFactor, int bynaryDiffVaule,
+ 	OPTIC_DATA* ledData, int LedNumX, int LedNumY, double* suposeLedAreaSize, double* suposeLedAreaSizeOffset, double* actualLedAreaSize/*,int useLocalLedCoordidate,*/
+ 	, const char* aligrithCfg/*,int* pointScope, int binaryCorret, int boundry*/) {
+@@ -2097,30 +1821,6 @@
+ 	return FALSE;
+ #endif
+ 
+-}
+-
+-bool colorVisionSimple::mergeMat(map<int, rebuiltData*>& pM, int num, BYTE* pData) {
+-	return true;
+-	/*int length = 0;
+-	int w = pM[0]->m_w;
+-	int h = pM[0]->m_h;
+-	for (int i = 0; i < num; i++)
+-	{
+-		length += pM[i]->m_h * pM[i]->m_w * 4;
+-	}
+-	BYTE* pT = new BYTE[length];
+-	float* pFt = (float*)pT;
+-	int dd = sqrt(num);
+-	for (int picN = 0; picN < num; picN++)
+-	{
+-		for (int i = 0; i < h; i += 4)
+-		{
+-			for (int j = 0; j < w; j += 4) {
+-				pFt[i * w + j] = pM[picN]->m_data[]
+-			}
+-		}
+-	}
+-	*/
+ }
+ 
+ int colorVisionSimple::insertCaliGroup(const char* caliTitle, float gain, CalibrationType ct, int channelType, const char* caliFile, BOOL newGroup) {
+--- a/cvCameraItem/cvCameraItem/colorVisionSimple.h
++++ b/cvCameraItem/cvCameraItem/colorVisionSimple.h
+@@ -71,18 +71,6 @@
+ 	std::vector<caliCell> list_cali;
+ };
+ 
+-struct rebuiltData
+-{
+-	rebuiltData(uint32_t w, uint32_t h, uint8_t* d) {
+-		m_w = w;
+-		m_h = h;
+-		m_data = d;
+-	}
+-	uint32_t m_w;
+-	uint32_t m_h;
+-	uint8_t* m_data;
+-};
+-
+ class colorVisionSimple
+ {
+ public:
+@@ -174,16 +162,6 @@
+ 	int saveCaliFile(CalibrationType ct, const char* fileName);
+ 
+ 	int getLedPosition(OPTIC_DATA* pOD, int& pointNummber);
+-
+-	void findLedInitial_s(const char* cfgFn);
+-
+-	int findDotsArray_s(int index);
+-
+-	int combinespadingData_s(int n_pic, uint32_t* w_comb, uint32_t* h_comb, BYTE* rst);
+-
+-	int findLedHighDensity(int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY);
+-
+-	bool mergeMat(map<int, rebuiltData*>& pM, int num, BYTE* pData);
+ 
+ 	int debugImage(const char* fn, int imgType);
+ 
+@@ -377,10 +355,6 @@
+ 	int caliImageArrNum;
+ 	IIntputData* caliDataInputArr;
+ 
+-	map<int, rebuiltData*>map_ledData_Y;
+-	map<int, rebuiltData*>map_ledData_X;
+-	map<int, rebuiltData*>map_ledData_Z;
+-	string ledParameters;
+ 
+ 	//π‚∆◊“«≤ø∑÷
+ 	HANDLE spectHandle;
+--- a/cvCameraItem/cvCameraItem/cvCameraSimple.cpp
++++ b/cvCameraItem/cvCameraItem/cvCameraSimple.cpp
+@@ -308,69 +308,6 @@
+ 	return res;
+ }
+ 
+-int CM_LedCalInit(HANDLE handle, const char* fileName) {
+-	LOGFMTI("invoke CM_LedCalInit");
+-	colorVisionSimple* pSimple = findHandle(handle);
+-	if (pSimple == nullptr) {
+-		return FALSE;
+-	}
+-	pSimple->findLedInitial_s(fileName);
+-	return TRUE;
+-}
+-
+-int CM_LedCalFind(HANDLE handle, int index) {
+-	LOGFMTI("invoke CM_LedCalFind.index:%d", index);
+-	colorVisionSimple* pSimple = findHandle(handle);
+-	if (pSimple == nullptr) {
+-		return FALSE;
+-	}
+-	int res = pSimple->findDotsArray_s(index);
+-	LOGFMTI("CM_LedCalFind return is:%d", res);
+-	return res;
+-}
+-
+-int CM_LedCalComBine(HANDLE handle, int n_pic, int& w_comb, int& h_comb, BYTE* rst) {
+-	LOGFMTI("invoke CM_LedCalComBine.n_pic:%d", n_pic);
+-	colorVisionSimple* pSimple = findHandle(handle);
+-	if (pSimple == nullptr) {
+-		return FALSE;
+-	}
+-	uint32_t tw = 0;
+-	uint32_t th = 0;
+-	int res = pSimple->combinespadingData_s(n_pic, &tw, &th, rst);
+-	w_comb = tw;
+-	h_comb = th;
+-	LOGFMTI("CM_LedCalComBine return is:%d", res);
+-	return res;
+-}
+-
+-int CM_LedCalFindHighDensity(HANDLE handle, int& number_x, int& number_y, float& interval_x, float& interval_y, float& angle, OPTIC_DATA* pOD) {
+-	LOGFMTI("invoke CM_LedCalFindHighDensity");
+-	colorVisionSimple* pSimple = findHandle(handle);
+-	if (pSimple == nullptr) {
+-		return FALSE;
+-	}
+-	if (number_x * number_y <= 0)
+-	{
+-		return FALSE;
+-	}
+-	double* px = new double[number_x * number_y];
+-	double* py = new double[number_x * number_y];
+-	int res = pSimple->findLedHighDensity(number_x, number_y, interval_x, interval_y, angle, px, py);
+-
+-	for (int i = 0; i < number_x * number_y; i++)
+-	{
+-		pOD[i].px = int(px[i]);
+-		pOD[i].py = int(py[i]);
+-		pOD[i].shape = 0;
+-		pOD[i].w_radius = 0;
+-	}
+-	delete[]px;
+-	delete[]py;
+-	LOGFMTI("CM_LedCalFindHighDensity return is:%d", res);
+-	return res;
+-}
+-
+ int CM_DebugImage(HANDLE handle, const char* fn, int imgType) {
+ 	colorVisionSimple* pSimple = findHandle(handle);
+ 	if (pSimple == nullptr) {
+--- a/cvCameraItem/cvCameraItem/cvCamera.h
++++ b/cvCameraItem/cvCameraItem/cvCamera.h
+@@ -1773,52 +1773,13 @@
+  
+    
+- / * RÀYSìbop‡s¿hKm- 
+- ¬Speˇ- 
+- H A N D L E ˇ¯v:gÂSƒg- 
+- f i l e N a m e ˇi n p u t , ¬SpeMënáeˆN-Ty- 
+- * / - 
+- E X P O R T C   M Y D L L   i n t   C M _ L e d C a l I n i t ( H A N D L E   h a n d l e ,   c o n s t   c h a r *   f i l e N a m e ) ; - 
+- - 
+- / * æãnìbop‡spencˇ(Wå(ug e t F r a m e S i m p l e KNT- 
+- ¬Speˇ- 
+- H A N D L E ˇ¯v:gÂSƒg- 
+- i n d e x ˇi n p u t , ,{‡Q!kπpÆNop‡sˇÇY N*N1 6  _ˇRÉÙV(W[ 0 - 1 5 ] - 
+- * / - 
+- E X P O R T C   M Y D L L   i n t   C M _ L e d C a l F i n d ( H A N D L E   h a n d l e ,   i n t   i n d e x ) ; - 
+- - 
+- - 
+- / * æãnìbop‡spencˇ(Wå(ug e t F r a m e S i m p l e KNT- 
+- ¬Speˇ- 
+- H A N D L E ˇ¯v:gÂSƒg- 
+- i n d e x ˇi n p u t , ,{‡Q!kπpÆNop‡sˇÇY N*N1 6  _ˇRÉÙV(W[ 0 - 1 5 ] - 
+- * / - 
+- E X P O R T C   M Y D L L   i n t   C M _ L e d C a l C o m B i n e ( H A N D L E   h a n d l e ,   i n t   n _ p i c ,   i n t &   w _ c o m b ,   i n t &   h _ c o m b ,   B Y T E *   r s t ) ; - 
+- - 
+- E X P O R T C   M Y D L L   i n t   C M _ L e d C a l F i n d H i g h D e n s i t y ( H A N D L E   h a n d l e ,   i n t &   n u m b e r _ x ,   i n t &   n u m b e r _ y ,   f l o a t &   i n t e r v a l _ x ,   f l o a t &   i n t e r v a l _ y ,   f l o a t &   a n g l e ,   O P T I C _ D A T A *   p O D ) ; + + 
++ + 
++ + 
++   
+    
+--- a/cvCameraItem/cvCameraItem/cvOpencvHandle.cpp
++++ b/cvCameraItem/cvCameraItem/cvOpencvHandle.cpp
+@@ -5524,13 +5524,6 @@
+ 	return pLedCheck_qk->getDrawImg(w, h, bpp, channels, data);
+ }
+ 
+-int CM_FindHighIndensityLed(int w, int h, int bpp, int channels, char* imgdata, CVLED_COLOR color, const char* cfg_json, const char* positionFn, int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY) {
+-	LOGI("invoke CM_FindHighIndensityLed");
+-	int res = ledCheck_qk::findHighIndensityLed(w, h, bpp, channels, imgdata, color, cfg_json, positionFn, col, row, x_interval, y_interval, angle, pX, pY);
+-	LOGFMTI("CM_FindHighIndensityLed return is:%d", res);
+-	return res;
+-}
+-
+ int CM_FindLedPositionBySocket(int w, int h, int bpp, int channels, uchar* data, const char* paramJson, PointInt* pArr, int& pLength, int& referenceRadius) {
+ 	if (pLedCheck_qk == nullptr)
+ 	{
+--- a/cvCameraItem/cvCameraItem/cvOpencvHandle.h
++++ b/cvCameraItem/cvCameraItem/cvOpencvHandle.h
+@@ -542,15 +542,6 @@
+ 
+ ******************************************************/
+ EXPORTC MYDLL BOOL CalFocusLevelByEdge(int w, int h, int bpp, int channels, const uint8_t* psrcData, const IRECT* pI, float* pResult, int length, int flag = 0);
+-//
+-//EXPORTC MYDLL int CvLoadParam(const char* cfgFn);
+-//
+-//EXPORTC MYDLL int findDotsArray(int w, int h, BYTE* imgdata, int type, CVLED_COLOR color);
+-//
+-//EXPORTC MYDLL int rebuildPixelsMem(int w, int h, BYTE* imadata, int type, CVLED_COLOR color, float exp, int* w_rebuilt, int* h_rebuilt, BYTE* img_rebuit);
+-//
+-//EXPORTC MYDLL int combinespacingData(int w, int h, BYTE* imadata, int type, uint64 tlen, int n_pic, int* w_comb, int* h_comb, BYTE* rst);
+-
+ /*****************************************************
+ brief:AA,–¬∞ÊÕ®”√¿œµƒΩ”ø⁄
+ 	
+@@ -798,14 +789,6 @@
+ ******************************************************/
+ EXPORTC MYDLL int CM_GetLedDrawImg(int& w, int& h, int& bpp, int& channels, uchar* data);
+ 
+-/*****************************************************
+-brief: ◊•µ∆÷È£¨∏ﬂ√‹∂»µ„’Ûµ∆÷È£¨—«∆ÊÀ„∑®,ƒ⁄≤ø π”√£°
+-Returns:≥…π¶‘Ú∑µªÿ1
+-Parameter:
+-
+-
+-******************************************************/
+-EXPORTC MYDLL  int CM_FindHighIndensityLed(int w, int h, int bpp, int channels, char* imgdata, CVLED_COLOR color, const char* cfg_json, const char* positionFn, int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY);
+ 
+ 
+ /*****************************************************
+--- a/cvCamera/cvCamera/OpencvManager.cpp
++++ b/cvCamera/cvCamera/OpencvManager.cpp
+@@ -8,7 +8,6 @@
+ #include <unsupported/Eigen/Splines>
+ #include "cvCalibration.h"
+ #include <fstream>
+-#include "cvOled.h"
+ 
+ std::vector<std::vector<Point>> brightContours;
+ 
+@@ -3131,18 +3130,6 @@
+ 	return TRUE;
+ }
+ 
+-int ledCheck_qk::findHighIndensityLed(int w, int h, int bpp, int channels, char* imgdata, CVLED_COLOR color, const char* cfg_json, const char* positionFn, int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY) {
+-	int srcType = CV_MAKE_TYPE(CV_16U, channels);
+-	if (bpp == 32) {
+-		srcType = CV_MAKE_TYPE(CV_32F, channels);
+-	}
+-	int res = findDotsArrayLowPitchMemPtsMemReturnMemImp(w, h, (uint8_t*)imgdata, srcType, color, cfg_json, col, row, x_interval, y_interval, angle, pX, pY);
+-	if (res != 0) {
+-		LOGE("Failed to findDotsArrayLowPitchMemPtsMemReturnMemImp");
+-		return FALSE;
+-	}
+-	return TRUE;
+-}
+ ledCheck_qk::~ledCheck_qk()
+ {
+ }
+--- a/cvCamera/cvCamera/OpencvManager.h
++++ b/cvCamera/cvCamera/OpencvManager.h
+@@ -164,8 +164,6 @@
+ 
+ 	int getDrawImg(int& w, int& h, int& bpp, int& channels, uchar* data);
+ 
+-	//—«∆ÊÀ„∑®£¨◊•LED£¨∏ﬂ ”œÓƒø”√π˝
+-	static int findHighIndensityLed(int w, int h,int bpp,int channels, char* imgdata,  CVLED_COLOR color, const char* cfg_json, const char* positionFn, int& col, int& row, float& x_interval, float& y_interval, float& angle, double* pX, double* pY);
+ 
+ private:
+ 	bool success;
+--- a/cvCamera/cvCamera/CMStruct.h
++++ b/cvCamera/cvCamera/CMStruct.h
+@@ -605,13 +605,6 @@
+ 	CameraType_Total,
+ };
+ 
+-enum CVLED_COLOR
+-{
+-	BLUE = 0,
+-	GREEN = 1,
+-	RED = 2,
+-};
+-
+ enum class CameraMode
+ {
+ 	CV_MODE,					// CVƒ£ Ω
+--- a/cvCameraItem/cvCameraItem/cvCameraTCL.vcxproj
++++ b/cvCameraItem/cvCameraItem/cvCameraTCL.vcxproj
+@@ -116,7 +116,7 @@
+       <SubSystem>Windows</SubSystem>
+       <GenerateDebugInformation>true</GenerateDebugInformation>
+       <AdditionalLibraryDirectories>..\..\qhyccd\lib;..\..\opencv\lib;..\..\pthreads\lib\x64;..\..\license\lib;..\..\DisplayImage\lib;..\..\glog\lib;..\..\ds\lib;..\x64\$(Configuration);..\..\cvCamera\CH341DLL;..\..\cvCamera\hasp_api;..\..\sqlite3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+-      <AdditionalDependencies>opencv_world401d.lib;pthreadVC2.lib;licenseClientd.lib;cryptlibd.lib;cvOled.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <AdditionalDependencies>opencv_world401d.lib;pthreadVC2.lib;licenseClientd.lib;cryptlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+     </Link>
+     <PostBuildEvent>
+       <Command>
+@@ -164,7 +164,7 @@
+       <OptimizeReferences>true</OptimizeReferences>
+       <GenerateDebugInformation>true</GenerateDebugInformation>
+       <AdditionalLibraryDirectories>..\..\qhyccd\lib;..\..\opencv\lib;..\..\pthreads\lib\x64;..\..\license\lib;..\..\glog\lib;..\..\ds\lib;..\x64\$(Configuration);..\..\cvCamera\CH341DLL;..\..\cvCamera\hasp_api;..\..\sqlite3\lib;..\..\ÂÖâË∞±‰ª™\È´òÂà©ÈÄö\ÂºÄÂèëÊñáÊ°£\Glit_Demo_Support_libs_20250106\Glit_Demo_Support_libs_20250106\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+-      <AdditionalDependencies>opencv_world401.lib;pthreadVC2.lib;cryptlib.lib;licenseClient.lib;cvOled.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <AdditionalDependencies>opencv_world401.lib;pthreadVC2.lib;cryptlib.lib;licenseClient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+     </Link>
+     <PostBuildEvent>
+       <Command>

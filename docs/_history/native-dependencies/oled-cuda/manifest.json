@@ -1,0 +1,146 @@
+[
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCamera\\cvCamera\\CMStruct.h",
+    "archive_entry": "native/cvCamera/cvCamera/CMStruct.h",
+    "bytes": 23302,
+    "sha256": "2c9d80a47bb32a694db7c1deaa7d5647d6716c3aafb7284c12cbcf4e7e1f07d2"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCamera\\cvCamera\\OpencvManager.cpp",
+    "archive_entry": "native/cvCamera/cvCamera/OpencvManager.cpp",
+    "bytes": 110943,
+    "sha256": "f461ede01c7109b97a52bd9b27a43da54ad89fc75e530f6f004c3a2eaeb95c7b"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCamera\\cvCamera\\OpencvManager.h",
+    "archive_entry": "native/cvCamera/cvCamera/OpencvManager.h",
+    "bytes": 9210,
+    "sha256": "ce30103ddc087a688b06335e2fe8900c99414c5a83769f59d2f7429676f302bd"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCamera\\cvCamera\\cvOled.h",
+    "archive_entry": "native/cvCamera/cvCamera/cvOled.h",
+    "bytes": 3970,
+    "sha256": "1bbfb9bc286cf77f552d01afc84a91f0d5af996d44f707109e717923dec9bb59"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\colorVisionSimple.cpp",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/colorVisionSimple.cpp",
+    "bytes": 87239,
+    "sha256": "fbaa35ba371af69cd9f50d2c9b7fe06186c9efcd40bb09278d27242f214b4ece"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\colorVisionSimple.h",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/colorVisionSimple.h",
+    "bytes": 11129,
+    "sha256": "3b442ca0b8a3694a229abaa68f8ece7165dc102758a17c9fe9f09410e428b730"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\cvCameraSimple.cpp",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/cvCameraSimple.cpp",
+    "bytes": 22495,
+    "sha256": "c6f9f0c9f438a8d5ea4f29c6438571f9db6a9e448db92c9a1697c494b6c42ac2"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\cvCamera.h",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/cvCamera.h",
+    "bytes": 61110,
+    "sha256": "4b938d9d5ae983006a65fa1548251fb195fd8018d2aceb20377b5bdac8bafad1"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\cvOpencvHandle.cpp",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/cvOpencvHandle.cpp",
+    "bytes": 178150,
+    "sha256": "ff674b4dd7a56759aed5b6ea6c88251753937067cdd2853af4b654ee3ab00ee1"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\cvOpencvHandle.h",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/cvOpencvHandle.h",
+    "bytes": 35728,
+    "sha256": "f09c4bebea938d247d2f117da1f6ae5c0c5a3fcecb83e76f50f69f1cb129a61e"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_internal_dll\\cvCameraItem\\cvCameraItem\\cvCameraTCL.vcxproj",
+    "archive_entry": "native/cvCameraItem/cvCameraItem/cvCameraTCL.vcxproj",
+    "bytes": 25603,
+    "sha256": "d35c45419687fa6f58de68ef024e2c317697e6c287f0c2c785d1b282bf7e5255"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Engine\\cvColorVision\\Devices\\Display\\CvOledDLL.cs",
+    "archive_entry": "wpf/Engine/cvColorVision/Devices/Display/CvOledDLL.cs",
+    "bytes": 2072,
+    "sha256": "25305c3b6a689914b198cc8ad80f99df794176a05502b2fd78f978f4ec5073f4"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Engine\\cvColorVision\\Devices\\Display\\CVOLED_ERROR.cs",
+    "archive_entry": "wpf/Engine/cvColorVision/Devices/Display/CVOLED_ERROR.cs",
+    "bytes": 485,
+    "sha256": "125d00d8a4c2eb33f529d4a8944b57e4e80b4d029b2cdfcf08083ef960051ed9"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Engine\\cvColorVision\\Color\\CVLED_COLOR.cs",
+    "archive_entry": "wpf/Engine/cvColorVision/Color/CVLED_COLOR.cs",
+    "bytes": 133,
+    "sha256": "323251ecc0a66195dff95f226499eb0f3c55b61a5e3c457e90d279c0c47d8922"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\DLL\\scgd_internal_dll\\cvCamera.dll",
+    "archive_entry": "wpf/DLL/scgd_internal_dll/cvCamera.dll",
+    "bytes": 9070080,
+    "sha256": "4103475910fc1e6cc1d0f03c642e6a83b5f76a6732eb99b6df36f1ebc012924d"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\DLL\\scgd_internal_dll\\cvoled.dll",
+    "archive_entry": "wpf/DLL/scgd_internal_dll/cvoled.dll",
+    "bytes": 7747072,
+    "sha256": "a74ff0527f795302f0e8da93fe50f4a723d52be5ee6efbf932d91bab962bb141"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\DLL\\scgd_internal_dll\\cudart64_12.dll",
+    "archive_entry": "wpf/DLL/scgd_internal_dll/cudart64_12.dll",
+    "bytes": 527872,
+    "sha256": "ca87e7115630e13f55b453584e20ef29b904344968779a7d65620c0019439eb7"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Engine\\cvColorVision\\cvColorVision.csproj",
+    "archive_entry": "wpf/Engine/cvColorVision/cvColorVision.csproj",
+    "bytes": 7941,
+    "sha256": "38736eedea5bdf5d296d8ecd4bc66744c61bd1a9ca46c70e1c16a55f73f2cb55"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Engine\\cvColorVision\\README.md",
+    "archive_entry": "wpf/Engine/cvColorVision/README.md",
+    "bytes": 2286,
+    "sha256": "0520573c60b26aa3bfb8da36fb3d0a7ca316717ea25922c95a0a6690d9adc64d"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\Scripts\\shared_files.json",
+    "archive_entry": "wpf/Scripts/shared_files.json",
+    "bytes": 21197,
+    "sha256": "f0a0da6edcf13ddf72df472bb2edfe4a88210596eaee209e43352c852b437b4e"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\SDK\\ColorVision.PluginKit\\scripts\\shared_files.json",
+    "archive_entry": "wpf/SDK/ColorVision.PluginKit/scripts/shared_files.json",
+    "bytes": 21197,
+    "sha256": "f0a0da6edcf13ddf72df472bb2edfe4a88210596eaee209e43352c852b437b4e"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\docs\\04-api-reference\\engine-components\\cvColorVision.md",
+    "archive_entry": "wpf/docs/04-api-reference/engine-components/cvColorVision.md",
+    "bytes": 11075,
+    "sha256": "a42f3d05dee599457d580ae6f2e6000a45fc0b15426eaeed0eae53c55de720a0"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\docs\\03-architecture\\service-integration-roadmap.md",
+    "archive_entry": "wpf/docs/03-architecture/service-integration-roadmap.md",
+    "bytes": 26980,
+    "sha256": "3f80efcfcb1db504dc9c6258cb24fc8dd17b1b0e1f5856daed4a4ff39227c1ec"
+  },
+  {
+    "original": "C:\\Users\\Xin\\Documents\\Advanced Installer\\Projects\\ColorVision\\ColorVision.aip",
+    "archive_entry": "installer/ColorVision.aip",
+    "bytes": 235312,
+    "sha256": "87d3c38121bb6e4b5a44d3f0863df3665f55effbf5264fc0e0ff58b132b06ebc"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "original_path": "DLL/scgd_internal_dll/cfg_files/IKap/510.vlcf",
+    "archived_path": "docs/_history/device-configs/ikap-mil/IKap/510.vlcf",
+    "bytes": 5304,
+    "sha256": "9B1F79FE1BD67FE39F01295B131D56908ECE566D8596AEC6A87F26091827EF25"
+  },
+  {
+    "original_path": "DLL/scgd_internal_dll/cfg_files/mil-dcf/ConfigDCF.ini",
+    "archived_path": "docs/_history/device-configs/ikap-mil/mil-dcf/ConfigDCF.ini",
+    "bytes": 96,
+    "sha256": "9F0FDC21D4A1437C71E2E8386D6BC0F92F1DD8140C6596B84B9F06ED19708312"
+  },
+  {
+    "original_path": "DLL/scgd_internal_dll/cfg_files/mil-dcf/VP101_85Mhz_10tap8bit-trigger-good.dcf",
+    "archived_path": "docs/_history/device-configs/ikap-mil/mil-dcf/VP101_85Mhz_10tap8bit-trigger-good.dcf",
+    "bytes": 262510,
+    "sha256": "A14AEC3C6CBF9E396492993B18F3A55FB9B4DCC712BF83F02D5306E3A68622FC"
+  },
+  {
+    "original_path": "DLL/scgd_internal_dll/cfg_files/mil-dcf/VP101_85Mhz_4tap12bit-trigger-good.dcf",
+    "archived_path": "docs/_history/device-configs/ikap-mil/mil-dcf/VP101_85Mhz_4tap12bit-trigger-good.dcf",
+    "bytes": 262506,
+    "sha256": "45B890DF599FBFDB80E555E7FCD16E0991ABF370DB9066701D762BC83EFE6BEB"
+  }
+]

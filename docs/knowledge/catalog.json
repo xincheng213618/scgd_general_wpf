@@ -5187,7 +5187,7 @@
       "knowledge_id": "engine.native-bindings",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。",
+      "summary": "定位供应商 native DLL 的相机、光谱、XYZ、PG 与源表绑定契约，以及内部版的交付边界。",
       "aliases": [
         "设备SDK入口在哪里",
         "cvColorVision",
@@ -5204,7 +5204,6 @@
         "Engine/cvColorVision/CVCommCore",
         "Engine/cvColorVision/MQTTMessageLib",
         "Engine/cvColorVision/Color/ConvertXYZ.cs",
-        "Engine/cvColorVision/Devices/Display/CvOledDLL.cs",
         "Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs",
         "Engine/cvColorVision/cvColorVision.csproj"
       ],

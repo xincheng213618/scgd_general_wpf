@@ -29,18 +29,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="runtimes\win-x64\native\cudart64_12.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="runtimes\win-x64\native\cvoled.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
@@ -145,22 +135,6 @@
 			<Pack>true</Pack>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cfg\sys.cfg" Link="cfg\sys.cfg">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\IKap\510.vlcf" Link="cfg_files\IKap\510.vlcf">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\ConfigDCF.ini" Link="cfg_files\mil-dcf\ConfigDCF.ini">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_10tap8bit-trigger-good.dcf">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf" Link="cfg_files\mil-dcf\VP101_85Mhz_4tap12bit-trigger-good.dcf">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>

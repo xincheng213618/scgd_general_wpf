@@ -24,9 +24,8 @@ function Test-CameraTestPackageFile([string]$RelativePath) {
     # Keep all declared managed/vendor DLL dependencies, including camera drivers omitted by Spectrum's filter.
     if ($path.EndsWith('.dll')) { return $true }
     if ($path -in @('cameratest.exe', 'cameratest.deps.json', 'cameratest.runtimeconfig.json', 'cameratest.dll.config')) { return $true }
-    # Only repository-supplied SDK defaults; never copy a developer's runtime configuration or licence.
-    if ($path -in @('cfg/sys.cfg', 'cfg_files/ikap/510.vlcf', 'cfg_files/mil-dcf/configdcf.ini',
-        'cfg_files/mil-dcf/vp101_85mhz_10tap8bit-trigger-good.dcf', 'cfg_files/mil-dcf/vp101_85mhz_4tap12bit-trigger-good.dcf')) { return $true }
+    # Keep the shared SDK configuration; device-specific capture-card profiles are supplied separately.
+    if ($path -eq 'cfg/sys.cfg') { return $true }
     return ($path -match '(^|/)(license|licence|notice|third-party-notices)(\.[a-z0-9_-]+)?\.(txt|md)$')
 }
 
