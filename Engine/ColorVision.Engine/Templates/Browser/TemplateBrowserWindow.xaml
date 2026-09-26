@@ -225,7 +225,7 @@
                 <TextBlock x:Name="StatusText" Grid.Column="1" Text="拖放交换位置 · 双击打开" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="12" Opacity="0.6"
                            ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Command="ApplicationCommands.Save" Content="保存" ToolTip="保存名称修改或重试排序保存" AutomationProperties.Name="保存修改" Style="{StaticResource BrowserAction}"/>
+                    <Button Command="ApplicationCommands.Save" Content="保存" ToolTip="保存名称修改" AutomationProperties.Name="保存修改" Style="{StaticResource BrowserAction}"/>
                     <Button Click="Close_Click" Content="关闭" ToolTip="关闭模板窗口" AutomationProperties.Name="关闭窗口" Style="{StaticResource BrowserAction}"/>
                 </StackPanel>
             </Grid>

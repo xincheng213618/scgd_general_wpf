@@ -10,7 +10,5 @@ public sealed class FlowTemplateManagerWindow : TemplateBrowserWindow
 
     internal FlowTemplateManagerWindow(TemplateFlow template, int selectedIndex, FlowTemplateCoverService coverService)
         : base(template, selectedIndex, new TemplateBrowserOptions("流程", true,
-            () => template.BrowserOrderScope,
-            item => ((TemplateModel<FlowParam>)item).Value.FlowKey ?? $"id:{item.Id}",
             item => template.Save((TemplateModel<FlowParam>)item)), coverService) { }
 }

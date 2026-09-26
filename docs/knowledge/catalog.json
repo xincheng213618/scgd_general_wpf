@@ -5735,6 +5735,7 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/ITemplate.cs",
+        "Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs",
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
         "Engine/ColorVision.Engine/Templates/ModelBase.cs",
         "Engine/ColorVision.Engine/Templates/ParamModBase.cs",
@@ -5749,7 +5750,8 @@
         "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
+        "Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"
       ],
       "related": [
         "engine.index",

@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "TemplateControl注册与普通ITemplate<T>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。"
 aliases: ["模板架构","Templates目录","模板注册","如何新增算法模板","新增模板要继承什么","ITemplate","IITemplateLoad","TemplateControl","TemplateDicId","TemplateModel","ParamModBase","ModelBase","SaveIndex","TryCreateTemplate","SwapTemplateOrder"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ARVR/SFR/TemplateSFR.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ARVR/SFR/TemplateSFR.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
 related: ["engine.index","algorithms.template-management","algorithms.json-templates","flow.templates","ui.property-grid","engine.results"]
 ---
 
@@ -82,7 +82,7 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 - `CopyTo(index)` 将当前参数 JSON 序列化再反序列化到 `ImportTemp`，只显式把参数 `Id` 置为 `-1`；不会在此刻创建数据库记录，也不保证全部嵌套 ID、资源引用已重映射。
 - 普通 `ImportFile` 读取文件、先构造默认参数，再按来源明细的 `SysPid` 将 `ValueA` 拷入目标明细。它不是任意 JSON 字段合并；来源字典项不匹配可能在 `First(...)` 处失败。只捕获 JSON 异常，文件 I/O、字典/构造和其它异常可传播，失败前的临时状态也不保证全恢复。
 - 普通单项导出是 `.cfg` 参数 JSON，多选是多个 `.cfg` 的 zip；基类导入对话框只选择 `.cfg`，不能据多选导出推断它支持整包回导。导出不自动包含设备、图像、相关模板或历史结果，失败也没有目标文件原子替换保证。
-- `SwapTemplateOrder` 默认实现试图用临时 ID 交换主记录身份、明细 `Pid` 和内存集合，不只是修改界面排序。它没有显式事务和影响行数核验，异常返回 `false`；不能据返回值证明数据库与外部引用完整一致。需要授权数据库验证，不把拖动顺序当作只读整理。
+- `SwapTemplateOrder` / `SwapTemplateOrderAsync` 通过 `TemplateOrderSwap` 保存数据库顺序。MySQL 沿用按主键排列的现有约定：在事务内按 ID 顺序锁住两条主记录、核对名称，以明确的旧 ID 条件交换主键，再用一条 CASE 更新全部明细 `Pid`；不回写名称、JSON、创建时间或流程资源内容。每次主记录更新必须影响一行，明细更新数须与交换前数量相同，失败回滚。不能用修改 ID 后的 `Updateable(entity)` 代替主键更新，否则其 WHERE 使用新 ID，会覆盖目标记录。Flow、POI、普通模板和 JSON 模板共用此实现；本地 Flow/POI 使用 SQLite 的 `sort_order`，保持本地 ID 不变。提交成功才发布内存顺序并重映射待保存项索引，异步入口把数据库工作移到后台。这个操作会改变服务器模板 ID，不是只读整理；既有数据库损坏和客户侧历史 ID 引用不由排序自动修复。
 
 JSON、POI、Flow 可覆写上述方法。尤其 JSON 的“设为默认”与 Flow 保存具有各自事务规则，不能总结成“所有模板保存都一样”或“所有模板都没有事务”。
 
@@ -98,4 +98,4 @@ Flow 常规属性通过 属性上的 `PropertyEditorTypeAttribute` 选择编辑�
 
 `AlgorithmNodeTemplateMappingTests` 当前仅验证 ARVR 的 `POITempName` 映射到指定编辑器，不证明普通模板 CRUD。Flow 身份/流程包测试由 Flow 主题维护，不能拿它们代表全部 `ITemplate<T>`、字典迁移或编辑器行为。
 
-尚未登记覆盖上述普通模板注册冲突、离线/增量重载、跨表部分写入、默认创建、过滤后目标选择与排序身份变化的完整自动化测试。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。
+`FlowTemplateBrowserOrderTests` 在隔离数据库验证排序后的完整主记录字段、全部明细归属、缺失/过期目标和事务失败回滚；浏览器测试验证共享列表顺序与当前选择。其余普通模板注册冲突、离线/增量重载、默认创建及过滤后的所有写入入口仍缺少完整覆盖。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。

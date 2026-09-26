@@ -33,20 +33,15 @@ public partial class TemplateBrowserWindow : Window
     private IEnumerable<TemplateBase> SourceItems => template.ItemsSource.Cast<TemplateBase>();
     private readonly ListCollectionView items;
     private readonly ObservableCollection<TemplateBase> browserItems;
-    private readonly TemplateBrowserOrderStore orderStore;
-    private readonly string orderScope;
     private readonly ViewBase listView;
     private readonly ItemsPanelTemplate listPanel;
     private readonly HashSet<TemplateBase> renamed = [];
     private readonly HashSet<FlowTemplateCover> covers = [];
     private bool isClosed, coverRefreshPending;
     private double listOffset, tileOffset;
-    private int orderRevision;
-    private bool orderSaveFailed;
     private ListViewItem? dropTarget;
     private long lastDragScroll;
     internal Task OrderSaveTask { get; private set; } = Task.CompletedTask;
-    internal Task OrderLoadTask { get; private set; } = Task.CompletedTask;
     private int modeGeneration;
     private Point dragStart;
     private TemplateBase? dragItem;
@@ -61,8 +56,6 @@ public partial class TemplateBrowserWindow : Window
         template.Load();
         browserItems = new ObservableCollection<TemplateBase>(SourceItems);
         items = new ListCollectionView(browserItems);
-        orderStore = new TemplateBrowserOrderStore(coverService.DatabasePath);
-        orderScope = options.GetOrderScope();
         InitializeComponent();
         this.ApplyCaption();
         HeadingText.Text = $"{options.Label}模板";
@@ -84,12 +77,11 @@ public partial class TemplateBrowserWindow : Window
         UpdateStatus();
         CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (_, _) => TryAction(Create, "新建失败")));
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => TryAction(Delete, "删除失败"), (_, e) => e.CanExecute = Selected != null));
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, async (_, _) =>
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (_, _) =>
         {
             TryAction(SaveRenames, "保存失败");
-            if (orderSaveFailed) await PersistOrderAsync();
             UpdateStatus();
-        }, (_, e) => e.CanExecute = renamed.Count > 0 || orderSaveFailed));
+        }, (_, e) => e.CanExecute = renamed.Count > 0));
         CommandBindings.Add(new CommandBinding(Commands.ReName, (_, _) => BeginRename(), (_, e) => e.CanExecute = Selected != null));
         InputBindings.Add(new KeyBinding(Commands.ReName, Key.F2, ModifierKeys.None));
         PreviewKeyDown += (_, e) =>
@@ -106,7 +98,12 @@ public partial class TemplateBrowserWindow : Window
         };
         Activated += (_, _) => QueueCoverRefresh();
         SetViewMode(true);
-        Loaded += (_, _) => OrderLoadTask = LoadBrowserOrderAsync();
+        Loaded += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            if (isClosed) return;
+            if (Selected != null) TemplateList.ScrollIntoView(Selected);
+            QueueCoverRefresh();
+        });
         Closing += Window_Closing;
         Closed += (_, _) =>
         {
@@ -140,7 +137,7 @@ public partial class TemplateBrowserWindow : Window
         {
             e.Cancel = true;
             await OrderSaveTask;
-            if (!orderSaveFailed && !isClosed) Close();
+            if (!isClosed) Close();
             return;
         }
         if (!renamed.Any(SourceItems.Contains)) return;
@@ -154,19 +151,6 @@ public partial class TemplateBrowserWindow : Window
         }
     }
 
-    private async Task LoadBrowserOrderAsync()
-    {
-        try
-        {
-            string[] keys = await orderStore.LoadAsync(orderScope);
-            if (!isClosed && orderRevision == 0) ApplySavedOrder(keys);
-        }
-        catch (Exception ex) { log.Warn("Loading local template browser order failed.", ex); if (!isClosed) StatusText.Text = "本机排序暂不可用，可继续浏览"; }
-        if (!isClosed) { if (Selected != null) TemplateList.ScrollIntoView(Selected); QueueCoverRefresh(); }
-    }
-
-    private string OrderKey(TemplateBase item) => options.GetOrderKey(item);
-
     private void Source_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         var source = SourceItems.ToHashSet();
@@ -179,6 +163,13 @@ public partial class TemplateBrowserWindow : Window
         {
             added.PropertyChanged += Item_PropertyChanged;
             browserItems.Add(added);
+        }
+        int index = 0;
+        foreach (var item in SourceItems)
+        {
+            int previous = browserItems.IndexOf(item);
+            if (previous != index) browserItems.Move(previous, index);
+            index++;
         }
     }
 
@@ -195,25 +186,6 @@ public partial class TemplateBrowserWindow : Window
         SelectionText.Text = marked > 0 ? $"已勾选 {marked} 项" : Selected == null ? "未选择模板" : "已选择 1 项";
         DeleteButton.Content = marked > 0 ? $"删除 ({marked})" : "删除";
         CommandManager.InvalidateRequerySuggested();
-    }
-
-    private void ApplySavedOrder(IEnumerable<string> keys)
-    {
-        var selected = Selected;
-        var remaining = browserItems.ToList();
-        var ordered = new List<TemplateBase>();
-        foreach (string key in keys)
-        {
-            var item = remaining.FirstOrDefault(item => OrderKey(item) == key);
-            if (item != null) { ordered.Add(item); remaining.Remove(item); }
-        }
-        ordered.AddRange(remaining);
-        for (int i = 0; i < ordered.Count; i++)
-        {
-            int previous = browserItems.IndexOf(ordered[i]);
-            if (previous != i) browserItems.Move(previous, i);
-        }
-        TemplateList.SelectedItem = selected;
     }
 
     private TemplateBase? Selected => TemplateList.SelectedItem as TemplateBase;
@@ -275,7 +247,9 @@ public partial class TemplateBrowserWindow : Window
         new TemplateEditorWindow(template, Math.Max(0, SourceIndex)) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         foreach (var item in renamed) item.IsEditMode = false;
         renamed.Clear();
-        items.Refresh();
+        // Source changes already update browserItems. A view reset would recreate
+        // every cover; only re-filter when a legacy rename changed membership.
+        if (items.Filter != null && !items.Cast<TemplateBase>().SequenceEqual(browserItems.Where(item => items.Filter(item)))) items.Refresh();
         TemplateList.SelectedItem = selected != null && items.Contains(selected) ? selected : items.Cast<object>().FirstOrDefault();
         Title = template.Title;
         QueueCoverRefresh();
@@ -470,42 +444,27 @@ public partial class TemplateBrowserWindow : Window
 
     internal Task SwapItemsAsync(TemplateBase source, TemplateBase target)
     {
-        int from = browserItems.IndexOf(source), to = browserItems.IndexOf(target);
+        if (!OrderSaveTask.IsCompleted) return OrderSaveTask;
+        var sourceItems = SourceItems.ToList();
+        int from = sourceItems.IndexOf(source), to = sourceItems.IndexOf(target);
         if (from < 0 || to < 0 || from == to) return Task.CompletedTask;
-        // Only two browser slots change. Never renumber MySQL records or move the runtime collection.
-        browserItems[from] = target;
-        browserItems[to] = source;
-        TemplateList.SelectedItem = source;
-        return PersistOrderAsync();
-    }
-
-    private Task PersistOrderAsync()
-    {
-        int revision = ++orderRevision;
-        string[] keys = browserItems.Select(OrderKey).ToArray();
-        StatusText.Text = "正在保存本机顺序…";
-        OrderSaveTask = SaveOrderAfterAsync(OrderSaveTask, keys, revision);
+        OrderSaveTask = SaveDatabaseOrderAsync(source, from, to);
         return OrderSaveTask;
     }
 
-    private async Task SaveOrderAfterAsync(Task previous, string[] keys, int revision)
+    private async Task SaveDatabaseOrderAsync(TemplateBase selected, int from, int to)
     {
-        await previous;
+        IsEnabled = false;
+        StatusText.Text = "正在保存排序…";
         try
         {
-            await orderStore.SaveAsync(orderScope, keys);
-            if (!isClosed && revision == orderRevision) { orderSaveFailed = false; StatusText.Text = "本机顺序已保存"; UpdateStatus(); }
+            bool saved = await template.SwapTemplateOrderAsync(from, to);
+            if (isClosed) return;
+            TemplateList.SelectedItem = selected;
+            StatusText.Text = saved ? "排序已保存，其他模板列表已同步" : "排序保存失败，请重新打开管理窗口核对后重试";
+            UpdateStatus();
         }
-        catch (Exception ex)
-        {
-            log.Warn("Saving local template browser order failed.", ex);
-            if (!isClosed && revision == orderRevision)
-            {
-                orderSaveFailed = true;
-                StatusText.Text = "顺序尚未保存，点击“保存”重试";
-                UpdateStatus();
-            }
-        }
+        finally { IsEnabled = true; }
     }
 
     private static bool IsEditingControl(DependencyObject? element)

@@ -32,6 +32,7 @@ namespace ColorVision.Engine.Templates
     public partial class TemplateEditorWindow : Window
     {
         private const string TemplateDragFormat = "ColorVision.TemplateEditor.Template";
+        private bool savingOrder;
 
         public ITemplate ITemplate { get; set; }
 
@@ -44,6 +45,7 @@ namespace ColorVision.Engine.Templates
             template.Load();
             InitializeComponent();
             this.ApplyCaption();
+            Closing += (_, e) => { if (savingOrder) e.Cancel = true; };
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
             MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
                 if (!TrySaveEditor()) return;
@@ -277,7 +279,7 @@ namespace ColorVision.Engine.Templates
             e.Handled = true;
         }
 
-        private void ListView1_Drop(object sender, DragEventArgs e)
+        private async void ListView1_Drop(object sender, DragEventArgs e)
         {
             TemplateBase? draggedTemplate = e.Data.GetData(TemplateDragFormat) as TemplateBase;
             ListViewItem? targetItem = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject);
@@ -289,29 +291,17 @@ namespace ColorVision.Engine.Templates
             if (sourceIndex < 0 || targetIndex < 0)
                 return;
 
-            bool dropAfterTarget = e.GetPosition(targetItem).Y > targetItem.ActualHeight / 2;
-            int destinationIndex = targetIndex;
-            if (dropAfterTarget && sourceIndex > targetIndex)
-                destinationIndex++;
-            else if (!dropAfterTarget && sourceIndex < targetIndex)
-                destinationIndex--;
-
-            destinationIndex = Math.Clamp(destinationIndex, 0, ITemplate.Count - 1);
-            if (sourceIndex == destinationIndex)
-                return;
-
-            if (MoveTemplateToIndex(sourceIndex, destinationIndex))
-            {
-                RefreshTemplateList(draggedTemplate);
-                HandyControl.Controls.Growl.SuccessGlobal(Properties.Resources.TemplateEditor_OrderSwapped);
-            }
-            else
-            {
-                RefreshTemplateList(draggedTemplate);
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_SwapFailed, "ColorVision");
-            }
-
             e.Handled = true;
+            savingOrder = true;
+            IsEnabled = false;
+            try
+            {
+                bool saved = await ITemplate.SwapTemplateOrderAsync(sourceIndex, targetIndex);
+                RefreshTemplateList(draggedTemplate);
+                if (saved) HandyControl.Controls.Growl.SuccessGlobal(Properties.Resources.TemplateEditor_OrderSwapped);
+                else MessageBox1.Show(this, "排序保存失败，请重新打开管理窗口核对后重试。", "ColorVision");
+            }
+            finally { savingOrder = false; IsEnabled = true; }
         }
 
         private static T? FindVisualParent<T>(DependencyObject? element) where T : DependencyObject
@@ -598,17 +588,6 @@ namespace ColorVision.Engine.Templates
                 index++;
             }
             return -1;
-        }
-
-        private bool MoveTemplateToIndex(int sourceIndex, int destinationIndex)
-        {
-            int direction = sourceIndex < destinationIndex ? 1 : -1;
-            for (int index = sourceIndex; index != destinationIndex; index += direction)
-            {
-                if (!ITemplate.SwapTemplateOrder(index, index + direction))
-                    return false;
-            }
-            return true;
         }
 
         private void RefreshTemplateList(TemplateBase selectedTemplate)

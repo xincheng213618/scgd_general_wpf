@@ -46,15 +46,6 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly Func<SqlSugarClient> openMySql;
         private bool localReadMode;
         private bool UseLocalStorage => localReadMode || !isMySqlConnected();
-        internal string BrowserOrderScope
-        {
-            get
-            {
-                if (UseLocalStorage) return "local";
-                var config = MySqlSetting.Instance.MySqlConfig;
-                return TemplateBrowserOrderStore.MySqlScope(config.Host, config.Port, config.Database);
-            }
-        }
 
         public TemplateFlow() : this(LocalFlowTemplateStorage.Default) { }
 
@@ -694,21 +685,6 @@ namespace ColorVision.Engine.Templates.Flow
         public override object CreateDefault() => UseLocalStorage
             ? CreateTemp = new FlowParam { Id = -1 }
             : base.CreateDefault();
-
-        public override bool SwapTemplateOrder(int index1, int index2)
-        {
-            if (index1 < 0 || index1 >= Count || index2 < 0 || index2 >= Count) return false;
-            var first = TemplateParams[index1];
-            var second = TemplateParams[index2];
-            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) && !LocalFlowTemplateStorage.IsLocalId(second.Id))
-                return base.SwapTemplateOrder(index1, index2);
-            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) || !LocalFlowTemplateStorage.IsLocalId(second.Id)) return false;
-            if (index1 == index2) return true;
-            (first.Value.LocalStorage ?? localStorage).SwapOrder(first.Id, second.Id);
-            TemplateParams[index1] = second;
-            TemplateParams[index2] = first;
-            return true;
-        }
 
         private static void TryRecordCatalogRevision(FlowParam flowParam)
         {

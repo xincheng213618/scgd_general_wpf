@@ -12,6 +12,8 @@ namespace ColorVision.Engine.Templates
         [JsonIgnore]
         public virtual int Id { get; set; }
 
+        internal void NotifyIdChanged() => OnPropertyChanged(nameof(Id));
+
         [JsonIgnore]
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
         private bool _IsSelected;

@@ -32,6 +32,10 @@ public sealed class FlowTemplateCover : Grid
 
     private void Reset()
     {
+        // Legacy reloads replace FlowParam even when the saved canvas is unchanged.
+        // Keep its image (or pending request) instead of flashing the placeholder.
+        string? data = Flow?.DataBase64;
+        if (data != null && (data == completedData || data == requestedData)) return;
         Cancel();
         completedData = null;
         image.Source = null;

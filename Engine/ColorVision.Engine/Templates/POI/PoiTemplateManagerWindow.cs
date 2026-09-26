@@ -11,6 +11,5 @@ public sealed class PoiTemplateManagerWindow : TemplateBrowserWindow
 
     internal PoiTemplateManagerWindow(TemplatePoi template, int selectedIndex, FlowTemplateCoverService coverService)
         : base(template, selectedIndex, new TemplateBrowserOptions("POI", false,
-            () => template.BrowserOrderScope, item => $"id:{item.Id}",
             item => template.Save((TemplateModel<PoiParam>)item)), coverService) { }
 }

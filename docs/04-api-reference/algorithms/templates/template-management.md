@@ -77,7 +77,7 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 
 这是现有实现风险，不是推荐行为：筛选后的第零行未必是源集合第零项。再加上具体 `Delete/Export` 可能优先使用集合的 `IsSelected` 勾选项，不能宣称操作一定只作用于当前可见选中项。执行写入或删除前，应清空筛选、重新选择，并核对记录 ID 与全部勾选项。搜索框的 Enter 入口也先清空筛选再读取 `SelectedIndex`，没有保持原对象的索引映射；需要打开已筛选条目时，鼠标双击会按对象找源索引。
 
-列头排序改变的是源集合顺序；拖动则逐步调用 `SwapTemplateOrder`，可能已经完成前面的交换后才失败。具体模板的排序可能写数据库甚至改变身份，不能把“整理列表”当作无副作用显示操作；普通基类边界见持久化主题。
+列头排序改变源集合顺序。拖动按源对象找到两个目标，一次异步交换这两个模板的数据库顺序，中间项不动；不会逐项交换拖动经过的记录。保存期间禁用窗口交互并阻止关闭，提交成功后共享集合和下拉列表同步，失败提示重新打开核对。MySQL 的主记录 ID 与明细 `Pid` 在同一事务中交换，本地模板则交换 SQLite `sort_order`，具体约束见[模板持久化与排序](../../../03-architecture/components/templates/design.md)。
 
 `TemplatesExtension.CreateEmpty` 是下拉列表适配：新增 Empty 项，并复用源集合中的包装对象；监听 Add/Remove/Reset，不是完整的 Move/Replace 同步或独立深复制。使用这种列表的调用方要处理空项与索引偏移，不直接拿显示索引写入模板源集合。
 

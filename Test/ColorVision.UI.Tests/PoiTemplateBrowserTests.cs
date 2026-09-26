@@ -94,13 +94,9 @@ public sealed class PoiTemplateBrowserTests
                 Assert.Same(original[1], combo.SelectedItem);
                 Wait(dialog.SwapItemsAsync(original[0], original[3]));
                 Assert.Equal(new[] { original[3], original[1], original[2], original[0] }, list.Items.Cast<TemplateModel<PoiParam>>());
-                Assert.Equal(originalIds, TemplatePoi.Params.Select(item => item.Id));
+                Assert.Equal(new[] { originalIds[3], originalIds[1], originalIds[2], originalIds[0] }, TemplatePoi.Params.Select(item => item.Id));
                 Assert.Same(original[1], combo.SelectedItem);
-                Assert.Equal(originalIds, storage.Load().Select(item => item.Id));
-                var order = new TemplateBrowserOrderStore(path);
-                Wait(order.SaveAsync("local", ["flow-key"]));
-                Task<string[]> flowOrder = order.LoadAsync("local"); Wait(flowOrder);
-                Assert.Equal(new[] { "flow-key" }, flowOrder.Result);
+                Assert.Equal(new[] { originalIds[3], originalIds[1], originalIds[2], originalIds[0] }, storage.Load().Select(item => item.Id));
                 dialog.SelectTemplate(original[1].Id);
                 ColorVision.UI.Commands.ReName.Execute(null, dialog);
                 // Simulate a server master whose detail collection has not been populated.
@@ -116,7 +112,7 @@ public sealed class PoiTemplateBrowserTests
                 search.Text = "重命名后";
                 Assert.Single(list.Items);
                 dialog.DeleteItems(TemplatePoi.Params.Where(item => item.IsSelected));
-                Assert.Equal(new[] { original[1].Id, original[3].Id }, storage.Load().Select(item => item.Id));
+                Assert.Equal(new[] { original[3].Id, original[1].Id }, storage.Load().Select(item => item.Id));
                 Assert.Same(original[1], combo.SelectedItem);
             }
             finally { dialog.Close(); }
@@ -148,7 +144,6 @@ public sealed class PoiTemplateBrowserTests
         public int OpenedIndex { get; private set; } = -1;
         public override void Load() { LoadCount++; if (!masterOnly) base.Load(); }
         public override void PreviewMouseDoubleClick(int index) => OpenedIndex = index;
-        public override bool SwapTemplateOrder(int first, int second) => throw new InvalidOperationException("Browser order must not renumber templates.");
     }
 
     private static PoiTemplateManagerWindow Open(TemplatePoi template, string path, int selectedIndex = 0)
@@ -156,7 +151,7 @@ public sealed class PoiTemplateBrowserTests
         var dialog = new PoiTemplateManagerWindow(template, selectedIndex, new FlowTemplateCoverService(path))
             { Left = -10000, Top = -10000, WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false };
         dialog.Show();
-        Wait(dialog.OrderLoadTask);
+        Drain();
         dialog.UpdateLayout();
         return dialog;
     }
