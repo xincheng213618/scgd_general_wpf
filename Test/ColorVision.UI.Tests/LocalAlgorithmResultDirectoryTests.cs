@@ -1,9 +1,24 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class LocalAlgorithmResultDirectoryTests
 {
+    [Fact]
+    public void LegacyAlgorithmDeviceFieldsAreIgnoredAndPoiCctWaveDefaultsOn()
+    {
+        ConfigAlgorithm config = JsonConvert.DeserializeObject<ConfigAlgorithm>("{\"Code\":\"algorithm\",\"IsCCTWave\":false,\"POI_DBMaxNum\":10000000}")!;
+        JObject serialized = JObject.FromObject(config);
+
+        Assert.Equal("algorithm", config.Code);
+        Assert.Null(serialized.Property("IsCCTWave"));
+        Assert.Null(serialized.Property("POI_DBMaxNum"));
+        Assert.True(new PoiDisplayAlgorithmConfig().IsCCTWave);
+    }
+
     [Fact]
     public void UsesConfiguredDefaultServiceRootAndRunDate()
     {

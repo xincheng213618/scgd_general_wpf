@@ -176,8 +176,7 @@ namespace ColorVision.Engine.Services.Devices
             Register(new DeviceServiceFactory<ConfigAlgorithm>(
                 ServiceTypes.Algorithm,
                 sysResourceModel => new DeviceAlgorithm(sysResourceModel),
-                "DrawingImageAlgorithm",
-                (config, _) => config.IsCCTWave = true));
+                "DrawingImageAlgorithm"));
 
             Register(new DeviceServiceFactory<ConfigCfwPort>(
                 ServiceTypes.FilterWheel,
