@@ -35,7 +35,7 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
    ```
 
    用户环境变量的修改不会更新已运行进程的环境；重新启动客户端，并确认启动它的进程取得了新值。服务本身不读取 `COLORVISION_MCP_TOKEN`，它核对的是请求头 `Authorization: Bearer <token>` 与 `CopilotConfig` 中的值。
-4. 使用 **Test Connection** 检查握手和只读 `get_server_status`，再由外部客户端建立自己的会话。该按钮使用当前草稿端口和 token，不自动保存或启用服务；具体诊断预算与保存边界见[配置与连接诊断](./copilot-configuration.md#诊断、发现与同步的副作用)。
+4. 使用 **Test Connection** 检查握手和只读 `get_server_status`，再由外部客户端建立自己的会话。该按钮使用当前草稿端口和 token，不自动保存或启用服务；具体诊断预算与保存边界见[配置与连接诊断](./copilot-configuration.md#诊断与发现的副作用)。
 
 更换端口会重启监听器；同端口更换 token 会清除现有会话。关闭服务、重启应用或会话过期后，客户端需要重新初始化。`Regenerate` 先修改设置草稿，保存后才影响正在运行的服务。
 
