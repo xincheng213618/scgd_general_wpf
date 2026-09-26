@@ -52,6 +52,7 @@ namespace ProjectARVRPro
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         private const string FlowStartRejectedMessage = "FlowStartRejected";
+        private const int ExecutionStatusRefreshIntervalMs = 100;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -101,6 +102,7 @@ namespace ProjectARVRPro
         private int _currentFlowTemplateId;
         private MeasureBatchModel? _currentFlowBatch;
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new FlowNodeExecutionRecorder();
+        private readonly FlowRunningNodeTracker _runningFlowNodes = new();
         private DateTime? _pendingSwitchRequestedAt;
         private DateTime? _pendingSwitchAcknowledgedAt;
         private long? _currentSwitchPreparationMilliseconds;
@@ -377,6 +379,7 @@ namespace ProjectARVRPro
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
+        private int _executionStatusUpdatePending;
 
         Stopwatch stopwatch = new Stopwatch();
 
@@ -401,8 +404,7 @@ namespace ProjectARVRPro
 
             flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            timer = new Timer(TimeRun, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer = new Timer(TimeRun, null, Timeout.Infinite, Timeout.Infinite);
 
 
             logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectARVRProLogConfig.Instance);
@@ -614,7 +616,11 @@ namespace ProjectARVRPro
             MqttRCService.GetInstance().QueryServices();
             _currentRefreshServicesMs = refreshTiming.Elapsed.TotalMilliseconds;
             foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            {
                 node.nodeRunEvent -= UpdateMsg;
+                node.nodeEndEvent -= NodeExecutionEnded;
+            }
+            _runningFlowNodes.Reset(null);
             _flowNodeExecutionRecorder.DetachNodes();
             double detachedAt = refreshTiming.Elapsed.TotalMilliseconds;
             _currentRefreshDetachNodesMs = detachedAt - _currentRefreshServicesMs;
@@ -629,6 +635,8 @@ namespace ProjectARVRPro
             {
                 item.nodeRunEvent -= UpdateMsg;
                 item.nodeRunEvent += UpdateMsg;
+                item.nodeEndEvent -= NodeExecutionEnded;
+                item.nodeEndEvent += NodeExecutionEnded;
             }
             _flowNodeExecutionRecorder.AttachNodes(flowNodes);
             _currentRefreshTotalMs = refreshTiming.Elapsed.TotalMilliseconds;
@@ -671,37 +679,54 @@ namespace ProjectARVRPro
             UpdateMsg(state);
         }
 
-        string Msg1;
         private long LastFlowTime;
         string FlowName;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                try
-                {
-                    // A timer callback already queued on the dispatcher must not replace a final error.
-                    if (_isDisposed || !stopwatch.IsRunning || ExecutionStatus.Status.Kind != FlowExecutionStatusKind.Running)
-                        return;
-                    ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, Msg1, stopwatch.ElapsedMilliseconds, LastFlowTime);
-                }
-                catch
-                {
+            // Keep one pending update; it reads the latest node and elapsed time on the UI thread.
+            if (_isDisposed || Interlocked.Exchange(ref _executionStatusUpdatePending, 1) != 0)
+                return;
 
-                }
-            });
+            try
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    try
+                    {
+                        // A timer callback already queued on the dispatcher must not replace a final error.
+                        if (_isDisposed || !stopwatch.IsRunning || ExecutionStatus.Status.Kind != FlowExecutionStatusKind.Running)
+                            return;
+                        ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, _runningFlowNodes.GetRunningNodeNames(), stopwatch.ElapsedMilliseconds, LastFlowTime);
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref _executionStatusUpdatePending, 0);
+                    }
+                });
+            }
+            catch
+            {
+                Volatile.Write(ref _executionStatusUpdatePending, 0);
+                throw;
+            }
         }
 
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
         {
-            if (sender is CVCommonNode algorithmNode)
-            {
-                if (e != null)
-                {
-                    Msg1 = algorithmNode.Title;
-                    UpdateMsg(sender);
-                }
-            }
+            if (!_isDisposed && e != null && sender is CVCommonNode node
+                && _runningFlowNodes.NodeStarted(e.SerialNumber, node.NodeID, node.Title, e.SendMsgId))
+                UpdateMsg(sender);
+        }
+
+        private void NodeExecutionEnded(object sender, FlowEngineNodeEndEventArgs e)
+        {
+            if (!_isDisposed && e != null && sender is CVCommonNode node
+                && _runningFlowNodes.NodeEnded(e.SerialNumber, node.NodeID, e.RecvMsgId))
+                UpdateMsg(sender);
         }
 
         private async void TestClick(object sender, RoutedEventArgs e)
@@ -851,7 +876,7 @@ namespace ProjectARVRPro
 
                 flowStarted = true;
                 SetStepProgress(CurrentFlowResult.TestType, completed: false);
-                timer.Change(0, 200); // 启动定时器
+                timer.Change(0, ExecutionStatusRefreshIntervalMs); // 启动定时器
                 return true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -947,6 +972,7 @@ namespace ProjectARVRPro
             _currentFlowBatch.Id = db.Insertable(_currentFlowBatch).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = _currentFlowBatch.Id;
             _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
+            _runningFlowNodes.Reset(CurrentFlowResult.Code);
         }
 
         private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowResult)
@@ -2772,7 +2798,7 @@ namespace ProjectARVRPro
                         else
                         {
                             SetStepProgress(CurrentTestType, completed: false);
-                            timer.Change(0, 500);
+                            timer.Change(0, ExecutionStatusRefreshIntervalMs);
 
                             // 等待流程完成，默认超时 10 分钟。
                             try
@@ -2916,6 +2942,12 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
+            _runningFlowNodes.Reset(null);
+            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            {
+                node.nodeRunEvent -= UpdateMsg;
+                node.nodeEndEvent -= NodeExecutionEnded;
+            }
             Interlocked.Increment(ref _resultImagePresentationVersion);
             Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
             _automaticImageExportResults.Clear();

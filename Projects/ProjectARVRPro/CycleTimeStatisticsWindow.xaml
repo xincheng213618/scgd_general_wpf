@@ -44,19 +44,19 @@
                         <Border Width="9" Height="9" Margin="0,2,4,0" CornerRadius="2" Background="{DynamicResource Statistics.TimelineUnknown}"/>
                         <TextBlock Text="未归因" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
                     </WrapPanel>
-                    <TextBlock Grid.Row="1" Text="{Binding SummaryText}" Margin="0,0,0,3" FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis"/>
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <TextBlock Grid.Row="1" Text="{Binding SummaryText}" ToolTip="{Binding SummaryText}" Margin="0,0,0,3" FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Height="22">
+                                    <Grid MinHeight="22">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="124"/>
+                                            <ColumnDefinition Width="160"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="58"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding Label}" ToolTip="{Binding FlowName}" Margin="0,0,6,0" VerticalAlignment="Center"
-                                                   FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                   FontSize="11" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="Wrap"/>
                                         <Border Grid.Column="1" Height="12" CornerRadius="3" VerticalAlignment="Center" ClipToBounds="True"
                                                 Background="{DynamicResource Statistics.TimelineTrack}">
                                             <Viewbox Stretch="Fill" StretchDirection="Both">
@@ -116,7 +116,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <Grid Grid.Row="3" Margin="124,1,58,0">
+                    <Grid Grid.Row="3" Margin="160,1,76,0">
                         <TextBlock Text="{Binding StartTimeText}" HorizontalAlignment="Left" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock Text="{Binding MiddleTimeText}" HorizontalAlignment="Center" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock Text="{Binding EndTimeText}" HorizontalAlignment="Right" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
@@ -357,13 +357,13 @@
                                         </ContextMenu>
                                     </DataGrid.ContextMenu>
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="*" MinWidth="150"/>
-                                        <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="82"/>
-                                        <DataGridTextColumn Header="运行时间" Binding="{Binding FlowRunTimeText}" Width="82"/>
-                                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="112"/>
-                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="54"/>
-                                        <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="62"/>
-                                        <DataGridTextColumn Header="第几次测试" Binding="{Binding ExecutionText}" Width="82"/>
+                                        <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="Auto" MinWidth="150" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="整组 CT" Binding="{Binding CycleTimeText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="运行时间" Binding="{Binding FlowRunTimeText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="结束时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="测试次数" Binding="{Binding ExecutionText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </GroupBox>
@@ -383,7 +383,7 @@
                         </Grid>
 
                         <GridSplitter Grid.Column="1"
-                                      Width="6" Background="Transparent"
+                                      Width="4" Style="{StaticResource StatisticsSplitter}" ToolTip="拖动调整批次记录与详情宽度"
                                       HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch"
                                       ResizeDirection="Columns"
@@ -391,39 +391,27 @@
 
                         <GroupBox Grid.Column="2" Style="{StaticResource StatisticsSection}">
                             <GroupBox.Header>
-                                <TextBlock x:Name="DetailHeader" Text="流程 CT 明细"/>
+                                <TextBlock x:Name="DetailHeader" Text="流程 CT 明细" TextWrapping="Wrap"/>
                             </GroupBox.Header>
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="3*"/>
-                                    <RowDefinition Height="6"/>
-                                    <RowDefinition Height="2*" MinHeight="170"/>
+                                    <RowDefinition Height="*" MinHeight="100"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="1.3*" MinHeight="170"/>
                                 </Grid.RowDefinitions>
-                                <ListView x:Name="DetailList"
-                                          Background="{DynamicResource Statistics.Background}"
-                                          BorderThickness="0"
-                                          Padding="0"
-                                          SelectionMode="Extended">
-                                    <ListView.ItemContainerStyle>
-                                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                            <Setter Property="MinHeight" Value="24"/>
-                                            <Setter Property="Padding" Value="2,0"/>
-                                        </Style>
-                                    </ListView.ItemContainerStyle>
-                                    <ListView.View>
-                                        <GridView>
-                                            <GridViewColumn Header="Id" Width="48" DisplayMemberBinding="{Binding Id}"/>
-                                            <GridViewColumn Header="状态" Width="68" DisplayMemberBinding="{Binding FlowStatus}"/>
-                                            <GridViewColumn Header="PASS" Width="46" DisplayMemberBinding="{Binding Result}"/>
-                                            <GridViewColumn Header="Model" Width="145" DisplayMemberBinding="{Binding Model}"/>
-                                            <GridViewColumn Header="时间" Width="112" DisplayMemberBinding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}"/>
-                                            <GridViewColumn Header="耗时(ms)" Width="76" DisplayMemberBinding="{Binding RunTime}"/>
-                                            <GridViewColumn Header="RunMsg" Width="160" DisplayMemberBinding="{Binding Msg}"/>
-                                        </GridView>
-                                    </ListView.View>
-                                </ListView>
+                                <DataGrid x:Name="DetailList" Style="{StaticResource StatisticsDetailGrid}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="流程名" Binding="{Binding Model}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="PASS" Binding="{Binding Result}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="耗时(ms)" Binding="{Binding RunTime}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="时间" Binding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="状态" Binding="{Binding FlowStatus}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="运行消息" Binding="{Binding Msg}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
 
-                                <GridSplitter Grid.Row="1" Height="4" Margin="0,1" Background="Transparent" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+                                <GridSplitter Grid.Row="1" Height="4" Style="{StaticResource StatisticsSplitter}" ToolTip="拖动调整明细与时间轴高度" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
 
                                 <Border x:Name="TimelinePanel" Grid.Row="2" Padding="8,6,8,4" CornerRadius="8"
                                         Background="{DynamicResource Statistics.Background}" BorderBrush="{DynamicResource Statistics.Border}" BorderThickness="1">
@@ -488,13 +476,13 @@
                                 <DataGrid x:Name="CombinedRecordDataGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                                           HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow" Style="{StaticResource StatisticsDataGrid}">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="主体 SN" Binding="{Binding SN}" Width="*" MinWidth="130"/>
-                                        <DataGridTextColumn Header="全批次 CT" Binding="{Binding CycleTimeText}" Width="88"/>
-                                        <DataGridTextColumn Header="L / R CT" Binding="{Binding SideCycleTimeText}" Width="145"/>
-                                        <DataGridTextColumn Header="L→R 等待" Binding="{Binding TransitionText}" Width="86"/>
-                                        <DataGridTextColumn Header="R 完成时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="112"/>
-                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="54"/>
-                                        <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="62"/>
+                                        <DataGridTextColumn Header="主体 SN" Binding="{Binding SN}" Width="Auto" MinWidth="130" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="全批次 CT" Binding="{Binding CycleTimeText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="L / R CT" Binding="{Binding SideCycleTimeText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="L→R 等待" Binding="{Binding TransitionText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="R 完成时间" Binding="{Binding EndTime, StringFormat=MM/dd HH:mm:ss}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="流程数" Binding="{Binding FlowCountText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </GroupBox>
@@ -506,24 +494,22 @@
                                 <Button x:Name="CombinedLastPageButton" Content="末页" Width="54" Style="{StaticResource StatisticsPageButton}" Click="CombinedLastPage_Click"/>
                             </StackPanel>
                         </Grid>
-                        <GridSplitter Grid.Column="1" Width="6" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+                        <GridSplitter Grid.Column="1" Width="4" Style="{StaticResource StatisticsSplitter}" ToolTip="拖动调整批次记录与详情宽度" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
                         <GroupBox Grid.Column="2" Style="{StaticResource StatisticsSection}">
-                            <GroupBox.Header><TextBlock x:Name="CombinedDetailHeader" Text="L/R 流程 CT 明细"/></GroupBox.Header>
+                            <GroupBox.Header><TextBlock x:Name="CombinedDetailHeader" Text="L/R 流程 CT 明细" TextWrapping="Wrap"/></GroupBox.Header>
                             <Grid>
-                                <Grid.RowDefinitions><RowDefinition Height="3*"/><RowDefinition Height="6"/><RowDefinition Height="2*" MinHeight="170"/></Grid.RowDefinitions>
-                                <ListView x:Name="CombinedDetailList" Background="{DynamicResource Statistics.Background}" BorderThickness="0" Padding="0" SelectionMode="Extended">
-                                    <ListView.View>
-                                        <GridView>
-                                            <GridViewColumn Header="侧别 SN" Width="155" DisplayMemberBinding="{Binding SN}"/>
-                                            <GridViewColumn Header="状态" Width="65" DisplayMemberBinding="{Binding FlowStatus}"/>
-                                            <GridViewColumn Header="PASS" Width="45" DisplayMemberBinding="{Binding Result}"/>
-                                            <GridViewColumn Header="Model" Width="140" DisplayMemberBinding="{Binding Model}"/>
-                                            <GridViewColumn Header="时间" Width="106" DisplayMemberBinding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}"/>
-                                            <GridViewColumn Header="耗时(ms)" Width="72" DisplayMemberBinding="{Binding RunTime}"/>
-                                        </GridView>
-                                    </ListView.View>
-                                </ListView>
-                                <GridSplitter Grid.Row="1" Height="4" Margin="0,1" Background="Transparent" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+                                <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="100"/><RowDefinition Height="10"/><RowDefinition Height="1.3*" MinHeight="170"/></Grid.RowDefinitions>
+                                <DataGrid x:Name="CombinedDetailList" Style="{StaticResource StatisticsDetailGrid}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="流程名" Binding="{Binding Model}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="PASS" Binding="{Binding Result}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="耗时(ms)" Binding="{Binding RunTime}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="时间" Binding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="侧别 SN" Binding="{Binding SN}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                        <DataGridTextColumn Header="状态" Binding="{Binding FlowStatus}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <GridSplitter Grid.Row="1" Height="4" Style="{StaticResource StatisticsSplitter}" ToolTip="拖动调整明细与时间轴高度" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
                                 <Border x:Name="CombinedTimelinePanel" Grid.Row="2" Padding="8,6,8,4" CornerRadius="8"
                                         Background="{DynamicResource Statistics.Background}" BorderBrush="{DynamicResource Statistics.Border}" BorderThickness="1">
                                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TimelinePresentationTemplate}"/>
@@ -630,11 +616,11 @@
                                     </ContextMenu>
                                 </DataGrid.ContextMenu>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="流程名" Binding="{Binding Model}" Width="*" MinWidth="260"/>
-                                    <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="220"/>
-                                    <DataGridTextColumn Header="执行时间" Binding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}" Width="135"/>
-                                    <DataGridTextColumn Header="流程耗时" Binding="{Binding RunTimeText}" Width="100"/>
-                                    <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="70"/>
+                                    <DataGridTextColumn Header="流程名" Binding="{Binding Model}" Width="Auto" MinWidth="260" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    <DataGridTextColumn Header="SN" Binding="{Binding SN}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    <DataGridTextColumn Header="执行时间" Binding="{Binding CreateTime, StringFormat=MM/dd HH:mm:ss}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    <DataGridTextColumn Header="流程耗时" Binding="{Binding RunTimeText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
+                                    <DataGridTextColumn Header="结果" Binding="{Binding ResultText}" Width="Auto" ElementStyle="{StaticResource StatisticsCellText}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </GroupBox>

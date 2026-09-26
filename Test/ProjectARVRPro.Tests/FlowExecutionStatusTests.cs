@@ -75,7 +75,7 @@ public sealed class FlowExecutionStatusTests
             FlowExecutionStatusInfo[] states =
             [
                 FlowExecutionStatusInfo.Idle,
-                FlowExecutionStatusInfo.Running("Black_Test_1", "L/BV相机", 10518, 25000),
+                FlowExecutionStatusInfo.Running("Black_Test_1", "L/BV相机, 亮度计算", 10518, 25000),
                 FlowExecutionStatusInfo.Finished("flow2", "Failed", "十字图像文件不存在。", 10518),
                 FlowExecutionStatusInfo.Finished("flow2", "Failed", "十字图像文件不存在，请检查采集目录、图像文件名以及当前流程对应的模板配置。\n完整路径：C:\\images\\cross\\sample.tif", 10518),
                 FlowExecutionStatusInfo.Finished("flow2", "Completed", null, 12345),

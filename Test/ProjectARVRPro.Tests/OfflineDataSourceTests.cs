@@ -44,7 +44,7 @@ public sealed class OfflineDataSourceTests
                 Assert.NotEmpty(grid.Items.Cast<object>());
                 var record = Assert.IsType<ResultStatisticsRecordRow>(grid.SelectedItem);
                 RunUiTask(window, "LoadFlowDetailsAsync", record);
-                var details = (ListView)window.FindName("DetailList");
+                var details = (DataGrid)window.FindName("DetailList");
                 Assert.NotEmpty(details.Items.Cast<object>());
                 Assert.Contains("现场只读", ((TextBlock)window.FindName("DataSourceText")).Text);
                 Assert.Equal(source.LatestDate, ((DatePicker)window.FindName("RecordAnchorDatePicker")).SelectedDate);

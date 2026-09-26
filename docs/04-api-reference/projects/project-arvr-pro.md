@@ -1,11 +1,11 @@
-﻿---
+---
 knowledge_id: "projects.arvr-pro"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
 aliases: ["现场数据库离线查看","打开现场数据","ArvrOfflineDataSource","ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
-code_paths: ["Projects/ProjectARVRPro/Offline/","Projects/ProjectARVRPro/ARVRWindow.xaml","Projects/ProjectARVRPro/TestResultViewWindow.xaml","Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
-test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs","Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs","Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs","Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs"]
+code_paths: ["Projects/ProjectARVRPro/Offline/","Projects/ProjectARVRPro/ARVRWindow.xaml","Projects/ProjectARVRPro/TestResultViewWindow.xaml","Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/FlowRunningNodeTracker.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs","Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs","Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs","Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs","Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
 
@@ -48,6 +48,10 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 ## 界面主题
 
 主窗口测试工具栏下方使用 `ColorVision.UI.Controls.FlowExecutionStatus`，与 KB、LUX 共用紧凑执行状态栏：普通提示保持一行，运行时显示当前节点，运行中和结束后的耗时均显示整数毫秒（ms）；长错误最多占两行，窄窗口优先保留提示并隐藏辅助耗时。“详情”浮层可查看、选择和复制完整提示、流程名、节点与精确耗时，按 Esc 关闭，不挤压结果区域。上次耗时和预计剩余时间只在详情内显示，单位同为 ms；预计剩余时间仅作为历史参考。状态图标同时配中文文字，错误保留至后续执行更新，已排队的定时刷新不得覆盖最终状态。“流程执行完成”只表示 Flow 完成，不代替检测结果的 PASS/FAIL 判定。
+
+单独测试与一键执行的运行中状态统一按 100 ms 间隔请求刷新，节点事件也会请求更新；UI 忙时合并待处理请求，执行时读取最新节点与秒表值，不积压逐次刷新。实际显示节奏受 UI 调度影响。刷新只更新状态显示，不触发采集、算法或结果查询；结束状态单独读取停止后的秒表，不按刷新间隔取整。
+
+“正在执行”同时列出本次流程内尚未结束的节点，以逗号分隔；节点结束后从列表移除，其余并行节点继续显示。同一节点有多次重叠执行时，只显示一个名称，直到这些执行全部结束才移除；名称相同的不同节点分别跟踪。列表过长时主提示省略，悬停提示和详情保留完整名单。重新准备、切换流程和关闭窗口时清空运行列表，结束状态保留最后启动节点用于诊断；上一轮执行的迟到事件不更新本轮列表。
 
 主界面分隔线、结果明细表格、流程配置提示和串口/Socket 中转日志界面使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。切换黑白主题时，普通背景、说明文字和按钮状态随主题更新；断开连接后的状态文字也保留动态资源引用。结果明细的隔行背景在行样式中设置，避免覆盖选中与悬停高亮。明细选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色；连接状态和图像标记保留各自的业务颜色。
 
@@ -139,7 +143,7 @@ W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v�
 
 本机运行库在 `ViewResultManager` 打开时为结果表和统计表补齐查询索引；旧库保留原记录并自动补建，包括按 `BatchId` 查找流程结果的索引。首次为较大的旧库建索引可能增加打开耗时，后续打开重复执行不会重建已有索引。离线资料仍保持只读。
 
-批次记录优先显示 SN、整组 CT、流程运行时间、结束时间和流程数；流程数显示为纯数字，测试次数放在末列。选中批次后，右侧下方时间轴以整组开始和最终化时间为同一横轴，按流程显示 PG 应答、本地切图与稳定等待、预处理、流程执行、执行后处理与保存，以及无法归因的间隔。鼠标悬停阶段条可查看起止时间和耗时。
+批次记录优先显示 SN、整组 CT、流程运行时间、结束时间和流程数；流程数显示为纯数字，测试次数放在末列。批次、全批次和流程查询表格按内容确定列宽，空间不足时可横向滚动，悬停单元格可查看完整内容。右侧流程明细优先显示流程名、结果、耗时和时间，其余字段保留在后方；可拖动可见的分隔条调整左右宽度及明细与时间轴的高度。选中批次后，右侧下方时间轴以整组开始和最终化时间为同一横轴，按流程显示 PG 应答、本地切图与稳定等待、预处理、流程执行、执行后处理与保存，以及无法归因的间隔。时间轴摘要与长流程名换行显示，流程行超出可用高度时纵向滚动；鼠标悬停阶段条可查看起止时间和耗时。
 
 联合统计不新增或回写结果库字段，只在查询时解析最终后缀为 `_L_HHmmss` / `_R_HHmmss` 的 SN。只有全局结果记录中相邻、顺序为 L→R、去掉侧别与时间后主体 SN 相同且均已最终化的两条记录才组成一个全批次；插入其它记录、侧别倒序、主体不同或只存在单侧时均不配对，原记录仍完整保留在“批次记录”。全批次结果仅在 L 和 R 都 PASS 时为 PASS，完成时间按 R 最终化时间归入所选日/周/月；跨统计边界时会读取范围前紧邻的一条记录用于确认当天第一条 R 的 L 配对，但不会把范围外完成的 R 计入当前范围。
 

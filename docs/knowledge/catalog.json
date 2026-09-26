@@ -9130,6 +9130,7 @@
         "Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml",
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
         "Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs",
+        "Projects/ProjectARVRPro/FlowRunningNodeTracker.cs",
         "Projects/ProjectARVRPro/ResultImagePresentation.cs",
         "Projects/ProjectARVRPro/ProjectARVRReuslt.cs",
         "Projects/ProjectARVRPro/ViewResultManager.cs",
@@ -9151,7 +9152,8 @@
         "Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs",
         "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs",
         "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs",
-        "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs"
+        "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs",
+        "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs"
       ],
       "related": [
         "projects.index",

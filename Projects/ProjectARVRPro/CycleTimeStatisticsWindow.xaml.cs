@@ -1783,8 +1783,6 @@ namespace ProjectARVRPro
 
         private void BuildDetailContextMenu()
         {
-            DetailList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (_, e) => e.CanExecute = DetailList.SelectedItems.Count > 0));
-
             var openFolderCommand = new RelayCommand(
                 _ => OpenFolderAndSelectFile(),
                 _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
@@ -1799,7 +1797,7 @@ namespace ProjectARVRPro
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
-            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = DetailList, Header = "复制" });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = "流程结果查询" });
@@ -1810,11 +1808,11 @@ namespace ProjectARVRPro
             DetailList.PreviewMouseRightButtonDown += (_, e) =>
             {
                 DependencyObject? element = DetailList.InputHitTest(e.GetPosition(DetailList)) as DependencyObject;
-                while (element != null && element is not ListViewItem)
+                while (element != null && element is not DataGridRow)
                     element = VisualTreeHelper.GetParent(element);
 
-                if (element is ListViewItem targetItem)
-                    targetItem.IsSelected = true;
+                if (element is DataGridRow targetItem && !targetItem.IsSelected)
+                    DetailList.SelectedItem = targetItem.Item;
             };
 
             DetailList.ContextMenu = contextMenu;
