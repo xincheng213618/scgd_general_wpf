@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="切图调试" Height="650" Width="690"
+        Title="雷鸟连接与切图" Height="650" Width="740" MinWidth="720" MinHeight="440"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource GlobalBackground}">
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -32,10 +33,10 @@
                         <ColumnDefinition Width="80"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="串口" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" x:Name="ComPortComboBox" Margin="0,0,5,0"/>
+                    <ComboBox Grid.Column="1" x:Name="ComPortComboBox" IsEditable="True" Margin="0,0,5,0"/>
                     <Button Grid.Column="2" Content="刷新" Click="RefreshPorts_Click" Padding="8,2" Margin="0,0,5,0"/>
                     <TextBlock Grid.Column="3" Text="波特率" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="4" x:Name="BaudRateComboBox" SelectedIndex="0">
+                    <ComboBox Grid.Column="4" x:Name="BaudRateComboBox" IsEditable="True" SelectedIndex="0">
                         <ComboBoxItem Content="115200"/>
                         <ComboBoxItem Content="9600"/>
                     </ComboBox>
@@ -45,23 +46,24 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="ConnectionStatusText" Text="● 未连接" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" FontWeight="Bold"/>
                     <TextBlock Grid.Column="1" Text="超时(ms):" VerticalAlignment="Center" Margin="5,0,3,0"/>
                     <TextBox Grid.Column="2" x:Name="TimeoutTextBox" Text="1000" Width="55" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="保存连接设置" Padding="8,2" Margin="0,0,8,0" Click="SaveConnectionSettings_Click"
+                            ToolTip="仅保存参数，不连接设备、不切图"/>
                     <Button Grid.Column="4" x:Name="TogglePortButton" Content="连接" Click="TogglePort_Click"
                             Width="100" Height="28" Background="#FF4CAF50" Foreground="White" FontWeight="Bold"/>
-                    <CheckBox Grid.Column="5" x:Name="AutoConnectCheckBox" Content="自动连接" Margin="10,0,0,0" VerticalAlignment="Center"
-                              Checked="AutoConnectCheckBox_Changed" Unchecked="AutoConnectCheckBox_Changed"/>
+                    <CheckBox Grid.Column="5" x:Name="AutoConnectCheckBox" Content="切图时自动连接" Margin="10,0,0,0" VerticalAlignment="Center"/>
                 </Grid>
             </Grid>
         </GroupBox>
 
-        <!-- Row 1: Image Switching -->
-        <GroupBox Grid.Row="1" Header="切图操作" Margin="0,0,0,5" Padding="8">
+        <!-- Row 2: Image Switching -->
+        <GroupBox Grid.Row="2" Header="切图操作" Margin="0,0,0,5" Padding="8">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -167,7 +169,7 @@
         </GroupBox>
 
         <!-- Row 2: Brightness Control -->
-        <GroupBox Grid.Row="2" Header="亮度控制 (PWM 0x20~0x30, 共17档)" Margin="0,0,0,5" Padding="8">
+        <GroupBox Grid.Row="3" Header="亮度控制 (PWM 0x20~0x30, 共17档)" Margin="0,0,0,5" Padding="8">
             <StackPanel>
                 <!-- Current brightness status -->
                 <Grid Margin="0,0,0,8">
@@ -226,8 +228,8 @@
             </StackPanel>
         </GroupBox>
 
-        <!-- Row 3: Status -->
-        <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,0,5">
+        <!-- Row 1: Keep save and connection feedback beside the connection settings. -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,0,5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -239,7 +241,7 @@
         </Border>
 
         <!-- Row 4: Log -->
-        <GroupBox Grid.Row="4" Header="通信日志" Padding="5">
+        <GroupBox Grid.Row="4" Header="通信日志" Padding="5" Height="160">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -257,4 +259,5 @@
             </Grid>
         </GroupBox>
     </Grid>
+    </ScrollViewer>
 </Window>

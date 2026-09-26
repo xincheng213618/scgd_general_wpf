@@ -43,9 +43,11 @@ namespace ProjectARVRPro
         四分之一尺寸 = 4,
     }
 
+    [DisplayName("结果与导出设置")]
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
-        [DisplayName("查询数量"), Category("View")]
+        [DisplayName("默认查询条数"), Category("结果列表")]
+        [Description("打开结果列表或点击查询时加载的最新记录数；小于等于0表示全部，不删除历史数据。")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
@@ -53,23 +55,29 @@ namespace ProjectARVRPro
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        [DisplayName("结果编号包含 SN"), Category("结果编号")]
         public bool CodeUseSN { get => _CodeUseSN; set { _CodeUseSN = value; OnPropertyChanged(); } }
         private bool _CodeUseSN =true;
 
+        [DisplayName("编号时间格式"), Category("结果编号")]
+        [Description("用于生成结果编号的时间部分，例如 yyyyMMdd'T'HHmmss.fffffff。")]
         public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
         private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
 
-        [DisplayName("按日期保存")]
+        [DisplayName("按日期创建文件夹"), Category("保存选项")]
         public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
         private bool _SaveByDate;
 
+        [DisplayName("保存 CSV 结果"), Category("保存选项")]
         public bool IsSaveCsv { get => _IsSaveCsv; set { _IsSaveCsv = value; OnPropertyChanged(); } }
         private bool _IsSaveCsv = true;
 
+        [DisplayName("保存原图快捷方式"), Category("原图")]
+        [Description("在结果输出目录中创建指向原图文件的快捷方式，不复制原图。")]
         public bool IsSaveLink { get => _IsSaveLink; set { _IsSaveLink = value; OnPropertyChanged(); } }
         private bool _IsSaveLink = true;
 
-        [DisplayName("保存标记图（8位）"), Category("图像导出")]
+        [DisplayName("保存标记图（8位）"), Category("标记图")]
         [Description("保存8位结果图；可选择是否把点位、文字等标记混合到图中")]
         public bool IsSaveImageReuslt
         {
@@ -91,7 +99,7 @@ namespace ProjectARVRPro
             set { }
         }
 
-        [DisplayName("标记图格式"), Category("图像导出")]
+        [DisplayName("标记图格式"), Category("标记图")]
         [Description("PNG无损并兼容原有result.png；JPEG固定质量100、编码更快但属于有损格式")]
         [PropertyVisibility(nameof(IsSaveImageReuslt))]
         public ResultImageFormat ResultSnapshotFormat
@@ -107,7 +115,7 @@ namespace ProjectARVRPro
         }
         private ResultImageFormat _ResultSnapshotFormat = ResultImageFormat.PNG;
 
-        [DisplayName("标记图尺寸"), Category("图像导出")]
+        [DisplayName("标记图尺寸"), Category("标记图")]
         [Description("完整、1/2或1/4宽高；缩小仅用于降低导出耗时和文件大小，不影响测量数据与算法结果")]
         [PropertyVisibility(nameof(IsSaveImageReuslt))]
         public ImageExportSize ResultSnapshotSize
@@ -126,7 +134,7 @@ namespace ProjectARVRPro
         }
         private ImageExportSize _ResultSnapshotSize = ImageExportSize.完整尺寸;
 
-        [DisplayName("混合保存标记"), Category("图像导出")]
+        [DisplayName("混合保存标记"), Category("标记图")]
         [Description("开启时将点位、文字等标记混合到结果图；关闭时只保存底图")]
         [PropertyVisibility(nameof(IsSaveImageReuslt))]
         public bool ResultSnapshotIncludeOverlays { get => _ResultSnapshotIncludeOverlays; set { _ResultSnapshotIncludeOverlays = value; OnPropertyChanged(); } }
@@ -141,7 +149,7 @@ namespace ProjectARVRPro
             set { }
         }
 
-        [DisplayName("保存原图（保留位深）"), Category("图像导出")]
+        [DisplayName("保存原图（保留位深）"), Category("原图")]
         [Description("直接保存ImageEditor当前已加载的原始像素，不混合标记、不改变尺寸；可与8位标记图同时保存")]
         public bool IsSaveSourceImage
         {
@@ -174,7 +182,7 @@ namespace ProjectARVRPro
         }
         private SourceImageFormat _SourceImageFormat = SourceImageFormat.TIFF;
 
-        [DisplayName("原图格式"), Category("图像导出")]
+        [DisplayName("原图格式"), Category("原图")]
         [Description("TIFF和PNG保留源图位深；BMP仅在当前ImageEditor源图可无损表示为8位格式时提供")]
         [PropertyVisibility(nameof(ShowSourceFormatWithBmp))]
         [Newtonsoft.Json.JsonIgnore]
@@ -184,7 +192,7 @@ namespace ProjectARVRPro
             set => SourceExportFormat = value;
         }
 
-        [DisplayName("原图格式"), Category("图像导出")]
+        [DisplayName("原图格式"), Category("原图")]
         [Description("当前ImageEditor源图为高位深格式；PNG和TIFF可保留源图位深，BMP不提供")]
         [PropertyVisibility(nameof(ShowSourceFormatWithoutBmp))]
         [Newtonsoft.Json.JsonIgnore]
@@ -223,7 +231,7 @@ namespace ProjectARVRPro
         [Browsable(false), Newtonsoft.Json.JsonIgnore]
         public bool ShowSourceFormatWithoutBmp => IsSaveSourceImage && !SourceImageSupportsBmp;
 
-        [DisplayName("TIFF压缩"), Category("图像导出")]
+        [DisplayName("TIFF压缩"), Category("原图")]
         [Description("LZW为推荐默认；ZIP文件仅略小但速度可能慢很多。两者均为无损压缩并保留源图位深")]
         [PropertyVisibility(nameof(ShowSourceTiffCompression))]
         public SourceTiffCompression SourceTiffCompressionMode
@@ -242,35 +250,40 @@ namespace ProjectARVRPro
         [Browsable(false), Newtonsoft.Json.JsonIgnore]
         public bool ShowSourceTiffCompression => IsSaveSourceImage && SourceExportFormat == SourceImageFormat.TIFF;
 
-        [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
+        [DisplayName("结果输出目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("输出路径")]
+        [Description("CSV、自动导出图像及原图快捷方式共用的根目录。")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
-        [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
+        // Retained for old configuration files; ARVRPro has no text-output consumer.
+        [Browsable(false)]
         public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
         private string _TextSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
-        [DisplayName("输出旧版ARVR格式"), Category("ARVR")]
+        [DisplayName("输出旧版 ARVR 格式"), Category("兼容格式")]
         [Description("启用后，CSV和Socket输出将使用旧版ProjectARVR扁平格式，保持对方系统兼容")]
         public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
         private bool _UseLegacyARVROutput;
 
-        [DisplayName("保存客制化XLSX"), Category("客制化输出")]
+        [DisplayName("保存客户 XLSX 报表"), Category("客制化输出")]
         [Description("启用后，测试完成时会在标准CSV之外追加输出指定客户格式的XLSX")]
         public bool IsSaveCustomXlsx { get => _IsSaveCustomXlsx; set { _IsSaveCustomXlsx = value; OnPropertyChanged(); } }
         private bool _IsSaveCustomXlsx;
 
-        [DisplayName("客制化输出类型"), Category("客制化输出")]
+        [DisplayName("报表格式"), Category("客制化输出")]
+        [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("选择需要追加输出的客户表格格式")]
         public CustomTestResultOutputProfile CustomOutputProfile { get => _CustomOutputProfile; set { _CustomOutputProfile = value; OnPropertyChanged(); } }
         private CustomTestResultOutputProfile _CustomOutputProfile = CustomTestResultOutputProfile.金星1_0光机抽检规格_视彩成像色度计;
 
-        [DisplayName("客制化项目名称"), Category("客制化输出")]
+        [DisplayName("报表项目名称"), Category("客制化输出")]
+        [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("用于生成每天汇总XLSX文件名，例如 2026-5-21TestResults+ProjectARVRPro.xlsx")]
         public string CustomXlsxProjectName { get => _CustomXlsxProjectName; set { _CustomXlsxProjectName = value; OnPropertyChanged(); } }
         private string _CustomXlsxProjectName = "ProjectARVRPro";
 
-        [DisplayName("客制化XLSX保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
+        [DisplayName("报表保存目录"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("客制化输出")]
+        [PropertyVisibility(nameof(IsSaveCustomXlsx))]
         [Description("客制化XLSX的输出文件夹。留空时默认使用CSV保存路径")]
         public string CustomXlsxSavePath { get => _CustomXlsxSavePath; set { _CustomXlsxSavePath = value; OnPropertyChanged(); } }
         private string _CustomXlsxSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");

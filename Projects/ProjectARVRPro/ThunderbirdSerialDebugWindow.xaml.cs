@@ -15,35 +15,57 @@ namespace ProjectARVRPro
         private static readonly ILog log = LogManager.GetLogger(typeof(ThunderbirdSerialDebugWindow));
 
         private ThunderbirdSerialController _controller = ThunderbirdSerialController.GetInstance();
-        private ProjectARVRProConfig _projectConfig = ProjectARVRProConfig.Instance;
+        private readonly ProjectARVRProConfig _projectConfig;
+        private readonly Action _persist;
 
         /// <summary>
         /// 滑块变更是否由程序内部触发（避免循环触发）
         /// </summary>
         private bool _suppressSliderEvent;
 
-        public ThunderbirdSerialDebugWindow()
+        public ThunderbirdSerialDebugWindow() : this(ProjectARVRProConfig.Instance, () => ConfigService.Instance.SaveConfigs(), true) { }
+
+        internal ThunderbirdSerialDebugWindow(ProjectARVRProConfig projectConfig, Action persist, bool initializeDevice)
         {
+            _projectConfig = projectConfig;
+            _persist = persist;
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             InitializeBrightnessLevels();
-            RefreshPortList();
-            SyncUiFromController();
+            if (initializeDevice) RefreshPortList();
+            ComPortComboBox.Text = _projectConfig.ThunderbirdPortName;
+            BaudRateComboBox.Text = _projectConfig.ThunderbirdBaudRate.ToString();
+            TimeoutTextBox.Text = _projectConfig.ThunderbirdTimeoutMs.ToString();
+            AutoConnectCheckBox.IsChecked = _projectConfig.ThunderbirdAutoConnect;
+            if (initializeDevice) SyncUiFromController();
         }
 
-        private void SaveThunderbirdConfig()
+        internal bool SaveThunderbirdConfig()
         {
-            if (ComPortComboBox.SelectedItem != null)
-                _projectConfig.ThunderbirdPortName = ComPortComboBox.SelectedItem.ToString() ?? string.Empty;
-
-            if (BaudRateComboBox.SelectedItem is ComboBoxItem baudItem && int.TryParse(baudItem.Content?.ToString(), out int baudRate))
+            if (!int.TryParse(BaudRateComboBox.Text, out int baudRate) || baudRate <= 0
+                || !int.TryParse(TimeoutTextBox.Text, out int timeoutMs) || timeoutMs < 0)
+            {
+                UpdateStatus("波特率须为正整数；超时须为非负整数，0 使用默认超时。");
+                return false;
+            }
+            var previous = (_projectConfig.ThunderbirdPortName, _projectConfig.ThunderbirdBaudRate,
+                _projectConfig.ThunderbirdTimeoutMs, _projectConfig.ThunderbirdAutoConnect);
+            try
+            {
+                _projectConfig.ThunderbirdPortName = ComPortComboBox.Text.Trim();
                 _projectConfig.ThunderbirdBaudRate = baudRate;
-
-            if (int.TryParse(TimeoutTextBox.Text, out int timeoutMs) && timeoutMs > 0)
                 _projectConfig.ThunderbirdTimeoutMs = timeoutMs;
-
-            _projectConfig.ThunderbirdAutoConnect = AutoConnectCheckBox.IsChecked == true;
-            ConfigService.Instance.SaveConfigs();
+                _projectConfig.ThunderbirdAutoConnect = AutoConnectCheckBox.IsChecked == true;
+                _persist();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                (_projectConfig.ThunderbirdPortName, _projectConfig.ThunderbirdBaudRate,
+                    _projectConfig.ThunderbirdTimeoutMs, _projectConfig.ThunderbirdAutoConnect) = previous;
+                UpdateStatus($"连接设置保存失败：{ex.Message}");
+                return false;
+            }
         }
 
         private void SyncUiFromController()
@@ -62,19 +84,8 @@ namespace ProjectARVRPro
             int baudRate = _controller.CurrentBaudRate;
             int timeout = _controller.CurrentTimeoutMs;
 
-            if (!string.IsNullOrWhiteSpace(_controller.CurrentPortName) && ComPortComboBox.Items.Contains(_controller.CurrentPortName))
-                ComPortComboBox.SelectedItem = _controller.CurrentPortName;
-
-            foreach (var item in BaudRateComboBox.Items)
-            {
-                if (item is ComboBoxItem comboItem &&
-                    int.TryParse(comboItem.Content?.ToString(), out int itemBaudRate) &&
-                    itemBaudRate == baudRate)
-                {
-                    BaudRateComboBox.SelectedItem = comboItem;
-                    break;
-                }
-            }
+            ComPortComboBox.Text = portName;
+            BaudRateComboBox.Text = baudRate.ToString();
 
             TimeoutTextBox.Text = timeout.ToString();
 
@@ -115,17 +126,17 @@ namespace ProjectARVRPro
 
         private void RefreshPortList()
         {
-            string? previousSelection = ComPortComboBox.SelectedItem as string;
+            string previousSelection = ComPortComboBox.Text;
             ComPortComboBox.Items.Clear();
             foreach (string portName in SerialPortHelper.GetPortNames())
             {
                 ComPortComboBox.Items.Add(portName);
             }
 
-            if (previousSelection != null && ComPortComboBox.Items.Contains(previousSelection))
-                ComPortComboBox.SelectedItem = previousSelection;
-            else if (!string.IsNullOrWhiteSpace(_projectConfig.ThunderbirdPortName) && ComPortComboBox.Items.Contains(_projectConfig.ThunderbirdPortName))
-                ComPortComboBox.SelectedItem = _projectConfig.ThunderbirdPortName;
+            if (!string.IsNullOrWhiteSpace(previousSelection))
+                ComPortComboBox.Text = previousSelection;
+            else if (!string.IsNullOrWhiteSpace(_projectConfig.ThunderbirdPortName))
+                ComPortComboBox.Text = _projectConfig.ThunderbirdPortName;
             else if (ComPortComboBox.Items.Count > 0)
                 ComPortComboBox.SelectedIndex = 0;
         }
@@ -152,7 +163,7 @@ namespace ProjectARVRPro
 
         private void OpenPort()
         {
-            if (ComPortComboBox.SelectedItem == null)
+            if (string.IsNullOrWhiteSpace(ComPortComboBox.Text))
             {
                 UpdateStatus("请选择串口");
                 return;
@@ -160,15 +171,10 @@ namespace ProjectARVRPro
 
             try
             {
-                string portName = ComPortComboBox.SelectedItem.ToString()!;
-                int baudRate = int.Parse(((ComboBoxItem)BaudRateComboBox.SelectedItem).Content.ToString()!);
+                if (!SaveThunderbirdConfig()) return;
+                string portName = _projectConfig.ThunderbirdPortName;
+                int baudRate = _projectConfig.ThunderbirdBaudRate;
                 int timeout = GetConfiguredTimeout();
-
-                _projectConfig.ThunderbirdPortName = portName;
-                _projectConfig.ThunderbirdBaudRate = baudRate;
-                _projectConfig.ThunderbirdTimeoutMs = timeout;
-                _projectConfig.ThunderbirdAutoConnect = AutoConnectCheckBox.IsChecked == true;
-                ConfigService.Instance.SaveConfigs();
 
                 _controller.Open(portName, baudRate, timeout);
 
@@ -224,9 +230,9 @@ namespace ProjectARVRPro
             }
         }
 
-        private void AutoConnectCheckBox_Changed(object sender, RoutedEventArgs e)
+        private void SaveConnectionSettings_Click(object sender, RoutedEventArgs e)
         {
-            SaveThunderbirdConfig();
+            if (SaveThunderbirdConfig()) UpdateStatus("连接设置已保存；未执行连接或切图。");
         }
 
         /// <summary>

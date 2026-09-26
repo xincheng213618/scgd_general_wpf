@@ -38,6 +38,7 @@ namespace ProjectARVRPro
         public static ProjectARVRProLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProLogConfig>();
     }
 
+    [DisplayName("模组检测设置")]
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
@@ -94,27 +95,31 @@ namespace ProjectARVRPro
         private bool _ProgressControlVisibility = true;
 
 
-        [DisplayName("重试次数")]
+        [DisplayName("最大尝试次数"), Category("测试策略")]
+        [Description("单步测试的尝试上限，包含首次执行；0或1均不追加重试。一键执行不自动重试。")]
         public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; OnPropertyChanged(); } }
         private int _TryCountMax = 2;
 
-        [DisplayName("允许测试失败")]
+        [DisplayName("失败后继续执行"), Category("测试策略")]
+        [Description("流程或结果处理失败后继续下一项，不会把失败结果改成通过。")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
 
-        [DisplayName("雷鸟串口")]
+        [DisplayName("串口名称"), Category("串口参数")]
+        [Description("例如 COM3；从流程处理配置的“雷鸟连接与切图”中连接和调试设备。")]
         public string ThunderbirdPortName { get => _ThunderbirdPortName; set { _ThunderbirdPortName = value; OnPropertyChanged(); } }
         private string _ThunderbirdPortName = string.Empty;
 
-        [DisplayName("雷鸟波特率")]
+        [DisplayName("波特率"), Category("串口参数"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int ThunderbirdBaudRate { get => _ThunderbirdBaudRate; set { _ThunderbirdBaudRate = value; OnPropertyChanged(); } }
         private int _ThunderbirdBaudRate = 115200;
 
-        [DisplayName("雷鸟超时(ms)")]
+        [DisplayName("超时时间（ms）"), Category("串口参数")]
         public int ThunderbirdTimeoutMs { get => _ThunderbirdTimeoutMs; set { _ThunderbirdTimeoutMs = value; OnPropertyChanged(); } }
         private int _ThunderbirdTimeoutMs = 1000;
 
-        [DisplayName("雷鸟自动连接")]
+        [DisplayName("切图时自动连接"), Category("串口参数")]
+        [Description("切图前若尚未连接，按以上参数尝试连接串口。")]
         public bool ThunderbirdAutoConnect { get => _ThunderbirdAutoConnect; set { _ThunderbirdAutoConnect = value; OnPropertyChanged(); } }
         private bool _ThunderbirdAutoConnect;
 
@@ -141,8 +146,7 @@ namespace ProjectARVRPro
 
         public void OpenConfig()
         {
-            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigService.Instance.SaveConfigs();
+            ProjectWindowInstance.WindowInstance.OpenSettings(ProjectSettingsPage.Testing);
         }
 
 
@@ -166,7 +170,8 @@ namespace ProjectARVRPro
 
         public event EventHandler<string> SNChanged;
 
-        [DisplayName("SN锁")]
+        [DisplayName("锁定 SN"), Category("测试策略")]
+        [Description("锁定后不再接受 SN 修改；解除锁定后恢复更新。")]
         public bool SNlocked { get => _SNlocked; set { _SNlocked = value; OnPropertyChanged(); } }
         private bool _SNlocked;
 

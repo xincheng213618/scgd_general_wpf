@@ -1828,13 +1828,15 @@ namespace ProjectARVRPro
 
         private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
         {
-            ViewResultManager.Config.SourceImageSupportsBmp = CanCurrentSourceExportBmp();
-            new PropertyEditorWindow(ViewResultManager.Config)
+            OpenSettings(ProjectSettingsPage.Results);
+        }
+
+        public void OpenSettings(ProjectSettingsPage page)
+        {
+            new ProjectSettingsWindow(ProjectConfig, ViewResultManager.Config, CanCurrentSourceExportBmp(), page)
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
             }.ShowDialog();
-            ConfigService.Instance.SaveConfigs();
         }
 
         private void OpenResultViewRefreshManager_Click(object sender, RoutedEventArgs e)
