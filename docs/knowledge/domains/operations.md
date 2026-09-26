@@ -32,8 +32,8 @@ next: false
 - [FileServer 设备配置与实现边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
   FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。
 
-- [FlowDevice 远端服务包装与本地图边界](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
-  Flow 远端设备包装有工厂但默认类型树过滤；它不执行 FlowEngineLib 本地图，也未提供专用运行/停止和完成回执。
+- [已移除的 Flow 与第三方算法设备包装](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
+  FlowDevice 与 ThirdPartyAlgorithms 的 WPF 设备包装已移除；保留协议值、旧流程节点和服务端能力，记录用途及按需重建入口。
 
 - [跨模块运行问题定位](../../01-user-guide/README.md) — `operations.index`
   从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。

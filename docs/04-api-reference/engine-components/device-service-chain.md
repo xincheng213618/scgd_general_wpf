@@ -53,9 +53,11 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 ## 工厂存在不等于默认可见
 
-`DeviceServiceFactoryRegistry.RegisterDefaults()` 是内置注册的来源，不是扫描所有 `Device*` 类自动发现。它注册 Camera、PG、Spectrum、SMU、Sensor、FileServer、Algorithm、FilterWheel、Calibration、Motor、ThirdPartyAlgorithms、Flow 和 LightingControl。
+`DeviceServiceFactoryRegistry.RegisterDefaults()` 是内置注册的来源，不是扫描所有 `Device*` 类自动发现。它注册 Camera、PG、Spectrum、SMU、Sensor、FileServer、Algorithm、FilterWheel、Calibration、Motor 和 LightingControl。
 
-默认类型树明确过滤 **FileServer、FocusRing、Flow、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl**。因此 FileServer/Flow 有工厂仍不会生成它们自己的默认类型分支；LightingControl（值 16）没有被该过滤排除。过滤发生在类型节点层，装配可见终端的子资源时仍按子资源自己的 Type 查工厂，并未再次排除这些类型。因此遗留或错误层级数据仍可能经其它类型终端构造它们，不能将类型过滤说成全局禁止实例化。不要仅凭有实现类或菜单文字承诺可创建、可见或可运行。
+默认类型树明确过滤 **FileServer、FocusRing、Flow、ThirdPartyAlgorithms、ThirdPartyAlgorithms32、PowerControl**。FileServer 有工厂但不会生成自己的默认类型分支；LightingControl（值 16）没有被该过滤排除。过滤发生在类型节点层，装配可见终端的子资源时仍按子资源自己的 Type 查工厂，因此 FileServer 仍可能经其它类型终端构造，不能将类型过滤说成全局禁止实例化。
+
+Flow 和第三方算法的 WPF 设备包装及内置工厂已移除；即使遗留子资源的 Type 为 12、13 或 14，默认工厂也返回 null，跳过创建而不删除资源记录。协议枚举、旧流程节点和服务端实现仍保留。用途、兼容边界与按需重建入口见[已移除设备模块说明](../../01-user-guide/devices/flow-device.md)。
 
 `CreateService(resource)` 在工厂未注册时返回 `null`，该资源不会进入运行集合；工厂构造抛异常则会向外传播，不是同一种“跳过”行为。重复注册默认抛错，明确 `replace=true` 才替换既有工厂，不能无意覆盖其它模块的类型所有者。
 
@@ -124,7 +126,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 | 电压/电流与扫描输出 | `Services/Devices/SMU/` | [SMU](../../01-user-guide/devices/smu.md) |
 | 本地校正与服务校准 | `Services/Devices/Calibration/` | [校准](../../01-user-guide/devices/calibration.md) |
 | 文件服务资源与实际文件输出 | `Services/Devices/FileServer/` | [文件服务](../../01-user-guide/devices/file-server.md) |
-| 远端 Flow 服务与本地图的区别 | `Services/Devices/FlowDevice/` | [流程设备](../../01-user-guide/devices/flow-device.md) |
+| 已移除的 Flow / 第三方算法设备包装与重建边界 | `Services/Devices/DeviceServiceFactory.cs` | [已移除设备模块说明](../../01-user-guide/devices/flow-device.md) |
 
 PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命令和显示实现；插件同名不等于同一个设备对象。MQTT 关联、返回与超时由[消息契约](../../02-developer-guide/engine-development/mqtt.md)维护，Flow 业务完成由[执行会话](../../01-user-guide/workflow/execution.md)维护。
 

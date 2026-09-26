@@ -72,7 +72,6 @@ internal static class ResultViewRefreshDiscovery
             ["ViewCalibrationConfig"] = "校正结果视图",
             ["ViewSpectrumConfig"] = "光谱结果视图",
             ["ViewSMUConfig"] = "SMU 结果视图",
-            ["ViewThirdPartyAlgorithmsConfig"] = "第三方算法结果视图",
         };
 
     internal static ObservableCollection<ResultViewRefreshSettingItem> Discover()

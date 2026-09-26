@@ -40,7 +40,7 @@ public class MenuDiscoveryExclusionTests
     {
         Assembly[] menuAssemblies =
         [
-            typeof(ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.TemplateThirdParty).Assembly,
+            typeof(ColorVision.Engine.Services.Devices.DeviceServiceFactoryRegistry).Assembly,
             typeof(ColorVision.Database.MySqlControl).Assembly,
             typeof(ColorVision.Solution.Workspace.WorkspaceManager).Assembly,
             typeof(ColorVision.App).Assembly,

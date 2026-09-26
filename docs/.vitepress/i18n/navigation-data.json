@@ -2543,7 +2543,7 @@
             },
             {
               "text": {
-                "root": "FlowDevice 远端服务包装与本地图边界"
+                "root": "已移除的 Flow 与第三方算法设备包装"
               },
               "link": "/01-user-guide/devices/flow-device"
             },
@@ -2954,6 +2954,12 @@
                 "root": "相机服务、采集与结果视图"
               },
               "link": "/01-user-guide/devices/camera"
+            },
+            {
+              "text": {
+                "root": "已移除的 Flow 与第三方算法设备包装"
+              },
+              "link": "/01-user-guide/devices/flow-device"
             },
             {
               "text": {

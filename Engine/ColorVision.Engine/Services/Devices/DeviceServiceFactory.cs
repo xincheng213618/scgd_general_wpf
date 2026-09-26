@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
-using ColorVision.Engine.Services.Devices.FlowDevice;
 using ColorVision.Engine.Services.Devices.LightingController;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
@@ -13,7 +12,6 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Types;
 using System;
 using System.Collections.Generic;
@@ -192,14 +190,6 @@ namespace ColorVision.Engine.Services.Devices
                 ServiceTypes.Motor,
                 sysResourceModel => new DeviceMotor(sysResourceModel),
                 "COMDrawingImage"));
-
-            Register(new DeviceServiceFactory<ConfigThirdPartyAlgorithms>(
-                ServiceTypes.ThirdPartyAlgorithms,
-                sysResourceModel => new DeviceThirdPartyAlgorithms(sysResourceModel)));
-
-            Register(new DeviceServiceFactory<ConfigFlowDevice>(
-                ServiceTypes.Flow,
-                sysResourceModel => new DeviceFlowDevice(sysResourceModel)));
 
             Register(new DeviceServiceFactory<ConfigLightingController>(
                 ServiceTypes.LightingControl,

@@ -140,9 +140,6 @@
 		<Compile Update="Templates\ARVR\SFR\EditSFR.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
 		<Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
