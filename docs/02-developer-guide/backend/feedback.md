@@ -77,28 +77,24 @@ Feedback/<安全机器标识>/yyyyMMdd_HHmmss_BJT_<12位唯一后缀>/
 
 ## 开发电脑读取反馈
 
-统一入口为 PowerShell 7 的 `Scripts\download_feedback.ps1`。默认 `-Source Auto`：若本机有 `H:\ColorVision\Feedback` 挂载则直接只读定位附件，否则通过已配置的远程 API 下载。显式提供 `-BaseUrl` 或 `-Source Remote` 时走网络；`-Source Local -LocalRoot <路径>` 可指定另一挂载。不要重复下载已有共享附件，也不要修改共享目录里的原反馈文件。
+统一入口为 PowerShell 7 的 `Scripts\download_feedback.ps1`。默认 `-Source Auto`：若本机有 `H:\ColorVision\Feedback` 挂载则直接只读定位附件，否则通过远程 API 下载。远程下载默认读取仓库 `Web/Backend/config.json` 中的 `upload_auth` 固定账号并发送 Basic 认证，不需要在每台电脑配置 API key。显式提供 `-BaseUrl` 或 `-Source Remote` 时走网络；`-Source Local -LocalRoot <路径>` 可指定另一挂载。不要重复下载已有共享附件，也不要修改共享目录里的原反馈文件。
 
 用户明确要求“最新反馈”时使用 `-Latest`，按接收时间选择最新匹配记录，并报告所选机器名、北京时间与编号；不要求用户每次先手工找 ID。尚未写完或无法读取 `feedback.json` 的目录不参与自动选择，远程列表按需继续分页查找。需要指定机器时加 `-Machine`，浏览候选时用 `-List`。`-Latest` 找不到有效接收时间时明确失败，不把未知时间记录当作最新。原始文件时间受复制、同步影响，不参与排序。
 
 ```powershell
-# 本机优先共享目录；没有挂载时自动从 API 下载到用户缓存目录
-pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest
-pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Machine 'ARVR-STATION-07'
-pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -List
+# 本机优先共享目录；没有挂载时自动从现有 HTTP API 下载到用户缓存目录
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -AllowInsecureHttp
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Machine 'ARVR-STATION-07' -AllowInsecureHttp
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -List -AllowInsecureHttp
 ```
 
-## 其他电脑按编号下载
+## 其他电脑下载
 
-先由 API Key 管理员创建仅含 `feedback:read` 的 key。维护电脑不需要管理员账号或交互登录；一台电脑配置一次即可，key 可单独撤销。Windows 初始化脚本通过隐藏输入读取 key，保存到当前用户环境；凭据不进入仓库、命令示例或工具输出。不要把可用 key 随 clone 分发。非 Windows 环境设置同名进程/用户环境变量。
+在新电脑拉取仓库并安装 PowerShell 7 后，直接运行下载脚本；固定账号跟随仓库中的 `Web/Backend/config.json` 分发，无需登录或配置环境变量。此账号目前是服务端 `upload_auth` 管理账号，Basic 认证不区分使用它的电脑，也不提供反馈只读权限隔离；附件请求仍按账号、反馈编号、附件名、IP 和时间写入 SQLite 审计。服务端更改 `upload_auth` 后，维护电脑也需同步配置。已有的只读 API key 仍可显式指定 `-ApiKeyEnvironmentVariable COLORVISION_FEEDBACK_API_KEY` 使用，旧的 `Scripts/configure_feedback.ps1` 仅用于这条兼容路径。
 
 ```powershell
-# 一次性配置：执行后在隐藏输入提示中粘贴反馈只读 key
-pwsh -NoProfile -File .\Scripts\configure_feedback.ps1 `
-  -BaseUrl 'http://xc213618.ddns.me:9998' -AllowInsecureHttp
-
-# 远程获取最新反馈；已经完整下载且校验一致的附件直接复用
-pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Source Remote
+# 远程获取最新反馈；现有服务地址使用 HTTP，需要显式允许
+pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Source Remote -AllowInsecureHttp
 
 # 可选查询，只列出候选
 .\Scripts\download_feedback.ps1 `
@@ -112,9 +108,9 @@ pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -Source Remote
   -OutputDirectory 'D:\ColorVisionFeedback'
 ```
 
-地址优先使用显式 `-BaseUrl`，其次 `COLORVISION_FEEDBACK_BASE_URL`，最后才是当前服务默认地址。key 使用 `COLORVISION_FEEDBACK_API_KEY`，Windows 上也读取当前用户的已保存环境变量。默认下载缓存为用户 LocalApplicationData 下的 `ColorVision/Feedback/<反馈编号>`。它先取详情清单，再把每个附件流式写入同目录随机 `.part` 文件，核对字节数和服务端 SHA-256 后以原子 rename 落盘，最后写不可覆盖的 `feedback-manifest.json`。已存在且 hash 一致的附件会复用；内容不同则停止，不覆盖。失败临时文件会删除，未验证文件不会冒充完成。脚本只读反馈附件，不导入或覆盖 ColorVision / ARVRPro 正在运行的数据库。
+地址优先使用显式 `-BaseUrl`，其次 `COLORVISION_FEEDBACK_BASE_URL`，最后才是当前服务默认地址。显式使用 API key 兼容路径时，脚本读取指定的进程环境变量；Windows 上也读取当前用户的已保存环境变量。默认下载缓存为用户 LocalApplicationData 下的 `ColorVision/Feedback/<反馈编号>`。它先取详情清单，再把每个附件流式写入同目录随机 `.part` 文件，核对字节数和服务端 SHA-256 后以原子 rename 落盘，最后写不可覆盖的 `feedback-manifest.json`。已存在且 hash 一致的附件会复用；内容不同则停止，不覆盖。失败临时文件会删除，未验证文件不会冒充完成。脚本只读反馈附件，不导入或覆盖 ColorVision / ARVRPro 正在运行的数据库。
 
-HTTPS 始终优先。现有 HTTP 部署只能在用户明确选择 `-AllowInsecureHttp` 或保存 `COLORVISION_FEEDBACK_ALLOW_HTTP=1` 后使用；`-AllowInsecureLocalhost` 仍仅限模拟测试。HTTP 不加密 key 与诊断附件，使用只读 key 只限制权限，不等于加密。脚本不跟随重定向，也不会绕过 TLS 证书校验。后续配置 HTTPS 时更新服务地址并取消 HTTP 选项。
+HTTPS 始终优先。现有 HTTP 部署只能在用户明确选择 `-AllowInsecureHttp` 或保存 `COLORVISION_FEEDBACK_ALLOW_HTTP=1` 后使用；`-AllowInsecureLocalhost` 仍仅限模拟测试。HTTP 不加密固定账号密码、API key 或诊断附件；仓库内固定账号只阻止没有凭据的请求。脚本不跟随重定向，也不会绕过 TLS 证书校验。后续配置 HTTPS 时更新服务地址并取消 HTTP 选项。
 
 动态公网 IP 加 DDNS 可以承载 HTTPS，证书绑定域名。但使用公开 CA 自动签发，需要公网 80 的 HTTP-01、公网 443 的 TLS-ALPN-01，或控制 DNS TXT 的 DNS-01 验证。外部只能开放 18080/18443 且没有 DNS 权限时，不能用这些高端口替代标准验证端口；自签名证书也不能让新电脑的浏览器自动信任。当前条件下保留 HTTP，不声称已经完成 HTTPS。
 

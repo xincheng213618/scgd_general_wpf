@@ -197,17 +197,33 @@ function Get-FileSha256 {
     return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
 }
 
-$apiKey = Get-FeedbackSetting $ApiKeyEnvironmentVariable
-if ([string]::IsNullOrWhiteSpace($apiKey)) {
-    throw "API key environment variable '$ApiKeyEnvironmentVariable' is not set."
+$baseUri = Resolve-FeedbackBaseUri $BaseUrl
+if ($PSBoundParameters.ContainsKey('ApiKeyEnvironmentVariable')) {
+    $apiKey = Get-FeedbackSetting $ApiKeyEnvironmentVariable
+    if ([string]::IsNullOrWhiteSpace($apiKey)) {
+        throw "API key environment variable '$ApiKeyEnvironmentVariable' is not set."
+    }
+    $authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new('Bearer', $apiKey)
+} else {
+    $configPath = Join-Path $PSScriptRoot '../Web/Backend/config.json'
+    if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+        throw 'Feedback account configuration is missing from Web/Backend/config.json.'
+    }
+    $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    $username = [string]$config.upload_auth.username
+    $password = [string]$config.upload_auth.password
+    if ([string]::IsNullOrWhiteSpace($username) -or [string]::IsNullOrEmpty($password)) {
+        throw 'Feedback account is missing from Web/Backend/config.json.'
+    }
+    $credential = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${username}:${password}"))
+    $authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new('Basic', $credential)
 }
 
-$baseUri = Resolve-FeedbackBaseUri $BaseUrl
 $handler = [System.Net.Http.HttpClientHandler]::new()
 $handler.AllowAutoRedirect = $false
 $client = [System.Net.Http.HttpClient]::new($handler, $true)
 $client.Timeout = [TimeSpan]::FromMinutes(30)
-$client.DefaultRequestHeaders.Authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new('Bearer', $apiKey)
+$client.DefaultRequestHeaders.Authorization = $authorization
 $client.DefaultRequestHeaders.Accept.ParseAdd('application/json')
 
 try {

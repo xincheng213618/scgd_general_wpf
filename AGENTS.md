@@ -18,9 +18,9 @@
 
 ## Feedback retrieval
 
-- For requests to find or analyze the latest feedback, run `pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest` first. The script uses an available local share, otherwise the configured remote API, and reports the selected machine and receive time. Use `-List` or `-Machine <name>` when the user specifies a machine or wants candidates; explicit `-Latest` authorizes selecting the newest matching record.
+- For requests to find or analyze the latest feedback, run `pwsh -NoProfile -File .\Scripts\download_feedback.ps1 -Latest -AllowInsecureHttp` first for the current HTTP deployment. The script uses an available local share, otherwise the remote API, and reports the selected machine and receive time. Use `-List` or `-Machine <name>` when the user specifies a machine or wants candidates; explicit `-Latest` authorizes selecting the newest matching record.
 - Never determine recency from filesystem creation/modification times. Use `serverReceivedAt`, legacy `createdAt`, then the timestamp encoded in the feedback directory name; unknown times sort last. Feedback IDs come from the original metadata and remain stable when directories move. New storage groups feedback under machine folders; historical flat records remain readable. Rename historical feedback folders only when the user explicitly requests organization, preserving file contents and a complete old/new path manifest. `Feedback/index.html` provides a readable share index.
-- On a new Windows maintenance computer, configure a `feedback:read` key once using `Scripts\configure_feedback.ps1`. Keep credentials outside the repository and tool output. HTTP is supported only with an explicit opt-in for the existing deployment; prefer HTTPS when available. See `docs/02-developer-guide/backend/feedback.md` for setup and limitations.
+- On a new Windows maintenance computer, remote feedback download uses the existing fixed `upload_auth` account from tracked `Web/Backend/config.json`; do not print its credentials in tool output. Existing `feedback:read` keys remain available only when `-ApiKeyEnvironmentVariable` is passed explicitly. HTTP is supported only with an explicit opt-in for the existing deployment; prefer HTTPS when available. See `docs/02-developer-guide/backend/feedback.md` for setup and limitations.
 
 ## Architecture boundaries
 
