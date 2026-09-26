@@ -18,8 +18,8 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 | 对象 / 源码入口 | 负责的状态 |
 | --- | --- |
 | `ConfigPhyCamera` | 物理型号、模式、通道/位深、CFW、电机、曝光/增益默认值与范围；`CameraCfg` 另含传感器 ROI、温控等物理参数 |
-| `ConfigCamera` | 逻辑服务的 `CameraCode` / `CameraID`、采集模式、通道/位深、自动曝光开关与范围、ND/CFW、电机/对焦、文件缓存和保存选项 |
-| `DisplayCameraConfig`（`DisplayCamera.xaml.cs`） | 按逻辑设备 `Config.Code` 获取；手动采集的曝光、增益、平均次数、翻转和模板选择，以及本地视频 ROI/显示偏好；饱和度字段也在这里，不在 `ConfigCamera` |
+| `ConfigCamera` | 逻辑服务的 `CameraCode` / `CameraID`、采集模式、通道/位深、自动曝光开关与范围、ND/CFW 和电机/对焦 |
+| `DisplayCameraConfig`（`DisplayCamera.xaml.cs`） | 按逻辑设备 `Config.Code` 获取；手动采集的曝光、增益、平均次数、翻转、模板选择和“本地取图保存文件”，以及本地视频 ROI/显示偏好；饱和度字段也在这里，不在 `ConfigCamera` |
 | `CameraRunParam` | 参数模板里的曝光、增益、平均次数、焦点/光圈等；不是显示参数的别名 |
 | `LocalCameraNode` | 用节点自身的 `ExpTime`、`Gain`、`AvgCount` 构造 `CameraRunParam`；不自动沿用手动面板曝光 |
 | `DeviceCamera.RealtimeCameraConfig` | 返回共享的 `DefaultRealtimeCameraConfig.Current`；不是每台相机独立克隆的配置 |

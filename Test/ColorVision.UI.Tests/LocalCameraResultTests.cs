@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using FlowEngineLib.Algorithm;
@@ -21,6 +22,17 @@ public class LocalCameraResultTests
         Assert.True(JsonConvert.DeserializeObject<DisplayCameraConfig>("{\"UseLocalCamera\":true}")!.SaveLocalCaptureFiles);
         var config = new DisplayCameraConfig { SaveLocalCaptureFiles = false };
         Assert.False(JsonConvert.DeserializeObject<DisplayCameraConfig>(JsonConvert.SerializeObject(config))!.SaveLocalCaptureFiles);
+    }
+
+    [Fact]
+    public void LegacyCameraFileSaveFieldsAreIgnored()
+    {
+        ConfigCamera config = JsonConvert.DeserializeObject<ConfigCamera>("{\"Code\":\"camera\",\"UsingFileCaching\":false,\"IsCVCIEFileSave\":false}")!;
+        JObject serialized = JObject.FromObject(config);
+
+        Assert.Equal("camera", config.Code);
+        Assert.Null(serialized.Property("UsingFileCaching"));
+        Assert.Null(serialized.Property("IsCVCIEFileSave"));
     }
 
     [Theory]

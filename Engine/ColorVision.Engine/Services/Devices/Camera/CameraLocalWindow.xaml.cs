@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.FileIO;
 using ColorVision.ImageEditor.Realtime;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -16,7 +15,6 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -152,7 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.DisplayConfig.ExpTimeB = _sourceNode.ExpTime;
             Device.DisplayConfig.FlipMode = _sourceNode.FlipMode;
             Device.Config.IsAutoExpose = _sourceNode.IsAutoExp;
-            Device.Config.UsingFileCaching = _sourceNode.SaveFiles;
+            Device.DisplayConfig.SaveLocalCaptureFiles = _sourceNode.SaveFiles;
         }
 
         private void SelectNodeCalibrationTemplate()
@@ -181,7 +179,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _sourceNode.ExpTime = (float)Device.DisplayConfig.ExpTime;
             _sourceNode.FlipMode = Device.DisplayConfig.FlipMode;
             _sourceNode.IsAutoExp = Device.Config.IsAutoExpose;
-            _sourceNode.SaveFiles = Device.Config.UsingFileCaching;
+            _sourceNode.SaveFiles = Device.DisplayConfig.SaveLocalCaptureFiles;
             _sourceNode.CalibTempName = ComboxCalibrationTemplate.SelectedItem is TemplateModel<CalibrationParam> template && template.Value.Id >= 0
                 ? template.Key
                 : string.Empty;
@@ -893,7 +891,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Calibration = calibration,
                     FlipMode = Device.DisplayConfig.FlipMode,
                     IsAutoExposure = Device.Config.IsAutoExpose,
-                    SaveFiles = Device.Config.UsingFileCaching
+                    SaveFiles = Device.DisplayConfig.SaveLocalCaptureFiles
                 };
                 LocalCaptureDisplayResult display = await Task.Run(() => CaptureAndPrepareDisplay(request));
 
@@ -1043,88 +1041,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             cvRawOpen.AttachLiveCvcie(ImageView, width, height, bpp, channels, rawArray, GetCurrentExposureValues(GetSelectedChannelCount()));
-        }
-
-        private string BuildLocalCaptureDirectory()
-        {
-            string basePath = Device.Config.FileServerCfg.DataBasePath;
-            if (string.IsNullOrWhiteSpace(basePath))
-            {
-                basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision");
-            }
-
-            string deviceCode = string.IsNullOrWhiteSpace(Device.Config.Code) ? "CameraLocal" : Device.Config.Code;
-            string captureDirectory = Path.Combine(basePath, deviceCode, "Data", DateTime.Now.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(captureDirectory);
-            return captureDirectory;
-        }
-
-        private static string BuildCaptureStem()
-        {
-            return $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}";
-        }
-
-        private void SaveCaptureFilesIfNeeded(bool hasColorCalibration, uint width, uint height, uint srcBpp, uint dstBpp, uint channels, byte[] sourceFrameData)
-        {
-            if (!Device.Config.UsingFileCaching || sourceFrameData == null || sourceFrameData.Length == 0)
-            {
-                return;
-            }
-
-            string captureDirectory = BuildLocalCaptureDirectory();
-            string stem = BuildCaptureStem();
-            float[] exposureValues = GetCurrentExposureValues((int)channels);
-            float gain = Device.DisplayConfig.Gain;
-
-            string rawFilePath = Path.Combine(captureDirectory, stem + ".cvraw");
-            CVCIEFile rawFile = new CVCIEFile
-            {
-                Version = 1,
-                FileExtType = CVType.Raw,
-                Rows = (int)height,
-                Cols = (int)width,
-                Bpp = (int)srcBpp,
-                Channels = (int)channels,
-                Gain = gain,
-                Exp = exposureValues,
-                Data = sourceFrameData
-            };
-
-            if (!CVFileUtil.WriteCVRaw(rawFilePath, rawFile))
-            {
-                log.Warn($"Failed to save local raw capture: {rawFilePath}");
-                return;
-            }
-
-            if (!hasColorCalibration || rawArray == null || rawArray.Length == 0)
-            {
-                log.Info($"Saved local capture: {rawFilePath}");
-                return;
-            }
-
-            string cieFilePath = Path.Combine(captureDirectory, stem + ".cvcie");
-            CVCIEFile cieFile = new CVCIEFile
-            {
-                Version = 1,
-                FileExtType = CVType.CIE,
-                Rows = (int)height,
-                Cols = (int)width,
-                Bpp = (int)dstBpp,
-                Channels = (int)channels,
-                Gain = gain,
-                Exp = exposureValues,
-                SrcFileName = Path.GetFileName(rawFilePath),
-                Data = rawArray
-            };
-
-            if (CVFileUtil.WriteCVCIE(cieFilePath, cieFile))
-            {
-                log.Info($"Saved local capture: {cieFilePath}");
-            }
-            else
-            {
-                log.Warn($"Failed to save local CVCIE capture: {cieFilePath}");
-            }
         }
 
         private async void btn_CalAutoExp_Click(object sender, RoutedEventArgs e)

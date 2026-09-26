@@ -95,7 +95,7 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
         {
             Device = device, CameraParameters = cameraParameters, Calibration = calibration,
             FlipMode = parameters.FlipMode, IsAutoExposure = false,
-            SaveFiles = device.DisplayConfig.SaveLocalCaptureFiles, SaveCieFile = device.Config.IsCVCIEFileSave
+            SaveFiles = device.DisplayConfig.SaveLocalCaptureFiles
         };
     }
 

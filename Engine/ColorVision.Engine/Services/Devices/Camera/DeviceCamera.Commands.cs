@@ -88,7 +88,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 Device = this, CameraParameters = parameters, Calibration = calibration,
                 IsAutoExposure = autoExposure.Id != -1, SaveFiles = DisplayConfig.SaveLocalCaptureFiles,
-                SaveCieFile = Config.IsCVCIEFileSave, FlipMode = DisplayConfig.FlipMode
+                FlipMode = DisplayConfig.FlipMode
             };
             return RunLocalCommand("GetData", () =>
             {

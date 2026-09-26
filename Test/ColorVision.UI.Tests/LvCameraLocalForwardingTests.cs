@@ -51,7 +51,6 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Equal(3, request.CameraParameters.AvgCount);
             Assert.Equal(CVImageFlipMode.Y, request.FlipMode);
             Assert.True(request.SaveFiles);
-            Assert.False(request.SaveCieFile);
         }
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
     });
@@ -287,7 +286,7 @@ public sealed class LvCameraLocalForwardingTests
             this.expectedExecutions = expectedExecutions;
             ConfigService.SetInstance(new ConfigHandler());
             Camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
-            Camera.Config = new() { Code = "lv-test", IsCVCIEFileSave = false };
+            Camera.Config = new() { Code = "lv-test" };
             Camera.SysResourceModel = new SysResourceModel { Code = "lv-test" };
             Backend = new CameraBackendState(preferLocal);
             if (localOpen) { Backend.BeginLocalOpen(); Backend.SetLocalStatus(DeviceStatusType.Opened); }

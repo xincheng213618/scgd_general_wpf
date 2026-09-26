@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
         public bool SaveFiles { get; init; }
-        public bool SaveCieFile { get; init; } = true;
         public bool AllowAcceleration { get; init; }
     }
 
@@ -178,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
-                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code, includeCie: request.SaveCieFile);
+                    LocalFrameFileService.SaveCapture(frame, device.Config.FileServerCfg.DataBasePath, device.Code);
                     saveStopwatch.Stop();
                     saveTimeMs = ToMilliseconds(saveStopwatch.ElapsedMilliseconds);
                 }
