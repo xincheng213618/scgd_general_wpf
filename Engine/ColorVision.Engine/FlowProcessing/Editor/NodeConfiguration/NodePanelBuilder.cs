@@ -87,11 +87,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
             };
             button.Click += (_, _) =>
             {
-                new TemplateEditorWindow(template, comboBox.SelectedIndex)
-                {
-                    Owner = Application.Current.GetActiveWindow(),
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                }.ShowDialog();
+                var window = template.CreateManagerWindow(comboBox.SelectedIndex);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
             };
             return button;
         }

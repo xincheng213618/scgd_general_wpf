@@ -140,7 +140,7 @@ namespace ProjectKB
         public void OpenTemplate()
         {
             if (!RequireAdmin()) return;
-            new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowTemplateManagerWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public void OpenFlowEngineTool()

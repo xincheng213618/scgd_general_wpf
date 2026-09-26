@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CA1863
+using ColorVision.Engine.Templates.Browser;
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Compilation;
@@ -29,7 +30,7 @@ namespace ColorVision.Engine.Templates.Flow
         public override string Header => Properties.Resources.MenuFlow;
         public override void Execute()
         {
-            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new FlowTemplateManagerWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 
@@ -45,8 +46,19 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly Func<SqlSugarClient> openMySql;
         private bool localReadMode;
         private bool UseLocalStorage => localReadMode || !isMySqlConnected();
+        internal string BrowserOrderScope
+        {
+            get
+            {
+                if (UseLocalStorage) return "local";
+                var config = MySqlSetting.Instance.MySqlConfig;
+                return TemplateBrowserOrderStore.MySqlScope(config.Host, config.Port, config.Database);
+            }
+        }
 
         public TemplateFlow() : this(LocalFlowTemplateStorage.Default) { }
+
+        public override Window CreateManagerWindow(int selectedIndex = 0) => new FlowTemplateManagerWindow(this, selectedIndex);
 
         public TemplateFlow(LocalFlowTemplateStorage localStorage, Func<bool>? isMySqlConnected = null, Func<SqlSugarClient>? openMySql = null)
         {
@@ -112,7 +124,9 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     existing.Value = value;
                     existing.Key = value.Name;
-                    TemplateParams.Move(TemplateParams.IndexOf(existing), index);
+                    int oldIndex = TemplateParams.IndexOf(existing);
+                    // WPF clears ComboBox selection when the selected item is moved to its own index.
+                    if (oldIndex != index) TemplateParams.Move(oldIndex, index);
                 }
             }
             Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? " · 本地" : " · MySQL");

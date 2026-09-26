@@ -1,5 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Browser;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -20,6 +21,15 @@ namespace ColorVision.Engine.Templates.POI
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
         private readonly PoiTemplateStorage storage;
+        internal string BrowserOrderScope
+        {
+            get
+            {
+                if (storage.IsLocal) return "poi:local";
+                var config = MySqlSetting.Instance.MySqlConfig;
+                return "poi:" + TemplateBrowserOrderStore.MySqlScope(config.Host, config.Port, config.Database);
+            }
+        }
         public TemplatePoi() : this(PoiTemplateStorage.Default) { }
         public TemplatePoi(PoiTemplateStorage storage)
         {
@@ -31,6 +41,7 @@ namespace ColorVision.Engine.Templates.POI
             TemplateParams = Params;
         }
         public EditPoiParam EditWindow { get; set; }
+        public override Window CreateManagerWindow(int selectedIndex = 0) => new PoiTemplateManagerWindow(this, selectedIndex);
         public override void PreviewMouseDoubleClick(int index)
         {
             EditWindow = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
@@ -51,7 +62,8 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     existing.Value = value;
                     existing.Key = value.Name;
-                    Params.Move(Params.IndexOf(existing), i);
+                    int previous = Params.IndexOf(existing);
+                    if (previous != i) Params.Move(previous, i);
                 }
             }
             Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? " · 本地" : " · MySQL");
@@ -68,6 +80,8 @@ namespace ColorVision.Engine.Templates.POI
                 }
             SaveIndex.Clear();
         }
+
+        public override void Save(TemplateModel<PoiParam> item) => (item.Value.Storage ?? storage).SaveMetadata(item.Value);
 
         public override void Delete(int index)
         {

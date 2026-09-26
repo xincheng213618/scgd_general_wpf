@@ -186,7 +186,10 @@ namespace ColorVision.Engine.PropertyEditor
                     return;
 
                 int defaultIndex = GetTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
-                new TemplateEditorWindow(currentTemplate, defaultIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                var window = currentTemplate.CreateManagerWindow(defaultIndex);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
                 RefreshItems();
             };
 
@@ -354,7 +357,10 @@ namespace ColorVision.Engine.PropertyEditor
                     }
                 }
 
-                new TemplateEditorWindow(selectedTemplate, selectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                var window = selectedTemplate.CreateManagerWindow(selectedIndex);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
                 RefreshItems();
             };
 

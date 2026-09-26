@@ -3,9 +3,9 @@ knowledge_id: "algorithms.poi-template"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
-aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PoiTemplateBrowserTests.cs","Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -40,6 +40,10 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 主 POI 模板保存真实点位；其它模板描述如何生成、过滤、修正、标定或输出点位。不要把它们当成同一种持久化模型。
 
 ## 主模板存储
+
+主菜单、图像工具栏、手动算法模板选择、流程节点属性面板和 Conoscope 对焦点管理通过 `PoiTemplateManagerWindow` 浏览主 POI 点集。窗口复用流程的 `TemplateBrowserWindow` 搜索、操作栏和浏览交互；默认紧凑图标平铺，统一点阵图标下方显示居中的单行名称，长名称悬停查看。图标不是点位预览，浏览时不为它额外读取或渲染点明细。列表切换保留筛选、勾选、选中对象及各自滚动位置；双击仍交给原 `EditPoiParam`。过滤、修正、输出等伴生模板维持旧编辑宿主，主 POI 也可从“更多 → 旧版管理”回退。
+
+拖拽只交换窗口内两个显示位置，异步把顺序存到本机 SQLite 的 `flow_template_browser_order` 表，沿用表名以保留已有流程偏好。POI 的来源键带 `poi:` 前缀，与流程独立；服务器来源按主机、端口和数据库区分。它不修改模板 ID、点位、服务器顺序或共享下拉框集合。保存失败时窗口提示并允许重试，重新打开恢复本机顺序。新建、复制、导入、导出仍使用 `TemplatePoi` 原操作；重命名经 `PoiTemplateStorage.SaveMetadata` 保留未加载的点位；删除处理实际勾选项，包括被筛选隐藏的条目。重新加载跳过位置不变的集合移动，以免清空绑定的 ComboBox 选择。
 
 `TemplatePoi` 双击打开 `EditPoiParam`，不是普通右侧 PropertyGrid。`PoiParam` 里保存画布尺寸、四角、配置 JSON 和 `ObservableCollection<PoiPoint>`。POI 主模板走专用表：
 
@@ -107,6 +111,6 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
+关联测试：`Test/ColorVision.UI.Tests/PoiTemplateBrowserTests.cs` 验证图标浏览不读明细、视图切换、编辑索引、排序隔离和重命名/删除；`Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs` 验证本地点位保存。另有 `Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
 
 包编解码与点模型测试不替代现场数据库保存、MQTT POI 服务和各结果 handler 回放；修改 ID 或引用名时补充旧模板集成验证。

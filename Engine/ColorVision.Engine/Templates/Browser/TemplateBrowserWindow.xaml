@@ -1,0 +1,234 @@
+<Window x:Class="ColorVision.Engine.Templates.Browser.TemplateBrowserWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Engine.Templates.Browser"
+        xmlns:flow="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
+        Width="940" Height="660" MinWidth="640" MinHeight="420" ShowInTaskbar="False"
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style x:Key="BrowserAction" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+        <Style x:Key="BrowserViewMode" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,4"/>
+        </Style>
+        <DataTemplate x:Key="TemplateName">
+            <Grid>
+                <TextBlock Text="{Binding Key}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Key}"
+                           VerticalAlignment="Center" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                <TextBox Text="{Binding Key,UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Key}"
+                         Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"
+                         IsVisibleChanged="RenameBox_IsVisibleChanged" LostFocus="RenameBox_LostFocus" KeyDown="RenameBox_KeyDown"/>
+            </Grid>
+        </DataTemplate>
+        <ContextMenu x:Key="TemplateContextMenu" Opened="TemplateContextMenu_Opened">
+            <MenuItem Header="打开编辑器" Click="Open_Click"/>
+            <Separator/>
+            <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"/>
+            <MenuItem Header="{x:Static properties:Resources.CreateCopy}" Click="Copy_Click"/>
+            <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete"/>
+        </ContextMenu>
+        <ContextMenu x:Key="MoreMenu">
+            <MenuItem Header="旧版管理" Click="LegacyManager_Click"/>
+        </ContextMenu>
+        <Style x:Key="TemplateListItem" TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+            <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
+            <Style.Triggers><Trigger Property="Tag" Value="SwapTarget"><Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/></Trigger></Style.Triggers>
+        </Style>
+        <Style x:Key="TemplateTileItem" TargetType="ListViewItem">
+            <Setter Property="Width" Value="{Binding TileWidth,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}"/>
+            <Setter Property="Margin" Value="4,4,4,8"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="6">
+                                <ContentPresenter HorizontalAlignment="Stretch"/>
+                            </Border>
+                            <Border x:Name="SwapBadge" Visibility="Collapsed" Background="{DynamicResource PrimaryBrush}" CornerRadius="3"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="7,3" IsHitTestVisible="False">
+                                <TextBlock Text="交换位置" Foreground="White" FontSize="11"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="SwapTarget">
+                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="SwapBadge" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ItemsPanelTemplate x:Key="TemplateTilePanel"><WrapPanel/></ItemsPanelTemplate>
+        <ControlTemplate x:Key="TemplateTileList" TargetType="ListView">
+            <Border Background="{TemplateBinding Background}">
+                <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                              CanContentScroll="False">
+                    <ItemsPresenter/>
+                </ScrollViewer>
+            </Border>
+        </ControlTemplate>
+        <DataTemplate x:Key="FlowTile">
+            <StackPanel>
+                <Grid Height="{Binding CoverHeight,RelativeSource={RelativeSource AncestorType=local:TemplateBrowserWindow}}">
+                    <flow:FlowTemplateCover Flow="{Binding Value}"/>
+                    <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"
+                              ToolTip="{x:Static properties:Resources.Choice}">
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                                <Setter Property="Visibility" Value="Hidden"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMouseOver,RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsChecked" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+                </Grid>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch" TextBlock.TextAlignment="Center" Margin="0,7,0,0" Height="26"/>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="PoiTile">
+            <StackPanel>
+                <Grid Height="90">
+                    <Canvas x:Name="PoiIcon" Width="64" Height="64" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <Path Stroke="{DynamicResource PrimaryBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 8,22 L 8,8 22,8 M 42,8 L 56,8 56,22 M 56,42 L 56,56 42,56 M 22,56 L 8,56 8,42"/>
+                        <Path Fill="{DynamicResource PrimaryBrush}" Opacity="0.7">
+                            <Path.Data>
+                                <GeometryGroup>
+                                    <EllipseGeometry Center="20,20" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="32,20" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="44,20" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="20,32" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="44,32" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="20,44" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="32,44" RadiusX="2.5" RadiusY="2.5"/>
+                                    <EllipseGeometry Center="44,44" RadiusX="2.5" RadiusY="2.5"/>
+                                </GeometryGroup>
+                            </Path.Data>
+                        </Path>
+                        <Ellipse Canvas.Left="27" Canvas.Top="27" Width="10" Height="10" Fill="{DynamicResource PrimaryBrush}"/>
+                    </Canvas>
+                    <CheckBox IsChecked="{Binding IsSelected}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2"
+                              ToolTip="{x:Static properties:Resources.Choice}">
+                        <CheckBox.Style>
+                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                                <Setter Property="Visibility" Value="Hidden"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMouseOver,RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
+                                    <Trigger Property="IsChecked" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </CheckBox.Style>
+                    </CheckBox>
+                </Grid>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateName}" HorizontalContentAlignment="Stretch"
+                                TextBlock.TextAlignment="Center" Margin="0,5,0,0" Height="26"/>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid Margin="16,12">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="NewButton" Command="ApplicationCommands.New" ToolTip="新建流程" AutomationProperties.Name="新建流程"
+                        Style="{StaticResource BrowserAction}" Background="{DynamicResource PrimaryBrush}" Foreground="White" BorderBrush="Transparent">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock x:Name="NewLabel" Text="新建模板"/></StackPanel>
+                </Button>
+                <Button Click="Import_Click" Content="导入" ToolTip="导入模板文件" AutomationProperties.Name="导入模板" Style="{StaticResource BrowserAction}"/>
+                <Button Click="Export_Click" Content="导出" ToolTip="导出选中或勾选的模板" AutomationProperties.Name="导出模板" Style="{StaticResource BrowserAction}"/>
+                <Button Content="&#xE712;" FontFamily="Segoe MDL2 Assets" ToolTip="更多操作" AutomationProperties.Name="更多操作" Click="More_Click" Style="{StaticResource BrowserAction}" Width="32" Padding="0"/>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock x:Name="HeadingText" Text="模板" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock x:Name="CountText" FontSize="12" Margin="0,3,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6"/>
+            </StackPanel>
+        </DockPanel>
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <Border Height="34" MaxWidth="420" HorizontalAlignment="Left" Width="{Binding ActualWidth,RelativeSource={RelativeSource AncestorType=Grid}}"
+                    Background="{DynamicResource ButtonBackground}" BorderThickness="1" CornerRadius="5" Margin="0,0,16,0">
+                <Border.Style><Style TargetType="Border"><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+                    <Style.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/></Trigger></Style.Triggers>
+                </Style></Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
+                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" Padding="0,3"
+                             ToolTip="按名称搜索（Ctrl+F）" AutomationProperties.Name="搜索流程名称" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown"/>
+                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="搜索模板名称" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45">
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                        </Style></TextBlock.Style>
+                    </TextBlock>
+                    <Button Grid.Column="2" Click="ClearSearch_Click" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Background="Transparent" BorderThickness="0" Padding="0" ToolTip="清空搜索" AutomationProperties.Name="清空搜索">
+                        <Button.Style><Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+                            <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers>
+                        </Style></Button.Style>
+                    </Button>
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ToggleButton x:Name="TileModeButton" Content="平铺" Click="TileMode_Click" ToolTip="封面平铺" AutomationProperties.Name="平铺视图" Style="{StaticResource BrowserViewMode}"/>
+                <ToggleButton x:Name="ListModeButton" Content="列表" Click="ListMode_Click" ToolTip="名称列表" AutomationProperties.Name="列表视图" Style="{StaticResource BrowserViewMode}" Margin="3,0,0,0"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="2">
+            <ListView x:Name="TemplateList" Style="{StaticResource ListView.Small}" ItemContainerStyle="{StaticResource TemplateListItem}"
+                      BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      PreviewMouseDoubleClick="TemplateList_DoubleClick" KeyDown="TemplateList_KeyDown" AllowDrop="True"
+                      PreviewMouseLeftButtonDown="TemplateList_MouseDown" PreviewMouseMove="TemplateList_MouseMove" DragOver="TemplateList_DragOver" DragLeave="TemplateList_DragLeave" Drop="TemplateList_Drop">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="选择" Width="52">
+                            <GridViewColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected}"/></DataTemplate></GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="序号" Width="60" DisplayMemberBinding="{Binding Id}"/>
+                        <GridViewColumn Header="名称" Width="340" CellTemplate="{StaticResource TemplateName}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <TextBlock x:Name="EmptyText" Text="暂无流程" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource GlobalTextBrush}" IsHitTestVisible="False"/>
+        </Grid>
+        <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="SelectionText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.7" VerticalAlignment="Center" FontSize="12"/>
+                    <Button x:Name="DeleteButton" Command="ApplicationCommands.Delete" Content="删除" ToolTip="删除选中或勾选的模板" AutomationProperties.Name="删除模板" Style="{StaticResource BrowserAction}" Background="Transparent" BorderBrush="Transparent" Foreground="#E87979"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Grid.Column="1" Text="拖放交换位置 · 双击打开" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="12" Opacity="0.6"
+                           ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Command="ApplicationCommands.Save" Content="保存" ToolTip="保存名称修改或重试排序保存" AutomationProperties.Name="保存修改" Style="{StaticResource BrowserAction}"/>
+                    <Button Click="Close_Click" Content="关闭" ToolTip="关闭模板窗口" AutomationProperties.Name="关闭窗口" Style="{StaticResource BrowserAction}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

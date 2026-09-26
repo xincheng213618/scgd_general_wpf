@@ -192,7 +192,7 @@ public sealed class FlowEngineManager : ViewModelBase
 
     private void EditSelectedFlowTemplate()
     {
-        new TemplateEditorWindow(CreateFlowTemplate(), TemplateFlowParamsIndex)
+        new FlowTemplateManagerWindow(CreateFlowTemplate(), TemplateFlowParamsIndex)
         {
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,

@@ -813,7 +813,7 @@ namespace Conoscope
         private void btnEditFlowTemplates_Click(object sender, RoutedEventArgs e)
         {
             int selectedIndex = Math.Max(0, cbFlowTemplate.SelectedIndex);
-            new TemplateEditorWindow(new TemplateFlow(), selectedIndex)
+            new FlowTemplateManagerWindow(new TemplateFlow(), selectedIndex)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

@@ -65,16 +65,261 @@ public sealed class OfflineConfigurationEntryTests
             Button edit = Descendants(manager.DisplayFlow).OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, manager.EditTemplateFlowCommand));
             Assert.True(edit.IsEnabled);
-            WithDialog<TemplateEditorWindow>(dialog =>
+            WithDialog<FlowTemplateManagerWindow>(dialog =>
             {
-                Assert.Equal(0, dialog.ITemplate.Count);
+                Assert.Empty(Assert.IsType<ListView>(dialog.FindName("TemplateList")).Items);
                 Assert.Contains("本地", dialog.Title);
-                var createTarget = Assert.IsType<Grid>(dialog.FindName("MainGrid"));
                 WithDialog<TemplateCreate>(create => CreateTemplate(create, "管理器首个流程"),
-                    () => System.Windows.Input.ApplicationCommands.New.Execute(null, createTarget));
+                    () => System.Windows.Input.ApplicationCommands.New.Execute(null, dialog));
             }, () => (useCanvasMenu ? manager.View.OpenFlowTemplateCommand : edit.Command).Execute(null));
             Assert.Equal(Assert.Single(storage.Load()).Id, manager.SelectedFlowParam?.Id);
         });
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void OpeningAndClosingTemplateManagerPreservesWorkflowComboSelection(int selectedIndex)
+    {
+        WithWorkspace((manager, storage) =>
+        {
+            foreach (string name in new[] { "White51_Test", "Chessboard_ANSI_Test", "OpticCenter_Test" })
+                storage.Save(new FlowParam { Name = name });
+            manager.CreateFlowTemplate().Load();
+            var combo = Assert.IsType<ComboBox>(manager.DisplayFlow.FindName("ComboBoxFlow"));
+            combo.SelectedIndex = selectedIndex;
+            object selectedItem = combo.SelectedItem;
+            string selectedName = manager.FlowParams[selectedIndex].Key;
+
+            void AssertSelection()
+            {
+                Assert.Equal(3, combo.Items.Count);
+                Assert.Equal(selectedIndex, combo.SelectedIndex);
+                Assert.Same(selectedItem, combo.SelectedItem);
+                Assert.Equal(selectedName, combo.Text);
+                Assert.Equal(selectedIndex, manager.TemplateFlowParamsIndex);
+            }
+
+            AssertSelection();
+            WithDialog<FlowTemplateManagerWindow>(_ => AssertSelection(), () => manager.EditTemplateFlowCommand.Execute(null));
+            AssertSelection();
+        });
+    }
+
+    [Fact]
+    public void FlowBrowserSharesSelectionOrderAndFilterAcrossModesWithoutReloadingRuntimeSelection()
+    {
+        WithWorkspace((manager, storage) =>
+        {
+            AddCanvas(manager.View);
+            string canvas = Convert.ToBase64String(manager.View.STNodeEditorMain.GetCanvasData());
+            foreach (string name in new[] { "White51_Test", "White255_Test", "Chessboard_ANSI_Test", "OpticCenter_Test", "Distortion_Test", "MTF_HV_1_Test" })
+                storage.Save(new FlowParam { Name = name, DataBase64 = canvas });
+            manager.CreateFlowTemplate().Load();
+            var combo = Assert.IsType<ComboBox>(manager.DisplayFlow.FindName("ComboBoxFlow"));
+            combo.SelectedIndex = 2;
+            object runtimeSelection = combo.SelectedItem;
+            var template = new BrowserTestFlow(storage);
+            var cache = new FlowTemplateCoverService(Path.Combine(Environments.DirAppData, "cover-test.db"));
+            var dialog = new FlowTemplateManagerWindow(template, 2, cache) { Left = -10000, Top = -10000, WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false };
+            try
+            {
+                dialog.Show();
+                dialog.UpdateLayout();
+                Assert.True(dialog.IsTileMode);
+                double width = dialog.Width;
+                var list = Assert.IsType<ListView>(dialog.FindName("TemplateList"));
+                var search = Assert.IsType<TextBox>(dialog.FindName("SearchBox"));
+                object[] order = list.Items.Cast<object>().ToArray();
+                object selection = list.SelectedItem;
+                var marked = Assert.IsType<TemplateModel<FlowParam>>(order[1]);
+                marked.IsSelected = true;
+                dialog.SetViewMode(true);
+                DrainBrowser();
+                Assert.True(dialog.IsTileMode);
+                Assert.Equal(order, list.Items.Cast<object>());
+                Assert.Same(selection, list.SelectedItem);
+                Assert.Same(runtimeSelection, combo.SelectedItem);
+                Assert.Equal(1, template.LoadCount);
+                Assert.True(marked.IsSelected);
+                Assert.Equal(order.Length, VisualChildren(list).OfType<FlowTemplateCover>().Count());
+                var deadline = DateTime.UtcNow.AddSeconds(15);
+                while (DateTime.UtcNow < deadline && VisualChildren(list).OfType<Image>().Count(image => image.Source != null) < order.Length)
+                {
+                    DrainBrowser();
+                    Thread.Sleep(10);
+                }
+                Assert.Equal(order.Length, VisualChildren(list).OfType<Image>().Count(image => image.Source != null));
+                CaptureBrowser(dialog, "flow-tiles.png");
+                var targetCard = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromIndex(3));
+                targetCard.Tag = "SwapTarget";
+                CaptureBrowser(dialog, "flow-drag-target.png");
+                targetCard.Tag = null;
+                dialog.Width = 640;
+                DrainBrowser();
+                CaptureBrowser(dialog, "flow-compact.png");
+                dialog.Width = width;
+                DrainBrowser();
+                search.Text = "OpticCenter";
+                dialog.UpdateLayout();
+                var container = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromIndex(0));
+                list.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
+                {
+                    RoutedEvent = Control.PreviewMouseDoubleClickEvent, Source = container
+                });
+                Assert.Equal(3, template.OpenedIndex);
+                dialog.SetViewMode(false);
+                DrainBrowser();
+                Assert.Equal(width, dialog.Width);
+                Assert.Single(list.Items);
+                Assert.Equal("OpticCenter", search.Text);
+                Assert.Equal(1, template.LoadCount);
+                Assert.Same(runtimeSelection, combo.SelectedItem);
+                search.Clear();
+                Assert.Equal(order, list.Items.Cast<object>());
+                CaptureBrowser(dialog, "flow-list.png");
+                var more = Assert.IsType<ContextMenu>(dialog.Resources["MoreMenu"]);
+                WithDialog<TemplateEditorWindow>(_ => Assert.Same(runtimeSelection, combo.SelectedItem),
+                    () => Assert.IsType<MenuItem>(more.Items[0]).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)));
+                Assert.Same(runtimeSelection, combo.SelectedItem);
+            }
+            finally { dialog.Close(); }
+        });
+    }
+
+    private sealed class BrowserTestFlow(LocalFlowTemplateStorage storage) : TemplateFlow(storage, () => false)
+    {
+        public int LoadCount { get; private set; }
+        public int OpenedIndex { get; private set; } = -1;
+        public override void Load() { LoadCount++; base.Load(); }
+        public override void PreviewMouseDoubleClick(int index) => OpenedIndex = index;
+        public override bool SwapTemplateOrder(int index1, int index2) => throw new InvalidOperationException("Browser dragging must not reorder server templates.");
+    }
+
+    [Fact]
+    public void FlowBrowserRestoresEachModesScrollPositionAndKeepsSourceOrder()
+    {
+        WithWorkspace((_, storage) =>
+        {
+            for (int i = 0; i < 60; i++) storage.Save(new FlowParam { Name = $"Flow_{i:00}" });
+            var template = new BrowserTestFlow(storage);
+            var dialog = new FlowTemplateManagerWindow(template, 0) { Left = -10000, Top = -10000, WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false };
+            try
+            {
+                dialog.Show();
+                dialog.SetViewMode(false);
+                DrainBrowser();
+                var list = Assert.IsType<ListView>(dialog.FindName("TemplateList"));
+                var scroll = Assert.IsType<ScrollViewer>(FlowTemplateManagerWindow.FindChild<ScrollViewer>(list));
+                scroll.ScrollToVerticalOffset(15);
+                DrainBrowser();
+                double listOffset = scroll.VerticalOffset;
+                Assert.True(listOffset > 0);
+                dialog.SetViewMode(true);
+                DrainBrowser();
+                scroll = Assert.IsType<ScrollViewer>(FlowTemplateManagerWindow.FindChild<ScrollViewer>(list));
+                scroll.ScrollToVerticalOffset(280);
+                DrainBrowser();
+                double tileOffset = scroll.VerticalOffset;
+                Assert.True(tileOffset > 0);
+                dialog.SetViewMode(false);
+                DrainBrowser();
+                Assert.Equal(listOffset, FlowTemplateManagerWindow.FindChild<ScrollViewer>(list)!.VerticalOffset);
+                dialog.SetViewMode(true);
+                DrainBrowser();
+                Assert.Equal(tileOffset, FlowTemplateManagerWindow.FindChild<ScrollViewer>(list)!.VerticalOffset);
+                Assert.Equal(template.TemplateParams, list.Items.Cast<TemplateModel<FlowParam>>());
+                Assert.Equal(1, template.LoadCount);
+            }
+            finally { dialog.Close(); }
+        });
+    }
+
+    [Fact]
+    public void BrowserDragSwapsOnlyTwoSlotsPreservesRuntimeAndPersistsAcrossWindows()
+    {
+        WithWorkspace((manager, storage) =>
+        {
+            foreach (string name in new[] { "Flow_A", "Flow_B", "Flow_C", "Flow_D" }) storage.Save(new FlowParam { Name = name });
+            manager.CreateFlowTemplate().Load();
+            var combo = Assert.IsType<ComboBox>(manager.DisplayFlow.FindName("ComboBoxFlow"));
+            combo.SelectedIndex = 1;
+            object selected = combo.SelectedItem;
+            var template = new BrowserTestFlow(storage);
+            var cache = new FlowTemplateCoverService(Path.Combine(Environments.DirAppData, "browser.db"));
+            var dialog = new FlowTemplateManagerWindow(template, 1, cache) { Left = -10000, Top = -10000, WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false };
+            var original = template.TemplateParams.ToArray();
+            int[] ids = original.Select(item => item.Id).ToArray();
+            try
+            {
+                dialog.Show();
+                WaitForBrowser(dialog.OrderLoadTask);
+                var list = Assert.IsType<ListView>(dialog.FindName("TemplateList"));
+                Task first = dialog.SwapItemsAsync(original[0], original[3]);
+                Assert.Equal(new[] { original[3], original[1], original[2], original[0] }, list.Items.Cast<TemplateModel<FlowParam>>());
+                Assert.Equal(original, template.TemplateParams);
+                Assert.Equal(ids, template.TemplateParams.Select(item => item.Id));
+                Assert.Same(selected, combo.SelectedItem);
+                WaitForBrowser(first);
+                Assert.Contains("已保存", Assert.IsType<TextBlock>(dialog.FindName("StatusText")).Text);
+                dialog.SetViewMode(false);
+                Assert.Equal(new[] { "Flow_D", "Flow_B", "Flow_C", "Flow_A" }, list.Items.Cast<TemplateModel<FlowParam>>().Select(item => item.Key));
+            }
+            finally { dialog.Close(); }
+            var reopened = new FlowTemplateManagerWindow(new BrowserTestFlow(storage), 1, cache) { Left = -10000, Top = -10000, WindowStartupLocation = WindowStartupLocation.Manual, ShowActivated = false };
+            try
+            {
+                reopened.Show();
+                WaitForBrowser(reopened.OrderLoadTask);
+                var list = Assert.IsType<ListView>(reopened.FindName("TemplateList"));
+                Assert.Equal(new[] { "Flow_D", "Flow_B", "Flow_C", "Flow_A" }, list.Items.Cast<TemplateModel<FlowParam>>().Select(item => item.Key));
+                Assert.Equal(new[] { "Flow_A", "Flow_B", "Flow_C", "Flow_D" }, storage.Load().Select(item => item.Name));
+                Assert.Same(selected, combo.SelectedItem);
+                var button = new Button { Style = (Style)Application.Current.FindResource("ButtonProperty") };
+                Assert.Equal("操作", System.Windows.Automation.AutomationProperties.GetName(button));
+            }
+            finally { reopened.Close(); }
+        });
+    }
+
+    private static void WaitForBrowser(Task task)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!task.IsCompleted && DateTime.UtcNow < deadline) { DrainBrowser(); Thread.Sleep(10); }
+        Assert.True(task.IsCompletedSuccessfully, task.Exception?.ToString());
+        DrainBrowser();
+    }
+
+    private static void DrainBrowser()
+    {
+        var frame = new DispatcherFrame();
+        Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => frame.Continue = false);
+        Dispatcher.PushFrame(frame);
+    }
+
+    private static void CaptureBrowser(FrameworkElement visual, string name)
+    {
+        string? directory = Environment.GetEnvironmentVariable("FLOW_BROWSER_PREVIEW_DIR");
+        if (string.IsNullOrEmpty(directory)) return;
+        visual.UpdateLayout();
+        Directory.CreateDirectory(directory);
+        var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)visual.ActualWidth, (int)visual.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+        using var stream = File.Create(Path.Combine(directory, name));
+        encoder.Save(stream);
+    }
+
+    private static IEnumerable<DependencyObject> VisualChildren(DependencyObject root)
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            yield return child;
+            foreach (var descendant in VisualChildren(child)) yield return descendant;
+        }
     }
 
     [Fact]
@@ -226,6 +471,8 @@ public sealed class OfflineConfigurationEntryTests
             var previousTemplates = TemplateFlow.Params;
             var previousRegistrations = TemplateControl.ITemplateNames.ToArray();
             var previousConfig = ConfigService.Instance;
+            var rcInstanceField = typeof(ColorVision.Engine.Services.RC.MqttRCService).GetField("_instance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+            object? previousRc = rcInstanceField.GetValue(null);
             ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
             string previousAppData = Environments.DirAppData;
             int previousIndex = FlowEngineConfig.Instance.TemplateFlowParamsIndex;
@@ -281,6 +528,13 @@ public sealed class OfflineConfigurationEntryTests
                 if (manager != null) ColorVision.UI.Views.DockViewManager.GetInstance().RemoveView(manager.View);
                 manager?.View.Dispose();
                 manager?.FlowEngineControl.Dispose();
+                // The isolated workspace may create the RC singleton; stop its keepalive
+                // before restoring the previous (possibly absent) configuration service.
+                if (previousRc == null && rcInstanceField.GetValue(null) is ColorVision.Engine.Services.RC.MqttRCService createdRc)
+                {
+                    createdRc.Dispose();
+                    rcInstanceField.SetValue(null, null);
+                }
                 owner.Close();
                 Application.Current.MainWindow = previousWindow;
                 TemplateFlow.Params = previousTemplates;

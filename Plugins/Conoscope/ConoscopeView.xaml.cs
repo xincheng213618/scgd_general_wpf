@@ -2667,7 +2667,7 @@ namespace Conoscope
         private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
         {
             int selectedIndex = cbFocusPoiTemplate.SelectedIndex > 0 ? cbFocusPoiTemplate.SelectedIndex - 1 : 0;
-            TemplateEditorWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
+            PoiTemplateManagerWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
             {
                 Owner = Window.GetWindow(this),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

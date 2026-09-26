@@ -168,8 +168,8 @@ namespace ColorVision.Engine.Media
                     {
                         int selectedId = (poiTemplateComboBox.SelectedValue as PoiParam)?.Id ?? -1;
                         var template = new TemplatePoi(storage);
-                        var manager = new TemplateEditorWindow(template) { Owner = Window.GetWindow(imageView) };
-                        if (selectedId != -1 && manager.FindName("ListView1") is ListView list) list.SelectedIndex = template.FindIndex(selectedId);
+                        var manager = new PoiTemplateManagerWindow(template) { Owner = Window.GetWindow(imageView) };
+                        if (selectedId != -1) manager.SelectTemplate(selectedId);
                         manager.Closed += (_, _) => LoadTemplates(++loadVersion);
                         manager.Show();
                     }

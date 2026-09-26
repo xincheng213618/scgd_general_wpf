@@ -226,18 +226,37 @@ public sealed class LocalPoiTemplateStorageTests
             Assert.Equal(66.875, reopened.PoiPoints[0].PixY);
             Assert.Equal(44.5, reopened.PoiPoints[0].PixWidth);
             Assert.Equal(2, reopened.PoiPoints.Count);
-            WpfTestHost.Invoke(() => { editor!.Close(); editor = new EditPoiParam(reopened); });
+            await CloseEditorAsync(editor!);
+            WpfTestHost.Invoke(() => editor = new EditPoiParam(reopened));
             await WpfTestHost.Invoke(() => editor!.PoiLoadTask);
             WpfTestHost.Invoke(() => Assert.Equal("已编辑", editor!.DrawingVisualLists.OfType<DVRectangleText>().Single().Attribute.Text));
         }
         finally
         {
+            if (editor != null) await CloseEditorAsync(editor);
             WpfTestHost.Invoke(() =>
             {
-                editor?.Close(); view?.Dispose();
+                view?.Dispose();
                 TemplatePoi.Params.Clear(); foreach (var item in previous) TemplatePoi.Params.Add(item);
                 ConfigService.SetInstance(previousConfig!);
             });
         }
+    }
+
+    private static async Task CloseEditorAsync(EditPoiParam editor)
+    {
+        // EditPoiParam delays WM_CLOSE until its image cleanup has finished. Do not
+        // restore the shared configuration while a previous editor is still closing.
+        Task closed = WpfTestHost.Invoke(() =>
+        {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            editor.Closed += (_, _) => completion.TrySetResult();
+            editor.Close();
+            return completion.Task;
+        });
+        await closed.WaitAsync(TimeSpan.FromSeconds(10));
+        // These editors are never shown, so their native close hook may not have
+        // been installed. Explicitly release the image-view timers in the fixture.
+        WpfTestHost.Invoke(() => Assert.IsType<ImageView>(editor.FindName("ImageView")).Dispose());
     }
 }

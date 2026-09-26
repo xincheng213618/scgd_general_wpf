@@ -31,8 +31,8 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 | --- | --- | --- |
 | 模板主菜单 | `Templates/Menus/MenuTemplate.cs` | `Header = Resources.MenuTemplate`，`Order = 2` |
 | 通用模板菜单基类 | `Templates/Menus/MenuItemTemplateBase.cs` | 默认 `OwnerGuid = nameof(MenuTemplate)`；`Execute` 调用 `ShowTemplateWindow` |
-| POI 菜单 | `Templates/POI/MenuItemPoiParam.cs` | `MenuItemPoiParam : MenuItemTemplateBase`，提供 `TemplatePoi` |
-| Flow 菜单 | `Templates/Flow/TemplateFlow.cs` 中 `MenuTemplateFlow` | 挂在 `MenuTemplate`，以 `ShowDialog` 打开 `TemplateEditorWindow(new TemplateFlow())` |
+| POI 菜单 | `Templates/POI/MenuItemPoiParam.cs` | `MenuItemPoiParam : MenuItemTemplateBase`，提供 `TemplatePoi`，由 `CreateManagerWindow` 打开 `PoiTemplateManagerWindow` |
+| Flow 菜单 | `Templates/Flow/TemplateFlow.cs` 中 `MenuTemplateFlow` | 挂在 `MenuTemplate`，以 `ShowDialog` 打开专用 `FlowTemplateManagerWindow(new TemplateFlow())`，提供列表/平铺切换 |
 | 算法配置中的模板编辑 | `Services/Devices/Algorithm/DisplayAlgorithmConfiguration.cs` | `DisplayAlgorithmTemplateSelection.EditCommand` |
 | 按名称找模板 | `Templates/TemplateSearchProvider.cs` | 重新定位当前模板及条目，打开编辑器或模板定义的专用入口 |
 
@@ -40,7 +40,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 
 ## 菜单契约
 
-`MenuItemTemplateBase.Template` 是由具体菜单提供的 `ITemplate`。`ShowTemplateWindow` 默认创建 `TemplateEditorWindow(Template)`，设置当前活动窗口为 Owner、居中并调用非模态 `Show()`。Flow 入口显式采用 `ShowDialog()`，不要把所有模板窗口统称为模态。
+`MenuItemTemplateBase.Template` 是由具体菜单提供的 `ITemplate`。`ShowTemplateWindow` 调用 `Template.CreateManagerWindow()`：主 POI 返回图标浏览窗口，普通模板默认返回 `TemplateEditorWindow`，设置当前活动窗口为 Owner、居中并调用非模态 `Show()`。Flow 菜单的专用窗口显式采用 `ShowDialog()`，不要把所有模板窗口统称为模态。流程封面缓存、已迁移入口及旧窗口保留规则见[流程模板](../../engine-components/template-flow-chain.md)。
 
 菜单发现与层级组装由 `UI/ColorVision.UI/Menus/MenuManager.cs` 处理；按[菜单契约](../../ui-components/menus.md)检查类型缓存、目标窗口、父子树与显示过滤。接口或模板类存在本身不保证菜单可见。
 
@@ -48,7 +48,7 @@ related: ["algorithms.index","algorithms.template-management","ui.discovery","ui
 
 `DisplayAlgorithmManager` 查找带 `DisplayAlgorithmAttribute` 的 `IDisplayAlgorithm` 实现；`DisplayAlgorithmControl` 根据算法 `Configuration` 生成界面，执行按钮调用 `Execute()`；请求后的结果处理见[结果链](../../engine-components/result-handoff-chain.md)。
 
-`DisplayAlgorithmTemplateSelection` 保存模板与条目来源，提供 `SelectedIndex`、`SelectedValue`、`SelectedName`、`IsSelectionValid`、`TryGetValue<T>`。它的 `EditCommand` 用 `SelectedIndex + editorIndexOffset` 打开 `TemplateEditorWindow`；空项或特殊条目来源需检查索引偏移，不能照搬另一个算法的选中索引。
+`DisplayAlgorithmTemplateSelection` 保存模板与条目来源，提供 `SelectedIndex`、`SelectedValue`、`SelectedName`、`IsSelectionValid`、`TryGetValue<T>`。它的 `EditCommand` 将 `SelectedIndex + editorIndexOffset` 传给 `Template.CreateManagerWindow`；主 POI 和流程进入专用浏览窗口，其他模板仍使用 `TemplateEditorWindow`；空项或特殊条目来源需检查索引偏移，不能照搬另一个算法的选中索引。
 
 新增手动算法的模板编辑能力时优先复用这个选择对象和配置宿主；只有确有独立菜单需求时才新增具体菜单类。参数属性编辑契约见 [PropertyGrid](../../ui-components/property-grid.md)。
 

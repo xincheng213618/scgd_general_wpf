@@ -180,11 +180,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void OpenTemplateEditor()
         {
-            new TemplateEditorWindow(Template, SelectedIndex + _editorIndexOffset)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.Show();
+            var window = Template.CreateManagerWindow(SelectedIndex + _editorIndexOffset);
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
         }
     }
 }

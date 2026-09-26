@@ -1477,15 +1477,22 @@
         "TemplatePoi",
         "PoiParam",
         "FlowPackagePoiCodec",
-        "ViewHandleRealPOI"
+        "ViewHandleRealPOI",
+        "POI图标平铺",
+        "PoiTemplateManagerWindow"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs",
+        "Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs",
+        "Engine/ColorVision.Engine/Templates/Browser",
+        "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiParam.cs",
         "Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs",
         "Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/PoiTemplateBrowserTests.cs",
+        "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs",
         "Test/ColorVision.UI.Tests/PoiPointModelTests.cs"
       ],
@@ -6287,7 +6294,10 @@
         "逻辑与索引警告",
         "本地流程",
         "离线流程模板",
-        "LocalFlowTemplateStorage"
+        "LocalFlowTemplateStorage",
+        "流程封面",
+        "流程平铺",
+        "FlowTemplateManagerWindow"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/TemplateControl.cs",
@@ -6296,6 +6306,10 @@
         "Engine/ColorVision.Engine/Templates/Flow/FlowParam.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateSaveCondition.cs",
         "Engine/ColorVision.Engine/Templates/Flow/FlowPackageHelper.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateManagerWindow.cs",
+        "Engine/ColorVision.Engine/Templates/Browser",
+        "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCover.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/FlowTemplateCoverService.cs",
         "Engine/ColorVision.Engine/Templates/Flow/Versioning",
         "Engine/ColorVision.Engine/FlowProcessing/Compilation/FlowCanvasCatalogBuilder.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Compilation/StnV1NeutralCodec.cs"
@@ -6306,7 +6320,10 @@
         "Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs",
         "Test/ColorVision.UI.Tests/FlowTemplateIdentityTests.cs",
         "Test/ColorVision.UI.Tests/FlowCanvasCatalogBuilderTests.cs",
-        "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs"
+        "Test/ColorVision.UI.Tests/FlowCatalogServiceTests.cs",
+        "Test/ColorVision.UI.Tests/FlowTemplateCoverTests.cs",
+        "Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs",
+        "Test/ColorVision.UI.Tests/OfflineConfigurationEntryTests.cs"
       ],
       "related": [
         "flow.architecture",

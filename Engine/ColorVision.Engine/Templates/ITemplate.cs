@@ -171,6 +171,8 @@ namespace ColorVision.Engine.Templates
 
         }
 
+        public virtual Window CreateManagerWindow(int selectedIndex = 0) => new TemplateEditorWindow(this, selectedIndex);
+
         public virtual string InitialDirectory { get; set; } 
 
         public virtual void Load() { }
