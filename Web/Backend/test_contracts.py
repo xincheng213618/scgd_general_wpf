@@ -385,7 +385,7 @@ class PublicApiContracts(ContractTestBase):
         self.assertIn("items", legacy_releases["archive_visible_groups"][0])
         self.assertEqual(
             set(compact_home),
-            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs"},
+            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs", "download_assistant"},
         )
         self.assertIn("archive_page_item_count", compact_releases)
         self.assertIn("android_page_item_count", compact_releases)

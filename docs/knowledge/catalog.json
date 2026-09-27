@@ -3396,7 +3396,8 @@
         "Web/Backend/test_app.py",
         "Web/Backend/test_artifact_index.py",
         "Web/Backend/test_page_contexts.py",
-        "Web/Backend/test_app_releases.py"
+        "Web/Backend/test_app_releases.py",
+        "Web/Backend/test_setup_download.py"
       ],
       "related": [
         "delivery.backend",
