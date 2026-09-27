@@ -15,7 +15,7 @@ next: false
 只读与当前问题相关的主题，再核对源码和测试。`规划`、`历史`不代表当前能力。
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`
-  按源码输出、完整安装器、主程序更新包及插件项目包定位交付责任；安装、更新与启动恢复各有完成边界，旧ColorVisionSetup不是当前入口。
+  区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。
 
 - [安装、构建与运行入口](../../00-getting-started/README.md) — `delivery.start`
   克隆代码后的源码问答、本地构建、安装和运行分流；只问Codex不需要先启动程序。

@@ -17,7 +17,7 @@ next: false
 ## Scripts/ 根目录与跨模块关联 {#module-53637269707473}
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`
-  按源码输出、完整安装器、主程序更新包及插件项目包定位交付责任；安装、更新与启动恢复各有完成边界，旧ColorVisionSetup不是当前入口。
+  区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。
 
 - [客户项目与对接示例入口](../../04-api-reference/projects/README.md) — `projects.index`
   按客户业务代码、独立对接示例、旧项目归档与构建发布边界定位 Projects 的权威主题。

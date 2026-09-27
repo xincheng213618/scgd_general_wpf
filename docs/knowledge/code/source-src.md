@@ -34,4 +34,4 @@ next: false
 ## src/ColorVisionSetup {#module-7372632f436f6c6f72566973696f6e5365747570}
 
 - [桌面交付制品与责任路由](../../02-developer-guide/deployment/overview.md) — `delivery.deployment`
-  按源码输出、完整安装器、主程序更新包及插件项目包定位交付责任；安装、更新与启动恢复各有完成边界，旧ColorVisionSetup不是当前入口。
+  区分完整安装器、主程序更新、插件项目包和独立在线下载工具；ColorVisionSetup以Framework 4.8单文件查询并下载最新版，实际安装仍由完整安装包负责。
