@@ -140,6 +140,11 @@ namespace ColorVision.Copilot
             };
             AddStringProperty(_document, nameof(CopilotChatState.ActiveConversationId), state.ActiveConversationId);
             AddStringProperty(_document, nameof(CopilotChatState.ActiveProfileId), state.ActiveProfileId);
+            if (state.DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                _document[nameof(CopilotChatState.DefaultAccessMode)] =
+                    (int)CopilotAgentAccessMode.UnrestrictedFullAccess;
+            }
             if (!state.IsAgentTaskPanelExpanded)
                 _document[nameof(CopilotChatState.IsAgentTaskPanelExpanded)] = false;
             if (!state.ShowMessageTimestamps)

@@ -2148,6 +2148,45 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         Assert.Empty(state.QueuedFollowUpRecoveries);
     }
 
+    [Fact]
+    public void PersistentFullAccessRestoresAndCanBeChangedFromComposer()
+    {
+        StaTest.Run(() =>
+        {
+            var profile = CreateProfile("profile-a", "Profile A", "model-a");
+            var config = CreateConfig(profile, "persistent-full-access-test-token");
+            var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = profile.Id,
+                DefaultAccessMode = CopilotAgentAccessMode.UnrestrictedFullAccess,
+                Conversations = [conversation],
+            };
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            using var viewModel = new CopilotChatViewModel(
+                new CopilotChatService(),
+                new InMemoryStateStore(state),
+                config,
+                new GatedFailingTurnRuntime(),
+                new CopilotAgentTaskHost());
+
+            Assert.True(viewModel.IsComposerFullAccess);
+            Assert.Equal(CopilotAgentAccessMode.UnrestrictedFullAccess, conversation.AccessMode);
+            Assert.True(string.IsNullOrWhiteSpace(conversation.FullAccessWorkspacePath));
+
+            viewModel.SetComposerAccessModeCommand.Execute(CopilotAgentAccessMode.ConfirmProtectedActions);
+            Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, state.DefaultAccessMode);
+            Assert.True(viewModel.IsComposerConfirmAccess);
+            Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+
+            viewModel.SetComposerAccessModeCommand.Execute(CopilotAgentAccessMode.UnrestrictedFullAccess);
+            Assert.Equal(CopilotAgentAccessMode.UnrestrictedFullAccess, state.DefaultAccessMode);
+            Assert.True(viewModel.IsComposerFullAccess);
+            Assert.Equal(CopilotAgentAccessMode.UnrestrictedFullAccess, conversation.AccessMode);
+        });
+    }
+
     private static CopilotConfig CreateConfig(CopilotProfileConfig profile, string bearerToken) => new()
     {
         SchemaVersion = CopilotConfig.CurrentSchemaVersion,

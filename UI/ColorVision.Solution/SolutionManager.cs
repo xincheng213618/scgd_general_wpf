@@ -139,8 +139,6 @@ namespace ColorVision.Solution
             ? $"正在打开：{Path.GetFileName(OpeningWorkspacePath)}"
             : "就绪";
 
-        public RelayCommand SettingCommand { get; set; } 
-
         public SolutionManager() : this(restoreLastWorkspace: true, tryCloseWorkspaceDocuments: null)
         {
         }
@@ -163,10 +161,6 @@ namespace ColorVision.Solution
                     .Task
                     .Unwrap();
             }
-
-            SettingCommand = restoreLastWorkspace
-                ? SolutionSetting.Instance.EditCommand
-                : new RelayCommand(_ => { });
 
             if (restoreLastWorkspace)
                 WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);

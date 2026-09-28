@@ -74,6 +74,11 @@ public sealed class CopilotSettingsPresentationTests
             instanceField.SetValue(null, RuntimeHelpers.GetUninitializedObject(typeof(SolutionManager)));
             using var fixture = new CopilotSettingsQuickAddTests.Fixture();
             var profile = fixture.Config.Profiles[0];
+            profile.VendorType = CopilotVendorType.OpenAI;
+            profile.ProviderType = CopilotProviderType.LocalCodex;
+            profile.BaseUrl = string.Empty;
+            profile.Model = "gpt-5.6-sol";
+            profile.ReasoningMode = CopilotReasoningMode.XHigh;
             var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.Name);
             conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "已整理当前检查结果，可以继续提问。"));
             var state = new CopilotChatState { ActiveProfileId = profile.Id, ActiveConversationId = conversation.Id, Conversations = [conversation] };
@@ -93,6 +98,14 @@ public sealed class CopilotSettingsPresentationTests
                 var actionBounds = actions.TransformToAncestor(footer).TransformBounds(new Rect(actions.RenderSize));
                 Assert.False(selectorBounds.IntersectsWith(actionBounds));
                 Assert.True(actionBounds.Right <= footer.ActualWidth + 1);
+                var modelLabel = (TextBlock)panel.FindName("SelectedModelLabelTextBlock");
+                var reasoningLabel = (TextBlock)panel.FindName("SelectedReasoningLabelTextBlock");
+                var primaryAction = (Button)panel.FindName("PrimaryActionButton");
+                Assert.Equal("GPT-5.6 Sol", modelLabel.Text);
+                Assert.Equal(FontWeights.Normal, modelLabel.FontWeight);
+                Assert.Equal("极高", reasoningLabel.Text);
+                Assert.Equal(28, primaryAction.ActualWidth);
+                Assert.Equal(28, primaryAction.ActualHeight);
                 var accessLabel = (TextBlock)panel.FindName("AccessModeLabelTextBlock");
                 Assert.Equal(Visibility.Visible, accessLabel.Visibility);
                 var labelMeasure = new TextBlock { Text = accessLabel.Text, FontFamily = accessLabel.FontFamily, FontSize = accessLabel.FontSize, FontWeight = accessLabel.FontWeight };

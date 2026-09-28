@@ -227,8 +227,8 @@
             </Setter>
         </Style>
         <Style x:Key="ComposerPrimaryActionButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="34" />
-            <Setter Property="Height" Value="34" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
@@ -2545,12 +2545,12 @@
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
                                               ToolTip="最长 15 分钟并绑定任务与工作区。结构化补丁走确定性范围规则；其他受保护调用仅在提供完整原生审批详情时由独立模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险自动批准，无法判断或较高风险仍等待用户。" />
-                                    <MenuItem Header="完全访问（当前会话）"
+                                    <MenuItem Header="完全访问"
                                               IsCheckable="True"
                                               IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.UnrestrictedFullAccess}"
-                                              ToolTip="受保护工具直接执行，无需逐次确认或模型复核。手动关闭、工作区变化或重启后撤销；已有待审批操作仍需单独决定。" />
+                                              ToolTip="受保护工具直接执行，无需逐次确认或模型复核。该选择会保留，直到手动切换回按需确认；已有待审批操作仍需单独决定。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">
@@ -2681,12 +2681,12 @@
                                     </Grid.ColumnDefinitions>
                                     <Grid Grid.Column="0" VerticalAlignment="Center">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                        <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
-                                            <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{Binding SelectedProfile.Model}" /><Style.Triggers>
-                                                <DataTrigger Binding="{Binding SelectedProfile.Model}" Value=""><Setter Property="Text" Value="本机 Codex" /></DataTrigger>
-                                            </Style.Triggers></Style></TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center" FontSize="11" Opacity="0.62" Text="{Binding SelectedProfileReasoningLabel}" />
+                                        <TextBlock x:Name="SelectedModelLabelTextBlock"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="12"
+                                                   Text="{Binding SelectedProfile.ModelDisplayLabel}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="SelectedReasoningLabelTextBlock" Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center" FontSize="11" Opacity="0.62" Text="{Binding SelectedProfileReasoningLabel}" />
                                     </Grid>
                                     <TextBlock Grid.Column="1"
                                                Margin="7,0,0,0"
@@ -2724,8 +2724,7 @@
                                                             </Grid.ColumnDefinitions>
                                                             <StackPanel VerticalAlignment="Center">
                                                                 <TextBlock FontSize="11"
-                                                                           FontWeight="SemiBold"
-                                                                           Text="{Binding DisplayLabel}"
+                                                                           Text="{Binding ModelDisplayLabel}"
                                                                            TextTrimming="CharacterEllipsis" />
                                                                 <TextBlock Margin="0,2,0,0"
                                                                            FontSize="9"
@@ -2826,11 +2825,12 @@
                                            Text="&#xE720;" />
                             </Button>
 
-                            <Button Margin="2,0,0,0"
+                            <Button x:Name="PrimaryActionButton"
+                                    Margin="2,0,0,0"
                                     Command="{Binding PrimaryActionCommand}"
                                     Style="{StaticResource ComposerPrimaryActionButtonStyle}"
                                     Content="{Binding PrimaryActionGlyph}"
-                                    FontSize="15"
+                                    FontSize="14"
                                     ToolTip="{Binding PrimaryActionToolTip}" />
                         </StackPanel>
                     </Grid>

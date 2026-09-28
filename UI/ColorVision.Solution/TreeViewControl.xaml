@@ -50,15 +50,6 @@
                     CommandTarget="{Binding ElementName=SolutionTreeView}" ToolTip="属性" AutomationProperties.Name="属性">
                 <Rectangle Width="16" Height="16" Fill="{DynamicResource DIProperty}"/>
             </Button>
-            <Button x:Name="ExplorerMoreButton" Style="{StaticResource ExplorerToolbarButton}" Click="ExplorerMoreButton_Click"
-                    ToolTip="更多选项" AutomationProperties.Name="更多选项">
-                <TextBlock Style="{StaticResource ExplorerToolbarIcon}" Text="&#xE712;"/>
-                <Button.ContextMenu>
-                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                        <MenuItem Header="解决方案设置" Command="{Binding SettingCommand}"/>
-                    </ContextMenu>
-                </Button.ContextMenu>
-            </Button>
         </WrapPanel>
         <hc:SearchBar x:Name="SearchBar1" Grid.Row="1" Margin="5,2,5,4" Height="27" Padding="5,2"
                       FontSize="12" hc:BorderElement.CornerRadius="2" TextChanged="SearchBar1_TextChanged"

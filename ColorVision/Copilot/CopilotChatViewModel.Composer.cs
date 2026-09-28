@@ -13,7 +13,16 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotReasoningOption> SelectedProfileReasoningOptions => CopilotReasoningCapabilities.GetOptions(SelectedProfile);
 
-        public string SelectedProfileReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(SelectedProfile));
+        public string SelectedProfileReasoningLabel
+        {
+            get
+            {
+                var mode = CopilotReasoningCapabilities.GetEffectiveMode(SelectedProfile);
+                return mode == CopilotReasoningMode.Default
+                    ? string.Empty
+                    : CopilotReasoningCapabilities.GetLabel(mode);
+            }
+        }
 
         public string SelectedProfileReasoningToolTip => CopilotReasoningCapabilities.GetToolTip(SelectedProfile);
 

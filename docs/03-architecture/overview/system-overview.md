@@ -29,7 +29,7 @@ ColorVision 是由桌面宿主、共享类库、Engine、插件和客户项目�
 | Engine 业务宿主与算法实现 | Engine 负责设备、模板、消息及相应业务适配，但不是所有本地算法的内核；历史结果 handler 与中立算法结果不能混成一套注册机制 | [Engine 入口](../../04-api-reference/engine-components/README.md)、[结果交接](../../04-api-reference/engine-components/result-handoff-chain.md) |
 | Flow 执行与业务最终化 | 画布、模板持久化、节点图内核、共享业务会话与隔离执行各有 owner；不能把共享会话的前后处理和 RC 前提套给所有 Flow 路径 | [Flow 架构](../components/engine/flow-engine.md) |
 | 通用扩展与客户规则 | 可装载插件与客户项目包通过宿主已有扩展入口接入；独立对接示例按自身入口运行。客户判定、Recipe/Fix、协议字段和导出映射属于具体项目，不应下沉为通用 UI 或 Engine 规则 | [扩展职责](../../02-developer-guide/core-concepts/extensibility.md)、[客户项目](../../04-api-reference/projects/README.md) |
-| 源码输出与正式交付 | 项目构建、当前客户端更新、外部安装工程和包发布是不同链；历史 `src/ColorVisionSetup/` 仍存在不表示它参与当前发布 | [平台与制品](../../02-developer-guide/README.md)、[交付责任](../../02-developer-guide/deployment/overview.md) |
+| 源码输出与正式交付 | 项目构建、客户端更新、外部安装工程和包发布是不同链；`src/ColorVisionSetup/` 独立在线工具只下载最新版完整包并打开安装器，未接入主程序发布链 | [平台与制品](../../02-developer-guide/README.md)、[交付责任](../../02-developer-guide/deployment/overview.md) |
 
 ## 两个可核对的反例
 

@@ -201,8 +201,20 @@ namespace ColorVision.Copilot
             set => SelectConversation(value, persist: true);
         }
 
-        public CopilotAgentAccessMode ComposerAccessMode =>
-            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+        public CopilotAgentAccessMode ComposerAccessMode
+        {
+            get
+            {
+                var conversationMode = SelectedConversation?.AccessMode
+                    ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+                if (conversationMode == CopilotAgentAccessMode.FullAccess)
+                    return conversationMode;
+
+                return _state.DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                    ? CopilotAgentAccessMode.UnrestrictedFullAccess
+                    : conversationMode;
+            }
+        }
 
         public bool IsComposerFullAccess => ComposerAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess;
 
@@ -219,7 +231,7 @@ namespace ColorVision.Copilot
                 : "自动复核 · 本任务";
 
         public string ComposerAccessModeToolTip => IsComposerFullAccess
-            ? "完全访问：当前会话的受保护工具直接执行，无需逐次确认或模型复核。仅当前工作区有效，手动关闭、工作区变化或重启后撤销。"
+            ? "完全访问：受保护工具直接执行，无需逐次确认或模型复核。该选择会保留，直到手动切换回按需确认。"
             : IsComposerTemporaryAutoReview
             ? BuildFullAccessToolTip()
             : "受保护操作执行前逐次确认。可为下一任务临时授权；已有待审批操作始终需要单独决定。";

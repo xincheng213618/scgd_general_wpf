@@ -295,7 +295,7 @@ public sealed class SolutionExplorerPresentationTests
             RadioButton solutionMode = Assert.IsType<RadioButton>(Control.FindName("SolutionViewButton"));
             RadioButton fileMode = Assert.IsType<RadioButton>(Control.FindName("FileSystemViewButton"));
             WrapPanel toolbar = Assert.IsType<WrapPanel>(VisualTreeHelper.GetParent(solutionMode));
-            Assert.Equal(7, toolbar.Children.OfType<ButtonBase>().Count());
+            Assert.Equal(6, toolbar.Children.OfType<ButtonBase>().Count());
             double top = solutionMode.TransformToAncestor(Control).Transform(new Point()).Y;
             foreach (ButtonBase button in toolbar.Children.OfType<ButtonBase>())
             {

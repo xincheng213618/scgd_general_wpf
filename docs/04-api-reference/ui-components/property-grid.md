@@ -69,6 +69,10 @@ public interface IPropertyEditor
 
 属性级选择使用 `[PropertyEditorType(typeof(MyEditor))]`；`MyEditor` 在此只是占位类型名，实际实现应从现有编辑器复制必要模式。可参考 `Editor/TextSelectFilePropertiesEditor.cs`：每次调用创建新面板，使用 `CreateLabel`、`CreateTwoWayBinding(obj, property)` 和共享小控件样式。
 
+集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原字符串集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口。普通列表不显示索引列，字典仍按 Key/Value 编辑。
+
+路径语义由属性所属业务声明，不根据字符串内容或属性名猜测：文件融合与四图合成的输入文件集合使用文件项编辑器；图片投影列表项、光谱插件校准组的文件字段以及 POI 的 CAD/二次修正文件使用文件属性编辑器；文件服务根目录、自动快照目录使用目录属性编辑器。Everything 可执行文件也是文件。输出文件名、扩展名、URL、普通标定分组名称保持文本；解决方案项目引用同时接受文件、目录和相对路径，保留其原有项目管理入口与文本语义，不能直接替换成仅选择本机文件或目录的控件。
+
 Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 Flow 基类的 `FlowDeviceNameEditor` 由 Engine 注册到设备选择器；`FlowEditorCanvas` 会自动注册，其他宿主直接使用这个设备代理时需先调用 `FlowNodePropertyEditorRegistration.EnsureRegistered()`。未注册设备代理会退回普通文本框。
 
 类型级注册通过 `PropertyEditorHelper.RegisterEditor<TEditor>(typeof(TargetType))` 或匹配谓词完成。注册不是给每个对象存一份编辑器实例；通用注册表按编辑器类型缓存实例，编辑器必须可构造并实现 `IPropertyEditor`。
@@ -97,6 +101,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 - `PropertyEditorRegistry.GetOrCreate` 复用编辑器实例。不要把某个窗口、属性对象或生成的 `DockPanel` 保存到编辑器实例字段；本次调用的状态应放在新建控件、局部变量或适当释放的订阅中。
 - `CreateTwoWayBinding(obj, property)` 默认逐属性变化回写，启用异常与数据错误验证；属性标注可以指定 `UpdateSourceTrigger`。只读属性或 `[ReadOnly(true)]` 使用单向绑定，生成控件也按只读元数据禁用。
 - 标题、类别、描述优先用 `DisplayName`、`Category`、`Description` 和现有资源解析；显示条件用 `PropertyVisibility`，永久隐藏用 `Browsable(false)`。
+- 用于打开当前对象属性窗口的 `EditCommand` 应标记 `Browsable(false)`，避免在窗口内部再次生成“执行”按钮；`JsonIgnore` 只控制序列化，不控制界面可见性。不要全局按名称或 `ICommand` 类型屏蔽命令，设备上标有 `CommandDisplay` 的“修改配置”和配置内的“清除缓存”等业务操作仍应保留。
 - 布尔、枚举、数值、日期、集合、字典、Brush/Color 等内置映射以 `PropertyEditorBuiltIns.cs` 为准。先检查能否复用，不把“新业务字段”自动等同于“需要新编辑器”。
 
 枚举下拉框的显示文本由共享 `EnumPropertiesEditor` 生成。首先以枚举成员名查询当前对象的资源管理器；资源命中时保留该译文，即使译文与成员名相同。对象资源缺失或读取失败时，继续查询枚举类型所在程序集的资源；两者均未命中时，复用 `EnumExtensions.ToDescription()`：优先取枚举字段的 `DisplayAttribute`（支持 `ResourceType` 指向的显示资源），其次取 `Description`，最后回退成员名；得到的文本依次经过对象和枚举所属资源解析。这样节点跨程序集移动时，枚举仍能使用原所属模块的译文；对象已有的译文优先，包括译文与键相同的情况。例如 CVCIE 的 `Source` 可用 `Description("原图（CVRAW）")` 显示中文，无需专用编辑器。
@@ -146,7 +151,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 | `PropertyEditorContractTests.cs` | 更新触发与验证、失败降级、只读、精确类型优先、实例复用、标准类型和兼容入口 |
 | `EnumPropertiesEditorTests.cs` | CVCIE 中文枚举标签与实际值写回、已有资源优先级、显示元数据回退和可空枚举选择；不修改配置序列化值 |
 | `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
-| `ListEditorTests.cs` | 集合转换器的既有回归样例，不代表所有集合形态 |
+| `ListEditorTests.cs` | 集合转换、目录项元数据、字符串行内编辑与取消隔离、添加排序提交；不代表所有集合形态或系统文件选择器验收 |
 | `AlgorithmNodeTemplateMappingTests.cs` | ARVR POI 使用原生属性编辑行 |
 | `CameraNodeTemplateMappingTests.cs` | 相机和校准的模板类型映射 |
 

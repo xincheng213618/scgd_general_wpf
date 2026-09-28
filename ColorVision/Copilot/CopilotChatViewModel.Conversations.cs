@@ -432,6 +432,7 @@ namespace ColorVision.Copilot
             _composerSession.Load(selectedConversation);
             SynchronizeSelectedConversationComposerDraft();
             _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
+            EnsurePersistentFullAccess(selectedConversation);
             NotifyComposerTextChanged(synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));

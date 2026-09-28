@@ -38,6 +38,7 @@ namespace ColorVision.Update
         }
         private bool _createAutomaticSnapshotAfterHealthyStartup = true;
 
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string AutomaticSnapshotDirectory
         {
             get => _automaticSnapshotDirectory;

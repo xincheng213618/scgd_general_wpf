@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.Solution
 {
@@ -12,15 +10,8 @@ namespace ColorVision.Solution
     {
         public static SolutionSetting Instance => ConfigService.Instance.GetRequiredService<SolutionSetting>();
 
-        [JsonIgnore]
-        public RelayCommand EditCommand { get; set; }
-
-        public SolutionSetting()
-        {
-            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-        }
-
-
+        // Keep the persisted key and value compatible with existing user configurations.
+        // New workspaces can be named directly in the creation dialog.
         public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; OnPropertyChanged(); } }
         private string _DefaultCreatName = ColorVision.Solution.Properties.Resources.NewSolution;
 

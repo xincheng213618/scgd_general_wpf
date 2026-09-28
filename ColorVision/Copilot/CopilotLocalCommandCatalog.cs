@@ -171,7 +171,7 @@ namespace ColorVision.Copilot
                 new("status", "显示当前文件范围、能力与审批策略"),
                 new("ask", "恢复受保护操作逐次确认"),
                 new("auto", "为下一任务或当前任务临时启用自动复核"),
-                new("full", "为当前会话启用完全访问"),
+                new("full", "启用并保留完全访问，直到手动切回按需确认"),
             ]),
             new("/add-dir", "管理当前会话后续 Agent 请求可读取的附加目录", CopilotLocalCommandKind.AdditionalDirectories, AcceptsArguments: true, Usage: CopilotAdditionalDirectoryCommand.Usage, Arguments:
             [

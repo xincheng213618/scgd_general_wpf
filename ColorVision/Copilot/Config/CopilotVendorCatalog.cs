@@ -144,6 +144,27 @@ namespace ColorVision.Copilot
 
         public static IReadOnlyList<string> GetModelPresets(CopilotVendorType vendorType) => GetPreset(vendorType).ModelPresets;
 
+        public static string FormatModelDisplayName(string? model)
+        {
+            var normalized = (model ?? string.Empty).Trim();
+            if (normalized.Length == 0)
+                return string.Empty;
+
+            if (!normalized.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase))
+                return normalized;
+
+            var parts = normalized[4..].Split('-', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return normalized;
+
+            var displayName = "GPT-" + parts[0];
+            if (parts.Length == 1)
+                return displayName;
+
+            return displayName + " " + string.Join(" ", parts.Skip(1).Select(part =>
+                part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..].ToLowerInvariant()));
+        }
+
         public static string GetDefaultBaseUrl(CopilotVendorType vendorType, CopilotProviderType providerType)
         {
             var preset = GetPreset(vendorType);

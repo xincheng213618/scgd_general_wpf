@@ -41,9 +41,9 @@ namespace ColorVision.Copilot
         {
             var selected = GetEffectiveMode(profile);
             CopilotReasoningMode[] modes;
-            if (profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            if (profile != null && SupportsOpenAiReasoningModes(profile))
             {
-                modes = CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+                modes = IsGpt6Astra(profile)
                     ? new[]
                     {
                         CopilotReasoningMode.Default,
@@ -103,12 +103,12 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(profile);
             var normalized = Normalize(profile.VendorType, mode);
-            if (!CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile))
+            if (!SupportsOpenAiReasoningModes(profile))
                 return profile.VendorType == CopilotVendorType.OpenAI
                     ? CopilotReasoningMode.Default
                     : normalized;
 
-            if (CopilotOpenAiRequestPolicy.IsGpt6Astra(profile))
+            if (IsGpt6Astra(profile))
             {
                 return normalized switch
                 {
@@ -185,7 +185,22 @@ namespace ColorVision.Copilot
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)
         {
             return profile?.VendorType is CopilotVendorType.DeepSeek or CopilotVendorType.Xiaomi
-                || profile != null && CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile);
+                || profile != null && SupportsOpenAiReasoningModes(profile);
+        }
+
+        private static bool SupportsOpenAiReasoningModes(CopilotProfileConfig profile)
+        {
+            return CopilotOpenAiRequestPolicy.IsOfficialOpenAiReasoningModel(profile)
+                || profile.ProviderType == CopilotProviderType.LocalCodex
+                && profile.VendorType == CopilotVendorType.OpenAI
+                && CopilotOpenAiRequestPolicy.IsOpenAiReasoningModelName(profile.Model);
+        }
+
+        private static bool IsGpt6Astra(CopilotProfileConfig profile)
+        {
+            return CopilotOpenAiRequestPolicy.IsGpt6Astra(profile)
+                || profile.ProviderType == CopilotProviderType.LocalCodex
+                && CopilotOpenAiRequestPolicy.IsGpt6AstraModelName(profile.Model);
         }
 
         public static CopilotReasoningOption? FindCommandOption(

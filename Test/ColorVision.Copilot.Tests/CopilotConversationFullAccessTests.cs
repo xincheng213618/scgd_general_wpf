@@ -82,6 +82,20 @@ public sealed class CopilotConversationFullAccessTests
     }
 
     [Fact]
+    public void PersistentFullAccessWithoutWorkspaceCanBindAcrossWorkspaceChanges()
+    {
+        var access = new CopilotAgentAccessContext();
+        access.PrepareUnrestrictedFullAccess("conversation", string.Empty, null);
+
+        Assert.True(access.BindToTask("conversation", "first", Workspace));
+        Assert.True(access.AllowsUnattendedProtectedActionsFor("conversation", "first", Workspace));
+        Assert.True(access.EndTask("first"));
+        Assert.False(access.RevokeIfWorkspaceChanged(Path.Combine(Workspace, "other")));
+        Assert.True(access.BindToTask("conversation", "second", Path.Combine(Workspace, "other")));
+        Assert.True(access.AllowsUnattendedProtectedActionsFor("conversation", "second", Path.Combine(Workspace, "other")));
+    }
+
+    [Fact]
     public void TemporaryReviewStillExpiresAtTaskCompletion()
     {
         var access = new CopilotAgentAccessContext();

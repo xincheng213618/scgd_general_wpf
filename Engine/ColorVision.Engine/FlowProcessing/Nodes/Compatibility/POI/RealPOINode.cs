@@ -91,6 +91,7 @@ public class RealPOINode : CVBaseServerNodeHub
 	}
 
 	[STNodeProperty("二次修正文件", "二次修正文件", true)]
+	[System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string ReviseFileName
 	{
 		get

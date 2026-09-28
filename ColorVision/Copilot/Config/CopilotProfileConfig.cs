@@ -50,6 +50,7 @@ namespace ColorVision.Copilot
                 if (SetProperty(ref _name, NormalizeText(value)))
                 {
                     OnPropertyChanged(nameof(DisplayLabel));
+                    OnPropertyChanged(nameof(ModelDisplayLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
                 }
             }
@@ -149,6 +150,7 @@ namespace ColorVision.Copilot
                 {
                     SupportsImageInput = false;
                     OnPropertyChanged(nameof(DisplayLabel));
+                    OnPropertyChanged(nameof(ModelDisplayLabel));
                     OnPropertyChanged(nameof(IsConfigured));
                     OnPropertyChanged(nameof(SecondaryLabel));
                     OnConfigurationStateChanged();
@@ -333,6 +335,16 @@ namespace ColorVision.Copilot
                     return Model;
 
                 return "Unnamed model";
+            }
+        }
+
+        [JsonIgnore]
+        public string ModelDisplayLabel
+        {
+            get
+            {
+                var modelLabel = CopilotVendorCatalog.FormatModelDisplayName(Model);
+                return modelLabel.Length > 0 ? modelLabel : DisplayLabel;
             }
         }
 

@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.UI.LogImp
@@ -45,7 +46,7 @@ namespace ColorVision.UI.LogImp
         public bool LogReverse { get => _LogReverse; set { _LogReverse = value; OnPropertyChanged(); } }
         private bool _LogReverse = true;
 
-        [JsonIgnore]
+        [JsonIgnore, Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         public WindowLogLocalConfig()

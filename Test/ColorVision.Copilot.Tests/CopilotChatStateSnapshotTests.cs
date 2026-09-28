@@ -67,6 +67,7 @@ public class CopilotChatStateSnapshotTests
         {
             ActiveConversationId = firstConversation.Id,
             ActiveProfileId = "profile",
+            DefaultAccessMode = CopilotAgentAccessMode.UnrestrictedFullAccess,
             Conversations = new ObservableCollection<CopilotConversationRecord>
             {
                 firstConversation,
@@ -97,6 +98,9 @@ public class CopilotChatStateSnapshotTests
         Assert.True(JToken.DeepEquals(expected, actual));
         Assert.True(chunkCount > state.Conversations.Count + state.QueuedFollowUpRecoveries.Count);
         Assert.Null(actual[nameof(CopilotChatState.Conversations)]![0]![nameof(CopilotConversationRecord.AccessMode)]);
+        Assert.Equal(
+            (int)CopilotAgentAccessMode.UnrestrictedFullAccess,
+            actual[nameof(CopilotChatState.DefaultAccessMode)]!.Value<int>());
         Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, store.Serialize(capture.Complete()), StringComparison.Ordinal);
     }
 

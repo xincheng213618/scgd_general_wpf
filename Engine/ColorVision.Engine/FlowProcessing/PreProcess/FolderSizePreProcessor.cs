@@ -23,6 +23,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         [Display(Name = "PreProcess_CacheFolders", Description = "PreProcess_CacheFoldersDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
+        [CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 

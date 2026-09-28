@@ -33,7 +33,7 @@ public sealed record FlowExecutionStatusInfo(
             if (lastMilliseconds > elapsedMilliseconds)
                 details += $"\n预计剩余：{lastMilliseconds - elapsedMilliseconds:N0} ms（参考上次执行）";
         }
-        return new(FlowExecutionStatusKind.Running, "运行中", message, $"已用 {Math.Max(0, elapsedMilliseconds)} ms", details);
+        return new(FlowExecutionStatusKind.Running, "运行中", message, $"{Math.Max(0, elapsedMilliseconds)} ms", details);
     }
 
     public static FlowExecutionStatusInfo Finished(string? flowName, string? eventName, string? reason, long? elapsedMilliseconds)
@@ -53,7 +53,7 @@ public sealed record FlowExecutionStatusInfo(
             "FlowStartRejected" => "流程未能启动",
             _ => message,
         };
-        string elapsedText = elapsedMilliseconds.HasValue ? $"用时 {Math.Max(0, elapsedMilliseconds.Value)} ms" : "";
+        string elapsedText = elapsedMilliseconds.HasValue ? $"{Math.Max(0, elapsedMilliseconds.Value)} ms" : "";
         string details = $"流程：{flowName}\n状态：{label}（{eventName}）\n提示：{message}";
         if (!string.IsNullOrWhiteSpace(reason) && reason.Trim() != message)
             details += $"\n原始提示：{reason}";

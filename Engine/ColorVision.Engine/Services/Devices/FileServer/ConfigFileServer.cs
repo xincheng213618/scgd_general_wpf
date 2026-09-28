@@ -8,6 +8,7 @@
         public string PortRange { get => _PortRange; set { _PortRange = value; OnPropertyChanged(); } }
         private string _PortRange;
 
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.TextSelectFolderPropertiesEditor))]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; OnPropertyChanged(); } }
         private string _FileBasePath;
 

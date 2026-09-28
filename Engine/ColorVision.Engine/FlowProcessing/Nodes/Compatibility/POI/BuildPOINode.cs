@@ -173,6 +173,7 @@ public class BuildPOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("CAD文件", "CAD文件", true)]
+	[System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string CAD_PosFileName
 	{
 		get

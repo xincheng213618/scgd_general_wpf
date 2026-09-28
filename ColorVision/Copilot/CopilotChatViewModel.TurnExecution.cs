@@ -488,6 +488,7 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
+                    EnsurePersistentFullAccess(conversation);
                     var previousMode = conversation.AccessMode;
                     var previousTaskId = conversation.FullAccessTaskId;
                     conversation.BindFullAccessGrantToTask(hostedRun.Id, turnSnapshot.SolutionDirectoryPath);
