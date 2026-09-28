@@ -187,15 +187,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             // 赋值并保存
+            sysResourceModel.Name = CreateConfig.CameraID;
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
 
             int saveResult = SysResourceDao.Instance.Save(sysResourceModel);
-            if (saveResult < 0) return;
+            if (saveResult <= 0) return;
 
-            PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
-            PhyCameraManager.LoadPhyCamera();
             PhysicalCameraCreationBatch creationBatch = new();
-            creationBatch.RecordSaved(requiresCreation, sysResourceModel, saveResult);
+            PhyCameraManager.CompletePhysicalCameraCreation(requiresCreation, sysResourceModel, saveResult, creationBatch);
             _ = creationBatch.ActivateAsync();
             DialogResult = true;
             Close();

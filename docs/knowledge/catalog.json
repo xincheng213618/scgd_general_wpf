@@ -7465,7 +7465,7 @@
       "knowledge_id": "operations.physical-camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建可静默重启本机注册中心，设备绑定由用户配置。",
+      "summary": "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。",
       "aliases": [
         "物理相机",
         "相机管理",
@@ -7500,6 +7500,7 @@
       "code_paths": [
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraInitialBinding.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",

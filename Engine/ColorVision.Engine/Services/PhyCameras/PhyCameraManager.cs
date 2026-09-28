@@ -454,16 +454,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Code = licenseModel.MacAddress,
                 Type = (int)ServiceTypes.PhyCamera
             };
-            ConfigPhyCamera config = new();
+            ConfigPhyCamera config = new() { Code = sysDictionaryModel.Code, CameraID = sysDictionaryModel.Name ?? string.Empty };
             EnsurePhysicalCameraDirectory(config.FileServerCfg.FileBasePath, sysDictionaryModel.Code);
             sysDictionaryModel.Value = JsonConvert.SerializeObject(config);
 
             int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
-            creationBatch.RecordSaved(true, sysDictionaryModel, ret);
-            if(ret != -1 && sysDictionaryModel.Code !=null)
-            {
-                CreatePhysicalCameraFloder(sysDictionaryModel.Code);
-            }
+            CompletePhysicalCameraCreation(true, sysDictionaryModel, ret, creationBatch);
             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? Properties.Resources.AddPhysicalCameraFailed : Properties.Resources.AddPhysicalCameraSuccess)}", Properties.Resources.PhysicalCameraManager);
         }
 
@@ -486,12 +482,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             Directory.CreateDirectory(Path.Combine(basePath, cameraCode, "cfg"));
         }
 
-        public void CreatePhysicalCameraFloder(string cameraID)
+        internal void CompletePhysicalCameraCreation(bool requiresCreation, SysResourceModel resource, int saveResult, PhysicalCameraCreationBatch creationBatch)
         {
+            if (saveResult <= 0 || string.IsNullOrWhiteSpace(resource.Code)) return;
             // Legacy PhysicalCamera_Load deletes the camera directory; keep this refresh local.
             LoadPhyCamera();
-            if (PhyCameras.Count == 1)
+            creationBatch.RecordSaved(requiresCreation, resource, saveResult);
+            if (requiresCreation && PhyCameras.Count == 1)
             {
+                string cameraID = resource.Code;
                 LicenseModel license = PhyLicenseDao.Instance.GetByMAC(cameraID);
                 if (license == null)
                     license = new LicenseModel();
@@ -500,7 +499,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyLicenseDao.Instance.Save(license);
 
                 GetPhyCamera(cameraID).CameraLicenseModel = license;
-
+                PhysicalCameraInitialBinding.BindDevices(requiresCreation, PhyCameras.Count, resource,
+                    GetPhyCamera(cameraID).Config, ServiceManager.GetInstance().DeviceServices.ToArray());
             }
 
         }
