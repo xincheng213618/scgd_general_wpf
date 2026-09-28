@@ -358,7 +358,7 @@
     <value>重置資料庫</value>
   </data>
   <data name="ResetDatabaseTooltip" xml:space="preserve">
-    <value>使用 root 執行服務安裝目錄 SQL\color_vision_all.sql</value>
+    <value>清除目標資料庫並使用 root 執行服務安裝目錄 SQL\color_vision_all.sql；不保留舊資料</value>
   </data>
   <data name="MqttServiceInfo" xml:space="preserve">
     <value>MQTT 服務資訊</value>

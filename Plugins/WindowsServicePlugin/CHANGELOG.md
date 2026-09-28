@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 1.4.3.35 - 2026-09-28
+
+### Fixed
+
+- Fixed MySQL reset stopping before the installation SQL runs because the import configuration lacked a database name.
+
+## 1.4.3.34 - 2026-09-28
+
+### Changed
+
+- After resetting the MySQL database, offers to restart the registration center service and then ColorVision.
+
+## 1.4.3.33 - 2026-09-28
+
+### Fixed
+
+- The MySQL Reset Database action now rebuilds the selected database from the installation SQL without restoring previous flows, templates, or resource data.
+- Reset results clearly distinguish completion from a failed or partial import.
+
 ## 1.4.3.31 - 2026-09-11
 
 ### Fixed

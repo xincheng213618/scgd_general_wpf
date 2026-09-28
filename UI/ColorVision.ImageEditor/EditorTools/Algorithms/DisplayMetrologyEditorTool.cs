@@ -241,14 +241,14 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         HeadersVisibility = DataGridHeadersVisibility.Column, Margin = new Thickness(8), FontSize = 13, MinRowHeight = 26,
     };
 
-    private static string Label(string name) => name switch
+    private string Label(string name) => name switch
     {
         "bright_point_candidates" => "亮点候选数", "dark_point_candidates" => "暗点候选数",
         "line_candidates" => "线缺陷候选数", "mura_candidates" => "Mura 候选数",
         "excluded_border" => "排除边界宽度", "analyzed_pixels" => "有效分析像素数",
         "valid_pairs" => "有效通道对应点", "invalid_pairs" => "无效通道对应点",
         "maximum_color_displacement" => "最大套色偏移", "rms_color_displacement" => "套色偏移均方根",
-        "valid_crosses" => "有效十字数", "invalid_crosses" => "无效十字数",
+        "valid_crosses" => "RGB 测量完整点数", "invalid_crosses" => "RGB 测量不完整点数",
         "passed_crosses" => "OK 十字数", "failed_crosses" => "NG 十字数",
         "maximum_r_to_g_edge_offset" => "R-G 最大边缘分离", "maximum_b_to_g_edge_offset" => "B-G 最大边缘分离",
         "maximum_cross_axis_separation" => "十字轴线最大 RGB 分离", "maximum_cross_edge_separation" => "十字边缘最大 RGB 分离",
@@ -258,7 +258,7 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
         "mean_horizontal_disparity" => "平均水平视差", "mean_vertical_disparity" => "平均垂直视差",
         "right_over_left_scale" => "右眼 / 左眼倍率", "right_rotation_clockwise" => "右眼相对旋转（顺时针）",
         "similarity_residual_rms" => "相似变换残差均方根", "mean_right_over_left_signal" => "平均右眼 / 左眼信号比",
-        "valid_signal_cells" => "有效信号分区", "candidate_count" => "杂散光候选数",
+        "valid_signal_cells" => "有效信号分区", "candidate_count" => _result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration ? "十字候选数" : "杂散光候选数",
         "primary_peak_above_background" => "扣背景后主像峰值", "outside_integral_over_primary_region" => "外部积分 / 主像积分",
         "outside_mean_over_primary_peak" => "外部平均值 / 主像峰值", "accepted_sample_count" => "满足阈值的采样点",
         "reference_valid_pixels" => "参考帧有效像素", "four_corner_accepted_mesh_area" => "四角满足阈值的网格面积",

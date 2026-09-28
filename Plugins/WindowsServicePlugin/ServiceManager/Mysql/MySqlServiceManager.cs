@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
+using MySqlConnector;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
@@ -291,7 +292,85 @@ namespace WindowsServicePlugin.ServiceManager
                 return false;
             }
 
-            return ResetDatabaseFromSqlFile(sqlFilePath, Config.Database, Config.Database, logCallback);
+            bool dropAttempted = false;
+            bool databaseDropped = false;
+            try
+            {
+                string dropSql = BuildFactoryResetDropSql(Config.Database);
+                string database = Config.Database.Trim();
+                FileInfo sqlFile = new(sqlFilePath);
+                if (!sqlFile.Exists || sqlFile.Length == 0)
+                    throw new InvalidDataException($"安装 SQL 不存在或为空: {sqlFilePath}");
+
+                string mysqlPath = ResolveMysqlClientPath();
+                if (!File.Exists(mysqlPath))
+                    throw new FileNotFoundException("找不到 mysql 客户端，数据库未清除。", mysqlPath);
+
+                if (!EnsureRootPasswordReady(logCallback))
+                    return false;
+
+                // The shared mysql runner validates Database even when selectDatabase is false.
+                // Keep the target name in the config; the client still starts without a default schema.
+                MySqlConfig rootConfig = CreateMySqlConfig("root", Config.RootPassword, database);
+                var connectionString = new MySqlConnectionStringBuilder
+                {
+                    Server = rootConfig.Host,
+                    Port = (uint)rootConfig.Port,
+                    UserID = rootConfig.UserName,
+                    Password = rootConfig.UserPwd,
+                    CharacterSet = MySqlProtocolDefaults.CharacterSet,
+                    ConnectionTimeout = 5,
+                    SslMode = MySqlSslMode.None,
+                    Pooling = false
+                }.ConnectionString;
+
+                using (var connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    using var command = new MySqlCommand(dropSql, connection);
+                    dropAttempted = true;
+                    command.ExecuteNonQuery();
+                    databaseDropped = true;
+                }
+                logCallback($"已清除目标数据库 {database}，正在执行安装 SQL: {sqlFilePath}");
+                MySqlDatabaseMaintenanceService.RestoreSqlFileAsync(
+                    sqlFilePath, rootConfig, mysqlPath, selectDatabase: false).GetAwaiter().GetResult();
+
+                using (var connection = new MySqlConnection(connectionString))
+                {
+                    connection.Open();
+                    using var command = new MySqlCommand(
+                        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @database AND TABLE_NAME = 't_scgd_sys_resource'",
+                        connection);
+                    command.Parameters.AddWithValue("@database", database);
+                    if (Convert.ToInt32(command.ExecuteScalar()) != 1)
+                        throw new InvalidDataException($"安装 SQL 未在目标数据库 {database} 创建关键资源表。");
+                }
+
+                logCallback($"目标数据库 {database} 已按安装 SQL 重建，未回写旧资源数据");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string stage = databaseDropped
+                    ? "目标数据库已清除且安装 SQL 可能部分执行"
+                    : dropAttempted ? "清除命令的结果未知，请核对目标数据库" : "目标数据库未清除";
+                logCallback($"数据库重置失败，{stage}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static string BuildFactoryResetDropSql(string database)
+        {
+            if (string.IsNullOrWhiteSpace(database))
+                throw new InvalidOperationException("目标数据库名称为空，无法重置。");
+
+            string name = database.Trim();
+            if (new[] { "mysql", "information_schema", "performance_schema", "sys" }
+                .Contains(name, StringComparer.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"不能重置 MySQL 系统数据库 {name}。");
+
+            return $"DROP DATABASE IF EXISTS `{name.Replace("`", "``")}`";
         }
 
         public bool TestConnection(string host, int port, string userName, string password, string? database, Action<string>? logCallback = null)

@@ -17,6 +17,52 @@ namespace ColorVision.UI.Tests;
 
 public sealed class WindowFullScreenTests
 {
+    [Fact]
+    public void ClosingWindowWhileImageIsFullScreenClearsModeState()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var host = new Host(compact: false);
+            Grid image = new();
+            host.Root.Children.Add(image);
+            using var mode = new ImageFullScreenMode(image);
+            mode.ToggleFullScreen();
+            Assert.True(mode.IsMax);
+            host.Window.Close();
+            Assert.False(mode.IsMax);
+            Assert.False(WindowFullScreenSession.GetIsActive(host.Window));
+            mode.Dispose();
+        });
+    }
+
+    [Fact]
+    public void DisposingImageViewWhileFullScreenRestoresHost()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            Application.Current.Resources["TextBox.Small"] = new Style(typeof(TextBox));
+            Application.Current.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
+            Application.Current.Resources["ToolBarBaseStyle"] = new Style(typeof(ToolBar));
+            Application.Current.Resources["ToolBarImage"] = new Style(typeof(Image));
+            Application.Current.Resources["BaseStyle"] = new Style(typeof(Control));
+            Application.Current.Resources["RangeSliderBaseStyle"] = new Style(typeof(HandyControl.Controls.RangeSlider));
+            Application.Current.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
+            using var host = new Host(compact: false);
+            using var view = new ImageView();
+            host.Root.Children.Add(view);
+            host.Window.UpdateLayout();
+            view.ToggleFullScreen();
+            Assert.True(WindowFullScreenSession.GetIsActive(host.Window));
+
+            view.Dispose();
+
+            Assert.False(WindowFullScreenSession.GetIsActive(host.Window));
+            Assert.Same(host.Root, host.Window.Content);
+            Assert.Null(view.Zoombox1.Child);
+            Assert.Equal(WindowStyle.SingleBorderWindow, host.Window.WindowStyle);
+        });
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

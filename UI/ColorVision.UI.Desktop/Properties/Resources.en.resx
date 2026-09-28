@@ -472,6 +472,12 @@
   <data name="Uploading" xml:space="preserve">
     <value>Uploading {0}%</value>
   </data>
+  <data name="UploadEstimatedRemaining" xml:space="preserve">
+    <value>About {0} remaining</value>
+  </data>
+  <data name="UploadWaitingForConfirmation" xml:space="preserve">
+    <value>Upload complete. Waiting for server confirmation...</value>
+  </data>
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
   </data>  <data name="ThirdPartyAppsAll" xml:space="preserve">

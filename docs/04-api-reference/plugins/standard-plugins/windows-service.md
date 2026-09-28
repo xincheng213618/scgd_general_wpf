@@ -90,7 +90,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 窗口只有在所选安装阶段及必需服务安装/启动汇总均通过后才将进度设为“安装完成”并显示完成弹窗；任一必需服务失败会显示安装失败及失败服务列表。该结果仍只覆盖编排收到的返回值，还须分别核对服务状态、版本、配置及数据库结果；日志、progress=100、完成弹窗或某次ServiceHost成功均不替代整条安装验收。
 
-插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
+插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine资源保留更新，之后只记录结果并刷新状态，不同步服务配置；专用“重置数据库”要求root密码、找到非空安装SQL并确认主机与目标库，再清除目标库、导入安装SQL，确认目标库已创建关键资源表后才报告重建成功。它不备份或回写旧流程、模板和资源；若导入或验证失败，数据库可能已清除或部分写入，日志会说明阶段。成功后同步受管理配置和旧App.config；该同步失败会单独提示，不把数据库重建当作整条操作完成。同步成功后先询问是否通过ServiceHost重启注册中心服务，等待结果后再独立询问是否重启ColorVision；服务重启失败会提示实际状态待核对，软件重启仅在用户选择后启动新进程 `-r`，创建成功才关闭当前应用。`RunSqlScriptAsync` 不会触发这两个提示。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
 
 ## 备份和恢复不等于自动回滚
 

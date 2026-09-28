@@ -226,8 +226,15 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ProgressBar x:Name="UploadProgressBar" Grid.ColumnSpan="2" Height="4" Margin="0,0,0,10"
-                             Minimum="0" Maximum="100" Value="0" Visibility="Collapsed"/>
+                <Grid x:Name="UploadProgressPanel" Grid.ColumnSpan="2" Height="24" Margin="0,0,0,10"
+                      Visibility="Collapsed">
+                    <ProgressBar x:Name="UploadProgressBar" Minimum="0" Maximum="100" Value="0"/>
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Margin="3"
+                            Padding="5,0" CornerRadius="3" Background="{DynamicResource GlobalBackground}">
+                        <TextBlock x:Name="UploadPercentText" FontSize="13" FontWeight="SemiBold"
+                                   Text="{Binding Value, ElementName=UploadProgressBar, StringFormat={}{0:0}%}"/>
+                    </Border>
+                </Grid>
                 <TextBlock x:Name="StatusText" Grid.Row="1" Margin="0,0,16,0" MaxHeight="40"
                            ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
                            AutomationProperties.LiveSetting="Polite"

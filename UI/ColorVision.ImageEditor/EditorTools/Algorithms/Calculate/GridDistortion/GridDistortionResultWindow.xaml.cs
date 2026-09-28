@@ -59,7 +59,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 互操作诊断：{result.InteropDiagnostic}
 
                 对边均值 9 点的 Keystone：水平 = (左高 − 右高) / 对边均值 × 100%；垂直 = (上宽 − 下宽) / 对边均值 × 100%。
-                旧 P9 方案保留旧口径：三跨度均值作为分母，Keystone 水平/垂直命名与对边均值方案相反。
                 单张图没有左右眼配对信息，本次不生成 DIFF_H / DIFF_V。
                 """);
             if (_analysis != null)
@@ -91,8 +90,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 Row("半值 TV", "Horizontal TV", analysis.HalfTv.HorizontalPercent, "%", "标准 Horizontal TV / 2"),
                 Row("半值 TV", "Vertical TV", analysis.HalfTv.VerticalPercent, "%", "标准 Vertical TV / 2")
             };
-            AddPoint9Rows(rows, "对边均值 9 点", analysis.ReferencePoint9, false);
-            AddPoint9Rows(rows, "旧 P9 三跨度", analysis.LegacyPoint9, true);
+            AddPoint9Rows(rows, analysis.ReferencePoint9);
             GridDistortionOpticalEstimate optical = analysis.Optical;
             if (optical.IsAvailable && optical.OpticRatioPercent.HasValue && optical.MaxAbsoluteRatioPercent.HasValue)
             {
@@ -110,20 +108,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             return rows;
         }
 
-        private static void AddPoint9Rows(List<GridDistortionMetricRow> rows, string method, GridDistortionPoint9Metrics metrics, bool legacy)
+        private static void AddPoint9Rows(List<GridDistortionMetricRow> rows, GridDistortionPoint9Metrics metrics)
         {
-            string heightMean = legacy ? "左中右高均值" : "左右高均值";
-            string widthMean = legacy ? "上中下宽均值" : "上下宽均值";
+            const string method = "对边均值 9 点";
             rows.AddRange(new[]
             {
-                Row(method, "上边畸变", metrics.TopPercent, "%", $"上中点到上边弦有符号距离 / {heightMean} × 100；向内为正"),
-                Row(method, "下边畸变", metrics.BottomPercent, "%", $"下中点到下边弦有符号距离 / {heightMean} × 100；向内为正"),
-                Row(method, "左边畸变", metrics.LeftPercent, "%", $"左中点到左边弦有符号距离 / {widthMean} × 100；向内为正"),
-                Row(method, "右边畸变", metrics.RightPercent, "%", $"右中点到右边弦有符号距离 / {widthMean} × 100；向内为正"),
-                Row(method, "Keystone Horizontal", metrics.KeystoneHorizontalPercent, "%", legacy
-                    ? "(上宽 − 下宽) / 上中下宽均值 × 100；保留旧名称" : "(左高 − 右高) / 左右高均值 × 100"),
-                Row(method, "Keystone Vertical", metrics.KeystoneVerticalPercent, "%", legacy
-                    ? "(左高 − 右高) / 左中右高均值 × 100；保留旧名称" : "(上宽 − 下宽) / 上下宽均值 × 100")
+                Row(method, "上边畸变", metrics.TopPercent, "%", "上中点到上边弦有符号距离 / 左右高均值 × 100；向内为正"),
+                Row(method, "下边畸变", metrics.BottomPercent, "%", "下中点到下边弦有符号距离 / 左右高均值 × 100；向内为正"),
+                Row(method, "左边畸变", metrics.LeftPercent, "%", "左中点到左边弦有符号距离 / 上下宽均值 × 100；向内为正"),
+                Row(method, "右边畸变", metrics.RightPercent, "%", "右中点到右边弦有符号距离 / 上下宽均值 × 100；向内为正"),
+                Row(method, "Keystone Horizontal", metrics.KeystoneHorizontalPercent, "%", "(左高 − 右高) / 左右高均值 × 100"),
+                Row(method, "Keystone Vertical", metrics.KeystoneVerticalPercent, "%", "(上宽 − 下宽) / 上下宽均值 × 100")
             });
         }
 

@@ -139,6 +139,19 @@ public sealed class LocalGridDistortionNodeTests
     }
 
     [Fact]
+    public void SavedLegacySelectionRemainsWhenNewNodesUseStandardPoint9()
+    {
+        LocalGridDistortionNode original = new() { Point9Formula = GridPoint9Formula.LegacyThreeSpanMean };
+        original.Create();
+        Dictionary<string, byte[]> state = ParseState(original.GetSaveData());
+        Assert.True(state.ContainsKey(nameof(LocalGridDistortionNode.Point9Formula)));
+        LocalGridDistortionNode restored = new();
+        restored.Create();
+        restored.OnLoadNode(state);
+        Assert.Equal(GridPoint9Formula.LegacyThreeSpanMean, restored.Point9Formula);
+    }
+
+    [Fact]
     public void TargetPolarityUsesVisibleBooleanEditorAndSameExplanationAsImageView()
     {
         PropertyInfo nodeProperty = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.BrightTarget))!;
@@ -465,20 +478,29 @@ public sealed class LocalGridDistortionNodeTests
     }
 
     [Fact]
-    public void LegacyVersionTwoJsonPreservesPercentAxesAndFullGridWithoutFakeOptic()
+    public void DefaultStandardPoint9UsesLegacyJsonFieldsWithStandardValues()
     {
         GridDistortionResult result = CreateDetection(7, 7);
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
-        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, false);
+        LocalGridDistortionNode node = new();
+        string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, node.TvFormula, node.Point9Formula, false);
         DistortionReslut legacy = JsonConvert.DeserializeObject<DistortionReslut>(json)!;
         Assert.Null(legacy.OpticDistortion);
         Assert.Equal(analysis.StandardTv.HorizontalPercent, legacy.TVDistortion.HorizontalRatio);
         Assert.Equal(analysis.StandardTv.VerticalPercent, legacy.TVDistortion.VerticalRatio);
+        Assert.Equal(analysis.ReferencePoint9.TopPercent, legacy.Point9Distortion.TopRatio);
+        Assert.Equal(analysis.ReferencePoint9.BottomPercent, legacy.Point9Distortion.BottomRatio);
+        Assert.Equal(analysis.ReferencePoint9.LeftPercent, legacy.Point9Distortion.LeftRatio);
+        Assert.Equal(analysis.ReferencePoint9.RightPercent, legacy.Point9Distortion.RightRatio);
         Assert.Equal(analysis.ReferencePoint9.KeystoneHorizontalPercent, legacy.Point9Distortion.KeyStoneHoriRatio);
         Assert.Equal(analysis.ReferencePoint9.KeystoneVerticalPercent, legacy.Point9Distortion.KeyStoneVercRatio);
+        Assert.NotEqual(analysis.LegacyPoint9.KeystoneHorizontalPercent, legacy.Point9Distortion.KeyStoneHoriRatio);
         Assert.Equal(49, legacy.TVDistortion.FinalPoints.Count);
         Assert.Equal(new[] { 0, 3, 6, 21, 24, 27, 42, 45, 48 }, legacy.Point9Distortion.FinalPoints.Select(point => point.Id));
         JObject root = JObject.Parse(json);
+        Assert.Equal("OppositeEdgeMean", root["OutputSelection"]!.Value<string>("Point9Formula"));
+        Assert.NotNull(root["Point9_distortion"]);
+        Assert.NotNull(root["TV_distortion"]);
         Assert.Equal("percent", root.Value<string>("Units"));
         Assert.NotNull(root["GridDistortion"]?["Quality"]);
         Assert.Equal(result.RawJson, root["GridDistortion"]!.Value<string>("RawJson"));

@@ -34,6 +34,13 @@ public sealed class MySqlBackupRestoreSafetyTests
             Assert.DoesNotContain(arguments, argument => argument.StartsWith("--password", StringComparison.OrdinalIgnoreCase));
             Assert.Equal(config.UserPwd, startInfo.Environment["MYSQL_PWD"]);
             Assert.Equal(["--user", config.UserName, "--host", config.Host, "--port", "3307", MySqlProtocolDefaults.DefaultCharacterSetArgument], arguments);
+
+            config.Database = string.Empty;
+            Assert.Throws<InvalidOperationException>(() =>
+                MySqlLocalServicesManager.CreateMySqlProcessStartInfo(executablePath, config, redirectStandardInput: true));
+            config.Database = "color_vision_4xx";
+            var installStartInfo = MySqlLocalServicesManager.CreateMySqlProcessStartInfo(executablePath, config, redirectStandardInput: true);
+            Assert.DoesNotContain(config.Database, installStartInfo.ArgumentList);
         }
         finally
         {
@@ -171,7 +178,7 @@ public sealed class MySqlBackupRestoreSafetyTests
     }
 
     [Fact]
-    public void WindowsServiceResetAndRestoreUseEngineMaintenanceImplementation()
+    public void WindowsServiceMigrationAndRestoreUseEngineMaintenanceImplementation()
     {
         string source = File.ReadAllText(FindRepositoryFile(
             "Plugins",
@@ -184,6 +191,25 @@ public sealed class MySqlBackupRestoreSafetyTests
         Assert.Contains("MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync", source, StringComparison.Ordinal);
         Assert.DoesNotContain("TryBackupResetPreservedData", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ResetPreservedTables", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WindowsServiceFactoryResetKeepsSystemSchemasAndSqlIdentifiersSafe()
+    {
+        MethodInfo buildDropSql = typeof(WindowsServicePlugin.ServiceManager.MySqlServiceManager)
+            .GetMethod("BuildFactoryResetDropSql", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        Assert.Equal("DROP DATABASE IF EXISTS `color_vision_4xx`",
+            buildDropSql.Invoke(null, ["color_vision_4xx"]));
+        Assert.Equal("DROP DATABASE IF EXISTS `customer``db`",
+            buildDropSql.Invoke(null, ["customer`db"]));
+
+        foreach (string name in new[] { "", "mysql", "INFORMATION_SCHEMA", "performance_schema", "sys" })
+        {
+            TargetInvocationException error = Assert.Throws<TargetInvocationException>(
+                () => buildDropSql.Invoke(null, [name]));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
     }
 
     [Fact]

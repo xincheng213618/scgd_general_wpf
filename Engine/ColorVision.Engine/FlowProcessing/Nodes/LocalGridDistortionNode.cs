@@ -270,7 +270,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private bool brightTarget = true;
     private double minimumContrast = 0.02;
     private GridTvFormula tvFormula;
-    private GridPoint9Formula point9Formula;
+    private GridPoint9Formula point9Formula = GridPoint9Formula.OppositeEdgeMean;
     private bool publishOpticalEstimate;
 
     [Category("本地点阵畸变")]
@@ -314,7 +314,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     public GridTvFormula TvFormula { get => tvFormula; set { tvFormula = value; OnPropertyChanged(); } }
 
     [Category("畸变输出")]
-    [STNodeProperty("九点输出口径", "对边平均参考使用附件 H/V 定义；旧 P9 保留三跨度分母及旧 H/V 命名。全部方案都会保存在分析结果中。", true)]
+    [STNodeProperty("九点输出口径", "新建节点默认对边平均九点；结果 JSON 沿用 Point9_distortion 字段结构。旧 P9 三跨度可选，全部方案都会保存在分析结果中。", true)]
     public GridPoint9Formula Point9Formula { get => point9Formula; set { point9Formula = value; OnPropertyChanged(); } }
 
     [Category("畸变输出")]

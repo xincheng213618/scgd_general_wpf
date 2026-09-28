@@ -78,7 +78,9 @@ public sealed partial class DisplayMetrologyTests
         foreach (var row in table.Rows)
         {
             Assert.True(row["valid"].GetBoolean());
-            Assert.Equal("NG", row["result"].GetString());
+            // Each channel is compared with G: max(R-G)=2 and max(B-G)=3
+            // both satisfy 4 px, although the legacy RGB aggregate spans 5 px.
+            Assert.Equal("OK", row["result"].GetString());
             Assert.InRange(row["rMinusG_dx_px"].GetDouble(), 1.99, 2.01);
             Assert.InRange(row["rMinusG_dy_px"].GetDouble(), -1.01, -0.99);
             Assert.InRange(row["bMinusG_dx_px"].GetDouble(), -3.01, -2.99);
@@ -87,7 +89,7 @@ public sealed partial class DisplayMetrologyTests
         }
         Assert.Equal(5, Metric(result, "maximum_cross_axis_separation"), 6);
         Assert.Equal(5, Metric(result, "maximum_cross_edge_separation"), 6);
-        Assert.Equal(0, Metric(result, "overall_threshold_result"));
+        Assert.Equal(1, Metric(result, "overall_threshold_result"));
         Assert.Equal(new[] { "R", "G", "B" }, result.Artifacts.OfType<AlgorithmImageArtifact>()
             .Select(artifact => artifact.Metadata!["channel"]).ToArray());
     }

@@ -232,15 +232,23 @@ public sealed class FeedbackWindowLayoutTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void MinimumSizeKeepsFooterOutsideTheScrollableContent(bool manyAttachments)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void MinimumSizeKeepsFooterOutsideTheScrollableContent(bool manyAttachments, bool uploading)
     {
         WithWindow(window =>
         {
             if (manyAttachments)
                 for (int index = 0; index < 16; index++)
                     Attachments(window).Add(new AttachmentItem { FilePath = $"attachment-{index}.txt" });
+            if (uploading)
+            {
+                Element<Grid>(window, "UploadProgressPanel").Visibility = Visibility.Visible;
+                Element<ProgressBar>(window, "UploadProgressBar").Value = 37;
+                FlushBindings(window);
+                Assert.Equal("37%", Element<TextBlock>(window, "UploadPercentText").Text);
+            }
             Grid root = Assert.IsType<Grid>(window.Content);
             ScrollViewer body = Element<ScrollViewer>(window, "FeedbackContentScrollViewer");
             FrameworkElement diagnostics = Element<FrameworkElement>(window, "DiagnosticsPanel");

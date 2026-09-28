@@ -9,6 +9,8 @@ import unittest
 from unittest import mock
 from pathlib import Path
 
+from flask import request
+
 from app_setup import RuntimeOverrides, create_app_and_context
 from config_loader import DEFAULT_CONFIG
 from routes.public_api import register_public_api
@@ -117,6 +119,18 @@ class FeedbackRouteTests(unittest.TestCase):
             },
             content_type="multipart/form-data",
         )
+
+    def test_feedback_is_not_restricted_by_package_upload_cap(self):
+        self.app.config["MAX_CONTENT_LENGTH"] = 64
+
+        response = self._submit(
+            self.app.test_client(), machine="LARGE-FEEDBACK-PC", message="feedback upload cap",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.app.config["MAX_CONTENT_LENGTH"], 64)
+        with self.app.test_request_context("/api/packages", method="POST"):
+            self.assertEqual(request.max_content_length, 64)
 
     def test_two_accounts_are_isolated_and_direct_attachment_urls_do_not_bypass_scope(self):
         alice_client = self.app.test_client()

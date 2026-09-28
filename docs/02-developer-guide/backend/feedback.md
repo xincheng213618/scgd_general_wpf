@@ -21,13 +21,15 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-account
 
 桌面反馈窗口直接匿名提交，不再弹出 Web 账号密码对话框。Backend 仍兼容其他已登录客户端的 Session 归属，但 ColorVision 本地 RBAC 用户、Windows 用户名和机器名与 Web 账号不是同一身份，不能据此自动认领。
 
+桌面窗口上传时在进度条内显示百分比，并在传输已有足够样本后按平均速度显示预计剩余时间；传输完成后等待服务端确认，只有成功响应才算发送成功。客户端流式发送附件，单次请求超时为 4 小时。当前提交是单次 multipart 请求，中断后需重新发送，不支持断点续传。
+
 | 字段 | 契约 |
 | --- | --- |
 | `message`、`userName`、`appVersion`、`machineInfo` | 每项最多 4000 字符 |
 | `machineName` | 最多 255 字符；仅用于显示、筛选与安全目录标签 |
 | `clientSubmittedAt`、`diagnosticsCollectedAt` | 可选 ISO 8601，必须带时区，服务端归一为 UTC；未知时不从复制时间猜测 |
 | 文件 | 全部 multipart 文件字段合计最多 10 个；净化后仍须有有效正文或附件 |
-| 请求 | 总请求上限由 `MAX_CONTENT_LENGTH` 控制，当前为 500 MiB |
+| 请求 | 反馈提交不使用其他上传接口的 500 MiB 全局 `MAX_CONTENT_LENGTH` 上限；部署在前面的代理或 WSGI 服务仍可能有独立请求体与超时限制 |
 
 附件名在净化后拒绝大小写变体的 `feedback.json`、`.admin.json` 及其内部临时命名空间，攻击者不能上传状态或归属 metadata。`feedback.json` 用同目录临时文件、flush/fsync 和 `os.replace` 完成；替换前失败不会产生完整 metadata，但附件与目录不是整体事务，失败目录仍可能作为异常历史记录被管理员看见。
 

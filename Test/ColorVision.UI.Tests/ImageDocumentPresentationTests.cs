@@ -14,6 +14,82 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageDocumentPresentationTests
 {
     [Fact]
+    public void ClearingImageCancelsFitAlreadyQueuedByWorker()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewResources();
+            using ImageView view = new();
+            view.SetImageSource(new WriteableBitmap(80, 60, 96, 96, PixelFormats.Gray8, null), false, false);
+            StaTest.Run(view.UpdateZoomAndScale);
+            view.Clear();
+            view.SetImageSource(new WriteableBitmap(160, 120, 96, 96, PixelFormats.Gray8, null), false, false);
+            Matrix requested = new(3, 0, 0, 3, 11, 13);
+            view.Zoombox1.RestoreView(requested);
+            Window window = new() { Content = view, Width = 400, Height = 300,
+                Left = -30000, Top = -30000, ShowInTaskbar = false, ShowActivated = false };
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                Assert.Equal(requested, view.Zoombox1.ContentMatrix);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
+    public void QueuedNavigationCannotRepopulateDisposedView()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewResources();
+            using ImageView view = new();
+            StaTest.Run(() => view.AppendImage("late-image.png", open: false));
+            view.Dispose();
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.Empty(view.ImageGroupItems);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReplacingOrClearingImageCancelsItsPendingViewportFit(bool clear)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewResources();
+            using ImageView view = new();
+            // Keep nonzero layout bounds after clear so an uncancelled fit would remain observable.
+            view.ImageShow.Width = 160;
+            view.ImageShow.Height = 120;
+            view.SetImageSource(new WriteableBitmap(80, 60, 96, 96, PixelFormats.Gray8, null), false, false);
+            view.Zoombox1.ZoomToContentRect(new Rect(10, 10, 30, 20));
+            var next = new WriteableBitmap(160, 120, 96, 96, PixelFormats.Gray8, null);
+            if (clear)
+            {
+                view.Clear();
+            }
+            else view.SetImageSource(next, false, false);
+
+            Window window = new() { Content = view, Width = 400, Height = 300,
+                Left = -30000, Top = -30000, ShowInTaskbar = false, ShowActivated = false };
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Background);
+                Assert.Equal(Matrix.Identity, view.Zoombox1.ContentMatrix);
+                if (clear) Assert.Null(view.ImageShow.Source);
+                else Assert.Same(next, view.ImageShow.Source);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
     public void DisplayPublicationWithoutDocumentSourceDoesNotCreateAPixelFrame()
     {
         WpfTestHost.Invoke(() =>

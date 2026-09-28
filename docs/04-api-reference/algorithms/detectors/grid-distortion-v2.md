@@ -11,7 +11,7 @@ related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross"
 
 # 本地点阵畸变 V2
 
-V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径和中心节距参考的相对光学估计。ImageView 展示全部方案；Flow 节点按参数选择写入 ARVR 的字段，同时保留全部分析。参数选择不重新找点。
+V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径和中心节距参考的相对光学估计。ImageView 主指标表展示 TV、对边均值九点和相对光学估计；旧 P9 三跨度保留在全部分析 JSON，Flow 节点仍可选它写入 ARVR 字段。参数选择不重新找点。
 
 输入是完整的规则圆点阵，行列分别为 3～15 的奇数，可以是 3×3、7×7 或非正方形奇数阵列。多点图卡的九点指标取首行、中行、末行与首列、中列、末列的交点。缺点时拒绝计算，不用拟合点冒充实测点；当前不计算左右眼 `DIFF_H`/`DIFF_V`，这还需要配对输入和明确差值定义。
 
@@ -23,7 +23,7 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 
 图像分析和流程节点均提供 **亮点模式**：默认勾选，检测暗背景上的亮点，适用于发光屏幕；取消勾选，检测亮背景上的暗点，适用于暗点反射图卡。`BrightTarget` 只改变背景残差与圆心提取的亮暗方向，有序圆心之后共用相同几何计算。模式随配置和运行参数保存；未包含该字段的旧节点配置仍按亮点运行。光晕、漏光、印刷反射与照明不均会影响圆心提取，暗点照片通过不能替代发光屏幕的实拍验证。
 
-**九点畸变测量** 位于同组。它的原生 `M_CalDistortionP9` 使用阈值分割和尺寸筛选，指标函数只处理九点；直接将旧配置改为 7×7 不能获得有效的 49 点畸变指标。
+**九点畸变测量** 位于同组。它的原生 `M_CalDistortionP9` 优先使用既有阈值分割和尺寸筛选；自动阈值和默认候选点筛选未找齐 3×3 时，使用 V2 的完整点阵定位补充，成功后仍按九点旧公式计算。显式阈值或自定义候选点筛选保持原有语义。补充定位点没有旧分割器的外接矩形，结果中的 `boundingRect` 为 null；`candidateCount` 与警告沿用 V2 的候选统计，`candidatePoints` 为空，不伪造额外候选坐标。直接将旧配置改为 7×7 不能获得有效的 49 点畸变指标。
 
 ### Flow 和 ARVR
 
@@ -34,10 +34,10 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 | 输出参数 | 默认值 | 作用 |
 | --- | --- | --- |
 | `TvFormula` | `Standard` | 选择标准 TV 或其半值 |
-| `Point9Formula` | `OppositeEdgeMean` | 选择两条对边均值参考口径或旧本地三条跨度均值口径 |
+| `Point9Formula` | `OppositeEdgeMean` | 新建节点默认输出对边均值九点；旧本地三跨度仍可选，已保存节点继续使用各自记录的口径 |
 | `PublishOpticalEstimate` | `false` | 明确启用后才将相对估计映射到既有 `Optic_Distortion` 字段 |
 
-流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。文件中的 `TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的结构，数值已经是百分数，不再乘 100。
+流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。默认把对边均值九点的六项数值写入既有 `Point9_distortion` 字段名，`TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的 JSON 结构；兼容的是读取格式，不代表沿用旧 P9 公式或旧梯形轴定义。数值已经是百分数，不再乘 100。
 
 全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。默认 `Optic_Distortion` 为 null；显式启用后仍标明是未标定估计，并省略含义未确认的 `t`。CSV 对此缺失项留空，不补零。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
 

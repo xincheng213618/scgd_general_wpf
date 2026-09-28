@@ -284,7 +284,7 @@ public sealed partial class DisplayMetrologyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task RgbCrossRejectsAmbiguousProfilesAndRequiresCoverageOnEveryHalfArm(bool entireSampleBand)
+    public async Task RgbCrossKeepsMultiPeakProfilesAndAggregatesTheirOuterEdges(bool entireSampleBand)
     {
         using var image = Image(400, 340, (x, y, c) =>
         {
@@ -294,23 +294,19 @@ public sealed partial class DisplayMetrologyTests
         using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
         Success(result);
         var first = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows[0];
-        Assert.Equal(!entireSampleBand, first["valid"].GetBoolean());
-        Assert.True(first["bRejectedProfiles"].GetInt32() > 0);
-        if (entireSampleBand)
-        {
-            Assert.Contains("ambiguous_arm_edges", first["reason"].GetString());
-            Assert.Equal(JsonValueKind.Null, first["maximumEdgeSeparation_px"].ValueKind);
-        }
-        else
-        {
-            Assert.Equal(0, first["maximumEdgeSeparation_px"].GetDouble(), 6);
-            Assert.InRange(first["bVerticalCoverage"].GetDouble(), 0.5, 0.99);
-        }
+        Assert.True(first["valid"].GetBoolean());
+        Assert.Equal(0, first["bRejectedProfiles"].GetInt32());
+        Assert.Contains("B:multiple_arm_bands", first["warning"].GetString());
+        Assert.Equal(1, first["bVerticalCoverage"].GetDouble());
+        // A single extra lobe is removed by the edge median; a lobe along a full
+        // half-arm contributes to the representative edge and gives a nonzero value.
+        if (entireSampleBand) Assert.True(first["bToGMaximumEdge_px"].GetDouble() > 0);
+        else Assert.Equal(0, first["bToGMaximumEdge_px"].GetDouble(), 6);
     }
     [Theory]
-    [InlineData(0.40, true)]
-    [InlineData(0.01, false)]
-    public async Task RgbCrossMeasuresConnectedShoulderButRejectsDarkSeparatedLobe(double valley, bool valid)
+    [InlineData(0.40)]
+    [InlineData(0.01)]
+    public async Task RgbCrossMeasuresOuterEdgesAcrossShallowAndDeepValleys(double valley)
     {
         using var image = Image(400, 340, (x, y, c) =>
         {
@@ -324,14 +320,87 @@ public sealed partial class DisplayMetrologyTests
         using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters(), image);
         Success(result);
         var first = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows[0];
-        Assert.Equal(valid, first["valid"].GetBoolean());
-        if (!valid) { Assert.Equal(JsonValueKind.Null, first["maximumEdgeSeparation_px"].ValueKind); return; }
+        Assert.True(first["valid"].GetBoolean());
         Assert.True(first["maximumEdgeSeparation_px"].GetDouble() > 0);
         var profiles = result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-profile-quality")!.Rows;
         var shoulder = Assert.Single(profiles.Where(p => p["point"].GetString() == "P1" && p["channel"].GetString() == "B" && p["arm"].GetString() == "vertical" && p["samplePosition_px"].GetInt32() == 48));
-        Assert.Equal("valid_connected_shoulder", shoulder["status"].GetString());
+        Assert.Equal("valid_multi_peak_envelope", shoulder["status"].GetString());
         Assert.Equal(2, shoulder["thresholdRunCount"].GetInt32());
         Assert.InRange(shoulder["lastEdge_px"].GetDouble(), 64.32, 64.34);
+        Assert.Contains("B:multiple_arm_bands", first["warning"].GetString());
+    }
+
+    [Theory]
+    [InlineData(0.5, 1.0)]
+    [InlineData(0.79, 1.0)]
+    [InlineData(0.5, 0.4)]
+    public async Task RgbCrossMeasuresMultiPeakEnvelopeAndKeepsItsNonzeroOffset(double secondary, double exposure)
+    {
+        using var input = Image(400, 400, (x, y, c) => MultiPeakCross(x, y, c, secondary, secondary) * exposure, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters { Rows = 1, Columns = 1 }, input);
+        Success(result);
+        var point = Assert.Single(result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows);
+        Assert.True(point["valid"].GetBoolean());
+        Assert.Equal(0, point["rToGMaximumEdge_px"].GetDouble(), 6);
+        Assert.Equal(8, point["bToGMaximumEdge_px"].GetDouble(), 6);
+        Assert.Contains("B:multiple_arm_bands", point["warning"].GetString());
+        Assert.Equal(1, point["bVerticalCoverage"].GetDouble());
+        Assert.Contains(result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-profile-quality")!.Rows, p => p["status"].GetString() == "valid_multi_peak_envelope");
+    }
+
+    [Theory]
+    [InlineData(0.8, 0.8)]
+    [InlineData(0.9, 0.5)]
+    [InlineData(0.5, 0.9)]
+    public async Task RgbCrossMeasuresEnvelopeWhenPeaksAreEqualOrSwitchStrength(double upperSecondary, double lowerSecondary)
+    {
+        using var input = Image(400, 400, (x, y, c) => MultiPeakCross(x, y, c, upperSecondary, lowerSecondary), AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters { Rows = 1, Columns = 1 }, input);
+        Success(result);
+        var point = Assert.Single(result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows);
+        Assert.True(point["valid"].GetBoolean());
+        Assert.Equal(0, point["rToGMaximumEdge_px"].GetDouble(), 6);
+        Assert.True(point["bToGMaximumEdge_px"].GetDouble() > 0);
+        Assert.True(point["bLeft_px"].GetDouble() < 192);
+        Assert.True(point["bRight_px"].GetDouble() > 200);
+        Assert.Equal("", point["reason"].GetString());
+        Assert.Contains("B:multiple_arm_bands", point["warning"].GetString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RgbCrossUsesRemainingHalfArmButDoesNotInventAnAbsentArm(bool removeBothHalves)
+    {
+        using var input = Image(400, 400, (x, y, c) =>
+        {
+            bool cross = Math.Abs(x - 200) <= 1 && Math.Abs(y - 200) <= 32 || Math.Abs(y - 200) <= 1 && Math.Abs(x - 200) <= 32;
+            if (c == 0 && (y < 199 || removeBothHalves && y > 201)) return 0.01;
+            return cross ? 0.8 : 0.01;
+        }, AlgorithmImageFormat.Bgr48);
+        using var result = await Run(DisplayMetrologyIds.RgbCrossRegistration, new RgbCrossRegistrationParameters { Rows = 1, Columns = 1 }, input);
+        Success(result);
+        var point = Assert.Single(result.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows);
+        Assert.Equal(0, point["rToGMaximumEdge_px"].GetDouble(), 6);
+        Assert.Equal(!removeBothHalves, point["valid"].GetBoolean());
+        if (removeBothHalves)
+        {
+            Assert.Equal(JsonValueKind.Null, point["bToGMaximumEdge_px"].ValueKind);
+            Assert.False(string.IsNullOrEmpty(point["reason"].GetString()));
+        }
+        else
+        {
+            Assert.Equal(0, point["bToGMaximumEdge_px"].GetDouble(), 6);
+            Assert.Equal(0, point["bVerticalCoverage"].GetDouble());
+            Assert.Contains("B:partial_arm_coverage", point["warning"].GetString());
+        }
+    }
+
+    private static double MultiPeakCross(int x, int y, int channel, double upperSecondary, double lowerSecondary)
+    {
+        bool Cross(int centreX) => Math.Abs(x - centreX) <= 1 && Math.Abs(y - 200) <= 32 || Math.Abs(y - 200) <= 1 && Math.Abs(x - centreX) <= 32;
+        if (channel != 0) return Cross(200) ? 0.8 : 0.01;
+        return Math.Max(Cross(192) ? 0.8 : 0.01, Cross(200) ? y < 200 ? upperSecondary : lowerSecondary : 0.01);
     }
 
     [Fact]

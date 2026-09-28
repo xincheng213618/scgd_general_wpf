@@ -452,6 +452,12 @@
   <data name="Uploading" xml:space="preserve">
     <value>上传中 {0}%</value>
   </data>
+  <data name="UploadEstimatedRemaining" xml:space="preserve">
+    <value>预计剩余 {0}</value>
+  </data>
+  <data name="UploadWaitingForConfirmation" xml:space="preserve">
+    <value>上传完成，等待服务器确认...</value>
+  </data>
   <data name="SendFailed" xml:space="preserve">
     <value>发送失败: {0}</value>
   </data>  <data name="ThirdPartyAppsAll" xml:space="preserve">

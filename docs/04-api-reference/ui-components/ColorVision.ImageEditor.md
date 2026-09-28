@@ -21,7 +21,7 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 图像顶部工具栏的全屏按钮只展示当前图像及其工具栏。进入后按新视口等比例适配图像；再次点击该按钮、按 F11 / Esc，或点击顶部退出按钮，恢复原文档位置和进入前的缩放、平移，并同步更新倍率显示与绘图缩放。鼠标移到屏幕顶边时显示退出按钮，进入时短暂显示按键提示。
 
-`ImageFullScreenMode` 暂时将图像内容移到宿主窗口，退出时恢复原父容器及子项顺序。窗口边框、显示器边界和原窗口状态由 Common 的 `WindowFullScreenSession` 负责；紧凑标题栏在改变窗口样式之前暂停，不能让标题拖动区截获图像顶部工具栏的鼠标命中。窗口尺寸改变和图像缩放是两个独立状态。
+`ImageFullScreenMode` 暂时将图像内容移到宿主窗口，退出时恢复原父容器及子项顺序。窗口边框、显示器边界和原窗口状态由 Common 的 `WindowFullScreenSession` 负责；紧凑标题栏在改变窗口样式之前暂停，不能让标题拖动区截获图像顶部工具栏的鼠标命中。窗口尺寸改变和图像缩放是两个独立状态。`ImageView.Dispose` 在清理图像前退出仍活动的图像全屏会话并恢复宿主；窗口直接关闭时释放模式持有的恢复信息，不再操作已关闭窗口。
 
 图像预览有键盘焦点或鼠标位于预览内时，F11 与图像工具栏全屏按钮效果相同，适用于主窗口中的图像和独立 ImageView 宿主。未由图像处理的 F11 才在冒泡阶段进入[主窗口全屏](../../01-user-guide/interface/main-window.md#全屏与最大化)。若先进入主窗口全屏，再通过图像按钮进入图像全屏，第一次 F11 / Esc 只返回全屏工作区，第二次才恢复普通窗口。已处理的按键、带修饰键的 F11 和长按重复事件不再次切换。
 
@@ -77,6 +77,14 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 缩放和平移定位图像区域；绘图工具向同一 `DrawCanvas` 添加矩形、圆、线、多边形、曲线或文本等对象。对象选不中时先确认当前绘图/选择状态和对象是否支持选择，再查命中测试与[属性编辑器](./property-grid.md)，不要先修改设备或算法配置。
 
 `DrawCanvas` 保留 `Image` 的布局和 Stretch 行为，将底图绘制到独立 `DrawingVisual` 子层；编辑图元集合、命中测试和撤销栈不把底图当作注释。`ImageDrawingPresentation` 同步绘图列表、文字/消息显示配置、缩放布局和活动编辑提交，并在组件初始化后附着订阅、释放时解绑。图像与图元的承载分离没有改变现有 shader 的作用范围：`ImageShaderPresentation` 仍将 `SceneEffect` 附着到整个画布，兼容整场景显示效果。
+
+`ImageView` 组合视口 `Zoombox` 与图像内容 `DrawCanvas`：前者负责视口变换和裁剪，后者保留图像坐标下的底图与标注。业务通过 `ImageView.Clear` 清理当前文档，通过 `ImageView.Dispose` 结束视图生命周期，由宿主统一释放工具订阅、图像和子控件引用；普通卸载保留重新挂载能力，不能等同于永久释放。
+
+图像源替换或清空时同步丢弃旧的底图绘制内容，释放画布时同时清空图像源；不能依赖卸载后的下一次 `OnRender` 才释放旧位图。`DrawCanvas.Clear` 仅清理标注和撤销记录，保留底图。`Zoombox` 的适配和区域缩放在布局未就绪时合并为最后一次请求，等待加载和真实布局更新后执行，卸载或替换子内容时取消；不通过 Dispatcher 循环重试。显式缩放、平移、重置或恢复视图会取消旧适配请求，`ImageView` 清图或替换源图时也取消旧图的请求。
+
+`ContentMatrixChanged` 在实际矩阵变化时统一通知，包括属性赋值和绑定更新；无变化的操作不重复通知。缩放和平移方法保留矩阵绑定，`Pan` 的位移使用视口坐标，非等比缩放按各轴当前倍率分别限制上下限。倍率工具仅在倍率变化时刷新，并由工具工厂释放时解绑。`DrawCanvasTests`、`ZoomboxLifecycleTests`、`ImageDocumentPresentationTests` 与 `EditorToolFactoryLifecycleTests` 覆盖释放、重新加载、导航和通知边界。
+
+`ImageDrawingPresentation` 合并后台适配请求与布局刷新，每类最多保留一个等待的 Dispatcher 操作；清图、换图、卸载和释放时取消等待操作。绘图缩放的延迟刷新使用画布所属 Dispatcher 上的可停止计时器。后台图像组导航在回到 UI 线程后重新检查视图是否已释放，不能重新填充已关闭视图。`ImageDrawingPresentationTests`、`ImageDocumentPresentationTests` 与 `WindowFullScreenTests` 覆盖排队合并、晚到请求、卸载重挂和全屏释放。
 
 圆形和矩形绘图工具在底部紧凑属性条中提供持续选项。连续模式关闭时显示 `1×`，开启时显示 `∞`；尺寸锁定关闭时显示开锁，开启时显示闭锁。图标与点击热区应大于普通状态文字，使缩放画布上的高频切换仍容易命中。开启后的持久选中态必须通过稳定的背景、边框或前景反馈与未选中态区分；鼠标按下只提供瞬时反馈，不能与持续选中态共用唯一的视觉差异。`ImageView.xaml` 定义紧凑控件样式与承载区域，`CompactInspector.cs` 创建属性元素，圆形和矩形管理器提供连续、锁定及尺寸状态。
 

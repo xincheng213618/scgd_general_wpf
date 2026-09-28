@@ -1,10 +1,85 @@
 using ColorVision.ImageEditor;
+using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Tests;
 
 public class DrawCanvasTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ChangingSourceReleasesPreviousDrawingWithoutAnotherRender(bool replace)
+    {
+        StaTest.Run(() =>
+        {
+            BitmapSource original = CreateBitmap();
+            using DrawCanvas canvas = new() { Source = original };
+            RenderCanvas(canvas);
+            DrawingVisual imageVisual = (DrawingVisual)VisualTreeHelper.GetChild(canvas, 0);
+            Assert.Same(original, Assert.Single(imageVisual.Drawing.Children.OfType<ImageDrawing>()).ImageSource);
+
+            BitmapSource? replacement = replace ? CreateBitmap() : null;
+            canvas.Source = replacement;
+
+            Assert.Same(replacement, canvas.Source);
+            Assert.Null(imageVisual.Drawing);
+            if (replace)
+            {
+                RenderCanvas(canvas);
+                DrawingGroup drawing = Assert.IsType<DrawingGroup>(imageVisual.Drawing);
+                Assert.Same(replacement, Assert.Single(drawing.Children.OfType<ImageDrawing>()).ImageSource);
+            }
+        });
+    }
+
+    [Fact]
+    public void ClearingAnnotationsPreservesSourceAndImageDrawing()
+    {
+        StaTest.Run(() =>
+        {
+            BitmapSource source = CreateBitmap();
+            using DrawCanvas canvas = new() { Source = source };
+            canvas.AddVisual(new DrawingVisual());
+            RenderCanvas(canvas);
+            DrawingVisual imageVisual = (DrawingVisual)VisualTreeHelper.GetChild(canvas, 0);
+
+            canvas.Clear();
+
+            Assert.Empty(canvas.Visuals);
+            Assert.Same(source, canvas.Source);
+            Assert.Same(source, Assert.Single(imageVisual.Drawing.Children.OfType<ImageDrawing>()).ImageSource);
+        });
+    }
+
+    [Fact]
+    public void DisposeClearsSourceAndRenderedImage()
+    {
+        StaTest.Run(() =>
+        {
+            DrawCanvas canvas = new() { Source = CreateBitmap() };
+            RenderCanvas(canvas);
+            DrawingVisual imageVisual = (DrawingVisual)VisualTreeHelper.GetChild(canvas, 0);
+            Assert.NotEmpty(imageVisual.Drawing.Children);
+
+            canvas.Dispose();
+
+            Assert.Null(canvas.Source);
+            Assert.Null(imageVisual.Drawing);
+        });
+    }
+
+    private static BitmapSource CreateBitmap() => new WriteableBitmap(64, 64, 96, 96, PixelFormats.Bgra32, null);
+
+    private static void RenderCanvas(DrawCanvas canvas)
+    {
+        canvas.Measure(new Size(64, 64));
+        canvas.Arrange(new Rect(0, 0, 64, 64));
+        canvas.UpdateLayout();
+        new RenderTargetBitmap(64, 64, 96, 96, PixelFormats.Pbgra32).Render(canvas);
+    }
+
     [Fact]
     public void ContainsVisualTracksAddAndRemove()
     {

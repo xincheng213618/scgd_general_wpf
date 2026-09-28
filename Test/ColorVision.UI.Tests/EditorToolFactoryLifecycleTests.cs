@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.EditorTools;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -8,6 +9,29 @@ namespace ColorVision.UI.Tests;
 
 public sealed class EditorToolFactoryLifecycleTests
 {
+    [Fact]
+    public void ZoomRatioToolIgnoresPanAndUnsubscribesWhenViewIsDisposed()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsureImageViewTestResources();
+            using ImageView view = new();
+            ZoomRatioEditorTool tool = Assert.IsType<ZoomRatioEditorTool>(view.IEditorToolFactory.GetIEditorTool<ZoomRatioEditorTool>());
+            int changes = 0;
+            tool.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(tool.ZoomRatio)) changes++; };
+            view.Zoombox1.Zoom(new Point(), new Vector(2, 2));
+            Assert.Equal(1, changes);
+            view.Zoombox1.Pan(new Vector(10, 20));
+            Assert.Equal(1, changes);
+
+            view.Dispose();
+            Assert.Null(view.Zoombox1.Child);
+            Assert.Null(view.ImageShow.Source);
+            view.Zoombox1.ZoomNone();
+            Assert.Equal(1, changes);
+        });
+    }
+
     [Fact]
     public void DrawToolbarCanRefreshRepeatedlyWithReusableUiElementIcons()
     {

@@ -34,7 +34,7 @@ public sealed class RgbCrossConfigurationDraft
     public string MinimumArmSpanFraction { get; set; } = "";
     [Category("检测参数"), DisplayName("轴带支持阈值"), Description("范围 0.1 到 0.9。"), PropertyEditorType]
     public string AxisBandThreshold { get; set; } = "";
-    [Category("检测参数"), DisplayName("最小臂截面覆盖率"), Description("范围 0.1 到 1。"), PropertyEditorType]
+    [Category("检测参数"), DisplayName("最小臂截面覆盖率"), Description("范围 0.1 到 1。低于此覆盖率时给出警告，仍使用可测截面计算。"), PropertyEditorType]
     public string MinimumArmCoverage { get; set; } = "";
     [Category("检测参数"), DisplayName("最小信号跨度"), Description("范围 0.000001 到 1，按满量程比例设置。"), PropertyEditorType]
     public string MinimumContrast { get; set; } = "";

@@ -338,7 +338,7 @@
     <value>重置数据库</value>
   </data>
   <data name="ResetDatabaseTooltip" xml:space="preserve">
-    <value>使用 root 执行服务安装目录 SQL\color_vision_all.sql</value>
+    <value>清除目标数据库并使用 root 执行服务安装目录 SQL\color_vision_all.sql；不保留旧数据</value>
   </data>
   <data name="MqttServiceInfo" xml:space="preserve">
     <value>MQTT 服务信息</value>

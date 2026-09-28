@@ -161,7 +161,9 @@
                 </Button>
                 <Button Click="Import_Click" Content="导入" ToolTip="导入模板文件" AutomationProperties.Name="导入模板" Style="{StaticResource BrowserAction}"/>
                 <Button Click="Export_Click" Content="导出" ToolTip="导出选中或勾选的模板" AutomationProperties.Name="导出模板" Style="{StaticResource BrowserAction}"/>
-                <Button Content="&#xE712;" FontFamily="Segoe MDL2 Assets" ToolTip="更多操作" AutomationProperties.Name="更多操作" Click="More_Click" Style="{StaticResource BrowserAction}" Width="32" Padding="0"/>
+                <Button ToolTip="更多操作" AutomationProperties.Name="更多操作" Click="More_Click" Style="{StaticResource BrowserAction}" Width="32" Padding="0">
+                    <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets"/>
+                </Button>
             </StackPanel>
             <StackPanel>
                 <TextBlock x:Name="HeadingText" Text="模板" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -185,10 +187,11 @@
                             <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
                         </Style></TextBlock.Style>
                     </TextBlock>
-                    <Button Grid.Column="2" Click="ClearSearch_Click" Content="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Background="Transparent" BorderThickness="0" Padding="0" ToolTip="清空搜索" AutomationProperties.Name="清空搜索">
+                    <Button Grid.Column="2" Click="ClearSearch_Click" Background="Transparent" BorderThickness="0" Padding="0" ToolTip="清空搜索" AutomationProperties.Name="清空搜索">
                         <Button.Style><Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
                             <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers>
                         </Style></Button.Style>
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10"/>
                     </Button>
                 </Grid>
             </Border>

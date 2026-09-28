@@ -443,12 +443,7 @@ namespace ColorVision.ImageEditor
 
         private void MoveView(double x, double y)
         {
-            TranslateTransform translateTransform = new();
-            Vector vector = new(x, y);
-            translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-            translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-            EditorContext.DrawEditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
-                Matrix.Multiply(EditorContext.DrawEditorContext.Zoombox.ContentMatrix, translateTransform.Value));
+            Zoombox1.Pan(new Vector(x, y));
         }
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e) => SchedulePixelValueOverlayRefresh();
@@ -657,6 +652,7 @@ namespace ColorVision.ImageEditor
 
         public void OpenImages(IEnumerable<string>? filePaths, int selectedIndex = 0)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 var paths = filePaths?.ToList();
@@ -674,6 +670,7 @@ namespace ColorVision.ImageEditor
 
         public void OpenImageGroup(IEnumerable<ImageViewImageItem>? images, int selectedIndex = 0)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 var imageList = images?.ToList();
@@ -686,6 +683,7 @@ namespace ColorVision.ImageEditor
 
         public void AppendImage(string? filePath, bool open = true)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => AppendImage(filePath, open));
@@ -708,6 +706,7 @@ namespace ColorVision.ImageEditor
 
         public void SelectImage(int index)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => SelectImage(index));
@@ -755,6 +754,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            _drawing.CancelPendingZoom();
             _channels.CancelPending();
             ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
@@ -966,6 +966,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            _drawing.CancelPendingZoom();
             _channels.CancelPending();
             if (!_session.TryReplaceSource(imageSource, enableEditorImageServices, () => _isLayerSelectorEnabled = enableEditorImageServices))
             {
@@ -1105,6 +1106,8 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
+            _fullScreenMode?.Dispose();
+            _fullScreenMode = null;
             ReleaseSnapshotBuffer();
             DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
             _realtime?.Dispose();

@@ -358,7 +358,7 @@
     <value>Reset Database</value>
   </data>
   <data name="ResetDatabaseTooltip" xml:space="preserve">
-    <value>Run SQL\color_vision_all.sql from the service install folder as root.</value>
+    <value>Clear the target database, then run SQL\color_vision_all.sql as root without restoring old data.</value>
   </data>
   <data name="MqttServiceInfo" xml:space="preserve">
     <value>MQTT Service Info</value>

@@ -192,6 +192,20 @@ namespace ColorVision.ImageEditor
         protected override Visual GetVisualChild(int index) => index == 0 ? imageVisual : visuals[index - 1];
         protected override int VisualChildrenCount => visuals.Count + 1;
 
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+            if (e.Property == SourceProperty && !ReferenceEquals(e.OldValue, e.NewValue))
+                ClearImageDrawing();
+        }
+
+        private void ClearImageDrawing()
+        {
+            // Unloaded controls do not render again, so invalidating Source alone
+            // leaves the old bitmap referenced by this separate drawing surface.
+            using DrawingContext imageContext = imageVisual.RenderOpen();
+        }
+
         protected override void OnRender(DrawingContext drawingContext)
         {
             using DrawingContext imageContext = imageVisual.RenderOpen();
@@ -581,6 +595,8 @@ namespace ColorVision.ImageEditor
         public void Dispose()
         {
             Clear();
+            SetCurrentValue(SourceProperty, null);
+            ClearImageDrawing();
             MouseLeftButtonDown -= OnMouseLeftButtonDown;
             this.CommandBindings.Clear();
             GC.SuppressFinalize(this);
