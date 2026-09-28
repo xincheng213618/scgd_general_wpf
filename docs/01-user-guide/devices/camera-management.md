@@ -2,10 +2,10 @@
 knowledge_id: "operations.physical-camera"
 knowledge_type: "topic"
 status: "current"
-summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。"
+summary: "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建可静默重启本机注册中心，设备绑定由用户配置。"
 aliases: ["物理相机","相机管理","相机许可证","导入lic","唯一相机自动绑定","校准文件上传","校正文件管理","四色校正采集","四色校正文件修正","恢复点","PhyCameraManager","PhyCamera","SearchCameraIds","SetLicense","CreateRestore","LoadResotre","UploadDataAsync","CalibrationEdit","扫描在线相机","添加未创建的相机","上传校正文件","创建还原点","加载还原点","CameraSearchResultViewModel","PhysicalCamera_Load","t_scgd_camera_license","LicenseState","ExpiryDateTime","许可证过期字段"]
-code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs","Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs","Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadWorkspace.cs","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManagerWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchTypeWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CameraSearchResultWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/CreateWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationEdit.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationArchivePlanBuilder.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationExportArchive.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml","Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs","Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs","Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs","Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs","Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/CalibrationExportArchiveTests.cs"]
 related: ["operations.camera","operations.camera-configuration","operations.calibration","engine.devices"]
 ---
 
@@ -53,9 +53,13 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 ## 创建资源时的目录请求与自动关联
 
-创建窗口和管理器许可证导入都可能调用 `CreatePhysicalCameraFloder`。它先经 `RCFileUpload` 发送 `PhysicalCamera_Load`，得到请求记录后继续执行，没有等待目录创建的完成回执。
+创建窗口和管理器许可证导入在保存新增物理相机配置前，使用 `Directory.CreateDirectory` 确保本机 `FileBasePath/<相机Code>/cfg` 存在；目录已存在时保留其中的全部校正文件，创建失败则报错并停止保存该物理相机配置。已配置相机的许可证重导只更新许可证，不重新创建相机或覆盖路径配置。
 
-随后加载物理集合；若集合中仅一台相机，就设置该相机许可证，遍历当前全部设备服务：写入通用配置的 `SN`、相机/校准服务的 `CameraCode`，并逐个 `Save()`。这条路径可能影响多项绑定和服务；“唯一”按已加载的物理集合判断，不是按本次扫描到几台相机判断。文件/数据库/关联服务没有整批事务成功保证，需分别确认请求结果、保存内容和预期设备绑定。
+保存成功后，`CreatePhysicalCameraFloder` 保留本地集合刷新与许可证记录维护，不再发送 `PhysicalCamera_Load`：旧版服务收到这个事件会递归删除整台物理相机的目录，不能把它当作无损的目录创建或配置刷新请求。首次创建 MySQL 物理相机配置成功后，`PhysicalCameraCreationBatch` 通过 `ColorVisionServiceHost` 在后台正常重启本机 `RegistrationCenterService`，让注册中心重新加载包含新增相机的文件资源列表，保留磁盘文件；不弹重启提示或确认框。该路径适用于注册中心与客户端同机部署，需要本机服务和 Service Host 已安装且可用；失败只记录日志，不宣称配置已经在后端生效，也不回退到清目录的消息。普通“重启设备”MQTT 消息不会重建这份文件资源列表，不能代替注册中心重启。
+
+首次创建按保存前是否已有非空物理相机配置判断，保存失败、离线配置、重复导入已有相机许可证都不触发该重启。一次多文件 / ZIP 许可证导入在处理完成后合并为一次后台重启；批次并发时串行执行，避免 Windows 服务启停重叠。原有相机的日常使用不因本流程重启，许可证变更原有的设备服务重启确认仍由许可证入口单独管理。
+
+加载物理集合后，若集合中仅一台相机，仍维护该相机的许可证记录。创建或导入物理相机不批量改写已有设备的 `SN`、`CameraCode` 或保存设备；相机、校准设备及光谱仪由用户自行填写绑定信息。其他设备只在创建设备时选择到期时间最晚的可用相机许可证作为默认 SN，详见设备资源配置主题的“创建终端与创建设备”部分。
 
 ## 许可证字段与界面状态
 
@@ -70,7 +74,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 | `PhyCameraManager.Import` | 支持 `.lic` / `.zip`；ZIP 中只处理 `.lic` 项，以文件名（不含扩展名）作为 `MacAddress`，解析许可证并保存许可证/物理资源 |
 | `PhyCamera.SetLicense` | 更新当前相机，文件名必须匹配该物理资源 `Code`；只有保存返回 `1` 且许可证内容确实变化时才提示用户是否重启当前节点的后端服务，使相机、校准、算法、光谱与滤光轮等模块统一重新加载许可证；保存未替换或新旧内容相同时不重启 |
 
-管理器批量导入会按许可证文件名与物理相机 `Code`（忽略大小写）匹配。已存在且已有配置的物理相机只更新许可证及界面状态，不覆盖物理配置，也不请求创建目录或重新执行唯一相机自动关联；没有对应资源或只有空配置候选时，才写入默认 `new ConfigPhyCamera()` 并进入创建流程。
+管理器批量导入会按许可证文件名与物理相机 `Code`（忽略大小写）匹配。已存在且已有配置的物理相机只更新许可证及界面状态，不覆盖物理配置，也不请求创建目录；没有对应资源或只有空配置候选时，才写入默认 `new ConfigPhyCamera()` 并进入创建流程。
 
 许可证解析/数据库保存与硬件运行授权是不同判据；不要因“导入成功”就宣称采集可用。当前相机入口会忽略新旧许可证首尾空白差异；内容变化且保存成功后由用户确认是否发送整体重启命令。该命令不等待各后端完成，RC 未连接或令牌不可用时也没有成功回执，因此仍须通过服务日志或实际算法调用确认新许可证已经生效。执行导入、更新、创建或恢复前，确认目标相机代码、可覆盖配置/许可证的范围、关联服务和写入授权；不要把重导许可证作为默认排障步骤。
 
@@ -98,6 +102,8 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 ## 验证范围
 
+- `PhyCameraLicenseImportPolicyTests` 覆盖已有配置重导许可证的创建判定，以及本地目录首次创建、重复创建保留大于 10 MiB 的均匀场文件和四色文件、路径冲突保留原文件并报错；不覆盖真实注册中心重启。
+- `PhysicalCameraCreationBatchTests` 使用替代服务控制器覆盖首次创建、已有 / 离线 / 保存失败时跳过、批量只重启一次、失败释放门禁及并发串行；不操作真实 Windows 服务。
 - `CalibrationExportArchiveTests` 覆盖标准 ZIP 可读性、`.cvcal` 共用格式及解包、安全路径拒绝、失败保留旧目标和临时文件清理；不覆盖真实数据库或真机恢复。
 - `CalibrationUploadRunnerTests` 覆盖同相机并发拒绝、失败释放门禁、不同相机不互锁及 UI 通知。
 - `CalibrationUploadWorkspaceTests` 约束临时工作区隔离/清理；不证明资源上传的文件/数据库一致性。

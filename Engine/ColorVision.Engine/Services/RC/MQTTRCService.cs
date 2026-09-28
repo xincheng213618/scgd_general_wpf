@@ -234,9 +234,6 @@ namespace ColorVision.Engine.Services.RC
             ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
             SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
 
-            RCFileUpload.GetInstance().SendTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName); ;
-            RCFileUpload.GetInstance().SubscribeTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
-
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.SubscribeCache(SysConfigRespTopic);
         }

@@ -1,13 +1,9 @@
 #pragma warning disable CA1822,CA1826,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -347,6 +343,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Import()
         {
+            PhysicalCameraCreationBatch creationBatch = new();
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
                 RestoreDirectory = true,
@@ -367,11 +364,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         if (Path.GetExtension(file).Equals(".zip", StringComparison.OrdinalIgnoreCase))
                         {
-                            ProcessZipFile(file, licenses);
+                            ProcessZipFile(file, licenses, creationBatch);
                         }
                         else if (Path.GetExtension(file).Equals(".lic", StringComparison.OrdinalIgnoreCase))
                         {
-                            ProcessLicFile(file, licenses);
+                            ProcessLicFile(file, licenses, creationBatch);
                         }
                         else
                         {
@@ -385,9 +382,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }
             LoadPhyCamera();
+            _ = creationBatch.ActivateAsync();
         }
 
-        private  void ProcessZipFile(string file, List<LicenseModel> licenses)
+        private void ProcessZipFile(string file, List<LicenseModel> licenses, PhysicalCameraCreationBatch creationBatch)
         {
             using ZipArchive archive = ZipFile.OpenRead(file);
             var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -399,16 +397,16 @@ namespace ColorVision.Engine.Services.PhyCameras
                 using var reader = new StreamReader(stream, Encoding.UTF8);
                 licenseModel.LicenseValue = reader.ReadToEnd();
 
-                UpdateLicenseModel(licenseModel);
+                UpdateLicenseModel(licenseModel, creationBatch);
             }
         }
 
-        private  void ProcessLicFile(string file, List<LicenseModel> licenses)
+        private void ProcessLicFile(string file, List<LicenseModel> licenses, PhysicalCameraCreationBatch creationBatch)
         {
             var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(file), licenses);
             licenseModel.LicenseValue = File.ReadAllText(file);
 
-            UpdateLicenseModel(licenseModel);
+            UpdateLicenseModel(licenseModel, creationBatch);
         }
 
         internal static LicenseModel GetOrCreateLicenseModel(string macAddress, List<LicenseModel> licenses)
@@ -422,7 +420,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             return licenseModel;
         }
 
-        private void UpdateLicenseModel(LicenseModel licenseModel)
+        private void UpdateLicenseModel(LicenseModel licenseModel, PhysicalCameraCreationBatch creationBatch)
         {
             licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
             licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
@@ -440,10 +438,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 phyCamera.CameraLicenseModel = licenseModel;
             }
 
-            UpdateSysResource(licenseModel);
+            UpdateSysResource(licenseModel, creationBatch);
         }
 
-        private  void UpdateSysResource(LicenseModel licenseModel)
+        private void UpdateSysResource(LicenseModel licenseModel, PhysicalCameraCreationBatch creationBatch)
         {
             var sysDictionaryModel = FindPhysicalCameraResource(SysResourceDao.Instance.GetAll(), licenseModel.MacAddress);
             if (!RequiresPhysicalCameraCreation(sysDictionaryModel))
@@ -456,9 +454,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Code = licenseModel.MacAddress,
                 Type = (int)ServiceTypes.PhyCamera
             };
-            sysDictionaryModel.Value = JsonConvert.SerializeObject(new ConfigPhyCamera());
+            ConfigPhyCamera config = new();
+            EnsurePhysicalCameraDirectory(config.FileServerCfg.FileBasePath, sysDictionaryModel.Code);
+            sysDictionaryModel.Value = JsonConvert.SerializeObject(config);
 
             int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+            creationBatch.RecordSaved(true, sysDictionaryModel, ret);
             if(ret != -1 && sysDictionaryModel.Code !=null)
             {
                 CreatePhysicalCameraFloder(sysDictionaryModel.Code);
@@ -472,9 +473,22 @@ namespace ColorVision.Engine.Services.PhyCameras
         internal static bool RequiresPhysicalCameraCreation(SysResourceModel? resource) =>
             resource == null || string.IsNullOrWhiteSpace(resource.Value);
 
+        internal static void EnsurePhysicalCameraDirectory(string? basePath, string? cameraCode)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(basePath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(cameraCode);
+            if (cameraCode is "." or ".." || cameraCode.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                throw new ArgumentException("Camera code must be a single directory name.", nameof(cameraCode));
+            }
+
+            // Idempotent: creating an existing directory must preserve every calibration file.
+            Directory.CreateDirectory(Path.Combine(basePath, cameraCode, "cfg"));
+        }
+
         public void CreatePhysicalCameraFloder(string cameraID)
         {
-            if (!SysResourceDao.Instance.UseLocal) RCFileUpload.GetInstance().CreatePhysicalCameraFloder(cameraID);
+            // Legacy PhysicalCamera_Load deletes the camera directory; keep this refresh local.
             LoadPhyCamera();
             if (PhyCameras.Count == 1)
             {
@@ -487,20 +501,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 GetPhyCamera(cameraID).CameraLicenseModel = license;
 
-                foreach (var item in ServiceManager.GetInstance().DeviceServices)
-                {
-                    if (item.GetConfig() is DeviceServiceConfig deviceServiceConfig)
-                        deviceServiceConfig.SN = cameraID;
-                    if (item is DeviceCamera deviceCamera)
-                    {
-                        deviceCamera.Config.CameraCode = cameraID;
-                    }
-                    if (item is DeviceCalibration deviceCalibration)
-                    {
-                        deviceCalibration.Config.CameraCode = cameraID;
-                    }
-                    item.Save();
-                }
             }
 
         }

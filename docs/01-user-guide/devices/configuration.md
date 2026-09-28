@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
 aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
-code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
+code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/WindowServiceConfigurationTests.cs"]
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
 ---
@@ -52,6 +52,7 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 
 - `CreateType` 根据类型字典设置 Type，构造带服务类型、终端 Code 和 RCName 的 CMD/STATUS 主题，插入根资源后加入终端集合，再请求按类型重启。
 - `CreateTerminal` 以终端 Type 找工厂，传入 `DeviceServiceCreateContext(Code, Name, SendTopic, SubscribeTopic)`；工厂建立 Config，保存子资源 JSON，再创建运行实例并加入集合。
+- 新建设备在保存前查找可用的相机许可证并默认填入 SN；相机、校准设备和光谱仪不自动填写，由用户自行配置。候选必须是相机许可证（`LiceType=0`）、SN 和许可证内容非空，且许可证内容可解析、型号非空、内容中的到期时间晚于当前时间；不只依据数据库 `expired` 元数据。默认选择到期时间最晚的一份，到期时间相同则按 SN 忽略大小写排序，以保持选择稳定；不依赖物理相机是否已配置或选中。本地终端只查询本地许可证。没有可用许可证时保持原配置，已有显式 SN 不覆盖。默认值只在创建时写入，签名与硬件授权仍由原生驱动在运行时验证。
 - 默认命名辅助方法会查询资源是否重名，但手工提交的检查路径不同：`CreateType` 检查当前类型的终端 Code，`CreateTerminal` 检查当前已加载设备 Code。不能把界面检查当成跨进程、并发或全部数据库记录的唯一性保证。
 - 数据库插入、构建设备、加入集合和请求远端重启没有统一事务回滚。创建后异常时先定位失败阶段，不能直接重复创建。
 
@@ -104,5 +105,7 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 保存/创建失败时，分别记录：当前数据库和目标资源 ID/Type/Pid/Code、旧 Value 备份、编辑模式、数据库阶段结果、RC 连接与重启请求、设备端最终状态。只读诊断可以审查代码、脱敏日志与既有记录；不要通过改 Code、清库、重新导入或点击“重启服务”试探。
 
 本页未声明创建/保存/重启的自动化集成测试。`ServiceConfigTests` 只覆盖 RC 配置信息属性通知，不能证明本页契约。受授权的隔离验证应覆盖旧 JSON 恢复、无效 JSON 保留证据、保存后重开、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
+
+`WindowServiceConfigurationTests` 覆盖创建配置时按到期时间选择相机许可证、无可用许可证、相机 / 校准 / 光谱仪排除及显式 SN 保留，并验证默认 SN 随配置序列化；不访问真实数据库或操作设备。
 
 共享 Config 的即时取值、重置后的新旧引用、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。

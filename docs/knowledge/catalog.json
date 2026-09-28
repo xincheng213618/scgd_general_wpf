@@ -5478,7 +5478,6 @@
         "Engine/ColorVision.Engine/Services/RC/RCSetting.cs",
         "Engine/ColorVision.Engine/Services/RC/RCServiceConfig.cs",
         "Engine/ColorVision.Engine/Services/RC/RCInitializer.cs",
-        "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
         "Engine/cvColorVision/MQTTMessageLib/NodeToken.cs",
         "Engine/cvColorVision/MQTTMessageLib/MQTTRCServiceTypeConst.cs",
         "Engine/cvColorVision/MQTTMessageLib/Util/EnumTool.cs",
@@ -6911,6 +6910,7 @@
         "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs",
         "Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs",
         "Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs",
@@ -7465,7 +7465,7 @@
       "knowledge_id": "operations.physical-camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。",
+      "summary": "物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建可静默重启本机注册中心，设备绑定由用户配置。",
       "aliases": [
         "物理相机",
         "相机管理",
@@ -7499,6 +7499,7 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
@@ -7516,11 +7517,11 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml",
         "Engine/ColorVision.Engine/CalFile/CVXFileProcess.cs",
-        "Engine/ColorVision.Engine/Services/RC/RCFileUpload.cs",
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
+        "Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadWorkspaceTests.cs",
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",

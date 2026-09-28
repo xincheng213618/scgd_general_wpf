@@ -13,6 +13,7 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using System;
 using System.Collections.Generic;
 
@@ -134,6 +135,16 @@ namespace ColorVision.Engine.Services.Devices
             return TryGetFactory(serviceType, out IDeviceServiceFactory? factory) && factory != null
                 ? factory.CreateService(sysResourceModel)
                 : null;
+        }
+
+        internal static void ApplyDefaultLicense(ServiceTypes serviceType, DeviceServiceConfig config, IEnumerable<LicenseModel> licenses, DateTimeOffset now)
+        {
+            if (serviceType is ServiceTypes.Camera or ServiceTypes.Calibration or ServiceTypes.Spectrum
+                || config is ConfigCamera or ConfigCalibration or ConfigSpectrum
+                || !string.IsNullOrWhiteSpace(config.SN)) return;
+
+            LicenseModel? selectedLicense = PhyLicenseDao.FindUsableCameraLicense(licenses, now);
+            if (selectedLicense != null) config.SN = selectedLicense.MacAddress!;
         }
 
         private static void RegisterDefaults()
