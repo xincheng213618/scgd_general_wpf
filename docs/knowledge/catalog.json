@@ -7669,7 +7669,8 @@
       "related": [
         "platform.system",
         "platform.runtime",
-        "flow.architecture"
+        "flow.architecture",
+        "platform.service-integration-roadmap"
       ],
       "code_scopes": [
         "ColorVision",
@@ -8201,6 +8202,74 @@
       "title": "ColorVisionServiceHost：本机权限代理与生命周期",
       "source": "docs/03-architecture/components/service-host.md",
       "url": "/03-architecture/components/service-host",
+      "searchable": true
+    },
+    {
+      "knowledge_id": "platform.service-integration-roadmap",
+      "knowledge_type": "decision",
+      "status": "planned",
+      "summary": "在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。",
+      "aliases": [
+        "服务内化",
+        "服务成为产品的一部分",
+        "服务接管规划",
+        "去服务化",
+        "CVWindowsService整合",
+        "scgd_internal_dll",
+        "本地运行闭环",
+        "服务替换路线",
+        "配置主权",
+        "服务依赖退出"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Services/ServiceManager.cs",
+        "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local",
+        "Engine/ColorVision.Engine/Services/Devices/Spectrum/Local",
+        "Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs",
+        "Engine/ColorVision.Engine/Templates/Flow/LocalFlowTemplateStorage.cs",
+        "Engine/ColorVision.Engine/Mysql/MySqlResultCleanupProvider.cs",
+        "Engine/cvColorVision",
+        "UI/ColorVision.Algorithms/AlgorithmRuntime.cs",
+        "Native/opencv_helper",
+        "Plugins/WindowsServicePlugin/ServiceManager",
+        "src/ColorVisionServiceHost"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs",
+        "Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs",
+        "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs",
+        "Test/ColorVision.UI.Tests/LocalFlowTemplateStorageTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSpectrumFlowTests.cs",
+        "Test/Spectrum.Tests/LocalSpectrumTests.cs",
+        "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"
+      ],
+      "related": [
+        "platform.architecture",
+        "platform.service-host",
+        "plugins.windows-service",
+        "engine.devices",
+        "engine.native-bindings",
+        "flow.templates",
+        "flow.session",
+        "operations.calibration",
+        "engine.spectrum-device",
+        "algorithms.platform",
+        "engine.results"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine",
+        "Engine/cvColorVision",
+        "Native/opencv_helper",
+        "Plugins/WindowsServicePlugin",
+        "UI/ColorVision.Algorithms",
+        "src/ColorVisionServiceHost"
+      ],
+      "domain": "platform",
+      "title": "配套服务纳入 ColorVision 的演进规划",
+      "source": "docs/03-architecture/service-integration-roadmap.md",
+      "url": "/03-architecture/service-integration-roadmap",
       "searchable": true
     },
     {

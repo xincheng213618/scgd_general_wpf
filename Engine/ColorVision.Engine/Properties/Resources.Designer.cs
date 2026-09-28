@@ -7549,7 +7549,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearExpired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 确定清除 {0} 个已过期的许可证？
         ///
@@ -7560,7 +7560,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearExpiredConfirm", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清除失败：{0} 的本地化字符串。
         /// </summary>
@@ -7569,7 +7569,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearExpiredFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 清除已过期的许可证记录，保留到期时间未知的记录。 的本地化字符串。
         /// </summary>
@@ -7578,7 +7578,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearExpiredHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 已清除 {0} 个过期许可证。 的本地化字符串。
         /// </summary>
@@ -7587,7 +7587,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearExpiredSuccess", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 正在清除过期许可证… 的本地化字符串。
         /// </summary>
@@ -7596,7 +7596,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseClearingExpired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 许可证已复制到剪贴板 的本地化字符串。
         /// </summary>
@@ -7659,7 +7659,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseExpiryUnknown", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 有效期至 {0} 的本地化字符串。
         /// </summary>
@@ -7713,7 +7713,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseListEmpty", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 许可证过期 的本地化字符串。
         /// </summary>
@@ -7749,7 +7749,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseNoExpired", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 正常 的本地化字符串。
         /// </summary>
@@ -7821,7 +7821,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseSummaryFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 相机 的本地化字符串。
         /// </summary>
@@ -12076,7 +12076,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumCorrectionDevice", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 完整光谱或单独亮度校正 的本地化字符串。
         /// </summary>
@@ -12094,7 +12094,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumCorrectionNeedsDevice", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 电流 (A) 的本地化字符串。
         /// </summary>
@@ -12261,7 +12261,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorConnectionHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 波特率必须大于 0。 的本地化字符串。
         /// </summary>
@@ -12270,7 +12270,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorInvalidBaud", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择有效串口 COM1–COM256；使用默认连接时请关闭“串口连接”。 的本地化字符串。
         /// </summary>
@@ -12279,7 +12279,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorInvalidPort", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 许可证按上方 SN 匹配。上传后立即保存；取消配置编辑不会撤销许可证导入。 的本地化字符串。
         /// </summary>
@@ -12288,7 +12288,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorLicenseHint", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 管理许可证 的本地化字符串。
         /// </summary>
@@ -12297,7 +12297,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorManage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 查看搜索详情 的本地化字符串。
         /// </summary>
@@ -12306,7 +12306,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorSearchDetails", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 串口连接 的本地化字符串。
         /// </summary>
@@ -12315,7 +12315,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorSerial", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 编辑光谱仪配置 的本地化字符串。
         /// </summary>
@@ -12324,7 +12324,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorTitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 上传许可证 的本地化字符串。
         /// </summary>
@@ -12333,7 +12333,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("SpectrumEditorUpload", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 请选择光谱仪，或扫描 / 导入许可证。 的本地化字符串。
         /// </summary>

@@ -932,6 +932,12 @@
                 "root": "ONNX / AI 推理接入设计（Deferred） [规划]"
               },
               "link": "/02-developer-guide/core-concepts/onnx-inference-future-design"
+            },
+            {
+              "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
             }
           ]
         },
@@ -2795,6 +2801,12 @@
             },
             {
               "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
+            },
+            {
+              "text": {
                 "root": "图像设置：作用范围、保存和扩展"
               },
               "link": "/02-developer-guide/core-concepts/image-editor-settings-plan"
@@ -2891,6 +2903,12 @@
                 "root": "设备视图内存预览设计（待实施） [规划]"
               },
               "link": "/02-developer-guide/engine-development/local-camera-memory-preview"
+            },
+            {
+              "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
             }
           ]
         },
@@ -3230,6 +3248,12 @@
                 "root": "opencv_helper.dll API 参考"
               },
               "link": "/04-api-reference/engine-components/opencv-helper-api"
+            },
+            {
+              "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
             }
           ]
         }
@@ -3428,6 +3452,12 @@
                 "root": "插件依赖与接入矩阵"
               },
               "link": "/04-api-reference/plugins/plugin-capability-matrix"
+            },
+            {
+              "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
             }
           ]
         }
@@ -4202,6 +4232,12 @@
                 "root": "TCP 监听、协议分发与消息记录"
               },
               "link": "/04-api-reference/ui-components/ColorVision.SocketProtocol"
+            },
+            {
+              "text": {
+                "root": "配套服务纳入 ColorVision 的演进规划 [规划]"
+              },
+              "link": "/03-architecture/service-integration-roadmap"
             }
           ]
         },
