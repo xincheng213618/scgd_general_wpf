@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from flask import Flask, jsonify, request
+from flask.wrappers import Request as FlaskRequest
 from markupsafe import Markup
 from werkzeug.exceptions import HTTPException
 
@@ -48,6 +49,16 @@ try:
     import markdown as _markdown_mod
 except ImportError:
     _markdown_mod = None
+
+
+class ColorVisionRequest(FlaskRequest):
+    @property
+    def max_content_length(self) -> int | None:
+        # Keep the global package cap while allowing large feedback attachments.
+        # This works with both Flask 3.0 and 3.1, where the request setter differs.
+        if self.method == "POST" and self.path == "/api/feedback":
+            return None
+        return super().max_content_length
 
 
 def human_size(size_bytes: int) -> str:
@@ -106,6 +117,7 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     storage = Path(override_storage) if override_storage is not None else Path(config["storage_path"])
 
     app = Flask(__name__, static_folder=None)
+    app.request_class = ColorVisionRequest
     app.secret_key = config["secret_key"]
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
     app.config["SESSION_COOKIE_HTTPONLY"] = True
