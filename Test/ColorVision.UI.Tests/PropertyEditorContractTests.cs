@@ -1,4 +1,5 @@
 using ColorVision.UI.LogImp;
+using ColorVision.ImageEditor.Algorithms.Mtf;
 using log4net.Core;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -171,6 +172,129 @@ public class PropertyEditorContractTests
         Assert.Equal(EditorBrowsableState.Never, legacyEvent.GetCustomAttribute<EditorBrowsableAttribute>()?.State);
     }
 
+    [Theory]
+    [InlineData(PropertyEditorEditMode.Immediate)]
+    [InlineData(PropertyEditorEditMode.Transactional)]
+    public void MtfConditionalParametersAndCategoriesSurviveSearchAndSorting(PropertyEditorEditMode mode)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsurePropertyEditorResources();
+            StripeMtfParameters source = new() { Pattern = StripeMtfPattern.Horizontal, RectWidth = 73, TailRatio = .2 };
+            PropertyEditorWindow window = new(source, mode);
+            try
+            {
+                var editable = Assert.IsType<StripeMtfParameters>(window.EditConfig);
+                var panel = Assert.IsType<StackPanel>(window.FindName("PropertyPanel"));
+                var search = Assert.IsType<TextBox>(window.FindName("SearchBox"));
+                Border Group(string name) => panel.Children.OfType<Border>().Single(b => Equals(b.Tag, name));
+                IEnumerable<DockPanel> Rows() => panel.Children.OfType<Border>().SelectMany(b => ((StackPanel)b.Child).Children.OfType<DockPanel>());
+                DockPanel Row(string name) => Rows().Single(p => p.Tag is PropertyInfo property && property.Name == name);
+                void AssertFourPartVisibility(Visibility expected)
+                {
+                    Border group = Group("四部定位");
+                    Assert.Equal(expected, group.Visibility);
+                    Assert.Equal(expected == Visibility.Visible, window.TreeNodes.Single(n => n.Header == "四部定位").IsVisible);
+                    foreach (DockPanel row in ((StackPanel)group.Child).Children.OfType<DockPanel>()) Assert.Equal(expected, row.Visibility);
+                }
+
+                Assert.False(editable.ShowAdvanced);
+                foreach (StripeMtfPattern pattern in Enum.GetValues<StripeMtfPattern>())
+                {
+                    editable.Pattern = pattern;
+                    Assert.Equal(new[] { nameof(StripeMtfParameters.Pattern), nameof(StripeMtfParameters.ShowAdvanced) },
+                        Rows().Where(r => r.Visibility == Visibility.Visible).Select(r => ((PropertyInfo)r.Tag).Name));
+                    AssertFourPartVisibility(Visibility.Collapsed);
+                }
+                editable.Pattern = StripeMtfPattern.Horizontal;
+                editable.ShowAdvanced = true;
+                AssertFourPartVisibility(Visibility.Collapsed);
+                editable.Pattern = StripeMtfPattern.FourPart;
+                AssertFourPartVisibility(Visibility.Visible);
+                Assert.Equal(73, editable.RectWidth);
+                editable.Pattern = StripeMtfPattern.Vertical;
+                AssertFourPartVisibility(Visibility.Collapsed);
+                search.Text = "四部定位";
+                AssertFourPartVisibility(Visibility.Collapsed);
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("SearchEmptyState")).Visibility);
+                editable.Pattern = StripeMtfPattern.FourPart;
+                AssertFourPartVisibility(Visibility.Visible);
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("SearchEmptyState")).Visibility);
+                search.Text = "不存在的参数";
+                editable.Pattern = StripeMtfPattern.Horizontal;
+                editable.Pattern = StripeMtfPattern.FourPart;
+                AssertFourPartVisibility(Visibility.Collapsed);
+                search.Clear();
+                AssertFourPartVisibility(Visibility.Visible);
+
+                editable.Method = StripeMtfMethod.TrimmedExtrema;
+                Assert.Equal(Visibility.Collapsed, Row(nameof(StripeMtfParameters.TailRatio)).Visibility);
+                search.Text = "两端取样比例";
+                Assert.Equal(Visibility.Collapsed, Row(nameof(StripeMtfParameters.TailRatio)).Visibility);
+                editable.Method = StripeMtfMethod.TailMean;
+                Assert.Equal(Visibility.Visible, Row(nameof(StripeMtfParameters.TailRatio)).Visibility);
+                Assert.Equal(.2, editable.TailRatio);
+                editable.ShowAdvanced = false;
+                Assert.Equal(Visibility.Collapsed, Row(nameof(StripeMtfParameters.TailRatio)).Visibility);
+                AssertFourPartVisibility(Visibility.Collapsed);
+                editable.ShowAdvanced = true;
+                Assert.Equal(Visibility.Visible, Row(nameof(StripeMtfParameters.TailRatio)).Visibility);
+                Assert.Equal(.2, editable.TailRatio);
+                Assert.Equal(73, editable.RectWidth);
+                search.Clear();
+                editable.Pattern = StripeMtfPattern.Horizontal;
+                ((ComboBox)window.FindName("SortComboBox")).SelectedIndex = 1;
+                AssertFourPartVisibility(Visibility.Collapsed);
+                editable.Pattern = StripeMtfPattern.FourPart;
+                AssertFourPartVisibility(Visibility.Visible);
+                if (mode == PropertyEditorEditMode.Transactional) Assert.Equal(StripeMtfPattern.Horizontal, source.Pattern);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    private sealed class NestedMtfConfig
+    {
+        public string Caption { get; set; } = "Fixture";
+        public StripeMtfParameters Settings { get; set; } = new() { Pattern = StripeMtfPattern.Vertical, ShowAdvanced = true };
+    }
+
+    [Fact]
+    public void NestedConditionalParametersKeepTheirOwnSourceAndFilterTheirNavigation()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            EnsurePropertyEditorResources();
+            NestedMtfConfig config = new();
+            PropertyEditorWindow window = new(config);
+            try
+            {
+                var panel = Assert.IsType<StackPanel>(window.FindName("PropertyPanel"));
+                var search = Assert.IsType<TextBox>(window.FindName("SearchBox"));
+                static IEnumerable<FrameworkElement> Descendants(FrameworkElement element)
+                {
+                    yield return element;
+                    IEnumerable<FrameworkElement> children = element is Border border && border.Child is FrameworkElement content ? [content]
+                        : element is Panel container ? container.Children.OfType<FrameworkElement>() : [];
+                    foreach (var child in children) foreach (var descendant in Descendants(child)) yield return descendant;
+                }
+                Border locator = Descendants(panel).OfType<Border>().Single(b => Equals(b.Tag, "四部定位"));
+                search.Text = "Settings";
+                Assert.Equal(Visibility.Collapsed, locator.Visibility);
+                search.Text = "四部定位";
+                Assert.False(Assert.Single(window.TreeNodes).IsVisible);
+                config.Settings.Pattern = StripeMtfPattern.FourPart;
+                Assert.Equal(Visibility.Visible, locator.Visibility);
+                Assert.True(Assert.Single(window.TreeNodes).IsVisible);
+                Assert.True(Assert.Single(window.TreeNodes[0].Children).IsVisible);
+                search.Clear();
+                config.Settings.Pattern = StripeMtfPattern.Horizontal;
+                Assert.Equal(Visibility.Collapsed, locator.Visibility);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     private static void EnsurePropertyEditorResources()
     {
         Application application = Application.Current!;
@@ -180,6 +304,10 @@ public class PropertyEditorContractTests
         application.Resources["ButtonCommand"] = new Style(typeof(Button));
         application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
         application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
+        application.Resources["ButtonDefault"] = new Style(typeof(Button));
+        application.Resources["ButtonPrimary"] = new Style(typeof(Button));
+        application.Resources["TextBoxBaseStyle"] = new Style(typeof(TextBox));
+        application.Resources["TreeViewItemBaseStyle"] = new Style(typeof(TreeViewItem));
         application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
     }
 }

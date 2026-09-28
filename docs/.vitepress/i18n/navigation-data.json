@@ -1391,6 +1391,12 @@
             },
             {
               "text": {
+                "root": "ARVR 算法与模板"
+              },
+              "link": "/04-api-reference/algorithms/templates/arvr-template"
+            },
+            {
+              "text": {
                 "root": "Blob / 连通域 V1"
               },
               "link": "/02-developer-guide/core-concepts/blob-analysis-v1"

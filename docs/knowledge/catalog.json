@@ -7,8 +7,15 @@
       "knowledge_id": "algorithms.arvr",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。",
+      "summary": "ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。",
       "aliases": [
+        "条纹MTF",
+        "StripeMtfAnalyzer",
+        "ImageView MTF",
+        "H/V条纹",
+        "本地MTF",
+        "LocalMtfNode",
+        "CV_Ali_calcMtf",
         "ARVR算法",
         "MTF SFR FOV模板对应哪个结果",
         "SFR1.0",
@@ -29,6 +36,11 @@
         "WindowSFR"
       ],
       "code_paths": [
+        "UI/ColorVision.ImageEditor/Algorithms/Mtf",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf",
+        "Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf",
         "Engine/ColorVision.Engine/Templates/ARVR/SFR",
         "Engine/ColorVision.Engine/Templates/ARVR/Ghost",
         "Engine/ColorVision.Engine/Templates/ARVR/Distortion",
@@ -49,6 +61,9 @@
         "Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/StripeMtfTests.cs",
+        "Test/ColorVision.UI.Tests/VendorMtfReference.cs",
+        "Test/ColorVision.UI.Tests/LocalMtfTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
         "Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"
       ],
@@ -64,7 +79,8 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
-        "Engine/cvColorVision"
+        "Engine/cvColorVision",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
       "title": "ARVR 算法与模板",

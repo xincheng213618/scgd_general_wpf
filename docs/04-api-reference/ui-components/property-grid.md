@@ -100,7 +100,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 
 - `PropertyEditorRegistry.GetOrCreate` 复用编辑器实例。不要把某个窗口、属性对象或生成的 `DockPanel` 保存到编辑器实例字段；本次调用的状态应放在新建控件、局部变量或适当释放的订阅中。
 - `CreateTwoWayBinding(obj, property)` 默认逐属性变化回写，启用异常与数据错误验证；属性标注可以指定 `UpdateSourceTrigger`。只读属性或 `[ReadOnly(true)]` 使用单向绑定，生成控件也按只读元数据禁用。
-- 标题、类别、描述优先用 `DisplayName`、`Category`、`Description` 和现有资源解析；显示条件用 `PropertyVisibility`，永久隐藏用 `Browsable(false)`。
+- 标题、类别、描述优先用 `DisplayName`、`Category`、`Description` 和现有资源解析；显示条件用 `PropertyVisibility`，永久隐藏用 `Browsable(false)`。 窗口将条件显隐与搜索筛选叠加，搜索、清空和排序不覆盖条件绑定；条件变化时同步隐藏没有可见字段的分类及导航项。条件属性需发送 `PropertyChanged` 通知；隐藏只改变展示，不重置已填写的值。
 - 用于打开当前对象属性窗口的 `EditCommand` 应标记 `Browsable(false)`，避免在窗口内部再次生成“执行”按钮；`JsonIgnore` 只控制序列化，不控制界面可见性。不要全局按名称或 `ICommand` 类型屏蔽命令，设备上标有 `CommandDisplay` 的“修改配置”和配置内的“清除缓存”等业务操作仍应保留。
 - 布尔、枚举、数值、日期、集合、字典、Brush/Color 等内置映射以 `PropertyEditorBuiltIns.cs` 为准。先检查能否复用，不把“新业务字段”自动等同于“需要新编辑器”。
 

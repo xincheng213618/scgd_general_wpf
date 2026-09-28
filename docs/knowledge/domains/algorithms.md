@@ -72,7 +72,7 @@ next: false
   说明 Engine 模板发现、手动算法宿主、MQTT 请求和 Flow 接入链。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
+  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [Blob / 连通域 V1](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
   BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。

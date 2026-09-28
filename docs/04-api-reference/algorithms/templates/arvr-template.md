@@ -2,16 +2,16 @@
 knowledge_id: "algorithms.arvr"
 knowledge_type: "reference"
 status: "current"
-summary: "ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。"
-aliases: ["ARVR算法","MTF SFR FOV模板对应哪个结果","SFR1.0","MTF2.0","FOV2.0","畸变评价","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR","WindowSFR"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/ARVR/Distortion","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
+summary: "ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。"
+aliases: ["条纹MTF","StripeMtfAnalyzer","ImageView MTF","H/V条纹","本地MTF","LocalMtfNode","CV_Ali_calcMtf","ARVR算法","MTF SFR FOV模板对应哪个结果","SFR1.0","MTF2.0","FOV2.0","畸变评价","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR","WindowSFR"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/Mtf","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf","Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf","Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/ARVR/Distortion","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StripeMtfTests.cs","Test/ColorVision.UI.Tests/VendorMtfReference.cs","Test/ColorVision.UI.Tests/LocalMtfTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","algorithms.template-menus","algorithms.find-cross","algorithms.grid-distortion","engine.results"]
 ---
 
 # ARVR 算法与模板
 
-ARVR 算法通过算法服务计算，宿主负责选择模板、发送请求和展示结果。本页用于选择手动入口或流程算子、核对模板与结果版本，以及查看 SFR 曲线。各算法使用自己的参数模型；传统模板、JSON 模板和 POI 模板不能互换。
+ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请求和展示结果。ImageView 与 Flow 另有共用自研算法的本地条纹 MTF 入口，直接编辑参数，不选择数据库算法模板。本页用于选择手动入口或流程算子、核对模板与结果版本，以及查看 SFR 曲线。各算法使用自己的参数模型；传统模板、JSON 模板和 POI 模板不能互换。
 
 ## 手动运行与模板对应关系
 
@@ -62,6 +62,20 @@ ARVR 算法通过算法服务计算，宿主负责选择模板、发送请求和
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
 **POI模板** 是节点的公共属性行，由 `PoiTemplatePropertiesEditor` 编辑，对所有算子都存在。畸变的两个参数选择器共享同一名称，不是同时发送两套模板；运行前确认最终 `TempName`。
+
+**本地条纹 MTF** 使用共用的 `StripeMtfAnalyzer`，运行不依赖供应商 MTF DLL。ImageView 的 **分析测量 → 清晰度与频域 → 条纹 MTF（H / V / 四部）** 与矩形右键菜单都可打开参数编辑器；主菜单使用画面上的矩形，没有矩形时使用整图。单独 H、V 图像使用测量矩形，四部模式每个矩形圈住一整组图案。参数窗口默认只显示“图案”和“高级设置”开关，计算使用当前配置值；展开高级设置后才显示计算方式、去噪、取样及输出单位。四部模式额外显示“四部定位”组，单独 H/V 隐藏该组；极值法隐藏“两端取样比例”，均值法才显示。收起高级设置或切换图案均保留已填写的值；开关只控制展示，不写入算法配置，也不自动推断定位阈值或小框尺寸。ImageView 与节点参数窗口遵循相同规则。显示坐标按 DPI 转换为原图像素，旋转矩形拒绝测量。结果窗列出各框数值，四部模式另列 H、V、整体均值；叠图属于临时算法图层，切图或新请求使旧结果失效。此入口不需要设备或数据库。
+
+Flow 的 `LocalMtfNode` 位于自定义节点 **MTF计算(V2)**。图像连接 `IN_IMG`，运行时布点结果连接 `IN_POI`，两个输入须属于同一批次且均到达。直接编辑 **算法参数**；参数 JSON 随流程保存，**结果名称**仅用于结果主表命名。没有运行时布点时，把 Start 接到 `IN_POI`，配置 **测量区域**，`0,0,0,0` 表示整图。优先借用方向变换完成的上游 RAW 内存帧，无内存帧时才读取历史图像。接受 8/16 位、1/3 通道以及有行步长的 RAW，不把 CIE 或显示伪彩图当作测量输入。POI 中心矩形和左上角矩形按原服务的单精度坐标及 `Convert.ToInt32` 规则转换；名称须非空且唯一，矩形完整位于图内。
+
+横条纹、竖条纹都在测量框内计算 `(亮−暗)/(亮+暗)`，方向决定图案标记，不改变对比度公式。彩色输入先按 BGR 转灰度。均值法按像素计数舍弃最暗/最亮比例，再各取指定比例求均值；极值法取去噪后的两端点。直方图保留边界灰度中所需的像素个数，不因同值像素过多而整段丢弃；只处理 ROI，并复用直方图缓冲。纯黑、越界或取样不足会失败，不补零；有亮度的常量图输出零。原模板的额外 `sensorRatio` 校正及启用的 `mathMaskRect` 不受支持，导入时明确拒绝。
+
+`pattern=5` 为四部横竖条纹：定位平面进行 5×5 高斯平滑、CLAHE、阈值分割和 15×15 椭圆闭运算，选择满足最小面积的最大轮廓；接触搜索框边缘的目标拒绝定位。按轮廓质心及偏移量，沿四个对角方向放置测量框，编号为左上、右上、右下、左下；`distanceToRect` 是小框中心到目标中心的距离。测量仍使用未增强的原始灰度。`firstIsHor` 决定左上/右下归入 H 或 V。默认定位阈值 5000 适用于 16 位图；8 位图须设置不超过 255 的阈值。`PercentageDisplay` 决定输出比例或百分数，下游判定限须使用同一单位。此测量不是斜边 SFR 曲线，也不输出 MTF50/MTF10。
+
+成功结果保持类型 `MTF`、版本 `2.0`、一条含 `ResultFileName` 的 `DetailCommon` 明细及既有 JSON 字段：`result` 保存各矩形，四部模式另有 `resultChild`、`childRects`、`Average`、`horizontalAverage`、`verticalAverage`。`ViewHandleMTF2` 和客户解析可沿用此结构。自研算法版本、实际参数、ROI 和内存/文件来源记录在主表参数中。**结构兼容不代表数值逐位相同**：定位预处理及直方图端点处理可能与旧 DLL 有差异；本地极值法也不能假定等同于未公开的供应商 `CalcMethod=1`。替换生产流程前，应使用相同原图和 ROI 对照数值并核对判定限。
+
+结果目录默认位于当前用户 `LocalAppData/ColorVision/Results/MTF`。先写文件，再事务保存主表与明细；数据库失败回滚并清理本次文件，持久化完成后发布 `local-flow` 通知并向后续节点输出结果 ID。计算失败不产生成功记录；业务上下限仍由客户流程处理。没有与内存帧对应的已保存图片时，历史结果可能没有原图。原有远端模板算法入口仍按上表运行。
+
+专项验证：`dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~Mtf"`，覆盖 H/V 公式、四部方向分组、坐标、原图保护、ImageView 结果生命周期、直接参数、历史结果读取与事务回滚。设置 `COLORVISION_MTF_FIELD_CASE` 可运行离线对照，JSON 包含 `ImagePath`、`AlgorithmDirectory`、`Parameters`、`RoiRects`、`Expected`（原结果 JSON）；未提供则跳过。供应商适配器仅位于测试项目，用于复现基线。`StripeMtfFieldTests` 在同一驻留帧上预热后交替测量自研算法与 DLL，并输出数值/坐标差异；`COLORVISION_MTF_OWN_REPORT` 指定报告路径。耗时不含读图、数据库和 UI，对照报告不自动判定数值等价，也不代替现场整套流程验收。
 
 ### 公共请求字段
 
