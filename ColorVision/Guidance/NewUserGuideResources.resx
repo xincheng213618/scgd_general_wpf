@@ -4,7 +4,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="MenuHeader" xml:space="preserve"><value>新手引导(_T)</value></data>
+  <data name="MenuHeader" xml:space="preserve"><value>界面导览(_T)</value></data>
   <data name="WelcomeTitle" xml:space="preserve"><value>欢迎使用 ColorVision</value></data>
   <data name="WelcomeDescription" xml:space="preserve"><value>用一分钟了解 ColorVision 的核心界面，快速找到设备、解决方案与工作区。</value></data>
   <data name="DismissWelcomeAction" xml:space="preserve"><value>稍后了解</value></data>
@@ -24,5 +24,5 @@
   <data name="StatusStepTitle" xml:space="preserve"><value>运行状态</value></data>
   <data name="StatusStepDescription" xml:space="preserve"><value>底部状态栏显示当前解决方案与运行状态，并提供后台任务和数据状态入口。</value></data>
   <data name="CompletionTitle" xml:space="preserve"><value>导览完成</value></data>
-  <data name="CompletionDescription" xml:space="preserve"><value>你已了解 ColorVision 的主要界面。需要时，可从“帮助 → 新手引导”再次查看。</value></data>
+  <data name="CompletionDescription" xml:space="preserve"><value>你已了解 ColorVision 的主要界面。需要时，可从“帮助 → 界面导览”再次查看。</value></data>
 </root>

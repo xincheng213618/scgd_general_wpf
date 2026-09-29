@@ -53,7 +53,9 @@ public class ConventionalFlowNodeTests
             node.Title = "A deliberately long flow node title that needs room";
 
             Assert.Equal(26, node.TitleHeight);
-            Assert.Equal(node.TitleRectangle, node.TitleTextRectangle);
+            Assert.Equal(node.TitleRectangle.X, node.TitleTextRectangle.X);
+            Assert.Equal(node.TitleRectangle.Y + 2, node.TitleTextRectangle.Y);
+            Assert.Equal(node.TitleRectangle.Size, node.TitleTextRectangle.Size);
             Assert.True(node.Width > CVCommonNode.StandardNodeWidth);
         });
     }

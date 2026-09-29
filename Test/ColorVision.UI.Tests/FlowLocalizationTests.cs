@@ -180,6 +180,71 @@ public class FlowLocalizationTests
     }
 
     [Theory]
+    [InlineData(
+        "zh-Hans",
+        "循环名称",
+        "必须与对应的“循环下一节点”完全一致，用于匹配同一个循环。",
+        "按起始值、结束值和单步值重复执行一段流程。")]
+    [InlineData(
+        "en-US",
+        "Loop Name",
+        "Must exactly match the corresponding Loop Next node to identify the same loop.",
+        "Repeats a section of the flow using a start value, end value, and step.")]
+    [InlineData(
+        "zh-Hant",
+        "迴圈名稱",
+        "必須與對應的「迴圈下一節點」完全一致，用於配對同一個迴圈。",
+        "依起始值、結束值和單步值重複執行一段流程。")]
+    public void LoopAndLocalNodesExposeOnlyUserConfigurableIdentityFields(
+        string culture,
+        string loopNameLabel,
+        string loopNameDescription,
+        string loopSummary)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+
+                var metadata = FlowNodePropertyMetadataProvider.Instance;
+                PropertyInfo loopName = typeof(LoopNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.NodeName))!;
+                Assert.True(metadata.IsBrowsable(loopName));
+                Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(loopName));
+                Assert.Equal(loopNameLabel, metadata.GetDisplayName(loopName));
+                Assert.Equal(loopNameDescription, metadata.GetDescription(loopName));
+
+                Assert.False(metadata.IsBrowsable(typeof(LoopNode).GetProperty(nameof(FlowEngineLib.Base.CVDeviceNode.DeviceCode))!));
+                Assert.False(metadata.IsBrowsable(typeof(LoopNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.NodeID))!));
+                Assert.False(metadata.IsBrowsable(typeof(LoopNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.ZIndex))!));
+                Assert.False(metadata.IsBrowsable(typeof(LoopNextNode).GetProperty(nameof(FlowEngineLib.Base.CVDeviceNode.DeviceCode))!));
+                Assert.False(metadata.IsBrowsable(typeof(LocalFindLuminousAreaNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.NodeName))!));
+                Assert.False(metadata.IsBrowsable(typeof(LocalFindLuminousAreaNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.NodeID))!));
+                Assert.False(metadata.IsBrowsable(typeof(LocalFindLuminousAreaNode).GetProperty(nameof(FlowEngineLib.Base.CVCommonNode.ZIndex))!));
+
+                var loop = new LoopNode { NodeName = "LOOP_A" };
+                loop.Create();
+                FlowNodeDocumentation documentation = FlowNodeDocumentationPresenter.GetDocumentation(loop);
+                Assert.Equal(loopSummary, documentation.Summary);
+                Assert.Contains(documentation.Properties, property => property.Name == loopNameLabel && property.Description == loopNameDescription);
+
+                Dictionary<string, byte[]> savedState = ParseState(loop.GetSaveData());
+                Assert.Equal("LOOP_A", Encoding.UTF8.GetString(savedState[nameof(FlowEngineLib.Base.CVCommonNode.NodeName)]));
+                Assert.Contains(nameof(FlowEngineLib.Base.CVCommonNode.NodeID), savedState.Keys);
+                Assert.Contains(nameof(FlowEngineLib.Base.CVDeviceNode.DeviceCode), savedState.Keys);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
+        });
+    }
+
+    [Theory]
     [InlineData("zh-Hans", "全局", "运算", "自定义节点/其他")]
     [InlineData("en-US", "Global", "Operation", "Custom Nodes/Other")]
     [InlineData("zh-Hant", "全局", "運算", "自訂節點/其他")]

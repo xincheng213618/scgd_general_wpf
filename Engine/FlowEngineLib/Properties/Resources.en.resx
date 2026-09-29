@@ -870,6 +870,45 @@
   <data name="单步值" xml:space="preserve">
     <value>StepValue</value>
   </data>
+  <data name="循环名称" xml:space="preserve">
+    <value>Loop Name</value>
+  </data>
+  <data name="循环名称说明" xml:space="preserve">
+    <value>Must exactly match the corresponding Loop Next node to identify the same loop.</value>
+  </data>
+  <data name="循环起始值说明" xml:space="preserve">
+    <value>Value used for the first iteration.</value>
+  </data>
+  <data name="循环结束值说明" xml:space="preserve">
+    <value>End condition for an ascending loop; the loop exits before the next value would exceed it.</value>
+  </data>
+  <data name="循环步长说明" xml:space="preserve">
+    <value>Value added after each iteration. It must be greater than 0; descending loops are not supported.</value>
+  </data>
+  <data name="循环节点说明" xml:space="preserve">
+    <value>Repeats a section of the flow using a start value, end value, and step.</value>
+  </data>
+  <data name="循环节点用法" xml:space="preserve">
+    <value>1. Enter exactly the same loop name on the Loop and corresponding Loop Next nodes.&#xA;2. Set the start value, end value, and step.&#xA;3. Connect the Loop OUT port to the loop body, the end of the loop body to Loop Next, and Loop Next OUT_LP_NEXT back to Loop IN_LP_NEXT.&#xA;4. Connect Loop Next OUT to the flow that should run after the loop.</value>
+  </data>
+  <data name="循环节点处理顺序" xml:space="preserve">
+    <value>The Loop node creates the current iteration state and executes the body through OUT. Loop Next reads the state with the same name and returns through OUT_LP_NEXT when another iteration remains; otherwise it continues through OUT.</value>
+  </data>
+  <data name="循环节点注意事项" xml:space="preserve">
+    <value>Use different names for separate loops on the same execution path. The step must be greater than 0, or the loop may not terminate.</value>
+  </data>
+  <data name="循环下一节点说明" xml:space="preserve">
+    <value>Marks the end of a loop body and decides whether to start the next iteration or exit the loop.</value>
+  </data>
+  <data name="循环下一节点用法" xml:space="preserve">
+    <value>The loop name must exactly match the corresponding Loop node. Connect the loop body to IN, OUT_LP_NEXT back to Loop IN_LP_NEXT, and OUT to the flow that follows the loop.</value>
+  </data>
+  <data name="循环下一节点处理顺序" xml:space="preserve">
+    <value>Reads the loop state with the same name. It returns through OUT_LP_NEXT when another iteration remains and continues through OUT when the loop is complete.</value>
+  </data>
+  <data name="循环下一节点注意事项" xml:space="preserve">
+    <value>If the loop names do not match, the corresponding state cannot be found and the loop route will not work correctly.</value>
+  </data>
   <data name="当前值" xml:space="preserve">
     <value>Cur-Val</value>
   </data>

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
@@ -45,22 +46,53 @@ public sealed partial class DisplayMetrologyProvider
             // Positive decoding is monotonic: pool the original integers before
             // normalizing/decoding, producing exactly the same float maxima.
             // Keep every source pixel, including partial cells at the ROI edges.
+            // Max pooling is separable: combine contiguous rows with SIMD first,
+            // then reduce each horizontal cell without mixing B/G/R lanes.
+            ushort[]? pooledRow = step > 1 && Vector.IsHardwareAccelerated ? new ushort[search.Width * 3] : null;
             for (int py = 0; py < height; py++)
             {
                 int y0 = py * step, y1 = Math.Min(y0 + step, search.Height);
+                if (pooledRow != null)
+                {
+                    token.ThrowIfCancellationRequested();
+                    Span<ushort> maxima = pooledRow;
+                    MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y0) * input.Stride + search.X * 6, search.Width * 6)).CopyTo(maxima);
+                    int lanes = Vector<ushort>.Count;
+                    for (int y = y0 + 1; y < y1; y++)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + search.X * 6, search.Width * 6));
+                        int x = 0;
+                        for (; x <= row.Length - lanes; x += lanes)
+                            Vector.Max(new Vector<ushort>(row.Slice(x, lanes)), new Vector<ushort>(maxima.Slice(x, lanes))).CopyTo(maxima.Slice(x, lanes));
+                        for (; x < row.Length; x++) maxima[x] = Math.Max(maxima[x], row[x]);
+                    }
+                }
                 for (int px = 0; px < width; px++)
                 {
                     token.ThrowIfCancellationRequested();
                     int x0 = px * step, x1 = Math.Min(x0 + step, search.Width);
                     int blue = 0, green = 0, red = 0;
-                    for (int y = y0; y < y1; y++)
+                    if (pooledRow != null)
                     {
-                        var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + (search.X + x0) * 6, (x1 - x0) * 6));
-                        for (int x = 0; x < row.Length; x += 3)
+                        for (int x = x0 * 3; x < x1 * 3; x += 3)
                         {
-                            blue = Math.Max(blue, row[x]);
-                            green = Math.Max(green, row[x + 1]);
-                            red = Math.Max(red, row[x + 2]);
+                            blue = Math.Max(blue, pooledRow[x]);
+                            green = Math.Max(green, pooledRow[x + 1]);
+                            red = Math.Max(red, pooledRow[x + 2]);
+                        }
+                    }
+                    else
+                    {
+                        for (int y = y0; y < y1; y++)
+                        {
+                            var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + (search.X + x0) * 6, (x1 - x0) * 6));
+                            for (int x = 0; x < row.Length; x += 3)
+                            {
+                                blue = Math.Max(blue, row[x]);
+                                green = Math.Max(green, row[x + 1]);
+                                red = Math.Max(red, row[x + 2]);
+                            }
                         }
                     }
                     int index = py * width + px;
@@ -104,10 +136,12 @@ public sealed partial class DisplayMetrologyProvider
         int sourceWidth = search.Width, sourceHeight = search.Height;
         var signal = new float[width * height];
         for (int i = 0; i < signal.Length; i++) signal[i] = Math.Max(channels[0][i], Math.Max(channels[1][i], channels[2][i]));
-        var ordered = (float[])signal.Clone(); Array.Sort(ordered);
-        double minimum = ordered[ordered.Length / 2], contrast = ordered[^1] - minimum;
+        var work = (float[])signal.Clone();
+        double minimum = SelectCrossUpperMedian(work, token), contrast = signal.Max() - minimum;
         // Median/MAD tolerate sparse highlights and hot pixels without a manual noise setting.
-        double locatorFloor = minimum + Math.Max(p.MinimumContrast, 6 * CrossLocatorMad(ordered));
+        // Preserve double subtraction and float rounding without fully sorting the locator.
+        for (int i = 0; i < work.Length; i++) work[i] = (float)Math.Abs(signal[i] - minimum);
+        double locatorFloor = minimum + Math.Max(p.MinimumContrast, 6 * SelectCrossUpperMedian(work, token));
         candidateCount = 0;
         CrossSlot[] Reject(string reason) => Enumerable.Range(0, p.Rows * p.Columns).Select(_ => new CrossSlot(default, default, reason)).ToArray();
         if (contrast < p.MinimumContrast) return Reject("low_contrast");
@@ -191,22 +225,44 @@ public sealed partial class DisplayMetrologyProvider
         return slots;
     }
 
-    private static float CrossLocatorMad(float[] ordered)
+    private static float SelectCrossUpperMedian(float[] values, CancellationToken token)
     {
-        // Around the sorted upper median, absolute deviations form two ascending
-        // runs when traversed outwards. Merge only through their upper median,
-        // preserving the original double subtraction and float rounding.
-        int middle = ordered.Length / 2, left = middle - 1, right = middle;
-        double median = ordered[middle];
-        float deviation = 0;
-        for (int i = 0; i <= middle; i++)
+        // The locator has already validated a nonempty, finite signal. Three-way
+        // partitioning handles repeated dark values in one pass. Bound the number
+        // of partitions and fall back to sorting for adversarial arrangements.
+        int rank = values.Length / 2, left = 0, right = values.Length - 1;
+        int remaining = 2 * BitOperations.Log2((uint)values.Length) + 1;
+        while (left < right)
         {
-            float lower = left >= 0 ? (float)Math.Abs(ordered[left] - median) : float.PositiveInfinity;
-            float upper = right < ordered.Length ? (float)Math.Abs(ordered[right] - median) : float.PositiveInfinity;
-            if (lower <= upper) { deviation = lower; left--; }
-            else { deviation = upper; right++; }
+            token.ThrowIfCancellationRequested();
+            if (remaining-- == 0)
+            {
+                Array.Sort(values, left, right - left + 1);
+                return values[rank];
+            }
+            float a = values[left], b = values[left + (right - left) / 2], c = values[right];
+            float pivot = Math.Max(Math.Min(a, b), Math.Min(Math.Max(a, b), c));
+            int lower = left, scan = left, upper = right;
+            while (scan <= upper)
+            {
+                float value = values[scan];
+                if (value < pivot)
+                {
+                    (values[lower], values[scan]) = (values[scan], values[lower]);
+                    lower++; scan++;
+                }
+                else if (value > pivot)
+                {
+                    (values[scan], values[upper]) = (values[upper], values[scan]);
+                    upper--;
+                }
+                else scan++;
+            }
+            if (rank < lower) right = lower - 1;
+            else if (rank > upper) left = upper + 1;
+            else return pivot;
         }
-        return deviation;
+        return values[rank];
     }
 
     private static CrossTarget LocateCross(AlgorithmImageBuffer input, int channel, CrossSlot slot,
@@ -282,6 +338,12 @@ public sealed partial class DisplayMetrologyProvider
             int start = alongHorizontal ? evidence.X - roi.X : evidence.Y - roi.Y;
             int length = alongHorizontal ? evidence.Width : evidence.Height;
             int transverseLength = alongHorizontal ? roi.Height : roi.Width;
+            // Reuse scratch storage across the arm's profiles; diagnostics retain
+            // only serialized scalars, never references to these mutable buffers.
+            var profile = new double[transverseLength];
+            var scratch = new double[transverseLength];
+            int middle = transverseLength / 2;
+            string pointId = $"P{pointIndex + 1}", arm = alongHorizontal ? "horizontal" : "vertical";
             for (int side = 0; side < 2; side++)
             {
                 int count = 0, attempted = 0;
@@ -292,19 +354,30 @@ public sealed partial class DisplayMetrologyProvider
                 {
                     token.ThrowIfCancellationRequested();
                     attempted++;
-                    var profile = new double[transverseLength];
                     for (int t = 0; t < transverseLength; t++) profile[t] = alongHorizontal ? values[t * roi.Width + position] : values[position * roi.Width + t];
-                    void Diagnostic(string status, int runs, double? first = null, double? last = null) => profiles.Add(Row(
-                        ("point", $"P{pointIndex + 1}"), ("channel", channelName), ("arm", alongHorizontal ? "horizontal" : "vertical"),
-                        ("side", side == 0 ? "negative" : "positive"), ("samplePosition_px", position + (alongHorizontal ? roi.X : roi.Y)),
-                        ("status", status), ("thresholdRunCount", runs), ("firstEdge_px", first), ("lastEdge_px", last)));
-                    double low = Median(profile.ToList()), high = profile.Max();
+                    void Diagnostic(string status, int runs, double? first = null, double? last = null)
+                    {
+                        // One owned JSON document per row instead of one per cell.
+                        JsonElement row = AlgorithmJson.ToElement(new
+                        {
+                            point = pointId, channel = channelName, arm,
+                            side = side == 0 ? "negative" : "positive", samplePosition_px = position + (alongHorizontal ? roi.X : roi.Y),
+                            status, thresholdRunCount = runs, firstEdge_px = first, lastEdge_px = last,
+                        });
+                        profiles.Add(row.EnumerateObject().ToDictionary(property => property.Name, property => property.Value));
+                    }
+                    profile.CopyTo(scratch, 0); Array.Sort(scratch);
+                    double low = transverseLength % 2 == 0 ? (scratch[middle - 1] + scratch[middle]) / 2 : scratch[middle];
+                    double high = scratch[^1];
                     // The target already passed MinimumContrast. Dim outer arms are judged
                     // against their local noise, not the brighter crossing at the centre.
-                    double noise = Median(profile.Select(v => Math.Abs(v - low)).ToList());
+                    for (int t = 0; t < transverseLength; t++) scratch[t] = Math.Abs(profile[t] - low);
+                    Array.Sort(scratch);
+                    double noise = transverseLength % 2 == 0 ? (scratch[middle - 1] + scratch[middle]) / 2 : scratch[middle];
                     double quantum = bytes == 1 ? 1.0 / 255 : bytes == 2 ? 1.0 / 65535 : 1e-6;
                     if (high - low < Math.Max(6 * noise, 2 * quantum)) { Diagnostic("low_contrast", 0); continue; }
-                    var band = FindArmBand(profile.Select(v => v - low).ToArray(), p.TargetThreshold);
+                    for (int t = 0; t < transverseLength; t++) scratch[t] = profile[t] - low;
+                    var band = FindArmBand(scratch, p.TargetThreshold);
                     if (!band.Valid) { Diagnostic("arm_edges_not_found", band.RunCount); continue; }
                     if (band.First == 0 || band.Last == transverseLength - 1) { Diagnostic("cross_clipped", band.RunCount); continue; }
                     if (band.Last - band.First >= transverseLength / 2) { Diagnostic("not_a_cross", band.RunCount); continue; }

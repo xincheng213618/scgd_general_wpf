@@ -870,6 +870,45 @@
   <data name="单步值" xml:space="preserve">
     <value>单步值</value>
   </data>
+  <data name="循环名称" xml:space="preserve">
+    <value>迴圈名稱</value>
+  </data>
+  <data name="循环名称说明" xml:space="preserve">
+    <value>必須與對應的「迴圈下一節點」完全一致，用於配對同一個迴圈。</value>
+  </data>
+  <data name="循环起始值说明" xml:space="preserve">
+    <value>第一輪迴圈使用的數值。</value>
+  </data>
+  <data name="循环结束值说明" xml:space="preserve">
+    <value>遞增迴圈的結束判斷值；下一步將超過該值時結束迴圈。</value>
+  </data>
+  <data name="循环步长说明" xml:space="preserve">
+    <value>每輪增加的數值，必須大於 0；目前不支援倒序迴圈。</value>
+  </data>
+  <data name="循环节点说明" xml:space="preserve">
+    <value>依起始值、結束值和單步值重複執行一段流程。</value>
+  </data>
+  <data name="循环节点用法" xml:space="preserve">
+    <value>1. 為「迴圈節點」和對應的「迴圈下一節點」填寫完全相同的迴圈名稱。&#xA;2. 設定起始值、結束值和單步值。&#xA;3. 將迴圈節點的 OUT 連接到迴圈主體入口；迴圈主體末端連接到迴圈下一節點；再將 OUT_LP_NEXT 接回迴圈節點的 IN_LP_NEXT。&#xA;4. 迴圈下一節點的 OUT 連接迴圈結束後繼續執行的節點。</value>
+  </data>
+  <data name="循环节点处理顺序" xml:space="preserve">
+    <value>迴圈節點建立目前輪次狀態並從 OUT 執行迴圈主體；迴圈下一節點讀取同名狀態，有下一輪時從 OUT_LP_NEXT 返回迴圈節點，否則從 OUT 繼續後續流程。</value>
+  </data>
+  <data name="循环节点注意事项" xml:space="preserve">
+    <value>同一執行路徑中的不同迴圈應使用不同名稱。單步值必須大於 0，否則迴圈可能無法結束。</value>
+  </data>
+  <data name="循环下一节点说明" xml:space="preserve">
+    <value>標記迴圈主體的末端，並決定返回下一輪或離開迴圈。</value>
+  </data>
+  <data name="循环下一节点用法" xml:space="preserve">
+    <value>迴圈名稱必須與對應的迴圈節點完全一致。將迴圈主體末端接入 IN，將 OUT_LP_NEXT 接回迴圈節點的 IN_LP_NEXT，並將 OUT 接到迴圈結束後的流程。</value>
+  </data>
+  <data name="循环下一节点处理顺序" xml:space="preserve">
+    <value>讀取同名迴圈狀態；仍有下一輪時從 OUT_LP_NEXT 返回，沒有下一輪時從 OUT 繼續。</value>
+  </data>
+  <data name="循环下一节点注意事项" xml:space="preserve">
+    <value>迴圈名稱不一致時無法找到對應狀態，流程不會形成正確的迴圈路徑。</value>
+  </data>
   <data name="当前值" xml:space="preserve">
     <value>当前值</value>
   </data>

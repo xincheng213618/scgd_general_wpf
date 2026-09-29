@@ -5,6 +5,11 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("运算", CategoryOrder = 100)]
+[FlowNodeDocumentation(
+	"循环下一节点说明",
+	Usage = "循环下一节点用法",
+	Processing = "循环下一节点处理顺序",
+	Notes = "循环下一节点注意事项")]
 public class LoopNextNode : CVDeviceNode
 {
 	private STNodeOption m_in_start;

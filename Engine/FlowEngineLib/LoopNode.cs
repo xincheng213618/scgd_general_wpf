@@ -6,6 +6,11 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("运算", CategoryOrder = 100)]
+[FlowNodeDocumentation(
+	"循环节点说明",
+	Usage = "循环节点用法",
+	Processing = "循环节点处理顺序",
+	Notes = "循环节点注意事项")]
 public class LoopNode : CVDeviceNode
 {
 	private STNodeOption m_in_start;
@@ -24,7 +29,7 @@ public class LoopNode : CVDeviceNode
 
 	private STNodeEditText<string> m_ctrl_editText;
 
-	[STNodeProperty("起始值", "起始值")]
+	[STNodeProperty("起始值", "循环起始值说明")]
 	public float BeginVal
 	{
 		get
@@ -39,7 +44,7 @@ public class LoopNode : CVDeviceNode
 		}
 	}
 
-	[STNodeProperty("结束值", "结束值")]
+	[STNodeProperty("结束值", "循环结束值说明")]
 	public float EndVal
 	{
 		get
@@ -54,7 +59,7 @@ public class LoopNode : CVDeviceNode
 		}
 	}
 
-	[STNodeProperty("单步值", "单步值")]
+	[STNodeProperty("单步值", "循环步长说明")]
 	public float StepVal
 	{
 		get

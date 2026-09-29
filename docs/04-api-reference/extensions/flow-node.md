@@ -27,6 +27,8 @@ Flow 节点建立在 `STNode` 和 `FlowEngineLib` 基类上。服务节点负责
 
 `CVCommonNode` 提供 `NodeName`、`NodeType`、`NodeID`、`ZIndex`，以及 `nodeEvent`、`nodeRunEvent`、`nodeEndEvent`，不包含设备标识。`CVDeviceNode` 和 `LocalDeviceFlowNodeBase` 实现 `IFlowDeviceNode`，声明 `DeviceCode`；服务节点从 `CVDeviceNode` 继承。通用代码仅在节点实现该接口时读取设备标识，不再从 `CVCommonNode` 获取。参数编辑使用[PropertyGrid 契约](../ui-components/property-grid.md)，模板和量程编辑器见 `Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs`。
 
+配置面板只显示用户可配置的节点身份字段。`NodeID` 是流程持久化和运行关联使用的内部标识，保留保存兼容但不允许在属性面板修改；Engine 本地节点的 `NodeName` 由节点类型生成，仅用于运行诊断、结果名称和请求记录，同样不暴露为配置项。通用循环节点是例外：其 `NodeName` 以“循环名称”显示，`LoopNode` 与对应 `LoopNextNode` 必须填写完全相同的值以匹配循环状态；这两个控制节点不显示未参与循环逻辑的 `DeviceCode` 和 `ZIndex`。
+
 迁入 Engine、仍保留旧流程名称和保存标识的节点集中在 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/`，再按设备或功能分组。其中需要 Engine 模板或量程编辑器的相机、校准、POI、SMU、传感器和算法节点分别放在对应子目录，保留各自原 namespace、类名和保存标识；目录名不参与流程序列化。只有普通字符串、数值或枚举属性的节点，以及通用执行基类，继续由 FlowEngineLib 提供。迁移范围以属性编辑器依赖为准，无需整体搬迁节点库。
 
 Engine 内的模板与量程属性直接通过 `PropertyEditorType` 引用具体编辑器，声明放在属性定义上；例如 `BaseCameraNode` 声明的四个模板编辑器由 L/BV 节点继承。属性编辑不再经过类级名称映射或 Selector。校正模板依赖设备的刷新、增益联动和模板选择回写保持一致。公共基类的设备字段仍使用 `FlowDeviceNameEditor` 代理，让 FlowEngineLib 不引用 Engine 业务 UI。

@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <future>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -744,6 +745,39 @@ bool RunLuminousAreaV2SyntheticTests()
         }
         if (!severe) {
             cleanConfidence = output.value("Confidence", -1.0);
+        }
+        // Candidate fits keep their original seeds and merge order. Changing
+        // worker scheduling must preserve the complete public result.
+        struct RestoreThreadCount {
+            int previous = cv::getNumThreads();
+            ~RestoreThreadCount() { cv::setNumThreads(previous); }
+        } restoreThreads;
+        for (int threadCount : { 1, restoreThreads.previous }) {
+            cv::setNumThreads(threadCount);
+            for (int repeat = 0; repeat < 2; ++repeat) {
+                json repeated;
+                int repeatedCode = 0;
+                if (!callLuminousV2(image, RoiRect{ 0, 0, 0, 0 }, json::object(), repeated, repeatedCode)
+                    || repeatedCode != returnCode || repeated != output) {
+                    std::cerr << "V2 complete result changed with worker scheduling" << std::endl;
+                    return false;
+                }
+            }
+        }
+        std::array<std::future<bool>, 4> concurrentChecks;
+        for (auto& check : concurrentChecks) {
+            check = std::async(std::launch::async, [&] {
+                json concurrent;
+                int concurrentCode = 0;
+                return callLuminousV2(image, RoiRect{ 0, 0, 0, 0 }, json::object(), concurrent, concurrentCode)
+                    && concurrentCode == returnCode && concurrent == output;
+            });
+        }
+        for (auto& check : concurrentChecks) {
+            if (!check.get()) {
+                std::cerr << "V2 complete result changed with concurrent callers" << std::endl;
+                return false;
+            }
         }
     }
 

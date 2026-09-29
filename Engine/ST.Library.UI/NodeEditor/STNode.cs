@@ -15,6 +15,7 @@ public abstract class STNode : INotifyPropertyChanged
 {
 	private const int DefaultTitleHeight = 26;
 	private const int TitleHorizontalPadding = 40;
+	private const int TitleVerticalOffset = 2;
 
 	public event PropertyChangedEventHandler PropertyChanged;
 
@@ -918,7 +919,9 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected virtual Rectangle GetTitleTextRectangle()
 	{
-		return TitleRectangle;
+		Rectangle rectangle = TitleRectangle;
+		rectangle.Offset(0, TitleVerticalOffset);
+		return rectangle;
 	}
 
 	private static GraphicsPath CreateRoundedRectanglePath(Rectangle rectangle, int radius)

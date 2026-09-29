@@ -873,6 +873,45 @@
   <data name="单步值" xml:space="preserve">
     <value>单步值</value>
   </data>
+  <data name="循环名称" xml:space="preserve">
+    <value>循环名称</value>
+  </data>
+  <data name="循环名称说明" xml:space="preserve">
+    <value>必须与对应的“循环下一节点”完全一致，用于匹配同一个循环。</value>
+  </data>
+  <data name="循环起始值说明" xml:space="preserve">
+    <value>第一轮循环使用的数值。</value>
+  </data>
+  <data name="循环结束值说明" xml:space="preserve">
+    <value>递增循环的结束判断值；下一步将超过该值时结束循环。</value>
+  </data>
+  <data name="循环步长说明" xml:space="preserve">
+    <value>每轮增加的数值，必须大于 0；当前不支持倒序循环。</value>
+  </data>
+  <data name="循环节点说明" xml:space="preserve">
+    <value>按起始值、结束值和单步值重复执行一段流程。</value>
+  </data>
+  <data name="循环节点用法" xml:space="preserve">
+    <value>1. 为“循环节点”和对应的“循环下一节点”填写完全相同的循环名称。&#xA;2. 设置起始值、结束值和单步值。&#xA;3. 将循环节点的 OUT 连接到循环体入口；循环体末端连接到循环下一节点；再将 OUT_LP_NEXT 接回循环节点的 IN_LP_NEXT。&#xA;4. 循环下一节点的 OUT 连接循环结束后继续执行的节点。</value>
+  </data>
+  <data name="循环节点处理顺序" xml:space="preserve">
+    <value>循环节点创建当前轮状态并从 OUT 执行循环体；循环下一节点读取同名状态，有下一轮时从 OUT_LP_NEXT 返回循环节点，否则从 OUT 继续后续流程。</value>
+  </data>
+  <data name="循环节点注意事项" xml:space="preserve">
+    <value>同一执行路径中的不同循环应使用不同名称。单步值必须大于 0，否则循环可能无法结束。</value>
+  </data>
+  <data name="循环下一节点说明" xml:space="preserve">
+    <value>标记循环体的末端，并决定返回下一轮还是退出循环。</value>
+  </data>
+  <data name="循环下一节点用法" xml:space="preserve">
+    <value>循环名称必须与对应的循环节点完全一致。将循环体末端接入 IN，将 OUT_LP_NEXT 接回循环节点的 IN_LP_NEXT，并将 OUT 接到循环结束后的流程。</value>
+  </data>
+  <data name="循环下一节点处理顺序" xml:space="preserve">
+    <value>读取同名循环状态；仍有下一轮时从 OUT_LP_NEXT 返回，没有下一轮时从 OUT 继续。</value>
+  </data>
+  <data name="循环下一节点注意事项" xml:space="preserve">
+    <value>循环名称不匹配时无法找到对应状态，流程不会形成正确的循环回路。</value>
+  </data>
   <data name="当前值" xml:space="preserve">
     <value>当前值</value>
   </data>
