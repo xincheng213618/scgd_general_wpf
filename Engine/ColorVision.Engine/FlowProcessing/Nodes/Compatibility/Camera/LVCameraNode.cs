@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/02 相机")]
+[STNode("相机", CategoryOrder = 200)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.LVCameraNode")]
 [FlowNodeDocumentation(
 	"执行 L/BV 相机取图；复用当前相机会话，关闭且启用本地偏好时自动打开本地相机。",

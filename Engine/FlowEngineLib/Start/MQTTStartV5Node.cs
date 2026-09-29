@@ -11,7 +11,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Start;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 [Obsolete("Deprecated V5 start node retained for loading existing flows.")]
 public class MQTTStartV5Node : BaseStartNode
 {

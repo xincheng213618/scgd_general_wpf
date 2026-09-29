@@ -4151,7 +4151,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>Brightness is too low; cross not found</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>No sufficiently bright cross lines were found</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>Insufficient bright-line coverage. Row: {0:P0}; column: {1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>99 Custom Nodes</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>Custom Nodes</value></data>
+  <data name="Flow_OtherNodes" xml:space="preserve"><value>Other</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>Path to the local image file</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>The local image path is empty</value></data>
   <data name="LocalImage_FileNotFound" xml:space="preserve"><value>Local image not found: {0}</value></data>

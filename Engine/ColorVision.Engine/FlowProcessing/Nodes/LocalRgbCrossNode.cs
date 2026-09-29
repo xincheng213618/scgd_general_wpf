@@ -81,7 +81,7 @@ internal static class LocalRgbCrossResultPersistence
     }
 }
 
-[STNode("Flow_CustomNodes", "十字 RGB 分离")]
+[STNode("Flow_CustomNodes", "十字 RGB 分离", CategoryOrder = 9900)]
 public sealed class LocalRgbCrossNode : LocalFlowNodeBase
 {
     private readonly ILocalRgbCrossNodeServices services;

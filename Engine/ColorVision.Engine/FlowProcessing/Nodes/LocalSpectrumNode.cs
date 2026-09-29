@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
 
-[STNode("Flow_CustomNodes", "本地光谱采集")]
+[STNode("Flow_CustomNodes", "本地光谱采集", CategoryOrder = 9900)]
 public sealed class LocalSpectrumNode : LocalDeviceFlowNodeBase
 {
     private float integralTime = 100;

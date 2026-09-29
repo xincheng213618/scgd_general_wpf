@@ -107,7 +107,7 @@ internal static class LocalMtfResultPersistence
     }
 }
 
-[STNode("Flow_CustomNodes", "MTF计算(V2)")]
+[STNode("Flow_CustomNodes", "MTF计算(V2)", CategoryOrder = 9900)]
 public sealed class LocalMtfNode : LocalFlowNodeBase
 {
     private readonly ILocalMtfNodeServices services;

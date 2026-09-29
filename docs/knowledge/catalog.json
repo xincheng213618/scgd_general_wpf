@@ -6064,17 +6064,21 @@
         "CVEndNode"
       ],
       "code_paths": [
+        "Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs",
+        "Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs",
         "Engine/FlowEngineLib/Base/FlowLocalExecution.cs",
         "Engine/FlowEngineLib/Base/CVCommonNode.cs",
         "Engine/FlowEngineLib/Base/CVBaseServerNode.cs",
         "Engine/FlowEngineLib/Start/BaseStartNode.cs",
         "Engine/FlowEngineLib/End/CVEndNode.cs",
         "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
+        "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs",
         "Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"
@@ -6087,7 +6091,8 @@
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "Engine/ST.Library.UI"
       ],
       "domain": "flow",
       "title": "FlowEngineLib 节点扩展",
@@ -6742,11 +6747,14 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs"
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
-        "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs"
+        "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs",
+        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"
       ],
       "related": [
         "operations.camera",

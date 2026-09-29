@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.SMU;
 
-[STNode("/04 源表")]
+[STNode("源表", CategoryOrder = 400)]
 public class SMUSweepNode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUSweepNode));

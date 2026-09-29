@@ -40,7 +40,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? CvCieFilePath { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "相机取图")]
+    [STNode("Flow_CustomNodes", "相机取图", CategoryOrder = 9900)]
     [FlowNodeDocumentation(
         "Flow_LocalCamera_Summary",
         Usage = "Flow_LocalCamera_Usage",

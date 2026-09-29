@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_3 Image")]
+[STNode("Image", CategoryOrder = 330)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.Algorithm.AlgorithmImageROINode")]
 public class AlgorithmImageROINode : CVBaseServerNode
 {

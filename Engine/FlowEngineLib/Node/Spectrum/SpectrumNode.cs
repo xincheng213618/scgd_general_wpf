@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Spectrum;
 
-[STNode("/05 光谱仪")]
+[STNode("光谱仪", CategoryOrder = 500)]
 public class SpectrumNode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SpectrumNode));

@@ -5586,7 +5586,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 99 自定义节点 的本地化字符串。
+        ///   查找类似 自定义节点 的本地化字符串。
         /// </summary>
         public static string Flow_CustomNodes {
             get {
@@ -5594,6 +5594,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 其他 的本地化字符串。
+        /// </summary>
+        public static string Flow_OtherNodes {
+            get {
+                return ResourceManager.GetString("Flow_OtherNodes", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 耗时: 的本地化字符串。
         /// </summary>

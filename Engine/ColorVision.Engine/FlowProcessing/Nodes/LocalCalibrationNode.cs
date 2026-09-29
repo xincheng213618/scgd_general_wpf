@@ -341,7 +341,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    [STNode("Flow_CustomNodes", "校正")]
+    [STNode("Flow_CustomNodes", "校正", CategoryOrder = 9900)]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
         public LocalCalibrationNode() : base("校正", "LocalCalibration", "Calibration")

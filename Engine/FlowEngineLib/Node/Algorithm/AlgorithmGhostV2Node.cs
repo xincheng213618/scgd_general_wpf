@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_2 Algorithm")]
+[STNode("Algorithm", CategoryOrder = 320)]
 public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 {
 	private int _BufferLen;

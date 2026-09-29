@@ -120,7 +120,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private static int? Offset(int? value, int offset) => value.HasValue ? checked(value.Value - offset) : null;
     }
 
-    [STNode("Flow_CustomNodes", "校正+实时 POI")]
+    [STNode("Flow_CustomNodes", "校正+实时 POI", CategoryOrder = 9900)]
     public sealed class LocalCalibrationRealPoiNode : LocalCalibrationNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };

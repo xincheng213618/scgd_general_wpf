@@ -27,7 +27,7 @@ public sealed class FusionFileListDescriptor : STNodePropertyDescriptor
 internal sealed record LocalFileFusionResultData(int MasterId, int MasterResultType, string MasterValue,
     string FrameId, string ImageFilePath, int ImageCount, string ActualMode, long TotalTime);
 
-[STNode("Flow_CustomNodes", "景深融合")]
+[STNode("Flow_CustomNodes/Flow_OtherNodes", "景深融合", CategoryOrder = 9900)]
 public sealed class LocalFileFusionNode : LocalFlowNodeBase
 {
     private readonly IFileFusionServices services;

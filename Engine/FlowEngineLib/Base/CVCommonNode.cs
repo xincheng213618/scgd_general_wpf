@@ -13,6 +13,7 @@ public class CVCommonNode : STNode
 {
 	public const int StandardNodeWidth = 160;
 	public const int StandardNodeMinHeight = 80;
+	protected const int CompactTerminalNodeWidth = 112;
 	protected const int StandardNodeContentPadding = 5;
 	protected const int StandardNodeContentWidth = StandardNodeWidth - StandardNodeContentPadding * 2;
 	protected const int CompactSummaryTop = 30;
@@ -151,6 +152,8 @@ public class CVCommonNode : STNode
 		return string.Empty;
 	}
 
+	protected virtual int MinimumNodeWidth => StandardNodeWidth;
+
 	protected bool ShouldDrawCompactSummary()
 	{
 		return !ShowControls && InputOptionsCount < 2 && !string.IsNullOrEmpty(GetCompactSummaryValue());
@@ -198,7 +201,7 @@ public class CVCommonNode : STNode
 	protected override Size GetDefaultNodeSize(Graphics g)
 	{
 		Size size = base.GetDefaultNodeSize(g);
-		return new Size(StandardNodeWidth, Math.Max(StandardNodeMinHeight, size.Height));
+		return new Size(Math.Max(MinimumNodeWidth, size.Width), Math.Max(StandardNodeMinHeight, size.Height));
 	}
 
 	protected STNodeEditText<T> CreateControl<T>(Type clsType, Rectangle rect, string text, T value)

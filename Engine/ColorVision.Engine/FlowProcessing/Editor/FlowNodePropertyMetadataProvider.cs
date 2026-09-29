@@ -6,6 +6,8 @@ using ST.Library.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Reflection;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
@@ -70,7 +72,60 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public string? GetCategory(PropertyInfo propertyInfo)
         {
-            return Localize(propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category);
+            string? category = GetDeclaredCategory(propertyInfo);
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                return Localize(category);
+            }
+
+            Type? nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
+            if (propertyInfo.Name == nameof(STNode.Title) && IsLocalNodeType(nodeType))
+            {
+                return Localize(GetPrimaryLocalNodeCategory(nodeType!));
+            }
+
+            return null;
+        }
+
+        private static string? GetPrimaryLocalNodeCategory(Type nodeType)
+        {
+            return nodeType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.Name != nameof(STNode.Title))
+                .Where(property => property.GetCustomAttribute<STNodePropertyAttribute>(inherit: true) != null)
+                .Where(property => property.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
+                .OrderBy(property => property.GetCustomAttribute<DisplayAttribute>()?.GetOrder() ?? 0)
+                .ThenByDescending(property => GetInheritanceDepth(property.DeclaringType))
+                .Select(GetDeclaredCategory)
+                .FirstOrDefault(category => !string.IsNullOrWhiteSpace(category));
+        }
+
+        private static string? GetDeclaredCategory(PropertyInfo propertyInfo)
+        {
+            string? category = propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category;
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                return category;
+            }
+
+            try
+            {
+                return propertyInfo.GetCustomAttribute<DisplayAttribute>()?.GetGroupName();
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+        }
+
+        private static int GetInheritanceDepth(Type? type)
+        {
+            int depth = 0;
+            while (type != null)
+            {
+                depth++;
+                type = type.BaseType;
+            }
+            return depth;
         }
 
         private static bool IsAdvancedProperty(PropertyInfo propertyInfo)

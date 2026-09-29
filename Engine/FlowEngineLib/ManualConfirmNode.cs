@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace FlowEngineLib;
 
-[STNode("/01 运算")]
+[STNode("运算", CategoryOrder = 100)]
 public class ManualConfirmNode : CVCommonNodeHub
 {
 	public static readonly ILog logger = LogManager.GetLogger(typeof(ManualConfirmNode));

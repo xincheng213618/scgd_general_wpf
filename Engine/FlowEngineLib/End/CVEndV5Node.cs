@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.End;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 [Obsolete("Deprecated V5 end node retained for loading existing flows.")]
 public class CVEndV5Node : CVDeviceNode
 {
@@ -20,9 +20,13 @@ public class CVEndV5Node : CVDeviceNode
 		: base("EndV5Node", "EndNode", "EN1", "DEV01")
 	{
 		base.AutoSize = false;
-		base.Width = StandardNodeWidth;
-		base.Height = 160;
+		base.Width = CompactTerminalNodeWidth;
+		base.Height = base.TitleHeight + 6 * base.ItemHeight;
 	}
+
+	protected override int MinimumNodeWidth => CompactTerminalNodeWidth;
+
+	protected override bool ShouldDrawOptionText(STNodeOption op) => false;
 
 	protected override void OnCreate()
 	{

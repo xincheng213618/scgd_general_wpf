@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Camera;
 
-[STNode("/11 ROI")]
+[STNode("ROI", CategoryOrder = 1100)]
 [System.Obsolete("Deprecated ROI flow node retained for loading existing flows.")]
 public class CameraROINode : CVBaseServerNode
 {

@@ -8,7 +8,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-[STNode("/03_5 OLED")]
+[STNode("OLED", CategoryOrder = 350)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode")]
 public class OLEDRebuildPixelsNode : CVBaseServerNodeHub
 {

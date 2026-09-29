@@ -145,6 +145,116 @@ public class FlowLocalizationTests
         });
     }
 
+    [Theory]
+    [InlineData("zh-Hans", "加载图片")]
+    [InlineData("en-US", "Load Image")]
+    [InlineData("zh-Hant", "載入圖片")]
+    public void LocalNodeTitleSharesItsPrimaryLocalizedCategory(string culture, string expectedCategory)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+
+                var metadata = FlowNodePropertyMetadataProvider.Instance;
+                PropertyInfo imageTitle = typeof(LocalImageNode).GetProperty(nameof(ST.Library.UI.NodeEditor.STNode.Title))!;
+                PropertyInfo imageFile = typeof(LocalImageNode).GetProperty(nameof(TestMessageBoxNode.ImageFileUrl))!;
+                Assert.Equal(expectedCategory, metadata.GetCategory(imageFile));
+                Assert.Equal(expectedCategory, metadata.GetCategory(imageTitle));
+
+                PropertyInfo distortionTitle = typeof(LocalGridDistortionNode).GetProperty(nameof(ST.Library.UI.NodeEditor.STNode.Title))!;
+                PropertyInfo distortionImage = typeof(LocalGridDistortionNode).GetProperty(nameof(LocalGridDistortionNode.ImageFilePath))!;
+                Assert.Equal(metadata.GetCategory(distortionImage), metadata.GetCategory(distortionTitle));
+                Assert.NotEqual(nameof(LocalGridDistortionNode), metadata.GetCategory(distortionTitle));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData("zh-Hans", "全局", "运算", "自定义节点/其他")]
+    [InlineData("en-US", "Global", "Operation", "Custom Nodes/Other")]
+    [InlineData("zh-Hant", "全局", "運算", "自訂節點/其他")]
+    public void FlowNodeCreationMenuUsesCategoryOrderAndNestedOtherCategory(
+        string culture,
+        string globalHeader,
+        string operationHeader,
+        string otherPath)
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+
+                IReadOnlyDictionary<Type, string> paths = FlowNodeContextMenuService.GetNodeCreationMenuPaths();
+                Assert.Equal(otherPath, paths[typeof(CommandLineScriptNode)]);
+                Assert.Equal(otherPath, paths[typeof(LocalImageNode)]);
+                Assert.Equal(otherPath, paths[typeof(LocalFileFusionNode)]);
+                ST.Library.UI.NodeEditor.STNodeAttribute globalAttribute = typeof(FlowEngineLib.Start.MQTTStartNode)
+                    .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
+                ST.Library.UI.NodeEditor.STNodeAttribute operationAttribute = typeof(LoopNode)
+                    .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
+                ST.Library.UI.NodeEditor.STNodeAttribute customAttribute = typeof(CommandLineScriptNode)
+                    .GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>()!;
+                Assert.Equal(("全局", 0), (globalAttribute.Path, globalAttribute.CategoryOrder));
+                Assert.Equal(("运算", 100), (operationAttribute.Path, operationAttribute.CategoryOrder));
+                Assert.Equal(("Flow_CustomNodes/Flow_OtherNodes", 9900), (customAttribute.Path, customAttribute.CategoryOrder));
+                Assert.Equal(globalHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/00 全局"));
+                Assert.Equal(operationHeader, FlowNodeContextMenuService.LocalizeNodeMenuPath("FlowEngineLib/01 运算"));
+                Assert.DoesNotContain(paths.Keys, type => type.FullName == "ColorVision.Engine.FlowProcessing.Nodes.LocalBuildPoiByTemplateNode");
+                Assert.DoesNotContain(paths.Keys, type => type.FullName == "FlowEngineLib.DisplayHub");
+                Assert.All(paths.Values, path => Assert.DoesNotMatch(@"^\d+(?:_\d+)?\s", path));
+
+                Type[] registeredTypes = ST.Library.UI.NodeEditor.STNodeTypeRegistry.GetTypes();
+                Assert.Contains(registeredTypes, type => type.FullName == "ColorVision.Engine.FlowProcessing.Nodes.LocalBuildPoiByTemplateNode");
+                Assert.Contains(registeredTypes, type => type.FullName == "FlowEngineLib.DisplayHub");
+                var builtInCategories = registeredTypes
+                    .Where(type => type.Assembly == typeof(LoopNode).Assembly || type.Assembly == typeof(LocalImageNode).Assembly)
+                    .Where(type => !type.IsDefined(typeof(ObsoleteAttribute), inherit: false))
+                    .Select(type => type.GetCustomAttribute<ST.Library.UI.NodeEditor.STNodeAttribute>())
+                    .Where(attribute => attribute != null)
+                    .Cast<ST.Library.UI.NodeEditor.STNodeAttribute>()
+                    .Select(attribute => new
+                    {
+                        Category = attribute.Path.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries)[0],
+                        attribute.CategoryOrder,
+                    })
+                    .ToArray();
+                Assert.All(builtInCategories, category =>
+                {
+                    Assert.DoesNotMatch(@"^\d+(?:_\d+)?\s", category.Category);
+                    Assert.NotEqual(int.MaxValue, category.CategoryOrder);
+                });
+                Assert.All(
+                    builtInCategories.GroupBy(category => category.Category, StringComparer.Ordinal),
+                    group => Assert.Single(group.Select(category => category.CategoryOrder).Distinct()));
+
+                IReadOnlyList<string> rootHeaders = FlowNodeContextMenuService.GetNodeCreationMenuRootHeaders();
+                int globalIndex = rootHeaders.ToList().IndexOf(globalHeader);
+                int operationIndex = rootHeaders.ToList().IndexOf(operationHeader);
+                Assert.True(globalIndex >= 0, $"Missing root category: {globalHeader}");
+                Assert.True(operationIndex > globalIndex, $"Expected {operationHeader} after {globalHeader}.");
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
+        });
+    }
+
     [Fact]
     public void EnglishEngineUiAndPostProcessMetadataUseLocalizedDisplayText()
     {

@@ -55,54 +55,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="00 全局" xml:space="preserve">
-    <value>00 全局</value>
-  </data>
-  <data name="01 运算" xml:space="preserve">
-    <value>01 运算</value>
-  </data>
-  <data name="02 相机" xml:space="preserve">
-    <value>02 相机</value>
-  </data>
-  <data name="03_1 关注点" xml:space="preserve">
-    <value>03_1 关注点</value>
-  </data>
-  <data name="03_2 Algorithm" xml:space="preserve">
-    <value>03_2 算法</value>
-  </data>
-  <data name="03_3 Image" xml:space="preserve">
-    <value>03_3 图像</value>
-  </data>
-  <data name="03_3 校正" xml:space="preserve">
-    <value>03_3 校正</value>
-  </data>
-  <data name="03_4 KB" xml:space="preserve">
-    <value>03_4 KB</value>
-  </data>
-  <data name="03_5 OLED" xml:space="preserve">
-    <value>03_5 OLED</value>
-  </data>
-  <data name="04 源表" xml:space="preserve">
-    <value>04 源表</value>
-  </data>
-  <data name="05 光谱仪" xml:space="preserve">
-    <value>05 光谱仪</value>
-  </data>
-  <data name="07 传感器" xml:space="preserve">
-    <value>07 传感器</value>
-  </data>
-  <data name="09 合规验证" xml:space="preserve">
-    <value>09 合规验证</value>
-  </data>
-  <data name="10 MQTT" xml:space="preserve">
-    <value>10 MQTT</value>
-  </data>
-  <data name="11 ROI" xml:space="preserve">
-    <value>11 ROI</value>
-  </data>
-  <data name="12 第三方算法" xml:space="preserve">
-    <value>12 第三方算法</value>
-  </data>
+  <data name="全局" xml:space="preserve"><value>全局</value></data>
+  <data name="运算" xml:space="preserve"><value>运算</value></data>
+  <data name="关注点" xml:space="preserve"><value>关注点</value></data>
+  <data name="Algorithm" xml:space="preserve"><value>算法</value></data>
+  <data name="Image" xml:space="preserve"><value>图像</value></data>
+  <data name="KB" xml:space="preserve"><value>KB</value></data>
+  <data name="OLED" xml:space="preserve"><value>OLED</value></data>
+  <data name="传感器" xml:space="preserve"><value>传感器</value></data>
+  <data name="合规验证" xml:space="preserve"><value>合规验证</value></data>
+  <data name="MQTT" xml:space="preserve"><value>MQTT</value></data>
+  <data name="ROI" xml:space="preserve"><value>ROI</value></data>
   <data name="FlowEngineLib" xml:space="preserve">
     <value>FlowEngineLib</value>
   </data>

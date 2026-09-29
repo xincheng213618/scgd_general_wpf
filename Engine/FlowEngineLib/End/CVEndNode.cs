@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.End;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 public class CVEndNode : CVDeviceNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVEndNode));
@@ -19,9 +19,13 @@ public class CVEndNode : CVDeviceNode
 		: base("EndNode", "EndNode", "EN1", "DEV01")
 	{
 		base.AutoSize = false;
-		base.Width = StandardNodeWidth;
-		base.Height = 100;
+		base.Width = CompactTerminalNodeWidth;
+		base.Height = base.TitleHeight + 3 * base.ItemHeight;
 	}
+
+	protected override int MinimumNodeWidth => CompactTerminalNodeWidth;
+
+	protected override bool ShouldDrawOptionText(STNodeOption op) => false;
 
 	protected override void OnCreate()
 	{

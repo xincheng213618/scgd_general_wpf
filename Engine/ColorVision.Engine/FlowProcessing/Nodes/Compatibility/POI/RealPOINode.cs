@@ -10,7 +10,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.POI;
 
-[STNode("/03_1 关注点")]
+[STNode("关注点", CategoryOrder = 310)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.POI.RealPOINode")]
 public class RealPOINode : CVBaseServerNodeHub
 {

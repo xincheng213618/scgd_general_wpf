@@ -63,7 +63,18 @@ public sealed class CompatibilityNodeMigrationTests
         for (int i = 0; i < container.Nodes.Count; i++)
         {
             Type type = container.Nodes[i].GetType();
-            Assert.Equal((string?)contracts[i]["menu"], type.GetCustomAttribute<STNodeAttribute>()?.Path);
+            string? legacyMenuPath = (string?)contracts[i]["menu"];
+            STNodeAttribute? nodeAttribute = type.GetCustomAttribute<STNodeAttribute>();
+            if (legacyMenuPath == null)
+            {
+                Assert.Null(nodeAttribute);
+            }
+            else
+            {
+                Assert.NotNull(nodeAttribute);
+                Assert.Equal(RemoveLegacyMenuSortPrefix(legacyMenuPath), nodeAttribute.Path);
+                Assert.Equal(GetExpectedCategoryOrder(legacyMenuPath), nodeAttribute.CategoryOrder);
+            }
             PropertyInfo[] edited = type.GetProperties().Where(p => p.DeclaringType == type && p.GetCustomAttribute<PropertyEditorTypeAttribute>() != null).ToArray();
             Assert.Contains(edited, p => p.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType?.Assembly == typeof(DeviceCamera).Assembly);
             Assert.All(edited, p => Assert.DoesNotContain("FlowEngineLib.PropertyEditor", p.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType!.FullName!));
@@ -75,6 +86,38 @@ public sealed class CompatibilityNodeMigrationTests
         Assert.Same(typeof(CVBaseServerNode).Assembly, typeof(FlowEngineLib.Node.Algorithm.AlgDataLoadNode2).Assembly);
         Assert.Same(typeof(CVBaseServerNode).Assembly, typeof(FlowEngineLib.Node.Algorithm.AlgDataConvertNode).Assembly);
     });
+
+    private static string RemoveLegacyMenuSortPrefix(string path)
+    {
+        int separator = path.IndexOf(' ');
+        return separator >= 0 ? path[(separator + 1)..] : path;
+    }
+
+    private static int GetExpectedCategoryOrder(string legacyPath)
+    {
+        string prefix = legacyPath.Split(' ', 2)[0];
+        return prefix switch
+        {
+            "00" => 0,
+            "01" => 100,
+            "02" => 200,
+            "03_1" => 310,
+            "03_2" => 320,
+            "03_3" when legacyPath.EndsWith("Image", StringComparison.Ordinal) => 330,
+            "03_3" => 331,
+            "03_4" => 340,
+            "03_5" => 350,
+            "04" => 400,
+            "05" => 500,
+            "06" => 600,
+            "07" => 700,
+            "09" => 900,
+            "10" => 1000,
+            "11" => 1100,
+            "12" => 1200,
+            _ => int.MaxValue,
+        };
+    }
 
     private static void AssertPropertiesAndConnections(byte[] before, byte[] after, bool editorLayout = false)
     {

@@ -11,7 +11,7 @@ public enum ManualBranchPath
 	B
 }
 
-[STNode("/01 运算", "在 A/B 两条执行路径之间手动切换")]
+[STNode("运算", "在 A/B 两条执行路径之间手动切换", CategoryOrder = 100)]
 public sealed class ManualBranchNode : CVDeviceNode
 {
 	private ManualBranchPath selectedPath;

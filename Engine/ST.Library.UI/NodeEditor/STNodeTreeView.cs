@@ -32,6 +32,8 @@ public class STNodeTreeView : UserControl, IDisposable
 
 		public DrawingColor NodeColor { get; set; } = DrawingColor.DarkCyan;
 
+		public int CategoryOrder { get; set; } = int.MaxValue;
+
 		public List<CatalogNode> Children { get; } = new List<CatalogNode>();
 
 		public int NodeCount => NodeType == null
@@ -40,6 +42,7 @@ public class STNodeTreeView : UserControl, IDisposable
 	}
 
 	private readonly Dictionary<Type, string> m_dic_all_type = new Dictionary<Type, string>();
+	private readonly Dictionary<Type, int> m_dic_category_order = new Dictionary<Type, int>();
 	private readonly STNodeEditor _editor;
 	private readonly STNodePropertyGrid _property_grid;
 	private readonly TextBox m_search_box;
@@ -345,10 +348,12 @@ public class STNodeTreeView : UserControl, IDisposable
 		}
 
 		string assemblyName = nodeType.Assembly.GetName().Name ?? "Unknown";
-		string path = string.IsNullOrWhiteSpace(attribute.Path)
+		string declaredPath = attribute.Path?.Trim('/', '\\') ?? string.Empty;
+		string path = string.IsNullOrWhiteSpace(declaredPath)
 			? assemblyName
-			: $"{assemblyName}/{attribute.Path.Trim('/', '\\')}";
+			: $"{assemblyName}/{NormalizeCategoryPath(declaredPath)}";
 		m_dic_all_type.Add(nodeType, path);
+		m_dic_category_order.Add(nodeType, ResolveCategoryOrder(declaredPath, attribute.CategoryOrder));
 		RefreshTree();
 		return true;
 	}
@@ -382,12 +387,14 @@ public class STNodeTreeView : UserControl, IDisposable
 	public void Clear()
 	{
 		m_dic_all_type.Clear();
+		m_dic_category_order.Clear();
 		RefreshTree();
 	}
 
 	public bool RemoveNode(Type nodeType)
 	{
 		bool removed = m_dic_all_type.Remove(nodeType);
+		m_dic_category_order.Remove(nodeType);
 		if (removed)
 		{
 			RefreshTree();
@@ -433,11 +440,68 @@ public class STNodeTreeView : UserControl, IDisposable
 			return false;
 		}
 		string assemblyName = nodeType.Assembly.GetName().Name ?? "Unknown";
-		string path = string.IsNullOrWhiteSpace(attribute.Path)
+		string declaredPath = attribute.Path?.Trim('/', '\\') ?? string.Empty;
+		string path = string.IsNullOrWhiteSpace(declaredPath)
 			? assemblyName
-			: $"{assemblyName}/{attribute.Path.Trim('/', '\\')}";
+			: $"{assemblyName}/{NormalizeCategoryPath(declaredPath)}";
 		m_dic_all_type.Add(nodeType, path);
+		m_dic_category_order.Add(nodeType, ResolveCategoryOrder(declaredPath, attribute.CategoryOrder));
 		return true;
+	}
+
+	private static string NormalizeCategoryPath(string path)
+	{
+		int separatorIndex = path.IndexOfAny(new[] { '/', '\\' });
+		string firstSegment = separatorIndex < 0 ? path : path[..separatorIndex];
+		string normalizedFirstSegment = RemoveSortPrefix(firstSegment);
+		return separatorIndex < 0 ? normalizedFirstSegment : normalizedFirstSegment + path[separatorIndex..];
+	}
+
+	private static int ResolveCategoryOrder(string path, int configuredOrder)
+	{
+		if (configuredOrder != int.MaxValue || string.IsNullOrWhiteSpace(path))
+			return configuredOrder;
+
+		int separatorIndex = path.IndexOfAny(new[] { '/', '\\' });
+		string text = (separatorIndex < 0 ? path : path[..separatorIndex]).Trim();
+		int index = 0;
+		while (index < text.Length && char.IsDigit(text[index]))
+			index++;
+		if (index == 0 || index >= text.Length || !int.TryParse(text[..index], out int major))
+			return int.MaxValue;
+
+		int minor = 0;
+		if (text[index] == '_')
+		{
+			int minorStart = ++index;
+			while (index < text.Length && char.IsDigit(text[index]))
+				index++;
+			if (minorStart == index || !int.TryParse(text[minorStart..index], out minor))
+				return int.MaxValue;
+		}
+
+		if (index >= text.Length || !char.IsWhiteSpace(text[index]))
+			return int.MaxValue;
+
+		long order = (long)major * 100 + (long)minor * 10;
+		return order <= int.MaxValue ? (int)order : int.MaxValue;
+	}
+
+	private static string RemoveSortPrefix(string text)
+	{
+		int index = 0;
+		while (index < text.Length && (char.IsDigit(text[index]) || text[index] == '_'))
+			index++;
+		if (index == 0 || index >= text.Length || !char.IsWhiteSpace(text[index]))
+			return text;
+		while (index < text.Length && char.IsWhiteSpace(text[index]))
+			index++;
+		return text[index..];
+	}
+
+	private static string GetCategoryDisplayName(string name)
+	{
+		return Lang.GetOrDefault(RemoveSortPrefix(name));
 	}
 
 	private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
@@ -473,14 +537,18 @@ public class STNodeTreeView : UserControl, IDisposable
 		foreach (KeyValuePair<Type, string> entry in m_dic_all_type.Where(item => MatchesSearch(item.Key, item.Value)))
 		{
 			List<CatalogNode> level = roots;
-			foreach (string segment in entry.Value.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries))
+			string[] segments = entry.Value.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+			for (int segmentIndex = 0; segmentIndex < segments.Length; segmentIndex++)
 			{
+				string segment = segments[segmentIndex];
 				CatalogNode folder = level.FirstOrDefault(item => item.NodeType == null && item.Name == segment);
 				if (folder == null)
 				{
 					folder = new CatalogNode { Name = segment };
 					level.Add(folder);
 				}
+				if (segmentIndex == 1 && m_dic_category_order.TryGetValue(entry.Key, out int categoryOrder))
+					folder.CategoryOrder = Math.Min(folder.CategoryOrder, categoryOrder);
 				level = folder.Children;
 			}
 
@@ -517,7 +585,14 @@ public class STNodeTreeView : UserControl, IDisposable
 			{
 				return left.NodeType == null ? -1 : 1;
 			}
-			return StringComparer.CurrentCultureIgnoreCase.Compare(left.Name, right.Name);
+			int orderResult = left.CategoryOrder.CompareTo(right.CategoryOrder);
+			if (orderResult != 0)
+			{
+				return orderResult;
+			}
+			string leftName = left.NodeType == null ? GetCategoryDisplayName(left.Name) : left.Name;
+			string rightName = right.NodeType == null ? GetCategoryDisplayName(right.Name) : right.Name;
+			return StringComparer.CurrentCultureIgnoreCase.Compare(leftName, rightName);
 		});
 		foreach (CatalogNode node in nodes)
 		{
@@ -564,7 +639,7 @@ public class STNodeTreeView : UserControl, IDisposable
 
 		var name = new TextBlock
 		{
-			Text = node.NodeType == null ? Lang.GetOrDefault(node.Name) : node.Name,
+			Text = node.NodeType == null ? GetCategoryDisplayName(node.Name) : node.Name,
 			VerticalAlignment = VerticalAlignment.Center,
 			TextTrimming = TextTrimming.CharacterEllipsis,
 			Foreground = ToBrush(m_search_text.Length > 0

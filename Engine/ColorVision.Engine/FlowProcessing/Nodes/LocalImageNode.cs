@@ -239,7 +239,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "Engine_PG_LocalImage")]
+    [STNode("Flow_CustomNodes/Flow_OtherNodes", "Engine_PG_LocalImage", CategoryOrder = 9900)]
     public class LocalImageNode : TestMessageBoxNode
     {
     }

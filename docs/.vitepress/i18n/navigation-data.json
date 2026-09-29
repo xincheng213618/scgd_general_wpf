@@ -3062,6 +3062,12 @@
             },
             {
               "text": {
+                "root": "FlowEngineLib 节点扩展"
+              },
+              "link": "/04-api-reference/extensions/flow-node"
+            },
+            {
+              "text": {
                 "root": "配置 ARVRPro 流程、解析映射与 Recipe"
               },
               "link": "/04-api-reference/projects/project-arvr-pro-processes"

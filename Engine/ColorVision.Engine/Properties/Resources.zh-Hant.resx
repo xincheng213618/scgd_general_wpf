@@ -2959,7 +2959,8 @@
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>亮度過低，找不到十字</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>找不到足夠明亮的十字線</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>亮線覆蓋不足，列：{0:P0}，欄：{1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>99 自訂節點</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>自訂節點</value></data>
+  <data name="Flow_OtherNodes" xml:space="preserve"><value>其他</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>本機圖片檔案路徑</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>本機圖片路徑為空</value></data>
   <data name="LocalImage_FileNotFound" xml:space="preserve"><value>找不到本機圖片：{0}</value></data>

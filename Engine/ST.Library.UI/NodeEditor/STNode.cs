@@ -13,6 +13,9 @@ namespace ST.Library.UI.NodeEditor;
 
 public abstract class STNode : INotifyPropertyChanged
 {
+	private const int DefaultTitleHeight = 26;
+	private const int TitleHorizontalPadding = 40;
+
 	public event PropertyChangedEventHandler PropertyChanged;
 
 	private STNodeEditor _Owner;
@@ -53,7 +56,7 @@ public abstract class STNode : INotifyPropertyChanged
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 22;
+	private int _TitleHeight = DefaultTitleHeight;
 
 	private STNodeOptionCollection _InputOptions;
 
@@ -915,9 +918,7 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected virtual Rectangle GetTitleTextRectangle()
 	{
-		Rectangle rectangle = TitleRectangle;
-		rectangle.Offset(0, 2);
-		return rectangle;
+		return TitleRectangle;
 	}
 
 	private static GraphicsPath CreateRoundedRectanglePath(Rectangle rectangle, int radius)
@@ -1156,9 +1157,9 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			sizeF = g.MeasureString(Title, Font);
 		}
-		if (sizeF.Width + 30f > (float)num3)
+		if (sizeF.Width + TitleHorizontalPadding > (float)num3)
 		{
-			num3 = (int)sizeF.Width + 30;
+			num3 = (int)sizeF.Width + TitleHorizontalPadding;
 		}
 		return new Size(num3, height);
 	}

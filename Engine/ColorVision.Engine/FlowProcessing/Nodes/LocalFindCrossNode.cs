@@ -432,7 +432,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "十字定位")]
+    [STNode("Flow_CustomNodes", "十字定位", CategoryOrder = 9900)]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
         internal const int DetectionFailureResultCode = -1;

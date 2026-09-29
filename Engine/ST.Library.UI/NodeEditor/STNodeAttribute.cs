@@ -35,6 +35,12 @@ public class STNodeAttribute : Attribute
 
 	public string DisplayDescription => Lang.GetOrDefault(_Description);
 
+	/// <summary>
+	/// Sort order of the first category declared by <see cref="Path"/>.
+	/// Categories without an explicit order are sorted by their localized names.
+	/// </summary>
+	public int CategoryOrder { get; set; } = int.MaxValue;
+
 	public STNodeAttribute(string strPath)
 		: this(strPath, null, null, null, null)
 	{

@@ -4,8 +4,8 @@ knowledge_type: "guide"
 status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
 aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode"]
-code_paths: ["Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
+code_paths: ["Engine/ST.Library.UI/NodeEditor/STNodeAttribute.cs","Engine/ST.Library.UI/NodeEditor/STNodeTreeView.cs","Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/FlowLocalizationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -44,6 +44,12 @@ Engine 内的模板与量程属性直接通过 `PropertyEditorType` 引用具体
 5. 核对 `GetSendTopic()`、`GetRecvTopic()`、`operatorCode` 和 `FlowServiceManager` 中的服务配置，并使用目标协议样例验证请求与响应。
 
 `Engine/FlowEngineLib/Algorithm/AlgorithmNode.cs` 是服务节点示例：它收集模板、颜色和图像路径等参数，生成发往算法服务的请求。`[STNode("...")]` 决定节点树分类，扩展时采用相邻节点的实际分组。
+
+### 节点目录与右键菜单
+
+流程画布的新增节点菜单直接复用 `STNodeTypeRegistry` 已缓存的反射结果；节点类型、分类元数据和各语言下的显示标题只解析一次，新程序集注册节点后再增量补入。`STNodeAttribute.Path` 只保存分类名称，使用 `/` 分隔多级分类；第一段分类通过 `CategoryOrder` 显式排序，同一顺序或未声明顺序的分类再按本地化标题自然排序。同组节点按本地化标题自然排序。旧插件若仍声明 `00 全局`、`03_1 关注点` 等带编号路径，宿主会先提取编号作为兜底顺序，再将路径规范为 `全局`、`关注点` 等语义资源键进行本地化，因此不再保留带编号的资源文案；新代码应直接声明语义路径和 `CategoryOrder`。
+
+“自定义节点 → 其他”包含命令行脚本、加载图片和景深融合。标记为 `Obsolete` 的节点不会出现在新增节点菜单或 Copilot 节点目录中，但类型及序列化身份仍保留，用于加载旧流程；本地“关注点布点(参数)”和“值显示HUB”遵循这一兼容规则，需要布点时使用原有关注点节点。
 
 Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC` 快照，再把快照副本交给异步执行。Start 的同一个动作可以扇出到多条并行分支，但各节点不得直接修改这份共享输入；单输入和多输入节点都通过各自的快照传递 `MasterId`、`MasterResultType` 与 `MasterValue`。运行资源仍由同一次流程共享并按其资源生命周期管理，分支结果字段则保存在独立的 `Data` 字典中。执行返回或抛出异常时，如果本次 `RuntimeResources` 已释放，基类丢弃迟到的完成，不再发布节点结束事件或继续传递输出；节点仍需自行取消在途计算并在文件、数据库等写入前检查有效性。
 

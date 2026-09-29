@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-[STNode("/03_3 校正")]
+[STNode("校正", CategoryOrder = 331)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.Node.OLED.Calibration2InNode")]
 public class Calibration2InNode : CVBaseServerNodeHub
 {
