@@ -257,6 +257,101 @@ public sealed partial class DisplayMetrologyTests
         Assert.Equal("2", result.Artifacts.OfType<AlgorithmImageArtifact>().First().Metadata!["sourcePixelsPerPreviewPixel"]);
     }
 
+    [Theory]
+    [InlineData(37, 0.1)]
+    [InlineData(1603, 1.0)]
+    [InlineData(3203, 2.2)]
+    [InlineData(8003, 5.0)]
+    public void RgbCrossIntegerPoolingMatchesGenericPathWithPaddedStrideAndPartialRoi(int searchWidth, double exponent)
+    {
+        int width = searchWidth + 11, height = 49;
+        AlgorithmImageBuffer Buffer(AlgorithmImageFormat format)
+        {
+            int channels = format.Channels(), stride = width * channels * 2 + 7;
+            var data = new byte[stride * height];
+            Array.Fill(data, (byte)255); // Padding must not contribute a bright pixel.
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    for (int c = 0; c < channels; c++)
+                    {
+                        ushort value = c == 3 ? ushort.MaxValue : unchecked((ushort)(x * 73856093 ^ y * 19349663 ^ c * 83492791));
+                        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(y * stride + (x * channels + c) * 2, 2), value);
+                    }
+            return new AlgorithmImageBuffer(width, height, stride, format, data);
+        }
+        using var bgr = Buffer(AlgorithmImageFormat.Bgr48);
+        using var bgra = Buffer(AlgorithmImageFormat.Bgra64);
+        var pool = typeof(DisplayMetrologyProvider).GetMethod("CrossLocatorImage", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        (float[][] Channels, int Width, int Height, int Step) Pool(AlgorithmImageBuffer input)
+            => ((float[][], int, int, int))pool.Invoke(null, [input, new OpenCvSharp.Rect(3, 5, searchWidth, 31), exponent, CancellationToken.None])!;
+        var actual = Pool(bgr);
+        var expected = Pool(bgra); // Opaque BGRA uses the unchanged generic reader.
+        Assert.Equal((expected.Width, expected.Height, expected.Step), (actual.Width, actual.Height, actual.Step));
+        for (int c = 0; c < 3; c++) Assert.True(actual.Channels[c].AsSpan().SequenceEqual(expected.Channels[c]), $"Channel {c} differs from generic pooling.");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(31)]
+    [InlineData(1024)]
+    [InlineData(100001)]
+    public void RgbCrossLocatorMadMatchesSortingForOddEvenAndRepeatedSamples(int length)
+    {
+        var random = new Random(173);
+        var mad = typeof(DisplayMetrologyProvider).GetMethod("CrossLocatorMad", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        foreach (double exponent in new[] { 0.1, 1.0, 2.2, 5.0 })
+            foreach (int distribution in new[] { 0, 1, 2, 3, 4 })
+            {
+                var ordered = new float[length];
+                for (int i = 0; i < length; i++)
+                    ordered[i] = distribution switch
+                    {
+                        0 => 0,
+                        1 => (float)Math.Pow(random.Next(65536) / 65535d, exponent),
+                        2 => i % 4 == 0 ? 1 : 0,
+                        3 => (float)(random.Next(4) / 3d),
+                        _ => random.NextSingle(),
+                    };
+                Array.Sort(ordered);
+                double median = ordered[length / 2];
+                float[] deviations = ordered.Select(value => (float)Math.Abs(value - median)).ToArray();
+                Array.Sort(deviations);
+                Assert.Equal(deviations[length / 2], (float)mad.Invoke(null, [ordered])!);
+            }
+    }
+
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(1.0)]
+    [InlineData(2.2)]
+    [InlineData(5.0)]
+    public async Task RgbCrossHistogramBackgroundMatchesSortedBackgroundOnLargeRois(double exponent)
+    {
+        double Pixel(int x, int y, int c)
+        {
+            int shift = c == 2 ? 2 : c == 0 ? -3 : 0;
+            int u = x - 300 - shift, v = y - 250;
+            if (Math.Abs(u) <= 2 && Math.Abs(v) <= 100 || Math.Abs(v) <= 2 && Math.Abs(u) <= 100) return 0.8;
+            uint hash = unchecked((uint)(x * 73856093 ^ y * 19349663 ^ c * 83492791));
+            return 0.01 + (hash % 1009) / 1008d * 0.02;
+        }
+        using var bgr = Image(600, 500, Pixel, AlgorithmImageFormat.Bgr48);
+        using var bgra = Image(600, 500, Pixel, AlgorithmImageFormat.Bgra64);
+        var parameters = new RgbCrossRegistrationParameters { Rows = 1, Columns = 1, DecodeExponent = exponent };
+        using var actual = await Run(DisplayMetrologyIds.RgbCrossRegistration, parameters, bgr);
+        using var expected = await Run(DisplayMetrologyIds.RgbCrossRegistration, parameters, bgra);
+        Success(actual); Success(expected);
+        Assert.Equal(1, Metric(actual, "valid_crosses"));
+        var point = Assert.Single(actual.GetArtifact<AlgorithmTableArtifact>("RGB-cross-separation")!.Rows);
+        Assert.True(point["roiWidth_px"].GetInt32() * point["roiHeight_px"].GetInt32() >= ushort.MaxValue + 1);
+        foreach (string table in new[] { "RGB-cross-separation", "RGB-cross-profile-quality" })
+            Assert.Equal(JsonSerializer.Serialize(expected.GetArtifact<AlgorithmTableArtifact>(table)!.Rows), JsonSerializer.Serialize(actual.GetArtifact<AlgorithmTableArtifact>(table)!.Rows));
+    }
+
     [Fact]
     public void RgbCrossStoredNumericThresholdRemainsCompatibleAndDefaultDoesNotInventALimit()
     {

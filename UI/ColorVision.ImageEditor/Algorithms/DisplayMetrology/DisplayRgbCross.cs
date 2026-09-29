@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 
@@ -39,6 +40,37 @@ public sealed partial class DisplayMetrologyProvider
         float[][] channels = [new float[width * height], new float[width * height], new float[width * height]];
         int count = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
         ReadOnlySpan<byte> data = input.Data.Span;
+        if (input.Format == AlgorithmImageFormat.Bgr48 && BitConverter.IsLittleEndian)
+        {
+            // Positive decoding is monotonic: pool the original integers before
+            // normalizing/decoding, producing exactly the same float maxima.
+            // Keep every source pixel, including partial cells at the ROI edges.
+            for (int py = 0; py < height; py++)
+            {
+                int y0 = py * step, y1 = Math.Min(y0 + step, search.Height);
+                for (int px = 0; px < width; px++)
+                {
+                    token.ThrowIfCancellationRequested();
+                    int x0 = px * step, x1 = Math.Min(x0 + step, search.Width);
+                    int blue = 0, green = 0, red = 0;
+                    for (int y = y0; y < y1; y++)
+                    {
+                        var row = MemoryMarshal.Cast<byte, ushort>(data.Slice((search.Y + y) * input.Stride + (search.X + x0) * 6, (x1 - x0) * 6));
+                        for (int x = 0; x < row.Length; x += 3)
+                        {
+                            blue = Math.Max(blue, row[x]);
+                            green = Math.Max(green, row[x + 1]);
+                            red = Math.Max(red, row[x + 2]);
+                        }
+                    }
+                    int index = py * width + px;
+                    channels[0][index] = (float)(exponent == 1 ? red / 65535d : Math.Pow(red / 65535d, exponent));
+                    channels[1][index] = (float)(exponent == 1 ? green / 65535d : Math.Pow(green / 65535d, exponent));
+                    channels[2][index] = (float)(exponent == 1 ? blue / 65535d : Math.Pow(blue / 65535d, exponent));
+                }
+            }
+            return (channels, width, height, step);
+        }
         for (int y = 0; y < search.Height; y++)
         {
             token.ThrowIfCancellationRequested();
@@ -75,9 +107,7 @@ public sealed partial class DisplayMetrologyProvider
         var ordered = (float[])signal.Clone(); Array.Sort(ordered);
         double minimum = ordered[ordered.Length / 2], contrast = ordered[^1] - minimum;
         // Median/MAD tolerate sparse highlights and hot pixels without a manual noise setting.
-        for (int i = 0; i < ordered.Length; i++) ordered[i] = (float)Math.Abs(ordered[i] - minimum);
-        Array.Sort(ordered);
-        double locatorFloor = minimum + Math.Max(p.MinimumContrast, 6 * ordered[ordered.Length / 2]);
+        double locatorFloor = minimum + Math.Max(p.MinimumContrast, 6 * CrossLocatorMad(ordered));
         candidateCount = 0;
         CrossSlot[] Reject(string reason) => Enumerable.Range(0, p.Rows * p.Columns).Select(_ => new CrossSlot(default, default, reason)).ToArray();
         if (contrast < p.MinimumContrast) return Reject("low_contrast");
@@ -161,6 +191,24 @@ public sealed partial class DisplayMetrologyProvider
         return slots;
     }
 
+    private static float CrossLocatorMad(float[] ordered)
+    {
+        // Around the sorted upper median, absolute deviations form two ascending
+        // runs when traversed outwards. Merge only through their upper median,
+        // preserving the original double subtraction and float rounding.
+        int middle = ordered.Length / 2, left = middle - 1, right = middle;
+        double median = ordered[middle];
+        float deviation = 0;
+        for (int i = 0; i <= middle; i++)
+        {
+            float lower = left >= 0 ? (float)Math.Abs(ordered[left] - median) : float.PositiveInfinity;
+            float upper = right < ordered.Length ? (float)Math.Abs(ordered[right] - median) : float.PositiveInfinity;
+            if (lower <= upper) { deviation = lower; left--; }
+            else { deviation = upper; right++; }
+        }
+        return deviation;
+    }
+
     private static CrossTarget LocateCross(AlgorithmImageBuffer input, int channel, CrossSlot slot,
         RgbCrossRegistrationParameters p, CancellationToken token, int pointIndex, string channelName, List<IReadOnlyDictionary<string, JsonElement>> profiles)
     {
@@ -170,20 +218,43 @@ public sealed partial class DisplayMetrologyProvider
             return new(false, "cross_clipped");
         int channels = input.Format.Channels(), bytes = input.Format.BitsPerChannel() / 8;
         var values = new float[roi.Width * roi.Height];
+        const int histogramBins = ushort.MaxValue + 1;
+        // Large BGR16 ROIs can select the exact upper median by counting samples.
+        // Positive decoding preserves their ordering, including float rounding ties.
+        // For smaller ROIs, sorting a copy uses less scratch space than the bins.
+        int[]? histogram = input.Format == AlgorithmImageFormat.Bgr48 && values.Length >= histogramBins ? new int[histogramBins] : null;
         ReadOnlySpan<byte> data = input.Data.Span;
         for (int y = 0; y < roi.Height; y++)
         {
             token.ThrowIfCancellationRequested();
             for (int x = 0; x < roi.Width; x++)
             {
-                double value = CrossSample(data, (roi.Y + y) * input.Stride + (roi.X + x) * channels * bytes + channel * bytes, bytes);
+                int offset = (roi.Y + y) * input.Stride + (roi.X + x) * channels * bytes + channel * bytes;
+                double value;
+                if (histogram != null)
+                {
+                    ushort sample = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
+                    histogram[sample]++;
+                    value = sample / 65535d;
+                }
+                else value = CrossSample(data, offset, bytes);
                 values[y * roi.Width + x] = (float)(p.DecodeExponent == 1 ? value : Math.Pow(value, p.DecodeExponent));
             }
         }
         int saturatedSamples = values.Count(value => value >= 1);
         // Sparse dark noise must not become the background level of an entire ROI.
-        var background = (float[])values.Clone(); Array.Sort(background);
-        double minimum = background[background.Length / 2];
+        double minimum;
+        if (histogram != null)
+        {
+            int remaining = values.Length / 2, median = 0;
+            while (remaining >= histogram[median]) remaining -= histogram[median++];
+            minimum = (float)(p.DecodeExponent == 1 ? median / 65535d : Math.Pow(median / 65535d, p.DecodeExponent));
+        }
+        else
+        {
+            var background = (float[])values.Clone(); Array.Sort(background);
+            minimum = background[background.Length / 2];
+        }
         if (values.Max() - minimum < p.MinimumContrast) return new(false, "low_contrast");
         var rows = new double[roi.Height]; var columns = new double[roi.Width];
         for (int y = 0; y < roi.Height; y++)
