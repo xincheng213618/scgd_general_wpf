@@ -52,7 +52,7 @@ status: "current"
 summary: "属性编辑器的选择、实例复用、失败降级和扩展验证。"
 aliases: ["自定义属性编辑器", "PropertyGrid", "IPropertyEditor"]
 code_paths: ["UI/ColorVision.UI/PropertyEditor"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs"]
+test_paths: []
 related: ["ui.index"]
 ```
 

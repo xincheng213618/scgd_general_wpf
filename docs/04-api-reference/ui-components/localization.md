@@ -5,7 +5,7 @@ status: "current"
 summary: "界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。"
 aliases: ["多语言", "界面语言", "语言切换", "语言下拉框", "系统语言", "语言资源", "翻译", "日语", "简体中文", "繁体中文", "英文", "LanguageManager", "LanguageConfig", "LanguagePropertiesEditor", "UICulture", "CurrentUICulture", "LanguageChange", "zh-Hans", "zh-Hant", "添加界面语言", "卫星资源"]
 code_paths: ["UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "Engine/ST.Library.UI/Lang.cs", "Engine/FlowEngineLib/FlowEngineLocalization.cs", "Engine/ColorVision.Engine/EngineLocalization.cs", "Engine/ColorVision.Engine/Properties/Resources.en.resx", "Engine/ColorVision.Engine/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Properties/Resources.resx", "UI/ColorVision.UI/Properties/Resources.en.resx", "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Properties/Resources.Designer.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/Serach/SearchSettingsWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Capabilities/CopilotApplicationControlSupport.cs", "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/EngineUiLocalizationTests.cs", "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"]
 related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid", "platform.runtime", "copilot.tool-contracts", "governance.maintenance"]
 ---
 
@@ -86,6 +86,6 @@ Flow 节点标题、属性名称/说明和分类通过 `ST.Library.UI.Lang` 查�
 
 `CopilotAgentCapabilityServices.SetLanguageAsync` 解析当前可用语言，在 UI dispatcher 上调用同一 LanguageChange，仍需用户确认和重启；已是目标文化时返回无需修改，未确认时返回未完成。工具审批、取消与恢复说明归[工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md)，不能因为通过 AI 调用而略过应用自身确认或把工具返回当作重启验收。
 
-`EngineUiLocalizationTests` 和 `FlowLocalizationTests` 先设置英语文化，再查询资源或创建控件，覆盖部分标签/格式化文本及显示翻译不改变枚举、序列化值的约束。它们不是先打开旧窗口再切文化的热更新测试，列出测试路径也不表示本次已运行。
+它们不是先打开旧窗口再切文化的热更新测试，列出测试路径也不表示本次已运行。
 
 目前未找到语言目录发现、getter 回退、取消恢复或实际重启的专项测试；Copilot 输入/审批测试同样不等于语言已切换。后续验收需在获授权、无未保存工作且使用隔离配置的环境下检查资源部署、取消、保存失败及新进程界面。

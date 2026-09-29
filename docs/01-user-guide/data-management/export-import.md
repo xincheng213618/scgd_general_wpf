@@ -5,7 +5,7 @@ status: "current"
 summary: "按软件设置备份、流程、图像和项目结果定位导入导出入口，说明备份恢复范围、文件验收与迁移边界。"
 aliases: ["导入导出","CSV","Excel","cvsettings","导出图片","SaveSnapshotExportsAsync","配置备份","设置备份","配置恢复点","MaintenanceBackups","打开配置文件夹"]
 code_paths: ["UI/ColorVision.UI/ConfigHandler.cs","UI/ColorVision.UI/ConfigMaintenanceResetService.cs","ColorVision/Settings/Maintenance/StorageMaintenanceControl.xaml.cs","Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowPackageCompatibilityTests.cs","Test/ColorVision.UI.Tests/ConfigHandlerPersistenceTests.cs"]
 related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.results","flow.templates","ui.image-editor","engine.cv-image-export","delivery.file-transfer"]
 ---
 
@@ -66,4 +66,4 @@ related: ["operations.data","ui.configuration","ui.storage-maintenance","engine.
 
 配置保存、备份和加载在 `UI/ColorVision.UI/ConfigHandler.cs`；流程入口在 `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs`；图像快照与原图保存入口在 `UI/ColorVision.ImageEditor/ImageView.Snapshot.cs`。
 
-`ConfigHandlerPersistenceTests.cs` 覆盖配置重载和持久化的局部契约，不等于所有模块迁移已验证；`FlowPackageCompatibilityTests.cs` 覆盖流程包兼容、完整性与模板引用；`ImageViewSnapshotSaveTests.cs` 覆盖快照/原图保存与格式限制。项目报表字段和 Socket/MES 交付仍需对应样例与项目测试。
+`ConfigHandlerPersistenceTests.cs` 覆盖配置重载和持久化的局部契约，不等于所有模块迁移已验证；`FlowPackageCompatibilityTests.cs` 覆盖流程包兼容、完整性与模板引用；项目报表字段和 Socket/MES 交付仍需对应样例与项目测试。

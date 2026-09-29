@@ -5,7 +5,7 @@ status: "current"
 summary: "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。"
 aliases: ["色度分析", "色度分析工作台", "CIE 色度图", "色差计算", "色域覆盖率", "CIEDE2000", "JNCD", "CieSampleAnalysisView", "CieAnalysisMath", "CieGamutGeometry", "WindowCIE", "ManualColorGamutView"]
 code_paths: ["UI/ColorVision.ImageEditor/Cie", "Engine/ColorVision.Engine/Media/CvcieDiagramEditorTool.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CieAnalysisTests.cs", "Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"]
+test_paths: ["Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"]
 related: ["ui.image-editor", "engine.cvcie-results"]
 ---
 
@@ -89,6 +89,6 @@ Name,Space,V1,V2,V3,Group,Source,Basis
 
 ## 验证与排障
 
-运行 `CieAnalysisTests` 与 `CieWindowCompositionTests`，覆盖 34 组公开 ΔE00 数据、CIE94/CMC 独立数值、黑色与分段转换、uv/xy 往返、CCT 适用性、主/补波长、色域交集、尺度隔离、CSV/会话往返、报告转义与 WPF 交互；原窗口测试覆盖组成、布局与缩放保留。
+原窗口测试覆盖组成、布局与缩放保留。
 
-设置 `COLORVISION_CIE_PREVIEW_OUTPUT` 可输出深浅主题、正常/最小窗口的 WPF 渲染图。这不代替实机高 DPI、仪器数据或客户验收，也不证明设备校准正确。完整色差空值检查亮度与尺度，CCT 空值检查距黑体轨迹是否过远；导入失败检查表头大小写、列数和小数点。样品页白点与阈值编辑后需点击 **应用计算条件**；色度图预设即时应用，自定义输入需点击 **应用参考白**。参考切换测试覆盖窗口隔离、两个页面同步、源 XYZ 保留、静止鼠标读数刷新、亮度尺度、无效输入与会话恢复。
+当前托管套件不再生成 CIE 深浅主题或最小窗口预览；实机高 DPI、仪器数据、设备校准和客户验收需分别验证。完整色差空值检查亮度与尺度，CCT 空值检查距黑体轨迹是否过远；导入失败检查表头大小写、列数和小数点。样品页白点与阈值编辑后需点击 **应用计算条件**；色度图预设即时应用，自定义输入需点击 **应用参考白**。

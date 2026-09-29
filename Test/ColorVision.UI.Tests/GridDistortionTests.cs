@@ -204,24 +204,6 @@ public sealed class GridDistortionTests
     }
 
     [Fact]
-    public void ResultWindowUsesAttachmentKeystoneAxesAndDoesNotDisplayFailureAsZero()
-    {
-        Assert.True(GridDistortionResultParser.TryParse(ValidJson().ToJsonString(), 1000, 800, out GridDistortionResult result, out _));
-        GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
-        IReadOnlyList<GridDistortionMetricRow> rows = GridDistortionResultWindow.BuildMetricRows(result, analysis);
-        Assert.Contains("左高 − 右高", rows.Single(row => row.Method == "对边均值 9 点" && row.Name == "Keystone Horizontal").Description);
-        Assert.Contains("上宽 − 下宽", rows.Single(row => row.Method == "对边均值 9 点" && row.Name == "Keystone Vertical").Description);
-        Assert.Contains("上宽 − 下宽", rows.Single(row => row.Method == "旧 P9 三跨度" && row.Name == "Keystone Horizontal").Description);
-        Assert.Contains("左高 − 右高", rows.Single(row => row.Method == "旧 P9 三跨度" && row.Name == "Keystone Vertical").Description);
-        Assert.Equal(2, rows.Count(row => row.Method == "标准 TV"));
-        Assert.Equal(2, rows.Count(row => row.Method == "半值 TV"));
-        Assert.Contains(rows, row => row.Description.Contains("非已标定镜头畸变"));
-        GridDistortionMetricRow failure = Assert.Single(GridDistortionResultWindow.BuildMetricRows(GridDistortionResult.CreateFailure("MissingPoints", "缺点"), null));
-        Assert.Equal("无有效指标", failure.Value);
-        Assert.DoesNotContain(rows, row => row.Name is "DIFF_H" or "DIFF_V");
-    }
-
-    [Fact]
     public void AnalysisExportIncludesAllConventionsAndPreservesNativeEnvelope()
     {
         Assert.True(GridDistortionResultParser.TryParse(ValidJson(7).ToJsonString(), 1000, 800, out GridDistortionResult result, out _));

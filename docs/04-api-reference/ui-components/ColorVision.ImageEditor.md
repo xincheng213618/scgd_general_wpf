@@ -5,7 +5,7 @@ status: "current"
 summary: "图像/视频打开、绘图撤销、叠加层、3D 与快照输出边界，区分渲染图、当前源像素和重读源文件的模型导出。"
 aliases: ["打开图像","看图","视频模式","标注","撤销标注","自由套索","闭合多边形","图形旋转","绘图连续模式","绘图锁定","紧凑属性条","CompactInspector","保存原图还是截图","图像叠加层为什么没有显示","像素数字显示","PixelValueOverlay","ColorVision.ImageEditor","ImageView","OpenImage","ImageSourceLoaded","ExternalRenderCompleted","TIFF","Gray32Float","ImageViewSnapshot","AlgorithmOverlayManager","3D高度图","3D模型查看器","ModelViewer3D","ModelViewer3DControl","ModelViewer3DModel","Window3D","HeightMapPixelSampler","ImageGroupNavigation","VideoPlaybackSession","ImageSnapshotCapture","ImageDrawingPresentation","ImageContextMenuComposer"]
 code_paths: ["UI/ColorVision.ImageEditor/Cie","UI/ColorVision.ImageEditor/Zoombox.cs","UI/ColorVision.ImageEditor/EditorTools/FullScreen","UI/ColorVision.ImageEditor/ImageView.xaml","UI/ColorVision.ImageEditor/ImageView.xaml.cs","UI/ColorVision.ImageEditor/ImageViewLifecycleEventArgs.cs","UI/ColorVision.ImageEditor/ImageView.Snapshot.cs","UI/ColorVision.ImageEditor/EditorContext.cs","UI/ColorVision.ImageEditor/EditorToolFactory.cs","UI/ColorVision.ImageEditor/CompactInspector.cs","UI/ColorVision.ImageEditor/DrawCanvas.cs","UI/ColorVision.ImageEditor/Draw/SelectEditorVisual.cs","UI/ColorVision.ImageEditor/Draw/RegionProperties.cs","UI/ColorVision.ImageEditor/Draw/Polygon","UI/ColorVision.ImageEditor/Draw/Circle/CircleManager.cs","UI/ColorVision.ImageEditor/Draw/Rectangle/RectangleManager.cs","UI/ColorVision.ImageEditor/Draw/Annotations/AnnotationMapper.cs","UI/ColorVision.ImageEditor/Tif","UI/ColorVision.ImageEditor/Video/VideoOpen.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs","UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs","UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj","Engine/ColorVision.Engine/Media/CVRawOpen.cs","UI/ColorVision.ImageEditor/README.md","UI/ColorVision.ImageEditor/EditorTools/ThreeD","UI/ColorVision.ImageEditor/PixelValueOverlay.cs","UI/ColorVision.ImageEditor/Settings/DefaultImageViewDisplayConfig.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsWindow.xaml.cs","UI/ColorVision.ImageEditor/Settings/ImageViewSettingsEntry.cs","Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs","UI/ColorVision.ImageEditor/ImageEditorSession.cs","UI/ColorVision.ImageEditor/Documents","UI/ColorVision.ImageEditor/Presentation","UI/ColorVision.ImageEditor/Output","UI/ColorVision.ImageEditor/Navigation","UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs","UI/ColorVision.ImageEditor/Tooling/ImageContextMenuComposer.cs","UI/ColorVision.ImageEditor/Video/VideoPlaybackSession.cs","UI/ColorVision.ImageEditor/Video/VideoPlaybackBackend.cs","UI/ColorVision.ImageEditor/Video/VideoAudioTrack.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WindowFullScreenTests.cs","Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewSnapshotSaveTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs","Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs","Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs","Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs","Test/HeightMap.Validation/Program.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/VideoPlaybackSessionTests.cs","Test/ColorVision.UI.Tests/DrawCanvasTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageOpenCompletionContractTests.cs","Test/ColorVision.UI.Tests/CvcieDisplaySettingsTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs","Test/ColorVision.UI.Tests/ImageViewContextMenuTests.cs","Test/ColorVision.UI.Tests/EraseManagerUndoTests.cs","Test/ColorVision.UI.Tests/DrawShapeCompatibilityTests.cs","Test/ColorVision.UI.Tests/VideoLifecycleTests.cs","Test/ColorVision.UI.Tests/HeightMapPixelSamplerTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DStateTests.cs","Test/ColorVision.UI.Tests/ModelViewer3DModelTests.cs","Test/ColorVision.UI.Tests/HeightMapDxGeometryTests.cs","Test/ColorVision.UI.Tests/HeightMapOrbitCameraTests.cs","Test/ColorVision.UI.Tests/HeightMapModelExporterTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/VideoPlaybackSessionTests.cs"]
 related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.results","algorithms.platform","algorithms.local-native-analysis","operations.first-run","ui.publishing"]
 ---
 
@@ -25,7 +25,7 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 
 图像预览有键盘焦点或鼠标位于预览内时，F11 与图像工具栏全屏按钮效果相同，适用于主窗口中的图像和独立 ImageView 宿主。未由图像处理的 F11 才在冒泡阶段进入[主窗口全屏](../../01-user-guide/interface/main-window.md#全屏与最大化)。若先进入主窗口全屏，再通过图像按钮进入图像全屏，第一次 F11 / Esc 只返回全屏工作区，第二次才恢复普通窗口。已处理的按键、带修饰键的 F11 和长按重复事件不再次切换。
 
-`WindowFullScreenTests` 覆盖窗口及紧凑 chrome 往返、显示器边界、顶部原生鼠标命中、父容器顺序、嵌套退出和启动位置保护；真实图像工具栏与缩放仍需结合 WPF 预览检查。
+真实图像工具栏与缩放仍需结合 WPF 预览检查。
 
 ## CIE 色度图与手动色域计算
 
@@ -82,9 +82,9 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 图像源替换或清空时同步丢弃旧的底图绘制内容，释放画布时同时清空图像源；不能依赖卸载后的下一次 `OnRender` 才释放旧位图。`DrawCanvas.Clear` 仅清理标注和撤销记录，保留底图。`Zoombox` 的适配和区域缩放在布局未就绪时合并为最后一次请求，等待加载和真实布局更新后执行，卸载或替换子内容时取消；不通过 Dispatcher 循环重试。显式缩放、平移、重置或恢复视图会取消旧适配请求，`ImageView` 清图或替换源图时也取消旧图的请求。
 
-`ContentMatrixChanged` 在实际矩阵变化时统一通知，包括属性赋值和绑定更新；无变化的操作不重复通知。缩放和平移方法保留矩阵绑定，`Pan` 的位移使用视口坐标，非等比缩放按各轴当前倍率分别限制上下限。倍率工具仅在倍率变化时刷新，并由工具工厂释放时解绑。`DrawCanvasTests`、`ZoomboxLifecycleTests`、`ImageDocumentPresentationTests` 与 `EditorToolFactoryLifecycleTests` 覆盖释放、重新加载、导航和通知边界。
+`ContentMatrixChanged` 在实际矩阵变化时统一通知，包括属性赋值和绑定更新；无变化的操作不重复通知。缩放和平移方法保留矩阵绑定，`Pan` 的位移使用视口坐标，非等比缩放按各轴当前倍率分别限制上下限。倍率工具仅在倍率变化时刷新，并由工具工厂释放时解绑。
 
-`ImageDrawingPresentation` 合并后台适配请求与布局刷新，每类最多保留一个等待的 Dispatcher 操作；清图、换图、卸载和释放时取消等待操作。绘图缩放的延迟刷新使用画布所属 Dispatcher 上的可停止计时器。后台图像组导航在回到 UI 线程后重新检查视图是否已释放，不能重新填充已关闭视图。`ImageDrawingPresentationTests`、`ImageDocumentPresentationTests` 与 `WindowFullScreenTests` 覆盖排队合并、晚到请求、卸载重挂和全屏释放。
+`ImageDrawingPresentation` 合并后台适配请求与布局刷新，每类最多保留一个等待的 Dispatcher 操作；清图、换图、卸载和释放时取消等待操作。绘图缩放的延迟刷新使用画布所属 Dispatcher 上的可停止计时器。后台图像组导航在回到 UI 线程后重新检查视图是否已释放，不能重新填充已关闭视图。
 
 圆形和矩形绘图工具在底部紧凑属性条中提供持续选项。连续模式关闭时显示 `1×`，开启时显示 `∞`；尺寸锁定关闭时显示开锁，开启时显示闭锁。图标与点击热区应大于普通状态文字，使缩放画布上的高频切换仍容易命中。开启后的持久选中态必须通过稳定的背景、边框或前景反馈与未选中态区分；鼠标按下只提供瞬时反馈，不能与持续选中态共用唯一的视觉差异。`ImageView.xaml` 定义紧凑控件样式与承载区域，`CompactInspector.cs` 创建属性元素，圆形和矩形管理器提供连续、锁定及尺寸状态。
 
@@ -172,7 +172,7 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 - 界面 `ExportModel_Click` 调用 `ModelViewer3DLoader.ExportAsync(model.FilePath, ...)`，导出时重新由 `Importer` 读取源文件，再交给 `Exporter`，不是序列化当前显示场景。因此隐藏/隔离、线框与窗口变换不构成模型导出内容；源文件后续变化也可能影响输出。`ModelViewer3DModel.ExportToFile()` 则是另一条对已有场景操作的 API，不能因其存在就推断界面使用了它。
 - 模型导出会写入用户选择的目标；格式支持、材质/纹理、配套文件和输出保真须按实际导出器及样本核验，不能笼统承诺 OBJ/STL 都完整保留材质和纹理。导出接口返回成功不替代重新导入检查。
 
-相关确定性测试为 `HeightMapPixelSamplerTests`、`HeightMapDxGeometryTests`、`HeightMapOrbitCameraTests`、`HeightMapModelExporterTests`，分别覆盖显示采样契约、网格/透明洞/射线命中、取景和按时间平滑，以及 OBJ/STL 流式导出、取消和 Assimp 重导入。`Test/HeightMap.Validation` 可在独立配置中运行旧/新窗口并记录真实图像的采样、构网格、进程 CPU 和 CompositionTarget 回调间隔；回调间隔不是 GPU 帧时间或呈现延迟，不能据此宣称渲染倍率。`ModelViewer3DStateTests` 和 `ModelViewer3DModelTests` 继续覆盖模型可见性/加载状态及重读源文件导出。这些检查不覆盖所有格式、显卡驱动或低配机器。
+相关确定性测试为 `HeightMapPixelSamplerTests`、`HeightMapDxGeometryTests`、`HeightMapOrbitCameraTests`、`HeightMapModelExporterTests`，分别覆盖显示采样契约、网格/透明洞/射线命中、取景和按时间平滑，以及 OBJ/STL 流式导出、取消和 Assimp 重导入。`ModelViewer3DStateTests` 和 `ModelViewer3DModelTests` 继续覆盖模型可见性/加载状态及重读源文件导出。这些检查不覆盖所有格式、显卡驱动或低配机器，真实性能与交互体验仍需在目标显卡、目标样本和实际桌面上验证。
 
 ## 入口缺失与失败定位
 
@@ -190,13 +190,7 @@ CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，�
 
 ## 验证边界
 
-`ImageEditorRealSampleTests` 是显式启用的本地 CVRAW/CVCIE 验证：通过 `COLORVISION_IMAGE_EDITOR_SAMPLE_FILES` 指定分号分隔的文件，输出目录可由 `COLORVISION_IMAGE_EDITOR_SAMPLE_OUTPUT` 指定。它检查真实打开器、图层切换、旧源租约、TIFF 解码像素以及输入文件前后 SHA256；未指定样本时明确跳过。普通位图的通道选择只改变显示；`CVRawOpen` 的文件图层控制器会重载基准图，测试按实际打开器的版本契约验证。
-
-```powershell
-$env:COLORVISION_IMAGE_EDITOR_SAMPLE_FILES = 'C:\samples\image.cvraw;C:\samples\measurement.cvcie'
-$env:COLORVISION_IMAGE_EDITOR_SAMPLE_OUTPUT = Join-Path $env:TEMP 'ColorVision-ImageEditor-Samples'
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter FullyQualifiedName~ImageEditorRealSampleTests
-```
+当前托管自动化不包含默认跳过的真实 CVRAW/CVCIE 样本宿主。真实打开器、图层切换、旧源租约、TIFF 解码像素和输入文件只读性需要使用获授权的非敏感样本单独验证；普通位图的通道选择只改变显示，`CVRawOpen` 的文件图层控制器会重载基准图。
 
 元数据中的测试分别涉及图像完成/过期请求、overlay 生命周期、快照与源像素输出、擦除撤销、注释类型兼容、工具栏重复装配及上述 3D 子契约。`ImageGroupNavigationTests` 检查纯状态去重、跟随和事件顺序；`VideoPlaybackSessionTests` 以替代 backend/audio 检查首帧借用、播放控制、重开/跳转过期回调、UI 丢帧及关闭重入释放，`VideoLifecycleTests` 检查打开器清理。它们不证明所有真实视频编码和音画同步。
 

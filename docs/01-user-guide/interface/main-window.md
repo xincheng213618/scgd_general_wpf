@@ -3,9 +3,9 @@ knowledge_id: "operations.main-window"
 knowledge_type: "topic"
 status: "current"
 summary: "主窗口菜单、搜索、状态栏与工作区装配；紧凑主窗口在 Windows build 22000 或更高版本默认启用并保留旧窗口开关，低版本直接使用普通主窗口。"
-aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","CompactMainWindow","MainWindowFactory","紧凑主窗口","紧凑标题栏","恢复旧主窗口","标题栏合并菜单","标题栏更多","标题栏按钮位置","标题栏图标颜色","Windows build 22000","低版本隐藏紧凑主窗口设置","MainWindowActionButtonStyle","TitleBarActionForeground","TitleBarActionInactiveForeground","EnableWindowResizeDiagnostics","MainWindowResizeDiagnostics","window-resize-diagnostics.mode","最大化闪烁","还原闪烁","UseCompactMainWindow","CompactTitleBarChrome","CompactTitleBarLayout","CompactTitleBarActions","AvalonDock","VS2026","停靠标题","文档标签","固定选项卡","固定标签","图钉","DocumentTabPinManager","浮动窗口主题","浮窗最大化","停靠导航器","停靠预览","工具面板三段色","标题右键菜单","菜单整行点击","标签栏空白背景","文档标签溢出","当前标签不可见","StableDocumentPaneTabPanel","设备控制滚动条","单工具面板空白","ToolTabStrip","工具标题命令","IDockPanelTitleActionProvider","DockPanelTitleAction","新手引导","产品导览","首次欢迎","NewUserGuideOverlay","HasShownNewUserGuide"]
-code_paths: ["ColorVision/MainWindow.FullScreen.cs","ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.NewUserGuide.cs","ColorVision/Guidance","ColorVision/MainWindow.Hotkeys.cs","ColorVision/CompactMainWindow.cs","ColorVision/MainWindowFactory.cs","ColorVision/StartWindow.xaml.cs","ColorVision/MainWindowConfig.cs","ColorVision/Windowing/MainWindowResizeDiagnostics.cs","ColorVision/Windowing/CompactTitleBarChrome.cs","ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs","ColorVision/Windowing/CompactTitleBarLayout.cs","ColorVision/Windowing/CompactTitleBarActions.cs","ColorVision/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockModernLight.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernDark.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernTemplates.xaml","UI/ColorVision.Solution/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.Solution/Themes/DockingSurfaceBorder.cs","UI/ColorVision.Solution/Themes/DockingTabBorder.cs","UI/ColorVision.Solution/Themes/StableDocumentPaneTabPanel.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.Themes/Themes/Controls/Menu.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Serach/ContextualFindRouter.cs","UI/ColorVision.UI/Serach/SearchWindow.xaml","UI/ColorVision.UI/Serach/SearchWindow.xaml.cs","UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.Solution/Workspace","UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WindowFullScreenTests.cs","Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/MainWindowSearchShellTests.cs","Test/ColorVision.UI.Tests/NewUserGuideTests.cs","Test/ColorVision.UI.Tests/WindowResizeDiagnosticsContractTests.cs","Test/ColorVision.UI.Tests/CompactTitleBarIntegrationContractTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs","Test/ColorVision.UI.Tests/SearchWindowHotkeyBridgeTests.cs","Test/ColorVision.UI.Tests/SearchWindowHostTests.cs"]
+aliases: ["主窗口","菜单不见了","搜索框消失","工作区","MainWindow","CompactMainWindow","MainWindowFactory","紧凑主窗口","紧凑标题栏","恢复旧主窗口","标题栏合并菜单","标题栏更多","标题栏按钮位置","标题栏图标颜色","Windows build 22000","低版本隐藏紧凑主窗口设置","MainWindowActionButtonStyle","TitleBarActionForeground","TitleBarActionInactiveForeground","最大化闪烁","还原闪烁","UseCompactMainWindow","CompactTitleBarChrome","CompactTitleBarLayout","CompactTitleBarActions","AvalonDock","VS2026","停靠标题","文档标签","固定选项卡","固定标签","图钉","DocumentTabPinManager","浮动窗口主题","浮窗最大化","停靠导航器","停靠预览","工具面板三段色","标题右键菜单","菜单整行点击","标签栏空白背景","文档标签溢出","当前标签不可见","StableDocumentPaneTabPanel","设备控制滚动条","单工具面板空白","ToolTabStrip","工具标题命令","IDockPanelTitleActionProvider","DockPanelTitleAction","新手引导","产品导览","首次欢迎","NewUserGuideOverlay","HasShownNewUserGuide"]
+code_paths: ["ColorVision/MainWindow.FullScreen.cs","ColorVision/MainWindow.xaml","ColorVision/MainWindow.xaml.cs","ColorVision/MainWindow.NewUserGuide.cs","ColorVision/Guidance","ColorVision/MainWindow.Hotkeys.cs","ColorVision/CompactMainWindow.cs","ColorVision/MainWindowFactory.cs","ColorVision/StartWindow.xaml.cs","ColorVision/MainWindowConfig.cs","ColorVision/Windowing/CompactTitleBarChrome.cs","ColorVision/Windowing/CompactTitleBarVisibilityGuard.cs","ColorVision/Windowing/CompactTitleBarLayout.cs","ColorVision/Windowing/CompactTitleBarActions.cs","ColorVision/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockTheme.cs","UI/ColorVision.Solution/Themes/AvalonDockModernLight.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernDark.xaml","UI/ColorVision.Solution/Themes/AvalonDockModernTemplates.xaml","UI/ColorVision.Solution/Themes/AvalonDockGripTemplates.xaml","UI/ColorVision.Solution/Themes/DockingSurfaceBorder.cs","UI/ColorVision.Solution/Themes/DockingTabBorder.cs","UI/ColorVision.Solution/Themes/StableDocumentPaneTabPanel.cs","UI/ColorVision.Themes/Themes/White.xaml","UI/ColorVision.Themes/Themes/Dark.xaml","UI/ColorVision.Themes/Themes/Controls/Menu.xaml","UI/ColorVision.UI/Menus","UI/ColorVision.UI/Serach/ContextualFindRouter.cs","UI/ColorVision.UI/Serach/SearchWindow.xaml","UI/ColorVision.UI/Serach/SearchWindow.xaml.cs","UI/ColorVision.UI/Serach/SearchWindowHotkeyBridge.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.Solution/Workspace","UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/StartupFileOpenPolicyTests.cs","Test/ColorVision.UI.Tests/ContextualFindRouterTests.cs"]
 related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui.solution","ui.documents","ui.themes","platform.runtime","operations.index","ui.desktop-pet"]
 ---
 
@@ -37,7 +37,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 导览步骤只提供“上一步/下一步”和界面说明，不把点击高亮区域当作完成条件。遮罩由目标四周的独立区域组成，高亮孔内仍可点击原控件；目标因布局或可见性无法解析时，退化为全屏遮罩和居中说明，不阻止退出。当前步骤仅定位主窗口视觉树中的稳定区域，不跨 AvalonDock 浮动窗口、右键菜单、下拉弹层或其它独立窗口。
 
-欢迎页和步骤文字随主程序的简体中文、繁体中文和英文资源切换。常规与紧凑主窗口复用同一层导览 XAML；引导不会改变用户已保存的停靠布局。布局计算和宿主标记由 `NewUserGuideTests` 覆盖，仍需在实际桌面检查浅色/深色、最大化/还原和不同 DPI 下的遮罩位置与文字排版。
+欢迎页和步骤文字随主程序的简体中文、繁体中文和英文资源切换。常规与紧凑主窗口复用同一层导览 XAML；引导不会改变用户已保存的停靠布局。
 
 ## 全屏与最大化
 
@@ -47,7 +47,7 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 
 `SetWindowFull` 把 `IFullScreenState.IsFull` 与 `WindowFullScreenSession` 连接起来；一个宿主只注册一次，重复状态通知不覆盖原窗口快照，关闭后解绑。紧凑 chrome 同时监听共享全屏状态，在更改窗口样式前暂停，恢复窗口后重挂。图像预览有键盘焦点或鼠标位于图像预览内时，F11 优先进入图像全屏；主窗口在按键冒泡阶段处理剩余的 F11。全屏期间的退出键由当前最内层会话统一处理，详见[图像全屏与恢复](../../04-api-reference/ui-components/ColorVision.ImageEditor.md#图像全屏与恢复)。
 
-`WindowFullScreenTests` 使用自有 WPF 窗口与 HWND 检查完整显示器像素边界、普通/最大化恢复、连续往返、嵌套按键、顶部鼠标命中及启动位置保护；真实浮层点击、混合 DPI、多屏切换和生产工作区还需交互验证。
+真实浮层点击、混合 DPI、多屏切换和生产工作区还需交互验证。
 
 ## 紧凑主窗口与标题栏
 
@@ -84,26 +84,6 @@ related: ["ui.discovery","ui.menus","ui.hotkeys","ui.search","ui.status-bar","ui
 全屏由 `SetWindowFull` 连接共享会话控制窗口样式与状态。紧凑窗口先注册自己的配置处理器，再注册该共享全屏处理器：进入前暂停 chrome 和显隐保护，恢复普通标题行尺寸与按钮占位，工作区外边距保持 0，并隐藏拖动区；退出并恢复原样式后，通过 Dispatcher 在 Loaded 优先级接回同一 chrome 实例，并同步显隐保护的菜单状态。关闭取消时不提前拆除 chrome；真正 `Closed` 后解除所捕获配置对象和主题管理器上的订阅，并释放窗口 hook 与 subclass；原生 `WM_NCDESTROY` 也清理 subclass。显隐保护附加失败时回退普通外观。窗口位置保存与恢复仍沿用 `WindowConfig`，没有另建一套 DPI 或屏幕布局持久化规则。
 
 共享全屏会话通过无边框普通状态与完整显示器像素矩形定位，避免沿用最大化的任务栏工作区；从最大化进入后，退出仍恢复最大化。菜单属于应用内容，保留可见与点击能力，不随原生标题栏一起隐藏。
-
-## 最大化与还原的诊断构建
-
-`EnableWindowResizeDiagnostics=true` 是仅供开发排查的编译开关，不是用户设置，也不是动画修复。它同时为主程序和 `ST.Library.UI` 定义 `COLORVISION_WINDOW_RESIZE_DIAGNOSTICS`；普通构建不包含诊断类型、窗口 hook、模式文件读取或流程图计时。不要只替换其中一个程序集，也不要将诊断构建作为正常发布包。
-
-关闭准备替换的应用后，在仓库根目录构建；此命令不发布或上传：
-
-```powershell
-dotnet build .\ColorVision\ColorVision.csproj -c Debug -p:Platform=x64 -p:EnableWindowResizeDiagnostics=true
-```
-
-诊断版可读取自身 EXE 目录中的 `window-resize-diagnostics.mode`：文件内容去掉首尾空白后，`native` 为原生窗口、`compact` 为当前紧凑窗口；仅接受这两个小写值，缺失或其它内容使用原设置。它不写回 `UseCompactMainWindow`。以相同诊断构建、已加载内容、主题、窗口初始尺寸和 DPI 分别测试，避免把轻量样窗与真实工作区当作单变量对照。主程序仍走真实启动初始化，只有在允许启动业务应用的环境中运行；诊断本身不执行流程或设备命令。
-
-`MainWindowFactory` 在窗口创建后、显示前注册只读诊断，附加时晚于紧凑 chrome 初始化。最大化/还原命令和相应尺寸变化开启约一秒的数值采样：记录原生消息前后时序、客户区与 WPF 布局尺寸、标题区高度及 chrome 参数；关联流程图记录真实 `OnRender` 的目标重建、GDI 绘制和像素复制阶段，均使用同一 Stopwatch 时基。固定容量满后累计丢弃数；绘制期间不写文件或强制布局，不订阅 `CompositionTarget.Rendering` 来制造持续帧回调。
-
-在过渡结束后按 **F12** 导出本地 JSON，关闭窗口也尝试导出。文件位于该 EXE 目录的 `window-resize-traces` 下，使用唯一名称；包含配置选择、本次模式覆盖、实际 chrome 附加状态、运行时及数值采样，不包含文档标题、节点文字或配置正文。检查丢弃/诊断错误字段后再解释数据；读取模式文件或导出失败不应阻止正常启动或关闭。窗口关闭时解除事件与 subclass，不保留旧文档编辑器的强引用。
-
-编辑器通过启动时的有界可视树扫描及 Loaded 事件发现；F12 显式导出前也重扫当前窗口，兼容延迟加入的停靠内容，不在 resize/绘制热路径扫描。`EditorDiscovery` 区分已跟踪、仍存活、已有快照及 Loaded/扫描的匹配、错误和上限计数。`Editors` 为空不能解读为流程图没有重绘；F12 才发现的编辑器需要再最大化/还原后重新导出，诊断不会补造此前的绘制记录。
-
-`OnRender` 结束只说明相应调用完成，不是 GPU/DWM Present 完成；消息尺寸和绘制耗时也不能单独证明肉眼闪烁已消失。排查结束后用 `-p:EnableWindowResizeDiagnostics=false` 重新构建普通版本，再进行正式的视觉与交互验收。
 
 ## 独立搜索窗口与焦点
 
@@ -154,9 +134,9 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 ## 验证范围
 
-`CompactTitleBarIntegrationContractTests` 检查开关默认值、旧字段忽略、新字段 false/true 的 JSON 往返、窗口选择与本地化提示；从真实主窗口 XAML 提取隔离标题布局，调用 `CompactTitleBarLayout`，检查窄宽往返、异步更新提示、自动高度、分级收纳及“更多”和拖动区命中。测试不固定启动源码写法、完整 XAML 层级或包图标缓存实现。`CompactTitleBarChromeTests` 使用隔离窗口和 HWND，检查附加前提、既有 chrome 保留、原生窗口能力、主题刷新、全屏往返、关闭取消及 Dispose 后释放，不加载生产配置、工作区或设备。系统不支持紧凑标题栏时，只覆盖普通窗口分支。测试引用不表示本次已经执行。
+从真实主窗口 XAML 提取隔离标题布局，调用 `CompactTitleBarLayout`，检查窄宽往返、异步更新提示、自动高度、分级收纳及“更多”和拖动区命中。测试不固定启动源码写法、完整 XAML 层级或包图标缓存实现。`CompactTitleBarChromeTests` 使用隔离窗口和 HWND，检查附加前提、既有 chrome 保留、原生窗口能力、主题刷新、全屏往返、关闭取消及 Dispose 后释放，不加载生产配置、工作区或设备。系统不支持紧凑标题栏时，只覆盖普通窗口分支。测试引用不表示本次已经执行。
 
-`CompactTitleBarIntegrationContractTests` 还用 mock 命令检查原按钮与“更多”菜单的命令、参数、命令目标和禁用状态动态一致、RoutedCommand 仍经过原按钮路由、更新项只进入原更新按钮的 Click 管线，并加载真实按钮模板核对完整点击区域。普通与紧凑按钮使用真实 WPF 控件检查字形继承同一 `Foreground` 画刷、默认配色随浅深主题刷新，以及离屏窗口实际 `IsActive=false` 时的非活动前景与资源刷新；悬停、按下、键盘焦点的前景恢复和覆盖非活动状态的顺序属于模板触发器契约检查。深浅主题下的实际悬停、键盘焦点、蓝点和辅助功能体验仍需视觉与真实输入验收；不应实际执行下载、登录或更新来证明布局正确。
+普通与紧凑按钮使用真实 WPF 控件检查字形继承同一 `Foreground` 画刷、默认配色随浅深主题刷新，以及离屏窗口实际 `IsActive=false` 时的非活动前景与资源刷新；悬停、按下、键盘焦点的前景恢复和覆盖非活动状态的顺序属于模板触发器契约检查。深浅主题下的实际悬停、键盘焦点、蓝点和辅助功能体验仍需视觉与真实输入验收；不应实际执行下载、登录或更新来证明布局正确。
 
 显隐回归由 `CompactTitleBarChromeTests` 向自有 HWND 发出系统最大化/还原命令，记录实际 `WM_STYLECHANGED`，验证切换中不清除可见位，且原生系统菜单的最大化/还原可用状态正确；覆盖全屏暂停后恢复、WPF 与原生隐藏/显示、最小化，以及业务在普通缩放或最大化的 `SizeChanged` 回调中主动隐藏。只检查最终 `IsVisible=true` 不足以证明没有中途显隐。
 
@@ -170,4 +150,4 @@ WPF `Border.CornerRadius` 只约束边框自身绘制，不会自动裁切子内
 
 这些测试不覆盖所有菜单、状态栏、窗口布局或插件初始化，也不证明真实拖拽和浮动窗口最大化已通过。对宿主交互的修改仍需在获准启动应用的环境中检查目标入口、窄窗口、文档切换、自动隐藏、浮动/重新停靠和日志；只读文档核对不能记为这些交互已通过。
 
-`MainWindowSearchShellTests` 检查独立窗口标记与入口接线；`ContextualFindRouterTests` 用隔离内容检查局部查找、禁用状态、菜单焦点和跨面板边界。`SearchWindowHotkeyBridgeTests` 检查当前组合、搜索窗口活动状态、重复按键和捕获门禁；`SearchWindowHostTests` 使用隔离测试窗口，检查原生 Owner 关系、可缩放非模态窗口且无独立任务栏项、移动宿主不关闭、单独关闭后重开与 Owner 关闭联动；会话测试注入合成查询，检查关闭取消和窗口关闭后才执行结果，不运行真实 provider 或生产 MainWindow。列出这些用例不表示它们已经执行；真实输入法、多屏 DPI、拖动和业务文档交互仍需对应运行时验收。
+`ContextualFindRouterTests` 用隔离内容检查局部查找、禁用状态、菜单焦点和跨面板边界。会话测试注入合成查询，检查关闭取消和窗口关闭后才执行结果，不运行真实 provider 或生产 MainWindow。列出这些用例不表示它们已经执行；真实输入法、多屏 DPI、拖动和业务文档交互仍需对应运行时验收。

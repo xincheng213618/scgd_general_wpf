@@ -5,7 +5,7 @@ status: "current"
 summary: "ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。"
 aliases: ["条纹MTF","StripeMtfAnalyzer","ImageView MTF","H/V条纹","本地MTF","LocalMtfNode","CV_Ali_calcMtf","ARVR算法","MTF SFR FOV模板对应哪个结果","SFR1.0","MTF2.0","FOV2.0","畸变评价","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR","WindowSFR"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/Mtf","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf","Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf","Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/ARVR/Distortion","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/StripeMtfTests.cs","Test/ColorVision.UI.Tests/VendorMtfReference.cs","Test/ColorVision.UI.Tests/LocalMtfTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","algorithms.template-menus","algorithms.find-cross","algorithms.grid-distortion","engine.results"]
 ---
 
@@ -75,7 +75,7 @@ Flow 的 `LocalMtfNode` 位于自定义节点 **MTF计算(V2)**。图像连接 `
 
 结果目录默认位于当前用户 `LocalAppData/ColorVision/Results/MTF`。先写文件，再事务保存主表与明细；数据库失败回滚并清理本次文件，持久化完成后发布 `local-flow` 通知并向后续节点输出结果 ID。计算失败不产生成功记录；业务上下限仍由客户流程处理。没有与内存帧对应的已保存图片时，历史结果可能没有原图。原有远端模板算法入口仍按上表运行。
 
-专项验证：`dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~Mtf"`，覆盖 H/V 公式、四部方向分组、坐标、原图保护、ImageView 结果生命周期、直接参数、历史结果读取与事务回滚。设置 `COLORVISION_MTF_FIELD_CASE` 可运行离线对照，JSON 包含 `ImagePath`、`AlgorithmDirectory`、`Parameters`、`RoiRects`、`Expected`（原结果 JSON）；未提供则跳过。供应商适配器仅位于测试项目，用于复现基线。`StripeMtfFieldTests` 在同一驻留帧上预热后交替测量自研算法与 DLL，并输出数值/坐标差异；`COLORVISION_MTF_OWN_REPORT` 指定报告路径。耗时不含读图、数据库和 UI，对照报告不自动判定数值等价，也不代替现场整套流程验收。
+当前托管套件只保留节点模板映射和结果叠图等相邻契约，不再包含 H/V 数值、四部定位、供应商 DLL 对照或现场样本宿主。替换生产流程前应在获授权环境使用相同原图、ROI、参数和判定限对照自研算法与目标 DLL，并把读图、数据库、UI 和整套流程耗时分别记录。
 
 ### 公共请求字段
 

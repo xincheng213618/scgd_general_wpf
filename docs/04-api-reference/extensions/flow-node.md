@@ -5,7 +5,7 @@ status: "current"
 summary: "说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。"
 aliases: ["FlowLocalExecution","CreateLocalExecution","如何新增Flow节点","CVCommonNode","CVBaseServerNode","LocalFlowNodeBase","CVStartCFC输入快照","getBaseEventData","CVEndNode"]
 code_paths: ["Engine/FlowEngineLib/Base/FlowLocalExecution.cs","Engine/FlowEngineLib/Base/CVCommonNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/FlowEngineLib/Start/BaseStartNode.cs","Engine/FlowEngineLib/End/CVEndNode.cs","Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFlowNodeBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/LocalFlowNodePortTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs","Test/ColorVision.UI.Tests/ConventionalFlowNodeTests.cs","Test/ColorVision.UI.Tests/FlowRuntimeCompletionTests.cs"]
 related: ["platform.extensibility","flow.index","flow.runtime","ui.property-grid"]
 ---
 
@@ -67,7 +67,6 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 
 - `ConventionalFlowNodeTests.cs`：常规节点契约。
 - `CompatibilityNodeMigrationTests.cs`：迁移前的 30 节点合成画布，检查持久化字段、连线、请求、菜单可见性及直接属性编辑器。
-- `LocalFlowNodePortTests.cs`：本地节点端口、资源节点设备字段保存，以及纯算法节点忽略旧字段且不再写出的契约。
 - `FlowRuntimeCompletionTests.cs`：流程终态。
 - `LvCameraLocalForwardingTests.cs`：服务节点由宿主本地执行时的路由、结果交接、命令终态和资源释放。
 

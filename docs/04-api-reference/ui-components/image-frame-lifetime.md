@@ -5,7 +5,7 @@ status: "current"
 summary: "位图读取时借用原图内存与复制像素的区别、租约释放责任和缓存版本；原图修改须显式失效，复制HImage不延长租约。"
 aliases: ["图像帧租约", "图像内存所有权", "像素缓存失效", "借用图像", "复制图像", "SourceImageFrame", "ImageFrameStore", "ImageFrameLease", "HImageExtension", "ForHImage", "ToHImage", "NotifySourcePixelsChanged", "ImageDocument", "CommitSourcePixels"]
 code_paths: ["UI/ColorVision.Core/SourceImageFrame.cs", "UI/ColorVision.Core/HImage.cs", "UI/ColorVision.Core/HImageExtension.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/Documents/ImageDocument.cs", "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs", "Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs", "Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs", "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageFrameOwnerTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs"]
 related: ["ui.core", "ui.image-editor", "engine.native-integration", "algorithms.platform"]
 ---
 

@@ -5,7 +5,7 @@ status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
 aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/WindowServiceConfigurationTests.cs"]
+test_paths: []
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
 ---
 
@@ -106,6 +106,6 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 本页未声明创建/保存/重启的自动化集成测试。`ServiceConfigTests` 只覆盖 RC 配置信息属性通知，不能证明本页契约。受授权的隔离验证应覆盖旧 JSON 恢复、无效 JSON 保留证据、保存后重开、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
 
-`WindowServiceConfigurationTests` 覆盖创建配置时按到期时间选择相机许可证、无可用许可证、相机 / 校准 / 光谱仪排除及显式 SN 保留，并验证默认 SN 随配置序列化；不访问真实数据库或操作设备。
+不访问真实数据库或操作设备。
 
 共享 Config 的即时取值、重置后的新旧引用、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。

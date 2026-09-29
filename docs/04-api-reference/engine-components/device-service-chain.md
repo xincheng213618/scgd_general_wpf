@@ -5,7 +5,7 @@ status: "current"
 summary: "设备工厂、资源重载、显示装配与详情视图按需初始化；旧对象释放、集合重建和显示替换并非一个事务，记录存在、界面可见、服务在线和动作完成分别判断。"
 aliases: ["设备打不开","设备服务","设备连接","设备资源有记录却不出现","如何新增设备服务","设备资源重载","设备资源过滤","设备类型字典","组关联资源","空设备树","管理员服务配置","进入采集窗口","切换列表","LastSelectIndex","运行对象生命周期","显示集合","ServiceManager","t_scgd_sys_resource","t_scgd_sys_resource_group","DeviceServiceFactoryRegistry","ServiceTypes","LoadServices","LastGenControl","设备控制分组","CreateGroupCommand","设备行置顶","取消置顶","DisplayPinButton","设备详情按需初始化","ViewShell","EnsureInitialized","ViewCamera","ViewSpectrum","AlgorithmView","ViewCalibration"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Dao/SysDictionaryModel.cs","Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs","Engine/ColorVision.Engine/Dao/VSysResourceDao.cs","UI/ColorVision.Database/BaseTableDao.cs","Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs","Engine/ColorVision.Engine/Services/ServiceManager.cs","Engine/ColorVision.Engine/Services/ServiceInitializer.cs","Engine/ColorVision.Engine/Services/WindowService.xaml.cs","Engine/ColorVision.Engine/Services/WindowService.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml","Engine/ColorVision.Engine/Services/DevicePropertyWindow.xaml.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/Type/TypeService.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Views/ViewCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DeviceSpectrum.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/DisplaySpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Spectrum/Views/ViewSpectrum.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DeviceAlgorithm.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithm.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","UI/ColorVision.UI/DisPlayManager.cs","UI/ColorVision.UI/DisplayPinButton.xaml","UI/ColorVision.UI/DisplayPinButton.xaml.cs","UI/ColorVision.UI/DisPlayControlPanel.cs","UI/ColorVision.UI/Docking/DockPanelTitleAction.cs","UI/ColorVision.UI/Views/DockViewManager.cs","UI/ColorVision.Solution/Workspace/DockViewManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs","Test/ColorVision.UI.Tests/DeferredDeviceViewTests.cs","Test/ColorVision.UI.Tests/DockViewManagerTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs"]
 related: ["engine.index","platform.runtime","operations.device-configuration","engine.mqtt","engine.rc-registration","engine.results","engine.spectrum-device","operations.camera","operations.motor","operations.smu","operations.calibration","operations.file-server","operations.flow-device","flow.session","ui.property-grid","ui.database"]
 ---
 
@@ -97,7 +97,7 @@ Flow 和第三方算法的 WPF 设备包装及内置工厂已移除；即使遗�
 
 `DisPlayManagerConfig.PinnedControls` 按稳定 `PersistenceKey` 独立保存置顶状态；旧配置缺少该字段时全部未置顶。`StoreIndex` 保留基础顺序，置顶和取消置顶不重写它；重建显示集合时也按基础顺序规范化索引，避免把置顶顺序固化。拖动按同一置顶状态的相邻项转换回基础顺序，所以取消置顶后回到基础顺序（包含用户主动拖动的调整）。置顶或拖动重排现有集合时保持当前选中对象，并同步索引和稳定选择键。
 
-`DockViewManagerTests` 覆盖置顶/取消、JSON 配置往返和显示集合重建、稳定键迁移、开合恢复、隐藏/重新显示、选择保持、组内与跨组拖动及图钉输入隔离；真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
+真实窗口的触控、多 DPI 和现场设备操作仍需单独验收。
 
 ### 设备详情视图按需初始化
 
@@ -150,7 +150,7 @@ PG、Spectrum、Sensor 等设备从 `RegisterDefaults` 定位具体配置、命�
 | 手动成功但 Flow 失败 | 节点引用的设备 Code、模板版本和输入，再查共享会话完成条件 |
 | 保存后异常或重启未生效 | 配置持久化和 RC 重启是不同阶段，进入[配置契约](../../01-user-guide/devices/configuration.md) |
 
-`DeferredDeviceViewTests` 使用合成设备和 MQTT 对象、内存配置及真实 WPF/XAML，检查四类详情的登记身份、隐藏加载与首次可见初始化、WPF Initialized 已发生后的公开 View 访问；另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。`DockViewManagerTests` 检查晚登记文档、标题更新、双击激活和显示集合替换后的选择恢复。测试引用不表示已执行或通过。
+另检查相机、算法、校准未初始化详情的释放，以及相机和校准内存结果模型的首次显示。它不构造真实设备连接、不执行 DAO 结果回查，也不覆盖 Spectrum 完整释放。测试引用不表示已执行或通过。
 
 本页未声明资源树、工厂与真实 MySQL 的自动化集成覆盖。`ServiceConfigTests` 只验证注册中心服务信息属性通知，不证明此装配链；具体设备测试从对应主题进入。验证应记录同一设备的资源 ID/Code、版本、父终端、配置来源和实际失败阶段，敏感配置须脱敏。
 

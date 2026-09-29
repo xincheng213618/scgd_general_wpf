@@ -5,7 +5,7 @@ status: "current"
 summary: "ImageRegistration 的输入、参数、结果、宿主接入与定向验证契约。"
 aliases: ["图像配准如何求变换和输出配准质量","ImageRegistration","ImageRegistrationAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/ImageRegistrationAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageRegistrationV1Tests.cs"]
+test_paths: []
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -67,7 +67,6 @@ reference 与 moving 可以不同尺寸。provider 使用 ORB、双向最近邻�
 
 ## 验证、取消与性能
 
-`ImageRegistrationV1Tests` 覆盖 Catalog/alias/schema、preset 往返与版本拒绝、九种规范格式 identity golden、DPI 与输入只读、相位平移方向、确定性 ORB 单应性、格式/色彩空间/尺寸/ROI/NaN 结构化失败、预取消及执行中取消、成功/失败/取消的 transferred 输入释放、Result artifact 释放、Flow 双帧 adapter，以及 ImageView Catalog 入口、结果窗口和 Visual 级 transient overlay 回收。
 
 可选性能门禁 `ImageRegistrationPipelineProbe` 在 4K Gray16/Bgra32 上执行非 identity 相位相关，预算只允许一份配准输出、一份 mask 与固定 32 MiB 管理内存余量，并把延迟限制为 30 秒。仍不可消除的边界是 OpenCV 的归一化亮度/频域工作区、native warp 输出到 Result buffer 的一次复制，以及 mask；两幅输入均通过 lease 只读借用。
 

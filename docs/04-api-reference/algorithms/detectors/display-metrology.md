@@ -5,7 +5,7 @@ status: "current"
 summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
 aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
-test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/DustDetectionTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
 ---
 
@@ -68,7 +68,7 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 
 没有直接调用单十字 `FindCrossLocal`：`pattern_cross.cpp` 的 `ConvertToGrayFloat` 会混合颜色，而 `PatternCrossResult` 提供轴交点、角度、端点和臂质量，不提供通道对应的双侧阈值边缘。其 `SampleAxis` 内部有原图背景滤除、单目标候选及光学坐标语义，也不是可直接调用的中立边缘 API。这里采用独立的逐通道截面质量检查与中位数测量；单十字功能及 Engine 结果链保持独立。当前没有像素到角度的自动换算，不能替代相机/镜头色差基线与现场误报漏报验收。
 
-合成回归在 `DisplayMetrologyTests.cs`、`DisplayRgbCrossTests.cs`，包含平移紧凑阵列、相同外轮廓的臂分离、弱竖臂、缺点、缺通道、额外目标、触边、排序歧义，以及多峰外包络、同强度或两侧峰强度互换、半臂缺失仍测量与整臂缺失留空、G 基准两组偏移、曝光与背景噪声变化、弱外臂。`DisplayRgbCrossSiteTests.cs` 是显式启用的 CVCIE v2 / BGR16 只读现场路径；默认跳过，不把缺少现场文件算作已验证。它使用生产 Runner，保存原文件前后 SHA-256、参数、每点 JSON/CSV、汇总、截面质量、通道预览及原图/叠图对照。PowerShell 示例：`./Scripts/validate_rgb_cross.ps1 -Source C:/samples/array.cvraw -OutputDirectory C:/validation/rgb-cross`。工作树没有 native DLL 时，可显式传入 `-OpenCvHelperBinary` 指向已有匹配 DLL；脚本不下载、不发布，也不改原文件。现场图没有人工真值，测试完成仅代表路径执行和原文件未变，不保证九点全部有效或满足产品规格。
+现场复核可显式运行 `./Scripts/validate_rgb_cross.ps1 -Source C:/samples/array.cvraw -OutputDirectory C:/validation/rgb-cross`，保存参数、逐点 JSON/CSV、汇总、截面质量、通道预览及原图/叠图对照。工作树没有 native DLL 时，可显式传入 `-OpenCvHelperBinary` 指向已有匹配 DLL；脚本不下载、不发布，也不改原文件。现场图没有人工真值，脚本完成仅代表路径执行和原文件未变，不保证九点全部有效或满足产品规格。
 
 双目至少需要三个有效且非共线的对应目标。用最小二乘拟合左图到右图的相似变换，同时保留原始逐格位移与拟合残差；不把对齐后的零误差当作产品误差。旋转正值为图像坐标下的顺时针。当前不做稳健外点剔除，残差须结合格点表解释。只比较均匀白场时关闭“测量目标位置”；信号比仍要求相同采集条件，彩色图额外给出 B/G/R 各通道比值，不输出校准色差。
 
@@ -98,7 +98,7 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 
 坐标与叠图转换回原图像素；“原图等效面积”是分析面积乘 X/Y 缩放系数，不能当作原分辨率精确分割。两幅掩膜为分析分辨率，`dust-analysis` 与掩膜元数据保存尺寸和缩放系数。小于分析分辨率、非常宽或浅的污斑、排除边缘和非最大成像区域可能漏检；浅纹理也可能误报。输出仅为暗斑候选，不区别灰尘、划痕、坏点或光学缺陷，不给出产品 PASS/FAIL。
 
-`DustDetectionTests.cs` 覆盖圆形成像、缺口排除、原图坐标映射、8/16/float 输入、无信号与输入只读。现场路径由 `COLORVISION_DUST_SOURCE` 和 `COLORVISION_DUST_OUTPUT` 显式开启，运行 `dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter FullyQualifiedName~DustSiteImages`；输出目录须在样本目录外。该路径逐图通过生产 Runner 执行，保存参数、结果、掩膜、标框预览与前后 SHA-256。默认跳过现场样本，不把未标注图片当作检出率真值。
+当前托管套件不包含灰尘现场样本宿主。现场验收应在样本目录外写入参数、结果、掩膜、标框预览与前后 SHA-256，并为样本提供人工真值；未标注图片不能用于宣称检出率。
 
 ### Eyebox
 
@@ -151,7 +151,7 @@ python Scripts/generate_display_metrology_samples.py
 ## 验证
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~DisplayMetrologyTests|FullyQualifiedName~AlgorithmReleaseGateTests|FullyQualifiedName~ImageAlgorithmPlatformTests"
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~AlgorithmReleaseGateTests"
 ```
 
 用例覆盖已知位移/旋转/倍率、不同位深、强度比、点线与 Mura 位置、Eyebox 空洞与网格面积、高斯理论 MTF50、无效样本、预算、取消、PNG 导入和结果窗口所有权。测试存在或文档构建成功不等于已经运行；本次执行结果以实际日志为准。现场仍需验证采集重复性、不同模组/背景/缺陷尺度、误报漏报、运动扫描标定以及完整量产结果交接。

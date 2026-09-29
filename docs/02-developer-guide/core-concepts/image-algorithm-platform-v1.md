@@ -5,7 +5,7 @@ status: "current"
 summary: "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。"
 aliases: ["有哪些本地图像算法","为什么算法有源码但菜单没有","ONNX 是否已经支持","Microsoft.ML.OnnxRuntime","AlgorithmRunner","ImageAlgorithmPlatform","ExperimentalAlgorithmProviderGate","AlgorithmsContextMenu","ImageAlgorithmPreviewSession","ImageAlgorithmApplier","BasicAdjustmentWindow","WhiteBalanceWindow","ThresholdWindow","算法预览","应用与保存","基础调整","图像反相","白平衡","图像阈值","ConvertBatchImages","OpenBatchImageProcessing","colorvision-batch-image-conversion","批量图片处理"]
 code_paths: ["UI/ColorVision.Algorithms/", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPreviewSession.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmApplier.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/BasicAdjustmentWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/WhiteBalanceWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/ThresholdWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/InvertEditorTool.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageAlgorithms.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageProcessor.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchImageOutput.cs", "Engine/ColorVision.Engine/Media/CVRawBatchImageLoader.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotConvertBatchImagesTool.cs", "ColorVision/Copilot/Agent/Tools/Application/CopilotOpenBatchImageProcessingTool.cs", "ColorVision/Copilot/Skills/colorvision-batch-image-conversion", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs","Test/ColorVision.Copilot.Tests/CopilotBatchImageProcessingTests.cs","Scripts/tests/test_algorithm_package_contract.py"]
 related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","engine.cv-image-export"]
 ---
 
@@ -45,7 +45,7 @@ related: ["algorithms.index","algorithms.onnx","ui.index","ui.image-editor","eng
 | 默认图像输出 Batch | `BatchProcessing/BatchImageAlgorithms.cs` 的 `CreateAll` 从 `ForBatchImageProcessing` 投影能力，`CreateDefaultParameters` 读取 Descriptor 默认值，`BatchImageAlgorithmDefinition.Apply` 构造 Invocation 并调用同一 runtime 的 Runner | 保留同步 façade 和部分旧参数归一化；“仅转换格式”及调用方显式构造的 legacy delegate 不冒充 Catalog 算法 |
 | Canny 参数与执行 | `Algorithms/StandardAlgorithmCatalog.cs` 注册 `StandardAlgorithmParameters.cs` 的 `CannyParameters`，低/高阈值默认为 `50/150`；默认 Batch 读取同一参数并经 Runner 执行 | Batch 不另设一套 Canny 默认值或私有执行路径；位深转换与输出 Gray8 的契约由同一 provider 负责 |
 
-以上路径相对 `UI/ColorVision.ImageEditor/`。`Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs` 的 `EightBitBatchAndRunnerUseIdenticalCannyParametersAndPixels` 对照 Batch 与 Runner 的参数和像素；测试存在不表示本次已经运行。RemoveMoire 的 native 依赖和允许的宿主入口仍以下方能力矩阵及前述发布门禁为准。
+以上路径相对 `UI/ColorVision.ImageEditor/`。测试存在不表示本次已经运行。RemoveMoire 的 native 依赖和允许的宿主入口仍以下方能力矩阵及前述发布门禁为准。
 
 ImageView 适配器通过 `ImageFrameStore`/`ImageFrameLease` 读取 source，并把 revision 与 `DocumentInstanceId`、`InvocationId` 一起交给专属 session；平台不维护第二套源帧生命周期。租约、位图复制与显式失效的实现及测试范围见[源图像帧契约](../../04-api-reference/ui-components/image-frame-lifetime.md)，不把内存仍有效当作结果仍可发布。
 
@@ -64,7 +64,7 @@ ImageEditor 中的具体仲裁 owner 是 `Operations/ImageOperationCoordinator`�
 | 成功提交 | 替换内存中的 `ViewBitmapSource`、清 `FunctionImage` 并推进一次 source revision；不写图像文件、不代表测量验收或可通过图元撤销恢复 |
 | 点击“取消”或窗口关闭 | 取消/释放该会话；只有仍拥有预览时才恢复宿主当前基准图，不应覆盖已换图、已提交或被其他调用取代的内容 |
 
-“应用后已保存原图”是错误推断。需要落盘时继续核对[图像编辑器输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)的 source/rendered 格式、像素保真与覆盖边界。`ImageAlgorithmPlatformTests` 的预览有效性、同宿主会话、提交 revision 和换图/清空回归只覆盖各自契约，不替代所有真实参数窗口和驱动验收。
+“应用后已保存原图”是错误推断。需要落盘时继续核对[图像编辑器输出](../../04-api-reference/ui-components/ColorVision.ImageEditor.md)的 source/rendered 格式、像素保真与覆盖边界。
 
 参数的界面范围也不等于全部像素格式都能执行：`ThresholdWindow` 当前最大刻度固定为 `255`，使用标称范围而不是旧教程的按位深扩大到 `65535`；非 8-bit 中值滤波的大核会由 provider 拒绝，即使滑动条允许选择。白平衡菜单还检查当前 Channel 大于 1，Runner 仍另行校验实际格式。参数与输出以以下 Catalog 契约为准，不在 README 维护第二份数值表。
 

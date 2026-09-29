@@ -5,7 +5,7 @@ status: "current"
 summary: "属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。"
 aliases: ["属性面板", "属性编辑器窗口", "修改参数", "编辑器显示成文本", "如何新增属性编辑器", "自定义编辑器", "属性编辑器为什么不显示", "IPropertyEditor", "GenProperties", "PropertyEditorType", "PropertyVisibility", "PropertyEditSession", "PropertyEditorWindow", "FlowPropertyEditorRegistry", "FlowNodePropertyEditorRegistration", "FlowTemplatePropertiesEditors", "取消修改", "关闭回滚", "枚举下拉显示英文", "EnumPropertiesEditor", "命令自动生成", "GenCommand", "CommandDisplay", "按钮分类"]
 code_paths: ["UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorRegistry.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorTypeAttribute.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditSession.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml", "UI/ColorVision.UI/PropertyEditor/PropertyEditorWindow.xaml.cs", "UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "UI/ColorVision.Common/Utilities/EnumUtils.cs", "Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs", "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs", "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs", "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"]
-test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs", "Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs", "Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs", "Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/EnumPropertiesEditorTests.cs", "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs", "Test/ColorVision.UI.Tests/ListEditorTests.cs", "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs", "Test/ColorVision.UI.Tests/CommandPanelTests.cs", "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/CameraNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs","Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"]
 related: ["ui.index", "ui.configuration", "ui.discovery", "flow.templates", "algorithms.template-management"]
 ---
 
@@ -46,7 +46,7 @@ public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 生成器拥有传入容器的内容，重新生成会替换旧按钮，宿主不要在容器中预置业务按钮。保留原有公开方法签名，现有调用端自动使用统一样式；Flow 节点检查器的 `compact: true` 保持平铺的小按钮工具栏，不加入分类卡片。
 
-`CommandPanelTests` 覆盖继承、分类/命令排序、本地化、隐藏/空命令、命令替换、禁用、重复生成、窄布局与动态主题；`DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
+`DeviceCommandMetadataTests` 核对上述设备类型的分类和中文标签，不构建设备或操作硬件。
 
 ## 设置行呈现
 
@@ -92,7 +92,7 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 
 异常边界不能混为一谈：元数据 Provider 的 `GetEditorType` 回调在 `TryGenerateEditor` 之外。该回调自身抛异常时，外层 `TryCreatePropertyDockPanel` 记录错误并返回 `false`，不会继续尝试属性标注；可见性绑定等外层步骤抛异常也会终止该行。新增 Provider 时需单独验证这些异常路径。
 
-`PropertyEditorContractTests.FailingAttributedEditor_FallsBackToStandardTypeEditor` 锁定属性指定编辑器失败后回到标准类型编辑器的情况；不要把该测试扩大解释成全部失败路径都会成功降级。
+不要把该测试扩大解释成全部失败路径都会成功降级。
 
 ## 实例、绑定与可见性
 
@@ -148,17 +148,14 @@ Engine 模板和量程编辑器可直接构造，不需要代理注册。公共 
 
 | 测试文件，均在 `Test/ColorVision.UI.Tests/` | 覆盖契约 |
 | --- | --- |
-| `PropertyEditorContractTests.cs` | 更新触发与验证、失败降级、只读、精确类型优先、实例复用、标准类型和兼容入口 |
-| `EnumPropertiesEditorTests.cs` | CVCIE 中文枚举标签与实际值写回、已有资源优先级、显示元数据回退和可空枚举选择；不修改配置序列化值 |
 | `PropertyEditSessionTests.cs` | 配置数据工作副本隔离、嵌套提交、重置、直接写入模式，以及 WPF 运行时引用保留 |
-| `ListEditorTests.cs` | 集合转换、目录项元数据、字符串行内编辑与取消隔离、添加排序提交；不代表所有集合形态或系统文件选择器验收 |
 | `AlgorithmNodeTemplateMappingTests.cs` | ARVR POI 使用原生属性编辑行 |
 | `CameraNodeTemplateMappingTests.cs` | 相机和校准的模板类型映射 |
 
 可在 Windows/x64 上运行最接近的测试，例如：
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~PropertyEditorContractTests|FullyQualifiedName~EnumPropertiesEditorTests|FullyQualifiedName~PropertyEditSessionTests|FullyQualifiedName~ListEditorTests"
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~PropertyEditSessionTests"
 ```
 
 这些是验证入口，不是运行通过记录；会话单元测试不等于窗口关闭、`Submitted` 订阅或持久化链路的端到端验证。自定义编辑器仍需在目标宿主检查样式、键盘操作、错误提示、订阅释放和保存重开；新增公开签名还要验证实际插件 DLL 的二进制兼容性。

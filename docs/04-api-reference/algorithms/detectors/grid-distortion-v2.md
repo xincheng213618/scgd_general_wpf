@@ -5,7 +5,7 @@ status: "current"
 summary: "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。"
 aliases: ["点阵畸变分析(V2)","本地点阵畸变(V2)","漏光畸变失败","7x7畸变","GridDistortionAnalysis","LocalGridDistortionNode","M_CalDistortionGridV2","HorizontalTVDistortion","VerticalTVDistortion","Optic_Distortion","KeystoneHoriz","KeystoneVert","DIFF_H","DIFF_V"]
 code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/ARVR/Distortion/ViewHandleDistortion.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
-test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/opencv_helper_test/benchmark_public_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/GridDistortionRealSampleTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
+test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/opencv_helper_test/benchmark_public_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
 related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross","engine.native-integration","engine.results","flow.node-extension"]
 ---
 
@@ -92,12 +92,10 @@ python .\Test\opencv_helper_test\benchmark_grid_distortion.py --dll .\x64\Releas
 
 python .\Test\opencv_helper_test\benchmark_public_grid_distortion.py --dll .\x64\Release\opencv_helper.dll --dataset C:\Samples\opencv-circles --output .\artifacts\grid-distortion-public
 
-$env:COLORVISION_GRID_DISTORTION_SAMPLE = 'C:\Samples\distortion.cvraw'
-$env:COLORVISION_GRID_DISTORTION_EVIDENCE_DIR = '.\artifacts\grid-distortion-evidence'
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter 'FullyQualifiedName~GridDistortion'
+dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter 'FullyQualifiedName~GridDistortionTests'
 ```
 
-真实样本检查默认按 3×3 运行；未指定样本时，可设置 `COLORVISION_RUN_GRID_DISTORTION_NATIVE_TESTS=1` 运行固定合成 7×7 及实际 WPF 结果窗口渲染。普通托管测试默认跳过该原生集成项。窗口证据是测试自行创建的 WPF 内容，不是现有用户窗口截图。
+当前托管套件不包含真实样本、原生合成图或 WPF 结果窗口渲染宿主；上述 Python 基准与托管契约测试也不是现有用户窗口截图。现场复核需要显式提供样本、DLL 与独立输出目录。
 
 公开图脚本读取已准备好的 OpenCV `opencv_extra/testdata/cv/cameracalibration/circles` 中 14 对 `circlesN.png` 和 `circles_cornersN.dat`，不自动下载。使用固定 7×7、暗点和整图配置，同时比较新旧原生接口与 OpenCV 默认检测；输出目录必须为空，记录输入、参考和 DLL 哈希。参考点来自 OpenCV 回归数据，允许未标方向正方点阵的八种整体对称对齐，不做任意点重排或坐标拟合。参考差异用于回归比较，不代表有独立计量真值；用于修复的公开图应视为开发回归集，不能再作为未见数据的通过率证明。
 

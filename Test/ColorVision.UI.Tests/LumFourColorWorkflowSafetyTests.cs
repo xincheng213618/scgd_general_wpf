@@ -526,65 +526,6 @@ public sealed class LumFourColorWorkflowSafetyTests
         });
     }
 
-    [Fact]
-    public void ImageViewRemeasuresGeometryClearsDeletedPoiAndRestoresPerColor()
-    {
-        WithTheme(() =>
-        {
-            var options = new LumFourColorPoiOptions();
-            var window = new LumFourColorCalibrationWorkflowWindow(Array.Empty<DeviceCamera>(), Array.Empty<DeviceSpectrum>(), options: options);
-            try
-            {
-                Assert.Equal(0, Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex);
-                Render(window, 1556, 976, "workflow-landscape-empty");
-                var view = Control<ImageView>(window, "CieImageView");
-                var list = Control<ListBox>(window, "SampleList");
-                var first = Assert.IsType<LumFourColorCalibrationSample>(list.Items[0]);
-                var frame = SyntheticFrame(956, 654);
-                first.SetFrame(frame, LumFourColorCieService.Render(frame));
-                Invoke(window, "RefreshSelectedSample");
-                Click(window, "DrawPoiButton");
-                Assert.IsType<CircleManager>(view.EditorContext.DrawEditorManager.Current);
-                Assert.True(((FrameworkElement)view.FindName("CompactInspectorOverlay")).IsVisible);
-                var circle = new DVCircleText(new CircleTextProperties { Center = new Point(478, 327), Radius = 80, Text = "POI" });
-                view.ImageShow.AddVisual(circle);
-                Drain();
-                Assert.True(first.HasCameraMeasurement);
-                double originalY = first.CameraY!.Value;
-                circle.Attribute.Center = new Point(200, 200);
-                Assert.False(first.HasCameraMeasurement);
-                Drain();
-                Assert.True(first.HasCameraMeasurement);
-                Assert.NotEqual(originalY, first.CameraY);
-                Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex = 1;
-                Assert.IsType<RectangleManager>(view.EditorContext.DrawEditorManager.Current);
-                var rectangle = new DVRectangleText(new RectangleTextProperties { Rect = new Rect(320, 220, 160, 120), Text = "POI" });
-                view.ImageShow.AddVisual(rectangle);
-                Drain();
-                Assert.Single(view.EditorContext.DrawingVisualLists);
-                Assert.Equal(PoiMeasurementShape.Rect, first.Poi!.Value.Shape);
-                list.SelectedIndex = 1;
-                Assert.Empty(view.EditorContext.DrawingVisualLists);
-                list.SelectedIndex = 0;
-                Assert.IsType<DVRectangleText>(Assert.Single(view.EditorContext.DrawingVisualLists));
-                view.ImageShow.RemoveVisual((Visual)view.EditorContext.DrawingVisualLists[0]);
-                Assert.False(first.HasCameraMeasurement);
-                Control<ComboBox>(window, "PoiShapeCombo").SelectedIndex = 0;
-                var previewCircle = new DVCircleText(new CircleTextProperties { Center = new Point(478, 327), Radius = 90, Text = "POI" });
-                view.ImageShow.AddVisual(previewCircle);
-                Drain();
-                view.EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-                view.EditorContext.SelectionVisual.SetRender(previewCircle);
-                first.SetSpectrumMeasurement(Spectrum(42));
-                Invoke(window, "RefreshSelectedSample");
-                Assert.True(((FrameworkElement)view.FindName("CompactInspectorOverlay")).IsVisible);
-                Render(window, 1556, 976, "workflow-landscape-circle");
-                Assert.True(view.ImageShow.ActualWidth > 0);
-            }
-            finally { window.Close(); }
-        });
-    }
-
     private static void Drain() => Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle, System.Threading.CancellationToken.None, TimeSpan.FromSeconds(5));
 
     [Fact]

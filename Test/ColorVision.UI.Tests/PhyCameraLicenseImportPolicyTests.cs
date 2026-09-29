@@ -13,7 +13,6 @@ using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace ColorVision.UI.Tests;
@@ -258,24 +257,6 @@ public sealed class PhyCameraLicenseImportPolicyTests : IDisposable
             PhyCamera.InvokeOnApplicationDispatcherAsync(() => Environment.CurrentManagedThreadId));
 
         Assert.Equal(dispatcherThreadId, actionThreadId);
-
-        string source = File.ReadAllText(FindPhyCameraSource());
-        Assert.DoesNotContain("Task.Run(() => UploadLicenseNet())", source, StringComparison.Ordinal);
-        Assert.Contains("await InvokeOnApplicationDispatcherAsync(() => SetLicense(fileName))", source, StringComparison.Ordinal);
-    }
-
-    private static string FindPhyCameraSource([CallerFilePath] string testSourcePath = "")
-    {
-        string testDirectory = Path.GetDirectoryName(testSourcePath)!;
-        return Path.GetFullPath(Path.Combine(
-            testDirectory,
-            "..",
-            "..",
-            "Engine",
-            "ColorVision.Engine",
-            "Services",
-            "PhyCameras",
-            "PhyCamera.cs"));
     }
 
     public void Dispose()

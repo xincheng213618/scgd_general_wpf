@@ -10,7 +10,7 @@
 dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64
 ```
 
-这是未筛选的本地入口；CI 将普通回归与 `PerformanceProbe` 分进程运行，部分大型探针另需显式启用。筛选与结果解释见[测试与验证](../../docs/02-developer-guide/testing.md)，不能由整体通过推断所有性能测量都执行过。
+这是未筛选的本地入口；GitHub Actions 不运行 managed/UI 测试，开发和评审按改动范围在本地选择普通回归或 `PerformanceProbe`。筛选与结果解释见[测试与验证](../../docs/02-developer-guide/testing.md)，不能由整体通过推断现场交互、真实设备或性能目标已验收。
 
 Copilot 回归：
 
@@ -27,3 +27,9 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 ## 当前排序覆盖
 
 [UniversalSortTests.cs](./UniversalSortTests.cs) 是当前排序测试入口，验证 `SortByProperty` 的逻辑字符串顺序、可空值排序和嵌套属性路径降序。不要在说明中维护会随测试增删而漂移的完整文件清单；仓库级测试选择与其他验证链见 [测试与验证](../../docs/02-developer-guide/testing.md)。
+
+## 维护边界
+
+- 优先保留输入输出、用户操作、失败状态、兼容数据和并发/生命周期边界；不要读取产品源码或 XAML 后断言具体写法、控件树形状和装饰像素。
+- 一次性的诊断开关、旧实现副本和真实样本对比宿主在结论进入确定性回归后删除。需要现场样本时记录独立验收步骤，不把默认跳过的探针永久堆在常规测试项目里。
+- 业务变化使临时阈值失效时，重写为确定性行为或删除重复覆盖；不要单纯放宽时间、像素和循环次数来保住通过状态。

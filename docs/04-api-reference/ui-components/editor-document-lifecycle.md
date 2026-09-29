@@ -5,7 +5,7 @@ status: "current"
 summary: "编辑器注册与选择、按路径和编辑器区分文档、保存重载关闭及外部变更；停靠布局不恢复未注册文件标签，重置也不预审脏文档。"
 aliases: ["EditorManager", "EditorDescriptor", "EditorDocumentService", "IEditorDocumentContent", "IReloadableEditorDocumentContent", "IResourcePathAwareDocumentContent", "DockLayoutManager", "DockContentRegistration", "DeferredDockContent", "WorkspaceManager", "DocumentTabPinManager", "TryCloseAllDocuments", "NotifyResourceRenamed", "ResetLayout", "DefaultEditorUpdated", "默认编辑器", "重复打开文件", "保存文档", "重新加载文件", "文件被外部修改", "固定选项卡", "固定标签", "重置窗口布局", "停靠布局恢复", "关闭重开面板", "面板内容双父节点"]
 code_paths: ["UI/ColorVision.Solution/Editor/EditorManager.cs", "UI/ColorVision.Solution/Editor/EditorDescriptor.cs", "UI/ColorVision.Solution/Editor/IEditor.cs", "UI/ColorVision.Solution/Editor/EditorForExtensionAttribute.cs", "UI/ColorVision.Solution/Editor/GenericEditorAttribute.cs", "UI/ColorVision.Solution/Editor/TextEditor.cs", "UI/ColorVision.Solution/Editor/ImageEditor.cs", "UI/ColorVision.Solution/Editor/SystemEditor.cs", "UI/ColorVision.Solution/Workspace/EditorDocumentService.cs", "UI/ColorVision.Solution/Workspace/IEditorDocumentContent.cs", "UI/ColorVision.Solution/Workspace/DocumentTabPinManager.cs", "UI/ColorVision.Solution/Workspace/DockLayoutManager.cs", "UI/ColorVision.Solution/Workspace/WorkspaceManager.cs", "UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs", "UI/ColorVision.Solution/CommandInitializer.cs", "ColorVision/MainWindow.xaml.cs", "UI/ColorVision.UI/ConfigHandler.cs", "UI/ColorVision.UI/Environments.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs", "Test/ColorVision.UI.Tests/BuiltInShortcutDefaultsTests.cs"]
+test_paths: []
 related: ["ui.solution", "ui.configuration", "ui.image-editor", "ui.text-editor", "operations.terminal"]
 ---
 
@@ -124,11 +124,11 @@ Reload 要求受管理内容支持重载且 `File.Exists(ResourcePath)`。有未
 
 ## 证据与验证缺口
 
-`Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs` 用合成内容和真实 AvalonDock 内存布局检查工厂延迟与单次创建、空结果拒绝、已有对象直接恢复、重复取得注册内容，以及关闭后 Show/Toggle、Hide 后再显示、未物化就关闭后同步显示和重复布局替换。断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
+断言宿主及子内容引用、逻辑父子关系和工厂调用次数，并区分旧布局项的 Dispatcher 清理在重开之前或之后发生。
 
 这些用例通过实际注册内容恢复入口取得宿主，再替换内存 `LayoutRoot`；不调用 `SaveLayout` / `LoadLayout` / `ResetLayout`，不读写用户 XML 或配置。因此它们不覆盖完整布局文件保存恢复、带脏文档重置、默认编辑器配置落盘失败、文档关闭取消、外部文件事件或路径更新失败，不能据此推断完整生命周期已验证。
 
-`BuiltInShortcutDefaultsTests` 用注入的确认和重置回调检查菜单/快捷键取消后不执行、确认后仅执行一次；不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
+不重建真实布局或写入用户布局文件，也不证明未保存文档已被自动保护。
 
 主程序与 Spectrum 的停靠模板统一由 `ColorVision.Solution.Themes.AvalonDockTheme` 提供；模板只读取文档和面板状态，不创建工作区，不替代各窗口的内容注册或保存关闭逻辑。共享资源入口及兼容字典见[停靠外观与主题边界](../../01-user-guide/interface/main-window.md#停靠外观与主题边界)。
 

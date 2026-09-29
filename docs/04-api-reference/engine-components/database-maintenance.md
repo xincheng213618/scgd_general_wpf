@@ -5,7 +5,7 @@ status: "current"
 summary: "数据库维护窗口与provider能力：表统计不是删除预览；备份默认关闭，备份和清理不是事务且失败不自动恢复；清理、手动优化和迁移边界彼此独立。"
 aliases: ["数据库清理", "数据维护窗口", "清理预览", "刷新统计", "清理前备份", "保留月数", "清空选中表", "清理取消", "索引优化", "结果关联索引", "DatabaseCleanupWindow", "DatabaseCleanupWindowViewModel", "DatabaseCleanupSourceViewModel", "DatabaseCleanupTableInfo", "IDatabaseCleanupSourceProvider", "IDatabaseCleanupSelectionProvider", "IDatabaseCleanupBackupProvider", "IDatabaseCleanupMaintenanceProvider", "IDatabaseCleanupMigrationProvider", "IDatabaseCleanupOptimizationProvider", "OptimizationCommand", "SocketDatabaseCleanupWindowLauncher"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/DatabaseCleanupContracts.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Services/DatabaseCleanup/SocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.SocketProtocol/ISocketDatabaseCleanupWindowLauncher.cs", "UI/ColorVision.UI/AssemblyHandler.cs", "Projects/ProjectARVRPro/ArvrSqliteCleanupProvider.cs", "Projects/ProjectKB/KbSqliteCleanupProvider.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs"]
+test_paths: []
 related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.database", "ui.discovery", "operations.data"]
 ---
 
@@ -23,7 +23,7 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 
 `OpenWindow(owner, source)` 只注入一个 provider，不进行全局发现；`Sources` 对外只读，单源模式要求恰好一项，`SelectedSource` 拒绝集合外对象。Socket 的 Engine launcher 使用此入口；`MySqlToolWindow` 的清理按钮调用无 source 的全局入口。
 
-必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；`DatabaseCleanupWindowTests` 通过精确反射签名与委托绑定检查此兼容入口，不打开真实数据库。
+必须保留真正的 `public static void OpenWindow()` 无参数重载：已发布的 ARVR、KB 等项目插件可能仍引用这个二进制签名。把它替换为带可选参数的方法，只能兼容重新编译的源码，旧 DLL 点击“数据清理”会抛 `MissingMethodException`。无参数重载转入同一全局窗口逻辑，不改变单源范围或清理行为；
 
 静态窗口表按不区分大小写的 `global` 或 `source:{Id}` 复用窗口，不按数据库连接、账号或文件路径区分。同 ID 再次调用只激活原窗口，不替换 provider，也不重新自动统计。全局和单源窗口可并存；直接构造窗口不走这个复用表。窗口范围是 UI 路由约束，不是数据库权限或进程级互斥机制。
 
@@ -95,6 +95,6 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 ## 验证证据
 
-`DatabaseCleanupWindowTests.cs` 用 fake 覆盖能力开关、默认备份关闭、仅存在表可选、组合维护调用一次，以及 MySQL 白名单/排序/未知明细检测辅助方法；它没有执行真实清理事务、在线索引 DDL 或窗口布局验收。
+它没有执行真实清理事务、在线索引 DDL 或窗口布局验收。
 
 例如布局测试显式刷新选中 source，不等于生产 Loaded 只刷新选中项；应读具体调用而不是仅凭测试名推断。现有测试不证明真实关闭时取消、备份故障恢复、主从完整性、跨窗口互斥或授权门禁。本次仅核对源码与测试内容，没有运行产品或操作用户数据库。

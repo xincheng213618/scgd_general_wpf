@@ -5,7 +5,7 @@ status: "current"
 summary: "反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。"
 aliases: ["反馈收件箱", "我的反馈", "Feedback Inbox", "反馈上传", "feedback:read", "feedback:manage", "feedback_attachment_download", "download_feedback.ps1", "ownerUserId", "machineName", "serverReceivedAt", "feedback.json", ".admin.json"]
 code_paths: ["Web/Backend/feedback_service.py", "Web/Backend/services/feedback_admin.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/api_key_service.py", "Web/Frontend/src/pages/FeedbackPage.tsx", "Web/Frontend/src/services/admin.ts", "Scripts/download_feedback.ps1", "Scripts/configure_feedback.ps1", "UI/ColorVision.UI.Desktop/Feedback"]
-test_paths: ["Web/Backend/test_feedback_service.py", "Web/Backend/test_feedback_admin.py", "Web/Backend/test_feedback_routes.py", "Web/Backend/test_feedback_download_script.py", "Web/Frontend/tests/feedback.test.ts", "Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs"]
+test_paths: ["Web/Backend/test_feedback_service.py","Web/Backend/test_feedback_admin.py","Web/Backend/test_feedback_routes.py","Web/Backend/test_feedback_download_script.py","Web/Frontend/tests/feedback.test.ts"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-accounts", "delivery.artifact-delivery", "ui.desktop"]
 ---
 

@@ -5,7 +5,7 @@ status: "current"
 summary: "设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。"
 aliases: ["设置窗口", "选项", "设置搜索", "定位设置项", "自定义设置页", "启动检查更新", "SettingWindow", "SettingWindowController", "SettingRowFactory", "SettingMetadataResolver", "SettingEntryCatalog", "SettingSearchProvider", "SettingNavigation", "NavigateToSetting", "ConfigSettingManager", "IConfigSettingProvider", "ConfigSettingMetadata", "AggregatedBoolSetting", "MenuOptions"]
 code_paths: ["UI/ColorVision.UI.Desktop/Settings", "UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs", "UI/ColorVision.Common/Interfaces/ConfigSetting", "UI/ColorVision.UI/AssemblyHandler.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PropertyEditorContractTests.cs", "Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs", "Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs", "Test/ColorVision.UI.Tests/HotkeySettingsTests.cs", "Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ConfigServiceAdaptersTests.cs","Test/ColorVision.UI.Tests/StorageMaintenanceTests.cs","Test/ColorVision.UI.Tests/SettingSearchProviderTests.cs"]
 related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", "ui.hotkeys", "ui.search", "ui.localization", "operations.exports", "delivery.update", "ui.storage-maintenance", "ui.desktop-pet"]
 ---
 
@@ -106,10 +106,10 @@ related: ["ui.desktop", "ui.configuration", "ui.property-grid", "ui.discovery", 
 | 活对象编辑、自定义页面复用 | `Settings/SettingRowFactory.cs`、`SettingEntry.cs` |
 | 设置发现与失效范围 | `UI/ColorVision.UI/ConfigSetting/ConfigSettingManager.cs` |
 
-上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`PropertyEditorContractTests` 覆盖通用 helper 的绑定、只读属性、失败降级和实例复用，不覆盖整个设置窗口。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
+上表省略前缀的 `Settings/` 路径均相对于 `UI/ColorVision.UI.Desktop/`。`ConfigServiceAdaptersTests` 中名称含 `ConfigSettingManager_WorksWith...` 的用例只模拟对象解析，未构造 manager，不能作为设置发现或窗口集成测试。
 
 `StorageMaintenanceTests` 通过注入独立元数据构造真实设置窗口，覆盖分区标题、搜索、切组回顶、说明文本、编辑器边框裁切和设置值写回后切组保留，并检查中英文、深浅主题与窄窗口下的维护控件布局。该入口不调用生产设置发现，也不操作真实配置或缓存；它不替代真实 provider 发现、关窗保存、配置重载重绑定或更新安装验证。文档检索与网站校验不填补这些运行时缺口；实际修改设置和更新检查应在获授权的隔离环境中单独验证。
 
-`HotkeySettingsTests` 同样通过独立元数据把快捷键页装进真实设置框架，检查中英文、深浅主题和不同宽度下的列表布局、页内文本搜索与空状态；应用委托及键位数据是隔离替身，不调用生产配置或业务操作，具体覆盖与 Win32 验证边界见[快捷键契约](./hotkeys.md)。
+应用委托及键位数据是隔离替身，不调用生产配置或业务操作，具体覆盖与 Win32 验证边界见[快捷键契约](./hotkeys.md)。
 
-`SettingSearchProviderTests` 通过注入元数据和导航回调，覆盖目录投影不读取属性值/构造自定义页面、稳定 ID 与去重、聚合项、仅按 ID 导航，以及隔离真实设置窗口中的清除筛选、分组选择和目标行定位。它不调用生产配置发现、真实菜单保存或自定义页面业务，也不证明真实窗口滚动、动态属性可见性或所有插件设置均可定位。列出测试不表示已运行通过。
+`SettingSearchProviderTests` 通过注入元数据和导航回调，覆盖目录投影不读取属性值/构造自定义页面、稳定 ID 与去重、聚合项，以及仅按 ID 请求导航。它不调用生产配置发现、真实设置窗口、菜单保存或自定义页面业务，也不证明真实窗口滚动、筛选清理、分组选择、动态属性可见性或所有插件设置均可定位。列出测试不表示已运行通过。

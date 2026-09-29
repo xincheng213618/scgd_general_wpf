@@ -5,7 +5,7 @@ status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
 aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
@@ -178,4 +178,4 @@ flowchart LR
 
 当前没有据此声明 ETag/304、超时后旧元数据、服务地址切换、取消窗口与共享请求并发、真实主程序/插件组合更新的端到端覆盖。验证这些行为需要隔离网络和安装环境；文档检查不授权发起更新、安装或发布。
 
-快照相关验证见 `ApplicationSnapshotServiceTests`（开关、版本判定、替换、裁剪及还原脚本）与 `StartupRecoverySnapshotRuntimeTests`（运行期还原入口）。它们不证明用户当前快照完整、所有进程已退出或目标安装已恢复。
+它们不证明用户当前快照完整、所有进程已退出或目标安装已恢复。

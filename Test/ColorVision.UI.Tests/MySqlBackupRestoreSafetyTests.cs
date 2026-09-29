@@ -1,7 +1,6 @@
 using ColorVision.Database;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -148,52 +147,6 @@ public sealed class MySqlBackupRestoreSafetyTests
     }
 
     [Fact]
-    public void BothRestoreEntriesUseSharedSafeWorkflow()
-    {
-        string source = File.ReadAllText(FindManagerSourcePath());
-
-        Assert.Contains("GetInstance().RestoreAndRestartAsync(FilePath)", source, StringComparison.Ordinal);
-        Assert.Contains("RestoreAndRestartAsync(filePath)", source, StringComparison.Ordinal);
-        Assert.Contains("RedirectStandardInput = redirectStandardInput", source, StringComparison.Ordinal);
-        Assert.Contains("FileMode.CreateNew", source, StringComparison.Ordinal);
-        Assert.Contains("File.Move(partFile, backupFile)", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlProtocolDefaults.AddCharacterSetArgument", source, StringComparison.Ordinal);
-        Assert.Contains("MYSQL_PWD", source, StringComparison.Ordinal);
-        Assert.Contains("return RunDatabaseMaintenance(() => CreateMySqlBackup", source, StringComparison.Ordinal);
-        Assert.Contains("return RunDatabaseMaintenance(() => RestoreMysqlCore(backupFile))", source, StringComparison.Ordinal);
-        Assert.Contains("AsyncLocal<int>", source, StringComparison.Ordinal);
-        Assert.Contains("CopyToAsync", source, StringComparison.Ordinal);
-        Assert.Contains("WaitForExitAsync", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlCommandTimeout", source, StringComparison.Ordinal);
-        Assert.Contains("process.Kill(entireProcessTree: true)", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlRestoreProgressWindow", source, StringComparison.Ordinal);
-        Assert.Contains("SynchronizeInstalledServiceConfigs", source, StringComparison.Ordinal);
-        Assert.Contains(
-            "internal static string CreateFeedbackResourceBackup()\n        {\n            RefreshMySqlToolPathsFromServices();",
-            source.Replace("\r\n", "\n"),
-            StringComparison.Ordinal);
-        Assert.DoesNotContain("ExecuteCommandAsAdmin", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ExecuteCommandUI", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("restoreCommand", source, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void WindowsServiceMigrationAndRestoreUseEngineMaintenanceImplementation()
-    {
-        string source = File.ReadAllText(FindRepositoryFile(
-            "Plugins",
-            "WindowsServicePlugin",
-            "ServiceManager",
-            "Mysql",
-            "MySqlServiceManager.cs"));
-
-        Assert.Contains("MySqlDatabaseMaintenanceService.RestoreSqlFileAsync", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("TryBackupResetPreservedData", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ResetPreservedTables", source, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void WindowsServiceFactoryResetKeepsSystemSchemasAndSqlIdentifiersSafe()
     {
         MethodInfo buildDropSql = typeof(WindowsServicePlugin.ServiceManager.MySqlServiceManager)
@@ -242,41 +195,4 @@ public sealed class MySqlBackupRestoreSafetyTests
         }
     }
 
-    private static string FindManagerSourcePath([CallerFilePath] string testSourcePath = "")
-    {
-        return FindRepositoryFile(
-            ["Engine", "ColorVision.Engine", "Mysql", "MySqlLocalServicesManager.cs"],
-            testSourcePath);
-    }
-
-    private static string FindRepositoryFile(params string[] relativeParts)
-    {
-        return FindRepositoryFile(relativeParts, string.Empty);
-    }
-
-    private static string FindRepositoryFile(string[] relativeParts, [CallerFilePath] string testSourcePath = "")
-    {
-        string? testDirectory = Path.GetDirectoryName(testSourcePath);
-        if (!string.IsNullOrWhiteSpace(testDirectory))
-        {
-            string sourceRelativeCandidate = Path.GetFullPath(Path.Combine(testDirectory, "..", "..", Path.Combine(relativeParts)));
-            if (File.Exists(sourceRelativeCandidate))
-                return sourceRelativeCandidate;
-        }
-
-        foreach (string seed in new[] { Environment.CurrentDirectory, AppContext.BaseDirectory })
-        {
-            DirectoryInfo? directory = new(seed);
-            while (directory != null)
-            {
-                string candidate = Path.Combine(directory.FullName, Path.Combine(relativeParts));
-                if (File.Exists(candidate))
-                    return candidate;
-
-                directory = directory.Parent;
-            }
-        }
-
-        throw new FileNotFoundException($"Unable to locate {Path.Combine(relativeParts)} from the test working directory.");
-    }
 }

@@ -5,7 +5,7 @@ status: "current"
 summary: "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。"
 aliases: ["发光区定位1","发光区检测模板","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","恢复Mysql发光区检测","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
 code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
 related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","algorithms.template-management","engine.native-integration","engine.results"]
 ---
 
@@ -126,6 +126,6 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 `LocalFindLuminousAreaNodeTests.cs` 使用替代检测、保存、发布服务和事务对象检查节点输入优先级、POI 更新次序、四角顺序、失败主结果及提交/回滚流程，不能代替真实数据库或 native 验证。`FindLuminousAreaManualResultTests.cs` 检查手动诊断消息内容。
 
-`LuminousAreaNativeInteropTests.cs` 的真实 native 用例默认跳过，需要显式设置 `COLORVISION_RUN_LUMINOUS_NATIVE_V2_TESTS=1` 并具备兼容的 `opencv_helper.dll` 才会运行；普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
+普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
 
 现场验收应保留有预期结果的图像集，覆盖透视、旋转、16 位输入、暗角、漏光、饱和、噪声、遮挡、裁边和多候选；分别检查成功角点误差、拒绝原因与事务落库。测试文件存在、native 返回正数或单张叠图都不表示这些链路已通过验收。
