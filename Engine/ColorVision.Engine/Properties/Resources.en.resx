@@ -544,7 +544,7 @@
     <value>Restore point created successfully</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>Change NDPort</value>
+    <value>Set ND position</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>Autofocus</value>
@@ -4899,7 +4899,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="高度" xml:space="preserve"><value>Height</value></data>
   <data name="高级设置" xml:space="preserve"><value>Advanced Settings</value></data>
   <data name="缓存大小" xml:space="preserve"><value>Cache Size</value></data>
-  <data name="计算色温波长" xml:space="preserve"><value>CCT Wavelength</value></data>
+  <data name="计算色温波长" xml:space="preserve"><value>Calculate CCT and wavelength</value></data>
   <data name="矩形" xml:space="preserve"><value>Rectangle</value></data>
   <data name="宽度" xml:space="preserve"><value>Width</value></data>
   <data name="使用本地校正" xml:space="preserve"><value>Use Local Correction</value></data>
@@ -5163,4 +5163,63 @@ Only license records will be removed. Device settings, exported files and record
   <data name="将释放当前进程所有相机的校正缓存和图像文件缓存槽位。&#xA;&#xA;等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？" xml:space="preserve"><value>Release calibration caches for all cameras and the image file cache slot in the current process?
 
 This waits for calibration and image copies to finish and keeps disk files. Caches reload on next use.</value></data>
+  <data name="POI模板" xml:space="preserve"><value>POI template</value></data>
+  <data name="过滤模板" xml:space="preserve"><value>Filter template</value></data>
+  <data name="修正模板" xml:space="preserve"><value>Correction template</value></data>
+  <data name="输出模板" xml:space="preserve"><value>Output template</value></data>
+  <data name="请先选择关注点模板" xml:space="preserve"><value>Select a POI template first</value></data>
+  <data name="需要选择关注点过滤模板" xml:space="preserve"><value>Select a POI filter template</value></data>
+  <data name="需要选择关注点修正模板" xml:space="preserve"><value>Select a POI correction template</value></data>
+  <data name="需要选择关注点输出模板" xml:space="preserve"><value>Select a POI output template</value></data>
+  <data name="Db" xml:space="preserve"><value>Database</value></data>
+  <data name="启用 CVRAW 文件缓存" xml:space="preserve"><value>Enable CVRAW file cache</value></data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变，可用于对比文件缓存效果。" xml:space="preserve"><value>Enabled by default. When disabled, files are read and written directly; cache slots are released after active reads finish. Display memory reuse remains enabled. Use this setting to compare file cache performance.</value></data>
+
+  <data name="FilterWheelSetPosition" xml:space="preserve"><value>Set position</value></data>
+  <data name="FilterWheelReadPosition" xml:space="preserve"><value>Read position</value></data>
+  <data name="NDFilterPosition" xml:space="preserve"><value>ND position</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>Open shutter</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>Close shutter</value></data>
+  <data name="ServiceConfigurations" xml:space="preserve">
+    <value>Service configurations</value>
+  </data>
+  <data name="CreateServiceAndDevice" xml:space="preserve">
+    <value>Create service configuration and add device</value>
+  </data>
+  <data name="LocalConfigurationCreated" xml:space="preserve">
+    <value>Local configuration created.</value>
+  </data>
+  <data name="ServiceType_Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="ServiceType_PG" xml:space="preserve">
+    <value>Pattern generator (PG)</value>
+  </data>
+  <data name="ServiceType_Spectrum" xml:space="preserve">
+    <value>Spectrometer</value>
+  </data>
+  <data name="ServiceType_SMU" xml:space="preserve">
+    <value>Source measure unit (SMU)</value>
+  </data>
+  <data name="ServiceType_Sensor" xml:space="preserve">
+    <value>General sensor</value>
+  </data>
+  <data name="ServiceType_FileServer" xml:space="preserve">
+    <value>File service</value>
+  </data>
+  <data name="ServiceType_Algorithm" xml:space="preserve">
+    <value>Algorithm service</value>
+  </data>
+  <data name="ServiceType_FilterWheel" xml:space="preserve">
+    <value>Filter wheel</value>
+  </data>
+  <data name="ServiceType_Calibration" xml:space="preserve">
+    <value>Calibration service</value>
+  </data>
+  <data name="ServiceType_Motor" xml:space="preserve">
+    <value>Motor</value>
+  </data>
+  <data name="ServiceType_LightingControl" xml:space="preserve">
+    <value>Lighting control</value>
+  </data>
 </root>

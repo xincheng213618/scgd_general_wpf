@@ -14322,5 +14322,13 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("自动曝光模板", resourceCulture);
             }
         }
+        public static string FilterWheelSetPosition => ResourceManager.GetString("FilterWheelSetPosition", resourceCulture);
+        public static string FilterWheelReadPosition => ResourceManager.GetString("FilterWheelReadPosition", resourceCulture);
+        public static string NDFilterPosition => ResourceManager.GetString("NDFilterPosition", resourceCulture);
+        public static string OpenShutter => ResourceManager.GetString("OpenShutter", resourceCulture);
+        public static string CloseShutter => ResourceManager.GetString("CloseShutter", resourceCulture);
+        public static string ServiceConfigurations => ResourceManager.GetString("ServiceConfigurations", resourceCulture);
+        public static string CreateServiceAndDevice => ResourceManager.GetString("CreateServiceAndDevice", resourceCulture);
+        public static string LocalConfigurationCreated => ResourceManager.GetString("LocalConfigurationCreated", resourceCulture);
     }
 }

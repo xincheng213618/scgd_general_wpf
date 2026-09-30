@@ -896,4 +896,22 @@
   <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
     <value>安裝程式提示需要重新啟動 Windows。請儲存工作並自行重新啟動，再接回相機和重新偵測。</value>
   </data>
+  <data name="ConfigDesktopPetAsset" xml:space="preserve">
+    <value>寵物素材</value>
+  </data>
+  <data name="ConfigDesktopPetAssetDescription" xml:space="preserve">
+    <value>使用 ColorVision、Codex 或相容 pet.json 的自訂素材。</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegration" xml:space="preserve">
+    <value>連結 Copilot</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegrationDescription" xml:space="preserve">
+    <value>讓寵物跟隨 Copilot 的執行、等待確認、完成和失敗狀態。</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotifications" xml:space="preserve">
+    <value>顯示 Copilot 提醒</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotificationsDescription" xml:space="preserve">
+    <value>在 Copilot 需要確認、完成或失敗時顯示寵物通知。</value>
+  </data>
 </root>

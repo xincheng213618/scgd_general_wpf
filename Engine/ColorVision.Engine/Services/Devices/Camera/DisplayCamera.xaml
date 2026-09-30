@@ -204,9 +204,9 @@
                     </StackPanel>
 
                     <DockPanel Margin="0,2" IsEnabled="{Binding ServiceControlsEnabled}" Visibility="{Binding Config.CFW.IsNDPort, Converter={StaticResource bool2VisibilityConverter}}">
-                        <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
+                        <Button Click="GetNDport_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                         <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
-                        <TextBlock Text="NDPort" />
+                        <TextBlock Text="{x:Static properties:Resources.NDFilterPosition}" />
                         <TextBox Margin="5,0" BorderThickness="0,0,0,1" Text="{Binding Config.NDPort}" />
                     </DockPanel>
 

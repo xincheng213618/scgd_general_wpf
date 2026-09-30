@@ -126,6 +126,8 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 菜单以测量用途命名：十字中心与倾角、发光区域定位、灯珠定位、视场角测量（FOV）、点阵畸变测量、九点畸变测量和鬼影检测（Ghost）。十字中心与倾角排在定位与几何首位，十字 RGB 分离测量归入色彩与套色。AlgorithmMenuGroups 统一 Catalog 与独立分析工具的分组；Catalog 的组内 Order 直接参与排序，不重新压缩序号，避免与独立工具的顺序冲突。菜单兼容 ID、算法 ID、参数及结果协议保持稳定。
 
+标准图像右键菜单及 Catalog 菜单文案支持简体中文、英文和繁体中文，按应用界面语言读取资源；Catalog 的交互条目显式声明资源键，第三方条目仍保留自身显示名称的回退语义。“适应窗口”保持长宽比完整显示图像；“另存快照”沿用上面的渲染 PNG 输出。缩放插值子菜单按不同数值列出默认、双线性、Fant 和最近邻四项，WPF 的 Linear/LowQuality、Fant/HighQuality 别名不产生重复项；修改标签不改变枚举值、选择状态或命令。
+
 统一算法菜单由当前 Runtime 能力和 provider 可用性决定；有 Descriptor 或源码不等于默认可执行。查询 Blob、轮廓、亚像素边缘、拟合、FFT、摩尔纹等能力时，先核对[统一算法平台](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md)的发布门禁，再读对应专题的输入约束与预览/提交/导出边界。[本地 Native 分析](../algorithms/local-native-analysis.md)等直接入口不自动受这套门禁控制。工具构造、刷新与临时 ROI 见[编辑器上下文](./image-editor-context.md)。不能依据实现文件存在就构造一个产品菜单，也不能假设关闭算法窗口必然恢复原图。
 
 CIE 在同一个窗口提供 **色度图 / 色域计算 / 样品与色差**，多样品、色差、色域覆盖与导出契约见 [CIE 色度与样品分析](./cie-analysis.md)。选中样品可直接设为色域 R、G 或 B；实测 XYZ、RGB 推算和仅色坐标分别处理。

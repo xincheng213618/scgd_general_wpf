@@ -71,7 +71,7 @@ public sealed class SFRIDVContextMenu : IDVContextMenu
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if (obj is not IRectangle rectangle) return [];
-        var item = new MenuItem { Header = Properties.Resources.Algorithm_SfrMtfAnalysis + "..." };
+        var item = new MenuItem { Header = Properties.Resources.Algorithm_SfrMtfAnalysis + "…" };
         item.Click += (_, _) =>
         {
             ImageSelectionScope? scope = TransientRoiSelectionSession.CaptureSourceScope(_image);

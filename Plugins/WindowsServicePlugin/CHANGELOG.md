@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.4.3.36 - 2026-09-30
+
+### Changed
+
+- Localized the legacy service manager update menu, status messages, and download prompts.
+
 ## 1.4.3.35 - 2026-09-28
 
 ### Fixed

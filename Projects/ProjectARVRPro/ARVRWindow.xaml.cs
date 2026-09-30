@@ -1458,34 +1458,12 @@ namespace ProjectARVRPro
                         if (ViewResultManager.Config.IsSaveLink)
                         {
                             Stopwatch linkSaveStopwatch = Stopwatch.StartNew();
-                            string linkPath = ViewResultManager.Config.CsvSavePath;
-                            string sn = result.SN;
+                            string linkPath = ProjectImageExportService.BuildOutputDirectory(
+                                exportConfig.CsvSavePath, exportConfig.SaveByDate, DateTime.Now, result.SN);
+                            using var linkWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                                exportConfig.CsvSavePath, exportConfig.AutoCleanupEnabled, exportConfig.MinimumFreeSpaceGB, linkPath);
+                            linkWrite.EnsureSpace();
 
-                            if (ViewResultManager.Config.SaveByDate)
-                            {
-                                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                                linkPath = Path.Combine(linkPath, dateFolder);
-                            }
-
-                            // 处理 SN 不为空的情况
-                            if (!string.IsNullOrWhiteSpace(sn))
-                            {
-                                // 移除 SN 中的非法文件名字符
-                                foreach (char c in Path.GetInvalidFileNameChars())
-                                {
-                                    sn = sn.Replace(c.ToString(), "");
-                                }
-
-                                // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
-                                if (!string.IsNullOrWhiteSpace(sn))
-                                {
-                                    linkPath = Path.Combine(linkPath, sn);
-                                }
-                            }
-                            // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
-
-                            // 注意：原始代码中是 if (Directory.Exists) Create... 
-                            // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
                             if (!Directory.Exists(linkPath))
                                 Directory.CreateDirectory(linkPath);
 
@@ -1718,8 +1696,13 @@ namespace ProjectARVRPro
             {
                 try
                 {
-                    Directory.CreateDirectory(csvOutputDirectory);
                     string filePath = Path.Combine(csvOutputDirectory, $"{baseFileName}_.csv");
+                    string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
+                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, SNtextBox.Text);
+                    using var csvWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                        outputConfig.CsvSavePath, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB, currentSnDirectory, filePath);
+                    csvWrite.EnsureSpace();
+                    Directory.CreateDirectory(csvOutputDirectory);
 
                     if (outputConfig.UseLegacyARVROutput)
                     {
@@ -1746,8 +1729,14 @@ namespace ProjectARVRPro
             {
                 try
                 {
-                    Directory.CreateDirectory(customXlsxOutputDirectory);
                     string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
+                    string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
+                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, SNtextBox.Text);
+                    using var xlsxWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                        customXlsxOutputDirectory, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB,
+                        currentSnDirectory, Path.Combine(customXlsxOutputDirectory, $"{customXlsxBaseFileName}.xlsx"));
+                    xlsxWrite.EnsureSpace();
+                    Directory.CreateDirectory(customXlsxOutputDirectory);
                     string xlsxPath = CustomTestResultExportService.Export(
                         new ObjectiveTestResultExportContext
                         {
@@ -2308,6 +2297,8 @@ namespace ProjectARVRPro
             SourceTiffCompression sourceTiffCompression = config.SourceTiffCompressionMode;
             string outputRoot = config.CsvSavePath;
             bool saveByDate = config.SaveByDate;
+            bool autoCleanupEnabled = config.AutoCleanupEnabled;
+            int minimumFreeSpaceGB = config.MinimumFreeSpaceGB;
             DateTime requestedAt = result.CreateTime == default ? DateTime.Now : result.CreateTime;
 
             ImageViewSnapshot? snapshot = null;
@@ -2368,7 +2359,9 @@ namespace ProjectARVRPro
                     result,
                     outputRoot,
                     saveByDate,
-                    requestedAt);
+                    requestedAt,
+                    autoCleanupEnabled,
+                    minimumFreeSpaceGB);
                 snapshot = null;
             }
             catch (Exception ex)
@@ -2404,13 +2397,16 @@ namespace ProjectARVRPro
             ProjectARVRReuslt result,
             string outputRoot,
             bool saveByDate,
-            DateTime requestedAt)
+            DateTime requestedAt,
+            bool autoCleanupEnabled,
+            int minimumFreeSpaceGB)
         {
             string? renderedFilePath = null;
             string? sourceFilePath = null;
             Stopwatch? exportStopwatch = null;
             bool exportCompleted = false;
             ProjectImageExportAttempt? exportAttempt = null;
+            ResultStorageSpaceManager.WriteLease? storageWrite = null;
             ProjectImageExportAttemptResult exportResult = new();
             try
             {
@@ -2457,6 +2453,9 @@ namespace ProjectARVRPro
                     log.Info($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
                 }
 
+                storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                    outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
+                if (autoCleanupEnabled) await Task.Run(storageWrite.EnsureSpace).ConfigureAwait(false);
                 exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
@@ -2510,6 +2509,7 @@ namespace ProjectARVRPro
                     string outcome = exportCompleted ? "完成" : "结束（含失败）";
                     log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
                 }
+                storageWrite?.Dispose();
                 snapshot?.Dispose();
             }
         }

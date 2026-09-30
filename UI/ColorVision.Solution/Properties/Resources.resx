@@ -766,4 +766,7 @@
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
   <data name="Sol_DocumentTabPin" xml:space="preserve"><value>固定选项卡</value></data>
   <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>取消固定选项卡</value></data>
+  <data name="Sol_View_More" xml:space="preserve"><value>更多</value></data>
+  <data name="Sol_Terminal_Title" xml:space="preserve"><value>终端</value></data>
+  <data name="Sol_Terminal_Run" xml:space="preserve"><value>运行</value></data>
 </root>

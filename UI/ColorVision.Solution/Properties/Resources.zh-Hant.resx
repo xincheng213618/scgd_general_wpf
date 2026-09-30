@@ -785,4 +785,7 @@
   <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
   <data name="Sol_DocumentTabPin" xml:space="preserve"><value>固定索引標籤</value></data>
   <data name="Sol_DocumentTabUnpin" xml:space="preserve"><value>取消固定索引標籤</value></data>
+  <data name="Sol_View_More" xml:space="preserve"><value>更多</value></data>
+  <data name="Sol_Terminal_Title" xml:space="preserve"><value>終端</value></data>
+  <data name="Sol_Terminal_Run" xml:space="preserve"><value>執行</value></data>
 </root>

@@ -68,28 +68,28 @@
     <value>缩小</value>
   </data>
   <data name="ZoomUniform" xml:space="preserve">
-    <value>适应屏幕</value>
+    <value>适应窗口</value>
   </data>
   <data name="Property" xml:space="preserve">
     <value>属性(_R)</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>打开(_O)</value>
+    <value>打开(_O)…</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>清空(_C)</value>
   </data>
   <data name="RestoreOriginalImage" xml:space="preserve">
-    <value>一键还原</value>
+    <value>还原原图</value>
   </data>
   <data name="Rotate" xml:space="preserve">
     <value>图像旋转</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
-    <value>左旋转(_L)</value>
+    <value>向左旋转 90°(_L)</value>
   </data>
   <data name="RotateRight" xml:space="preserve">
-    <value>右旋转(_R)</value>
+    <value>向右旋转 90°(_R)</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
     <value>水平翻转(_H)</value>
@@ -101,13 +101,13 @@
     <value>全屏</value>
   </data>
   <data name="Print" xml:space="preserve">
-    <value>打印</value>
+    <value>打印…</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
-    <value>截屏</value>
+    <value>另存快照…</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>缩放质量</value>
+    <value>缩放插值</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>反相</value>
@@ -1067,12 +1067,33 @@
   <data name="Algorithm_GhostDetection" xml:space="preserve"><value>鬼影检测（Ghost）</value></data>
   <data name="Algorithm_RotatedTemplate" xml:space="preserve"><value>旋转模板匹配</value></data>
   <data name="Algorithm_SurfaceDefects" xml:space="preserve"><value>表面缺陷检测（Mura）</value></data>
-  <data name="Algorithm_RgbCross" xml:space="preserve"><value>十字 RGB 分离测量...</value></data>
-  <data name="Algorithm_RgbRegistration" xml:space="preserve"><value>RGB 图案套色测量...</value></data>
-  <data name="Algorithm_GhostMetrology" xml:space="preserve"><value>鬼影与杂散光评价...</value></data>
-  <data name="Algorithm_DisplayDefects" xml:space="preserve"><value>显示缺陷检测（亮暗点 / 线 / Mura）...</value></data>
-  <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>左右眼对准与信号一致性...</value></data>
-  <data name="Algorithm_Eyebox" xml:space="preserve"><value>眼盒扫描评价（Eyebox）...</value></data>
-  <data name="Algorithm_FieldSfr" xml:space="preserve"><value>全视场斜边 SFR...</value></data>
-  <data name="Algorithm_DustDetection" xml:space="preserve"><value>灰尘 / 脏污检测...</value></data>
+  <data name="Algorithm_RgbCross" xml:space="preserve"><value>十字 RGB 分离测量…</value></data>
+  <data name="Algorithm_RgbRegistration" xml:space="preserve"><value>RGB 图案套色测量…</value></data>
+  <data name="Algorithm_GhostMetrology" xml:space="preserve"><value>鬼影与杂散光评价…</value></data>
+  <data name="Algorithm_DisplayDefects" xml:space="preserve"><value>显示缺陷检测（亮暗点 / 线 / Mura）…</value></data>
+  <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>左右眼对准与信号一致性…</value></data>
+  <data name="Algorithm_Eyebox" xml:space="preserve"><value>眼盒扫描评价（Eyebox）…</value></data>
+  <data name="Algorithm_FieldSfr" xml:space="preserve"><value>全视场斜边 SFR…</value></data>
+  <data name="Algorithm_DustDetection" xml:space="preserve"><value>灰尘 / 脏污检测…</value></data>
+  <data name="ImageView_ContextSettings" xml:space="preserve"><value>设置…</value></data>
+  <data name="ImageView_AskAiAboutImage" xml:space="preserve"><value>问 AI 分析当前图像…</value></data>
+  <data name="ImageView_CopilotImagePrompt" xml:space="preserve"><value>请基于已附加的图像元数据、选区/ROI 和标注摘要，分析当前图像可能需要关注的质量问题、测量风险和下一步检查建议。注意：当前上下文不包含图像像素，只能基于结构化信息判断。</value></data>
+  <data name="ImageView_CurrentImageContext" xml:space="preserve"><value>当前图像</value></data>
+  <data name="ImageView_BatchProcessing" xml:space="preserve"><value>批量处理图像…</value></data>
+  <data name="Algorithm_FourEdgeSfr" xml:space="preserve"><value>四边 SFR…</value></data>
+  <data name="BitmapScaling_Default" xml:space="preserve"><value>默认</value></data>
+  <data name="BitmapScaling_Bilinear" xml:space="preserve"><value>双线性（快速）</value></data>
+  <data name="BitmapScaling_Fant" xml:space="preserve"><value>Fant（高质量）</value></data>
+  <data name="BitmapScaling_NearestNeighbor" xml:space="preserve"><value>最近邻（硬边缘）</value></data>
+  <data name="Algorithm_Erode" xml:space="preserve"><value>腐蚀…</value></data>
+  <data name="Algorithm_Dilate" xml:space="preserve"><value>膨胀…</value></data>
+  <data name="Algorithm_MorphologyEx" xml:space="preserve"><value>形态学操作…</value></data>
+  <data name="Algorithm_BilateralFilter" xml:space="preserve"><value>双边滤波…</value></data>
+  <data name="Algorithm_Blur" xml:space="preserve"><value>均值滤波…</value></data>
+  <data name="Algorithm_GeometricTransform" xml:space="preserve"><value>几何变换…</value></data>
+  <data name="Algorithm_ImageRegistration" xml:space="preserve"><value>图像配准…</value></data>
+  <data name="Algorithm_LensDistortionCorrection" xml:space="preserve"><value>镜头畸变校正…</value></data>
+  <data name="Algorithm_ImagingCorrection" xml:space="preserve"><value>成像校正…</value></data>
+  <data name="Algorithm_FrequencySpectrum" xml:space="preserve"><value>频谱分析…</value></data>
+  <data name="Algorithm_MoireAnalysis" xml:space="preserve"><value>摩尔纹分析…</value></data>
 </root>

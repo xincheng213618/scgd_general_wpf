@@ -10,6 +10,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using ColorVision.UI;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -111,7 +113,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 return new Button
                 {
-                    Content = commandDisplay.DisplayName,
+                    Content = PropertyEditorHelper.GetLocalizedString(PropertyEditorHelper.GetResourceManager(source), commandDisplay.DisplayName),
                     Command = command,
                     HorizontalAlignment = HorizontalAlignment.Left,
                     Margin = new Thickness(LabelWidth, 2, 0, 2)
@@ -129,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
                 return new Expander
                 {
-                    Header = GetDisplayName(property),
+                    Header = GetDisplayName(source, property),
                     IsExpanded = true,
                     Content = nestedPanel,
                     Margin = new Thickness(depth * 8, 2, 0, 2)
@@ -227,7 +229,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             TextBlock label = CreateLabel(
                 property.Name == nameof(DisplayAlgorithmConfigBase.ImageFilePath)
                     ? Properties.Resources.Image
-                    : GetDisplayName(property));
+                    : GetDisplayName(source, property));
             TextBox textBox = CreateTextBox(source, property, usePlaceholderStyle: true);
             HandyControl.Controls.InfoElement.SetPlaceholder(textBox, ColorVision.Themes.Properties.Resources.Upload_SelectFile);
             Button browseButton = new()
@@ -271,7 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private static FrameworkElement CreateBooleanEditor(object source, PropertyInfo property)
         {
             DockPanel row = CreateRow();
-            TextBlock label = CreateLabel(GetDisplayName(property));
+            TextBlock label = CreateLabel(GetDisplayName(source, property));
             CheckBox checkBox = new()
             {
                 VerticalAlignment = VerticalAlignment.Center,
@@ -287,15 +289,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private static FrameworkElement CreateEnumEditor(object source, PropertyInfo property, Type enumType)
         {
             DockPanel row = CreateRow();
-            TextBlock label = CreateLabel(GetDisplayName(property));
+            TextBlock label = CreateLabel(GetDisplayName(source, property));
+            var resources = PropertyEditorHelper.GetResourceManager(source);
+            var enumResources = PropertyEditorHelper.GetResourceManager(enumType);
             ComboBox comboBox = new()
             {
                 MinWidth = 0,
-                ItemsSource = Enum.GetValues(enumType)
+                ItemsSource = Enum.GetValues(enumType).Cast<Enum>().Select(value =>
+                    new KeyValuePair<Enum, string>(value,
+                        resources?.GetString(value.ToString(), CultureInfo.CurrentUICulture)
+                        ?? enumResources?.GetString(value.ToString(), CultureInfo.CurrentUICulture)
+                        ?? PropertyEditorHelper.GetLocalizedString(enumResources, value.ToDescription()))).ToList(),
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key"
             };
             comboBox.SetResourceReference(FrameworkElement.StyleProperty, "ComboBox.Small");
             comboBox.SetBinding(
-                System.Windows.Controls.Primitives.Selector.SelectedItemProperty,
+                System.Windows.Controls.Primitives.Selector.SelectedValueProperty,
                 CreateBinding(source, property.Name));
             DockPanel.SetDock(label, Dock.Left);
             row.Children.Add(label);
@@ -306,7 +316,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private static FrameworkElement CreateTextEditor(object source, PropertyInfo property)
         {
             DockPanel row = CreateRow();
-            TextBlock label = CreateLabel(GetDisplayName(property));
+            TextBlock label = CreateLabel(GetDisplayName(source, property));
             TextBox textBox = CreateTextBox(source, property);
             DockPanel.SetDock(label, Dock.Left);
             row.Children.Add(label);
@@ -361,9 +371,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
         }
 
-        private static string GetDisplayName(PropertyInfo property)
+        private static string GetDisplayName(object source, PropertyInfo property)
         {
-            return property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name;
+            return PropertyEditorHelper.GetDisplayName(PropertyEditorHelper.GetResourceManager(source), property);
         }
 
         private static void ApplyVisibility(FrameworkElement editor, object source, PropertyInfo property)

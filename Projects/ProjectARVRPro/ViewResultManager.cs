@@ -255,6 +255,17 @@ namespace ProjectARVRPro
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
 
+        [DisplayName("空间不足时自动清理"), Category("磁盘空间")]
+        [Description("保存前检查输出盘的剩余空间；不足时从最早的导出文件开始删除。仅清理结果输出目录和已启用的客户报表目录，不删除原始采集文件或数据库记录。默认关闭。")]
+        public bool AutoCleanupEnabled { get => _AutoCleanupEnabled; set { _AutoCleanupEnabled = value; OnPropertyChanged(); } }
+        private bool _AutoCleanupEnabled;
+
+        [DisplayName("保留磁盘空间（GB）"), Category("磁盘空间")]
+        [Description("剩余空间低于此值时触发清理，达到此值后停止；默认100，必须大于0。按1 GB = 1024³字节计算。正在写入的文件和当前SN目录不会被清理。")]
+        [PropertyVisibility(nameof(AutoCleanupEnabled))]
+        public int MinimumFreeSpaceGB { get => _MinimumFreeSpaceGB; set { _MinimumFreeSpaceGB = value; OnPropertyChanged(); } }
+        private int _MinimumFreeSpaceGB = 100;
+
         // Retained for old configuration files; ARVRPro has no text-output consumer.
         [Browsable(false)]
         public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }

@@ -3290,4 +3290,68 @@
   <data name="将释放当前进程所有相机的校正缓存和图像文件缓存槽位。&#xA;&#xA;等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？" xml:space="preserve"><value>將釋放目前處理程序所有相機的校正快取和影像檔案快取槽位。
 
 等待正在執行的校正與影像複製完成，不刪除磁碟檔案。後續使用時會重新載入。是否繼續？</value></data>
+  <data name="POI模板" xml:space="preserve"><value>POI範本</value></data>
+  <data name="过滤模板" xml:space="preserve"><value>篩選範本</value></data>
+  <data name="修正模板" xml:space="preserve"><value>修正範本</value></data>
+  <data name="输出模板" xml:space="preserve"><value>輸出範本</value></data>
+  <data name="请先选择关注点模板" xml:space="preserve"><value>請先選擇關注點範本</value></data>
+  <data name="需要选择关注点过滤模板" xml:space="preserve"><value>請選擇關注點篩選範本</value></data>
+  <data name="需要选择关注点修正模板" xml:space="preserve"><value>請選擇關注點修正範本</value></data>
+  <data name="需要选择关注点输出模板" xml:space="preserve"><value>請選擇關注點輸出範本</value></data>
+  <data name="Db" xml:space="preserve"><value>資料庫</value></data>
+  <data name="启用 CVRAW 文件缓存" xml:space="preserve"><value>啟用 CVRAW 檔案快取</value></data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变，可用于对比文件缓存效果。" xml:space="preserve"><value>預設開啟。關閉後直接讀寫檔案，既有讀取完成後釋放槽位；顯示記憶體重用保持不變，可用於比較檔案快取效果。</value></data>
+  <data name="存储类型" xml:space="preserve"><value>儲存類型</value></data>
+  <data name="亚像素" xml:space="preserve"><value>次像素</value></data>
+  <data name="计算色温波长" xml:space="preserve"><value>計算色溫與波長</value></data>
+  <data name="POI文件" xml:space="preserve"><value>POI檔案</value></data>
+  <data name="File" xml:space="preserve"><value>檔案</value></data>
+  <data name="FilterWheelSetPosition" xml:space="preserve"><value>設定位置</value></data>
+  <data name="FilterWheelReadPosition" xml:space="preserve"><value>讀取位置</value></data>
+  <data name="NDFilterPosition" xml:space="preserve"><value>ND位置</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>開啟快門</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>關閉快門</value></data>
+  <data name="ChangeNDPort" xml:space="preserve"><value>切換ND位置</value></data>
+  <data name="ServiceConfigurations" xml:space="preserve">
+    <value>服務設定</value>
+  </data>
+  <data name="CreateServiceAndDevice" xml:space="preserve">
+    <value>新增服務設定並新增設備</value>
+  </data>
+  <data name="LocalConfigurationCreated" xml:space="preserve">
+    <value>本機設定已建立。</value>
+  </data>
+  <data name="ServiceType_Camera" xml:space="preserve">
+    <value>相機</value>
+  </data>
+  <data name="ServiceType_PG" xml:space="preserve">
+    <value>圖像產生器（PG）</value>
+  </data>
+  <data name="ServiceType_Spectrum" xml:space="preserve">
+    <value>光譜儀</value>
+  </data>
+  <data name="ServiceType_SMU" xml:space="preserve">
+    <value>源量測單元（SMU）</value>
+  </data>
+  <data name="ServiceType_Sensor" xml:space="preserve">
+    <value>通用感測器</value>
+  </data>
+  <data name="ServiceType_FileServer" xml:space="preserve">
+    <value>檔案服務</value>
+  </data>
+  <data name="ServiceType_Algorithm" xml:space="preserve">
+    <value>演算法服務</value>
+  </data>
+  <data name="ServiceType_FilterWheel" xml:space="preserve">
+    <value>濾色輪</value>
+  </data>
+  <data name="ServiceType_Calibration" xml:space="preserve">
+    <value>校準服務</value>
+  </data>
+  <data name="ServiceType_Motor" xml:space="preserve">
+    <value>馬達</value>
+  </data>
+  <data name="ServiceType_LightingControl" xml:space="preserve">
+    <value>光源控制</value>
+  </data>
 </root>

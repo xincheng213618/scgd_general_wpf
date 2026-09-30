@@ -104,7 +104,7 @@ namespace ColorVision.UI.Tests
                     sourceDirectory,
                     destinationDirectory));
 
-            Assert.Contains("缺少 SKILL.md", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(DesktopPetText.SkillMissingManifest, exception.Message);
             Assert.Equal("user data", File.ReadAllText(markerPath));
         }
 

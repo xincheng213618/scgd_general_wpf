@@ -131,10 +131,10 @@ namespace ColorVision.UI.Desktop.Diagnostics
             }
             catch (Exception ex) when (ex is IOException or TimeoutException or InvalidOperationException)
             {
-                throw new InvalidOperationException("无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。", ex);
+                throw new InvalidOperationException(CrashDumpText.Get("无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。"), ex);
             }
 
-            EnsureServiceHostSucceeded(response, "应用崩溃转储设置");
+            EnsureServiceHostSucceeded(response, CrashDumpText.Get("应用崩溃转储设置"));
             Reload();
         }
 
@@ -165,10 +165,10 @@ namespace ColorVision.UI.Desktop.Diagnostics
             }
             catch (Exception ex) when (ex is IOException or TimeoutException or InvalidOperationException)
             {
-                throw new InvalidOperationException("无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。", ex);
+                throw new InvalidOperationException(CrashDumpText.Get("无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。"), ex);
             }
 
-            EnsureServiceHostSucceeded(response, "清除崩溃转储设置");
+            EnsureServiceHostSucceeded(response, CrashDumpText.Get("清除崩溃转储设置"));
             Reload();
         }
 
@@ -190,9 +190,9 @@ namespace ColorVision.UI.Desktop.Diagnostics
 
             NumberStyles style = isHex ? NumberStyles.HexNumber : NumberStyles.Integer;
             if (!int.TryParse(value, style, CultureInfo.InvariantCulture, out int flags))
-                throw new FormatException("自定义标志应为十进制整数或 0x 开头的十六进制整数。");
+                throw new FormatException(CrashDumpText.Get("自定义标志应为十进制整数或 0x 开头的十六进制整数。"));
             if ((flags & ~(int)MiniDumpType.MiniDumpValidTypeFlags) != 0)
-                throw new ArgumentOutOfRangeException(nameof(text), "自定义转储标志包含不支持的位。");
+                throw new ArgumentOutOfRangeException(nameof(text), CrashDumpText.Get("自定义转储标志包含不支持的位。"));
 
             return (MiniDumpType)flags;
         }
@@ -201,13 +201,13 @@ namespace ColorVision.UI.Desktop.Diagnostics
         {
             ValidateDumpFolder();
             if (DumpCount is < 1 or > 999)
-                throw new ArgumentOutOfRangeException(nameof(DumpCount), "保留数量必须在 1 到 999 之间。");
+                throw new ArgumentOutOfRangeException(nameof(DumpCount), CrashDumpText.Get("保留数量必须在 1 到 999 之间。"));
             if (!Enum.IsDefined(DumpType))
-                throw new ArgumentOutOfRangeException(nameof(DumpType), "无效的转储类型。");
+                throw new ArgumentOutOfRangeException(nameof(DumpType), CrashDumpText.Get("无效的转储类型。"));
             if (DumpType == CrashDumpType.Custom)
                 CustomDumpFlags = ParseCustomDumpFlags(CustomDumpFlagsText);
             if (((int)CustomDumpFlags & ~(int)MiniDumpType.MiniDumpValidTypeFlags) != 0)
-                throw new ArgumentOutOfRangeException(nameof(CustomDumpFlags), "自定义转储标志包含不支持的位。");
+                throw new ArgumentOutOfRangeException(nameof(CustomDumpFlags), CrashDumpText.Get("自定义转储标志包含不支持的位。"));
 
             DumpFolder = Path.GetFullPath(Environment.ExpandEnvironmentVariables(DumpFolder.Trim()));
             Directory.CreateDirectory(DumpFolder);
@@ -216,7 +216,7 @@ namespace ColorVision.UI.Desktop.Diagnostics
         private void ApplyRegistrySettings()
         {
             using RegistryKey key = Registry.LocalMachine.CreateSubKey(RegistryKeyPath, writable: true)
-                ?? throw new InvalidOperationException($"无法创建注册表项：{RegistryKeyPath}");
+                ?? throw new InvalidOperationException(CrashDumpText.Format("无法创建注册表项：{0}", RegistryKeyPath));
 
             key.SetValue("DumpFolder", DumpFolder, RegistryValueKind.ExpandString);
             key.SetValue("DumpCount", DumpCount, RegistryValueKind.DWord);
@@ -263,11 +263,11 @@ namespace ColorVision.UI.Desktop.Diagnostics
         private void ValidateDumpFolder()
         {
             if (string.IsNullOrWhiteSpace(DumpFolder))
-                throw new ArgumentException("请选择转储保存目录。", nameof(DumpFolder));
+                throw new ArgumentException(CrashDumpText.Get("请选择转储保存目录。"), nameof(DumpFolder));
 
             string expandedPath = Environment.ExpandEnvironmentVariables(DumpFolder.Trim());
             if (!Path.IsPathFullyQualified(expandedPath))
-                throw new ArgumentException("转储保存目录必须是绝对路径。", nameof(DumpFolder));
+                throw new ArgumentException(CrashDumpText.Get("转储保存目录必须是绝对路径。"), nameof(DumpFolder));
         }
 
         private int ResolveMiniDumpFlags()
@@ -286,15 +286,15 @@ namespace ColorVision.UI.Desktop.Diagnostics
             if (response.Success) return;
 
             if (response.Message.StartsWith("Unsupported command", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("ColorVision Service Host 版本过旧，请先在“更新”中更新后台特权服务。");
+                throw new InvalidOperationException(CrashDumpText.Get("ColorVision Service Host 版本过旧，请先在“更新”中更新后台特权服务。"));
 
-            throw new InvalidOperationException($"{operation}失败：{response.Message}");
+            throw new InvalidOperationException(CrashDumpText.Format("{0}失败：{1}", operation, response.Message));
         }
 
         private static void EnsureAdministrator()
         {
             if (!Tool.IsAdministrator())
-                throw new UnauthorizedAccessException("写入 Windows Error Reporting 的 HKLM 设置需要管理员权限或 ColorVision Service Host。");
+                throw new UnauthorizedAccessException(CrashDumpText.Get("写入 Windows Error Reporting 的 HKLM 设置需要管理员权限或 ColorVision Service Host。"));
         }
 
         private static string FormatCustomDumpFlags(MiniDumpType flags) => $"0x{(int)flags:X8}";

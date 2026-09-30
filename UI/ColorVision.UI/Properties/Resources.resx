@@ -637,4 +637,20 @@
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟随软件主题</value></data>
   <data name="DisplayPin" xml:space="preserve"><value>置顶</value></data>
   <data name="DisplayUnpin" xml:space="preserve"><value>取消置顶</value></data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve"><value>没有匹配的设置</value></data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve"><value>该设置暂不可编辑</value></data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve"><value>设置编辑器加载失败</value></data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve"><value>设置页面类型无效</value></data>
+  <data name="SettingsPageUnavailable" xml:space="preserve"><value>设置页面不可用</value></data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve"><value>设置页面加载失败</value></data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve"><value>启动时检查更新</value></data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve"><value>启动软件时检查程序和插件更新</value></data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve"><value>启动 检查更新 自动更新 插件更新</value></data>
+  <data name="SettingsSectionBasic" xml:space="preserve"><value>基础</value></data>
+  <data name="SettingsSectionSearch" xml:space="preserve"><value>搜索</value></data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve"><value>文件归档</value></data>
+  <data name="SettingsSectionServices" xml:space="preserve"><value>高级服务</value></data>
+  <data name="SettingsSectionPaths" xml:space="preserve"><value>底层路径</value></data>
+  <data name="SettingsSectionExtensions" xml:space="preserve"><value>扩展页面</value></data>
+  <data name="SettingsSectionOther" xml:space="preserve"><value>其他</value></data>
 </root>

@@ -492,4 +492,20 @@
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>跟隨軟體主題</value></data>
   <data name="DisplayPin" xml:space="preserve"><value>置頂</value></data>
   <data name="DisplayUnpin" xml:space="preserve"><value>取消置頂</value></data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve"><value>沒有符合的設定</value></data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve"><value>此設定暫時無法編輯</value></data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve"><value>設定編輯器載入失敗</value></data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve"><value>設定頁面類型無效</value></data>
+  <data name="SettingsPageUnavailable" xml:space="preserve"><value>設定頁面無法使用</value></data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve"><value>設定頁面載入失敗</value></data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve"><value>啟動時檢查更新</value></data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve"><value>啟動軟體時檢查程式和外掛更新</value></data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve"><value>啟動 檢查更新 自動更新 外掛更新</value></data>
+  <data name="SettingsSectionBasic" xml:space="preserve"><value>基礎</value></data>
+  <data name="SettingsSectionSearch" xml:space="preserve"><value>搜尋</value></data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve"><value>檔案儲存</value></data>
+  <data name="SettingsSectionServices" xml:space="preserve"><value>進階服務</value></data>
+  <data name="SettingsSectionPaths" xml:space="preserve"><value>系統路徑</value></data>
+  <data name="SettingsSectionExtensions" xml:space="preserve"><value>擴充頁面</value></data>
+  <data name="SettingsSectionOther" xml:space="preserve"><value>其他</value></data>
 </root>

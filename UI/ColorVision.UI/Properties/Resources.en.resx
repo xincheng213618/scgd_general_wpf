@@ -598,4 +598,20 @@
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>Follow application theme</value></data>
   <data name="DisplayPin" xml:space="preserve"><value>Pin to top</value></data>
   <data name="DisplayUnpin" xml:space="preserve"><value>Unpin</value></data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve"><value>No matching settings</value></data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve"><value>This setting cannot be edited yet</value></data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve"><value>Failed to load the settings editor</value></data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve"><value>Invalid settings page type</value></data>
+  <data name="SettingsPageUnavailable" xml:space="preserve"><value>Settings page unavailable</value></data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve"><value>Failed to load the settings page</value></data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve"><value>Check for updates on startup</value></data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve"><value>Check for application and plugin updates when ColorVision starts</value></data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve"><value>startup check updates automatic updates plugin updates</value></data>
+  <data name="SettingsSectionBasic" xml:space="preserve"><value>Basic</value></data>
+  <data name="SettingsSectionSearch" xml:space="preserve"><value>Search</value></data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve"><value>File storage</value></data>
+  <data name="SettingsSectionServices" xml:space="preserve"><value>Advanced services</value></data>
+  <data name="SettingsSectionPaths" xml:space="preserve"><value>System paths</value></data>
+  <data name="SettingsSectionExtensions" xml:space="preserve"><value>Extensions</value></data>
+  <data name="SettingsSectionOther" xml:space="preserve"><value>Other</value></data>
 </root>

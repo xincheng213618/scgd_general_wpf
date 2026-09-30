@@ -189,12 +189,12 @@ namespace ColorVision.Solution.Terminal
                     var runTerminalControl = new TerminalControl();
                     var interactiveTab = new TabItem
                     {
-                        Header = "终端",
+                        Header = Properties.Resources.Sol_Terminal_Title,
                         Content = interactiveTerminalControl,
                     };
                     var runTab = new TabItem
                     {
-                        Header = "运行",
+                        Header = Properties.Resources.Sol_Terminal_Run,
                         Content = runTerminalControl,
                     };
                     var tabControl = new TabControl();
@@ -221,7 +221,7 @@ namespace ColorVision.Solution.Terminal
                             : interactiveTerminalControl);
                     return tabControl;
                 },
-                "终端",
+                Properties.Resources.Sol_Terminal_Title,
                 PanelPosition.Bottom,
                 isDefaultVisible: false);
         }

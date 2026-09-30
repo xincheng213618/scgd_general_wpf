@@ -3293,5 +3293,194 @@ namespace ColorVision.ImageEditor.Properties {
                 return ResourceManager.GetString("ZoomUniform", resourceCulture);
             }
         }
+        /// <summary>
+        ///   查找类似 设置… 的本地化字符串。
+        /// </summary>
+        public static string ImageView_ContextSettings {
+            get {
+                return ResourceManager.GetString("ImageView_ContextSettings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 问 AI 分析当前图像… 的本地化字符串。
+        /// </summary>
+        public static string ImageView_AskAiAboutImage {
+            get {
+                return ResourceManager.GetString("ImageView_AskAiAboutImage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请基于已附加的图像元数据、选区/ROI 和标注摘要，分析当前图像可能需要关注的质量问题、测量风险和下一步检查建议。注意：当前上下文不包含图像像素，只能基于结构化信息判断。 的本地化字符串。
+        /// </summary>
+        public static string ImageView_CopilotImagePrompt {
+            get {
+                return ResourceManager.GetString("ImageView_CopilotImagePrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 当前图像 的本地化字符串。
+        /// </summary>
+        public static string ImageView_CurrentImageContext {
+            get {
+                return ResourceManager.GetString("ImageView_CurrentImageContext", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 批量处理图像… 的本地化字符串。
+        /// </summary>
+        public static string ImageView_BatchProcessing {
+            get {
+                return ResourceManager.GetString("ImageView_BatchProcessing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 四边 SFR… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FourEdgeSfr {
+            get {
+                return ResourceManager.GetString("Algorithm_FourEdgeSfr", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 默认 的本地化字符串。
+        /// </summary>
+        public static string BitmapScaling_Default {
+            get {
+                return ResourceManager.GetString("BitmapScaling_Default", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 双线性（快速） 的本地化字符串。
+        /// </summary>
+        public static string BitmapScaling_Bilinear {
+            get {
+                return ResourceManager.GetString("BitmapScaling_Bilinear", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Fant（高质量） 的本地化字符串。
+        /// </summary>
+        public static string BitmapScaling_Fant {
+            get {
+                return ResourceManager.GetString("BitmapScaling_Fant", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 最近邻（硬边缘） 的本地化字符串。
+        /// </summary>
+        public static string BitmapScaling_NearestNeighbor {
+            get {
+                return ResourceManager.GetString("BitmapScaling_NearestNeighbor", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 腐蚀… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Erode {
+            get {
+                return ResourceManager.GetString("Algorithm_Erode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 膨胀… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Dilate {
+            get {
+                return ResourceManager.GetString("Algorithm_Dilate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 形态学操作… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_MorphologyEx {
+            get {
+                return ResourceManager.GetString("Algorithm_MorphologyEx", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 双边滤波… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_BilateralFilter {
+            get {
+                return ResourceManager.GetString("Algorithm_BilateralFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 均值滤波… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Blur {
+            get {
+                return ResourceManager.GetString("Algorithm_Blur", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 几何变换… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_GeometricTransform {
+            get {
+                return ResourceManager.GetString("Algorithm_GeometricTransform", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 图像配准… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_ImageRegistration {
+            get {
+                return ResourceManager.GetString("Algorithm_ImageRegistration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 镜头畸变校正… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_LensDistortionCorrection {
+            get {
+                return ResourceManager.GetString("Algorithm_LensDistortionCorrection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 成像校正… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_ImagingCorrection {
+            get {
+                return ResourceManager.GetString("Algorithm_ImagingCorrection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 频谱分析… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_FrequencySpectrum {
+            get {
+                return ResourceManager.GetString("Algorithm_FrequencySpectrum", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 摩尔纹分析… 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_MoireAnalysis {
+            get {
+                return ResourceManager.GetString("Algorithm_MoireAnalysis", resourceCulture);
+            }
+        }
+
     }
 }

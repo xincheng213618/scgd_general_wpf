@@ -953,4 +953,22 @@
   <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
     <value>安装程序提示需要重启 Windows。请保存工作并自行重启，再接回相机和重新检测。</value>
   </data>
+  <data name="ConfigDesktopPetAsset" xml:space="preserve">
+    <value>宠物素材</value>
+  </data>
+  <data name="ConfigDesktopPetAssetDescription" xml:space="preserve">
+    <value>使用 ColorVision、Codex 或兼容 pet.json 的自定义素材。</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegration" xml:space="preserve">
+    <value>关联 Copilot</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegrationDescription" xml:space="preserve">
+    <value>让宠物跟随 Copilot 的运行、等待确认、完成和失败状态。</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotifications" xml:space="preserve">
+    <value>显示 Copilot 提醒</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotificationsDescription" xml:space="preserve">
+    <value>在 Copilot 需要确认、完成或失败时显示宠物气泡。</value>
+  </data>
 </root>

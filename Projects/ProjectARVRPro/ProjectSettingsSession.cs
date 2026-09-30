@@ -48,7 +48,7 @@ internal sealed class ProjectSettingsSession
         [
             Section(ProjectSettingsPage.Testing, "检测设置", "设置失败处理和 SN 锁定方式。", ["测试策略"]),
             Section(ProjectSettingsPage.Display, "界面显示", "调整工作区、结果图层和默认查询条数。", ["界面", "结果图层", "结果列表"]),
-            Section(ProjectSettingsPage.Results, "结果保存", "设置保存位置、CSV、兼容格式和客户报表。", ["输出路径", "保存选项", "兼容格式", "客制化输出", "结果编号"]),
+            Section(ProjectSettingsPage.Results, "结果保存", "设置保存位置、CSV、兼容格式、客户报表和磁盘空间清理。", ["输出路径", "保存选项", "兼容格式", "客制化输出", "磁盘空间", "结果编号"]),
             Section(ProjectSettingsPage.Images, "图像保存", "标记图和原图保存在结果输出目录；开启后显示格式等选项。", ["标记图", "原图"]),
         ];
     }
@@ -110,6 +110,8 @@ internal sealed class ProjectSettingsSession
         }
         if (source is ViewResultManagerConfig)
         {
+            if (property == nameof(ViewResultManagerConfig.MinimumFreeSpaceGB) && value is int space && space <= 0)
+                return "保留磁盘空间必须大于0 GB。";
             if (property == nameof(ViewResultManagerConfig.CodeDateFormat))
             {
                 try { _ = DateTime.Now.ToString(value as string); }

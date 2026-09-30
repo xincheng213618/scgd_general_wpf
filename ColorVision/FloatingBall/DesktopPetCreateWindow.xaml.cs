@@ -33,7 +33,7 @@ namespace ColorVision.FloatingBall
         private async Task InspectCodexAvailabilityAsync()
         {
             CodexStatusText.Foreground = FindResource("SecondaryTextBrush") as Brush ?? Brushes.DimGray;
-            CodexStatusText.Text = "正在检测本机 Codex 与 Hatch Pet…";
+            CodexStatusText.Text = DesktopPetText.DetectingCodex;
             try
             {
                 _codexAvailability = await Task.Run(DesktopPetCodexService.InspectAvailability);
@@ -46,7 +46,7 @@ namespace ColorVision.FloatingBall
             {
                 _codexAvailability = null;
                 CodexStatusText.Foreground = Brushes.Firebrick;
-                CodexStatusText.Text = $"Codex 检测失败：{ex.Message}";
+                CodexStatusText.Text = DesktopPetText.Format("CodexCheckFailed", ex.Message);
             }
             finally
             {
@@ -66,7 +66,7 @@ namespace ColorVision.FloatingBall
                 return;
 
             var useCodex = CreationModeTabControl.SelectedIndex == 0;
-            PrimaryButton.Content = useCodex ? "在 Codex 中创建" : "导入并选择";
+            PrimaryButton.Content = useCodex ? DesktopPetText.CreateInCodex : DesktopPetText.ImportAndSelect;
             PrimaryButton.IsEnabled = !_isCreating && (!useCodex || _codexAvailability?.IsAvailable == true);
         }
 
@@ -74,8 +74,8 @@ namespace ColorVision.FloatingBall
         {
             var dialog = new OpenFileDialog
             {
-                Title = "选择桌面宠物精灵表",
-                Filter = "宠物精灵表 (*.webp;*.png)|*.webp;*.png|WebP 图片 (*.webp)|*.webp|PNG 图片 (*.png)|*.png",
+                Title = DesktopPetText.SelectSpriteSheet,
+                Filter = DesktopPetText.SpriteSheetFilter,
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -104,7 +104,7 @@ namespace ColorVision.FloatingBall
             _isCreating = true;
             UpdatePrimaryAction();
             CodexStatusText.Foreground = FindResource("SecondaryTextBrush") as Brush ?? Brushes.DimGray;
-            CodexStatusText.Text = "正在准备 Hatch Pet 并打开 Codex…";
+            CodexStatusText.Text = DesktopPetText.PreparingCodex;
             try
             {
                 await DesktopPetCodexService.LaunchAsync(CodexConceptTextBox.Text);
@@ -114,7 +114,7 @@ namespace ColorVision.FloatingBall
             catch (Exception ex)
             {
                 CodexStatusText.Foreground = Brushes.Firebrick;
-                CodexStatusText.Text = $"无法打开 Codex：{ex.Message}";
+                CodexStatusText.Text = DesktopPetText.Format("CodexOpenFailed", ex.Message);
             }
             finally
             {
@@ -133,7 +133,7 @@ namespace ColorVision.FloatingBall
             _isCreating = true;
             UpdatePrimaryAction();
             ImportStatusText.Foreground = Brushes.DimGray;
-            ImportStatusText.Text = "正在校验并导入素材…";
+            ImportStatusText.Text = DesktopPetText.Importing;
             try
             {
                 var displayName = PetNameTextBox.Text.Trim();

@@ -70,7 +70,7 @@ public sealed class StripeMtfParameters : ViewModelBase
     public double BlackNoiseRatio { get; set; } = 0.01;
     [Category("条纹 MTF"), DisplayName("输出百分数"), PropertyVisibility(nameof(ShowAdvanced), false), Description("关闭输出比例，开启输出百分数；下游判定限必须使用相同单位。")]
     public bool PercentageDisplay { get; set; }
-    [Category("四部定位"), DisplayName("定位阈值"), PropertyVisibility(nameof(ShowFourPartSettings), false)]
+    [Category("四部定位"), DisplayName("定位阈值"), PropertyVisibility(nameof(ShowFourPartSettings), false), Description("优先尝试此阈值；未找到完整目标时自动按图像亮度重新定位。8 位图无需手动换算默认阈值。")]
     public int Threshold { get; set; } = 5000;
     [Category("四部定位"), DisplayName("最小目标面积"), PropertyVisibility(nameof(ShowFourPartSettings), false)]
     public int MinimumArea { get; set; } = 100;

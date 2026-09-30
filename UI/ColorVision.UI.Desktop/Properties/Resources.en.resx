@@ -877,4 +877,162 @@
   <data name="FeedbackNoMatchingDiagnostics" xml:space="preserve">
     <value>No matching diagnostic items</value>
   </data>
+  <data name="崩溃转储" xml:space="preserve"><value>Crash dumps</value></data>
+  <data name="配置 Windows Error Reporting 转储，并保存或收集当前进程的诊断文件。" xml:space="preserve"><value>Configure Windows Error Reporting dumps and save or collect diagnostic files for the current process.</value></data>
+  <data name="转储类型" xml:space="preserve"><value>Dump type</value></data>
+  <data name="选择 Windows Error Reporting 在程序崩溃时保存的转储内容。" xml:space="preserve"><value>Choose the dump content Windows Error Reporting saves when the application crashes.</value></data>
+  <data name="最多保留" xml:space="preserve"><value>Maximum files</value></data>
+  <data name="最多保留的转储文件数量，允许 1 到 999。" xml:space="preserve"><value>Maximum number of dump files to keep, from 1 to 999.</value></data>
+  <data name="保存目录" xml:space="preserve"><value>Save folder</value></data>
+  <data name="转储文件的保存位置，必须使用绝对路径。" xml:space="preserve"><value>Folder for dump files. An absolute path is required.</value></data>
+  <data name="自定义标志" xml:space="preserve"><value>Custom flags</value></data>
+  <data name="输入十进制整数或以 0x 开头的 MINIDUMP_TYPE 十六进制标志。" xml:space="preserve"><value>Enter decimal MINIDUMP_TYPE flags or hexadecimal flags starting with 0x.</value></data>
+  <data name="系统操作" xml:space="preserve"><value>System actions</value></data>
+  <data name="普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。" xml:space="preserve"><value>Apply and clear use ColorVision Service Host to write HKLM in standard user mode. Administrator mode writes directly. Manual dumps are saved only to the folder above.</value></data>
+  <data name="应用系统设置" xml:space="preserve"><value>Apply system settings</value></data>
+  <data name="清除系统设置" xml:space="preserve"><value>Clear system settings</value></data>
+  <data name="保存当前进程 Dump" xml:space="preserve"><value>Save current process dump</value></data>
+  <data name="当前为管理员模式，系统设置可直接写入。" xml:space="preserve"><value>Administrator mode: system settings can be written directly.</value></data>
+  <data name="当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。" xml:space="preserve"><value>Standard user mode: ColorVision Service Host writes the system settings.</value></data>
+  <data name="当前目标：{0}。{1}" xml:space="preserve"><value>Current target: {0}. {1}</value></data>
+  <data name="正在应用系统设置……" xml:space="preserve"><value>Applying system settings…</value></data>
+  <data name="正在通过后台特权服务应用系统设置……" xml:space="preserve"><value>Applying system settings through ColorVision Service Host…</value></data>
+  <data name="已应用 Windows Error Reporting 设置：{0}" xml:space="preserve"><value>Windows Error Reporting settings applied: {0}</value></data>
+  <data name="应用失败：{0}" xml:space="preserve"><value>Apply failed: {0}</value></data>
+  <data name="确定清除 {0} 的 Windows Error Reporting 转储设置吗？" xml:space="preserve"><value>Clear the Windows Error Reporting dump settings for {0}?</value></data>
+  <data name="清除崩溃转储设置" xml:space="preserve"><value>Clear crash dump settings</value></data>
+  <data name="正在清除系统设置……" xml:space="preserve"><value>Clearing system settings…</value></data>
+  <data name="正在通过后台特权服务清除系统设置……" xml:space="preserve"><value>Clearing system settings through ColorVision Service Host…</value></data>
+  <data name="已清除当前程序的专用转储设置；界面已回到系统默认值。" xml:space="preserve"><value>Application-specific dump settings cleared. System defaults are now shown.</value></data>
+  <data name="清除失败：{0}" xml:space="preserve"><value>Clear failed: {0}</value></data>
+  <data name="正在保存当前进程 Dump，请稍候……" xml:space="preserve"><value>Saving the current process dump. Please wait…</value></data>
+  <data name="Dump 已保存：{0}" xml:space="preserve"><value>Dump saved: {0}</value></data>
+  <data name="保存失败：{0}" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="小型转储（推荐）" xml:space="preserve"><value>Mini dump (recommended)</value></data>
+  <data name="完整内存转储" xml:space="preserve"><value>Full memory dump</value></data>
+  <data name="自定义转储" xml:space="preserve"><value>Custom dump</value></data>
+  <data name="无法连接 ColorVision Service Host，请先在“更新”中安装或更新后台特权服务。" xml:space="preserve"><value>Cannot connect to ColorVision Service Host. Install or update the privileged background service in Updates first.</value></data>
+  <data name="应用崩溃转储设置" xml:space="preserve"><value>Apply crash dump settings</value></data>
+  <data name="自定义标志应为十进制整数或 0x 开头的十六进制整数。" xml:space="preserve"><value>Custom flags must be a decimal integer or a hexadecimal integer starting with 0x.</value></data>
+  <data name="自定义转储标志包含不支持的位。" xml:space="preserve"><value>Custom dump flags contain unsupported bits.</value></data>
+  <data name="保留数量必须在 1 到 999 之间。" xml:space="preserve"><value>The number of files to keep must be between 1 and 999.</value></data>
+  <data name="无效的转储类型。" xml:space="preserve"><value>Invalid dump type.</value></data>
+  <data name="请选择转储保存目录。" xml:space="preserve"><value>Select a folder for dump files.</value></data>
+  <data name="转储保存目录必须是绝对路径。" xml:space="preserve"><value>The dump folder must be an absolute path.</value></data>
+  <data name="ColorVision Service Host 版本过旧，请先在“更新”中更新后台特权服务。" xml:space="preserve"><value>ColorVision Service Host is outdated. Update the privileged background service in Updates first.</value></data>
+  <data name="{0}失败：{1}" xml:space="preserve"><value>{0} failed: {1}</value></data>
+  <data name="写入 Windows Error Reporting 的 HKLM 设置需要管理员权限或 ColorVision Service Host。" xml:space="preserve"><value>Writing Windows Error Reporting settings to HKLM requires administrator privileges or ColorVision Service Host.</value></data>
+  <data name="无法创建注册表项：{0}" xml:space="preserve"><value>Cannot create registry key: {0}</value></data>
+  <data name="MarketplacePluginName_WindowsServicePlugin" xml:space="preserve"><value>ColorVision Service Plugin</value></data>
+  <data name="MarketplacePluginDescription_WindowsServicePlugin" xml:space="preserve"><value>Service management tools for service logs, updates and related operations.</value></data>
+  <data name="局域网控制" xml:space="preserve"><value>LAN control</value></data>
+  <data name="启用后，手机可以扫描二维码连接到这台电脑上的 ColorVision。" xml:space="preserve"><value>When enabled, scan the QR code on your phone to connect to ColorVision on this computer.</value></data>
+  <data name="LanRemote_Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="LanRemote_Companion" xml:space="preserve"><value>Operations companion</value></data>
+  <data name="LanRemote_Introduction" xml:space="preserve"><value>Connect your phone to check status and handle maintenance requests. You control device access and local approvals.</value></data>
+  <data name="LanRemote_ConnectTab" xml:space="preserve"><value>Connect phone</value></data>
+  <data name="LanRemote_DevicesTab" xml:space="preserve"><value>Devices</value></data>
+  <data name="LanRemote_ConfirmationsTab" xml:space="preserve"><value>Local approval</value></data>
+  <data name="LanRemote_NetworkTab" xml:space="preserve"><value>Network</value></data>
+  <data name="LanRemote_InstallStep" xml:space="preserve"><value>1. Install the mobile app</value></data>
+  <data name="LanRemote_InstallDescription" xml:space="preserve"><value>Scan this code to download ColorVision. If already installed, continue to the next step.</value></data>
+  <data name="LanRemote_DownloadQr" xml:space="preserve"><value>Mobile app download QR code</value></data>
+  <data name="LanRemote_DownloadAddress" xml:space="preserve"><value>Mobile app download address</value></data>
+  <data name="LanRemote_OpenDownload" xml:space="preserve"><value>Open download page</value></data>
+  <data name="LanRemote_CopyDownload" xml:space="preserve"><value>Copy download link</value></data>
+  <data name="LanRemote_PairStep" xml:space="preserve"><value>2. Scan to pair</value></data>
+  <data name="LanRemote_PairDescription" xml:space="preserve"><value>Use the same network on your phone and computer, then scan this code in the app. Approve the device on this computer afterward.</value></data>
+  <data name="LanRemote_PairingQr" xml:space="preserve"><value>Short-lived secure pairing QR code</value></data>
+  <data name="LanRemote_SecureAddress" xml:space="preserve"><value>Secure maintenance address</value></data>
+  <data name="LanRemote_RefreshPairing" xml:space="preserve"><value>New pairing code</value></data>
+  <data name="LanRemote_CopySecureAddress" xml:space="preserve"><value>Copy secure address</value></data>
+  <data name="LanRemote_ReviewDevices" xml:space="preserve"><value>Review devices</value></data>
+  <data name="LanRemote_ApproveStep" xml:space="preserve"><value>3. Approve the device on this computer</value></data>
+  <data name="LanRemote_ApproveStepDescription" xml:space="preserve"><value>Check the device name shown on your phone, then approve it under Devices. Existing confirmation rules still apply to sensitive actions.</value></data>
+  <data name="LanRemote_PendingDevices" xml:space="preserve"><value>Pending devices</value></data>
+  <data name="LanRemote_PendingDescription" xml:space="preserve"><value>Check the name shown on the phone before approving. Unapproved devices cannot read maintenance data.</value></data>
+  <data name="LanRemote_PendingEmpty" xml:space="preserve"><value>No pending devices
+Scan the pairing code in the app to send a request.</value></data>
+  <data name="LanRemote_ApproveDevice" xml:space="preserve"><value>Approve access</value></data>
+  <data name="LanRemote_Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="LanRemote_PairedDevices" xml:space="preserve"><value>Paired devices</value></data>
+  <data name="LanRemote_PairedDescription" xml:space="preserve"><value>Revoking access immediately invalidates all signed requests from that device.</value></data>
+  <data name="LanRemote_PairedEmpty" xml:space="preserve"><value>No paired devices</value></data>
+  <data name="LanRemote_RevokeDevice" xml:space="preserve"><value>Revoke selected device</value></data>
+  <data name="LanRemote_LocalJobs" xml:space="preserve"><value>Jobs awaiting local approval</value></data>
+  <data name="LanRemote_LocalJobsDescription" xml:space="preserve"><value>The phone can confirm diagnostics, window snapshots, fixed MQTT recovery, or app restart. Restart is blocked during inspection. Web relay diagnostics and support sessions require local consent.</value></data>
+  <data name="LanRemote_JobsEmpty" xml:space="preserve"><value>No jobs awaiting local approval</value></data>
+  <data name="LanRemote_ConfirmJob" xml:space="preserve"><value>Approve and execute</value></data>
+  <data name="LanRemote_RejectLocally" xml:space="preserve"><value>Reject locally</value></data>
+  <data name="LanRemote_SupportRequests" xml:space="preserve"><value>Support requests</value></data>
+  <data name="LanRemote_SupportDescription" xml:space="preserve"><value>Diagnostics or guided support only, for up to 30 minutes. Arbitrary remote desktop access and commands are unavailable.</value></data>
+  <data name="LanRemote_SupportEmpty" xml:space="preserve"><value>No support requests</value></data>
+  <data name="LanRemote_ConsentSupport" xml:space="preserve"><value>Allow support session</value></data>
+  <data name="LanRemote_SupportDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="LanRemote_SupportGuided" xml:space="preserve"><value>Guided support</value></data>
+  <data name="LanRemote_NetworkTitle" xml:space="preserve"><value>Connection and listeners</value></data>
+  <data name="LanRemote_NetworkDescription" xml:space="preserve"><value>Choose a local IPv4 address your phone can reach. Pairing uses the secure HTTPS channel.</value></data>
+  <data name="LanRemote_QrAddress" xml:space="preserve"><value>Pairing address</value></data>
+  <data name="LanRemote_LegacyPort" xml:space="preserve"><value>HTTP listener port</value></data>
+  <data name="LanRemote_LegacyPortDescription" xml:space="preserve"><value>Existing LAN control endpoint. Changing this port restarts the listener. Mobile pairing uses the HTTPS port below.</value></data>
+  <data name="LanRemote_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="LanRemote_SecurePort" xml:space="preserve"><value>Secure HTTPS port</value></data>
+  <data name="LanRemote_RefreshStatus" xml:space="preserve"><value>Refresh status</value></data>
+  <data name="LanRemote_ReadyHint" xml:space="preserve"><value>Connect with a short-lived pairing code. Approve device access on this computer.</value></data>
+  <data name="LanRemote_Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="LanRemote_Running" xml:space="preserve"><value>Secure channel running</value></data>
+  <data name="LanRemote_StartFailed" xml:space="preserve"><value>Secure channel failed to start. Check network settings.</value></data>
+  <data name="LanRemote_EnableToPair" xml:space="preserve"><value>Enable to show a pairing code</value></data>
+  <data name="LanRemote_PairingExpired" xml:space="preserve"><value>Pairing code expired
+Generate a new code.</value></data>
+  <data name="LanRemote_PairingSubmitted" xml:space="preserve"><value>Pairing request submitted
+Review it under Devices.</value></data>
+  <data name="LanRemote_PairingExpires" xml:space="preserve"><value>Valid until {0} · Single use</value></data>
+  <data name="LanRemote_PairingLifetime" xml:space="preserve"><value>Pairing codes last 2 minutes and can be submitted once.</value></data>
+  <data name="LanRemote_DownloadCopied" xml:space="preserve"><value>Mobile app download link copied.</value></data>
+  <data name="LanRemote_AddressCopied" xml:space="preserve"><value>Secure connection address copied.</value></data>
+  <data name="LanRemote_StatusUpdated" xml:space="preserve"><value>Status refreshed.</value></data>
+  <data name="LanRemote_PairingUpdated" xml:space="preserve"><value>New pairing code generated. Scan it within two minutes.</value></data>
+  <data name="LanRemote_SelectApproveDevice" xml:space="preserve"><value>Select a device to approve.</value></data>
+  <data name="LanRemote_SelectRejectDevice" xml:space="preserve"><value>Select a device to reject.</value></data>
+  <data name="LanRemote_SelectRevokeDevice" xml:space="preserve"><value>Select a device to revoke.</value></data>
+  <data name="LanRemote_DeviceApproved" xml:space="preserve"><value>Maintenance access approved for {0}.</value></data>
+  <data name="LanRemote_DeviceRejected" xml:space="preserve"><value>Rejected {0}.</value></data>
+  <data name="LanRemote_DeviceRevoked" xml:space="preserve"><value>Revoked access for {0}.</value></data>
+  <data name="LanRemote_RequestUnavailable" xml:space="preserve"><value>This request is no longer available. Refresh status and try again.</value></data>
+  <data name="LanRemote_SelectJob" xml:space="preserve"><value>Select a job to approve locally.</value></data>
+  <data name="LanRemote_EvidenceFailed" xml:space="preserve"><value>Evidence capture failed: {0}</value></data>
+  <data name="LanRemote_SnapshotConfirmationTitle" xml:space="preserve"><value>Confirm main window snapshot</value></data>
+  <data name="LanRemote_SnapshotConfirmation" xml:space="preserve"><value>A JPEG of the ColorVision main window will be captured immediately.
+
+The desktop is excluded, but visible inspection or customer data may be included. The snapshot is retained for 5 minutes, can be read once by the requesting device, and is deleted from this computer after reading.
+
+Continue?</value></data>
+  <data name="LanRemote_NoAddresses" xml:space="preserve"><value>No LAN IPv4 address found. Connect your phone and computer to the same Wi-Fi or subnet.</value></data>
+  <data name="LanRemote_AvailableAddresses" xml:space="preserve"><value>Available addresses: {0}</value></data>
+  <data name="LanRemote_Automatic" xml:space="preserve"><value>Automatic</value></data>
+  <data name="LanRemote_AutomaticAddress" xml:space="preserve"><value>Automatic ({0})</value></data>
+  <data name="LanRemote_TabCount" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="LanRemote_LegacyDisabled" xml:space="preserve"><value>LAN control is disabled.</value></data>
+  <data name="LanRemote_LegacyRunning" xml:space="preserve"><value>LAN control running: {0}</value></data>
+  <data name="LanRemote_LegacyRestarting" xml:space="preserve"><value>LAN control is restarting.</value></data>
+  <data name="LanRemote_LegacyPortFailed" xml:space="preserve"><value>LAN control failed to start. Port {0} is unavailable: {1}</value></data>
+  <data name="LanRemote_LegacyStartFailed" xml:space="preserve"><value>LAN control failed to start: {0}</value></data>
+  <data name="LanRemote_JobTitle_Snapshot" xml:space="preserve"><value>Capture a ColorVision main window snapshot</value></data>
+  <data name="LanRemote_JobTitle_Diagnostics" xml:space="preserve"><value>Create a sanitized diagnostic bundle</value></data>
+  <data name="LanRemote_JobTitle_ServiceRestart" xml:space="preserve"><value>Restart the allowed MQTT service</value></data>
+  <data name="LanRemote_JobTitle_ApplicationRestart" xml:space="preserve"><value>Restart ColorVision</value></data>
+  <data name="LanRemote_JobTitle_Reconnect" xml:space="preserve"><value>Recover the ColorVision message channel</value></data>
+  <data name="LanRemote_JobTitle_CancelFlow" xml:space="preserve"><value>Cancel the active main inspection flow</value></data>
+  <data name="LanRemote_JobTitle_Other" xml:space="preserve"><value>Maintenance job</value></data>
+  <data name="LanRemote_JobNotice_Snapshot" xml:space="preserve"><value>Captures only the ColorVision main window, which may include visible inspection data. Captured immediately after phone confirmation. The JPEG lasts 5 minutes and is deleted after one read by the requesting device.</value></data>
+  <data name="LanRemote_JobNotice_Diagnostics" xml:space="preserve"><value>After explicit phone confirmation, creates a sanitized ZIP excluding images, credentials, usernames, machine names, network addresses, and raw logs.</value></data>
+  <data name="LanRemote_JobNotice_ServiceRestart" xml:space="preserve"><value>Only restarts the fixed Mosquitto service via ServiceHost. Runs after explicit phone confirmation without another local approval.</value></data>
+  <data name="LanRemote_JobNotice_ApplicationRestart" xml:space="preserve"><value>Restarts only the current ColorVision app cleanly. Paths, arguments, and other processes are excluded. Rejected during inspection.</value></data>
+  <data name="LanRemote_JobNotice_Reconnect" xml:space="preserve"><value>Rebuilds the existing fixed connection and registered subscriptions only when the message client is disconnected or subscriptions are not ready. Accepts no address, topic, credentials, or arguments.</value></data>
+  <data name="LanRemote_JobNotice_CancelFlow" xml:space="preserve"><value>Requests cancellation only for the active inspection in the main workspace. Accepts no flow, node, or arguments. No additional local approval is required.</value></data>
+  <data name="LanRemote_JobNotice_Other" xml:space="preserve"><value>Check the job source and its fixed capability scope.</value></data>
+  <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>Secure maintenance channel is disabled.</value></data>
+  <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>Secure maintenance channel running on HTTPS port {0}.</value></data>
+  <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>Secure maintenance channel failed to start: {0}</value></data>
 </root>

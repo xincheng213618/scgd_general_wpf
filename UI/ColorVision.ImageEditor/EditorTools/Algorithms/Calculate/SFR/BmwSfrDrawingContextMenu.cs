@@ -230,7 +230,7 @@ public sealed class BmwSfrRectangleContextMenu(ImageProcessingContext image,Draw
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if(obj is not IRectangle rectangle)return [];
-        var run=new MenuItem { Header="四边 SFR…" };
+        var run=new MenuItem { Header=Properties.Resources.Algorithm_FourEdgeSfr };
         run.Click+=(_,_)=>BmwDrawingAnalysisRunner.Run(image,draw,BmwDrawingAnalysisRunner.SelectRectangles(draw,rectangle));
         return [run];
     }

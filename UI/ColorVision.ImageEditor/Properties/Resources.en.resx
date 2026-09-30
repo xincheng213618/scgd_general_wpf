@@ -68,46 +68,46 @@
     <value>Zoom Out</value>
   </data>
   <data name="ZoomUniform" xml:space="preserve">
-    <value>Uniform</value>
+    <value>Fit to Window</value>
   </data>
   <data name="Property" xml:space="preserve">
     <value>P_roperty</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>_Open</value>
+    <value>_Open…</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
   </data>
   <data name="RestoreOriginalImage" xml:space="preserve">
-    <value>Restore Original</value>
+    <value>Restore Original Image</value>
   </data>
   <data name="Rotate" xml:space="preserve">
     <value>Rotate</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
-    <value>Rotate Left</value>
+    <value>Rotate 90° Counterclockwise</value>
   </data>
   <data name="RotateRight" xml:space="preserve">
-    <value>Rotate Right</value>
+    <value>Rotate 90° Clockwise</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>Flip Horizontal</value>
+    <value>Flip Horizontally</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>Flip Vertical</value>
+    <value>Flip Vertically</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
     <value>Full Screen</value>
   </data>
   <data name="Print" xml:space="preserve">
-    <value>Print</value>
+    <value>Print…</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
-    <value>Save as Image</value>
+    <value>Save Snapshot As…</value>
   </data>
   <data name="BitmapScalingMode" xml:space="preserve">
-    <value>Scaling Quality</value>
+    <value>Interpolation</value>
   </data>
   <data name="Invert" xml:space="preserve">
     <value>Invert</value>
@@ -146,34 +146,34 @@
     <value>Display message</value>
   </data>
   <data name="AutoLevelsAdjustment" xml:space="preserve">
-    <value>Automatic Levels Adjustment</value>
+    <value>Auto Levels</value>
   </data>
   <data name="WhiteBalanceAdjustment" xml:space="preserve">
-    <value>White balance adjustment</value>
+    <value>White Balance…</value>
   </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>Basic adjustment...</value>
+    <value>Basic Adjustments…</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
-    <value>Threshold processing</value>
+    <value>Threshold…</value>
   </data>
   <data name="MoireRemove" xml:space="preserve">
-    <value>Remove moiré patterns</value>
+    <value>Remove Moiré</value>
   </data>
   <data name="Sharpening" xml:space="preserve">
     <value>Sharpen</value>
   </data>
   <data name="GaussianBlur" xml:space="preserve">
-    <value>Gaussian blur</value>
+    <value>Gaussian Blur…</value>
   </data>
   <data name="MedianFilter" xml:space="preserve">
-    <value>Median filtering</value>
+    <value>Median Filter…</value>
   </data>
   <data name="Canny" xml:space="preserve">
-    <value>Edge detection (Canny)</value>
+    <value>Canny Edge Detection…</value>
   </data>
   <data name="HistogramEqualization" xml:space="preserve">
-    <value>Histogram equalization</value>
+    <value>Histogram Equalization</value>
   </data>
   <data name="MenuModelViewer3D" xml:space="preserve">
     <value>3D Model Viewer</value>
@@ -719,7 +719,7 @@
     <value>Error</value>
   </data>
   <data name="Algorithm_SfrMtfAnalysis" xml:space="preserve">
-    <value>Slanted-Edge Sharpness (SFR/MTF)</value>
+    <value>Slanted-Edge SFR/MTF Analysis</value>
   </data>
   <data name="Histogram_Title" xml:space="preserve">
     <value>Histogram</value>
@@ -1050,29 +1050,50 @@ Double-click object: Focus</value>
   <data name="Cie_Results" xml:space="preserve"><value>Results</value></data>
   <data name="Algorithm_GroupTone" xml:space="preserve"><value>Tone and Color</value></data>
   <data name="Algorithm_GroupMorphology" xml:space="preserve"><value>Thresholding and Morphology</value></data>
-  <data name="Algorithm_GroupCorrection" xml:space="preserve"><value>Transform and Correction</value></data>
-  <data name="Algorithm_GroupLocalization" xml:space="preserve"><value>Localization and Geometry</value></data>
+  <data name="Algorithm_GroupCorrection" xml:space="preserve"><value>Geometric Transforms and Correction</value></data>
+  <data name="Algorithm_GroupLocalization" xml:space="preserve"><value>Feature Detection and Geometry</value></data>
   <data name="Algorithm_GroupFieldGeometry" xml:space="preserve"><value>Field of View and Distortion</value></data>
-  <data name="Algorithm_GroupImageQuality" xml:space="preserve"><value>Sharpness and Frequency</value></data>
-  <data name="Algorithm_GroupColorRegistration" xml:space="preserve"><value>Color and Registration</value></data>
+  <data name="Algorithm_GroupImageQuality" xml:space="preserve"><value>Sharpness and Frequency Analysis</value></data>
+  <data name="Algorithm_GroupColorRegistration" xml:space="preserve"><value>Color and Channel Registration</value></data>
   <data name="Algorithm_GroupDefects" xml:space="preserve"><value>Defects and Ghosting</value></data>
   <data name="Algorithm_GroupStatistics" xml:space="preserve"><value>Intensity and Statistics</value></data>
-  <data name="Algorithm_GroupStereo" xml:space="preserve"><value>Binocular and Eyebox</value></data>
+  <data name="Algorithm_GroupStereo" xml:space="preserve"><value>Stereo and Eyebox</value></data>
   <data name="Algorithm_FindCross" xml:space="preserve"><value>Cross Center and Tilt</value></data>
   <data name="Algorithm_FindLuminousArea" xml:space="preserve"><value>Luminous Area Localization</value></data>
   <data name="Algorithm_FindLightBeads" xml:space="preserve"><value>LED Localization</value></data>
   <data name="Algorithm_FieldOfView" xml:space="preserve"><value>Field of View Measurement (FOV)</value></data>
   <data name="Algorithm_GridDistortion" xml:space="preserve"><value>Dot Grid Distortion</value></data>
   <data name="Algorithm_NinePointDistortion" xml:space="preserve"><value>Nine-Point Distortion</value></data>
-  <data name="Algorithm_GhostDetection" xml:space="preserve"><value>Ghost Detection</value></data>
+  <data name="Algorithm_GhostDetection" xml:space="preserve"><value>Ghosting Detection</value></data>
   <data name="Algorithm_RotatedTemplate" xml:space="preserve"><value>Rotation-Aware Template Matching</value></data>
   <data name="Algorithm_SurfaceDefects" xml:space="preserve"><value>Surface Defect Detection (Mura)</value></data>
-  <data name="Algorithm_RgbCross" xml:space="preserve"><value>RGB Cross Separation...</value></data>
-  <data name="Algorithm_RgbRegistration" xml:space="preserve"><value>RGB Pattern Registration...</value></data>
-  <data name="Algorithm_GhostMetrology" xml:space="preserve"><value>Ghost and Stray Light Evaluation...</value></data>
-  <data name="Algorithm_DisplayDefects" xml:space="preserve"><value>Display Defects (Points / Lines / Mura)...</value></data>
-  <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>Binocular Alignment and Signal Consistency...</value></data>
-  <data name="Algorithm_Eyebox" xml:space="preserve"><value>Eyebox Scan Evaluation...</value></data>
-  <data name="Algorithm_FieldSfr" xml:space="preserve"><value>Full-Field Slanted-Edge SFR...</value></data>
-  <data name="Algorithm_DustDetection" xml:space="preserve"><value>Dust / contamination detection...</value></data>
+  <data name="Algorithm_RgbCross" xml:space="preserve"><value>RGB Cross Registration…</value></data>
+  <data name="Algorithm_RgbRegistration" xml:space="preserve"><value>RGB Pattern Registration…</value></data>
+  <data name="Algorithm_GhostMetrology" xml:space="preserve"><value>Ghosting and Stray Light Analysis…</value></data>
+  <data name="Algorithm_DisplayDefects" xml:space="preserve"><value>Display Defects (Points, Lines and Mura)…</value></data>
+  <data name="Algorithm_BinocularQuality" xml:space="preserve"><value>Binocular Alignment and Signal Consistency…</value></data>
+  <data name="Algorithm_Eyebox" xml:space="preserve"><value>Eyebox Scan Analysis…</value></data>
+  <data name="Algorithm_FieldSfr" xml:space="preserve"><value>Full-Field Slanted-Edge SFR…</value></data>
+  <data name="Algorithm_DustDetection" xml:space="preserve"><value>Dust and Contamination Detection…</value></data>
+  <data name="ImageView_ContextSettings" xml:space="preserve"><value>Settings…</value></data>
+  <data name="ImageView_AskAiAboutImage" xml:space="preserve"><value>Analyze Image with AI…</value></data>
+  <data name="ImageView_CopilotImagePrompt" xml:space="preserve"><value>Review the attached image metadata, selections/ROIs and annotation summaries. Identify potential image-quality issues and measurement risks, and suggest what to check next. The context contains structured information only, with no image pixels; keep the analysis within those limits.</value></data>
+  <data name="ImageView_CurrentImageContext" xml:space="preserve"><value>Current Image</value></data>
+  <data name="ImageView_BatchProcessing" xml:space="preserve"><value>Batch Image Processing…</value></data>
+  <data name="Algorithm_FourEdgeSfr" xml:space="preserve"><value>Four-Edge SFR Analysis…</value></data>
+  <data name="BitmapScaling_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="BitmapScaling_Bilinear" xml:space="preserve"><value>Bilinear (Fast)</value></data>
+  <data name="BitmapScaling_Fant" xml:space="preserve"><value>Fant (High Quality)</value></data>
+  <data name="BitmapScaling_NearestNeighbor" xml:space="preserve"><value>Nearest Neighbor (Hard Edges)</value></data>
+  <data name="Algorithm_Erode" xml:space="preserve"><value>Erode…</value></data>
+  <data name="Algorithm_Dilate" xml:space="preserve"><value>Dilate…</value></data>
+  <data name="Algorithm_MorphologyEx" xml:space="preserve"><value>Morphological Operations…</value></data>
+  <data name="Algorithm_BilateralFilter" xml:space="preserve"><value>Bilateral Filter…</value></data>
+  <data name="Algorithm_Blur" xml:space="preserve"><value>Box Blur…</value></data>
+  <data name="Algorithm_GeometricTransform" xml:space="preserve"><value>Geometric Transform…</value></data>
+  <data name="Algorithm_ImageRegistration" xml:space="preserve"><value>Image Registration…</value></data>
+  <data name="Algorithm_LensDistortionCorrection" xml:space="preserve"><value>Lens Distortion Correction…</value></data>
+  <data name="Algorithm_ImagingCorrection" xml:space="preserve"><value>Image Correction…</value></data>
+  <data name="Algorithm_FrequencySpectrum" xml:space="preserve"><value>Frequency Spectrum Analysis…</value></data>
+  <data name="Algorithm_MoireAnalysis" xml:space="preserve"><value>Moiré Analysis…</value></data>
 </root>

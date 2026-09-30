@@ -947,4 +947,22 @@ Startup driver: {1}    USB driver: {2}</value>
   <data name="CameraDriverWizardRestartRequired" xml:space="preserve">
     <value>The installer requires a Windows restart. Save your work and restart Windows, then reconnect the camera and check again.</value>
   </data>
+  <data name="ConfigDesktopPetAsset" xml:space="preserve">
+    <value>Pet assets</value>
+  </data>
+  <data name="ConfigDesktopPetAssetDescription" xml:space="preserve">
+    <value>Use ColorVision, Codex or custom pet.json assets.</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegration" xml:space="preserve">
+    <value>Follow Copilot</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotIntegrationDescription" xml:space="preserve">
+    <value>Follow Copilot activity while running, awaiting approval, completing or failing.</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotifications" xml:space="preserve">
+    <value>Show Copilot notifications</value>
+  </data>
+  <data name="ConfigDesktopPetCopilotNotificationsDescription" xml:space="preserve">
+    <value>Show a pet notification when Copilot needs approval, completes or fails.</value>
+  </data>
 </root>
