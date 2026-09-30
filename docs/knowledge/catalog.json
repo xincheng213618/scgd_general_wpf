@@ -1346,7 +1346,7 @@
       "knowledge_id": "algorithms.platform",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。",
+      "summary": "图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。",
       "aliases": [
         "有哪些本地图像算法",
         "为什么算法有源码但菜单没有",
@@ -1370,7 +1370,10 @@
         "ConvertBatchImages",
         "OpenBatchImageProcessing",
         "colorvision-batch-image-conversion",
-        "批量图片处理"
+        "批量图片处理",
+        "本地算法扩展",
+        "StandardAlgorithmCatalog",
+        "IImageAlgorithmProvider"
       ],
       "code_paths": [
         "UI/ColorVision.Algorithms",
@@ -1406,6 +1409,8 @@
         "algorithms.onnx",
         "ui.index",
         "ui.image-editor",
+        "ui.image-editor-context",
+        "engine.results",
         "engine.cv-image-export"
       ],
       "code_scopes": [
@@ -5480,7 +5485,7 @@
       "knowledge_id": "engine.results",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。",
+      "summary": "图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。",
       "aliases": [
         "结果交接",
         "算法结果管理",
@@ -5507,7 +5512,11 @@
         "IViewResult",
         "IResultHandleBase",
         "CanHandle1",
-        "AlgorithmOverlayManager"
+        "AlgorithmOverlayManager",
+        "本地算法结果叠加",
+        "AlgorithmOverlayRenderer",
+        "AlgorithmGeometryArtifact",
+        "AlgorithmOverlayArtifact"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs",
@@ -6179,7 +6188,7 @@
       "knowledge_id": "flow.session",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。",
+      "summary": "从工作流程面板或流程编辑器开始执行；流程停止请求与结果返回按启动准备、引擎和前后处理收尾分阶段判断，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。",
       "aliases": [
         "工作流程",
         "流程编辑器",
@@ -6361,7 +6370,7 @@
       "knowledge_id": "governance.home",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "ColorVision AI优先知识入口：按问题定位能力、代码、测试与维护约束。",
+      "summary": "ColorVision AGENTS.md 的按需知识扩展入口，网页展示同一份主题资料。",
       "aliases": [
         "ColorVision",
         "从哪里开始",
@@ -6388,7 +6397,7 @@
       "knowledge_id": "governance.knowledge",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "说明仓库知识入口、按需检索、源码核对和文档与代码同步维护的共同规则。",
+      "summary": "说明 AGENTS.md 的按需知识扩展、权威主题与生成资料各自的职责和入口。",
       "aliases": [
         "文档怎么用",
         "AI共治",
@@ -6430,7 +6439,7 @@
       "knowledge_id": "governance.maintenance",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "定义AI与人共同维护知识的字段、事实责任、源码反向影响检查和验收流程。",
+      "summary": "定义按需知识扩展的元数据、更新流程和按变更选择的验证范围。",
       "aliases": [
         "如何更新文档",
         "知识过期",
@@ -6473,7 +6482,7 @@
       "knowledge_id": "governance.retrieval",
       "knowledge_type": "guide",
       "status": "current",
-      "summary": "用固定检索问题和无个人记忆的源码问答抽样，验证知识入口能否定位正确模块、边界和测试。",
+      "summary": "定义本地知识查询的 CLI、匹配契约和独立问题抽样方法，供检索工具维护时使用。",
       "aliases": [
         "文档验收",
         "冷启动",
@@ -11505,7 +11514,7 @@
       "knowledge_id": "ui.settings",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。",
+      "summary": "设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。",
       "aliases": [
         "设置窗口",
         "选项",

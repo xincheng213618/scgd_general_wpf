@@ -750,6 +750,10 @@
     {"query":"增加一个属性编辑器","expected_any":["ui.property-grid"],"include_planned":false},
     {"query":"画好流程以后从哪里开始执行","expected_any":["flow.session"],"include_planned":false},
     {"query":"流程卡住后怎样安全停下来","expected_any":["flow.session"],"include_planned":false},
-    {"query":"软件设置改坏了怎么用备份恢复","expected_any":["ui.configuration","operations.exports"],"include_planned":false}
+    {"query":"软件设置改坏了怎么用备份恢复","expected_any":["ui.configuration","operations.exports"],"include_planned":false},
+    {"query":"给图像编辑器加一个本地算法，结果如何画到图上","expected_any":["algorithms.platform"],"include_planned":false},
+    {"query":"本地算法结果的几何和叠加如何显示","expected_any":["engine.results"],"include_planned":false},
+    {"query":"设置窗口关闭以后，刚才的修改会不会保存","expected_any":["ui.settings"],"include_planned":false},
+    {"query":"流程已经停止了，为什么结果还在返回","expected_any":["flow.session"],"include_planned":false}
   ]
 }

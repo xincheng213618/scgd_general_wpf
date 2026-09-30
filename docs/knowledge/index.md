@@ -10,7 +10,7 @@ next: false
 
 > 由 Markdown 元数据生成。不要手工编辑；在仓库根目录运行 `node docs/.vitepress/scripts/knowledge.mjs generate`。
 
-从现有 `AGENTS.md` 读取工作约束，再按源码职责进入模块；索引只负责定位，修改前核对正文、关联源码及测试。`规划`、`历史`不是当前能力。
+`docs/` 是 `AGENTS.md` 的按需知识扩展。已知主题时直接读取正文和必要源码；归属不清时使用下面的地图或离线检索。
 
 离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。
 
