@@ -58,6 +58,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string GetCompactSummaryValue() => CompactValueOrDash(Path.GetFileName(ImageFileUrl));
 
+        public override string OnGetDrawTitle() => Title is "加载图片" or "Load Image" or "載入圖片"
+            ? Properties.Resources.Engine_PG_LocalImage
+            : base.OnGetDrawTitle();
+
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             string fileUrl = ResolveFileUrl();

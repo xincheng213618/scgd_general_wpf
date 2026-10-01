@@ -1,6 +1,10 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
 using ColorVision.UI.Desktop.Diagnostics;
 using ColorVision.UI.Desktop.LanRemote;
 using ColorVision.UI.Desktop.Marketplace;
@@ -10,6 +14,7 @@ using MQTTMessageLib.Algorithm;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -20,6 +25,76 @@ namespace ColorVision.UI.Tests;
 [Collection(AssemblyDiscoveryCollection.CollectionName)]
 public sealed class ScreenshotLocalizationTests
 {
+    [Theory]
+    [InlineData("zh-Hans", "黑画面检测", "黑画面检测模板", "关注点模板", "就绪")]
+    [InlineData("en-US", "Black Screen Detection", "Black Screen Template", "POI Template", "Ready")]
+    [InlineData("zh-Hant", "黑畫面檢測", "黑畫面檢測範本", "關注點範本", "就緒")]
+    public void AlgorithmPanelLocalizesLabelsAndKeepsTemplateIdentity(string culture, string algorithm, string template, string poi, string ready)
+    {
+        WithCulture(culture, () =>
+        {
+            var metadata = typeof(AlgorithmFPForBlackScreen).GetCustomAttribute<DisplayAlgorithmAttribute>()!;
+            Assert.Equal(algorithm, metadata.DisplayName);
+            Assert.Equal("黑画面检测", metadata.Name);
+            Assert.Equal(57, metadata.Order);
+            var sample = new PoiParam { Id = 42, Name = "客户黑画面模板" };
+            var items = new[] { new KeyValuePair<string, PoiParam>(sample.Name, sample) };
+            var primary = new DisplayAlgorithmTemplateSelection("黑画面检测模板", new TemplatePoi(), "请先选择黑画面检测模板", itemsSource: () => items);
+            var secondary = new DisplayAlgorithmTemplateSelection("关注点模板", new TemplatePoi(), "请先选择关注点模板", itemsSource: () => items);
+            var config = new DualTemplateDisplayAlgorithmConfig(primary, secondary);
+            var panel = Assert.IsType<StackPanel>(new DisplayAlgorithmConfigurationBuilder().Build(config));
+            var rows = panel.Children.OfType<Grid>().ToArray();
+            Assert.Equal(new[] { template, poi }, rows.SelectMany(row => row.Children.OfType<TextBlock>()).Select(label => label.Text));
+            Assert.All(rows.SelectMany(row => row.Children.OfType<TextBlock>()), label => Assert.Equal(TextWrapping.Wrap, label.TextWrapping));
+            var combo = Assert.Single(rows[0].Children.OfType<ComboBox>());
+            Assert.Equal(0, combo.SelectedIndex);
+            Assert.Same(sample, primary.SelectedValue);
+            Assert.Equal("客户黑画面模板", primary.SelectedName);
+            Assert.Equal(42, sample.Id);
+            Assert.Equal(ready, new ColorVision.Solution.SolutionManager(restoreLastWorkspace: false).WorkspaceOpenStatus);
+        });
+    }
+
+    [Fact]
+    public void EnglishAlgorithmCatalogAndTemplatePromptsDoNotFallBackToChinese()
+    {
+        WithCulture("en-US", () =>
+        {
+            var algorithms = typeof(DisplayAlgorithmAttribute).Assembly.GetTypes()
+                .Select(type => type.GetCustomAttribute<DisplayAlgorithmAttribute>())
+                .Where(attribute => attribute != null).Cast<DisplayAlgorithmAttribute>().ToArray();
+            Assert.NotEmpty(algorithms);
+            Assert.All(algorithms, attribute => Assert.DoesNotMatch("[\\u3400-\\u9fff]", attribute.DisplayName));
+            Assert.Equal("Emitting Area Location", Assert.Single(algorithms, attribute => attribute.Name == "EmittingAreaLocation,").DisplayName);
+            var selection = new DisplayAlgorithmTemplateSelection("黑画面检测模板", new TemplatePoi(), "请先选择黑画面检测模板", itemsSource: () => Array.Empty<object>());
+            Assert.False(selection.IsSelectionValid());
+            Assert.Equal("Select a black screen template first", selection.ValidationMessage);
+        });
+    }
+
+    [Theory]
+    [InlineData("zh-Hans", "加载图片")]
+    [InlineData("en-US", "Load Image")]
+    [InlineData("zh-Hant", "載入圖片")]
+    public void SavedDefaultImageTitleUsesCurrentLanguageWithoutRewritingSavedOrCustomTitles(string culture, string displayTitle)
+    {
+        WithCulture(culture, () =>
+        {
+            var node = new LocalImageNode();
+            node.Create();
+            foreach (string savedTitle in new[] { "加载图片", "Load Image", "載入圖片" })
+            {
+                node.OnLoadNode(new Dictionary<string, byte[]> { ["Title"] = Encoding.UTF8.GetBytes(savedTitle) });
+                byte[] before = node.GetSaveData();
+                Assert.Equal(displayTitle, node.OnGetDrawTitle());
+                Assert.Equal(savedTitle, node.Title);
+                Assert.Equal(before, node.GetSaveData());
+            }
+            node.Title = "客户自定义图片节点";
+            Assert.Equal("客户自定义图片节点", node.OnGetDrawTitle());
+        });
+    }
+
     [Theory]
     [InlineData("zh-Hans", "POI模板", "存储类型", "数据库", "文件")]
     [InlineData("en-US", "POI template", "Storage Type", "Database", "File")]

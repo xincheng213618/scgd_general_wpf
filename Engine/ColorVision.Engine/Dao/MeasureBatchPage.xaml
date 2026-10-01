@@ -11,7 +11,7 @@
       d:DesignHeight="720" d:DesignWidth="1280"
       Title="{x:Static properties:Resources.BatchResults}"
       Initialized="Page_Initialized"
-      Loaded="Page_Loaded"
+      Loaded="Page_LifetimeLoaded"
       Unloaded="Page_Unloaded">
     <Page.Resources>
         <Style TargetType="TextBlock">

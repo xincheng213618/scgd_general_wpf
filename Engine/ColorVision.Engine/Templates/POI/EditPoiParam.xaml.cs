@@ -60,11 +60,16 @@ namespace ColorVision.Engine.Templates.POI
             PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
 
-            this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
+            Closed += (_, _) =>
             {
                 _isClosing = true;
+                var config = EditPoiParamConfig.Instance;
+                // Persist preferences without retaining columns or menu handlers from this window.
+                if (ReferenceEquals(config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                    config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                        new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
                 ImageView?.Dispose();
-            }))));
+            };
             this.Title = poiParam.Name + "-" + this.Title;
         }
 

@@ -123,9 +123,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 .Distinct()
                 .Where(group => !string.IsNullOrWhiteSpace(group) && group != _allAlgorithmsGroup));
 
-            string previousGroup = CB_AlgorithmTypes.SelectedItem as string ?? Device.DisplayConfig.LastSelectGroup;
-            CB_AlgorithmTypes.ItemsSource = groups;
-            CB_AlgorithmTypes.SelectedItem = groups.Contains(previousGroup)
+            string previousGroup = CB_AlgorithmTypes.SelectedValue as string ?? Device.DisplayConfig.LastSelectGroup;
+            CB_AlgorithmTypes.ItemsSource = groups
+                .Select(group => new KeyValuePair<string, string>(group, EngineLocalization.Get(group)))
+                .ToList();
+            CB_AlgorithmTypes.SelectedValue = groups.Contains(previousGroup)
                 ? previousGroup
                 : _allAlgorithmsGroup;
 
@@ -134,7 +136,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void CB_AlgorithmTypesChanged()
         {
-            if (CB_AlgorithmTypes.SelectedItem is not string selectedGroup)
+            if (CB_AlgorithmTypes.SelectedValue is not string selectedGroup)
             {
                 return;
             }

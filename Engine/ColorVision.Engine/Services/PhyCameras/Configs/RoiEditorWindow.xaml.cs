@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = this;
+            Closed += (_, _) => PreviewImageView.Dispose();
             Loaded += (_, _) =>
             {
                 ConfigurePreviewImageView();

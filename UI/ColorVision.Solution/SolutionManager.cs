@@ -136,8 +136,8 @@ namespace ColorVision.Solution
         }
         private string _openingWorkspacePath = string.Empty;
         public string WorkspaceOpenStatus => IsOpeningWorkspace
-            ? $"正在打开：{Path.GetFileName(OpeningWorkspacePath)}"
-            : "就绪";
+            ? DisplayText.Format($"正在打开：{Path.GetFileName(OpeningWorkspacePath)}")
+            : DisplayText.Get("就绪");
 
         public SolutionManager() : this(restoreLastWorkspace: true, tryCloseWorkspaceDocuments: null)
         {

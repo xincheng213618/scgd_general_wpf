@@ -76,6 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = Device;
+            Closed += (_, _) => Dispose();
             Device.CameraBackend.Changed += Backend_Changed;
             if (_sourceNode != null)
             {
@@ -413,7 +414,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             SaveLocalPreferences();
             SaveDisplayConfig();
-            Dispose();
         }
 
         cvCameraCSLib.QHYCCDProcCallBack callback;
@@ -1213,6 +1213,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
             Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;
             _localRealtimePipeline.Dispose();
+            ImageView.Dispose();
+            rawArray = null;
+            srcrawArray = null;
             GC.SuppressFinalize(this);
         }
     }

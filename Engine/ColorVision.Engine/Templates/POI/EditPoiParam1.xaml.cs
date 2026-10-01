@@ -194,14 +194,19 @@ namespace ColorVision.Engine.Templates.POI
             _keyboardRecalculationTimer.Stop();
             PoiImageViewComponent.SetIsTemplateSelectorEnabled(ImageView, false);
             this.ApplyCaption();
-            this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
+            Closed += (_, _) =>
             {
                 _isClosing = true;
                 _keyboardRecalculationTimer.Stop();
                 _dirtyKeyboardKeys.Clear();
                 ReleaseKeyboardCalibration();
+                var config = EditPoiParam1Config.Instance;
+                // Persist preferences without retaining columns or menu handlers from this window.
+                if (ReferenceEquals(config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                    config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                        new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
                 ImageView?.Dispose();
-            }))));
+            };
             this.Title = poiParam.Name + "-" + this.Title;
         }
 
@@ -1932,8 +1937,8 @@ namespace ColorVision.Engine.Templates.POI
             };
             window.ApplyCaption();
             window.ContentRendered += (_, _) => preview.UpdateZoomAndScale();
+            window.Closed += (_, _) => preview.Dispose();
             window.Show();
-            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(preview.Clear));
         }
 
         private static void AddKeyboardPreviewRect(

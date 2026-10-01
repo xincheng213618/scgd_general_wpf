@@ -1374,4 +1374,10 @@
   <data name="请选择一个项目" xml:space="preserve">
     <value>Select a project</value>
   </data>
+  <data name="就绪" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="正在打开：{0}" xml:space="preserve">
+    <value>Opening: {0}</value>
+  </data>
 </root>

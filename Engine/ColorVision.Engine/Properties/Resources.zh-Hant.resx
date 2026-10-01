@@ -7525,4 +7525,235 @@
   <data name="结果 ID：{0}" xml:space="preserve">
     <value>結果 ID：{0}</value>
   </data>
+  <data name="灯条Poi中心计算" xml:space="preserve">
+    <value>燈條 POI 中心計算</value>
+  </data>
+  <data name="发光区裁剪" xml:space="preserve">
+    <value>發光區裁切</value>
+  </data>
+  <data name="AA布点" xml:space="preserve">
+    <value>AA 布點</value>
+  </data>
+  <data name="POI分析" xml:space="preserve">
+    <value>POI 分析</value>
+  </data>
+  <data name="畸变2.0" xml:space="preserve">
+    <value>畸變 2.0</value>
+  </data>
+  <data name="亮点检测" xml:space="preserve">
+    <value>亮點檢測</value>
+  </data>
+  <data name="缺陷检测V2" xml:space="preserve">
+    <value>缺陷檢測 V2</value>
+  </data>
+  <data name="黑画面检测" xml:space="preserve">
+    <value>黑畫面檢測</value>
+  </data>
+  <data name="发光区定位1" xml:space="preserve">
+    <value>發光區定位 1</value>
+  </data>
+  <data name="键盘检测1" xml:space="preserve">
+    <value>鍵盤檢測 1</value>
+  </data>
+  <data name="发光区1" xml:space="preserve">
+    <value>發光區 1</value>
+  </data>
+  <data name="关注点布点" xml:space="preserve">
+    <value>關注點布點</value>
+  </data>
+  <data name="亚像素级灯珠检测" xml:space="preserve">
+    <value>次像素級燈珠檢測</value>
+  </data>
+  <data name="SFR寻边" xml:space="preserve">
+    <value>SFR 尋邊</value>
+  </data>
+  <data name="EmittingAreaLocation," xml:space="preserve">
+    <value>發光區定位</value>
+  </data>
+  <data name="定位算法" xml:space="preserve">
+    <value>定位演算法</value>
+  </data>
+  <data name="基础算法" xml:space="preserve">
+    <value>基礎演算法</value>
+  </data>
+  <data name="数据提取算法" xml:space="preserve">
+    <value>資料擷取演算法</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="灯条检测模板" xml:space="preserve">
+    <value>燈條檢測範本</value>
+  </data>
+  <data name="灯珠检测模板" xml:space="preserve">
+    <value>燈珠檢測範本</value>
+  </data>
+  <data name="发光区裁剪模板" xml:space="preserve">
+    <value>發光區裁切範本</value>
+  </data>
+  <data name="发光区检测模板" xml:space="preserve">
+    <value>發光區檢測範本</value>
+  </data>
+  <data name="关注点模板" xml:space="preserve">
+    <value>關注點範本</value>
+  </data>
+  <data name="黑画面检测模板" xml:space="preserve">
+    <value>黑畫面檢測範本</value>
+  </data>
+  <data name="畸变模板" xml:space="preserve">
+    <value>畸變範本</value>
+  </data>
+  <data name="键盘检测模板" xml:space="preserve">
+    <value>鍵盤檢測範本</value>
+  </data>
+  <data name="亮点检测模板" xml:space="preserve">
+    <value>亮點檢測範本</value>
+  </data>
+  <data name="缺陷检测V2模板" xml:space="preserve">
+    <value>缺陷檢測 V2 範本</value>
+  </data>
+  <data name="双目融合模板" xml:space="preserve">
+    <value>雙目融合範本</value>
+  </data>
+  <data name="AA布点模板" xml:space="preserve">
+    <value>AA 布點範本</value>
+  </data>
+  <data name="AAFindPoints模板" xml:space="preserve">
+    <value>AA 點位定位範本</value>
+  </data>
+  <data name="AOI模板" xml:space="preserve">
+    <value>AOI 範本</value>
+  </data>
+  <data name="BlackMura模板" xml:space="preserve">
+    <value>Black Mura 範本</value>
+  </data>
+  <data name="BuildPoi模板" xml:space="preserve">
+    <value>關注點布點範本</value>
+  </data>
+  <data name="Distortion模板" xml:space="preserve">
+    <value>畸變範本</value>
+  </data>
+  <data name="FindCross模板" xml:space="preserve">
+    <value>十字定位範本</value>
+  </data>
+  <data name="FocusPoints模板" xml:space="preserve">
+    <value>焦點範本</value>
+  </data>
+  <data name="FOV2.0模板" xml:space="preserve">
+    <value>FOV 2.0 範本</value>
+  </data>
+  <data name="Ghost模板" xml:space="preserve">
+    <value>鬼影範本</value>
+  </data>
+  <data name="ImageROI模板" xml:space="preserve">
+    <value>影像 ROI 範本</value>
+  </data>
+  <data name="LedCheck模板" xml:space="preserve">
+    <value>燈珠檢測範本</value>
+  </data>
+  <data name="LEDStripDetection模板" xml:space="preserve">
+    <value>燈帶檢測範本</value>
+  </data>
+  <data name="MTF2.0模板" xml:space="preserve">
+    <value>MTF 2.0 範本</value>
+  </data>
+  <data name="POI分析模板" xml:space="preserve">
+    <value>POI 分析範本</value>
+  </data>
+  <data name="SFR2.0模板" xml:space="preserve">
+    <value>SFR 2.0 範本</value>
+  </data>
+  <data name="SFR模板" xml:space="preserve">
+    <value>SFR 範本</value>
+  </data>
+  <data name="SFR寻边模板" xml:space="preserve">
+    <value>SFR 尋邊範本</value>
+  </data>
+  <data name="请先选择灯条检测模板" xml:space="preserve">
+    <value>請先選擇燈條檢測範本</value>
+  </data>
+  <data name="请先选择灯珠检测模板" xml:space="preserve">
+    <value>請先選擇燈珠檢測範本</value>
+  </data>
+  <data name="请先选择发光区裁剪模板" xml:space="preserve">
+    <value>請先選擇發光區裁切範本</value>
+  </data>
+  <data name="请先选择发光区检测模板" xml:space="preserve">
+    <value>請先選擇發光區檢測範本</value>
+  </data>
+  <data name="请先选择黑画面检测模板" xml:space="preserve">
+    <value>請先選擇黑畫面檢測範本</value>
+  </data>
+  <data name="请先选择畸变模板" xml:space="preserve">
+    <value>請先選擇畸變範本</value>
+  </data>
+  <data name="请先选择键盘检测模板" xml:space="preserve">
+    <value>請先選擇鍵盤檢測範本</value>
+  </data>
+  <data name="请先选择亮点检测模板" xml:space="preserve">
+    <value>請先選擇亮點檢測範本</value>
+  </data>
+  <data name="请先选择模板匹配参数" xml:space="preserve">
+    <value>請先選擇範本比對參數</value>
+  </data>
+  <data name="请先选择屏幕缺陷检测模板" xml:space="preserve">
+    <value>請先選擇螢幕缺陷檢測範本</value>
+  </data>
+  <data name="请先选择缺陷检测V2模板" xml:space="preserve">
+    <value>請先選擇缺陷檢測 V2 範本</value>
+  </data>
+  <data name="请先选择双目融合模板" xml:space="preserve">
+    <value>請先選擇雙目融合範本</value>
+  </data>
+  <data name="请先选择AA布点模板" xml:space="preserve">
+    <value>請先選擇 AA 布點範本</value>
+  </data>
+  <data name="请先选择AAFindPoints模板" xml:space="preserve">
+    <value>請先選擇 AA 點位定位範本</value>
+  </data>
+  <data name="请先选择AOI模板" xml:space="preserve">
+    <value>請先選擇 AOI 範本</value>
+  </data>
+  <data name="请先选择BlackMura模板" xml:space="preserve">
+    <value>請先選擇 Black Mura 範本</value>
+  </data>
+  <data name="请先选择BuildPoi模板" xml:space="preserve">
+    <value>請先選擇關注點布點範本</value>
+  </data>
+  <data name="请先选择Distortion模板" xml:space="preserve">
+    <value>請先選擇畸變範本</value>
+  </data>
+  <data name="请先选择FindCross模板" xml:space="preserve">
+    <value>請先選擇十字定位範本</value>
+  </data>
+  <data name="请先选择FocusPoints模板" xml:space="preserve">
+    <value>請先選擇焦點範本</value>
+  </data>
+  <data name="请先选择FOV2.0模板" xml:space="preserve">
+    <value>請先選擇 FOV 2.0 範本</value>
+  </data>
+  <data name="请先选择Ghost模板" xml:space="preserve">
+    <value>請先選擇鬼影範本</value>
+  </data>
+  <data name="请先选择ImageROI模板" xml:space="preserve">
+    <value>請先選擇影像 ROI 範本</value>
+  </data>
+  <data name="请先选择LEDStripDetection模板" xml:space="preserve">
+    <value>請先選擇燈帶檢測範本</value>
+  </data>
+  <data name="请先选择MTF2.0模板" xml:space="preserve">
+    <value>請先選擇 MTF 2.0 範本</value>
+  </data>
+  <data name="请先选择POI分析模板" xml:space="preserve">
+    <value>請先選擇 POI 分析範本</value>
+  </data>
+  <data name="请先选择SFR2.0模板" xml:space="preserve">
+    <value>請先選擇 SFR 2.0 範本</value>
+  </data>
+  <data name="请先选择SFR模板" xml:space="preserve">
+    <value>請先選擇 SFR 範本</value>
+  </data>
+  <data name="请先选择SFR寻边模板" xml:space="preserve">
+    <value>請先選擇 SFR 尋邊範本</value>
+  </data>
 </root>

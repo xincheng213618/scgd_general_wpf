@@ -354,6 +354,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 Text = text,
                 Width = LabelWidth,
                 VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = text
             };
