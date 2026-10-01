@@ -754,6 +754,8 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            long releasedBytes = Math.Max(ImageMemoryReclaimer.GetPixelBytes(_document.Source),
+                ImageMemoryReclaimer.GetPixelBytes(Presentation.DisplaySource));
             _drawing.CancelPendingZoom();
             _channels.CancelPending();
             ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
@@ -767,6 +769,8 @@ namespace ColorVision.ImageEditor
             ImageShow.Clear();
             Presentation.Publish(null, null);
             ImageShow.UpdateLayout();
+            ReleaseSnapshotBuffer();
+            _ = ImageMemoryReclaimer.RequestCollection(releasedBytes);
         }
 
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()

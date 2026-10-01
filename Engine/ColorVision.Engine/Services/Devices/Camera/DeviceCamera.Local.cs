@@ -16,13 +16,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
-        private (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
+        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
         private bool previewQueued;
         private long previewVersion;
 
         internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
         {
-            if (IsDisposed || Application.Current == null) return;
+            ViewCamera? view = ExistingView;
+            if (IsDisposed || Application.Current == null || view == null) return;
             // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
             if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
@@ -31,22 +32,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 LocalCameraPreview preview = LocalCameraPreview.Create(frame);
                 lock (previewSync)
                 {
-                    if (IsDisposed || version != Volatile.Read(ref previewVersion)) return;
-                    pendingPreview = (model, preview, forceDisplay);
+                    if (IsDisposed || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
+                    pendingPreview = (view, model, preview, forceDisplay);
                     if (previewQueued) return;
                     previewQueued = true;
                 }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
+                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
                     lock (previewSync)
                     {
                         pending = pendingPreview;
                         pendingPreview = null;
                         previewQueued = false;
                     }
-                    if (IsDisposed || pending == null) return;
-                    try { ViewShell.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
+                    if (IsDisposed || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
+                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });
             }

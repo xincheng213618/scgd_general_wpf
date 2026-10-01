@@ -313,6 +313,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
             {
                 listView1.SelectionChanged -= listView1_SelectionChanged;

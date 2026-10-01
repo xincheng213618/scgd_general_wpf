@@ -15,10 +15,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private bool _isDisposed;
 
         public MQTTAlgorithm DService { get; set; }
-        private readonly Lazy<AlgorithmView> _view;
-        internal AlgorithmView ViewShell => Application.Current.Dispatcher.CheckAccess()
-            ? _view.Value
-            : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        private readonly DockViewRegistration _view;
+        internal DockViewRegistration ViewRegistration => _view;
+        internal AlgorithmView? ExistingView => _view.Current as AlgorithmView;
+        internal AlgorithmView ViewShell => (AlgorithmView)_view.GetOrCreate();
         public AlgorithmView View
         {
             get
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTAlgorithm(Config);
-            _view = new Lazy<AlgorithmView>(() => new AlgorithmView(this, deferInitialization: true));
+            _view = new DockViewRegistration(() => new AlgorithmView(this, deferInitialization: true), Config.Name);
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
@@ -73,11 +73,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (DisplayAlgorithmControlLazy.IsValueCreated)
                 DisplayAlgorithmControlLazy.Value.Dispose();
 
-            if (_view.IsValueCreated)
-            {
-                DockViewManager.GetInstance().RemoveView(_view.Value);
-                _view.Value.Dispose();
-            }
+            _view.Dispose();
 
             DService.Dispose();
             base.Dispose();

@@ -111,11 +111,22 @@ namespace ColorVision.Solution.Workspace
                 CanFloat = true
             };
 
-            // 用户关闭文档标签时，同步清理内部映射
-            doc.Closing += (s, e) =>
+            // Closing can be cancelled. Retire content only after the document actually closes.
+            void OnClosed(object? sender, EventArgs e)
             {
-                _viewDocuments.Remove(control);
-            };
+                doc.Closed -= OnClosed;
+                if (_viewDocuments.TryGetValue(control, out var current) && ReferenceEquals(current, doc))
+                    _viewDocuments.Remove(control);
+                try
+                {
+                    manager.CloseView(control);
+                }
+                finally
+                {
+                    doc.Content = null;
+                }
+            }
+            doc.Closed += OnClosed;
 
             DocumentPane.Children.Add(doc);
             _viewDocuments[control] = doc;

@@ -233,12 +233,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MQTTCamera DService { get => Device.DService; }
         public DisplayCameraConfig DisplayCameraConfig => Device.DisplayConfig;
 
-        private ViewCamera _view;
-        public ViewCamera View
-        {
-            get { _view.EnsureInitialized(); return _view; }
-            set => _view = value;
-        }
+        public ViewCamera View => Device.View;
         public string DisPlayName => Device.Config.Name;
         public string PersistenceKey => Device.Config.Code;
 
@@ -279,7 +274,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public DisplayCamera(DeviceCamera device)
         {
             Device = device;
-            View = Device.ViewShell;
             _localRealtimePipeline = new CameraRealtimeFramePipeline();
             _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
             _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
@@ -292,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _isInitialized = true;
 
             DataContext = Device;
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             EnsureTimedButtonOperations();
 
             UpdateCalibrationTemplates();
@@ -529,7 +523,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureLocalVideoRoiVisual(bool select = true)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true }) return;
 
             if (!IsLocalVideoRoiVisualNeeded)
             {
@@ -656,7 +650,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (!_isLocalVideoRoiVisualRemoveSubscribed) return;
 
-            Device.View.ImageView.ImageShow.VisualsRemove -= ImageShow_VisualsRemoveLocalVideoRoi;
+            if (Device.ExistingView is { IsContentInitialized: true } view)
+                view.ImageView.ImageShow.VisualsRemove -= ImageShow_VisualsRemoveLocalVideoRoi;
             _isLocalVideoRoiVisualRemoveSubscribed = false;
         }
 
@@ -686,7 +681,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveLocalVideoRoiVisual(bool restoreImageEditMode)
         {
-            if (!Device.ViewShell.IsContentInitialized) return;
+            if (Device.ExistingView is not { IsContentInitialized: true }) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -737,6 +732,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private bool TryGetLocalVideoFrameSize(out int width, out int height)
         {
+            if (Device.ExistingView is not { IsContentInitialized: true })
+            {
+                width = height = 0;
+                return false;
+            }
             width = Device.View.ImageView.Config.GetProperties<int>(ImageViewPropertyKeys.Cols);
             height = Device.View.ImageView.Config.GetProperties<int>(ImageViewPropertyKeys.Rows);
             if (width > 0 && height > 0) return true;
@@ -780,7 +780,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureCrossGuideOverlay()
         {
-            if (IsDisposed) return;
+            if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true }) return;
 
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
@@ -798,7 +798,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveCrossGuideOverlay()
         {
-            if (!Device.ViewShell.IsContentInitialized) return;
+            if (Device.ExistingView is not { IsContentInitialized: true }) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -820,7 +820,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
         {
             request = default;
-            if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled) return false;
+            if (Device.ExistingView is not { IsContentInitialized: true }
+                || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled) return false;
             if (width <= 0 || height <= 0) return false;
 
             int transform = Device.DisplayConfig.LocalVideoTransform;
@@ -843,7 +844,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
+                if (IsDisposed || Device.ExistingView is not { IsContentInitialized: true }
+                    || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
                     return;
 
                 EnsureCrossGuideOverlay();
@@ -1512,6 +1514,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
+        internal void AttachImageView(ViewCamera view)
+        {
+            if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen) return;
+            view.EnsureInitialized();
+            _localRealtimePipeline.Start(view.ImageView, Device.DisplayConfig.LocalVideoTransform, showOverlayRoi: false,
+                showOverlayMetrics: !Device.DisplayConfig.IsCrossGuideEnabled);
+            SetLocalVideoPoiTemplateSupported(true);
+            RefreshLocalVideoRoiVisual(selectNewVisual: false);
+            RefreshCrossGuideOverlay();
+        }
+
+        internal void ReleaseImageView(ViewCamera view)
+        {
+            if (IsDisposed) return;
+            _localRealtimePipeline.Stop(resetRealtime: true);
+            _crossGuideProcessor.Reset();
+            _crossGuideOverlayVisual.Detach();
+            _crossGuideOverlayVisual.Clear();
+            _crossGuideOverlayAdded = false;
+            if (_localVideoRoiVisual != null)
+                _localVideoRoiVisual.Attribute.PropertyChanged -= LocalVideoRoiVisual_PropertyChanged;
+            _localVideoRoiVisual = null;
+            if (_isLocalVideoRoiVisualRemoveSubscribed && view.IsContentInitialized)
+                view.ImageView.ImageShow.VisualsRemove -= ImageShow_VisualsRemoveLocalVideoRoi;
+            _isLocalVideoRoiVisualRemoveSubscribed = false;
+            _hasLocalVideoImageEditModeSnapshot = false;
+        }
+
         public void Dispose()
         {
             if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
@@ -1915,7 +1945,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void SetLocalVideoPoiTemplateSupported(bool isSupported)
         {
-            if (!Device.ViewShell.IsContentInitialized && !Device.DisplayConfig.IsLocalVideoOpen) return;
+            if (Device.ExistingView is not { IsContentInitialized: true }) return;
             var imageView = Device.View.ImageView;
 
             void Apply()

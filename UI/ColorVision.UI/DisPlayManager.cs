@@ -109,6 +109,19 @@ namespace ColorVision.UI
                 e.Handled = true;
             };
         }
+
+        public static void AddViewConfig(this UserControl userControl, DockViewRegistration registration, string title)
+        {
+            var manager = DockViewManager.GetInstance();
+            registration.Title = title;
+            manager.RegisterView(registration);
+            userControl.MouseDoubleClick += (s, e) =>
+            {
+                if (e.ChangedButton != MouseButton.Left || DisplayPinButton.IsPinInput(e.OriginalSource as DependencyObject)) return;
+                manager.OpenView(registration);
+                e.Handled = true;
+            };
+        }
     }
 
     public class DisPlayGroupConfig : ViewModelBase

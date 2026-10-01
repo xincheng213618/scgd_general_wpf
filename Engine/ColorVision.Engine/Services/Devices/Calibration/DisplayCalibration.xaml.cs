@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             UpdateCalibrationTemplates();
             Device.ConfigChanged += Device_ConfigChanged;
             PhyCameraManager.GetInstance().Loaded += PhyCameraManager_Loaded;
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             ImageFile.TextChanged += ImageFile_TextChanged;
@@ -257,7 +257,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     exposure));
                 if (_isDisposed) return;
 
-                Device.View.ShowResult(result);
+                Device.ExistingView?.ShowResult(result);
                 succeeded = true;
             }
             catch (Exception ex)

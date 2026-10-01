@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             InitializeAlgorithmList();
             CB_AlgorithmTypes.SelectionChanged += CB_AlgorithmTypes_SelectionChanged;
 
-            this.AddViewConfig(Device.ViewShell, DisPlayName);
+            this.AddViewConfig(Device.ViewRegistration, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             UpdateUI(Device.DService.DeviceStatus);

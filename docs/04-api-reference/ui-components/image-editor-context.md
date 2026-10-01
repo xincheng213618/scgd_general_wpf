@@ -104,6 +104,10 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 工厂 `Dispose` 停用当前打开器 lifecycle，并对全局及当前打开器工具中的 `IDisposable` 去重释放，不承诺释放每个 opener/component。`ImageEditorSession.Dispose` 依次释放连续帧、显示能力、算法 overlay 和文档。`ImageView.Unloaded` 仅解绑窗口快捷键，不是 `Dispose`；宿主仍需负责真正释放。工具栏重建、控件卸载和文档资源释放不能混用。
 
+相机、算法和校正设备通过 `DockViewRegistration` 注册轻量视图工厂。注册及后台采集不创建图像视图；主窗口显式显示全部视图或用户打开页签时才创建当前实例。`DockViewManagerHost` 在实际 `Closed` 后移除文档映射、清除注册表和设备对当前视图的引用，并 `Dispose` 源图、图层、快照缓冲及事件订阅；列偏好保存为不含 UI 对象和菜单回调的数据。再次打开会创建新实例，原页签中的临时图像与结果列表不保留，持久化结果仍可查询。取消关闭、普通页签切换及 WPF `Unloaded` 不释放视图。没有当前相机视图时不创建本地 RAW/CIE 预览快照；关闭实时相机页签仅断开预览显示，设备视频状态保持，重新打开后接入新视图。
+
+清空图像也释放保存快照的复用缓冲。对于单份像素缓冲至少 64 MiB 的清理或页签关闭，`Documents/ImageMemoryReclaimer` 在解除引用、UI 清空与渲染调度之后合并后台回收请求，完成终结器并归还空闲托管堆页；RAW 打开器在串行读取结束后才释放数组，取消尚未显示的加载同样请求回收。小图及逐帧更新使用正常 GC，不在 UI 线程等待终结器。原因是 WPF 对超大 `WriteableBitmap` 的内存压力估算可能发生整数溢出，同时只解除引用或普通 GC 不能保证空闲 POH 页立即归还。后台回收仍可能带来短暂 GC 停顿；渲染器及程序其他模块的常驻内存不属于当前图像，进程不保证回到冷启动占用。验证需观察实际显示窗口反复打开、清理/关闭后的进程私有内存，并分别记录托管堆和空闲时变化；测试中主动强制 GC 后弱引用消失不能单独证明清理按钮的效果。
+
 ## 临时 ROI：形状、坐标与有效期
 
 `ImageView.BeginSelectAsync` 每次创建一个 `TransientRoiSelectionSession`，支持 Rectangle、Circle、Polygon、Quadrilateral。临时 visual 直接加入/移出画布，不登记撤销命令，也不是持久注释。
