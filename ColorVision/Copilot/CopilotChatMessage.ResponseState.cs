@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using Newtonsoft.Json;
 
@@ -87,16 +88,16 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string RetryActionLabel => RequestMode == CopilotAgentMode.Chat
             ? Properties.Resources.CopilotRetry
-            : "重新运行";
+            : LocalizedText.Get("重新运行");
 
         [JsonIgnore]
         public string RetryActionToolTip => RequestMode == CopilotAgentMode.Chat
-            ? "使用本轮已保存的文件、图片和网页上下文重新生成回答。"
-            : "重新执行本轮 Agent，并重新读取图片、文件、工作区和工具状态；受保护写操作仍需再次审批。";
+            ? LocalizedText.Get("使用本轮已保存的文件、图片和网页上下文重新生成回答。")
+            : LocalizedText.Get("重新执行本轮 Agent，并重新读取图片、文件、工作区和工具状态；受保护写操作仍需再次审批。");
 
         [JsonIgnore]
         public string RefreshActionToolTip => RequestMode == CopilotAgentMode.Chat
-            ? "重新读取本轮文件、图片和网页上下文后生成新回答。"
+            ? LocalizedText.Get("重新读取本轮文件、图片和网页上下文后生成新回答。")
             : string.Empty;
 
         [JsonIgnore]

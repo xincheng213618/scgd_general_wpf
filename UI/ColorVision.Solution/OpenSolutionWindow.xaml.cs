@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Editor;
+﻿using LocalizedText = global::ColorVision.Solution.DisplayText;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.Mru;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;
@@ -169,7 +170,7 @@ namespace ColorVision.Solution
                 e.Handled = true;
                 return;
             }
-            TogglePinMenuItem.Header = solutionInfo.IsPinned ? "取消固定" : "固定到最近列表";
+            TogglePinMenuItem.Header = solutionInfo.IsPinned ? LocalizedText.Get("取消固定") : LocalizedText.Get("固定到最近列表");
         }
 
         private async void OpenRecentSolution_Click(object sender, RoutedEventArgs e)
@@ -204,8 +205,8 @@ namespace ColorVision.Solution
         {
             if (MessageBox.Show(
                 this,
-                "确定要清空最近工作区列表吗？",
-                "清空最近列表",
+                LocalizedText.Get("确定要清空最近工作区列表吗？"),
+                LocalizedText.Get("清空最近列表"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
             {

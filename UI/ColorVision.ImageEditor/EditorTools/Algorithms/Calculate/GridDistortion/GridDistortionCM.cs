@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -41,7 +42,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.GridDistortionTag);
             if (!options.TryValidate(out string error))
             {
-                MessageBox.Show(error, "点阵畸变参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(error, LocalizedText.Get("点阵畸变参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             GridDistortionOptions snapshot = new()
@@ -53,7 +54,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("请先打开待分析图像。", "点阵畸变", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("请先打开待分析图像。"), LocalizedText.Get("点阵畸变"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             long revision = lease.Revision;

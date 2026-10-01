@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Application;
 using CameraTest.Models;
 using ColorVision.Core;
@@ -63,11 +64,11 @@ public partial class CameraTestWindow : Window
         if (_presenting || !_ready || _closing) return;
         _generation++;
         _frame = null;
-        FrameText.Text = "图像已更改";
+        FrameText.Text = LocalizedText.Get("图像已更改");
         FrameText.ToolTip = null;
         ResetFocus();
         InvalidateResult();
-        StatusText.Text = "图像已在编辑器中改变。请通过打开图像或取图分析重新加载测量源。";
+        StatusText.Text = LocalizedText.Get("图像已在编辑器中改变。请通过打开图像或取图分析重新加载测量源。");
         Refresh();
     }
 
@@ -77,7 +78,7 @@ public partial class CameraTestWindow : Window
         RefreshCameraControls();
         _regionError = GetRegionError();
         bool idle = !_busy && !_closing && !_stopping;
-        CameraSummary.Text = _camera.IsConnected ? "已连接" : "未连接";
+        CameraSummary.Text = _camera.IsConnected ? LocalizedText.Get("已连接") : LocalizedText.Get("未连接");
         RefreshOperationControls();
         ResponseColumn.Header = $"MTF@{_profile.Analysis.TargetFrequency:G}";
         RegionCountText.Text = _profile.Regions.Count.ToString();
@@ -93,7 +94,7 @@ public partial class CameraTestWindow : Window
         CaptureButton.IsEnabled = idle && !_live;
         OpenButton.IsEnabled = idle && !_live;
         AnalyzeButton.IsEnabled = idle && !_live && _frame != null && _profile.Regions.Count > 0 && _regionError == null;
-        AnalyzeButton.Content = _result == null ? "开始分析" : "重新分析";
+        AnalyzeButton.Content = _result == null ? LocalizedText.Get("开始分析") : LocalizedText.Get("重新分析");
         AnalyzeButton.ToolTip = _regionError;
         ImageView.EditorContext.DrawEditorContext.DrawCanvas.IsEnabled = !_closing && !_live && (!_busy || _selectingRegion);
         ExportMenuItem.IsEnabled = idle && !_live && _result != null && _result.FrameId == _frame?.Id;
@@ -134,7 +135,7 @@ public partial class CameraTestWindow : Window
     private async void Connect_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
     {
         await EnsureCameraAsync(false);
-        StatusText.Text = "相机已连接，可以取图分析。";
+        StatusText.Text = LocalizedText.Get("相机已连接，可以取图分析。");
     });
 
     private async void Disconnect_Click(object sender, RoutedEventArgs e)
@@ -144,7 +145,7 @@ public partial class CameraTestWindow : Window
         {
             try { await ApplyPendingAcquisitionAsync(); }
             finally { await _camera.DisconnectAsync(); }
-            StatusText.Text = "相机已断开，当前图像保留。";
+            StatusText.Text = LocalizedText.Get("相机已断开，当前图像保留。");
         });
     }
 
@@ -155,7 +156,7 @@ public partial class CameraTestWindow : Window
         var ids = result.Cameras.Select(c => c.CameraId).ToArray();
         CameraIds.ItemsSource = ids;
         CameraIds.SelectedItem = ids.FirstOrDefault(id => id == remembered) ?? ids.FirstOrDefault();
-        StatusText.Text = result.Cameras.Count > 0 ? $"发现 {result.Cameras.Count} 台相机。" : string.Join("；", result.Models.Select(m => m.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m))) is { Length: > 0 } error ? error : "未发现相机，请核对驱动和连接。";
+        StatusText.Text = result.Cameras.Count > 0 ? LocalizedText.Format($"发现 {result.Cameras.Count} 台相机。") : string.Join("；", result.Models.Select(m => m.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m))) is { Length: > 0 } error ? error : LocalizedText.Get("未发现相机，请核对驱动和连接。");
     });
 
     private void CameraIds_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -170,7 +171,7 @@ public partial class CameraTestWindow : Window
     private async void Capture_Click(object sender, RoutedEventArgs e) => await PerformAsync(async () =>
     {
         var total = Stopwatch.StartNew();
-        CaptureTimingText.Text = "正在取图…";
+        CaptureTimingText.Text = LocalizedText.Get("正在取图…");
         var capture = new Stopwatch();
         StandaloneCameraFrame data;
         try
@@ -182,7 +183,7 @@ public partial class CameraTestWindow : Window
         }
         catch
         {
-            CaptureTimingText.Text = $"取图失败 · 已等待 {total.Elapsed.TotalMilliseconds:F0} ms";
+            CaptureTimingText.Text = LocalizedText.Format($"取图失败 · 已等待 {total.Elapsed.TotalMilliseconds:F0} ms");
             throw;
         }
         await AcceptCaptureAsync(new TestFrame(data, $"Camera:{_profile.Camera.Model}/{_profile.Camera.CameraId}", FrameSourceKind.Capture, _camera.RequestedSettings), capture.Elapsed.TotalMilliseconds, total);
@@ -209,7 +210,7 @@ public partial class CameraTestWindow : Window
         {
             _profile.ImageWidth = frame.Data.Width;
             _profile.ImageHeight = frame.Data.Height;
-            StatusText.Text = $"图像已加载。{ChartSelectionHint}";
+            StatusText.Text = LocalizedText.Format($"图像已加载。{ChartSelectionHint}");
         }
         else if (_regionError != null) StatusText.Text = _regionError;
         else await AnalyzeFrameAsync(frame, _generation);
@@ -235,7 +236,7 @@ public partial class CameraTestWindow : Window
             ImageView.UpdateLayout();
             ImageView.UpdateZoomAndScale();
         }));
-        FrameText.Text = $"{frame.Data.Width} × {frame.Data.Height} · {frame.Data.BitDepth} bit · {frame.Data.Channels} 通道 · {(frame.SourceKind == FrameSourceKind.ImageFile ? Path.GetFileName(frame.Source) : "相机图像")}";
+        FrameText.Text = LocalizedText.Format($"{frame.Data.Width} × {frame.Data.Height} · {frame.Data.BitDepth} bit · {frame.Data.Channels} 通道 · {(frame.SourceKind == FrameSourceKind.ImageFile ? Path.GetFileName(frame.Source) : LocalizedText.Get("相机图像"))}");
         FrameText.ToolTip = $"{frame.Source}\n{frame.Data.CapturedAt:yyyy-MM-dd HH:mm:ss.fff}";
     }
 
@@ -253,7 +254,7 @@ public partial class CameraTestWindow : Window
         var selected = Metrics.SelectedItem as MetricRow;
         var selectedColor = ColorMetrics.SelectedItem as ColorShiftRow;
         if (!_live) InvalidateResult();
-        if (!_live) StatusText.Text = "正在定位并计算四边 SFR…";
+        if (!_live) StatusText.Text = LocalizedText.Get("正在定位并计算四边 SFR…");
         var snapshot = JsonSerializer.Deserialize<TestProfile>(JsonSerializer.Serialize(_profile, ProfileStore.JsonOptions), ProfileStore.JsonOptions)!;
         var job = Task.Run(() => FrameAnalysis.Run(frame, snapshot));
         _analysisTask = job;
@@ -298,7 +299,7 @@ public partial class CameraTestWindow : Window
         var channels = result.Targets.SelectMany(t => t.Edges).Where(edge => edge.Analysis != null).SelectMany(edge => edge.Analysis!.Channels).ToArray();
         string chartTypes = string.Join(" / ", result.Targets.Where(t => t.Located).Select(GetChartTypeText).Distinct());
         string elapsed = _live ? "" : $" · {result.ElapsedMilliseconds:F0} ms";
-        StatusText.Text = $"定位 {located}/{result.Targets.Count} 个测量点 {chartTypes} · 有效通道结果 {channels.Count(channel => channel.Valid)}/{channels.Length}{elapsed} · {result.Judgment.Status}";
+        StatusText.Text = LocalizedText.Format($"定位 {located}/{result.Targets.Count} 个测量点 {chartTypes} · 有效通道结果 {channels.Count(channel => channel.Valid)}/{channels.Length}{elapsed} · {result.Judgment.Status}");
         RenderOverlays();
     }
 
@@ -314,7 +315,7 @@ public partial class CameraTestWindow : Window
             _videoMetrics.Reset();
             _videoClock.Restart();
             RefreshVideoReadouts();
-            StatusText.Text = "视频已启动，等待相机帧。";
+            StatusText.Text = LocalizedText.Get("视频已启动，等待相机帧。");
         });
         if (_live && !_closing) _videoTask = RunVideoAsync(_generation);
     }
@@ -335,7 +336,7 @@ public partial class CameraTestWindow : Window
             if (!_closing && generation == _generation)
             {
                 StopLive();
-                StatusText.Text = $"视频分析已停止：{exception.Message}";
+                StatusText.Text = LocalizedText.Format($"视频分析已停止：{exception.Message}");
                 Refresh();
             }
         }
@@ -378,7 +379,7 @@ public partial class CameraTestWindow : Window
                     _profile.ImageWidth = frame.Data.Width;
                     _profile.ImageHeight = frame.Data.Height;
                 }
-                StatusText.Text = _profile.Video.Mode == VideoAnalysisMode.BmwSfr ? "SFR · 未设置测量点" : "视频运行中";
+                StatusText.Text = _profile.Video.Mode == VideoAnalysisMode.BmwSfr ? LocalizedText.Get("SFR · 未设置测量点") : LocalizedText.Get("视频运行中");
             }
             else await AnalyzeFrameAsync(frame, generation);
             if (!_live || _closing || generation != _generation) return false;
@@ -394,7 +395,7 @@ public partial class CameraTestWindow : Window
 
     private void StopLive()
     {
-        if (_live) VideoFpsText.Text = "视频已停止";
+        if (_live) VideoFpsText.Text = LocalizedText.Get("视频已停止");
         _live = false;
         _videoClock.Stop();
         _generation++;
@@ -425,7 +426,7 @@ public partial class CameraTestWindow : Window
             catch (Exception exception) { Trace.TraceError(exception.ToString()); }
         try { await ApplyPendingAcquisitionAsync(); }
         finally { await _camera.DisconnectAsync(); }
-        StatusText.Text = "相机已断开，画面已冻结。";
+        StatusText.Text = LocalizedText.Get("相机已断开，画面已冻结。");
     }
 
     private async Task WaitForVideoAsync()
@@ -441,7 +442,7 @@ public partial class CameraTestWindow : Window
         if (_profile.Regions.Count > 0 && (_profile.ImageWidth != _frame.Data.Width || _profile.ImageHeight != _frame.Data.Height))
             throw new InvalidOperationException("请先移除尺寸不匹配的旧搜索区域。");
         Guid sourceId = _frame.Id;
-        StatusText.Text = $"{ChartSelectionHint} Esc 取消。";
+        StatusText.Text = LocalizedText.Format($"{ChartSelectionHint} Esc 取消。");
         SelectResult? selected;
         _selectingRegion = true;
         Refresh();
@@ -463,7 +464,7 @@ public partial class CameraTestWindow : Window
     {
         if (_busy || _live || _closing) return;
         var region = (sender as FrameworkElement)?.Tag as SearchRegion ?? RegionList.SelectedItem as SearchRegion;
-        if (region == null) { StatusText.Text = "请先选择测量点。"; return; }
+        if (region == null) { StatusText.Text = LocalizedText.Get("请先选择测量点。"); return; }
         var draw = ImageView.EditorContext.DrawEditorContext;
         var visual = draw.DrawingVisualLists.FirstOrDefault(v => _regionIdentities.TryGetValue(v, out var identity) && identity.Id == region.Id);
         if (visual is System.Windows.Media.Visual shape) draw.DrawCanvas.RemoveVisualCommand(shape);
@@ -479,7 +480,7 @@ public partial class CameraTestWindow : Window
         ColorMetrics.ItemsSource = null;
         ColorSummary.Text = ColorShiftPresentation.Summary([]);
         JudgmentMetrics.ItemsSource = null;
-        VerdictText.Text = "未分析";
+        VerdictText.Text = LocalizedText.Get("未分析");
         CurvePlot.Clear();
         _overlays?.Dispose();
         _overlays = null;
@@ -515,8 +516,8 @@ public partial class CameraTestWindow : Window
     {
         if (!_ready) return;
         var selected = Metrics.SelectedItem as MetricRow;
-        CurveSelectionText.Text = selected == null ? "等待选择"
-            : $"{selected.Target} · {(Enum.TryParse<BmwEdgeId>(selected.Edge, out var edge) ? EdgeName(edge) : selected.Edge)}边";
+        CurveSelectionText.Text = selected == null ? LocalizedText.Get("等待选择")
+            : LocalizedText.Format($"{selected.Target} · {(Enum.TryParse<BmwEdgeId>(selected.Edge, out var edge) ? EdgeName(edge) : selected.Edge)}边");
         if (selected is not { Analysis: { } analysis })
         {
             CurvePlot.Clear();
@@ -573,7 +574,7 @@ public partial class CameraTestWindow : Window
         plot.Clear();
         if (FocusSelection.SelectedItem is not FocusKey key)
         {
-            FocusReadout.Text = "开始实时分析后记录调焦趋势。";
+            FocusReadout.Text = LocalizedText.Get("开始实时分析后记录调焦趋势。");
             plot.Axes.SetLimits(0, 1, 0, 1);
             FocusPlot.Refresh();
             return;
@@ -598,7 +599,7 @@ public partial class CameraTestWindow : Window
         plot.YLabel(metric == FocusMetric.Mtf50 ? "MTF50 (cycles/pixel)" : $"MTF@{_profile.Analysis.TargetFrequency:G}");
         plot.Axes.Bottom.Label.FontName = plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect("本轮时间");
         string Format(double? value) => value.HasValue ? value.Value.ToString(metric == FocusMetric.Mtf50 ? "F4" : "P1") : "缺测";
-        FocusReadout.Text = $"当前：{Format(samples.LastOrDefault()?.Value)}    窗口峰值：{Format(valid.Length == 0 ? null : valid.Max())}\n有效 {valid.Length}/{samples.Count} 帧 · 调焦参考";
+        FocusReadout.Text = LocalizedText.Format($"当前：{Format(samples.LastOrDefault()?.Value)}    窗口峰值：{Format(valid.Length == 0 ? null : valid.Max())}\n有效 {valid.Length}/{samples.Count} 帧 · 调焦参考");
         FocusPlot.Refresh();
     }
     private void FocusSelection_Changed(object sender, SelectionChangedEventArgs e) => UpdateFocusPlot();
@@ -607,7 +608,7 @@ public partial class CameraTestWindow : Window
     {
         var dialog = new SaveFileDialog { Filter = "调焦记录 CSV|*.csv", FileName = $"Focus-{DateTime.Now:yyyyMMdd-HHmmss}.csv" };
         if (dialog.ShowDialog(this) != true) return;
-        try { _focusHistory.Export(dialog.FileName); StatusText.Text = "调焦记录已导出。"; }
+        try { _focusHistory.Export(dialog.FileName); StatusText.Text = LocalizedText.Get("调焦记录已导出。"); }
         catch (Exception exception) { StatusText.Text = exception.Message; }
     }
 
@@ -630,7 +631,7 @@ public partial class CameraTestWindow : Window
         bool submitted = false;
         var window = new PropertyEditorWindow(_archiveSettings, PropertyEditorEditMode.Transactional)
         {
-            Owner = this, Title = "生产调试存档信息", WindowStartupLocation = WindowStartupLocation.CenterOwner
+            Owner = this, Title = LocalizedText.Get("生产调试存档信息"), WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
         window.Submitted += (_, _) => submitted = true;
         window.ShowDialog();
@@ -653,7 +654,7 @@ public partial class CameraTestWindow : Window
             _archiveTask = job;
             string folder = await job;
             if (_frame?.Id == frame.Id) MarkFrameSaved(folder);
-            StatusText.Text = $"设备 {settings.DeviceSerial} 已存档：{folder}";
+            StatusText.Text = LocalizedText.Format($"设备 {settings.DeviceSerial} 已存档：{folder}");
             StatusText.ToolTip = folder;
         });
     }
@@ -687,7 +688,7 @@ public partial class CameraTestWindow : Window
         ResetFocus();
         InvalidateResult();
         RenderOverlays();
-        StatusText.Text = "检测配置已加载；分析前将检查图像尺寸。";
+        StatusText.Text = LocalizedText.Get("检测配置已加载；分析前将检查图像尺寸。");
         Refresh();
     }
 
@@ -695,7 +696,7 @@ public partial class CameraTestWindow : Window
     {
         var dialog = new SaveFileDialog { Filter = "检测配置|*.json", FileName = "CameraTest.profile.json" };
         if (dialog.ShowDialog(this) != true) return;
-        try { ProfileStore.Save(dialog.FileName, _profile); StatusText.Text = "配置已保存。"; }
+        try { ProfileStore.Save(dialog.FileName, _profile); StatusText.Text = LocalizedText.Get("配置已保存。"); }
         catch (Exception exception) { StatusText.Text = exception.Message; }
     }
 
@@ -704,7 +705,7 @@ public partial class CameraTestWindow : Window
         if (_result == null || _result.FrameId != _frame?.Id) return;
         var dialog = new SaveFileDialog { Filter = "完整结果 JSON|*.json|指标与 MTF 曲线 CSV|*.csv", FileName = $"CameraTest-{DateTime.Now:yyyyMMdd-HHmmss}" };
         if (dialog.ShowDialog(this) != true) return;
-        try { _result.Export(dialog.FileName); StatusText.Text = "分析结果已导出。"; }
+        try { _result.Export(dialog.FileName); StatusText.Text = LocalizedText.Get("分析结果已导出。"); }
         catch (Exception exception) { StatusText.Text = exception.Message; }
     }
 
@@ -718,7 +719,7 @@ public partial class CameraTestWindow : Window
             var frame = _frame;
             await Task.Run(() => CaptureFileStore.SavePng(frame, dialog.FileName));
             if (_frame?.Id == frame.Id) MarkFrameSaved(dialog.FileName);
-            StatusText.Text = "当前原始像素已保存为 PNG（不包含叠图或显示滤镜）。";
+            StatusText.Text = LocalizedText.Get("当前原始像素已保存为 PNG（不包含叠图或显示滤镜）。");
         });
     }
 

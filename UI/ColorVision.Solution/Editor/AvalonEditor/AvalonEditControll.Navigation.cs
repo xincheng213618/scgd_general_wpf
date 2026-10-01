@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ICSharpCode.AvalonEdit.Document;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +18,7 @@ public partial class AvalonEditControll
         _typingAssistance?.SetModel(model);
         Minimap.ErrorLine = model.Diagnostic?.Line;
         DiagnosticButton.Visibility = model.Diagnostic != null ? Visibility.Visible : Visibility.Collapsed;
-        DiagnosticButton.Content = model.Diagnostic == null ? "" : $"JSON 语法问题 · {model.Diagnostic.Line}:{model.Diagnostic.Column}";
+        DiagnosticButton.Content = model.Diagnostic == null ? "" : LocalizedText.Format($"JSON 语法问题 · {model.Diagnostic.Line}:{model.Diagnostic.Column}");
         DiagnosticButton.ToolTip = model.Diagnostic?.Message;
         if (SymbolPanel.Visibility == Visibility.Visible) FilterSymbols();
     }
@@ -73,7 +74,7 @@ public partial class AvalonEditControll
         var symbols = _typingAssistance.Model.Symbols.Where(s => s.Name.Contains(SymbolQuery.Text, StringComparison.OrdinalIgnoreCase)).ToArray();
         SymbolList.ItemsSource = symbols;
         SymbolList.SelectedIndex = symbols.Length > 0 ? 0 : -1;
-        SymbolHint.Text = symbols.Length == 0 ? "没有匹配的文档声明" : $"{symbols.Length} 个声明 · Enter 跳转 · Esc 关闭";
+        SymbolHint.Text = symbols.Length == 0 ? LocalizedText.Get("没有匹配的文档声明") : LocalizedText.Format($"{symbols.Length} 个声明 · Enter 跳转 · Esc 关闭");
     }
 
     private void SymbolQuery_TextChanged(object sender, TextChangedEventArgs e) => FilterSymbols();
@@ -118,7 +119,7 @@ public partial class AvalonEditControll
         {
             OpenSymbols();
             SymbolQuery.Text = name;
-            if (candidates.Length == 0) SymbolHint.Text = "未找到文档内定义；可搜索其他声明";
+            if (candidates.Length == 0) SymbolHint.Text = LocalizedText.Get("未找到文档内定义；可搜索其他声明");
         }
     }
 

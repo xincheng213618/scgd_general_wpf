@@ -1,4 +1,5 @@
-﻿using ColorVision.ImageEditor.Algorithms;
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -46,7 +47,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
 
                     if (!detectionResult.HasValidCorners)
                     {
-                        MessageBox.Show(LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(LuminousAreaDetector.GetFailureMessage(detectionResult), LocalizedText.Get("发光区定位"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 

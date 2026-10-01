@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -21,7 +22,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen
 
         public TemplateFPForBlackScreen()
         {
-            Title = "黑画面检测模板管理";
+            Title = LocalizedText.Get("黑画面检测模板管理");
             Code = "OLED.AOI.FPForBlackScreen";
             Name = "FPForBlackScreen";
             TemplateDicId = 57;

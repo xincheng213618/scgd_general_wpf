@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 #pragma warning disable CA1001,CA1822,CS0169,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
@@ -158,7 +159,7 @@ namespace ProjectARVRPro.Services
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToFlow,
                     EventName = "System",
-                    Content = $"服务器已启动, 监听 {Config.ListenIP}:{Config.ListenPort}"
+                    Content = LocalizedText.Format($"服务器已启动, 监听 {Config.ListenIP}:{Config.ListenPort}")
                 });
 
                 while (_running)
@@ -177,7 +178,7 @@ namespace ProjectARVRPro.Services
                         Time = DateTime.Now,
                         Direction = RelayMessageDirection.FlowToRelay,
                         EventName = "System",
-                        Content = $"Flow已连接: {endpoint}"
+                        Content = LocalizedText.Format($"Flow已连接: {endpoint}")
                     });
 
                     _readThread = new Thread(ReadFlowMessages) { IsBackground = true, Name = "RelayFlowReader" };
@@ -230,7 +231,7 @@ namespace ProjectARVRPro.Services
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.FlowToRelay,
                     EventName = "Error",
-                    Content = $"Flow连接断开: {ex.Message}"
+                    Content = LocalizedText.Format($"Flow连接断开: {ex.Message}")
                 });
             }
             finally
@@ -253,7 +254,7 @@ namespace ProjectARVRPro.Services
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToClient,
                     EventName = "Error",
-                    Content = "外部Client未连接, 无法转发"
+                    Content = LocalizedText.Get("外部Client未连接, 无法转发")
                 });
                 return;
             }
@@ -318,7 +319,7 @@ namespace ProjectARVRPro.Services
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToClient,
                     EventName = "Error",
-                    Content = $"转发失败: {ex.Message}"
+                    Content = LocalizedText.Format($"转发失败: {ex.Message}")
                 });
             }
         }
@@ -336,7 +337,7 @@ namespace ProjectARVRPro.Services
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToFlow,
                     EventName = "Error",
-                    Content = "Flow未连接, 无法转发"
+                    Content = LocalizedText.Get("Flow未连接, 无法转发")
                 });
                 return;
             }
@@ -366,7 +367,7 @@ namespace ProjectARVRPro.Services
                         Time = DateTime.Now,
                         Direction = RelayMessageDirection.RelayToFlow,
                         EventName = "Error",
-                        Content = $"转发失败: {ex.Message}"
+                        Content = LocalizedText.Format($"转发失败: {ex.Message}")
                     });
                 }
             }

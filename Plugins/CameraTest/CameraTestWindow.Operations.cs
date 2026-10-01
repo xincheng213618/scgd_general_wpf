@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Application;
 using CameraTest.Models;
 using Microsoft.Win32;
@@ -29,7 +30,7 @@ public partial class CameraTestWindow
             _profile.Camera = _operationSettings.Camera;
             _profile.Video = _operationSettings.Video;
         }
-        catch (Exception exception) { StatusText.Text = $"本地设置读取失败，使用默认参数：{exception.Message}"; }
+        catch (Exception exception) { StatusText.Text = LocalizedText.Format($"本地设置读取失败，使用默认参数：{exception.Message}"); }
         _settingsTimer.Tick += SaveSettings_Tick;
         if (!string.IsNullOrWhiteSpace(_profile.Camera.CameraId))
         {
@@ -57,12 +58,12 @@ public partial class CameraTestWindow
             _operationSettings.Video = _profile.Video;
             _settingsStore.Save(_operationSettings);
             _settingsDirty = false;
-            ExposureInput.ToolTip = GainInput.ToolTip = $"参数已保存：{_settingsStore.PathName}";
+            ExposureInput.ToolTip = GainInput.ToolTip = LocalizedText.Format($"参数已保存：{_settingsStore.PathName}");
         }
         catch (Exception exception)
         {
-            ExposureInput.ToolTip = GainInput.ToolTip = $"参数未保存：{exception.Message}";
-            StatusText.Text = $"本地参数保存失败：{exception.Message}";
+            ExposureInput.ToolTip = GainInput.ToolTip = LocalizedText.Format($"参数未保存：{exception.Message}");
+            StatusText.Text = LocalizedText.Format($"本地参数保存失败：{exception.Message}");
         }
     }
 
@@ -86,7 +87,7 @@ public partial class CameraTestWindow
 
     private void CaptureDirectory_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "取图保存目录", InitialDirectory = _operationSettings.CaptureDirectory };
+        var dialog = new OpenFolderDialog { Title = LocalizedText.Get("取图保存目录"), InitialDirectory = _operationSettings.CaptureDirectory };
         if (dialog.ShowDialog(this) != true) return;
         _operationSettings.CaptureDirectory = dialog.FolderName;
         ScheduleSettingsSave();
@@ -115,17 +116,17 @@ public partial class CameraTestWindow
 
     private void UpdateFrameSaveState(TestFrame frame)
     {
-        CaptureStampText.Text = frame.SourceKind == FrameSourceKind.ImageFile ? "" : $"取图 {frame.Data.CapturedAt.LocalDateTime:HH:mm:ss.fff}";
+        CaptureStampText.Text = frame.SourceKind == FrameSourceKind.ImageFile ? "" : LocalizedText.Format($"取图 {frame.Data.CapturedAt.LocalDateTime:HH:mm:ss.fff}");
         CaptureStampText.ToolTip = $"{frame.Source}\n{frame.Data.CapturedAt.LocalDateTime:yyyy-MM-dd HH:mm:ss.fff}";
-        FrameSaveText.Text = frame.SourceKind == FrameSourceKind.ImageFile ? "原文件已在磁盘" : "当前帧未保存";
-        FrameSaveText.ToolTip = frame.SourceKind == FrameSourceKind.ImageFile ? frame.Source : "取图可勾选自动保存；视频停止后通过“文件 → 保存原图”保存当前帧。";
+        FrameSaveText.Text = frame.SourceKind == FrameSourceKind.ImageFile ? LocalizedText.Get("原文件已在磁盘") : LocalizedText.Get("当前帧未保存");
+        FrameSaveText.ToolTip = frame.SourceKind == FrameSourceKind.ImageFile ? frame.Source : LocalizedText.Get("取图可勾选自动保存；视频停止后通过“文件 → 保存原图”保存当前帧。");
         CaptureTimingText.Text = "";
         CaptureTimingText.ToolTip = null;
     }
 
     private void MarkFrameSaved(string path)
     {
-        FrameSaveText.Text = "已保存";
+        FrameSaveText.Text = LocalizedText.Get("已保存");
         FrameSaveText.ToolTip = path;
     }
 
@@ -137,7 +138,7 @@ public partial class CameraTestWindow
         // Save before analysis so a measurement failure cannot lose a requested original image.
         if (_operationSettings.SaveCapturedImages)
         {
-            FrameSaveText.Text = "正在保存原图…";
+            FrameSaveText.Text = LocalizedText.Get("正在保存原图…");
             try { saved = await Task.Run(() => CaptureFileStore.Save(frame, _operationSettings.CaptureDirectory, captureMilliseconds)); }
             catch (Exception exception) { saveError = exception.Message; }
         }
@@ -149,12 +150,12 @@ public partial class CameraTestWindow
         finally
         {
             if (saved != null) MarkFrameSaved(saved.ImagePath);
-            else if (saveError != null) { FrameSaveText.Text = "保存失败"; FrameSaveText.ToolTip = saveError; }
+            else if (saveError != null) { FrameSaveText.Text = LocalizedText.Get("保存失败"); FrameSaveText.ToolTip = saveError; }
             string analysis = analysisMilliseconds.HasValue ? $" · 分析 {analysisMilliseconds:F0} ms" : "";
             string saving = saved != null ? $" · 保存 {saved.SaveMilliseconds:F0} ms" : "";
-            CaptureTimingText.Text = $"取图 {captureMilliseconds:F0} ms · 总计 {total.Elapsed.TotalMilliseconds:F0} ms";
-            CaptureTimingText.ToolTip = $"取图 {captureMilliseconds:F0} ms{analysis}{saving} · 总计 {total.Elapsed.TotalMilliseconds:F0} ms\n取图为 SDK 等待和数据读取耗时；总计包含连接、显示、分析和保存。";
-            if (saveError != null) StatusText.Text = $"取图成功，但自动保存失败：{saveError}";
+            CaptureTimingText.Text = LocalizedText.Format($"取图 {captureMilliseconds:F0} ms · 总计 {total.Elapsed.TotalMilliseconds:F0} ms");
+            CaptureTimingText.ToolTip = LocalizedText.Format($"取图 {captureMilliseconds:F0} ms{analysis}{saving} · 总计 {total.Elapsed.TotalMilliseconds:F0} ms\n取图为 SDK 等待和数据读取耗时；总计包含连接、显示、分析和保存。");
+            if (saveError != null) StatusText.Text = LocalizedText.Format($"取图成功，但自动保存失败：{saveError}");
         }
     }
 
@@ -162,10 +163,10 @@ public partial class CameraTestWindow
     {
         TimeSpan timeout = TimeSpan.FromMilliseconds(Math.Max(3000, _profile.Camera.ExposureMilliseconds * 2));
         bool stalled = _live && !_busy && !_processingFrame && _videoMetrics.IsStalled(_videoClock.Elapsed, timeout);
-        VideoFpsText.Text = stalled ? "显示 0.0 FPS · 等待帧" : _videoMetrics.DisplayFramesPerSecond is { } fps ? $"显示 {fps:F1} FPS" : "显示 — FPS";
-        VideoSharpnessText.Text = stalled ? "清晰度 —" : _videoMetrics.Sharpness is { } value ? $"清晰度 {value:G6}" : "清晰度 —";
-        VideoAnalysisText.Text = _videoMetrics.AnalysisMilliseconds is { } elapsed ? $"计算 {elapsed:F0} ms" : "";
-        VideoAnalysisText.ToolTip = stalled ? "等待相机帧，请检查连接与曝光时间。" : "当前显示帧的分析耗时";
+        VideoFpsText.Text = stalled ? LocalizedText.Get("显示 0.0 FPS · 等待帧") : _videoMetrics.DisplayFramesPerSecond is { } fps ? LocalizedText.Format($"显示 {fps:F1} FPS") : LocalizedText.Get("显示 — FPS");
+        VideoSharpnessText.Text = stalled ? LocalizedText.Get("清晰度 —") : _videoMetrics.Sharpness is { } value ? LocalizedText.Format($"清晰度 {value:G6}") : LocalizedText.Get("清晰度 —");
+        VideoAnalysisText.Text = _videoMetrics.AnalysisMilliseconds is { } elapsed ? LocalizedText.Format($"计算 {elapsed:F0} ms") : "";
+        VideoAnalysisText.ToolTip = stalled ? LocalizedText.Get("等待相机帧，请检查连接与曝光时间。") : LocalizedText.Get("当前显示帧的分析耗时");
         VideoSharpnessText.Visibility = _profile.Video.Mode == VideoAnalysisMode.Sharpness || _profile.Video.Mode == VideoAnalysisMode.BmwSfr && _profile.Video.IncludeSharpnessWithSfr ? Visibility.Visible : Visibility.Collapsed;
     }
 }

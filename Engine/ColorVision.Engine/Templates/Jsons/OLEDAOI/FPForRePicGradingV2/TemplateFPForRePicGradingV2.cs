@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -21,7 +22,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2
 
         public TemplateFPForRePicGradingV2()
         {
-            Title = "缺陷检测V2模板管理";
+            Title = LocalizedText.Get("缺陷检测V2模板管理");
             Code = "OLED.AOI.FPForRePicGradingV2";
             Name = "FPForRePicGradingV2";
             TemplateDicId = 56;

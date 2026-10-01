@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
@@ -122,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             menuItem.Click += (s, e) => OpenLocalCameraWindow();
 
             ContextMenu.Items.Add(menuItem);
-            ContextMenu.Items.Add(new MenuItem() { Header = "本地缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = LocalizedText.Get("本地缓存管理"), Command = ReleaseLocalCalibrationCacheCommand });
 
         }
 

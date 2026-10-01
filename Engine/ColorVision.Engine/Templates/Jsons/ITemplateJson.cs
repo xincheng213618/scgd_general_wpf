@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -306,7 +307,7 @@ namespace ColorVision.Engine.Templates.Jsons
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"解析模板文件时出错: {ex.Message}"), "ColorVision");
                 return false;
             }
         }
@@ -322,7 +323,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (dictemplate == null)
                 {
                     log.Warn("模板字典未找到，ID=" + TemplateDicId);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"模板字典未找到，ID={TemplateDicId}", "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"模板字典未找到，ID={TemplateDicId}"), "ColorVision");
                     return;
                 }
 
@@ -361,7 +362,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
                     if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
                     {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"是否重置数据库{typeof(T)}相关项"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
                             BatchSqlConsumer.ExecuteAfterCommit(mysqlCommand.GetRecover(), () => log.Warn($"数据库{typeof(T)}相关项已重置"));
                         }
@@ -375,7 +376,7 @@ namespace ColorVision.Engine.Templates.Jsons
             catch (Exception ex)
             {
                 log.Error("模板创建异常：" + ex.Message, ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), "模板创建发生异常：" + ex.Message, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("模板创建发生异常：") + ex.Message, "ColorVision");
             }
         }
 

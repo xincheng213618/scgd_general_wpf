@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ProjectLUX.DisplayText;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -22,7 +23,7 @@ namespace ProjectLUX
         {
             var menu = new ContextMenu();
             menu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Delete });
-            menu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = "复制" });
+            menu.Items.Add(new MenuItem() { Command = System.Windows.Input.ApplicationCommands.Copy, Header = LocalizedText.Get("复制") });
 
             RelayCommand openFolderAndSelectFile = new RelayCommand(a =>
             {
@@ -32,10 +33,10 @@ namespace ProjectLUX
             menu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
 
             RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(), e => BatchId > 0);
-            menu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = "流程结果查询" });
+            menu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
 
             RelayCommand ViewTestResultCommand = new RelayCommand(a => ViewTestResult(), e => Id > 0 || !string.IsNullOrEmpty(ViewResultJson));
-            menu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = "查看测试结果" });
+            menu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
 
             return menu;
         }
@@ -46,7 +47,7 @@ namespace ProjectLUX
             ViewResultManager.GetInstance().LoadViewResultJson(this);
             if (string.IsNullOrEmpty(ViewResultJson))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("ViewResultJson为空"), "ColorVision");
 
                 return;
             }
@@ -65,7 +66,7 @@ namespace ProjectLUX
             var Batch = Db.Queryable<MeasureBatchModel>().Where(a => a.Id == BatchId).First();
             if (Batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
             Frame frame = new Frame();

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -61,14 +62,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             }
             catch (Exception exception)
             {
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("ROI 统计"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                AlgorithmAnalysisMessageBox.Show(windowOwner, "无法确定当前图像 revision。", "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, LocalizedText.Get("无法确定当前图像 revision。"), LocalizedText.Get("ROI 统计"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -92,7 +93,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => progressWindow?.Complete(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("ROI 统计"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             AlgorithmResult? result = null;
@@ -113,7 +114,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(input.Image.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 if (!progressWindow.WasCancelled)
-                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "ROI 统计", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("ROI 统计"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -140,7 +141,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, message, "ROI 统计失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, message, LocalizedText.Get("ROI 统计失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -159,7 +160,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 previous,
                 out Exception? presentationFailure);
             if (!shown && presentationFailure != null)
-                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, "ROI 统计结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, LocalizedText.Get("ROI 统计结果"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private static RoiStatisticsParameters? EditParameters(Window? owner)
@@ -167,7 +168,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             RoiStatisticsParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "ROI 统计参数",
+                Title = LocalizedText.Get("ROI 统计参数"),
                 Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -229,7 +230,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             RoiStatisticsEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Statistics.Id, GuidId = "RoiStatistics", Order = 1, Header = "ROI 统计" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Statistics.Id, GuidId = "RoiStatistics", Order = 1, Header = LocalizedText.Get("ROI 统计") },
                 Item("RoiStatisticsRectangle", "矩形 ROI...", 0, () => tool.Execute(SelectShapeType.Rectangle)),
                 Item("RoiStatisticsCircle", "圆形 ROI...", 1, () => tool.Execute(SelectShapeType.Circle)),
                 Item("RoiStatisticsPolygon", "多边形 ROI...", 2, () => tool.Execute(SelectShapeType.Polygon)),
@@ -258,7 +259,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         {
             if (obj is not IRectangle rectangle) return [];
             (double x, double y) = RoiStatisticsEditorTool.PixelScale(image.ViewBitmapSource as BitmapSource);
-            MenuItem item = new() { Header = "ROI 统计..." };
+            MenuItem item = new() { Header = LocalizedText.Get("ROI 统计...") };
             item.Click += (_, _) => new RoiStatisticsEditorTool(image, draw).Execute(RoiStatisticsEditorTool.Rectangle(rectangle.Rect, x, y));
             return [item];
         }
@@ -276,7 +277,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         {
             if (obj is not ICircle circle) return [];
             (double x, double y) = RoiStatisticsEditorTool.PixelScale(image.ViewBitmapSource as BitmapSource);
-            MenuItem item = new() { Header = "ROI 统计..." };
+            MenuItem item = new() { Header = LocalizedText.Get("ROI 统计...") };
             item.Click += (_, _) => new RoiStatisticsEditorTool(image, draw).Execute(RoiStatisticsEditorTool.Circle(circle.Center, circle.Radius, x, y));
             return [item];
         }
@@ -294,7 +295,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
         {
             if (obj is not DVPolygon polygon || polygon.Points.Count < 3) return [];
             (double x, double y) = RoiStatisticsEditorTool.PixelScale(image.ViewBitmapSource as BitmapSource);
-            MenuItem item = new() { Header = "ROI 统计..." };
+            MenuItem item = new() { Header = LocalizedText.Get("ROI 统计...") };
             item.Click += (_, _) => new RoiStatisticsEditorTool(image, draw).Execute(RoiStatisticsEditorTool.Polygon(polygon.Points, x, y));
             return [item];
         }

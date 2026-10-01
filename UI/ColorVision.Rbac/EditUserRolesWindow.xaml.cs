@@ -1,4 +1,5 @@
-﻿using ColorVision.Rbac.ViewModels;
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+using ColorVision.Rbac.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,8 +31,8 @@ namespace ColorVision.Rbac
         private void Window_Initialized(object sender, EventArgs e)
         {
             _rbacManager = RbacManager.GetInstance();
-            TxtTitle.Text = $"编辑用户角色 - {_user.Username}";
-            TxtSubtitle.Text = $"用户ID: {_user.Id} | 当前角色: {_user.RolesDisplay}";
+            TxtTitle.Text = LocalizedText.Format($"编辑用户角色 - {_user.Username}");
+            TxtSubtitle.Text = LocalizedText.Format($"用户ID: {_user.Id} | 当前角色: {_user.RolesDisplay}");
             LoadRoles();
         }
 
@@ -102,7 +103,7 @@ namespace ColorVision.Rbac
                     };
                     var badgeText = new TextBlock
                     {
-                        Text = "启用",
+                        Text = LocalizedText.Get("启用"),
                         Foreground = Brushes.White,
                         FontSize = 10,
                         FontWeight = FontWeights.SemiBold
@@ -128,7 +129,7 @@ namespace ColorVision.Rbac
         private void UpdateSelectedCount()
         {
             int count = _roleCheckBoxes.Count(cb => cb.IsChecked == true);
-            TxtSelectedCount.Text = $"已选择 {count} 个角色";
+            TxtSelectedCount.Text = LocalizedText.Format($"已选择 {count} 个角色");
         }
 
         private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -151,7 +152,7 @@ namespace ColorVision.Rbac
         private async void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             BtnSave.IsEnabled = false;
-            BtnSave.Content = "保存中...";
+            BtnSave.Content = LocalizedText.Get("保存中...");
 
             try
             {
@@ -162,21 +163,21 @@ namespace ColorVision.Rbac
 
                 if (await _rbacManager.UpdateUserRolesAsync(_user.Id, selectedIds))
                 {
-                    MessageBox.Show("角色更新成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Get("角色更新成功！"), LocalizedText.Get("成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;
                 }
                 else
                 {
-                    MessageBox.Show("角色更新失败！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(LocalizedText.Get("角色更新失败！"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                     BtnSave.IsEnabled = true;
-                    BtnSave.Content = "保存";
+                    BtnSave.Content = LocalizedText.Get("保存");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"保存失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 BtnSave.IsEnabled = true;
-                BtnSave.Content = "保存";
+                BtnSave.Content = LocalizedText.Get("保存");
             }
         }
 

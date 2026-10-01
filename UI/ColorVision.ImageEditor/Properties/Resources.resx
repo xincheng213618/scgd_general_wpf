@@ -1252,4 +1252,2401 @@
   <data name="BatchAnalyzing" xml:space="preserve">
     <value>分析中...</value>
   </data>
+  <data name="0 个样品" xml:space="preserve">
+    <value>0 个样品</value>
+  </data>
+  <data name="CCT 是近似黑体轨迹上的最近投影，范围 1667–25000 K；轨迹距离大于 0.05 或落在范围端点时不报告。主波长使用参考白点向样品的射线与光谱轨迹交点；紫色区域报告反方向的补色波长。纯度为白点至样品距离 / 白点至边界距离，紫色区域使用紫线边界。白点自身、无效色坐标或光谱边界外不报告波长。图面颜色仅为屏幕示意。" xml:space="preserve">
+    <value>CCT 是近似黑体轨迹上的最近投影，范围 1667–25000 K；轨迹距离大于 0.05 或落在范围端点时不报告。主波长使用参考白点向样品的射线与光谱轨迹交点；紫色区域报告反方向的补色波长。纯度为白点至样品距离 / 白点至边界距离，紫色区域使用紫线边界。白点自身、无效色坐标或光谱边界外不报告波长。图面颜色仅为屏幕示意。</value>
+  </data>
+  <data name="CSV / Excel TSV 支持带表头的 Space,V1,V2,V3 格式，以及 X,Y,Z 或 x,y,Y 或 x,y 简表（区分大小写）。Name、Group、Source、Basis 可选；Basis 为 Relative、Absolute、ChromaticityOnly，默认 Relative。小数点使用 .，不解析公式。整批验证后才加入；最多 5000 点。CSV 保存 XYZ 原值与色差结果，JSON 会话另存参考样品、白点与图层条件。筛选只影响图和表的显示，批量统计及导出使用全部样品。报告为含图像的离线 HTML，可在浏览器打印。色域页的输入和结果独立导出，不包含在样品会话中。" xml:space="preserve">
+    <value>CSV / Excel TSV 支持带表头的 Space,V1,V2,V3 格式，以及 X,Y,Z 或 x,y,Y 或 x,y 简表（区分大小写）。Name、Group、Source、Basis 可选；Basis 为 Relative、Absolute、ChromaticityOnly，默认 Relative。小数点使用 .，不解析公式。整批验证后才加入；最多 5000 点。CSV 保存 XYZ 原值与色差结果，JSON 会话另存参考样品、白点与图层条件。筛选只影响图和表的显示，批量统计及导出使用全部样品。报告为含图像的离线 HTML，可在浏览器打印。色域页的输入和结果独立导出，不包含在样品会话中。</value>
+  </data>
+  <data name="JNCD 步长" xml:space="preserve">
+    <value>JNCD 步长</value>
+  </data>
+  <data name="RGB CIE 1931 xy 坐标" xml:space="preserve">
+    <value>RGB CIE 1931 xy 坐标</value>
+  </data>
+  <data name="XYZ · 三刺激值" xml:space="preserve">
+    <value>XYZ · 三刺激值</value>
+  </data>
+  <data name="sRGB · 0–255 推算" xml:space="preserve">
+    <value>sRGB · 0–255 推算</value>
+  </data>
+  <data name="xy · 仅色坐标" xml:space="preserve">
+    <value>xy · 仅色坐标</value>
+  </data>
+  <data name="xyY · 色坐标与亮度" xml:space="preserve">
+    <value>xyY · 色坐标与亮度</value>
+  </data>
+  <data name="ΔE00 阈值" xml:space="preserve">
+    <value>ΔE00 阈值</value>
+  </data>
+  <data name="ΔE76 为 CIELAB 欧氏距离；ΔEuv 为 CIELUV 欧氏距离；ΔE00 使用 CIEDE2000，kL=kC=kH=1；ΔE94 使用 graphic arts 参数；CMC 分别显示 1:1 与 2:1。CIE94 / CMC 具有方向性，以设定的参考样品作为公式中的第一色。所有样品使用相同白点，不自动做色适应。ΔE00 阈值用于比较，不代表任何行业认证。" xml:space="preserve">
+    <value>ΔE76 为 CIELAB 欧氏距离；ΔEuv 为 CIELUV 欧氏距离；ΔE00 使用 CIEDE2000，kL=kC=kH=1；ΔE94 使用 graphic arts 参数；CMC 分别显示 1:1 与 2:1。CIE94 / CMC 具有方向性，以设定的参考样品作为公式中的第一色。所有样品使用相同白点，不自动做色适应。ΔE00 阈值用于比较，不代表任何行业认证。</value>
+  </data>
+  <data name="Δu′v′ 是两个样品在 CIE 1976 平面的距离；Duv 是单个样品到黑体轨迹在 CIE 1960 uv 平面的有符号距离，两者不能混用。JNCD=Δu′v′/步长，默认步长 0.004，仅为可修改的换算约定。" xml:space="preserve">
+    <value>Δu′v′ 是两个样品在 CIE 1976 平面的距离；Duv 是单个样品到黑体轨迹在 CIE 1960 uv 平面的有符号距离，两者不能混用。JNCD=Δu′v′/步长，默认步长 0.004，仅为可修改的换算约定。</value>
+  </data>
+  <data name="Δu′v′、Duv 与 JNCD" xml:space="preserve">
+    <value>Δu′v′、Duv 与 JNCD</value>
+  </data>
+  <data name="下载 CSV 模板…" xml:space="preserve">
+    <value>下载 CSV 模板…</value>
+  </data>
+  <data name="与本窗口色度图共用参考白，应用后同步更新。" xml:space="preserve">
+    <value>与本窗口色度图共用参考白，应用后同步更新。</value>
+  </data>
+  <data name="主 / 补波长: --" xml:space="preserve">
+    <value>主 / 补波长: --</value>
+  </data>
+  <data name="主 / 补波长辅助线" xml:space="preserve">
+    <value>主 / 补波长辅助线</value>
+  </data>
+  <data name="交集面积" xml:space="preserve">
+    <value>交集面积</value>
+  </data>
+  <data name="亮度尺度" xml:space="preserve">
+    <value>亮度尺度</value>
+  </data>
+  <data name="仅用于本窗口。相对样品参考白 Y=100；下方白点勾选只控制图层显示。" xml:space="preserve">
+    <value>仅用于本窗口。相对样品参考白 Y=100；下方白点勾选只控制图层显示。</value>
+  </data>
+  <data name="从一个样品开始" xml:space="preserve">
+    <value>从一个样品开始</value>
+  </data>
+  <data name="保存会话" xml:space="preserve">
+    <value>保存会话</value>
+  </data>
+  <data name="保存图像" xml:space="preserve">
+    <value>保存图像</value>
+  </data>
+  <data name="保存样品、参考白与色差条件；色域结果使用色域页独立导出" xml:space="preserve">
+    <value>保存样品、参考白与色差条件；色域结果使用色域页独立导出</value>
+  </data>
+  <data name="全选" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="分析面板" xml:space="preserve">
+    <value>分析面板</value>
+  </data>
+  <data name="分组" xml:space="preserve">
+    <value>分组</value>
+  </data>
+  <data name="删除所选" xml:space="preserve">
+    <value>删除所选</value>
+  </data>
+  <data name="判定" xml:space="preserve">
+    <value>判定</value>
+  </data>
+  <data name="加入色度图当前点" xml:space="preserve">
+    <value>加入色度图当前点</value>
+  </data>
+  <data name="参考白与判定条件" xml:space="preserve">
+    <value>参考白与判定条件</value>
+  </data>
+  <data name="参考白亮度 Yn（cd/m²）" xml:space="preserve">
+    <value>参考白亮度 Yn（cd/m²）</value>
+  </data>
+  <data name="参考白预设" xml:space="preserve">
+    <value>参考白预设</value>
+  </data>
+  <data name="双击图中的样品点可选中；双击空白色度位置可填入 xy。" xml:space="preserve">
+    <value>双击图中的样品点可选中；双击空白色度位置可填入 xy。</value>
+  </data>
+  <data name="图层与标准色域" xml:space="preserve">
+    <value>图层与标准色域</value>
+  </data>
+  <data name="在右侧输入坐标，或从下方导入数据。&#10;也可载入演示数据了解样品对比。" xml:space="preserve">
+    <value>在右侧输入坐标，或从下方导入数据。
+也可载入演示数据了解样品对比。</value>
+  </data>
+  <data name="在样品表中设置参考点，查看色差与批量统计。" xml:space="preserve">
+    <value>在样品表中设置参考点，查看色差与批量统计。</value>
+  </data>
+  <data name="坐标与光谱信息" xml:space="preserve">
+    <value>坐标与光谱信息</value>
+  </data>
+  <data name="套用标准值" xml:space="preserve">
+    <value>套用标准值</value>
+  </data>
+  <data name="导入 CSV / TSV…" xml:space="preserve">
+    <value>导入 CSV / TSV…</value>
+  </data>
+  <data name="导入…" xml:space="preserve">
+    <value>导入…</value>
+  </data>
+  <data name="导入与保存" xml:space="preserve">
+    <value>导入与保存</value>
+  </data>
+  <data name="导出" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="导出…" xml:space="preserve">
+    <value>导出…</value>
+  </data>
+  <data name="导出全部样品 CSV…" xml:space="preserve">
+    <value>导出全部样品 CSV…</value>
+  </data>
+  <data name="导出离线 HTML 报告…" xml:space="preserve">
+    <value>导出离线 HTML 报告…</value>
+  </data>
+  <data name="尚未选中样品" xml:space="preserve">
+    <value>尚未选中样品</value>
+  </data>
+  <data name="尺度" xml:space="preserve">
+    <value>尺度</value>
+  </data>
+  <data name="应用参考白" xml:space="preserve">
+    <value>应用参考白</value>
+  </data>
+  <data name="应用计算条件" xml:space="preserve">
+    <value>应用计算条件</value>
+  </data>
+  <data name="所有样品统一采用此参考白，不自动进行色适应。JNCD 步长与阈值是可调整的约定。" xml:space="preserve">
+    <value>所有样品统一采用此参考白，不自动进行色适应。JNCD 步长与阈值是可调整的约定。</value>
+  </data>
+  <data name="所选样品分析" xml:space="preserve">
+    <value>所选样品分析</value>
+  </data>
+  <data name="打开会话" xml:space="preserve">
+    <value>打开会话</value>
+  </data>
+  <data name="按名称或分组筛选" xml:space="preserve">
+    <value>按名称或分组筛选</value>
+  </data>
+  <data name="支持 xyY、XYZ、u′v′Y、CIELAB、CIELUV、sRGB 与仅 xy。色度坐标使用 CIE 1931 2°。相对样品的参考白 Y 固定为 100；绝对 XYZ 的 Y 单位为 cd/m²，参考白 Y 可配置。sRGB 按 D65 解码为相对 XYZ，属于推算值。仅色坐标样品可以比较 Δu′v′，不会假定其实际亮度。" xml:space="preserve">
+    <value>支持 xyY、XYZ、u′v′Y、CIELAB、CIELUV、sRGB 与仅 xy。色度坐标使用 CIE 1931 2°。相对样品的参考白 Y 固定为 100；绝对 XYZ 的 Y 单位为 cd/m²，参考白 Y 可配置。sRGB 按 D65 解码为相对 XYZ，属于推算值。仅色坐标样品可以比较 Δu′v′，不会假定其实际亮度。</value>
+  </data>
+  <data name="数据与尺度" xml:space="preserve">
+    <value>数据与尺度</value>
+  </data>
+  <data name="数量" xml:space="preserve">
+    <value>数量</value>
+  </data>
+  <data name="新建样品会话" xml:space="preserve">
+    <value>新建样品会话</value>
+  </data>
+  <data name="日光轨迹" xml:space="preserve">
+    <value>日光轨迹</value>
+  </data>
+  <data name="显示或折叠分析面板" xml:space="preserve">
+    <value>显示或折叠分析面板</value>
+  </data>
+  <data name="更多…" xml:space="preserve">
+    <value>更多…</value>
+  </data>
+  <data name="更新所选" xml:space="preserve">
+    <value>更新所选</value>
+  </data>
+  <data name="来源" xml:space="preserve">
+    <value>来源</value>
+  </data>
+  <data name="标准色域" xml:space="preserve">
+    <value>标准色域</value>
+  </data>
+  <data name="标准面积" xml:space="preserve">
+    <value>标准面积</value>
+  </data>
+  <data name="样品" xml:space="preserve">
+    <value>样品</value>
+  </data>
+  <data name="样品 1" xml:space="preserve">
+    <value>样品 1</value>
+  </data>
+  <data name="样品与色差" xml:space="preserve">
+    <value>样品与色差</value>
+  </data>
+  <data name="样品分组" xml:space="preserve">
+    <value>样品分组</value>
+  </data>
+  <data name="样品名称" xml:space="preserve">
+    <value>样品名称</value>
+  </data>
+  <data name="样品面积" xml:space="preserve">
+    <value>样品面积</value>
+  </data>
+  <data name="添加 / 编辑样品" xml:space="preserve">
+    <value>添加 / 编辑样品</value>
+  </data>
+  <data name="添加样品" xml:space="preserve">
+    <value>添加样品</value>
+  </data>
+  <data name="添加样品，或导入 CSV / 粘贴 Excel 表格开始分析。" xml:space="preserve">
+    <value>添加样品，或导入 CSV / 粘贴 Excel 表格开始分析。</value>
+  </data>
+  <data name="清空" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="清除参考" xml:space="preserve">
+    <value>清除参考</value>
+  </data>
+  <data name="激发纯度: --" xml:space="preserve">
+    <value>激发纯度: --</value>
+  </data>
+  <data name="用于色域" xml:space="preserve">
+    <value>用于色域</value>
+  </data>
+  <data name="白点 x" xml:space="preserve">
+    <value>白点 x</value>
+  </data>
+  <data name="白点 y" xml:space="preserve">
+    <value>白点 y</value>
+  </data>
+  <data name="相对 XYZ · 参考白 Y=100" xml:space="preserve">
+    <value>相对 XYZ · 参考白 Y=100</value>
+  </data>
+  <data name="第一个分量" xml:space="preserve">
+    <value>第一个分量</value>
+  </data>
+  <data name="第三个分量" xml:space="preserve">
+    <value>第三个分量</value>
+  </data>
+  <data name="第二个分量" xml:space="preserve">
+    <value>第二个分量</value>
+  </data>
+  <data name="筛选样品" xml:space="preserve">
+    <value>筛选样品</value>
+  </data>
+  <data name="算法依据" xml:space="preserve">
+    <value>算法依据</value>
+  </data>
+  <data name="粘贴 Excel 表格" xml:space="preserve">
+    <value>粘贴 Excel 表格</value>
+  </data>
+  <data name="绝对 XYZ · Y 为 cd/m²" xml:space="preserve">
+    <value>绝对 XYZ · Y 为 cd/m²</value>
+  </data>
+  <data name="绝对样品参考白 Y（cd/m²）" xml:space="preserve">
+    <value>绝对样品参考白 Y（cd/m²）</value>
+  </data>
+  <data name="色差与白点" xml:space="preserve">
+    <value>色差与白点</value>
+  </data>
+  <data name="色度图坐标系" xml:space="preserve">
+    <value>色度图坐标系</value>
+  </data>
+  <data name="色温、主波长与纯度" xml:space="preserve">
+    <value>色温、主波长与纯度</value>
+  </data>
+  <data name="覆盖率(%)" xml:space="preserve">
+    <value>覆盖率(%)</value>
+  </data>
+  <data name="角色" xml:space="preserve">
+    <value>角色</value>
+  </data>
+  <data name="计算" xml:space="preserve">
+    <value>计算</value>
+  </data>
+  <data name="计算参考白" xml:space="preserve">
+    <value>计算参考白</value>
+  </data>
+  <data name="计算参考白 x" xml:space="preserve">
+    <value>计算参考白 x</value>
+  </data>
+  <data name="计算参考白 y" xml:space="preserve">
+    <value>计算参考白 y</value>
+  </data>
+  <data name="计算参考白亮度" xml:space="preserve">
+    <value>计算参考白亮度</value>
+  </data>
+  <data name="计算参考白（默认 D65）" xml:space="preserve">
+    <value>计算参考白（默认 D65）</value>
+  </data>
+  <data name="计算说明" xml:space="preserve">
+    <value>计算说明</value>
+  </data>
+  <data name="让每一个结果都有明确的计算条件" xml:space="preserve">
+    <value>让每一个结果都有明确的计算条件</value>
+  </data>
+  <data name="设为参考" xml:space="preserve">
+    <value>设为参考</value>
+  </data>
+  <data name="设为红原色 R" xml:space="preserve">
+    <value>设为红原色 R</value>
+  </data>
+  <data name="设为绿原色 G" xml:space="preserve">
+    <value>设为绿原色 G</value>
+  </data>
+  <data name="设为蓝原色 B" xml:space="preserve">
+    <value>设为蓝原色 B</value>
+  </data>
+  <data name="读取所选" xml:space="preserve">
+    <value>读取所选</value>
+  </data>
+  <data name="距 D65 Δu′v′: --" xml:space="preserve">
+    <value>距 D65 Δu′v′: --</value>
+  </data>
+  <data name="载入演示数据" xml:space="preserve">
+    <value>载入演示数据</value>
+  </data>
+  <data name="输入与参考白必须使用一致尺度。仅 xy 不计算完整色差。" xml:space="preserve">
+    <value>输入与参考白必须使用一致尺度。仅 xy 不计算完整色差。</value>
+  </data>
+  <data name="输入色彩空间" xml:space="preserve">
+    <value>输入色彩空间</value>
+  </data>
+  <data name="面积比" xml:space="preserve">
+    <value>面积比</value>
+  </data>
+  <data name="面积比(%)" xml:space="preserve">
+    <value>面积比(%)</value>
+  </data>
+  <data name="面积比=样品三角形面积/标准三角形面积，可超过 100%；覆盖率=二者交集面积/标准三角形面积，范围 0–100%。两者均为所选 xy 或 u′v′ 平面上的二维面积，不是三维色域体积。选择结果行可查看交集填充。" xml:space="preserve">
+    <value>面积比=样品三角形面积/标准三角形面积，可超过 100%；覆盖率=二者交集面积/标准三角形面积，范围 0–100%。两者均为所选 xy 或 u′v′ 平面上的二维面积，不是三维色域体积。选择结果行可查看交集填充。</value>
+  </data>
+  <data name="面积比与覆盖率" xml:space="preserve">
+    <value>面积比与覆盖率</value>
+  </data>
+  <data name="面积计算平面" xml:space="preserve">
+    <value>面积计算平面</value>
+  </data>
+  <data name="黑体轨迹与色温参考" xml:space="preserve">
+    <value>黑体轨迹与色温参考</value>
+  </data>
+  <data name="&#10;波长 / 纯度：不适用" xml:space="preserve">
+    <value>
+波长 / 纯度：不适用</value>
+  </data>
+  <data name=" Lab/Luv 使用相对参考白 Y=100；sRGB 推算值不是仪器测量。" xml:space="preserve">
+    <value> Lab/Luv 使用相对参考白 Y=100；sRGB 推算值不是仪器测量。</value>
+  </data>
+  <data name=" Lab/Luv 参考白亮度 Yn={0} cd/m²。" xml:space="preserve">
+    <value> Lab/Luv 参考白亮度 Yn={0} cd/m²。</value>
+  </data>
+  <data name=" · 可比较 {0} 个 · ΔE00 平均 {1:F3} / 最大 {2:F3} · 超阈值 {3} 个" xml:space="preserve">
+    <value> · 可比较 {0} 个 · ΔE00 平均 {1:F3} / 最大 {2:F3} · 超阈值 {3} 个</value>
+  </data>
+  <data name=" · 尚无可比较的完整色差" xml:space="preserve">
+    <value> · 尚无可比较的完整色差</value>
+  </data>
+  <data name="CCT / Duv: 不适用" xml:space="preserve">
+    <value>CCT / Duv: 不适用</value>
+  </data>
+  <data name="CCT / Duv：不适用或超出近似范围" xml:space="preserve">
+    <value>CCT / Duv：不适用或超出近似范围</value>
+  </data>
+  <data name="CIE 当前色坐标" xml:space="preserve">
+    <value>CIE 当前色坐标</value>
+  </data>
+  <data name="CIE 计算参考白已更新；样品 XYZ 原值保持不变。" xml:space="preserve">
+    <value>CIE 计算参考白已更新；样品 XYZ 原值保持不变。</value>
+  </data>
+  <data name="CSV / TSV|*.csv;*.tsv|文本|*.txt" xml:space="preserve">
+    <value>CSV / TSV|*.csv;*.tsv|文本|*.txt</value>
+  </data>
+  <data name="Delta E 00 阈值" xml:space="preserve">
+    <value>Delta E 00 阈值</value>
+  </data>
+  <data name="HTML 离线报告|*.html" xml:space="preserve">
+    <value>HTML 离线报告|*.html</value>
+  </data>
+  <data name="sRGB / D65 推算，相对 Y；不是仪器测量值。" xml:space="preserve">
+    <value>sRGB / D65 推算，相对 Y；不是仪器测量值。</value>
+  </data>
+  <data name="sRGB 推算 / D65" xml:space="preserve">
+    <value>sRGB 推算 / D65</value>
+  </data>
+  <data name="{0} · 参考：{1}&#10;ΔE00 阈值 {2:G}；JNCD 步长 {3:G}。" xml:space="preserve">
+    <value>{0} · 参考：{1}
+ΔE00 阈值 {2:G}；JNCD 步长 {3:G}。</value>
+  </data>
+  <data name="{0} 平面：面积比可超过 100%；覆盖率为交集 / 标准面积。选中结果行查看交集填充。" xml:space="preserve">
+    <value>{0} 平面：面积比可超过 100%；覆盖率为交集 / 标准面积。选中结果行查看交集填充。</value>
+  </data>
+  <data name="“{0}”不是有效数字，请使用小数点 .。" xml:space="preserve">
+    <value>“{0}”不是有效数字，请使用小数点 .。</value>
+  </data>
+  <data name="主 / 补波长: —" xml:space="preserve">
+    <value>主 / 补波长: —</value>
+  </data>
+  <data name="亮度尺度不同" xml:space="preserve">
+    <value>亮度尺度不同</value>
+  </data>
+  <data name="仅色坐标" xml:space="preserve">
+    <value>仅色坐标</value>
+  </data>
+  <data name="仅色坐标，不假定实际亮度；可比较 Δu′v′。" xml:space="preserve">
+    <value>仅色坐标，不假定实际亮度；可比较 Δu′v′。</value>
+  </data>
+  <data name="共 {0} 个样品 · 参考：{1}" xml:space="preserve">
+    <value>共 {0} 个样品 · 参考：{1}</value>
+  </data>
+  <data name="剪贴板中没有文本。请复制包含表头的 Excel 区域。" xml:space="preserve">
+    <value>剪贴板中没有文本。请复制包含表头的 Excel 区域。</value>
+  </data>
+  <data name="参考" xml:space="preserve">
+    <value>参考</value>
+  </data>
+  <data name="参考样品不存在。" xml:space="preserve">
+    <value>参考样品不存在。</value>
+  </data>
+  <data name="参考白" xml:space="preserve">
+    <value>参考白</value>
+  </data>
+  <data name="参考白 x" xml:space="preserve">
+    <value>参考白 x</value>
+  </data>
+  <data name="参考白 y" xml:space="preserve">
+    <value>参考白 y</value>
+  </data>
+  <data name="双击样品点可选中；双击空白色度位置可填入 xy。" xml:space="preserve">
+    <value>双击样品点可选中；双击空白色度位置可填入 xy。</value>
+  </data>
+  <data name="已从剪贴板加入 {0} 个样品。" xml:space="preserve">
+    <value>已从剪贴板加入 {0} 个样品。</value>
+  </data>
+  <data name="已保存会话：{0}" xml:space="preserve">
+    <value>已保存会话：{0}</value>
+  </data>
+  <data name="已保存当前图表视图：{0}" xml:space="preserve">
+    <value>已保存当前图表视图：{0}</value>
+  </data>
+  <data name="已保存：{0}" xml:space="preserve">
+    <value>已保存：{0}</value>
+  </data>
+  <data name="已创建空白分析会话。" xml:space="preserve">
+    <value>已创建空白分析会话。</value>
+  </data>
+  <data name="已删除 {0} 个样品。" xml:space="preserve">
+    <value>已删除 {0} 个样品。</value>
+  </data>
+  <data name="已加入色度图当前点快照；后续取点不会修改已加入的样品。" xml:space="preserve">
+    <value>已加入色度图当前点快照；后续取点不会修改已加入的样品。</value>
+  </data>
+  <data name="已填入双击位置的 xy；点击“添加样品”锁定。该位置不是仪器测量数据。" xml:space="preserve">
+    <value>已填入双击位置的 xy；点击“添加样品”锁定。该位置不是仪器测量数据。</value>
+  </data>
+  <data name="已导入 {0} 个样品。" xml:space="preserve">
+    <value>已导入 {0} 个样品。</value>
+  </data>
+  <data name="已将 {0} 用作色域 {1} 原色。其他原色保持不变。" xml:space="preserve">
+    <value>已将 {0} 用作色域 {1} 原色。其他原色保持不变。</value>
+  </data>
+  <data name="已应用：{0} · Yn={1:G} cd/m²" xml:space="preserve">
+    <value>已应用：{0} · Yn={1:G} cd/m²</value>
+  </data>
+  <data name="已恢复会话，共 {0} 个样品。" xml:space="preserve">
+    <value>已恢复会话，共 {0} 个样品。</value>
+  </data>
+  <data name="已更新 {0}。" xml:space="preserve">
+    <value>已更新 {0}。</value>
+  </data>
+  <data name="已添加 {0}。可在下方设定参考样品。" xml:space="preserve">
+    <value>已添加 {0}。可在下方设定参考样品。</value>
+  </data>
+  <data name="已添加标记为“示例”的两组数据；可更改参考白、阈值或继续添加样品。" xml:space="preserve">
+    <value>已添加标记为“示例”的两组数据；可更改参考白、阈值或继续添加样品。</value>
+  </data>
+  <data name="已设 {0} 为参考样品。" xml:space="preserve">
+    <value>已设 {0} 为参考样品。</value>
+  </data>
+  <data name="当前分析尚未保存。是否先保存会话？" xml:space="preserve">
+    <value>当前分析尚未保存。是否先保存会话？</value>
+  </data>
+  <data name="当前点" xml:space="preserve">
+    <value>当前点</value>
+  </data>
+  <data name="彩度 C*ab: {0}  色相 hab: {1}°" xml:space="preserve">
+    <value>彩度 C*ab: {0}  色相 hab: {1}°</value>
+  </data>
+  <data name="数值超出计算范围" xml:space="preserve">
+    <value>数值超出计算范围</value>
+  </data>
+  <data name="文件超过 16 MiB，请分批导入。" xml:space="preserve">
+    <value>文件超过 16 MiB，请分批导入。</value>
+  </data>
+  <data name="暂无样品可导出。" xml:space="preserve">
+    <value>暂无样品可导出。</value>
+  </data>
+  <data name="最多支持 {0} 个样品，请分批建立会话。" xml:space="preserve">
+    <value>最多支持 {0} 个样品，请分批建立会话。</value>
+  </data>
+  <data name="未应用：{0}" xml:space="preserve">
+    <value>未应用：{0}</value>
+  </data>
+  <data name="未应用：请输入有效数字，要求 x&gt;0、y&gt;0、x+y&lt;1、Yn&gt;0。" xml:space="preserve">
+    <value>未应用：请输入有效数字，要求 x&gt;0、y&gt;0、x+y&lt;1、Yn&gt;0。</value>
+  </data>
+  <data name="未设参考" xml:space="preserve">
+    <value>未设参考</value>
+  </data>
+  <data name="未设置" xml:space="preserve">
+    <value>未设置</value>
+  </data>
+  <data name="样品 ID 重复。" xml:space="preserve">
+    <value>样品 ID 重复。</value>
+  </data>
+  <data name="样品 {0}" xml:space="preserve">
+    <value>样品 {0}</value>
+  </data>
+  <data name="激发纯度: —" xml:space="preserve">
+    <value>激发纯度: —</value>
+  </data>
+  <data name="相关色温 CCT: --" xml:space="preserve">
+    <value>相关色温 CCT: --</value>
+  </data>
+  <data name="相对 Y" xml:space="preserve">
+    <value>相对 Y</value>
+  </data>
+  <data name="相对样品使用参考白 Y=100；绝对样品使用配置的参考白亮度。" xml:space="preserve">
+    <value>相对样品使用参考白 Y=100；绝对样品使用配置的参考白亮度。</value>
+  </data>
+  <data name="绝对 Y" xml:space="preserve">
+    <value>绝对 Y</value>
+  </data>
+  <data name="绝对参考白亮度 cd/m²" xml:space="preserve">
+    <value>绝对参考白亮度 cd/m²</value>
+  </data>
+  <data name="缺少亮度" xml:space="preserve">
+    <value>缺少亮度</value>
+  </data>
+  <data name="自定义" xml:space="preserve">
+    <value>自定义</value>
+  </data>
+  <data name="自定义白点" xml:space="preserve">
+    <value>自定义白点</value>
+  </data>
+  <data name="色度分析" xml:space="preserve">
+    <value>色度分析</value>
+  </data>
+  <data name="色度分析会话|*.cie-session.json" xml:space="preserve">
+    <value>色度分析会话|*.cie-session.json</value>
+  </data>
+  <data name="色度分析会话|*.cie-session.json;*.json" xml:space="preserve">
+    <value>色度分析会话|*.cie-session.json;*.json</value>
+  </data>
+  <data name="色度图暂无有效当前点" xml:space="preserve">
+    <value>色度图暂无有效当前点</value>
+  </data>
+  <data name="计算参考白：{0} (x={1:F5}, y={2:F5})。白点与光谱边界外不定义波长；CCT 为近似值。" xml:space="preserve">
+    <value>计算参考白：{0} (x={1:F5}, y={2:F5})。白点与光谱边界外不定义波长；CCT 为近似值。</value>
+  </data>
+  <data name="计算条件已应用；样品 XYZ 原值保持不变。" xml:space="preserve">
+    <value>计算条件已应用；样品 XYZ 原值保持不变。</value>
+  </data>
+  <data name="请先显示色度分析页面。" xml:space="preserve">
+    <value>请先显示色度分析页面。</value>
+  </data>
+  <data name="请先选中一个样品。" xml:space="preserve">
+    <value>请先选中一个样品。</value>
+  </data>
+  <data name="请先选择要更新的样品。" xml:space="preserve">
+    <value>请先选择要更新的样品。</value>
+  </data>
+  <data name="超出阈值" xml:space="preserve">
+    <value>超出阈值</value>
+  </data>
+  <data name="距 {0} Δu′v′: {1}" xml:space="preserve">
+    <value>距 {0} Δu′v′: {1}</value>
+  </data>
+  <data name="距 {0} Δu′v′: —" xml:space="preserve">
+    <value>距 {0} Δu′v′: —</value>
+  </data>
+  <data name="输入以当前参考白解释，再保存为 XYZ；切换白点不会重解释原始输入。" xml:space="preserve">
+    <value>输入以当前参考白解释，再保存为 XYZ；切换白点不会重解释原始输入。</value>
+  </data>
+  <data name="阈值内" xml:space="preserve">
+    <value>阈值内</value>
+  </data>
+  <data name="值" xml:space="preserve">
+    <value>值</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="列" xml:space="preserve">
+    <value>列</value>
+  </data>
+  <data name="单位" xml:space="preserve">
+    <value>单位</value>
+  </data>
+  <data name="参数" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="双边滤波" xml:space="preserve">
+    <value>双边滤波</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="字段" xml:space="preserve">
+    <value>字段</value>
+  </data>
+  <data name="宽" xml:space="preserve">
+    <value>宽</value>
+  </data>
+  <data name="对比度" xml:space="preserve">
+    <value>对比度</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>导出 CSV</value>
+  </data>
+  <data name="应用" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="应用并刷新" xml:space="preserve">
+    <value>应用并刷新</value>
+  </data>
+  <data name="开始" xml:space="preserve">
+    <value>开始</value>
+  </data>
+  <data name="形态学操作" xml:space="preserve">
+    <value>形态学操作</value>
+  </data>
+  <data name="摘要" xml:space="preserve">
+    <value>摘要</value>
+  </data>
+  <data name="操作" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="最大面积(px)" xml:space="preserve">
+    <value>最大面积(px)</value>
+  </data>
+  <data name="最小面积(px)" xml:space="preserve">
+    <value>最小面积(px)</value>
+  </data>
+  <data name="查询" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="检测" xml:space="preserve">
+    <value>检测</value>
+  </data>
+  <data name="状态" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="目标" xml:space="preserve">
+    <value>目标</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="编号" xml:space="preserve">
+    <value>编号</value>
+  </data>
+  <data name="腐蚀" xml:space="preserve">
+    <value>腐蚀</value>
+  </data>
+  <data name="膨胀" xml:space="preserve">
+    <value>膨胀</value>
+  </data>
+  <data name="行" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="说明" xml:space="preserve">
+    <value>说明</value>
+  </data>
+  <data name="运行" xml:space="preserve">
+    <value>运行</value>
+  </data>
+  <data name="选择..." xml:space="preserve">
+    <value>选择...</value>
+  </data>
+  <data name="通道" xml:space="preserve">
+    <value>通道</value>
+  </data>
+  <data name="间隔 (ms)" xml:space="preserve">
+    <value>间隔 (ms)</value>
+  </data>
+  <data name="面积" xml:space="preserve">
+    <value>面积</value>
+  </data>
+  <data name="高" xml:space="preserve">
+    <value>高</value>
+  </data>
+  <data name="9点坐标" xml:space="preserve">
+    <value>9点坐标</value>
+  </data>
+  <data name="9点畸变分析" xml:space="preserve">
+    <value>9点畸变分析</value>
+  </data>
+  <data name="B · 蓝色" xml:space="preserve">
+    <value>B · 蓝色</value>
+  </data>
+  <data name="B 通道" xml:space="preserve">
+    <value>B 通道</value>
+  </data>
+  <data name="Blob / 连通域结果" xml:space="preserve">
+    <value>Blob / 连通域结果</value>
+  </data>
+  <data name="ESF · 边缘过渡" xml:space="preserve">
+    <value>ESF · 边缘过渡</value>
+  </data>
+  <data name="FFT / 频域分析结果" xml:space="preserve">
+    <value>FFT / 频域分析结果</value>
+  </data>
+  <data name="G · 绿色" xml:space="preserve">
+    <value>G · 绿色</value>
+  </data>
+  <data name="G 通道" xml:space="preserve">
+    <value>G 通道</value>
+  </data>
+  <data name="H / V 汇总" xml:space="preserve">
+    <value>H / V 汇总</value>
+  </data>
+  <data name="L · 亮度" xml:space="preserve">
+    <value>L · 亮度</value>
+  </data>
+  <data name="L 亮度" xml:space="preserve">
+    <value>L 亮度</value>
+  </data>
+  <data name="LSF · 加窗后的边缘导数" xml:space="preserve">
+    <value>LSF · 加窗后的边缘导数</value>
+  </data>
+  <data name="LSF · 线扩散" xml:space="preserve">
+    <value>LSF · 线扩散</value>
+  </data>
+  <data name="MTF · 对比度响应" xml:space="preserve">
+    <value>MTF · 对比度响应</value>
+  </data>
+  <data name="MTF 表示不同粗细细节保留的相对对比度。空间频率越高，细节越细。&#10;&#10;MTF50 / MTF10 是响应降到 50% / 10% 时的频率，不是清晰度分数。— 表示无效或在 0..0.5 cy/pixel 范围内未达到阈值，请看状态列。MTF@频率则是指定频率的响应比例。&#10;&#10;Nyquist = 0.5 cy/pixel。超出部分用于诊断，不能解释为无混叠分辨能力。曲线超过 1 可能与锐化有关，不会自动裁掉。&#10;&#10;ESF 显示亮暗边缘过渡；LSF 是其导数，本窗口显示用于计算的加窗 LSF。平台不平、多峰或振铃有助于解释异常。&#10;&#10;显示屏 RGB 子像素被解析出来时，平台纹理与两套像素栅格可能影响结果。请检查原始 ROI、方向、曝光和拍摄尺度；自动模糊或周期平均会改变测量响应，不能当作无代价的修复。&#10;&#10;当前结果是单张图像的系统响应。没有连续原始帧时不能判断采集重复性；也不能直接当作镜头自身的 MTF。" xml:space="preserve">
+    <value>MTF 表示不同粗细细节保留的相对对比度。空间频率越高，细节越细。
+
+MTF50 / MTF10 是响应降到 50% / 10% 时的频率，不是清晰度分数。— 表示无效或在 0..0.5 cy/pixel 范围内未达到阈值，请看状态列。MTF@频率则是指定频率的响应比例。
+
+Nyquist = 0.5 cy/pixel。超出部分用于诊断，不能解释为无混叠分辨能力。曲线超过 1 可能与锐化有关，不会自动裁掉。
+
+ESF 显示亮暗边缘过渡；LSF 是其导数，本窗口显示用于计算的加窗 LSF。平台不平、多峰或振铃有助于解释异常。
+
+显示屏 RGB 子像素被解析出来时，平台纹理与两套像素栅格可能影响结果。请检查原始 ROI、方向、曝光和拍摄尺度；自动模糊或周期平均会改变测量响应，不能当作无代价的修复。
+
+当前结果是单张图像的系统响应。没有连续原始帧时不能判断采集重复性；也不能直接当作镜头自身的 MTF。</value>
+  </data>
+  <data name="Mura 最小面积" xml:space="preserve">
+    <value>Mura 最小面积</value>
+  </data>
+  <data name="R · 红色" xml:space="preserve">
+    <value>R · 红色</value>
+  </data>
+  <data name="R 通道" xml:space="preserve">
+    <value>R 通道</value>
+  </data>
+  <data name="ROI 统计结果" xml:space="preserve">
+    <value>ROI 统计结果</value>
+  </data>
+  <data name="X (cy/px 或 px)" xml:space="preserve">
+    <value>X (cy/px 或 px)</value>
+  </data>
+  <data name="Z = 亮度值 / 255 × 显示高度" xml:space="preserve">
+    <value>Z = 亮度值 / 255 × 显示高度</value>
+  </data>
+  <data name="Z = 灰度 / 255 × 显示高度" xml:space="preserve">
+    <value>Z = 灰度 / 255 × 显示高度</value>
+  </data>
+  <data name="notch 滤波亮度" xml:space="preserve">
+    <value>notch 滤波亮度</value>
+  </data>
+  <data name="↺ 重置并完整显示  ·  Home" xml:space="preserve">
+    <value>↺ 重置并完整显示  ·  Home</value>
+  </data>
+  <data name="一次定位，计算全部指标方案。蓝色：完整点阵；橙色：参考 9 点。所有坐标均为原图像素。" xml:space="preserve">
+    <value>一次定位，计算全部指标方案。蓝色：完整点阵；橙色：参考 9 点。所有坐标均为原图像素。</value>
+  </data>
+  <data name="三维点" xml:space="preserve">
+    <value>三维点</value>
+  </data>
+  <data name="中央节距相对估计，非已标定镜头畸变。以中心点及相邻四点建立参考；径向偏差 = (实际半径 − 参考半径) / 参考半径 × 100%。透视和光轴偏心未单独分离。" xml:space="preserve">
+    <value>中央节距相对估计，非已标定镜头畸变。以中心点及相邻四点建立参考；径向偏差 = (实际半径 − 参考半径) / 参考半径 × 100%。透视和光轴偏心未单独分离。</value>
+  </data>
+  <data name="也可在主图选中小框，拖动或缩放后自动重算；双击小框查看该边详情。" xml:space="preserve">
+    <value>也可在主图选中小框，拖动或缩放后自动重算；双击小框查看该边详情。</value>
+  </data>
+  <data name="亚像素边缘结果" xml:space="preserve">
+    <value>亚像素边缘结果</value>
+  </data>
+  <data name="交互时使用缓存的较低细节网格" xml:space="preserve">
+    <value>交互时使用缓存的较低细节网格</value>
+  </data>
+  <data name="交互网格上限 X / Y（128–1024）" xml:space="preserve">
+    <value>交互网格上限 X / Y（128–1024）</value>
+  </data>
+  <data name="亮度/Luma" xml:space="preserve">
+    <value>亮度/Luma</value>
+  </data>
+  <data name="亮度高度图" xml:space="preserve">
+    <value>亮度高度图</value>
+  </data>
+  <data name="亮缺陷阈值(%)" xml:space="preserve">
+    <value>亮缺陷阈值(%)</value>
+  </data>
+  <data name="仅调整显示比例。亮度不是物理深度；不改变源像素。" xml:space="preserve">
+    <value>仅调整显示比例。亮度不是物理深度；不改变源像素。</value>
+  </data>
+  <data name="保存 mask..." xml:space="preserve">
+    <value>保存 mask...</value>
+  </data>
+  <data name="保存 preset..." xml:space="preserve">
+    <value>保存 preset...</value>
+  </data>
+  <data name="保存功率图..." xml:space="preserve">
+    <value>保存功率图...</value>
+  </data>
+  <data name="保存变换图..." xml:space="preserve">
+    <value>保存变换图...</value>
+  </data>
+  <data name="保存完整测量..." xml:space="preserve">
+    <value>保存完整测量...</value>
+  </data>
+  <data name="保存幅度图..." xml:space="preserve">
+    <value>保存幅度图...</value>
+  </data>
+  <data name="保存当前差分 PNG" xml:space="preserve">
+    <value>保存当前差分 PNG</value>
+  </data>
+  <data name="保存校正图..." xml:space="preserve">
+    <value>保存校正图...</value>
+  </data>
+  <data name="保存滤波图..." xml:space="preserve">
+    <value>保存滤波图...</value>
+  </data>
+  <data name="保存配准图..." xml:space="preserve">
+    <value>保存配准图...</value>
+  </data>
+  <data name="信噪比" xml:space="preserve">
+    <value>信噪比</value>
+  </data>
+  <data name="俯视" xml:space="preserve">
+    <value>俯视</value>
+  </data>
+  <data name="候选图覆盖比例" xml:space="preserve">
+    <value>候选图覆盖比例</value>
+  </data>
+  <data name="候选热力图" xml:space="preserve">
+    <value>候选热力图</value>
+  </data>
+  <data name="倾角 (°)" xml:space="preserve">
+    <value>倾角 (°)</value>
+  </data>
+  <data name="倾角 °" xml:space="preserve">
+    <value>倾角 °</value>
+  </data>
+  <data name="光学相对估计" xml:space="preserve">
+    <value>光学相对估计</value>
+  </data>
+  <data name="全部分析 JSON" xml:space="preserve">
+    <value>全部分析 JSON</value>
+  </data>
+  <data name="全部通道" xml:space="preserve">
+    <value>全部通道</value>
+  </data>
+  <data name="几何变换" xml:space="preserve">
+    <value>几何变换</value>
+  </data>
+  <data name="几何变换结果" xml:space="preserve">
+    <value>几何变换结果</value>
+  </data>
+  <data name="分箱覆盖" xml:space="preserve">
+    <value>分箱覆盖</value>
+  </data>
+  <data name="列 (0起)" xml:space="preserve">
+    <value>列 (0起)</value>
+  </data>
+  <data name="刷新前清除旧 Overlay" xml:space="preserve">
+    <value>刷新前清除旧 Overlay</value>
+  </data>
+  <data name="削顶比例" xml:space="preserve">
+    <value>削顶比例</value>
+  </data>
+  <data name="功率频谱" xml:space="preserve">
+    <value>功率频谱</value>
+  </data>
+  <data name="加载 preset..." xml:space="preserve">
+    <value>加载 preset...</value>
+  </data>
+  <data name="加载标定 JSON..." xml:space="preserve">
+    <value>加载标定 JSON...</value>
+  </data>
+  <data name="匹配点" xml:space="preserve">
+    <value>匹配点</value>
+  </data>
+  <data name="十字 RGB 分离" xml:space="preserve">
+    <value>十字 RGB 分离</value>
+  </data>
+  <data name="十字 RGB 分离 · 参数配置" xml:space="preserve">
+    <value>十字 RGB 分离 · 参数配置</value>
+  </data>
+  <data name="原始 JSON" xml:space="preserve">
+    <value>原始 JSON</value>
+  </data>
+  <data name="参考 X (px)" xml:space="preserve">
+    <value>参考 X (px)</value>
+  </data>
+  <data name="参考 Y (px)" xml:space="preserve">
+    <value>参考 Y (px)</value>
+  </data>
+  <data name="参考半径 (px)" xml:space="preserve">
+    <value>参考半径 (px)</value>
+  </data>
+  <data name="参考点" xml:space="preserve">
+    <value>参考点</value>
+  </data>
+  <data name="参考追溯" xml:space="preserve">
+    <value>参考追溯</value>
+  </data>
+  <data name="双目标定融合" xml:space="preserve">
+    <value>双目标定融合</value>
+  </data>
+  <data name="取消导出" xml:space="preserve">
+    <value>取消导出</value>
+  </data>
+  <data name="变换图像" xml:space="preserve">
+    <value>变换图像</value>
+  </data>
+  <data name="变换矩阵" xml:space="preserve">
+    <value>变换矩阵</value>
+  </data>
+  <data name="右图：尚未选择" xml:space="preserve">
+    <value>右图：尚未选择</value>
+  </data>
+  <data name="各框数值" xml:space="preserve">
+    <value>各框数值</value>
+  </data>
+  <data name="合并距离(px)" xml:space="preserve">
+    <value>合并距离(px)</value>
+  </data>
+  <data name="启用线缺陷分类" xml:space="preserve">
+    <value>启用线缺陷分类</value>
+  </data>
+  <data name="噪声" xml:space="preserve">
+    <value>噪声</value>
+  </data>
+  <data name="四边 SFR（BMW / 棋盘格）" xml:space="preserve">
+    <value>四边 SFR（BMW / 棋盘格）</value>
+  </data>
+  <data name="四边清晰度 · SFR" xml:space="preserve">
+    <value>四边清晰度 · SFR</value>
+  </data>
+  <data name="四通道指标" xml:space="preserve">
+    <value>四通道指标</value>
+  </data>
+  <data name="回显通道" xml:space="preserve">
+    <value>回显通道</value>
+  </data>
+  <data name="固定图像快照 · 频率基于输入像素 · 未设置产品判定规格" xml:space="preserve">
+    <value>固定图像快照 · 频率基于输入像素 · 未设置产品判定规格</value>
+  </data>
+  <data name="图像比较" xml:space="preserve">
+    <value>图像比较</value>
+  </data>
+  <data name="图像配准" xml:space="preserve">
+    <value>图像配准</value>
+  </data>
+  <data name="图像配准结果" xml:space="preserve">
+    <value>图像配准结果</value>
+  </data>
+  <data name="圆拟合结果" xml:space="preserve">
+    <value>圆拟合结果</value>
+  </data>
+  <data name="均值模糊" xml:space="preserve">
+    <value>均值模糊</value>
+  </data>
+  <data name="坏点候选" xml:space="preserve">
+    <value>坏点候选</value>
+  </data>
+  <data name="增加高度（+）" xml:space="preserve">
+    <value>增加高度（+）</value>
+  </data>
+  <data name="复制 JSON" xml:space="preserve">
+    <value>复制 JSON</value>
+  </data>
+  <data name="复制全部分析 JSON" xml:space="preserve">
+    <value>复制全部分析 JSON</value>
+  </data>
+  <data name="复制原始 JSON" xml:space="preserve">
+    <value>复制原始 JSON</value>
+  </data>
+  <data name="复制指标" xml:space="preserve">
+    <value>复制指标</value>
+  </data>
+  <data name="复制结果" xml:space="preserve">
+    <value>复制结果</value>
+  </data>
+  <data name="复制结果 JSON" xml:space="preserve">
+    <value>复制结果 JSON</value>
+  </data>
+  <data name="复制配置" xml:space="preserve">
+    <value>复制配置</value>
+  </data>
+  <data name="外接框" xml:space="preserve">
+    <value>外接框</value>
+  </data>
+  <data name="完整数据" xml:space="preserve">
+    <value>完整数据</value>
+  </data>
+  <data name="完整曲线数据" xml:space="preserve">
+    <value>完整曲线数据</value>
+  </data>
+  <data name="完整结果 JSON" xml:space="preserve">
+    <value>完整结果 JSON</value>
+  </data>
+  <data name="定义" xml:space="preserve">
+    <value>定义</value>
+  </data>
+  <data name="实际半径 (px)" xml:space="preserve">
+    <value>实际半径 (px)</value>
+  </data>
+  <data name="对齐预检" xml:space="preserve">
+    <value>对齐预检</value>
+  </data>
+  <data name="导出 CSV..." xml:space="preserve">
+    <value>导出 CSV...</value>
+  </data>
+  <data name="导出 JSON" xml:space="preserve">
+    <value>导出 JSON</value>
+  </data>
+  <data name="导出 JSON..." xml:space="preserve">
+    <value>导出 JSON...</value>
+  </data>
+  <data name="将鼠标移到曲面上读取显示亮度（0–255）" xml:space="preserve">
+    <value>将鼠标移到曲面上读取显示亮度（0–255）</value>
+  </data>
+  <data name="展开超 Nyquist 区域" xml:space="preserve">
+    <value>展开超 Nyquist 区域</value>
+  </data>
+  <data name="左侧为纯伪彩色，右侧增强表面光照；图例始终表示原始伪彩色" xml:space="preserve">
+    <value>左侧为纯伪彩色，右侧增强表面光照；图例始终表示原始伪彩色</value>
+  </data>
+  <data name="左图：当前编辑器图像" xml:space="preserve">
+    <value>左图：当前编辑器图像</value>
+  </data>
+  <data name="差分" xml:space="preserve">
+    <value>差分</value>
+  </data>
+  <data name="差分热力图" xml:space="preserve">
+    <value>差分热力图</value>
+  </data>
+  <data name="已配准图像" xml:space="preserve">
+    <value>已配准图像</value>
+  </data>
+  <data name="幅度频谱" xml:space="preserve">
+    <value>幅度频谱</value>
+  </data>
+  <data name="平台波动" xml:space="preserve">
+    <value>平台波动</value>
+  </data>
+  <data name="平移" xml:space="preserve">
+    <value>平移</value>
+  </data>
+  <data name="序列" xml:space="preserve">
+    <value>序列</value>
+  </data>
+  <data name="开运算" xml:space="preserve">
+    <value>开运算</value>
+  </data>
+  <data name="当前图像作为 reference；随后选择的图像作为 moving。参数可保存为严格版本化的 V1 preset。" xml:space="preserve">
+    <value>当前图像作为 reference；随后选择的图像作为 moving。参数可保存为严格版本化的 V1 preset。</value>
+  </data>
+  <data name="形态学" xml:space="preserve">
+    <value>形态学</value>
+  </data>
+  <data name="径向偏差 (%)" xml:space="preserve">
+    <value>径向偏差 (%)</value>
+  </data>
+  <data name="径向频谱" xml:space="preserve">
+    <value>径向频谱</value>
+  </data>
+  <data name="怎么看结果" xml:space="preserve">
+    <value>怎么看结果</value>
+  </data>
+  <data name="成像校正" xml:space="preserve">
+    <value>成像校正</value>
+  </data>
+  <data name="成像校正结果" xml:space="preserve">
+    <value>成像校正结果</value>
+  </data>
+  <data name="所有目标与四边 · MTF50 (cy/px)" xml:space="preserve">
+    <value>所有目标与四边 · MTF50 (cy/px)</value>
+  </data>
+  <data name="执行并提交" xml:space="preserve">
+    <value>执行并提交</value>
+  </data>
+  <data name="拟合 RMS (px)" xml:space="preserve">
+    <value>拟合 RMS (px)</value>
+  </data>
+  <data name="指标" xml:space="preserve">
+    <value>指标</value>
+  </data>
+  <data name="按原图像素测量条纹对比度；不是 SFR 的 MTF50。单独 H/V 输出各框数值，四部图案另列方向均值。" xml:space="preserve">
+    <value>按原图像素测量条纹对比度；不是 SFR 的 MTF50。单独 H/V 输出各框数值，四部图案另列方向均值。</value>
+  </data>
+  <data name="摩尔纹分析结果" xml:space="preserve">
+    <value>摩尔纹分析结果</value>
+  </data>
+  <data name="数值" xml:space="preserve">
+    <value>数值</value>
+  </data>
+  <data name="数据源：" xml:space="preserve">
+    <value>数据源：</value>
+  </data>
+  <data name="整体均值" xml:space="preserve">
+    <value>整体均值</value>
+  </data>
+  <data name="斜边清晰度" xml:space="preserve">
+    <value>斜边清晰度</value>
+  </data>
+  <data name="斜边清晰度 · SFR / MTF" xml:space="preserve">
+    <value>斜边清晰度 · SFR / MTF</value>
+  </data>
+  <data name="方向频谱" xml:space="preserve">
+    <value>方向频谱</value>
+  </data>
+  <data name="方案" xml:space="preserve">
+    <value>方案</value>
+  </data>
+  <data name="旋转" xml:space="preserve">
+    <value>旋转</value>
+  </data>
+  <data name="显示至 1 cy/px" xml:space="preserve">
+    <value>显示至 1 cy/px</value>
+  </data>
+  <data name="显示高度" xml:space="preserve">
+    <value>显示高度</value>
+  </data>
+  <data name="暗缺陷阈值(%)" xml:space="preserve">
+    <value>暗缺陷阈值(%)</value>
+  </data>
+  <data name="最大输出数" xml:space="preserve">
+    <value>最大输出数</value>
+  </data>
+  <data name="最小 severity" xml:space="preserve">
+    <value>最小 severity</value>
+  </data>
+  <data name="有效区域 mask" xml:space="preserve">
+    <value>有效区域 mask</value>
+  </data>
+  <data name="有效性 mask" xml:space="preserve">
+    <value>有效性 mask</value>
+  </data>
+  <data name="有符号差（中性灰为零）" xml:space="preserve">
+    <value>有符号差（中性灰为零）</value>
+  </data>
+  <data name="本次判定（可选）" xml:space="preserve">
+    <value>本次判定（可选）</value>
+  </data>
+  <data name="条纹 MTF 结果" xml:space="preserve">
+    <value>条纹 MTF 结果</value>
+  </data>
+  <data name="松开后恢复完整细节。低配显卡可用 768 / 256；关闭此选项可始终保持细节。采样不恢复原图未采到的细节。" xml:space="preserve">
+    <value>松开后恢复完整细节。低配显卡可用 768 / 256；关闭此选项可始终保持细节。采样不恢复原图未采到的细节。</value>
+  </data>
+  <data name="极性" xml:space="preserve">
+    <value>极性</value>
+  </data>
+  <data name="查看当前 SFR 矩形细节（取消可看整个靶标）" xml:space="preserve">
+    <value>查看当前 SFR 矩形细节（取消可看整个靶标）</value>
+  </data>
+  <data name="查询全部通道" xml:space="preserve">
+    <value>查询全部通道</value>
+  </data>
+  <data name="校正图像" xml:space="preserve">
+    <value>校正图像</value>
+  </data>
+  <data name="校正顺序固定为 Dark-frame → Flat-field → Shading/Non-uniformity → Bad-pixel。参考图必须与源图尺寸和格式一致；坏点 map 必须为 Gray8。" xml:space="preserve">
+    <value>校正顺序固定为 Dark-frame → Flat-field → Shading/Non-uniformity → Bad-pixel。参考图必须与源图尺寸和格式一致；坏点 map 必须为 Gray8。</value>
+  </data>
+  <data name="梯度" xml:space="preserve">
+    <value>梯度</value>
+  </data>
+  <data name="检查配置" xml:space="preserve">
+    <value>检查配置</value>
+  </data>
+  <data name="检测亮缺陷" xml:space="preserve">
+    <value>检测亮缺陷</value>
+  </data>
+  <data name="检测后刷新 Overlay" xml:space="preserve">
+    <value>检测后刷新 Overlay</value>
+  </data>
+  <data name="检测暗缺陷" xml:space="preserve">
+    <value>检测暗缺陷</value>
+  </data>
+  <data name="检测通道" xml:space="preserve">
+    <value>检测通道</value>
+  </data>
+  <data name="次数" xml:space="preserve">
+    <value>次数</value>
+  </data>
+  <data name="正在准备高度图…" xml:space="preserve">
+    <value>正在准备高度图…</value>
+  </data>
+  <data name="正在分析固定图像快照..." xml:space="preserve">
+    <value>正在分析固定图像快照...</value>
+  </data>
+  <data name="正在载入" xml:space="preserve">
+    <value>正在载入</value>
+  </data>
+  <data name="残差 px" xml:space="preserve">
+    <value>残差 px</value>
+  </data>
+  <data name="测量区域 · 原始像素预览" xml:space="preserve">
+    <value>测量区域 · 原始像素预览</value>
+  </data>
+  <data name="测量参数 / 重新分析" xml:space="preserve">
+    <value>测量参数 / 重新分析</value>
+  </data>
+  <data name="测量参数..." xml:space="preserve">
+    <value>测量参数...</value>
+  </data>
+  <data name="测量框与显示" xml:space="preserve">
+    <value>测量框与显示</value>
+  </data>
+  <data name="测量质量" xml:space="preserve">
+    <value>测量质量</value>
+  </data>
+  <data name="清除 Overlay" xml:space="preserve">
+    <value>清除 Overlay</value>
+  </data>
+  <data name="滤波/去噪" xml:space="preserve">
+    <value>滤波/去噪</value>
+  </data>
+  <data name="灰度与颜色剖面" xml:space="preserve">
+    <value>灰度与颜色剖面</value>
+  </data>
+  <data name="点 ID" xml:space="preserve">
+    <value>点 ID</value>
+  </data>
+  <data name="点阵坐标" xml:space="preserve">
+    <value>点阵坐标</value>
+  </data>
+  <data name="点阵畸变分析 (V2)" xml:space="preserve">
+    <value>点阵畸变分析 (V2)</value>
+  </data>
+  <data name="状态 / 未达阈值原因（悬停查看）" xml:space="preserve">
+    <value>状态 / 未达阈值原因（悬停查看）</value>
+  </data>
+  <data name="状态 / 警告" xml:space="preserve">
+    <value>状态 / 警告</value>
+  </data>
+  <data name="畸变指标" xml:space="preserve">
+    <value>畸变指标</value>
+  </data>
+  <data name="畸变系数" xml:space="preserve">
+    <value>畸变系数</value>
+  </data>
+  <data name="目标响应 (0..1)" xml:space="preserve">
+    <value>目标响应 (0..1)</value>
+  </data>
+  <data name="目标频率 (cy/pixel)" xml:space="preserve">
+    <value>目标频率 (cy/pixel)</value>
+  </data>
+  <data name="目标频率 (cy/px)" xml:space="preserve">
+    <value>目标频率 (cy/px)</value>
+  </data>
+  <data name="直方图" xml:space="preserve">
+    <value>直方图</value>
+  </data>
+  <data name="直线拟合结果" xml:space="preserve">
+    <value>直线拟合结果</value>
+  </data>
+  <data name="相机矩阵" xml:space="preserve">
+    <value>相机矩阵</value>
+  </data>
+  <data name="矩阵按源像素中心 → 目标像素中心定义。可编辑参数，或加载已保存的 V1 preset。" xml:space="preserve">
+    <value>矩阵按源像素中心 → 目标像素中心定义。可编辑参数，或加载已保存的 V1 preset。</value>
+  </data>
+  <data name="空间 Sigma" xml:space="preserve">
+    <value>空间 Sigma</value>
+  </data>
+  <data name="立体光照" xml:space="preserve">
+    <value>立体光照</value>
+  </data>
+  <data name="端点像素" xml:space="preserve">
+    <value>端点像素</value>
+  </data>
+  <data name="等级" xml:space="preserve">
+    <value>等级</value>
+  </data>
+  <data name="等级阈值" xml:space="preserve">
+    <value>等级阈值</value>
+  </data>
+  <data name="纯伪彩色                         明暗塑形" xml:space="preserve">
+    <value>纯伪彩色                         明暗塑形</value>
+  </data>
+  <data name="线缺陷长宽比" xml:space="preserve">
+    <value>线缺陷长宽比</value>
+  </data>
+  <data name="结果 JSON" xml:space="preserve">
+    <value>结果 JSON</value>
+  </data>
+  <data name="绘制 Overlay" xml:space="preserve">
+    <value>绘制 Overlay</value>
+  </data>
+  <data name="绝对差（显示归一化）" xml:space="preserve">
+    <value>绝对差（显示归一化）</value>
+  </data>
+  <data name="统计摘要" xml:space="preserve">
+    <value>统计摘要</value>
+  </data>
+  <data name="编辑参数..." xml:space="preserve">
+    <value>编辑参数...</value>
+  </data>
+  <data name="缺陷列表" xml:space="preserve">
+    <value>缺陷列表</value>
+  </data>
+  <data name="背景尺度" xml:space="preserve">
+    <value>背景尺度</value>
+  </data>
+  <data name="自动清除上次结果" xml:space="preserve">
+    <value>自动清除上次结果</value>
+  </data>
+  <data name="融合配置 JSON（标定值必须替换为真实数据）" xml:space="preserve">
+    <value>融合配置 JSON（标定值必须替换为真实数据）</value>
+  </data>
+  <data name="行 (0起)" xml:space="preserve">
+    <value>行 (0起)</value>
+  </data>
+  <data name="表面缺陷/Mura 检测" xml:space="preserve">
+    <value>表面缺陷/Mura 检测</value>
+  </data>
+  <data name="视角" xml:space="preserve">
+    <value>视角</value>
+  </data>
+  <data name="调整当前 SFR 矩形…" xml:space="preserve">
+    <value>调整当前 SFR 矩形…</value>
+  </data>
+  <data name="质量与耗时" xml:space="preserve">
+    <value>质量与耗时</value>
+  </data>
+  <data name="质量诊断" xml:space="preserve">
+    <value>质量诊断</value>
+  </data>
+  <data name="质量门限用于判断单斜边是否适用，不能代替产品合格规格。平台波动同时包含噪声、纹理和不均匀性；端点像素比例提示削顶风险。" xml:space="preserve">
+    <value>质量门限用于判断单斜边是否适用，不能代替产品合格规格。平台波动同时包含噪声、纹理和不均匀性；端点像素比例提示削顶风险。</value>
+  </data>
+  <data name="跨度" xml:space="preserve">
+    <value>跨度</value>
+  </data>
+  <data name="轮廓提取结果" xml:space="preserve">
+    <value>轮廓提取结果</value>
+  </data>
+  <data name="输入 Brown-Conrady 相机内参与畸变系数。参数按图像像素中心坐标定义；V1 不从图像猜测标定，也不隐式缩放内参。" xml:space="preserve">
+    <value>输入 Brown-Conrady 相机内参与畸变系数。参数按图像像素中心坐标定义；V1 不从图像猜测标定，也不隐式缩放内参。</value>
+  </data>
+  <data name="输入范围" xml:space="preserve">
+    <value>输入范围</value>
+  </data>
+  <data name="边" xml:space="preserve">
+    <value>边</value>
+  </data>
+  <data name="运行融合" xml:space="preserve">
+    <value>运行融合</value>
+  </data>
+  <data name="选择 moving..." xml:space="preserve">
+    <value>选择 moving...</value>
+  </data>
+  <data name="选择右图..." xml:space="preserve">
+    <value>选择右图...</value>
+  </data>
+  <data name="通道质量" xml:space="preserve">
+    <value>通道质量</value>
+  </data>
+  <data name="配置 JSON（可直接编辑）" xml:space="preserve">
+    <value>配置 JSON（可直接编辑）</value>
+  </data>
+  <data name="采样数据" xml:space="preserve">
+    <value>采样数据</value>
+  </data>
+  <data name="采样覆盖" xml:space="preserve">
+    <value>采样覆盖</value>
+  </data>
+  <data name="重新分析" xml:space="preserve">
+    <value>重新分析</value>
+  </data>
+  <data name="镜头畸变校正" xml:space="preserve">
+    <value>镜头畸变校正</value>
+  </data>
+  <data name="镜头畸变校正结果" xml:space="preserve">
+    <value>镜头畸变校正结果</value>
+  </data>
+  <data name="闭运算" xml:space="preserve">
+    <value>闭运算</value>
+  </data>
+  <data name="阶段统计" xml:space="preserve">
+    <value>阶段统计</value>
+  </data>
+  <data name="降低高度（−）" xml:space="preserve">
+    <value>降低高度（−）</value>
+  </data>
+  <data name="静止细节 · 最长边（128–2048）" xml:space="preserve">
+    <value>静止细节 · 最长边（128–2048）</value>
+  </data>
+  <data name="面积 (px²)" xml:space="preserve">
+    <value>面积 (px²)</value>
+  </data>
+  <data name="顶帽" xml:space="preserve">
+    <value>顶帽</value>
+  </data>
+  <data name="频率 @ 50%" xml:space="preserve">
+    <value>频率 @ 50%</value>
+  </data>
+  <data name="颜色 Sigma" xml:space="preserve">
+    <value>颜色 Sigma</value>
+  </data>
+  <data name="高度图显示设置" xml:space="preserve">
+    <value>高度图显示设置</value>
+  </data>
+  <data name="高级参数" xml:space="preserve">
+    <value>高级参数</value>
+  </data>
+  <data name="高级参数..." xml:space="preserve">
+    <value>高级参数...</value>
+  </data>
+  <data name="黑帽" xml:space="preserve">
+    <value>黑帽</value>
+  </data>
+  <data name="默认 3×3，单个十字设为 1×1。" xml:space="preserve">
+    <value>默认 3×3，单个十字设为 1×1。</value>
+  </data>
+  <data name="左键旋转 · 右键 / 中键平移&#10;滚轮缩放 · 双击完整显示" xml:space="preserve">
+    <value>左键旋转 · 右键 / 中键平移
+滚轮缩放 · 双击完整显示</value>
+  </data>
+  <data name="&#10;&#10;光学相对估计：{0}&#10;方法：{1}&#10;中央节距相对估计，非已标定镜头畸变。&#10;{2}&#10;参考中心：({3:F4}, {4:F4}) px&#10;列节距：({5:F4}, {6:F4}) px&#10;行节距：({7:F4}, {8:F4}) px&#10;{9}" xml:space="preserve">
+    <value>
+
+光学相对估计：{0}
+方法：{1}
+中央节距相对估计，非已标定镜头畸变。
+{2}
+参考中心：({3:F4}, {4:F4}) px
+列节距：({5:F4}, {6:F4}) px
+行节距：({7:F4}, {8:F4}) px
+{9}</value>
+  </data>
+  <data name=" Confidence 为区域填充率，并非分类概率。" xml:space="preserve">
+    <value> Confidence 为区域填充率，并非分类概率。</value>
+  </data>
+  <data name=" Confidence 为轮廓实心度，并非分类概率。" xml:space="preserve">
+    <value> Confidence 为轮廓实心度，并非分类概率。</value>
+  </data>
+  <data name=" Confidence 是响应质量分数；LocalizationUncertainty 是启发式像素不确定度，并非标定后的计量置信区间。" xml:space="preserve">
+    <value> Confidence 是响应质量分数；LocalizationUncertainty 是启发式像素不确定度，并非标定后的计量置信区间。</value>
+  </data>
+  <data name="(未命名)" xml:space="preserve">
+    <value>(未命名)</value>
+  </data>
+  <data name="(未提供)" xml:space="preserve">
+    <value>(未提供)</value>
+  </data>
+  <data name="9点畸变" xml:space="preserve">
+    <value>9点畸变</value>
+  </data>
+  <data name="9点畸变结果解析失败。" xml:space="preserve">
+    <value>9点畸变结果解析失败。</value>
+  </data>
+  <data name="9点畸变计算失败，返回码: {0}&#10;{1}" xml:space="preserve">
+    <value>9点畸变计算失败，返回码: {0}
+{1}</value>
+  </data>
+  <data name="9点畸变计算异常: {0}" xml:space="preserve">
+    <value>9点畸变计算异常: {0}</value>
+  </data>
+  <data name="B-G 最大边缘分离" xml:space="preserve">
+    <value>B-G 最大边缘分离</value>
+  </data>
+  <data name="BMW SFR 测量质量参数" xml:space="preserve">
+    <value>BMW SFR 测量质量参数</value>
+  </data>
+  <data name="Blob / 连通域" xml:space="preserve">
+    <value>Blob / 连通域</value>
+  </data>
+  <data name="Blob / 连通域参数" xml:space="preserve">
+    <value>Blob / 连通域参数</value>
+  </data>
+  <data name="Blob / 连通域失败" xml:space="preserve">
+    <value>Blob / 连通域失败</value>
+  </data>
+  <data name="ESF · 归一化边缘信号" xml:space="preserve">
+    <value>ESF · 归一化边缘信号</value>
+  </data>
+  <data name="ESF：沿边缘法线的亮暗过渡。平台起伏可能来自像素纹理、噪声或光照不均。" xml:space="preserve">
+    <value>ESF：沿边缘法线的亮暗过渡。平台起伏可能来自像素纹理、噪声或光照不均。</value>
+  </data>
+  <data name="Eyebox 采样点" xml:space="preserve">
+    <value>Eyebox 采样点</value>
+  </data>
+  <data name="FFT / 频域分析" xml:space="preserve">
+    <value>FFT / 频域分析</value>
+  </data>
+  <data name="FFT / 频域分析参数" xml:space="preserve">
+    <value>FFT / 频域分析参数</value>
+  </data>
+  <data name="FFT / 频域分析失败" xml:space="preserve">
+    <value>FFT / 频域分析失败</value>
+  </data>
+  <data name="JSON / 结构化结果" xml:space="preserve">
+    <value>JSON / 结构化结果</value>
+  </data>
+  <data name="LSF · 响应 / pixel" xml:space="preserve">
+    <value>LSF · 响应 / pixel</value>
+  </data>
+  <data name="LSF：本图为用于傅里叶变换的加窗导数。多峰、拖尾和振铃可用于诊断。" xml:space="preserve">
+    <value>LSF：本图为用于傅里叶变换的加窗导数。多峰、拖尾和振铃可用于诊断。</value>
+  </data>
+  <data name="MTF · 相对响应" xml:space="preserve">
+    <value>MTF · 相对响应</value>
+  </data>
+  <data name="MTF 参数或图像无效" xml:space="preserve">
+    <value>MTF 参数或图像无效</value>
+  </data>
+  <data name="MTF 计算失败。" xml:space="preserve">
+    <value>MTF 计算失败。</value>
+  </data>
+  <data name="Mura 候选数" xml:space="preserve">
+    <value>Mura 候选数</value>
+  </data>
+  <data name="NG 十字数" xml:space="preserve">
+    <value>NG 十字数</value>
+  </data>
+  <data name="OK 十字数" xml:space="preserve">
+    <value>OK 十字数</value>
+  </data>
+  <data name="Overlay 已清除。" xml:space="preserve">
+    <value>Overlay 已清除。</value>
+  </data>
+  <data name="Preset: {0}&#10;内参: Fx={1:G10}px  Fy={2:G10}px  主点={3} ({4:G10}, {5:G10})px&#10;畸变: K1={6:G8}  K2={7:G8}  P1={8:G8}  P2={9:G8}  K3={10:G8}  K4={11:G8}  K5={12:G8}  K6={13:G8}&#10;输出: {14}  Alpha={15:G5}  插值={16}  边界={17}&#10;标定: source={18}  version={19}  checksum={20}" xml:space="preserve">
+    <value>Preset: {0}
+内参: Fx={1:G10}px  Fy={2:G10}px  主点={3} ({4:G10}, {5:G10})px
+畸变: K1={6:G8}  K2={7:G8}  P1={8:G8}  P2={9:G8}  K3={10:G8}  K4={11:G8}  K5={12:G8}  K6={13:G8}
+输出: {14}  Alpha={15:G5}  插值={16}  边界={17}
+标定: source={18}  version={19}  checksum={20}</value>
+  </data>
+  <data name="Preset: {0}&#10;方法: {1}    插值: {2}    边界: {3}&#10;相位最小响应: {4:G6}    最大平移: {5:G8}px&#10;ORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:G6}px" xml:space="preserve">
+    <value>Preset: {0}
+方法: {1}    插值: {2}    边界: {3}
+相位最小响应: {4:G6}    最大平移: {5:G8}px
+ORB 特征上限: {6:N0}    最少匹配/内点: {7}/{8}    重投影阈值: {9:G6}px</value>
+  </data>
+  <data name="Preset: {0}&#10;无效参考: {1}；增益 {2:G5}..{3:G5}；输出 {4}&#10;校正来源: {5}；版本: {6}" xml:space="preserve">
+    <value>Preset: {0}
+无效参考: {1}；增益 {2:G5}..{3:G5}；输出 {4}
+校正来源: {5}；版本: {6}</value>
+  </data>
+  <data name="Preset: {0}&#10;类型: {1}    画布: {2}    插值: {3}    边界: {4}&#10;[{5:G8}, {6:G8}, {7:G8}]&#10;[{8:G8}, {9:G8}, {10:G8}]&#10;[{11:G8}, {12:G8}, {13:G8}]&#10;显式尺寸: {14} × {15}    自动留白: {16}px&#10;最大输出: {17:N0} pixels" xml:space="preserve">
+    <value>Preset: {0}
+类型: {1}    画布: {2}    插值: {3}    边界: {4}
+[{5:G8}, {6:G8}, {7:G8}]
+[{8:G8}, {9:G8}, {10:G8}]
+[{11:G8}, {12:G8}, {13:G8}]
+显式尺寸: {14} × {15}    自动留白: {16}px
+最大输出: {17:N0} pixels</value>
+  </data>
+  <data name="R-G 最大边缘分离" xml:space="preserve">
+    <value>R-G 最大边缘分离</value>
+  </data>
+  <data name="RGB 位移明细" xml:space="preserve">
+    <value>RGB 位移明细</value>
+  </data>
+  <data name="RGB 测量不完整点数" xml:space="preserve">
+    <value>RGB 测量不完整点数</value>
+  </data>
+  <data name="RGB 测量完整点数" xml:space="preserve">
+    <value>RGB 测量完整点数</value>
+  </data>
+  <data name="RGB/Gray 为 DN；XYZ 单位未声明；x/y 为无量纲色度。" xml:space="preserve">
+    <value>RGB/Gray 为 DN；XYZ 单位未声明；x/y 为无量纲色度。</value>
+  </data>
+  <data name="ROI ({0}, {1}) · {2} × {3} px · 输入 {4} bit · 快照 {5:HH:mm:ss}" xml:space="preserve">
+    <value>ROI ({0}, {1}) · {2} × {3} px · 输入 {4} bit · 快照 {5:HH:mm:ss}</value>
+  </data>
+  <data name="ROI 像素：{0:N0}；通道：{1}；坏点候选：{2:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。" xml:space="preserve">
+    <value>ROI 像素：{0:N0}；通道：{1}；坏点候选：{2:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。</value>
+  </data>
+  <data name="ROI 统计" xml:space="preserve">
+    <value>ROI 统计</value>
+  </data>
+  <data name="ROI 统计..." xml:space="preserve">
+    <value>ROI 统计...</value>
+  </data>
+  <data name="ROI 统计参数" xml:space="preserve">
+    <value>ROI 统计参数</value>
+  </data>
+  <data name="ROI 统计失败" xml:space="preserve">
+    <value>ROI 统计失败</value>
+  </data>
+  <data name="SFR 曲线数据" xml:space="preserve">
+    <value>SFR 曲线数据</value>
+  </data>
+  <data name="SFR 测量与显示" xml:space="preserve">
+    <value>SFR 测量与显示</value>
+  </data>
+  <data name="X 扫描跨度" xml:space="preserve">
+    <value>X 扫描跨度</value>
+  </data>
+  <data name="Y 扫描跨度" xml:space="preserve">
+    <value>Y 扫描跨度</value>
+  </data>
+  <data name="moving：{0}；方法={1}；{2}；光度 RMSE={3:G8}；置信度={4:P2}；有效区域={5:P2}。矩阵方向为 moving 像素中心 → reference 像素中心。" xml:space="preserve">
+    <value>moving：{0}；方法={1}；{2}；光度 RMSE={3:G8}；置信度={4:P2}；有效区域={5:P2}。矩阵方向为 moving 像素中心 → reference 像素中心。</value>
+  </data>
+  <data name="{0}    Overlay 已清除。" xml:space="preserve">
+    <value>{0}    Overlay 已清除。</value>
+  </data>
+  <data name="{0} - 结果" xml:space="preserve">
+    <value>{0} - 结果</value>
+  </data>
+  <data name="{0} · {1} · {2}边" xml:space="preserve">
+    <value>{0} · {1} · {2}边</value>
+  </data>
+  <data name="{0} · {1}边 SFR 矩形" xml:space="preserve">
+    <value>{0} · {1}边 SFR 矩形</value>
+  </data>
+  <data name="{0} · 采样 {1} × {2} · 显示高度 {3:F1} · 双线性亮度采样，未做深度重建" xml:space="preserve">
+    <value>{0} · 采样 {1} × {2} · 显示高度 {3:F1} · 双线性亮度采样，未做深度重建</value>
+  </data>
+  <data name="{0} × {1} 原始像素 · {2} bit · 快照 {3:HH:mm:ss}" xml:space="preserve">
+    <value>{0} × {1} 原始像素 · {2} bit · 快照 {3:HH:mm:ss}</value>
+  </data>
+  <data name="{0} 个搜索框 · {1} 个已定位 · {2} 条边 · 可计算通道 {3}/{4} · 输入编码 {5}" xml:space="preserve">
+    <value>{0} 个搜索框 · {1} 个已定位 · {2} 条边 · 可计算通道 {3}/{4} · 输入编码 {5}</value>
+  </data>
+  <data name="{0} 个测量框 · {1} · 计算 {2:F2} ms" xml:space="preserve">
+    <value>{0} 个测量框 · {1} · 计算 {2:F2} ms</value>
+  </data>
+  <data name="{0} 未绘制：{1}" xml:space="preserve">
+    <value>{0} 未绘制：{1}</value>
+  </data>
+  <data name="一条完整斜边，两侧保留均匀平台。橙色线为 L 通道拟合位置。" xml:space="preserve">
+    <value>一条完整斜边，两侧保留均匀平台。橙色线为 L 通道拟合位置。</value>
+  </data>
+  <data name="主频={0:G8} cycles/pixel；周期={1:G8}px；频率方向={2:G6}°；空间纹理方向={3:G6}°；逆变换 RMSE={4:G8}。" xml:space="preserve">
+    <value>主频={0:G8} cycles/pixel；周期={1:G8}px；频率方向={2:G6}°；空间纹理方向={3:G6}°；逆变换 RMSE={4:G8}。</value>
+  </data>
+  <data name="亚像素边缘" xml:space="preserve">
+    <value>亚像素边缘</value>
+  </data>
+  <data name="亚像素边缘参数" xml:space="preserve">
+    <value>亚像素边缘参数</value>
+  </data>
+  <data name="亚像素边缘失败" xml:space="preserve">
+    <value>亚像素边缘失败</value>
+  </data>
+  <data name="亮点候选数" xml:space="preserve">
+    <value>亮点候选数</value>
+  </data>
+  <data name="保存失败" xml:space="preserve">
+    <value>保存失败</value>
+  </data>
+  <data name="保存失败: {0}" xml:space="preserve">
+    <value>保存失败: {0}</value>
+  </data>
+  <data name="保存成功" xml:space="preserve">
+    <value>保存成功</value>
+  </data>
+  <data name="候选图像" xml:space="preserve">
+    <value>候选图像</value>
+  </data>
+  <data name="候选：{0:N0}；接受：{1:N0}；" xml:space="preserve">
+    <value>候选：{0:N0}；接受：{1:N0}；</value>
+  </data>
+  <data name="候选：{0}；MSE={1:G10}，RMSE={2:G10}，PSNR={3} dB，SSIM={4}；对齐预检={5}，候选偏移=({6}, {7}) px，置信度={8}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。" xml:space="preserve">
+    <value>候选：{0}；MSE={1:G10}，RMSE={2:G10}，PSNR={3} dB，SSIM={4}；对齐预检={5}，候选偏移=({6}, {7}) px，置信度={8}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。</value>
+  </data>
+  <data name="停止" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="准备导出…" xml:space="preserve">
+    <value>准备导出…</value>
+  </data>
+  <data name="准备执行..." xml:space="preserve">
+    <value>准备执行...</value>
+  </data>
+  <data name="几何变换参数" xml:space="preserve">
+    <value>几何变换参数</value>
+  </data>
+  <data name="剖面分析" xml:space="preserve">
+    <value>剖面分析</value>
+  </data>
+  <data name="剖面分析失败" xml:space="preserve">
+    <value>剖面分析失败</value>
+  </data>
+  <data name="剖面分析结果" xml:space="preserve">
+    <value>剖面分析结果</value>
+  </data>
+  <data name="剖面采样参数" xml:space="preserve">
+    <value>剖面采样参数</value>
+  </data>
+  <data name="加载双目标定 JSON" xml:space="preserve">
+    <value>加载双目标定 JSON</value>
+  </data>
+  <data name="加载右图失败" xml:space="preserve">
+    <value>加载右图失败</value>
+  </data>
+  <data name="加载标定失败" xml:space="preserve">
+    <value>加载标定失败</value>
+  </data>
+  <data name="十字 RGB 分离..." xml:space="preserve">
+    <value>十字 RGB 分离...</value>
+  </data>
+  <data name="十字 RGB 分离明细" xml:space="preserve">
+    <value>十字 RGB 分离明细</value>
+  </data>
+  <data name="十字候选数" xml:space="preserve">
+    <value>十字候选数</value>
+  </data>
+  <data name="十字总体判定（1=OK，0=NG）" xml:space="preserve">
+    <value>十字总体判定（1=OK，0=NG）</value>
+  </data>
+  <data name="十字轴线最大 RGB 分离" xml:space="preserve">
+    <value>十字轴线最大 RGB 分离</value>
+  </data>
+  <data name="十字边缘分离均方根" xml:space="preserve">
+    <value>十字边缘分离均方根</value>
+  </data>
+  <data name="十字边缘最大 RGB 分离" xml:space="preserve">
+    <value>十字边缘最大 RGB 分离</value>
+  </data>
+  <data name="卡尺：{0:N0}；接受：{1:N0}；" xml:space="preserve">
+    <value>卡尺：{0:N0}；接受：{1:N0}；</value>
+  </data>
+  <data name="参数无效" xml:space="preserve">
+    <value>参数无效</value>
+  </data>
+  <data name="参考帧有效像素" xml:space="preserve">
+    <value>参考帧有效像素</value>
+  </data>
+  <data name="双目标定融合..." xml:space="preserve">
+    <value>双目标定融合...</value>
+  </data>
+  <data name="双目检测与三角化计算中..." xml:space="preserve">
+    <value>双目检测与三角化计算中...</value>
+  </data>
+  <data name="发光区定位" xml:space="preserve">
+    <value>发光区定位</value>
+  </data>
+  <data name="发光区定位（需复核）" xml:space="preserve">
+    <value>发光区定位（需复核）</value>
+  </data>
+  <data name="可在设置中降低细节后重试；需要可用的 DirectX 11 渲染设备。" xml:space="preserve">
+    <value>可在设置中降低细节后重试；需要可用的 DirectX 11 渲染设备。</value>
+  </data>
+  <data name="可用" xml:space="preserve">
+    <value>可用</value>
+  </data>
+  <data name="可计算通道 {0}/{1}；{2}" xml:space="preserve">
+    <value>可计算通道 {0}/{1}；{2}</value>
+  </data>
+  <data name="右图已加载；请确认标定矩阵、畸变、旋转和平移均与这对图像一致。" xml:space="preserve">
+    <value>右图已加载；请确认标定矩阵、畸变、旋转和平移均与这对图像一致。</value>
+  </data>
+  <data name="右图：{0} ({1} x {2})" xml:space="preserve">
+    <value>右图：{0} ({1} x {2})</value>
+  </data>
+  <data name="右眼 / 左眼倍率" xml:space="preserve">
+    <value>右眼 / 左眼倍率</value>
+  </data>
+  <data name="右眼相对旋转（顺时针）" xml:space="preserve">
+    <value>右眼相对旋转（顺时针）</value>
+  </data>
+  <data name="周期频谱证据评分={0:F2}/100（{1}）；候选={2:N0}；候选功率比例={3:P2}；最大突出度={4:G6}。评分是频谱证据，不是摩尔纹成因证明。" xml:space="preserve">
+    <value>周期频谱证据评分={0:F2}/100（{1}）；候选={2:N0}；候选功率比例={3:P2}；最大突出度={4:G6}。评分是频谱证据，不是摩尔纹成因证明。</value>
+  </data>
+  <data name="四角满足阈值的网格面积" xml:space="preserve">
+    <value>四角满足阈值的网格面积</value>
+  </data>
+  <data name="四边 SFR" xml:space="preserve">
+    <value>四边 SFR</value>
+  </data>
+  <data name="四边 SFR · 图卡与测量框" xml:space="preserve">
+    <value>四边 SFR · 图卡与测量框</value>
+  </data>
+  <data name="四通道均可计算；MTF50/10 未在 Nyquist 内交叉时保留空值。" xml:space="preserve">
+    <value>四通道均可计算；MTF50/10 未在 Nyquist 内交叉时保留空值。</value>
+  </data>
+  <data name="图像比较参数" xml:space="preserve">
+    <value>图像比较参数</value>
+  </data>
+  <data name="图像比较失败" xml:space="preserve">
+    <value>图像比较失败</value>
+  </data>
+  <data name="图像比较结果" xml:space="preserve">
+    <value>图像比较结果</value>
+  </data>
+  <data name="图像配准参数" xml:space="preserve">
+    <value>图像配准参数</value>
+  </data>
+  <data name="图像配准失败" xml:space="preserve">
+    <value>图像配准失败</value>
+  </data>
+  <data name="圆心：({0:G8}, {1:G8})px；半径：{2:G8}px；有效点：{3:N0}/{4:N0}；RMS：{5:G8}px；角覆盖：{6:G6}°；质量：{7:G6}。质量不是统计概率。" xml:space="preserve">
+    <value>圆心：({0:G8}, {1:G8})px；半径：{2:G8}px；有效点：{3:N0}/{4:N0}；RMS：{5:G8}px；角覆盖：{6:G6}°；质量：{7:G6}。质量不是统计概率。</value>
+  </data>
+  <data name="圆拟合" xml:space="preserve">
+    <value>圆拟合</value>
+  </data>
+  <data name="圆拟合..." xml:space="preserve">
+    <value>圆拟合...</value>
+  </data>
+  <data name="圆拟合参数" xml:space="preserve">
+    <value>圆拟合参数</value>
+  </data>
+  <data name="圆拟合失败" xml:space="preserve">
+    <value>圆拟合失败</value>
+  </data>
+  <data name="圆点为 MTF50/10 交点；虚线标示 Nyquist 0.5 cy/pixel。展开后的右半区仅供诊断。" xml:space="preserve">
+    <value>圆点为 MTF50/10 交点；虚线标示 Nyquist 0.5 cy/pixel。展开后的右半区仅供诊断。</value>
+  </data>
+  <data name="在此 ROI 执行旋转模板匹配" xml:space="preserve">
+    <value>在此 ROI 执行旋转模板匹配</value>
+  </data>
+  <data name="垂直" xml:space="preserve">
+    <value>垂直</value>
+  </data>
+  <data name="复制失败" xml:space="preserve">
+    <value>复制失败</value>
+  </data>
+  <data name="复制失败: {0}" xml:space="preserve">
+    <value>复制失败: {0}</value>
+  </data>
+  <data name="复制失败：{0}" xml:space="preserve">
+    <value>复制失败：{0}</value>
+  </data>
+  <data name="外部平均值 / 主像峰值" xml:space="preserve">
+    <value>外部平均值 / 主像峰值</value>
+  </data>
+  <data name="外部积分 / 主像积分" xml:space="preserve">
+    <value>外部积分 / 主像积分</value>
+  </data>
+  <data name="套色偏移均方根" xml:space="preserve">
+    <value>套色偏移均方根</value>
+  </data>
+  <data name="完成时闭合区域；Enter 完成，Esc 取消" xml:space="preserve">
+    <value>完成时闭合区域；Enter 完成，Esc 取消</value>
+  </data>
+  <data name="完整编辑" xml:space="preserve">
+    <value>完整编辑</value>
+  </data>
+  <data name="导出 PNG" xml:space="preserve">
+    <value>导出 PNG</value>
+  </data>
+  <data name="导出 TIFF" xml:space="preserve">
+    <value>导出 TIFF</value>
+  </data>
+  <data name="导出十字 JSON" xml:space="preserve">
+    <value>导出十字 JSON</value>
+  </data>
+  <data name="导出失败" xml:space="preserve">
+    <value>导出失败</value>
+  </data>
+  <data name="导出完成" xml:space="preserve">
+    <value>导出完成</value>
+  </data>
+  <data name="导出完成。" xml:space="preserve">
+    <value>导出完成。</value>
+  </data>
+  <data name="导出已取消。" xml:space="preserve">
+    <value>导出已取消。</value>
+  </data>
+  <data name="将鼠标移到曲面上读取显示亮度（0–255）；透明区域没有曲面。" xml:space="preserve">
+    <value>将鼠标移到曲面上读取显示亮度（0–255）；透明区域没有曲面。</value>
+  </data>
+  <data name="尚未设置模板" xml:space="preserve">
+    <value>尚未设置模板</value>
+  </data>
+  <data name="左右眼分区明细" xml:space="preserve">
+    <value>左右眼分区明细</value>
+  </data>
+  <data name="左右眼颜色通道" xml:space="preserve">
+    <value>左右眼颜色通道</value>
+  </data>
+  <data name="左图：当前编辑器图像 ({0} x {1})" xml:space="preserve">
+    <value>左图：当前编辑器图像 ({0} x {1})</value>
+  </data>
+  <data name="已加载标定配置：{0}" xml:space="preserve">
+    <value>已加载标定配置：{0}</value>
+  </data>
+  <data name="已复制到剪贴板" xml:space="preserve">
+    <value>已复制到剪贴板</value>
+  </data>
+  <data name="已导出 {0} 个文件。" xml:space="preserve">
+    <value>已导出 {0} 个文件。</value>
+  </data>
+  <data name="已导出:&#10;{0}" xml:space="preserve">
+    <value>已导出:
+{0}</value>
+  </data>
+  <data name="平均右眼 / 左眼信号比" xml:space="preserve">
+    <value>平均右眼 / 左眼信号比</value>
+  </data>
+  <data name="平均垂直视差" xml:space="preserve">
+    <value>平均垂直视差</value>
+  </data>
+  <data name="平均水平视差" xml:space="preserve">
+    <value>平均水平视差</value>
+  </data>
+  <data name="异常" xml:space="preserve">
+    <value>异常</value>
+  </data>
+  <data name="当前图像" xml:space="preserve">
+    <value>当前图像</value>
+  </data>
+  <data name="当前图像为左眼：选择右眼图像" xml:space="preserve">
+    <value>当前图像为左眼：选择右眼图像</value>
+  </data>
+  <data name="当前图像在创建比较快照时已改变，请重试。" xml:space="preserve">
+    <value>当前图像在创建比较快照时已改变，请重试。</value>
+  </data>
+  <data name="当前图像在创建配准快照时已改变，请重试。" xml:space="preserve">
+    <value>当前图像在创建配准快照时已改变，请重试。</value>
+  </data>
+  <data name="当前没有可作为左图的图像。" xml:space="preserve">
+    <value>当前没有可作为左图的图像。</value>
+  </data>
+  <data name="当前没有可分析的图像。" xml:space="preserve">
+    <value>当前没有可分析的图像。</value>
+  </data>
+  <data name="当前没有可匹配的图像。" xml:space="preserve">
+    <value>当前没有可匹配的图像。</value>
+  </data>
+  <data name="当前没有可检测的图像。" xml:space="preserve">
+    <value>当前没有可检测的图像。</value>
+  </data>
+  <data name="成像校正高级参数" xml:space="preserve">
+    <value>成像校正高级参数</value>
+  </data>
+  <data name="截图失败" xml:space="preserve">
+    <value>截图失败</value>
+  </data>
+  <data name="截图已保存：{0}" xml:space="preserve">
+    <value>截图已保存：{0}</value>
+  </data>
+  <data name="所选 ROI 与当前图像没有有效交集。" xml:space="preserve">
+    <value>所选 ROI 与当前图像没有有效交集。</value>
+  </data>
+  <data name="扣背景后主像峰值" xml:space="preserve">
+    <value>扣背景后主像峰值</value>
+  </data>
+  <data name="拒绝：{0:N0}。" xml:space="preserve">
+    <value>拒绝：{0:N0}。</value>
+  </data>
+  <data name="拒绝：{0:N0}；前景像素：{1:N0}。" xml:space="preserve">
+    <value>拒绝：{0:N0}；前景像素：{1:N0}。</value>
+  </data>
+  <data name="拒绝：{0:N0}；结构化点：{1:N0}。" xml:space="preserve">
+    <value>拒绝：{0:N0}；结构化点：{1:N0}。</value>
+  </data>
+  <data name="拟合被结构化拒绝；请查看各点 RejectionReason。" xml:space="preserve">
+    <value>拟合被结构化拒绝；请查看各点 RejectionReason。</value>
+  </data>
+  <data name="排除边界宽度" xml:space="preserve">
+    <value>排除边界宽度</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="搜索框 ({0}, {1}, {2}, {3})&#10;{4}边 ({5}, {6}, {7}, {8}) 原图像素&#10;{9}" xml:space="preserve">
+    <value>搜索框 ({0}, {1}, {2}, {3})
+{4}边 ({5}, {6}, {7}, {8}) 原图像素
+{9}</value>
+  </data>
+  <data name="摩尔纹分析" xml:space="preserve">
+    <value>摩尔纹分析</value>
+  </data>
+  <data name="摩尔纹分析参数" xml:space="preserve">
+    <value>摩尔纹分析参数</value>
+  </data>
+  <data name="斜边测量参数" xml:space="preserve">
+    <value>斜边测量参数</value>
+  </data>
+  <data name="旋转角度" xml:space="preserve">
+    <value>旋转角度</value>
+  </data>
+  <data name="无效对准分区" xml:space="preserve">
+    <value>无效对准分区</value>
+  </data>
+  <data name="无效斜边分区" xml:space="preserve">
+    <value>无效斜边分区</value>
+  </data>
+  <data name="无效通道对应点" xml:space="preserve">
+    <value>无效通道对应点</value>
+  </data>
+  <data name="无数据" xml:space="preserve">
+    <value>无数据</value>
+  </data>
+  <data name="无法确定当前图像 revision。" xml:space="preserve">
+    <value>无法确定当前图像 revision。</value>
+  </data>
+  <data name="显示通道：" xml:space="preserve">
+    <value>显示通道：</value>
+  </data>
+  <data name="暗点候选数" xml:space="preserve">
+    <value>暗点候选数</value>
+  </data>
+  <data name="最大套色偏移" xml:space="preserve">
+    <value>最大套色偏移</value>
+  </data>
+  <data name="有效信号分区" xml:space="preserve">
+    <value>有效信号分区</value>
+  </data>
+  <data name="有效像素={0:P2}；坏点 {1:G0}/{2:G0} 已校正；低/高端裁剪样本={3:G0}/{4:G0}。结果已通过 ImageView session 提交。" xml:space="preserve">
+    <value>有效像素={0:P2}；坏点 {1:G0}/{2:G0} 已校正；低/高端裁剪样本={3:G0}/{4:G0}。结果已通过 ImageView session 提交。</value>
+  </data>
+  <data name="有效像素={0:P2}；平均位移={1:G8}px；最大位移={2:G8}px；{3}。标定来源={4}；版本={5}。结果已通过 ImageView session 提交。" xml:space="preserve">
+    <value>有效像素={0:P2}；平均位移={1:G8}px；最大位移={2:G8}px；{3}。标定来源={4}；版本={5}。结果已通过 ImageView session 提交。</value>
+  </data>
+  <data name="有效分析像素数" xml:space="preserve">
+    <value>有效分析像素数</value>
+  </data>
+  <data name="有效对准分区" xml:space="preserve">
+    <value>有效对准分区</value>
+  </data>
+  <data name="有效斜边分区" xml:space="preserve">
+    <value>有效斜边分区</value>
+  </data>
+  <data name="有效点: {0}/5    深度: {1:F2} mm    重投影: {2:F3} px    Confidence: {3:F3}" xml:space="preserve">
+    <value>有效点: {0}/5    深度: {1:F2} mm    重投影: {2:F3} px    Confidence: {3:F3}</value>
+  </data>
+  <data name="有效点：{0:N0}/{1:N0}；角度：{2:G8}°；RMS 残差：{3:G8}px；质量：{4:G6}。置信度是确定性的拟合质量分数，不是统计概率。" xml:space="preserve">
+    <value>有效点：{0:N0}/{1:N0}；角度：{2:G8}°；RMS 残差：{3:G8}px；质量：{4:G6}。置信度是确定性的拟合质量分数，不是统计概率。</value>
+  </data>
+  <data name="有效通道对应点" xml:space="preserve">
+    <value>有效通道对应点</value>
+  </data>
+  <data name="未交叉" xml:space="preserve">
+    <value>未交叉</value>
+  </data>
+  <data name="未检测" xml:space="preserve">
+    <value>未检测</value>
+  </data>
+  <data name="未检测到超过阈值的非直流峰值；逆变换 RMSE={0:G8}。频谱图是显示归一化结果，数值结果请使用表格/导出。" xml:space="preserve">
+    <value>未检测到超过阈值的非直流峰值；逆变换 RMSE={0:G8}。频谱图是显示归一化结果，数值结果请使用表格/导出。</value>
+  </data>
+  <data name="本地 FindCross 结果" xml:space="preserve">
+    <value>本地 FindCross 结果</value>
+  </data>
+  <data name="本地 FindCross 计算异常：{0}" xml:space="preserve">
+    <value>本地 FindCross 计算异常：{0}</value>
+  </data>
+  <data name="杂散光候选数" xml:space="preserve">
+    <value>杂散光候选数</value>
+  </data>
+  <data name="杂散光候选明细" xml:space="preserve">
+    <value>杂散光候选明细</value>
+  </data>
+  <data name="条纹 MTF" xml:space="preserve">
+    <value>条纹 MTF</value>
+  </data>
+  <data name="条纹 MTF（H / V / 四部）" xml:space="preserve">
+    <value>条纹 MTF（H / V / 四部）</value>
+  </data>
+  <data name="条纹 MTF（H / V / 四部）…" xml:space="preserve">
+    <value>条纹 MTF（H / V / 四部）…</value>
+  </data>
+  <data name="检测中..." xml:space="preserve">
+    <value>检测中...</value>
+  </data>
+  <data name="检测结果 JSON 已复制。" xml:space="preserve">
+    <value>检测结果 JSON 已复制。</value>
+  </data>
+  <data name="模型已导出：{0}" xml:space="preserve">
+    <value>模型已导出：{0}</value>
+  </data>
+  <data name="模板已设置：{0} x {1}&#10;{2}" xml:space="preserve">
+    <value>模板已设置：{0} x {1}
+{2}</value>
+  </data>
+  <data name="正在取消..." xml:space="preserve">
+    <value>正在取消...</value>
+  </data>
+  <data name="正在后台生成有界预览…" xml:space="preserve">
+    <value>正在后台生成有界预览…</value>
+  </data>
+  <data name="正在导出完整细节模型…" xml:space="preserve">
+    <value>正在导出完整细节模型…</value>
+  </data>
+  <data name="正在按四边测量框设置重新定位与计算…" xml:space="preserve">
+    <value>正在按四边测量框设置重新定位与计算…</value>
+  </data>
+  <data name="正在重新分析固定图像快照…" xml:space="preserve">
+    <value>正在重新分析固定图像快照…</value>
+  </data>
+  <data name="水平" xml:space="preserve">
+    <value>水平</value>
+  </data>
+  <data name="没有可显示的有效曲面（透明像素不会生成网格）。" xml:space="preserve">
+    <value>没有可显示的有效曲面（透明像素不会生成网格）。</value>
+  </data>
+  <data name="测得 MTF50 的分区" xml:space="preserve">
+    <value>测得 MTF50 的分区</value>
+  </data>
+  <data name="测量失败 · {0}&#10;{1}" xml:space="preserve">
+    <value>测量失败 · {0}
+{1}</value>
+  </data>
+  <data name="测量完成 · {0} × {1} · {2} 个点 · 检测 {3:F2} ms" xml:space="preserve">
+    <value>测量完成 · {0} × {1} · {2} 个点 · 检测 {3:F2} ms</value>
+  </data>
+  <data name="测量方向：{0}；边缘偏离{1} {2:F2}°。&#10;输入编码：{3}；未自动平滑或重采样测量像素。" xml:space="preserve">
+    <value>测量方向：{0}；边缘偏离{1} {2:F2}°。
+输入编码：{3}；未自动平滑或重采样测量像素。</value>
+  </data>
+  <data name="测量框必须完整位于当前搜索外框内，宽高须大于零。" xml:space="preserve">
+    <value>测量框必须完整位于当前搜索外框内，宽高须大于零。</value>
+  </data>
+  <data name="测量汇总" xml:space="preserve">
+    <value>测量汇总</value>
+  </data>
+  <data name="测量质量检查：SNR ≥ {0:G4}，对比度 ≥ {1:G4}，拟合残差 ≤ {2:G4} px。不是产品合格判据；未知编码仅供诊断。" xml:space="preserve">
+    <value>测量质量检查：SNR ≥ {0:G4}，对比度 ≥ {1:G4}，拟合残差 ≤ {2:G4} px。不是产品合格判据；未知编码仅供诊断。</value>
+  </data>
+  <data name="添加" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="源图 {0:N0} × {1:N0} · 显示亮度 0–255" xml:space="preserve">
+    <value>源图 {0:N0} × {1:N0} · 显示亮度 0–255</value>
+  </data>
+  <data name="源图坐标 X {0:F1}  Y {1:F1}    采样灰度 {2} / 255    Z(灰度) {3:F2}    曲面交点 Z {4:F2}" xml:space="preserve">
+    <value>源图坐标 X {0:F1}  Y {1:F1}    采样灰度 {2} / 255    Z(灰度) {3:F2}    曲面交点 Z {4:F2}</value>
+  </data>
+  <data name="满足阈值的采样点" xml:space="preserve">
+    <value>满足阈值的采样点</value>
+  </data>
+  <data name="灯珠检测失败，错误代码: {0}&#10;请检查图像格式和参数设置。" xml:space="preserve">
+    <value>灯珠检测失败，错误代码: {0}
+请检查图像格式和参数设置。</value>
+  </data>
+  <data name="灰度与颜色剖面 — {0}" xml:space="preserve">
+    <value>灰度与颜色剖面 — {0}</value>
+  </data>
+  <data name="点阵畸变" xml:space="preserve">
+    <value>点阵畸变</value>
+  </data>
+  <data name="点阵畸变参数无效" xml:space="preserve">
+    <value>点阵畸变参数无效</value>
+  </data>
+  <data name="状态: {0}    点数: {1} / 候选: {2}" xml:space="preserve">
+    <value>状态: {0}    点数: {1} / 候选: {2}</value>
+  </data>
+  <data name="状态：{0}&#10;{1}&#10;&#10;候选点：{2}；选中：{3}&#10;质量分数：{4:F4}（启发式质量分数，不是正确概率）&#10;最小对比度：{5:F5}&#10;点阵残差 / 网格间距：{6:F5}&#10;处理缩放：{7:F5}&#10;&#10;预处理：{8:F3} ms&#10;候选检测：{9:F3} ms&#10;点阵排序：{10:F3} ms&#10;原图精修：{11:F3} ms&#10;指标计算：{12:F3} ms&#10;原生检测合计：{13:F3} ms&#10;&#10;警告：{14}&#10;互操作诊断：{15}&#10;&#10;对边均值 9 点的 Keystone：水平 = (左高 − 右高) / 对边均值 × 100%；垂直 = (上宽 − 下宽) / 对边均值 × 100%。&#10;单张图没有左右眼配对信息，本次不生成 DIFF_H / DIFF_V。" xml:space="preserve">
+    <value>状态：{0}
+{1}
+
+候选点：{2}；选中：{3}
+质量分数：{4:F4}（启发式质量分数，不是正确概率）
+最小对比度：{5:F5}
+点阵残差 / 网格间距：{6:F5}
+处理缩放：{7:F5}
+
+预处理：{8:F3} ms
+候选检测：{9:F3} ms
+点阵排序：{10:F3} ms
+原图精修：{11:F3} ms
+指标计算：{12:F3} ms
+原生检测合计：{13:F3} ms
+
+警告：{14}
+互操作诊断：{15}
+
+对边均值 9 点的 Keystone：水平 = (左高 − 右高) / 对边均值 × 100%；垂直 = (上宽 − 下宽) / 对边均值 × 100%。
+单张图没有左右眼配对信息，本次不生成 DIFF_H / DIFF_V。</value>
+  </data>
+  <data name="直线拟合" xml:space="preserve">
+    <value>直线拟合</value>
+  </data>
+  <data name="直线拟合..." xml:space="preserve">
+    <value>直线拟合...</value>
+  </data>
+  <data name="直线拟合参数" xml:space="preserve">
+    <value>直线拟合参数</value>
+  </data>
+  <data name="直线拟合失败" xml:space="preserve">
+    <value>直线拟合失败</value>
+  </data>
+  <data name="相似变换残差均方根" xml:space="preserve">
+    <value>相似变换残差均方根</value>
+  </data>
+  <data name="矩形范围无效" xml:space="preserve">
+    <value>矩形范围无效</value>
+  </data>
+  <data name="移除" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="空间频率 (cycles/pixel)" xml:space="preserve">
+    <value>空间频率 (cycles/pixel)</value>
+  </data>
+  <data name="算法结果" xml:space="preserve">
+    <value>算法结果</value>
+  </data>
+  <data name="线缺陷候选数" xml:space="preserve">
+    <value>线缺陷候选数</value>
+  </data>
+  <data name="结果 JSON 已复制。" xml:space="preserve">
+    <value>结果 JSON 已复制。</value>
+  </data>
+  <data name="缺陷候选明细" xml:space="preserve">
+    <value>缺陷候选明细</value>
+  </data>
+  <data name="裁剪" xml:space="preserve">
+    <value>裁剪</value>
+  </data>
+  <data name="裁剪复制到剪贴板" xml:space="preserve">
+    <value>裁剪复制到剪贴板</value>
+  </data>
+  <data name="裁剪并另存..." xml:space="preserve">
+    <value>裁剪并另存...</value>
+  </data>
+  <data name="裁剪并替换当前图像" xml:space="preserve">
+    <value>裁剪并替换当前图像</value>
+  </data>
+  <data name="视场最大 MTF50" xml:space="preserve">
+    <value>视场最大 MTF50</value>
+  </data>
+  <data name="视场最小 MTF50" xml:space="preserve">
+    <value>视场最小 MTF50</value>
+  </data>
+  <data name="视场清晰度" xml:space="preserve">
+    <value>视场清晰度</value>
+  </data>
+  <data name="计算中..." xml:space="preserve">
+    <value>计算中...</value>
+  </data>
+  <data name="设为旋转匹配模板" xml:space="preserve">
+    <value>设为旋转匹配模板</value>
+  </data>
+  <data name="设置无效" xml:space="preserve">
+    <value>设置无效</value>
+  </data>
+  <data name="设置模板失败" xml:space="preserve">
+    <value>设置模板失败</value>
+  </data>
+  <data name="请先修正 JSON 配置。" xml:space="preserve">
+    <value>请先修正 JSON 配置。</value>
+  </data>
+  <data name="请先加载实际图像" xml:space="preserve">
+    <value>请先加载实际图像</value>
+  </data>
+  <data name="请先在图像上绘制矩形，右键该矩形并选择“设为旋转匹配模板”。" xml:space="preserve">
+    <value>请先在图像上绘制矩形，右键该矩形并选择“设为旋转匹配模板”。</value>
+  </data>
+  <data name="请先在图像上绘制矩形，每框包含一个完整 BMW 靶标或一个居中的棋盘格交叉点。" xml:space="preserve">
+    <value>请先在图像上绘制矩形，每框包含一个完整 BMW 靶标或一个居中的棋盘格交叉点。</value>
+  </data>
+  <data name="请先打开待分析图像。" xml:space="preserve">
+    <value>请先打开待分析图像。</value>
+  </data>
+  <data name="请先选择右图。" xml:space="preserve">
+    <value>请先选择右图。</value>
+  </data>
+  <data name="请输入上述范围内的整数。" xml:space="preserve">
+    <value>请输入上述范围内的整数。</value>
+  </data>
+  <data name="请选择右图并加载真实标定参数。当前 JSON 中的焦距和基线仅为界面调试示例，不能用于测量。" xml:space="preserve">
+    <value>请选择右图并加载真实标定参数。当前 JSON 中的焦距和基线仅为界面调试示例，不能用于测量。</value>
+  </data>
+  <data name="调整 JSON 参数后点击运行；Overlay 仅用于当前调试窗口。" xml:space="preserve">
+    <value>调整 JSON 参数后点击运行；Overlay 仅用于当前调试窗口。</value>
+  </data>
+  <data name="调整参数后点击检测；结果会以临时 overlay 画在当前图上。" xml:space="preserve">
+    <value>调整参数后点击检测；结果会以临时 overlay 画在当前图上。</value>
+  </data>
+  <data name="距中心 {0:F1} px" xml:space="preserve">
+    <value>距中心 {0:F1} px</value>
+  </data>
+  <data name="轮廓提取" xml:space="preserve">
+    <value>轮廓提取</value>
+  </data>
+  <data name="轮廓提取参数" xml:space="preserve">
+    <value>轮廓提取参数</value>
+  </data>
+  <data name="轮廓提取失败" xml:space="preserve">
+    <value>轮廓提取失败</value>
+  </data>
+  <data name="输出 {0:G0} × {1:G0}；有效像素 {2:P2}；条件数 {3:G8}；正逆矩阵残差 {4:G6}。结果已通过 ImageView session 提交，mask 与矩阵可分别查看/导出。" xml:space="preserve">
+    <value>输出 {0:G0} × {1:G0}；有效像素 {2:P2}；条件数 {3:G8}；正逆矩阵残差 {4:G6}。结果已通过 ImageView session 提交，mask 与矩阵可分别查看/导出。</value>
+  </data>
+  <data name="边缘法线方向位置 (pixel)" xml:space="preserve">
+    <value>边缘法线方向位置 (pixel)</value>
+  </data>
+  <data name="选择 Eyebox 扫描清单（行优先排列）" xml:space="preserve">
+    <value>选择 Eyebox 扫描清单（行优先排列）</value>
+  </data>
+  <data name="选择 moving 图像" xml:space="preserve">
+    <value>选择 moving 图像</value>
+  </data>
+  <data name="选择双目右图" xml:space="preserve">
+    <value>选择双目右图</value>
+  </data>
+  <data name="选择要与当前图像比较的图像" xml:space="preserve">
+    <value>选择要与当前图像比较的图像</value>
+  </data>
+  <data name="配置 JSON 已复制。" xml:space="preserve">
+    <value>配置 JSON 已复制。</value>
+  </data>
+  <data name="配置无效" xml:space="preserve">
+    <value>配置无效</value>
+  </data>
+  <data name="配置有效。" xml:space="preserve">
+    <value>配置有效。</value>
+  </data>
+  <data name="配置的边缘分离上限" xml:space="preserve">
+    <value>配置的边缘分离上限</value>
+  </data>
+  <data name="采样点：{0:N0}；界面预览：{1:N0}；路径：{2:G8} px / {3:G8} mm。统计按完整数据计算并排除非有限值；标准差为总体标准差。" xml:space="preserve">
+    <value>采样点：{0:N0}；界面预览：{1:N0}；路径：{2:G8} px / {3:G8} mm。统计按完整数据计算并排除非有限值；标准差为总体标准差。</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="镜头畸变校正参数" xml:space="preserve">
+    <value>镜头畸变校正参数</value>
+  </data>
+  <data name="闭合" xml:space="preserve">
+    <value>闭合</value>
+  </data>
+  <data name="闭合区域" xml:space="preserve">
+    <value>闭合区域</value>
+  </data>
+  <data name="闭合区域可计算 POI" xml:space="preserve">
+    <value>闭合区域可计算 POI</value>
+  </data>
+  <data name="预览生成失败：{0}" xml:space="preserve">
+    <value>预览生成失败：{0}</value>
+  </data>
+  <data name="频率 @ {0:P0}" xml:space="preserve">
+    <value>频率 @ {0:P0}</value>
+  </data>
+  <data name="频率应为 0..0.5；响应应大于 0、小于 1。" xml:space="preserve">
+    <value>频率应为 0..0.5；响应应大于 0、小于 1。</value>
+  </data>
+  <data name="频率范围为 0..0.5" xml:space="preserve">
+    <value>频率范围为 0..0.5</value>
+  </data>
+  <data name="高度图未能完成：{0}" xml:space="preserve">
+    <value>高度图未能完成：{0}</value>
+  </data>
+  <data name="交互细节" xml:space="preserve">
+    <value>交互细节</value>
+  </data>
+  <data name="完整细节" xml:space="preserve">
+    <value>完整细节</value>
+  </data>
+  <data name="不可用" xml:space="preserve">
+    <value>不可用</value>
+  </data>
+  <data name="百分数 (%)" xml:space="preserve">
+    <value>百分数 (%)</value>
+  </data>
+  <data name="比例值" xml:space="preserve">
+    <value>比例值</value>
+  </data>
+  <data name="粗红框为当前边；测量不缩放原图。" xml:space="preserve">
+    <value>粗红框为当前边；测量不缩放原图。</value>
+  </data>
+  <data name="当前 ROI 不适合单斜边测量，请查看状态与质量诊断。" xml:space="preserve">
+    <value>当前 ROI 不适合单斜边测量，请查看状态与质量诊断。</value>
+  </data>
+  <data name="质量检查通过不等于产品达标。" xml:space="preserve">
+    <value>质量检查通过不等于产品达标。</value>
+  </data>
+  <data name="竖直" xml:space="preserve">
+    <value>竖直</value>
+  </data>
+  <data name="CIE TN 013:2022：色温的定义与适用范围" xml:space="preserve">
+    <value>CIE TN 013:2022：色温的定义与适用范围</value>
+  </data>
+  <data name="Sharma、Wu、Dalal：CIEDE2000 实现说明与 34 组验证数据" xml:space="preserve">
+    <value>Sharma、Wu、Dalal：CIEDE2000 实现说明与 34 组验证数据</value>
+  </data>
 </root>

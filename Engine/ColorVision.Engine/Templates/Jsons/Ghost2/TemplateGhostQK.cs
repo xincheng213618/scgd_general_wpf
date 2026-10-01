@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Database;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -62,7 +63,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public TemplateGhostQK()
         {
-            Title = "Ghost2.0模板管理";
+            Title = LocalizedText.Get("Ghost2.0模板管理");
             Code = "ghost";
             Name = "ghost2.0";
             TemplateDicId = 38;

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Themes;
 using ICSharpCode.AvalonEdit.Rendering;
 using ICSharpCode.AvalonEdit.Search;
@@ -109,8 +110,8 @@ public partial class EditTemplateJson
         }
         catch (JsonException) { modified = true; }
         StatusText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-        StatusText.Text = modified ? "● 已修改 · Ctrl+S 保存" : "语法正确 · 无新修改";
-        StatusText.ToolTip = "语法检查不等于算法参数有效性检查。";
+        StatusText.Text = modified ? LocalizedText.Get("● 已修改 · Ctrl+S 保存") : LocalizedText.Get("语法正确 · 无新修改");
+        StatusText.ToolTip = LocalizedText.Get("语法检查不等于算法参数有效性检查。");
         UpdatePosition();
     }
 
@@ -120,14 +121,14 @@ public partial class EditTemplateJson
         StatusText.SetResourceReference(TextBlock.ForegroundProperty, "DangerBrush");
     }
 
-    private void UpdatePosition() => PositionText.Text = $"行 {textEditor.TextArea.Caret.Line}，列 {textEditor.TextArea.Caret.Column} · {textEditor.LineCount} 行";
+    private void UpdatePosition() => PositionText.Text = LocalizedText.Format($"行 {textEditor.TextArea.Caret.Line}，列 {textEditor.TextArea.Caret.Column} · {textEditor.LineCount} 行");
 
     private void Validate_Click(object sender, RoutedEventArgs e)
     {
         if (TryCommitPendingEdits())
         {
             UpdateStatus();
-            StatusText.Text = "语法检查通过 · " + StatusText.Text;
+            StatusText.Text = LocalizedText.Get("语法检查通过 · ") + StatusText.Text;
         }
     }
 
@@ -159,7 +160,7 @@ public partial class EditTemplateJson
     private void Reset_Click(object sender, RoutedEventArgs e)
     {
         if (IEditTemplateJson == null) return;
-        if (MessageBox.Show(Window.GetWindow(this), "用默认参数替换当前内容？此操作会丢弃当前草稿，保存后才写入模板。", "恢复默认参数", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(Window.GetWindow(this), LocalizedText.Get("用默认参数替换当前内容？此操作会丢弃当前草稿，保存后才写入模板。"), LocalizedText.Get("恢复默认参数"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         IEditTemplateJson.ResetCommand.Execute(null);
     }
 

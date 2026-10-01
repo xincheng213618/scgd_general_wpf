@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1822,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -507,7 +508,7 @@ namespace ColorVision.Engine.Templates
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"解析模板文件时出错: {ex.Message}"), "ColorVision");
                 return false;
             }
         }
@@ -589,10 +590,10 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"数据库创建{typeof(T)}模板失败"), "ColorVision");
                 if (GetMysqlCommand() is IMysqlCommand  mysqlCommand)
                 {
-                    if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"是否重置数据库{typeof(T)}相关项"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
                         try
                         {

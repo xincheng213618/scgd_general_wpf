@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1863,CS8604
 #pragma warning disable CA1001
 using ColorVision.Common.MVVM;
@@ -788,7 +789,7 @@ namespace ColorVision.Engine.Media
                         catch (Exception error)
                         {
                             log.Error("CVCIE POI calculation failed.", error);
-                            MessageBox.Show(error.Message, "POI 区域测量", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(error.Message, LocalizedText.Get("POI 区域测量"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     })
                 };

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using System;
@@ -39,12 +40,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             }
             catch (Exception exception)
             {
-                MessageBox.Show(exception.Message, "镜头畸变校正", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(exception.Message, LocalizedText.Get("镜头畸变校正"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (result.Status != AlgorithmResultStatus.Succeeded)
             {
-                MessageBox.Show(string.Join("; ", result.Failures), "镜头畸变校正", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Join("; ", result.Failures), LocalizedText.Get("镜头畸变校正"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 result.Dispose();
                 return;
             }
@@ -56,7 +57,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             catch (Exception exception)
             {
                 result.Dispose();
-                MessageBox.Show(exception.Message, "镜头畸变校正", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(exception.Message, LocalizedText.Get("镜头畸变校正"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

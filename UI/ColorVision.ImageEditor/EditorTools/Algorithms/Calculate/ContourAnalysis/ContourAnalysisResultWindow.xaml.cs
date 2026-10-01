@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -29,9 +30,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             _result = result;
             _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
             ContoursGrid.ItemsSource = ToTable(contours).DefaultView;
-            SummaryText.Text = $"候选：{Measurement("contour.candidate_count"):N0}；接受：{Measurement("contour.accepted_count"):N0}；"
-                + $"拒绝：{Measurement("contour.rejected_count"):N0}；结构化点：{Measurement("contour.structured_point_count"):N0}。"
-                + " Confidence 为轮廓实心度，并非分类概率。";
+            SummaryText.Text = LocalizedText.Format($"候选：{Measurement("contour.candidate_count"):N0}；接受：{Measurement("contour.accepted_count"):N0}；")
+                + LocalizedText.Format($"拒绝：{Measurement("contour.rejected_count"):N0}；结构化点：{Measurement("contour.structured_point_count"):N0}。")
+                + LocalizedText.Get(" Confidence 为轮廓实心度，并非分类概率。");
             Closed += (_, _) => DisposeOwnedState();
         }
 
@@ -69,11 +70,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -84,11 +85,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             try
             {
                 AlgorithmResultExporter.ExportJson(_result, dialog.FileName);
-                MessageBox.Show(this, "导出完成。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("导出完成。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

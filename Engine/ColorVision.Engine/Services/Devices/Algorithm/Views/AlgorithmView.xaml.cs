@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
@@ -344,10 +345,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), "历史算法结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), "历史算法结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), "历史算法结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), "历史算法结果图像像素高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间高度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素高度"));
             ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
             ImageView.UpdateZoomAndScale();
         }

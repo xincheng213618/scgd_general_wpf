@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 #pragma warning disable CS8622
 using ColorVision.UI;
 using ColorVision.SocketProtocol;
@@ -73,7 +74,7 @@ namespace ProjectARVRPro.SocketRelay
             // 服务器状态
             if (_relayManager.IsListening)
             {
-                ServerStatusText.Text = $"● 服务器已启动 {_relayManager.Config.ListenIP}:{_relayManager.Config.ListenPort}";
+                ServerStatusText.Text = LocalizedText.Format($"● 服务器已启动 {_relayManager.Config.ListenIP}:{_relayManager.Config.ListenPort}");
                 ServerStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 StartButton.IsEnabled = false;
                 StopButton.IsEnabled = true;
@@ -82,7 +83,7 @@ namespace ProjectARVRPro.SocketRelay
             }
             else
             {
-                ServerStatusText.Text = "● 服务器未启动";
+                ServerStatusText.Text = LocalizedText.Get("● 服务器未启动");
                 ServerStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
@@ -93,13 +94,13 @@ namespace ProjectARVRPro.SocketRelay
             // Flow连接状态
             if (_relayManager.IsFlowConnected)
             {
-                FlowStatusText.Text = "● Flow已连接";
+                FlowStatusText.Text = LocalizedText.Get("● Flow已连接");
                 FlowStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 SendToFlowButton.IsEnabled = true;
             }
             else
             {
-                FlowStatusText.Text = "● Flow未连接";
+                FlowStatusText.Text = LocalizedText.Get("● Flow未连接");
                 FlowStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SendToFlowButton.IsEnabled = false;
             }
@@ -107,13 +108,13 @@ namespace ProjectARVRPro.SocketRelay
             // 外部Client连接状态
             if (SocketControl.Current.Stream != null && SocketManager.GetInstance().TcpClients.Count > 0)
             {
-                ClientStatusText.Text = "● 外部Client已连接";
+                ClientStatusText.Text = LocalizedText.Get("● 外部Client已连接");
                 ClientStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 SendToClientButton.IsEnabled = true;
             }
             else
             {
-                ClientStatusText.Text = "● 外部Client未连接";
+                ClientStatusText.Text = LocalizedText.Get("● 外部Client未连接");
                 ClientStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SendToClientButton.IsEnabled = false;
             }

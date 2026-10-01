@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -205,7 +206,7 @@ namespace ColorVision.Copilot
         {
             var normalized = string.Join(" ", (value ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
             if (normalized.Length == 0)
-                return "未命名图片";
+                return LocalizedText.Get("未命名图片");
             return normalized.Length <= 120 ? normalized : normalized[..117] + "...";
         }
     }

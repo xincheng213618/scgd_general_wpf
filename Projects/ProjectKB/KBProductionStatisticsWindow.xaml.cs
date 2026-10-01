@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectKB.DisplayText;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -124,7 +125,7 @@ namespace ProjectKB
             KBProductionQuery query = CreateQuery(pageNumber);
             int loadVersion = ++_loadVersion;
             RefreshButton.IsEnabled = false;
-            QueryStatusText.Text = "正在读取生产统计和检测记录...";
+            QueryStatusText.Text = LocalizedText.Get("正在读取生产统计和检测记录...");
 
             try
             {
@@ -156,15 +157,15 @@ namespace ProjectKB
                 RenderHomeTrend(statistics.TrendRows, query.PeriodMode, query.From, query.ToExclusive);
                 CaptureState();
                 QueryStatusText.Text = _totalRecordCount > RecordPageSize
-                    ? $"已查询 {_totalRecordCount:N0} 条记录；第 {_currentPage:N0}/{GetPageCount():N0} 页，本页 {_recordRows.Count:N0} 条"
-                    : $"已查询 {_totalRecordCount:N0} 条记录，有效产量 {statistics.ProductionCount:N0}";
+                    ? LocalizedText.Format($"已查询 {_totalRecordCount:N0} 条记录；第 {_currentPage:N0}/{GetPageCount():N0} 页，本页 {_recordRows.Count:N0} 条")
+                    : LocalizedText.Format($"已查询 {_totalRecordCount:N0} 条记录，有效产量 {statistics.ProductionCount:N0}");
             }
             catch (Exception ex)
             {
                 if (loadVersion == _loadVersion)
                 {
-                    QueryStatusText.Text = "查询失败";
-                    MessageBox.Show(this, $"读取生产统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    QueryStatusText.Text = LocalizedText.Get("查询失败");
+                    MessageBox.Show(this, LocalizedText.Format($"读取生产统计失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             finally
@@ -208,7 +209,7 @@ namespace ProjectKB
         {
             int pageCount = GetPageCount();
             PaginationPanel.Visibility = _totalRecordCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
-            PageStatusText.Text = $"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            PageStatusText.Text = LocalizedText.Format($"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）");
             FirstPageButton.IsEnabled = _currentPage > 1;
             PreviousPageButton.IsEnabled = _currentPage > 1;
             NextPageButton.IsEnabled = _currentPage < pageCount;
@@ -242,14 +243,14 @@ namespace ProjectKB
 
             KBProductionPeriodMode mode = GetSelectedPeriodMode();
             KBProductionPeriodRange range = KBProductionPeriod.GetRange(mode, AnchorDatePicker.SelectedDate ?? DateTime.Today);
-            PeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            PeriodText.Text = LocalizedText.Format($"查询范围：{range.ToDisplayText(mode)}");
             PeriodNavigation.Visibility = mode == KBProductionPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
             CurrentPeriodButton.Content = mode switch
             {
-                KBProductionPeriodMode.Week => "本周",
-                KBProductionPeriodMode.Month => "本月",
-                KBProductionPeriodMode.All => "全部",
-                _ => "今天",
+                KBProductionPeriodMode.Week => LocalizedText.Get("本周"),
+                KBProductionPeriodMode.Month => LocalizedText.Get("本月"),
+                KBProductionPeriodMode.All => LocalizedText.Get("全部"),
+                _ => LocalizedText.Get("今天"),
             };
         }
 
@@ -492,13 +493,13 @@ namespace ProjectKB
             {
                 HomeTrendPlot.Plot.Title("月产量与平均 CT");
                 HomeTrendPlot.Plot.YLabel("产量");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = "平均 CT（秒）";
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
             }
             else
             {
                 HomeTrendPlot.Plot.Title("逐条 CT 与累计产量");
                 HomeTrendPlot.Plot.YLabel("CT（秒）");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = "累计产量";
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("累计产量");
             }
         }
 

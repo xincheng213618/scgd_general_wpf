@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -56,7 +57,7 @@ internal static class StripeMtfImageViewRunner
             MtfRoi[] selected = Capture(rectangles, image.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX), image.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
             StripeMtfParameters draft = StripeMtfParameters.FromJson(state.Parameters.ToJson().ToString());
             PropertyEditorWindow dialog = new(draft, PropertyEditorEditMode.Transactional)
-            { Title = "条纹 MTF（H / V / 四部）", Owner = editor.OwnerWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            { Title = LocalizedText.Get("条纹 MTF（H / V / 四部）"), Owner = editor.OwnerWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             dialog.Submitted += (_, _) =>
             {
                 if (!IsCurrent(image, draw, document, revision, request)) return;
@@ -73,11 +74,11 @@ internal static class StripeMtfImageViewRunner
                     }
                     catch { lease.Dispose(); throw; }
                 }
-                catch (Exception error) { MessageBox.Show(editor.OwnerWindow, error.Message, "MTF 参数或图像无效", MessageBoxButton.OK, MessageBoxImage.Warning); }
+                catch (Exception error) { MessageBox.Show(editor.OwnerWindow, error.Message, LocalizedText.Get("MTF 参数或图像无效"), MessageBoxButton.OK, MessageBoxImage.Warning); }
             };
             dialog.ShowDialog();
         }
-        catch (Exception error) { MessageBox.Show(editor.OwnerWindow, error.Message, "条纹 MTF", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception error) { MessageBox.Show(editor.OwnerWindow, error.Message, LocalizedText.Get("条纹 MTF"), MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
     internal static bool IsCurrent(ImageProcessingContext image, DrawEditorContext draw, Guid document, long revision, long request) =>
@@ -99,7 +100,7 @@ internal static class StripeMtfImageViewRunner
                 if (!IsCurrent(image, draw, document, revision, request)) return;
                 if (result == null)
                 {
-                    MessageBox.Show(editor.OwnerWindow, error?.Message ?? "MTF 计算失败。", "条纹 MTF", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(editor.OwnerWindow, error?.Message ?? LocalizedText.Get("MTF 计算失败。"), LocalizedText.Get("条纹 MTF"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 using AlgorithmResult overlay = CreateOverlay(result, options.PercentageDisplay);
@@ -130,7 +131,7 @@ public sealed class CMStripeMtf(EditorContext editor) : IIEditorToolContextMenu
     public List<MenuItemMetadata> GetContextMenuItems() => [new()
     {
         OwnerGuid = AlgorithmMenuGroups.ImageQuality.Id, GuidId = "StripeMtf.Local", Order = 12,
-        Header = "条纹 MTF（H / V / 四部）…",
+        Header = LocalizedText.Get("条纹 MTF（H / V / 四部）…"),
         Command = new RelayCommand(_ => StripeMtfImageViewRunner.ShowOptions(editor, editor.DrawEditorContext.DrawingVisualLists.OfType<IRectangle>()))
     }];
 }
@@ -141,7 +142,7 @@ public sealed class DVCMStripeMtf(EditorContext editor) : IDVContextMenu
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if (obj is not IRectangle rectangle) return [];
-        MenuItem item = new() { Header = "条纹 MTF（H / V / 四部）…" };
+        MenuItem item = new() { Header = LocalizedText.Get("条纹 MTF（H / V / 四部）…") };
         item.Click += (_, _) => StripeMtfImageViewRunner.ShowOptions(editor, [rectangle]);
         return [item];
     }

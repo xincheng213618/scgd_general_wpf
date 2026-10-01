@@ -64,7 +64,7 @@
     <value>工具(_T)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
+    <value>幫助(_H)</value>
   </data>
   <data name="GlobalMode" xml:space="preserve">
     <value>全局</value>
@@ -132,7 +132,7 @@
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
   </data>  <data name="MenuOpen" xml:space="preserve">
-    <value>打开(_O)</value>
+    <value>打開(_O)</value>
   </data>
   <data name="MenuSave" xml:space="preserve">
     <value>儲存(_S)</value>
@@ -688,7 +688,7 @@
     <value>預處理失敗</value>
   </data>
   <data name="FlowStatusStartRejected" xml:space="preserve">
-    <value>流程未能啓動</value>
+    <value>流程未能啟動</value>
   </data>
   <data name="FlowStatusFinishedDetails" xml:space="preserve">
     <value>流程：{0}
@@ -730,5 +730,89 @@
   </data>
   <data name="DisplayControlGroupMoveDown" xml:space="preserve">
     <value>下移</value>
+  </data>
+  <data name="参数分组" xml:space="preserve">
+    <value>參數分組</value>
+  </data>
+  <data name="定位错误输入" xml:space="preserve">
+    <value>定位錯誤輸入</value>
+  </data>
+  <data name="展开全部分组" xml:space="preserve">
+    <value>展開全部分組</value>
+  </data>
+  <data name="展开当前参数的完整说明、范围与示例" xml:space="preserve">
+    <value>展開當前參數的完整說明、範圍與示例</value>
+  </data>
+  <data name="展开或收起全部分组" xml:space="preserve">
+    <value>展開或收起全部分組</value>
+  </data>
+  <data name="折叠选项" xml:space="preserve">
+    <value>摺疊選項</value>
+  </data>
+  <data name="按 Tab 切换参数，修改后使用窗口的“保存”。" xml:space="preserve">
+    <value>按 Tab 切換參數，修改後使用窗口的“保存”。</value>
+  </data>
+  <data name="搜索全部参数：名称、说明或值…" xml:space="preserve">
+    <value>搜索全部參數：名稱、說明或值…</value>
+  </data>
+  <data name="搜索参数" xml:space="preserve">
+    <value>搜索參數</value>
+  </data>
+  <data name="收起全部分组" xml:space="preserve">
+    <value>收起全部分組</value>
+  </data>
+  <data name="清除搜索" xml:space="preserve">
+    <value>清除搜索</value>
+  </data>
+  <data name="说明" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="选择参数查看完整说明" xml:space="preserve">
+    <value>選擇參數查看完整說明</value>
+  </data>
+  <data name="JSON 路径：{0}" xml:space="preserve">
+    <value>JSON 路徑：{0}</value>
+  </data>
+  <data name="{0} / {1} 项" xml:space="preserve">
+    <value>{0} / {1} 項</value>
+  </data>
+  <data name="{0} 项" xml:space="preserve">
+    <value>{0} 項</value>
+  </data>
+  <data name="{0}（当前值）" xml:space="preserve">
+    <value>{0}（當前值）</value>
+  </data>
+  <data name="使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。" xml:space="preserve">
+    <value>使用 JSON 數組格式，例如 [60, 40]。字符串需要雙引號。</value>
+  </data>
+  <data name="全部分组" xml:space="preserve">
+    <value>全部分組</value>
+  </data>
+  <data name="参数说明" xml:space="preserve">
+    <value>參數說明</value>
+  </data>
+  <data name="对象中还没有参数，请在 JSON 视图添加。" xml:space="preserve">
+    <value>對象中還沒有參數，請在 JSON 視圖添加。</value>
+  </data>
+  <data name="已关闭" xml:space="preserve">
+    <value>已關閉</value>
+  </data>
+  <data name="已启用" xml:space="preserve">
+    <value>已啓用</value>
+  </data>
+  <data name="没有找到匹配参数，试试字段名、说明或值。" xml:space="preserve">
+    <value>沒有找到匹配參數，試試字段名、說明或值。</value>
+  </data>
+  <data name="输入 JSON 对象，例如: {&quot;key1&quot;: &quot;value1&quot;, &quot;key2&quot;: &quot;value2&quot;}" xml:space="preserve">
+    <value>輸入 JSON 對象，例如: {"key1": "value1", "key2": "value2"}</value>
+  </data>
+  <data name="输入 JSON 数组，例如: [1, 2, 3]" xml:space="preserve">
+    <value>輸入 JSON 數組，例如: [1, 2, 3]</value>
+  </data>
+  <data name="选择参数查看完整说明、范围和示例。" xml:space="preserve">
+    <value>選擇參數查看完整說明、範圍和示例。</value>
+  </data>
+  <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
+    <value>選擇參數查看路徑。未提供字段說明時，仍可編輯現有參數。</value>
   </data>
 </root>

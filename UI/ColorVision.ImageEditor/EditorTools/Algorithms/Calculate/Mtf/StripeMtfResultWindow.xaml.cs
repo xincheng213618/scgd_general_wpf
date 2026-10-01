@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms.Mtf;
 using ColorVision.Themes;
 using Newtonsoft.Json.Linq;
@@ -12,7 +13,7 @@ public partial class StripeMtfResultWindow : Window
     public StripeMtfResultWindow(JObject result, StripeMtfParameters parameters, double elapsedMs)
     {
         InitializeComponent(); this.ApplyCaption();
-        Summary.Text = $"{result["result"]!.Count()} 个测量框 · {(parameters.PercentageDisplay ? "百分数 (%)" : "比例值")} · 计算 {elapsedMs:F2} ms";
+        Summary.Text = LocalizedText.Format($"{result["result"]!.Count()} 个测量框 · {(parameters.PercentageDisplay ? LocalizedText.Get("百分数 (%)") : LocalizedText.Get("比例值"))} · 计算 {elapsedMs:F2} ms");
         Measurements.ItemsSource = BuildRows(result);
         Groups.ItemsSource = (result["resultChild"] as JArray ?? []).Select(g => new
         { Name = g.Value<string>("name"), Horizontal = g.Value<double>("horizontalAverage"), Vertical = g.Value<double>("verticalAverage"), Average = g.Value<double>("Average") }).ToArray();
@@ -26,7 +27,7 @@ public partial class StripeMtfResultWindow : Window
     private void CopyJson(object sender, RoutedEventArgs e)
     {
         try { Clipboard.SetText(JsonText.Text); }
-        catch (Exception error) { MessageBox.Show(this, error.Message, "复制失败"); }
+        catch (Exception error) { MessageBox.Show(this, error.Message, LocalizedText.Get("复制失败")); }
     }
 }
 

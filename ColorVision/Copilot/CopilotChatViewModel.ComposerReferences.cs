@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using ColorVision.Solution;
 using ColorVision.UI;
@@ -139,8 +140,8 @@ namespace ColorVision.Copilot
 
         public string ComposerReferenceMenuToolTip =>
             _currentCodexConfigOptions.ConfiguredMentionsV2Enabled
-                ? "在当前光标位置插入 @ 并打开统一关联候选。"
-                : "在当前光标位置插入 @ 并打开旧版文件候选；features.mentions_v2=false 不列出 Skill、模板或菜单。";
+                ? LocalizedText.Get("在当前光标位置插入 @ 并打开统一关联候选。")
+                : LocalizedText.Get("在当前光标位置插入 @ 并打开旧版文件候选；features.mentions_v2=false 不列出 Skill、模板或菜单。");
 
         public CopilotComposerReferenceItem? SelectedComposerReference
         {

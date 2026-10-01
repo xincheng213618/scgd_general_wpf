@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -62,7 +63,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             string[] paths = [];
             if (descriptor.Id == DisplayMetrologyIds.Eyebox)
             {
-                var dialog = new OpenFileDialog { Title = "选择 Eyebox 扫描清单（行优先排列）", Filter = "扫描清单|*.json", CheckFileExists = true };
+                var dialog = new OpenFileDialog { Title = LocalizedText.Get("选择 Eyebox 扫描清单（行优先排列）"), Filter = "扫描清单|*.json", CheckFileExists = true };
                 if (dialog.ShowDialog(owner.Current) != true) return;
                 ScanManifest manifest = ReadManifest(dialog.FileName);
                 parameters = manifest.Parameters; paths = manifest.Frames;
@@ -85,7 +86,7 @@ internal sealed class DisplayMetrologyEditorTool(ImageProcessingContext image, D
             if (!parameters.Validate().IsValid) throw new InvalidDataException(string.Join("; ", parameters.Validate().Issues.Select(i => i.Message)));
             if (descriptor.Id == DisplayMetrologyIds.Binocular)
             {
-                var dialog = new OpenFileDialog { Title = "当前图像为左眼：选择右眼图像", Filter = "图像|*.png;*.tif;*.tiff;*.bmp", CheckFileExists = true };
+                var dialog = new OpenFileDialog { Title = LocalizedText.Get("当前图像为左眼：选择右眼图像"), Filter = "图像|*.png;*.tif;*.tiff;*.bmp", CheckFileExists = true };
                 if (dialog.ShowDialog(owner.Current) != true) return;
                 paths = [dialog.FileName];
             }
@@ -189,13 +190,13 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
             content.Background = SystemColors.WindowBrush;
             if (result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration)
             {
-                var export = new Button { Content = "导出十字 JSON", Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
+                var export = new Button { Content = LocalizedText.Get("导出十字 JSON"), Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left };
                 export.Click += (_, _) =>
                 {
                     var dialog = new Microsoft.Win32.SaveFileDialog { Filter = "JSON|*.json", FileName = $"RgbCross_{result.InvocationId:N}.json", OverwritePrompt = false };
                     if (dialog.ShowDialog(this) != true) return;
                     try { RgbCrossMeasurementExporter.Export(result, dialog.FileName); }
-                    catch (Exception ex) { MessageBox.Show(this, ex.Message, "导出十字 JSON"); }
+                    catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizedText.Get("导出十字 JSON")); }
                 };
                 DockPanel.SetDock(export, Dock.Top); content.Children.Insert(0, export);
             }
@@ -205,7 +206,7 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
             summary.Columns.Add("指标"); summary.Columns.Add("数值"); summary.Columns.Add("单位");
             foreach (var metric in result.Artifacts.OfType<AlgorithmMeasurementArtifact>().SelectMany(a => a.Measurements))
                 summary.Rows.Add(Label(metric.Name), metric.Value.ToString("G8", CultureInfo.InvariantCulture), metric.Unit);
-            tabs.Items.Insert(0, new TabItem { Header = "测量汇总", Content = CreateTable(summary) });
+            tabs.Items.Insert(0, new TabItem { Header = LocalizedText.Get("测量汇总"), Content = CreateTable(summary) });
             int position = 1;
             foreach (var artifact in result.Artifacts.OfType<AlgorithmTableArtifact>())
             {
@@ -243,32 +244,32 @@ internal sealed class DisplayMetrologyResultWindow : Window, IDisposable
 
     private string Label(string name) => name switch
     {
-        "bright_point_candidates" => "亮点候选数", "dark_point_candidates" => "暗点候选数",
-        "line_candidates" => "线缺陷候选数", "mura_candidates" => "Mura 候选数",
-        "excluded_border" => "排除边界宽度", "analyzed_pixels" => "有效分析像素数",
-        "valid_pairs" => "有效通道对应点", "invalid_pairs" => "无效通道对应点",
-        "maximum_color_displacement" => "最大套色偏移", "rms_color_displacement" => "套色偏移均方根",
-        "valid_crosses" => "RGB 测量完整点数", "invalid_crosses" => "RGB 测量不完整点数",
-        "passed_crosses" => "OK 十字数", "failed_crosses" => "NG 十字数",
-        "maximum_r_to_g_edge_offset" => "R-G 最大边缘分离", "maximum_b_to_g_edge_offset" => "B-G 最大边缘分离",
-        "maximum_cross_axis_separation" => "十字轴线最大 RGB 分离", "maximum_cross_edge_separation" => "十字边缘最大 RGB 分离",
-        "rms_cross_edge_separation" => "十字边缘分离均方根", "configured_edge_separation_limit" => "配置的边缘分离上限",
-        "overall_threshold_result" => "十字总体判定（1=OK，0=NG）",
-        "valid_alignment_cells" => "有效对准分区", "invalid_alignment_cells" => "无效对准分区",
-        "mean_horizontal_disparity" => "平均水平视差", "mean_vertical_disparity" => "平均垂直视差",
-        "right_over_left_scale" => "右眼 / 左眼倍率", "right_rotation_clockwise" => "右眼相对旋转（顺时针）",
-        "similarity_residual_rms" => "相似变换残差均方根", "mean_right_over_left_signal" => "平均右眼 / 左眼信号比",
-        "valid_signal_cells" => "有效信号分区", "candidate_count" => _result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration ? "十字候选数" : "杂散光候选数",
-        "primary_peak_above_background" => "扣背景后主像峰值", "outside_integral_over_primary_region" => "外部积分 / 主像积分",
-        "outside_mean_over_primary_peak" => "外部平均值 / 主像峰值", "accepted_sample_count" => "满足阈值的采样点",
-        "reference_valid_pixels" => "参考帧有效像素", "four_corner_accepted_mesh_area" => "四角满足阈值的网格面积",
-        "sampled_span_x" => "X 扫描跨度", "sampled_span_y" => "Y 扫描跨度",
-        "valid_edge_cells" => "有效斜边分区", "invalid_edge_cells" => "无效斜边分区",
-        "mtf50_crossing_cells" => "测得 MTF50 的分区", "minimum_field_mtf50" => "视场最小 MTF50",
-        "maximum_field_mtf50" => "视场最大 MTF50", "RGB-displacement" => "RGB 位移明细", "RGB-cross-separation" => "十字 RGB 分离明细",
-        "binocular-field" => "左右眼分区明细", "binocular-channel-consistency" => "左右眼颜色通道",
-        "defect-candidates" => "缺陷候选明细", "stray-light-candidates" => "杂散光候选明细",
-        "eyebox-scan" => "Eyebox 采样点", "field-sfr" => "视场清晰度", "sfr-curves" => "SFR 曲线数据",
+        "bright_point_candidates" => LocalizedText.Get("亮点候选数"), "dark_point_candidates" => LocalizedText.Get("暗点候选数"),
+        "line_candidates" => LocalizedText.Get("线缺陷候选数"), "mura_candidates" => LocalizedText.Get("Mura 候选数"),
+        "excluded_border" => LocalizedText.Get("排除边界宽度"), "analyzed_pixels" => LocalizedText.Get("有效分析像素数"),
+        "valid_pairs" => LocalizedText.Get("有效通道对应点"), "invalid_pairs" => LocalizedText.Get("无效通道对应点"),
+        "maximum_color_displacement" => LocalizedText.Get("最大套色偏移"), "rms_color_displacement" => LocalizedText.Get("套色偏移均方根"),
+        "valid_crosses" => LocalizedText.Get("RGB 测量完整点数"), "invalid_crosses" => LocalizedText.Get("RGB 测量不完整点数"),
+        "passed_crosses" => LocalizedText.Get("OK 十字数"), "failed_crosses" => LocalizedText.Get("NG 十字数"),
+        "maximum_r_to_g_edge_offset" => LocalizedText.Get("R-G 最大边缘分离"), "maximum_b_to_g_edge_offset" => LocalizedText.Get("B-G 最大边缘分离"),
+        "maximum_cross_axis_separation" => LocalizedText.Get("十字轴线最大 RGB 分离"), "maximum_cross_edge_separation" => LocalizedText.Get("十字边缘最大 RGB 分离"),
+        "rms_cross_edge_separation" => LocalizedText.Get("十字边缘分离均方根"), "configured_edge_separation_limit" => LocalizedText.Get("配置的边缘分离上限"),
+        "overall_threshold_result" => LocalizedText.Get("十字总体判定（1=OK，0=NG）"),
+        "valid_alignment_cells" => LocalizedText.Get("有效对准分区"), "invalid_alignment_cells" => LocalizedText.Get("无效对准分区"),
+        "mean_horizontal_disparity" => LocalizedText.Get("平均水平视差"), "mean_vertical_disparity" => LocalizedText.Get("平均垂直视差"),
+        "right_over_left_scale" => LocalizedText.Get("右眼 / 左眼倍率"), "right_rotation_clockwise" => LocalizedText.Get("右眼相对旋转（顺时针）"),
+        "similarity_residual_rms" => LocalizedText.Get("相似变换残差均方根"), "mean_right_over_left_signal" => LocalizedText.Get("平均右眼 / 左眼信号比"),
+        "valid_signal_cells" => LocalizedText.Get("有效信号分区"), "candidate_count" => _result.AlgorithmId == DisplayMetrologyIds.RgbCrossRegistration ? LocalizedText.Get("十字候选数") : LocalizedText.Get("杂散光候选数"),
+        "primary_peak_above_background" => LocalizedText.Get("扣背景后主像峰值"), "outside_integral_over_primary_region" => LocalizedText.Get("外部积分 / 主像积分"),
+        "outside_mean_over_primary_peak" => LocalizedText.Get("外部平均值 / 主像峰值"), "accepted_sample_count" => LocalizedText.Get("满足阈值的采样点"),
+        "reference_valid_pixels" => LocalizedText.Get("参考帧有效像素"), "four_corner_accepted_mesh_area" => LocalizedText.Get("四角满足阈值的网格面积"),
+        "sampled_span_x" => LocalizedText.Get("X 扫描跨度"), "sampled_span_y" => LocalizedText.Get("Y 扫描跨度"),
+        "valid_edge_cells" => LocalizedText.Get("有效斜边分区"), "invalid_edge_cells" => LocalizedText.Get("无效斜边分区"),
+        "mtf50_crossing_cells" => LocalizedText.Get("测得 MTF50 的分区"), "minimum_field_mtf50" => LocalizedText.Get("视场最小 MTF50"),
+        "maximum_field_mtf50" => LocalizedText.Get("视场最大 MTF50"), "RGB-displacement" => LocalizedText.Get("RGB 位移明细"), "RGB-cross-separation" => LocalizedText.Get("十字 RGB 分离明细"),
+        "binocular-field" => LocalizedText.Get("左右眼分区明细"), "binocular-channel-consistency" => LocalizedText.Get("左右眼颜色通道"),
+        "defect-candidates" => LocalizedText.Get("缺陷候选明细"), "stray-light-candidates" => LocalizedText.Get("杂散光候选明细"),
+        "eyebox-scan" => LocalizedText.Get("Eyebox 采样点"), "field-sfr" => LocalizedText.Get("视场清晰度"), "sfr-curves" => LocalizedText.Get("SFR 曲线数据"),
         _ => name,
     };
 }
@@ -283,7 +284,7 @@ public sealed class RgbCrossRectangleContextMenu(ImageProcessingContext image, D
     public IEnumerable<MenuItem> GetContextMenuItems(object obj)
     {
         if (obj is not IRectangle rectangle || !image.AlgorithmRuntime.Catalog.TryResolve(AlgorithmId, out var descriptor) || descriptor == null) return [];
-        MenuItem item = new() { Header = "十字 RGB 分离..." };
+        MenuItem item = new() { Header = LocalizedText.Get("十字 RGB 分离...") };
         item.Click += async (_, _) =>
         {
             ImageSelectionScope? scope = TransientRoiSelectionSession.CaptureSourceScope(image);

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -162,24 +163,24 @@ namespace ColorVision.Copilot
         {
             return mode switch
             {
-                CopilotReasoningMode.Disabled => "关闭",
-                CopilotReasoningMode.Enabled => "开启",
-                CopilotReasoningMode.Low => "低",
-                CopilotReasoningMode.Medium => "中",
-                CopilotReasoningMode.High => "高",
-                CopilotReasoningMode.XHigh => "极高",
-                CopilotReasoningMode.Max => "最高",
-                _ => "默认",
+                CopilotReasoningMode.Disabled => LocalizedText.Get("关闭"),
+                CopilotReasoningMode.Enabled => LocalizedText.Get("开启"),
+                CopilotReasoningMode.Low => LocalizedText.Get("低"),
+                CopilotReasoningMode.Medium => LocalizedText.Get("中"),
+                CopilotReasoningMode.High => LocalizedText.Get("高"),
+                CopilotReasoningMode.XHigh => LocalizedText.Get("极高"),
+                CopilotReasoningMode.Max => LocalizedText.Get("最高"),
+                _ => LocalizedText.Get("默认"),
             };
         }
 
         public static string GetToolTip(CopilotProfileConfig? profile)
         {
             if (profile == null)
-                return "没有选中的模型配置。";
+                return LocalizedText.Get("没有选中的模型配置。");
 
             var mode = GetEffectiveMode(profile);
-            return $"{profile.DisplayLabel} · 推理{GetLabel(mode)}\n{GetDescription(profile.VendorType, mode)}";
+            return LocalizedText.Format($"{profile.DisplayLabel} · 推理{GetLabel(mode)}\n{GetDescription(profile.VendorType, mode)}");
         }
 
         public static bool HasConfigurableReasoning(CopilotProfileConfig? profile)

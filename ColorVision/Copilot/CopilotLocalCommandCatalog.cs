@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -396,9 +397,9 @@ namespace ColorVision.Copilot
         private static string BuildSkillSourceLabel(CopilotAgentSkillCatalogItem skill)
         {
             if (skill.SourceKind == CopilotAgentSkillSourceKind.User)
-                return "用户";
+                return LocalizedText.Get("用户");
             if (skill.SourceKind == CopilotAgentSkillSourceKind.BuiltIn)
-                return "内置";
+                return LocalizedText.Get("内置");
 
             try
             {
@@ -409,11 +410,11 @@ namespace ColorVision.Copilot
                 var directoryName = string.IsNullOrWhiteSpace(projectDirectory)
                     ? string.Empty
                     : Path.GetFileName(projectDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                return string.IsNullOrWhiteSpace(directoryName) ? "项目" : "项目:" + directoryName;
+                return string.IsNullOrWhiteSpace(directoryName) ? LocalizedText.Get("项目") : LocalizedText.Get("项目:") + directoryName;
             }
             catch
             {
-                return "项目";
+                return LocalizedText.Get("项目");
             }
         }
 

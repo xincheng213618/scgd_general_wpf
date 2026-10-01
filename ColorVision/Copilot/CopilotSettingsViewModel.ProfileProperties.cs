@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822
+﻿using LocalizedText = global::ColorVision.DisplayText;
+#pragma warning disable CA1822
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +75,7 @@ namespace ColorVision.Copilot
         public string ConnectProviderDescription =>
             $"输入你的 {SelectedConnectProvider.Label} API 密钥以连接账户，并在 ColorVision Copilot 中使用 {SelectedConnectProvider.Label} 模型。";
 
-        public string ConnectProviderApiKeyLabel => $"{SelectedConnectProvider.Label} API 密钥";
+        public string ConnectProviderApiKeyLabel => LocalizedText.Format($"{SelectedConnectProvider.Label} API 密钥");
 
         public string ConnectProviderIconText => SelectedConnectProvider.IconText;
 

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CS4014,CS8602,CS8604
 using System.IO;
 using System.Windows;
@@ -55,7 +56,7 @@ namespace ColorVision.Solution.Explorer
             {
                 MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"同一级已存在名为“{normalizedName}”的解决方案文件夹。",
+                    LocalizedText.Format($"同一级已存在名为“{normalizedName}”的解决方案文件夹。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);

@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+#pragma warning disable CA1822
 using ColorVision.Rbac.Dtos;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -58,7 +59,7 @@ namespace ColorVision.Rbac
             try
             {
                 BtnLogin.IsEnabled = false;
-                BtnLogin.Content = "自动登录中...";
+                BtnLogin.Content = LocalizedText.Get("自动登录中...");
                 
                 var config = RbacManagerConfig.Instance;
                 var rbacManager = RbacManager.GetInstance();
@@ -105,7 +106,7 @@ namespace ColorVision.Rbac
             finally
             {
                 BtnLogin.IsEnabled = true;
-                BtnLogin.Content = "登  录";
+                BtnLogin.Content = LocalizedText.Get("登  录");
             }
         }
 
@@ -116,13 +117,13 @@ namespace ColorVision.Rbac
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("请输入用户名和密码", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("请输入用户名和密码"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             // 显示加载状态
             BtnLogin.IsEnabled = false;
-            BtnLogin.Content = "登录中...";
+            BtnLogin.Content = LocalizedText.Get("登录中...");
 
             try
             {
@@ -131,7 +132,7 @@ namespace ColorVision.Rbac
                 
                 if (userLoginResult == null)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "用户名或者密码不正确", "登录失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Application.Current.MainWindow, LocalizedText.Get("用户名或者密码不正确"), LocalizedText.Get("登录失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -146,7 +147,7 @@ namespace ColorVision.Rbac
                     if (changeWindow.ShowDialog() != true)
                     {
                         // 用户拒绝修改默认密码，不允许登录
-                        MessageBox.Show("首次登录必须修改默认密码。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(LocalizedText.Get("首次登录必须修改默认密码。"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                 }
@@ -158,13 +159,13 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"登录失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"登录失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 // 恢复按钮状态
                 BtnLogin.IsEnabled = true;
-                BtnLogin.Content = "登  录";
+                BtnLogin.Content = LocalizedText.Get("登  录");
             }
         }
 

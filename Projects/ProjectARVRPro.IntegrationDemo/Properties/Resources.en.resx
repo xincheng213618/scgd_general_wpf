@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+		Microsoft ResX Schema
+
+		Version 1.3
+
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
+		associated with the data types.
+
+		Example:
+
+		... ado.net/XML headers & schema ...
+		<resheader name="resmimetype">text/microsoft-resx</resheader>
+		<resheader name="version">1.3</resheader>
+		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+		<data name="Name1">this is my long string</data>
+		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+			[base64 mime encoded serialized .NET Framework object]
+		</data>
+		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+			[base64 mime encoded string representing a byte array form of the .NET Framework object]
+		</data>
+
+		There are any number of "resheader" rows that contain simple
+		name/value pairs.
+
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
+		mimetype set.
+
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
+		extensible. For a given mimetype the value must be set accordingly:
+
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
+		read any of the formats listed below.
+
+		mimetype: application/x-microsoft.net.object.binary.base64
+		value   : The object must be serialized with
+			: System.Serialization.Formatters.Binary.BinaryFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.soap.base64
+		value   : The object must be serialized with
+			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.bytearray.base64
+		value   : The object must be serialized into a byte array
+			: using a System.ComponentModel.TypeConverter
+			: and then encoded with base64 encoding.
+	-->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="原始 JSON" xml:space="preserve">
+    <value>Raw JSON</value>
+  </data>
+  <data name="断开" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="输出目录" xml:space="preserve">
+    <value>Output Folder</value>
+  </data>
+  <data name="AOI 完成" xml:space="preserve">
+    <value>AOI Complete</value>
+  </data>
+  <data name="ProjectARVRPro 客户对接 Demo (.NET Framework 4.8)" xml:space="preserve">
+    <value>ProjectARVRPro Integration Demo (.NET Framework 4.8)</value>
+  </data>
+  <data name="SwitchGroup: 组名；GetProcessEnable: 留空；SetProcessEnable: &quot;Items&quot; JSON 字符串" xml:space="preserve">
+    <value>SwitchGroup: group name; GetProcessEnable: leave blank; SetProcessEnable: "Items" JSON string</value>
+  </data>
+  <data name="SwitchPG 完成" xml:space="preserve">
+    <value>SwitchPG Complete</value>
+  </data>
+  <data name="仅连接" xml:space="preserve">
+    <value>Connect Only</value>
+  </data>
+  <data name="保存扁平 CSV" xml:space="preserve">
+    <value>Save Flat CSV</value>
+  </data>
+  <data name="公开契约摘要" xml:space="preserve">
+    <value>Public Contract Summary</value>
+  </data>
+  <data name="加载样例" xml:space="preserve">
+    <value>Load Sample</value>
+  </data>
+  <data name="发送同步命令" xml:space="preserve">
+    <value>Send Synchronous Command</value>
+  </data>
+  <data name="同步命令" xml:space="preserve">
+    <value>Synchronous Commands</value>
+  </data>
+  <data name="字段说明" xml:space="preserve">
+    <value>Field Description</value>
+  </data>
+  <data name="打开结果 JSON" xml:space="preserve">
+    <value>Open Result JSON</value>
+  </data>
+  <data name="测试项" xml:space="preserve">
+    <value>Test Item</value>
+  </data>
+  <data name="消息上限" xml:space="preserve">
+    <value>Message Limit</value>
+  </data>
+  <data name="结果摘要" xml:space="preserve">
+    <value>Result Summary</value>
+  </data>
+  <data name="自动确认 AOI" xml:space="preserve">
+    <value>Automatically Confirm AOI</value>
+  </data>
+  <data name="自动确认 SwitchPG" xml:space="preserve">
+    <value>Automatically Confirm SwitchPG</value>
+  </data>
+  <data name="超时(s)" xml:space="preserve">
+    <value>Timeout (s)</value>
+  </data>
+  <data name="连接 Init" xml:space="preserve">
+    <value>Connect + Init</value>
+  </data>
+  <data name="连接 RunAll" xml:space="preserve">
+    <value>Connect + RunAll</value>
+  </data>
+  <data name="通信日志" xml:space="preserve">
+    <value>Communication Log</value>
+  </data>
+  <data name=" 需要填写 Params。" xml:space="preserve">
+    <value> Params is required.</value>
+  </data>
+  <data name="发送失败" xml:space="preserve">
+    <value>Send Failed</value>
+  </data>
+  <data name="无结果" xml:space="preserve">
+    <value>No Results</value>
+  </data>
+  <data name="缺少参数" xml:space="preserve">
+    <value>Missing Parameters</value>
+  </data>
+  <data name="解析失败" xml:space="preserve">
+    <value>Parse Failed</value>
+  </data>
+  <data name="解析或导出失败" xml:space="preserve">
+    <value>Parse or Export Failed</value>
+  </data>
+  <data name="请先加载或接收 ProjectARVRResult。" xml:space="preserve">
+    <value>Load or receive a ProjectARVRResult first.</value>
+  </data>
+  <data name="连接失败" xml:space="preserve">
+    <value>Connection Failed</value>
+  </data>
+</root>

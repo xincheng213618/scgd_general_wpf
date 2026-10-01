@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.Copilot.Mcp;
 using System;
@@ -365,12 +366,12 @@ namespace ColorVision.Copilot
         private string BuildFullAccessToolTip()
         {
             var conversation = SelectedConversation;
-            var scope = conversation?.IsFullAccessPreparedForNextTask == true ? "下一任务" : "本任务";
+            var scope = conversation?.IsFullAccessPreparedForNextTask == true ? LocalizedText.Get("下一任务") : LocalizedText.Get("本任务");
             var workspace = string.IsNullOrWhiteSpace(conversation?.FullAccessWorkspacePath)
-                ? "当前 ColorVision 应用"
+                ? LocalizedText.Get("当前 ColorVision 应用")
                 : conversation.FullAccessWorkspacePath;
-            var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "15 分钟内";
-            return $"临时自动复核仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。";
+            var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? LocalizedText.Get("15 分钟内");
+            return LocalizedText.Format($"临时自动复核仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。");
         }
 
         private static bool WorkspacePathsMatch(string expectedPath, string currentPath)

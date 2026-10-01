@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -478,7 +479,7 @@ namespace ProjectARVRPro
             if (listView1.SelectedIndex < 0) return;
             var item = listView1.SelectedItem as ProjectARVRReuslt;
             if (item == null) return;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"是否删除 {item.SN} 测试结果？"), "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
@@ -510,12 +511,12 @@ namespace ProjectARVRPro
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
-            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = LocalizedText.Get("复制") });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
-            contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = "流程结果查询" });
-            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
-            contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = "查看测试结果" });
+            contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
 
             // 右键菜单打开时刷新 CanExecute 状态
             contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
@@ -547,7 +548,7 @@ namespace ProjectARVRPro
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
             var frame = new Frame();
@@ -563,7 +564,7 @@ namespace ProjectARVRPro
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
 
@@ -595,7 +596,7 @@ namespace ProjectARVRPro
             string? viewResultJson = ViewResultManager.LoadViewResultJson(item);
             if (string.IsNullOrEmpty(viewResultJson))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("ViewResultJson为空"), "ColorVision");
                 return;
             }
             var window = new TestResultViewWindow(viewResultJson)
@@ -1390,7 +1391,7 @@ namespace ProjectARVRPro
                 RecordFlowFailure("找不到批次号，请检查流程配置");
                 ViewResultManager.Save(CurrentFlowResult);
                 SaveObjectiveTestResultRecord(CurrentFlowResult);
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return false;
             }
 
@@ -1844,11 +1845,11 @@ namespace ProjectARVRPro
         {
             int enabledCount = ResultViewRefreshDiscovery.Discover().Count(item => item.IsWarning);
             ViewRefreshManagerButton.Content = enabledCount > 0
-                ? $"视图刷新（{enabledCount}项开启）"
-                : "视图刷新（已关闭）";
+                ? LocalizedText.Format($"视图刷新（{enabledCount}项开启）")
+                : LocalizedText.Get("视图刷新（已关闭）");
             ViewRefreshManagerButton.ToolTip = enabledCount > 0
-                ? "仍有已加载的读图或结果视图在自动刷新，点击查看"
-                : "所有已加载的读图与结果视图均已关闭自动刷新";
+                ? LocalizedText.Get("仍有已加载的读图或结果视图在自动刷新，点击查看")
+                : LocalizedText.Get("所有已加载的读图与结果视图均已关闭自动刷新");
 
             if (enabledCount > 0)
             {
@@ -1903,7 +1904,7 @@ namespace ProjectARVRPro
             if (IsTestExecutionBusy)
             {
                 log.Warn($"当前测试尚未结束，暂不重放历史批次：{batch.Id}");
-                MessageBox.Show(this, "当前测试尚未结束，请在测试完成后再打开历史批次。", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("当前测试尚未结束，请在测试完成后再打开历史批次。"), "ColorVision");
                 return;
             }
 
@@ -2225,10 +2226,10 @@ namespace ProjectARVRPro
             if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
             {
                 ImageView.Clear();
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ARVRWindow), "历史结果坐标空间宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ARVRWindow), "历史结果坐标空间高度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ARVRWindow), "历史结果图像像素宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ARVRWindow), "历史结果图像像素高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ARVRWindow), LocalizedText.Get("历史结果坐标空间宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ARVRWindow), LocalizedText.Get("历史结果坐标空间高度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ARVRWindow), LocalizedText.Get("历史结果图像像素宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ARVRWindow), LocalizedText.Get("历史结果图像像素高度"));
                 ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
                 ImageView.UpdateZoomAndScale();
             }

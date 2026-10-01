@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using ColorVision.UI.Menus;
 using log4net;
 using Spectrum.Menus;
@@ -10,7 +11,7 @@ public sealed class MenuSpectrumUpdate : SpectrumMenuIBase
 {
     public override string OwnerGuid => MenuItemConstants.Help;
     public override int Order => 5;
-    public override string Header => UpdateText.Get("CheckForUpdates", "检查更新");
+    public override string Header => UpdateText.Get("CheckForUpdates", LocalizedText.Get("检查更新"));
     public override Visibility Visibility => SpectrumRuntime.IsStandalone ? Visibility.Visible : Visibility.Collapsed;
 
     public override void Execute() => SpectrumUpdateCoordinator.ShowManualCheck();
@@ -104,18 +105,18 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
 
     private void ApplyText()
     {
-        Title = UpdateText.Get("SpectrumUpdateTitle", "Spectrum 更新");
-        HeadingText.Text = UpdateText.Get("SpectrumUpdateHeading", "Spectrum 软件更新");
-        CurrentVersionLabel.Text = UpdateText.Get("CurrentVersion", "当前版本");
-        LatestVersionLabel.Text = UpdateText.Get("LatestVersion", "最新版本");
-        ReleaseNotesGroup.Header = UpdateText.Get("ReleaseNotes", "更新说明");
+        Title = UpdateText.Get("SpectrumUpdateTitle", LocalizedText.Get("Spectrum 更新"));
+        HeadingText.Text = UpdateText.Get("SpectrumUpdateHeading", LocalizedText.Get("Spectrum 软件更新"));
+        CurrentVersionLabel.Text = UpdateText.Get("CurrentVersion", LocalizedText.Get("当前版本"));
+        LatestVersionLabel.Text = UpdateText.Get("LatestVersion", LocalizedText.Get("最新版本"));
+        ReleaseNotesGroup.Header = UpdateText.Get("ReleaseNotes", LocalizedText.Get("更新说明"));
         CurrentVersionText.Text = SpectrumRuntime.CurrentVersion.ToString();
         LatestVersionText.Text = "--";
-        ReleaseNotesText.Text = UpdateText.Get("CheckingForUpdates", "正在检查更新...");
-        StatusText.Text = UpdateText.Get("CheckingForUpdates", "正在检查更新...");
-        CloseButton.Content = UpdateText.Get("Close", "关闭");
-        CancelDownloadButton.Content = UpdateText.Get("CancelDownload", "取消下载");
-        PrimaryButton.Content = UpdateText.Get("CheckAgain", "重新检查");
+        ReleaseNotesText.Text = UpdateText.Get("CheckingForUpdates", LocalizedText.Get("正在检查更新..."));
+        StatusText.Text = UpdateText.Get("CheckingForUpdates", LocalizedText.Get("正在检查更新..."));
+        CloseButton.Content = UpdateText.Get("Close", LocalizedText.Get("关闭"));
+        CancelDownloadButton.Content = UpdateText.Get("CancelDownload", LocalizedText.Get("取消下载"));
+        PrimaryButton.Content = UpdateText.Get("CheckAgain", LocalizedText.Get("重新检查"));
     }
 
     private async void SpectrumUpdateWindow_Loaded(object sender, RoutedEventArgs e)
@@ -142,7 +143,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
         PrimaryButton.IsEnabled = false;
         LatestVersionText.Text = "--";
         ReleaseNotesText.Text = string.Empty;
-        StatusText.Text = UpdateText.Get("CheckingForUpdates", "正在检查更新...");
+        StatusText.Text = UpdateText.Get("CheckingForUpdates", LocalizedText.Get("正在检查更新..."));
         try
         {
             using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
@@ -155,8 +156,8 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
             else
             {
                 ReleaseNotesText.Text = checkResult.Manifest.ReleaseNotes;
-                StatusText.Text = UpdateText.Get("AlreadyUpToDate", "当前已是最新版本。");
-                PrimaryButton.Content = UpdateText.Get("CheckAgain", "重新检查");
+                StatusText.Text = UpdateText.Get("AlreadyUpToDate", LocalizedText.Get("当前已是最新版本。"));
+                PrimaryButton.Content = UpdateText.Get("CheckAgain", LocalizedText.Get("重新检查"));
                 PrimaryButton.IsEnabled = true;
             }
         }
@@ -178,7 +179,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
     private void ShowCheckError(string message)
     {
         StatusText.Text = message;
-        PrimaryButton.Content = UpdateText.Get("CheckAgain", "重新检查");
+        PrimaryButton.Content = UpdateText.Get("CheckAgain", LocalizedText.Get("重新检查"));
         PrimaryButton.IsEnabled = true;
     }
 
@@ -186,11 +187,11 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
     {
         LatestVersionText.Text = result.Version.ToString();
         ReleaseNotesText.Text = string.IsNullOrWhiteSpace(result.Manifest.ReleaseNotes)
-            ? UpdateText.Get("NoReleaseNotes", "此版本没有附加说明。")
+            ? UpdateText.Get("NoReleaseNotes", LocalizedText.Get("此版本没有附加说明。"))
             : result.Manifest.ReleaseNotes;
-        StatusText.Text = UpdateText.Get("NewVersionAvailable", "发现新版本。下载后会完成安全校验，再提示重启安装。");
+        StatusText.Text = UpdateText.Get("NewVersionAvailable", LocalizedText.Get("发现新版本。下载后会完成安全校验，再提示重启安装。"));
         ProgressText.Text = FormatSize(result.Manifest.Package.Size);
-        PrimaryButton.Content = UpdateText.Get("DownloadUpdate", "下载更新");
+        PrimaryButton.Content = UpdateText.Get("DownloadUpdate", LocalizedText.Get("下载更新"));
         PrimaryButton.IsEnabled = true;
     }
 
@@ -225,7 +226,7 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
         CancelDownloadButton.Visibility = Visibility.Visible;
         DownloadProgress.Visibility = Visibility.Visible;
         DownloadProgress.Value = 0;
-        StatusText.Text = UpdateText.Get("DownloadingUpdate", "正在下载完整更新包...");
+        StatusText.Text = UpdateText.Get("DownloadingUpdate", LocalizedText.Get("正在下载完整更新包..."));
         ProgressText.Text = $"0 / {FormatSize(manifest.Package.Size)}";
 
         Progress<SpectrumDownloadProgress> progress = new(value =>
@@ -238,22 +239,22 @@ public partial class SpectrumUpdateWindow : Window, IDisposable
         {
             downloadedUpdate = await SpectrumUpdateService.DownloadAndValidateAsync(manifest, progress, operationCancellation.Token);
             DownloadProgress.Value = 100;
-            StatusText.Text = UpdateText.Get("UpdateReadyToInstall", "下载和完整性校验已完成。请保存工作后重启安装。");
-            PrimaryButton.Content = UpdateText.Get("RestartAndInstall", "重启并安装");
+            StatusText.Text = UpdateText.Get("UpdateReadyToInstall", LocalizedText.Get("下载和完整性校验已完成。请保存工作后重启安装。"));
+            PrimaryButton.Content = UpdateText.Get("RestartAndInstall", LocalizedText.Get("重启并安装"));
         }
         catch (OperationCanceledException)
         {
-            StatusText.Text = UpdateText.Get("UpdateDownloadCancelled", "下载已取消。");
+            StatusText.Text = UpdateText.Get("UpdateDownloadCancelled", LocalizedText.Get("下载已取消。"));
             DownloadProgress.Visibility = Visibility.Collapsed;
             ProgressText.Text = string.Empty;
-            PrimaryButton.Content = UpdateText.Get("DownloadUpdate", "下载更新");
+            PrimaryButton.Content = UpdateText.Get("DownloadUpdate", LocalizedText.Get("下载更新"));
         }
         catch (Exception ex)
         {
             log.Error("Spectrum 更新包下载或校验失败", ex);
             StatusText.Text = ex.Message;
             DownloadProgress.Visibility = Visibility.Collapsed;
-            PrimaryButton.Content = UpdateText.Get("RetryDownload", "重新下载");
+            PrimaryButton.Content = UpdateText.Get("RetryDownload", LocalizedText.Get("重新下载"));
         }
         finally
         {

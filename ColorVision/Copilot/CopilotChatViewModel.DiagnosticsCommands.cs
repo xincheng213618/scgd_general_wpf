@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
@@ -67,7 +68,7 @@ namespace ColorVision.Copilot
                 ProviderProjectTokenReset = providerRateLimits.ProjectTokenReset,
                 ProviderRateLimitRetryAfter = providerRateLimits.RetryAfter,
                 ProviderRateLimitRequestId = providerRateLimits.RequestId,
-                ReasoningLabel = profile?.ReasoningLabel ?? "默认",
+                ReasoningLabel = profile?.ReasoningLabel ?? LocalizedText.Get("默认"),
                 Mode = ResolveComposerRequestMode(),
                 AgentState = activeRun?.State.ToString() ?? "Idle",
                 QueuedAgentRuns = _taskHost.QueuedCount,

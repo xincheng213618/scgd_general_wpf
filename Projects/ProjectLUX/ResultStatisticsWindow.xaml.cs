@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectLUX.DisplayText;
 using ColorVision.Database;
 using System.Windows;
 
@@ -45,7 +46,7 @@ public partial class ResultStatisticsWindow : Window
             PageNumber = page,
             PageSize = PageSize,
         };
-        Status.Text = "正在读取统计...";
+        Status.Text = LocalizedText.Get("正在读取统计...");
         try
         {
             var data = await Task.Run(() => ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
@@ -57,8 +58,8 @@ public partial class ResultStatisticsWindow : Window
             Records.ItemsSource = data.Records;
             _page = page;
             _pageCount = Math.Max(1, (data.Count + PageSize - 1) / PageSize);
-            PageText.Text = $"{_page} / {_pageCount} 页 · 共 {data.Count:N0} 条";
-            Status.Text = $"{range.ToDisplayText(mode)} · 最短 CT {data.Dashboard.Summary.MinimumCtText} · 最长 CT {data.Dashboard.Summary.MaximumCtText}";
+            PageText.Text = LocalizedText.Format($"{_page} / {_pageCount} 页 · 共 {data.Count:N0} 条");
+            Status.Text = LocalizedText.Format($"{range.ToDisplayText(mode)} · 最短 CT {data.Dashboard.Summary.MinimumCtText} · 最长 CT {data.Dashboard.Summary.MaximumCtText}");
         }
         catch (Exception ex)
         {
@@ -66,7 +67,7 @@ public partial class ResultStatisticsWindow : Window
             SummaryPanel.DataContext = null;
             Records.ItemsSource = null;
             Trend.ItemsSource = null;
-            Status.Text = $"读取统计失败：{ex.Message}";
+            Status.Text = LocalizedText.Format($"读取统计失败：{ex.Message}");
         }
     }
 
@@ -79,7 +80,7 @@ public partial class ResultStatisticsWindow : Window
             if (!IsLoaded || Records.SelectedItem != row) return;
             if (string.IsNullOrEmpty(record?.ObjectiveTestResultJson))
             {
-                MessageBox.Show(this, "该记录没有可查看的测试结果。", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("该记录没有可查看的测试结果。"), "ColorVision");
                 return;
             }
             new TestResultViewWindow(record.ObjectiveTestResultJson)
@@ -89,7 +90,7 @@ public partial class ResultStatisticsWindow : Window
         }
         catch (Exception ex)
         {
-            if (IsLoaded) MessageBox.Show(this, $"读取结果失败：{ex.Message}", "ColorVision");
+            if (IsLoaded) MessageBox.Show(this, LocalizedText.Format($"读取结果失败：{ex.Message}"), "ColorVision");
         }
     }
 

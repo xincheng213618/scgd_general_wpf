@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -41,13 +42,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             try { input = ImageAlgorithmInputFactory.Acquire(image, expectedScope); }
             catch (Exception exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "直线拟合", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("直线拟合"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前图像 revision。", "直线拟合", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("无法确定当前图像 revision。"), LocalizedText.Get("直线拟合"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -67,7 +68,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             {
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "直线拟合", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("直线拟合"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -88,7 +89,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "直线拟合", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(progressWindow.Owner, exception.Message, LocalizedText.Get("直线拟合"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -109,7 +110,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(progressWindow.Owner, message, "直线拟合失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(progressWindow.Owner, message, LocalizedText.Get("直线拟合失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -135,7 +136,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             {
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "直线拟合结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("直线拟合结果"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -144,7 +145,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
             LineFitParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "直线拟合参数",
+                Title = LocalizedText.Get("直线拟合参数"),
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -171,7 +172,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LineFit
                     OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                     GuidId = "LineFit",
                     Order = 8,
-                    Header = "直线拟合...",
+                    Header = LocalizedText.Get("直线拟合..."),
                     Command = new RelayCommand(_ => tool.Execute()),
                 },
             ];

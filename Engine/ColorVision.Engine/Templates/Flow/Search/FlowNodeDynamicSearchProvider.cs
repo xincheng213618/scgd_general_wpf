@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.Flow.Versioning;
@@ -82,8 +83,8 @@ namespace ColorVision.Engine.Templates.Flow.Search
                         {
                             MessageBox.Show(
                                 Application.Current.GetActiveWindow(),
-                                "搜索结果对应的流程版本已经变化，请重新搜索。",
-                                "流程搜索",
+                                LocalizedText.Get("搜索结果对应的流程版本已经变化，请重新搜索。"),
+                                LocalizedText.Get("流程搜索"),
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Information);
                             return;
@@ -97,8 +98,8 @@ namespace ColorVision.Engine.Templates.Flow.Search
                             {
                                 MessageBox.Show(
                                     window,
-                                    "流程已打开，但目标节点不存在。请重新保存流程并刷新搜索索引。",
-                                    "流程搜索",
+                                    LocalizedText.Get("流程已打开，但目标节点不存在。请重新保存流程并刷新搜索索引。"),
+                                    LocalizedText.Get("流程搜索"),
                                     MessageBoxButton.OK,
                                     MessageBoxImage.Information);
                             }

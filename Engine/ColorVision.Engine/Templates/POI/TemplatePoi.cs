@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Browser;
@@ -58,7 +59,7 @@ namespace ColorVision.Engine.Templates.POI
                     if (previous != i) Params.Move(previous, i);
                 }
             }
-            Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? " · 本地" : " · MySQL");
+            Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 
@@ -214,7 +215,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"解析模板文件时出错: {ex.Message}"), "ColorVision");
                 return false;
             }
         }

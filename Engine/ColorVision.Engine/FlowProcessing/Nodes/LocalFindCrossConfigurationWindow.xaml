@@ -1,18 +1,19 @@
 <Window x:Class="ColorVision.Engine.FlowProcessing.Nodes.LocalFindCrossConfigurationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.Engine"
         xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
-        Title="本地十字定位 · 参数配置" Width="850" Height="720" MinWidth="780" MinHeight="500"
+        Title="{display:EngineLang Key='本地十字定位 · 参数配置'}" Width="850" Height="720" MinWidth="780" MinHeight="500"
         Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}">
     <DockPanel Margin="16">
         <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <StackPanel>
-                <TextBlock Text="十字定位参数" FontSize="20" FontWeight="SemiBold"/>
-                <TextBlock Text="修改后点击应用，搜索区域仍在节点面板设置。" Opacity="0.65" Margin="0,4,0,0"/>
+                <TextBlock Text="{display:EngineLang Key='十字定位参数'}" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock Text="{display:EngineLang Key='修改后点击应用，搜索区域仍在节点面板设置。'}" Opacity="0.65" Margin="0,4,0,0"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <RadioButton x:Name="FormMode" Content="参数" GroupName="Mode" IsChecked="True" Click="FormMode_Click" Margin="8"/>
+                <RadioButton x:Name="FormMode" Content="{display:EngineLang Key='参数'}" GroupName="Mode" IsChecked="True" Click="FormMode_Click" Margin="8"/>
                 <RadioButton x:Name="JsonMode" Content="JSON" GroupName="Mode" Click="JsonMode_Click" Margin="8"/>
             </StackPanel>
         </Grid>
@@ -20,16 +21,16 @@
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource EditorSyntaxErrorBrush}" Margin="0,0,0,8"/>
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Button Content="检查配置" Click="Validate_Click" HorizontalAlignment="Left" Padding="12,5"/>
-                <Button Grid.Column="1" Content="取消" IsCancel="True" MinWidth="88" Padding="12,5" Margin="0,0,8,0"/>
-                <Button Grid.Column="2" Content="应用" Click="Apply_Click" MinWidth="88" Padding="12,5"/>
+                <Button Content="{display:EngineLang Key='检查配置'}" Click="Validate_Click" HorizontalAlignment="Left" Padding="12,5"/>
+                <Button Grid.Column="1" Content="{display:EngineLang Key='取消'}" IsCancel="True" MinWidth="88" Padding="12,5" Margin="0,0,8,0"/>
+                <Button Grid.Column="2" Content="{display:EngineLang Key='应用'}" Click="Apply_Click" MinWidth="88" Padding="12,5"/>
             </Grid>
         </StackPanel>
         <Grid>
             <ScrollViewer x:Name="FormScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <ContentControl x:Name="BasicForm"/>
-                    <Expander x:Name="AdvancedSection" Header="高级校准 · 中心补偿与镜头畸变" Margin="0,12,0,0">
+                    <Expander x:Name="AdvancedSection" Header="{display:EngineLang Key='高级校准 · 中心补偿与镜头畸变'}" Margin="0,12,0,0">
                         <ContentControl x:Name="AdvancedForm"/>
                     </Expander>
                 </StackPanel>

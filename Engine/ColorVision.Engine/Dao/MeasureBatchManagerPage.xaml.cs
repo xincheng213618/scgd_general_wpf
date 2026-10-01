@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1863,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
@@ -63,7 +64,7 @@ namespace ColorVision.Engine
 
         private void PopulateContextMenu()
         {
-            var nodeAnalysisMenuItem = new MenuItem { Header = "流程执行分析" };
+            var nodeAnalysisMenuItem = new MenuItem { Header = LocalizedText.Get("流程执行分析") };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
                 var window = new FlowExecutionAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -46,10 +47,10 @@ namespace ColorVision.Copilot
                     ? CopilotUiText.NewConversationTitle
                     : Conversation.Title.Trim();
                 if (IsRoot)
-                    return $"根会话 · {title}";
+                    return LocalizedText.Format($"根会话 · {title}");
 
                 var indent = new string(' ', Math.Min(Depth, 6) * 2);
-                var missingParent = HasMissingParent ? "源会话缺失 · " : string.Empty;
+                var missingParent = HasMissingParent ? LocalizedText.Get("源会话缺失 · ") : string.Empty;
                 return $"{indent}↳ {missingParent}{title}";
             }
         }

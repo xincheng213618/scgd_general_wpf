@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1805,CS8604
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1805,CS8604
 using ColorVision.Engine.Templates.SFR;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -196,7 +197,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
         {
             if (!double.TryParse(TxtFreq.Text, out var freq))
             {
-                Resultextbox.Text = "频率输入错误";
+                Resultextbox.Text = LocalizedText.Get("频率输入错误");
                 return;
             }
 
@@ -204,14 +205,14 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             if (!double.IsNaN(mtf))
                 Resultextbox.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
             else
-                Resultextbox.Text = "未找到对应MTF";
+                Resultextbox.Text = LocalizedText.Get("未找到对应MTF");
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(TxtMtf.Text, out var mtf))
             {
-                Resultextbox.Text = "MTF输入错误";
+                Resultextbox.Text = LocalizedText.Get("MTF输入错误");
                 return;
             }
 
@@ -219,7 +220,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             if (freq > 0)
                 Resultextbox.Text = $"Freq(MTF={mtf:F4}) = {freq:F5}";
             else
-                Resultextbox.Text = "未找到对应频率";
+                Resultextbox.Text = LocalizedText.Get("未找到对应频率");
         }
 
         private void BtnSaveChart_Click(object sender, RoutedEventArgs e)
@@ -239,12 +240,12 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
                     int height = WpfPlot.ActualHeight > 0 ? (int)WpfPlot.ActualHeight : DefaultChartHeight;
                     
                     WpfPlot.Plot.Save(dlg.FileName, width, height);
-                    MessageBox.Show("图表保存成功!", "保存图表", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Get("图表保存成功!"), LocalizedText.Get("保存图表"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"保存失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -277,12 +278,12 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
                     }
 
                     File.WriteAllText(dlg.FileName, csv.ToString(), Encoding.UTF8);
-                    MessageBox.Show($"数据已成功导出到:\n{dlg.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(LocalizedText.Format($"数据已成功导出到:\n{dlg.FileName}"), LocalizedText.Get("导出成功"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"导出失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }  

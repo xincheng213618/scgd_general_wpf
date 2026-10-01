@@ -40,7 +40,7 @@ namespace Spectrum
     public class ExportMenuViewMax : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "全屏";
+        public override string Header => ColorVision.ImageEditor.Properties.Resources.FullScreen;
 
         public override void Execute()
         {

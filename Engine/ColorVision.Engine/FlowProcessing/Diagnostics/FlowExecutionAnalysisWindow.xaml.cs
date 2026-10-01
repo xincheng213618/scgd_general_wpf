@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -1045,7 +1046,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             HeaderTitleText.Text = EngineLocalization.Get(title);
             BreadcrumbText.Text = EngineLocalization.Get(breadcrumb);
-            HeaderSubtitleText.Text = _dataSource.IsReadOnly ? $"{_dataSource.Label} · 只读 · {subtitle}" : subtitle;
+            HeaderSubtitleText.Text = _dataSource.IsReadOnly ? LocalizedText.Format($"{_dataSource.Label} · 只读 · {subtitle}") : subtitle;
         }
 
         private static string BuildRunSubtitle(FlowExecutionAnalysisSession session)

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ColorVision.DisplayText;
+using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
 using ColorVision.Engine.Services.Operations;
@@ -243,9 +244,9 @@ namespace ColorVision
                 {
                     log.Error("Unable to replace the earlier ColorVision instance.", ex);
                     MessageBox.Show(
-                        "无法完成旧 ColorVision 实例的关闭，本次启动已停止。\n\n" +
-                        "请在任务管理器中检查 ColorVision 进程。详细原因已写入日志。",
-                        "ColorVision 无法启动", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        LocalizedText.Get("无法完成旧 ColorVision 实例的关闭，本次启动已停止。\n\n") +
+                        LocalizedText.Get("请在任务管理器中检查 ColorVision 进程。详细原因已写入日志。"),
+                        LocalizedText.Get("ColorVision 无法启动"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     StartupRegistryChecker.CompleteForRecoveryRestart();
                     Environment.Exit(-1);
                     return;

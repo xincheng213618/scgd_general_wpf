@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
@@ -300,7 +301,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (IsLocalCodex) return "使用本机 Codex；发送前检查运行时与登录状态。";
+                if (IsLocalCodex) return LocalizedText.Get("使用本机 Codex；发送前检查运行时与登录状态。");
                 var missing = BuildMissingConfigurationParts();
                 if (missing.Length > 0)
                     return "Missing " + string.Join(", ", missing) + ".";
@@ -318,7 +319,7 @@ namespace ColorVision.Copilot
         public string VendorLabel => CopilotVendorCatalog.GetLabel(VendorType);
 
         [JsonIgnore]
-        public string ProviderLabel => IsLocalCodex ? "本机 Codex" : ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
+        public string ProviderLabel => IsLocalCodex ? LocalizedText.Get("本机 Codex") : ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
 
         [JsonIgnore]
         public string ReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(this));
@@ -349,7 +350,7 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string SecondaryLabel => IsLocalCodex ? $"本机 Codex · {(string.IsNullOrWhiteSpace(Model) ? "默认模型" : Model)}" : $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? "Model not set" : Model)}";
+        public string SecondaryLabel => IsLocalCodex ? LocalizedText.Format($"本机 Codex · {(string.IsNullOrWhiteSpace(Model) ? LocalizedText.Get("默认模型") : Model)}") : $"{VendorLabel} · {ProviderLabel} · {(string.IsNullOrWhiteSpace(Model) ? LocalizedText.Get("未设置模型") : Model)}";
 
         public bool EnsureValid()
         {

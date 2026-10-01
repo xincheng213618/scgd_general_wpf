@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.ImageEditor.Algorithms.Mtf;
 using ColorVision.UI;
 using System;
@@ -14,7 +15,7 @@ public sealed class LocalMtfConfigurationEditor : IPropertyEditor
     {
         DockPanel panel = new();
         panel.Children.Add(PropertyEditorHelper.CreateLabel(property, PropertyEditorHelper.GetResourceManager(obj)));
-        Button button = new() { Content = "配置条纹 MTF…", Padding = new Thickness(10, 2, 10, 2) };
+        Button button = new() { Content = LocalizedText.Get("配置条纹 MTF…"), Padding = new Thickness(10, 2, 10, 2) };
         panel.Children.Add(button);
         button.Click += (_, _) =>
         {
@@ -22,15 +23,15 @@ public sealed class LocalMtfConfigurationEditor : IPropertyEditor
             {
                 StripeMtfParameters parameters = StripeMtfParameters.FromJson(property.GetValue(obj) as string ?? "{}");
                 PropertyEditorWindow window = new(parameters, PropertyEditorEditMode.Transactional)
-                { Title = "条纹 MTF 参数", Owner = Window.GetWindow(panel), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                { Title = LocalizedText.Get("条纹 MTF 参数"), Owner = Window.GetWindow(panel), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Submitted += (_, _) =>
                 {
                     try { property.SetValue(obj, parameters.ToJson().ToString()); }
-                    catch (Exception error) { MessageBox.Show(error.Message, "MTF 参数无效"); }
+                    catch (Exception error) { MessageBox.Show(error.Message, LocalizedText.Get("MTF 参数无效")); }
                 };
                 window.ShowDialog();
             }
-            catch (Exception error) { MessageBox.Show(error.Message, "MTF 参数无效"); }
+            catch (Exception error) { MessageBox.Show(error.Message, LocalizedText.Get("MTF 参数无效")); }
         };
         return panel;
     }

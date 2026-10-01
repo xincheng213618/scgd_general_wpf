@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Templates.Browser;
 #pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
@@ -120,7 +121,7 @@ namespace ColorVision.Engine.Templates.Flow
                     if (oldIndex != index) TemplateParams.Move(oldIndex, index);
                 }
             }
-            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? " · 本地" : " · MySQL");
+            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 

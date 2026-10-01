@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.UI.Menus;
 
 namespace ProjectARVRPro.SocketRelay
@@ -7,7 +8,7 @@ namespace ProjectARVRPro.SocketRelay
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 101;
-        public override string Header => "Socket中转服务器";
+        public override string Header => LocalizedText.Get("Socket中转服务器");
 
         public override void Execute()
         {

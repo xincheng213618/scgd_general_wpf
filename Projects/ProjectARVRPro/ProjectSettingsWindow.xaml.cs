@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System.ComponentModel;
@@ -34,7 +35,7 @@ public partial class ProjectSettingsWindow : Window
         _session = session;
         _persist = persist;
         _confirmDiscard = confirmDiscard ?? (() => MessageBox.Show(this,
-            "部分修改未保存，仍要关闭吗？\n已自动保存的设置不会撤销。", "设置未保存",
+            LocalizedText.Get("部分修改未保存，仍要关闭吗？\n已自动保存的设置不会撤销。"), LocalizedText.Get("设置未保存"),
             MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes);
         InitializeComponent();
         this.ApplyCaption();
@@ -125,7 +126,7 @@ public partial class ProjectSettingsWindow : Window
             AutomationProperties.SetHeadingLevel(heading, AutomationHeadingLevel.Level1);
             panel.Children.Add(heading);
             if (section.Id == ProjectSettingsPage.Images)
-                panel.Children.Add(new TextBlock { Text = "图像保存在“结果保存”指定的目录。", Margin = new Thickness(0, 0, 0, 10) });
+                panel.Children.Add(new TextBlock { Text = LocalizedText.Get("图像保存在“结果保存”指定的目录。"), Margin = new Thickness(0, 0, 0, 10) });
             foreach (var group in section.Groups)
             {
                 var normalProperties = group.Properties.Where(property => property.GetCustomAttribute<CategoryAttribute>()?.Category != "结果编号").ToArray();
@@ -142,7 +143,7 @@ public partial class ProjectSettingsWindow : Window
                 var numbering = group.Properties.Where(property => property.GetCustomAttribute<CategoryAttribute>()?.Category == "结果编号").ToArray();
                 if (numbering.Length > 0)
                 {
-                    panel.Children.Add(new TextBlock { Text = "结果编号规则", FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 0, 0, 6) });
+                    panel.Children.Add(new TextBlock { Text = LocalizedText.Get("结果编号规则"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 0, 0, 6) });
                     panel.Children.Add(CreateSettingsGroup(group.Source, numbering));
                 }
             }
@@ -272,7 +273,7 @@ public partial class ProjectSettingsWindow : Window
     private void UpdateStatus()
     {
         StatusText.Text = _defaultsError ?? _saveErrors.Values.FirstOrDefault()
-            ?? (FindValidationError(SettingsContent) != null ? "标红的输入未保存，请修正；其他设置已自动保存。" : "");
+            ?? (FindValidationError(SettingsContent) != null ? LocalizedText.Get("标红的输入未保存，请修正；其他设置已自动保存。") : "");
         StatusText.Visibility = string.IsNullOrEmpty(StatusText.Text) ? Visibility.Collapsed : Visibility.Visible;
         RetryButton.Visibility = _defaultsError != null || _saveErrors.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -292,7 +293,7 @@ public partial class ProjectSettingsWindow : Window
 
     private void Defaults_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show(this, "将本窗口所有设置恢复为默认值并立即保存？", "恢复默认设置",
+        if (MessageBox.Show(this, LocalizedText.Get("将本窗口所有设置恢复为默认值并立即保存？"), LocalizedText.Get("恢复默认设置"),
             MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) != MessageBoxResult.OK) return;
         RestoreDefaults();
     }

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -51,7 +52,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             string estimateSummary = string.Equals(method, nameof(ImageRegistrationMethod.OrbHomography), StringComparison.Ordinal)
                 ? $"匹配={Value(measurements, "registration.match_count"):G0}；内点={Value(measurements, "registration.inlier_count"):G0}；几何 RMSE={Value(measurements, "registration.geometric_rmse"):G8}px"
                 : $"平移=({Value(measurements, "registration.phase_shift_x"):G8}, {Value(measurements, "registration.phase_shift_y"):G8}) px；相关损失={Value(measurements, "registration.correlation_loss"):G8}；峰唯一性={Value(measurements, "registration.phase_peak_uniqueness"):P2}";
-            SummaryText.Text = $"moving：{movingName}；方法={method}；{estimateSummary}；光度 RMSE={Value(measurements, "registration.photometric_rmse"):G8}；置信度={Value(measurements, "registration.confidence"):P2}；有效区域={Value(measurements, "registration.valid_fraction"):P2}。矩阵方向为 moving 像素中心 → reference 像素中心。";
+            SummaryText.Text = LocalizedText.Format($"moving：{movingName}；方法={method}；{estimateSummary}；光度 RMSE={Value(measurements, "registration.photometric_rmse"):G8}；置信度={Value(measurements, "registration.confidence"):P2}；有效区域={Value(measurements, "registration.valid_fraction"):P2}。矩阵方向为 moving 像素中心 → reference 像素中心。");
             if (image != null && draw != null) _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
             Closed += (_, _) => DisposeOwnedState();
         }
@@ -86,7 +87,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {

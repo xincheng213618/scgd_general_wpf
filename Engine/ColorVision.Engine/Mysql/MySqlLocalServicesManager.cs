@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CA1863,CS8602,CS8603
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1822,CA1863,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine;
@@ -528,7 +529,7 @@ namespace ColorVision.Database
             catch (Exception ex)
             {
                 log.Error("MySQL备份失败。", ex);
-                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, $"备份失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
+                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, LocalizedText.Format($"备份失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
             }
             finally
             {
@@ -552,7 +553,7 @@ namespace ColorVision.Database
                 string filePath = openFileDialog.FileName; // Get the selected file path
                 if (!string.Equals(Path.GetExtension(filePath), ".sql", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "仅支持加载 .sql 备份文件。");
+                    MessageBox.Show(Application.Current.MainWindow, LocalizedText.Get("仅支持加载 .sql 备份文件。"));
                     return;
                 }
 
@@ -574,7 +575,7 @@ namespace ColorVision.Database
             }
             else
             {
-                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, "已有数据库维护任务正在执行，请稍候。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information));
+                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, LocalizedText.Get("已有数据库维护任务正在执行，请稍候。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information));
                 return;
             }
 

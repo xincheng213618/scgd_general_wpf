@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -107,9 +108,9 @@ namespace ProjectARVRPro
             _windowConfig?.SetWindow(this);
             if (offlineSource != null)
             {
-                Title = $"结果统计 · {offlineSource.Label} · 只读";
+                Title = LocalizedText.Format($"结果统计 · {offlineSource.Label} · 只读");
                 DataSourceText.Text = offlineSource.Description;
-                DataSourceText.ToolTip = $"来源：{offlineSource.SourcePath}\n读取副本：{offlineSource.DirectoryPath}\n各数据库是独立快照；图片未随记录自动导入。";
+                DataSourceText.ToolTip = LocalizedText.Format($"来源：{offlineSource.SourcePath}\n读取副本：{offlineSource.DirectoryPath}\n各数据库是独立快照；图片未随记录自动导入。");
                 OfflineMessagesButton.Visibility = Visibility.Visible;
             }
             RestoreSearchState();
@@ -180,18 +181,18 @@ namespace ProjectARVRPro
             CombinedSummaryPanel.Visibility = visibility;
             CombinedSummaryLabel.Visibility = visibility;
             CombinedSummaryRow.Height = IsCombinedStatisticsEnabled ? GridLength.Auto : new GridLength(0);
-            StatisticsSettingsButton.Content = IsCombinedStatisticsEnabled ? "统计设置 · L/R 已开启" : "统计设置";
+            StatisticsSettingsButton.Content = IsCombinedStatisticsEnabled ? LocalizedText.Get("统计设置 · L/R 已开启") : LocalizedText.Get("统计设置");
         }
 
         private async void OpenOfflineData_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog { Title = "打开现场数据", Filter = "反馈包或 ARVRPro 数据库|*.zip;*.db|所有文件|*.*", CheckFileExists = true };
+            var dialog = new OpenFileDialog { Title = LocalizedText.Get("打开现场数据"), Filter = "反馈包或 ARVRPro 数据库|*.zip;*.db|所有文件|*.*", CheckFileExists = true };
             if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FileName);
         }
 
         private async void OpenOfflineFolder_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFolderDialog { Title = "选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹" };
+            var dialog = new OpenFolderDialog { Title = LocalizedText.Get("选择包含 ProjectARVRPro.db 或 Database 子目录的资料文件夹") };
             if (dialog.ShowDialog(this) == true) await OpenOfflineAsync(dialog.FolderName);
         }
 
@@ -200,14 +201,14 @@ namespace ProjectARVRPro
             if (_openingOffline || _closed) return;
             _openingOffline = true;
             string previous = DataSourceText.Text;
-            DataSourceText.Text = "正在准备现场只读副本…";
+            DataSourceText.Text = LocalizedText.Get("正在准备现场只读副本…");
             try
             {
                 Offline.ArvrOfflineDataSource source = await Task.Run(() => Offline.ArvrOfflineDataSource.Open(path));
                 if (_closed) return;
                 new CycleTimeStatisticsWindow(source) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
             }
-            catch (Exception ex) { if (!_closed) MessageBox.Show(this, $"打开现场数据失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+            catch (Exception ex) { if (!_closed) MessageBox.Show(this, LocalizedText.Format($"打开现场数据失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
             finally { DataSourceText.Text = previous; _openingOffline = false; }
         }
 
@@ -216,7 +217,7 @@ namespace ProjectARVRPro
             if (_offlineSource == null) return;
             if (SelectedRecordRow is not ResultStatisticsRecordRow row)
             {
-                MessageBox.Show(this, "请先在测试记录中选择一轮测试。", "现场消息");
+                MessageBox.Show(this, LocalizedText.Get("请先在测试记录中选择一轮测试。"), LocalizedText.Get("现场消息"));
                 return;
             }
             new Offline.OfflineMessagesWindow(_offlineSource, row) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
@@ -504,7 +505,7 @@ namespace ProjectARVRPro
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
-            HomePeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            HomePeriodText.Text = LocalizedText.Format($"查询范围：{range.ToDisplayText(mode)}");
             HomeCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             HomePeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -516,7 +517,7 @@ namespace ProjectARVRPro
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
-            RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            RecordPeriodText.Text = LocalizedText.Format($"查询范围：{range.ToDisplayText(mode)}");
             RecordCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             RecordPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -528,7 +529,7 @@ namespace ProjectARVRPro
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
-            FlowPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            FlowPeriodText.Text = LocalizedText.Format($"查询范围：{range.ToDisplayText(mode)}");
             FlowCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             FlowPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -540,7 +541,7 @@ namespace ProjectARVRPro
 
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(CombinedPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, CombinedAnchorDatePicker.SelectedDate ?? DateTime.Today);
-            CombinedPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            CombinedPeriodText.Text = LocalizedText.Format($"查询范围：{range.ToDisplayText(mode)}");
             CombinedCurrentPeriodButton.Content = GetCurrentPeriodButtonText(mode);
             CombinedPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -615,7 +616,7 @@ namespace ProjectARVRPro
                 ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
                 RenderHomeTrend([], mode, query.From, query.ToExclusive, IsCombinedStatisticsEnabled);
                 _homeStatus = "查询失败";
-                MessageBox.Show(this, $"读取首页统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取首页统计失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -631,7 +632,7 @@ namespace ProjectARVRPro
             RecordRefreshButton.IsEnabled = false;
             _recordStatus = "正在查询批次记录...";
             UpdateStatusText();
-            DetailHeader.Text = "流程 CT 明细";
+            DetailHeader.Text = LocalizedText.Get("流程 CT 明细");
             _details.Clear();
             TimelinePanel.DataContext = CreateEmptyTimeline("正在查询批次记录...");
 
@@ -661,7 +662,7 @@ namespace ProjectARVRPro
                     return;
 
                 _recordStatus = "查询失败";
-                MessageBox.Show(this, $"读取批次记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取批次记录失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -683,7 +684,7 @@ namespace ProjectARVRPro
             CombinedRefreshButton.IsEnabled = false;
             _combinedStatus = "正在匹配 L/R 全批次...";
             UpdateStatusText();
-            CombinedDetailHeader.Text = "L/R 流程 CT 明细";
+            CombinedDetailHeader.Text = LocalizedText.Get("L/R 流程 CT 明细");
             _combinedDetails.Clear();
             CombinedTimelinePanel.DataContext = CreateEmptyTimeline("正在查询全批次记录...");
             try
@@ -709,7 +710,7 @@ namespace ProjectARVRPro
                 if (loadVersion != _combinedLoadVersion)
                     return;
                 _combinedStatus = "查询失败";
-                MessageBox.Show(this, $"读取 L/R 全批次记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取 L/R 全批次记录失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -754,7 +755,7 @@ namespace ProjectARVRPro
                     return;
 
                 _flowStatus = "查询失败";
-                MessageBox.Show(this, $"读取流程执行记录失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取流程执行记录失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -775,7 +776,7 @@ namespace ProjectARVRPro
         {
             int pageCount = GetPageCount();
             PaginationPanel.Visibility = _totalRecordCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
-            PageStatusText.Text = $"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            PageStatusText.Text = LocalizedText.Format($"第 {_currentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）");
             FirstPageButton.IsEnabled = _currentPage > 1;
             PreviousPageButton.IsEnabled = _currentPage > 1;
             NextPageButton.IsEnabled = _currentPage < pageCount;
@@ -791,7 +792,7 @@ namespace ProjectARVRPro
         {
             int pageCount = GetFlowPageCount();
             FlowPaginationPanel.Visibility = _totalFlowCount > FlowPageSize ? Visibility.Visible : Visibility.Collapsed;
-            FlowPageStatusText.Text = $"第 {_flowCurrentPage:N0} / {pageCount:N0} 页（每页 {FlowPageSize:N0} 条）";
+            FlowPageStatusText.Text = LocalizedText.Format($"第 {_flowCurrentPage:N0} / {pageCount:N0} 页（每页 {FlowPageSize:N0} 条）");
             FlowFirstPageButton.IsEnabled = _flowCurrentPage > 1;
             FlowPreviousPageButton.IsEnabled = _flowCurrentPage > 1;
             FlowNextPageButton.IsEnabled = _flowCurrentPage < pageCount;
@@ -1139,7 +1140,7 @@ namespace ProjectARVRPro
         {
             int pageCount = GetCombinedPageCount();
             CombinedPaginationPanel.Visibility = _totalCombinedCount > RecordPageSize ? Visibility.Visible : Visibility.Collapsed;
-            CombinedPageStatusText.Text = $"第 {_combinedCurrentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）";
+            CombinedPageStatusText.Text = LocalizedText.Format($"第 {_combinedCurrentPage:N0} / {pageCount:N0} 页（每页 {RecordPageSize:N0} 条）");
             CombinedFirstPageButton.IsEnabled = _combinedCurrentPage > 1;
             CombinedPreviousPageButton.IsEnabled = _combinedCurrentPage > 1;
             CombinedNextPageButton.IsEnabled = _combinedCurrentPage < pageCount;
@@ -1200,18 +1201,18 @@ namespace ProjectARVRPro
         private void ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode mode, bool combined)
         {
             string unit = combined ? "L/R 全批次" : "单侧批次";
-            HomeTrendHeading.Text = combined ? "L/R 全批次产量与 CT 趋势" : "单侧批次产量与 CT 趋势";
+            HomeTrendHeading.Text = combined ? LocalizedText.Get("L/R 全批次产量与 CT 趋势") : LocalizedText.Get("单侧批次产量与 CT 趋势");
             if (mode == ResultStatisticsPeriodMode.All)
             {
                 HomeTrendPlot.Plot.Title($"月产量与平均{unit} CT");
                 HomeTrendPlot.Plot.YLabel("产量（组）");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = "平均 CT（秒）";
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
             }
             else
             {
                 HomeTrendPlot.Plot.Title($"逐条{unit} CT 与累计产量");
                 HomeTrendPlot.Plot.YLabel($"{unit} CT（秒）");
-                HomeTrendPlot.Plot.Axes.Right.Label.Text = "累计产量（组）";
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("累计产量（组）");
             }
         }
 
@@ -1453,7 +1454,7 @@ namespace ProjectARVRPro
             FlowExecutionRecordRow? row = SelectedFlowRow;
             if (row == null)
             {
-                MessageBox.Show(this, "请先选择一条流程记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("请先选择一条流程记录。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return null;
             }
 
@@ -1471,7 +1472,7 @@ namespace ProjectARVRPro
                 string? viewResultJson = await Task.Run(() => _statisticsStore.LoadViewResultJson(result));
                 if (string.IsNullOrEmpty(viewResultJson))
                 {
-                    MessageBox.Show(this, "该流程没有可查看的测试结果。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, LocalizedText.Get("该流程没有可查看的测试结果。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                     return null;
                 }
 
@@ -1479,7 +1480,7 @@ namespace ProjectARVRPro
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"读取流程测试结果失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取流程测试结果失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
         }
@@ -1493,7 +1494,7 @@ namespace ProjectARVRPro
             string json = record.ObjectiveTestResultJson ?? string.Empty;
             if (json.Length == 0)
             {
-                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("ObjectiveTestResult 为空。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -1513,7 +1514,7 @@ namespace ProjectARVRPro
             string json = record.ObjectiveTestResultJson ?? string.Empty;
             if (json.Length == 0)
             {
-                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("ObjectiveTestResult 为空。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -1537,7 +1538,7 @@ namespace ProjectARVRPro
 
             var dialog = new SaveFileDialog
             {
-                Title = "导出单条 ObjectiveTestResult",
+                Title = LocalizedText.Get("导出单条 ObjectiveTestResult"),
                 Filter = "CSV 文件 (*.csv)|*.csv",
                 DefaultExt = ".csv",
                 AddExtension = true,
@@ -1553,7 +1554,7 @@ namespace ProjectARVRPro
                 ObjectiveTestResultRecord? record = await LoadRecordAsync(row);
                 if (record == null)
                 {
-                    MessageBox.Show(this, "该记录已不存在。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, LocalizedText.Get("该记录已不存在。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -1561,7 +1562,7 @@ namespace ProjectARVRPro
                 ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (useLegacy && result == null)
                 {
-                    MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出旧版 CSV。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, LocalizedText.Get("ObjectiveTestResult 为空，无法导出旧版 CSV。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -1584,11 +1585,11 @@ namespace ProjectARVRPro
                             throw new InvalidOperationException("没有可导出的单流程结果或聚合结果。");
                     }
                 });
-                MessageBox.Show(this, $"导出完成：{fileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"导出完成：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"导出失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1601,13 +1602,13 @@ namespace ProjectARVRPro
                 selectedRows = _recordRows.ToList();
             if (selectedRows.Count == 0)
             {
-                MessageBox.Show(this, "当前没有可导出的记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("当前没有可导出的记录。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var dialog = new SaveFileDialog
             {
-                Title = "批量导出结果记录",
+                Title = LocalizedText.Get("批量导出结果记录"),
                 Filter = "CSV 文件 (*.csv)|*.csv",
                 DefaultExt = ".csv",
                 AddExtension = true,
@@ -1638,11 +1639,11 @@ namespace ProjectARVRPro
 
                 foreach (ObjectiveTestResultRecord record in exportedRecords)
                     _recordCache[record.Id] = record;
-                MessageBox.Show(this, $"已导出 {exportedRecords.Count:N0} 条记录：{fileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {exportedRecords.Count:N0} 条记录：{fileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"批量导出失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"批量导出失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1655,7 +1656,7 @@ namespace ProjectARVRPro
             }
 
             row = null!;
-            MessageBox.Show(this, "请先选择一条记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, LocalizedText.Get("请先选择一条记录。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             return false;
         }
 
@@ -1691,7 +1692,7 @@ namespace ProjectARVRPro
             {
                 ++_detailLoadVersion;
                 _details.Clear();
-                DetailHeader.Text = "流程 CT 明细";
+                DetailHeader.Text = LocalizedText.Get("流程 CT 明细");
                 TimelinePanel.DataContext = CreateEmptyTimeline("选择左侧批次后显示整组时间轴。");
                 return;
             }
@@ -1702,7 +1703,7 @@ namespace ProjectARVRPro
         private async Task LoadFlowDetailsAsync(ResultStatisticsRecordRow row)
         {
             int loadVersion = ++_detailLoadVersion;
-            DetailHeader.Text = $"{row.SN} - 正在读取流程 CT 明细...";
+            DetailHeader.Text = LocalizedText.Format($"{row.SN} - 正在读取流程 CT 明细...");
             TimelinePanel.DataContext = CreateEmptyTimeline("正在生成整组时间轴...");
             try
             {
@@ -1713,7 +1714,7 @@ namespace ProjectARVRPro
                 ReplaceItems(_details, details);
                 double flowMilliseconds = details.Sum(item => Convert.ToDouble(item.RunTime));
                 TimelinePanel.DataContext = ResultTimelineBuilder.Build(row, details);
-                DetailHeader.Text = $"{row.SN} · CT {row.CycleTimeText} · 运行 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)} · {details.Count:N0} 个流程";
+                DetailHeader.Text = LocalizedText.Format($"{row.SN} · CT {row.CycleTimeText} · 运行 {ResultStatisticsCalculator.FormatMilliseconds(flowMilliseconds)} · {details.Count:N0} 个流程");
             }
             catch (Exception ex)
             {
@@ -1721,9 +1722,9 @@ namespace ProjectARVRPro
                     return;
 
                 _details.Clear();
-                DetailHeader.Text = $"{row.SN} - 流程 CT 明细读取失败";
+                DetailHeader.Text = LocalizedText.Format($"{row.SN} - 流程 CT 明细读取失败");
                 TimelinePanel.DataContext = CreateEmptyTimeline("时间轴读取失败。");
-                MessageBox.Show(this, $"读取流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取流程 CT 明细失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1734,7 +1735,7 @@ namespace ProjectARVRPro
             {
                 ++_combinedDetailLoadVersion;
                 _combinedDetails.Clear();
-                CombinedDetailHeader.Text = "L/R 流程 CT 明细";
+                CombinedDetailHeader.Text = LocalizedText.Get("L/R 流程 CT 明细");
                 CombinedTimelinePanel.DataContext = CreateEmptyTimeline("选择左侧全批次后显示 L/R 时间轴。");
                 return;
             }
@@ -1745,7 +1746,7 @@ namespace ProjectARVRPro
         private async Task LoadCombinedFlowDetailsAsync(ResultStatisticsCombinedRecordRow row)
         {
             int loadVersion = ++_combinedDetailLoadVersion;
-            CombinedDetailHeader.Text = $"{row.SN} - 正在读取 L/R 流程 CT 明细...";
+            CombinedDetailHeader.Text = LocalizedText.Format($"{row.SN} - 正在读取 L/R 流程 CT 明细...");
             CombinedTimelinePanel.DataContext = CreateEmptyTimeline("正在生成 L/R 全批次时间轴...");
             try
             {
@@ -1759,16 +1760,16 @@ namespace ProjectARVRPro
                 IReadOnlyList<ProjectARVRReuslt> right = await rightTask;
                 ReplaceItems(_combinedDetails, left.Concat(right));
                 CombinedTimelinePanel.DataContext = ResultTimelineBuilder.BuildCombined(row, left, right);
-                CombinedDetailHeader.Text = $"{row.SN} · 全批次 CT {row.CycleTimeText} · L→R 等待 {row.TransitionText} · {left.Count + right.Count:N0} 个流程";
+                CombinedDetailHeader.Text = LocalizedText.Format($"{row.SN} · 全批次 CT {row.CycleTimeText} · L→R 等待 {row.TransitionText} · {left.Count + right.Count:N0} 个流程");
             }
             catch (Exception ex)
             {
                 if (loadVersion != _combinedDetailLoadVersion)
                     return;
                 _combinedDetails.Clear();
-                CombinedDetailHeader.Text = $"{row.SN} - L/R 流程 CT 明细读取失败";
+                CombinedDetailHeader.Text = LocalizedText.Format($"{row.SN} - L/R 流程 CT 明细读取失败");
                 CombinedTimelinePanel.DataContext = CreateEmptyTimeline("L/R 全批次时间轴读取失败。");
-                MessageBox.Show(this, $"读取 L/R 流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"读取 L/R 流程 CT 明细失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1797,12 +1798,12 @@ namespace ProjectARVRPro
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
-            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = DetailList, Header = "复制" });
+            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = DetailList, Header = LocalizedText.Get("复制") });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
-            contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = "流程结果查询" });
-            contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
-            contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = "查看测试结果" });
+            contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
+            contextMenu.Items.Add(new MenuItem { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
             contextMenu.Opened += (_, _) => CommandManager.InvalidateRequerySuggested();
 
             DetailList.PreviewMouseRightButtonDown += (_, e) =>
@@ -1831,7 +1832,7 @@ namespace ProjectARVRPro
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
-                MessageBox.Show(this, "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
 
@@ -1857,13 +1858,13 @@ namespace ProjectARVRPro
                         Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     }.Show();
                 }
-                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, "现场节点分析", MessageBoxButton.OK, MessageBoxImage.Information); }
+                catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("现场节点分析"), MessageBoxButton.OK, MessageBoxImage.Information); }
                 return;
             }
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
-                MessageBox.Show(this, "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
 
@@ -1897,7 +1898,7 @@ namespace ProjectARVRPro
             string? viewResultJson = _statisticsStore.LoadViewResultJson(item);
             if (string.IsNullOrEmpty(viewResultJson))
             {
-                MessageBox.Show(this, "ViewResultJson为空", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("ViewResultJson为空"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 

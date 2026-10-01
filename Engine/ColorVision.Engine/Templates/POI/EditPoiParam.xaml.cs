@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1805,CS0414,CS8601,CS8602,CS8604,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1805,CS0414,CS8601,CS8602,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
@@ -201,7 +202,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 _poiLoadFailed = true;
                 log.Error("POI template load failed", ex);
-                if (!_isClosing) MessageBox.Show(this, $"模板读取失败，已禁止保存以保护原数据。{ex.Message}", "POI 模板");
+                if (!_isClosing) MessageBox.Show(this, LocalizedText.Format($"模板读取失败，已禁止保存以保护原数据。{ex.Message}"), LocalizedText.Get("POI 模板"));
             }
             finally
             {
@@ -241,7 +242,7 @@ namespace ColorVision.Engine.Templates.POI
                     shapeType = SelectShapeType.Polygon;
                     break;
                 default:
-                    MessageBox.Show("请选择点布局区域", "ColorVision");
+                    MessageBox.Show(LocalizedText.Get("请选择点布局区域"), "ColorVision");
                     return;
             }
 
@@ -260,7 +261,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (!ApplyQuadrilateralCorners(result.Points))
                     {
-                        MessageBox.Show("四边形角点无效，请重新框选", "ColorVision");
+                        MessageBox.Show(LocalizedText.Get("四边形角点无效，请重新框选"), "ColorVision");
                         return;
                     }
                 }
@@ -283,7 +284,7 @@ namespace ColorVision.Engine.Templates.POI
             PoiConfig.IsShowPoiConfig = true;
             if (!UpdateAreaFromRect(result.Rect))
             {
-                MessageBox.Show("矩形区域无效，请重新框选", "ColorVision");
+                MessageBox.Show(LocalizedText.Get("矩形区域无效，请重新框选"), "ColorVision");
             }
         }
 
@@ -478,7 +479,7 @@ namespace ColorVision.Engine.Templates.POI
                 case GraphicTypes.Circle:
                     if (PoiConfig.AreaCircleNum < 1)
                     {
-                        MessageBox.Show("绘制的个数不能小于1", "ColorVision");
+                        MessageBox.Show(LocalizedText.Get("绘制的个数不能小于1"), "ColorVision");
                         return;
                     }
 
@@ -577,7 +578,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (rows < 1 || cols < 1)
                     {
-                        MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
+                        MessageBox.Show(LocalizedText.Get("点阵数的行列不能小于1"), "ColorVision");
                         return;
                     }
 
@@ -586,7 +587,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         if (rows != 1 || cols != 1)
                         {
-                            MessageBox.Show("缩进后的布点区域只能生成1×1点阵", "ColorVision");
+                            MessageBox.Show(LocalizedText.Get("缩进后的布点区域只能生成1×1点阵"), "ColorVision");
                             return;
                         }
                         layoutPoints = [collapsedPoint];
@@ -595,7 +596,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         if (!PoiLayoutGeometry.TryNormalizeQuadrilateral(pts_src, out List<Point> points))
                         {
-                            MessageBox.Show("布点四边形无效，请重新定位或框选", "ColorVision");
+                            MessageBox.Show(LocalizedText.Get("布点四边形无效，请重新定位或框选"), "ColorVision");
                             return;
                         }
 
@@ -607,7 +608,7 @@ namespace ColorVision.Engine.Templates.POI
                         };
                         if (!offsetSucceeded)
                         {
-                            MessageBox.Show("布点四边形无效，或区域无法容纳当前采样窗尺寸", "ColorVision");
+                            MessageBox.Show(LocalizedText.Get("布点四边形无效，或区域无法容纳当前采样窗尺寸"), "ColorVision");
                             return;
                         }
 
@@ -821,7 +822,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+            if (MessageBox.Show(LocalizedText.Get("清空关注点"), "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
             ClearRender();
             //清空关注点的时候重置计数
@@ -979,12 +980,12 @@ namespace ColorVision.Engine.Templates.POI
             try
             {
                 await SaveTemplateAsync();
-                if (!_isClosing) MessageBox.Show(this, PoiTemplateStorage.IsLocalId(PoiParam.Id) ? "已保存到本地模板库" : "保存成功", "ColorVision");
+                if (!_isClosing) MessageBox.Show(this, PoiTemplateStorage.IsLocalId(PoiParam.Id) ? LocalizedText.Get("已保存到本地模板库") : LocalizedText.Get("保存成功"), "ColorVision");
             }
             catch (Exception ex)
             {
                 log.Error("POI template save failed", ex);
-                if (!_isClosing) MessageBox.Show(this, $"保存失败：{ex.Message}", "ColorVision");
+                if (!_isClosing) MessageBox.Show(this, LocalizedText.Format($"保存失败：{ex.Message}"), "ColorVision");
             }
         }
 
@@ -1078,7 +1079,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (!MySqlSetting.IsConnect)
             {
-                MessageBox.Show(this, "本地模式请使用图像导入；服务图像需要连接 MySQL。", "POI 模板");
+                MessageBox.Show(this, LocalizedText.Get("本地模式请使用图像导入；服务图像需要连接 MySQL。"), LocalizedText.Get("POI 模板"));
                 return;
             }
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
@@ -1090,7 +1091,7 @@ namespace ColorVision.Engine.Templates.POI
 
             if (recentItems.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到刚拍摄的图像");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到刚拍摄的图像"));
                 return;
             }
             try
@@ -1344,7 +1345,7 @@ namespace ColorVision.Engine.Templates.POI
             ImageFrameLease? acquiredLease = ImageView.AcquireImageFrame();
             if (acquiredLease == null)
             {
-                MessageBox.Show("请先加载图像", "ColorVision");
+                MessageBox.Show(LocalizedText.Get("请先加载图像"), "ColorVision");
                 return;
             }
 
@@ -1376,7 +1377,7 @@ namespace ColorVision.Engine.Templates.POI
 
                             if (keyRegions == null || keyRegions.Count == 0)
                             {
-                                MessageBox.Show("未检测到按键区域，请调整参数后重试", "ColorVision");
+                                MessageBox.Show(LocalizedText.Get("未检测到按键区域，请调整参数后重试"), "ColorVision");
                                 return;
                             }
 
@@ -1396,12 +1397,12 @@ namespace ColorVision.Engine.Templates.POI
                                 ImageShow.AddVisualCommand(rectangle);
                             }
 
-                            MessageBox.Show($"成功检测到 {count} 个按键区域", "ColorVision");
+                            MessageBox.Show(LocalizedText.Format($"成功检测到 {count} 个按键区域"), "ColorVision");
                         }
                         catch (Exception ex)
                         {
                             log.Error("DetectKeyRegions parse error", ex);
-                            MessageBox.Show($"解析检测结果失败: {ex.Message}", "ColorVision");
+                            MessageBox.Show(LocalizedText.Format($"解析检测结果失败: {ex.Message}"), "ColorVision");
                         }
                     });
                 }
@@ -1412,7 +1413,7 @@ namespace ColorVision.Engine.Templates.POI
                         if (!ImageView.IsCurrentImageRevision(revision))
                             return;
 
-                        MessageBox.Show($"按键区域检测失败(错误码: {length})，请调整参数后重试", "ColorVision");
+                        MessageBox.Show(LocalizedText.Format($"按键区域检测失败(错误码: {length})，请调整参数后重试"), "ColorVision");
                     });
                 }
             });
@@ -1535,7 +1536,7 @@ namespace ColorVision.Engine.Templates.POI
 
                             if (!detectionResult.HasValidCorners)
                             {
-                                MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                MessageBox.Show(this, LuminousAreaDetector.GetFailureMessage(detectionResult), LocalizedText.Get("发光区定位"), MessageBoxButton.OK, MessageBoxImage.Warning);
                                 return;
                             }
 
@@ -1546,7 +1547,7 @@ namespace ColorVision.Engine.Templates.POI
                                 .Select(corner => new Point(corner.X, corner.Y))
                                 .ToList()))
                             {
-                                MessageBox.Show(this, "定位结果的四角点无效，请复核图像或重新框选", "发光区定位", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                MessageBox.Show(this, LocalizedText.Get("定位结果的四角点无效，请复核图像或重新框选"), LocalizedText.Get("发光区定位"), MessageBoxButton.OK, MessageBoxImage.Warning);
                                 return;
                             }
                             RenderPoiConfig();
@@ -1556,7 +1557,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    MessageBox.Show("请先加载实际图像", "ColorVision");
+                    MessageBox.Show(LocalizedText.Get("请先加载实际图像"), "ColorVision");
                 }
             }));
         }
@@ -1566,7 +1567,7 @@ namespace ColorVision.Engine.Templates.POI
             string warningMessage = LuminousAreaDetector.GetWarningMessage(detectionResult);
             if (!string.IsNullOrEmpty(warningMessage))
             {
-                MessageBox.Show(this, warningMessage, "发光区定位（需复核）", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, warningMessage, LocalizedText.Get("发光区定位（需复核）"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -1629,7 +1630,7 @@ namespace ColorVision.Engine.Templates.POI
 
             if(type == typeof(DVPolygon) || type == typeof(DVLine))
             {
-                var itemss= new MenuItem { Header = "设置到折线布点" };
+                var itemss= new MenuItem { Header = LocalizedText.Get("设置到折线布点") };
                 itemss.Click += (s, e) =>
                 {
                     PoiConfig.Polygons.Clear();
@@ -1654,34 +1655,34 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-                var moveUpItem = new MenuItem { Header = "上移 (Alt+↑)", Command = MoveUpCommand };
+                var moveUpItem = new MenuItem { Header = LocalizedText.Get("上移 (Alt+↑)"), Command = MoveUpCommand };
             ListView1.ContextMenu.Items.Add(moveUpItem);
 
-            var moveDownItem = new MenuItem { Header = "下移 (Alt+↓)", Command = MoveDownCommand };
+            var moveDownItem = new MenuItem { Header = LocalizedText.Get("下移 (Alt+↓)"), Command = MoveDownCommand };
             ListView1.ContextMenu.Items.Add(moveDownItem);
 
-            var moveToTopItem = new MenuItem { Header = "移动到首位", Command = MoveToTopCommand };
+            var moveToTopItem = new MenuItem { Header = LocalizedText.Get("移动到首位"), Command = MoveToTopCommand };
             ListView1.ContextMenu.Items.Add(moveToTopItem);
 
-            var moveToBottomItem = new MenuItem { Header = "移动到末尾", Command = MoveToBottomCommand };
+            var moveToBottomItem = new MenuItem { Header = LocalizedText.Get("移动到末尾"), Command = MoveToBottomCommand };
             ListView1.ContextMenu.Items.Add(moveToBottomItem);
 
             ListView1.ContextMenu.Items.Add(new Separator());
 
             if (ListView1.SelectedItems.Count > 1)
             {
-                var batchHeader = new MenuItem { Header = $"批量编辑 ({ListView1.SelectedItems.Count} 项)", IsEnabled = false };
+                var batchHeader = new MenuItem { Header = LocalizedText.Format($"批量编辑 ({ListView1.SelectedItems.Count} 项)"), IsEnabled = false };
                 batchHeader.FontWeight = FontWeights.Bold;
                 ListView1.ContextMenu.Items.Add(batchHeader);
 
-                var batchTextItem = new MenuItem { Header = "批量设置名称..." };
+                var batchTextItem = new MenuItem { Header = LocalizedText.Get("批量设置名称...") };
                 batchTextItem.Click += (s, ev) => BatchSetText();
                 ListView1.ContextMenu.Items.Add(batchTextItem);
 
                 bool hasCircles = ListView1.SelectedItems.Cast<IDrawingVisual>().Any(v => v is DVCircleText || v is DVCircle);
                 if (hasCircles)
                 {
-                    var batchRadiusItem = new MenuItem { Header = "批量设置半径..." };
+                    var batchRadiusItem = new MenuItem { Header = LocalizedText.Get("批量设置半径...") };
                     batchRadiusItem.Click += (s, ev) => BatchSetRadius();
                     ListView1.ContextMenu.Items.Add(batchRadiusItem);
                 }
@@ -1689,12 +1690,12 @@ namespace ColorVision.Engine.Templates.POI
                 bool hasRects = ListView1.SelectedItems.Cast<IDrawingVisual>().Any(v => v is DVRectangleText || v is DVRectangle);
                 if (hasRects)
                 {
-                    var batchSizeItem = new MenuItem { Header = "批量设置尺寸..." };
+                    var batchSizeItem = new MenuItem { Header = LocalizedText.Get("批量设置尺寸...") };
                     batchSizeItem.Click += (s, ev) => BatchSetRectSize();
                     ListView1.ContextMenu.Items.Add(batchSizeItem);
                 }
 
-                var fillDownItem = new MenuItem { Header = "向下填充 (Ctrl+D)" };
+                var fillDownItem = new MenuItem { Header = LocalizedText.Get("向下填充 (Ctrl+D)") };
                 fillDownItem.Click += (s, ev) => BatchFillDown();
                 ListView1.ContextMenu.Items.Add(fillDownItem);
             }
@@ -1971,7 +1972,7 @@ namespace ColorVision.Engine.Templates.POI
                 var parts = dialog.InputValue.Split(',');
                 if (parts.Length != 2 || !double.TryParse(parts[0].Trim(), out double width) || !double.TryParse(parts[1].Trim(), out double height))
                 {
-                    MessageBox.Show("请输入正确的格式：宽度,高度 (例如: 100,50)", "格式错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(LocalizedText.Get("请输入正确的格式：宽度,高度 (例如: 100,50)"), LocalizedText.Get("格式错误"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -2026,7 +2027,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (DrawingVisualLists.Count == 0)
             {
-                MessageBox.Show("没有可变换的POI点", "ColorVision");
+                MessageBox.Show(LocalizedText.Get("没有可变换的POI点"), "ColorVision");
                 return;
             }
 
@@ -2068,7 +2069,7 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
 
-            MessageBox.Show($"已成功变换 {DrawingVisualLists.Count} 个POI点", "ColorVision");
+            MessageBox.Show(LocalizedText.Format($"已成功变换 {DrawingVisualLists.Count} 个POI点"), "ColorVision");
         }
     }
 

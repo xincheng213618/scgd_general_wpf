@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -21,7 +22,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg
 
         public TemplateFPForQuardImg()
         {
-            Title = "亮点检测模板管理";
+            Title = LocalizedText.Get("亮点检测模板管理");
             Code = "OLED.AOI.FPForQuardImg";
             Name = "FPForQuardImg";
             TemplateDicId = 55;

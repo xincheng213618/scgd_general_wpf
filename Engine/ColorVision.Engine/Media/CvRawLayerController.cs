@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1859,CS8604
 using ColorVision.FileIO;
 using ColorVision.Engine.Services.POI;
@@ -387,7 +388,7 @@ namespace ColorVision.Engine.Media
                 layers.Add(new ImageLayerDescriptor
                 {
                     Id = "cie-srgb",
-                    DisplayName = "真彩 sRGB（XYZ）",
+                    DisplayName = LocalizedText.Get("真彩 sRGB（XYZ）"),
                     Kind = ImageLayerKind.Derived,
                 });
             }

@@ -6,10 +6,10 @@
   <data name="WizardTitle" xml:space="preserve"><value>初始化嚮導</value></data>
   <data name="WizardDescription" xml:space="preserve"><value>打開初始化嚮導，查看或調整應用配置；不會自動清空現有設置。需要管理員權限。</value></data>
   <data name="RecoveryTitle" xml:space="preserve"><value>故障恢復</value></data>
-  <data name="RecoveryDescription" xml:space="preserve"><value>打開故障恢復窗口，查看診斷與恢復選項；僅執行需要重啓的操作時才提示。需要管理員權限。</value></data>
-  <data name="ConfirmPluginRestart" xml:space="preserve"><value>已加載的插件無法在運行中跳過。按剛纔的選擇重啓 ColorVision？
+  <data name="RecoveryDescription" xml:space="preserve"><value>打開故障恢復窗口，查看診斷與恢復選項；僅執行需要重啟的操作時才提示。需要管理員權限。</value></data>
+  <data name="ConfirmPluginRestart" xml:space="preserve"><value>已加載的插件無法在運行中跳過。按剛才的選擇重啟 ColorVision？
 
-本次啓動將跳過所選插件；不會修改永久啓用狀態。未保存文檔仍會詢問是否保存，取消關閉將取消本次重啓。</value></data>
+本次啟動將跳過所選插件；不會修改永久啟用狀態。未保存文檔仍會詢問是否保存，取消關閉將取消本次重啟。</value></data>
   <data name="AdminRequired" xml:space="preserve"><value>此維護操作需要管理員權限。</value></data>
   <data name="OperationCancelled" xml:space="preserve"><value>已取消操作。請先保存未完成的工作後重試。</value></data>
   <data name="FlowBusy" xml:space="preserve"><value>流程仍在運行或無法確認運行狀態，請結束任務後再執行此操作。</value></data>
@@ -17,19 +17,19 @@
   <data name="UpdateBusy" xml:space="preserve"><value>應用正在準備或執行更新，請等待更新結束後再執行此操作。</value></data>
   <data name="ApplicationUnavailable" xml:space="preserve"><value>當前無法執行維護操作，請返回主窗口後重試。</value></data>
   <data name="RestartFailed" xml:space="preserve"><value>無法進入維護流程：{0}</value></data>
-  <data name="RestartFailedAfterClose" xml:space="preserve"><value>應用窗口已關閉，但維護進程未能啓動：{0}
+  <data name="RestartFailedAfterClose" xml:space="preserve"><value>應用窗口已關閉，但維護進程未能啟動：{0}
 
 請重新打開 ColorVision 後重試。</value></data>
   <data name="ManualRecoveryHeadline" xml:space="preserve"><value>ColorVision 維護與恢復</value></data>
-  <data name="ManualRecoveryExplanation" xml:space="preserve"><value>你已主動進入恢復模式。請選擇需要的診斷或恢復操作，也可正常啓動返回應用。</value></data>
+  <data name="ManualRecoveryExplanation" xml:space="preserve"><value>你已主動進入恢復模式。請選擇需要的診斷或恢復操作，也可正常啟動返回應用。</value></data>
   <data name="RuntimeRecoverySubtitle" xml:space="preserve"><value>查看診斷與恢復選項</value></data>
-  <data name="RuntimeRecoveryExplanation" xml:space="preserve"><value>應用仍在運行。查看日誌或恢復選項無需重啓；安全啓動、修復和回退等操作會在執行時提示。</value></data>
+  <data name="RuntimeRecoveryExplanation" xml:space="preserve"><value>應用仍在運行。查看日誌或恢復選項無需重啟；安全啟動、修復和回退等操作會在執行時提示。</value></data>
   <data name="RuntimeNormalAction" xml:space="preserve"><value>返回應用</value></data>
   <data name="RuntimeExitAction" xml:space="preserve"><value>關閉窗口</value></data>
-  <data name="RuntimeSafeStartAction" xml:space="preserve"><value>重啓並安全啓動</value></data>
-  <data name="RuntimeSkipAllAction" xml:space="preserve"><value>重啓並跳過全部</value></data>
-  <data name="RuntimeSkipSelectedAction" xml:space="preserve"><value>重啓並跳過所選</value></data>
+  <data name="RuntimeSafeStartAction" xml:space="preserve"><value>重啟並安全啟動</value></data>
+  <data name="RuntimeSkipAllAction" xml:space="preserve"><value>重啟並跳過全部</value></data>
+  <data name="RuntimeSkipSelectedAction" xml:space="preserve"><value>重啟並跳過所選</value></data>
   <data name="RuntimeDisableSelectedAction" xml:space="preserve"><value>永久禁用所選</value></data>
-  <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>已加載插件會繼續運行。臨時跳過需要重啓；永久禁用將在下次啓動時生效。</value></data>
-  <data name="RuntimePluginsDisabled" xml:space="preserve"><value>所選插件已禁用，將在下次啓動時生效；當前已加載的插件仍會繼續運行。</value></data>
+  <data name="RuntimePluginSelectionHint" xml:space="preserve"><value>已加載插件會繼續運行。臨時跳過需要重啟；永久禁用將在下次啟動時生效。</value></data>
+  <data name="RuntimePluginsDisabled" xml:space="preserve"><value>所選插件已禁用，將在下次啟動時生效；當前已加載的插件仍會繼續運行。</value></data>
 </root>

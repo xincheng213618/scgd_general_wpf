@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8603
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+#pragma warning disable CS8603
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
@@ -57,7 +58,7 @@ namespace ProjectARVRPro.Recipe
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMin.StringFormat = "0.0################";
             var textboxMin = PropertyEditorHelper.CreateSmallTextBox(bindingMin);
-            textboxMin.ToolTip = "下限：结果需大于或等于此值";
+            textboxMin.ToolTip = LocalizedText.Get("下限：结果需大于或等于此值");
             textboxMin.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             Grid.SetColumn(textboxMin, 1);
             grid.Children.Add(textboxMin);
@@ -70,7 +71,7 @@ namespace ProjectARVRPro.Recipe
             bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingMax.StringFormat = "0.0################";
             var textboxMax = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
-            textboxMax.ToolTip = "上限：结果需小于或等于此值";
+            textboxMax.ToolTip = LocalizedText.Get("上限：结果需小于或等于此值");
             textboxMax.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             Grid.SetColumn(textboxMax, 3);
             grid.Children.Add(textboxMax);
@@ -83,7 +84,7 @@ namespace ProjectARVRPro.Recipe
             bindingFix.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingFix.StringFormat = "0.0################";
             var textboxFix = PropertyEditorHelper.CreateSmallTextBox(bindingFix);
-            textboxFix.ToolTip = "修正系数 K：修正后 = 原值 * K + B";
+            textboxFix.ToolTip = LocalizedText.Get("修正系数 K：修正后 = 原值 * K + B");
             textboxFix.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             Grid.SetColumn(textboxFix, 5);
             grid.Children.Add(textboxFix);
@@ -96,7 +97,7 @@ namespace ProjectARVRPro.Recipe
             bindingB.UpdateSourceTrigger = UpdateSourceTrigger.Default;
             bindingB.StringFormat = "0.0################";
             var textboxB = PropertyEditorHelper.CreateSmallTextBox(bindingB);
-            textboxB.ToolTip = "修正偏移 B：修正后 = 原值 * K + B";
+            textboxB.ToolTip = LocalizedText.Get("修正偏移 B：修正后 = 原值 * K + B");
             textboxB.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
             Grid.SetColumn(textboxB, 7);
             grid.Children.Add(textboxB);

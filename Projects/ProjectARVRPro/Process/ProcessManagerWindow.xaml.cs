@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CA1859,CS8622,CS8625
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+#pragma warning disable CA1822,CA1859,CS8622,CS8625
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Themes;
@@ -558,7 +559,7 @@ namespace ProjectARVRPro.Process
                     {
                         MessageBox.Show(
                             this,
-                            $"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。",
+                            LocalizedText.Format($"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。"),
                             "ColorVision",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);

@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8604
+﻿using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
@@ -449,7 +450,7 @@ namespace ColorVision.ImageEditor
         {
             Action undoaction = () => RemoveVisual(visual);
             Action redoaction = () => AddVisual(visual);
-            ActionCommand command = new(undoaction, redoaction) { Header = "添加" };
+            ActionCommand command = new(undoaction, redoaction) { Header = LocalizedText.Get("添加") };
             AddActionCommand(command);
             return command;
         }
@@ -475,7 +476,7 @@ namespace ColorVision.ImageEditor
 
             Action undoaction = () => InsertVisual(index, visual);
             Action redoaction = () => RemoveVisual(visual);
-            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
+            AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = LocalizedText.Get("移除") });
         }
 
         public void AddOverlayVisual(Visual visual)

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -10,7 +11,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public TemplateLocalizationImageEnhancement()
         {
-            Title = "局部图像增强模板管理";
+            Title = LocalizedText.Get("局部图像增强模板管理");
             Code = "OLED.LocalizationImageEnhan";
             Name = "OLED_LocalizationImageEnhan";
             TemplateDicId = 201;

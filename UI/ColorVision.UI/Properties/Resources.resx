@@ -876,4 +876,88 @@
   <data name="DisplayControlGroupMoveDown" xml:space="preserve">
     <value>下移</value>
   </data>
+  <data name="参数分组" xml:space="preserve">
+    <value>参数分组</value>
+  </data>
+  <data name="定位错误输入" xml:space="preserve">
+    <value>定位错误输入</value>
+  </data>
+  <data name="展开全部分组" xml:space="preserve">
+    <value>展开全部分组</value>
+  </data>
+  <data name="展开当前参数的完整说明、范围与示例" xml:space="preserve">
+    <value>展开当前参数的完整说明、范围与示例</value>
+  </data>
+  <data name="展开或收起全部分组" xml:space="preserve">
+    <value>展开或收起全部分组</value>
+  </data>
+  <data name="折叠选项" xml:space="preserve">
+    <value>折叠选项</value>
+  </data>
+  <data name="按 Tab 切换参数，修改后使用窗口的“保存”。" xml:space="preserve">
+    <value>按 Tab 切换参数，修改后使用窗口的“保存”。</value>
+  </data>
+  <data name="搜索全部参数：名称、说明或值…" xml:space="preserve">
+    <value>搜索全部参数：名称、说明或值…</value>
+  </data>
+  <data name="搜索参数" xml:space="preserve">
+    <value>搜索参数</value>
+  </data>
+  <data name="收起全部分组" xml:space="preserve">
+    <value>收起全部分组</value>
+  </data>
+  <data name="清除搜索" xml:space="preserve">
+    <value>清除搜索</value>
+  </data>
+  <data name="说明" xml:space="preserve">
+    <value>说明</value>
+  </data>
+  <data name="选择参数查看完整说明" xml:space="preserve">
+    <value>选择参数查看完整说明</value>
+  </data>
+  <data name="JSON 路径：{0}" xml:space="preserve">
+    <value>JSON 路径：{0}</value>
+  </data>
+  <data name="{0} / {1} 项" xml:space="preserve">
+    <value>{0} / {1} 项</value>
+  </data>
+  <data name="{0} 项" xml:space="preserve">
+    <value>{0} 项</value>
+  </data>
+  <data name="{0}（当前值）" xml:space="preserve">
+    <value>{0}（当前值）</value>
+  </data>
+  <data name="使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。" xml:space="preserve">
+    <value>使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。</value>
+  </data>
+  <data name="全部分组" xml:space="preserve">
+    <value>全部分组</value>
+  </data>
+  <data name="参数说明" xml:space="preserve">
+    <value>参数说明</value>
+  </data>
+  <data name="对象中还没有参数，请在 JSON 视图添加。" xml:space="preserve">
+    <value>对象中还没有参数，请在 JSON 视图添加。</value>
+  </data>
+  <data name="已关闭" xml:space="preserve">
+    <value>已关闭</value>
+  </data>
+  <data name="已启用" xml:space="preserve">
+    <value>已启用</value>
+  </data>
+  <data name="没有找到匹配参数，试试字段名、说明或值。" xml:space="preserve">
+    <value>没有找到匹配参数，试试字段名、说明或值。</value>
+  </data>
+  <data name="输入 JSON 对象，例如: {&quot;key1&quot;: &quot;value1&quot;, &quot;key2&quot;: &quot;value2&quot;}" xml:space="preserve">
+    <value>输入 JSON 对象，例如: {"key1": "value1", "key2": "value2"}</value>
+  </data>
+  <data name="输入 JSON 数组，例如: [1, 2, 3]" xml:space="preserve">
+    <value>输入 JSON 数组，例如: [1, 2, 3]</value>
+  </data>
+  <data name="选择参数查看完整说明、范围和示例。" xml:space="preserve">
+    <value>选择参数查看完整说明、范围和示例。</value>
+  </data>
+  <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
+    <value>选择参数查看路径。未提供字段说明时，仍可编辑现有参数。</value>
+  </data>
 </root>

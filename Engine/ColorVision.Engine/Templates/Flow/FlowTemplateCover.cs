@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Templates.Browser;
 using log4net;
 using System;
@@ -16,7 +17,7 @@ public sealed class FlowTemplateCover : Grid
         new PropertyMetadata(null, (owner, _) => ((FlowTemplateCover)owner).Reset()));
     public FlowParam? Flow { get => (FlowParam?)GetValue(FlowProperty); set => SetValue(FlowProperty, value); }
     private readonly Image image = new() { Stretch = Stretch.Uniform };
-    private readonly TextBlock placeholder = new() { Text = "正在生成预览…", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.LightGray, FontSize = 12 };
+    private readonly TextBlock placeholder = new() { Text = LocalizedText.Get("正在生成预览…"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.LightGray, FontSize = 12 };
     private CancellationTokenSource? pending;
     private string? completedData, requestedData;
     private TemplateBrowserWindow? owner;
@@ -39,7 +40,7 @@ public sealed class FlowTemplateCover : Grid
         Cancel();
         completedData = null;
         image.Source = null;
-        placeholder.Text = "正在生成预览…";
+        placeholder.Text = LocalizedText.Get("正在生成预览…");
         placeholder.Visibility = Visibility.Visible;
         owner?.RegisterCover(this);
     }
@@ -64,7 +65,7 @@ public sealed class FlowTemplateCover : Grid
         pending = request;
         requestedData = data;
         image.Source = null;
-        placeholder.Text = "正在生成预览…";
+        placeholder.Text = LocalizedText.Get("正在生成预览…");
         placeholder.Visibility = Visibility.Visible;
         ToolTip = null;
         try
@@ -73,7 +74,7 @@ public sealed class FlowTemplateCover : Grid
             if (!ReferenceEquals(pending, request) || Flow.DataBase64 != data) return;
             completedData = data;
             image.Source = result;
-            placeholder.Text = "空流程";
+            placeholder.Text = LocalizedText.Get("空流程");
             placeholder.Visibility = result == null ? Visibility.Visible : Visibility.Collapsed;
         }
         catch (OperationCanceledException) { }
@@ -82,8 +83,8 @@ public sealed class FlowTemplateCover : Grid
             if (!ReferenceEquals(pending, request)) return;
             log.Warn("Flow cover unavailable; template editing remains available.", ex);
             completedData = data;
-            placeholder.Text = "预览不可用";
-            ToolTip = "仍可双击打开流程编辑器";
+            placeholder.Text = LocalizedText.Get("预览不可用");
+            ToolTip = LocalizedText.Get("仍可双击打开流程编辑器");
         }
         finally
         {

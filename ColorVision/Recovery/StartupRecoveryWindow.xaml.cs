@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -33,9 +34,9 @@ namespace ColorVision.Recovery
         private bool _isRefreshingPlugins;
         private bool _resultWasChosen;
         private bool _isDisposed;
-        private string _updateStatusTitle = "正在检查主程序更新";
-        private string _updateStatusDetail = "正在连接更新服务，请稍候。";
-        private string _updateActionText = "检查中...";
+        private string _updateStatusTitle = LocalizedText.Get("正在检查主程序更新");
+        private string _updateStatusDetail = LocalizedText.Get("正在连接更新服务，请稍候。");
+        private string _updateActionText = LocalizedText.Get("检查中...");
         private string _operationStatusText = string.Empty;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -50,21 +51,21 @@ namespace ColorVision.Recovery
 
         public string RecoverySubtitle => _isRunningApplication
             ? StartupMaintenanceText.Get("RuntimeRecoverySubtitle")
-            : _manualRequest ? StartupMaintenanceText.Get("ManualRecoveryHeadline") : "ColorVision 上次未能正常启动";
+            : _manualRequest ? StartupMaintenanceText.Get("ManualRecoveryHeadline") : LocalizedText.Get("ColorVision 上次未能正常启动");
 
-        public string NormalActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeNormalAction") : "正常启动";
+        public string NormalActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeNormalAction") : LocalizedText.Get("正常启动");
 
-        public string ExitActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeExitAction") : "退出 ColorVision";
+        public string ExitActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeExitAction") : LocalizedText.Get("退出 ColorVision");
 
-        public string SkipAllActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipAllAction") : "不加载全部插件";
+        public string SkipAllActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipAllAction") : LocalizedText.Get("不加载全部插件");
 
-        public string SkipSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipSelectedAction") : "本次跳过所选";
+        public string SkipSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSkipSelectedAction") : LocalizedText.Get("本次跳过所选");
 
-        public string DisableSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeDisableSelectedAction") : "永久禁用所选";
+        public string DisableSelectedActionText => _isRunningApplication ? StartupMaintenanceText.Get("RuntimeDisableSelectedAction") : LocalizedText.Get("永久禁用所选");
 
         public string PluginSelectionHint => _isRunningApplication
             ? StartupMaintenanceText.Get("RuntimePluginSelectionHint")
-            : "选择插件后，可临时跳过、永久禁用或恢复备份。";
+            : LocalizedText.Get("选择插件后，可临时跳过、永久禁用或恢复备份。");
 
         public Visibility FailureVisibility => _previousFailure == null
             ? Visibility.Collapsed
@@ -81,16 +82,16 @@ namespace ColorVision.Recovery
                 string? component = RecordedComponent;
                 return _previousFailure?.Stage switch
                 {
-                    "LoadingPlugin" when component != null => $"上次启动在加载“{component}”时未完成",
-                    "LoadingPlugins" => "上次启动在准备插件时未完成",
-                    "PluginsLoaded" => "上次启动在插件加载完成后未结束",
-                    "DependencyFailure" when component != null => $"检测到启动组件“{component}”缺失或损坏",
-                    "DependencyFailure" => "检测到 ColorVision 启动组件缺失或损坏",
-                    "MainWindowInitializer" when component != null => $"上次启动在初始化“{component}”时未完成",
-                    "StartupInitializer" when component != null => $"上次启动在初始化“{component}”时未完成",
-                    "FeatureLauncher" when component != null => $"上次启动在打开“{component}”时未完成",
-                    "CoreInitialized" => "上次启动在初始化主程序时未完成",
-                    _ => "上次启动没有正常完成",
+                    "LoadingPlugin" when component != null => LocalizedText.Format($"上次启动在加载“{component}”时未完成"),
+                    "LoadingPlugins" => LocalizedText.Get("上次启动在准备插件时未完成"),
+                    "PluginsLoaded" => LocalizedText.Get("上次启动在插件加载完成后未结束"),
+                    "DependencyFailure" when component != null => LocalizedText.Format($"检测到启动组件“{component}”缺失或损坏"),
+                    "DependencyFailure" => LocalizedText.Get("检测到 ColorVision 启动组件缺失或损坏"),
+                    "MainWindowInitializer" when component != null => LocalizedText.Format($"上次启动在初始化“{component}”时未完成"),
+                    "StartupInitializer" when component != null => LocalizedText.Format($"上次启动在初始化“{component}”时未完成"),
+                    "FeatureLauncher" when component != null => LocalizedText.Format($"上次启动在打开“{component}”时未完成"),
+                    "CoreInitialized" => LocalizedText.Get("上次启动在初始化主程序时未完成"),
+                    _ => LocalizedText.Get("上次启动没有正常完成"),
                 };
             }
         }
@@ -100,14 +101,14 @@ namespace ColorVision.Recovery
             : _manualRequest && _previousFailure == null
             ? StartupMaintenanceText.Get("ManualRecoveryExplanation")
             : IsDependencyFailure
-            ? "建议使用完整安装包修复；现有配置和用户数据会保留。"
+            ? LocalizedText.Get("建议使用完整安装包修复；现有配置和用户数据会保留。")
             : IsPluginLoadingFailure
-                ? "建议使用安全启动，本次不加载任何插件。"
-                : "可先使用安全启动排除插件影响，或从右下角正常启动。";
+                ? LocalizedText.Get("建议使用安全启动，本次不加载任何插件。")
+                : LocalizedText.Get("可先使用安全启动排除插件影响，或从右下角正常启动。");
 
         public string RecommendedRecoveryActionText => IsDependencyFailure
-            ? "完整安装包修复"
-            : _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSafeStartAction") : "安全启动";
+            ? LocalizedText.Get("完整安装包修复")
+            : _isRunningApplication ? StartupMaintenanceText.Get("RuntimeSafeStartAction") : LocalizedText.Get("安全启动");
 
         private string? RecordedComponent => _previousFailure?.Component is { } component &&
             !string.IsNullOrWhiteSpace(component)
@@ -183,10 +184,10 @@ namespace ColorVision.Recovery
                 int backupOnlyCount = Plugins.Count(item => item.IsBackupOnly);
                 string backupOnlyText = backupOnlyCount == 0
                     ? string.Empty
-                    : $"，其中 {backupOnlyCount} 个仅备份可恢复";
+                    : LocalizedText.Format($"，其中 {backupOnlyCount} 个仅备份可恢复");
                 return selectedCount == 0
-                    ? $"已发现 {Plugins.Count} 个插件项{backupOnlyText}"
-                    : $"已发现 {Plugins.Count} 个，已选 {selectedCount} 个{backupOnlyText}";
+                    ? LocalizedText.Format($"已发现 {Plugins.Count} 个插件项{backupOnlyText}")
+                    : LocalizedText.Format($"已发现 {Plugins.Count} 个，已选 {selectedCount} 个{backupOnlyText}");
             }
         }
 
@@ -210,7 +211,7 @@ namespace ColorVision.Recovery
             _validateRuntimeOperation = validateRuntimeOperation;
             _prepareRuntimeOperation = prepareRuntimeOperation;
             CurrentApplicationVersionText =
-                $"当前版本 {AutoUpdater.CurrentVersion?.ToString() ?? "未知"}";
+                LocalizedText.Format($"当前版本 {AutoUpdater.CurrentVersion?.ToString() ?? LocalizedText.Get("未知")}");
             DataContext = this;
             InitializeComponent();
             this.ApplyCaption();
@@ -270,7 +271,7 @@ namespace ColorVision.Recovery
             OnPropertyChanged(nameof(CanContinueStartup));
             OnPropertyChanged(nameof(CanRunApplicationUpdate));
             OnPropertyChanged(nameof(CanOpenOtherRecovery));
-            OperationStatusText = "正在扫描插件...";
+            OperationStatusText = LocalizedText.Get("正在扫描插件...");
 
             try
             {
@@ -291,12 +292,12 @@ namespace ColorVision.Recovery
                 }
 
                 OperationStatusText = Plugins.Count == 0
-                    ? "正在读取备份记录..."
-                    : "插件清单已加载，正在读取备份记录...";
+                    ? LocalizedText.Get("正在读取备份记录...")
+                    : LocalizedText.Get("插件清单已加载，正在读取备份记录...");
                 await LoadAvailableBackupsAsync(scannedPlugins, cancellationToken).ConfigureAwait(true);
                 OperationStatusText = Plugins.Count == 0
-                    ? "未发现插件或可恢复备份"
-                    : "插件和备份记录已加载";
+                    ? LocalizedText.Get("未发现插件或可恢复备份")
+                    : LocalizedText.Get("插件和备份记录已加载");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -304,7 +305,7 @@ namespace ColorVision.Recovery
             }
             catch (Exception ex)
             {
-                OperationStatusText = $"插件扫描失败：{ex.GetBaseException().Message}";
+                OperationStatusText = LocalizedText.Format($"插件扫描失败：{ex.GetBaseException().Message}");
             }
             finally
             {
@@ -361,9 +362,9 @@ namespace ColorVision.Recovery
                 if (!WindowsNetworkState.IsConnectedToInternet())
                 {
                     SetRepairState(
-                        "未连接到 Internet",
-                        "暂时无法检查更新；修复当前版本需要连接更新服务。",
-                        "修复当前版本");
+                        LocalizedText.Get("未连接到 Internet"),
+                        LocalizedText.Get("暂时无法检查更新；修复当前版本需要连接更新服务。"),
+                        LocalizedText.Get("修复当前版本"));
                     return;
                 }
 
@@ -375,36 +376,36 @@ namespace ColorVision.Recovery
                 if (checkResult.Status == UpdateServerCheckStatus.NoInternetConnection)
                 {
                     SetRepairState(
-                        "未连接到 Internet",
-                        "暂时无法检查更新；修复当前版本需要连接更新服务。",
-                        "修复当前版本");
+                        LocalizedText.Get("未连接到 Internet"),
+                        LocalizedText.Get("暂时无法检查更新；修复当前版本需要连接更新服务。"),
+                        LocalizedText.Get("修复当前版本"));
                     return;
                 }
 
                 if (checkResult.Status == UpdateServerCheckStatus.ServerUnavailable)
                 {
                     SetRepairState(
-                        "无法连接更新服务",
-                        "未能确认是否存在新版本。可稍后重试，或尝试修复当前版本。",
-                        "修复当前版本");
+                        LocalizedText.Get("无法连接更新服务"),
+                        LocalizedText.Get("未能确认是否存在新版本。可稍后重试，或尝试修复当前版本。"),
+                        LocalizedText.Get("修复当前版本"));
                     return;
                 }
 
                 if (_applicationUpdatePlan != null)
                 {
                     Version targetVersion = _applicationUpdatePlan.TargetVersion;
-                    UpdateStatusTitle = $"发现可用版本 {targetVersion}";
+                    UpdateStatusTitle = LocalizedText.Format($"发现可用版本 {targetVersion}");
                     UpdateStatusDetail =
-                        $"当前版本 {_applicationUpdatePlan.CurrentVersion}。更新完成后 ColorVision 将自动重启。";
-                    UpdateActionText = $"更新到 {targetVersion} 并重启";
+                        LocalizedText.Format($"当前版本 {_applicationUpdatePlan.CurrentVersion}。更新完成后 ColorVision 将自动重启。");
+                    UpdateActionText = LocalizedText.Format($"更新到 {targetVersion} 并重启");
                 }
                 else
                 {
-                    string currentVersion = AutoUpdater.CurrentVersion?.ToString() ?? "未知";
+                    string currentVersion = AutoUpdater.CurrentVersion?.ToString() ?? LocalizedText.Get("未知");
                     SetRepairState(
-                        "主程序已是最新版本",
-                        $"检查完成，当前版本为 {currentVersion}。如果程序文件可能损坏，可重新安装当前版本。",
-                        "修复当前版本");
+                        LocalizedText.Get("主程序已是最新版本"),
+                        LocalizedText.Format($"检查完成，当前版本为 {currentVersion}。如果程序文件可能损坏，可重新安装当前版本。"),
+                        LocalizedText.Get("修复当前版本"));
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -414,9 +415,9 @@ namespace ColorVision.Recovery
             catch (Exception ex)
             {
                 SetRepairState(
-                    "更新检查失败",
-                    $"{ex.GetBaseException().Message} 可稍后重试，或尝试修复当前版本。",
-                    "修复当前版本");
+                    LocalizedText.Get("更新检查失败"),
+                    LocalizedText.Format($"{ex.GetBaseException().Message} 可稍后重试，或尝试修复当前版本。"),
+                    LocalizedText.Get("修复当前版本"));
             }
             finally
             {
@@ -475,7 +476,7 @@ namespace ColorVision.Recovery
                 return;
 
             string message =
-                $"将下载并运行 ColorVision {currentVersion} 的完整安装程序，用于修复当前版本。确定继续？";
+                LocalizedText.Format($"将下载并运行 ColorVision {currentVersion} 的完整安装程序，用于修复当前版本。确定继续？");
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
@@ -499,7 +500,7 @@ namespace ColorVision.Recovery
                 return;
 
             SetRecoveryBusy(true);
-            UpdateStatusDetail = "正在准备下载安装包；完成后将退出并重启 ColorVision。";
+            UpdateStatusDetail = LocalizedText.Get("正在准备下载安装包；完成后将退出并重启 ColorVision。");
 
             try
             {
@@ -508,14 +509,14 @@ namespace ColorVision.Recovery
             catch (Exception ex)
             {
                 SetRecoveryBusy(false);
-                UpdateStatusDetail = $"无法启动更新：{ex.GetBaseException().Message}";
+                UpdateStatusDetail = LocalizedText.Format($"无法启动更新：{ex.GetBaseException().Message}");
             }
         }
 
         private void OnApplicationUpdateDownloadFailed()
         {
             SetRecoveryBusy(false);
-            UpdateStatusDetail = "下载安装包失败。请检查网络后重试，或打开更新日志目录查看原因。";
+            UpdateStatusDetail = LocalizedText.Get("下载安装包失败。请检查网络后重试，或打开更新日志目录查看原因。");
         }
 
         private async void RestorePluginBackup_Click(object sender, RoutedEventArgs e)
@@ -526,7 +527,7 @@ namespace ColorVision.Recovery
                 item.Backup == null || !TryValidateRuntimeOperation())
                 return;
 
-            string message = $"将先校验最近一次备份，再退出 ColorVision 并回退插件“{item.DisplayName}”。确定继续？";
+            string message = LocalizedText.Format($"将先校验最近一次备份，再退出 ColorVision 并回退插件“{item.DisplayName}”。确定继续？");
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
             if (!TryPrepareRuntimeOperation())
@@ -534,14 +535,14 @@ namespace ColorVision.Recovery
 
             PluginRecoveryBackupInfo backup = item.Backup;
             SetRecoveryBusy(true);
-            OperationStatusText = $"正在准备回退 {item.DisplayName}...";
+            OperationStatusText = LocalizedText.Format($"正在准备回退 {item.DisplayName}...");
 
             try
             {
                 await PluginRecoveryBackupService.Instance
                     .RestoreAsync(backup, _windowCancellation.Token)
                     .ConfigureAwait(true);
-                OperationStatusText = "插件回退已启动，ColorVision 即将退出。";
+                OperationStatusText = LocalizedText.Get("插件回退已启动，ColorVision 即将退出。");
             }
             catch (OperationCanceledException) when (_windowCancellation.IsCancellationRequested)
             {
@@ -550,7 +551,7 @@ namespace ColorVision.Recovery
             catch (Exception ex)
             {
                 SetRecoveryBusy(false);
-                OperationStatusText = $"插件回退失败：{ex.GetBaseException().Message}";
+                OperationStatusText = LocalizedText.Format($"插件回退失败：{ex.GetBaseException().Message}");
                 MessageBox.Show(this, OperationStatusText, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
@@ -592,7 +593,7 @@ namespace ColorVision.Recovery
             if (!CanOpenOtherRecovery)
                 return;
 
-            OpenDirectory(ResolveApplicationLogDirectory(), "主日志目录");
+            OpenDirectory(ResolveApplicationLogDirectory(), LocalizedText.Get("主日志目录"));
         }
 
         private void OpenUpdateLog_Click(object sender, RoutedEventArgs e)
@@ -600,7 +601,7 @@ namespace ColorVision.Recovery
             if (!CanOpenOtherRecovery)
                 return;
 
-            OpenDirectory(GetUpdateLogDirectory(), "更新日志目录");
+            OpenDirectory(GetUpdateLogDirectory(), LocalizedText.Get("更新日志目录"));
         }
 
         private void OpenDirectory(string directory, string displayName)
@@ -612,7 +613,7 @@ namespace ColorVision.Recovery
             }
             catch (Exception ex)
             {
-                OperationStatusText = $"无法打开{displayName}：{ex.GetBaseException().Message}";
+                OperationStatusText = LocalizedText.Format($"无法打开{displayName}：{ex.GetBaseException().Message}");
             }
         }
 
@@ -669,7 +670,7 @@ namespace ColorVision.Recovery
             }
             catch (Exception ex)
             {
-                OperationStatusText = $"保存插件禁用状态失败：{ex.GetBaseException().Message}";
+                OperationStatusText = LocalizedText.Format($"保存插件禁用状态失败：{ex.GetBaseException().Message}");
                 return false;
             }
         }
@@ -804,32 +805,32 @@ namespace ColorVision.Recovery
 
             List<string> details = new();
             if (!string.IsNullOrWhiteSpace(failure.Stage))
-                details.Add($"阶段：{failure.Stage}");
+                details.Add(LocalizedText.Format($"阶段：{failure.Stage}"));
             if (!string.IsNullOrWhiteSpace(failure.Component))
-                details.Add($"组件：{failure.Component}");
+                details.Add(LocalizedText.Format($"组件：{failure.Component}"));
             if (!string.IsNullOrWhiteSpace(failure.Version))
-                details.Add($"版本：{failure.Version}");
+                details.Add(LocalizedText.Format($"版本：{failure.Version}"));
             if (failure.StartedAt.HasValue)
-                details.Add($"时间：{failure.StartedAt.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+                details.Add(LocalizedText.Format($"时间：{failure.StartedAt.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}"));
 
             return details.Count == 0
-                ? "上次启动未完成；没有记录到可确认的故障组件。"
-                : $"上次启动未完成（{string.Join("；", details)}）。“疑似”仅表示与记录匹配，不代表已确认插件有问题。";
+                ? LocalizedText.Get("上次启动未完成；没有记录到可确认的故障组件。")
+                : LocalizedText.Format($"上次启动未完成（{string.Join("；", details)}）。“疑似”仅表示与记录匹配，不代表已确认插件有问题。");
         }
 
         private string BuildFeedbackDraft()
         {
-            List<string> details = new() { "启动恢复反馈" };
+            List<string> details = new() { LocalizedText.Get("启动恢复反馈") };
             if (!string.IsNullOrWhiteSpace(_previousFailure?.Stage))
-                details.Add($"阶段：{_previousFailure.Stage}");
+                details.Add(LocalizedText.Format($"阶段：{_previousFailure.Stage}"));
             if (!string.IsNullOrWhiteSpace(_previousFailure?.Component))
-                details.Add($"组件：{_previousFailure.Component}");
+                details.Add(LocalizedText.Format($"组件：{_previousFailure.Component}"));
             if (!string.IsNullOrWhiteSpace(_previousFailure?.Version))
-                details.Add($"版本：{_previousFailure.Version}");
+                details.Add(LocalizedText.Format($"版本：{_previousFailure.Version}"));
             if (_previousFailure?.StartedAt is { } startedAt)
-                details.Add($"时间：{startedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+                details.Add(LocalizedText.Format($"时间：{startedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"));
             details.Add(string.Empty);
-            details.Add("问题描述：");
+            details.Add(LocalizedText.Get("问题描述："));
             return string.Join(Environment.NewLine, details);
         }
 

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -250,7 +251,7 @@ namespace ProjectARVRPro.Process
             if (string.IsNullOrWhiteSpace(NewGroupName)) return;
             if (ProcessGroups.Any(g => g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
                 return;
             }
             var group = new ProcessGroup { Name = NewGroupName };
@@ -264,11 +265,11 @@ namespace ProjectARVRPro.Process
         {
             if (ProcessGroups.Count <= 1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "至少保留一个组", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("至少保留一个组"), "ColorVision");
                 return;
             }
             if (ActiveGroup == null) return;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"确定要删除组 \"{ActiveGroup.Name}\" 吗？", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"确定要删除组 \"{ActiveGroup.Name}\" 吗？"), "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
 
             UnhookProcessMetasEvents();
@@ -288,7 +289,7 @@ namespace ProjectARVRPro.Process
             if (ActiveGroup == null || string.IsNullOrWhiteSpace(NewGroupName)) return;
             if (ProcessGroups.Any(g => g != ActiveGroup && g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
                 return;
             }
             ActiveGroup.Name = NewGroupName;
@@ -323,7 +324,7 @@ namespace ProjectARVRPro.Process
             string legacyFilePath = Path.Combine(legacyDirectory, "ARVRRecipe.json");
             var dialog = new OpenFileDialog
             {
-                Title = "导入旧版 Recipe 清单",
+                Title = LocalizedText.Get("导入旧版 Recipe 清单"),
                 Filter = LegacyRecipeFilter,
                 DefaultExt = "json",
                 InitialDirectory = Directory.Exists(legacyDirectory) ? legacyDirectory : string.Empty,
@@ -335,7 +336,7 @@ namespace ProjectARVRPro.Process
 
             if (!LegacyRecipeImporter.TryReadFile(dialog.FileName, out var importResult, out string errorMessage))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入旧版 Recipe 失败:\n{errorMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"导入旧版 Recipe 失败:\n{errorMessage}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -355,7 +356,7 @@ namespace ProjectARVRPro.Process
             catch (Exception ex)
             {
                 log.Error("准备导入旧版 Recipe 失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"准备导入旧版 Recipe 失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"准备导入旧版 Recipe 失败:\n{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -390,7 +391,7 @@ namespace ProjectARVRPro.Process
                     rollbackMessage = $"\n恢复导入前配置也失败，请勿关闭程序并立即导出当前配置：{rollbackException.Message}";
                 }
 
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用旧版 Recipe 失败:\n{ex.Message}{rollbackMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"应用旧版 Recipe 失败:\n{ex.Message}{rollbackMessage}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -533,7 +534,7 @@ namespace ProjectARVRPro.Process
             {
                 var dialog = new SaveFileDialog
                 {
-                    Title = "导出流程配置",
+                    Title = LocalizedText.Get("导出流程配置"),
                     Filter = ExportConfigFilter,
                     DefaultExt = "arvrprocess.json",
                     FileName = $"ARVRProcessConfig_{DateTime.Now:yyyyMMdd_HHmmss}.arvrprocess.json"
@@ -551,12 +552,12 @@ namespace ProjectARVRPro.Process
 
                 string json = JsonConvert.SerializeObject(exportRoot, ExportJsonSerializerSettings);
                 File.WriteAllText(dialog.FileName, json);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"流程配置已导出到:\n{dialog.FileName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"流程配置已导出到:\n{dialog.FileName}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 log.Error("导出流程配置失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"导出流程配置失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"导出流程配置失败:\n{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -564,7 +565,7 @@ namespace ProjectARVRPro.Process
         {
             var dialog = new OpenFileDialog
             {
-                Title = "导入流程配置",
+                Title = LocalizedText.Get("导入流程配置"),
                 Filter = ExportConfigFilter,
                 DefaultExt = "arvrprocess.json"
             };
@@ -574,13 +575,13 @@ namespace ProjectARVRPro.Process
 
             if (!TryReadConfigFile(dialog.FileName, out var importedGroups, out var importedRecipe, out var warningMessage, out var errorMessage))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入流程配置失败:\n{errorMessage}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"导入流程配置失败:\n{errorMessage}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             int groupCount = importedGroups.Groups?.Count ?? 0;
             int parserCount = importedGroups.ResultParsers?.Count ?? 0;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"导入后将替换当前流程组和解析映射，共 {groupCount} 个组、{parserCount} 条解析映射。是否继续？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"导入后将替换当前流程组和解析映射，共 {groupCount} 个组、{parserCount} 条解析映射。是否继续？"), "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
             try
@@ -595,7 +596,7 @@ namespace ProjectARVRPro.Process
             catch (Exception ex)
             {
                 log.Error("应用导入流程配置失败", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"应用导入流程配置失败:\n{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"应用导入流程配置失败:\n{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -736,7 +737,7 @@ namespace ProjectARVRPro.Process
 
             if (HasDuplicateMetaName(dialog.MetaName))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("名称重复"), "ColorVision");
                 return;
             }
 
@@ -834,7 +835,7 @@ namespace ProjectARVRPro.Process
 
             if (HasDuplicateMetaName(name, SelectedProcessMeta))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("名称重复"), "ColorVision");
                 return;
             }
 
@@ -883,7 +884,7 @@ namespace ProjectARVRPro.Process
 
             if (HasDuplicateMetaName(dialog.MetaName, meta))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("名称重复"), "ColorVision");
                 return;
             }
 
@@ -909,7 +910,7 @@ namespace ProjectARVRPro.Process
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"未找到流程模板 \"{meta.FlowTemplate}\"。",
+                    LocalizedText.Format($"未找到流程模板 \"{meta.FlowTemplate}\"。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -943,7 +944,7 @@ namespace ProjectARVRPro.Process
 
             if (HasDuplicateResultParser(dialog.SelectedTemplate.Key))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "该流程模板已经配置了解析映射", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("该流程模板已经配置了解析映射"), "ColorVision");
                 return;
             }
 
@@ -999,7 +1000,7 @@ namespace ProjectARVRPro.Process
 
             if (HasDuplicateResultParser(dialog.SelectedTemplate.Key, selectedMeta))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "该流程模板已经配置了解析映射", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("该流程模板已经配置了解析映射"), "ColorVision");
                 return;
             }
 

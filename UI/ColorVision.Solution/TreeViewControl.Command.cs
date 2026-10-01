@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Explorer;
+﻿using LocalizedText = global::ColorVision.Solution.DisplayText;
+using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Terminal;
 using ColorVision.UI;
@@ -94,8 +95,8 @@ namespace ColorVision.Solution
                 details += $"{Environment.NewLine}• …";
             MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
-                $"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}",
-                "部分文件未能打开",
+                LocalizedText.Format($"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}"),
+                LocalizedText.Get("部分文件未能打开"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
@@ -140,7 +141,7 @@ namespace ColorVision.Solution
                 MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
                     result.ErrorMessage,
-                    result.Succeeded ? "默认打开方式未保存" : "无法打开资源",
+                    result.Succeeded ? LocalizedText.Get("默认打开方式未保存") : LocalizedText.Get("无法打开资源"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -396,7 +397,7 @@ namespace ColorVision.Solution
 
                 var result = MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"确定删除或从解决方案移除选中的 {nodes.Count} 项吗？{Environment.NewLine}{Environment.NewLine}{names}",
+                    LocalizedText.Format($"确定删除或从解决方案移除选中的 {nodes.Count} 项吗？{Environment.NewLine}{Environment.NewLine}{names}"),
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Warning);
@@ -411,7 +412,7 @@ namespace ColorVision.Solution
                 {
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        $"有 {failedNodes.Count} 项未能删除或移除，请查看前面的错误信息。",
+                        LocalizedText.Format($"有 {failedNodes.Count} 项未能删除或移除，请查看前面的错误信息。"),
                         "ColorVision",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
@@ -489,7 +490,7 @@ namespace ColorVision.Solution
                     || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer)
                     || !ReferenceEquals(displayedRoot, GetDisplayedRootNode()))
                 {
-                    SearchStatusText.Text = "无法在当前视图中定位该项";
+                    SearchStatusText.Text = LocalizedText.Get("无法在当前视图中定位该项");
                     SearchStatusText.Visibility = Visibility.Visible;
                     return;
                 }
@@ -525,7 +526,7 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
-                SearchStatusText.Text = $"定位失败：{ex.Message}";
+                SearchStatusText.Text = LocalizedText.Format($"定位失败：{ex.Message}");
                 SearchStatusText.Visibility = Visibility.Visible;
             }
             finally

@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Application;
 using CameraTest.Models;
 using ColorVision.Algorithms;
@@ -36,7 +37,7 @@ public partial class CameraTestWindow
                 ChartTypeSelector.ItemsSource = ChartTypeSupport.SupportsCheckerboard ? new[] { "BMW", "棋盘格交叉点", "自动识别" } : new[] { "BMW" };
             ChartTypeSelector.SelectedIndex = ChartTypeSupport.Selection(_profile.MeasurementRoi);
             ChartTypeSelector.IsEnabled = ChartTypeSupport.SupportsCheckerboard && !_busy && !_live && !_closing && !_stopping;
-            ChartTypeSelector.ToolTip = ChartTypeSupport.SupportsCheckerboard ? ChartSelectionHint : "当前宿主仅支持 BMW；棋盘格需要更新 ColorVision 宿主及原生组件。";
+            ChartTypeSelector.ToolTip = ChartTypeSupport.SupportsCheckerboard ? ChartSelectionHint : LocalizedText.Get("当前宿主仅支持 BMW；棋盘格需要更新 ColorVision 宿主及原生组件。");
         }
         finally { _syncingChartType = false; }
     }
@@ -63,7 +64,7 @@ public partial class CameraTestWindow
         if (_busy || _live || _closing) return;
         var edited = new BmwSfrViewSettings { Display = _profile.Display.Copy(), MeasurementRoi = _profile.MeasurementRoi with { } };
         var window = new PropertyEditorWindow(edited, PropertyEditorEditMode.Transactional)
-        { Owner = this, Title = "SFR 测量与显示", Width = 820, Height = 680, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        { Owner = this, Title = LocalizedText.Get("SFR 测量与显示"), Width = 820, Height = 680, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         bool submitted = false;
         window.Submitted += (_, _) => submitted = true;
         window.ShowDialog();
@@ -177,7 +178,7 @@ public partial class CameraTestWindow
         ColorMetrics.SelectedItem = ColorMetrics.Items.OfType<ColorShiftRow>().FirstOrDefault(row => row.Target == target && row.Edge == edge.ToString() && row.Pair == colorPair)
             ?? ColorMetrics.Items.OfType<ColorShiftRow>().FirstOrDefault(row => row.Target == target && row.Edge == edge.ToString());
         if (AnalysisTabs.SelectedIndex != 1) AnalysisTabs.SelectedIndex = 0;
-        StatusText.Text = $"{target} · {GetChartTypeText(_result?.Targets.FirstOrDefault(t => t.Id == target))} · {EdgeName(edge)}边；右键可独立分析此矩形。";
+        StatusText.Text = LocalizedText.Format($"{target} · {GetChartTypeText(_result?.Targets.FirstOrDefault(t => t.Id == target))} · {EdgeName(edge)}边；右键可独立分析此矩形。");
         RenderOverlays();
     }
 
@@ -215,12 +216,12 @@ public partial class CameraTestWindow
         var rectangle = new DVRectangle(new() { Rect = new(edge.Roi.X, edge.Roi.Y, edge.Roi.Width, edge.Roi.Height) });
         var provider = new SFRIDVContextMenu(ImageView.EditorContext.ProcessingContext, ImageView.Config);
         var menu = new ContextMenu();
-        menu.Items.Add(new MenuItem { Header = $"{target} / {EdgeName(edge.Id)}边", IsEnabled = false });
+        menu.Items.Add(new MenuItem { Header = LocalizedText.Format($"{target} / {EdgeName(edge.Id)}边"), IsEnabled = false });
         menu.Items.Add(new Separator());
         foreach (var item in provider.GetContextMenuItems(rectangle))
         {
             item.IsEnabled = !_live;
-            item.ToolTip = _live ? "停止实时分析后可独立测量此矩形。" : "使用当前小矩形打开单边 SFR 窗口，无需重新框选。";
+            item.ToolTip = _live ? LocalizedText.Get("停止实时分析后可独立测量此矩形。") : LocalizedText.Get("使用当前小矩形打开单边 SFR 窗口，无需重新框选。");
             menu.Items.Add(item);
         }
         return menu;

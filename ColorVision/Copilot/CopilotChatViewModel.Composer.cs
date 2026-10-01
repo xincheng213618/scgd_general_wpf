@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.UI;
 using System;
@@ -64,31 +65,31 @@ namespace ColorVision.Copilot
             return true;
         }
         public string InputPlaceholder => IsPromptHistorySearchOpen
-            ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
+            ? LocalizedText.Format($"搜索{PromptHistorySearchScopeLabel}的可见历史请求")
             : IsEditingMessage
-            ? $"修改后按 {ComposerSubmitShortcutLabel} 重新发送"
+            ? LocalizedText.Format($"修改后按 {ComposerSubmitShortcutLabel} 重新发送")
             : IsViewingActiveRun
                 ? IsAnsweringUserQuestion
-                    ? $"输入问题答案并按 {ComposerSubmitShortcutLabel}；也可直接选择上方选项"
+                    ? LocalizedText.Format($"输入问题答案并按 {ComposerSubmitShortcutLabel}；也可直接选择上方选项")
                     : ActiveHostedRun?.State switch
                     {
-                        CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
-                        CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
-                        _ when IsAgentRequestActive && HasAttachments => $"{ComposerSubmitShortcutLabel}/Tab 连同附件排到下一轮 · Ctrl+Enter 立即接管",
-                        _ when IsAgentRequestActive => $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管 · @ 关联",
-                        _ => "正在生成回复 · 可使用 /status",
+                        CopilotHostedRunState.PauseRequested => LocalizedText.Get("任务正在暂停 · 当前输入会保留到任务结束"),
+                        CopilotHostedRunState.CancelRequested => LocalizedText.Get("任务正在取消 · 当前输入会保留到任务结束"),
+                        _ when IsAgentRequestActive && HasAttachments => LocalizedText.Format($"{ComposerSubmitShortcutLabel}/Tab 连同附件排到下一轮 · Ctrl+Enter 立即接管"),
+                        _ when IsAgentRequestActive => LocalizedText.Format($"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管 · @ 关联"),
+                        _ => LocalizedText.Get("正在生成回复 · 可使用 /status"),
                     }
                 : ResolveComposerRequestMode() == CopilotAgentMode.Plan
-                    ? "计划模式 · 输入任务；只读分析，不执行修改"
-                : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
+                    ? LocalizedText.Get("计划模式 · 输入任务；只读分析，不执行修改")
+                : IsConversationEmpty ? LocalizedText.Get("随心输入 · @ 关联 · / 或 $ 命令") : LocalizedText.Get("要求后续变更 · @ 关联 · / 或 $ 命令");
 
         private string ComposerSubmitShortcutLabel => UseMultilineComposer ? "Shift+Enter" : "Enter";
 
         private string DefaultFollowUpActionLabel =>
-            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? "排队" : "调整";
+            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? LocalizedText.Get("排队") : LocalizedText.Get("调整");
 
         private string AlternateFollowUpActionLabel =>
-            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? "调整" : "排队";
+            DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue ? LocalizedText.Get("调整") : LocalizedText.Get("排队");
 
         private string ResolveFollowUpShortcut(CopilotFollowUpBehavior behavior) =>
             behavior == DefaultFollowUpBehavior ? ComposerSubmitShortcutLabel : "Tab";

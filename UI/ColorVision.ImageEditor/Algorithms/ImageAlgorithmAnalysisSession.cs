@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using System;
 using System.Runtime.CompilerServices;
@@ -355,9 +356,9 @@ namespace ColorVision.ImageEditor.Algorithms
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             StackPanel panel = new() { Margin = new Thickness(16) };
-            _status = new TextBlock { Text = "准备执行...", Margin = new Thickness(0, 0, 0, 10) };
+            _status = new TextBlock { Text = LocalizedText.Get("准备执行..."), Margin = new Thickness(0, 0, 0, 10) };
             _progress = new ProgressBar { Minimum = 0, Maximum = 100, Height = 18, Margin = new Thickness(0, 0, 0, 12) };
-            Button cancel = new() { Content = "取消", Width = 80, HorizontalAlignment = HorizontalAlignment.Right };
+            Button cancel = new() { Content = LocalizedText.Get("取消"), Width = 80, HorizontalAlignment = HorizontalAlignment.Right };
             cancel.Click += (_, _) => Cancel();
             panel.Children.Add(_status);
             panel.Children.Add(_progress);
@@ -397,7 +398,7 @@ namespace ColorVision.ImageEditor.Algorithms
         {
             if (WasCancelled) return;
             WasCancelled = true;
-            _status.Text = "正在取消...";
+            _status.Text = LocalizedText.Get("正在取消...");
             _cancellation.Cancel();
         }
     }

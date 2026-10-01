@@ -971,4 +971,2725 @@ Startup driver: {1}    USB driver: {2}</value>
   <data name="UpdatePreviewSelectionDefersPluginUpdates" xml:space="preserve">
     <value>Plugin updates will be deferred for this run</value>
   </data>
+  <data name="API 格式" xml:space="preserve">
+    <value>API Format</value>
+  </data>
+  <data name="Agent 与工具" xml:space="preserve">
+    <value>Agent and Tools</value>
+  </data>
+  <data name="Agent 任务" xml:space="preserve">
+    <value>Agent Tasks</value>
+  </data>
+  <data name="Codex 模型" xml:space="preserve">
+    <value>Codex Model</value>
+  </data>
+  <data name="ColorVision 启动恢复" xml:space="preserve">
+    <value>ColorVision Startup Recovery</value>
+  </data>
+  <data name="ColorVision 服务主机" xml:space="preserve">
+    <value>ColorVision Service Host</value>
+  </data>
+  <data name="Copilot 设置" xml:space="preserve">
+    <value>Copilot Settings</value>
+  </data>
+  <data name="MCP 服务" xml:space="preserve">
+    <value>MCP Servers</value>
+  </data>
+  <data name="Responses 兼容服务可填写以 /responses 结尾的完整地址。" xml:space="preserve">
+    <value>For Responses-compatible services, you can enter a complete URL ending in /responses.</value>
+  </data>
+  <data name="Responses 兼容服务可填写以 /responses 结尾的完整地址；普通兼容地址使用 Chat Completions。" xml:space="preserve">
+    <value>Responses-compatible services can use a complete URL ending in /responses. Other compatible endpoints use Chat Completions.</value>
+  </data>
+  <data name="Tab/→ 补全" xml:space="preserve">
+    <value>Tab/→: Complete</value>
+  </data>
+  <data name="↑↓ 选择 · Enter/→ 关联 · Esc 关闭" xml:space="preserve">
+    <value>↑↓: select · Enter/→: attach · Esc: close</value>
+  </data>
+  <data name="↑↓ 选择 · Enter/→ 恢复 · 保存快捷键切换范围 · Esc 关闭" xml:space="preserve">
+    <value>↑↓: select · Enter/→: restore · Save shortcut: switch scope · Esc: close</value>
+  </data>
+  <data name="↑↓ 选择 · Tab/→ 补全 · Enter 执行" xml:space="preserve">
+    <value>↑↓: select · Tab/→: complete · Enter: execute</value>
+  </data>
+  <data name="→ 接受" xml:space="preserve">
+    <value>→ Accept</value>
+  </data>
+  <data name="↓  回到最新消息" xml:space="preserve">
+    <value>↓  Jump to Latest Message</value>
+  </data>
+  <data name="↩ 返回源会话" xml:space="preserve">
+    <value>↩ Return to Source Conversation</value>
+  </data>
+  <data name="上一个匹配项 (Shift+Enter)" xml:space="preserve">
+    <value>Previous Match (Shift+Enter)</value>
+  </data>
+  <data name="上下文整理重点" xml:space="preserve">
+    <value>Context Compaction Focus</value>
+  </data>
+  <data name="上下文窗口" xml:space="preserve">
+    <value>Context Window</value>
+  </data>
+  <data name="下一个匹配项 (Enter)" xml:space="preserve">
+    <value>Next Match (Enter)</value>
+  </data>
+  <data name="串口驱动" xml:space="preserve">
+    <value>Serial Port Driver</value>
+  </data>
+  <data name="临时自动复核（仅下一任务/本任务）" xml:space="preserve">
+    <value>Temporary Automatic Review (Next/Current Task Only)</value>
+  </data>
+  <data name="仅在排障时使用；卸载服务会使更新和系统维护功能不可用。" xml:space="preserve">
+    <value>For troubleshooting only. Uninstalling the service disables updates and system maintenance.</value>
+  </data>
+  <data name="仅在此模型和接口支持图片时开启。" xml:space="preserve">
+    <value>Enable only when this model and endpoint support images.</value>
+  </data>
+  <data name="仅影响当前模型连接；响应较慢时可增加等待时间。" xml:space="preserve">
+    <value>Applies only to the current model connection. Increase the wait time for slower responses.</value>
+  </data>
+  <data name="仅用于受信的内网服务；HTTP 不加密密钥和对话内容。" xml:space="preserve">
+    <value>Use only for trusted intranet services. HTTP does not encrypt API keys or conversation content.</value>
+  </data>
+  <data name="从更新前或手动创建的快照恢复主程序和插件文件。" xml:space="preserve">
+    <value>Restore application and plugin files from a pre-update or manually created snapshot.</value>
+  </data>
+  <data name="从此回答复制已发送上下文到新会话；不继承 Agent 运行状态" xml:space="preserve">
+    <value>Copy the submitted context from this response into a new conversation; agent running state is not inherited</value>
+  </data>
+  <data name="从预设中选择，也可以直接输入模型 ID。" xml:space="preserve">
+    <value>Choose a preset or enter a model ID directly.</value>
+  </data>
+  <data name="仓库" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="代码审查详情" xml:space="preserve">
+    <value>Code Review Details</value>
+  </data>
+  <data name="任务" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="任务默认值" xml:space="preserve">
+    <value>Task Defaults</value>
+  </data>
+  <data name="任务：" xml:space="preserve">
+    <value>Task:</value>
+  </data>
+  <data name="使用本机 Codex" xml:space="preserve">
+    <value>Use Local Codex</value>
+  </data>
+  <data name="供应商预设" xml:space="preserve">
+    <value>Provider Preset</value>
+  </data>
+  <data name="修复文件关联" xml:space="preserve">
+    <value>Repair File Associations</value>
+  </data>
+  <data name="修复文件打开方式和资源管理器缩略图。" xml:space="preserve">
+    <value>Repair file associations and File Explorer thumbnails.</value>
+  </data>
+  <data name="停止服务" xml:space="preserve">
+    <value>Stop Service</value>
+  </data>
+  <data name="允许向非本机 HTTP 服务发送密钥" xml:space="preserve">
+    <value>Allow sending API keys to non-local HTTP services</value>
+  </data>
+  <data name="先核对来源、任务、工作区、影响和撤销方式，再批准操作。" xml:space="preserve">
+    <value>Review the source, task, workspace, impact, and undo method before approving the action.</value>
+  </data>
+  <data name="全部已读" xml:space="preserve">
+    <value>Mark All Read</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="关闭本地命令结果" xml:space="preserve">
+    <value>Close Local Command Result</value>
+  </data>
+  <data name="关闭查找 (Esc)" xml:space="preserve">
+    <value>Close Find (Esc)</value>
+  </data>
+  <data name="内部端口 A" xml:space="preserve">
+    <value>Internal Port A</value>
+  </data>
+  <data name="内部端口 B" xml:space="preserve">
+    <value>Internal Port B</value>
+  </data>
+  <data name="分支" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="切回计划模式，在输入框中补充反馈后生成修订计划" xml:space="preserve">
+    <value>Return to plan mode, add feedback in the input box, then generate a revised plan</value>
+  </data>
+  <data name="创建串口对" xml:space="preserve">
+    <value>Create Port Pair</value>
+  </data>
+  <data name="删除所选" xml:space="preserve">
+    <value>Delete Selected</value>
+  </data>
+  <data name="删除这条后续消息" xml:space="preserve">
+    <value>Delete This Follow-up</value>
+  </data>
+  <data name="判断" xml:space="preserve">
+    <value>Assessment</value>
+  </data>
+  <data name="刷新" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="刷新日志" xml:space="preserve">
+    <value>Refresh Logs</value>
+  </data>
+  <data name="刷新状态" xml:space="preserve">
+    <value>Refresh Status</value>
+  </data>
+  <data name="卸载服务" xml:space="preserve">
+    <value>Uninstall Service</value>
+  </data>
+  <data name="历史补全" xml:space="preserve">
+    <value>History Suggestions</value>
+  </data>
+  <data name="压缩" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="压缩已裁剪的会话上下文" xml:space="preserve">
+    <value>Compact the trimmed conversation context</value>
+  </data>
+  <data name="反馈会自动附带服务运行日志和安装记录。" xml:space="preserve">
+    <value>Feedback automatically includes service runtime logs and installation records.</value>
+  </data>
+  <data name="反馈将自动附带应用日志、更新日志和系统诊断信息。" xml:space="preserve">
+    <value>Feedback automatically includes application logs, update logs, and system diagnostics.</value>
+  </data>
+  <data name="发送反馈" xml:space="preserve">
+    <value>Send Feedback</value>
+  </data>
+  <data name="取消" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="取消当前轮，把这条提升为下一轮立即执行" xml:space="preserve">
+    <value>Cancel the current turn and run this request immediately in the next turn</value>
+  </data>
+  <data name="取消排队并移回输入框" xml:space="preserve">
+    <value>Remove from the queue and return to the input box</value>
+  </data>
+  <data name="取消编辑" xml:space="preserve">
+    <value>Cancel Edit</value>
+  </data>
+  <data name="取消缩略图" xml:space="preserve">
+    <value>Unregister Thumbnails</value>
+  </data>
+  <data name="受保护工具直接执行，无需逐次确认或模型复核。该选择会保留，直到手动切换回按需确认；已有待审批操作仍需单独决定。" xml:space="preserve">
+    <value>Protected tools execute directly without individual confirmation or model review. This setting remains until manually switched back to Confirm as Needed. Existing pending approvals still require individual decisions.</value>
+  </data>
+  <data name="受保护操作执行前逐次确认。" xml:space="preserve">
+    <value>Confirm each protected action before execution.</value>
+  </data>
+  <data name="可在反馈窗口补充现场现象并检查待发送的诊断资料。" xml:space="preserve">
+    <value>Describe the observed issue and review diagnostic data to be sent in the feedback window.</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="后台更新服务" xml:space="preserve">
+    <value>Update Service in Background</value>
+  </data>
+  <data name="后移一位" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="后续队列" xml:space="preserve">
+    <value>Follow-up Queue</value>
+  </data>
+  <data name="启动恢复" xml:space="preserve">
+    <value>Startup Recovery</value>
+  </data>
+  <data name="启动服务" xml:space="preserve">
+    <value>Start Service</value>
+  </data>
+  <data name="回到最新消息" xml:space="preserve">
+    <value>Jump to Latest Message</value>
+  </data>
+  <data name="在反馈窗口补充现场现象并检查诊断资料；右侧目录仅供人工排障。" xml:space="preserve">
+    <value>Describe the observed issue and review diagnostic data in the feedback window. The folders on the right are for manual troubleshooting.</value>
+  </data>
+  <data name="备份" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="复制 Diff" xml:space="preserve">
+    <value>Copy Diff</value>
+  </data>
+  <data name="复制 Findings" xml:space="preserve">
+    <value>Copy Findings</value>
+  </data>
+  <data name="复制 ID" xml:space="preserve">
+    <value>Copy ID</value>
+  </data>
+  <data name="复制回答（不包含执行轨迹和推理）" xml:space="preserve">
+    <value>Copy the response without execution traces or reasoning</value>
+  </data>
+  <data name="复制确认载荷" xml:space="preserve">
+    <value>Copy Confirmation Payload</value>
+  </data>
+  <data name="复制结论" xml:space="preserve">
+    <value>Copy Findings</value>
+  </data>
+  <data name="复制证据原文" xml:space="preserve">
+    <value>Copy Original Evidence</value>
+  </data>
+  <data name="复制诊断摘要" xml:space="preserve">
+    <value>Copy Diagnostic Summary</value>
+  </data>
+  <data name="安装完整性" xml:space="preserve">
+    <value>Installation Integrity</value>
+  </data>
+  <data name="安装或修复服务" xml:space="preserve">
+    <value>Install or Repair Service</value>
+  </data>
+  <data name="安装目录" xml:space="preserve">
+    <value>Installation Folder</value>
+  </data>
+  <data name="安装记录" xml:space="preserve">
+    <value>Installation Records</value>
+  </data>
+  <data name="完全访问" xml:space="preserve">
+    <value>Full Access</value>
+  </data>
+  <data name="完整安装包修复" xml:space="preserve">
+    <value>Repair with Full Installer</value>
+  </data>
+  <data name="审查并批准" xml:space="preserve">
+    <value>Review and Approve</value>
+  </data>
+  <data name="审查结论" xml:space="preserve">
+    <value>Review Findings</value>
+  </data>
+  <data name="审查详情" xml:space="preserve">
+    <value>Review Details</value>
+  </data>
+  <data name="导出 Markdown" xml:space="preserve">
+    <value>Export Markdown</value>
+  </data>
+  <data name="导出当前会话为 Markdown" xml:space="preserve">
+    <value>Export the current conversation as Markdown</value>
+  </data>
+  <data name="将当前编辑文件作为本轮明确附件；普通 Chat 模式也能读取其正文。" xml:space="preserve">
+    <value>Attach the currently edited file explicitly to this turn. Regular Chat mode can also read its contents.</value>
+  </data>
+  <data name="工作区" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="已有串口对" xml:space="preserve">
+    <value>Existing Port Pairs</value>
+  </data>
+  <data name="序号" xml:space="preserve">
+    <value>Index</value>
+  </data>
+  <data name="应用" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="应用快照恢复" xml:space="preserve">
+    <value>Application Snapshot Recovery</value>
+  </data>
+  <data name="应用恢复" xml:space="preserve">
+    <value>Application Recovery</value>
+  </data>
+  <data name="应用更新与修复" xml:space="preserve">
+    <value>Application Update and Repair</value>
+  </data>
+  <data name="建议操作：刷新" xml:space="preserve">
+    <value>Suggested Action: Refresh</value>
+  </data>
+  <data name="当前 Windows 用户无法解密已保存的密钥，请重新输入。" xml:space="preserve">
+    <value>The current Windows user cannot decrypt the saved API key. Enter it again.</value>
+  </data>
+  <data name="当前版本 检查中" xml:space="preserve">
+    <value>Current Version: Checking</value>
+  </data>
+  <data name="影响" xml:space="preserve">
+    <value>Impact</value>
+  </data>
+  <data name="恢复" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="恢复到输入框，不会自动发送" xml:space="preserve">
+    <value>Restore to the input box without sending</value>
+  </data>
+  <data name="恢复暂存的 Copilot 草稿" xml:space="preserve">
+    <value>Restore the saved Copilot draft</value>
+  </data>
+  <data name="恢复服务运行、文件关联和资源管理器集成功能。" xml:space="preserve">
+    <value>Restore service operation, file associations, and File Explorer integration.</value>
+  </data>
+  <data name="恢复模块会列出可用快照及其版本、创建时间和大小；确认还原后 ColorVision 将自动退出。" xml:space="preserve">
+    <value>Recovery lists available snapshots with their versions, creation times, and sizes. ColorVision exits automatically after you confirm a restore.</value>
+  </data>
+  <data name="恢复目标并启动新的 Agent 轮次" xml:space="preserve">
+    <value>Resume the goal and start a new agent turn</value>
+  </data>
+  <data name="恢复草稿" xml:space="preserve">
+    <value>Restore Draft</value>
+  </data>
+  <data name="恢复这条当前会话中的历史请求，不会自动发送" xml:space="preserve">
+    <value>Restore this earlier request from the current conversation without sending it</value>
+  </data>
+  <data name="我已完整核对上方执行详情，确认它符合当前任务意图。" xml:space="preserve">
+    <value>I have reviewed all execution details above and confirmed that they match the current task's intent.</value>
+  </data>
+  <data name="打开应用恢复" xml:space="preserve">
+    <value>Open Application Recovery</value>
+  </data>
+  <data name="打开应用日志" xml:space="preserve">
+    <value>Open Application Log</value>
+  </data>
+  <data name="打开当前根会话及其全部分支；会话切换不会继承其他分支的运行状态、授权或 checkpoint。" xml:space="preserve">
+    <value>Open the current root conversation and all its branches. Switching conversations does not inherit another branch's running state, authorization, or checkpoints.</value>
+  </data>
+  <data name="打开或查看 Agent 任务状态" xml:space="preserve">
+    <value>Open or View Agent Task Status</value>
+  </data>
+  <data name="打开文件" xml:space="preserve">
+    <value>Open File</value>
+  </data>
+  <data name="打开日志目录" xml:space="preserve">
+    <value>Open Log Folder</value>
+  </data>
+  <data name="打开更新日志" xml:space="preserve">
+    <value>Open Update Log</value>
+  </data>
+  <data name="打开最新的子代理结果或后台命令输出" xml:space="preserve">
+    <value>Open the latest subagent result or background command output</value>
+  </data>
+  <data name="打开源会话" xml:space="preserve">
+    <value>Open Source Conversation</value>
+  </data>
+  <data name="执行计划" xml:space="preserve">
+    <value>Execute Plan</value>
+  </data>
+  <data name="批准并继续" xml:space="preserve">
+    <value>Approve and Continue</value>
+  </data>
+  <data name="批准这份计划并作为新的执行任务开始；受保护操作仍按当前权限策略处理" xml:space="preserve">
+    <value>Approve this plan and begin a new execution task. Protected actions still follow the current permission policy.</value>
+  </data>
+  <data name="技术详情" xml:space="preserve">
+    <value>Technical Details</value>
+  </data>
+  <data name="拒绝" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="拒绝这个受保护操作。" xml:space="preserve">
+    <value>Reject this protected action.</value>
+  </data>
+  <data name="按需确认" xml:space="preserve">
+    <value>Confirm as Needed</value>
+  </data>
+  <data name="接口地址 / Base URL" xml:space="preserve">
+    <value>Endpoint / Base URL</value>
+  </data>
+  <data name="推理强度" xml:space="preserve">
+    <value>Reasoning Effort</value>
+  </data>
+  <data name="提交启动问题" xml:space="preserve">
+    <value>Report a Startup Issue</value>
+  </data>
+  <data name="提交当前澄清问题的答案（Enter）" xml:space="preserve">
+    <value>Submit the answers to the current clarification questions (Enter)</value>
+  </data>
+  <data name="提交服务问题" xml:space="preserve">
+    <value>Report a Service Issue</value>
+  </data>
+  <data name="提前一位" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="插件" xml:space="preserve">
+    <value>Plugin</value>
+  </data>
+  <data name="插件恢复" xml:space="preserve">
+    <value>Plugin Recovery</value>
+  </data>
+  <data name="搜索供应商" xml:space="preserve">
+    <value>Search Providers</value>
+  </data>
+  <data name="搜索当前列表 (Ctrl+G)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" xml:space="preserve">
+    <value>Search the current list (Ctrl+G); ↑↓: select, Enter: switch, Ctrl+R: rename, Esc: exit</value>
+  </data>
+  <data name="撤销" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="撤销这次修改" xml:space="preserve">
+    <value>Undo This Change</value>
+  </data>
+  <data name="操作记录" xml:space="preserve">
+    <value>Action Log</value>
+  </data>
+  <data name="支持与诊断" xml:space="preserve">
+    <value>Support and Diagnostics</value>
+  </data>
+  <data name="支持图片输入" xml:space="preserve">
+    <value>Supports Image Input</value>
+  </data>
+  <data name="新建会话 (Ctrl+N)" xml:space="preserve">
+    <value>New Conversation (Ctrl+N)</value>
+  </data>
+  <data name="日志" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="显示名称" xml:space="preserve">
+    <value>Display Name</value>
+  </data>
+  <data name="暂停" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="暂停后续目标续作；当前已开始的 Agent 轮次仍会安全收尾" xml:space="preserve">
+    <value>Pause future goal continuations. The current agent turn will still finish safely.</value>
+  </data>
+  <data name="暂无需要关注的会话" xml:space="preserve">
+    <value>No Conversations Need Attention</value>
+  </data>
+  <data name="更多选项" xml:space="preserve">
+    <value>More Options</value>
+  </data>
+  <data name="更换供应商" xml:space="preserve">
+    <value>Change Provider</value>
+  </data>
+  <data name="更新或恢复服务；按钮会根据当前状态自动启用。" xml:space="preserve">
+    <value>Update or restore the service. Buttons are enabled according to its current state.</value>
+  </data>
+  <data name="最近更新" xml:space="preserve">
+    <value>Last Updated</value>
+  </data>
+  <data name="最长 15 分钟并绑定任务与工作区。结构化补丁走确定性范围规则；其他受保护调用仅在提供完整原生审批详情时由独立模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险自动批准，无法判断或较高风险仍等待用户。" xml:space="preserve">
+    <value>Bound to this task and workspace for up to 15 minutes. Structured patches follow deterministic scope rules. Other protected calls are reviewed by an independent model only when full native approval details are available, adding one model call per review. Only LOW/MEDIUM risk actions are automatically approved; uncertain or higher risk actions still await the user.</value>
+  </data>
+  <data name="服务控制" xml:space="preserve">
+    <value>Service Controls</value>
+  </data>
+  <data name="服务连接" xml:space="preserve">
+    <value>Service Connection</value>
+  </data>
+  <data name="本机 Codex" xml:space="preserve">
+    <value>Local Codex</value>
+  </data>
+  <data name="来源" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="来源：" xml:space="preserve">
+    <value>Source:</value>
+  </data>
+  <data name="松开以附加文件" xml:space="preserve">
+    <value>Release to Attach Files</value>
+  </data>
+  <data name="查找当前会话 (Ctrl+F)" xml:space="preserve">
+    <value>Find in This Conversation (Ctrl+F)</value>
+  </data>
+  <data name="查找当前会话可见内容；Enter 下一个，Shift+Enter 上一个，Esc 关闭" xml:space="preserve">
+    <value>Find visible content in this conversation; Enter: next, Shift+Enter: previous, Esc: close</value>
+  </data>
+  <data name="查看当前 Copilot 模型供应商限额" xml:space="preserve">
+    <value>View usage limits for the current Copilot model provider</value>
+  </data>
+  <data name="查看持续目标的有界迭代记录" xml:space="preserve">
+    <value>View bounded iteration records for the ongoing goal</value>
+  </data>
+  <data name="查看服务运行、安装和当前页面的操作记录。" xml:space="preserve">
+    <value>View service runtime logs, installation records, and actions performed on this page.</value>
+  </data>
+  <data name="查看本轮 Review 实际使用的只读 Git Diff 与审查结论" xml:space="preserve">
+    <value>View the read-only Git diff and findings actually used in this review</value>
+  </data>
+  <data name="查看附件" xml:space="preserve">
+    <value>View Attachment</value>
+  </data>
+  <data name="检查中" xml:space="preserve">
+    <value>Checking</value>
+  </data>
+  <data name="检测本机" xml:space="preserve">
+    <value>Detect Local Installation</value>
+  </data>
+  <data name="检测本机 Codex" xml:space="preserve">
+    <value>Detect Local Codex</value>
+  </data>
+  <data name="检测连接" xml:space="preserve">
+    <value>Test Connection</value>
+  </data>
+  <data name="模型" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="模型与连接" xml:space="preserve">
+    <value>Models and Connections</value>
+  </data>
+  <data name="模型可见 Diff" xml:space="preserve">
+    <value>Diff Seen by the Model</value>
+  </data>
+  <data name="模型证据原文" xml:space="preserve">
+    <value>Original Model Evidence</value>
+  </data>
+  <data name="模型连接" xml:space="preserve">
+    <value>Model Connections</value>
+  </data>
+  <data name="正在核对运行时文件" xml:space="preserve">
+    <value>Checking Runtime Files</value>
+  </data>
+  <data name="正在检查…" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="正在检查服务" xml:space="preserve">
+    <value>Checking Service</value>
+  </data>
+  <data name="正在检查服务状态和安装文件。" xml:space="preserve">
+    <value>Checking service status and installed files.</value>
+  </data>
+  <data name="正在读取安装记录…" xml:space="preserve">
+    <value>Reading Installation Records…</value>
+  </data>
+  <data name="正在读取服务日志…" xml:space="preserve">
+    <value>Reading Service Log…</value>
+  </data>
+  <data name="此模型支持图片输入" xml:space="preserve">
+    <value>This Model Supports Image Input</value>
+  </data>
+  <data name="没有匹配的会话" xml:space="preserve">
+    <value>No Matching Conversations</value>
+  </data>
+  <data name="没有匹配的供应商，请尝试其他名称。" xml:space="preserve">
+    <value>No matching providers. Try another name.</value>
+  </data>
+  <data name="注册缩略图" xml:space="preserve">
+    <value>Register Thumbnails</value>
+  </data>
+  <data name="流式响应间隔" xml:space="preserve">
+    <value>Streaming Response Interval</value>
+  </data>
+  <data name="添加" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="添加到列表" xml:space="preserve">
+    <value>Add to List</value>
+  </data>
+  <data name="添加后可测试连接，点击底部保存后生效。" xml:space="preserve">
+    <value>After adding, you can test the connection. Changes take effect after clicking Save below.</value>
+  </data>
+  <data name="添加模型连接" xml:space="preserve">
+    <value>Add Model Connection</value>
+  </data>
+  <data name="清除" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="清除待查看和任务受阻项；需要输入与运行中任务会保留" xml:space="preserve">
+    <value>Clear unread and blocked task items. Tasks requiring input and running tasks remain.</value>
+  </data>
+  <data name="清除搜索" xml:space="preserve">
+    <value>Clear Search</value>
+  </data>
+  <data name="清除目标及其进度记录；不会停止当前已开始的 Agent 轮次" xml:space="preserve">
+    <value>Clear the goal and its progress records. The current agent turn will continue.</value>
+  </data>
+  <data name="点击，或用 ↑↓ 选择后按 Tab/→ 补全；Enter 在参数完整时执行" xml:space="preserve">
+    <value>Click, or select with ↑↓ then press Tab/→ to complete. Enter executes when all arguments are present.</value>
+  </data>
+  <data name="版本" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="状态" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="状态与日志" xml:space="preserve">
+    <value>Status and Logs</value>
+  </data>
+  <data name="留空使用 Codex 默认模型；账户、可用模型与额度由本机 Codex 管理。" xml:space="preserve">
+    <value>Leave blank to use the default Codex model. The account, available models, and usage limits are managed by local Codex.</value>
+  </data>
+  <data name="疑似" xml:space="preserve">
+    <value>Suspected</value>
+  </data>
+  <data name="登录 Codex" xml:space="preserve">
+    <value>Sign in to Codex</value>
+  </data>
+  <data name="目标" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="确认受保护操作" xml:space="preserve">
+    <value>Confirm Protected Action</value>
+  </data>
+  <data name="秒 · 15–3,600 · 默认 120" xml:space="preserve">
+    <value>Seconds · 15–3,600 · Default 120</value>
+  </data>
+  <data name="秒 · 15–3,600 · 默认 180" xml:space="preserve">
+    <value>Seconds · 15–3,600 · Default 180</value>
+  </data>
+  <data name="移除附件" xml:space="preserve">
+    <value>Remove Attachment</value>
+  </data>
+  <data name="程序包目录" xml:space="preserve">
+    <value>Package Folder</value>
+  </data>
+  <data name="立即" xml:space="preserve">
+    <value>Run Now</value>
+  </data>
+  <data name="立即重新保存当前 Copilot 会话" xml:space="preserve">
+    <value>Save the current Copilot conversation again now</value>
+  </data>
+  <data name="端口 A" xml:space="preserve">
+    <value>Port A</value>
+  </data>
+  <data name="端口 B" xml:space="preserve">
+    <value>Port B</value>
+  </data>
+  <data name="系统维护" xml:space="preserve">
+    <value>System Maintenance</value>
+  </data>
+  <data name="系统集成" xml:space="preserve">
+    <value>System Integration</value>
+  </data>
+  <data name="累计请求 Token" xml:space="preserve">
+    <value>Cumulative Request Tokens</value>
+  </data>
+  <data name="结论与模型证据来自同一次只读 Review；这里不会重新读取或修改工作区。" xml:space="preserve">
+    <value>The findings and model evidence come from the same read-only review. This view does not reread or modify the workspace.</value>
+  </data>
+  <data name="继续规划" xml:space="preserve">
+    <value>Continue Planning</value>
+  </data>
+  <data name="编辑" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="编辑目标结果、约束和验证条件" xml:space="preserve">
+    <value>Edit the goal outcome, constraints, and verification criteria</value>
+  </data>
+  <data name="编辑这条请求；历史请求会先创建隔离的会话分支，最新请求会替换最新回复" xml:space="preserve">
+    <value>Edit this request. An earlier request first creates an isolated conversation branch; the latest request replaces the latest response.</value>
+  </data>
+  <data name="网页与网络" xml:space="preserve">
+    <value>Web and Network</value>
+  </data>
+  <data name="自动刷新" xml:space="preserve">
+    <value>Auto Refresh</value>
+  </data>
+  <data name="自动整理上下文" xml:space="preserve">
+    <value>Automatically Compact Context</value>
+  </data>
+  <data name="范围" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="虚拟串口" xml:space="preserve">
+    <value>Virtual Serial Ports</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="证据" xml:space="preserve">
+    <value>Evidence</value>
+  </data>
+  <data name="诊断与反馈" xml:space="preserve">
+    <value>Diagnostics and Feedback</value>
+  </data>
+  <data name="该区域只在本机待审批对象中展示，不会写入普通审计或复制确认载荷。" xml:space="preserve">
+    <value>This section is shown only in the local pending approval object. It is not included in ordinary audit records or copied confirmation payloads.</value>
+  </data>
+  <data name="语音输入（Windows + H）" xml:space="preserve">
+    <value>Voice Input (Windows + H)</value>
+  </data>
+  <data name="请核对来源、作用域和下方完整执行详情；关闭窗口或按 Esc 都不会批准。" xml:space="preserve">
+    <value>Review the source, scope, and full execution details below. Closing the window or pressing Esc does not approve the action.</value>
+  </data>
+  <data name="请求 Agent 安全回滚这一整个文件变更集；执行前仍需再次批准。" xml:space="preserve">
+    <value>Ask the agent to safely revert this entire file change set. Approval is still required before execution.</value>
+  </data>
+  <data name="读取服务状态" xml:space="preserve">
+    <value>Read Service Status</value>
+  </data>
+  <data name="负责更新、系统集成和需要管理员权限的本机维护操作" xml:space="preserve">
+    <value>Handles updates, system integration, and local maintenance that requires administrator privileges</value>
+  </data>
+  <data name="路径" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="运行初始化向导" xml:space="preserve">
+    <value>Run Setup Wizard</value>
+  </data>
+  <data name="运行日志" xml:space="preserve">
+    <value>Runtime Log</value>
+  </data>
+  <data name="运行状态" xml:space="preserve">
+    <value>Service State</value>
+  </data>
+  <data name="返回创建此分支的直接源会话；如果中间分支已删除，则返回仍存在的根会话。" xml:space="preserve">
+    <value>Return to the conversation that created this branch. If the intermediate branch was deleted, return to the remaining root conversation.</value>
+  </data>
+  <data name="返回模型列表" xml:space="preserve">
+    <value>Back to Model List</value>
+  </data>
+  <data name="连接选项" xml:space="preserve">
+    <value>Connection Options</value>
+  </data>
+  <data name="连接配置" xml:space="preserve">
+    <value>Connection Settings</value>
+  </data>
+  <data name="选" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="选择供应商" xml:space="preserve">
+    <value>Select Provider</value>
+  </data>
+  <data name="选择应用快照进行还原" xml:space="preserve">
+    <value>Choose an Application Snapshot to Restore</value>
+  </data>
+  <data name="选择模型" xml:space="preserve">
+    <value>Select Model</value>
+  </data>
+  <data name="选择预设后填写密钥，或使用自定义兼容接口。" xml:space="preserve">
+    <value>Select a preset and enter an API key, or use a custom compatible endpoint.</value>
+  </data>
+  <data name="重新安装当前版本并补齐缺失文件；用户配置和数据保持不变。" xml:space="preserve">
+    <value>Reinstall the current version and restore missing files while preserving user settings and data.</value>
+  </data>
+  <data name="重新扫描" xml:space="preserve">
+    <value>Scan Again</value>
+  </data>
+  <data name="重新检查设备、数据库和系统服务等初始化设置。" xml:space="preserve">
+    <value>Review initialization settings for devices, databases, and system services.</value>
+  </data>
+  <data name="重新检测" xml:space="preserve">
+    <value>Detect Again</value>
+  </data>
+  <data name="重新配置 ColorVision" xml:space="preserve">
+    <value>Reconfigure ColorVision</value>
+  </data>
+  <data name="重试保存" xml:space="preserve">
+    <value>Retry Save</value>
+  </data>
+  <data name="附加当前窗口" xml:space="preserve">
+    <value>Attach Current Window</value>
+  </data>
+  <data name="首段内容超时" xml:space="preserve">
+    <value>First Content Timeout</value>
+  </data>
+  <data name="验证写入权限" xml:space="preserve">
+    <value>Verify Write Permissions</value>
+  </data>
+  <data name="高级 · 超时设置" xml:space="preserve">
+    <value>Advanced · Timeouts</value>
+  </data>
+  <data name="高级维护" xml:space="preserve">
+    <value>Advanced Maintenance</value>
+  </data>
+  <data name=" / 子 " xml:space="preserve">
+    <value> / Child </value>
+  </data>
+  <data name=" tokens（缩减 " xml:space="preserve">
+    <value> tokens (Reduced by </value>
+  </data>
+  <data name=" · 失败" xml:space="preserve">
+    <value> · Failed</value>
+  </data>
+  <data name=" · 子 " xml:space="preserve">
+    <value> · Child </value>
+  </data>
+  <data name=" · 定义 " xml:space="preserve">
+    <value> · Definitions </value>
+  </data>
+  <data name=" · 工具输出完整" xml:space="preserve">
+    <value> · Complete Tool Output</value>
+  </data>
+  <data name=" · 工具输出有界" xml:space="preserve">
+    <value> · Bounded Tool Output</value>
+  </data>
+  <data name=" · 已中断" xml:space="preserve">
+    <value> · Interrupted</value>
+  </data>
+  <data name=" · 已取消" xml:space="preserve">
+    <value> · Canceled</value>
+  </data>
+  <data name=" · 已撤销" xml:space="preserve">
+    <value> · Reverted</value>
+  </data>
+  <data name=" · 总计 " xml:space="preserve">
+    <value> · Total </value>
+  </data>
+  <data name=" · 最慢 " xml:space="preserve">
+    <value> · Slowest </value>
+  </data>
+  <data name=" · 有效响应 " xml:space="preserve">
+    <value> · Valid Responses </value>
+  </data>
+  <data name=" · 未批准" xml:space="preserve">
+    <value> · Not Approved</value>
+  </data>
+  <data name=" · 模型 Diff 完整" xml:space="preserve">
+    <value> · Complete Model Diff</value>
+  </data>
+  <data name=" · 模型结果已替换" xml:space="preserve">
+    <value> · Model Result Replaced</value>
+  </data>
+  <data name=" · 模型证据已裁剪" xml:space="preserve">
+    <value> · Model Evidence Trimmed</value>
+  </data>
+  <data name=" · 片段间平均 " xml:space="preserve">
+    <value> · Average Chunk Interval </value>
+  </data>
+  <data name=" · 等待批准" xml:space="preserve">
+    <value> · Awaiting Approval</value>
+  </data>
+  <data name=" · 累计 " xml:space="preserve">
+    <value> · Cumulative </value>
+  </data>
+  <data name=" · 累计输入（估算）" xml:space="preserve">
+    <value> · Cumulative Input (Estimated)</value>
+  </data>
+  <data name=" · 结果不完整" xml:space="preserve">
+    <value> · Partial Result</value>
+  </data>
+  <data name=" · 缓存未上报" xml:space="preserve">
+    <value> · Cache Usage Not Reported</value>
+  </data>
+  <data name=" · 缓存输入 " xml:space="preserve">
+    <value> · Cached Input </value>
+  </data>
+  <data name=" · 计划等待 " xml:space="preserve">
+    <value> · Planned Wait </value>
+  </data>
+  <data name=" · 输出 " xml:space="preserve">
+    <value> · Output </value>
+  </data>
+  <data name=" · 部分失败" xml:space="preserve">
+    <value> · Partial Failure</value>
+  </data>
+  <data name=" · 限流 " xml:space="preserve">
+    <value> · Rate Limit </value>
+  </data>
+  <data name=" 个内容片段" xml:space="preserve">
+    <value> Content Chunks</value>
+  </data>
+  <data name=" 字符" xml:space="preserve">
+    <value> Characters</value>
+  </data>
+  <data name=" 次" xml:space="preserve">
+    <value> Retries</value>
+  </data>
+  <data name="0 项" xml:space="preserve">
+    <value>0 Items</value>
+  </data>
+  <data name="15 分钟内" xml:space="preserve">
+    <value>Within 15 Minutes</value>
+  </data>
+  <data name="Agent 任务 · {0} · {1}{2}{3}" xml:space="preserve">
+    <value>Agent Task · {0} · {1}{2}{3}</value>
+  </data>
+  <data name="Agent 已停止" xml:space="preserve">
+    <value>Agent Stopped</value>
+  </data>
+  <data name="Choose input files or a folder, select '仅转换格式' for format-only conversion, review the output settings, and start the batch when ready." xml:space="preserve">
+    <value>Choose input files or a folder, select format-only conversion, review the output settings, and start the batch when ready.</value>
+  </data>
+  <data name="Claude 兼容指令" xml:space="preserve">
+    <value>Claude-compatible Instructions</value>
+  </data>
+  <data name="Claude 路径规则" xml:space="preserve">
+    <value>Claude Path Rules</value>
+  </data>
+  <data name="Codex Home + 受信项目 .codex/config.toml" xml:space="preserve">
+    <value>Codex Home + Trusted Project .codex/config.toml</value>
+  </data>
+  <data name="Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml" xml:space="preserve">
+    <value>Invalid Codex Home trust_level; project .codex/config.toml was conservatively skipped</value>
+  </data>
+  <data name="Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml" xml:space="preserve">
+    <value>Codex Home trust_level=untrusted; project .codex/config.toml was skipped</value>
+  </data>
+  <data name="Codex 全局指令" xml:space="preserve">
+    <value>Codex Global Instructions</value>
+  </data>
+  <data name="Codex 沙箱约束：" xml:space="preserve">
+    <value>Codex Sandbox Constraints:</value>
+  </data>
+  <data name="ColorVision Copilot 任务" xml:space="preserve">
+    <value>ColorVision Copilot Task</value>
+  </data>
+  <data name="ColorVision · MCP 运行时未刷新" xml:space="preserve">
+    <value>ColorVision · MCP Runtime Not Refreshed</value>
+  </data>
+  <data name="ColorVision · MCP 配置未保存" xml:space="preserve">
+    <value>ColorVision · MCP Configuration Not Saved</value>
+  </data>
+  <data name="ColorVision · Skill MCP 依赖" xml:space="preserve">
+    <value>ColorVision · Skill MCP Dependencies</value>
+  </data>
+  <data name="ColorVision · Skill MCP 依赖不可用" xml:space="preserve">
+    <value>ColorVision · Skill MCP Dependencies Unavailable</value>
+  </data>
+  <data name="ColorVision 上次未能正常启动" xml:space="preserve">
+    <value>ColorVision Did Not Start Successfully Last Time</value>
+  </data>
+  <data name="ColorVision 服务主机 {0}" xml:space="preserve">
+    <value>ColorVision Service Host {0}</value>
+  </data>
+  <data name="ColorVision 服务主机问题&#10;&#10;现象：&#10;&#10;复现步骤：&#10;" xml:space="preserve">
+    <value>ColorVision Service Host Issue
+
+Observed Behavior:
+
+Steps to Reproduce:
+</value>
+  </data>
+  <data name="ColorVision 本地界面" xml:space="preserve">
+    <value>ColorVision Local Interface</value>
+  </data>
+  <data name="ColorVision 默认" xml:space="preserve">
+    <value>ColorVision Default</value>
+  </data>
+  <data name="MCP 配置保存失败；本次发送已取消。" xml:space="preserve">
+    <value>MCP configuration could not be saved. This submission was canceled.</value>
+  </data>
+  <data name="MCP 配置已写入磁盘，但当前聊天运行时未能刷新；本次发送已取消。" xml:space="preserve">
+    <value>MCP configuration was saved to disk, but the current chat runtime could not refresh. This submission was canceled.</value>
+  </data>
+  <data name="OpenAI 兼容（Chat / Responses）" xml:space="preserve">
+    <value>OpenAI-compatible (Chat / Responses)</value>
+  </data>
+  <data name="Service Host 管理页面已打开。" xml:space="preserve">
+    <value>The Service Host management page is open.</value>
+  </data>
+  <data name="on-request 或启用 sandbox_approval 的 granular 审批由独立审查器复核；它不扩大沙箱或工具权限。" xml:space="preserve">
+    <value>On-request approval, or granular approval with sandbox_approval enabled, is reviewed by an independent reviewer. This does not expand sandbox or tool permissions.</value>
+  </data>
+  <data name="{0:N0} 个字符 · {1:N0} 个附件 · {2}模式" xml:space="preserve">
+    <value>{0:N0} Characters · {1:N0} Attachments · {2} Mode</value>
+  </data>
+  <data name="{0:N0} 轮 · {1:N0} 次独立评估 · " xml:space="preserve">
+    <value>{0:N0} Turns · {1:N0} Independent Evaluations · </value>
+  </data>
+  <data name="{0:N0}/{1:N0} 个字符。点击生成延续摘要；完整聊天记录不会删除。" xml:space="preserve">
+    <value>{0:N0}/{1:N0} characters. Click to generate a continuation summary. The complete chat history will not be deleted.</value>
+  </data>
+  <data name="{0} API 密钥" xml:space="preserve">
+    <value>{0} API Key</value>
+  </data>
+  <data name="{0} Agent 任务（Ctrl+Alt+T）" xml:space="preserve">
+    <value>{0} Agent Tasks (Ctrl+Alt+T)</value>
+  </data>
+  <data name="{0} {1} · Tab {2} · Ctrl+Enter 立即接管 · @ 关联" xml:space="preserve">
+    <value>{0} {1} · Tab {2} · Ctrl+Enter: take over now · @: attach</value>
+  </data>
+  <data name="{0} · {1} · {2:HH:mm:ss} 更新 · 显示最新内容" xml:space="preserve">
+    <value>{0} · {1} · Updated {2:HH:mm:ss} · Showing Latest Content</value>
+  </data>
+  <data name="{0} · {1} 到期" xml:space="preserve">
+    <value>{0} · Expires {1}</value>
+  </data>
+  <data name="{0} · 推理{1}&#10;{2}" xml:space="preserve">
+    <value>{0} · Reasoning {1}
+{2}</value>
+  </data>
+  <data name="{0} 个文件完整" xml:space="preserve">
+    <value>{0} Files Verified</value>
+  </data>
+  <data name="{0} 个计划步骤" xml:space="preserve">
+    <value>{0} Plan Steps</value>
+  </data>
+  <data name="{0} 可稍后重试，或尝试修复当前版本。" xml:space="preserve">
+    <value>{0} Retry later or try repairing the current version.</value>
+  </data>
+  <data name="{0} 失败。{1}{2}{3}{4}已保留安装记录和服务日志供诊断。" xml:space="preserve">
+    <value>{0} failed. {1}{2}{3}{4}Installation records and service logs were retained for diagnosis.</value>
+  </data>
+  <data name="{0} 无法继续" xml:space="preserve">
+    <value>{0} Cannot Continue</value>
+  </data>
+  <data name="{0}/Tab 连同附件排到下一轮 · Ctrl+Enter 立即接管" xml:space="preserve">
+    <value>{0}/Tab: queue with attachments for the next turn · Ctrl+Enter: take over now</value>
+  </data>
+  <data name="{0}/{1} 已完成" xml:space="preserve">
+    <value>{0}/{1} Completed</value>
+  </data>
+  <data name="{0}{1}本地消息、草稿和托管附件会被移除，且不能通过 /unarchive 恢复。" xml:space="preserve">
+    <value>{0}{1}Local messages, drafts, and managed attachments will be removed and cannot be restored with /unarchive.</value>
+  </data>
+  <data name="{0}{1}请先切换到该会话，使用 /ps 查看并停止后台命令；进程树未改变。" xml:space="preserve">
+    <value>{0}{1}Switch to this conversation first, then use /ps to inspect and stop background commands. The process tree has not been changed.</value>
+  </data>
+  <data name="{0}{1}请先处理或明确放弃该状态；若只想隐藏安全会话，请使用 /archive。" xml:space="preserve">
+    <value>{0}{1}Resolve or explicitly abandon this state first. To hide a safe conversation, use /archive.</value>
+  </data>
+  <data name="{0}为空" xml:space="preserve">
+    <value>{0} Is Empty</value>
+  </data>
+  <data name="{0}尚未创建" xml:space="preserve">
+    <value>{0} Has Not Been Created</value>
+  </data>
+  <data name="{0}若只想隐藏，请选择“否”并使用 /archive。" xml:space="preserve">
+    <value>{0}To hide the conversation instead, choose No and use /archive.</value>
+  </data>
+  <data name="{0}读取失败" xml:space="preserve">
+    <value>Unable to Read {0}</value>
+  </data>
+  <data name="{0}，另有 {1} 个" xml:space="preserve">
+    <value>{0}, plus {1} more</value>
+  </data>
+  <data name="{0}｜来源：{1}｜任务：{2}｜风险：{3}｜{4}" xml:space="preserve">
+    <value>{0} | Source: {1} | Task: {2} | Risk: {3} | {4}</value>
+  </data>
+  <data name="上下文" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="上次启动在准备插件时未完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish While Preparing Plugins</value>
+  </data>
+  <data name="上次启动在初始化“{0}”时未完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish While Initializing "{0}"</value>
+  </data>
+  <data name="上次启动在初始化主程序时未完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish While Initializing the Application</value>
+  </data>
+  <data name="上次启动在加载“{0}”时未完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish While Loading "{0}"</value>
+  </data>
+  <data name="上次启动在打开“{0}”时未完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish While Opening "{0}"</value>
+  </data>
+  <data name="上次启动在插件加载完成后未结束" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish After Loading Plugins</value>
+  </data>
+  <data name="上次启动未完成（{0}）。“疑似”仅表示与记录匹配，不代表已确认插件有问题。" xml:space="preserve">
+    <value>The previous startup did not finish ({0}). "Suspected" means only that the plugin matches the record; it does not confirm a plugin fault.</value>
+  </data>
+  <data name="上次启动未完成；没有记录到可确认的故障组件。" xml:space="preserve">
+    <value>The previous startup did not finish. No confirmed faulty component was recorded.</value>
+  </data>
+  <data name="上次启动没有正常完成" xml:space="preserve">
+    <value>The Previous Startup Did Not Finish Normally</value>
+  </data>
+  <data name="上次安装未完成" xml:space="preserve">
+    <value>Previous Installation Incomplete</value>
+  </data>
+  <data name="下一任务" xml:space="preserve">
+    <value>Next Task</value>
+  </data>
+  <data name="下载安装包失败。请检查网络后重试，或打开更新日志目录查看原因。" xml:space="preserve">
+    <value>Installer download failed. Check the network and retry, or open the update log folder for details.</value>
+  </data>
+  <data name="不一致 {0}" xml:space="preserve">
+    <value>Mismatch {0}</value>
+  </data>
+  <data name="不创建新审批提示；需要新审批的调用会自动拒绝，现有沙箱与本机权限不会扩大" xml:space="preserve">
+    <value>No new approval prompts are created. Calls requiring new approval are automatically rejected. Existing sandbox and local permissions are not expanded.</value>
+  </data>
+  <data name="不加载全部插件" xml:space="preserve">
+    <value>Skip All Plugins</value>
+  </data>
+  <data name="不扩大 ColorVision 原生可写根、访问模式或审批权限" xml:space="preserve">
+    <value>Does not expand ColorVision's native writable roots, access mode, or approval permissions</value>
+  </data>
+  <data name="不支持 cached 后端；已保守禁用实时公网检索" xml:space="preserve">
+    <value>The cached backend is unsupported; live public web search is conservatively disabled</value>
+  </data>
+  <data name="不支持 indexed 后端；已保守禁用实时公网检索" xml:space="preserve">
+    <value>The indexed backend is unsupported; live public web search is conservatively disabled</value>
+  </data>
+  <data name="不映射为提权；仍受 ColorVision 原生访问与审批边界约束" xml:space="preserve">
+    <value>Does not map to privilege elevation; ColorVision's native access and approval boundaries still apply</value>
+  </data>
+  <data name="中" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="临时自动复核仅对{0}及工作区“{1}”有效，最晚 {2} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。" xml:space="preserve">
+    <value>Temporary automatic review applies only to {0} and workspace "{1}" and expires no later than {2}. Previewed workspace patches and reverts still use deterministic per-file path and SHA-256 approval rules. Other protected calls are reviewed by an independent, tool-free permission model only when full native approval details are available, adding one model call per review. Only LOW/MEDIUM risk actions can be automatically approved. HIGH/CRITICAL risk, missing or excessive details, invalid format, timeouts, or model failures still await the user. Confirm as Needed is restored when the task ends, the workspace changes, or the application restarts.</value>
+  </data>
+  <data name="主日志目录" xml:space="preserve">
+    <value>Application Log Folder</value>
+  </data>
+  <data name="主程序已是最新版本" xml:space="preserve">
+    <value>Application Is Up to Date</value>
+  </data>
+  <data name="仅使用已保存的上下文和证据生成最终回答；不会再次调用工具" xml:space="preserve">
+    <value>Generate the final answer using only saved context and evidence, without calling tools again</value>
+  </data>
+  <data name="从当前 AgentSession 继续未完成任务；写操作仍需重新审批" xml:space="preserve">
+    <value>Continue the unfinished task from the current AgentSession. Write actions still require new approval.</value>
+  </data>
+  <data name="代码" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="代码内容" xml:space="preserve">
+    <value>Code Content</value>
+  </data>
+  <data name="代码已复制到剪贴板" xml:space="preserve">
+    <value>Code copied to the clipboard</value>
+  </data>
+  <data name="令牌：" xml:space="preserve">
+    <value>Tokens:</value>
+  </data>
+  <data name="任务 {0}" xml:space="preserve">
+    <value>Task {0}</value>
+  </data>
+  <data name="任务受阻" xml:space="preserve">
+    <value>Task Blocked</value>
+  </data>
+  <data name="任务完成" xml:space="preserve">
+    <value>Task Completed</value>
+  </data>
+  <data name="任务尚未完成" xml:space="preserve">
+    <value>Task Not Completed</value>
+  </data>
+  <data name="任务已取消" xml:space="preserve">
+    <value>Task Canceled</value>
+  </data>
+  <data name="任务已暂停" xml:space="preserve">
+    <value>Task Paused</value>
+  </data>
+  <data name="任务执行中" xml:space="preserve">
+    <value>Task Running</value>
+  </data>
+  <data name="任务暂时受阻" xml:space="preserve">
+    <value>Task Temporarily Blocked</value>
+  </data>
+  <data name="任务正在取消 · 当前输入会保留到任务结束" xml:space="preserve">
+    <value>Task Canceling · Current Input Will Be Retained Until the Task Ends</value>
+  </data>
+  <data name="任务正在暂停 · 当前输入会保留到任务结束" xml:space="preserve">
+    <value>Task Pausing · Current Input Will Be Retained Until the Task Ends</value>
+  </data>
+  <data name="会话 {0}" xml:space="preserve">
+    <value>Conversation {0}</value>
+  </data>
+  <data name="会话树 · {0}" xml:space="preserve">
+    <value>Conversation Tree · {0}</value>
+  </data>
+  <data name="低" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="使用本机 Codex；发送前检查运行时与登录状态。" xml:space="preserve">
+    <value>Uses local Codex; checks runtime and sign-in status before sending.</value>
+  </data>
+  <data name="使用本轮已保存的文件、图片和网页上下文重新生成回答。" xml:space="preserve">
+    <value>Generate the response again using this turn's saved file, image, and web context.</value>
+  </data>
+  <data name="保存插件禁用状态失败：{0}" xml:space="preserve">
+    <value>Unable to Save Plugin Disabled State: {0}</value>
+  </data>
+  <data name="保留 ColorVision 原生逐调用审批、临时授权与自动审查边界" xml:space="preserve">
+    <value>Preserves ColorVision's native per-call approval, temporary authorization, and automatic review boundaries</value>
+  </data>
+  <data name="修复当前版本" xml:space="preserve">
+    <value>Repair Current Version</value>
+  </data>
+  <data name="修改" xml:space="preserve">
+    <value>Modify</value>
+  </data>
+  <data name="修改了文件" xml:space="preserve">
+    <value>Modified File</value>
+  </data>
+  <data name="修改后按 {0} 重新发送" xml:space="preserve">
+    <value>Edit, then press {0} to send again</value>
+  </data>
+  <data name="停止上下文压缩" xml:space="preserve">
+    <value>Stop Context Compaction</value>
+  </data>
+  <data name="停止了后台命令" xml:space="preserve">
+    <value>Stopped Background Command</value>
+  </data>
+  <data name="停止了后台输出监控" xml:space="preserve">
+    <value>Stopped Background Output Monitoring</value>
+  </data>
+  <data name="停止处理附件" xml:space="preserve">
+    <value>Stop Processing Attachments</value>
+  </data>
+  <data name="停止当前 Agent 任务" xml:space="preserve">
+    <value>Stop the Current Agent Task</value>
+  </data>
+  <data name="停止读取网页附件" xml:space="preserve">
+    <value>Stop Reading Web Attachments</value>
+  </data>
+  <data name="全部会话" xml:space="preserve">
+    <value>All Conversations</value>
+  </data>
+  <data name="共享指令" xml:space="preserve">
+    <value>Shared Instructions</value>
+  </data>
+  <data name="共享覆盖" xml:space="preserve">
+    <value>Shared Override</value>
+  </data>
+  <data name="内置" xml:space="preserve">
+    <value>Built-in</value>
+  </data>
+  <data name="准备了修改" xml:space="preserve">
+    <value>Prepared Changes</value>
+  </data>
+  <data name="删除" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="剩余 {0} 分钟" xml:space="preserve">
+    <value>{0} Minutes Remaining</value>
+  </data>
+  <data name="剩余 {0} 小时" xml:space="preserve">
+    <value>{0} Hours Remaining</value>
+  </data>
+  <data name="剩余 {0} 秒" xml:space="preserve">
+    <value>{0} Seconds Remaining</value>
+  </data>
+  <data name="剩余 {0} 项" xml:space="preserve">
+    <value>{0} Items Remaining</value>
+  </data>
+  <data name="包含变更" xml:space="preserve">
+    <value>Contains Changes</value>
+  </data>
+  <data name="发现 {0} 个文件问题" xml:space="preserve">
+    <value>{0} File Issues Found</value>
+  </data>
+  <data name="发现可用版本 {0}" xml:space="preserve">
+    <value>Version {0} Available</value>
+  </data>
+  <data name="取消这个排队任务" xml:space="preserve">
+    <value>Cancel This Queued Task</value>
+  </data>
+  <data name="受保护操作" xml:space="preserve">
+    <value>Protected Action</value>
+  </data>
+  <data name="受保护操作执行前逐次确认。可为下一任务临时授权；已有待审批操作始终需要单独决定。" xml:space="preserve">
+    <value>Confirm each protected action before execution. Temporary authorization can be granted for the next task. Existing pending approvals always require individual decisions.</value>
+  </data>
+  <data name="受保护状态文件：{0}" xml:space="preserve">
+    <value>Protected State File: {0}</value>
+  </data>
+  <data name="受信项目 .codex/config.toml" xml:space="preserve">
+    <value>Trusted Project .codex/config.toml</value>
+  </data>
+  <data name="只能通过后续手动操作恢复。" xml:space="preserve">
+    <value>Can only be restored through a later manual action.</value>
+  </data>
+  <data name="只读工具可直接运行；所有写工具和原生受保护工具均升级为逐调用审批" xml:space="preserve">
+    <value>Read-only tools can run directly. All write tools and native protected tools require approval for each call.</value>
+  </data>
+  <data name="只读能力上限；写工具不暴露，旧计划或注入写调用也会拒绝" xml:space="preserve">
+    <value>Read-only capability ceiling. Write tools are not exposed; write calls from older plans or injected requests are also rejected.</value>
+  </data>
+  <data name="可先使用安全启动排除插件影响，或从右下角正常启动。" xml:space="preserve">
+    <value>Use Safe Startup to rule out plugin issues, or start normally from the bottom right.</value>
+  </data>
+  <data name="启动了后台命令" xml:space="preserve">
+    <value>Started Background Command</value>
+  </data>
+  <data name="启动恢复反馈" xml:space="preserve">
+    <value>Startup Recovery Feedback</value>
+  </data>
+  <data name="响应期间无法更改附件" xml:space="preserve">
+    <value>Attachments Cannot Be Changed During a Response</value>
+  </data>
+  <data name="回溯会用所选历史请求的附件快照替换当前待发送附件；源会话和文件不会改变。是否继续？" xml:space="preserve">
+    <value>Rewinding replaces the pending attachments with the selected earlier request's attachment snapshot. The source conversation and files remain unchanged. Continue?</value>
+  </data>
+  <data name="回滚了修改" xml:space="preserve">
+    <value>Reverted Changes</value>
+  </data>
+  <data name="图片像素解析" xml:space="preserve">
+    <value>Image Pixel Analysis</value>
+  </data>
+  <data name="在当前光标位置插入 @ 并打开旧版文件候选；features.mentions_v2=false 不列出 Skill、模板或菜单。" xml:space="preserve">
+    <value>Insert @ at the current cursor position and open legacy file suggestions. With features.mentions_v2=false, skills, templates, and menus are not listed.</value>
+  </data>
+  <data name="在当前光标位置插入 @ 并打开统一关联候选。" xml:space="preserve">
+    <value>Insert @ at the current cursor position and open unified attachment suggestions.</value>
+  </data>
+  <data name="复制" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="复制代码" xml:space="preserve">
+    <value>Copy Code</value>
+  </data>
+  <data name="复制失败" xml:space="preserve">
+    <value>Copy Failed</value>
+  </data>
+  <data name="外部 MCP 客户端" xml:space="preserve">
+    <value>External MCP Client</value>
+  </data>
+  <data name="外部 MCP 客户端 · {0}" xml:space="preserve">
+    <value>External MCP Client · {0}</value>
+  </data>
+  <data name="外部 MCP 请求" xml:space="preserve">
+    <value>External MCP Request</value>
+  </data>
+  <data name="多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑" xml:space="preserve">
+    <value>Multiline mode: Enter inserts a line break; Shift+Enter sends. While an agent runs, Ctrl+Enter cancels the current turn and executes the input immediately. ↑/↓ browses request history; → accepts suggestions. Ctrl+R searches history; the Save shortcut stores or restores a draft; Ctrl+E expands the editor.</value>
+  </data>
+  <data name="委派了代码探索" xml:space="preserve">
+    <value>Delegated Code Exploration</value>
+  </data>
+  <data name="委派了子任务" xml:space="preserve">
+    <value>Delegated Subtask</value>
+  </data>
+  <data name="委派直返" xml:space="preserve">
+    <value>Direct Delegated Response</value>
+  </data>
+  <data name="委派直返：是（省略第二次父级模型调用）" xml:space="preserve">
+    <value>Direct Delegated Response: Yes (Second Parent Model Call Omitted)</value>
+  </data>
+  <data name="子工具面（峰值）：" xml:space="preserve">
+    <value>Child Tool Surface (Peak):</value>
+  </data>
+  <data name="子运行指令（峰值）：" xml:space="preserve">
+    <value>Child Runtime Instructions (Peak):</value>
+  </data>
+  <data name="安全启动" xml:space="preserve">
+    <value>Safe Startup</value>
+  </data>
+  <data name="安装服务" xml:space="preserve">
+    <value>Install Service</value>
+  </data>
+  <data name="安装记录显示失败：{0}。当前服务状态为“{1}”，建议重新安装并验证。" xml:space="preserve">
+    <value>Installation records show a failure: {0}. The current service state is "{1}". Reinstall and verify the service.</value>
+  </data>
+  <data name="完全访问：受保护工具直接执行，无需逐次确认或模型复核。该选择会保留，直到手动切换回按需确认。" xml:space="preserve">
+    <value>Full Access: protected tools execute directly without individual confirmation or model review. This setting remains until manually switched back to Confirm as Needed.</value>
+  </data>
+  <data name="审批未通过" xml:space="preserve">
+    <value>Approval Rejected</value>
+  </data>
+  <data name="导出 Copilot 会话" xml:space="preserve">
+    <value>Export Copilot Conversation</value>
+  </data>
+  <data name="将下载并运行 ColorVision {0} 的完整安装程序，用于修复当前版本。确定继续？" xml:space="preserve">
+    <value>The full ColorVision {0} installer will be downloaded and run to repair the current version. Continue?</value>
+  </data>
+  <data name="将先校验最近一次备份，再退出 ColorVision 并回退插件“{0}”。确定继续？" xml:space="preserve">
+    <value>The latest backup will be verified, then ColorVision will exit and revert plugin "{0}". Continue?</value>
+  </data>
+  <data name="展开" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="峰值输入（估算）：" xml:space="preserve">
+    <value>Peak Input (Estimated):</value>
+  </data>
+  <data name="工具调用：" xml:space="preserve">
+    <value>Tool Calls:</value>
+  </data>
+  <data name="工具面：" xml:space="preserve">
+    <value>Tool Surface:</value>
+  </data>
+  <data name="已保存当前进度，可安全恢复" xml:space="preserve">
+    <value>Progress saved; recovery is safe</value>
+  </data>
+  <data name="已停止" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="已允许按请求意图实时公网检索" xml:space="preserve">
+    <value>Live public web search is allowed according to request intent</value>
+  </data>
+  <data name="已发现 {0} 个插件项{1}" xml:space="preserve">
+    <value>Found {0} Plugin Items{1}</value>
+  </data>
+  <data name="已发现 {0} 个，已选 {1} 个{2}" xml:space="preserve">
+    <value>Found {0}, Selected {1}{2}</value>
+  </data>
+  <data name="已复制" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="已暂停" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="已禁用实时公网检索" xml:space="preserve">
+    <value>Live Public Web Search Disabled</value>
+  </data>
+  <data name="已过期" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="应用中断后可恢复" xml:space="preserve">
+    <value>Recoverable After Application Interruption</value>
+  </data>
+  <data name="应用中断，可继续" xml:space="preserve">
+    <value>Application Interrupted; Can Continue</value>
+  </data>
+  <data name="建议使用安全启动，本次不加载任何插件。" xml:space="preserve">
+    <value>Use Safe Startup to skip all plugins for this run.</value>
+  </data>
+  <data name="建议使用完整安装包修复；现有配置和用户数据会保留。" xml:space="preserve">
+    <value>Repair with the full installer. Existing settings and user data will be retained.</value>
+  </data>
+  <data name="建议操作：使用完整安装包修复" xml:space="preserve">
+    <value>Suggested Action: Repair with the Full Installer</value>
+  </data>
+  <data name="建议操作：使用完整安装包修复 ColorVision" xml:space="preserve">
+    <value>Suggested Action: Repair ColorVision with the Full Installer</value>
+  </data>
+  <data name="建议操作：刷新并检查日志" xml:space="preserve">
+    <value>Suggested Action: Refresh and Check Logs</value>
+  </data>
+  <data name="建议操作：后台更新服务" xml:space="preserve">
+    <value>Suggested Action: Update Service in Background</value>
+  </data>
+  <data name="建议操作：启动服务" xml:space="preserve">
+    <value>Suggested Action: Start Service</value>
+  </data>
+  <data name="建议操作：安装或更新服务" xml:space="preserve">
+    <value>Suggested Action: Install or Update Service</value>
+  </data>
+  <data name="建议操作：安装服务" xml:space="preserve">
+    <value>Suggested Action: Install Service</value>
+  </data>
+  <data name="建议操作：检查日志后重试" xml:space="preserve">
+    <value>Suggested Action: Check Logs and Retry</value>
+  </data>
+  <data name="建议操作：重新安装并修复服务" xml:space="preserve">
+    <value>Suggested Action: Reinstall and Repair Service</value>
+  </data>
+  <data name="开启" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="当前 ColorVision 应用" xml:space="preserve">
+    <value>Current ColorVision Application</value>
+  </data>
+  <data name="当前 ColorVision 程序包缺少 {0} 个服务文件：{1}。请使用完整安装包修复。" xml:space="preserve">
+    <value>The current ColorVision package is missing {0} service files: {1}. Repair it with the full installer.</value>
+  </data>
+  <data name="当前 Copilot 任务" xml:space="preserve">
+    <value>Current Copilot Task</value>
+  </data>
+  <data name="当前会话" xml:space="preserve">
+    <value>Current Conversation</value>
+  </data>
+  <data name="当前应用操作" xml:space="preserve">
+    <value>Current Application Action</value>
+  </data>
+  <data name="当前无需处理" xml:space="preserve">
+    <value>No Action Currently Required</value>
+  </data>
+  <data name="当前模型窗口只会发送 {0:N0}/{1:N0} 条历史消息、" xml:space="preserve">
+    <value>The current model window sends only {0:N0}/{1:N0} history messages and </value>
+  </data>
+  <data name="当前版本 {0}" xml:space="preserve">
+    <value>Current Version {0}</value>
+  </data>
+  <data name="当前版本 {0}。更新完成后 ColorVision 将自动重启。" xml:space="preserve">
+    <value>Current version: {0}. ColorVision restarts automatically after the update.</value>
+  </data>
+  <data name="当前版本 未知" xml:space="preserve">
+    <value>Current Version: Unknown</value>
+  </data>
+  <data name="当前还没有日志。服务首次运行或执行安装后，记录会自动显示在这里。" xml:space="preserve">
+    <value>No logs are available yet. Records appear here automatically after the service first runs or an installation is performed.</value>
+  </data>
+  <data name="待查看" xml:space="preserve">
+    <value>Unread</value>
+  </data>
+  <data name="恢复暂存草稿（保存快捷键）" xml:space="preserve">
+    <value>Restore Saved Draft (Save Shortcut)</value>
+  </data>
+  <data name="恢复点未能保存，请重新发送请求" xml:space="preserve">
+    <value>The recovery checkpoint could not be saved. Send the request again.</value>
+  </data>
+  <data name="打开工作区文件：{0}" xml:space="preserve">
+    <value>Open Workspace File: {0}</value>
+  </data>
+  <data name="打开活动视图 (Ctrl+Alt+U)" xml:space="preserve">
+    <value>Open Activity View (Ctrl+Alt+U)</value>
+  </data>
+  <data name="打开链接：{0}" xml:space="preserve">
+    <value>Open Link: {0}</value>
+  </data>
+  <data name="执行" xml:space="preserve">
+    <value>Execute</value>
+  </data>
+  <data name="执行了数据库 SQL" xml:space="preserve">
+    <value>Executed Database SQL</value>
+  </data>
+  <data name="把输入作为新指令加入当前 Agent 运行（{0}）" xml:space="preserve">
+    <value>Add the input as a new instruction to the current agent run ({0})</value>
+  </data>
+  <data name="把选中的历史请求恢复到输入框" xml:space="preserve">
+    <value>Restore the selected earlier request to the input box</value>
+  </data>
+  <data name="持续目标" xml:space="preserve">
+    <value>Ongoing Goal</value>
+  </data>
+  <data name="按保存快捷键暂存当前输入、附件和请求模式（默认 Ctrl+S，可在选项中修改）" xml:space="preserve">
+    <value>Use the Save shortcut to store the current input, attachments, and request mode (Ctrl+S by default, configurable in Options)</value>
+  </data>
+  <data name="按工具能力类别执行 granular 审批；交互类别：{0}；自动拒绝：{1}" xml:space="preserve">
+    <value>Uses granular approval by tool capability category. Interactive categories: {0}; automatically rejected: {1}</value>
+  </data>
+  <data name="排到当前 Agent 任务结束后再执行（{0}）" xml:space="preserve">
+    <value>Queue for execution after the current agent task ends ({0})</value>
+  </data>
+  <data name="排队" xml:space="preserve">
+    <value>Queue</value>
+  </data>
+  <data name="排队 {0}" xml:space="preserve">
+    <value>Queue {0}</value>
+  </data>
+  <data name="控制停止" xml:space="preserve">
+    <value>Control Stopped</value>
+  </data>
+  <data name="控制异常" xml:space="preserve">
+    <value>Control Error</value>
+  </data>
+  <data name="控制运行中" xml:space="preserve">
+    <value>Control Running</value>
+  </data>
+  <data name="推理：{0}" xml:space="preserve">
+    <value>Reasoning: {0}</value>
+  </data>
+  <data name="提供商用量：输入 " xml:space="preserve">
+    <value>Provider Usage: Input </value>
+  </data>
+  <data name="提供商重试：" xml:space="preserve">
+    <value>Provider Retries:</value>
+  </data>
+  <data name="插件和备份记录已加载" xml:space="preserve">
+    <value>Plugins and Backup Records Loaded</value>
+  </data>
+  <data name="插件回退失败：{0}" xml:space="preserve">
+    <value>Plugin Revert Failed: {0}</value>
+  </data>
+  <data name="插件回退已启动，ColorVision 即将退出。" xml:space="preserve">
+    <value>Plugin revert started. ColorVision will exit shortly.</value>
+  </data>
+  <data name="插件扫描失败：{0}" xml:space="preserve">
+    <value>Plugin Scan Failed: {0}</value>
+  </data>
+  <data name="插件清单已加载，正在读取备份记录..." xml:space="preserve">
+    <value>Plugin List Loaded; Reading Backup Records...</value>
+  </data>
+  <data name="搜索{0}的可见历史请求" xml:space="preserve">
+    <value>Search visible earlier requests in {0}</value>
+  </data>
+  <data name="搜索了网页" xml:space="preserve">
+    <value>Searched the Web</value>
+  </data>
+  <data name="搜索会话" xml:space="preserve">
+    <value>Search Conversations</value>
+  </data>
+  <data name="搜索活动" xml:space="preserve">
+    <value>Search Activity</value>
+  </data>
+  <data name="撤销 Copilot 工作区修改" xml:space="preserve">
+    <value>Undo Copilot Workspace Changes</value>
+  </data>
+  <data name="操作未成功，退出码 {0}。" xml:space="preserve">
+    <value>The action failed with exit code {0}.</value>
+  </data>
+  <data name="操作未获批准" xml:space="preserve">
+    <value>Action Not Approved</value>
+  </data>
+  <data name="支持在有效期内自动撤销。" xml:space="preserve">
+    <value>Supports automatic undo within its validity period.</value>
+  </data>
+  <data name="收起" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="放弃任务恢复并清除 checkpoint；原停止原因和审计证据仍保留" xml:space="preserve">
+    <value>Abandon task recovery and clear its checkpoint. The original stop reason and audit evidence remain.</value>
+  </data>
+  <data name="放弃重试最终回答并清除恢复 checkpoint；原任务终态和审计证据仍保留" xml:space="preserve">
+    <value>Abandon final answer retry and clear its recovery checkpoint. The original terminal task state and audit evidence remain.</value>
+  </data>
+  <data name="整个仓库" xml:space="preserve">
+    <value>Entire Repository</value>
+  </data>
+  <data name="文件" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="文件引用未完成：" xml:space="preserve">
+    <value>File reference unresolved: </value>
+  </data>
+  <data name="新建" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="无法创建会话分支：{0}" xml:space="preserve">
+    <value>Unable to create a conversation branch: {0}</value>
+  </data>
+  <data name="无法创建历史编辑分支：{0}" xml:space="preserve">
+    <value>Unable to create a history edit branch: {0}</value>
+  </data>
+  <data name="无法启动更新：{0}" xml:space="preserve">
+    <value>Unable to Start Update: {0}</value>
+  </data>
+  <data name="无法启动语音输入：" xml:space="preserve">
+    <value>Unable to start voice input: </value>
+  </data>
+  <data name="无法复制{0}：{1}" xml:space="preserve">
+    <value>Unable to copy {0}: {1}</value>
+  </data>
+  <data name="无法打开{0}：{1}" xml:space="preserve">
+    <value>Unable to Open {0}: {1}</value>
+  </data>
+  <data name="无法打开代码审查详情：" xml:space="preserve">
+    <value>Unable to open code review details: </value>
+  </data>
+  <data name="无法打开文件夹：" xml:space="preserve">
+    <value>Unable to open folder: </value>
+  </data>
+  <data name="无法打开链接：" xml:space="preserve">
+    <value>Unable to open link: </value>
+  </data>
+  <data name="无法打开附件：" xml:space="preserve">
+    <value>Unable to open attachment: </value>
+  </data>
+  <data name="无法核对" xml:space="preserve">
+    <value>Unable to Verify</value>
+  </data>
+  <data name="无法永久删除“{0}”：{1}。" xml:space="preserve">
+    <value>Cannot permanently delete "{0}": {1}.</value>
+  </data>
+  <data name="无法永久删除“{0}”：当前会话还有 {1:N0} 条后台命令在运行。" xml:space="preserve">
+    <value>Cannot permanently delete "{0}": {1:N0} background commands are still running in this conversation.</value>
+  </data>
+  <data name="无法读取日志：{0}" xml:space="preserve">
+    <value>Unable to read log: {0}</value>
+  </data>
+  <data name="无法读取服务状态" xml:space="preserve">
+    <value>Unable to Read Service Status</value>
+  </data>
+  <data name="无法连接更新服务" xml:space="preserve">
+    <value>Unable to Connect to Update Service</value>
+  </data>
+  <data name="日志文件不存在。" xml:space="preserve">
+    <value>The log file does not exist.</value>
+  </data>
+  <data name="日志文件为空。" xml:space="preserve">
+    <value>The log file is empty.</value>
+  </data>
+  <data name="日志目录不存在。" xml:space="preserve">
+    <value>The log folder does not exist.</value>
+  </data>
+  <data name="时间：{0:yyyy-MM-dd HH:mm:ss}" xml:space="preserve">
+    <value>Time: {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="暂时无法检查更新；修复当前版本需要连接更新服务。" xml:space="preserve">
+    <value>Unable to check for updates now. Repairing the current version requires a connection to the update service.</value>
+  </data>
+  <data name="更新" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="更新到 {0} 并重启" xml:space="preserve">
+    <value>Update to {0} and Restart</value>
+  </data>
+  <data name="更新或修复服务" xml:space="preserve">
+    <value>Update or Repair Service</value>
+  </data>
+  <data name="更新日志目录" xml:space="preserve">
+    <value>Update Log Folder</value>
+  </data>
+  <data name="更新检查失败" xml:space="preserve">
+    <value>Update Check Failed</value>
+  </data>
+  <data name="最终回答以未确认完成的状态结束" xml:space="preserve">
+    <value>The final answer ended without confirmed completion</value>
+  </data>
+  <data name="最终回答被内容策略提前停止" xml:space="preserve">
+    <value>The final answer was stopped early by the content policy</value>
+  </data>
+  <data name="最终回答达到输出上限，已保留部分内容" xml:space="preserve">
+    <value>The final answer reached the output limit. Partial content was retained.</value>
+  </data>
+  <data name="最近判断：" xml:space="preserve">
+    <value>Latest Assessment:</value>
+  </data>
+  <data name="最高" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="服务安装不完整" xml:space="preserve">
+    <value>Service Installation Incomplete</value>
+  </data>
+  <data name="服务尚未安装" xml:space="preserve">
+    <value>Service Not Installed</value>
+  </data>
+  <data name="服务已停止" xml:space="preserve">
+    <value>Service Stopped</value>
+  </data>
+  <data name="服务无响应" xml:space="preserve">
+    <value>Service Not Responding</value>
+  </data>
+  <data name="服务没有处于可用状态，请按建议操作恢复。" xml:space="preserve">
+    <value>The service is unavailable. Follow the suggested action to restore it.</value>
+  </data>
+  <data name="服务程序包不完整" xml:space="preserve">
+    <value>Service Package Incomplete</value>
+  </data>
+  <data name="服务程序包目录不可用" xml:space="preserve">
+    <value>Service Package Folder Unavailable</value>
+  </data>
+  <data name="服务运行日志" xml:space="preserve">
+    <value>Service Runtime Log</value>
+  </data>
+  <data name="服务运行正常" xml:space="preserve">
+    <value>Service Running Normally</value>
+  </data>
+  <data name="服务连接正常，当前版本可以使用。" xml:space="preserve">
+    <value>The service is connected and the current version is usable.</value>
+  </data>
+  <data name="服务连接正常，版本一致，已核对 {0} 个运行时文件。" xml:space="preserve">
+    <value>The service is connected, versions match, and {0} runtime files have been verified.</value>
+  </data>
+  <data name="服务需要处理" xml:space="preserve">
+    <value>Service Requires Attention</value>
+  </data>
+  <data name="未发现变更" xml:space="preserve">
+    <value>No Changes Found</value>
+  </data>
+  <data name="未发现插件或可恢复备份" xml:space="preserve">
+    <value>No Plugins or Restorable Backups Found</value>
+  </data>
+  <data name="未命名图片" xml:space="preserve">
+    <value>Unnamed Image</value>
+  </data>
+  <data name="未安装" xml:space="preserve">
+    <value>Not installed</value>
+  </data>
+  <data name="未提供文件详情" xml:space="preserve">
+    <value>No File Details Provided</value>
+  </data>
+  <data name="未收到最终回答" xml:space="preserve">
+    <value>No Final Answer Received</value>
+  </data>
+  <data name="未知" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="未能确认是否存在新版本。可稍后重试，或尝试修复当前版本。" xml:space="preserve">
+    <value>Could not confirm whether a new version is available. Retry later or try repairing the current version.</value>
+  </data>
+  <data name="未覆盖现有 ColorVision 行为：临时任务授权仍可对不支持临时完整访问的受保护工具启动自动复核。" xml:space="preserve">
+    <value>Existing ColorVision behavior remains: temporary task authorization can still start automatic review for protected tools that do not support temporary full access.</value>
+  </data>
+  <data name="未连接" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="未连接到 Internet" xml:space="preserve">
+    <value>Not Connected to the Internet</value>
+  </data>
+  <data name="未配置；保留 ColorVision 原生审批策略" xml:space="preserve">
+    <value>Not configured; preserves ColorVision's native approval policy</value>
+  </data>
+  <data name="未配置；保留 ColorVision 原生访问与审批边界" xml:space="preserve">
+    <value>Not configured; preserves ColorVision's native access and approval boundaries</value>
+  </data>
+  <data name="未配置；保留 ColorVision 按请求意图实时检索" xml:space="preserve">
+    <value>Not configured; preserves ColorVision's live search according to request intent</value>
+  </data>
+  <data name="本任务" xml:space="preserve">
+    <value>Current Task</value>
+  </data>
+  <data name="本机 Codex · {0}" xml:space="preserve">
+    <value>Local Codex · {0}</value>
+  </data>
+  <data name="本次跳过所选" xml:space="preserve">
+    <value>Skip Selected for This Run</value>
+  </data>
+  <data name="本轮预算已用尽" xml:space="preserve">
+    <value>Turn Budget Exhausted</value>
+  </data>
+  <data name="来源未标记的本地操作" xml:space="preserve">
+    <value>Local Action with Unspecified Source</value>
+  </data>
+  <data name="极高" xml:space="preserve">
+    <value>Extra High</value>
+  </data>
+  <data name="查询了数据库" xml:space="preserve">
+    <value>Queried Database</value>
+  </data>
+  <data name="查阅了外部资料" xml:space="preserve">
+    <value>Consulted External Sources</value>
+  </data>
+  <data name="标准模式：Enter 发送，Shift+Enter 换行；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑" xml:space="preserve">
+    <value>Standard mode: Enter sends; Shift+Enter inserts a line break. While an agent runs, Ctrl+Enter cancels the current turn and executes the input immediately. ↑/↓ browses request history; → accepts suggestions. Ctrl+R searches history; the Save shortcut stores or restores a draft; Ctrl+E expands the editor.</value>
+  </data>
+  <data name="根会话 · {0}" xml:space="preserve">
+    <value>Root Conversation · {0}</value>
+  </data>
+  <data name="检查中..." xml:space="preserve">
+    <value>Checking...</value>
+  </data>
+  <data name="检查了后台命令" xml:space="preserve">
+    <value>Checked Background Command</value>
+  </data>
+  <data name="检查了工作树" xml:space="preserve">
+    <value>Checked Working Tree</value>
+  </data>
+  <data name="检查了服务" xml:space="preserve">
+    <value>Checked Services</value>
+  </data>
+  <data name="检查了端口" xml:space="preserve">
+    <value>Checked Ports</value>
+  </data>
+  <data name="检查了系统" xml:space="preserve">
+    <value>Checked System</value>
+  </data>
+  <data name="检查了进程" xml:space="preserve">
+    <value>Checked Processes</value>
+  </data>
+  <data name="检查完成，当前版本为 {0}。如果程序文件可能损坏，可重新安装当前版本。" xml:space="preserve">
+    <value>Check complete. The current version is {0}. Reinstall it if application files may be damaged.</value>
+  </data>
+  <data name="检测到 ColorVision 启动组件缺失或损坏" xml:space="preserve">
+    <value>A ColorVision Startup Component Is Missing or Damaged</value>
+  </data>
+  <data name="检测到 {0} 个缺失或不一致的文件：{1}。重新安装会从当前完整程序包恢复这些文件。" xml:space="preserve">
+    <value>Detected {0} missing or inconsistent files: {1}. Reinstalling restores these files from the current complete package.</value>
+  </data>
+  <data name="检测到启动组件“{0}”缺失或损坏" xml:space="preserve">
+    <value>Startup Component "{0}" Is Missing or Damaged</value>
+  </data>
+  <data name="模型 {0}" xml:space="preserve">
+    <value>Model {0}</value>
+  </data>
+  <data name="模型停顿中止：" xml:space="preserve">
+    <value>Model Stall Aborts:</value>
+  </data>
+  <data name="模型延迟：" xml:space="preserve">
+    <value>Model Latency:</value>
+  </data>
+  <data name="模型服务异常" xml:space="preserve">
+    <value>Model Service Error</value>
+  </data>
+  <data name="模型服务暂时不可用" xml:space="preserve">
+    <value>Model Service Temporarily Unavailable</value>
+  </data>
+  <data name="模型未返回最终回答" xml:space="preserve">
+    <value>The Model Did Not Return a Final Answer</value>
+  </data>
+  <data name="模型请求被拒绝" xml:space="preserve">
+    <value>Model Request Rejected</value>
+  </data>
+  <data name="模型调用：" xml:space="preserve">
+    <value>Model Calls:</value>
+  </data>
+  <data name="模型连接中断" xml:space="preserve">
+    <value>Model Connection Interrupted</value>
+  </data>
+  <data name="模板" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="正在保存会话变更，请稍候" xml:space="preserve">
+    <value>Saving Conversation Changes, Please Wait</value>
+  </data>
+  <data name="正在修改文件" xml:space="preserve">
+    <value>Modifying File</value>
+  </data>
+  <data name="正在停止后台命令" xml:space="preserve">
+    <value>Stopping Background Command</value>
+  </data>
+  <data name="正在停止后台输出监控" xml:space="preserve">
+    <value>Stopping Background Output Monitoring</value>
+  </data>
+  <data name="正在准备下载安装包；完成后将退出并重启 ColorVision。" xml:space="preserve">
+    <value>Preparing to download the installer. ColorVision will exit and restart when preparation completes.</value>
+  </data>
+  <data name="正在准备修改" xml:space="preserve">
+    <value>Preparing Changes</value>
+  </data>
+  <data name="正在准备回退 {0}..." xml:space="preserve">
+    <value>Preparing to Revert {0}...</value>
+  </data>
+  <data name="正在取消当前任务" xml:space="preserve">
+    <value>Canceling the Current Task</value>
+  </data>
+  <data name="正在启动后台命令" xml:space="preserve">
+    <value>Starting Background Command</value>
+  </data>
+  <data name="正在回滚修改" xml:space="preserve">
+    <value>Reverting Changes</value>
+  </data>
+  <data name="正在委派代码探索" xml:space="preserve">
+    <value>Delegating Code Exploration</value>
+  </data>
+  <data name="正在委派子任务" xml:space="preserve">
+    <value>Delegating Subtask</value>
+  </data>
+  <data name="正在执行数据库 SQL" xml:space="preserve">
+    <value>Executing Database SQL</value>
+  </data>
+  <data name="正在扫描插件..." xml:space="preserve">
+    <value>Scanning Plugins...</value>
+  </data>
+  <data name="正在搜索网页" xml:space="preserve">
+    <value>Searching the Web</value>
+  </data>
+  <data name="正在暂停当前 Agent 任务；再次点击将改为取消" xml:space="preserve">
+    <value>Pausing the current agent task; click again to cancel instead</value>
+  </data>
+  <data name="正在查询数据库" xml:space="preserve">
+    <value>Querying Database</value>
+  </data>
+  <data name="正在查阅外部资料" xml:space="preserve">
+    <value>Consulting External Sources</value>
+  </data>
+  <data name="正在检查主程序更新" xml:space="preserve">
+    <value>Checking Application Updates</value>
+  </data>
+  <data name="正在检查后台命令" xml:space="preserve">
+    <value>Checking Background Command</value>
+  </data>
+  <data name="正在检查工作树" xml:space="preserve">
+    <value>Checking Working Tree</value>
+  </data>
+  <data name="正在检查服务状态…" xml:space="preserve">
+    <value>Checking Service Status…</value>
+  </data>
+  <data name="正在检查端口" xml:space="preserve">
+    <value>Checking Ports</value>
+  </data>
+  <data name="正在检查系统" xml:space="preserve">
+    <value>Checking System</value>
+  </data>
+  <data name="正在检查进程" xml:space="preserve">
+    <value>Checking Processes</value>
+  </data>
+  <data name="正在生成回复 · 可使用 /status" xml:space="preserve">
+    <value>Generating Response · Use /status for Details</value>
+  </data>
+  <data name="正在监控后台输出" xml:space="preserve">
+    <value>Monitoring Background Output</value>
+  </data>
+  <data name="正在等待后台命令" xml:space="preserve">
+    <value>Waiting for Background Command</value>
+  </data>
+  <data name="正在等待多个后台命令" xml:space="preserve">
+    <value>Waiting for Background Commands</value>
+  </data>
+  <data name="正在读取 Git 差异" xml:space="preserve">
+    <value>Reading Git Diff</value>
+  </data>
+  <data name="正在读取后台输出" xml:space="preserve">
+    <value>Reading Background Output</value>
+  </data>
+  <data name="正在读取命令输出" xml:space="preserve">
+    <value>Reading Command Output</value>
+  </data>
+  <data name="正在读取备份记录..." xml:space="preserve">
+    <value>Reading Backup Records...</value>
+  </data>
+  <data name="正在读取文件" xml:space="preserve">
+    <value>Reading File</value>
+  </data>
+  <data name="正在读取网页" xml:space="preserve">
+    <value>Reading Web Page</value>
+  </data>
+  <data name="正在转换图像" xml:space="preserve">
+    <value>Converting Image</value>
+  </data>
+  <data name="正在运行 {0}" xml:space="preserve">
+    <value>Running {0}</value>
+  </data>
+  <data name="正在运行命令" xml:space="preserve">
+    <value>Running Command</value>
+  </data>
+  <data name="正在连接更新服务，请稍候。" xml:space="preserve">
+    <value>Connecting to the update service. Please wait.</value>
+  </data>
+  <data name="正常启动" xml:space="preserve">
+    <value>Start Normally</value>
+  </data>
+  <data name="此工具未声明自动撤销能力；请在批准前核对影响。" xml:space="preserve">
+    <value>This tool does not declare automatic undo support. Review its impact before approving.</value>
+  </data>
+  <data name="此操作无法由 Copilot 自动撤销。" xml:space="preserve">
+    <value>Copilot cannot automatically undo this action.</value>
+  </data>
+  <data name="永久删除“{0}”？" xml:space="preserve">
+    <value>Permanently delete "{0}"?</value>
+  </data>
+  <data name="永久禁用所选" xml:space="preserve">
+    <value>Disable selected</value>
+  </data>
+  <data name="没有选中的模型配置。" xml:space="preserve">
+    <value>No Model Configuration Selected.</value>
+  </data>
+  <data name="活动目标已从源会话带入分支；下一条显式 Agent 任务将接管目标生命周期，完成后恢复正常自动续作。" xml:space="preserve">
+    <value>The active goal was carried into this branch from the source conversation. The next explicit agent task takes over its lifecycle; normal automatic continuation resumes when that task ends.</value>
+  </data>
+  <data name="流式输出 " xml:space="preserve">
+    <value>Streaming Output </value>
+  </data>
+  <data name="流式输出：" xml:space="preserve">
+    <value>Streaming Output:</value>
+  </data>
+  <data name="添加附件" xml:space="preserve">
+    <value>Add Attachment</value>
+  </data>
+  <data name="源会话缺失 · " xml:space="preserve">
+    <value>Source Conversation Missing · </value>
+  </data>
+  <data name="父 " xml:space="preserve">
+    <value>Parent </value>
+  </data>
+  <data name="父 {0} / 子 {1}" xml:space="preserve">
+    <value>Parent {0} / Child {1}</value>
+  </data>
+  <data name="父工具面：" xml:space="preserve">
+    <value>Parent Tool Surface:</value>
+  </data>
+  <data name="父运行指令：" xml:space="preserve">
+    <value>Parent Runtime Instructions:</value>
+  </data>
+  <data name="版本：{0}" xml:space="preserve">
+    <value>Version: {0}</value>
+  </data>
+  <data name="状态目录：{0}" xml:space="preserve">
+    <value>State Folder: {0}</value>
+  </data>
+  <data name="用户" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="监控了后台输出" xml:space="preserve">
+    <value>Monitored Background Output</value>
+  </data>
+  <data name="目标受阻" xml:space="preserve">
+    <value>Goal Blocked</value>
+  </data>
+  <data name="目标已暂停" xml:space="preserve">
+    <value>Goal Paused</value>
+  </data>
+  <data name="目标已达成" xml:space="preserve">
+    <value>Goal Achieved</value>
+  </data>
+  <data name="目标用量受限" xml:space="preserve">
+    <value>Goal Usage Limit Reached</value>
+  </data>
+  <data name="目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。" xml:space="preserve">
+    <value>The goal constrains completion assessment but does not authorize writes, tool calls, approval reuse, or external side effects.</value>
+  </data>
+  <data name="目标预算受限" xml:space="preserve">
+    <value>Goal Budget Limit Reached</value>
+  </data>
+  <data name="私有局部覆盖" xml:space="preserve">
+    <value>Private Local Override</value>
+  </data>
+  <data name="程序包与安装目录一致" xml:space="preserve">
+    <value>Package Matches Installation Folder</value>
+  </data>
+  <data name="程序包与当前服务版本或内容不一致，建议更新后重新检查。" xml:space="preserve">
+    <value>The package differs from the current service version or content. Update it and check again.</value>
+  </data>
+  <data name="程序包缺少 {0} 个文件" xml:space="preserve">
+    <value>Package Missing {0} Files</value>
+  </data>
+  <data name="窗口恢复：" xml:space="preserve">
+    <value>Context Window Recovery:</value>
+  </data>
+  <data name="符合条件的原生审批由 ColorVision 用户复核；不启动自动审查器。" xml:space="preserve">
+    <value>Eligible native approvals are reviewed by the ColorVision user; the automatic reviewer is not started.</value>
+  </data>
+  <data name="等待" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="等待了后台命令" xml:space="preserve">
+    <value>Waited for Background Command</value>
+  </data>
+  <data name="等待了多个后台命令" xml:space="preserve">
+    <value>Waited for Background Commands</value>
+  </data>
+  <data name="等待回复" xml:space="preserve">
+    <value>Awaiting Response</value>
+  </data>
+  <data name="等待最终回答" xml:space="preserve">
+    <value>Awaiting Final Answer</value>
+  </data>
+  <data name="等待用户决定" xml:space="preserve">
+    <value>Awaiting User Decision</value>
+  </data>
+  <data name="等待确认" xml:space="preserve">
+    <value>Awaiting Confirmation</value>
+  </data>
+  <data name="等待确认 {0}" xml:space="preserve">
+    <value>Awaiting Confirmation {0}</value>
+  </data>
+  <data name="等待运行" xml:space="preserve">
+    <value>Awaiting Execution</value>
+  </data>
+  <data name="系统维护服务不可用，更新和需要管理员权限的操作可能无法完成。" xml:space="preserve">
+    <value>The system maintenance service is unavailable. Updates and actions requiring administrator privileges may fail.</value>
+  </data>
+  <data name="组件：{0}" xml:space="preserve">
+    <value>Component: {0}</value>
+  </data>
+  <data name="继续任务" xml:space="preserve">
+    <value>Resume Task</value>
+  </data>
+  <data name="编辑上一条请求会暂时替换当前草稿和待发送附件；取消编辑时会恢复。是否继续？" xml:space="preserve">
+    <value>Editing the previous request temporarily replaces the current draft and pending attachments. Canceling the edit restores them. Continue?</value>
+  </data>
+  <data name="缺少 {0}" xml:space="preserve">
+    <value>Missing {0}</value>
+  </data>
+  <data name="自动复核 · 下一任务" xml:space="preserve">
+    <value>Automatic Review · Next Task</value>
+  </data>
+  <data name="自动复核 · 本任务" xml:space="preserve">
+    <value>Automatic Review · Current Task</value>
+  </data>
+  <data name="自动（PowerShell）" xml:space="preserve">
+    <value>Automatic (PowerShell)</value>
+  </data>
+  <data name="自定义" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="菜单" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="要求后续变更 · @ 关联 · / 或 $ 命令" xml:space="preserve">
+    <value>Request Follow-up Changes · @: attach · / or $: commands</value>
+  </data>
+  <data name="计划" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="计划已生成" xml:space="preserve">
+    <value>Plan Generated</value>
+  </data>
+  <data name="计划模式 · 输入任务；只读分析，不执行修改" xml:space="preserve">
+    <value>Plan Mode · Enter a task; read-only analysis with no modifications</value>
+  </data>
+  <data name="请修改历史搜索关键词" xml:space="preserve">
+    <value>Change the history search keywords</value>
+  </data>
+  <data name="请根据操作说明和参数确认影响范围。" xml:space="preserve">
+    <value>Confirm the scope of impact using the action description and arguments.</value>
+  </data>
+  <data name="读取了 Git 差异" xml:space="preserve">
+    <value>Read Git Diff</value>
+  </data>
+  <data name="读取了后台输出" xml:space="preserve">
+    <value>Read Background Output</value>
+  </data>
+  <data name="读取了命令输出" xml:space="preserve">
+    <value>Read Command Output</value>
+  </data>
+  <data name="读取了文件" xml:space="preserve">
+    <value>Read File</value>
+  </data>
+  <data name="读取了网页" xml:space="preserve">
+    <value>Read Web Page</value>
+  </data>
+  <data name="调整" xml:space="preserve">
+    <value>Adjust</value>
+  </data>
+  <data name="调用累计 " xml:space="preserve">
+    <value>Total Call Time </value>
+  </data>
+  <data name="转换了图像" xml:space="preserve">
+    <value>Converted Image</value>
+  </data>
+  <data name="输入关键词" xml:space="preserve">
+    <value>Enter Keywords</value>
+  </data>
+  <data name="输入含附件，将与附件一起排到下一轮（{0}）" xml:space="preserve">
+    <value>The input has attachments and will be queued with them for the next turn ({0})</value>
+  </data>
+  <data name="输入问题答案并按 {0}；也可直接选择上方选项" xml:space="preserve">
+    <value>Enter your answers and press {0}, or select the options above</value>
+  </data>
+  <data name="达到本轮继续上限" xml:space="preserve">
+    <value>Turn Continuation Limit Reached</value>
+  </data>
+  <data name="达到轮次上限" xml:space="preserve">
+    <value>Turn Limit Reached</value>
+  </data>
+  <data name="运行 {0} · 安装 {1} · 程序包 {2}" xml:space="preserve">
+    <value>Running {0} · Installed {1} · Package {2}</value>
+  </data>
+  <data name="运行中" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="运行了 {0}" xml:space="preserve">
+    <value>Ran {0}</value>
+  </data>
+  <data name="运行了命令" xml:space="preserve">
+    <value>Ran Command</value>
+  </data>
+  <data name="运行指令：" xml:space="preserve">
+    <value>Runtime Instructions:</value>
+  </data>
+  <data name="运行耗时：" xml:space="preserve">
+    <value>Elapsed Runtime:</value>
+  </data>
+  <data name="返回全部会话 (Ctrl+Alt+U)" xml:space="preserve">
+    <value>Back to All Conversations (Ctrl+Alt+U)</value>
+  </data>
+  <data name="连接正常" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="退出 ColorVision" xml:space="preserve">
+    <value>Exit ColorVision</value>
+  </data>
+  <data name="选择插件后，可临时跳过、永久禁用或恢复备份。" xml:space="preserve">
+    <value>Select plugins to skip temporarily, disable permanently, or restore from backup.</value>
+  </data>
+  <data name="重新安装并修复" xml:space="preserve">
+    <value>Reinstall and Repair</value>
+  </data>
+  <data name="重新安装并验证" xml:space="preserve">
+    <value>Reinstall and Verify</value>
+  </data>
+  <data name="重新安装服务" xml:space="preserve">
+    <value>Reinstall Service</value>
+  </data>
+  <data name="重新执行本轮 Agent，并重新读取图片、文件、工作区和工具状态；受保护写操作仍需再次审批。" xml:space="preserve">
+    <value>Run this agent turn again and reread images, files, the workspace, and tool state. Protected write actions still require new approval.</value>
+  </data>
+  <data name="重新读取本轮文件、图片和网页上下文后生成新回答。" xml:space="preserve">
+    <value>Reread this turn's file, image, and web context, then generate a new response.</value>
+  </data>
+  <data name="重新运行" xml:space="preserve">
+    <value>Run Again</value>
+  </data>
+  <data name="重试只读检查" xml:space="preserve">
+    <value>Retry Read-only Check</value>
+  </data>
+  <data name="重试最终回答" xml:space="preserve">
+    <value>Retry Final Answer</value>
+  </data>
+  <data name="问题描述：" xml:space="preserve">
+    <value>Issue Description:</value>
+  </data>
+  <data name="阶段：{0}" xml:space="preserve">
+    <value>Stage: {0}</value>
+  </data>
+  <data name="随心输入 · @ 关联 · / 或 $ 命令" xml:space="preserve">
+    <value>Enter a Message · @: attach · / or $: commands</value>
+  </data>
+  <data name="需要完整安装包" xml:space="preserve">
+    <value>Full Installer Required</value>
+  </data>
+  <data name="需要您的决定" xml:space="preserve">
+    <value>Your Decision Is Required</value>
+  </data>
+  <data name="需要输入" xml:space="preserve">
+    <value>Input Required</value>
+  </data>
+  <data name="项目" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="项目:" xml:space="preserve">
+    <value>Project:</value>
+  </data>
+  <data name="项目指令" xml:space="preserve">
+    <value>Project Instructions</value>
+  </data>
+  <data name="项目目录信任未决定；已跳过项目 .codex/config.toml" xml:space="preserve">
+    <value>Project folder trust is undecided; project .codex/config.toml was skipped</value>
+  </data>
+  <data name="预算耗尽" xml:space="preserve">
+    <value>Budget Exhausted</value>
+  </data>
+  <data name="首内容 " xml:space="preserve">
+    <value>First Content </value>
+  </data>
+  <data name="首响应平均 " xml:space="preserve">
+    <value>Average First Response </value>
+  </data>
+  <data name="高" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="默认" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="（包含估算）" xml:space="preserve">
+    <value>(Includes Estimates)</value>
+  </data>
+  <data name="（父 " xml:space="preserve">
+    <value>(Parent </value>
+  </data>
+  <data name="，其中 {0} 个仅备份可恢复" xml:space="preserve">
+    <value>, Including {0} Restorable Only from Backup</value>
+  </data>
+  <data name="默认模型" xml:space="preserve">
+    <value>Default Model</value>
+  </data>
+  <data name="ColorVision 启动" xml:space="preserve">
+    <value>ColorVision Startup</value>
+  </data>
+  <data name="DNS 连接修复" xml:space="preserve">
+    <value>DNS Connection Repair</value>
+  </data>
+  <data name="IPv4 地址" xml:space="preserve">
+    <value>IPv4 Address</value>
+  </data>
+  <data name="IPv4 网卡与 DNS" xml:space="preserve">
+    <value>IPv4 Adapters and DNS</value>
+  </data>
+  <data name="Metric 数值越小，网络优先级通常越高；修改网络配置时 Windows 会请求管理员授权。" xml:space="preserve">
+    <value>Lower metric values usually mean higher network priority. Windows requests administrator authorization when network settings are changed.</value>
+  </data>
+  <data name="下载并安装…" xml:space="preserve">
+    <value>Download and Install…</value>
+  </data>
+  <data name="下载源仅用于安装包，不修改 pip/npm 源；安装前会校验官网 SHA256 和发布者签名。" xml:space="preserve">
+    <value>The download source applies only to installers and does not change pip/npm registries. Official SHA256 checksums and publisher signatures are verified before installation.</value>
+  </data>
+  <data name="创建快照" xml:space="preserve">
+    <value>Create Snapshot</value>
+  </data>
+  <data name="创建快照，保存当前可用的程序版本。" xml:space="preserve">
+    <value>Create a snapshot to preserve the current usable application version.</value>
+  </data>
+  <data name="刷新检测" xml:space="preserve">
+    <value>Refresh Detection</value>
+  </data>
+  <data name="发现方式" xml:space="preserve">
+    <value>Discovery Method</value>
+  </data>
+  <data name="取消启动" xml:space="preserve">
+    <value>Cancel Startup</value>
+  </data>
+  <data name="可选安装" xml:space="preserve">
+    <value>Optional Installations</value>
+  </data>
+  <data name="合计" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="命令路径详情" xml:space="preserve">
+    <value>Command Path Details</value>
+  </data>
+  <data name="国内镜像 · npmmirror" xml:space="preserve">
+    <value>China Mirror · npmmirror</value>
+  </data>
+  <data name="备份记录" xml:space="preserve">
+    <value>Backup Records</value>
+  </data>
+  <data name="大小" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="安装包下载源" xml:space="preserve">
+    <value>Installer Download Source</value>
+  </data>
+  <data name="安装版本" xml:space="preserve">
+    <value>Installation Version</value>
+  </data>
+  <data name="官方网站" xml:space="preserve">
+    <value>Official Website</value>
+  </data>
+  <data name="将所选网卡的 IPv4 DNS 设置为 114.114.114.114，并立即刷新 Windows DNS 缓存。" xml:space="preserve">
+    <value>Set the selected adapter's IPv4 DNS to 114.114.114.114 and immediately flush the Windows DNS cache.</value>
+  </data>
+  <data name="就绪" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="开发工具管理" xml:space="preserve">
+    <value>Developer Tool Manager</value>
+  </data>
+  <data name="当前应用" xml:space="preserve">
+    <value>Current App</value>
+  </data>
+  <data name="当前版本" xml:space="preserve">
+    <value>Current Versions</value>
+  </data>
+  <data name="恢复自动 Metric" xml:space="preserve">
+    <value>Restore Automatic Metric</value>
+  </data>
+  <data name="打开位置" xml:space="preserve">
+    <value>Open Location</value>
+  </data>
+  <data name="打开目录" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="批准" xml:space="preserve">
+    <value>Approve</value>
+  </data>
+  <data name="接口 Metric" xml:space="preserve">
+    <value>Interface Metric</value>
+  </data>
+  <data name="新版本正常启动后在后台保存，自动保留一份最新存档。" xml:space="preserve">
+    <value>Save in the background after the new version starts successfully, keeping the latest archive automatically.</value>
+  </data>
+  <data name="新终端参考" xml:space="preserve">
+    <value>New Terminal Reference</value>
+  </data>
+  <data name="时间" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="暂无程序备份" xml:space="preserve">
+    <value>No Application Backups</value>
+  </data>
+  <data name="更改位置" xml:space="preserve">
+    <value>Change Location</value>
+  </data>
+  <data name="查看" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="检测并安装系统中的 Python 和 Node.js。" xml:space="preserve">
+    <value>Detect and install Python and Node.js on this system.</value>
+  </data>
+  <data name="正在关闭旧程序" xml:space="preserve">
+    <value>Closing the Previous Application</value>
+  </data>
+  <data name="正常启动后自动存档" xml:space="preserve">
+    <value>Archive Automatically After Successful Startup</value>
+  </data>
+  <data name="直接打开" xml:space="preserve">
+    <value>Open Directly</value>
+  </data>
+  <data name="类型" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="系统中发现的安装" xml:space="preserve">
+    <value>Installations Found on This System</value>
+  </data>
+  <data name="网卡" xml:space="preserve">
+    <value>Network Adapter</value>
+  </data>
+  <data name="自动 Metric" xml:space="preserve">
+    <value>Automatic Metric</value>
+  </data>
+  <data name="获取可安装版本" xml:space="preserve">
+    <value>Get Available Versions</value>
+  </data>
+  <data name="解释器路径" xml:space="preserve">
+    <value>Interpreter Path</value>
+  </data>
+  <data name="设为首选（Metric 5）" xml:space="preserve">
+    <value>Set as Preferred (Metric 5)</value>
+  </data>
+  <data name="设置 DNS 并刷新缓存" xml:space="preserve">
+    <value>Set DNS and Flush Cache</value>
+  </data>
+  <data name="路由 Metric" xml:space="preserve">
+    <value>Route Metric</value>
+  </data>
+  <data name="还原所选" xml:space="preserve">
+    <value>Restore Selected</value>
+  </data>
+  <data name="选择目标网卡后，可调整 IPv4 Metric 或执行 DNS 连接修复。所有修改只作用于所选网卡。" xml:space="preserve">
+    <value>Choose a target adapter to adjust its IPv4 metric or repair its DNS connection. All changes apply only to the selected adapter.</value>
+  </data>
+  <data name="选择首选上网网卡" xml:space="preserve">
+    <value>Choose the Preferred Internet Adapter</value>
+  </data>
+  <data name="重建默认" xml:space="preserve">
+    <value>Recreate Defaults</value>
+  </data>
+  <data name="重试结束" xml:space="preserve">
+    <value>Retry Termination</value>
+  </data>
+  <data name="随附包管理器" xml:space="preserve">
+    <value>Included Package Managers</value>
+  </data>
+  <data name="需确认" xml:space="preserve">
+    <value>Confirmation Required</value>
+  </data>
+  <data name="默认位置" xml:space="preserve">
+    <value>Default Location</value>
+  </data>
+  <data name="默认网关" xml:space="preserve">
+    <value>Default Gateway</value>
+  </data>
+  <data name="ColorVision 无法启动" xml:space="preserve">
+    <value>ColorVision Cannot Start</value>
+  </data>
+  <data name="Copilot 操作等待确认" xml:space="preserve">
+    <value>Copilot Action Awaiting Confirmation</value>
+  </data>
+  <data name="Copilot 活动" xml:space="preserve">
+    <value>Copilot Activity</value>
+  </data>
+  <data name="Copilot 活动 · {0}" xml:space="preserve">
+    <value>Copilot Activity · {0}</value>
+  </data>
+  <data name="{0} · 会话 {1}" xml:space="preserve">
+    <value>{0} · Session {1}</value>
+  </data>
+  <data name="下载服务不可用，未开始安装。" xml:space="preserve">
+    <value>Download service unavailable; installation has not started.</value>
+  </data>
+  <data name="修改网卡失败" xml:space="preserve">
+    <value>Failed to Modify Network Adapter</value>
+  </data>
+  <data name="原生日志" xml:space="preserve">
+    <value>Native Log</value>
+  </data>
+  <data name="另有 {0} 项，打开 Copilot 查看" xml:space="preserve">
+    <value>{0} more items; open Copilot to view</value>
+  </data>
+  <data name="安装向导已退出（代码 {0}）。{1} 新终端或重启应用后再核对默认命令。" xml:space="preserve">
+    <value>Installer exited (code {0}). {1} Check the default command in a new terminal or after restarting the application.</value>
+  </data>
+  <data name="安装向导提示需要重启 Windows。请保存工作后自行重启，并重新检测。" xml:space="preserve">
+    <value>The installer requires a Windows restart. Save your work, restart Windows, and check again.</value>
+  </data>
+  <data name="安装未完成：" xml:space="preserve">
+    <value>Installation incomplete:</value>
+  </data>
+  <data name="将“{0}”的 IPv4 DNS 设置为 {1}，然后刷新 Windows DNS 缓存。&#10;&#10;此操作会替换该网卡现有的手动 DNS 列表，是否继续？" xml:space="preserve">
+    <value>Set IPv4 DNS for “{0}” to {1}, then flush the Windows DNS cache.
+
+This replaces the adapter's existing manual DNS list. Continue?</value>
+  </data>
+  <data name="将“{0}”的 IPv4 自动 Metric 关闭并设为 {1}。&#10;&#10;此操作只修改所选网卡，是否继续？" xml:space="preserve">
+    <value>Disable automatic IPv4 Metric for “{0}” and set it to {1}.
+
+Only the selected adapter will be changed. Continue?</value>
+  </data>
+  <data name="工具 · {0}" xml:space="preserve">
+    <value>Tool · {0}</value>
+  </data>
+  <data name="工具 · 未知" xml:space="preserve">
+    <value>Tool · Unknown</value>
+  </data>
+  <data name="已创建 {0}" xml:space="preserve">
+    <value>Created {0}</value>
+  </data>
+  <data name="已恢复默认自动存档位置" xml:space="preserve">
+    <value>Default automatic archive location restored</value>
+  </data>
+  <data name="已更新 {0} 可安装版本。尚未下载或安装。" xml:space="preserve">
+    <value>Updated available installable versions for {0}. Nothing has been downloaded or installed.</value>
+  </data>
+  <data name="已读取 {0} 个 IPv4 接口。Metric 数值越小，优先级通常越高。" xml:space="preserve">
+    <value>Read {0} IPv4 interfaces. Lower Metric values generally mean higher priority.</value>
+  </data>
+  <data name="影响 · {0}&#10;撤销 · {1}" xml:space="preserve">
+    <value>Impact · {0}
+Undo · {1}</value>
+  </data>
+  <data name="影响：{0}&#10;撤销：{1}" xml:space="preserve">
+    <value>Impact: {0}
+Undo: {1}</value>
+  </data>
+  <data name="快照已删除" xml:space="preserve">
+    <value>Snapshot deleted</value>
+  </data>
+  <data name="快照已刷新" xml:space="preserve">
+    <value>Snapshot refreshed</value>
+  </data>
+  <data name="快照已加载" xml:space="preserve">
+    <value>Snapshot loaded</value>
+  </data>
+  <data name="恢复“{0}”的 IPv4 自动 Metric？" xml:space="preserve">
+    <value>Restore automatic IPv4 Metric for “{0}”?</value>
+  </data>
+  <data name="打开 Copilot" xml:space="preserve">
+    <value>Open Copilot</value>
+  </data>
+  <data name="无法完成旧 ColorVision 实例的关闭，本次启动已停止。&#10;&#10;" xml:space="preserve">
+    <value>Cannot finish closing the previous ColorVision instance; startup stopped.
+
+</value>
+  </data>
+  <data name="最近检测：{0:HH:mm:ss} · 每 15 秒自动刷新" xml:space="preserve">
+    <value>Last Checked: {0:HH:mm:ss} · Refreshes Every 15 Seconds</value>
+  </data>
+  <data name="来源 · {0}&#10;任务 · {1}&#10;工作区 · {2}" xml:space="preserve">
+    <value>Source · {0}
+Task · {1}
+Workspace · {2}</value>
+  </data>
+  <data name="来源：{0}&#10;任务：{1}&#10;工作区：{2}" xml:space="preserve">
+    <value>Source: {0}
+Task: {1}
+Workspace: {2}</value>
+  </data>
+  <data name="校验通过，正在启动官方安装向导。安装位置和系统更改由向导确认。" xml:space="preserve">
+    <value>Verification passed; starting the official installer. Installation location and system changes are confirmed in the wizard.</value>
+  </data>
+  <data name="检测失败：" xml:space="preserve">
+    <value>Detection failed:</value>
+  </data>
+  <data name="正在下载 {0}，进度可在下载管理器查看。关闭本窗口会取消后续自动安装。" xml:space="preserve">
+    <value>Downloading {0}; view progress in the download manager. Closing this window cancels subsequent automatic installation.</value>
+  </data>
+  <data name="正在校验 SHA256 和发布者数字签名…" xml:space="preserve">
+    <value>Verifying SHA256 and publisher signature…</value>
+  </data>
+  <data name="正在获取 {0} 的官网 SHA256…" xml:space="preserve">
+    <value>Retrieving official SHA256 for {0}…</value>
+  </data>
+  <data name="自动存档位置已更新" xml:space="preserve">
+    <value>Automatic archive location updated</value>
+  </data>
+  <data name="自动存档已更新" xml:space="preserve">
+    <value>Automatic archive updated</value>
+  </data>
+  <data name="覆盖安装" xml:space="preserve">
+    <value>Install over Existing Version</value>
+  </data>
+  <data name="设置首选上网网卡" xml:space="preserve">
+    <value>Set Preferred Network Adapter</value>
+  </data>
+  <data name="请在任务管理器中检查 ColorVision 进程。详细原因已写入日志。" xml:space="preserve">
+    <value>Check ColorVision processes in Task Manager. Details are in the logs.</value>
+  </data>
+  <data name="请确认这项操作是否符合你的预期。" xml:space="preserve">
+    <value>Confirm that this operation matches your intention.</value>
+  </data>
+  <data name="读取网卡失败" xml:space="preserve">
+    <value>Failed to Read Network Adapters</value>
+  </data>
+  <data name="选择宠物与设置" xml:space="preserve">
+    <value>Select Pet and Settings</value>
+  </data>
+  <data name="选择自动存档位置" xml:space="preserve">
+    <value>Select Automatic Archive Location</value>
+  </data>
+  <data name="需确认 · {0}" xml:space="preserve">
+    <value>Confirmation Required · {0}</value>
+  </data>
+  <data name="默认快照已重建" xml:space="preserve">
+    <value>Default snapshot rebuilt</value>
+  </data>
+  <data name="{0} 到期" xml:space="preserve">
+    <value>Expires {0}</value>
+  </data>
+  <data name="共 {0} 份" xml:space="preserve">
+    <value>{0} Snapshots</value>
+  </data>
+  <data name="参数指纹（SHA-256）：{0}" xml:space="preserve">
+    <value>Argument Fingerprint (SHA-256): {0}</value>
+  </data>
+  <data name="参数：{0}" xml:space="preserve">
+    <value>Arguments: {0}</value>
+  </data>
+  <data name="完整参数指纹（SHA-256）：{0}" xml:space="preserve">
+    <value>Full Argument Fingerprint (SHA-256): {0}</value>
+  </data>
+  <data name="工作区：{0}" xml:space="preserve">
+    <value>Workspace: {0}</value>
+  </data>
+  <data name="工具：{0}" xml:space="preserve">
+    <value>Tool: {0}</value>
+  </data>
+  <data name="影响：{0}" xml:space="preserve">
+    <value>Impact: {0}</value>
+  </data>
+  <data name="撤销：{0}" xml:space="preserve">
+    <value>Undo: {0}</value>
+  </data>
+  <data name="操作 ID：{0}" xml:space="preserve">
+    <value>Action ID: {0}</value>
+  </data>
+  <data name="脱敏参数摘要：{0}" xml:space="preserve">
+    <value>Redacted Argument Summary: {0}</value>
+  </data>
+  <data name="已检测到所选版本。" xml:space="preserve">
+    <value>The selected version was detected.</value>
+  </data>
+  <data name="尚未检测到所选版本，请检查向导结果并刷新。" xml:space="preserve">
+    <value>The selected version has not been detected; check the installer result and refresh.</value>
+  </data>
+  <data name="未设置模型" xml:space="preserve">
+    <value>Model Not Set</value>
+  </data>
+  <data name="{0} 对端口" xml:space="preserve">
+    <value>{0} Port Pairs</value>
+  </data>
+  <data name="不可用" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="已安装，但读取端口对失败：{0}" xml:space="preserve">
+    <value>Installed, but pair listing failed: {0}</value>
+  </data>
+  <data name="是否删除 com0com 端口对 {0}？" xml:space="preserve">
+    <value>Delete com0com pair {0}?</value>
+  </data>
+  <data name="是否卸载 ColorVisionServiceHost？" xml:space="preserve">
+    <value>Uninstall ColorVisionServiceHost?</value>
+  </data>
+  <data name="未找到已安装的服务主机程序。" xml:space="preserve">
+    <value>Installed service host executable was not found.</value>
+  </data>
+  <data name="未找到服务主机安装包程序。" xml:space="preserve">
+    <value>Service host package executable was not found.</value>
+  </data>
+  <data name="版本 {0} · 驱动 {1}" xml:space="preserve">
+    <value>Version {0} · Driver {1}</value>
+  </data>
+  <data name="端口对列表不可用" xml:space="preserve">
+    <value>Pair list unavailable</value>
+  </data>
+  <data name="请选择两个不同的可用端口号。" xml:space="preserve">
+    <value>Select two different available port numbers.</value>
+  </data>
 </root>

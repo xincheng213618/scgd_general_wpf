@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Models;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -91,7 +92,7 @@ public partial class CameraTestWindow
             ResetFocus();
             InvalidateResult();
             RenderOverlays();
-            StatusText.Text = _regionError ?? (regions.Count == 0 ? "请添加测量点。" : $"已添加 {regions.Count} 个测量点，可开始分析。");
+            StatusText.Text = _regionError ?? (regions.Count == 0 ? LocalizedText.Get("请添加测量点。") : LocalizedText.Format($"已添加 {regions.Count} 个测量点，可开始分析。"));
             Refresh();
         }
         finally { _syncingRegions = false; }

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
@@ -77,8 +78,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
                             if (!imageContext.IsCurrentImageRevision(revision)) return;
 
                             MessageBox.Show(
-                                $"9点畸变计算失败，返回码: {length}\n{DescribeReturnCode(length)}",
-                                "9点畸变",
+                                LocalizedText.Format($"9点畸变计算失败，返回码: {length}\n{DescribeReturnCode(length)}"),
+                                LocalizedText.Get("9点畸变"),
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Error);
                         });
@@ -95,7 +96,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
                         {
                             if (!imageContext.IsCurrentImageRevision(revision)) return;
 
-                            MessageBox.Show("9点畸变结果解析失败。", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show(LocalizedText.Get("9点畸变结果解析失败。"), LocalizedText.Get("9点畸变"), MessageBoxButton.OK, MessageBoxImage.Error);
                         });
                         return;
                     }
@@ -120,7 +121,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
                     {
                         if (!imageContext.IsCurrentImageRevision(revision)) return;
 
-                        MessageBox.Show($"9点畸变计算异常: {ex.Message}", "9点畸变", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(LocalizedText.Format($"9点畸变计算异常: {ex.Message}"), LocalizedText.Get("9点畸变"), MessageBoxButton.OK, MessageBoxImage.Error);
                     });
                 }
             });

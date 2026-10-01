@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using System;
@@ -22,7 +23,7 @@ public sealed class SFREditorTool(ImageProcessingContext image, DrawEditorContex
             RoiRect roi = SfrAnalysisRunner.PixelRoi(selection.Rect, scope);
             if (roi.Width > 0 && roi.Height > 0) SfrAnalysisRunner.Run(image, roi);
         }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "斜边清晰度", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, LocalizedText.Get("斜边清晰度"), MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 }
 
@@ -57,7 +58,7 @@ internal static class SfrAnalysisRunner
         catch (Exception ex)
         {
             lease.Dispose();
-            MessageBox.Show(ex.Message, "斜边清晰度", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, LocalizedText.Get("斜边清晰度"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

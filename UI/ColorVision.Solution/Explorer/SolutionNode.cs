@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Common.Utilities;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -276,12 +277,12 @@ namespace ColorVision.Solution.Explorer
 
         protected virtual void ShowUserError(string message)
         {
-            MessageBox.Show(message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(message, LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         protected virtual void ShowUserInfo(string message)
         {
-            MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(message, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         public virtual bool ReName(string name) => false;

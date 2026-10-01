@@ -1,6 +1,8 @@
 using ColorVision.UI.Controls;
 using ColorVision.UI.Languages;
 using ColorVision.ImageEditor.BatchProcessing;
+using ColorVision.ImageEditor.Cie;
+using ColorVision.Copilot;
 using System.Globalization;
 using System.IO;
 using System.Resources;
@@ -16,6 +18,47 @@ namespace ColorVision.UI.Tests;
 
 public sealed class UiLocalizationConsistencyTests
 {
+    [Theory]
+    [InlineData("zh-CN", "Copilot 设置", "新建样品会话", "参考")]
+    [InlineData("en-US", "Copilot Settings", "New Sample Session", "Reference")]
+    [InlineData("zh-Hant", "Copilot 設置", "新建樣品會話", "參考")]
+    public void CopilotAndCieControlsUseSelectedLanguageAndRetainSampleData(string uiCulture, string settingsLabel, string newSessionLabel, string referenceLabel)
+    {
+        StaTest.Run(() =>
+        {
+            using var culture = new CultureScope(uiCulture);
+            var copilot = new CopilotChatPanel();
+            Assert.Equal(settingsLabel, Assert.Single(copilot.TitleActions).ToolTip);
+            var cie = new CieSampleAnalysisView();
+            var toolbar = Assert.IsType<System.Windows.Controls.WrapPanel>(cie.FindName("SessionToolbar"));
+            Assert.Contains(toolbar.Children.OfType<Button>(), button => Equals(button.Content, newSessionLabel));
+            var sample = CieAnalysisSample.Create("客户原始样品", "固定分组", "原始来源", CieInputSpace.XyY,
+                0.3127, 0.3290, 100, CieSampleBasis.Relative, new CieAnalysisSettings());
+            cie.AddSamples([sample]);
+            cie.SetReference(sample.Id);
+            var row = Assert.Single(cie.Rows);
+            Assert.Equal(referenceLabel, row.Role);
+            Assert.Equal(referenceLabel, row.Result);
+            Assert.Equal(sample, row.Sample);
+            Assert.Equal("客户原始样品", row.Sample.Name);
+            Assert.Equal("原始来源", row.Sample.Source);
+            Assert.Equal(sample.Xyz, Assert.Single(cie.GetSession().Samples).Xyz);
+        });
+    }
+
+    [Fact]
+    public void CompiledEngineTraditionalResourcesCoverEnglishDynamicLookupKeys()
+    {
+        var manager = ColorVision.Engine.Properties.Resources.ResourceManager;
+        var traditional = manager.GetResourceSet(CultureInfo.GetCultureInfo("zh-Hant"), true, false)!;
+        var english = manager.GetResourceSet(CultureInfo.GetCultureInfo("en"), true, false)!;
+        foreach (System.Collections.DictionaryEntry item in english)
+            Assert.NotNull(traditional.GetString((string)item.Key));
+        using var culture = new CultureScope("zh-Hant");
+        Assert.Equal("開始", ST.Library.UI.Lang.Get("开始"));
+        Assert.Equal("類別", ST.Library.UI.Lang.Get("类别"));
+    }
+
     [Theory]
     [InlineData("zh-CN")]
     [InlineData("en-US")]
@@ -172,11 +215,14 @@ public sealed class UiLocalizationConsistencyTests
             var neutral = ReadResources(neutralPath);
             string traditionalPath = Path.ChangeExtension(neutralPath, ".zh-Hant.resx");
             Assert.True(File.Exists(traditionalPath), $"Missing Traditional Chinese resource family: {neutralPath}");
+            var keys = neutral.Keys.Union(ReadResources(englishPath).Keys).Union(ReadResources(traditionalPath).Keys).ToArray();
             foreach (string localizedPath in new[] { englishPath, traditionalPath })
             {
                 var localized = ReadResources(localizedPath);
-                foreach (var (key, value) in neutral)
+                foreach (string key in keys)
                 {
+                    // Dynamic Lang lookups can use the literal Chinese key as the neutral display text.
+                    string value = neutral.GetValueOrDefault(key, key);
                     Assert.True(localized.TryGetValue(key, out string? translation), $"{localizedPath}: missing {key}");
                     if (string.IsNullOrWhiteSpace(value)) continue; // Empty legacy placeholder resources are not display text.
                     Assert.False(string.IsNullOrWhiteSpace(translation), $"{localizedPath}: empty {key}");
@@ -212,10 +258,44 @@ public sealed class UiLocalizationConsistencyTests
         }
     }
 
+    [Theory]
+    [InlineData("zh-CN", "恢复草稿", "压缩", "全部已读")]
+    [InlineData("en-US", "Restore Draft", "Compact", "Mark All Read")]
+    [InlineData("zh-Hant", "恢復草稿", "壓縮", "全部已讀")]
+    public void CopilotTextActionsMeasureToTheirLocalizedLabels(string uiCulture, string restore, string compact, string markRead)
+    {
+        StaTest.Run(() =>
+        {
+            using var culture = new CultureScope(uiCulture);
+            var panel = new CopilotChatPanel();
+            var buttons = LogicalElements(panel).OfType<Button>().ToArray();
+            foreach (string label in new[] { restore, compact, markRead })
+            {
+                var button = Assert.Single(buttons, item => Equals(item.Content, label));
+                Assert.True(double.IsNaN(button.Width), $"{label}: text action must size to its content");
+                button.Visibility = Visibility.Visible;
+                button.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                var text = new FormattedText(label, CultureInfo.CurrentUICulture, button.FlowDirection,
+                    new Typeface(button.FontFamily, button.FontStyle, button.FontWeight, button.FontStretch), button.FontSize, Brushes.Black, 1);
+                Assert.True(text.WidthIncludingTrailingWhitespace + button.Padding.Left + button.Padding.Right <= button.DesiredSize.Width,
+                    $"{uiCulture}: {label} is clipped at its measured width");
+            }
+        });
+    }
+
+    private static IEnumerable<DependencyObject> LogicalElements(DependencyObject element)
+    {
+        yield return element;
+        foreach (var child in LogicalTreeHelper.GetChildren(element).OfType<DependencyObject>())
+        foreach (var descendant in LogicalElements(child)) yield return descendant;
+    }
+
     private static Dictionary<string, string> ReadResources(string path)
     {
         var items = XDocument.Load(path).Root!.Elements("data").ToArray();
         Assert.Equal(items.Length, items.Select(item => item.Attribute("name")!.Value).Distinct().Count());
+        // GenerateResource treats case-only key differences as duplicates and silently drops one label.
+        Assert.Equal(items.Length, items.Select(item => item.Attribute("name")!.Value).Distinct(StringComparer.OrdinalIgnoreCase).Count());
         return items.ToDictionary(item => item.Attribute("name")!.Value, item => item.Element("value")?.Value ?? "");
     }
 

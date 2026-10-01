@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -10,7 +11,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public TemplateDediffusion()
         {
-            Title = "解串扰模板管理";
+            Title = LocalizedText.Get("解串扰模板管理");
             Code = "OLED.Dediffusion";
             Name = "OLED_Dediffusion";
             TemplateDicId = 202;

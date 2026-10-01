@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using System.Globalization;
 using System.Linq;
 
@@ -14,16 +15,16 @@ internal sealed class CiePointReadout
     public double DistanceToWhite { get; }
     public string WhiteName { get; }
     internal static string GetWhiteName(CieChromaticity white) => CieIlluminants.Defaults
-        .FirstOrDefault(p => CieAnalysisMath.Distance(p.Chromaticity, white) < 1e-9)?.Name ?? "自定义白点";
+        .FirstOrDefault(p => CieAnalysisMath.Distance(p.Chromaticity, white) < 1e-9)?.Name ?? LocalizedText.Get("自定义白点");
     public string CctText => Cct.IsFinite
         ? string.Create(CultureInfo.InvariantCulture, $"CCT≈{Cct.TemperatureKelvin:F0} K  Duv={Cct.Duv:+0.00000;-0.00000;0.00000}")
-        : "CCT / Duv: 不适用";
+        : LocalizedText.Get("CCT / Duv: 不适用");
     public string WavelengthText => Wavelength.HasValue
         ? $"{(Wavelength.Value.IsComplementary ? "补波长 λc" : "主波长 λd")}: {CieAnalysisRow.Format(Wavelength.Value.Wavelength, "F1")} nm"
-        : "主 / 补波长: —";
+        : LocalizedText.Get("主 / 补波长: —");
     public string PurityText => Wavelength.HasValue
         ? $"{(Wavelength.Value.IsComplementary ? "紫线方向比例" : "激发纯度")}: {CieAnalysisRow.Format(Wavelength.Value.Purity * 100, "F2")}%"
-        : "激发纯度: —";
+        : LocalizedText.Get("激发纯度: —");
     public string CursorText => string.Create(CultureInfo.InvariantCulture,
         $"x={Xy.X:F5}  y={Xy.Y:F5}    u={Uv1960.X:F5}  v={Uv1960.Y:F5}    u′={Uv1976.X:F5}  v′={Uv1976.Y:F5}\n{CctText}   {WavelengthText}   {PurityText} ({WhiteName})");
 

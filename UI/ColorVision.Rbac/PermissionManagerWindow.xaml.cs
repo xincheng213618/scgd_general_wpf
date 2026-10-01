@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Rbac.DisplayText;
 #pragma warning disable CA1822
 using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Exceptions;
@@ -32,7 +33,7 @@ namespace ColorVision.Rbac
             // 权限检查
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("只有管理员才能访问权限管理功能。", "权限不足", 
+                MessageBox.Show(LocalizedText.Get("只有管理员才能访问权限管理功能。"), LocalizedText.Get("权限不足"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 Close();
                 return;
@@ -45,23 +46,23 @@ namespace ColorVision.Rbac
         {
             try
             {
-                StatusText.Text = "正在加载数据...";
-                
+                StatusText.Text = LocalizedText.Get("正在加载数据...");
+
                 // 加载角色列表
                 var roles = await _rbacManager.RoleService.GetAllRolesAsync();
                 RolesListBox.ItemsSource = roles;
-                
+
                 // 加载所有权限并按组分类
                 var allPermissions = await _rbacManager.PermissionService.GetAllAsync();
                 _permissionGroups = GroupPermissions(allPermissions);
-                
-                StatusText.Text = $"就绪 - 共{roles.Count}个角色，{allPermissions.Count}个权限";
+
+                StatusText.Text = LocalizedText.Format($"就绪 - 共{roles.Count}个角色，{allPermissions.Count}个权限");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"加载数据失败: {ex.Message}", "错误", 
+                MessageBox.Show(LocalizedText.Format($"加载数据失败: {ex.Message}"), LocalizedText.Get("错误"),
                     MessageBoxButton.OK, MessageBoxImage.Error);
-                StatusText.Text = "加载失败";
+                StatusText.Text = LocalizedText.Get("加载失败");
             }
         }
 
@@ -94,7 +95,7 @@ namespace ColorVision.Rbac
             {
                 _selectedRole = null;
                 SaveButton.IsEnabled = false;
-                CurrentRoleText.Text = "未选择";
+                CurrentRoleText.Text = LocalizedText.Get("未选择");
                 return;
             }
 
@@ -104,8 +105,8 @@ namespace ColorVision.Rbac
 
             try
             {
-                StatusText.Text = $"正在加载角色 [{role.Name}] 的权限...";
-                
+                StatusText.Text = LocalizedText.Format($"正在加载角色 [{role.Name}] 的权限...");
+
                 // 获取该角色已有的权限
                 var rolePermissions = await _rbacManager.RoleService.GetRolePermissionsAsync(role.Id);
                 var rolePermissionIds = new HashSet<int>(rolePermissions.Select(p => p.Id));
@@ -127,13 +128,13 @@ namespace ColorVision.Rbac
                 // 绑定到TreeView
                 PermissionsTreeView.ItemsSource = _permissionGroups;
 
-                StatusText.Text = $"已加载角色 [{role.Name}] 的权限配置（已分配 {rolePermissionIds.Count} 个权限）";
+                StatusText.Text = LocalizedText.Format($"已加载角色 [{role.Name}] 的权限配置（已分配 {rolePermissionIds.Count} 个权限）");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"加载角色权限失败: {ex.Message}", "错误", 
+                MessageBox.Show(LocalizedText.Format($"加载角色权限失败: {ex.Message}"), LocalizedText.Get("错误"),
                     MessageBoxButton.OK, MessageBoxImage.Error);
-                StatusText.Text = "加载失败";
+                StatusText.Text = LocalizedText.Get("加载失败");
             }
         }
 
@@ -145,7 +146,7 @@ namespace ColorVision.Rbac
             try
             {
                 SaveButton.IsEnabled = false;
-                StatusText.Text = "正在保存权限分配...";
+                StatusText.Text = LocalizedText.Get("正在保存权限分配...");
 
                 // 收集所有选中的权限ID
                 var selectedPermissionIds = _permissionGroups
@@ -156,36 +157,36 @@ namespace ColorVision.Rbac
 
                 // 调用服务保存
                 var success = await _rbacManager.RoleService.AssignPermissionsToRoleAsync(
-                    _selectedRole.Id, 
+                    _selectedRole.Id,
                     selectedPermissionIds);
 
                 if (success)
                 {
                     // 清除该角色相关用户的权限缓存
                     _rbacManager.PermissionChecker.InvalidateAllCache();
-                    
-                    MessageBox.Show($"成功为角色 [{_selectedRole.Name}] 分配了 {selectedPermissionIds.Count} 个权限。", 
-                        "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    
-                    StatusText.Text = $"权限保存成功 - 已分配 {selectedPermissionIds.Count} 个权限";
+
+                    MessageBox.Show(LocalizedText.Format($"成功为角色 [{_selectedRole.Name}] 分配了 {selectedPermissionIds.Count} 个权限。"),
+                        LocalizedText.Get("保存成功"), MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    StatusText.Text = LocalizedText.Format($"权限保存成功 - 已分配 {selectedPermissionIds.Count} 个权限");
                 }
                 else
                 {
-                    MessageBox.Show("保存权限失败，请重试。", "错误", 
+                    MessageBox.Show(LocalizedText.Get("保存权限失败，请重试。"), LocalizedText.Get("错误"),
                         MessageBoxButton.OK, MessageBoxImage.Error);
-                    StatusText.Text = "保存失败";
+                    StatusText.Text = LocalizedText.Get("保存失败");
                 }
             }
             catch (PermissionDeniedException ex)
             {
-                MessageBox.Show(ex.Message, "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
-                StatusText.Text = "权限不足";
+                MessageBox.Show(ex.Message, LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = LocalizedText.Get("权限不足");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败: {ex.Message}", "错误", 
+                MessageBox.Show(LocalizedText.Format($"保存失败: {ex.Message}"), LocalizedText.Get("错误"),
                     MessageBoxButton.OK, MessageBoxImage.Error);
-                StatusText.Text = "保存失败";
+                StatusText.Text = LocalizedText.Get("保存失败");
             }
             finally
             {
@@ -294,7 +295,7 @@ namespace ColorVision.Rbac
         public string? Remark { get; set; }
 
         public bool HasRemark => !string.IsNullOrWhiteSpace(Remark);
-        
+
         public Visibility HasRemarkVisibility => HasRemark ? Visibility.Visible : Visibility.Collapsed;
 
         private bool _isSelected;

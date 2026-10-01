@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -260,7 +261,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             if (node is LocalCalibrationNodeBase)
             {
-                var cacheManagerItem = new MenuItem { Header = LocalizeNodeMenuText("本地校正缓存管理") };
+                var cacheManagerItem = new MenuItem { Header = LocalizeNodeMenuText(LocalizedText.Get("本地校正缓存管理")) };
                 cacheManagerItem.Click += (_, _) => LocalCalibrationCacheManagerWindow.OpenWindow();
                 items.Add(cacheManagerItem);
             }

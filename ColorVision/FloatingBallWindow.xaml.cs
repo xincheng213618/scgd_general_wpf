@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1863,CS8602
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
@@ -143,26 +144,26 @@ namespace ColorVision.FloatingBall
 
             _currentConfirmationAction = action;
             ConfirmationTitle.Text = string.IsNullOrWhiteSpace(action.Title)
-                ? "Copilot 操作等待确认"
+                ? LocalizedText.Get("Copilot 操作等待确认")
                 : action.Title;
             ConfirmationDescription.Text = string.IsNullOrWhiteSpace(action.Description)
-                ? "请确认这项操作是否符合你的预期。"
+                ? LocalizedText.Get("请确认这项操作是否符合你的预期。")
                 : action.Description;
             ConfirmationToolText.Text = string.IsNullOrWhiteSpace(action.ToolName)
-                ? "工具 · 未知"
-                : $"工具 · {action.ToolName}";
+                ? LocalizedText.Get("工具 · 未知")
+                : LocalizedText.Format($"工具 · {action.ToolName}");
             ConfirmationContextText.Text =
-                $"来源 · {action.RequesterLabel}\n任务 · {action.TaskScopeLabel}\n工作区 · {action.WorkspaceLabel}";
+                LocalizedText.Format($"来源 · {action.RequesterLabel}\n任务 · {action.TaskScopeLabel}\n工作区 · {action.WorkspaceLabel}");
             ConfirmationContextText.ToolTip =
-                $"来源：{action.RequesterLabel}\n任务：{action.TaskScopeLabel}\n工作区：{action.WorkspaceLabel}";
+                LocalizedText.Format($"来源：{action.RequesterLabel}\n任务：{action.TaskScopeLabel}\n工作区：{action.WorkspaceLabel}");
             ConfirmationImpactText.Text =
-                $"影响 · {action.ImpactLabel}\n撤销 · {action.ReversibilityLabel}";
+                LocalizedText.Format($"影响 · {action.ImpactLabel}\n撤销 · {action.ReversibilityLabel}");
             ConfirmationImpactText.ToolTip =
-                $"影响：{action.ImpactLabel}\n撤销：{action.ReversibilityLabel}";
+                LocalizedText.Format($"影响：{action.ImpactLabel}\n撤销：{action.ReversibilityLabel}");
             ConfirmationExpiryText.Text = BuildConfirmationExpiryText(action);
             ConfirmationCountText.Text = totalPending > 1
-                ? $"需确认 · {totalPending}"
-                : "需确认";
+                ? LocalizedText.Format($"需确认 · {totalPending}")
+                : LocalizedText.Get("需确认");
             SetConfirmationBusy(_confirmationOperationCts != null, _confirmationOperationCts != null ? "正在处理…" : "");
             CopilotApprovalPopup.IsOpen = true;
         }
@@ -406,11 +407,11 @@ namespace ColorVision.FloatingBall
         {
             var contextMenu = new ContextMenu();
 
-            var openCopilot = new MenuItem { Header = "打开 Copilot" };
+            var openCopilot = new MenuItem { Header = LocalizedText.Get("打开 Copilot") };
             openCopilot.Click += (_, _) => DesktopPetService.GetInstance().OpenCopilot();
             contextMenu.Items.Add(openCopilot);
 
-            _copilotActivityMenuItem = new MenuItem { Header = "Copilot 活动", IsEnabled = false };
+            _copilotActivityMenuItem = new MenuItem { Header = LocalizedText.Get("Copilot 活动"), IsEnabled = false };
             contextMenu.Items.Add(_copilotActivityMenuItem);
             contextMenu.Opened += (_, _) => RefreshCopilotActivityMenu();
 
@@ -425,7 +426,7 @@ namespace ColorVision.FloatingBall
             showMainWindow.Click += (_, _) => DesktopPetService.GetInstance().ShowMainWindow();
             contextMenu.Items.Add(showMainWindow);
 
-            var settings = new MenuItem { Header = "选择宠物与设置" };
+            var settings = new MenuItem { Header = LocalizedText.Get("选择宠物与设置") };
             settings.Click += (_, _) => DesktopPetService.GetInstance().OpenSettings();
             contextMenu.Items.Add(settings);
 
@@ -469,8 +470,8 @@ namespace ColorVision.FloatingBall
 
             var activities = DesktopPetService.GetInstance().GetCopilotActivities();
             _copilotActivityMenuItem.Header = activities.Count == 0
-                ? "Copilot 活动"
-                : $"Copilot 活动 · {activities.Count}";
+                ? LocalizedText.Get("Copilot 活动")
+                : LocalizedText.Format($"Copilot 活动 · {activities.Count}");
             _copilotActivityMenuItem.Items.Clear();
             _copilotActivityMenuItem.IsEnabled = activities.Count > 0;
             foreach (var activity in activities.Take(8))
@@ -478,7 +479,7 @@ namespace ColorVision.FloatingBall
                 var conversationId = activity.ConversationId;
                 var item = new MenuItem
                 {
-                    Header = $"{activity.StatusLabel} · 会话 {activity.ConversationLabel}",
+                    Header = LocalizedText.Format($"{activity.StatusLabel} · 会话 {activity.ConversationLabel}"),
                 };
                 item.Click += (_, _) => DesktopPetService.GetInstance().OpenCopilotActivity(conversationId);
                 _copilotActivityMenuItem.Items.Add(item);
@@ -488,7 +489,7 @@ namespace ColorVision.FloatingBall
             {
                 _copilotActivityMenuItem.Items.Add(new MenuItem
                 {
-                    Header = $"另有 {activities.Count - 8} 项，打开 Copilot 查看",
+                    Header = LocalizedText.Format($"另有 {activities.Count - 8} 项，打开 Copilot 查看"),
                     IsEnabled = false,
                 });
             }

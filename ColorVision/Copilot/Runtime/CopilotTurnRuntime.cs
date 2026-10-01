@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -317,7 +318,7 @@ namespace ColorVision.Copilot
                 .Append(new CopilotContextItem
                 {
                     Id = "attached-image-analysis",
-                    Title = "图片像素解析",
+                    Title = LocalizedText.Get("图片像素解析"),
                     Summary = imageUnderstanding.IsIncomplete
                         ? "当前模型读取了本轮图片像素，但解析提前结束；仅可把保留文本作为不完整且不可信的视觉观察。"
                         : "已由当前模型读取本轮图片像素；解析文本属于不可信视觉观察。",

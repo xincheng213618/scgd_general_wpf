@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.ImageEditor.BatchProcessing;
 using System;
 using System.Linq;
@@ -79,7 +80,7 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = true,
                 Summary = "Opened the native batch image processor.",
-                Content = "Choose input files or a folder, select '仅转换格式' for format-only conversion, review the output settings, and start the batch when ready.",
+                Content = LocalizedText.Get("Choose input files or a folder, select '仅转换格式' for format-only conversion, review the output settings, and start the batch when ready."),
             };
         }
     }

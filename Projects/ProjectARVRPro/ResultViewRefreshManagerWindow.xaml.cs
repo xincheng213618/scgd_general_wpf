@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -65,7 +66,7 @@ public partial class ResultViewRefreshManagerWindow : Window, INotifyPropertyCha
                 item.Restore();
 
             MessageBox.Show(this,
-                $"保存视图刷新配置失败，本次修改未应用：{ex.Message}",
+                LocalizedText.Format($"保存视图刷新配置失败，本次修改未应用：{ex.Message}"),
                 "ColorVision",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

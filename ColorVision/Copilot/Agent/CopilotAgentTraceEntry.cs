@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
@@ -670,10 +671,10 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string OperationLabel => Operation switch
         {
-            "Create" => "新建",
-            "Update" => "更新",
-            "Delete" => "删除",
-            _ => "修改",
+            "Create" => LocalizedText.Get("新建"),
+            "Update" => LocalizedText.Get("更新"),
+            "Delete" => LocalizedText.Get("删除"),
+            _ => LocalizedText.Get("修改"),
         };
 
         internal bool EnsureValid(out bool changed)

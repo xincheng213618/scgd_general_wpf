@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 #pragma warning disable CS8604
 using ColorVision.Themes;
 using Microsoft.Win32;
@@ -24,7 +25,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             _result = result;
             _json = FormatJson(rawJson);
 
-            SummaryText.Text = $"状态: {(_result.Success ? "OK" : "异常")}    点数: {_result.Count} / 候选: {_result.CandidateCount}";
+            SummaryText.Text = LocalizedText.Format($"状态: {(_result.Success ? "OK" : LocalizedText.Get("异常"))}    点数: {_result.Count} / 候选: {_result.CandidateCount}");
             StatusText.Text = BuildStatusText();
             MetricsGrid.ItemsSource = BuildMetricRows(_result);
             PointsGrid.ItemsSource = _result.Points.Count > 0 ? _result.Points : _result.CandidatePoints;
@@ -142,7 +143,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             }
 
             File.WriteAllText(dialog.FileName, _json, Encoding.UTF8);
-            MessageBox.Show($"已导出:\n{dialog.FileName}", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(LocalizedText.Format($"已导出:\n{dialog.FileName}"), LocalizedText.Get("导出完成"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void ExportCsv_Click(object sender, RoutedEventArgs e)
@@ -160,7 +161,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9
             }
 
             File.WriteAllText(dialog.FileName, BuildCsv(), Encoding.UTF8);
-            MessageBox.Show($"已导出:\n{dialog.FileName}", "导出完成", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(LocalizedText.Format($"已导出:\n{dialog.FileName}"), LocalizedText.Get("导出完成"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void CopyJson_Click(object sender, RoutedEventArgs e)

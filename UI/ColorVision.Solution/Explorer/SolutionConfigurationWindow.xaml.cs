@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.Windows;
 
 namespace ColorVision.Solution.Explorer
@@ -32,7 +33,7 @@ namespace ColorVision.Solution.Explorer
                 UpdateSaveState();
                 MessageBox.Show(
                     this,
-                    "请先修复验证结果中的错误。",
+                    LocalizedText.Get("请先修复验证结果中的错误。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using log4net;
 using System.Collections.ObjectModel;
@@ -30,7 +31,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
 
         public TemplateOLEDAOI()
         {
-            Title = "OLED AOI模板管理";
+            Title = LocalizedText.Get("OLED AOI模板管理");
             Code = "OLED.AOI";
             Name = "OLED_AOI";
             TemplateDicId = 28;

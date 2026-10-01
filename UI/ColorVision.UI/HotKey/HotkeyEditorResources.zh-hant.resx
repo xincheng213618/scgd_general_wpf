@@ -19,13 +19,13 @@
   <data name="Count" xml:space="preserve"><value>{0} 項操作 · {1} 項已修改 · {2} 項未分配</value></data>
   <data name="SearchCount" xml:space="preserve"><value>找到 {0} / {1} 項操作</value></data>
   <data name="Saved" xml:space="preserve"><value>快捷鍵已保存</value></data>
-  <data name="ResetConfirm" xml:space="preserve"><value>將所有已加載操作的快捷鍵和全局模式恢復爲默認值？此操作不會重置其他設置。</value></data>
+  <data name="ResetConfirm" xml:space="preserve"><value>將所有已加載操作的快捷鍵和全局模式恢復為默認值？此操作不會重置其他設置。</value></data>
   <data name="ResetTitle" xml:space="preserve"><value>恢復默認快捷鍵</value></data>
   <data name="EditTitle" xml:space="preserve"><value>編輯快捷鍵</value></data>
   <data name="Record" xml:space="preserve"><value>按下新的組合鍵</value></data>
   <data name="RecordHelp" xml:space="preserve"><value>點擊輸入框並按下組合鍵。每組綁定都能觸發此操作。Tab 切換焦點，Esc 取消。</value></data>
   <data name="GlobalOption" xml:space="preserve"><value>全局生效</value></data>
-  <data name="GlobalHelp" xml:space="preserve"><value>此設置作用於該操作的全部快捷鍵。開啓後，應用在後臺時也可以觸發。</value></data>
+  <data name="GlobalHelp" xml:space="preserve"><value>此設置作用於該操作的全部快捷鍵。開啟後，應用在後臺時也可以觸發。</value></data>
   <data name="Default" xml:space="preserve"><value>默認：{0}</value></data>
   <data name="Apply" xml:space="preserve"><value>保存</value></data>
   <data name="Cancel" xml:space="preserve"><value>取消</value></data>

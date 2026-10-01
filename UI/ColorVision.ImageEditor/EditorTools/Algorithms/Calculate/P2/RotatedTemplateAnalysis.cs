@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -65,9 +66,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 return Array.Empty<MenuItem>();
             }
 
-            MenuItem setTemplate = new() { Header = "设为旋转匹配模板" };
+            MenuItem setTemplate = new() { Header = LocalizedText.Get("设为旋转匹配模板") };
             setTemplate.Click += (_, _) => SetTemplate(roi);
-            MenuItem matchInRoi = new() { Header = "在此 ROI 执行旋转模板匹配" };
+            MenuItem matchInRoi = new() { Header = LocalizedText.Get("在此 ROI 执行旋转模板匹配") };
             matchInRoi.Click += (_, _) => RotatedTemplateLocalAnalysis.Open(_imageContext, _drawContext, _config, roi);
             return new[] { setTemplate, matchInRoi };
         }
@@ -81,14 +82,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                 session.Template = template;
                 session.Description = $"当前图像 ROI: {P2RoiHelper.Describe(roi)}";
                 MessageBox.Show(
-                    $"模板已设置：{template.PixelWidth} x {template.PixelHeight}\n{session.Description}",
+                    LocalizedText.Format($"模板已设置：{template.PixelWidth} x {template.PixelHeight}\n{session.Description}"),
                     ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate,
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "设置模板失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, LocalizedText.Get("设置模板失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -118,7 +119,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             using ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("当前没有可匹配的图像。", ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前没有可匹配的图像。"), ColorVision.ImageEditor.Properties.Resources.Algorithm_RotatedTemplate, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -126,8 +127,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             if (session.Template == null)
             {
                 MessageBox.Show(
-                    "请先在图像上绘制矩形，右键该矩形并选择“设为旋转匹配模板”。",
-                    "尚未设置模板",
+                    LocalizedText.Get("请先在图像上绘制矩形，右键该矩形并选择“设为旋转匹配模板”。"),
+                    LocalizedText.Get("尚未设置模板"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
