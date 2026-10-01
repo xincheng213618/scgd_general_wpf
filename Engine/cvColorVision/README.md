@@ -9,6 +9,7 @@ ColorVision 的供应商 native 绑定层，通过 P/Invoke 和薄包装暴露�
 - `CVCommCore.*` / `MQTTMessageLib.*` 的当前源码类型编入 `cvColorVision.dll`，不会另生成同名 DLL；旧插件若引用独立程序集，仍须保留其匹配依赖，不能通过改名本 DLL 替代。
 - Release 构建会检查高立通 x64 运行依赖是否齐全。托管构建或 NuGet 打包成功不证明设备可用、native ABI 全部兼容或许可证分支已验证。
 - 当前内部版相机创建接口支持空配置路径，直接初始化 native 默认参数；默认交付不含 `cfg/sys.cfg`。显式文件参数仍保留兼容支持，运行时相机和校准参数继续通过 JSON 接口注入，须使用配套更新的 `cvCamera.dll`。
+- 当前内部版不使用 `CameraAttribute.db`：读出模式保留相机 SDK 默认值，制冷能力由 SDK 查询，温控开关和目标温度来自相机配置；不交付 `cvTableList.dll` 和它使用的 `sqlite3.dll`。托管 SQLite 的 `SQLitePCLRaw` / `e_sqlite3.dll` 依赖继续保留。
 - 句柄、缓冲区大小与释放顺序须按具体入口核对；接口混用 `int`、`bool`、`void`，不能套用统一的成功返回码，也不能把初始化状态码当新句柄。
 - 连接、采集、校准、图卡切换及源表输出可能改变真实设备状态。文档示例和接口存在不构成操作授权；不得为验证文档而连接硬件或执行这些调用。
 

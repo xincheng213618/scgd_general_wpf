@@ -49,17 +49,7 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="runtimes\win-x64\native\sqlite3.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="runtimes\win-x64\native\cvTableList.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
