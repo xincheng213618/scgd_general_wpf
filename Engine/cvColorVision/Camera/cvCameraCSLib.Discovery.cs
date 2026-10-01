@@ -84,6 +84,7 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseResource", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern void ReleaseResource();
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManagerV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        // Null or empty selects the native defaults; explicit files remain supported for compatibility.
         public unsafe static extern IntPtr CM_CreatCameraManagerV1(CameraModel eMdl, CameraMode eMode, string cfgFilename);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAllCameraID", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]

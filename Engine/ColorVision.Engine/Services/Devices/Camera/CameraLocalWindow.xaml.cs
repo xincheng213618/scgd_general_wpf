@@ -63,7 +63,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         CameraModel m_eCameraMdl = CameraModel.QHY_USB;
         CameraMode m_eCameraMode = CameraMode.CV_MODE;
 
-        public string strPathSysCfg = "cfg\\sys.cfg";
 
         public DeviceCamera Device { get; set; }
 

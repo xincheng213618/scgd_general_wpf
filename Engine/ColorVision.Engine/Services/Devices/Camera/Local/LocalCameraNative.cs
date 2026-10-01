@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     {
         public IntPtr Initialize()
         {
-            IntPtr manager = cvCameraCSLib.CM_CreatCameraManagerV1(device.Config.CameraModel, device.Config.CameraMode, "cfg\\sys.cfg");
+            IntPtr manager = cvCameraCSLib.CM_CreatCameraManagerV1(device.Config.CameraModel, device.Config.CameraMode, null);
             if (manager == IntPtr.Zero) throw new InvalidOperationException($"创建本地相机管理器失败：{device.Code}");
             if (cvCameraCSLib.CM_InitXYZ(manager) == 0)
             {

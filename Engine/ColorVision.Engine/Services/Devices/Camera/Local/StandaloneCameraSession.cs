@@ -2,7 +2,6 @@ using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +17,6 @@ public sealed class StandaloneCameraOptions
     public CameraMode Mode { get; set; } = CameraMode.BV_MODE;
     [Browsable(false)]
     public string CameraId { get; set; } = string.Empty;
-    [Browsable(false)]
-    public string ConfigurationFile { get; set; } = "cfg/sys.cfg";
     [Category("采集"), DisplayName("位深"), Description("支持 8 或 16 位；实际支持能力由相机驱动决定。")]
     public int BitDepth { get; set; } = 8;
     [Category("采集"), DisplayName("曝光时间 (ms)")]
@@ -108,9 +105,7 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
             if (IsConnected) throw new InvalidOperationException("请先断开当前相机，再切换连接参数或采集模式。");
             await Task.Run(() =>
             {
-                string config = Path.GetFullPath(copy.ConfigurationFile, AppContext.BaseDirectory);
-                if (!File.Exists(config)) throw new FileNotFoundException("相机运行文件缺失，请检查安装目录中的 cfg/sys.cfg。", config);
-                IntPtr handle = cvCameraCSLib.CM_CreatCameraManagerV1(copy.Model, copy.Mode, config);
+                IntPtr handle = cvCameraCSLib.CM_CreatCameraManagerV1(copy.Model, copy.Mode, null);
                 if (handle == IntPtr.Zero) throw new InvalidOperationException("创建相机 SDK 会话失败，请检查驱动、SDK 配置及许可证。");
                 try
                 {

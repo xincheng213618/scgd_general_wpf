@@ -23,7 +23,9 @@ OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，�
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
-默认交付保留 `cfg/sys.cfg`，不再捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，本调整不代表移除了这些相机 SDK 或改变了相机类型枚举。仓库与 PluginKit 的共享文件清单、CameraTest 独立包均遵循此边界；主安装器的外部 AIP 文件也须同步移除对应文件、组件和目录引用。
+默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。仓库、PluginKit 共享清单、CameraTest 独立包与主安装器的外部 AIP 均不再引用该文件。
+
+默认交付也不捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，这不代表移除了这些相机 SDK 或改变了相机类型枚举。
 
 原始配置在仓库 `docs/_history/device-configs/ikap-mil/` 归档，不参与运行输出和默认安装包。该目录的 `manifest.json` 记录原始路径、字节数和 SHA-256，`README.txt` 说明按设备恢复工程复制项、安装器和共享清单的方法。恢复前应核对设备型号与位深，并在真实采集卡上验收，不能直接将历史配置当作所有 IKap/MIL 设备的通用默认值。
 

@@ -1620,7 +1620,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
         public IntPtr m_hCamHandle;
-        public string strPathSysCfg = "cfg\\sys.cfg";
         private TimedButtonOperationRegistry EnsureTimedButtonOperations()
         {
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
@@ -1841,7 +1840,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (m_hCamHandle == IntPtr.Zero)
             {
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
+                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, null);
                 int initResult = cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
                 if (initResult != cvErrorDefine.CV_ERR_SUCCESS)
                 {
