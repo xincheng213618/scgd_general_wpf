@@ -11025,7 +11025,8 @@
         "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"
+        "Test/ColorVision.UI.Tests/FlowLocalizationTests.cs",
+        "Test/ColorVision.UI.Tests/UiLocalizationConsistencyTests.cs"
       ],
       "related": [
         "ui.framework",

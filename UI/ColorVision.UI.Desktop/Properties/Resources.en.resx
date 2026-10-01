@@ -1035,4 +1035,7 @@ Continue?</value></data>
   <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>Secure maintenance channel is disabled.</value></data>
   <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>Secure maintenance channel running on HTTPS port {0}.</value></data>
   <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>Secure maintenance channel failed to start: {0}</value></data>
+  <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
+    <value>Some plugin packages could not be downloaded. This bulk update has been canceled.</value>
+  </data>
 </root>

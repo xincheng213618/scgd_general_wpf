@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>存儲與維護</value></data>
+  <data name="Description" xml:space="preserve"><value>清理日誌、臨時文件和可重建緩存；獨立管理歷史數據、備份與設置重置。</value></data>
+  <data name="Space" xml:space="preserve"><value>空間清理</value></data>
+  <data name="Protected" xml:space="preserve"><value>不會刪除檢測原圖、結果、流程模板、設備參數或授權。</value></data>
+  <data name="Scan" xml:space="preserve"><value>掃描空間</value></data>
+  <data name="CleanSelected" xml:space="preserve"><value>清理選中項</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Details" xml:space="preserve"><value>查看清單</value></data>
+  <data name="Clean" xml:space="preserve"><value>清理</value></data>
+  <data name="NotScanned" xml:space="preserve"><value>尚未掃描</value></data>
+  <data name="ScanFirst" xml:space="preserve"><value>先掃描，再確認要清理的文件。</value></data>
+  <data name="Keep" xml:space="preserve"><value>保留最近</value></data>
+  <data name="Days" xml:space="preserve"><value>天</value></data>
+  <data name="Files" xml:space="preserve"><value>項</value></data>
+  <data name="Logs" xml:space="preserve"><value>運行日誌</value></data>
+  <data name="LogsDescription" xml:space="preserve"><value>僅處理日誌輸出目錄中的歷史日誌，保留當前正在寫入的日誌。</value></data>
+  <data name="Temporary" xml:space="preserve"><value>工作臨時文件</value></data>
+  <data name="TemporaryDescription" xml:space="preserve"><value>已過保留期的更新解壓殘留、診斷包和反饋截圖；不掃描其他軟件的臨時文件。</value></data>
+  <data name="Packages" xml:space="preserve"><value>下載與更新緩存</value></data>
+  <data name="PackagesDescription" xml:space="preserve"><value>僅舊安裝包和插件包；保留待安裝更新及可繼續下載的任務。</value></data>
+  <data name="Cie" xml:space="preserve"><value>繪圖緩存</value></data>
+  <data name="CieDescription" xml:space="preserve"><value>可重新生成的 CIE 背景，不包括校準文件或業務圖像。</value></data>
+  <data name="Thumbnails" xml:space="preserve"><value>縮略圖緩存</value></data>
+  <data name="ThumbnailsDescription" xml:space="preserve"><value>僅清空縮略圖索引和預覽，下次瀏覽時按需重建。</value></data>
+  <data name="Scanning" xml:space="preserve"><value>正在掃描…</value></data>
+  <data name="Cleaning" xml:space="preserve"><value>正在清理…</value></data>
+  <data name="ScanComplete" xml:space="preserve"><value>掃描完成。選中需要清理的類別，可先查看具體清單。</value></data>
+  <data name="Result" xml:space="preserve"><value>已釋放 {0}；已刪除 {1} 項，跳過 {2} 項，失敗 {3} 項。</value></data>
+  <data name="Cancelled" xml:space="preserve"><value>操作已取消；已經完成的刪除不會撤銷。</value></data>
+  <data name="ConfirmClean" xml:space="preserve"><value>將永久刪除已掃描的 {0} 項，預計釋放 {1}。運行中的文件或掃描後變化的文件會跳過。是否繼續？</value></data>
+  <data name="History" xml:space="preserve"><value>數據與備份</value></data>
+  <data name="Database" xml:space="preserve"><value>歷史數據維護</value></data>
+  <data name="DatabaseDescription" xml:space="preserve"><value>單獨選擇數據庫、保留時間與備份；不參與空間清理。</value></data>
+  <data name="Manage" xml:space="preserve"><value>管理</value></data>
+  <data name="Snapshots" xml:space="preserve"><value>程序存檔</value></data>
+  <data name="SnapshotsDescription" xml:space="preserve"><value>查看、創建和管理軟件恢復快照；不會隨緩存一起刪除。</value></data>
+  <data name="ConfigBackup" xml:space="preserve"><value>配置恢復點</value></data>
+  <data name="ConfigBackupDescription" xml:space="preserve"><value>備份完整設置文件，包括尚未在本次運行中使用的配置節。</value></data>
+  <data name="CreateBackup" xml:space="preserve"><value>創建備份</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>打開目錄</value></data>
+  <data name="Reset" xml:space="preserve"><value>重置與恢復</value></data>
+  <data name="ResetDescription" xml:space="preserve"><value>僅重置勾選的應用設置，下次啓動生效。啓動時備份成功後纔會應用；設備、數據庫連接、授權和業務數據均保留。</value></data>
+  <data name="Appearance" xml:space="preserve"><value>主題與語言</value></data>
+  <data name="Window" xml:space="preserve"><value>主窗口偏好</value></data>
+  <data name="Hotkeys" xml:space="preserve"><value>快捷鍵</value></data>
+  <data name="Search" xml:space="preserve"><value>搜索偏好</value></data>
+  <data name="Viewer" xml:space="preserve"><value>多圖瀏覽偏好</value></data>
+  <data name="ScheduleReset" xml:space="preserve"><value>安排重置</value></data>
+  <data name="CancelReset" xml:space="preserve"><value>取消待重置</value></data>
+  <data name="ResetConfirm" xml:space="preserve"><value>將重置：{0}。關閉軟件前仍可取消；請保存當前工作後正常重啓。繼續安排？</value></data>
+  <data name="ResetScheduled" xml:space="preserve"><value>已安排下次啓動重置；請先保存工作，再正常重啓軟件。</value></data>
+  <data name="ResetCancelled" xml:space="preserve"><value>已取消待執行的設置重置。</value></data>
+  <data name="BackupCreated" xml:space="preserve"><value>已創建完整配置備份：{0}</value></data>
+  <data name="AdminRequired" xml:space="preserve"><value>此操作需要軟件管理員權限。</value></data>
+  <data name="SelectReset" xml:space="preserve"><value>請至少選擇一項需要重置的設置。</value></data>
+  <data name="FilePath" xml:space="preserve"><value>文件路徑</value></data>
+  <data name="Size" xml:space="preserve"><value>大小</value></data>
+  <data name="Modified" xml:space="preserve"><value>最後修改</value></data>
+  <data name="Warnings" xml:space="preserve"><value>掃描或清理提示</value></data>
+  <data name="ViewWarnings" xml:space="preserve"><value>查看處理結果</value></data>
+  <data name="NoFiles" xml:space="preserve"><value>沒有符合當前條件的可清理文件。</value></data>
+  <data name="Close" xml:space="preserve"><value>關閉</value></data>
+  <data name="BusyClose" xml:space="preserve"><value>清理仍在進行。請先取消或等待完成後再關閉設置窗口。</value></data>
+  <data name="ScanChanged" xml:space="preserve"><value>保留時間已變化，請重新掃描。</value></data>
+  <data name="Pending" xml:space="preserve"><value>待下次啓動重置：{0}</value></data>
+  <data name="CacheUnavailable" xml:space="preserve"><value>緩存不存在或暫無可清理項。</value></data>
+  <data name="Failed" xml:space="preserve"><value>操作未完成：{0}</value></data>
+  <data name="ThumbnailList" xml:space="preserve"><value>縮略圖由緩存管理器清理，不會刪除原圖文件。</value></data>
+  <data name="StoppedForSafety" xml:space="preserve"><value>爲保護活躍任務，本類別暫不清理。</value></data>
+  <data name="FlowBusy" xml:space="preserve"><value>請先停止檢測或採集，並確認數據庫沒有其他寫入方，再進行歷史數據維護。</value></data>
+  <data name="ResetApplied" xml:space="preserve"><value>設置重置已完成。完整配置備份：{0}</value></data>
+  <data name="Reclaimable" xml:space="preserve"><value>選中項預計可釋放</value></data>
+  <data name="ResetDeferred" xml:space="preserve"><value>其他 ColorVision 實例仍在運行，本次已延後重置。請保存工作、關閉所有實例後再啓動。</value></data>
+  <data name="UpdateTemporaryProtected" xml:space="preserve"><value>存在進行中或待安裝的更新，更新臨時文件暫不清理。</value></data>
+  <data name="FeedbackProtected" xml:space="preserve"><value>反饋窗口仍在使用診斷包和截圖，這些附件暫不清理。</value></data>
+  <data name="UpdatePackagesProtected" xml:space="preserve"><value>存在進行中或待安裝的更新，本次保留全部安裝包緩存。</value></data>
+  <data name="ResetStartupFailed" xml:space="preserve"><value>上次啓動未能完成重置：{0}。可取消計劃後檢查配置和備份。</value></data>
+</root>

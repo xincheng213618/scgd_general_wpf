@@ -9,6 +9,6 @@ public sealed class FlowTemplateManagerWindow : TemplateBrowserWindow
         : this(template, selectedIndex, FlowTemplateCoverService.Shared) { }
 
     internal FlowTemplateManagerWindow(TemplateFlow template, int selectedIndex, FlowTemplateCoverService coverService)
-        : base(template, selectedIndex, new TemplateBrowserOptions("流程", true,
+        : base(template, selectedIndex, new TemplateBrowserOptions(Properties.Resources.Flow, true,
             item => template.Save((TemplateModel<FlowParam>)item)), coverService) { }
 }

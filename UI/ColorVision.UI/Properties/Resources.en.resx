@@ -614,4 +614,227 @@
   <data name="SettingsSectionPaths" xml:space="preserve"><value>System paths</value></data>
   <data name="SettingsSectionExtensions" xml:space="preserve"><value>Extensions</value></data>
   <data name="SettingsSectionOther" xml:space="preserve"><value>Other</value></data>
+  <data name="DisplayControlManagerTitle" xml:space="preserve">
+    <value>Device Control Manager</value>
+  </data>
+  <data name="DisplayControlsTitle" xml:space="preserve">
+    <value>Device Controls</value>
+  </data>
+  <data name="DisplayControlsDescription" xml:space="preserve">
+    <value>Manage groups and control visibility</value>
+  </data>
+  <data name="DisplayControlGroups" xml:space="preserve">
+    <value>Groups</value>
+  </data>
+  <data name="DisplayControlAllItems" xml:space="preserve">
+    <value>All Controls</value>
+  </data>
+  <data name="DisplayControlName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="DisplayControlGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="DisplayControlVisible" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="DisplayControlPinned" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="DisplayControlExpanded" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="DisplayControlOrder" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="DisplayControlEmpty" xml:space="preserve">
+    <value>No controls available</value>
+  </data>
+  <data name="DisplayControlVisibilityHint" xml:space="preserve">
+    <value>Hiding a control only affects the device control panel. Devices and flows continue to run.</value>
+  </data>
+  <data name="DisplayControlCreateGroup" xml:space="preserve">
+    <value>New Group</value>
+  </data>
+  <data name="DisplayControlRenameGroup" xml:space="preserve">
+    <value>Rename Group</value>
+  </data>
+  <data name="DisplayControlDeleteGroup" xml:space="preserve">
+    <value>Delete Group</value>
+  </data>
+  <data name="DisplayControlGroupName" xml:space="preserve">
+    <value>Group Name</value>
+  </data>
+  <data name="DisplayControlDefaultGroup" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="DisplayControlUnnamedGroup" xml:space="preserve">
+    <value>Unnamed Group</value>
+  </data>
+  <data name="DisplayControlNewGroupName" xml:space="preserve">
+    <value>Group {0}</value>
+  </data>
+  <data name="DisplayControlDeleteGroupPrompt" xml:space="preserve">
+    <value>Delete group "{0}"? Its controls will move to the default group.</value>
+  </data>
+  <data name="DisplayControlGroupActions" xml:space="preserve">
+    <value>Group Actions</value>
+  </data>
+  <data name="DisplayControlExpandGroupHint" xml:space="preserve">
+    <value>Expand or collapse the group in the device control panel</value>
+  </data>
+  <data name="DisplayControlMoveToGroupHint" xml:space="preserve">
+    <value>Move to a group</value>
+  </data>
+  <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
+    <value>Show or hide in the device control panel</value>
+  </data>
+  <data name="DisplayControlPinTooltip" xml:space="preserve">
+    <value>Pin or unpin within the group</value>
+  </data>
+  <data name="DisplayControlExpandTooltip" xml:space="preserve">
+    <value>Expand or collapse the control</value>
+  </data>
+  <data name="DisplayControlMoveUp" xml:space="preserve">
+    <value>Move up within the group</value>
+  </data>
+  <data name="DisplayControlMoveDown" xml:space="preserve">
+    <value>Move down within the group</value>
+  </data>
+  <data name="DisplayControlExpandGroupAccessible" xml:space="preserve">
+    <value>Expand or collapse group {0}</value>
+  </data>
+  <data name="DisplayControlGroupAccessible" xml:space="preserve">
+    <value>Group for {0}</value>
+  </data>
+  <data name="DisplayControlShowAccessible" xml:space="preserve">
+    <value>Show {0}</value>
+  </data>
+  <data name="DisplayControlPinAccessible" xml:space="preserve">
+    <value>Pin {0}</value>
+  </data>
+  <data name="DisplayControlExpandAccessible" xml:space="preserve">
+    <value>Expand or collapse {0}</value>
+  </data>
+  <data name="DisplayControlItemCount" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="FlowStatusIdle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="FlowStatusWaiting" xml:space="preserve">
+    <value>Waiting to start the test</value>
+  </data>
+  <data name="FlowStatusNotStarted" xml:space="preserve">
+    <value>The test has not started.</value>
+  </data>
+  <data name="FlowStatusFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="FlowStatusNotice" xml:space="preserve">
+    <value>Notice</value>
+  </data>
+  <data name="FlowStatusPreparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="FlowStatusPreparingMessage" xml:space="preserve">
+    <value>Preparing the flow</value>
+  </data>
+  <data name="FlowStatusPreparingDetails" xml:space="preserve">
+    <value>Flow: {0}
+Preparing the flow and preprocessing.</value>
+  </data>
+  <data name="FlowStatusRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="FlowStatusRunningMessage" xml:space="preserve">
+    <value>Executing the flow</value>
+  </data>
+  <data name="FlowStatusExecutingNode" xml:space="preserve">
+    <value>Executing: {0}</value>
+  </data>
+  <data name="FlowStatusRunningDetails" xml:space="preserve">
+    <value>Flow: {0}
+Current node: {1}
+Elapsed: {2:N0} ms</value>
+  </data>
+  <data name="FlowStatusLastExecution" xml:space="preserve">
+    <value>
+Last run: {0:N0} ms</value>
+  </data>
+  <data name="FlowStatusRemaining" xml:space="preserve">
+    <value>
+Estimated remaining: {0:N0} ms (based on the last run)</value>
+  </data>
+  <data name="FlowStatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="FlowStatusCompletedMessage" xml:space="preserve">
+    <value>Flow completed</value>
+  </data>
+  <data name="FlowStatusTimedOut" xml:space="preserve">
+    <value>Timed Out</value>
+  </data>
+  <data name="FlowStatusTimedOutMessage" xml:space="preserve">
+    <value>Flow execution timed out</value>
+  </data>
+  <data name="FlowStatusCanceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="FlowStatusCanceledMessage" xml:space="preserve">
+    <value>Test canceled</value>
+  </data>
+  <data name="FlowStatusFailedMessage" xml:space="preserve">
+    <value>Flow execution failed</value>
+  </data>
+  <data name="FlowStatusPictureSwitchFailed" xml:space="preserve">
+    <value>Image switch failed</value>
+  </data>
+  <data name="FlowStatusPreprocessFailed" xml:space="preserve">
+    <value>Preprocessing failed</value>
+  </data>
+  <data name="FlowStatusStartRejected" xml:space="preserve">
+    <value>The flow could not start</value>
+  </data>
+  <data name="FlowStatusFinishedDetails" xml:space="preserve">
+    <value>Flow: {0}
+Status: {1} ({2})
+Message: {3}</value>
+  </data>
+  <data name="FlowStatusOriginalMessage" xml:space="preserve">
+    <value>
+Original message: {0}</value>
+  </data>
+  <data name="FlowStatusElapsed" xml:space="preserve">
+    <value>
+Duration: {0:N0} ms</value>
+  </data>
+  <data name="FlowStatusAdditionalMessage" xml:space="preserve">
+    <value>{0} · {1}: {2}</value>
+  </data>
+  <data name="FlowStatusAdditionalDetails" xml:space="preserve">
+    <value>{0}
+{1}: {2}</value>
+  </data>
+  <data name="FlowStatusViewDetails" xml:space="preserve">
+    <value>View full execution details</value>
+  </data>
+  <data name="FlowStatusDetails" xml:space="preserve">
+    <value>Execution Details</value>
+  </data>
+  <data name="FlowStatusCopy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FlowStatusCopied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="FlowStatusRetryCopy" xml:space="preserve">
+    <value>Retry Copy</value>
+  </data>
+  <data name="DisplayControlGroupMoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="DisplayControlGroupMoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
 </root>

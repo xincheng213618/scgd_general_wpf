@@ -1096,4 +1096,160 @@
   <data name="Algorithm_ImagingCorrection" xml:space="preserve"><value>成像校正…</value></data>
   <data name="Algorithm_FrequencySpectrum" xml:space="preserve"><value>頻譜分析…</value></data>
   <data name="Algorithm_MoireAnalysis" xml:space="preserve"><value>摩爾紋分析…</value></data>
+  <data name="ContextSettingsNoData" xml:space="preserve">
+    <value>無數據</value>
+  </data>
+  <data name="BatchTitle" xml:space="preserve">
+    <value>批量執行圖像算法</value>
+  </data>
+  <data name="BatchAlgorithm" xml:space="preserve">
+    <value>算法</value>
+  </data>
+  <data name="BatchOutput" xml:space="preserve">
+    <value>輸出</value>
+  </data>
+  <data name="BatchOutputFormat" xml:space="preserve">
+    <value>結果格式</value>
+  </data>
+  <data name="BatchFilenameSuffix" xml:space="preserve">
+    <value>文件名後綴</value>
+  </data>
+  <data name="BatchOutputDirectory" xml:space="preserve">
+    <value>輸出目錄</value>
+  </data>
+  <data name="BatchOutputDirectoryHint" xml:space="preserve">
+    <value>留空時保存到每個源文件所在目錄</value>
+  </data>
+  <data name="BatchBrowse" xml:space="preserve">
+    <value>瀏覽...</value>
+  </data>
+  <data name="BatchPreserveFolders" xml:space="preserve">
+    <value>文件夾輸入時保留目錄結構</value>
+  </data>
+  <data name="BatchAvoidOverwrite" xml:space="preserve">
+    <value>不覆蓋已有結果（自動追加編號）</value>
+  </data>
+  <data name="BatchInputImages" xml:space="preserve">
+    <value>待處理圖像</value>
+  </data>
+  <data name="BatchAddFiles" xml:space="preserve">
+    <value>添加文件...</value>
+  </data>
+  <data name="BatchAddFolder" xml:space="preserve">
+    <value>添加文件夾...</value>
+  </data>
+  <data name="BatchRemoveSelected" xml:space="preserve">
+    <value>移除選中</value>
+  </data>
+  <data name="BatchClear" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="BatchIncludeSubfolders" xml:space="preserve">
+    <value>包含子文件夾</value>
+  </data>
+  <data name="BatchFilename" xml:space="preserve">
+    <value>文件名</value>
+  </data>
+  <data name="BatchSourceFile" xml:space="preserve">
+    <value>源文件</value>
+  </data>
+  <data name="BatchStatus" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="BatchOutputFile" xml:space="preserve">
+    <value>輸出文件</value>
+  </data>
+  <data name="BatchNotStarted" xml:space="preserve">
+    <value>尚未執行</value>
+  </data>
+  <data name="BatchCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="BatchStart" xml:space="preserve">
+    <value>開始執行</value>
+  </data>
+  <data name="BatchOutputHint" xml:space="preserve">
+    <value>輸出目錄留空時，將在源文件同目錄按“原名 + 後綴”保存；CVRAW/CVCIE 的“與源格式相同”會輸出 TIFF。</value>
+  </data>
+  <data name="BatchSameAsSource" xml:space="preserve">
+    <value>與源格式相同</value>
+  </data>
+  <data name="BatchNoExtraParameters" xml:space="preserve">
+    <value>此算法無需額外參數</value>
+  </data>
+  <data name="BatchSelectInputFolder" xml:space="preserve">
+    <value>選擇包含待處理圖像的文件夾</value>
+  </data>
+  <data name="BatchAddFolderFailed" xml:space="preserve">
+    <value>添加文件夾失敗</value>
+  </data>
+  <data name="BatchSelectOutputFolder" xml:space="preserve">
+    <value>選擇結果圖像的保存目錄</value>
+  </data>
+  <data name="BatchAddImagesFirst" xml:space="preserve">
+    <value>請先添加需要處理的圖像。</value>
+  </data>
+  <data name="BatchRunTitle" xml:space="preserve">
+    <value>批量執行</value>
+  </data>
+  <data name="BatchInvalidSuffix" xml:space="preserve">
+    <value>文件名後綴包含無效字符。</value>
+  </data>
+  <data name="BatchInvalidOutputFolder" xml:space="preserve">
+    <value>輸出目錄無效：{0}</value>
+  </data>
+  <data name="BatchCanceledSummary" xml:space="preserve">
+    <value>已取消。成功 {0} 個，失敗 {1} 個。</value>
+  </data>
+  <data name="BatchCompletedSummary" xml:space="preserve">
+    <value>處理完成。成功 {0} 個，失敗 {1} 個。</value>
+  </data>
+  <data name="BatchFileFilter" xml:space="preserve">
+    <value>支持的圖像文件 ({0})|{0}|所有文件 (*.*)|*.*</value>
+  </data>
+  <data name="BatchFileCount" xml:space="preserve">
+    <value>共 {0} 個文件</value>
+  </data>
+  <data name="BatchCanceling" xml:space="preserve">
+    <value>正在取消...</value>
+  </data>
+  <data name="BatchWaiting" xml:space="preserve">
+    <value>等待處理</value>
+  </data>
+  <data name="BatchProcessing" xml:space="preserve">
+    <value>處理中...</value>
+  </data>
+  <data name="BatchCompleted" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="BatchCanceled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="BatchFailed" xml:space="preserve">
+    <value>失敗：{0}</value>
+  </data>
+  <data name="BatchUnsupportedFormat" xml:space="preserve">
+    <value>不支持的圖像格式：{0}</value>
+  </data>
+  <data name="BatchFormatOnly" xml:space="preserve">
+    <value>僅轉換格式</value>
+  </data>
+  <data name="BatchAlgorithmMorphology" xml:space="preserve">
+    <value>形態學操作</value>
+  </data>
+  <data name="BatchAlgorithmDenoise" xml:space="preserve">
+    <value>降噪濾波</value>
+  </data>
+  <data name="BatchImageReadFailed" xml:space="preserve">
+    <value>無法讀取圖像：{0}</value>
+  </data>
+  <data name="BatchCannotOverwriteSource" xml:space="preserve">
+    <value>輸出文件不能覆蓋源文件，請設置輸出後綴或輸出目錄。</value>
+  </data>
+  <data name="BatchImageSaveFailed" xml:space="preserve">
+    <value>保存圖像失敗：{0}</value>
+  </data>
+  <data name="BatchAnalyzing" xml:space="preserve">
+    <value>分析中...</value>
+  </data>
 </root>

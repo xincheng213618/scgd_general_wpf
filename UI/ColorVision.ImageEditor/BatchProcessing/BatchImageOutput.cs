@@ -42,7 +42,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             if (Path.GetFullPath(outputPath).Equals(Path.GetFullPath(item.FilePath), StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("输出文件不能覆盖源文件，请设置输出后缀或输出目录。");
+                throw new InvalidOperationException(Properties.Resources.BatchCannotOverwriteSource);
             }
 
             int index = 2;
@@ -94,7 +94,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
                 if (!Cv2.ImWrite(temporaryPath, writable))
                 {
-                    throw new IOException($"保存图像失败：{fullPath}");
+                    throw new IOException(string.Format(Properties.Resources.BatchImageSaveFailed, fullPath));
                 }
 
                 File.Move(temporaryPath, fullPath, overwrite);

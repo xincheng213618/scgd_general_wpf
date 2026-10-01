@@ -5222,4 +5222,237 @@ This waits for calibration and image copies to finish and keeps disk files. Cach
   <data name="ServiceType_LightingControl" xml:space="preserve">
     <value>Lighting control</value>
   </data>
+  <data name="TemplateBrowserOpenEditor" xml:space="preserve">
+    <value>Open Editor</value>
+  </data>
+  <data name="TemplateBrowserLegacyManager" xml:space="preserve">
+    <value>Legacy Manager</value>
+  </data>
+  <data name="TemplateBrowserSwap" xml:space="preserve">
+    <value>Swap Positions</value>
+  </data>
+  <data name="TemplateBrowserHeading" xml:space="preserve">
+    <value>{0} Templates</value>
+  </data>
+  <data name="TemplateBrowserNew" xml:space="preserve">
+    <value>New {0}</value>
+  </data>
+  <data name="TemplateBrowserSearch" xml:space="preserve">
+    <value>Search {0} names</value>
+  </data>
+  <data name="TemplateBrowserCoverTiles" xml:space="preserve">
+    <value>Cover Tiles</value>
+  </data>
+  <data name="TemplateBrowserIconTiles" xml:space="preserve">
+    <value>Icon Tiles</value>
+  </data>
+  <data name="TemplateBrowserImportHint" xml:space="preserve">
+    <value>Import a template file</value>
+  </data>
+  <data name="TemplateBrowserExportHint" xml:space="preserve">
+    <value>Export the selected or checked templates</value>
+  </data>
+  <data name="TemplateBrowserMore" xml:space="preserve">
+    <value>More Actions</value>
+  </data>
+  <data name="TemplateBrowserTemplates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="TemplateBrowserSearchHint" xml:space="preserve">
+    <value>Search by name (Ctrl+F)</value>
+  </data>
+  <data name="TemplateBrowserClearSearch" xml:space="preserve">
+    <value>Clear Search</value>
+  </data>
+  <data name="TemplateBrowserTiles" xml:space="preserve">
+    <value>Tiles</value>
+  </data>
+  <data name="TemplateBrowserList" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="TemplateBrowserSelect" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="TemplateBrowserNumber" xml:space="preserve">
+    <value>No.</value>
+  </data>
+  <data name="TemplateBrowserDeleteHint" xml:space="preserve">
+    <value>Delete the selected or checked templates</value>
+  </data>
+  <data name="TemplateBrowserInteractionHint" xml:space="preserve">
+    <value>Drag to swap positions · Double-click to open</value>
+  </data>
+  <data name="TemplateBrowserSaveHint" xml:space="preserve">
+    <value>Save name changes</value>
+  </data>
+  <data name="TemplateBrowserCloseHint" xml:space="preserve">
+    <value>Close the template window</value>
+  </data>
+  <data name="TemplateBrowserCreateFailed" xml:space="preserve">
+    <value>Creation Failed</value>
+  </data>
+  <data name="TemplateBrowserDeleteFailed" xml:space="preserve">
+    <value>Deletion Failed</value>
+  </data>
+  <data name="TemplateBrowserSaveFailed" xml:space="preserve">
+    <value>Save Failed</value>
+  </data>
+  <data name="TemplateBrowserSavePrompt" xml:space="preserve">
+    <value>Save name changes?</value>
+  </data>
+  <data name="TemplateBrowserCount" xml:space="preserve">
+    <value>{0} {1} templates</value>
+  </data>
+  <data name="TemplateBrowserFilteredCount" xml:space="preserve">
+    <value>{0} / {1} {2} templates</value>
+  </data>
+  <data name="TemplateBrowserCheckedCount" xml:space="preserve">
+    <value>{0} checked</value>
+  </data>
+  <data name="TemplateBrowserNoSelection" xml:space="preserve">
+    <value>No template selected</value>
+  </data>
+  <data name="TemplateBrowserOneSelected" xml:space="preserve">
+    <value>1 selected</value>
+  </data>
+  <data name="TemplateBrowserDeleteCount" xml:space="preserve">
+    <value>Delete ({0})</value>
+  </data>
+  <data name="TemplateBrowserLegacyPrompt" xml:space="preserve">
+    <value>Save renamed templates before opening the legacy manager? Choose No to discard unsaved name changes.</value>
+  </data>
+  <data name="TemplateBrowserLegacyFailed" xml:space="preserve">
+    <value>Could Not Open Legacy Manager</value>
+  </data>
+  <data name="TemplateBrowserEmpty" xml:space="preserve">
+    <value>No {0} templates</value>
+  </data>
+  <data name="TemplateBrowserNoMatches" xml:space="preserve">
+    <value>No matching templates</value>
+  </data>
+  <data name="TemplateBrowserOpenFailed" xml:space="preserve">
+    <value>Open Failed</value>
+  </data>
+  <data name="TemplateBrowserUnsavedNames" xml:space="preserve">
+    <value>Names have changed. Click Save to apply.</value>
+  </data>
+  <data name="TemplateBrowserCopyFailed" xml:space="preserve">
+    <value>Copy Failed</value>
+  </data>
+  <data name="TemplateBrowserDeletePrompt" xml:space="preserve">
+    <value>Delete these {0} {1} templates?
+
+{2}</value>
+  </data>
+  <data name="TemplateBrowserNamesSaved" xml:space="preserve">
+    <value>Names saved</value>
+  </data>
+  <data name="TemplateBrowserExportFailed" xml:space="preserve">
+    <value>Export Failed</value>
+  </data>
+  <data name="TemplateBrowserImportFailed" xml:space="preserve">
+    <value>Import Failed</value>
+  </data>
+  <data name="TemplateBrowserSavingOrder" xml:space="preserve">
+    <value>Saving order…</value>
+  </data>
+  <data name="TemplateBrowserOrderSaved" xml:space="preserve">
+    <value>Order saved and other template lists synchronized</value>
+  </data>
+  <data name="TemplateBrowserOrderFailed" xml:space="preserve">
+    <value>Could not save the order. Reopen the manager, check the order, and try again.</value>
+  </data>
+  <data name="AppSecretTooltip" xml:space="preserve">
+    <value>App Secret</value>
+  </data>
+  <data name="DefaultCreateTemplateName" xml:space="preserve">
+    <value>default</value>
+  </data>
+  <data name="ToolTipAngleShift" xml:space="preserve">
+    <value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value>
+  </data>
+  <data name="ToolTipColorDiff" xml:space="preserve">
+    <value>Color correction (ColorDiff): corrects color difference between channels</value>
+  </data>
+  <data name="ToolTipColorShift" xml:space="preserve">
+    <value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value>
+  </data>
+  <data name="ToolTipDSNU" xml:space="preserve">
+    <value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value>
+  </data>
+  <data name="ToolTipDarkNoise" xml:space="preserve">
+    <value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value>
+  </data>
+  <data name="ToolTipDefectPoint" xml:space="preserve">
+    <value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value>
+  </data>
+  <data name="ToolTipDistortion" xml:space="preserve">
+    <value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value>
+  </data>
+  <data name="ToolTipFourColor" xml:space="preserve">
+    <value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value>
+  </data>
+  <data name="ToolTipLineArity" xml:space="preserve">
+    <value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value>
+  </data>
+  <data name="ToolTipLuminance" xml:space="preserve">
+    <value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value>
+  </data>
+  <data name="ToolTipMultiColor" xml:space="preserve">
+    <value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value>
+  </data>
+  <data name="ToolTipOneColor" xml:space="preserve">
+    <value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value>
+  </data>
+  <data name="ToolTipUniformity" xml:space="preserve">
+    <value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value>
+  </data>
+  <data name="AutoDetectKeyRegionsToolTip" xml:space="preserve">
+    <value>Auto-detect glowing key areas in image and create POI</value>
+  </data>
+  <data name="FrameSelectAreaToolTip" xml:space="preserve">
+    <value>Frame-select layout area on image</value>
+  </data>
+  <data name="ShowOnCieDiagramToolTip" xml:space="preserve">
+    <value>Show current result point on CIE chromaticity diagram</value>
+  </data>
+  <data name="DSNU" xml:space="preserve">
+    <value>DSNU</value>
+  </data>
+  <data name="Id" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="MacOrSn" xml:space="preserve">
+    <value>MAC/SN</value>
+  </data>
+  <data name="Roi" xml:space="preserve">
+    <value>ROI</value>
+  </data>
+  <data name="RoiX" xml:space="preserve">
+    <value>ROI X</value>
+  </data>
+  <data name="RoiY" xml:space="preserve">
+    <value>ROI Y</value>
+  </data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve">
+    <value>Show advanced properties such as node ID, token, and service name</value>
+  </data>
+  <data name="PG_ImageNumberTooltip" xml:space="preserve">
+    <value>Specify an image number</value>
+  </data>
+  <data name="PG_NextImageTooltip" xml:space="preserve">
+    <value>Next image</value>
+  </data>
+  <data name="PG_PreviousImageTooltip" xml:space="preserve">
+    <value>Previous image</value>
+  </data>
+  <data name="PG_SwitchImageTooltip" xml:space="preserve">
+    <value>Switch to the specified image</value>
+  </data>
+  <data name="POITransformTooltip" xml:space="preserve">
+    <value>Batch-adjust POI positions and sizes</value>
+  </data>
+  <data name="TemplateBrowserActionError" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
 </root>

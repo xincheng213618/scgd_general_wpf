@@ -27,14 +27,14 @@
             </Grid>
         </DataTemplate>
         <ContextMenu x:Key="TemplateContextMenu" Opened="TemplateContextMenu_Opened">
-            <MenuItem Header="打开编辑器" Click="Open_Click"/>
+            <MenuItem Header="{x:Static properties:Resources.TemplateBrowserOpenEditor}" Click="Open_Click"/>
             <Separator/>
             <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}"/>
             <MenuItem Header="{x:Static properties:Resources.CreateCopy}" Click="Copy_Click"/>
             <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete"/>
         </ContextMenu>
         <ContextMenu x:Key="MoreMenu">
-            <MenuItem Header="旧版管理" Click="LegacyManager_Click"/>
+            <MenuItem Header="{x:Static properties:Resources.TemplateBrowserLegacyManager}" Click="LegacyManager_Click"/>
         </ContextMenu>
         <Style x:Key="TemplateListItem" TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
             <Setter Property="ContextMenu" Value="{StaticResource TemplateContextMenu}"/>
@@ -60,7 +60,7 @@
                             </Border>
                             <Border x:Name="SwapBadge" Visibility="Collapsed" Background="{DynamicResource PrimaryBrush}" CornerRadius="3"
                                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="7,3" IsHitTestVisible="False">
-                                <TextBlock Text="交换位置" Foreground="White" FontSize="11"/>
+                                <TextBlock Text="{x:Static properties:Resources.TemplateBrowserSwap}" Foreground="White" FontSize="11"/>
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
@@ -155,18 +155,18 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,14">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="NewButton" Command="ApplicationCommands.New" ToolTip="新建流程" AutomationProperties.Name="新建流程"
+                <Button x:Name="NewButton" Command="ApplicationCommands.New" ToolTip="{x:Static properties:Resources.TemplateBrowserTemplates}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserTemplates}"
                         Style="{StaticResource BrowserAction}" Background="{DynamicResource PrimaryBrush}" Foreground="White" BorderBrush="Transparent">
-                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock x:Name="NewLabel" Text="新建模板"/></StackPanel>
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock x:Name="NewLabel" Text="{x:Static properties:Resources.TemplateBrowserTemplates}"/></StackPanel>
                 </Button>
-                <Button Click="Import_Click" Content="导入" ToolTip="导入模板文件" AutomationProperties.Name="导入模板" Style="{StaticResource BrowserAction}"/>
-                <Button Click="Export_Click" Content="导出" ToolTip="导出选中或勾选的模板" AutomationProperties.Name="导出模板" Style="{StaticResource BrowserAction}"/>
-                <Button ToolTip="更多操作" AutomationProperties.Name="更多操作" Click="More_Click" Style="{StaticResource BrowserAction}" Width="32" Padding="0">
+                <Button Click="Import_Click" Content="{x:Static properties:Resources.Import}" ToolTip="{x:Static properties:Resources.TemplateBrowserImportHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserImportHint}" Style="{StaticResource BrowserAction}"/>
+                <Button Click="Export_Click" Content="{x:Static properties:Resources.Export}" ToolTip="{x:Static properties:Resources.TemplateBrowserExportHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserExportHint}" Style="{StaticResource BrowserAction}"/>
+                <Button ToolTip="{x:Static properties:Resources.TemplateBrowserMore}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserMore}" Click="More_Click" Style="{StaticResource BrowserAction}" Width="32" Padding="0">
                     <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets"/>
                 </Button>
             </StackPanel>
             <StackPanel>
-                <TextBlock x:Name="HeadingText" Text="模板" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock x:Name="HeadingText" Text="{x:Static properties:Resources.TemplateBrowserTemplates}" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
                 <TextBlock x:Name="CountText" FontSize="12" Margin="0,3,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6"/>
             </StackPanel>
         </DockPanel>
@@ -181,13 +181,13 @@
                     <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
                     <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" Padding="0,3"
-                             ToolTip="按名称搜索（Ctrl+F）" AutomationProperties.Name="搜索流程名称" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown"/>
-                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="搜索模板名称" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45">
+                             ToolTip="{x:Static properties:Resources.TemplateBrowserSearchHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserSearchHint}" TextChanged="Search_TextChanged" KeyDown="Search_KeyDown"/>
+                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="{x:Static properties:Resources.TemplateBrowserSearchHint}" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
                         </Style></TextBlock.Style>
                     </TextBlock>
-                    <Button Grid.Column="2" Click="ClearSearch_Click" Background="Transparent" BorderThickness="0" Padding="0" ToolTip="清空搜索" AutomationProperties.Name="清空搜索">
+                    <Button Grid.Column="2" Click="ClearSearch_Click" Background="Transparent" BorderThickness="0" Padding="0" ToolTip="{x:Static properties:Resources.TemplateBrowserClearSearch}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserClearSearch}">
                         <Button.Style><Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
                             <Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers>
                         </Style></Button.Style>
@@ -196,8 +196,8 @@
                 </Grid>
             </Border>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <ToggleButton x:Name="TileModeButton" Content="平铺" Click="TileMode_Click" ToolTip="封面平铺" AutomationProperties.Name="平铺视图" Style="{StaticResource BrowserViewMode}"/>
-                <ToggleButton x:Name="ListModeButton" Content="列表" Click="ListMode_Click" ToolTip="名称列表" AutomationProperties.Name="列表视图" Style="{StaticResource BrowserViewMode}" Margin="3,0,0,0"/>
+                <ToggleButton x:Name="TileModeButton" Content="{x:Static properties:Resources.TemplateBrowserTiles}" Click="TileMode_Click" ToolTip="{x:Static properties:Resources.TemplateBrowserCoverTiles}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserTiles}" Style="{StaticResource BrowserViewMode}"/>
+                <ToggleButton x:Name="ListModeButton" Content="{x:Static properties:Resources.TemplateBrowserList}" Click="ListMode_Click" ToolTip="{x:Static properties:Resources.TemplateBrowserList}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserList}" Style="{StaticResource BrowserViewMode}" Margin="3,0,0,0"/>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="2">
@@ -207,15 +207,15 @@
                       PreviewMouseLeftButtonDown="TemplateList_MouseDown" PreviewMouseMove="TemplateList_MouseMove" DragOver="TemplateList_DragOver" DragLeave="TemplateList_DragLeave" Drop="TemplateList_Drop">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="选择" Width="52">
+                        <GridViewColumn Header="{x:Static properties:Resources.TemplateBrowserSelect}" Width="64">
                             <GridViewColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsSelected}"/></DataTemplate></GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="序号" Width="60" DisplayMemberBinding="{Binding Id}"/>
-                        <GridViewColumn Header="名称" Width="340" CellTemplate="{StaticResource TemplateName}"/>
+                        <GridViewColumn Header="{x:Static properties:Resources.TemplateBrowserNumber}" Width="60" DisplayMemberBinding="{Binding Id}"/>
+                        <GridViewColumn Header="{x:Static properties:Resources.Name}" Width="340" CellTemplate="{StaticResource TemplateName}"/>
                     </GridView>
                 </ListView.View>
             </ListView>
-            <TextBlock x:Name="EmptyText" Text="暂无流程" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <TextBlock x:Name="EmptyText" Text="{x:Static properties:Resources.TemplateBrowserNoMatches}" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource GlobalTextBrush}" IsHitTestVisible="False"/>
         </Grid>
         <Border Grid.Row="3" BorderBrush="{DynamicResource GlobalBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
@@ -223,13 +223,13 @@
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="SelectionText" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.7" VerticalAlignment="Center" FontSize="12"/>
-                    <Button x:Name="DeleteButton" Command="ApplicationCommands.Delete" Content="删除" ToolTip="删除选中或勾选的模板" AutomationProperties.Name="删除模板" Style="{StaticResource BrowserAction}" Background="Transparent" BorderBrush="Transparent" Foreground="#E87979"/>
+                    <Button x:Name="DeleteButton" Command="ApplicationCommands.Delete" Content="{x:Static properties:Resources.Delete}" ToolTip="{x:Static properties:Resources.TemplateBrowserDeleteHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserDeleteHint}" Style="{StaticResource BrowserAction}" Background="Transparent" BorderBrush="Transparent" Foreground="#E87979"/>
                 </StackPanel>
-                <TextBlock x:Name="StatusText" Grid.Column="1" Text="拖放交换位置 · 双击打开" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="12" Opacity="0.6"
+                <TextBlock x:Name="StatusText" Grid.Column="1" Text="{x:Static properties:Resources.TemplateBrowserInteractionHint}" TextTrimming="CharacterEllipsis" Margin="14,0" FontSize="12" Opacity="0.6"
                            ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Command="ApplicationCommands.Save" Content="保存" ToolTip="保存名称修改" AutomationProperties.Name="保存修改" Style="{StaticResource BrowserAction}"/>
-                    <Button Click="Close_Click" Content="关闭" ToolTip="关闭模板窗口" AutomationProperties.Name="关闭窗口" Style="{StaticResource BrowserAction}"/>
+                    <Button Command="ApplicationCommands.Save" Content="{x:Static properties:Resources.Save}" ToolTip="{x:Static properties:Resources.TemplateBrowserSaveHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserSaveHint}" Style="{StaticResource BrowserAction}"/>
+                    <Button Click="Close_Click" Content="{x:Static properties:Resources.Close}" ToolTip="{x:Static properties:Resources.TemplateBrowserCloseHint}" AutomationProperties.Name="{x:Static properties:Resources.TemplateBrowserCloseHint}" Style="{StaticResource BrowserAction}"/>
                 </StackPanel>
             </Grid>
         </Border>

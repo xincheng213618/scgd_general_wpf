@@ -32,7 +32,7 @@ public partial class FlowExecutionStatus : UserControl
     private void CloseDetails_Click(object sender, RoutedEventArgs e) => DetailsPopup.IsOpen = false;
     private void DetailsPopup_Opened(object sender, EventArgs e)
     {
-        CopyButton.Content = "复制";
+        CopyButton.Content = Properties.Resources.FlowStatusCopy;
         DetailsText.Focus();
     }
     private void DetailsPopup_Closed(object sender, EventArgs e) => DetailsButton.Focus();
@@ -47,11 +47,11 @@ public partial class FlowExecutionStatus : UserControl
         try
         {
             Clipboard.SetText(Status.Details);
-            CopyButton.Content = "已复制";
+            CopyButton.Content = Properties.Resources.FlowStatusCopied;
         }
         catch (ExternalException)
         {
-            CopyButton.Content = "重试复制";
+            CopyButton.Content = Properties.Resources.FlowStatusRetryCopy;
             DetailsText.Focus();
             DetailsText.SelectAll();
         }

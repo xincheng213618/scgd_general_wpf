@@ -5,7 +5,7 @@ status: "current"
 summary: "界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。"
 aliases: ["多语言", "界面语言", "语言切换", "语言下拉框", "系统语言", "语言资源", "翻译", "日语", "简体中文", "繁体中文", "英文", "LanguageManager", "LanguageConfig", "LanguagePropertiesEditor", "UICulture", "CurrentUICulture", "LanguageChange", "zh-Hans", "zh-Hant", "添加界面语言", "卫星资源"]
 code_paths: ["UI/ColorVision.UI/PropertyEditor/Editor/EnumPropertiesEditor.cs", "Engine/ST.Library.UI/Lang.cs", "Engine/FlowEngineLib/FlowEngineLocalization.cs", "Engine/ColorVision.Engine/EngineLocalization.cs", "Engine/ColorVision.Engine/Properties/Resources.en.resx", "Engine/ColorVision.Engine/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Languages", "UI/ColorVision.UI/Properties/Resources.resx", "UI/ColorVision.UI/Properties/Resources.en.resx", "UI/ColorVision.UI/Properties/Resources.zh-Hant.resx", "UI/ColorVision.UI/Properties/Resources.Designer.cs", "UI/ColorVision.UI/PropertyEditor/PropertyEditorHelper.cs", "UI/ColorVision.UI/Serach/SearchSettingsWindow.xaml.cs", "UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml", "ColorVision/App.xaml.cs", "ColorVision/Copilot/Capabilities/CopilotApplicationControlSupport.cs", "ColorVision/Copilot/Capabilities/CopilotAgentCapabilityServices.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowLocalizationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowLocalizationTests.cs", "Test/ColorVision.UI.Tests/UiLocalizationConsistencyTests.cs"]
 related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid", "platform.runtime", "copilot.tool-contracts", "governance.maintenance"]
 ---
 
@@ -37,6 +37,8 @@ related: ["ui.framework", "ui.settings", "ui.configuration", "ui.property-grid",
 `LanguageManager.Current.Languages` 在 manager 实例初始化时取得列表，不因资源文件或系统设置变化自动刷新。Copilot 的 `GetAvailableLanguages()` 会另行调用 GetLanguages 并替换该列表，但也不负责刷新所有已创建的语言编辑器。
 
 显示为“跟随系统”的项实际使用 `CultureInfo.InstalledUICulture.Name` 这个文化字符串，不是一个独立的 UseSystem 持久化标记或持续监听系统变化的订阅。某文化因当前线程/系统项出现在下拉框中，不代表主程序及每个插件都有该文化的卫星资源。
+
+语言显示名称先查询当前界面文化中的精确文化名资源，再沿候选文化的父级查询。例如 `en-US` 使用 `en` 的译名，`zh-CN` 使用 `zh-Hans`，`zh-TW` 使用 `zh-Hant`；找不到译名时使用该文化的 `NativeName`，无效文化名保留原字符串。语言编辑器同样对空白显示名称执行这一回退，不修改保存的文化代码、语言发现范围或重启流程。
 
 ## 配置值与启动应用
 
@@ -82,10 +84,12 @@ Flow 节点标题、属性名称/说明和分类通过 `ST.Library.UI.Lang` 查�
 
 翻译只改变显示文本，不改枚举值、序列化字段、协议名称或资源键。历史翻译可从 Git 查询后按当前键集合核对；不要直接用旧资源覆盖当前文件。
 
+共享设备控制管理、流程执行状态、模板浏览器与批量图像处理使用各自所属模块的简体、英文和繁体资源。设备分组的显示名称与持久化 `Name` 分开：默认分组显示本地化名称，用户命名原样保留，派生 `DisplayName` 不写入配置。流程状态保留调用方传入的流程名、节点名和原始错误代码；批量算法显示名称使用目录提供的资源提示，算法 ID、目录名称和输出后缀保持原有含义。
+
 ## Copilot 入口与验证缺口
 
 `CopilotAgentCapabilityServices.SetLanguageAsync` 解析当前可用语言，在 UI dispatcher 上调用同一 LanguageChange，仍需用户确认和重启；已是目标文化时返回无需修改，未确认时返回未完成。工具审批、取消与恢复说明归[工具契约](../../02-developer-guide/core-concepts/copilot-agent-tool-contracts.md)，不能因为通过 AI 调用而略过应用自身确认或把工具返回当作重启验收。
 
 它们不是先打开旧窗口再切文化的热更新测试，列出测试路径也不表示本次已运行。
 
-目前未找到语言目录发现、getter 回退、取消恢复或实际重启的专项测试；Copilot 输入/审批测试同样不等于语言已切换。后续验收需在获授权、无未保存工作且使用隔离配置的环境下检查资源部署、取消、保存失败及新进程界面。
+`UiLocalizationConsistencyTests` 检查保留语言资源的键和格式参数一致性、区域文化显示名回退、三种文化下的共享状态与设备分组显示，以及不接入数据库或设备的批量窗口布局。它不覆盖语言目录发现、配置 getter 回退、取消恢复或实际重启；Copilot 输入/审批测试同样不等于语言已切换。后续验收需在获授权、无未保存工作且使用隔离配置的环境下检查资源部署、取消、保存失败及新进程界面。

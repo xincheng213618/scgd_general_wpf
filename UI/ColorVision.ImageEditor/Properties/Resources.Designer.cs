@@ -3482,5 +3482,473 @@ namespace ColorVision.ImageEditor.Properties {
             }
         }
 
+
+        /// <summary>
+        ///   查找本地化的 ContextSettingsNoData 字符串。
+        /// </summary>
+        public static string ContextSettingsNoData {
+            get {
+                return ResourceManager.GetString("ContextSettingsNoData", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchTitle 字符串。
+        /// </summary>
+        public static string BatchTitle {
+            get {
+                return ResourceManager.GetString("BatchTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAlgorithm 字符串。
+        /// </summary>
+        public static string BatchAlgorithm {
+            get {
+                return ResourceManager.GetString("BatchAlgorithm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutput 字符串。
+        /// </summary>
+        public static string BatchOutput {
+            get {
+                return ResourceManager.GetString("BatchOutput", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutputFormat 字符串。
+        /// </summary>
+        public static string BatchOutputFormat {
+            get {
+                return ResourceManager.GetString("BatchOutputFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFilenameSuffix 字符串。
+        /// </summary>
+        public static string BatchFilenameSuffix {
+            get {
+                return ResourceManager.GetString("BatchFilenameSuffix", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutputDirectory 字符串。
+        /// </summary>
+        public static string BatchOutputDirectory {
+            get {
+                return ResourceManager.GetString("BatchOutputDirectory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutputDirectoryHint 字符串。
+        /// </summary>
+        public static string BatchOutputDirectoryHint {
+            get {
+                return ResourceManager.GetString("BatchOutputDirectoryHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchBrowse 字符串。
+        /// </summary>
+        public static string BatchBrowse {
+            get {
+                return ResourceManager.GetString("BatchBrowse", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchPreserveFolders 字符串。
+        /// </summary>
+        public static string BatchPreserveFolders {
+            get {
+                return ResourceManager.GetString("BatchPreserveFolders", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAvoidOverwrite 字符串。
+        /// </summary>
+        public static string BatchAvoidOverwrite {
+            get {
+                return ResourceManager.GetString("BatchAvoidOverwrite", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchInputImages 字符串。
+        /// </summary>
+        public static string BatchInputImages {
+            get {
+                return ResourceManager.GetString("BatchInputImages", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAddFiles 字符串。
+        /// </summary>
+        public static string BatchAddFiles {
+            get {
+                return ResourceManager.GetString("BatchAddFiles", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAddFolder 字符串。
+        /// </summary>
+        public static string BatchAddFolder {
+            get {
+                return ResourceManager.GetString("BatchAddFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchRemoveSelected 字符串。
+        /// </summary>
+        public static string BatchRemoveSelected {
+            get {
+                return ResourceManager.GetString("BatchRemoveSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchClear 字符串。
+        /// </summary>
+        public static string BatchClear {
+            get {
+                return ResourceManager.GetString("BatchClear", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchIncludeSubfolders 字符串。
+        /// </summary>
+        public static string BatchIncludeSubfolders {
+            get {
+                return ResourceManager.GetString("BatchIncludeSubfolders", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFilename 字符串。
+        /// </summary>
+        public static string BatchFilename {
+            get {
+                return ResourceManager.GetString("BatchFilename", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchSourceFile 字符串。
+        /// </summary>
+        public static string BatchSourceFile {
+            get {
+                return ResourceManager.GetString("BatchSourceFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchStatus 字符串。
+        /// </summary>
+        public static string BatchStatus {
+            get {
+                return ResourceManager.GetString("BatchStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutputFile 字符串。
+        /// </summary>
+        public static string BatchOutputFile {
+            get {
+                return ResourceManager.GetString("BatchOutputFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchNotStarted 字符串。
+        /// </summary>
+        public static string BatchNotStarted {
+            get {
+                return ResourceManager.GetString("BatchNotStarted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCancel 字符串。
+        /// </summary>
+        public static string BatchCancel {
+            get {
+                return ResourceManager.GetString("BatchCancel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchStart 字符串。
+        /// </summary>
+        public static string BatchStart {
+            get {
+                return ResourceManager.GetString("BatchStart", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchOutputHint 字符串。
+        /// </summary>
+        public static string BatchOutputHint {
+            get {
+                return ResourceManager.GetString("BatchOutputHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchSameAsSource 字符串。
+        /// </summary>
+        public static string BatchSameAsSource {
+            get {
+                return ResourceManager.GetString("BatchSameAsSource", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchNoExtraParameters 字符串。
+        /// </summary>
+        public static string BatchNoExtraParameters {
+            get {
+                return ResourceManager.GetString("BatchNoExtraParameters", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchSelectInputFolder 字符串。
+        /// </summary>
+        public static string BatchSelectInputFolder {
+            get {
+                return ResourceManager.GetString("BatchSelectInputFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAddFolderFailed 字符串。
+        /// </summary>
+        public static string BatchAddFolderFailed {
+            get {
+                return ResourceManager.GetString("BatchAddFolderFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchSelectOutputFolder 字符串。
+        /// </summary>
+        public static string BatchSelectOutputFolder {
+            get {
+                return ResourceManager.GetString("BatchSelectOutputFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAddImagesFirst 字符串。
+        /// </summary>
+        public static string BatchAddImagesFirst {
+            get {
+                return ResourceManager.GetString("BatchAddImagesFirst", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchRunTitle 字符串。
+        /// </summary>
+        public static string BatchRunTitle {
+            get {
+                return ResourceManager.GetString("BatchRunTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchInvalidSuffix 字符串。
+        /// </summary>
+        public static string BatchInvalidSuffix {
+            get {
+                return ResourceManager.GetString("BatchInvalidSuffix", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchInvalidOutputFolder 字符串。
+        /// </summary>
+        public static string BatchInvalidOutputFolder {
+            get {
+                return ResourceManager.GetString("BatchInvalidOutputFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCanceledSummary 字符串。
+        /// </summary>
+        public static string BatchCanceledSummary {
+            get {
+                return ResourceManager.GetString("BatchCanceledSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCompletedSummary 字符串。
+        /// </summary>
+        public static string BatchCompletedSummary {
+            get {
+                return ResourceManager.GetString("BatchCompletedSummary", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFileFilter 字符串。
+        /// </summary>
+        public static string BatchFileFilter {
+            get {
+                return ResourceManager.GetString("BatchFileFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFileCount 字符串。
+        /// </summary>
+        public static string BatchFileCount {
+            get {
+                return ResourceManager.GetString("BatchFileCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCanceling 字符串。
+        /// </summary>
+        public static string BatchCanceling {
+            get {
+                return ResourceManager.GetString("BatchCanceling", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchWaiting 字符串。
+        /// </summary>
+        public static string BatchWaiting {
+            get {
+                return ResourceManager.GetString("BatchWaiting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchProcessing 字符串。
+        /// </summary>
+        public static string BatchProcessing {
+            get {
+                return ResourceManager.GetString("BatchProcessing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCompleted 字符串。
+        /// </summary>
+        public static string BatchCompleted {
+            get {
+                return ResourceManager.GetString("BatchCompleted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCanceled 字符串。
+        /// </summary>
+        public static string BatchCanceled {
+            get {
+                return ResourceManager.GetString("BatchCanceled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFailed 字符串。
+        /// </summary>
+        public static string BatchFailed {
+            get {
+                return ResourceManager.GetString("BatchFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchUnsupportedFormat 字符串。
+        /// </summary>
+        public static string BatchUnsupportedFormat {
+            get {
+                return ResourceManager.GetString("BatchUnsupportedFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchFormatOnly 字符串。
+        /// </summary>
+        public static string BatchFormatOnly {
+            get {
+                return ResourceManager.GetString("BatchFormatOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAlgorithmMorphology 字符串。
+        /// </summary>
+        public static string BatchAlgorithmMorphology {
+            get {
+                return ResourceManager.GetString("BatchAlgorithmMorphology", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAlgorithmDenoise 字符串。
+        /// </summary>
+        public static string BatchAlgorithmDenoise {
+            get {
+                return ResourceManager.GetString("BatchAlgorithmDenoise", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchImageReadFailed 字符串。
+        /// </summary>
+        public static string BatchImageReadFailed {
+            get {
+                return ResourceManager.GetString("BatchImageReadFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchCannotOverwriteSource 字符串。
+        /// </summary>
+        public static string BatchCannotOverwriteSource {
+            get {
+                return ResourceManager.GetString("BatchCannotOverwriteSource", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchImageSaveFailed 字符串。
+        /// </summary>
+        public static string BatchImageSaveFailed {
+            get {
+                return ResourceManager.GetString("BatchImageSaveFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 BatchAnalyzing 字符串。
+        /// </summary>
+        public static string BatchAnalyzing {
+            get {
+                return ResourceManager.GetString("BatchAnalyzing", resourceCulture);
+            }
+        }
     }
 }

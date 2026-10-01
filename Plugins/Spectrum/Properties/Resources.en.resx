@@ -365,4 +365,10 @@
   <data name="UpdateInstallDirectoryNotWritable" xml:space="preserve"><value>The current folder is not writable. Extract Spectrum to a folder writable by the current user before using automatic updates.</value></data>
   <data name="UpdateLaunchFailed" xml:space="preserve"><value>Could not start the update command: {0}</value></data>
   <data name="UpdateUnsafeInstallPath" xml:space="preserve"><value>The installation path contains characters that the update command cannot handle safely.</value></data>
+  <data name="CvCameraInitializing" xml:space="preserve">
+    <value>Initializing software and device resources. The window is responsive; please wait...</value>
+  </data>
+  <data name="CvCameraInitializationFailed" xml:space="preserve">
+    <value>Software or device resource initialization failed: </value>
+  </data>
 </root>

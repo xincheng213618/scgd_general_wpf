@@ -965,4 +965,10 @@ Startup driver: {1}    USB driver: {2}</value>
   <data name="ConfigDesktopPetCopilotNotificationsDescription" xml:space="preserve">
     <value>Show a pet notification when Copilot needs approval, completes or fails.</value>
   </data>
+  <data name="UpdatePreviewPluginDeferredByFullApplicationUpdate" xml:space="preserve">
+    <value>Plugin updates will not be combined with the full installer update in this run.</value>
+  </data>
+  <data name="UpdatePreviewSelectionDefersPluginUpdates" xml:space="preserve">
+    <value>Plugin updates will be deferred for this run</value>
+  </data>
 </root>

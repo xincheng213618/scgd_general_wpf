@@ -14330,5 +14330,428 @@ namespace ColorVision.Engine.Properties {
         public static string ServiceConfigurations => ResourceManager.GetString("ServiceConfigurations", resourceCulture);
         public static string CreateServiceAndDevice => ResourceManager.GetString("CreateServiceAndDevice", resourceCulture);
         public static string LocalConfigurationCreated => ResourceManager.GetString("LocalConfigurationCreated", resourceCulture);
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserOpenEditor 字符串。
+        /// </summary>
+        public static string TemplateBrowserOpenEditor {
+            get {
+                return ResourceManager.GetString("TemplateBrowserOpenEditor", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserLegacyManager 字符串。
+        /// </summary>
+        public static string TemplateBrowserLegacyManager {
+            get {
+                return ResourceManager.GetString("TemplateBrowserLegacyManager", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSwap 字符串。
+        /// </summary>
+        public static string TemplateBrowserSwap {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSwap", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserHeading 字符串。
+        /// </summary>
+        public static string TemplateBrowserHeading {
+            get {
+                return ResourceManager.GetString("TemplateBrowserHeading", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserNew 字符串。
+        /// </summary>
+        public static string TemplateBrowserNew {
+            get {
+                return ResourceManager.GetString("TemplateBrowserNew", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSearch 字符串。
+        /// </summary>
+        public static string TemplateBrowserSearch {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSearch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCoverTiles 字符串。
+        /// </summary>
+        public static string TemplateBrowserCoverTiles {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCoverTiles", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserIconTiles 字符串。
+        /// </summary>
+        public static string TemplateBrowserIconTiles {
+            get {
+                return ResourceManager.GetString("TemplateBrowserIconTiles", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserImportHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserImportHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserImportHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserExportHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserExportHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserExportHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserMore 字符串。
+        /// </summary>
+        public static string TemplateBrowserMore {
+            get {
+                return ResourceManager.GetString("TemplateBrowserMore", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserTemplates 字符串。
+        /// </summary>
+        public static string TemplateBrowserTemplates {
+            get {
+                return ResourceManager.GetString("TemplateBrowserTemplates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSearchHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserSearchHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSearchHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserClearSearch 字符串。
+        /// </summary>
+        public static string TemplateBrowserClearSearch {
+            get {
+                return ResourceManager.GetString("TemplateBrowserClearSearch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserTiles 字符串。
+        /// </summary>
+        public static string TemplateBrowserTiles {
+            get {
+                return ResourceManager.GetString("TemplateBrowserTiles", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserList 字符串。
+        /// </summary>
+        public static string TemplateBrowserList {
+            get {
+                return ResourceManager.GetString("TemplateBrowserList", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSelect 字符串。
+        /// </summary>
+        public static string TemplateBrowserSelect {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSelect", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserNumber 字符串。
+        /// </summary>
+        public static string TemplateBrowserNumber {
+            get {
+                return ResourceManager.GetString("TemplateBrowserNumber", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserDeleteHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserDeleteHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserDeleteHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserInteractionHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserInteractionHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserInteractionHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSaveHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserSaveHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSaveHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCloseHint 字符串。
+        /// </summary>
+        public static string TemplateBrowserCloseHint {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCloseHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCreateFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserCreateFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCreateFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserDeleteFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserDeleteFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserDeleteFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSaveFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserSaveFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSaveFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSavePrompt 字符串。
+        /// </summary>
+        public static string TemplateBrowserSavePrompt {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSavePrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCount 字符串。
+        /// </summary>
+        public static string TemplateBrowserCount {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserFilteredCount 字符串。
+        /// </summary>
+        public static string TemplateBrowserFilteredCount {
+            get {
+                return ResourceManager.GetString("TemplateBrowserFilteredCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCheckedCount 字符串。
+        /// </summary>
+        public static string TemplateBrowserCheckedCount {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCheckedCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserNoSelection 字符串。
+        /// </summary>
+        public static string TemplateBrowserNoSelection {
+            get {
+                return ResourceManager.GetString("TemplateBrowserNoSelection", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserOneSelected 字符串。
+        /// </summary>
+        public static string TemplateBrowserOneSelected {
+            get {
+                return ResourceManager.GetString("TemplateBrowserOneSelected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserDeleteCount 字符串。
+        /// </summary>
+        public static string TemplateBrowserDeleteCount {
+            get {
+                return ResourceManager.GetString("TemplateBrowserDeleteCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserLegacyPrompt 字符串。
+        /// </summary>
+        public static string TemplateBrowserLegacyPrompt {
+            get {
+                return ResourceManager.GetString("TemplateBrowserLegacyPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserLegacyFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserLegacyFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserLegacyFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserEmpty 字符串。
+        /// </summary>
+        public static string TemplateBrowserEmpty {
+            get {
+                return ResourceManager.GetString("TemplateBrowserEmpty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserNoMatches 字符串。
+        /// </summary>
+        public static string TemplateBrowserNoMatches {
+            get {
+                return ResourceManager.GetString("TemplateBrowserNoMatches", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserOpenFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserOpenFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserOpenFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserUnsavedNames 字符串。
+        /// </summary>
+        public static string TemplateBrowserUnsavedNames {
+            get {
+                return ResourceManager.GetString("TemplateBrowserUnsavedNames", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserCopyFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserCopyFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserCopyFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserDeletePrompt 字符串。
+        /// </summary>
+        public static string TemplateBrowserDeletePrompt {
+            get {
+                return ResourceManager.GetString("TemplateBrowserDeletePrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserNamesSaved 字符串。
+        /// </summary>
+        public static string TemplateBrowserNamesSaved {
+            get {
+                return ResourceManager.GetString("TemplateBrowserNamesSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserExportFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserExportFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserExportFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserImportFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserImportFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserImportFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserSavingOrder 字符串。
+        /// </summary>
+        public static string TemplateBrowserSavingOrder {
+            get {
+                return ResourceManager.GetString("TemplateBrowserSavingOrder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserOrderSaved 字符串。
+        /// </summary>
+        public static string TemplateBrowserOrderSaved {
+            get {
+                return ResourceManager.GetString("TemplateBrowserOrderSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserOrderFailed 字符串。
+        /// </summary>
+        public static string TemplateBrowserOrderFailed {
+            get {
+                return ResourceManager.GetString("TemplateBrowserOrderFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 TemplateBrowserActionError 字符串。
+        /// </summary>
+        public static string TemplateBrowserActionError {
+            get {
+                return ResourceManager.GetString("TemplateBrowserActionError", resourceCulture);
+            }
+        }
     }
 }

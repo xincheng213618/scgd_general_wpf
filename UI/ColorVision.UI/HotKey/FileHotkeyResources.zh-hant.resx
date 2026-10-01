@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Category" xml:space="preserve"><value>文件與工作區</value></data>
+  <data name="OpenFile" xml:space="preserve"><value>打開文件</value></data>
+  <data name="OpenFileDescription" xml:space="preserve"><value>選擇文件，並使用對應編輯器打開。</value></data>
+  <data name="OpenWorkspace" xml:space="preserve"><value>打開工作區列表</value></data>
+  <data name="OpenWorkspaceDescription" xml:space="preserve"><value>查看最近的工作區並選擇要打開的項目或解決方案。</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>打開文件夾工作區</value></data>
+  <data name="OpenFolderDescription" xml:space="preserve"><value>選擇文件夾作爲工作區；切換前保留現有的保存與取消確認。</value></data>
+  <data name="Save" xml:space="preserve"><value>保存當前文檔</value></data>
+  <data name="SaveDescription" xml:space="preserve"><value>保存當前文檔的修改；僅在當前編輯器允許保存時執行。</value></data>
+  <data name="SaveAs" xml:space="preserve"><value>另存爲</value></data>
+  <data name="SaveAsDescription" xml:space="preserve"><value>在支持此命令的當前編輯器中打開另存爲對話框；圖像編輯器導出當前渲染圖。</value></data>
+  <data name="CloseDocument" xml:space="preserve"><value>關閉當前標籤頁</value></data>
+  <data name="CloseDocumentDescription" xml:space="preserve"><value>關閉當前文檔標籤頁；有未保存修改時按編輯器的關閉流程確認。</value></data>
+</root>

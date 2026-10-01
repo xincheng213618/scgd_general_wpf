@@ -914,4 +914,31 @@
   <data name="ConfigDesktopPetCopilotNotificationsDescription" xml:space="preserve">
     <value>在 Copilot 需要確認、完成或失敗時顯示寵物通知。</value>
   </data>
+  <data name="UpdatePreviewServerUnavailableHeading" xml:space="preserve">
+    <value>無法連接更新服務器</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableSummary" xml:space="preserve">
+    <value>未能獲取主程序、插件和主題的最新版本信息。</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
+    <value>已嘗試連接更新服務器，但未能取得版本信息。請檢查網絡或代理設置後重試。</value>
+  </data>
+  <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
+    <value>Windows 未檢測到可用的互聯網連接。請恢復網絡連接後重試。</value>
+  </data>
+  <data name="UpdatePreviewReinstall" xml:space="preserve">
+    <value>重新安裝</value>
+  </data>
+  <data name="UpdatePreviewReinstallDescription" xml:space="preserve">
+    <value>下載最新完整安裝包並啓動安裝，用於修復增量更新問題；當前已是最新版本時也可使用。</value>
+  </data>
+  <data name="UpdatePreviewReinstallChecking" xml:space="preserve">
+    <value>正在獲取最新版本…</value>
+  </data>
+  <data name="UpdatePreviewPluginDeferredByFullApplicationUpdate" xml:space="preserve">
+    <value>完整安裝包更新時，本輪不合並插件更新。</value>
+  </data>
+  <data name="UpdatePreviewSelectionDefersPluginUpdates" xml:space="preserve">
+    <value>本輪不合並插件更新</value>
+  </data>
 </root>

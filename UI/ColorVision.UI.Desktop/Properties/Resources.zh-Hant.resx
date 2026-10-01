@@ -946,4 +946,7 @@
   <data name="LanRemote_SecureDisabledStatus" xml:space="preserve"><value>安全維運通道已關閉。</value></data>
   <data name="LanRemote_SecureRunningStatus" xml:space="preserve"><value>安全維運通道執行中，HTTPS 連接埠 {0}。</value></data>
   <data name="LanRemote_SecureFailedStatus" xml:space="preserve"><value>安全維運通道啟動失敗：{0}</value></data>
+  <data name="MarketplaceBulkUpdatePackageDownloadFailed" xml:space="preserve">
+    <value>插件包未全部下載成功，已取消本次批量更新。</value>
+  </data>
 </root>
