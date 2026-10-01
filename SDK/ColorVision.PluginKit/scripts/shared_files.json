@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-09-14T04:58:31.871709+00:00",
+  "generated_at": "2026-10-01T12:32:55.502695+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -277,6 +277,8 @@
     "en/ColorVision.Database.resources.dll",
     "en/ColorVision.Engine.resources.dll",
     "en/ColorVision.ImageEditor.resources.dll",
+    "en/ColorVision.ImageTools.resources.dll",
+    "en/ColorVision.Rbac.resources.dll",
     "en/ColorVision.Scheduler.resources.dll",
     "en/ColorVision.SocketProtocol.resources.dll",
     "en/ColorVision.Solution.resources.dll",
@@ -459,6 +461,8 @@
     "zh-Hant/ColorVision.Database.resources.dll",
     "zh-Hant/ColorVision.Engine.resources.dll",
     "zh-Hant/ColorVision.ImageEditor.resources.dll",
+    "zh-Hant/ColorVision.ImageTools.resources.dll",
+    "zh-Hant/ColorVision.Rbac.resources.dll",
     "zh-Hant/ColorVision.Scheduler.resources.dll",
     "zh-Hant/ColorVision.SocketProtocol.resources.dll",
     "zh-Hant/ColorVision.Solution.resources.dll",
