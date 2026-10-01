@@ -245,8 +245,7 @@ public class MQTTClientPoolTests
 
     public static TheoryData<Type> MqttStartNodeTypes => new()
     {
-        typeof(MQTTStartNode),
-        typeof(MQTTStartV5Node)
+        typeof(MQTTStartNode)
     };
 
     [Theory]

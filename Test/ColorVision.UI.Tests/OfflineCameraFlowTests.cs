@@ -44,16 +44,14 @@ public sealed class OfflineCameraFlowTests
         });
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void DisconnectedMqttStartDispatchesLocalFlowButStillRejectsServiceGraph(bool v5)
+    [Fact]
+    public void DisconnectedMqttStartDispatchesLocalFlowButStillRejectsServiceGraph()
     {
         StaTest.Run(() =>
         {
             using var editor = new STNodeEditor();
             using var control = new FlowEngineControl(editor, false, new FlowNodeManager()) { PersistResults = false };
-            BaseStartNode start = v5 ? new DisconnectedMqttV5Start() : new DisconnectedMqttStart();
+            var start = new DisconnectedMqttStart();
             start.NodeName = "offline";
             start.Create();
             var end = new CVEndNode();
@@ -94,11 +92,6 @@ public sealed class OfflineCameraFlowTests
     }
 
     private sealed class DisconnectedMqttStart : MQTTStartNode
-    {
-        public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default) => Task.FromResult(false);
-        public override void DoPublishStatus(string message) { }
-    }
-    private sealed class DisconnectedMqttV5Start : MQTTStartV5Node
     {
         public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default) => Task.FromResult(false);
         public override void DoPublishStatus(string message) { }
