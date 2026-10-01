@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             if (_isRunning) Stop(resetRealtime: true);
             // A camera stream owns new pixels, not the previous file's path, layers or measurements.
             // Clearing the file identity also rejects a CVRAW load that is still finishing in the background.
-            imageView.EditorContext.IImageOpen = null;
+            imageView.ReleaseImageContent();
             imageView.IEditorToolFactory.ApplyImageOpenTools(null);
             imageView.SetLayerController(null);
             imageView.Config.ClearProperties();

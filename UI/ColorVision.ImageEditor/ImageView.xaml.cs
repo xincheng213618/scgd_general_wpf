@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
+using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
 using ColorVision.ImageEditor.Draw.Special;
@@ -79,6 +80,7 @@ namespace ColorVision.ImageEditor
         private WpfWindow? _shortcutWindow;
 
         public event EventHandler ClearImageEventHandler;
+        internal Task PendingContentRelease { get; private set; } = Task.CompletedTask;
         public event EventHandler StatusBarItemsChanged;
         public event EventHandler<ImageViewImageChangedEventArgs>? SelectedImageChanged;
 
@@ -760,8 +762,8 @@ namespace ColorVision.ImageEditor
             _channels.CancelPending();
             ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
+            ReleaseImageContent();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
-            EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
             _session.ClearConfiguration();
@@ -861,20 +863,22 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
+            bool fileExists = File.Exists(filePath);
+            string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+            IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen);
+            ReleaseImageContent(fileExists ? imageOpen : null);
             Config.ClearProperties();
-            EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FilePath);
             try
             {
-                if (filePath != null && File.Exists(filePath))
+                if (fileExists)
                 {
                     long fileSize = new FileInfo(filePath).Length;
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
-                    string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                    if (IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
+                    if (imageOpen != null)
                     {
                         EditorContext.IImageOpen = imageOpen;
                         EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
@@ -889,11 +893,27 @@ namespace ColorVision.ImageEditor
             }
             catch(Exception ex)
             {
-                EditorContext.IImageOpen = null;
+                ReleaseImageContent();
                 IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
                 WpfMessageBox.Show(ex.Message);
             }
+        }
+
+        /// <summary>Ends the file opener's content before replacing it with another file or a camera source.</summary>
+        public void ReleaseImageContent(IImageOpen? nextOpener = null)
+        {
+            Dispatcher.VerifyAccess();
+            var opener = EditorContext.IImageOpen;
+            EditorContext.IImageOpen = null;
+            if (opener is IImageOpenContentLifetime lifetime)
+                PendingContentRelease = Task.WhenAll(PendingContentRelease, ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener)));
+        }
+
+        private static async Task ObserveContentReleaseAsync(IImageOpenContentLifetime lifetime, bool reuseBuffers)
+        {
+            try { await lifetime.ReleaseContentAsync(reuseBuffers); }
+            catch (Exception ex) { log.Error("Failed to release image content.", ex); }
         }
 
         public bool CanRestoreOriginalImage

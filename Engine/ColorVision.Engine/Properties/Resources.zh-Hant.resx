@@ -7756,4 +7756,119 @@
   <data name="请先选择SFR寻边模板" xml:space="preserve">
     <value>請先選擇 SFR 尋邊範本</value>
   </data>
+  <data name="打开本地缓存管理，查看或释放校正与图像文件缓存。" xml:space="preserve">
+    <value>開啟本機快取管理，檢視或釋放校正與影像檔案快取。</value>
+  </data>
+  <data name="读取失败" xml:space="preserve">
+    <value>讀取失敗</value>
+  </data>
+  <data name="复用校正文件和相机上下文，减少重复加载。释放后会在下次校正时重新加载。" xml:space="preserve">
+    <value>重用校正檔案和相機上下文，減少重複載入。釋放後會在下次校正時重新載入。</value>
+  </data>
+  <data name="校正缓存不支持停用，请使用释放缓存。" xml:space="preserve">
+    <value>校正快取不支援停用，請使用釋放快取。</value>
+  </data>
+  <data name="复用最近一次完整的 CVRAW 图像文件，减少重复读写。释放缓存会保留磁盘文件。" xml:space="preserve">
+    <value>重用最近一次完整的 CVRAW 影像檔案，減少重複讀寫。釋放快取會保留磁碟檔案。</value>
+  </data>
+  <data name="图像文件槽位" xml:space="preserve">
+    <value>影像檔案槽位</value>
+  </data>
+  <data name="单槽位复用 · 已分配 {0:N0} 次" xml:space="preserve">
+    <value>單槽位重用 · 已配置 {0:N0} 次</value>
+  </data>
+  <data name="缓存内存" xml:space="preserve">
+    <value>快取記憶體</value>
+  </data>
+  <data name="缓存模块" xml:space="preserve">
+    <value>快取模組</value>
+  </data>
+  <data name="缓存条目" xml:space="preserve">
+    <value>快取項目</value>
+  </data>
+  <data name="内存占用" xml:space="preserve">
+    <value>記憶體使用量</value>
+  </data>
+  <data name="活动引用" xml:space="preserve">
+    <value>作用中參照</value>
+  </data>
+  <data name="搜索缓存模块或文件…" xml:space="preserve">
+    <value>搜尋快取模組或檔案…</value>
+  </data>
+  <data name="搜索缓存模块或文件" xml:space="preserve">
+    <value>搜尋快取模組或檔案</value>
+  </data>
+  <data name="释放选中" xml:space="preserve">
+    <value>釋放選取項目</value>
+  </data>
+  <data name="缓存模块：{0:N0}" xml:space="preserve">
+    <value>快取模組：{0:N0}</value>
+  </data>
+  <data name="模块详情" xml:space="preserve">
+    <value>模組詳細資料</value>
+  </data>
+  <data name="没有匹配的缓存模块。" xml:space="preserve">
+    <value>沒有相符的快取模組。</value>
+  </data>
+  <data name="当前模块没有缓存文件。" xml:space="preserve">
+    <value>目前模組沒有快取檔案。</value>
+  </data>
+  <data name="选择模块以查看缓存详情。" xml:space="preserve">
+    <value>選取模組以檢視快取詳細資料。</value>
+  </data>
+  <data name="最后刷新：{0:HH:mm:ss}" xml:space="preserve">
+    <value>最後更新：{0:HH:mm:ss}</value>
+  </data>
+  <data name="校正内存为估算值" xml:space="preserve">
+    <value>校正記憶體為估算值</value>
+  </data>
+  <data name="总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>總量僅統計已接入的快取模組。</value>
+  </data>
+  <data name="正在释放缓存…" xml:space="preserve">
+    <value>正在釋放快取…</value>
+  </data>
+  <data name="将释放“{0}”模块的缓存。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>將釋放「{0}」模組的快取。
+
+等待正在進行的快取操作完成，保留磁碟檔案，後續使用時會重新載入。是否繼續？</value>
+  </data>
+  <data name="将释放所有缓存模块。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>將釋放所有快取模組。
+
+等待正在進行的快取操作完成，保留磁碟檔案，後續使用時會重新載入。是否繼續？</value>
+  </data>
+  <data name="正在使用" xml:space="preserve">
+    <value>正在使用</value>
+  </data>
+  <data name="校正内存为估算值；总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>校正記憶體為估算值；總量僅統計已接入的快取模組。</value>
+  </data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变。" xml:space="preserve">
+    <value>預設開啟。關閉後直接讀寫檔案，既有讀取完成後釋放槽位；顯示記憶體重用保持不變。</value>
+  </data>
+  <data name="文件大小" xml:space="preserve">
+    <value>檔案大小</value>
+  </data>
+  <data name="已关闭（直接读写文件）" xml:space="preserve">
+    <value>已關閉（直接讀寫檔案）</value>
+  </data>
+  <data name="数量上限" xml:space="preserve">
+    <value>數量上限</value>
+  </data>
+  <data name="默认保留 1 个完整 CVRAW 图像文件，可调整；减少数量后释放多余缓存，磁盘文件保留。" xml:space="preserve">
+    <value>預設保留 1 個完整 CVRAW 影像檔案，可調整；減少數量後釋放多餘快取，磁碟檔案保留。</value>
+  </data>
+  <data name="缓存上限：{0:N0} 个 · 已分配 {1:N0} 次" xml:space="preserve">
+    <value>快取上限：{0:N0} 個 · 已配置 {1:N0} 次</value>
+  </data>
+  <data name="图像缓存数量上限" xml:space="preserve">
+    <value>影像快取數量上限</value>
+  </data>
+  <data name="等待读取完成后释放" xml:space="preserve">
+    <value>等候讀取完成後釋放</value>
+  </data>
+  <data name="请输入大于零的缓存数量。" xml:space="preserve">
+    <value>請輸入大於零的快取數量。</value>
+  </data>
 </root>

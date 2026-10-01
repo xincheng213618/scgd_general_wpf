@@ -5648,7 +5648,7 @@ This waits for calibration and image copies to finish and keeps disk files. Cach
     <value>Measurement Data Verified</value>
   </data>
   <data name="应用" xml:space="preserve">
-    <value>Application</value>
+    <value>Apply</value>
   </data>
   <data name="应用到节点" xml:space="preserve">
     <value>Apply to Node</value>
@@ -6748,5 +6748,120 @@ Open the spectrum log?</value>
   </data>
   <data name="请先选择SFR寻边模板" xml:space="preserve">
     <value>Select an SFR edge template first</value>
+  </data>
+  <data name="打开本地缓存管理，查看或释放校正与图像文件缓存。" xml:space="preserve">
+    <value>Open Local Cache Management to view or release calibration and image file caches.</value>
+  </data>
+  <data name="读取失败" xml:space="preserve">
+    <value>Read failed</value>
+  </data>
+  <data name="复用校正文件和相机上下文，减少重复加载。释放后会在下次校正时重新加载。" xml:space="preserve">
+    <value>Reuse calibration files and camera contexts to reduce repeated loading. Released caches reload on the next calibration.</value>
+  </data>
+  <data name="校正缓存不支持停用，请使用释放缓存。" xml:space="preserve">
+    <value>The calibration cache cannot be disabled. Use Release Cache instead.</value>
+  </data>
+  <data name="复用最近一次完整的 CVRAW 图像文件，减少重复读写。释放缓存会保留磁盘文件。" xml:space="preserve">
+    <value>Reuse the most recent complete CVRAW image file to reduce repeated reads and writes. Releasing the cache keeps disk files.</value>
+  </data>
+  <data name="图像文件槽位" xml:space="preserve">
+    <value>Image file slot</value>
+  </data>
+  <data name="单槽位复用 · 已分配 {0:N0} 次" xml:space="preserve">
+    <value>One reusable slot · {0:N0} allocations</value>
+  </data>
+  <data name="缓存内存" xml:space="preserve">
+    <value>Cached Memory</value>
+  </data>
+  <data name="缓存模块" xml:space="preserve">
+    <value>Cache Module</value>
+  </data>
+  <data name="缓存条目" xml:space="preserve">
+    <value>Cache Entries</value>
+  </data>
+  <data name="内存占用" xml:space="preserve">
+    <value>Memory Usage</value>
+  </data>
+  <data name="活动引用" xml:space="preserve">
+    <value>Active References</value>
+  </data>
+  <data name="搜索缓存模块或文件…" xml:space="preserve">
+    <value>Search cache modules or files…</value>
+  </data>
+  <data name="搜索缓存模块或文件" xml:space="preserve">
+    <value>Search cache modules or files</value>
+  </data>
+  <data name="释放选中" xml:space="preserve">
+    <value>Release Selected</value>
+  </data>
+  <data name="缓存模块：{0:N0}" xml:space="preserve">
+    <value>Cache Modules: {0:N0}</value>
+  </data>
+  <data name="模块详情" xml:space="preserve">
+    <value>Module Details</value>
+  </data>
+  <data name="没有匹配的缓存模块。" xml:space="preserve">
+    <value>No matching cache modules.</value>
+  </data>
+  <data name="当前模块没有缓存文件。" xml:space="preserve">
+    <value>This module has no cached files.</value>
+  </data>
+  <data name="选择模块以查看缓存详情。" xml:space="preserve">
+    <value>Select a module to view cache details.</value>
+  </data>
+  <data name="最后刷新：{0:HH:mm:ss}" xml:space="preserve">
+    <value>Last Refreshed: {0:HH:mm:ss}</value>
+  </data>
+  <data name="校正内存为估算值" xml:space="preserve">
+    <value>Calibration memory is estimated</value>
+  </data>
+  <data name="总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>Totals include only connected cache modules.</value>
+  </data>
+  <data name="正在释放缓存…" xml:space="preserve">
+    <value>Releasing cache…</value>
+  </data>
+  <data name="将释放“{0}”模块的缓存。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>Release the cache for “{0}”?
+
+Active cache operations will finish first. Disk files will be kept, and the cache will reload when needed. Continue?</value>
+  </data>
+  <data name="将释放所有缓存模块。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>Release all cache modules?
+
+Active cache operations will finish first. Disk files will be kept, and the caches will reload when needed. Continue?</value>
+  </data>
+  <data name="正在使用" xml:space="preserve">
+    <value>In use</value>
+  </data>
+  <data name="校正内存为估算值；总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>Calibration memory is estimated; totals include only connected cache modules.</value>
+  </data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变。" xml:space="preserve">
+    <value>Enabled by default. When disabled, files are read and written directly; the slot is released after active reads finish. Display memory reuse remains unchanged.</value>
+  </data>
+  <data name="文件大小" xml:space="preserve">
+    <value>File Size</value>
+  </data>
+  <data name="已关闭（直接读写文件）" xml:space="preserve">
+    <value>Disabled (direct file access)</value>
+  </data>
+  <data name="数量上限" xml:space="preserve">
+    <value>Entry Limit</value>
+  </data>
+  <data name="默认保留 1 个完整 CVRAW 图像文件，可调整；减少数量后释放多余缓存，磁盘文件保留。" xml:space="preserve">
+    <value>Keep one complete CVRAW image file by default. The limit is adjustable; reducing it releases excess caches and keeps disk files.</value>
+  </data>
+  <data name="缓存上限：{0:N0} 个 · 已分配 {1:N0} 次" xml:space="preserve">
+    <value>Cache Limit: {0:N0} entries · {1:N0} allocations</value>
+  </data>
+  <data name="图像缓存数量上限" xml:space="preserve">
+    <value>Image Cache Entry Limit</value>
+  </data>
+  <data name="等待读取完成后释放" xml:space="preserve">
+    <value>Waiting for reads to finish before release</value>
+  </data>
+  <data name="请输入大于零的缓存数量。" xml:space="preserve">
+    <value>Enter a cache entry limit greater than zero.</value>
   </data>
 </root>

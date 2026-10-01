@@ -2,7 +2,6 @@ using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
 using FlowEngineLib.Algorithm;
 using OpenCvSharp;
-using OpenCvSharp.WpfExtensions;
 using System;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -50,12 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             // Use the CVRAW decoder's BGR-to-WPF conversion, including BGR16 -> Rgb48.
             // The converter owns the display copy; neither source samples nor their order are changed.
             using Mat mat = Mat.FromPixelData(height, width, matType, raw, stride);
-            return mat.ToWriteableBitmap();
+            return mat.CreateDisplayBitmap();
         }
 
         public void Show(ImageView view)
         {
-            view.EditorContext.IImageOpen = null;
+            view.ReleaseImageContent();
             view.IEditorToolFactory.ApplyImageOpenTools(null);
             view.SetLayerController(null);
             view.Config.ClearProperties();

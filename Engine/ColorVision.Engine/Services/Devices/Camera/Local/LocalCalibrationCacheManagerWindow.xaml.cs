@@ -1,8 +1,7 @@
-using ColorVision.Core;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Caches;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using cvColorVision;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -11,37 +10,36 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
-    internal sealed class LocalCalibrationCacheViewItem
-    {
-        public required string CalibrationTypeText { get; init; }
-        public required string FilePath { get; init; }
-        public required string ResidentMemoryText { get; init; }
-        public ulong HitCount { get; init; }
-        public required string UsageText { get; init; }
-    }
-
     public partial class LocalCalibrationCacheManagerWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManagerWindow));
         private static LocalCalibrationCacheManagerWindow? instance;
-        private readonly ObservableCollection<LocalCalibrationCacheViewItem> items = new();
+        private readonly ObservableCollection<CacheModuleViewItem> modules = new();
         private readonly CvRawFileCacheConfig imageCacheConfig;
+        private readonly ICollectionView modulesView;
         private bool isBusy;
         private bool isClosed;
+        private bool isApplyingSnapshot;
 
         public LocalCalibrationCacheManagerWindow()
         {
             imageCacheConfig = CvRawFileCacheConfig.Current;
+            modulesView = CollectionViewSource.GetDefaultView(modules);
+            modulesView.SortDescriptions.Add(new SortDescription(nameof(CacheModuleViewItem.MemoryBytes), ListSortDirection.Descending));
+            modulesView.Filter = MatchesSearch;
             InitializeComponent();
             this.ApplyCaption();
-            CacheDataGrid.ItemsSource = items;
+            CacheModulesGrid.ItemsSource = modulesView;
             ImageCacheEnabledCheckBox.SetBinding(ToggleButton.IsCheckedProperty,
-                new Binding(nameof(CvRawFileCacheConfig.IsEnabled)) { Source = imageCacheConfig, Mode = BindingMode.TwoWay });
+                new Binding(nameof(CvRawFileCacheConfig.IsEnabled)) { Source = imageCacheConfig, Mode = BindingMode.OneWay });
+            ImageCacheCountTextBox.SetBinding(TextBox.TextProperty,
+                new Binding(nameof(CvRawFileCacheConfig.MaximumEntries)) { Source = imageCacheConfig, Mode = BindingMode.OneWay });
             imageCacheConfig.PropertyChanged += ImageCacheConfig_PropertyChanged;
         }
 
@@ -52,241 +50,228 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Application.Current.Dispatcher.Invoke(OpenWindow);
                 return;
             }
-
             if (instance != null && !instance.isClosed)
             {
-                if (instance.WindowState == WindowState.Minimized)
-                {
-                    instance.WindowState = WindowState.Normal;
-                }
+                if (instance.WindowState == WindowState.Minimized) instance.WindowState = WindowState.Normal;
                 instance.Activate();
                 return;
             }
-
-            instance = null;
             Window? owner = Application.Current.MainWindow;
-            if (owner?.IsLoaded != true)
-            {
-                owner = null;
-            }
+            if (owner?.IsLoaded != true) owner = null;
             instance = new LocalCalibrationCacheManagerWindow
             {
                 Owner = owner,
-                WindowStartupLocation = owner == null
-                    ? WindowStartupLocation.CenterScreen
-                    : WindowStartupLocation.CenterOwner,
+                WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
             };
             instance.Show();
             instance.Activate();
         }
 
-        private async void Window_Initialized(object sender, EventArgs e)
-        {
-            await RefreshAsync(showError: true);
-        }
+        private async void Window_Initialized(object sender, EventArgs e) => await RefreshAsync(showError: true);
 
         private void Window_Closed(object? sender, EventArgs e)
         {
             imageCacheConfig.PropertyChanged -= ImageCacheConfig_PropertyChanged;
             isClosed = true;
-            if (ReferenceEquals(instance, this))
-            {
-                instance = null;
-            }
+            if (ReferenceEquals(instance, this)) instance = null;
         }
 
         private void Window_Closing(object? sender, CancelEventArgs e)
         {
             if (!isBusy) return;
-
             e.Cancel = true;
             StatusText.Text = EngineLocalization.Get("缓存操作正在进行，请等待操作完成后再关闭窗口。");
         }
 
-        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            await RefreshAsync(showError: true);
-        }
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshAsync(showError: true);
 
-        private void ImageCacheEnabledCheckBox_Click(object sender, RoutedEventArgs e)
-            => CvRawFileCacheConfig.SaveCurrent();
+        private async void ImageCacheEnabledCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (isBusy || CacheManagerService.GetById("ImageFile") is not ICacheModule module) return;
+            bool enabled = ImageCacheEnabledCheckBox.IsChecked == true;
+            SetBusy(true, EngineLocalization.Get("正在读取缓存状态…"));
+            try
+            {
+                await Task.Run(() => module.SetEnabled(enabled));
+                ApplySnapshots(await CacheManagerService.ReadSnapshotsAsync());
+            }
+            catch (Exception ex)
+            {
+                log.Error("Change image file cache setting failed.", ex);
+                StatusText.Text = EngineLocalization.Format($"读取缓存状态失败：{ex.Message}");
+            }
+            finally
+            {
+                ImageCacheEnabledCheckBox.GetBindingExpression(ToggleButton.IsCheckedProperty)?.UpdateTarget();
+                if (!isClosed) SetBusy(false, string.Empty);
+            }
+        }
 
         private async void ImageCacheConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(CvRawFileCacheConfig.IsEnabled)) await RefreshAsync(showError: false);
+            if ((e.PropertyName != nameof(CvRawFileCacheConfig.IsEnabled) && e.PropertyName != nameof(CvRawFileCacheConfig.MaximumEntries)) || isClosed) return;
+            if (!Dispatcher.CheckAccess())
+            {
+                await Dispatcher.InvokeAsync(() => RefreshAsync(showError: false)).Task.Unwrap();
+                return;
+            }
+            await RefreshAsync(showError: false);
+        }
+
+        private async void ApplyImageCacheCountButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (isBusy || CacheManagerService.GetById("ImageFile") is not ImageFileCacheModule module) return;
+            if (!int.TryParse(ImageCacheCountTextBox.Text, out int maximumEntries) || maximumEntries <= 0)
+            {
+                StatusText.Text = EngineLocalization.Get("请输入大于零的缓存数量。");
+                ImageCacheCountTextBox.Focus();
+                ImageCacheCountTextBox.SelectAll();
+                return;
+            }
+            SetBusy(true, EngineLocalization.Get("正在读取缓存状态…"));
+            try
+            {
+                await Task.Run(() => module.SetMaximumEntries(maximumEntries));
+                ApplySnapshots(await CacheManagerService.ReadSnapshotsAsync());
+            }
+            catch (Exception ex)
+            {
+                log.Error("Change image file cache count failed.", ex);
+                StatusText.Text = EngineLocalization.Format($"读取缓存状态失败：{ex.Message}");
+            }
+            finally
+            {
+                ImageCacheCountTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+                if (!isClosed) SetBusy(false, string.Empty);
+            }
         }
 
         private async Task RefreshAsync(bool showError)
         {
-            if (isBusy) return;
-
+            if (isBusy || isClosed) return;
             SetBusy(true, EngineLocalization.Get("正在读取缓存状态…"));
             try
             {
-                LocalCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
-                if (isClosed) return;
-                ApplySnapshot(snapshot);
+                ApplySnapshots(await CacheManagerService.ReadSnapshotsAsync());
             }
             catch (Exception ex)
             {
-                log.Error("Read local calibration cache snapshot failed.", ex);
+                log.Error("Read cache modules failed.", ex);
                 if (isClosed) return;
                 StatusText.Text = EngineLocalization.Format($"读取缓存状态失败：{ex.Message}");
-                if (showError)
-                {
+                if (showError && IsVisible)
                     MessageBox1.Show(this, EngineLocalization.Format($"读取本地缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
             }
             finally
             {
-                if (!isClosed)
-                {
-                    SetBusy(false, string.Empty);
-                }
+                if (!isClosed) SetBusy(false, string.Empty);
             }
         }
 
-        private async void ReleaseAllButton_Click(object sender, RoutedEventArgs e)
+        private async void ReleaseSelectedButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (CacheModulesGrid.SelectedItem is not CacheModuleViewItem selected) return;
+            if (CacheManagerService.GetById(selected.Id) is ICacheModule module) await ReleaseAsync(module);
+        }
+
+        private async void ReleaseAllButton_Click(object sender, RoutedEventArgs e) => await ReleaseAsync(null);
+
+        private async Task ReleaseAsync(ICacheModule? selectedModule)
         {
             if (isBusy) return;
-
-            string confirmation = EngineLocalization.Get("将释放当前进程所有相机的校正缓存和图像文件缓存槽位。\n\n等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？");
-            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
-            {
-                return;
-            }
-
-            SetBusy(true, EngineLocalization.Get("正在等待校正与图像复制完成并释放缓存…"));
-            Exception? refreshError = null;
+            string confirmation = selectedModule == null
+                ? EngineLocalization.Get("将释放所有缓存模块。\n\n等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？")
+                : EngineLocalization.Format($"将释放“{selectedModule.Name}”模块的缓存。\n\n等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？");
+            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+            SetBusy(true, EngineLocalization.Get("正在释放缓存…"));
             try
             {
-                LocalCalibrationCacheReleaseSummary summary = await LocalCalibrationCacheService.ReleaseAllAsync();
-                if (isClosed) return;
-                try
-                {
-                    LocalCacheSnapshot snapshot = await Task.Run(LocalCalibrationCacheService.GetSnapshot);
-                    if (isClosed) return;
-                    ApplySnapshot(snapshot);
-                }
-                catch (Exception ex)
-                {
-                    refreshError = ex;
-                    log.Error("Refresh local calibration cache snapshot after release failed.", ex);
-                }
-                if (isClosed) return;
-
-                string message = BuildReleaseMessage(summary, refreshError);
-                bool hasActiveEntries = summary.NativeRelease?.ActiveEntryCount > 0;
-                MessageBoxImage image = summary.Succeeded && !hasActiveEntries && refreshError == null
-                    ? MessageBoxImage.Information
-                    : MessageBoxImage.Warning;
+                IReadOnlyList<CacheModuleReleaseResult> results = selectedModule == null
+                    ? await CacheManagerService.ReleaseAllAsync()
+                    : new[] { await CacheManagerService.ReleaseAsync(selectedModule) };
+                ApplySnapshots(await CacheManagerService.ReadSnapshotsAsync());
+                string message = string.Join(Environment.NewLine + Environment.NewLine, results.Select(result => result.Message));
                 StatusText.Text = message.Replace(Environment.NewLine, " ");
-                MessageBox1.Show(this, message, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OK, image);
+                MessageBox1.Show(this, message, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OK,
+                    results.All(result => result.Succeeded) ? MessageBoxImage.Information : MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                log.Error("Release all local calibration caches failed.", ex);
-                if (isClosed) return;
+                log.Error("Release cache modules failed.", ex);
                 StatusText.Text = EngineLocalization.Format($"释放缓存失败：{ex.Message}");
                 MessageBox1.Show(this, EngineLocalization.Format($"释放本地缓存失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                if (!isClosed)
-                {
-                    SetBusy(false, string.Empty);
-                }
+                if (!isClosed) SetBusy(false, string.Empty);
             }
         }
 
-        private void ApplySnapshot(LocalCacheSnapshot state)
+        private void ApplySnapshots(IReadOnlyList<CacheModuleSnapshot> snapshots)
         {
             if (isClosed) return;
-            CalibrationSharedCacheSnapshot snapshot = state.Calibration;
-
-            items.Clear();
-            foreach (CalibrationSharedCacheEntry entry in snapshot.Entries
-                .OrderBy(item => item.CalibrationType)
-                .ThenBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase))
+            string? selectedId = (CacheModulesGrid.SelectedItem as CacheModuleViewItem)?.Id;
+            ulong totalBytes = snapshots.Aggregate(0UL, (total, snapshot) => total + snapshot.MemoryBytes);
+            isApplyingSnapshot = true;
+            try
             {
-                items.Add(new LocalCalibrationCacheViewItem
-                {
-                    CalibrationTypeText = GetCalibrationTypeText(entry.CalibrationType),
-                    FilePath = entry.FilePath,
-                    ResidentMemoryText = FormatBytes(entry.EstimatedMemoryBytes),
-                    HitCount = entry.HitCount,
-                    UsageText = GetUsageText(entry),
-                });
+                modules.Clear();
+                foreach (CacheModuleSnapshot snapshot in snapshots) modules.Add(new CacheModuleViewItem(snapshot, totalBytes));
+                CacheModulesGrid.SelectedItem = modulesView.Cast<CacheModuleViewItem>().FirstOrDefault(item => item.Id == selectedId)
+                    ?? modulesView.Cast<CacheModuleViewItem>().FirstOrDefault();
             }
-
-            CalibrationSharedCacheStatistics statistics = snapshot.Statistics;
-            EntryCountText.Text = EngineLocalization.Format($"缓存文件：{statistics.EntryCount:N0}");
-            ResidentMemoryText.Text = EngineLocalization.Format($"驻留内存：{FormatBytes(statistics.EstimatedMemoryBytes)}");
-            BudgetText.Text = statistics.BudgetBytes == 0
-                ? EngineLocalization.Get("缓存预算：未限制")
-                : EngineLocalization.Format($"缓存预算：{FormatBytes(statistics.BudgetBytes)}");
-            HitSummaryText.Text = EngineLocalization.Format($"命中：{statistics.HitCount:N0} / 未命中：{statistics.MissCount:N0}");
-
-            var image = state.ImageFile;
-            ImageCapacityText.Text = EngineLocalization.Format($"驻留内存：{FormatBytes((ulong)image.CapacityBytes)}");
-            ImageHitSummaryText.Text = EngineLocalization.Format($"命中：{image.HitCount:N0} / 未命中：{image.MissCount:N0}");
-            ImageCacheDataGrid.ItemsSource = new[]
-            {
-                new
-                {
-                    Slot = 1,
-                    FilePath = image.FilePath ?? EngineLocalization.Get("尚未缓存图像"),
-                    Capacity = FormatBytes((ulong)image.CapacityBytes),
-                    Content = FormatBytes((ulong)image.ContentBytes),
-                    image.HitCount,
-                    Usage = image.ActiveReaders > 0
-                        ? EngineLocalization.Format($"正在读取（{image.ActiveReaders} 个引用）")
-                        : EngineLocalization.Get(!image.IsEnabled ? "已关闭（直接读写文件）" : image.FilePath == null ? "等待加载" : "已缓存（可释放）"),
-                }
-            };
-
-            int activeEntries = snapshot.Entries.Count(entry => entry.ActiveOwnerCount > 0) + (image.ActiveReaders > 0 ? 1 : 0);
-            ulong activeOwners = snapshot.Entries.Aggregate(0UL, (total, entry) => total + entry.ActiveOwnerCount) + (ulong)image.ActiveReaders;
-            StatusText.Text = activeEntries == 0
-                ? EngineLocalization.Format($"最后刷新：{DateTime.Now:HH:mm:ss}。当前没有缓存被活动上下文占用。")
-                : EngineLocalization.Format($"最后刷新：{DateTime.Now:HH:mm:ss}。{activeEntries} 个缓存文件仍有 {activeOwners} 个活动引用。");
+            finally { isApplyingSnapshot = false; }
+            TotalMemoryText.Text = CacheManagerService.FormatBytes(totalBytes);
+            ModuleCountText.Text = EngineLocalization.Format($"缓存模块：{snapshots.Count:N0}");
+            StatusText.Text = EngineLocalization.Format($"最后刷新：{DateTime.Now:HH:mm:ss}");
+            if (snapshots.Any(snapshot => snapshot.Error != null))
+                StatusText.Text += " · " + EngineLocalization.Get("读取失败");
+            UpdateModuleDetails();
+            UpdateEmptyState();
         }
 
-        private static string BuildReleaseMessage(LocalCalibrationCacheReleaseSummary summary, Exception? refreshError)
+        private bool MatchesSearch(object value)
         {
-            List<string> lines = new()
-            {
-                EngineLocalization.Format($"已检查 {summary.DeviceCount} 台相机，释放 {summary.ContextsReleased} 个本地校正上下文缓存项。"),
-                EngineLocalization.Format($"图像文件缓存槽位已释放 {FormatBytes((ulong)summary.ImageFileBytesReleased)}，磁盘文件保留。"),
-            };
-
-            if (summary.NativeRelease is CalibrationSharedCacheReleaseResult nativeRelease)
-            {
-                lines.Add(EngineLocalization.Format($"共享文件缓存已移除 {nativeRelease.ReleasedEntryCount} 项，涉及驻留内存约 {FormatBytes(nativeRelease.ReleasedEstimatedMemoryBytes)}。"));
-                if (nativeRelease.ActiveEntryCount > 0)
-                {
-                    lines.Add(EngineLocalization.Format($"其中仍有 {nativeRelease.ActiveEntryCount} 项被 {nativeRelease.ActiveOwnerCount} 个活动引用使用，约 {FormatBytes(nativeRelease.ActiveEstimatedMemoryBytes)} 暂未物理释放。完成相关执行后可再次释放。"));
-                }
-                else
-                {
-                    lines.Add(EngineLocalization.Get("没有共享文件缓存仍被活动上下文占用。"));
-                }
-            }
-            else
-            {
-                lines.Add(EngineLocalization.Get("opencv_helper 共享文件缓存未能执行释放。"));
-            }
-
-            if (summary.Errors.Count > 0)
-            {
-                lines.Add(EngineLocalization.Get("释放错误：") + string.Join(EngineLocalization.Get("；"), summary.Errors.Select(error => $"{error.DeviceCode}: {error.Message}")));
-            }
-            if (refreshError != null)
-            {
-                lines.Add(EngineLocalization.Format($"释放后刷新失败：{refreshError.Message}"));
-            }
-            return string.Join(Environment.NewLine, lines);
+            if (value is not CacheModuleViewItem item) return false;
+            string query = CacheSearchBox?.Text.Trim() ?? string.Empty;
+            return query.Length == 0 || item.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                || item.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                || item.Snapshot.Entries.Any(entry => entry.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                    || entry.FilePath.Contains(query, StringComparison.OrdinalIgnoreCase));
         }
+
+        private void CacheSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (SearchPlaceholderText == null || CacheModulesGrid == null) return;
+            SearchPlaceholderText.Visibility = string.IsNullOrEmpty(CacheSearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+            modulesView.Refresh();
+            if (CacheModulesGrid.SelectedItem == null) CacheModulesGrid.SelectedItem = modulesView.Cast<CacheModuleViewItem>().FirstOrDefault();
+            UpdateModuleDetails();
+            UpdateEmptyState();
+        }
+
+        private void CacheModulesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isApplyingSnapshot && SelectedModuleTitleText != null) UpdateModuleDetails();
+        }
+
+        private void UpdateModuleDetails()
+        {
+            CacheModuleSnapshot? selected = (CacheModulesGrid.SelectedItem as CacheModuleViewItem)?.Snapshot;
+            SelectedModuleTitleText.Text = selected?.Name ?? EngineLocalization.Get("模块详情");
+            SelectedModuleDescriptionText.Text = selected?.Description ?? EngineLocalization.Get("选择模块以查看缓存详情。");
+            SelectedModuleSummaryText.Text = selected?.DetailSummary ?? string.Empty;
+            SelectedModuleErrorText.Text = selected?.Error ?? string.Empty;
+            SelectedModuleErrorText.Visibility = selected?.Error == null ? Visibility.Collapsed : Visibility.Visible;
+            CacheDetailsGrid.ItemsSource = selected?.Entries.Select(entry => new CacheEntryViewItem(entry)).ToArray();
+            ImageCacheOptionsPanel.Visibility = selected?.CanToggle == true ? Visibility.Visible : Visibility.Collapsed;
+            EmptyDetailsText.Visibility = selected?.Entries.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+            EmptyDetailsText.Text = EngineLocalization.Get(selected == null ? "选择模块以查看缓存详情。" : "当前模块没有缓存文件。");
+            ReleaseSelectedButton.IsEnabled = !isBusy && selected != null
+                && (selected.MemoryBytes > 0 || selected.EntryCount > 0 || selected.ActiveReferences > 0 || selected.Error != null);
+        }
+
+        private void UpdateEmptyState() => EmptyModulesText.Visibility = modulesView.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
 
         private void SetBusy(bool busy, string loadingText)
         {
@@ -294,43 +279,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             RefreshButton.IsEnabled = !busy;
             ReleaseAllButton.IsEnabled = !busy;
             ImageCacheEnabledCheckBox.IsEnabled = !busy;
+            ImageCacheCountTextBox.IsEnabled = !busy;
+            ApplyImageCacheCountButton.IsEnabled = !busy;
             LoadingText.Text = loadingText;
             LoadingOverlay.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private static string GetCalibrationTypeText(int calibrationType)
-        {
-            return Enum.IsDefined(typeof(CalibrationType), calibrationType)
-                ? EngineLocalization.Get(((CalibrationType)calibrationType).ToString())
-                : EngineLocalization.Format($"未知 ({calibrationType})");
-        }
-
-        private static string GetUsageText(CalibrationSharedCacheEntry entry)
-        {
-            if ((entry.Flags & CalibrationSharedCacheEntryStates.Loading) != 0)
-            {
-                return EngineLocalization.Get("正在加载");
-            }
-            if (entry.ActiveOwnerCount > 0)
-            {
-                return EngineLocalization.Format($"仍被使用（{entry.ActiveOwnerCount} 个引用）");
-            }
-            return (entry.Flags & CalibrationSharedCacheEntryStates.Ready) != 0
-                ? EngineLocalization.Get("已缓存（可释放）")
-                : EngineLocalization.Get("等待加载");
-        }
-
-        private static string FormatBytes(ulong bytes)
-        {
-            string[] units = { "B", "KB", "MB", "GB", "TB" };
-            double value = bytes;
-            int unitIndex = 0;
-            while (value >= 1024 && unitIndex < units.Length - 1)
-            {
-                value /= 1024;
-                unitIndex++;
-            }
-            return unitIndex == 0 ? $"{bytes:N0} {units[unitIndex]}" : $"{value:N2} {units[unitIndex]}";
+            UpdateModuleDetails();
         }
     }
 }

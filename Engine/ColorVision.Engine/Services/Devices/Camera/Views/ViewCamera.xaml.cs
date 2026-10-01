@@ -83,6 +83,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // A deferred dock shell already inherits its host's context when XAML bindings are created.
+            DataContext = Config;
             InitializeComponent();
             // A registered shell may already have raised FrameworkElement.Initialized.
             UserControl_Initialized(this, EventArgs.Empty);
@@ -94,7 +96,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || _isInitialized) return;
             _isInitialized = true;
 
-            this.DataContext = Config;
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);

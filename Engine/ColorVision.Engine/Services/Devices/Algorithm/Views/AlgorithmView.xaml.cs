@@ -98,6 +98,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
+                // A deferred dock shell must own its context before loading child bindings.
+                DataContext = Config;
                 InitializeComponent();
                 // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
                 UserControl_Initialized(this, EventArgs.Empty);
@@ -122,7 +124,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isInitialized = true;
-            this.DataContext = Config;
             ImageView = new ImageView();
             ListView = listViewSide;
             SideTextBox = TextBoxside;

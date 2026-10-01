@@ -999,7 +999,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ShowImageInView(WriteableBitmap writeableBitmap)
         {
-            ImageView.EditorContext.IImageOpen = null;
+            ImageView.ReleaseImageContent();
             ImageView.IEditorToolFactory.ApplyImageOpenTools(null);
             ImageView.SetLayerController(null);
             ImageView.Config.ClearProperties();

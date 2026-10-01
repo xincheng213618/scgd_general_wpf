@@ -6,6 +6,8 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.POI;
+using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Documents;
@@ -299,6 +301,151 @@ public sealed class DockViewLifecycleTests
             image.Clear();
             Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
         });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LeavingRawReleasesItsPixelsButToolbarRefreshPreservesMeasurement(bool calibrated)
+    {
+        using var sample = new RawFile(4, 3);
+        using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(4, 3, 16, 3);
+        Assert.True(CVFileUtil.WriteCIEFile(sample.Path, raw));
+        var transform = RawColorTransformV1.Create();
+        transform.Kind = 0; transform.Channels = 3; transform.InterleavedBgr = 1;
+        transform.Coefficients = [0.1, 0.02, 0.03, 0.04, 0.2, 0.06, 0.07, 0.08, 0.3];
+        var snapshot = ColorCalibrationSnapshot.Create(transform, 4, 3, 16, raw.Exp, "lifetime-test");
+        if (calibrated) snapshot.Save(sample.Path, true);
+        using PoiMeasurementBuffer reference = new(raw, snapshot);
+        PoiMeasurementPoint[] points = [new(1, 1, 1, 1, PoiMeasurementShape.Point)];
+        var expected = PoiMeasurementService.CalculateRaw(reference, points);
+        string png = System.IO.Path.ChangeExtension(sample.Path, ".png");
+        Scope? scope = null;
+        DeviceService? device = null;
+        CVRawOpen? opener = null;
+        CvRawPixelBuffer? buffer = null;
+        byte[]? pixels = null;
+        PoiMeasurementBuffer? measurement = null;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new Scope();
+                device = CreateDevice("camera");
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray8, null, new byte[] { 1, 2, 3, 4 }, 2)));
+                using var stream = File.Create(png);
+                encoder.Save(stream);
+            });
+            await WpfTestHost.Invoke(() => OpenRaw(device!, sample.Path)).WaitAsync(TimeSpan.FromSeconds(15));
+            WpfTestHost.Invoke(() =>
+            {
+                ImageView image = Image(device!);
+                opener = Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen);
+                buffer = GetOpenerField<CvRawPixelBuffer>(opener, "_rawPixels")!;
+                pixels = GetRawPixels(buffer);
+                Assert.Equal(raw.Data, pixels);
+                measurement = GetOpenerField<PoiMeasurementBuffer>(opener, "_measurementBuffer");
+                image.IEditorToolFactory.ApplyImageOpenTools(opener);
+                image.IEditorToolFactory.ApplyImageOpenTools(opener);
+                Assert.Same(pixels, GetRawPixels(buffer));
+                if (calibrated)
+                {
+                    Assert.NotNull(measurement);
+                    Assert.Same(pixels, measurement.RawSource!.BorrowRaw(file => file.Data));
+                    Assert.Equal(expected, PoiMeasurementService.CalculateRaw(measurement, points));
+                }
+                else Assert.Null(measurement);
+            });
+
+            await WpfTestHost.Invoke(() => BeginOpen(Image(device!), png)).WaitAsync(TimeSpan.FromSeconds(15));
+            await WpfTestHost.Invoke(() => Image(device!).PendingContentRelease).WaitAsync(TimeSpan.FromSeconds(15));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Null(GetRawPixels(buffer!));
+                Assert.Null(GetOpenerField<PoiMeasurementBuffer>(opener!, "_measurementBuffer"));
+                if (calibrated) Assert.Throws<ObjectDisposedException>(() => measurement!.RawSource!.BorrowRaw(file => file.Data));
+                Assert.Equal(2, ((BitmapSource)Image(device!).ViewBitmapSource).PixelWidth);
+            });
+
+            await WpfTestHost.Invoke(() => BeginOpen(Image(device!), sample.Path)).WaitAsync(TimeSpan.FromSeconds(15));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(opener, Image(device!).EditorContext.IImageOpen);
+                var reopened = GetRawPixels(GetOpenerField<CvRawPixelBuffer>(opener!, "_rawPixels")!);
+                Assert.NotSame(pixels, reopened);
+                Assert.Equal(raw.Data, reopened);
+                if (calibrated) Assert.Equal(expected, PoiMeasurementService.CalculateRaw(GetOpenerField<PoiMeasurementBuffer>(opener!, "_measurementBuffer")!, points));
+            });
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => { device?.Dispose(); scope?.Dispose(); });
+            File.Delete(png);
+        }
+    }
+
+    [Fact]
+    public async Task RetiringQueuedRawLoadCannotPublishOrClearTheNextImage()
+    {
+        using var first = new RawFile(4, 3);
+        using var second = new RawFile(3, 2);
+        Scope? scope = null;
+        DeviceService? device = null;
+        SemaphoreSlim? gate = null;
+        bool held = false;
+        try
+        {
+            WpfTestHost.Invoke(() => { scope = new Scope(); device = CreateDevice("camera"); });
+            await WpfTestHost.Invoke(() => OpenRaw(device!, first.Path)).WaitAsync(TimeSpan.FromSeconds(15));
+            CVRawOpen opener = WpfTestHost.Invoke(() => Assert.IsType<CVRawOpen>(Image(device!).EditorContext.IImageOpen));
+            gate = GetOpenerField<SemaphoreSlim>(opener, "_rawOpenGate")!;
+            Assert.True(await gate.WaitAsync(TimeSpan.FromSeconds(15)));
+            held = true;
+            CvRawPixelBuffer retired = GetOpenerField<CvRawPixelBuffer>(opener, "_rawPixels")!;
+            byte[] originalPixels = GetRawPixels(retired)!;
+            Task load = WpfTestHost.Invoke(() =>
+            {
+                ImageView image = Image(device!);
+                // The old request and its release both wait behind a controlled reader.
+                image.OpenImage(second.Path);
+                Assert.Same(originalPixels, GetRawPixels(GetOpenerField<CvRawPixelBuffer>(opener, "_rawPixels")!));
+                image.Clear();
+                Assert.False(image.PendingContentRelease.IsCompleted);
+                return BeginOpen(image, first.Path);
+            });
+            gate.Release(); held = false;
+            await load.WaitAsync(TimeSpan.FromSeconds(15));
+            await WpfTestHost.Invoke(() => Image(device!).PendingContentRelease).WaitAsync(TimeSpan.FromSeconds(15));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Null(GetRawPixels(retired));
+                Assert.NotNull(GetRawPixels(GetOpenerField<CvRawPixelBuffer>(opener, "_rawPixels")!));
+                Assert.Equal(first.Path, Image(device!).Config.FilePath);
+                Assert.Equal(4, ((BitmapSource)Image(device!).ViewBitmapSource).PixelWidth);
+            });
+        }
+        finally
+        {
+            if (held) gate!.Release();
+            WpfTestHost.Invoke(() => { device?.Dispose(); scope?.Dispose(); });
+        }
+    }
+
+    private static T? GetOpenerField<T>(CVRawOpen opener, string name) where T : class
+        => (T?)typeof(CVRawOpen).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(opener);
+
+    private static byte[]? GetRawPixels(CvRawPixelBuffer buffer)
+        => (byte[]?)typeof(CvRawPixelBuffer).GetField("pixels", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(buffer);
+
+    private static Task BeginOpen(ImageView image, string path)
+    {
+        TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
+        handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(); };
+        image.ImageSourceLoaded += handler;
+        image.OpenImage(path);
+        return completion.Task;
     }
 
     private static Task OpenRaw(DeviceService device, string path)
