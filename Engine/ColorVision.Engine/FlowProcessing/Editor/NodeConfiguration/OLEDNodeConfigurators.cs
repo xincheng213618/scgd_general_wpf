@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.Jsons.OLEDImageProcessing;
 using ColorVision.Engine.Templates.ImageCropping;
 using Jsons = ColorVision.Engine.Templates.Jsons;
-using SFR = ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
@@ -67,7 +66,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new Jsons.MTF2.TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
-                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new SFR.TemplateSFR());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new Jsons.SFR2.TemplateSFR2());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.图像裁剪:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());

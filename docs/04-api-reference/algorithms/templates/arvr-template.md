@@ -3,8 +3,8 @@ knowledge_id: "algorithms.arvr"
 knowledge_type: "reference"
 status: "current"
 summary: "ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。"
-aliases: ["条纹MTF","StripeMtfAnalyzer","ImageView MTF","H/V条纹","本地MTF","LocalMtfNode","CV_Ali_calcMtf","ARVR算法","MTF SFR FOV模板对应哪个结果","SFR1.0","MTF2.0","FOV2.0","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR","WindowSFR"]
-code_paths: ["UI/ColorVision.ImageEditor/Algorithms/Mtf","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf","Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf","Engine/ColorVision.Engine/Templates/ARVR/SFR","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
+aliases: ["条纹MTF","StripeMtfAnalyzer","ImageView MTF","H/V条纹","本地MTF","LocalMtfNode","CV_Ali_calcMtf","ARVR算法","MTF SFR FOV模板对应哪个结果","SFR2.0","MTF2.0","FOV2.0","畸变2.0","StereoFusion","SFR寻边","ARVR屏幕缺陷检测","SFR曲线","SFR导出CSV","MTF@Freq","Freq@MTF","AlgorithmARVRNode","TemplateMTF2","ViewHandleSFR2","Sfr2PlotWindow"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/Mtf","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/Mtf","Engine/ColorVision.Engine/PropertyEditor/LocalMtfConfigurationEditor.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf","Engine/ColorVision.Engine/Templates/Jsons/SFR2","Engine/ColorVision.Engine/Templates/ARVR/Ghost","Engine/ColorVision.Engine/Templates/Jsons/MTF2","Engine/ColorVision.Engine/Templates/Jsons/FOV2","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion","Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI","Engine/ColorVision.Engine/Templates/Jsons/FindCross","Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects","Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs","Engine/FlowEngineLib/Base/CVBaseServerNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/OLEDNodeConfigurators.cs","Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs","Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs","Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs","Engine/cvColorVision/MQTTMessageLib/Algorithm/MQTTAlgorithmEventEnum.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/StripeMtfLocatorTests.cs","Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs"]
 related: ["algorithms.index","algorithms.ghost","algorithms.json-templates","algorithms.template-menus","algorithms.find-cross","algorithms.grid-distortion","engine.results"]
 ---
@@ -20,11 +20,11 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 3. 按算法配置关注点或 ROI，并设置算法服务可读取的图像路径。界面的模板、非空路径检查不证明文件在服务端可读。
 4. 点击 **计算**，结合本次请求、服务返回和历史结果判断完成状态。创建 `MsgRecord` 表示已建立请求记录并发起发送，不代表计算或落库成功。
 
-下表中的编码和字典号属于模板身份，事件名属于请求协议。SFR1.0 和 Ghost1.0 使用传统参数模型，其余使用 JSON 模型。
+下表中的编码和字典号属于模板身份，事件名属于请求协议。Ghost1.0 使用传统参数模型，其余使用 JSON 模型。
 
 | 手动入口 | 参数模板；编码 / 字典号 | 请求事件 | 结果处理器及额外版本条件 |
 | --- | --- | --- | --- |
-| ARVR → SFR1.0 | `TemplateSFR`；`SFR` / `9` | `SFR` | `ViewHandleSFR` |
+| ARVR → SFR2.0 | `TemplateSFR2`；`SFR` / `49` | `SFR` | `ViewHandleSFR2`；`Version == "2.0"` |
 | ARVR → Ghost1.0 | `TemplateGhost`；`ghost` / `7` | `Ghost` | `ViewHandleGhost`；参数与叠图见[鬼影检测](../detectors/ghost-detection.md) |
 | ARVR → MTF2.0 | `TemplateMTF2`；`MTF` / `48` | `MTF` | `ViewHandleMTF2`；`Version == "2.0"` |
 | ARVR → FOV2.0 | `TemplateDFOV`；`FOV` / `39` | `FOV` | `ViewHandleDFOV`；`Version == "2.0"` |
@@ -34,14 +34,13 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | ARVR → FindCross | `TemplateFindCross`；`FindCross` / `45` | `FindCross` | `ViewHandleFindCross`；`Version == "1.0"` |
 | ARVR → 屏幕缺陷检测 | `TemplateDetectScreenDefects`；`ARVR.DetectScreenDefects` / `58` | `ARVR.DetectScreenDefects` | `ViewHandleDetectScreenDefects` |
 
-表中 FindCross 是远端算法入口；图像编辑器的原生定位及诊断模式见[本地十字定位](../detectors/find-cross.md)。SFR 手动请求使用消息库常量 `Event_SFR_GetData`，其值也是 `SFR`。
+表中 FindCross 是远端算法入口；图像编辑器的原生定位及诊断模式见[本地十字定位](../detectors/find-cross.md)。SFR2.0 手动请求使用事件 `SFR`。
 
 ### POI 与版本字段
 
-- **SFR1.0**：执行前必须选中有效的 SFR 模板和 **关注点模板**，请求带两者的 ID、名称。
-- **MTF2.0、FindCross、SFR寻边**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
+- **SFR2.0、MTF2.0、FindCross、SFR寻边**：配置界面有关注点模板，但 `JsonDisplayAlgorithmBase.Execute()` 只统一校验主模板与图像输入；各自仅在辅助模板选择有效时加入 `POITemplateParam`。不能把“有选择器”当作“发送前必填检查”，服务端要求需按对应协议确认。
 - **屏幕缺陷检测**：辅助选择器标为 **ROI**，使用 POI 模板；未有效选择时仍发送 `POITemplateParam = { ID: -1, Name: null }`。请求还含 `OutputFileName`、`BufferLen`、`IsInversion = false`、`Color = 1`、`Channel = 1`；新配置输出文件名为 `result.json`，缓存大小为 `1024`。
-- **MTF2.0、FOV2.0、畸变2.0**：手动请求明确带 `Params.Version = "2.0"`。畸变2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
+- **SFR2.0、MTF2.0、FOV2.0、畸变2.0**：手动请求明确带 `Params.Version = "2.0"`。畸变2.0 还发送 `CIEFileName`。模板编码相同不代表请求参数可以互换。
 
 这些请求通过 `TemplateParam` 引用模板身份，不在该字段中展开完整参数内容。修改模板后应确认保存成功，再核对服务实际读取的模板。
 
@@ -52,7 +51,7 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | Flow 算子 | `operatorCode` | 参数模板 |
 | --- | --- | --- |
 | MTF | `MTF` | `TemplateMTF2` |
-| SFR | `SFR` | `TemplateSFR` |
+| SFR | `SFR` | `TemplateSFR2` |
 | FOV | `FOV` | `TemplateDFOV` |
 | 畸变 | `Distortion` | `TemplateDistortion2` 绑定 `TempName` |
 | 双目融合 | `ARVR.BinocularFusion` | `TemplateBinocularFusion` |
@@ -60,7 +59,9 @@ ARVR 远端入口通过算法服务计算，宿主负责选择模板、发送请
 | 十字计算 | `FindCross` | `TemplateFindCross` |
 | 屏幕缺陷检测 | `ARVR.DetectScreenDefects` | `TemplateDetectScreenDefects` |
 
-**POI模板** 是节点的公共属性行，由 `PoiTemplatePropertiesEditor` 编辑，对所有算子都存在。畸变的两个参数选择器共享同一名称，不是同时发送两套模板；运行前确认最终 `TempName`。
+**POI模板** 是节点的公共属性行，由 `PoiTemplatePropertiesEditor` 编辑，对所有算子都存在。
+
+ARVR算法、通用算法和 AI算法2 的 SFR 参数选择器均使用 SFR2.0 JSON 模板。已有流程保存的旧 SFR 模板名称不会自动迁移，应重新选择 SFR2.0 模板并保存流程；字典号 `9` 的 Gamma 模板不能直接作为字典号 `49` 的 JSON 模板使用。
 
 **本地条纹 MTF** 使用共用的 `StripeMtfAnalyzer`，运行不依赖供应商 MTF DLL。ImageView 的 **分析测量 → 清晰度与频域 → 条纹 MTF（H / V / 四部）** 与矩形右键菜单都可打开参数编辑器；主菜单使用画面上的矩形，没有矩形时使用整图。单独 H、V 图像使用测量矩形，四部模式每个矩形圈住一整组图案。参数窗口默认只显示“图案”和“高级设置”开关，计算使用当前配置值；展开高级设置后才显示计算方式、去噪、取样及输出单位。四部模式额外显示“四部定位”组，单独 H/V 隐藏该组；极值法隐藏“两端取样比例”，均值法才显示。收起高级设置或切换图案均保留已填写的值；开关只控制展示，不写入算法配置。自动定位重试不修改已保存的参考阈值或小框尺寸。ImageView 与节点参数窗口遵循相同规则。显示坐标按 DPI 转换为原图像素，旋转矩形拒绝测量。结果窗列出各框数值，四部模式另列 H、V、整体均值；叠图属于临时算法图层，切图或新请求使旧结果失效。此入口不需要设备或数据库。
 
@@ -100,22 +101,16 @@ Flow 的 `LocalMtfNode` 位于自定义节点 **MTF计算(V2)**。图像连接 `
 
 ## SFR 曲线与 CSV
 
-SFR 明细包含 ROI 坐标、`Pdfrequency` 频率数组和 `PdomainSamplingData` 响应数组。`ViewHandleSFR.Load()` 仅在 `ViewResults == null` 时读取该结果 ID 的数据库明细并建立 **分析** 菜单；已有集合会复用，不是每次打开都重新查库。
+`ViewHandleSFR2` 只接收版本 `2.0` 的 SFR 结果，明细通过一条 `DetailCommon` 的 `ResultFileName` 指向 JSON 结果文件。文件包含关注点 `name`、各曲线 `id`、`frequency` 和 `domainSamplingData`；文件必须在宿主可读。
 
-1. 选中 SFR 历史结果，在该行的右键菜单中选择 **分析**，打开 `WindowSFR`。
-2. 使用 **选择数据线** 切换 ROI 明细。窗口按两数组较短长度配对，最多使用前 `48` 点；空数组不会形成有效曲线。
-3. 输入频率后点击 **MTF@Freq**，在相邻采样点间线性插值；输入 MTF 后点击 **Freq@MTF**，查找首个从高于或等于阈值向低于阈值穿越的区间并插值。查询范围受当前窗口采样点限制；找不到区间不能视为测量值为零。
-4. 用 **保存图表** 导出当前曲线图，或按下表选择 CSV 入口。
+历史结果右键菜单可打开结果集和 SFR 预览窗口 `Sfr2PlotWindow`。窗口支持关注点、四边及水平/垂直平均曲线选择，以及按曲线名称查询 **MTF@Freq**、**Freq@MTF**。曲线打不开时检查返回版本、明细数量和结果文件路径，再检查 JSON 数据。
 
-| 导出入口 | 数据范围与写入方式 |
-| --- | --- |
-| 曲线窗口 → 导出 CSV | 当前数据线、窗口实际使用的最多 48 对点，列为 `Frequency,MTF`；写入所选文件，覆盖同名内容 |
-| 历史结果 → 保存数据列 | `ViewHandleSFR.SideSave()` 导出当前 `ViewResults` 的所有 SFR 明细；每条 ROI 及成对采样列分别输出，按最长数组展开，短数组缺项留空；没有 48 点截断。写入所选目录的 `{ResultType}_{Batch}.csv`，覆盖同名内容 |
+**保存数据列** 导出所有关注点的曲线采样，列为 `name,id,frequency,value`，每条曲线按两数组较短长度配对，不截断为 48 点。文件名为 `{Batch}{ResultType}.csv`；当前实现追加到同名文件，重复导出会重复写入表头和数据。
 
-因此两种 CSV 不必有相同的行列数。曲线打不开时先检查该结果是否加载明细、两个采样字段是否为可解析数组；导出内容不符时确认入口与当前结果集合，再检查结果 ID 和数据库记录。
+旧版专用结果读取、曲线窗口和 CSV 导出已淘汰；数据库旧记录保留，但不能通过 2.0 处理器读取旧明细。SFR2.0 和自研本地 SFR 的参数、结果链路保持独立。
 
 ## 源码与验证边界
 
-手动适配器和结果处理器与模板位于同一算法目录；SFR 曲线及查询位于 `Templates/ARVR/SFR/WindowSFR.xaml.cs`。流程的入口是 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs`，面板配置位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs`。本页讨论的是宿主请求与显示契约，不定义算法服务内部计算公式或客户项目判定标准。
+手动适配器和结果处理器与模板位于同一算法目录；SFR 曲线及查询位于 `Templates/Jsons/SFR2/Sfr2PlotWindow.xaml.cs` 和 `Sfr2PlotControl.xaml.cs`。流程的入口是 `Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmARVRNode.cs`，面板配置位于 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs`。本页讨论的是宿主请求与显示契约，不定义算法服务内部计算公式或客户项目判定标准。
 
 `AlgorithmNodeTemplateMappingTests.cs` 只断言 ARVR 的 `POITempName` 解析到 `PoiTemplatePropertiesEditor`，没有覆盖所有算子切换及请求发送。`FindCrossResultOverlayTests.cs` 验证本地诊断数据与旧结果的叠图中心坐标选择，不验证远端 ARVR 服务或真实绘制。算法请求、返回版本、SFR 曲线和导出仍需用对应结果样例验证；测试文件存在不表示这些链路已通过端到端测试。

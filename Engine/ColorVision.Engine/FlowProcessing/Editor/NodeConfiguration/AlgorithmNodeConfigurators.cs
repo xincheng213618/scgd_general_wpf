@@ -12,11 +12,11 @@ using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.SFR2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
-                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new TemplateSFR2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
@@ -118,7 +118,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR:
-                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new TemplateSFR2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());

@@ -4,7 +4,7 @@ knowledge_type: "topic"
 status: "current"
 summary: "TemplateControl注册与普通ITemplate<T>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。"
 aliases: ["模板架构","Templates目录","模板注册","如何新增算法模板","新增模板要继承什么","ITemplate","IITemplateLoad","TemplateControl","TemplateDicId","TemplateModel","ParamModBase","ModelBase","SaveIndex","TryCreateTemplate","SwapTemplateOrder"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ARVR/SFR/TemplateSFR.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/LEDStripDetection/TemplateLEDStripDetection.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
 related: ["engine.index","algorithms.template-management","algorithms.json-templates","flow.templates","ui.property-grid","engine.results"]
 ---
@@ -88,7 +88,7 @@ JSON、POI、Flow 可覆写上述方法。尤其 JSON 的“设为默认”与 F
 
 ## 新模板与消费者的接入边界
 
-新增普通模板可参考 `Templates/ImageCropping/TemplateImageCropping.cs` 的参数集合、字典 ID 和加载接口；自定义编辑控件可参考 `Templates/ARVR/SFR/TemplateSFR.cs`，但还需区分编辑控件和创建预览钩子。除无参构造外，默认加载/创建需要对应的参数构造签名。
+新增普通模板可参考 `Templates/ImageCropping/TemplateImageCropping.cs` 的参数集合、字典 ID 和加载接口；自定义编辑控件可参考 `Templates/LEDStripDetection/TemplateLEDStripDetection.cs`，但还需区分编辑控件和创建预览钩子。除无参构造外，默认加载/创建需要对应的参数构造签名。
 
 参数属于设备时保持设备的资源关联；属于客户判定、报表或 MES 格式时放回项目包，不因为有模板窗口就移入通用层。算法适配器如何把模板名称/ID、POI 等写入 `CVTemplateParam`，应追实际 `Algorithm*` 请求实现，而不是由模板基类推定已经接入。
 

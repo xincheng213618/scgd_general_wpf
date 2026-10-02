@@ -134,12 +134,6 @@
 		<Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Templates\ARVR\SFR\DisplaySFR.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
-		<Compile Update="Templates\ARVR\SFR\EditSFR.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
 		<Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
