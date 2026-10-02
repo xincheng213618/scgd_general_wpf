@@ -1,4 +1,3 @@
-using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;
 using ColorVision.Engine.Templates.Ghost;
@@ -79,7 +78,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortion2());
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
@@ -131,7 +129,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "Distortion2", new TemplateDistortion2());
-                        context.AddTemplatePanel(nameof(node.TempName), "Distortion", new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LedCheck, new TemplateLedCheck());

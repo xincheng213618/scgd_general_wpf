@@ -4,7 +4,6 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using FlowEngineLib.Algorithm;
@@ -578,12 +577,10 @@ public sealed class LocalGridDistortionNodeTests
             ResultType = ViewResultAlgType.Distortion, Version = "2.0", ResultCode = -1, ResultDesc = "IncompleteGrid",
             ViewResults = new ObservableCollection<IViewResult>(), AlgResultMasterModel = new() { Params = "{\"MissingCount\":1}" }
         };
-        Assert.False(new ViewHandleDistortion().CanHandle1(result));
         Assert.True(new ViewHandleDistortion2().CanHandle1(result));
         Assert.Contains("IncompleteGrid", ViewHandleDistortion2.BuildResultText(result));
         Assert.Contains("MissingCount", ViewHandleDistortion2.BuildResultText(result));
         result.Version = "1.0";
-        Assert.True(new ViewHandleDistortion().CanHandle1(result));
         Assert.False(new ViewHandleDistortion2().CanHandle1(result));
     }
 
