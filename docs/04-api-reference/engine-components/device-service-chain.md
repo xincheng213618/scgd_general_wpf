@@ -122,6 +122,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 | 问题 | 所属实现 | 主题 |
 | --- | --- | --- |
+| 通用传感器、本地 TCP/串口和指令模板 | `Services/Devices/Sensor/` | [本地通用传感器](./generic-sensor.md) |
 | 相机服务、取图与运行参数 | `Services/Devices/Camera/` | [相机服务](../../01-user-guide/devices/camera.md) |
 | 物理相机、许可、校准配置 | `Services/PhyCameras/` | [物理相机](../../01-user-guide/devices/camera-management.md)、[相机配置](../../01-user-guide/devices/camera-configuration.md) |
 | 运动及位置状态 | `Services/Devices/Motor/` | [电机](../../01-user-guide/devices/motor.md) |

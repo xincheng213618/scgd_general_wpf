@@ -5563,6 +5563,42 @@
       "searchable": true
     },
     {
+      "knowledge_id": "engine.sensor-device",
+      "knowledge_type": "topic",
+      "status": "current",
+      "summary": "本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。",
+      "aliases": [
+        "本地通用传感器",
+        "通用传感器模板",
+        "PG串口指令",
+        "控制器TCP指令",
+        "LocalSensorNode"
+      ],
+      "code_paths": [
+        "Engine/ColorVision.Engine/Services/Devices/Sensor",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalSensorNode.cs"
+      ],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalSensorSessionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSensorFlowTests.cs"
+      ],
+      "related": [
+        "engine.devices",
+        "engine.mqtt",
+        "flow.runtime",
+        "ui.database",
+        "ui.property-grid"
+      ],
+      "code_scopes": [
+        "Engine/ColorVision.Engine"
+      ],
+      "domain": "engine",
+      "title": "本地通用传感器与模板",
+      "source": "docs/04-api-reference/engine-components/generic-sensor.md",
+      "url": "/04-api-reference/engine-components/generic-sensor",
+      "searchable": true
+    },
+    {
       "knowledge_id": "engine.shell-extension",
       "knowledge_type": "topic",
       "status": "current",

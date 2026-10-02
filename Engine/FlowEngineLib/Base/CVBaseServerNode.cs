@@ -445,7 +445,8 @@ public class CVBaseServerNode : CVDeviceNode
 			trans.trans_action = new CVStartCFC(trans.trans_action);
 			if (publishNodeRun) PublishNodeRun(CreateNodeRunEventArgs(trans, act));
 			trans.ResetStartTime();
-			ObserveBackgroundTask(WaitingOverTimeAsync(cmd), "local timeout monitor");
+			if (localExecution == null || localExecution.UseNodeTimeout)
+				ObserveBackgroundTask(WaitingOverTimeAsync(cmd), "local timeout monitor");
 			ObserveBackgroundTask(ExecuteLocalAsync(trans, cmd, localExecution, localSelectionError), "local execution");
 			return;
 		}
@@ -488,7 +489,11 @@ public class CVBaseServerNode : CVDeviceNode
 			if (trans.IsCanceled || trans.trans_action.RuntimeResources.IsDisposed) return;
 			try
 			{
-				if (failure == null) await Task.Run(execution.Execute).ConfigureAwait(false);
+				if (failure == null)
+				{
+					execution.Bind(trans.trans_action);
+					await Task.Run(execution.Execute).ConfigureAwait(false);
+				}
 			}
 			catch (Exception ex) { failure = ex; }
 			CVMQTTRequest request = cmd.cmd;

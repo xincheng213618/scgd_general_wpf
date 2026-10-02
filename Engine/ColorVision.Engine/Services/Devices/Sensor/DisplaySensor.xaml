@@ -48,6 +48,7 @@
                         <Button Grid.Column="2" Margin="5,0,0,0" Click="SendTemp_Click" Content="{x:Static properties:Resources.ExecteTemplate}" />
                     </Grid>
                 </StackPanel>
+                <TextBlock Text="{Binding LastLocalResponse}" TextWrapping="Wrap" MaxHeight="120" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
     </StackPanel>

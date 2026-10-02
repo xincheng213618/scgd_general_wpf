@@ -7,7 +7,9 @@ using MQTTMessageLib.Sensor;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -44,14 +46,20 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             Config.PropertyChanged -= Config_PropertyChanged;
             Config.PropertyChanged += Config_PropertyChanged;
+            if (Param is SensorParam sensorParam)
+            {
+                sensorParam.SensorCommands.CollectionChanged -= Commands_CollectionChanged;
+                sensorParam.SensorCommands.CollectionChanged += Commands_CollectionChanged;
+            }
+            RefreshCommandSelection(CommandForm.DataContext as SensorCommand);
         }
 
         private void EditTemplateSensor_Unloaded(object sender, RoutedEventArgs e)
         {
             Config.PropertyChanged -= Config_PropertyChanged;
+            if (Param is SensorParam sensorParam)
+                sensorParam.SensorCommands.CollectionChanged -= Commands_CollectionChanged;
         }
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void Config_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
@@ -70,39 +78,64 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 command.RefreshPreviewProperties();
             }
         }
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-        }
-
-
         public ParamModBase Param { get; set; }
 
         public void SetParam(ParamModBase param)
         {
+            if (Param is SensorParam previous)
+                previous.SensorCommands.CollectionChanged -= Commands_CollectionChanged;
             Param = param;
             if (param is SensorParam sensorParam)
             {
-                TemplateSensor.EnsureDefaultCommandDefinition(sensorParam.ModMaster.Pid);
+                if (sensorParam.ModMaster.Pid > 0)
+                    TemplateSensor.EnsureDefaultCommandDefinition(sensorParam.ModMaster.Pid);
+                sensorParam.SensorCommands.CollectionChanged += Commands_CollectionChanged;
             }
             this.DataContext = Param;
+            RefreshCommandSelection(null, 0);
         }
 
+        private void Commands_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            var preferred = e.NewItems?.OfType<SensorCommand>().LastOrDefault()
+                ?? CommandForm.DataContext as SensorCommand;
+            RefreshCommandSelection(preferred, CommandSelector.SelectedIndex);
+        }
+
+        private void RefreshCommandSelection(SensorCommand? preferred, int fallbackIndex = 0)
+        {
+            var commands = (Param as SensorParam)?.SensorCommands;
+            int count = commands?.Count ?? 0;
+            int index = preferred == null ? -1 : commands!.IndexOf(preferred);
+            if (index < 0) index = Math.Clamp(fallbackIndex, 0, Math.Max(0, count - 1));
+            CommandSelector.ItemsSource = Enumerable.Range(1, count).Select(number => $"#{number}").ToArray();
+            CommandSelector.SelectedIndex = count == 0 ? -1 : index;
+            CommandSelectionPanel.Visibility = count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            DeleteCommandButton.IsEnabled = count > 0;
+            CommandForm.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void CommandSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var commands = (Param as SensorParam)?.SensorCommands;
+            int index = CommandSelector.SelectedIndex;
+            CommandForm.DataContext = commands != null && index >= 0 && index < commands.Count ? commands[index] : null;
+            CommandPosition.Text = commands != null && index >= 0 ? $"{index + 1} / {commands.Count}" : string.Empty;
+        }
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is SensorCommand sensorCommand)
+            if (CommandForm.DataContext is SensorCommand sensorCommand)
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == sensorCommand.Model.Id).ExecuteCommand();
+                if (Param.Id > 0 && sensorCommand.Model.Id > 0)
+                {
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                    Db.Deleteable<ModDetailModel>().Where(x => x.Id == sensorCommand.Model.Id && x.Pid == Param.Id).ExecuteCommand();
+                }
                 Param.ModDetailModels.Remove(sensorCommand.Model);
             }
         }
 
-
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void ComboBoxType_Initialized(object sender, System.EventArgs e)
         {

@@ -481,11 +481,14 @@ namespace ColorVision.Engine.PropertyEditor
         internal static TemplateSensor CreateSensorTemplate(object obj)
         {
             string deviceCode = GetStringProperty(obj, nameof(IFlowDeviceNode.DeviceCode));
-            string? category = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode)?.Config?.Category;
+            var device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode);
+            string? category = device?.Config?.Category;
             if (string.IsNullOrWhiteSpace(category))
-                category = TemplateSensor.Params.Keys.FirstOrDefault() ?? "Sensor.Default";
+                category = "Sensor.Default";
 
-            return new TemplateSensor(category);
+            var template = new TemplateSensor(category);
+            template.Load();
+            return template;
         }
 
         private static string GetStringProperty(object obj, string propertyName)

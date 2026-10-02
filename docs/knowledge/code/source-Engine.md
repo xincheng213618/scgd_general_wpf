@@ -121,6 +121,9 @@ next: false
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
 
+- [本地通用传感器与模板](../../04-api-reference/engine-components/generic-sensor.md) — `engine.sensor-device`
+  本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。
+
 - [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
   主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。
 

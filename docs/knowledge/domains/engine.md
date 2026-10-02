@@ -47,6 +47,9 @@ next: false
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
   图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
 
+- [本地通用传感器与模板](../../04-api-reference/engine-components/generic-sensor.md) — `engine.sensor-device`
+  本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。
+
 - [Explorer 缩略图读取与 COM 注册](../../04-api-reference/engine-components/ColorVision.ShellExtension.md) — `engine.shell-extension`
   Explorer 的 CVRAW/CVCIE COM provider 如何读取像素、生成非测量用途缩略图，以及源码脚本与 ServiceHost 注册的不同副作用和失败边界。
 
