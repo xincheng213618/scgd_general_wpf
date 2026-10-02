@@ -5,7 +5,6 @@
         xmlns:engine="clr-namespace:ColorVision.Engine"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
       mc:Ignorable="d"
       d:DesignHeight="720"
       d:DesignWidth="1280"
@@ -342,7 +341,7 @@
                     </Grid>
 
                     <Grid Grid.Row="1">
-                        <ScottPlot:WpfPlot x:Name="TimelinePlot"/>
+                        <ContentControl x:Name="TimelineHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
                         <TextBlock x:Name="TimelineEmptyText"
                                    Text="{engine:EngineLang Key='本批次没有可显示的执行时序'}"
                                    HorizontalAlignment="Center"

@@ -122,16 +122,23 @@ namespace ProjectARVRPro
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
         private bool _runAllSessionPrepared;
+        internal bool IsResultExportPending { get; private set; }
 
         private bool IsTestExecutionBusy => IsSwitchRun
             || _isFlowStartPending
             || flowControl.IsFlowRun
             || _isFlowLifecycleActive
             || _isRunAllRunning
+            || IsResultExportPending
             || _runAllSessionPrepared;
 
         public string InitTest(string? serialNumber)
         {
+            if (IsResultExportPending)
+            {
+                log.Warn("正在保存测试结果，暂不初始化下一次测试");
+                return _objectiveSessionSerialNumber;
+            }
             string resolvedSerialNumber = InitializeTestSession(serialNumber);
             MarkSwitchRequested();
             return resolvedSerialNumber;
@@ -317,7 +324,7 @@ namespace ProjectARVRPro
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
+                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || IsResultExportPending)
                 {
                     log.Warn("PG切换错误，正在执行流程或处理流程结果");
                     return false;
@@ -343,17 +350,17 @@ namespace ProjectARVRPro
                 }
 
                 log.Info("没有可执行的 ARVR 流程");
-                AbortCurrentTestSession("没有可执行的 ARVR 流程");
+                await AbortCurrentTestSessionAsync("没有可执行的 ARVR 流程");
                 return false;
             }
             catch (OperationCanceledException)
             {
-                AbortCurrentTestSession("测试已取消");
+                await AbortCurrentTestSessionAsync("测试已取消");
                 throw;
             }
             catch (Exception ex)
             {
-                AbortCurrentTestSession($"启动下一项 ARVR 流程失败: {ex.Message}");
+                await AbortCurrentTestSessionAsync($"启动下一项 ARVR 流程失败: {ex.Message}");
                 throw;
             }
             finally
@@ -362,7 +369,7 @@ namespace ProjectARVRPro
             }
         }
 
-        private void AbortCurrentTestSession(string message)
+        private async Task AbortCurrentTestSessionAsync(string message)
         {
             if (_objectiveSessionCompleted || !ObjectiveTestResult.SessionStartTime.HasValue)
                 return;
@@ -374,7 +381,7 @@ namespace ProjectARVRPro
                 // missing next template cannot rewrite that historical flow as failed.
                 SaveObjectiveTestResultRecord(CurrentFlowResult);
             }
-            TestCompleted();
+            await TestCompletedAsync();
         }
 
         private TemplateModel<FlowParam> SelectFlowTemplate(ProcessMeta processMeta)
@@ -765,7 +772,7 @@ namespace ProjectARVRPro
             bool applyCameraParameterOverride = true,
             CancellationToken cancellationToken = default)
         {
-            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || IsResultExportPending)
             {
                 log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return false;
@@ -839,7 +846,7 @@ namespace ProjectARVRPro
                     RecordFlowFailure(CurrentFlowResult.Msg);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    TestCompleted();
+                    await TestCompletedAsync();
                     TryCount = 0;
                     return false;
                 }
@@ -858,7 +865,7 @@ namespace ProjectARVRPro
                     RecordFlowFailure(CurrentFlowResult.Msg);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    TestCompleted();
+                    await TestCompletedAsync();
                     TryCount = 0;
                     return false;
                 }
@@ -907,7 +914,7 @@ namespace ProjectARVRPro
                     RecordFlowFailure("测试已取消");
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
                 else
                 {
@@ -938,7 +945,7 @@ namespace ProjectARVRPro
                     TryAttachCapturedImage(CurrentFlowResult);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
                 else
                 {
@@ -1127,7 +1134,7 @@ namespace ProjectARVRPro
             log.ErrorFormat("流程启动失败 => flow={0}, code={1}, reason={2}", FlowName, CurrentFlowResult.Code, message);
             if (persistResult)
             {
-                TestCompleted();
+                await TestCompletedAsync();
             }
             else
             {
@@ -1305,7 +1312,7 @@ namespace ProjectARVRPro
                 _isFlowLifecycleActive = false;
                 if (!processingSucceeded && !ProjectARVRProConfig.Instance.AllowTestFailures)
                 {
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
                 else if (!IsTestTypeCompleted())
                 {
@@ -1313,7 +1320,7 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
                 TryCount = 0;
             }
@@ -1344,7 +1351,7 @@ namespace ProjectARVRPro
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
                     _isFlowLifecycleActive = false;
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
                 TryCount = 0;
             }
@@ -1374,13 +1381,13 @@ namespace ProjectARVRPro
                     else
                     {
                         _isFlowLifecycleActive = false;
-                        TestCompleted();
+                        await TestCompletedAsync();
                     }
                 }
                 else
                 {
                     _isFlowLifecycleActive = false;
-                    TestCompleted();
+                    await TestCompletedAsync();
                 }
             }
         }
@@ -1470,16 +1477,23 @@ namespace ProjectARVRPro
                                 exportConfig.CsvSavePath, exportConfig.SaveByDate, DateTime.Now, result.SN);
                             using var linkWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                                 exportConfig.CsvSavePath, exportConfig.AutoCleanupEnabled, exportConfig.MinimumFreeSpaceGB, linkPath);
-                            linkWrite.EnsureSpace();
-
-                            if (!Directory.Exists(linkPath))
-                                Directory.CreateDirectory(linkPath);
-
-                            if (!string.IsNullOrWhiteSpace(result.FileName))
+                            IsResultExportPending = true;
+                            try
                             {
-                                string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
-                                string shortcutPath = linkPath;
-                                ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, result.FileName, "");
+                                await linkWrite.EnsureSpaceAsync();
+
+                                if (!Directory.Exists(linkPath))
+                                    Directory.CreateDirectory(linkPath);
+
+                                if (!string.IsNullOrWhiteSpace(result.FileName))
+                                {
+                                    string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
+                                    ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, linkPath, result.FileName, "");
+                                }
+                            }
+                            finally
+                            {
+                                IsResultExportPending = false;
                             }
                             linkSaveStopwatch.Stop();
                             linkSaveMilliseconds = Math.Max(0, linkSaveStopwatch.ElapsedMilliseconds);
@@ -1674,18 +1688,41 @@ namespace ProjectARVRPro
 
         }
 
-        private void TestCompleted()
+        private async Task TestCompletedAsync()
         {
             if (_objectiveSessionCompleted)
                 return;
 
             _objectiveSessionCompleted = true;
+            IsResultExportPending = true;
+            try
+            {
+                await ExportCompletedTestAsync();
+            }
+            finally
+            {
+                IsResultExportPending = false;
+            }
+        }
+
+        private async Task ExportCompletedTestAsync()
+        {
             FinalizeObjectiveTestResultRecord();
             SetStepProgress(CurrentTestType, completed: true);
 
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-            var outputConfig = ViewResultManager.Config;
+            // Settings and the editable SN can change while background cleanup is awaited.
+            var config = ViewResultManager.Config;
+            var outputConfig = new
+            {
+                config.CsvSavePath, config.CustomXlsxSavePath, config.SaveByDate,
+                config.IsSaveCsv, config.UseLegacyARVROutput, config.IsSaveCustomXlsx,
+                config.AutoCleanupEnabled, config.MinimumFreeSpaceGB,
+                config.CustomXlsxProjectName, config.CustomOutputProfile
+            };
+            string serialNumber = SNtextBox.Text;
+            var responseStream = SocketControl.Current.Stream;
             DateTime exportTime = DateTime.Now;
             string timeStr = exportTime.ToString("yyyyMMdd_HHmmss");
             string csvOutputDirectory = outputConfig.CsvSavePath;
@@ -1698,7 +1735,7 @@ namespace ProjectARVRPro
                 csvOutputDirectory = Path.Combine(csvOutputDirectory, dateFolder);
             }
 
-            string baseFileName = $"TestResults_{SNtextBox.Text}_{timeStr}";
+            string baseFileName = $"TestResults_{serialNumber}_{timeStr}";
 
             if (outputConfig.IsSaveCsv)
             {
@@ -1706,10 +1743,10 @@ namespace ProjectARVRPro
                 {
                     string filePath = Path.Combine(csvOutputDirectory, $"{baseFileName}_.csv");
                     string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
-                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, SNtextBox.Text);
+                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, serialNumber);
                     using var csvWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                         outputConfig.CsvSavePath, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB, currentSnDirectory, filePath);
-                    csvWrite.EnsureSpace();
+                    await csvWrite.EnsureSpaceAsync();
                     Directory.CreateDirectory(csvOutputDirectory);
 
                     if (outputConfig.UseLegacyARVROutput)
@@ -1739,17 +1776,17 @@ namespace ProjectARVRPro
                 {
                     string customXlsxBaseFileName = BuildDailyCustomXlsxBaseFileName(exportTime, outputConfig.CustomXlsxProjectName);
                     string currentSnDirectory = ProjectImageExportService.BuildOutputDirectory(
-                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, SNtextBox.Text);
+                        outputConfig.CsvSavePath, outputConfig.SaveByDate, exportTime, serialNumber);
                     using var xlsxWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                         customXlsxOutputDirectory, outputConfig.AutoCleanupEnabled, outputConfig.MinimumFreeSpaceGB,
                         currentSnDirectory, Path.Combine(customXlsxOutputDirectory, $"{customXlsxBaseFileName}.xlsx"));
-                    xlsxWrite.EnsureSpace();
+                    await xlsxWrite.EnsureSpaceAsync();
                     Directory.CreateDirectory(customXlsxOutputDirectory);
                     string xlsxPath = CustomTestResultExportService.Export(
                         new ObjectiveTestResultExportContext
                         {
                             Result = ObjectiveTestResult,
-                            SerialNumber = SNtextBox.Text,
+                            SerialNumber = serialNumber,
                             OutputDirectory = customXlsxOutputDirectory,
                             BaseFileName = customXlsxBaseFileName,
                             ExportTime = exportTime,
@@ -1779,7 +1816,7 @@ namespace ProjectARVRPro
                     MsgID = string.Empty,
                     EventName = "ProjectARVRResult",
                     Code = _firstFlowFailure?.Code ?? 0,
-                    SerialNumber = SNtextBox.Text,
+                    SerialNumber = serialNumber,
                     Msg = _firstFlowFailure?.Message ?? (ObjectiveTestResult.TotalResult ? "ARVR Test Completed" : "ARVR Test Fail"),
                     Data = responseData
                 };
@@ -1795,13 +1832,13 @@ namespace ProjectARVRPro
                     ResponseCode = response.Code
                 };
 
-                if (SocketManager.GetInstance().TcpClients.Count <= 0 || SocketControl.Current.Stream == null)
+                if (SocketManager.GetInstance().TcpClients.Count <= 0 || responseStream == null)
                 {
                     log.Info("找不到连接的Socket");
                     return;
                 }
                 SocketMessageManager.GetInstance().AddMessage(sentMsg);
-                SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                responseStream.Write(Encoding.UTF8.GetBytes(respString));
             }
             catch (Exception ex)
             {
@@ -2471,7 +2508,7 @@ namespace ProjectARVRPro
 
                 storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(
                     outputRoot, autoCleanupEnabled, minimumFreeSpaceGB, outputDirectory);
-                if (autoCleanupEnabled) await Task.Run(storageWrite.EnsureSpace).ConfigureAwait(false);
+                await storageWrite.EnsureSpaceAsync().ConfigureAwait(false);
                 exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
                 ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
                     ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
@@ -2669,7 +2706,7 @@ namespace ProjectARVRPro
                 log.Info("一键执行已在运行中，忽略重复调用");
                 return;
             }
-            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || IsResultExportPending)
             {
                 log.Info("当前存在流程执行或正在处理流程结果，无法一键执行");
                 return;
@@ -2689,7 +2726,7 @@ namespace ProjectARVRPro
                 if (enabledMetas.Count == 0)
                 {
                     RecordFlowFailure("当前组没有启用的测试流程");
-                    TestCompleted();
+                    await TestCompletedAsync();
                     return;
                 }
 
@@ -2888,7 +2925,7 @@ namespace ProjectARVRPro
                 }
 
                 log.Info($"一键执行完成, TotalResult={ObjectiveTestResult.TotalResult}");
-                TestCompleted();
+                await TestCompletedAsync();
             }
             catch (Exception ex)
             {
@@ -2922,7 +2959,7 @@ namespace ProjectARVRPro
                     // summary; the previous flow row has already completed successfully.
                     SaveObjectiveTestResultRecord(lastPersistedRunAllResult);
                 }
-                TestCompleted();
+                await TestCompletedAsync();
                 log.Error("一键执行异常", ex);
             }
             finally

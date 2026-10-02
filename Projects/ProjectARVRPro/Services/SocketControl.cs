@@ -37,6 +37,8 @@ namespace ProjectARVRPro.Services
 
             (string resolvedSerialNumber, int firstEnabledIndex) = Application.Current.Dispatcher.Invoke(() =>
             {
+                if (ProjectWindowInstance.WindowInstance.IsResultExportPending)
+                    return (request.SerialNumber?.Trim() ?? string.Empty, -2);
                 var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
                 int firstEnabledInternalIndex = -1;
                 for (int i = 0; i < processMetas.Count; i++)
@@ -54,6 +56,17 @@ namespace ProjectARVRPro.Services
                 int externalIndex = firstEnabledInternalIndex + GetProcessEnableSocket.GetIndexOffset();
                 return (resolvedSerialNumber, externalIndex);
             });
+            if (firstEnabledIndex == -2)
+            {
+                return new SocketResponse
+                {
+                    MsgID = request.MsgID,
+                    EventName = EventName,
+                    Code = -4,
+                    Msg = "ARVR test is busy",
+                    SerialNumber = resolvedSerialNumber,
+                };
+            }
             if (firstEnabledIndex < 0)
             {
                 return new SocketResponse

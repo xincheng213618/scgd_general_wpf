@@ -77,7 +77,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 `ARVRTestType` 是活动组中步骤的**外部索引**，不保证从 0 开始，也不是固定测试类型枚举。首条启用步骤可能位于组中间；Legacy 输出还会使索引加 1，具体见[查询与设置启用状态](#查询与设置启用状态)。
 
-没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。初始化接口没有 RunAll 的忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
+没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。其它执行阶段的初始化接口仍没有 RunAll 的完整忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
 
 ### 普通切图：SwitchPG 与 SwitchPGCompleted
 
