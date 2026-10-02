@@ -31,11 +31,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             IntPtr manager = cvCameraCSLib.CM_CreatCameraManagerV1(device.Config.CameraModel, device.Config.CameraMode, null);
             if (manager == IntPtr.Zero) throw new InvalidOperationException($"创建本地相机管理器失败：{device.Code}");
-            if (cvCameraCSLib.CM_InitXYZ(manager) == 0)
-            {
-                _ = cvCameraCSLib.ReleaseCameraManager(manager);
-                throw new InvalidOperationException($"初始化本地相机 CIE 上下文失败：{device.Code}");
-            }
             return manager;
         }
 
@@ -55,7 +50,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool UpdateCalibration(IntPtr handle, string json) => cvCameraCSLib.UpdateCfgJson(handle, ConfigType.Cfg_Calibration, json);
         public void Release(IntPtr handle)
         {
-            _ = cvCameraCSLib.CM_UnInitXYZ(handle);
             _ = cvCameraCSLib.ReleaseCameraManager(handle);
         }
     }

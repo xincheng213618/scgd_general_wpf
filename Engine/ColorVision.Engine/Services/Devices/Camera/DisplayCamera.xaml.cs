@@ -1609,7 +1609,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         cvCameraCSLib.CM_UnregisterCallBack(handle);
                         cvCameraCSLib.CM_Close(handle);
                     }
-                    _ = cvCameraCSLib.CM_UnInitXYZ(handle);
                     _ = cvCameraCSLib.ReleaseCameraManager(handle);
                 }
                 catch (Exception ex)
@@ -1841,13 +1840,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
                 m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, null);
-                int initResult = cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
-                if (initResult != cvErrorDefine.CV_ERR_SUCCESS)
-                {
-                    string initMessage = string.Empty;
-                    cvCameraCSLib.CM_GetErrorMessage(initResult, ref initMessage);
-                    return (false, string.IsNullOrWhiteSpace(initMessage) ? "CM_InitXYZ failed" : initMessage);
-                }
+                if (m_hCamHandle == IntPtr.Zero) return (false, "创建本地视频相机管理器失败");
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
             }
             else

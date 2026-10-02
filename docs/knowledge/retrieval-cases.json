@@ -201,7 +201,6 @@
     {"query":"FlowEngineAPI.RunFlow是当前接口吗","expected_any":["flow.runtime"],"include_planned":false},
     {"query":"AlgComplianceMathNode","expected_any":["flow.runtime"],"include_planned":false},
     {"query":"旧合规流程加载","expected_any":["flow.runtime"],"include_planned":false},
-    {"query":"ConvertXYZ.CM_InitXYZ返回相机句柄吗","expected_any":["engine.native-bindings"],"include_planned":false},
     {"query":"IsUserLoggedIn能证明SessionToken仍有效吗","expected_any":["platform.rbac"],"include_planned":false},
     {"query":"RBAC自动登录失败会清掉LoginResult吗","expected_any":["platform.rbac"],"include_planned":false},
     {"query":"RBAC退出登录就证明会话已经撤销了吗","expected_any":["platform.rbac"],"include_planned":false},

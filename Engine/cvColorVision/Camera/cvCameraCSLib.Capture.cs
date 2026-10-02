@@ -124,12 +124,6 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SplitDataEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SplitDataEx(int w, int h, int bpp, byte[] srcimgdata, byte[] dstX, byte[] dstY, byte[] dstZ);
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvCircle",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetXYZxyuvCircle(IntPtr handle, uint pX, uint pY, ref float X, ref float Y, ref float Z, ref float x, ref float y, ref float u, ref float v, double nRadius = 3);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetXYZxyuvEx(uint[] pX, uint[] pY, float[] X, float[] Y, float[] Z, float[] x, float[] y, float[] u, float[] v, uint nLen, string fileName, double nRadius = 0.0);
-
         public struct ChromaInfo
         {
             public float fX { set; get; }

@@ -326,10 +326,7 @@ next: false
   ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
-  定位供应商 native DLL 的相机、光谱、XYZ、PG 与源表绑定契约，以及内部版的交付边界。
-
-- [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
+  定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。
 
 - [配套服务纳入 ColorVision 的演进规划 \[规划\]](../../03-architecture/service-integration-roadmap.md) — `platform.service-integration-roadmap`
   在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。

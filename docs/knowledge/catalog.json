@@ -4464,7 +4464,6 @@
         "Engine/ColorVision.Engine/Media/CVRawOpen.cs",
         "Engine/ColorVision.Engine/Media/CvRawLayerController.cs",
         "Engine/ColorVision.Engine/Services/POI/PoiMeasurementService.cs",
-        "Engine/cvColorVision/Color/ConvertXYZ.cs",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs"
       ],
       "test_paths": [
@@ -4478,7 +4477,6 @@
       "code_scopes": [
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
-        "Engine/cvColorVision",
         "UI/ColorVision.ImageEditor"
       ],
       "domain": "engine",
@@ -5155,12 +5153,11 @@
       "knowledge_id": "engine.native-bindings",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "定位供应商 native DLL 的相机、光谱、XYZ、PG 与源表绑定契约，以及内部版的交付边界。",
+      "summary": "定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。",
       "aliases": [
         "设备SDK入口在哪里",
         "cvColorVision",
         "cvCameraCSLib",
-        "ConvertXYZ",
         "CVCommCore",
         "MQTTMessageLib",
         "CVCommCore.dll",
@@ -5171,7 +5168,6 @@
         "Engine/cvColorVision/Camera",
         "Engine/cvColorVision/CVCommCore",
         "Engine/cvColorVision/MQTTMessageLib",
-        "Engine/cvColorVision/Color/ConvertXYZ.cs",
         "Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs",
         "Engine/cvColorVision/cvColorVision.csproj"
       ],

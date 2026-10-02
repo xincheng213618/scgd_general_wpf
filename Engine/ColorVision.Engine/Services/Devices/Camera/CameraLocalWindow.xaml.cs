@@ -953,27 +953,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
-        private bool HasNativeCieResult(uint width, uint height, uint channels)
-        {
-            int centerX = checked((int)(width / 2));
-            int centerY = checked((int)(height / 2));
-            if (channels == 1)
-            {
-                float luminance = 0;
-                return cvCameraCSLib.CM_GetYCircle(m_hCamHandle, centerX, centerY, ref luminance, 1) != 0;
-            }
-
-            float xValue = 0, yValue = 0, zValue = 0;
-            return cvCameraCSLib.CM_GetXYZCircle(m_hCamHandle, centerX, centerY, ref xValue, ref yValue, ref zValue, 1) != 0;
-        }
-
-        private static void ShowMissingCieResultMessage()
-        {
-            log.Error("The native camera capture completed without producing a valid CIE buffer.");
-            MessageBox1.Show(Application.Current.GetActiveWindow(),
-                Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_GetFrame returned no CIE buffer", StringComparison.Ordinal), "ColorVision");
-        }
-
         private void ShowImageInView(WriteableBitmap writeableBitmap)
         {
             ImageView.ReleaseImageContent();

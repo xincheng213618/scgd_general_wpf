@@ -2,9 +2,9 @@
 knowledge_id: "engine.native-bindings"
 knowledge_type: "reference"
 status: "current"
-summary: "定位供应商 native DLL 的相机、光谱、XYZ、PG 与源表绑定契约，以及内部版的交付边界。"
-aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
-code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
+summary: "定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。"
+aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
+code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
 test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
@@ -12,6 +12,8 @@ related: ["engine.index","engine.native-integration","ui.core"]
 # cvColorVision
 
 `Engine/cvColorVision/` 是原生能力绑定层，通过 `DllImport` 暴露 `cvCamera.dll` 等底层接口给 C#。它不是纯托管视觉算法库，也不负责 WPF 界面、模板或工作流编排。
+
+本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧插件若引用早期 `cvColorVision.dll` 的句柄式 XYZ 采样 API，需要迁移到本地测量接口并重新编译；当前托管程序集不保证这些旧 API 的二进制兼容。
 
 ## 绑定与交付前提
 
@@ -43,8 +45,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等声明。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
-`ConvertXYZ.CM_InitXYZ(IntPtr handle)` 返回 `int`，不是新建的 `IntPtr`；调用方持有并传入已有句柄。`CM_SetBufferXYZ` 的尺寸/通道参数为 `UInt32`，数组与指针重载均存在，且另有 `CM_ReleaseBuffer`。跨 native 边界须核对签名、缓冲区大小、所有权与释放顺序，不能只按方法名猜测资源生命周期。
-
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。
 
 ## 先查什么
@@ -55,7 +55,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | `EntryPointNotFoundException` | `EntryPoint` 名称、DLL 版本、供应商导出符号 |
 | `BadImageFormatException` | x86/x64 位数混用、AnyCPU 配置 |
 | `AccessViolationException` | `DllImport` 参数、数组长度、指针生命周期、释放顺序 |
-| XYZ/CCT/xy/uv 数值异常 | `CM_SetBufferXYZ` rows/cols/bpp/channels 和采样区域 |
+| XYZ/CCT/xy/uv 数值异常 | `PoiMeasurementService` 的平面 CIE 布局、RAW 校正快照与采样区域 |
 | PG/源表无响应 | 连接方式、端口/IP、Start/Stop 顺序、原生返回码日志 |
 
 ## 当前能力
@@ -63,7 +63,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
-| 色彩采样 | `Color/ConvertXYZ.cs` | XYZ 缓冲初始化/释放，Circle/Rect/批量点位采样，xyz/uv/CCT/主波长导出 |
 | 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
@@ -76,7 +75,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | native DLL 就位 | `cvCamera.dll` 及其实际依赖能在 Release/x64 输出目录加载；隔离加载不需要 OLED/CUDA，实际导出覆盖当前 C# 声明 |
 | 位数一致 | 主程序、插件、native DLL 都是 x64 |
 | 相机链路 | 初始化、枚举/打开、取帧、关闭和释放能按真实设备流程跑通 |
-| XYZ 采样 | `CM_InitXYZ`、`CM_SetBufferXYZ`、采样、`CM_ReleaseBuffer`、`CM_UnInitXYZ` 顺序清楚 |
 | PG 链路 | 初始化、连接、Start/Stop/Reset、上下切换或指定帧切换可被设备服务调用 |
 | 源表链路 | 打开、设置源模式、读电压电流、步进/扫描、关闭有明确调用顺序 |
 | 错误码 | 原生返回码能进入日志或上层异常，不被吞掉 |
@@ -121,7 +119,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | 任务 | 先看 |
 | --- | --- |
 | 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
-| XYZ 采样 | `Color/ConvertXYZ.cs` |
 | 图卡 | `Devices/PatternGenerator/PG.cs` |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` |
 | 光谱仪 | `Devices/Spectrometer/` |
