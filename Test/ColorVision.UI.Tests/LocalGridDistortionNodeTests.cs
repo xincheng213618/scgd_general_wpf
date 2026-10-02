@@ -512,7 +512,17 @@ public sealed class LocalGridDistortionNodeTests
     public void OutputConventionSelectsExistingAnalysisAndOpticalEstimateRequiresExplicitPublication()
     {
         GridDistortionResult result = CreateDetection(7, 7);
+        // Valid independent Brown fixture: the older asymmetric TV fixture is
+        // intentionally outside the centred radial model and must not publish.
+        result = result with { Points = result.Points.Select(point =>
+        {
+            double u = (point.Col - 3) / 3.0, v = (point.Row - 3) / 3.0;
+            double factor = 1 + 0.06 * (u * u + v * v);
+            return point with { X = 29 + 22 * u * factor, Y = 23 + 22 * v * factor };
+        }).ToArray() };
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
+        Assert.True(analysis.Optical.IsAvailable);
+        Assert.InRange(Math.Abs(analysis.Optical.OpticRatioPercent!.Value - 12), 0, 1e-6);
         string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Half, GridPoint9Formula.LegacyThreeSpanMean, true);
         JObject root = JObject.Parse(json);
         DistortionReslut legacy = JsonConvert.DeserializeObject<DistortionReslut>(json)!;
@@ -531,6 +541,11 @@ public sealed class LocalGridDistortionNodeTests
         GridDistortionAnalysis unavailable = analysis with { Optical = analysis.Optical with { IsAvailable = false, OpticRatioPercent = null } };
         JObject absent = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, unavailable, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, true));
         Assert.Equal(JTokenType.Null, absent["Optic_Distortion"]!.Type);
+        GridDistortionResult incompatible = CreateDetection(7, 7);
+        GridDistortionAnalysis rejected = GridDistortionAnalysis.Calculate(incompatible);
+        Assert.False(rejected.Optical.IsAvailable);
+        JObject rejectedOutput = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(incompatible, rejected, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, true));
+        Assert.Equal(JTokenType.Null, rejectedOutput["Optic_Distortion"]!.Type);
     }
 
     [Fact]

@@ -147,7 +147,7 @@ internal static class LocalGridDistortionResultPersistence
                 opticRatio,
                 finalPoints = points,
                 maxErrPoint = new { id = worstPoint.Id, x = worstPoint.X, y = worstPoint.Y },
-                message = $"{optical.Method}；中央节距相对畸变估计，未标定，不保证与供应商光学畸变等价；t 未定义，未输出。",
+                message = $"{optical.Method}；居中一阶径向模型估计，未标定；假设光学中心位于中心点，不拟合偏心、切向或高阶畸变；t 未定义，未输出。",
                 isCalibrated = false,
                 method = optical.Method
             };
@@ -318,7 +318,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     public GridPoint9Formula Point9Formula { get => point9Formula; set { point9Formula = value; OnPropertyChanged(); } }
 
     [Category("畸变输出")]
-    [STNodeProperty("输出相对光学估计", "默认关闭。启用后将中央节距相对估计写入 ARVR 光学畸变项；此值未标定，不保证与原供应商光学畸变等价。", true)]
+    [STNodeProperty("输出相对光学估计", "默认关闭。启用后仅将通过残差校验的居中一阶径向模型估计写入 ARVR 光学畸变项；假设等间距平面点阵与居中光轴，未经独立标定。", true)]
     public bool PublishOpticalEstimate { get => publishOpticalEstimate; set { publishOpticalEstimate = value; OnPropertyChanged(); } }
 
     [Category("本地点阵畸变")]

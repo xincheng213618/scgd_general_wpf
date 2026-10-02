@@ -210,7 +210,7 @@ public sealed class GridDistortionTests
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
         using JsonDocument document = JsonDocument.Parse(GridDistortionResultWindow.CreateAnalysisJson(result, analysis));
         JsonElement root = document.RootElement;
-        Assert.Equal("point-grid-metrics/1", root.GetProperty("formulaVersion").GetString());
+        Assert.Equal("point-grid-metrics/2", root.GetProperty("formulaVersion").GetString());
         Assert.Equal(49, root.GetProperty("nativeResult").GetProperty("selectedCount").GetInt32());
         JsonElement derived = root.GetProperty("analysis");
         Assert.True(derived.TryGetProperty("standardTv", out _));

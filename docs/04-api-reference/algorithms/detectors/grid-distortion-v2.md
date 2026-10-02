@@ -4,14 +4,14 @@ knowledge_type: "topic"
 status: "current"
 summary: "本地点阵畸变 V2 单次定位、TV/九点多口径及相对光学估计，覆盖 ImageView、Flow 和 ARVR 2.0 适配；光学估计不等同于标定结果。"
 aliases: ["点阵畸变分析(V2)","本地点阵畸变(V2)","漏光畸变失败","7x7畸变","GridDistortionAnalysis","LocalGridDistortionNode","M_CalDistortionGridV2","HorizontalTVDistortion","VerticalTVDistortion","Optic_Distortion","KeystoneHoriz","KeystoneVert","DIFF_H","DIFF_V"]
-code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
+code_paths: ["Native/opencv_helper/algorithm/distortion","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp","UI/ColorVision.Core/GridDistortion.cs","UI/ColorVision.Core/GridDistortionAnalysis.cs","UI/ColorVision.Core/GridDistortionOpticalModel.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs","Engine/ColorVision.Engine/Templates/Jsons/Distortion2","Projects/ProjectARVRPro/Process/Distortion"]
 test_paths: ["Test/opencv_helper_test/test_grid_distortion_v2.cpp","Test/opencv_helper_test/benchmark_grid_distortion.py","Test/opencv_helper_test/benchmark_public_grid_distortion.py","Test/ColorVision.UI.Tests/GridDistortionTests.cs","Test/ColorVision.UI.Tests/GridDistortionAnalysisTests.cs","Test/ColorVision.UI.Tests/LocalGridDistortionNodeTests.cs"]
 related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross","engine.native-integration","engine.results","flow.node-extension"]
 ---
 
 # 本地点阵畸变 V2
 
-V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径和中心节距参考的相对光学估计。ImageView 主指标表展示 TV、对边均值九点和相对光学估计；旧 P9 三跨度保留在全部分析 JSON，Flow 节点仍可选它写入 ARVR 字段。参数选择不重新找点。
+V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径和居中投影径向模型的光学估计。ImageView 主指标表展示 TV、对边均值九点和相对光学估计；旧 P9 三跨度保留在全部分析 JSON，Flow 节点仍可选它写入 ARVR 字段。参数选择不重新找点。
 
 输入是完整的规则圆点阵，行列分别为 3～15 的奇数，可以是 3×3、7×7 或非正方形奇数阵列。多点图卡的九点指标取首行、中行、末行与首列、中列、末列的交点。缺点时拒绝计算，不用拟合点冒充实测点；当前不计算左右眼 `DIFF_H`/`DIFF_V`，这还需要配对输入和明确差值定义。
 
@@ -59,9 +59,13 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 
 ### 相对光学估计
 
-`CentralPitchRadial/v1` 用实测中心为原点，中心相邻点差分的一半作为两个节距向量，按行列索引外推参考点。每个非中心点按 `100 × (AD-PD)/PD` 计算径向百分比，`AD` 为实测半径，`PD` 为外推参考半径；汇总保留绝对值最大点的有符号结果、点号及所有逐点数值。
+`CenteredProjectiveBrownK1/v2` 假设图卡为等间距平面点阵，光学中心位于实测中心点。用全部点联合拟合无径向畸变的投影参考 `p = H(u,v)` 与一阶 Brown 模型 `p_actual = p × (1 + k1 × |p|²)`，两者均以中心点为原点。中心相邻点只提供优化初值，最终节距来自拟合的投影局部导数，避免把已畸变的中心节距直接当作理想放大率。参考包含透视；径向模型作用于投影后的图像坐标。
 
-该参考从同一张图估计，`IsCalibrated` 固定为 false。它能用于同口径比较，但不是有标定依据的绝对光学畸变；中心节距本身可能有畸变，透视、偏轴和镜头作用也没有独立分离。需要与供应商光学指标等价时，应补充真实图卡节距/视场、成像标定及原始算法定义，不能仅凭 TV 或四边畸变换算。
+每个非中心点按 `100 × (AD-PD)/PD` 计算径向百分比，`AD` 为实测半径，`PD` 为拟合参考半径；按最大绝对**百分比**选择点并保留符号（正值为枕形、负值为桶形）。分析版本为 `point-grid-metrics/2`，TV 与两种九点公式不变；JSON 保留原有光学字段并新增 `RadialCoefficientPerPixelSquared`、`FitRmsPixels`、`MaxResidualPixels`、`FitResidualFraction` 和 `FitIterations`。列、行节距表示中心处的无径向畸变局部导数，逐点参考位置包含投影，不能用这两个向量线性外推全图。
+
+优化未收敛、参数不可辨识、投影退化、径向映射非单调，或模型 RMS 超过最小实测相邻点距的 1%、单点残差超过 3% 时，`IsAvailable = false`，数值为空并给出原因。残差门限衡量模型与点位的符合程度，不是计量精度承诺；失效不阻断 TV/九点结果，Flow 即使开启光学输出也不会发布失效的光学项。拟合成功时结果窗口显示像素残差与迭代次数，分析 JSON 保存诊断。
+
+该参考从单张图估计，`IsCalibrated` 固定为 false。模型可在居中一阶径向假设成立时恢复已知畸变并分离透视，但不估计光轴偏心、切向或高阶畸变；九点约束有限，低残差也不能证明假设成立。数值仅覆盖实测点阵范围，不能当作整幅图边缘畸变。独立标定及图卡/光轴信息仍用于验证实拍图的物理准确性，不能仅凭 TV 或四边畸变换算。
 
 公式参考 [Edmund Optics 的径向与 TV 畸变说明](https://www.edmundoptics.com/knowledge-center/application-notes/imaging/distortion/)；规则点阵检测参考 [OpenCV findCirclesGrid](https://docs.opencv.org/4.10.0/d9/d0c/group__calib3d.html)，畸变参考网格与标定方法可参阅 [Discorpy 方法文档](https://discorpy.readthedocs.io/en/latest/tutorials/methods.html)。本实现未移植 Discorpy 的完整标定模型，附件中的公式也不作为行业标准认证依据。
 
@@ -83,7 +87,7 @@ Flow 当前直接开放行列数、亮点模式、搜索区域和最小对比度
 
 ## 验证和复现
 
-原生定向测试覆盖输入类型、亮暗点、ROI 原图坐标、漏光、强反光、缺点拒绝及几何公式；托管测试覆盖 ABI 包装、多口径计算、结果窗口、Flow 参数快照与 ARVR JSON 映射。测试目录的基准脚本分别调用同一 DLL 的旧、新 ABI，用固定种子合成图及可选实图比较。
+原生定向测试覆盖输入类型、亮暗点、ROI 原图坐标、漏光、强反光、缺点拒绝及几何公式；托管测试覆盖 ABI 包装、多口径计算、结果窗口、Flow 参数快照与 ARVR JSON 映射；光学模型使用独立前向生成的 ±12% 真值（3×3、7×7、15×15 与矩形点阵）、旋转、透视及亚像素噪声验证，并覆盖非参考点离群、高阶模型失配及失效光学项不发布。测试目录的基准脚本分别调用同一 DLL 的旧、新 ABI，用固定种子合成图及可选实图比较。
 
 以下命令只构建/运行本地测试并写入指定输出，不运行设备或生产数据库。Python 脚本需要已安装的 NumPy 和 OpenCV Python；DLL 先按原生构建约定编译 Release/x64。
 

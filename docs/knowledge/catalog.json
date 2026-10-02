@@ -629,6 +629,7 @@
         "Native/opencv_helper/opencv_media_export.cpp",
         "UI/ColorVision.Core/GridDistortion.cs",
         "UI/ColorVision.Core/GridDistortionAnalysis.cs",
+        "UI/ColorVision.Core/GridDistortionOpticalModel.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/GridDistortion",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalGridDistortionNode.cs",
