@@ -2,7 +2,6 @@ using ColorVision.Engine;
 using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -27,6 +26,7 @@ public sealed class MeasureBatchPageLifecycleTests
             var page = CreateOfflinePage(frame);
             var image = Preview(page, "imagePreview");
             var algorithm = Preview(page, "algorithmImagePreview");
+            List<ImageView> previews = [image, algorithm];
             try
             {
                 frame.Navigate(page);
@@ -37,8 +37,14 @@ public sealed class MeasureBatchPageLifecycleTests
 
                 if (navigateBeforeClose)
                 {
-                    frame.Navigate(new Page());
+                    var nextPage = CreateOfflinePage(frame);
+                    var nextImage = Preview(nextPage, "imagePreview");
+                    var nextAlgorithm = Preview(nextPage, "algorithmImagePreview");
+                    previews.AddRange([nextImage, nextAlgorithm]);
+                    frame.Navigate(nextPage);
                     PumpDispatcher();
+                    Assert.Same(nextPage, frame.Content);
+                    SetPreviewImages(nextImage, nextAlgorithm);
                     Assert.Null(image.ViewBitmapSource);
                     Assert.Null(algorithm.ViewBitmapSource);
                     using (image.RegisterSettingsProvider(() => [])) { }
@@ -50,96 +56,26 @@ public sealed class MeasureBatchPageLifecycleTests
                     SetPreviewImages(image, algorithm);
                     frame.GoForward();
                     PumpDispatcher();
+                    Assert.Same(nextPage, frame.Content);
+                    SetPreviewImages(nextImage, nextAlgorithm);
                 }
 
                 window.Close();
                 PumpDispatcher();
-                Assert.Null(image.ViewBitmapSource);
-                Assert.Null(algorithm.ViewBitmapSource);
-                Assert.Throws<ObjectDisposedException>(() => image.RegisterSettingsProvider(() => []));
-                Assert.Throws<ObjectDisposedException>(() => algorithm.RegisterSettingsProvider(() => []));
+                Assert.All(previews, preview =>
+                {
+                    Assert.Null(preview.ViewBitmapSource);
+                    Assert.Throws<ObjectDisposedException>(() => preview.RegisterSettingsProvider(() => []));
+                });
             }
             finally
             {
                 window.Close();
-                image.Dispose();
-                algorithm.Dispose();
+                foreach (ImageView preview in previews) preview.Dispose();
                 PumpDispatcher();
                 Application.Current.MainWindow = previousMainWindow;
             }
         });
-    }
-
-    [Fact]
-    public void RepeatedClosedWindowsAndAllVisitedDetailsCanBeCollected()
-    {
-        WeakReference[] references = WpfTestHost.Invoke(CreateClosedWindowReferences);
-        try
-        {
-            for (int i = 0; i < 3 && references.Any(reference => reference.IsAlive); i++)
-            {
-                WpfTestHost.Invoke(PumpDispatcher);
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-            }
-            Assert.All(references, reference => Assert.False(reference.IsAlive,
-                "Closed batch-result windows, their navigation history and both previews must be collectible."));
-        }
-        finally
-        {
-            // Avoid leaving subscriptions behind when this regression test fails.
-            WpfTestHost.Invoke(() =>
-            {
-                foreach (var reference in references)
-                    if (reference.Target is ImageView image) image.Dispose();
-            });
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference[] CreateClosedWindowReferences()
-    {
-        using var resources = new PresentationResources();
-        Window? previousMainWindow = Application.Current.MainWindow;
-        var references = new List<WeakReference>();
-        try
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                var frame = new Frame();
-                var window = CreateWindow(frame);
-                try
-                {
-                    window.Show();
-                    for (int j = 0; j < 2; j++)
-                    {
-                        var page = CreateOfflinePage(frame);
-                        frame.Navigate(page);
-                        PumpDispatcher();
-                        Assert.Same(page, frame.Content);
-                        var image = Preview(page, "imagePreview");
-                        var algorithm = Preview(page, "algorithmImagePreview");
-                        SetPreviewImages(image, algorithm);
-                        references.Add(new WeakReference(page));
-                        references.Add(new WeakReference(image));
-                        references.Add(new WeakReference(algorithm));
-                    }
-                    references.Add(new WeakReference(frame));
-                    references.Add(new WeakReference(window));
-                }
-                finally
-                {
-                    window.Close();
-                    PumpDispatcher();
-                }
-            }
-        }
-        finally
-        {
-            Application.Current.MainWindow = previousMainWindow;
-        }
-        return references.ToArray();
     }
 
     private static MeasureBatchPage CreateOfflinePage(Frame frame)

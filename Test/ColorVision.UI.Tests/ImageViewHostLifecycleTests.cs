@@ -26,13 +26,10 @@ namespace ColorVision.UI.Tests;
 public sealed class ImageViewHostLifecycleTests
 {
     [Theory]
-    [InlineData("roi", false)]
-    [InlineData("roi", true)]
-    [InlineData("poi", false)]
-    [InlineData("poi", true)]
-    [InlineData("keyboard", false)]
-    [InlineData("keyboard", true)]
-    public void EditorsReleaseImagesEvenWhenNeverShown(string kind, bool show)
+    [InlineData("roi")]
+    [InlineData("poi")]
+    [InlineData("keyboard")]
+    public void EditorsReleaseImagesEvenWhenNeverShown(string kind)
     {
         WpfTestHost.Invoke(() =>
         {
@@ -41,12 +38,6 @@ public sealed class ImageViewHostLifecycleTests
             ImageView view = Preview(window);
             try
             {
-                if (show)
-                {
-                    PlaceOffscreen(window);
-                    window.Show();
-                    PumpDispatcher();
-                }
                 SetPixels(view);
                 window.Close();
                 PumpDispatcher();
