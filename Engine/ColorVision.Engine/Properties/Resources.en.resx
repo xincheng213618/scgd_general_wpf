@@ -6864,4 +6864,29 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="请输入大于零的缓存数量。" xml:space="preserve">
     <value>Enter a cache entry limit greater than zero.</value>
   </data>
+
+  <data name="Camera_LocalBindingUnavailable" xml:space="preserve"><value>The bound camera could not be uniquely identified. Refresh the camera list and select a camera ID in the local camera manager before connecting.</value></data>
+  <data name="Camera_LocalDiscoveryFailed" xml:space="preserve"><value>Failed to discover local cameras. Check the camera model, connection, and driver.</value></data>
+  <data name="Camera_LocalNotFound" xml:space="preserve"><value>No local camera was found. Check the camera model, connection, and driver.</value></data>
+  <data name="Camera_LocalSelectionRequired" xml:space="preserve"><value>Multiple local cameras were found. Refresh the camera list and select a camera ID in the local camera manager before connecting.</value></data>
+  <data name="跨批次比对" xml:space="preserve"><value>Compare Batches</value></data>
+  <data name="返回节点分析" xml:space="preserve"><value>Back to Node Analysis</value></data>
+  <data name="设为比对基准" xml:space="preserve"><value>Set as Baseline</value></data>
+  <data name="筛选批次 / SN / 消息" xml:space="preserve"><value>Filter Batch / SN / Message</value></data>
+  <data name="比对基准" xml:space="preserve"><value>Baseline</value></data>
+  <data name="当前选择" xml:space="preserve"><value>Current Selection</value></data>
+  <data name="响应消息" xml:space="preserve"><value>Response</value></data>
+  <data name="发送消息" xml:space="preserve"><value>Request</value></data>
+  <data name="执行时间" xml:space="preserve"><value>Execution Time</value></data>
+  <data name="节点耗时" xml:space="preserve"><value>Node Duration</value></data>
+  <data name="消息 ID" xml:space="preserve"><value>Message ID</value></data>
+  <data name="无消息记录" xml:space="preserve"><value>No Messages</value></data>
+  <data name="等待" xml:space="preserve"><value>Waiting</value></data>
+  <data name="请选择消息" xml:space="preserve"><value>Select a Message</value></data>
+  <data name="未记录正文" xml:space="preserve"><value>No Payload Recorded</value></data>
+  <data name="{0} · 跨批次比对" xml:space="preserve"><value>{0} · Compare Batches</value></data>
+  <data name="正在加载同流程、同节点的消息…" xml:space="preserve"><value>Loading messages for the same flow and node…</value></data>
+  <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>Same flow and node · {0} runs · {1} messages · Latest 500 flow runs plus the opened run; select a row, then set a baseline to compare side by side.</value></data>
+  <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>The record has no flow identity or node ID. Only this execution is shown; other batches cannot be reliably linked.</value></data>
+  <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>Flow Overview / Node Analysis / Compare Batches</value></data>
 </root>

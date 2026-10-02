@@ -1,10 +1,13 @@
 using cvColorVision;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal interface ILocalCameraNative
     {
+        IReadOnlyList<string> GetCameraIds();
         IntPtr Initialize();
         bool IsOpen(IntPtr handle);
         int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp);
@@ -16,6 +19,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
     internal sealed class LocalCameraNative(DeviceCamera device) : ILocalCameraNative
     {
+        public IReadOnlyList<string> GetCameraIds()
+        {
+            var summary = cvCameraCSLib.SearchCameraIds(new[] { device.Config.CameraModel });
+            if (summary.Models.Single().Success != true)
+                throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalDiscoveryFailed"));
+            return summary.Cameras.Select(camera => camera.CameraId).ToArray();
+        }
+
         public IntPtr Initialize()
         {
             IntPtr manager = cvCameraCSLib.CM_CreatCameraManagerV1(device.Config.CameraModel, device.Config.CameraMode, null);

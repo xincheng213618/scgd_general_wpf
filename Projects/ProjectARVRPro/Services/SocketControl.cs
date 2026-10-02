@@ -81,7 +81,7 @@ namespace ProjectARVRPro.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                log.Info("PG切换结束");
+                log.Debug("PG切换结束");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ProjectWindowInstance.WindowInstance.SwitchPGCompleted();

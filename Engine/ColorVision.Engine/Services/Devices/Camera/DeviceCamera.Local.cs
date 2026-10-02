@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal void EnsureLocalCameraAvailable()
+        internal void EnsureLocalCameraAvailable(string? cameraId = null)
         {
             CameraBackend.EnsureLocalAvailable();
             if (CameraBackend.LocalOwned) return;
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (ReferenceEquals(other, this)) continue;
                 bool samePhysical = (!string.IsNullOrEmpty(Config.CameraCode) && Config.CameraCode == other.Config.CameraCode)
-                    || (!string.IsNullOrEmpty(Config.CameraID) && Config.CameraID == other.Config.CameraID);
+                    || (!string.IsNullOrEmpty(cameraId ?? Config.CameraID) && string.Equals(cameraId ?? Config.CameraID, other.Config.CameraID, StringComparison.OrdinalIgnoreCase));
                 if (samePhysical && (other.CameraBackend.LocalOwned || other.CameraBackend.VideoOwned || other.CameraBackend.ServiceMayOwnCamera))
                     throw new InvalidOperationException($"同一物理相机已由设备 {other.Code} 占用，请先关闭该设备。");
             }

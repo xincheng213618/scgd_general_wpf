@@ -302,9 +302,9 @@ public class CVServiceProxy
 		CVMQTTRequest cmd2 = cmd.cmd;
 		int maxDelay = GetMaxDelay();
 		bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
-		if (logger.IsInfoEnabled)
+		if (logger.IsDebugEnabled)
 		{
-			logger.InfoFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", Title, DeviceCode, ZIndex, NodeID, result, maxDelay);
+			logger.DebugFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", Title, DeviceCode, ZIndex, NodeID, result, maxDelay);
 		}
 		if (result)
 		{
@@ -314,10 +314,7 @@ public class CVServiceProxy
 		if (cVTransAction != null)
 		{
 			cVTransAction.NodeOverTime(GetFullNodeName(), NodeID);
-			if (logger.IsInfoEnabled)
-			{
-				logger.InfoFormat("{0}/{1}/{2}/{3} => OverTime", Title, DeviceCode, ZIndex, NodeID);
-			}
+			logger.WarnFormat("{0}/{1}/{2}/{3} => OverTime, SerialNumber={4}, MsgID={5}, TimeoutMs={6}", Title, DeviceCode, ZIndex, NodeID, cmd2.SerialNumber, cmd2.MsgID, maxDelay);
 			Reset();
 			m_op_end.TransferData(cVTransAction.trans_action);
 		}

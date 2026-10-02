@@ -88,7 +88,8 @@ public class CVEndNode : CVDeviceNode
 			}
 			if (!startAction.TryDoFinishing())
 				return;
-			logger.InfoFormat("Flow Finished[{0}/{1}/{2}]", startAction.SerialNumber, startAction.FlowStatus, startAction.GetTotalTime());
+			if (logger.IsDebugEnabled)
+				logger.DebugFormat("Flow Finished[{0}/{1}/{2}]", startAction.SerialNumber, startAction.FlowStatus, startAction.GetTotalTime());
 			startAction.FireFinished();
 		}
 		catch (Exception ex)

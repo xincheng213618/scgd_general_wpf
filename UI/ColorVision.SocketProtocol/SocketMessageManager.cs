@@ -224,16 +224,24 @@ namespace ColorVision.SocketProtocol
                     else
                         Messages.Add(message);
 
-                    log.Info(JsonConvert.SerializeObject(new
+                    double updateMs = updateTiming.Elapsed.TotalMilliseconds;
+                    bool slowUpdate = queueMs >= 1000 || updateMs >= 100;
+                    // Normal projection has no new protocol information; keep slow UI evidence at INFO.
+                    if (slowUpdate || log.IsDebugEnabled)
                     {
-                        Event = "SocketMessageUiTiming",
-                        MessageId = message.Id,
-                        message.EventName,
-                        message.MsgID,
-                        UiQueueMs = Math.Round(queueMs, 3),
-                        UiUpdateMs = Math.Round(updateTiming.Elapsed.TotalMilliseconds, 3),
-                        UiUpdateAwaited = false,
-                    }));
+                        string timingJson = JsonConvert.SerializeObject(new
+                        {
+                            Event = "SocketMessageUiTiming",
+                            MessageId = message.Id,
+                            message.EventName,
+                            message.MsgID,
+                            UiQueueMs = Math.Round(queueMs, 3),
+                            UiUpdateMs = Math.Round(updateMs, 3),
+                            UiUpdateAwaited = false,
+                        });
+                        if (slowUpdate) log.Info(timingJson);
+                        else log.Debug(timingJson);
+                    }
                 }
                 catch (Exception ex)
                 {

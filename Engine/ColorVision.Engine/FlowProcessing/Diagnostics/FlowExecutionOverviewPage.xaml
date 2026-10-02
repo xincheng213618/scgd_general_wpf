@@ -286,6 +286,10 @@
                                                     Click="OpenNodeButton_Click"
                                                     Padding="9,3"
                                                     Margin="0,0,5,0"/>
+                                            <Button Content="{engine:EngineLang Key='跨批次比对'}"
+                                                    Tag="{Binding Record, Mode=OneWay}"
+                                                    Click="CompareNodeButton_Click"
+                                                    Padding="9,3" Margin="0,0,5,0"/>
                                             <Button Content="{engine:EngineLang Key='定位'}"
                                                     Tag="{Binding Record, Mode=OneWay}"
                                                     Click="LocateNodeButton_Click"

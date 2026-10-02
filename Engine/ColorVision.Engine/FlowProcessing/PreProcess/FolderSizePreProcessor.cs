@@ -107,6 +107,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                 try
                 {
+                    var scanTiming = System.Diagnostics.Stopwatch.StartNew();
                     // Parse file extensions
                     var extensions = ParseExtensions(fileExtensions);
 
@@ -121,12 +122,13 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                     if (files.Count == 0)
                     {
-                        log.Info($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
+                        log.Debug($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
                         continue;
                     }
 
                     // Calculate total size using File.GetLength() for better performance
                     long totalSize = 0;
+                    int unreadableFiles = 0;
                     var fileSizes = new Dictionary<string, long>();
 
                     foreach (var file in files)
@@ -139,9 +141,12 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                         }
                         catch
                         {
+                            unreadableFiles++;
                             // Skip files we can't access
                         }
                     }
+                    if (unreadableFiles > 0)
+                        log.Warn($"CacheCleanupPreProcess: 缓存扫描跳过了 {unreadableFiles} 个无法读取大小的文件，目录 {cachePath}");
                     if (fileSizes.Count == 0)
                     {
                         continue;
@@ -150,7 +155,8 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     long triggerMB = triggerBytes / OneMb;
                     long targetMB = targetBytes / OneMb;
 
-                    log.Info($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
+                    scanTiming.Stop();
+                    log.Debug($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
                     if (totalSize <= triggerBytes)
                     {
                         continue;
@@ -165,6 +171,10 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                     int deletedCount = 0;
                     long deletedSize = 0;
+                    int deleteFailures = 0;
+                    DateTime? firstDeletedWriteTime = null;
+                    DateTime? lastDeletedWriteTime = null;
+                    var deleteTiming = System.Diagnostics.Stopwatch.StartNew();
 
                     foreach (var file in filesByDate)
                     {
@@ -176,16 +186,22 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                             File.Delete(file.Path);
                             deletedSize += file.Size;
                             deletedCount++;
-                            log.Info($"删除文件: {Path.GetFileName(file.Path)} ({file.Size / 1024}KB)");
+                            firstDeletedWriteTime ??= file.LastWriteTime;
+                            lastDeletedWriteTime = file.LastWriteTime;
+                            if (log.IsDebugEnabled) log.Debug($"删除文件: {Path.GetFileName(file.Path)} ({file.Size / 1024}KB)");
                         }
                         catch (Exception ex)
                         {
+                            deleteFailures++;
                             log.Warn($"删除文件失败: {Path.GetFileName(file.Path)}", ex);
                         }
                     }
 
                     long finalSize = (totalSize - deletedSize) / (1024 * 1024);
-                    log.Info($"CacheCleanupPreProcess: 清理完成。删除了 {deletedCount} 个缓存文件，释放了 {deletedSize / (1024 * 1024)}MB。当前大小: {finalSize}MB");
+                    log.InfoFormat("CacheCleanupPreProcess: 清理完成。Directory={0} FilesScanned={1} UnreadableFiles={2} DeletedFiles={3} DeleteFailures={4} ReleasedMiB={5} RemainingMiB={6} ScanMs={7:F3} DeleteMs={8:F3} BeforeMiB={9} TriggerMiB={10} TargetMiB={11} FirstDeletedWriteTime={12:O} LastDeletedWriteTime={13:O}",
+                        cachePath, allFiles.Length, unreadableFiles, deletedCount, deleteFailures,
+                        deletedSize / OneMb, finalSize, scanTiming.Elapsed.TotalMilliseconds, deleteTiming.Elapsed.TotalMilliseconds,
+                        totalSizeMB, triggerMB, targetMB, firstDeletedWriteTime, lastDeletedWriteTime);
                 }
                 catch (Exception ex)
                 {

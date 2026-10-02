@@ -211,15 +211,23 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{display:DisplayText Key='单侧批次'}" Margin="4" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <UniformGrid Grid.Column="1" Columns="7">
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='记录数'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="TotalCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="PASS" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="PassCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="FAIL" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="FailCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='成功率'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="PassRateText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均单侧 CT'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="AverageCtText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='本小时'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CurrentHourCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='今日'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="TodayCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                        </UniformGrid>
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='记录数'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="TotalCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Grid.Column="1" Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="PASS" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="PassCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Grid.Column="2" Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="FAIL" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="FailCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Grid.Column="3" Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='成功率'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="PassRateText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Grid.Column="4" Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均单侧 CT'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="AverageCtText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Grid.Column="5" Grid.ColumnSpan="2" Style="{StaticResource CompactSummaryCard}" ToolTip="{display:DisplayText Key='按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。'}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均单侧运行时间（不含 PG）'}" TextWrapping="Wrap" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="AverageFlowRunTimeText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                        </Grid>
                         <TextBlock x:Name="CombinedSummaryLabel" Grid.Row="1" Text="{display:DisplayText Key='L/R 全批次'}" Margin="4" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
                         <UniformGrid x:Name="CombinedSummaryPanel" Grid.Row="1" Grid.Column="1" Columns="7">
                             <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='全批次数'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedTotalCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
@@ -228,7 +236,7 @@
                             <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='成功率'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedPassRateText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
                             <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均全批次 CT'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedAverageCtText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
                             <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均 L→R 等待'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedTransitionText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
-                            <Border Style="{StaticResource CompactSummaryCard}"><StackPanel><TextBlock Text="{display:DisplayText Key='今日全批次'}" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedTodayCountText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
+                            <Border Style="{StaticResource CompactSummaryCard}" ToolTip="{display:DisplayText Key='按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。'}"><StackPanel><TextBlock Text="{display:DisplayText Key='平均全批次运行时间（不含 PG）'}" TextWrapping="Wrap" Style="{StaticResource CompactSummaryLabel}"/><TextBlock x:Name="CombinedAverageFlowRunTimeText" Style="{StaticResource CompactSummaryValue}"/></StackPanel></Border>
                         </UniformGrid>
                     </Grid>
 

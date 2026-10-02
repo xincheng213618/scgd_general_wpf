@@ -129,10 +129,17 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
         frameTransferred = true;
         action.MasterValue(null, model.Id, 100);
         FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, captureRequest, capture, model));
+        using LocalFlowFrameLease diagnosticLease = frame.Acquire();
         return new
         {
             MasterId = model.Id, MasterResultType = 100, MasterValue = (string?)null,
             FrameId = frame.FrameId.ToString("N"), frame.HasRaw, frame.HasCie,
+            Backend = "Local", DeviceCode = device.Code,
+            frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, frame.Metadata.Channels,
+            frame.Metadata.Exposure, frame.Metadata.Gain,
+            AverageCount = captureRequest.CameraParameters?.AvgCount ?? 1,
+            RawBytes = diagnosticLease.RawLength, CieBytes = diagnosticLease.CieLength,
+            capture.CalibrationBackend,
             frame.CvRawFilePath, frame.CvCieFilePath,
             TotalTime = capture.TotalTimeMs, CaptureTime = capture.CaptureTimeMs,
             CalibrationTime = capture.CalibrationTimeMs, SaveTime = capture.SaveTimeMs,

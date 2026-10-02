@@ -123,7 +123,8 @@ namespace ProjectARVRPro
             CombinedTimelinePanel.DataContext = CreateEmptyTimeline("选择左侧全批次后显示 L/R 时间轴。");
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
             CombinedRecordDataGrid.SelectionChanged += CombinedRecordDataGrid_SelectionChanged;
-            BuildDetailContextMenu();
+            BuildDetailContextMenu(DetailList);
+            BuildDetailContextMenu(CombinedDetailList);
             ConfigureHomeTrendPlot();
             ApplyStatistics(new ResultStatistics());
             ApplyCombinedStatistics(new ResultStatisticsCombinedDashboard());
@@ -1127,8 +1128,7 @@ namespace ProjectARVRPro
             FailCountText.Text = statistics.FailCount.ToString("N0");
             PassRateText.Text = statistics.PassRateText;
             AverageCtText.Text = statistics.AverageCtText;
-            CurrentHourCountText.Text = statistics.CurrentHourCount.ToString("N0");
-            TodayCountText.Text = statistics.TodayCount.ToString("N0");
+            AverageFlowRunTimeText.Text = statistics.AverageFlowRunTimeText;
         }
 
         private int GetCombinedPageCount()
@@ -1156,7 +1156,7 @@ namespace ProjectARVRPro
             CombinedPassRateText.Text = statistics.PassRateText;
             CombinedAverageCtText.Text = statistics.AverageCtText;
             CombinedTransitionText.Text = dashboard.AverageTransitionText;
-            CombinedTodayCountText.Text = statistics.TodayCount.ToString("N0");
+            CombinedAverageFlowRunTimeText.Text = statistics.AverageFlowRunTimeText;
         }
 
         private void ConfigureHomeTrendPlot()
@@ -1782,23 +1782,23 @@ namespace ProjectARVRPro
             };
         }
 
-        private void BuildDetailContextMenu()
+        private void BuildDetailContextMenu(DataGrid detailGrid)
         {
             var openFolderCommand = new RelayCommand(
-                _ => OpenFolderAndSelectFile(),
-                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
+                _ => OpenFolderAndSelectFile(detailGrid.SelectedItem as ProjectARVRReuslt),
+                _ => _offlineSource == null && detailGrid.SelectedItem is ProjectARVRReuslt item && File.Exists(item.FileName));
             var batchHistoryCommand = new RelayCommand(
-                _ => OpenBatchDataHistory(),
-                _ => _offlineSource == null && DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+                _ => OpenBatchDataHistory(detailGrid.SelectedItem as ProjectARVRReuslt),
+                _ => _offlineSource == null && detailGrid.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var flowExecutionAnalysisCommand = new RelayCommand(
-                _ => OpenFlowExecutionAnalysis(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
+                _ => OpenFlowExecutionAnalysis(detailGrid.SelectedItem as ProjectARVRReuslt),
+                _ => detailGrid.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var viewTestResultCommand = new RelayCommand(
-                _ => ViewTestResult(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
+                _ => ViewTestResult(detailGrid.SelectedItem as ProjectARVRReuslt),
+                _ => detailGrid.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
-            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = DetailList, Header = LocalizedText.Get("复制") });
+            contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, CommandTarget = detailGrid, Header = LocalizedText.Get("复制") });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
@@ -1806,30 +1806,28 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new MenuItem { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
             contextMenu.Opened += (_, _) => CommandManager.InvalidateRequerySuggested();
 
-            DetailList.PreviewMouseRightButtonDown += (_, e) =>
+            detailGrid.PreviewMouseRightButtonDown += (_, e) =>
             {
-                DependencyObject? element = DetailList.InputHitTest(e.GetPosition(DetailList)) as DependencyObject;
-                while (element != null && element is not DataGridRow)
-                    element = VisualTreeHelper.GetParent(element);
-
-                if (element is DataGridRow targetItem && !targetItem.IsSelected)
-                    DetailList.SelectedItem = targetItem.Item;
+                if (e.OriginalSource is DependencyObject source
+                    && ItemsControl.ContainerFromElement(detailGrid, source) is DataGridRow targetItem
+                    && !targetItem.IsSelected)
+                    detailGrid.SelectedItem = targetItem.Item;
             };
 
-            DetailList.ContextMenu = contextMenu;
+            detailGrid.ContextMenu = contextMenu;
         }
 
-        private void OpenFolderAndSelectFile()
+        private void OpenFolderAndSelectFile(ProjectARVRReuslt? item)
         {
             if (_offlineSource != null) return;
-            if (DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrWhiteSpace(item.FileName))
+            if (item != null && !string.IsNullOrWhiteSpace(item.FileName))
                 PlatformHelper.OpenFolderAndSelectFile(item.FileName);
         }
 
-        private void OpenBatchDataHistory()
+        private void OpenBatchDataHistory(ProjectARVRReuslt? item)
         {
             if (_offlineSource != null) return;
-            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            MeasureBatchModel? batch = GetMeasureBatch(item);
             if (batch == null)
             {
                 MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
@@ -1844,11 +1842,11 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private async void OpenFlowExecutionAnalysis()
+        private async void OpenFlowExecutionAnalysis(ProjectARVRReuslt? result)
         {
+            if (result == null) return;
             if (_offlineSource != null)
             {
-                if (DetailList.SelectedItem is not ProjectARVRReuslt result) return;
                 try
                 {
                     string serial = await Task.Run(() => _offlineSource.ResolveFlowSerialNumber(result));
@@ -1861,7 +1859,7 @@ namespace ProjectARVRPro
                 catch (Exception ex) { if (!_closed) MessageBox.Show(this, ex.Message, LocalizedText.Get("现场节点分析"), MessageBoxButton.OK, MessageBoxImage.Information); }
                 return;
             }
-            MeasureBatchModel? batch = GetSelectedMeasureBatch();
+            MeasureBatchModel? batch = GetMeasureBatch(result);
             if (batch == null)
             {
                 MessageBox.Show(this, LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
@@ -1875,10 +1873,10 @@ namespace ProjectARVRPro
             }.Show();
         }
 
-        private MeasureBatchModel? GetSelectedMeasureBatch()
+        private MeasureBatchModel? GetMeasureBatch(ProjectARVRReuslt? item)
         {
             if (_offlineSource != null) return null;
-            if (DetailList.SelectedItem is not ProjectARVRReuslt item || item.BatchId <= 0)
+            if (item == null || item.BatchId <= 0)
                 return null;
 
             using var db = new SqlSugarClient(new ConnectionConfig
@@ -1890,9 +1888,9 @@ namespace ProjectARVRPro
             return db.Queryable<MeasureBatchModel>().Where(model => model.Id == item.BatchId).First();
         }
 
-        private void ViewTestResult()
+        private void ViewTestResult(ProjectARVRReuslt? item)
         {
-            if (DetailList.SelectedItem is not ProjectARVRReuslt item)
+            if (item == null)
                 return;
 
             string? viewResultJson = _statisticsStore.LoadViewResultJson(item);
