@@ -23,7 +23,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             TemplateDicId = 13;
             TemplateParams = Params;
         }
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlSMU();
     }
 
 

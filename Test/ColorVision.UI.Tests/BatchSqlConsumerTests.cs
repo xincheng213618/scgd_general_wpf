@@ -53,13 +53,13 @@ public class BatchSqlConsumerTests
     }
 
     [Fact]
-    public void TemplateSettingFailureDoesNotReloadSymbols()
+    public void FailedBatchDoesNotRunTheConsumerFollowUp()
     {
         bool reloadRan = false;
 
         Assert.Throws<BatchExecuteNonQueryException>(() =>
             BatchSqlConsumer.ExecuteAfterCommit(
-                "reset template tables;",
+                "update data;",
                 _ => throw CreateBatchFailure(),
                 () => reloadRan = true));
 

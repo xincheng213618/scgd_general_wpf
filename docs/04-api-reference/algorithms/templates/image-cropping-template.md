@@ -48,14 +48,14 @@ related: ["algorithms.index","algorithms.roi-routes","engine.results"]
 
 该路径不使用手动配置的四点。节点选择器与配置机制见 [PropertyGrid](../../ui-components/property-grid.md) 和 [模板与 Flow](../../engine-components/template-flow-chain.md)。
 
-## 结果与模板恢复
+## 结果与模板排查
 
 | 问题 | 入口与约束 |
 | --- | --- |
 | 明细为空 | `AlgResultImageDao.Instance.GetAllByPid(result.Id)`，核对主结果 ID 与类型 |
 | 图像和表格 | `ViewHandleImageCropping` 展示原始结果图像；列为 `file_name`、`order_index`、`FileInfo` |
 | 导出 | `SideSave` 导出 CSV 并尝试保存当前视图；两个路径都需实际核对 |
-| 模板缺失 | 字典 32、`TemplateImageCropping.Load` 与 `GetMysqlCommand` 的恢复定义 |
+| 模板缺失 | 检查 MySQL 连接、字典 32 及 `TemplateImageCropping.Load` 的读取条件 |
 
 源图缺失与通用展示恢复见 [结果链](../../engine-components/result-handoff-chain.md)；生成可显示画布不等于恢复原始像素。验证应分别覆盖手动四点、Flow ROI 主结果关联、历史明细和导出。
 

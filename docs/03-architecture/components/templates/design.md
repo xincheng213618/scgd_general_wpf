@@ -73,7 +73,7 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 普通 `Create(name)` 先插主记录，再写明细并添加内存项；与普通 `Save` 一样没有包住全链的事务。它依赖准备好的 `CreateTemp`：该分支会把明细 `Pid` 改为新主 ID；未准备预览的默认分支当前创建明细时使用 `Pid = -1`，不能将直接调用 `Create(name)` 等同于完整 UI 创建链。公开 `AddParamMode(name, resourceId)` 是另一个方法，会为默认明细设置新主 ID，并可绑定资源；不要混同两条创建路径。
 
-`TryCreateTemplate` 捕获 `Create` 异常并返回消息，以集合数量增长、当前名称出现或全局名称存在判断成功。它不是数据库核验，更不是失败补偿；返回 `false` 也不能据此假定前面的数据库写入已撤销。无有效参数的分支还可能询问是否通过 `GetMysqlCommand().GetRecover()` 重置数据库项，不能将这个恢复动作当作普通验证步骤。
+`TryCreateTemplate` 捕获 `Create` 异常并返回消息，以集合数量增长、当前名称出现或全局名称存在判断成功。它不是数据库核验，更不是失败补偿；返回 `false` 也不能据此假定前面的数据库写入已撤销。
 
 普通 `Delete(index)` 先检查集合中 `IsSelected` 勾选项：一个勾选项覆盖传入索引，多个勾选项逐个删除，否则用传入索引。它直接删除主表与明细，再移除内存项，不是软删除，没有跨条目事务或通用引用完整性检查。Flow 节点、项目和结果中残留的名称/ID引用须由各自调用链核对。
 

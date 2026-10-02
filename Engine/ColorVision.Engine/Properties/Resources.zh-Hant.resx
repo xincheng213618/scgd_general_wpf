@@ -673,9 +673,6 @@
   </data>
 
 
-  <data name="DataBaseConfig1" xml:space="preserve">
-    <value>資料庫配置(如果出現無法配置的情況)</value>
-  </data>
   <data name="offline" xml:space="preserve">
     <value>離線</value>
   </data>
@@ -1350,9 +1347,6 @@
   <data name="VerifyJson" xml:space="preserve">
     <value>驗證 JSON</value>
   </data>
-  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
-    <value>沒有配置資料庫重置選項</value>
-  </data>
   <data name="InputTemplateName" xml:space="preserve">
     <value>請輸入模板名稱。</value>
   </data>
@@ -1487,12 +1481,6 @@
   <data name="TimeoutDuration" xml:space="preserve">
     <value>超時(ms)</value>
   </data>
-  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
-    <value>恢復Mysql AutoFocus模板設置</value>
-  </data>
-  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
-    <value>恢復MysqlCameraRunParam模板設置</value>
-  </data>
   <data name="ParamInput" xml:space="preserve">
     <value>輸入參數</value>
   </data>
@@ -1572,9 +1560,6 @@
   </data>
   <data name="ResetDatabasePrompt" xml:space="preserve">
     <value>是否重置資料庫</value>
-  </data>
-  <data name="RelatedItems" xml:space="preserve">
-    <value>相關項</value>
   </data>
   <data name="Debug" xml:space="preserve">
     <value>偵錯</value>
@@ -2940,7 +2925,6 @@
   <data name="GhostGrayscale" xml:space="preserve"><value>鬼影灰階</value></data>
   <data name="OpenResultSetFormat" xml:space="preserve"><value>開啟 {0} 結果集</value></data>
   <data name="Score" xml:space="preserve"><value>分數</value></data>
-  <data name="ScreenDefect_RestoreDatabase" xml:space="preserve"><value>還原螢幕缺陷檢測</value></data>
   <data name="SelectResultSetFormat" xml:space="preserve"><value>選取 {0} 結果集</value></data>
   <data name="SfrWindowPreview" xml:space="preserve"><value>SFR 視窗預覽</value></data>
   <data name="SplitDiagram" xml:space="preserve"><value>切分示意圖</value></data>
@@ -7251,9 +7235,6 @@
   </data>
   <data name="无法重置，请检查数据库相关配置" xml:space="preserve">
     <value>無法重置，請檢查數據庫相關配置</value>
-  </data>
-  <data name="是否重置数据库{0}相关项" xml:space="preserve">
-    <value>是否重置數據庫{0}相關項</value>
   </data>
   <data name="未找到光谱日志文件。" xml:space="preserve">
     <value>未找到光譜日誌文件。</value>

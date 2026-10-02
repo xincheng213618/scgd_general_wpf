@@ -143,9 +143,6 @@
 		<Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Templates\TemplateSettingEdit.xaml.cs">
-			<SubType>Code</SubType>
-		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -359,19 +359,7 @@ namespace ColorVision.Engine.Templates.Jsons
                     string msg = $"数据库创建{typeof(T)}模板失败";
                     MessageBox.Show(Application.Current.GetActiveWindow(), msg, "ColorVision");
                     log.Error(msg);
-
-                    if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
-                    {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"是否重置数据库{typeof(T)}相关项"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            BatchSqlConsumer.ExecuteAfterCommit(mysqlCommand.GetRecover(), () => log.Warn($"数据库{typeof(T)}相关项已重置"));
-                        }
-                    }
                 }
-            }
-            catch (BatchExecuteNonQueryException ex)
-            {
-                BatchSqlConsumer.ReportUiFailure(log, $"重置数据库{typeof(T)}相关项", ex);
             }
             catch (Exception ex)
             {

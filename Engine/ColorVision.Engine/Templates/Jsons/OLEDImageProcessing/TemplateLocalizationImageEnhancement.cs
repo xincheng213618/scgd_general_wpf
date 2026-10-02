@@ -1,5 +1,4 @@
 using LocalizedText = global::ColorVision.Engine.EngineLocalization;
-using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -47,6 +46,5 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
 
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlLocalizationImageEnhancement();
     }
 }

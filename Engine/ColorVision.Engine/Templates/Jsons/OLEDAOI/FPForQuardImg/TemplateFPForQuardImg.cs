@@ -1,5 +1,4 @@
 using LocalizedText = global::ColorVision.Engine.EngineLocalization;
-using ColorVision.Database;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -44,6 +43,5 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg
         public string Description { get; set; } = "{\r\n  \"th\": 0.1,\r\n  \"index\": 1,\r\n  \"num_th\": 10\r\n}";
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlFPForQuardImg();
     }
 }

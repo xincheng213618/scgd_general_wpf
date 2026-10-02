@@ -343,7 +343,7 @@
       "knowledge_id": "algorithms.find-light-area",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。",
+      "summary": "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。",
       "aliases": [
         "发光区定位1",
         "发光区检测模板",
@@ -355,7 +355,6 @@
         "SavePOITempName",
         "最小置信度",
         "搜索区域",
-        "恢复Mysql发光区检测",
         "cvnative::luminous",
         "FindLuminousAreaV2Result",
         "hasCorners",
@@ -1709,7 +1708,6 @@
         "IsUserControl",
         "IsSideHide",
         "TemplateSearchProvider",
-        "TemplateSettingEdit",
         "TemplatesExtension",
         "放弃修改",
         "放弃更改",
@@ -1725,7 +1723,6 @@
         "Engine/ColorVision.Engine/Templates/ITemplate.cs",
         "Engine/ColorVision.Engine/Templates/TemplateModel.cs",
         "Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs",
-        "Engine/ColorVision.Engine/Templates/TemplateSettingEdit.xaml.cs",
         "Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"
       ],
       "test_paths": [],

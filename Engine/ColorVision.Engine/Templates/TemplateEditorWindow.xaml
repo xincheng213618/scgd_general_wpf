@@ -33,10 +33,6 @@
             </Grid.RowDefinitions>
             <Border Grid.Row="0" Grid.RowSpan="2" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
             <Grid Margin="5,5,5,3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
                 <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"/>
                 <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
                     <Rectangle Width="16" Height="16">
@@ -62,9 +58,6 @@
                         </Rectangle.Fill>
                     </Rectangle>
                 </Viewbox>
-                <Button Grid.Column="1" Margin="5,0,0,0" Click="Setting_Click" Padding="2" Height="20" Width="20">
-                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}"/>
-                </Button>
             </Grid>
 
             <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" PreviewMouseLeftButtonDown="ListView1_PreviewMouseLeftButtonDown" PreviewMouseMove="ListView1_PreviewMouseMove" SelectionChanged="ListView1_SelectionChanged" AllowDrop="True" DragOver="ListView1_DragOver" Drop="ListView1_Drop">

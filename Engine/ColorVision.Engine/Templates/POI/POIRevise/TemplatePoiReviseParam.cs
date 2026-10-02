@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.POI.POIRevise
 {
@@ -16,9 +15,5 @@ namespace ColorVision.Engine.Templates.POI.POIRevise
         }
 
 
-        public override IMysqlCommand? GetMysqlCommand()
-        {
-            return new MysqlPoiRevise();
-        }
     }
 }

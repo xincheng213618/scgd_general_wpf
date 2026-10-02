@@ -548,11 +548,6 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        private void Setting_Click(object sender, RoutedEventArgs e)
-        {
-            new TemplateSettingEdit(ITemplate) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
         private void CreateCopy()
         {
             int selectedIndex = GetSelectedTemplateSourceIndex();

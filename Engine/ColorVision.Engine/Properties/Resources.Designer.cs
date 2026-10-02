@@ -2904,24 +2904,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 数据库配置(如果出现无法配置的情况) 的本地化字符串。
-        /// </summary>
-        public static string DataBaseConfig1 {
-            get {
-                return ResourceManager.GetString("DataBaseConfig1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 没有配置数据库重置选项 的本地化字符串。
-        /// </summary>
-        public static string DatabaseResetOptionNotConfigured {
-            get {
-                return ResourceManager.GetString("DatabaseResetOptionNotConfigured", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 数据基础路径 的本地化字符串。
         /// </summary>
         public static string DataBasicPath {
@@ -10100,15 +10082,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 相关项 的本地化字符串。
-        /// </summary>
-        public static string RelatedItems {
-            get {
-                return ResourceManager.GetString("RelatedItems", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 相对 的本地化字符串。
         /// </summary>
         public static string Relative {
@@ -10249,24 +10222,6 @@ namespace ColorVision.Engine.Properties {
         public static string Restore_Mysql {
             get {
                 return ResourceManager.GetString("Restore_Mysql", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复Mysql AutoFocus模板设置 的本地化字符串。
-        /// </summary>
-        public static string RestoreMysqlAutoFocusTemplateSettings {
-            get {
-                return ResourceManager.GetString("RestoreMysqlAutoFocusTemplateSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复MysqlCameraRunParam模板设置 的本地化字符串。
-        /// </summary>
-        public static string RestoreMysqlCameraRunParamTemplateSettings {
-            get {
-                return ResourceManager.GetString("RestoreMysqlCameraRunParamTemplateSettings", resourceCulture);
             }
         }
         
@@ -10645,15 +10600,6 @@ namespace ColorVision.Engine.Properties {
         public static string ScreenDefect_OpenResultFile {
             get {
                 return ResourceManager.GetString("ScreenDefect_OpenResultFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 恢复屏幕缺陷检测 的本地化字符串。
-        /// </summary>
-        public static string ScreenDefect_RestoreDatabase {
-            get {
-                return ResourceManager.GetString("ScreenDefect_RestoreDatabase", resourceCulture);
             }
         }
         
