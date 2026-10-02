@@ -31,13 +31,13 @@ V1 不接受 ROI。双输入 ROI 若只携带一套坐标会产生歧义，Runne
 
 两幅图必须同尺寸。provider 按格式标称峰值把亮度归一化到 0..1，可选 Hann 窗，然后使用相位相关估计循环平移。报告的 `phase_shift_x/y` 是 reference 到 moving 的观测位移，因此输出矩阵使用其相反数把 moving 拉回 reference。执行前同时检查两幅图的纹理标准差；常量/近常量输入返回 `phase_insufficient_texture`。相关峰唯一性在最多 512×512 的有界诊断面上计算，并排除主峰的环绕邻域；周期纹理的次峰与主峰过近时返回 `phase_ambiguous_texture`，不会把任意一个等价平移当作可靠结果。`MinimumPhaseResponse` 与 `MaximumTranslationPixels` 继续作为结构化质量门禁；只有纹理与峰唯一性先通过后，完全相同的输入才走精确 identity。
 
-PhaseCorrelation 不再把无量纲的 `1-response` 标成像素几何 RMSE。结果改报 `correlation_loss`（ratio）与 `phase_peak_uniqueness`（ratio）；没有点对应关系时 transform geometry 的 Residual 为 null。ORB 仍以真实内点重投影误差报告 `geometric_rmse`（px）。Phase 置信度由有界 response 与峰唯一性共同形成，表示确定性质量启发值，不是校准概率。
+PhaseCorrelation 结果报告 `correlation_loss`（ratio）与 `phase_peak_uniqueness`（ratio）；没有点对应关系时 transform geometry 的 Residual 为 null。ORB 仍以真实内点重投影误差报告 `geometric_rmse`（px）。Phase 置信度由有界 response 与峰唯一性共同形成，表示确定性质量启发值，不是校准概率。
 
 ### OrbHomography
 
-reference 与 moving 可以不同尺寸。provider 使用 ORB、双向最近邻与 Lowe ratio 得到互相一致的匹配；再用固定种子的均匀确定性四点采样计算共识内点，最后用全部内点最小二乘求单应矩阵。采样去重且覆盖全部匹配 rank，不会像旧字典序截断那样让 rank 0 固定进入所有候选；单个早序 outlier 不能垄断共识。该过程不使用随机 RANSAC，因而在同一输入和参数下可重复。
+reference 与 moving 可以不同尺寸。provider 使用 ORB、双向最近邻与 Lowe ratio 得到互相一致的匹配；再用固定种子的均匀确定性四点采样计算共识内点，最后用全部内点最小二乘求单应矩阵。采样去重且覆盖全部匹配 rank；单个早序 outlier 不能垄断共识。该过程不使用随机 RANSAC，因而在同一输入和参数下可重复。
 
-持久参数 schema v1 仍可读取历史上限，但执行前按最坏情况检查工作预算：每幅最多 5,000 个 ORB 特征、双向暴力匹配最多 50,000,000 次 descriptor comparisons、共识最多 2,000,000 次 candidate×match 评估；超限在创建 ORB/native matcher 前返回 `registration_work_budget_exceeded`。双向 KNN 按 256 个 query descriptor 分块，可在块间取消。共识复用四点缓冲并流式累计内点/残差，不再为每个候选分配完整 `RegistrationMatch[]`。低纹理、匹配不足、共识不足、病态矩阵或穿越投影无穷远会返回结构化失败，不返回貌似成功的结果。
+持久参数 schema v1 仍可读取历史上限，但执行前按最坏情况检查工作预算：每幅最多 5,000 个 ORB 特征、双向暴力匹配最多 50,000,000 次 descriptor comparisons、共识最多 2,000,000 次 candidate×match 评估；超限在创建 ORB/native matcher 前返回 `registration_work_budget_exceeded`。双向 KNN 按 256 个 query descriptor 分块，可在块间取消。共识复用四点缓冲并流式累计内点/残差。低纹理、匹配不足、共识不足、病态矩阵或穿越投影无穷远会返回结构化失败，不返回貌似成功的结果。
 
 `confidence` 是由响应或内点比例、描述子质量与残差形成的有界质量启发值，不是经过标定的概率。
 

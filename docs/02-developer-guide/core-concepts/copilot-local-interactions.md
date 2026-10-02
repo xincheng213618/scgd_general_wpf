@@ -15,7 +15,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 “本地命令”只说明由宿主解析，**不保证只读、不联网或不改变任务**。诊断、草稿、任务控制、模型请求及受保护操作必须按以下边界区分。
 
-聊天面板的设置入口位于停靠标题栏，与设备控制面板共用标题栏动作机制。输入栏保留附件、权限、模型与推理强度、语音和发送动作；模型列表与推理强度在同一个弹出面板选择。窄面板将模型与发送动作移到第二行，权限文字保持可见。当前窗口附件建议保留点击附加行为，但不重复显示加号；历史上下文占用和展开输入编辑不再作为底部常驻按钮，原有诊断命令与快捷键仍可使用。系统提示不在此界面开放编辑。
+聊天面板的设置入口位于停靠标题栏，与设备控制面板共用标题栏动作机制。输入栏保留附件、权限、模型与推理强度、语音和发送动作；模型列表与推理强度在同一个弹出面板选择。窄面板将模型与发送动作移到第二行，权限文字保持可见。点击当前窗口附件建议可附加对应上下文。
 
 ## 命令发现、补全与执行门禁
 
@@ -102,7 +102,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 | `/clear`（`/new`） | 保留旧会话并创建干净上下文；可先命名旧会话。不删除旧记录、不继承 checkpoint 或临时授权，也不是 `/compact` |
 | `/fork`（`/branch`）、`/rewind N` | 会话快照/分支，不是文件系统回滚。`rewind` 复制目标请求之前的完整历史并恢复该请求供编辑，不自动发送；不继承可执行 checkpoint、临时授权或回滚能力 |
 | `/archive`、`/unarchive`、`/delete` | 归档隐藏与永久删除不同；删除经过状态检查与原生确认，不能把“本地会话命令”当作可无确认清理 |
-| `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式；不再占用打开文件的 Ctrl+O |
+| `/copy N`、Ctrl+Shift+C | 从最近开始选择有正文、非活动、非中断且非 display-only 的回答；部分流式回答不遮住上一条稳定回答，使用既有正文剪贴板格式 |
 | `/export [文件名]` | 无参数复制可见 Markdown，有文件名则预填保存对话框，由用户选目录及覆盖；使用同目录临时文件与原子替换 |
 | `/feedback [说明]` | 非模态打开 FeedbackWindow，附上有界可见会话快照；可最小化并继续操作主窗口，用户仍需选择诊断内容并显式 Send，打开窗口不等于上传 |
 
@@ -121,7 +121,7 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 - `/status`、`/doctor`、`/debug-config`、`/context`、`/hooks`、`/mcp [verbose]` 读取已有本地状态或健康快照并脱敏展示；`/doctor` 不替用户联网测试或自动修复，`/mcp` 不等于 Refresh Discovery。
 - `/settings` 打开配置；`/model`、`/reasoning`（`/effort`）选择现有 Profile/受支持级别，不另建一套配置。落盘与运行态发布失败要分开判断，见[配置契约](./copilot-configuration.md)。`/personality` 是当前会话后续回答的沟通风格，不修改工具权限；未设置会话覆盖时使用 ColorVision 的 Pragmatic 默认风格。
 - `/permissions` 打开同一盾牌菜单，`status` 展示范围/能力/审批策略；`ask` 恢复按需确认，`auto` 启用临时任务复核，`full` 启用并持久保留完全访问。`/approve` 包含原生待确认动作和自动审查拒绝后的精确重试入口，具体授权、过期和复核边界见[执行链](./copilot-agent-execution.md)。
-- 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+Alt+T 只是折叠同一任务列表，不做这些操作，不再占用常见的新标签 Ctrl+T。
+- 裸 `/tasks` 查看活动/队列和可恢复项；`stop N`、`resume N`、`dismiss N` 分别进入停止、恢复、放弃路径。stop/dismiss 有原生确认，resume 重新评估 checkpoint/能力兼容后才提交；Ctrl+Alt+T 只是折叠同一任务列表，不做这些操作。
 - 裸 `/queue` 查看当前会话条目，编号是当时的全局队列位置，不是稳定ID。当前实现还有 `send|edit|up|down|delete N` 和 `clear`：send 提升下一项并请求停止当前任务；edit 取消排队并恢复输入/附件但不发送；delete 取消且可能暂停绑定目标；clear 经确认只清当前会话等待项。编号在命令执行时按当前队列重新解析，稍早看到的同一编号可能已对应同会话另一项，不能把数字当稳定身份。解析到对象后才由 Host 状态复查拒绝已开始或已离队对象；清空确认期间开始执行的项会被跳过，不把清理等待项变成停止当前任务，原子取消边界见[后续队列](./copilot-agent-session-and-tools.md#任务-ui、停止原因、运行中-steering-与后续队列)。
 - `/ps` 是 Copilot 后台命令登记表入口，stop 需确认；不是系统所有进程列表。`/agents` 的只读目录与 steer/stop 等控制子命令也须区分，不可整体标成只读。
 - `/init`、`/review`、`/verify`、`/plan`、`/compact` 和 Skill 可能进入真实模型/工具流程；`/rollback N` 会创建精确文件回滚审批。它们不能因为以 Slash 开头就绕过范围、预算、确认或执行证据。项目指令见[生命周期](./copilot-agent-lifecycle.md)，技能目录、开关与调用见 [Copilot 技能](./copilot-skills.md)，文件修改见[任务与内置工具](./copilot-agent-session-and-tools.md)。

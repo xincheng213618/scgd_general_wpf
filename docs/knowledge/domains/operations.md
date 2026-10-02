@@ -29,11 +29,11 @@ next: false
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
   终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
 
-- [FileServer 移除与文件保存配置边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
-  客户端 FileServer 设备包装与工厂已移除；类型编号、相机和算法的文件保存配置及旧服务传输字段保持兼容。
+- [旧 FileServer 资源与文件保存配置](../../01-user-guide/devices/file-server.md) — `operations.file-server`
+  旧 FileServer 资源的类型值、装配过滤和 RC 协议兼容，以及相机、算法等设备当前文件保存配置的职责。
 
-- [已移除的 Flow 与第三方算法设备包装](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
-  FlowDevice 与 ThirdPartyAlgorithms 的 WPF 设备包装已移除；保留协议值、旧流程节点和服务端能力，记录用途及按需重建入口。
+- [旧 Flow 与第三方算法资源兼容](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
+  旧 Flow 与第三方算法资源的协议值、装配过滤和流程节点读取兼容；资源记录与远端服务状态分别核对。
 
 - [跨模块运行问题定位](../../01-user-guide/README.md) — `operations.index`
   从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。

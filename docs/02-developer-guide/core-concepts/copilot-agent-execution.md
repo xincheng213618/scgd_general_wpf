@@ -45,7 +45,7 @@ CopilotToolRegistry
 
 ## 工具可见性与任务意图
 
-工具可见性表示本轮可以向模型提供哪些能力，不代表用户要求执行全部能力。工作区的 `PreviewWorkspacePatchEnvelope`、`ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 按冻结的可写路径、模式、sandbox 与明确禁止修改的要求开放，不再依赖“请修改”“应用补丁”等动作词。其读取文件、搜索文本与目录发现工具同步可用，仍遵守精确文件范围和委派限制；项目指令也随可写能力加载，但不把普通应用任务强制改判为源码检查。附加只读目录不会成为可写目录或可信项目指令根，显式外部目录仍沿用原有范围准入规则。
+工具可见性表示本轮可以向模型提供哪些能力，不代表用户要求执行全部能力。工作区的 `PreviewWorkspacePatchEnvelope`、`ApplyWorkspacePatchEnvelope` 和 `RollbackWorkspacePatchEnvelope` 按冻结的可写路径、模式、sandbox 与明确禁止修改的要求开放。其读取文件、搜索文本与目录发现工具同步可用，仍遵守精确文件范围和委派限制；项目指令也随可写能力加载，但不把普通应用任务强制改判为源码检查。附加只读目录不会成为可写目录或可信项目指令根，显式外部目录仍沿用原有范围准入规则。
 
 Flow patch 仍要求当前请求或上下文与流程相关；修改工具不因“改成”等同义表达或附带“解释为什么”而隐藏。Plan、Review、Diagnose、Chat、只读 sandbox、空请求和明确禁止修改仍阻止 patch；实际应用继续经过原生审批及路径、文件指纹或 Flow revision 复核。`NeedsWorkspaceEdit/Create/Rollback` 等任务意图判断仍用于执行证据要求，不能因为工具可见就强制进行修改。`CopilotPatchToolAvailabilityTests` 覆盖真实表达、读取能力、指令加载、范围隔离和执行前写入拒绝。
 

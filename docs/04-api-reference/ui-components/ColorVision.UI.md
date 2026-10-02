@@ -32,7 +32,7 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 | 日志输出、历史读取、等级与关键词筛选 | `LogImp/` | [日志来源与显示](../../01-user-guide/interface/log-viewer.md) |
 | 设置窗口、向导、市场页面与诊断工具 | `UI/ColorVision.UI.Desktop/` | [桌面辅助壳层](./ColorVision.UI.Desktop.md) |
 
-上述正文各自维护当前行为、失败条件和测试，本页不再重复一份“怎么使用”和“怎么开发”的完整说明。按控件/窗口定位可看[组件目录](./control-catalog.md)；跨 DLL 看[组件责任速查](./component-handbook.md)。
+按控件/窗口定位可看[组件目录](./control-catalog.md)；跨 DLL 看[组件责任速查](./component-handbook.md)。
 
 ## 模块边界
 

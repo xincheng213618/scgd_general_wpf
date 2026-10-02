@@ -35,7 +35,7 @@ related: ["plugins.index","plugins.model","plugins.getting-started","plugins.con
 | 宿主设置页 | `SystemMonitorProvider : IConfigSettingProvider` | 设置页与菜单窗口共用 `SystemMonitorControl`；插件持有 `IConfig` 对象不等于注册了独立设置页 |
 | ImageEditor 右键 | `ConoscopeImageViewContextMenu : IIEditorToolContextMenu` | 由 `ConoscopeModuleService` 检查当前文件与通道条件后显示入口 |
 | 图卡扩展与启动 | Pattern 的 `IPattern` 发现、`PatternFeatureLauncher` | 从已装载程序集发现图卡；窗口可调用 `OpenImageProjectorCommand` 打开投影工具 |
-| 帮助菜单、应用工具与向导 | `MenuServiceManager`、`ServiceManagerAppProvider`、`InstallServiceManager` | 前两者打开同一非模态服务管理窗口并要求应用内 Administrator 权限，后者是模态向导步骤；旧 `InstallTool` 仍声明 `ServiceLog` 菜单位置并实现主窗口初始化器 |
+| 帮助菜单、应用工具与向导 | `MenuServiceManager`、`ServiceManagerAppProvider`、`InstallServiceManager` | 前两者打开同一非模态服务管理窗口并要求应用内 Administrator 权限，后者是模态向导步骤；`InstallTool` 声明 `ServiceLog` 菜单位置 |
 | Socket 与调度 | Spectrum 的五个 `ISocketJsonHandler` 和 `Job/` 测量/校零任务 | 复用测量 Manager；传输服务与业务指令见 [Spectrum Socket](./standard-plugins/spectrum-socket.md)，需要服务启用与相应设备条件 |
 
 Conoscope 的 `ConoscopeViewState` / `ConoscopeDocument` 属于标签页和文档状态；全局配置、参考存储与窗口工作副本见[配置与持久化](./standard-plugins/conoscope.md#配置-working-copy、参考与持久化)。Pattern（含投影配置）、Spectrum 和服务管理器的配置也由各模块维护，不能把配置类型列表当作宿主设置页列表。

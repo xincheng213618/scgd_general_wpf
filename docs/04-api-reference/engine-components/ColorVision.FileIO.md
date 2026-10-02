@@ -11,7 +11,7 @@ related: ["engine.index", "ui.image-editor", "engine.shell-extension", "plugins.
 
 # CV 文件读取、通道与写回契约
 
-`Engine/ColorVision.FileIO/` 负责 `CVCIE` 魔数这一组专有二进制图像文件的解析和序列化；`CVRAW`、`CVCIE`、`CVSRC` 共用这一入口。它不是标准图片解码器，也没有通用 JSON/YAML、压缩、批量任务或异步 I/O 框架。核心实现是 `CVFileUtil` 和数据载体 `CVCIEFile`；不要从旧示例推断存在 `CVRawFile.LoadAsync` 或 `FileValidator`。
+`Engine/ColorVision.FileIO/` 负责 `CVCIE` 魔数这一组专有二进制图像文件的解析和序列化；`CVRAW`、`CVCIE`、`CVSRC` 共用这一入口。它不是标准图片解码器，也没有通用 JSON/YAML、压缩、批量任务或异步 I/O 框架。核心实现是 `CVFileUtil` 和数据载体 `CVCIEFile`。
 
 先确定调用方要的是**当前文件的内嵌数据**、**关联源图**还是**显示用位图**。`Read`、`ReadCVCIE`、`ReadCIEFileChannel` 并不等价；方法返回成功也不统一意味着图像尺寸、版本往返或显示内容已经验证。
 
@@ -108,7 +108,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 它只分配目标通道数组，全部读满后才赋给 Data。保留的 `Channels` 仍是原文件通道数，例如 3；不能再用该值把返回 Data 当三通道图像，也不能直接当完整文件写回。取消在 header 读取后、每个读取块前检查；捕获 `OperationCanceledException` 时 Dispose 载体并**重新抛出**，不是返回 false，也不是异步 I/O。header 失败先返回 false，不保证预取消 token 优先于文件错误。
 
-旧入口 `ReadCVCIEXYZ` 也委托 `ReadCIEFileChannel` 直接读取目标平面；成功后返回 0，并将 Channels 改为 1、类型改为 Raw。文件头失败返回 `-1`，不适用的单通道输入、无效索引或数据读取失败返回 `-2`。不再采用先全读后切片的 `Cols * Rows * Bpp / 8` 整数运算：例如 14208×10640、32 位数据在乘 32 时会超出 int，造成短数组配上大尺寸元数据。`OpenLocalFileChannel` 仍不传播这些状态码，消费方必须验证数据。其枚举虽含 RGB、色度等值，当前分支只实现 SRC 和 CIE XYZ 选择，不能从枚举名推断全部通道转换可用。
+`ReadCVCIEXYZ` 也委托 `ReadCIEFileChannel` 直接读取目标平面；成功后返回 0，并将 Channels 改为 1、类型改为 Raw。文件头失败返回 `-1`，不适用的单通道输入、无效索引或数据读取失败返回 `-2`。`OpenLocalFileChannel` 仍不传播这些状态码，消费方必须验证数据。其枚举虽含 RGB、色度等值，当前分支只实现 SRC 和 CIE XYZ 选择，不能从枚举名推断全部通道转换可用。
 
 [Conoscope](../plugins/standard-plugins/conoscope.md) 使用新的直接通道入口，并额外要求 32 位浮点、至少三通道、Data 恰好是一个平面；Y-first 和其后的 XYZ 就绪属于 Conoscope 文档生命周期，不属于 FileIO。
 

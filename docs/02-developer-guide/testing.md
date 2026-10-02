@@ -28,7 +28,7 @@ related: ["delivery.index","delivery.prerequisites","delivery.native-testing","g
 
 ## `ColorVision.UI.Tests`
 
-这是普通 UI 与主程序基础设施测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`；Copilot 测试不再由这个程序集承载。
+这是普通 UI 与主程序基础设施测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`。
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
@@ -70,7 +70,7 @@ dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp"
 ```
 
-Copilot 的配置契约见[配置与指令来源](./core-concepts/copilot-configuration.md)：模型、供应商、工具与审批由 ColorVision 管理，不加载全局或项目 `config.toml`。`CopilotConfigurationIsolationTests` 验证外部 TOML 不覆盖应用设置且项目指令仍可发现；这是当前负向隔离覆盖，不应当作过期加载测试删除。
+Copilot 的配置契约见[配置与指令来源](./core-concepts/copilot-configuration.md)：模型、供应商、工具与审批由 ColorVision 管理，不加载全局或项目 `config.toml`。`CopilotConfigurationIsolationTests` 验证外部 TOML 不覆盖应用设置且项目指令仍可发现。
 
 ## Spectrum 与 Conoscope
 

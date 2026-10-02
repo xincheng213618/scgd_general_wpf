@@ -151,7 +151,7 @@ manager 的 `FilteredGuids` 是旧式跨目标过滤，`ScopedFilteredItems` 是
 
 测试使用合成菜单，**没有调用 CommitEditingSnapshot，也没有验收真实窗口 Apply、保存失败或快捷键行为**。
 
-`MenuDiscoveryExclusionTests` 断言特定已删除类型不存在，以及两个保留类型能通过候选判定、MySQL 工具的 Owner/Order；不是完整 `LoadMenuForWindow` 集成测试。当前未发现类型晚加载、重复 ID 树、局部刷新、懒命令执行和菜单注册生命周期的直接专项覆盖。
+`MenuDiscoveryExclusionTests` 检查数据库工具和布局重置菜单能通过候选判定，以及 MySQL 工具的 Owner/Order；不是完整 `LoadMenuForWindow` 集成测试。当前未发现类型晚加载、重复 ID 树、局部刷新、懒命令执行和菜单注册生命周期的直接专项覆盖。
 
 `HotkeyMenuBindingTests` 使用隔离的运行时集合、合成菜单和内置菜单的只读声明，覆盖原默认键保留、显式/旧类型 ID、先建菜单后加载热键、名称不参与匹配、清除/恢复、定义替换、普通菜单提示保留、重复附加、不可读声明、多动作 ID 要求与丢弃控件的弱引用生命周期。它不调用生产热键注册、配置保存或业务命令，不代表已验收真实 Win32 输入或完整菜单发现。
 

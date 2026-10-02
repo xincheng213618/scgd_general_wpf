@@ -6908,14 +6908,12 @@
         "导入导出",
         "CSV",
         "Excel",
-        "cvsettings",
         "导出图片",
         "SaveSnapshotExportsAsync",
         "配置备份",
         "设置备份",
         "配置恢复点",
-        "MaintenanceBackups",
-        "打开配置文件夹"
+        "MaintenanceBackups"
       ],
       "code_paths": [
         "UI/ColorVision.UI/ConfigHandler.cs",
@@ -6954,12 +6952,10 @@
       "knowledge_id": "operations.file-server",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "客户端 FileServer 设备包装与工厂已移除；类型编号、相机和算法的文件保存配置及旧服务传输字段保持兼容。",
+      "summary": "旧 FileServer 资源的类型值、装配过滤和 RC 协议兼容，以及相机、算法等设备当前文件保存配置的职责。",
       "aliases": [
         "文件服务器",
         "FileServer",
-        "DeviceFileServer",
-        "ConfigFileServer",
         "文件服务为什么不显示",
         "远程文件",
         "FileServerCfg",
@@ -6969,10 +6965,10 @@
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
-        "Engine/ColorVision.Engine/Services/DeviceService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
         "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraCaptureService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalAlgorithmResultDirectory.cs"
       ],
@@ -6991,7 +6987,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "operations",
-      "title": "FileServer 移除与文件保存配置边界",
+      "title": "旧 FileServer 资源与文件保存配置",
       "source": "docs/01-user-guide/devices/file-server.md",
       "url": "/01-user-guide/devices/file-server",
       "searchable": true
@@ -7078,20 +7074,17 @@
       "knowledge_id": "operations.flow-device",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "FlowDevice 与 ThirdPartyAlgorithms 的 WPF 设备包装已移除；保留协议值、旧流程节点和服务端能力，记录用途及按需重建入口。",
+      "summary": "旧 Flow 与第三方算法资源的协议值、装配过滤和流程节点读取兼容；资源记录与远端服务状态分别核对。",
       "aliases": [
         "流程设备",
-        "FlowDevice",
-        "DeviceFlowDevice",
-        "ConfigFlowDevice",
         "ServiceTypes.Flow",
         "流程设备为什么不显示",
         "远端流程服务",
         "ThirdPartyAlgorithms",
-        "DeviceThirdPartyAlgorithms",
         "第三方算法设备",
-        "已移除设备模块",
-        "重建设备模块"
+        "旧流程第三方算法",
+        "TPAlgorithmNode",
+        "TPAlgorithm2Node"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
@@ -7118,7 +7111,7 @@
         "Engine/FlowEngineLib"
       ],
       "domain": "operations",
-      "title": "已移除的 Flow 与第三方算法设备包装",
+      "title": "旧 Flow 与第三方算法资源兼容",
       "source": "docs/01-user-guide/devices/flow-device.md",
       "url": "/01-user-guide/devices/flow-device",
       "searchable": true
@@ -9757,7 +9750,6 @@
       "summary": "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。",
       "aliases": [
         "色度分析",
-        "色度分析工作台",
         "CIE 色度图",
         "色差计算",
         "色域覆盖率",

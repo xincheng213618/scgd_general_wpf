@@ -3,7 +3,7 @@ knowledge_id: "ui.cie-analysis"
 knowledge_type: "topic"
 status: "current"
 summary: "统一 CIE 窗口的样品、色差、色域覆盖与导出契约；区分实测 XYZ、RGB 推算与仅色坐标。"
-aliases: ["色度分析", "色度分析工作台", "CIE 色度图", "色差计算", "色域覆盖率", "CIEDE2000", "JNCD", "CieSampleAnalysisView", "CieAnalysisMath", "CieGamutGeometry", "WindowCIE", "ManualColorGamutView"]
+aliases: ["色度分析", "CIE 色度图", "色差计算", "色域覆盖率", "CIEDE2000", "JNCD", "CieSampleAnalysisView", "CieAnalysisMath", "CieGamutGeometry", "WindowCIE", "ManualColorGamutView"]
 code_paths: ["UI/ColorVision.ImageEditor/Cie", "Engine/ColorVision.Engine/Media/CvcieDiagramEditorTool.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/TestData/Cie/ciede2000testdata.txt"]
 related: ["ui.image-editor", "engine.cvcie-results"]
@@ -11,7 +11,7 @@ related: ["ui.image-editor", "engine.cvcie-results"]
 
 # CIE 色度与样品分析
 
-使用一个 `WindowCIE`，分为 **色度图 / 色域计算 / 样品与色差** 三个页签，不再提供独立工作台。色度图用于当前点查看，色域计算保留唯一的 RGB 三原色比较界面，样品与色差嵌入 `CieSampleAnalysisView`，保留多样品、色差、导入导出和样品会话。原有取点公共接口继续可用。计算与界面位于 ImageEditor，不反向依赖 Engine 或仪器服务。
+`WindowCIE` 分为 **色度图 / 色域计算 / 样品与色差** 三个页签。色度图用于当前点查看，色域计算用于 RGB 三原色比较，样品与色差嵌入 `CieSampleAnalysisView`，支持多样品、色差、导入导出和样品会话。计算与界面位于 ImageEditor，不反向依赖 Engine 或仪器服务。
 
 ## 使用流程
 
@@ -89,6 +89,4 @@ Name,Space,V1,V2,V3,Group,Source,Basis
 
 ## 验证与排障
 
-原窗口测试覆盖组成、布局与缩放保留。
-
-当前托管套件不再生成 CIE 深浅主题或最小窗口预览；实机高 DPI、仪器数据、设备校准和客户验收需分别验证。完整色差空值检查亮度与尺度，CCT 空值检查距黑体轨迹是否过远；导入失败检查表头大小写、列数和小数点。样品页白点与阈值编辑后需点击 **应用计算条件**；色度图预设即时应用，自定义输入需点击 **应用参考白**。
+实机高 DPI、仪器数据、设备校准和客户验收需分别验证。完整色差空值检查亮度与尺度，CCT 空值检查距黑体轨迹是否过远；导入失败检查表头大小写、列数和小数点。样品页白点与阈值编辑后需点击 **应用计算条件**；色度图预设即时应用，自定义输入需点击 **应用参考白**。

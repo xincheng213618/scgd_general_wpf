@@ -23,7 +23,7 @@ OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，�
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
-默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。仓库、PluginKit 共享清单、CameraTest 独立包与主安装器的外部 AIP 均不再引用该文件。
+默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
 
 配套内部版 `cvCamera.dll` 不再使用 `CameraAttribute.db` 或旧 `cvTableList` 数据表实现，也不再导入 `sqlite3.dll`。相机读出模式保留 SDK 默认值；制冷能力通过 SDK 查询，温控开关和目标温度使用现有相机配置，停止温控不再依赖属性库。默认交付不含 `cvTableList.dll` / `sqlite3.dll`，托管 SQLite 的 `SQLitePCLRaw` 与 `e_sqlite3.dll` 依赖继续保留。旧 DataTable / SQLiteBaseControl 的 C++ 导出已移除，依赖这些导出或导出序号的外部程序需重新核对。
 
@@ -41,7 +41,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 ## 签名与返回值不能统一推断
 
-当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
+当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等声明。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
 `ConvertXYZ.CM_InitXYZ(IntPtr handle)` 返回 `int`，不是新建的 `IntPtr`；调用方持有并传入已有句柄。`CM_SetBufferXYZ` 的尺寸/通道参数为 `UInt32`，数组与指针重载均存在，且另有 `CM_ReleaseBuffer`。跨 native 边界须核对签名、缓冲区大小、所有权与释放顺序，不能只按方法名猜测资源生命周期。
 

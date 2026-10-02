@@ -44,7 +44,7 @@ related: ["platform.architecture", "platform.service-host", "plugins.windows-ser
 | 流程编排 | 自有 Flow 引擎、执行会话、诊断、本地模板已有实现；纯本地图可跳过注册中心要求 | 本地流程定义不保证每个节点离线；服务节点仍依赖 RC/token；部分本地算法和客户后处理依赖数据库 | `FlowExecutionSession.cs`、[执行契约](../01-user-guide/workflow/execution.md) |
 | 配置与模板 | 设备、许可证及部分模板已支持本地 SQLite；本地对象重连后仍保存到本地 | 当前新查询以连接状态选本地/MySQL；本地流程导入和服务 `.cvflow` 关联模板迁移的能力不同 | `LocalConfigurationDao.cs`、[流程模板](../04-api-reference/engine-components/template-flow-chain.md) |
 | 算法 | 自有统一 Runner/provider、Native 算法、Engine 本地节点及直接 native 工具已形成基础 | 同时存在统一算法、直接 native 工具及 Engine 模板/MQTT 三条链；要按实际算法和节点确认执行、参数及结果依赖 | [算法入口](../04-api-reference/algorithms/README.md) |
-| 结果与归档 | 客户端已负责很多结果展示、文件保存、数据库清理及流程后处理；FileServer 设备包装与工厂已移除，文件保存配置仍保留 | 离线采集不自动形成可重开的业务历史；旧归档浏览/配置、服务更新恢复逻辑仍在；清理、归档与备份职责不能混同 | `LocalCameraResultService.cs`、`LocalSpectrumResultService.cs`、`Archive/`、`MySqlResultCleanupProvider.cs` |
+| 结果与归档 | 客户端已负责很多结果展示、文件保存、数据库清理及流程后处理 | 离线采集不自动形成可重开的业务历史；旧归档浏览/配置、服务更新恢复逻辑仍在；清理、归档与备份职责不能混同 | `LocalCameraResultService.cs`、`LocalSpectrumResultService.cs`、`Archive/`、`MySqlResultCleanupProvider.cs` |
 | 其余设备 | PG、SMU、Motor、Sensor、LightingController 等仍有 MQTT 适配；部分底层绑定已存在 | 不能由“有 DLL 接口”推定主程序已有完整本地控制；设备型号、联动、保护动作和现场需求需逐项核实 | `Engine/ColorVision.Engine/Services/Devices/`、`Engine/cvColorVision/` |
 
 过去的工作已经建立了控制和计算基础。接下来的主要收益来自把这些能力连成可独立交付、可恢复、可追溯的业务链。
@@ -155,7 +155,7 @@ B 和 C 可按项目需求交错推进，但同一能力应先明确配置与结
 | PG、Motor、FilterWheel、LightingController | 按基准流程的实际阻塞选择一个设备族接入 | 端口/设备唯一占用、命令确认、位置/状态读回、停止与保护语义；不要仅搬 Open/Close |
 | SMU、Sensor 与特殊设备 | 先封装服务适配；量产依赖明确后再做本地接管 | 电压/电流范围、联锁、取消后状态、异常恢复与真实测试条件 |
 | 第三方算法及旧 x86 组件 | 优先保留隔离进程和现有通信；有收益时再替换 | 真实在用插件清单、位数和许可证、外部程序集身份、输入输出兼容 |
-| `cvCamera.dll` 等 | 当前作为产品内部 SDK 依赖管理；本地 OLED/CUDA 链路已移除，其他能力逐功能替换 | 导出 ABI、句柄与释放配对、回调线程/寿命、内存布局、依赖 DLL 及有效发布版本 |
+| `cvCamera.dll` 等 | 当前作为产品内部 SDK 依赖管理；能力逐功能替换 | 导出 ABI、句柄与释放配对、回调线程/寿命、内存布局、依赖 DLL 及有效发布版本 |
 
 本地校正已经默认走 `opencv_helper`，但本地相机取图仍走 `cvCamera.dll`，本地光谱仍调用其既有原生接口；这是不同层级的接管进度。外部 C++ 中相机、校正、光谱、PG、XYZ 和流程导出同时存在，不能按一个 DLL 名称将全部能力判定为已替换或应重写。
 

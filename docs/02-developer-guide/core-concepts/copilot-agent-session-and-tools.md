@@ -92,7 +92,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 `NonIdempotent`、`Unknown`、校验错误、权限拒绝、用户取消和业务失败不会获得上述普通重试资格。自动审查拒绝另有用户显式触发的 [`/approve N` 一次精确重试](./copilot-agent-tool-contracts.md#approve-与自动拒绝后的精确重试)：它不是复用批准，也不绕过同一运行的无进展闸门。
 
-写入或非幂等调用进入实际工具执行后，若取消或超时且未取得可确认结果，执行器以 `OutcomeUnknown` / `tool_outcome_unknown` 闭合事件，要求先核对外部状态再重试。本地 Task 即使已经取消完成，也不能证明远端工作已停止或之前的写入已回滚；因此不再用 `Task.IsCompleted` 排除未知结果。资源闸门仍保留至本地执行任务结束，但不宣称能够锁住远端仍在执行的操作。前置校验、审批、排队及待写 checkpoint 保存期间的取消仍按尚未分派处理；返回了明确业务结果的工具不因失败本身被改判为未知。模型结果与任务事件保留同一失败码，下一次 checkpoint 兼容性检查据此返回 `UncertainToolOutcome`，继续工具任务时要求重新规划和核对状态，而不是直接重试原写入；不再执行工具的 Finalize 仍可只整理已有结果。
+写入或非幂等调用进入实际工具执行后，若取消或超时且未取得可确认结果，执行器以 `OutcomeUnknown` / `tool_outcome_unknown` 闭合事件，要求先核对外部状态再重试。本地 Task 即使已经取消完成，也不能证明远端工作已停止或之前的写入已回滚。资源闸门仍保留至本地执行任务结束，但不宣称能够锁住远端仍在执行的操作。前置校验、审批、排队及待写 checkpoint 保存期间的取消仍按尚未分派处理；返回了明确业务结果的工具不因失败本身被改判为未知。模型结果与任务事件保留同一失败码，下一次 checkpoint 兼容性检查据此返回 `UncertainToolOutcome`，继续工具任务时要求重新规划和核对状态，而不是直接重试原写入；不再执行工具的 Finalize 仍可只整理已有结果。
 
 宿主停止等待后，任务 journal 若只有 `ToolStarted` 而没有工具终态，同样以 `Interrupted` / `tool_outcome_unknown` 收尾，不把本轮的 `Cancelled` 推导为工具已取消。取消会丢弃可执行 Session，但保留 journal 中的未知结果证据；若该 journal 用于检查点兼容性判断，仍要求重新规划。已有权威工具结果、未开始调用和待审批调用各自保留原有边界。`CopilotCancelledToolJournalTests` 覆盖取消、暂停和异常结束、权威结果不覆盖、未分派对照及真实会话取消后的 journal 保留；界面 trace 的对应规则见[流清理与原始失败](./copilot-agent-execution.md#流清理与原始失败)。
 
