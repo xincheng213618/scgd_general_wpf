@@ -2,63 +2,41 @@
 knowledge_id: "operations.file-server"
 knowledge_type: "topic"
 status: "current"
-summary: "FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。"
-aliases: ["文件服务器", "FileServer", "DeviceFileServer", "ConfigFileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/FileServer", "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs", "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"]
-test_paths: []
+summary: "客户端 FileServer 设备包装与工厂已移除；类型编号、相机和算法的文件保存配置及旧服务传输字段保持兼容。"
+aliases: ["文件服务器", "FileServer", "DeviceFileServer", "ConfigFileServer", "文件服务为什么不显示", "远程文件", "FileServerCfg", "FileSeviceConfig"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs", "Engine/ColorVision.Engine/Services/ServiceManager.cs", "Engine/ColorVision.Engine/Services/Type/TypeService.cs", "Engine/ColorVision.Engine/Services/DeviceService.cs", "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs", "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs", "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs", "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalAlgorithmResultDirectory.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FileServerCompatibilityTests.cs", "Test/ColorVision.UI.Tests/LocalAlgorithmResultDirectoryTests.cs"]
 related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "operations.data", "delivery.file-transfer"]
 ---
 
-# FileServer 设备配置与实现边界
+# FileServer 移除与文件保存配置边界
 
-`DeviceFileServer` 是 `ServiceTypes.FileServer` 的设备包装，不是已完成的远端文件浏览器。当前类只创建通用 `MQTTDeviceService<ConfigFileServer>`、一个 `ImageView` 和配置编辑命令；没有实现远端列表、上传、下载、覆盖或删除动作，也没有专用文件操作回执。不能根据类名或协议库里存在文件类型，就回答“在这个设备页点击上传/下载”。
+客户端不再提供 `DeviceFileServer`、`ConfigFileServer` 或对应内置工厂。原包装只有通用 MQTT 服务、配置编辑和未接入显示区的 `ImageView`，没有实现独立文件浏览、上传或下载界面；移除该包装不等于停用服务端文件服务，也不删除数据库资源、配置或磁盘文件。
 
-## 工厂存在不等于默认可见
+## 遗留资源与协议兼容
 
-`DeviceServiceFactoryRegistry.RegisterDefaults` 为 `ServiceTypes.FileServer = 6` 注册了配置与实例工厂；但 `ServiceManager.LoadServices` 构建 `TypeServices` 时明确过滤 FileServer。终端树再从这个过滤后的集合生成，因此正常加载路径不会建立它自己的 FileServer 类型分支。
+`ServiceTypes.FileServer = 6` 和 RC 的 `CVServiceType.FileServer` 协议值继续保留。不要删除或重新编号这些枚举值，否则历史资源类型和服务协议可能不再对应。
 
-这不等于删除了工厂，也不能扩大成“任何调用路径都无法构造实例”。若某个扩展主动创建该类，仍需核对扩展如何加入资源树、显示区和生命周期。不要通过写数据库、伪造类型或移除过滤条件来验证文档。通用资源加载条件见[设备服务链](../../04-api-reference/engine-components/device-service-chain.md)。
+`ServiceManager.LoadServices` 仍过滤 FileServer 类型分支。即使遗留 Type 为 6 的资源挂在其它可见类型的终端下，默认 `DeviceServiceFactoryRegistry.CreateService` 也返回 null，跳过实例创建而不修改资源记录。通用装配规则见[设备服务链](../../04-api-reference/engine-components/device-service-chain.md)。旧二进制扩展若直接引用已删除的两个公开类型，需要更新扩展；保留类型编号不意味着继续保留这些 CLR 类型。
 
-`GetDeviceInfo()` 返回空 `UserControl`；类中的 `View` 虽是 `ImageView`，没有被本类接成文件浏览/操作面板。创建实例会构造图像编辑器并让 DService 订阅共享 MQTT 接收事件，不是完全无副作用的数据对象。
-
-## 配置的含义与保存副作用
-
-`ConfigFileServer` 在通用设备身份、主题、令牌等字段之外增加 `Endpoint`、`PortRange`、`FileBasePath`。新建配置工厂设置默认 Endpoint 为 `127.0.0.1`、FileBasePath 为 `D:\CVTest`，并以 `Random.Shared.Next(6500, 6599)` 产生起始端口、加 5 得到范围终点。这些是工厂默认值，不证明远端目录存在、端口可用或网络权限已配置；直接构造配置对象、加载已存 JSON 也不能套用工厂新建默认值。
-
-本类没有把上述三个字段交给本地文件传输客户端；它们随设备配置持久化，服务端是否接受和如何解释必须核对实际部署的服务实现。不要把 `FileBasePath` 当成本地探测、创建或清理目录的授权。
-
-配置编辑使用管理员门禁和 `PropertyEditorEditMode.Transactional`；确认后通过 `Submitted` 调用继承的 `Save()`。**该动作会更新数据库资源并请求 RC 重启设备服务，不是纯本地表单保存。** 通用“重启服务”命令也进入 `Save()`。必须先确认目标设备、影响范围和重启授权；精确持久化链见[设备配置契约](./configuration.md)。
-
-保存路径不是数据库与远端重启的整体事务：`RestartServices(nodeType, svrCode, devCode)` 不等待服务完成重启，RC 未连接或无可用 token 时内部可返回 `false`，该 void 包装不把结果交回编辑窗口。因此窗口关闭或数据库更新不能证明远端已应用配置。
-
-## 文件操作的不同入口
+## 仍在使用的文件配置
 
 | 入口 | 当前职责 |
 | --- | --- |
-| `DeviceFileServer / ConfigFileServer` | 本页的设备类型与配置包装；没有文件传输 UI/API |
-| `Services/Cache/FileServerCfg.cs` 的 `IFileServerCfg / FileServerCfg` | 部分相机、算法等配置持有的数据保存设置，含 `DataBasePath`、`Endpoint`、`PortRange`、`SaveDays` |
-| 基类 `ExportCommand / ImportCommand` | 本地设备配置 JSON 的导出/导入；不是远端结果文件下载/上传 |
-| Web“文件中转”（`/transfer`） | 独立的 HTTP 上传、断点续传和公开分享，见[文件中转](../../02-developer-guide/backend/file-transfer.md)；不通过本设备包装或 MQTT 文件回执 |
+| `Services/Cache/FileServerCfg.cs` 的 `IFileServerCfg / FileServerCfg` | 相机、算法、光谱和校准配置中的数据保存设置，含 `DataBasePath`、`Endpoint`、`PortRange`、`SaveDays` |
+| 物理相机的 `FileSeviceConfig` | 相机校正资源根目录及旧服务传输配置，含 `FileBasePath`、`Endpoint`、`PortRange` |
+| `LocalFrameFileService.SaveCapture` | 读取设备数据基础路径，将本地采集输出保存到 `<根目录>/<设备 Code>/Data/yyyy-MM-dd` |
+| `LocalAlgorithmResultDirectory` | 未显式指定结果目录时，读取算法服务 `FileServerCfg.DataBasePath` 和 Code，确定当天结果目录 |
+| Web“文件中转”（`/transfer`） | 独立的 HTTP 上传、断点续传和公开分享，见[文件中转](../../02-developer-guide/backend/file-transfer.md) |
 
-`ConfigFileServer` 本身不实现 `IFileServerCfg`；基类 `UpdateFilecfgCommand` 的可执行条件正是这个接口，不能因设备名含 FileServer 就推断它提供“文件保存路径”编辑入口。实际数据保存、保留或清理行为应沿配置的消费方核对，见[数据管理](../data-management/README.md)。
+这些入口不依赖被移除的 `DeviceFileServer`，不能按名称把文件保存配置、本地文件读写或文件类型枚举一并删除。实际数据保存、保留和清理职责见[数据管理](../data-management/README.md)；本地 CVRAW/CVCIE 格式读写见[CV 文件读写](../../04-api-reference/engine-components/ColorVision.FileIO.md)。
 
-`FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。当前部署按本机文件路径运行，校正资源体积也不适合通过旧文件服务共享，因此属性编辑器以及第三方算法的手写编辑窗口不再显示这两个字段。但属性仍保留默认值并参与 JSON 序列化；不要用 `JsonIgnore` 或直接删除字段代替界面隐藏，否则旧服务收到缺失的 `Endpoint` 后可能无法完成设备初始化。物理相机的 `FileSeviceConfig` 是另一套配置，其本机部署默认值仍按 `FileBasePath`、`Endpoint = 127.0.0.1` 与 `PortRange` 序列化下发；界面只显示文件路径，不显示两个旧传输字段。
+`FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。当前部署按本机文件路径运行，属性编辑器不显示这两个字段，但它们仍保留默认值并参与 JSON 序列化；不要用 `JsonIgnore` 或删除字段替代界面隐藏，否则旧服务收到缺失的 `Endpoint` 后可能无法完成设备初始化。物理相机的 `FileSeviceConfig` 同样保留 `FileBasePath`、`Endpoint = 127.0.0.1` 和 `PortRange` 的序列化；界面只显示文件路径。
 
-配置导出会写入所选本地 `.config` 文件；导入读取 JSON 后复制进当前配置并调用 `Save()`，因此还可能请求远端重启。只读诊断不执行导入、导出或真实上传来试探权限。
+设备基类的“文件保存路径”编辑仍按 `IFileServerCfg` 判断是否可用；发生变化后调用 `Save()`，可能请求 RC 重启对应设备服务。移除 FileServer 包装不会改变相机或算法配置的保存副作用，具体契约见[设备配置](./configuration.md)。
 
-## 消息、失败与生命周期缺口
+## 验证范围
 
-DService 使用通用 `MQTTServiceBase`，本类没有安装文件专属 `MsgReturnReceived` 处理器。基类接收先比较订阅主题，再按 `MsgID` 匹配待处理记录，以 `Code == 0` 标记该记录成功；不能把它说成已经校验文件内容、设备代码、事件类型或传输完整性。本页更没有可据此等待的“上传完成”状态机。通用通信边界见[MQTT](../../02-developer-guide/engine-development/mqtt.md)。
+`FileServerCompatibilityTests` 验证默认工厂跳过遗留 Type 为 6 的资源、保留原配置，并保持设备和 RC 的类型值为 6。`LocalAlgorithmResultDirectoryTests` 覆盖算法结果目录继续读取数据基础路径；测试引用不表示已经执行或通过。
 
-这两个层次还要区分：`MQTTServiceBase.Dispose()` 能解绑接收事件并清理请求计时器；但 `DeviceFileServer` 没有重写 `Dispose()`，当前设备基类的实现不会代它释放 DService 或 View。因此若扩展实际实例化本类，需要额外核对所有者的清理路径，不能宣称设备树刷新已保证释放这些资源。
-
-## 验证入口与未覆盖范围
-
-现有 UI 自动化覆盖 `FileServerCfg` 与物理相机 `FileSeviceConfig` 的旧传输字段不进入属性编辑器、但仍参与 JSON 序列化；FileServer 工厂过滤、配置应用、文件协议或生命周期仍没有专用自动化覆盖。排查首先只读核对：
-
-- 默认类型树过滤、数据库资源的类型/父子关系及真正的实例创建入口。
-- 当前 `ConfigFileServer` 与设备资源中的代码、主题、Endpoint 和路径是否对应目标服务。
-- 保存是否停在数据库更新、RC 连接/token 检查或实际服务重启阶段；不要用普通消息成功替代业务完成。
-- 所求文件操作是否由另一个模块或外部服务实现，先找到实际入口，再确定协议、覆盖范围和验收方式。
-
-远端服务实现、真实网络/目录权限、重启后配置应用与文件操作均未由本页证明。需要功能验证时，先取得相应运行与写入授权，并使用隔离、非敏感数据。
+运行服务是否仍有文件传输调用、外部插件是否引用旧类型以及现场文件保留行为，需要按实际部署另行核对。客户端包装移除或默认设备树中没有 FileServer，都不能证明服务端文件功能已退役。

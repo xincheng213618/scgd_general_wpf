@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.Engine.Services.Devices.LightingController;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
@@ -170,17 +169,6 @@ namespace ColorVision.Engine.Services.Devices
             Register(new DeviceServiceFactory<ConfigSensor>(
                 ServiceTypes.Sensor,
                 sysResourceModel => new DeviceSensor(sysResourceModel)));
-
-            Register(new DeviceServiceFactory<ConfigFileServer>(
-                ServiceTypes.FileServer,
-                sysResourceModel => new DeviceFileServer(sysResourceModel),
-                configureConfig: (config, _) =>
-                {
-                    int fromPort = Random.Shared.Next(6500, 6599);
-                    config.Endpoint = "127.0.0.1";
-                    config.PortRange = $"{fromPort}-{fromPort + 5}";
-                    config.FileBasePath = "D:\\CVTest";
-                }));
 
             Register(new DeviceServiceFactory<ConfigAlgorithm>(
                 ServiceTypes.Algorithm,

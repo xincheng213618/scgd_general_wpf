@@ -30,7 +30,7 @@ related: ["engine.host", "engine.devices", "engine.mqtt", "engine.rc-registratio
 | 数据库清理是否有预览、备份和回滚保证 | [维护窗口](./database-maintenance.md)、[MySQL 结果维护](./mysql-maintenance.md) | `DatabaseCleanupWindow`、`MySqlResultCleanupProvider`；与业务查询、SQLite 工具分开 |
 | SQL恢复失败但数据已变、重置为何没有保留结果 | [MySQL恢复、重置与资源保留](./mysql-recovery.md) | `MySqlDatabaseMaintenanceService`、`RestoreAndRestartAsync`；配置同步和服务重启有独立失败边界 |
 | 转换、图像转换、校准参数从哪来 | [转换与校准节点](./flow-conversion-calibration-nodes.md) | `Engine/FlowEngineLib/` |
-| FileServer 类型可见性或文件格式读写问题 | [FileServer 包装边界](../../01-user-guide/devices/file-server.md)、[CV 文件读写](./ColorVision.FileIO.md) | `DeviceFileServer` 不等同于本地格式读写库；不要根据包装类推断远程文件操作已实现 |
+| FileServer 设备移除、文件保存配置或文件格式读写问题 | [FileServer 移除与文件保存配置边界](../../01-user-guide/devices/file-server.md)、[CV 文件读写](./ColorVision.FileIO.md) | 客户端 FileServer 包装已移除；文件保存配置与本地格式读写仍保留 |
 | 工程依赖、资源缺失或 native 接入 | [Engine 工程契约](./ColorVision.Engine.md)、[OpenCV/native 集成](../../02-developer-guide/engine-development/opencv-integration.md) | `.csproj` 的引用/资源声明、`OpenCVMediaHelper`、native ABI |
 
 ## 按模块定位

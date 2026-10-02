@@ -6954,7 +6954,7 @@
       "knowledge_id": "operations.file-server",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。",
+      "summary": "客户端 FileServer 设备包装与工厂已移除；类型编号、相机和算法的文件保存配置及旧服务传输字段保持兼容。",
       "aliases": [
         "文件服务器",
         "FileServer",
@@ -6962,20 +6962,24 @@
         "ConfigFileServer",
         "文件服务为什么不显示",
         "远程文件",
-        "FileServerCfg"
+        "FileServerCfg",
+        "FileSeviceConfig"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Services/Devices/FileServer",
         "Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
-        "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
-        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
+        "Engine/ColorVision.Engine/Services/Type/TypeService.cs",
         "Engine/ColorVision.Engine/Services/DeviceService.cs",
         "Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs",
         "Engine/ColorVision.Engine/Services/Cache/FileServerCfg.cs",
-        "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs"
+        "Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalAlgorithmResultDirectory.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/FileServerCompatibilityTests.cs",
+        "Test/ColorVision.UI.Tests/LocalAlgorithmResultDirectoryTests.cs"
+      ],
       "related": [
         "engine.devices",
         "operations.device-configuration",
@@ -6987,7 +6991,7 @@
         "Engine/ColorVision.Engine"
       ],
       "domain": "operations",
-      "title": "FileServer 设备配置与实现边界",
+      "title": "FileServer 移除与文件保存配置边界",
       "source": "docs/01-user-guide/devices/file-server.md",
       "url": "/01-user-guide/devices/file-server",
       "searchable": true

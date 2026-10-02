@@ -33,7 +33,7 @@
     { "query": "电机回原点", "expected_any": ["operations.motor"], "include_planned": false },
     { "query": "电机Move结束后Position会自动更新吗", "expected_any": ["operations.motor"], "include_planned": false },
     { "query": "SMU扫描失败会自动关闭输出吗", "expected_any": ["operations.smu"], "include_planned": false },
-    { "query": "FileServer有工厂为什么设备树看不到", "expected_any": ["engine.devices", "operations.file-server"], "include_planned": false },
+    { "query": "FileServer设备移除后文件保存配置还在吗", "expected_any": ["engine.devices", "operations.file-server"], "include_planned": false },
     { "query": "FlowDevice就是本地流程引擎吗", "expected_any": ["operations.flow-device"], "include_planned": false },
     { "query": "设备保存后是不是远端已经应用配置", "expected_any": ["operations.device-configuration"], "include_planned": false },
     { "query": "只剩一个物理相机会自动绑定所有设备吗", "expected_any": ["operations.physical-camera", "operations.camera-configuration"], "include_planned": false },

@@ -2,7 +2,6 @@ using ColorVision.Engine;
 using ColorVision.Engine.Impl.SolutionImpl;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
@@ -218,18 +217,6 @@ public sealed class ImageViewHostLifecycleTests
     }
 
     [Fact]
-    public void FileServerDisposesPreviewAndUnsubscribesItsService()
-    {
-        var scope = WpfTestHost.Invoke(() => new PresentationScope());
-        try
-        {
-            WeakReference[] references = WpfTestHost.Invoke(CreateDisposedFileServerReferences);
-            Collect(references);
-        }
-        finally { WpfTestHost.Invoke(scope.Dispose); }
-    }
-
-    [Fact]
     public void ClosedEditorsAndPreviewsCanBeCollected()
     {
         var scope = WpfTestHost.Invoke(() => new PresentationScope());
@@ -280,19 +267,6 @@ public sealed class ImageViewHostLifecycleTests
     private static IReadOnlyList<GridViewColumnVisibility> ColumnPreferences(string kind) => kind == "poi"
         ? EditPoiParamConfig.Instance.GridViewColumnVisibilitys
         : EditPoiParam1Config.Instance.GridViewColumnVisibilitys;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference[] CreateDisposedFileServerReferences()
-    {
-        var device = new DeviceFileServer(Resource("file-server"));
-        SetPixels(device.View);
-        var references = new[] { new WeakReference(device), new WeakReference(device.View), new WeakReference(device.DService) };
-        device.Dispose();
-        device.Dispose();
-        AssertDisposed(device.View);
-        PumpDispatcher();
-        return references;
-    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference[] CreateClosedEditorReferences()
