@@ -40,7 +40,7 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 | 基类 `ExportCommand / ImportCommand` | 本地设备配置 JSON 的导出/导入；不是远端结果文件下载/上传 |
 | Web“文件中转”（`/transfer`） | 独立的 HTTP 上传、断点续传和公开分享，见[文件中转](../../02-developer-guide/backend/file-transfer.md)；不通过本设备包装或 MQTT 文件回执 |
 
-`ConfigFileServer` 本身不实现 `IFileServerCfg`；基类 `UpdateFilecfgCommand` 的可执行条件正是这个接口，不能因设备名含 FileServer 就推断它提供“文件保存路径”编辑入口。实际数据保存、保留或清理行为应沿配置的消费方核对，见[数据管理](../data-management/README.md)。
+`ConfigFileServer` 本身不实现 `IFileServerCfg`，不能因设备名含 FileServer 就推断它包含相机等设备的文件存储参数。实际数据保存、保留或清理行为应沿配置的消费方核对，见[数据管理](../data-management/README.md)。
 
 `FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。当前部署按本机文件路径运行，校正资源体积也不适合通过旧文件服务共享，因此属性编辑器以及第三方算法的手写编辑窗口不再显示这两个字段。但属性仍保留默认值并参与 JSON 序列化；不要用 `JsonIgnore` 或直接删除字段代替界面隐藏，否则旧服务收到缺失的 `Endpoint` 后可能无法完成设备初始化。物理相机的 `FileSeviceConfig` 是另一套配置，其本机部署默认值仍按 `FileBasePath`、`Endpoint = 127.0.0.1` 与 `PortRange` 序列化下发；界面只显示文件路径，不显示两个旧传输字段。
 

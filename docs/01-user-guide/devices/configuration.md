@@ -11,7 +11,7 @@ related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-g
 
 # 设备资源配置、保存与重启
 
-MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时，沿用同一套资源字段和窗口，保存到本地 SQLite 配置库。保存本地设备不会请求 RC 重启服务。查询“怎么配置”不授权新增资源、导入覆盖、保存、重置、删除或远端重启；先确认当前任务允许的设备、数据库和外部影响范围。
+MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时，沿用同一套资源字段和窗口，保存到本地 SQLite 配置库。保存本地设备不会请求 RC 重启服务。查询“怎么配置”不授权新增资源、导入覆盖、保存、删除或远端重启；先确认当前任务允许的设备、数据库和外部影响范围。
 
 资源怎样进入列表和主显示区见[Engine 设备装配](../../04-api-reference/engine-components/device-service-chain.md)。本页覆盖通用终端/设备资源，不替代物理相机、客户项目或具体硬件参数契约。
 
@@ -32,7 +32,7 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 
 ## 资源与配置身份
 
-设备树右侧的属性操作由[通用命令生成器](../../04-api-reference/ui-components/property-grid.md#命令属性页自动生成)依据命令元数据生成，按设备与连接、校准与校正、采集与显示、数据与日志、服务与维护归类。不同设备使用同一套紧凑按钮布局和更新窗口主题规则，仅显示自身拥有的命令；按钮显示操作名称，说明保留在工具提示和无障碍帮助文本中。修改配置、文件保存、重启、重置和删除来自基类元数据。页面不会因展示按钮而自动执行设备操作。
+设备树右侧的属性操作由[通用命令生成器](../../04-api-reference/ui-components/property-grid.md#命令属性页自动生成)依据命令元数据生成，按设备与连接、校准与校正、采集与显示、数据与日志、服务与维护归类。不同设备使用同一套紧凑按钮布局和更新窗口主题规则，仅显示自身拥有的命令；按钮显示操作名称，说明保留在工具提示和无障碍帮助文本中。修改配置和删除来自基类元数据；重启服务通过设备右键菜单执行，文件存储参数在“修改配置”中编辑。没有命令的分类不显示。页面不会因展示按钮而自动执行设备操作。
 
 设备卡片或上下文菜单中的 **属性** 会把同一设备页放入专用窗口外壳，显示设备名称、Code 和带留白的内容边界；管理员服务配置中的右侧详情仍使用其自身面板外壳。两种入口复用命令与设备行为，但不会把独立窗口的留白写进设备控件后再重复叠加。
 
@@ -64,7 +64,7 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 
 `DeviceService<T>.Config` 是运行对象持有的配置，不是天然的待保存副本。`MQTTDeviceService<T>` 的 `DeviceCode`、收发 Topic 和 `ServiceToken` 直接读取它持有的 Config；例如 `MQTTSMU` 构造时接收 `DeviceSMU.Config` 的同一引用。直接修改这个共享对象，后续取值即可变化，不以 `Save()` 为内存生效开关。但字段变化不证明新主题已经订阅、配置已持久化或远端设备已经应用，通信状态仍按[消息契约](../../02-developer-guide/engine-development/mqtt.md)核对。
 
-修改同一对象与替换引用也不同：通用重置直接 `Config = new T()`，不会自动重绑其它对象已保存的旧 Config。`Save()` 的基类流程不调用 `LoadServices()` 或重建显示区，默认 `OnConfigChanged()` 为空；具体设备可覆盖或订阅通知。不能承诺保存后所有运行对象自动重建，也不能统一建议“再重载一次”——重载对旧对象及集合的影响见[运行装配](../../04-api-reference/engine-components/device-service-chain.md#重载、旧对象与集合引用)。事务属性窗口的工作副本与提交边界仍只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护，不把直接改 Config 的语义套到所有编辑窗口。
+`Save()` 的基类流程不调用 `LoadServices()` 或重建显示区，默认 `OnConfigChanged()` 为空；具体设备可覆盖或订阅通知。不能承诺保存后所有运行对象自动重建，也不能统一建议“再重载一次”——重载对旧对象及集合的影响见[运行装配](../../04-api-reference/engine-components/device-service-chain.md#重载、旧对象与集合引用)。事务属性窗口的工作副本与提交边界仍只在[属性契约](../../04-api-reference/ui-components/property-grid.md)维护，不把直接改 Config 的语义套到所有编辑窗口。
 
 通用 `DeviceService<T>` 的顺序是：
 
@@ -85,14 +85,13 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 **终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。
 
-## 导入、导出、重置与删除
+## 导入、导出与删除
 
 | 操作 | 通用实现及限制 |
 | --- | --- |
 | 导出 `.config` | 将当前 Config JSON 写入选定文件；不包含设备树、数据库关系或硬件校准全量备份，分享前检查敏感字段 |
 | 导入 `.config` | 读取并反序列化为具体 T，复制到现有 Config 后调用 `Save()`；可能改变身份/主题并请求远端重启，不是预览 |
-| 重置 | 确认后仅 `Config = new T()`；本身没有保存或重建其它持有旧 Config 的对象，不等于恢复出厂硬件状态 |
-| 文件存储配置 | 仅 Config 实现 `IFileServerCfg` 时可用；`UpdateFilecfg` 用事务属性窗口，关闭时比较值，有变化才调用 Save |
+| 文件存储配置 | 相机、光谱仪、算法和校准的 `FileServerCfg` 在“修改配置”中编辑，随设备配置一起提交和保存；参数及旧 JSON 格式保持兼容，保存仍走设备原有流程 |
 | 删除设备 | 确认后移出树，物理删除该资源行，再移出 `DeviceServices`；尝试按本次 `GetDisplayControl()` 返回值移除显示项，最后调用 Dispose。没有通用软删除、子资源级联或整轮回滚保证 |
 | 删除终端 | 删除直接子资源行和终端行并移出终端集合；不能推断递归删除全部后代或立即清理所有旧设备/窗口引用 |
 
@@ -110,4 +109,4 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 不访问真实数据库或操作设备。
 
-共享 Config 的即时取值、重置后的新旧引用、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。
+共享 Config 的即时取值、删除前后显示实例与通信事件解绑也尚无本页声明的自动化覆盖；应使用隔离对象/替身分别验证，不能以知识检索命中替代生命周期测试。
