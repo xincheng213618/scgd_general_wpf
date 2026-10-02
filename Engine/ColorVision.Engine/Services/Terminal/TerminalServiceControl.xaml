@@ -32,10 +32,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
                     <Border Background ="{DynamicResource RegionBrush}" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="5,0">
@@ -44,18 +40,6 @@
                                 </Grid>
                                 <TextBlock Text="{Binding Config.Name}" FontWeight="SemiBold" FontSize="16"/>
                             </DockPanel>
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
-                        <StackPanel  Orientation="Horizontal" >
-                            <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25" >
-                                <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
-                                <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
-                            </Grid>
-                            <Grid Height="30" Margin="5,0" >
-                                <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
-                                <Button  Background="Transparent" BorderThickness="0" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
-                            </Grid>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -94,13 +78,6 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceIdentification}" Width="170">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type device:DeviceService}">
-                                    <TextBlock Text="{ Binding Code}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.DeviceName}" Width="170">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
@@ -126,16 +103,6 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn   Width="60">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type device:DeviceService}">
-                                    <Grid Height="30">
-                                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                                        <Button Background="Transparent"  BorderThickness="0"  Command="{Binding DeleteCommand}"/>
-                                    </Grid>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

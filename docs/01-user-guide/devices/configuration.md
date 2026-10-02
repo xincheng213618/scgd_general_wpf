@@ -5,7 +5,7 @@ status: "current"
 summary: "终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。"
 aliases: ["添加设备","保存设备","删除设备","设备配置引用","通信订阅清理","设备Code","设备配置保存失败","RestartRCService","SaveConfig","DeviceService","DeviceServiceConfig","DeviceServiceCreateContext","TryDeserializeConfig","txt_value","SQL修改设备配置"]
 code_paths: ["Engine/ColorVision.Engine/Dao/SysResourceModel.cs","Engine/ColorVision.Engine/Services/DeviceService.cs","Engine/ColorVision.Engine/Services/Core/ServiceObjectBaseExtensions.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceConfig.cs","Engine/ColorVision.Engine/Services/Devices/DeviceServiceFactory.cs","Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs","Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs","Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs","Engine/ColorVision.Engine/Services/Type/CreateType.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/CreateTerminal.xaml.cs","Engine/ColorVision.Engine/Services/Terminal/TerminalService.cs","Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs"]
-test_paths: []
+test_paths: ["Test/ColorVision.UI.Tests/WindowServiceListTests.cs","Test/ColorVision.UI.Tests/OfflineDeviceConfigurationTests.cs"]
 related: ["engine.devices","engine.mqtt","engine.rc-registration","ui.property-grid","operations.acceptance"]
 ---
 
@@ -17,11 +17,9 @@ MySQL 连接时，设备配置保存到 `SysResourceModel.Value`；未连接时�
 
 RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连接测试、取消、节点令牌与设备状态的区别见[RC 注册契约](../../04-api-reference/engine-components/rc-registration.md)。
 
-设备配置不拥有心跳周期。Camera、Sensor 与 ThirdPartyAlgorithms 的旧手写编辑窗口曾残留 `HeartbeatTime` 绑定，但通用设备配置已不再定义该属性，输入不会进入设备 JSON；界面不再显示这个无效字段。节点与服务保活仍由 RC/Windows 服务协议负责，设备页只配置业务参数，不能用设备配置推断服务心跳周期。
-
 ## 无 MySQL 时创建相机与许可证
 
-1. 点击设备控制面板标题栏的 **＋（添加/配置设备）**，进入管理员服务配置，点击 **创建设备** 并选择 Camera。可选已有终端，或选择 **新建服务配置并添加设备**，依次填写终端与设备配置；空本地库也有此入口。此操作沿用管理员权限要求，标题栏齿轮用于管理已有控制项的显示与分组。
+1. 点击设备控制面板标题栏的 **＋（添加/配置设备）**，进入管理员服务配置，在列表空白处右键并选择 Camera。可选已有终端，或选择 **新建服务配置并添加设备**，依次填写终端与设备配置；空本地库也有此入口。此操作沿用管理员权限要求，标题栏齿轮用于管理已有控制项的显示与分组。
 2. 在物理相机管理中创建相机，或者扫描后从结果列表创建，并配置 Camera ID、型号、模式及物理相机绑定。
 3. 从许可证管理导入已有许可证。许可证记录保存在本地；同一相机续期仍保留原有物理配置。SDK 需要的 `.lic` 文件继续通过原有导出入口写入程序使用的 `lincense` 目录，原生校验规则不变。
 4. 新建的本地相机默认优先本地连接，打开相机后可在本机拍照；流程可使用现有 MQTT 开始节点连接“相机取图”和结束节点，见[离线执行边界](../workflow/execution.md)。
@@ -50,7 +48,7 @@ RCName/AppId 等客户端注册配置不是这里的 MySQL 设备参数；其连
 
 `TypeService` 的创建入口打开 `CreateType`，实际创建的是根终端资源；`TerminalService` 的创建入口打开 `CreateTerminal`，实际创建的是终端下的设备。不要按窗口类名猜数据库层级。
 
-管理员设备配置窗口默认以“服务配置 → 设备”两层显示，可切换到设备平铺列表。服务类型不作为外层节点显示；旧配置中的类型视图会转为服务配置视图，原有设备平铺偏好继续保留。**创建设备** 菜单仍按服务类型选择已有服务配置，或通过 **新建服务配置并添加设备** 创建；没有已有设备的类型也保留创建入口。类型菜单使用程序的中英文资源，已有服务和设备名称沿用用户配置，类型字典、资源 Type、Code 和通信主题不会因显示语言或列表层级变化而改写。
+管理员设备配置窗口默认以“服务配置 → 设备”两层显示，可切换到设备平铺列表。服务类型不作为外层节点显示；旧配置中的类型视图会转为服务配置视图，原有设备平铺偏好继续保留。列表空白处的右键菜单按服务类型选择已有服务配置，或通过 **新建服务配置并添加设备** 创建；已有服务配置的右键 **创建** 直接添加其下设备。没有已有设备的类型也保留创建入口。右侧服务详情的设备列表显示设备名称与状态，编辑、创建和删除通过对应项的右键菜单执行。类型菜单使用程序的多语言资源，已有服务和设备名称沿用用户配置，类型字典、资源 Type、Code 和通信主题不会因显示语言或列表层级变化而改写。
 
 - `CreateType` 根据类型字典设置 Type，构造带服务类型、终端 Code 和 RCName 的 CMD/STATUS 主题，插入根资源后加入终端集合，再请求按类型重启。
 - `CreateTerminal` 以终端 Type 找工厂，传入 `DeviceServiceCreateContext(Code, Name, SendTopic, SubscribeTopic)`；工厂建立 Config，保存子资源 JSON，再创建运行实例并加入集合。
@@ -83,7 +81,9 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 设备右键“重启服务”的 `RefreshCommand` 实际调用 `Save()`，也会尝试把当前 Config 写入数据库，不是只读刷新。不要把设备级与终端级操作视为相同范围。
 
-**终端保存仍有实现缺口：** `TerminalService.Save()` 先修改内存 `SysResourceModel`，但使用的是未传实体、未指定条件的 `Db.Updateable<SysResourceModel>().ExecuteCommand()`，不同于设备的 `Updateable(SysResourceModel)`。不能据此宣称目标终端行已正确持久化；实际 ORM 行为和修复需单独验证，不猜测它一定更新全部行或一定失败。随后重启仅传 `Config.ServiceType.ToString()`，未传终端 Code；`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。
+服务配置右键 **编辑** 只提供 Name 的工作副本；确认后更新资源名称及原 JSON 中的 Name，并同步列表与详情标题。Code、Type、Pid、通信主题、ServiceToken 和其它 JSON 字段保持原值，不请求服务重启。取消或关闭编辑窗口不提交名称；保存失败恢复原资源名称和 JSON，运行配置名称保持原值。
+
+终端右键 **重启服务** 调用 `TerminalService.Save()`：将 Config 的 Name、Code 和 JSON 交给 `SysResourceDao.Save`，MySQL 终端随后按 `Config.ServiceType.ToString()` 请求重启，未传终端 Code；本地终端跳过远端重启。`CreateType` 新建 Config 没有设置该 ServiceType，加载终端也只覆盖 Code/Name，不以资源 Type 同步它。需要核对实际配置和请求目标，不能声称只重启当前终端。
 
 ## 导入、导出与删除
 
@@ -105,7 +105,7 @@ RC 的三参数 `RestartServices` 是 void 包装，丢弃 `TryRestartServices` 
 
 保存/创建失败时，分别记录：当前数据库和目标资源 ID/Type/Pid/Code、旧 Value 备份、编辑模式、数据库阶段结果、RC 连接与重启请求、设备端最终状态。只读诊断可以审查代码、脱敏日志与既有记录；不要通过改 Code、清库、重新导入或点击“重启服务”试探。
 
-本页未声明创建/保存/重启的自动化集成测试。`ServiceConfigTests` 只覆盖 RC 配置信息属性通知，不能证明本页契约。受授权的隔离验证应覆盖旧 JSON 恢复、无效 JSON 保留证据、保存后重开、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
+`WindowServiceListTests` 使用内存菜单验证已有服务、空类型创建和多语言名称；`OfflineDeviceConfigurationTests` 使用临时 SQLite 验证仅改终端名称后的持久化、其它字段保留，以及保存失败时的名称回退，不连接 MySQL 或设备。创建/保存/重启的完整集成仍需隔离验证，覆盖旧 JSON 恢复、无效 JSON 保留证据、目标行不存在、RC 离线和后阶段失败，并检查数据库已提交但远端未生效的分离状态；真实设备动作另外验收。
 
 不访问真实数据库或操作设备。
 

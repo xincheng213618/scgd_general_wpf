@@ -15,7 +15,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services
 {
@@ -59,11 +58,9 @@ namespace ColorVision.Engine.Services
     {
         private string? _copilotContextSourceId;
         private List<(ServiceObjectBase Service, string Configuration)>? _initialConfiguration;
-        public RelayCommand CreateDeviceCommand { get; }
 
         public WindowService()
         {
-            CreateDeviceCommand = new RelayCommand(_ => ShowCreateDeviceMenu(), _ => AccessControl.Check(PermissionMode.Administrator));
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -207,23 +204,36 @@ namespace ColorVision.Engine.Services
             new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        private void ShowCreateDeviceMenu()
+        private void CreateDeviceMenu_Opened(object sender, RoutedEventArgs e)
         {
-            var menu = BuildCreateDeviceMenu(ServiceManager.GetInstance().TypeServices, type =>
+            var menu = (ContextMenu)sender;
+            if (!AccessControl.Check(PermissionMode.Administrator))
             {
-                var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                dialog.ShowDialog();
-                if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
-                    terminal.OpenCreateWindowCommand.Execute(null);
-            });
-            menu.PlacementTarget = CreateDeviceButton;
-            menu.Placement = PlacementMode.Bottom;
-            menu.IsOpen = true;
+                menu.IsOpen = false;
+                return;
+            }
+            menu.Items.Clear();
+            PopulateCreateDeviceMenu(menu, ServiceManager.GetInstance().TypeServices, CreateServiceAndDevice);
+        }
+
+        private void CreateServiceAndDevice(Types.TypeService type)
+        {
+            if (!AccessControl.Check(PermissionMode.Administrator)) return;
+            var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            dialog.ShowDialog();
+            if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
+                terminal.OpenCreateWindowCommand.Execute(null);
         }
 
         internal static ContextMenu BuildCreateDeviceMenu(IEnumerable<Types.TypeService> types, Action<Types.TypeService> createService)
         {
             var menu = new ContextMenu();
+            PopulateCreateDeviceMenu(menu, types, createService);
+            return menu;
+        }
+
+        private static void PopulateCreateDeviceMenu(ContextMenu menu, IEnumerable<Types.TypeService> types, Action<Types.TypeService> createService)
+        {
             foreach (var type in types)
             {
                 if (!DeviceServiceFactoryRegistry.TryGetFactory(type.ServiceTypes, out _))
@@ -243,7 +253,6 @@ namespace ColorVision.Engine.Services
                 typeItem.Items.Add(createTerminal);
                 menu.Items.Add(typeItem);
             }
-            return menu;
         }
 
         private void ButtonPhySpectrumManager_Click(object sender, RoutedEventArgs e)
