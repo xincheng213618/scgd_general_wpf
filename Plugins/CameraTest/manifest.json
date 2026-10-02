@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "Id": "CameraTest",
   "name": "相机生产调试",
-  "version": "1.0.0.13",
+  "version": "1.0.0.14",
   "requires": "1.4.15.16",
   "description": "相机生产调焦、参数记录、BMW 四边 SFR 分析与设备数据存档",
   "dllpath": "CameraTest.dll"

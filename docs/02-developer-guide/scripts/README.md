@@ -33,13 +33,13 @@ related: ["delivery.index","delivery.testing","delivery.backend","delivery.updat
 
 以下命令会签名、打包并修改远端发布状态，只在用户明确要求发布时执行；文档或代码审阅不授予发布权限。
 
-主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号，并将根 `CHANGELOG.md` 替换为只描述本次版本的一至三条用户可感知变化，然后运行：
+主程序、ServiceHost 和 OperationsWatchdog 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 和 `OperationsWatchdog/` 运行时：前者确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装，后者确保完整安装器漏项或旧安装损坏后也能由下一次增量更新自修复。发布前提升这个版本号，在根 `CHANGELOG.md` 顶部新增本次版本的一至三条用户可感知变化，并保留同一三段版本系列的全部版本记录，例如所有 `1.4.15.*` 的更新累计放在一起。切换到 `1.4.16.*` 时，将整个 `1.4.15.*` 系列合并到 `docs/_history/CHANGELOG.md`，保留既有历史并避免重复版本章节；根日志从新系列开始，只累计 `1.4.16.*` 的记录。条数限制只针对本次新增内容，不限制累计历史；已有记录缺失时从 Git 历史补回，不为没有记录的版本编造条目。然后运行：
 
 ```powershell
 Scripts\release.bat
 ```
 
-`docs/_history/CHANGELOG.md` 保存截至 `1.4.14.37` 的完整旧版记录，仅供仓库内回顾；它是固定历史快照，不在日常发布时更新，也不作为主程序 changelog 上传。下划线目录会从公开文档构建中排除。
+`docs/_history/CHANGELOG.md` 保存既有旧版记录和已经结束的版本系列，仅供仓库内回顾。只在三段版本系列切换时合并上一系列，同系列的日常发布不修改历史文件。历史文件不作为主程序 changelog 上传；下划线目录会从公开文档构建中排除。
 
 发布前会按 SHA-256 校验 OpenCV 原生运行库：OpenCvSharp 的源文件由主程序 `project.assets.json` 中实际解析的 NuGet 版本定位，本地 OpenCV 由 `packages/OpenCV.Release.x64.props` 定位。安装器构建前自动修复输出副本，复制后再次校验；缺少源文件、复制失败或校验不符会停止发布。增量打包前只读复查，包内包含的原生库还会在上传前再次校验，文件大小和修改时间相同不能代替内容一致性。
 
