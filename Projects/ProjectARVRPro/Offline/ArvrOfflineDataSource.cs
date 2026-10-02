@@ -22,15 +22,15 @@ public sealed class ArvrOfflineDataSource
     public ResultStatisticsDataStore Statistics { get; }
     public string Description => $"现场只读：{Label} · 节点库{(FlowDatabasePath != null ? "已包含" : "未提供")} · Socket{(SocketDatabasePath != null ? "已包含" : "未提供")} · MQTT{(MqttDatabasePath != null ? "已包含" : "未提供")}";
 
-    private ArvrOfflineDataSource(string sourcePath, string directoryPath)
+    private ArvrOfflineDataSource(string sourcePath, string directoryPath, string? aggregateLabel)
     {
         SourcePath = sourcePath;
         DirectoryPath = directoryPath;
         var parent = new DirectoryInfo(System.IO.Directory.Exists(sourcePath) ? sourcePath : Path.GetDirectoryName(sourcePath)!);
         if (parent.Name.Equals("Database", StringComparison.OrdinalIgnoreCase) && parent.Parent != null) parent = parent.Parent;
-        Label = Path.GetExtension(sourcePath).Equals(".zip", StringComparison.OrdinalIgnoreCase)
+        Label = aggregateLabel ?? (Path.GetExtension(sourcePath).Equals(".zip", StringComparison.OrdinalIgnoreCase)
             ? Path.GetFileNameWithoutExtension(sourcePath)
-            : System.IO.Directory.Exists(sourcePath) ? parent.Name : $"{parent.Name} / {Path.GetFileName(sourcePath)}";
+            : System.IO.Directory.Exists(sourcePath) ? parent.Name : $"{parent.Name} / {Path.GetFileName(sourcePath)}");
         Statistics = new ResultStatisticsDataStore(ProjectDatabasePath, readOnly: true);
         var source = new ReadOnlySqliteDatabase(ProjectDatabasePath);
         using var db = source.OpenClient();
@@ -43,6 +43,7 @@ public sealed class ArvrOfflineDataSource
         string sourcePath = Path.GetFullPath(path);
         string root = Path.GetFullPath(cacheRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "OfflineData"));
         string directory = Path.Combine(root, Guid.NewGuid().ToString("N"));
+        string? aggregateLabel = null;
         if (Path.GetExtension(sourcePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
             using var archive = ZipFile.OpenRead(sourcePath);
@@ -63,6 +64,8 @@ public sealed class ArvrOfflineDataSource
         {
             bool isDirectory = System.IO.Directory.Exists(sourcePath);
             string sourceDirectory = isDirectory ? sourcePath : Path.GetDirectoryName(sourcePath)!;
+            if (isDirectory)
+                sourceDirectory = FeedbackAggregateDirectory.Resolve(sourceDirectory, out aggregateLabel);
             if (isDirectory && !File.Exists(Path.Combine(sourceDirectory, DatabaseNames[0])) && System.IO.Directory.Exists(Path.Combine(sourceDirectory, "Database")))
                 sourceDirectory = Path.Combine(sourceDirectory, "Database");
             string projectSource = isDirectory ? Path.Combine(sourceDirectory, DatabaseNames[0]) : sourcePath;
@@ -79,7 +82,7 @@ public sealed class ArvrOfflineDataSource
                 if (File.Exists(original + ".export.json")) File.Copy(original + ".export.json", Path.Combine(directory, name + ".export.json"));
             }
         }
-        return new ArvrOfflineDataSource(sourcePath, directory);
+        return new ArvrOfflineDataSource(sourcePath, directory, aggregateLabel);
     }
 
     public string ResolveFlowSerialNumber(ProjectARVRReuslt result)

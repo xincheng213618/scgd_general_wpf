@@ -47,7 +47,7 @@ related: ["engine.index","platform.runtime","operations.device-configuration","e
 
 字典查询与资源查询的失败行为不同：`GetAllByPid(1)` 在连接标志为 false 或捕获查询异常时返回空列表；若后续资源查询成功，仍会重建空类型/设备集合并发布 `ServiceChanged`。所以“完成加载”日志或没有抛出异常不能证明字典查询成功，应同时查 DAO 错误日志。通用 DAO 语义见[数据库访问](../ui-components/ColorVision.Database.md)。
 
-`LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出、重置与删除)。
+`LoadServiceResourceSnapshot` 则直接执行数据库查询，没有本地捕获；此处抛出时，旧对象可能已被 Dispose，设备集合可能因共享引用已被清空，但旧类型树或显示项仍在；更晚失败也可能留下部分新集合。不能把“加载失败”解释为旧运行状态完整保留。具体设备是否释放全部句柄和事件取决于其 Dispose 实现；删除时的清理限制集中在[设备配置契约](../../01-user-guide/devices/configuration.md#导入、导出与删除)。
 
 构造器始终首次重载，离线时从本地配置装配；`MySqlConnectChanged` 订阅同样调用 `LoadServices()`。断开会切换到本地资源，不能认为断开通知天然是无操作，也不要在只读诊断中用切换数据库连接或重载来试探；这些动作可能影响运行设备和旧窗口。
 

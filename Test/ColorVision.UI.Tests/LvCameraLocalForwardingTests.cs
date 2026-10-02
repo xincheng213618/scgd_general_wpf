@@ -43,6 +43,20 @@ public sealed class LvCameraLocalForwardingTests
         Assert.Equal(2, graph.Runs.Count);
         Assert.Equal(2, graph.Ends.Count);
         Assert.Equal(graph.Runs.Select(run => run.SendMsgId).Order(), graph.Ends.Select(end => end.RecvMsgId).Order());
+        foreach (var ended in graph.Ends)
+        {
+            var payload = JObject.Parse(ended.RecvPayload);
+            Assert.Equal("Local", (string?)payload["Backend"]);
+            Assert.Equal("lv-test", (string?)payload["DeviceCode"]);
+            Assert.Equal(2, (int?)payload["Width"]);
+            Assert.Equal(1, (int?)payload["Height"]);
+            Assert.Equal(8, (int?)payload["SourceBpp"]);
+            Assert.Equal(2, (int?)payload["RawBytes"]);
+            Assert.Equal(0, (int?)payload["CieBytes"]);
+            Assert.Equal(3, (int?)payload["AverageCount"]);
+            Assert.NotNull(payload["FrameId"]);
+            Assert.NotNull(payload["Timing"]);
+        }
         foreach (LocalCameraCaptureRequest request in scope.Services.Requests)
         {
             Assert.Equal(42, request.CameraParameters!.ExpTime);

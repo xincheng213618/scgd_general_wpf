@@ -263,7 +263,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (matchingMetas.Count == 0)
                 return Array.Empty<PostProcessExecutionResult>();
 
-            log.Info(
+            log.Debug(
                 $"匹配到 {matchingMetas.Count} 个自定义流程处理 "
                 + flowName);
             var context = new PostProcessContext
@@ -279,7 +279,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (result.Succeeded)
                 {
-                    log.Info(
+                    log.Debug(
                         $"自定义流程 {result.Name} -> "
                         + $"{result.ProcessTypeName} 执行成功");
                 }

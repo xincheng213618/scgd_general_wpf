@@ -370,6 +370,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             _currentState = target;
+            ExportButton.IsEnabled = target.PageKind != FlowAnalysisPageKind.Comparison;
             RenderCurrentPage();
             UpdateNavigationButtons();
         }
@@ -386,6 +387,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     AnalysisFrame.Content = new FlowExecutionOverviewPage(
                         _session,
                         record => NavigateTo(CreateNodeState(record)),
+                        OpenNodeComparison,
                         LocateFlowNode,
                         () => NavigateTo(CreateMessageState(null, null)),
                         ClearCurrentFlowRecords,
@@ -411,6 +413,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _focusFlowNode != null,
                         adjacent => NavigateTo(CreateNodeState(adjacent)),
                         NavigateToHistoryRecord,
+                        OpenNodeComparison,
                         LocateFlowNode,
                         (scope, messageId) => NavigateTo(CreateMessageState(scope, messageId)),
                         () => NavigateTo(
@@ -423,6 +426,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         "流程执行分析",
                         "流程概览 / 节点分析",
                         BuildRunSubtitle(_session));
+                    break;
+
+                case FlowAnalysisPageKind.Comparison:
+                    FlowNodeRecord? comparisonRecord = _session.FindRecord(state.RecordId);
+                    if (comparisonRecord == null) return;
+                    AnalysisFrame.Content = new FlowNodeComparisonPage(_session, comparisonRecord,
+                        () => NavigateTo(CreateNodeState(comparisonRecord)));
+                    UpdateHeader("跨批次比对", "流程概览 / 节点分析 / 跨批次比对",
+                        $"{comparisonRecord.NodeName} · {BuildRunSubtitle(_session)}");
                     break;
 
                 case FlowAnalysisPageKind.Messages:
@@ -493,6 +505,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 _session.BatchId,
                 _session.SerialNumber,
                 record.Id);
+        }
+
+        private void OpenNodeComparison(FlowNodeRecord record)
+        {
+            if (_session == null) return;
+            NavigateTo(new FlowAnalysisNavigationState(FlowAnalysisPageKind.Comparison,
+                _session.BatchId, _session.SerialNumber, record.Id));
         }
 
         private FlowAnalysisNavigationState CreateMessageState(
@@ -626,6 +645,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 FlowNodeRecord? scope = _session.FindRecord(previousState.Value.RecordId);
                 NavigateTo(
                     CreateMessageState(scope, previousState.Value.MessageId));
+            }
+            else if (previousState.Value.PageKind == FlowAnalysisPageKind.Comparison
+                && _session.FindRecord(previousState.Value.RecordId) is FlowNodeRecord record)
+            {
+                OpenNodeComparison(record);
             }
         }
 

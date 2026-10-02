@@ -7871,4 +7871,29 @@
   <data name="请输入大于零的缓存数量。" xml:space="preserve">
     <value>請輸入大於零的快取數量。</value>
   </data>
+
+  <data name="Camera_LocalBindingUnavailable" xml:space="preserve"><value>無法唯一找到目前繫結的相機，請在相機管理中重新整理並選擇相機 ID 後連線。</value></data>
+  <data name="Camera_LocalDiscoveryFailed" xml:space="preserve"><value>取得本機相機失敗，請檢查相機型號、連接與驅動程式。</value></data>
+  <data name="Camera_LocalNotFound" xml:space="preserve"><value>找不到本機相機，請檢查相機型號、連接與驅動程式。</value></data>
+  <data name="Camera_LocalSelectionRequired" xml:space="preserve"><value>偵測到多台本機相機，請在相機管理中重新整理並選擇相機 ID 後連線。</value></data>
+  <data name="跨批次比对" xml:space="preserve"><value>跨批次比對</value></data>
+  <data name="返回节点分析" xml:space="preserve"><value>返回節點分析</value></data>
+  <data name="设为比对基准" xml:space="preserve"><value>設為比對基準</value></data>
+  <data name="筛选批次 / SN / 消息" xml:space="preserve"><value>篩選批次 / SN / 訊息</value></data>
+  <data name="比对基准" xml:space="preserve"><value>比對基準</value></data>
+  <data name="当前选择" xml:space="preserve"><value>目前選取</value></data>
+  <data name="响应消息" xml:space="preserve"><value>回應訊息</value></data>
+  <data name="发送消息" xml:space="preserve"><value>傳送訊息</value></data>
+  <data name="执行时间" xml:space="preserve"><value>執行時間</value></data>
+  <data name="节点耗时" xml:space="preserve"><value>節點耗時</value></data>
+  <data name="消息 ID" xml:space="preserve"><value>訊息 ID</value></data>
+  <data name="无消息记录" xml:space="preserve"><value>無訊息記錄</value></data>
+  <data name="等待" xml:space="preserve"><value>等待</value></data>
+  <data name="请选择消息" xml:space="preserve"><value>請選擇訊息</value></data>
+  <data name="未记录正文" xml:space="preserve"><value>未記錄正文</value></data>
+  <data name="{0} · 跨批次比对" xml:space="preserve"><value>{0} · 跨批次比對</value></data>
+  <data name="正在加载同流程、同节点的消息…" xml:space="preserve"><value>正在載入同流程、同節點的訊息…</value></data>
+  <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>同流程、同節點 · {0} 次執行 · {1} 條訊息 · 查詢最近 500 次流程執行及目前執行；選擇一列查看，設為基準後並排比對。</value></data>
+  <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>目前記錄缺少流程身分或節點 ID，僅顯示本次執行，無法可靠關聯其他批次。</value></data>
+  <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>流程概覽 / 節點分析 / 跨批次比對</value></data>
 </root>

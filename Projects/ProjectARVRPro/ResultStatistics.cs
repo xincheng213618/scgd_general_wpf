@@ -101,6 +101,7 @@ namespace ProjectARVRPro
         public bool Result { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
+        public double? FlowRunTimeMilliseconds { get; set; }
 
         public double CycleTimeMilliseconds => Math.Max(0, (EndTime - StartTime).TotalMilliseconds);
         public DateTime ProductionTime => EndTime >= StartTime ? EndTime : StartTime;
@@ -116,6 +117,8 @@ namespace ProjectARVRPro
         public double AverageCtMilliseconds { get; init; }
         public double MinimumCtMilliseconds { get; init; }
         public double MaximumCtMilliseconds { get; init; }
+        public int FlowRunTimeSampleCount { get; init; }
+        public double AverageFlowRunTimeMilliseconds { get; init; }
         public int CurrentHourCount { get; init; }
         public int TodayCount { get; init; }
         public IReadOnlyList<ResultStatisticsHourlyRow> HourlyRows { get; init; } = [];
@@ -133,6 +136,7 @@ namespace ProjectARVRPro
         public string AverageCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(AverageCtMilliseconds) : "-";
         public string MinimumCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(MinimumCtMilliseconds) : "-";
         public string MaximumCtText => TotalCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(MaximumCtMilliseconds) : "-";
+        public string AverageFlowRunTimeText => FlowRunTimeSampleCount > 0 ? ResultStatisticsCalculator.FormatMilliseconds(AverageFlowRunTimeMilliseconds) : "-";
     }
 
     public sealed class ResultStatisticsHourlyRow
@@ -405,6 +409,8 @@ namespace ProjectARVRPro
                 .ThenBy(item => item.Id)
                 .ToList();
             ResultStatisticsMetrics overall = CalculateMetrics(samples);
+            List<double> flowRunTimes = samples.Where(item => item.FlowRunTimeMilliseconds.HasValue)
+                .Select(item => Math.Max(0, item.FlowRunTimeMilliseconds!.Value)).ToList();
 
             List<ResultStatisticsHourlyRow> hourlyRows = samples
                 .GroupBy(item => new DateTime(
@@ -462,6 +468,8 @@ namespace ProjectARVRPro
                 AverageCtMilliseconds = overall.AverageCtMilliseconds,
                 MinimumCtMilliseconds = overall.MinimumCtMilliseconds,
                 MaximumCtMilliseconds = overall.MaximumCtMilliseconds,
+                FlowRunTimeSampleCount = flowRunTimes.Count,
+                AverageFlowRunTimeMilliseconds = flowRunTimes.Count > 0 ? flowRunTimes.Average() : 0,
                 CurrentHourCount = hourlyRows.FirstOrDefault(item => item.Hour == currentHour)?.TotalCount ?? 0,
                 TodayCount = dailyRows.FirstOrDefault(item => item.Date == now.Date)?.TotalCount ?? 0,
                 HourlyRows = hourlyRows,
@@ -646,18 +654,36 @@ namespace ProjectARVRPro
                 if (query.Result.HasValue)
                     optionalFilter += " AND \"TotalResult\" = @Result";
                 string summarySql = $$"""
+                    WITH RankedRecords AS
+                    (
+                        SELECT "Id", "SN", "ResultId", "CreateTime", "UpdateTime", "TotalResult",
+                               COALESCE(LAG("ResultId") OVER (PARTITION BY TRIM("SN") ORDER BY "Id"), 0) AS "PreviousResultId"
+                        FROM "ObjectiveTestResultRecord"
+                        WHERE "IsFinalized" = 1 OR "IsFinalized" IS NULL
+                    ),
+                    TimedRecords AS
+                    (
+                        SELECT R.*,
+                               (SELECT SUM(F."RunTime")
+                                FROM "ARVRReuslt" AS F
+                                WHERE F."SN" = R."SN"
+                                  AND F."Id" > R."PreviousResultId"
+                                  AND F."Id" <= R."ResultId") AS "FlowRunTimeMilliseconds"
+                        FROM RankedRecords AS R
+                        WHERE "UpdateTime" >= @From
+                          AND "UpdateTime" < @ToExclusive
+                          {{optionalFilter}}
+                    )
                     SELECT COUNT(*) AS "TotalCount",
                            COALESCE(SUM(CASE WHEN "TotalResult" = 1 THEN 1 ELSE 0 END), 0) AS "PassCount",
                            COALESCE(AVG({{cycleTimeExpression}}), 0.0) AS "AverageCtMilliseconds",
                            COALESCE(MIN({{cycleTimeExpression}}), 0.0) AS "MinimumCtMilliseconds",
                            COALESCE(MAX({{cycleTimeExpression}}), 0.0) AS "MaximumCtMilliseconds",
+                           COUNT("FlowRunTimeMilliseconds") AS "FlowRunTimeSampleCount",
+                           COALESCE(AVG("FlowRunTimeMilliseconds"), 0.0) AS "AverageFlowRunTimeMilliseconds",
                            COALESCE(SUM(CASE WHEN "UpdateTime" >= @CurrentHour AND "UpdateTime" < @NextHour THEN 1 ELSE 0 END), 0) AS "CurrentHourCount",
                            COALESCE(SUM(CASE WHEN "UpdateTime" >= @Today AND "UpdateTime" < @Tomorrow THEN 1 ELSE 0 END), 0) AS "TodayCount"
-                    FROM "ObjectiveTestResultRecord"
-                    WHERE "UpdateTime" >= @From
-                      AND "UpdateTime" < @ToExclusive
-                      AND ("IsFinalized" = 1 OR "IsFinalized" IS NULL)
-                      {{optionalFilter}};
+                    FROM TimedRecords;
                     """;
                 ResultStatisticsAggregateRow aggregate = db.Ado.SqlQuery<ResultStatisticsAggregateRow>(
                     ReadSql(summarySql),
@@ -795,7 +821,7 @@ namespace ProjectARVRPro
             ArgumentNullException.ThrowIfNull(query);
             ResultStatisticsCalculator.ValidateRange(query.From, query.ToExclusive);
 
-            List<ResultStatisticsCombinedRecordRow> pairs = QueryCombinedRows(query, includeFlowData: false);
+            List<ResultStatisticsCombinedRecordRow> pairs = QueryCombinedRows(query);
             List<ResultStatisticsSample> samples = pairs.Select(item => new ResultStatisticsSample
             {
                 Id = item.Id,
@@ -803,6 +829,7 @@ namespace ProjectARVRPro
                 Result = item.Result,
                 StartTime = item.StartTime,
                 EndTime = item.EndTime,
+                FlowRunTimeMilliseconds = item.Left.FlowCount > 0 && item.Right.FlowCount > 0 ? item.FlowRunTimeMilliseconds : null,
             }).ToList();
             ResultStatistics summary = ResultStatisticsCalculator.Calculate(samples, query.From, query.ToExclusive, now);
             IReadOnlyList<ResultStatisticsTrendPoint> trend = mode == ResultStatisticsPeriodMode.All
@@ -825,7 +852,7 @@ namespace ProjectARVRPro
             if (query.PageSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(query), query.PageSize, "每页数量必须大于零。");
 
-            List<ResultStatisticsCombinedRecordRow> rows = QueryCombinedRows(query, includeFlowData: true)
+            List<ResultStatisticsCombinedRecordRow> rows = QueryCombinedRows(query)
                 .OrderByDescending(item => item.Id)
                 .ToList();
             int skip = checked((query.PageNumber - 1) * query.PageSize);
@@ -874,12 +901,11 @@ namespace ProjectARVRPro
             return query.OrderBy(item => item.Id, OrderByType.Asc).ToList();
         }
 
-        private List<ResultStatisticsCombinedRecordRow> QueryCombinedRows(ResultStatisticsQuery query, bool includeFlowData)
+        private List<ResultStatisticsCombinedRecordRow> QueryCombinedRows(ResultStatisticsQuery query)
         {
             InitializeSchema();
             using SqlSugarClient db = CreateClient();
-            string flowColumns = includeFlowData
-                ? """
+            const string flowColumns = """
                     CASE WHEN R."ResultId" > R."PreviousResultId" THEN
                         (SELECT COUNT(*)
                          FROM "ARVRReuslt" AS F
@@ -894,10 +920,6 @@ namespace ProjectARVRPro
                                     AND F."Id" > R."PreviousResultId"
                                     AND F."Id" <= R."ResultId"), 0)
                         ELSE 0 END AS "FlowRunTimeMilliseconds"
-                    """
-                : """
-                    0 AS "FlowCount",
-                    0 AS "FlowRunTimeMilliseconds"
                     """;
             string sql = $$"""
                 WITH RankedRecords AS
@@ -1163,6 +1185,8 @@ namespace ProjectARVRPro
                 AverageCtMilliseconds = aggregate.AverageCtMilliseconds,
                 MinimumCtMilliseconds = aggregate.MinimumCtMilliseconds,
                 MaximumCtMilliseconds = aggregate.MaximumCtMilliseconds,
+                FlowRunTimeSampleCount = aggregate.FlowRunTimeSampleCount,
+                AverageFlowRunTimeMilliseconds = aggregate.AverageFlowRunTimeMilliseconds,
                 CurrentHourCount = aggregate.CurrentHourCount,
                 TodayCount = aggregate.TodayCount,
             };
@@ -1258,6 +1282,8 @@ namespace ProjectARVRPro
             public double AverageCtMilliseconds { get; set; }
             public double MinimumCtMilliseconds { get; set; }
             public double MaximumCtMilliseconds { get; set; }
+            public int FlowRunTimeSampleCount { get; set; }
+            public double AverageFlowRunTimeMilliseconds { get; set; }
             public int CurrentHourCount { get; set; }
             public int TodayCount { get; set; }
         }

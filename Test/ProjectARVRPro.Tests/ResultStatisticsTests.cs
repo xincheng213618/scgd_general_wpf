@@ -658,6 +658,117 @@ public sealed class ResultStatisticsTests
         Assert.Contains("IX_ARVRReuslt_SN_Id", indexNames);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DashboardAveragesBatchFlowRuntimeWithoutPgOrPreviousExecutions(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        ResultStatisticsDataStore store = new(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        ProjectARVRReuslt previous = database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddSeconds(-20), RunTime = 5_000 });
+        ObjectiveTestResultRecord previousRecord = CreateRecord("SN-A", true, day.AddSeconds(-30), 10_000, "previous", true);
+        previousRecord.ResultId = previous.Id;
+        database.Insert(previousRecord);
+        database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddSeconds(8), RunTime = 1_000 });
+        ProjectARVRReuslt firstEnd = database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddSeconds(12), RunTime = 2_000 });
+        ObjectiveTestResultRecord first = CreateRecord("SN-A", true, day, 24_000, "first", true);
+        first.ResultId = firstEnd.Id;
+        database.Insert(first);
+        database.InsertFlow(new() { SN = "OTHER", CreateTime = day.AddMinutes(1), RunTime = 70_000 });
+        ProjectARVRReuslt secondEnd = database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddMinutes(1).AddSeconds(15), RunTime = 9_000 });
+        ObjectiveTestResultRecord second = CreateRecord("SN-A", false, day.AddMinutes(1), 20_000, "second", true);
+        second.ResultId = secondEnd.Id;
+        database.Insert(second, CreateRecord("MISSING", true, day.AddMinutes(2), 8_000, "missing", true));
+        ProjectARVRReuslt pendingFlow = database.InsertFlow(new() { SN = "SN-A", CreateTime = day.AddMinutes(3), RunTime = 40_000 });
+        ObjectiveTestResultRecord pending = CreateRecord("SN-A", true, day.AddMinutes(3), 5_000, "pending", false);
+        pending.ResultId = pendingFlow.Id;
+        database.Insert(pending);
+        ProjectARVRReuslt nextFlow = database.InsertFlow(new() { SN = "NEXT", CreateTime = day.AddDays(1), RunTime = 99_000 });
+        ObjectiveTestResultRecord next = CreateRecord("NEXT", true, day.AddDays(1), 5_000, "next", true);
+        next.ResultId = nextFlow.Id;
+        database.Insert(next);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 1 };
+
+        foreach (ResultStatisticsPeriodMode mode in Enum.GetValues<ResultStatisticsPeriodMode>())
+        {
+            ResultStatistics summary = store.QueryDashboard(query, mode, day.AddDays(1)).Summary;
+            Assert.Equal(3, summary.TotalCount);
+            Assert.Equal(2, summary.FlowRunTimeSampleCount);
+            Assert.Equal(6_000, summary.AverageFlowRunTimeMilliseconds);
+            Assert.Equal(ResultStatisticsCalculator.FormatMilliseconds(6_000), summary.AverageFlowRunTimeText);
+            Assert.Equal(0, summary.TodayCount);
+            Assert.Equal(52_000d / 3, summary.AverageCtMilliseconds, 1);
+        }
+
+        ResultStatistics filtered = store.QueryDashboard(new()
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "SN-A", Result = true,
+        }, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(1, filtered.FlowRunTimeSampleCount);
+        Assert.Equal(3_000, filtered.AverageFlowRunTimeMilliseconds);
+        ResultStatistics missing = store.QueryDashboard(new()
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "MISSING",
+        }, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(1, missing.TotalCount);
+        Assert.Equal(0, missing.FlowRunTimeSampleCount);
+        Assert.Equal("-", missing.AverageFlowRunTimeText);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CombinedDashboardSumsBothSidesAcrossMidnightAndExcludesIncompleteFlowData(bool readOnly)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        ResultStatisticsDataStore store = new(database.Path, readOnly);
+        DateTime day = new(2026, 9, 19);
+        InsertSide("BODY_L_235935", day.AddSeconds(-25), true, [3_000, 2_000]);
+        InsertSide("BODY_R_000002", day.AddSeconds(2), false, [9_000]);
+        InsertSide("BODY_L_120000", day.AddHours(12), true, [1_000]);
+        InsertSide("BODY_R_120030", day.AddHours(12).AddSeconds(30), true, [3_000]);
+        InsertSide("MISSING_L_130000", day.AddHours(13), true, [2_000]);
+        InsertSide("MISSING_R_130030", day.AddHours(13).AddSeconds(30), true, []);
+        InsertSide("UNPAIRED_L_140000", day.AddHours(14), true, [50_000]);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 1 };
+
+        foreach (ResultStatisticsPeriodMode mode in Enum.GetValues<ResultStatisticsPeriodMode>())
+        {
+            ResultStatistics summary = store.QueryCombinedDashboard(query, mode, day.AddDays(1)).Summary;
+            Assert.Equal(3, summary.TotalCount);
+            Assert.Equal(2, summary.FlowRunTimeSampleCount);
+            Assert.Equal(9_000, summary.AverageFlowRunTimeMilliseconds);
+            Assert.Equal(0, summary.TodayCount);
+            Assert.True(summary.AverageCtMilliseconds > summary.AverageFlowRunTimeMilliseconds);
+        }
+
+        ResultStatistics filtered = store.QueryCombinedDashboard(new()
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "BODY", Result = true,
+        }, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(1, filtered.TotalCount);
+        Assert.Equal(4_000, filtered.AverageFlowRunTimeMilliseconds);
+        ResultStatistics missing = store.QueryCombinedDashboard(new()
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "MISSING",
+        }, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(1, missing.TotalCount);
+        Assert.Equal("-", missing.AverageFlowRunTimeText);
+
+        void InsertSide(string sn, DateTime start, bool pass, long[] runtimes)
+        {
+            int resultId = 0;
+            foreach (long runtime in runtimes)
+                resultId = database.InsertFlow(new() { SN = sn, CreateTime = start.AddSeconds(10), RunTime = runtime }).Id;
+            ObjectiveTestResultRecord record = CreateRecord(sn, pass, start, 20_000, "flow", true);
+            record.ResultId = resultId;
+            database.Insert(record);
+        }
+    }
+
     [Fact]
     public void DataStoreBuildsCombinedBatchAcrossTheQueryBoundaryAndKeepsUnmatchedRecordsOut()
     {

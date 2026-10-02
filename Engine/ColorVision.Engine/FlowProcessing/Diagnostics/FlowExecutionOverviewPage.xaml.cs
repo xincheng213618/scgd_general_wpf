@@ -12,6 +12,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private readonly FlowExecutionAnalysisSession _session;
         private readonly Action<FlowNodeRecord> _openNode;
+        private readonly Action<FlowNodeRecord> _compareNode;
         private readonly Action<FlowNodeRecord> _locateNode;
         private readonly Action _openMessages;
         private readonly Action _clearCurrentFlow;
@@ -20,6 +21,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         internal FlowExecutionOverviewPage(
             FlowExecutionAnalysisSession session,
             Action<FlowNodeRecord> openNode,
+            Action<FlowNodeRecord> compareNode,
             Action<FlowNodeRecord> locateNode,
             Action openMessages,
             Action clearCurrentFlow,
@@ -27,6 +29,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _openNode = openNode ?? throw new ArgumentNullException(nameof(openNode));
+            _compareNode = compareNode ?? throw new ArgumentNullException(nameof(compareNode));
             _locateNode = locateNode ?? throw new ArgumentNullException(nameof(locateNode));
             _openMessages = openMessages ?? throw new ArgumentNullException(nameof(openMessages));
             _clearCurrentFlow =
@@ -142,6 +145,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             if (sender is Button { Tag: FlowNodeRecord record })
                 _openNode(record);
+        }
+
+        private void CompareNodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: FlowNodeRecord record })
+                _compareNode(record);
         }
 
         private void LocateNodeButton_Click(object sender, RoutedEventArgs e)

@@ -1265,4 +1265,16 @@
   <data name="选择处理类型后显示" xml:space="preserve">
     <value>选择处理类型后显示</value>
   </data>
+  <data name="平均单侧运行时间（不含 PG）" xml:space="preserve">
+    <value>平均单侧运行时间（不含 PG）</value>
+  </data>
+  <data name="平均全批次运行时间（不含 PG）" xml:space="preserve">
+    <value>平均全批次运行时间（不含 PG）</value>
+  </data>
+  <data name="按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。" xml:space="preserve">
+    <value>按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。</value>
+  </data>
+  <data name="按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。" xml:space="preserve">
+    <value>按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。</value>
+  </data>
 </root>

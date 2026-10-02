@@ -234,6 +234,7 @@ namespace ProjectARVRPro
             bool resultProcessingTimestampPersisted,
             bool resultImageDimensionsFromProcessCache)
         {
+            if (!log.IsInfoEnabled) return;
             DateTime persistedAt = DateTime.Now;
             long persistMilliseconds = Math.Max(0, viewResultSaveMilliseconds)
                 + Math.Max(0, objectiveResultSaveMilliseconds)
@@ -244,6 +245,12 @@ namespace ProjectARVRPro
                 result.SN,
                 result.Model,
                 result.BatchId,
+                ProcessId = Environment.ProcessId,
+                ObjectiveTestResultRecordId,
+                FlowStatus = result.FlowStatus.ToString(),
+                result.Result,
+                result.Code,
+                result.Msg,
                 result.SwitchRequestedAt,
                 result.SwitchAcknowledgedAt,
                 result.PictureSwitchStartedAt,
@@ -302,7 +309,7 @@ namespace ProjectARVRPro
         {
             if (IsSwitchRun)
             {
-                log.Info("重复触发PG");
+                log.Warn("重复触发PG，忽略本次请求");
                 return false;
             }
             IsSwitchRun = true;
@@ -312,7 +319,7 @@ namespace ProjectARVRPro
                 cancellationToken.ThrowIfCancellationRequested();
                 if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
-                    log.Info("PG切换错误，正在执行流程或处理流程结果");
+                    log.Warn("PG切换错误，正在执行流程或处理流程结果");
                     return false;
                 }
 
@@ -1269,7 +1276,7 @@ namespace ProjectARVRPro
             CurrentFlowResult.FlowCompletedAt = DateTime.Now;
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+            log.Debug($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             Stopwatch flowFinalizeStopwatch = Stopwatch.StartNew();
             await FinalizeCurrentFlowRunAsync(FlowControlData);
             flowFinalizeStopwatch.Stop();
@@ -1312,7 +1319,7 @@ namespace ProjectARVRPro
             }
             else if (FlowControlData.EventName == "OverTime")
             {
-                log.Info("流程运行超时，正在重新尝试");
+                log.Warn("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
                 CurrentFlowResult.Msg = FlowControlData.Params;
                 TryAttachCapturedImage(CurrentFlowResult);
@@ -1404,7 +1411,7 @@ namespace ProjectARVRPro
 
             try
             {
-                log.Info($"{result.Model}");
+                log.Debug($"{result.Model}");
 
                 IProcess? process = _currentFlowProcess ?? ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
                 if (process != null)
@@ -1538,7 +1545,7 @@ namespace ProjectARVRPro
             try
             {
                 ObjectiveTestResultRecordId = ViewResultManager.SaveObjectiveTestResult(ObjectiveTestResultRecordId, result, ObjectiveTestResult);
-                log.Info($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
+                log.Debug($"保存 ObjectiveTestResult 记录：{ObjectiveTestResultRecordId}");
             }
             catch (Exception ex)
             {
@@ -1614,7 +1621,7 @@ namespace ProjectARVRPro
                 log.Info("找不到连接的Socket");
                 return;
             }
-            log.Info("Socket已经链接 ");
+            log.Debug("Socket已经链接 ");
 
             // Find next enabled ProcessMeta index
             int nextTestType = -1;
@@ -1630,7 +1637,7 @@ namespace ProjectARVRPro
             //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
             if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
             {
-                log.Info("UseLegacyARVROutput + nextTestType 1");
+                log.Debug("UseLegacyARVROutput + nextTestType 1");
                 nextTestType = nextTestType + 1;
             }
 
@@ -2273,7 +2280,7 @@ namespace ProjectARVRPro
                 return;
             }
 
-            log.Info("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
+            log.Debug("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
             StartImageExportFromLoadedImage(result);
         }
 
@@ -2311,7 +2318,7 @@ namespace ProjectARVRPro
                     return;
                 ImageView.Dispatcher.VerifyAccess();
 
-                log.Info($"准备图像导出：8位标记图={saveResultImage}，保留位深原图={saveSourceImage}");
+                log.Debug($"准备图像导出：8位标记图={saveResultImage}，保留位深原图={saveSourceImage}");
 
                 BitmapSource? loadedSource = GetLoadedImageSource();
                 if (loadedSource == null)
@@ -2341,9 +2348,17 @@ namespace ProjectARVRPro
                     log.Warn("图像导出失败：ImageEditor无法生成后台快照。");
                     return;
                 }
-                log.Info(
-                    $"ImageEditor像素与场景快照准备完成，源格式 {loadedSource.Format}，"
-                    + $"耗时 {snapshotStopwatch.ElapsedMilliseconds}ms。");
+                if (log.IsInfoEnabled)
+                    log.Info(JsonConvert.SerializeObject(new
+                    {
+                        Event = "ARVRImageSnapshotTiming", result.SN, result.BatchId, result.Model,
+                        ResultId = result.Id, SourcePixelFormat = loadedSource.Format.ToString(),
+                        SourceWidth = loadedSource.PixelWidth, SourceHeight = loadedSource.PixelHeight,
+                        SaveRendered = saveResultImage, SaveSource = saveSourceImage, IncludeOverlays = includeOverlays,
+                        ResultFormat = resultFormat.ToString(), ResultSize = resultSize.ToString(),
+                        SourceFormat = sourceFormat.ToString(), SourceTiffCompression = sourceTiffCompression.ToString(),
+                        CaptureMs = snapshotStopwatch.ElapsedMilliseconds,
+                    }));
 
                 if (_isDisposed)
                     return;
@@ -2434,7 +2449,7 @@ namespace ProjectARVRPro
                         fileStem,
                         ProjectImageExportService.GetResultExtension(resultFormat));
                     string overlayDescription = includeOverlays ? "混合标记" : "仅底图";
-                    log.Info(
+                    log.Debug(
                         $"后台导出8位标记图：{resultFormat}，{DescribeImageSize(resultSize)}，{overlayDescription}，"
                         + (resultFormat == ResultImageFormat.JPEG ? "JPEG质量100" : "PNG自动压缩"));
                 }
@@ -2451,7 +2466,7 @@ namespace ProjectARVRPro
                         SourceImageFormat.PNG => "PNG自动无损压缩",
                         _ => "BMP（仅8位源图）",
                     };
-                    log.Info($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
+                    log.Debug($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
                 }
 
                 storageWrite = ResultStorageSpaceManager.Instance.BeginWrite(

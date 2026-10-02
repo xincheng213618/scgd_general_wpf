@@ -2923,4 +2923,33 @@
   <data name="请输入大于零的缓存数量。" xml:space="preserve">
     <value>请输入大于零的缓存数量。</value>
   </data>
+
+  <data name="Camera_LocalBindingUnavailable" xml:space="preserve"><value>无法唯一找到当前绑定的相机，请在相机管理中刷新并选择相机 ID 后连接。</value></data>
+  <data name="Camera_LocalDiscoveryFailed" xml:space="preserve"><value>获取本地相机失败，请检查相机型号、连接和驱动。</value></data>
+  <data name="Camera_LocalNotFound" xml:space="preserve"><value>未找到本地相机，请检查相机型号、连接和驱动。</value></data>
+  <data name="Camera_LocalSelectionRequired" xml:space="preserve"><value>检测到多台本地相机，请在相机管理中刷新并选择相机 ID 后连接。</value></data>
+  <data name="跨批次比对" xml:space="preserve"><value>跨批次比对</value></data>
+  <data name="返回节点分析" xml:space="preserve"><value>返回节点分析</value></data>
+  <data name="设为比对基准" xml:space="preserve"><value>设为比对基准</value></data>
+  <data name="筛选批次 / SN / 消息" xml:space="preserve"><value>筛选批次 / SN / 消息</value></data>
+  <data name="比对基准" xml:space="preserve"><value>比对基准</value></data>
+  <data name="当前选择" xml:space="preserve"><value>当前选择</value></data>
+  <data name="响应消息" xml:space="preserve"><value>响应消息</value></data>
+  <data name="发送消息" xml:space="preserve"><value>发送消息</value></data>
+  <data name="执行时间" xml:space="preserve"><value>执行时间</value></data>
+  <data name="节点耗时" xml:space="preserve"><value>节点耗时</value></data>
+  <data name="事件" xml:space="preserve"><value>事件</value></data>
+  <data name="状态" xml:space="preserve"><value>状态</value></data>
+  <data name="消息 ID" xml:space="preserve"><value>消息 ID</value></data>
+  <data name="状态消息" xml:space="preserve"><value>状态消息</value></data>
+  <data name="无消息记录" xml:space="preserve"><value>无消息记录</value></data>
+  <data name="已取消" xml:space="preserve"><value>已取消</value></data>
+  <data name="等待" xml:space="preserve"><value>等待</value></data>
+  <data name="请选择消息" xml:space="preserve"><value>请选择消息</value></data>
+  <data name="未记录正文" xml:space="preserve"><value>未记录正文</value></data>
+  <data name="{0} · 跨批次比对" xml:space="preserve"><value>{0} · 跨批次比对</value></data>
+  <data name="正在加载同流程、同节点的消息…" xml:space="preserve"><value>正在加载同流程、同节点的消息…</value></data>
+  <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。</value></data>
+  <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。</value></data>
+  <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>流程概览 / 节点分析 / 跨批次比对</value></data>
 </root>

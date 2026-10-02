@@ -96,7 +96,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 else FlowNodeTiming.Skip("AutoExposure");
                 string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
-                if (cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels) == 0
+                uint sourceInfoResult;
+                using (var sourceInfoStage = FlowNodeTiming.Measure("GetSourceFrameInfo"))
+                {
+                    sourceInfoResult = cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels);
+                    if (sourceInfoResult != 0 && width > 0 && height > 0 && sourceBpp > 0 && channels > 0) sourceInfoStage?.Complete();
+                }
+                if (sourceInfoResult == 0
                     || width == 0 || height == 0 || sourceBpp == 0 || channels == 0)
                 {
                     throw new InvalidOperationException("本地相机没有返回有效的源图尺寸。");

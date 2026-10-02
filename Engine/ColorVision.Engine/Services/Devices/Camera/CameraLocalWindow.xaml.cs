@@ -251,26 +251,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string ResolvePreferredCameraId(IReadOnlyList<string> cameraIds)
         {
-            if (!string.IsNullOrWhiteSpace(Device.Config.CameraID)
-                && cameraIds.Contains(Device.Config.CameraID, StringComparer.OrdinalIgnoreCase))
-            {
-                return Device.Config.CameraID;
-            }
-
-            string cameraCode = Device.Config.CameraCode ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(cameraCode))
-            {
-                foreach (string cameraId in cameraIds)
-                {
-                    string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
-                    if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return cameraId;
-                    }
-                }
-            }
-
-            return cameraIds.FirstOrDefault() ?? string.Empty;
+            return LocalCameraSession.SelectCameraId(cameraIds, Device.Config.CameraID, Device.Config.CameraCode);
         }
 
         private void InitializeCameraIdFromConfig()
@@ -287,6 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 cb_CM_ID.Items.Clear();
+                cb_CM_ID.Text = string.Empty;
                 foreach (string cameraId in cameraIds)
                 {
                     cb_CM_ID.Items.Add(cameraId);
@@ -799,12 +781,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 string cameraId = GetSelectedCameraId();
-                if (string.IsNullOrEmpty(cameraId))
-                {
-                    MessageBox.Show(Properties.Resources.NoCameraId);
-                    return;
-                }
-
                 if (Device.LocalCameraSession.IsOpen)
                 {
                     AttachLiveCallback();
@@ -822,6 +798,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
 
+                cameraId = Device.Config.CameraID;
+                InitializeCameraIdFromConfig();
                 if (m_etakeImageMode != TakeImageMode.Live)
                 {
                     string sn = cvCameraCSLib.CM_GetSN(m_hCamHandle);

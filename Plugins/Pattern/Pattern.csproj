@@ -7,7 +7,7 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<DefaultItemExcludes>$(DefaultItemExcludes);Projection\bin\**;Projection\obj\**</DefaultItemExcludes>
-		<VersionPrefix>1.5.1.7</VersionPrefix>
+		<VersionPrefix>1.5.1.8</VersionPrefix>
 		<AssemblyOriginatorKeyFile>..\..\ColorVision.snk</AssemblyOriginatorKeyFile>
 		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
 		<CETCompat>false</CETCompat>

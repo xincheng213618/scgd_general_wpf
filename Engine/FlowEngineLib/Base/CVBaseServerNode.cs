@@ -914,7 +914,7 @@ public class CVBaseServerNode : CVDeviceNode
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
 			trans.NodeFailed(statusMessage, GetFullNodeName(), NodeID);
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
+			logger.WarnFormat("[{0}]CVTransAction Failed => SerialNumber={1}, NodeId={2}, Message={3}", ToShortString(), trans.trans_action.SerialNumber, NodeID, statusMessage);
 		}
 
 		if (resp.Status != ActionStatusEnum.Failed)
@@ -922,9 +922,9 @@ public class CVBaseServerNode : CVDeviceNode
 			trans.AddTTL();
 		}
         TimeSpan timeSpan = DateTime.Now - trans.startTime;
-		if (logger.IsInfoEnabled)
+		if (logger.IsDebugEnabled)
 		{
-			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
+			logger.DebugFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
 		m_op_end.TransferData(trans.trans_action);
 		PublishNodeEnd(new FlowEngineNodeEndEventArgs

@@ -466,6 +466,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static List<FlowNodeRecord> GetNodeRecordsForRuns(string nodeId, int[] batchIds, string[] serialNumbers)
+        {
+            EnsureInitialized();
+            using var db = CreateReadDb();
+            return db.Queryable<FlowNodeRecord>()
+                .Where(item => item.NodeId == nodeId && (batchIds.Contains(item.BatchId) || serialNumbers.Contains(item.SerialNumber)))
+                .OrderByDescending(item => item.StartTime)
+                .ToList();
+        }
+
         public static List<FlowNodeRecord> GetBySerialNumbers(IEnumerable<string> serialNumbers)
         {
             string[] selectedSerialNumbers = serialNumbers?

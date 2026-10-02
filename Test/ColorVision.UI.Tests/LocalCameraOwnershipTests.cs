@@ -141,6 +141,7 @@ public class LocalCameraOwnershipTests
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public bool FailClose;
         private bool opened;
+        public IReadOnlyList<string> GetCameraIds() => [];
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
         public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp) { Opens++; opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS; return OpenResult; }

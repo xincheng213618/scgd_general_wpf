@@ -1285,4 +1285,16 @@ Automatically saved settings will remain.</value>
   <data name="选择处理类型后显示" xml:space="preserve">
     <value>Select a processing type to view</value>
   </data>
+  <data name="平均单侧运行时间（不含 PG）" xml:space="preserve">
+    <value>Average side runtime (excluding PG)</value>
+  </data>
+  <data name="平均全批次运行时间（不含 PG）" xml:space="preserve">
+    <value>Average L/R runtime (excluding PG)</value>
+  </data>
+  <data name="按所选统计周期，汇总各批次流程运行时间后取平均；不含 PG 应答、切图准备和执行后处理。缺少流程记录的批次不计入运行时间平均值。" xml:space="preserve">
+    <value>Average of the summed flow runtimes per batch in the selected period; excludes PG responses, switching/preparation and post-processing. Batches without flow records are excluded from the runtime average.</value>
+  </data>
+  <data name="按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。" xml:space="preserve">
+    <value>Average of the summed left and right flow runtimes per complete L/R batch in the selected period; excludes PG and L→R waiting. Pairs missing flow records on either side are excluded from the runtime average.</value>
+  </data>
 </root>
