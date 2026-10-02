@@ -31,7 +31,7 @@
             <TabItem Header="{display:DisplayText Key='光学相对估计'}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="10"
-                               Text="{display:DisplayText Key='中央节距相对估计，非已标定镜头畸变。以中心点及相邻四点建立参考；径向偏差 = (实际半径 − 参考半径) / 参考半径 × 100%。透视和光轴偏心未单独分离。'}"/>
+                               Text="{display:DisplayText Key='用完整等间距平面点阵拟合透视参考和一阶径向畸变，假设光学中心位于中心点。径向偏差 = (实际半径 − 无径向畸变参考半径) / 参考半径 × 100%。此为模型估计，未经独立标定；不拟合偏心、切向或高阶畸变。'}"/>
                     <DataGrid x:Name="OpticalGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                               SelectionUnit="CellOrRowHeader" ClipboardCopyMode="IncludeHeader" HeadersVisibility="Column">
                         <DataGrid.Columns>

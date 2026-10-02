@@ -45,14 +45,14 @@ namespace ColorVision.Core
     }
 
     /// <summary>
-    /// Relative radial distortion using a central-pitch affine reference. This
-    /// reference is estimated from the target, not a calibrated ideal image.
-    /// Perspective and an off-centre optical axis are not separated by this model.
+    /// Model estimate from a uniform planar grid, jointly fitting perspective
+    /// and first-order Brown radial distortion about the measured central point.
+    /// The optical centre assumption and model fit do not constitute calibration.
     /// </summary>
     public sealed record GridDistortionOpticalEstimate
     {
         public bool IsAvailable { get; init; }
-        public string Method { get; init; } = "CentralPitchRadial/v1";
+        public string Method { get; init; } = "CenteredProjectiveBrownK1/v2";
         public bool IsCalibrated => false;
         public double? OpticRatioPercent { get; init; }
         public double? MaxAbsoluteRatioPercent { get; init; }
@@ -60,19 +60,24 @@ namespace ColorVision.Core
         public GridDistortionVector Origin { get; init; } = new(0, 0);
         public GridDistortionVector ColumnPitch { get; init; } = new(0, 0);
         public GridDistortionVector RowPitch { get; init; } = new(0, 0);
+        public double? RadialCoefficientPerPixelSquared { get; init; }
+        public double? FitRmsPixels { get; init; }
+        public double? MaxResidualPixels { get; init; }
+        public double? FitResidualFraction { get; init; }
+        public int FitIterations { get; init; }
         public IReadOnlyList<GridDistortionOpticalSample> Samples { get; init; } = Array.Empty<GridDistortionOpticalSample>();
-        public string ReferenceDescription { get; init; } = "以中心点及其上下左右相邻点建立节距参考，D=100×(实际半径−参考半径)/参考半径；最大绝对值保留符号。";
+        public string ReferenceDescription { get; init; } = "用完整等间距平面点阵联合拟合投影参考与一阶径向模型，D=100×(实际半径−无径向畸变参考半径)/参考半径；最大绝对百分比保留符号。";
         public IReadOnlyList<string> Warnings { get; init; } = new[]
         {
-            "中心节距是图卡自身估计的参考，不能视为已标定的理想放大率或供应商光学畸变等价值。",
-            "该相对估计不分离透视与光轴偏心；稀疏九点的参考跨度较大，中心区域畸变会影响结果。"
+            "假设图卡为等间距平面点阵，光学中心位于实测中心点；参考由单张图拟合，未经独立标定。",
+            "仅拟合一阶径向畸变及透视，不拟合光轴偏心、切向或高阶畸变；低残差不能证明这些假设成立，结果只覆盖实测点阵范围。"
         };
     }
 
     /// <summary>Computes every supported convention from one measured grid.</summary>
     public sealed record GridDistortionAnalysis
     {
-        public string FormulaVersion => "point-grid-metrics/1";
+        public string FormulaVersion => "point-grid-metrics/2";
         public GridDistortionTvMetrics StandardTv { get; init; } = new(0, 0);
         public GridDistortionTvMetrics HalfTv { get; init; } = new(0, 0);
         public GridDistortionPoint9Metrics ReferencePoint9 { get; init; } = new();
@@ -136,48 +141,7 @@ namespace ColorVision.Core
             {
                 StandardTv = new(tvH, tvV), HalfTv = new(tvH / 2, tvV / 2),
                 ReferencePoint9 = reference, LegacyPoint9 = legacy,
-                Optical = CalculateOptical(grid, rows, cols, center)
-            };
-        }
-
-        private static GridDistortionOpticalEstimate CalculateOptical(GridDistortionPoint[,] grid, int rows, int cols, GridDistortionPoint center)
-        {
-            int mr = rows / 2, mc = cols / 2;
-            var columnPitch = new GridDistortionVector((grid[mr, mc + 1].X - grid[mr, mc - 1].X) / 2, (grid[mr, mc + 1].Y - grid[mr, mc - 1].Y) / 2);
-            var rowPitch = new GridDistortionVector((grid[mr + 1, mc].X - grid[mr - 1, mc].X) / 2, (grid[mr + 1, mc].Y - grid[mr - 1, mc].Y) / 2);
-            double determinant = columnPitch.X * rowPitch.Y - columnPitch.Y * rowPitch.X;
-            double scale = Math.Sqrt(columnPitch.X * columnPitch.X + columnPitch.Y * columnPitch.Y)
-                * Math.Sqrt(rowPitch.X * rowPitch.X + rowPitch.Y * rowPitch.Y);
-            var estimate = new GridDistortionOpticalEstimate { Origin = new(center.X, center.Y), ColumnPitch = columnPitch, RowPitch = rowPitch };
-            if (!double.IsFinite(scale) || scale <= 1e-9 || !double.IsFinite(determinant) || Math.Abs(determinant) <= 1e-6 * scale)
-                return estimate with { Warnings = new[] { "中央节距参考退化，无法计算相对光学畸变。" } };
-
-            var samples = new List<GridDistortionOpticalSample>(rows * cols - 1);
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    if (row == mr && col == mc) continue;
-                    double referenceX = (col - mc) * columnPitch.X + (row - mr) * rowPitch.X;
-                    double referenceY = (col - mc) * columnPitch.Y + (row - mr) * rowPitch.Y;
-                    double predicted = Math.Sqrt(referenceX * referenceX + referenceY * referenceY);
-                    double actual = Distance(grid[row, col], center);
-                    if (!double.IsFinite(predicted) || predicted <= 1e-9 || !double.IsFinite(actual))
-                        return estimate with { Warnings = new[] { "存在无效的光学参考半径。" } };
-                    double ratio = 100 * (actual - predicted) / predicted;
-                    if (!double.IsFinite(ratio)) return estimate;
-                    samples.Add(new GridDistortionOpticalSample
-                    {
-                        PointId = grid[row, col].Id, ActualRadiusPixels = actual, ReferenceRadiusPixels = predicted,
-                        RadialPercent = ratio, ReferencePosition = new(center.X + referenceX, center.Y + referenceY)
-                    });
-                }
-            }
-            GridDistortionOpticalSample worst = samples.OrderByDescending(sample => Math.Abs(sample.RadialPercent)).ThenBy(sample => sample.PointId).First();
-            return estimate with
-            {
-                IsAvailable = true, OpticRatioPercent = worst.RadialPercent,
-                MaxAbsoluteRatioPercent = Math.Abs(worst.RadialPercent), MaxErrorPointId = worst.PointId, Samples = samples
+                Optical = GridDistortionOpticalModel.Calculate(grid, rows, cols, center)
             };
         }
 

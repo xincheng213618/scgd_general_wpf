@@ -70,11 +70,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
 
                     光学相对估计：{(optical.IsAvailable ? LocalizedText.Get("可用") : LocalizedText.Get("不可用"))}
                     方法：{optical.Method}
-                    中央节距相对估计，非已标定镜头畸变。
+                    居中径向模型估计，非已标定镜头畸变。
                     {optical.ReferenceDescription}
                     参考中心：({optical.Origin.X:F4}, {optical.Origin.Y:F4}) px
                     列节距：({optical.ColumnPitch.X:F4}, {optical.ColumnPitch.Y:F4}) px
                     行节距：({optical.RowPitch.X:F4}, {optical.RowPitch.Y:F4}) px
+                    拟合 RMS：{optical.FitRmsPixels:F4} px；最大残差：{optical.MaxResidualPixels:F4} px
+                    RMS / 最小点距：{optical.FitResidualFraction:F6}；拟合迭代：{optical.FitIterations}
                     {string.Join(Environment.NewLine, optical.Warnings)}
                     """, CultureInfo.InvariantCulture);
             }
@@ -95,11 +97,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             GridDistortionOpticalEstimate optical = analysis.Optical;
             if (optical.IsAvailable && optical.OpticRatioPercent.HasValue && optical.MaxAbsoluteRatioPercent.HasValue)
             {
-                rows.Add(Row("中央节距估计", "最大径向偏差（带符号）", optical.OpticRatioPercent.Value, "%", "中央节距相对估计，非已标定镜头畸变"));
-                rows.Add(Row("中央节距估计", "最大绝对径向偏差", optical.MaxAbsoluteRatioPercent.Value, "%", "max(|实际半径 − 参考半径| / 参考半径) × 100"));
-                rows.Add(new("中央节距估计", "最大偏差点 ID", optical.MaxErrorPointId?.ToString(CultureInfo.InvariantCulture) ?? "无", string.Empty, optical.Method));
+                rows.Add(Row("径向模型估计", "最大径向偏差（带符号）", optical.OpticRatioPercent.Value, "%", "居中径向模型估计，非已标定镜头畸变"));
+                rows.Add(Row("径向模型估计", "最大绝对径向偏差", optical.MaxAbsoluteRatioPercent.Value, "%", "max(|实际半径 − 参考半径| / 参考半径) × 100"));
+                rows.Add(new("径向模型估计", "最大偏差点 ID", optical.MaxErrorPointId?.ToString(CultureInfo.InvariantCulture) ?? "无", string.Empty, optical.Method));
             }
-            else rows.Add(new("中央节距估计", "估计状态", LocalizedText.Get("不可用"), string.Empty, string.Join("；", optical.Warnings)));
+            else rows.Add(new("径向模型估计", "估计状态", LocalizedText.Get("不可用"), string.Empty, string.Join("；", optical.Warnings)));
             rows.AddRange(new[]
             {
                 Row("参考跨度", "上边宽度", m.TopWidth, "px", "左上到右上"), Row("参考跨度", "中间宽度", m.MiddleWidth, "px", "左中到右中"),

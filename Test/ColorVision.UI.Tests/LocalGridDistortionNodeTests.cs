@@ -4,7 +4,6 @@ using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using FlowEngineLib.Algorithm;
@@ -513,7 +512,17 @@ public sealed class LocalGridDistortionNodeTests
     public void OutputConventionSelectsExistingAnalysisAndOpticalEstimateRequiresExplicitPublication()
     {
         GridDistortionResult result = CreateDetection(7, 7);
+        // Valid independent Brown fixture: the older asymmetric TV fixture is
+        // intentionally outside the centred radial model and must not publish.
+        result = result with { Points = result.Points.Select(point =>
+        {
+            double u = (point.Col - 3) / 3.0, v = (point.Row - 3) / 3.0;
+            double factor = 1 + 0.06 * (u * u + v * v);
+            return point with { X = 29 + 22 * u * factor, Y = 23 + 22 * v * factor };
+        }).ToArray() };
         GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(result);
+        Assert.True(analysis.Optical.IsAvailable);
+        Assert.InRange(Math.Abs(analysis.Optical.OpticRatioPercent!.Value - 12), 0, 1e-6);
         string json = LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, analysis, GridTvFormula.Half, GridPoint9Formula.LegacyThreeSpanMean, true);
         JObject root = JObject.Parse(json);
         DistortionReslut legacy = JsonConvert.DeserializeObject<DistortionReslut>(json)!;
@@ -532,6 +541,11 @@ public sealed class LocalGridDistortionNodeTests
         GridDistortionAnalysis unavailable = analysis with { Optical = analysis.Optical with { IsAvailable = false, OpticRatioPercent = null } };
         JObject absent = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(result, unavailable, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, true));
         Assert.Equal(JTokenType.Null, absent["Optic_Distortion"]!.Type);
+        GridDistortionResult incompatible = CreateDetection(7, 7);
+        GridDistortionAnalysis rejected = GridDistortionAnalysis.Calculate(incompatible);
+        Assert.False(rejected.Optical.IsAvailable);
+        JObject rejectedOutput = JObject.Parse(LocalGridDistortionResultPersistence.BuildLegacyResultJson(incompatible, rejected, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean, true));
+        Assert.Equal(JTokenType.Null, rejectedOutput["Optic_Distortion"]!.Type);
     }
 
     [Fact]
@@ -578,12 +592,10 @@ public sealed class LocalGridDistortionNodeTests
             ResultType = ViewResultAlgType.Distortion, Version = "2.0", ResultCode = -1, ResultDesc = "IncompleteGrid",
             ViewResults = new ObservableCollection<IViewResult>(), AlgResultMasterModel = new() { Params = "{\"MissingCount\":1}" }
         };
-        Assert.False(new ViewHandleDistortion().CanHandle1(result));
         Assert.True(new ViewHandleDistortion2().CanHandle1(result));
         Assert.Contains("IncompleteGrid", ViewHandleDistortion2.BuildResultText(result));
         Assert.Contains("MissingCount", ViewHandleDistortion2.BuildResultText(result));
         result.Version = "1.0";
-        Assert.True(new ViewHandleDistortion().CanHandle1(result));
         Assert.False(new ViewHandleDistortion2().CanHandle1(result));
     }
 
