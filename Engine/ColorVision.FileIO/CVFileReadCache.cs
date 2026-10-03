@@ -103,7 +103,7 @@ namespace ColorVision.FileIO
 
         /// <summary>
         /// Returns a read-only file snapshot. Header-only misses do not populate the cache.
-        /// Each cached reader holds a real read handle, retaining the existing file-sharing contract.
+        /// A cache hit reads memory directly without opening or checking the disk file.
         /// When every slot is borrowed, a miss is served from disk without an additional allocation.
         /// </summary>
         public static Stream OpenRead(string filePath, bool populateCache = true)
@@ -112,26 +112,21 @@ namespace ColorVision.FileIO
             string path = Path.GetFullPath(filePath);
             lock (Sync)
             {
+                CacheEntry existing = isEnabled ? FindEntry(path) : null;
+                if (existing != null)
+                {
+                    hits++;
+                    existing.HitCount++;
+                    return Borrow(existing);
+                }
+
                 FileStream file = OpenFile(path);
                 try
                 {
                     if (!isEnabled) return file;
-                    CacheEntry existing = FindEntry(path);
-                    if (existing != null && Matches(existing, path, file))
-                    {
-                        hits++;
-                        existing.HitCount++;
-                        return Borrow(existing, file);
-                    }
-
                     misses++;
-                    if (existing != null && existing.Readers != 0)
-                    {
-                        Retire(existing);
-                        existing = null;
-                    }
                     if (!populateCache || file.Length <= 0 || file.Length > int.MaxValue) return file;
-                    CacheEntry entry = existing ?? GetWritableEntry();
+                    CacheEntry entry = GetWritableEntry();
                     if (entry == null) return file;
                     ForgetFile(entry);
                     try
@@ -139,7 +134,6 @@ namespace ColorVision.FileIO
                         EnsureCapacity(entry, file.Length);
                         using (Stream destination = OpenBuffer(entry, file.Length, FileAccess.Write)) file.CopyTo(destination);
                         Remember(entry, path, file.Length);
-                        return Borrow(entry, file);
                     }
                     catch (OutOfMemoryException ex)
                     {
@@ -148,12 +142,29 @@ namespace ColorVision.FileIO
                         file.Position = 0;
                         return file;
                     }
+                    file.Dispose();
+                    return Borrow(entry);
                 }
                 catch
                 {
                     file.Dispose();
                     throw;
                 }
+            }
+        }
+
+        /// <summary>Looks up cached content by path without accessing the disk file.</summary>
+        public static bool TryGetCachedLength(string filePath, out long length)
+        {
+            length = 0;
+            if (!IsRaw(filePath)) return false;
+            string path = Path.GetFullPath(filePath);
+            lock (Sync)
+            {
+                CacheEntry entry = isEnabled ? FindEntry(path) : null;
+                if (entry == null) return false;
+                length = entry.Length;
+                return true;
             }
         }
 
@@ -211,12 +222,7 @@ namespace ColorVision.FileIO
             {
                 while (HasReaders(fullPath)) Monitor.Wait(Sync);
                 CacheEntry entry = FindEntry(fullPath);
-                bool preserve = false;
-                if (isEnabled && entry != null)
-                {
-                    using (FileStream file = OpenFile(path)) preserve = Matches(entry, fullPath, file);
-                    if (!preserve) ForgetFile(entry);
-                }
+                bool preserve = isEnabled && entry != null;
                 try
                 {
                     FileTail tail = update();
@@ -284,14 +290,10 @@ namespace ColorVision.FileIO
             return false;
         }
 
-        private static bool Matches(CacheEntry entry, string path, FileStream file)
-            => entry.Length == file.Length && entry.LastWriteUtc == File.GetLastWriteTimeUtc(path);
-
         private static void Remember(CacheEntry entry, string path, long fileLength)
         {
             entry.FilePath = path;
             entry.Length = fileLength;
-            entry.LastWriteUtc = File.GetLastWriteTimeUtc(path);
             entry.LastAccessSequence = ++accessSequence;
         }
 
@@ -345,12 +347,12 @@ namespace ColorVision.FileIO
         private static unsafe Stream OpenBuffer(CacheEntry entry, long size, FileAccess access)
             => new UnmanagedMemoryStream((byte*)entry.Buffer.ToPointer(), size, entry.Capacity, access);
 
-        private static Stream Borrow(CacheEntry entry, FileStream file)
+        private static Stream Borrow(CacheEntry entry)
         {
             Stream memory = OpenBuffer(entry, entry.Length, FileAccess.Read);
             entry.Readers++;
             entry.LastAccessSequence = ++accessSequence;
-            return new CachedReadStream(entry, memory, file);
+            return new CachedReadStream(entry, memory);
         }
 
         private sealed class CacheEntry
@@ -359,7 +361,6 @@ namespace ColorVision.FileIO
             internal long Capacity;
             internal long Length;
             internal string FilePath;
-            internal DateTime LastWriteUtc;
             internal int Readers;
             internal long HitCount;
             internal long AllocationCount;
@@ -429,30 +430,30 @@ namespace ColorVision.FileIO
         private sealed class CachedReadStream : Stream
         {
             private readonly CacheEntry entry;
-            private readonly Stream memory;
-            private FileStream file;
-            internal CachedReadStream(CacheEntry entry, Stream memory, FileStream file) { this.entry = entry; this.memory = memory; this.file = file; }
+            private Stream memory;
+            private Stream Memory => memory ?? throw new ObjectDisposedException(nameof(CachedReadStream));
+            internal CachedReadStream(CacheEntry entry, Stream memory) { this.entry = entry; this.memory = memory; }
             ~CachedReadStream() { Dispose(false); }
-            public override bool CanRead => file != null;
-            public override bool CanSeek => file != null;
+            public override bool CanRead => memory != null;
+            public override bool CanSeek => memory != null;
             public override bool CanWrite => false;
-            public override long Length => memory.Length;
-            public override long Position { get => memory.Position; set => memory.Position = value; }
-            public override int Read(byte[] destination, int offset, int count) => memory.Read(destination, offset, count);
+            public override long Length => Memory.Length;
+            public override long Position { get => Memory.Position; set => Memory.Position = value; }
+            public override int Read(byte[] destination, int offset, int count) => Memory.Read(destination, offset, count);
 #if NETCOREAPP
-            public override int Read(Span<byte> destination) => memory.Read(destination);
+            public override int Read(Span<byte> destination) => Memory.Read(destination);
 #endif
-            public override int ReadByte() => memory.ReadByte();
-            public override long Seek(long offset, SeekOrigin origin) => memory.Seek(offset, origin);
+            public override int ReadByte() => Memory.ReadByte();
+            public override long Seek(long offset, SeekOrigin origin) => Memory.Seek(offset, origin);
             public override void Flush() { }
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] source, int offset, int count) => throw new NotSupportedException();
             protected override void Dispose(bool disposing)
             {
-                FileStream owned = Interlocked.Exchange(ref file, null);
+                Stream owned = Interlocked.Exchange(ref memory, null);
                 if (owned != null)
                 {
-                    try { memory.Dispose(); owned.Dispose(); }
+                    try { owned.Dispose(); }
                     finally
                     {
                         lock (Sync)

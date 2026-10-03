@@ -122,23 +122,25 @@ dispatcher 不统一回填响应关联字段。内置空请求/空事件错误 `
 
 ## 发送记录与重发结果
 
-正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 创建 `Sent` 行，再写入网络。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
+正常 JSON/Text 及错误响应路径均先调用 `MessageManager.AddMessage` 将 `Sent` 记录入队，再写入网络；接收记录入队后即继续业务分发。**有 Sent 不证明网络写入成功或对端已执行**；`ResponseCode` 是生成的响应内容，不是对端 ACK。接收行按读取片段登记，也不能直接用于统计业务操作次数。
 
-`AddMessage` 在同一数据库事务内同步写入元数据和压缩正文，提交后将 WPF 集合更新以 `Background` 优先级投递给 UI，不等待列表刷新再派发协议或发送响应。投递在存储锁内按提交顺序进行，但从不在锁内同步等待 UI。数据库及 UI 发布异常被捕获记入日志，方法不返回可区分结果：返回不证明已落库，界面未出现也不证明事务未提交。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
+`AddMessage` 复制消息元数据和正文引用，分配进程内 `RecordSequence` 后进入单个后台写入队列；调用方不等待存储锁、SQLite 提交或 UI。后台按入队顺序在同一事务内写入元数据和压缩正文，成功提交后才以 `Background` 优先级投递列表更新。队列为内存队列，不是持久化日志；数据库持续不可写时待写消息会积压，进程强制结束可能丢失未提交记录。数据库及 UI 发布异常被捕获记入日志，单条失败不终止后续写入；方法返回不证明已落库。JSON 正常分支出错后进入异常分支，还可能再次登记同一接收内容。
 
-清空消息、重新查询和高级查询/整表操作使之前待投递的列表更新失效，防止旧消息重新冒出或查询结果重复插入；后续提交的消息仍可实时显示。这不是数据库删除或保留策略。管理器释放或 UI Dispatcher 退出后不再追加列表，但已经提交的记录仍可在下次查询或启动时读取。
+清空消息立即清空内存列表，并抑制清空前已入队记录的后续列表更新；这些记录仍会落库。重新查询和高级查询/整表操作先等待此前入队的写入，再读取或修改数据库，并使对应的旧列表更新失效；期间协议消息仍可入队，查询之后的新记录仍会实时显示。这不是数据库保留策略。
+
+管理器释放时停止接收新记录，等待已接收记录写完后释放数据库，不再追加列表。应用退出先停止 TCP 服务，再用原有 Socket 关闭期限的剩余时间等待消息队列；超时会明确记录日志并返回未完成，后台继续排空，但不能保证进程退出前全部提交。UI Dispatcher 退出本身不会阻止后台落库。已提交记录仍可在下次查询或启动时读取。
 
 ### 回包派发与界面刷新计时
 
-INFO 结构化日志以数据库 `MessageId` 关联，`EventName` / `MsgID` 只作补充，不能假设客户 `MsgID` 唯一：
+INFO 结构化日志以进程内 `RecordSequence` 关联协议派发、后台落库和 UI 更新；数据库 ID 仅在提交后可用。跨进程排查还应核对日志会话和时间，`EventName` / `MsgID` 只作补充，不能假设客户 `MsgID` 唯一：
 
 | 事件 | 字段与边界 |
 | --- | --- |
-| `SocketMessageTiming` | `StorageGateWaitMs` 是存储锁排队，`StorageWriteMs` 是事务写入/正文压缩，`PersistMs` 包含前缀准备、排队和提交；它们不是三个互不重叠的阶段。`UiUpdateAwaited=false` 表示返回前未等待界面追加 |
-| `SocketReceiveDispatchTiming` | JSON 正常解析路径中，`DecodeAndDeserializeMs` 包含字节解码、原始消息日志及反序列化；`RecordMessageMs` 包含 `AddMessage` 的整个调用；二者之和为 `ReceiveToDispatchMs`，不含 handler 内部执行/等待。`DispatchRequestedAt` 位于诊断日志写出之前，不是实际 handler 已开始的证明 |
+| `SocketMessageTiming` | 提交后给出 `MessageId`；`PersistenceQueueMs` 是入队至后台开始执行的间隔，`StorageGateWaitMs` 是存储锁排队，`StorageWriteMs` 是事务写入/正文压缩，`PersistMs` 包含后台前缀准备、存储锁排队和提交，不包含 `PersistenceQueueMs`。后面三个字段相互重叠；`PersistenceAwaited=false` / `UiUpdateAwaited=false` 表示协议调用方没有等待落库或界面追加 |
+| `SocketReceiveDispatchTiming` | JSON 正常解析路径中，`DecodeAndDeserializeMs` 包含字节解码、原始消息日志及反序列化；`RecordMessageMs` 是消息快照及入队调用耗时，不含数据库写入；二者之和为 `ReceiveToDispatchMs`，不含 handler 内部执行/等待。`DispatchRequestedAt` 位于诊断日志写出之前，不是实际 handler 已开始的证明 |
 | `SocketMessageUiTiming` | `UiQueueMs` 是后台 UI 投递到开始执行的间隔，`UiUpdateMs` 是列表追加/集合通知耗时；两者发生在独立 UI 路径，不能再次相加到同步回包派发或 PG 耗时 |
 
-UI 仍可能因其它绘图工作延迟业务 handler 的 Dispatcher 调用；这些日志仅移除并标出消息列表的同步依赖，不承诺消除所有调度或磁盘抖动。
+UI 仍可能因其它绘图或用户发起的数据库查询延迟业务 handler 的 Dispatcher 调用；异步记录移除了收发线程等待落库和列表追加的依赖，不承诺消除所有调度或磁盘抖动。
 
 ### 重新发送一条记录
 
@@ -176,6 +178,6 @@ UI 仍可能因其它绘图工作延迟业务 handler 的 Dispatcher 调用；�
 | `SocketManagerProjectionTests` | WPF 状态投影、旧状态抑制、停止错误不被禁用配置掩盖 |
 | `SocketManagerWindowLayoutTests` | 筛选与空状态、详情格式化、多窗口独立筛选/关闭、维护入口及布局 |
 | `SocketMessageStorageTests` | 临时库的 gzip 写入、列表不取正文、按 ID 读取和旧 TEXT 迁移 |
-| `SocketMessageAsyncProjectionTests` | UI 不泵消息时持久化与返回仍完成、提交顺序、重新查询不重复、清空不复活、释放/Dispatcher 退出后保留数据库记录 |
+| `SocketMessageAsyncProjectionTests` | 提交与显示顺序、重新查询不重复、清空不复活、释放及 Dispatcher 退出后保留数据库记录 |
 
 尚缺直接覆盖 JSON 大小写/重复名、Text 多处理器分发、TCP 分帧、网络写失败后的 Sent、重发目标与回执、防火墙规则修改的专项验证。补充验证应使用临时库、隔离客户端和无设备副作用的 handler；系统规则修改需独立验证环境。现有测试覆盖范围不等于现场业务已验收。

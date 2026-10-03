@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Diagnostics;
+using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -38,13 +39,33 @@ namespace ColorVision.SocketProtocol
         private static readonly ILog log = LogManager.GetLogger(typeof(SocketMessageManager));
         private static SocketMessageManager? _instance;
         private static readonly object _locker = new();
+        private static int _shutdownStarted;
 
         public static SocketMessageManager GetInstance()
         {
             lock (_locker)
             {
-                return _instance ??= new SocketMessageManager();
+                if (Volatile.Read(ref _shutdownStarted) != 0)
+                    throw new InvalidOperationException("Socket message recording has stopped for application shutdown.");
+                _instance ??= new SocketMessageManager();
+                if (Volatile.Read(ref _shutdownStarted) != 0)
+                {
+                    _instance.Shutdown(TimeSpan.Zero);
+                    throw new InvalidOperationException("Socket message recording has stopped for application shutdown.");
+                }
+                return _instance;
             }
+        }
+
+        internal static bool ShutdownExisting(TimeSpan timeout)
+        {
+            var deadline = SocketShutdownDeadline.Start(timeout);
+            Interlocked.Exchange(ref _shutdownStarted, 1);
+            if (!Monitor.TryEnter(_locker, deadline.Remaining)) return false;
+            SocketMessageManager? manager;
+            try { manager = _instance; }
+            finally { Monitor.Exit(_locker); }
+            return manager == null || manager.Shutdown(deadline.Remaining);
         }
 
         public static string DirectoryPath { get; set; } = Path.Combine(
@@ -55,7 +76,15 @@ namespace ColorVision.SocketProtocol
 
         private readonly SqlSugarClient _db;
         private readonly Dispatcher? _dispatcher;
-        private long _displayGeneration;
+        private readonly object _queueGate = new();
+        private readonly Channel<Func<Task>> _writeQueue = Channel.CreateUnbounded<Func<Task>>(new()
+        {
+            SingleReader = true,
+            AllowSynchronousContinuations = false,
+        });
+        private readonly Task _writeWorker;
+        private long _recordSequence;
+        private long _displaySuppressedThrough;
         private volatile bool _disposed;
 
         public ObservableCollection<SocketMessage> Messages { get; set; } = new ObservableCollection<SocketMessage>();
@@ -101,6 +130,7 @@ namespace ColorVision.SocketProtocol
                 _db.CodeFirst.InitTables<SocketMessage>();
                 SocketMessagePayloadStorage.EnsureSchema(_db);
             });
+            _writeWorker = Task.Run(ProcessWriteQueueAsync);
         }
 
         public void EditConfig()
@@ -121,12 +151,11 @@ namespace ColorVision.SocketProtocol
         {
             // 限制最大加载数量以避免内存问题
             int effectiveCount = count <= 0 ? Config.Count : Math.Min(count, 1000);
-            List<SocketMessage> dbList = SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+            List<SocketMessage> dbList = new();
+            RunAfterPendingMessages(() =>
             {
-                // Queued rows already included in this query must not be inserted twice.
-                InvalidatePendingDisplay();
                 var query = _db.Queryable<SocketMessage>().OrderBy(x => x.Id, Config.OrderByType);
-                return query.Take(effectiveCount).ToList();
+                dbList = query.Take(effectiveCount).ToList();
             });
 
             Messages.Clear();
@@ -137,25 +166,55 @@ namespace ColorVision.SocketProtocol
         }
 
         /// <summary>
-        /// 添加新消息并持久化
+        /// 保存消息快照并入队；协议收发不等待数据库或 UI。
         /// </summary>
         public void AddMessage(SocketMessage message)
         {
             try
             {
                 if (message == null) return;
+                var snapshot = new SocketMessage
+                {
+                    ClientEndPoint = message.ClientEndPoint,
+                    Direction = message.Direction,
+                    Content = message.Content,
+                    MessageTime = message.MessageTime,
+                    EventName = message.EventName,
+                    MsgID = message.MsgID,
+                    ResponseCode = message.ResponseCode,
+                };
+                long queuedAt = Stopwatch.GetTimestamp();
+                lock (_queueGate)
+                {
+                    if (_disposed) throw new ObjectDisposedException(nameof(SocketMessageManager));
+                    snapshot.RecordSequence = message.RecordSequence = ++_recordSequence;
+                    _writeQueue.Writer.TryWrite(() =>
+                    {
+                        PersistMessage(snapshot, queuedAt);
+                        return Task.CompletedTask;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error queueing socket message", ex);
+            }
+        }
+
+        private void PersistMessage(SocketMessage message, long queuedAt)
+        {
+            try
+            {
+                double queueMs = Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds;
                 Stopwatch timing = Stopwatch.StartNew();
                 string? content = message.Content;
-                message.ContentPreview = GzipTextPayloadCodec.CreatePreview(
-                    content,
-                    SocketMessagePayloadStorage.PreviewCharacters);
+                message.ContentPreview = GzipTextPayloadCodec.CreatePreview(content, SocketMessagePayloadStorage.PreviewCharacters);
 
                 double gateRequestedAt = timing.Elapsed.TotalMilliseconds;
                 double gateEnteredAt = 0;
                 double committedAt = 0;
                 SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
                 {
-                    if (_disposed) throw new ObjectDisposedException(nameof(SocketMessageManager));
                     gateEnteredAt = timing.Elapsed.TotalMilliseconds;
                     _db.Ado.BeginTran();
                     int insertedId;
@@ -172,39 +231,78 @@ namespace ColorVision.SocketProtocol
                     }
                     committedAt = timing.Elapsed.TotalMilliseconds;
                     message.Id = insertedId;
-                    // Posting under the storage gate keeps display order equal to commit order.
-                    // Never wait for the UI while holding this gate (or before dispatching a request).
-                    QueueMessageForDisplay(message, Interlocked.Read(ref _displayGeneration));
+                    QueueMessageForDisplay(message);
                 });
                 log.Info(JsonConvert.SerializeObject(new
                 {
                     Event = "SocketMessageTiming",
+                    message.RecordSequence,
                     MessageId = message.Id,
                     message.EventName,
                     message.MsgID,
                     message.Direction,
                     message.MessageTime,
+                    PersistenceQueueMs = Math.Round(queueMs, 3),
                     StorageGateWaitMs = Math.Round(gateEnteredAt - gateRequestedAt, 3),
                     StorageWriteMs = Math.Round(committedAt - gateEnteredAt, 3),
                     PersistMs = Math.Round(committedAt, 3),
                     UiUpdateAwaited = false,
+                    PersistenceAwaited = false,
                 }));
             }
             catch (Exception ex)
             {
-                log.Error("Error adding socket message", ex);
+                log.Error($"Error persisting socket message RecordSequence={message.RecordSequence}", ex);
             }
         }
 
-        private void InvalidatePendingDisplay() => Interlocked.Increment(ref _displayGeneration);
+        private async Task ProcessWriteQueueAsync()
+        {
+            try
+            {
+                await foreach (Func<Task> work in _writeQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+                    await work().ConfigureAwait(false);
+            }
+            finally
+            {
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(() => _db.Dispose());
+            }
+        }
+
+        // Queries edit WPF collections on their calling thread. Pause only the writer,
+        // after earlier messages commit; protocol producers can keep enqueueing.
+        private void RunAfterPendingMessages(Action action)
+        {
+            var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            long boundary;
+            lock (_queueGate)
+            {
+                if (_disposed) throw new ObjectDisposedException(nameof(SocketMessageManager));
+                boundary = _recordSequence;
+                _writeQueue.Writer.TryWrite(async () =>
+                {
+                    ready.TrySetResult();
+                    await resume.Task.ConfigureAwait(false);
+                });
+            }
+            ready.Task.GetAwaiter().GetResult();
+            try
+            {
+                lock (_queueGate)
+                    Interlocked.Exchange(ref _displaySuppressedThrough, Math.Max(boundary, _displaySuppressedThrough));
+                SocketMessagePayloadStorage.RunDatabaseMaintenance(action);
+            }
+            finally { resume.TrySetResult(); }
+        }
 
         private void ClearMessages()
         {
-            SocketMessagePayloadStorage.RunDatabaseMaintenance(InvalidatePendingDisplay);
+            lock (_queueGate) Interlocked.Exchange(ref _displaySuppressedThrough, _recordSequence);
             Messages.Clear();
         }
 
-        private void QueueMessageForDisplay(SocketMessage message, long generation)
+        private void QueueMessageForDisplay(SocketMessage message)
         {
             Dispatcher? dispatcher = _dispatcher;
             if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
@@ -213,7 +311,7 @@ namespace ColorVision.SocketProtocol
             long queuedAt = Stopwatch.GetTimestamp();
             dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
-                if (_disposed || generation != Interlocked.Read(ref _displayGeneration))
+                if (_disposed || message.RecordSequence <= Interlocked.Read(ref _displaySuppressedThrough))
                     return;
                 double queueMs = Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds;
                 Stopwatch updateTiming = Stopwatch.StartNew();
@@ -232,6 +330,7 @@ namespace ColorVision.SocketProtocol
                         string timingJson = JsonConvert.SerializeObject(new
                         {
                             Event = "SocketMessageUiTiming",
+                            message.RecordSequence,
                             MessageId = message.Id,
                             message.EventName,
                             message.MsgID,
@@ -288,7 +387,7 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         public void GenericQuery()
         {
-            GenericQuery<SocketMessage> genericQuery = new SocketMessageGenericQuery(_db, Messages, InvalidatePendingDisplay);
+            GenericQuery<SocketMessage> genericQuery = new SocketMessageGenericQuery(_db, Messages, RunAfterPendingMessages);
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) 
             { 
                 Owner = Application.Current.GetActiveWindow(), 
@@ -299,49 +398,46 @@ namespace ColorVision.SocketProtocol
 
         public void Dispose()
         {
-            SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
-            {
-                if (_disposed) return;
-                _disposed = true;
-                InvalidatePendingDisplay();
-                _db?.Dispose();
-            });
+            Shutdown(Timeout.InfiniteTimeSpan);
             GC.SuppressFinalize(this);
+        }
+
+        internal bool Shutdown(TimeSpan timeout)
+        {
+            lock (_queueGate)
+            {
+                _disposed = true;
+                _writeQueue.Writer.TryComplete();
+            }
+            bool completed = _writeWorker.Wait(timeout);
+            if (!completed) log.Warn("Socket message persistence did not drain within the shutdown budget.");
+            return completed;
         }
 
         private sealed class SocketMessageGenericQuery : GenericQuery<SocketMessage>
         {
-            private readonly Action _invalidatePendingDisplay;
+            private readonly Action<Action> _runAfterPendingMessages;
 
-            public SocketMessageGenericQuery(SqlSugarClient db, IList<SocketMessage> viewResults, Action invalidatePendingDisplay)
+            public SocketMessageGenericQuery(SqlSugarClient db, IList<SocketMessage> viewResults, Action<Action> runAfterPendingMessages)
                 : base(db, viewResults)
             {
-                _invalidatePendingDisplay = invalidatePendingDisplay;
+                _runAfterPendingMessages = runAfterPendingMessages;
             }
 
             public override void QueryDB()
             {
-                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
-                {
-                    _invalidatePendingDisplay();
-                    base.QueryDB();
-                });
+                _runAfterPendingMessages(base.QueryDB);
             }
 
             public override void DeleteAll()
             {
-                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
-                {
-                    _invalidatePendingDisplay();
-                    base.DeleteAll();
-                });
+                _runAfterPendingMessages(base.DeleteAll);
             }
 
             public override void TruncateTable()
             {
-                SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
+                _runAfterPendingMessages(() =>
                 {
-                    _invalidatePendingDisplay();
                     string tableName = Db.EntityMaintenance.GetTableName<SocketMessage>();
                     Db.Ado.BeginTran();
                     try

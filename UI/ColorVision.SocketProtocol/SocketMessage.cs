@@ -23,6 +23,11 @@ namespace ColorVision.SocketProtocol
     [SugarTable("SocketMessage")]
     public class SocketMessage : ViewEntity
     {
+        /// <summary>进程内入队序号，用于关联落库前的协议派发与后台提交计时。</summary>
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public long RecordSequence { get; internal set; }
+
         /// <summary>
         /// 客户端地址
         /// </summary>

@@ -29,9 +29,10 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.Engine.Media
 {
     [FileExtension(".cvraw|.cvcie")]
-    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IImageOpenContentLifetime, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
+    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IImageOpenFileCache, IImageOpenContentLifetime, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
+        public bool TryGetCachedLength(string filePath, out long length) => CVFileReadCache.TryGetCachedLength(filePath, out length);
         private readonly object _bufferSync = new();
         private CvRawPixelBuffer _rawPixels = new();
         private readonly SemaphoreSlim _rawOpenGate = new(1, 1);
@@ -343,7 +344,7 @@ namespace ColorVision.Engine.Media
 
         private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers, CVCIEFile? loadedRaw = null)
         {
-            if (!File.Exists(filePath) || !CVFileUtil.IsCIEFile(filePath))
+            if (!CVFileUtil.IsCIEFile(filePath))
             {
                 return null;
             }

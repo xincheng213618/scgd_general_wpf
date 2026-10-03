@@ -1,6 +1,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.FileIO;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.ImageExport;
 using System.IO;
@@ -27,7 +28,7 @@ internal static class ResultImageFileCandidates
         Func<string, bool>? fileExists = null)
     {
         ArgumentNullException.ThrowIfNull(result);
-        fileExists ??= File.Exists;
+        fileExists ??= path => CVFileReadCache.TryGetCachedLength(path, out _) || File.Exists(path);
 
         List<ResultImageFileCandidate> candidates = [];
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);

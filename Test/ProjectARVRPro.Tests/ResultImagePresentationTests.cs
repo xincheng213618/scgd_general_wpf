@@ -1,5 +1,6 @@
 using ColorVision.ImageEditor;
 using ColorVision.Engine;
+using ColorVision.FileIO;
 using ProjectARVRPro.ImageExport;
 using ProjectARVRPro.Process;
 using System.IO;
@@ -9,6 +10,34 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultImagePresentationTests
 {
+    [Fact]
+    public void CachedOriginalRemainsAnImageCandidateWithoutItsDiskFile()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"arvr-cached-result-{Guid.NewGuid():N}.cvraw");
+        bool previousEnabled = CVFileReadCache.IsEnabled;
+        CVFileReadCache.Release();
+        CVFileReadCache.IsEnabled = true;
+        try
+        {
+            using CVCIEFile raw = new() { Version = 1, Cols = 2, Rows = 1, Bpp = 8, Channels = 1, Exp = [10], Data = [11, 12] };
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw));
+            File.Delete(path);
+
+            ProjectARVRReuslt result = new() { FileName = path };
+            ResultImageFileCandidate candidate = Assert.Single(ResultImageFileCandidates.GetExisting(result));
+            Assert.Equal(path, candidate.FilePath);
+            Assert.Equal(ResultImageFileKind.Original, candidate.Kind);
+            CVFileReadCache.Release();
+            Assert.Empty(ResultImageFileCandidates.GetExisting(result));
+        }
+        finally
+        {
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = previousEnabled;
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public async Task CandidateOpenContinuesAfterExistingFirstFileCannotBeOpened()
     {

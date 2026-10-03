@@ -63,7 +63,6 @@ namespace ColorVision.FileIO
         /// </summary>
         public static bool IsCIEFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
@@ -82,7 +81,6 @@ namespace ColorVision.FileIO
         }
         public static bool IsCVCIEFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
@@ -126,7 +124,6 @@ namespace ColorVision.FileIO
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
             cvcie = new CVCIEFile();
-            if (!File.Exists(filePath)) return -1;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))

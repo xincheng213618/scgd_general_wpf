@@ -5,6 +5,37 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvRawFileCacheCapacityTests
 {
+    [Theory]
+    [InlineData("deleted")]
+    [InlineData("locked")]
+    [InlineData("changed")]
+    public void CachedReadersUseMemoryWithoutDependingOnOrLockingTheDiskFile(string diskState)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        byte[] expected = File.ReadAllBytes(files.A);
+        using Stream firstReader = CVFileReadCache.OpenRead(files.A);
+        long hits = CVFileReadCache.GetSnapshot().HitCount;
+        if (diskState == "deleted") File.Delete(files.A);
+        if (diskState == "changed") File.WriteAllBytes(files.A, [1, 2, 3]);
+        using FileStream? exclusive = diskState == "locked" ? File.Open(files.A, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
+
+        Assert.True(CVFileReadCache.TryGetCachedLength(files.A, out long length));
+        Assert.Equal(expected.LongLength, length);
+        using Stream cachedReader = CVFileReadCache.OpenRead(files.A);
+        using MemoryStream content = new();
+        cachedReader.CopyTo(content);
+        Assert.Equal(expected, content.ToArray());
+        Assert.Equal(hits + 1, CVFileReadCache.GetSnapshot().HitCount);
+        Assert.True(CVFileUtil.IsCIEFile(files.A));
+        Assert.True(CVFileUtil.ReadCIEFileHeader(files.A, out CVCIEFile header) > 0);
+        header.Dispose();
+        cachedReader.Dispose();
+        cachedReader.Dispose();
+        Assert.False(cachedReader.CanRead);
+        Assert.Throws<ObjectDisposedException>(() => cachedReader.ReadByte());
+        Assert.Equal(1, CVFileReadCache.GetSnapshot().ActiveReaders);
+    }
+
     [Fact]
     public void SingleEntryLimitReusesBufferWhenOpeningAnotherFile()
     {

@@ -863,9 +863,11 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
-            bool fileExists = File.Exists(filePath);
             string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
             IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen);
+            long cachedLength = 0;
+            bool isCached = imageOpen is IImageOpenFileCache cache && cache.TryGetCachedLength(filePath, out cachedLength);
+            bool fileExists = isCached || File.Exists(filePath);
             ReleaseImageContent(fileExists ? imageOpen : null);
             Config.ClearProperties();
             IEditorToolFactory.ApplyImageOpenTools(null);
@@ -875,7 +877,7 @@ namespace ColorVision.ImageEditor
             {
                 if (fileExists)
                 {
-                    long fileSize = new FileInfo(filePath).Length;
+                    long fileSize = isCached ? cachedLength : new FileInfo(filePath).Length;
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
                     if (imageOpen != null)
@@ -921,7 +923,8 @@ namespace ColorVision.ImageEditor
             get
             {
                 string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                return EditorContext.IImageOpen != null && !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+                return EditorContext.IImageOpen != null && !string.IsNullOrWhiteSpace(filePath)
+                    && (EditorContext.IImageOpen is IImageOpenFileCache cache && cache.TryGetCachedLength(filePath, out _) || File.Exists(filePath));
             }
         }
 
@@ -933,7 +936,7 @@ namespace ColorVision.ImageEditor
             }
 
             string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (EditorContext.IImageOpen == null || string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (!CanRestoreOriginalImage)
             {
                 return false;
             }

@@ -82,17 +82,21 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
         finally { if (held) gate.Release(); }
     }
 
-    [Fact]
-    public async Task VideoStartDetachesOldFileCalibrationAndMeasurementTools()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task VideoStartDetachesOldFileCalibrationAndMeasurementTools(bool deleteFileBeforeOpen)
     {
         string path = Path.Combine(root, "calibrated.cvraw");
         using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(3, 2, 16, 3);
         Assert.True(CVFileUtil.WriteCVRaw(path, raw));
         ColorCalibrationSnapshot.Create(RawColorTransformV1.Create(), 3, 2, 16, raw.Exp, "previous-file").Save(path, true);
+        if (deleteFileBeforeOpen) File.Delete(path);
         await OpenAsync(path);
         PoiMeasurementBuffer previous = WpfTestHost.Invoke(() =>
         {
             Assert.True(view.Config.GetProperties<bool>("HasCieMeasurements"));
+            Assert.True(view.CanRestoreOriginalImage);
             return Measurement!;
         });
         WpfTestHost.Invoke(() => pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false));

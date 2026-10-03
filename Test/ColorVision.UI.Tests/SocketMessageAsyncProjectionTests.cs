@@ -23,6 +23,7 @@ public sealed class SocketMessageAsyncProjectionTests
             });
             // Intentionally do not pump the UI: the old Dispatcher.Invoke path blocks here.
             Assert.True(producer.Wait(TimeSpan.FromSeconds(5)), "Protocol-side persistence waited for the UI.");
+            WaitForRows(path, 3);
             Assert.Empty(manager.Messages);
             Assert.Equal(3L, CountRows(path));
 
@@ -36,11 +37,12 @@ public sealed class SocketMessageAsyncProjectionTests
     [Fact]
     public void QueryDoesNotDuplicateAlreadyCommittedPendingRows()
     {
-        WithManager(OrderByType.Desc, (manager, _) =>
+        WithManager(OrderByType.Desc, (manager, path) =>
         {
             manager.AddMessage(Message("before-query"));
             manager.LoadAll();
             manager.AddMessage(Message("after-query"));
+            WaitForRows(path, 2);
             PumpDispatcher();
             Assert.Equal(new[] { "after-query", "before-query" }, manager.Messages.Select(row => row.MsgID));
         });
@@ -54,6 +56,7 @@ public sealed class SocketMessageAsyncProjectionTests
             manager.AddMessage(Message("before-clear"));
             manager.MessagesClearCommand.Execute(null);
             manager.AddMessage(Message("after-clear"));
+            WaitForRows(path, 2);
             PumpDispatcher();
             Assert.Equal("after-clear", Assert.Single(manager.Messages).MsgID);
             Assert.Equal(2L, CountRows(path));
@@ -82,6 +85,7 @@ public sealed class SocketMessageAsyncProjectionTests
         {
             Dispatcher.CurrentDispatcher.InvokeShutdown();
             manager.AddMessage(Message("persisted-without-ui"));
+            WaitForRows(path, 1);
             Assert.Empty(manager.Messages);
             Assert.Equal(1L, CountRows(path));
         });
@@ -96,6 +100,10 @@ public sealed class SocketMessageAsyncProjectionTests
         Direction = SocketMessageDirection.Received,
         MessageTime = DateTime.Now,
     };
+
+    private static void WaitForRows(string path, long count) => Assert.True(SpinWait.SpinUntil(
+        () => SocketMessagePayloadStorage.RunDatabaseMaintenance(() => CountRows(path)) == count,
+        TimeSpan.FromSeconds(5)), "Socket messages were not committed.");
 
     private static long CountRows(string path)
     {
