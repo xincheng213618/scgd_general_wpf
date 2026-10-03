@@ -128,6 +128,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	internal Color GetOptionColor(STNodeOption option)
 	{
 		Color color = option.DotColor != Color.Transparent ? option.DotColor
+			: option.DataType == typeof(object) ? _UnknownTypeColor
 			: _TypeColor.TryGetValue(option.DataType, out Color typeColor) ? typeColor : _UnknownTypeColor;
 		return _VisualTheme?.ResolveAccent(color) ?? color;
 	}
@@ -1743,19 +1744,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected virtual void OnDrawGrid(DrawingTools dt, int nWidth, int nHeight)
 	{
 		Graphics graphics = dt.Graphics;
-		if (_VisualTheme != null)
-		{
-			// Dots remain a positioning aid without competing with connections when zoomed out.
-			float spacing = 24f * _CanvasScale;
-			while (spacing < 16f) spacing *= 2f;
-			using SolidBrush dots = new SolidBrush(STNodeVisualTheme.Blend(_VisualTheme.Canvas, _VisualTheme.Border, 0.58f));
-			for (float x = _CanvasOffsetX % spacing; x < nWidth; x += spacing)
-				for (float y = _CanvasOffsetY % spacing; y < nHeight; y += spacing)
-					graphics.FillRectangle(dots, x, y, 1f, 1f);
-			return;
-		}
-		using Pen pen = new Pen(Color.FromArgb(65, _GridColor));
-		using Pen pen2 = new Pen(Color.FromArgb(30, _GridColor));
+		using Pen pen = new Pen(_VisualTheme?.GridMajor ?? Color.FromArgb(65, _GridColor));
+		using Pen pen2 = new Pen(_VisualTheme?.GridMinor ?? Color.FromArgb(30, _GridColor));
 		float num = 20f * _CanvasScale;
 		int num2 = 5 - (int)(_CanvasOffsetX / num);
 		for (float num3 = _CanvasOffsetX % num; num3 < (float)nWidth; num3 += num)
@@ -1888,7 +1878,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		Graphics graphics = dt.Graphics;
 		graphics.SmoothingMode = SmoothingMode.HighQuality;
 		m_p_line_hover.Color = Color.FromArgb(10, 0, 0, 0);
-		Type typeFromHandle = typeof(object);
 		foreach (STNode node in _Nodes)
 		{
 			foreach (STNodeOption outputOption in node.OutputOptions)
@@ -1904,7 +1893,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 					float y1 = outputOption.DotTop + outputOption.DotSize / 2;
 					float x2 = item.DotLeft - 1;
 					float y2 = item.DotTop + item.DotSize / 2;
-					DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
+					if (_VisualTheme == null)
+						DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
 					DrawBezier(graphics, m_p_line, x1, y1, x2, y2, _Curvature);
 					if (m_is_buildpath)
 					{

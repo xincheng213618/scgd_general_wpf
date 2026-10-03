@@ -1663,9 +1663,6 @@
   <data name="BulkEdit" xml:space="preserve">
     <value>Unified Editing</value>
   </data>
-  <data name="ArchiveAll" xml:space="preserve">
-    <value>All Archives</value>
-  </data>
   <data name="BatchResults" xml:space="preserve">
     <value>Batch results</value>
   </data>
@@ -3073,12 +3070,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
     <value>Configuration Options</value>
-  </data>
-  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
-    <value>Archive command has been sent</value>
-  </data>
-  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
-    <value>All archive commands have been sent</value>
   </data>
   <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
     <value>Batch {0} Results</value>
@@ -6874,4 +6865,18 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="清空勾选表会删除表内全部记录，不受保留月数限制。" xml:space="preserve"><value>Emptying checked tables deletes all their records, regardless of the retention period.</value></data>
   <data name="全部数据清理" xml:space="preserve"><value>All Data Cleanup</value></data>
   <data name="将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>All {1:N0} available tables in {0} will be emptied.</value></data>
+  <data name="Sensor_ConvertEncoding" xml:space="preserve"><value>Convert content…</value></data>
+  <data name="Sensor_ConversionHint" xml:space="preserve"><value>Convert both request and response while preserving their bytes.</value></data>
+  <data name="Sensor_ConversionSuccess" xml:space="preserve"><value>Converted to {0}. Request and response have both been updated.</value></data>
+  <data name="Sensor_ConversionFailed" xml:space="preserve"><value>Cannot convert to {0} without loss. Check the content or choose another encoding. Original content is unchanged.</value></data>
+  <data name="Sensor_NoneHint" xml:space="preserve"><value>None selects a template; it is not a command encoding.</value></data>
+  <data name="Sensor_DeleteCommand" xml:space="preserve"><value>Delete command</value></data>
+  <data name="Sensor_EmptyCommands" xml:space="preserve"><value>No commands yet. Choose Add command to begin.</value></data>
+  <data name="Sensor_DeleteType" xml:space="preserve"><value>Delete type…</value></data>
+  <data name="Sensor_DeleteTypePrompt" xml:space="preserve"><value>Delete sensor type &quot;{0}&quot;?&#10;&#10;This also deletes its {1} templates and their commands:&#10;{2}&#10;&#10;Other types are unaffected. Update any flows referencing these templates. This cannot be undone.</value></data>
+  <data name="Sensor_DeleteTypeFailed" xml:space="preserve"><value>Could not delete type: {0}</value></data>
+  <data name="Sensor_TypeNotFound" xml:space="preserve"><value>Sensor type no longer exists. Reopen the template menu.</value></data>
+  <data name="Sensor_TypeInUse" xml:space="preserve"><value>These devices still use this type. Change their sensor type first: {0}</value></data>
+  <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>Templates of other types reference these command definitions. Remove those references first.</value></data>
+  <data name="Sensor_ConversionKeepHex" xml:space="preserve"><value>The result contains commas or escapes that the legacy template cannot safely store. Keep Hex.</value></data>
 </root>

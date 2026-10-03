@@ -9188,7 +9188,7 @@
         "Projects/ProjectARVRPro/Services/SocketControl.cs",
         "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs",
         "Projects/ProjectARVRPro/Services/RunAllSocket.cs",
-        "Projects/ProjectARVRPro/SocketRelay",
+        "Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs",
         "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml",
         "Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs",
         "Projects/ProjectARVRPro/ResultStatisticsTheme.xaml",
@@ -9372,7 +9372,7 @@
       "knowledge_id": "projects.arvr-pro-protocol",
       "knowledge_type": "reference",
       "status": "current",
-      "summary": "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。",
+      "summary": "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。",
       "aliases": [
         "ARVR TCP 协议",
         "ARVRPRO TCP 通讯协议手册",
@@ -9390,7 +9390,8 @@
         "ProjectARVRResult",
         "AoiSwitchPG",
         "AOITestSwitchImageComplete",
-        "SocketRelay",
+        "外部切图",
+        "ExternalImageSwitchNode",
         "UseLegacyARVROutput",
         "SNlocked"
       ],
@@ -9399,7 +9400,9 @@
         "Projects/ProjectARVRPro/Services/RunAllSocket.cs",
         "Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs",
         "Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs",
-        "Projects/ProjectARVRPro/SocketRelay",
+        "Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs",
+        "Projects/ProjectARVRPro/Services/ExternalImageSwitchService.cs",
+        "Projects/ProjectARVRPro/Services/AOITestSwitchImageCompleteHandler.cs",
         "Projects/ProjectARVRPro/ARVRWindow.xaml.cs",
         "Projects/ProjectARVRPro/ProjectARVRProConfig.cs",
         "Projects/ProjectARVRPro/ObjectiveTestResult.cs",
@@ -9408,7 +9411,9 @@
         "UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs",
         "UI/ColorVision.SocketProtocol/SocketConfig.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ProjectARVRPro.Tests/ExternalImageSwitchTests.cs"
+      ],
       "related": [
         "projects.arvr-pro",
         "projects.arvr-pro-processes",

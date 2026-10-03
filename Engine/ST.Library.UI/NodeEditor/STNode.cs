@@ -30,19 +30,6 @@ public abstract class STNode : INotifyPropertyChanged
 	private Color _TitleProgressColor;
 
 	private float _TitleProgress = -1f;
-	private STNodeExecutionState _ExecutionState;
-
-	[Browsable(false)]
-	public STNodeExecutionState ExecutionState
-	{
-		get => _ExecutionState;
-		set
-		{
-			if (_ExecutionState == value) return;
-			_ExecutionState = value;
-			Invalidate();
-		}
-	}
 
 	private Color _MarkColor;
 
@@ -692,7 +679,7 @@ public abstract class STNode : INotifyPropertyChanged
 		_TitleColor = Color.FromArgb(200, Color.DodgerBlue);
 		_TitleProgressColor = Color.FromArgb(230, Color.DeepSkyBlue);
 		_MarkColor = Color.FromArgb(200, Color.Brown);
-		_Font = new Font("Segoe UI", 9f);
+		_Font = new Font("courier new", 8.25f);
 		m_sf = new StringFormat();
 		m_sf.Alignment = StringAlignment.Near;
 		m_sf.LineAlignment = StringAlignment.Center;
@@ -885,15 +872,10 @@ public abstract class STNode : INotifyPropertyChanged
 		if (_TitleProgress > 0f && _TitleProgressColor.A != 0)
 		{
 			Rectangle progressRectangle = TitleRectangle;
-			if (_Owner?.VisualTheme != null)
-			{
-				progressRectangle.Y = progressRectangle.Bottom - 3;
-				progressRectangle.Height = 3;
-			}
 			progressRectangle.Width = (int)Math.Round(progressRectangle.Width * _TitleProgress);
 			if (progressRectangle.Width > 0)
 			{
-				solidBrush.Color = _Owner?.VisualTheme?.ResolveAccent(_TitleProgressColor) ?? _TitleProgressColor;
+				solidBrush.Color = _Owner?.VisualTheme?.TitleProgress(_TitleProgressColor) ?? _TitleProgressColor;
 				int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 				if (cornerRadius > 0)
 				{
@@ -912,7 +894,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		if (_LockOption)
 		{
-			solidBrush.Color = ForeColor;
+			solidBrush.Color = _ForeColor;
 			int num = _Top + _TitleHeight / 2 - 5;
 			graphics.FillRectangle(dt.SolidBrush, _Left + 4, num, 2, 4);
 			graphics.FillRectangle(dt.SolidBrush, _Left + 6, num, 2, 2);
@@ -921,7 +903,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 		if (_LockLocation)
 		{
-			solidBrush.Color = ForeColor;
+			solidBrush.Color = _ForeColor;
 			int num2 = _Top + _TitleHeight / 2 - 5;
 			graphics.FillRectangle(solidBrush, Right - 9, num2, 4, 4);
 			graphics.FillRectangle(solidBrush, Right - 11, num2 + 4, 8, 2);
@@ -930,48 +912,9 @@ public abstract class STNode : INotifyPropertyChanged
 		string text = OnGetDrawTitle();
 		if (!string.IsNullOrEmpty(text) && _ForeColor.A != 0)
 		{
-			solidBrush.Color = ForeColor;
+			solidBrush.Color = _ForeColor;
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			graphics.DrawString(text, _Font, solidBrush, GetTitleTextRectangle(), m_sf);
-		}
-		if (_Owner?.VisualTheme != null)
-			DrawExecutionIndicator(dt, _Owner.VisualTheme);
-	}
-
-	private void DrawExecutionIndicator(DrawingTools dt, STNodeVisualTheme theme)
-	{
-		Color color = _ExecutionState switch
-		{
-			STNodeExecutionState.Running => theme.Accent,
-			STNodeExecutionState.Succeeded => theme.Success,
-			STNodeExecutionState.Failed => theme.Error,
-			STNodeExecutionState.Canceled => theme.SecondaryText,
-			_ => theme.ResolveAccent(_TitleColor)
-		};
-		if (_LockOption) return;
-		float x = Left + 11;
-		float y = Top + TitleHeight / 2f;
-		dt.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-		using Pen pen = new Pen(color, 1.6f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
-		if (_ExecutionState == STNodeExecutionState.Succeeded)
-			dt.Graphics.DrawLines(pen, new[] { new PointF(x - 4, y), new PointF(x - 1, y + 3), new PointF(x + 4, y - 3) });
-		else if (_ExecutionState == STNodeExecutionState.Failed)
-		{
-			dt.Graphics.DrawLine(pen, x - 3, y - 3, x + 3, y + 3);
-			dt.Graphics.DrawLine(pen, x - 3, y + 3, x + 3, y - 3);
-		}
-		else if (_ExecutionState == STNodeExecutionState.Canceled)
-			dt.Graphics.DrawRectangle(pen, x - 3, y - 3, 6, 6);
-		else if (_ExecutionState == STNodeExecutionState.Running)
-		{
-			dt.Graphics.DrawEllipse(pen, x - 4, y - 4, 8, 8);
-			dt.Graphics.DrawLine(pen, x, y - 2, x, y);
-			dt.Graphics.DrawLine(pen, x, y, x + 2, y + 1);
-		}
-		else
-		{
-			dt.SolidBrush.Color = color;
-			dt.Graphics.FillEllipse(dt.SolidBrush, x - 3, y - 3, 6, 6);
 		}
 	}
 
@@ -1061,7 +1004,7 @@ public abstract class STNode : INotifyPropertyChanged
 			graphics.FillRectangle(solidBrush, _MarkRectangle);
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			SizeF sizeF = graphics.MeasureString(Mark, Font, _MarkRectangle.Width);
-			solidBrush.Color = ForeColor;
+			solidBrush.Color = _ForeColor;
 			if (sizeF.Height > (float)_ItemHeight || sizeF.Width > (float)_MarkRectangle.Width)
 			{
 				Rectangle rectangle = new Rectangle(_MarkRectangle.Left + 2, _MarkRectangle.Top + 2, _MarkRectangle.Width - 20, 16);

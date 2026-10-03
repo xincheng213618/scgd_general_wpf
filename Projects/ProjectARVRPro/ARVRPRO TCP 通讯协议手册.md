@@ -38,7 +38,7 @@
 | 字段 | 说明 |
 | --- | --- |
 | `Version` | 建议填写 `1.0`。当前不进行版本协商；部分响应中可能为 `null` |
-| `MsgID` | 客户端请求标识。直接响应通常原样返回；异步推送通常为空字符串 |
+| `MsgID` | 客户端请求标识。直接响应通常原样返回；普通异步推送通常为空字符串；外部切图请求携带唯一 MsgID，推荐确认时回显 |
 | `EventName` | 请求事件名，必填并区分大小写 |
 | `SerialNumber` | 产品 SN，主要用于初始化或 RunAll |
 | `Params` | 字符串或 `null`。需要传对象时，应先将对象序列化为 JSON 字符串 |
@@ -58,7 +58,7 @@
 | 客户端 -> ColorVision | `RunAll` | 触发当前组一键运行 | 先返回开始确认，结束后再推送结果 |
 | 客户端 -> ColorVision | `AOITestSwitchImageComplete` | 通知 AOI 画面已切换完成 | 成功时无单独 ACK |
 | ColorVision -> 客户端 | `SwitchPG` | 请求外部控制程序切换普通 PG 画面 | 客户端完成后回复 `SwitchPGCompleted` |
-| ColorVision -> 客户端 | `AoiSwitchPG` | AOI Relay 请求外部控制程序切图 | 客户端完成后回复 `AOITestSwitchImageComplete` |
+| ColorVision -> 客户端 | `AoiSwitchPG` | 外部切图节点请求外部控制程序切图 | 客户端完成后回复 `AOITestSwitchImageComplete` |
 | ColorVision -> 客户端 | `ProjectARVRResult` | 推送整轮测试最终结果 | 最终消息 |
 
 ## 5. 切换当前流程组：SwitchGroup
@@ -318,41 +318,42 @@ RunAll 会自行初始化本轮会话，不需要先发送 `ProjectARVRInit`：
 
 RunAll 启动时读取当前组的启用流程列表，并按顺序执行。执行期间不要切换组或修改启用状态。`AllowTestFailures` 配置决定某一步失败后继续还是终止；最终结果会保留首次流程失败信息。
 
-## 10. AOI 切图中转
+## 10. AOI 外部切图
 
-AOI 使用独立的 Socket Relay 服务，默认地址为 `127.0.0.1:9200`，默认不自动启动。现场必须确认 Relay 已启用并且 Flow 已连接。
+AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → ProjectARVRPro → 外部切图），复用已经由 `ProjectARVRInit` / `RunAll` 等建立的项目控制连接。无需另建 TCP 监听或传感器连接；外部程序仍须连接主 Socket。
 
 ```text
-Flow -- 文本 "1" --> Relay -- AoiSwitchPG --> 外部控制程序
-Flow <-- 文本 "1" -- Relay <-- AOITestSwitchImageComplete -- 外部控制程序
+外部切图节点 -- AoiSwitchPG --> 外部控制程序
+外部切图节点 <-- AOITestSwitchImageComplete -- 外部控制程序
 ```
 
-当 Relay 收到 Flow 发来的精确文本 `1` 时，向外部程序推送：
+节点发送以下报文，其中每次请求的 `MsgID` 都不同，`SerialNumber` 是当前产品 SN，而不是 Flow 内部的测量批次编号：
 
 ```json
-{
-  "Version": "1.0",
-  "MsgID": "",
-  "EventName": "AoiSwitchPG",
-  "Code": 0,
-  "Msg": "AoiSwitchPG"
-}
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG" }
 ```
 
-外部程序完成对应画面切换后发送：
+外部程序实际切图完成后，使用同一连接回复：
 
 ```json
-{
-  "Version": "1.0",
-  "MsgID": "req-aoi-001",
-  "EventName": "AOITestSwitchImageComplete",
-  "SerialNumber": "SN12345678"
-}
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AOITestSwitchImageComplete", "SerialNumber": "SN12345678" }
 ```
 
-成功时不会向外部程序返回单独 ACK，Relay 会向 Flow 转发文本 `1`。一轮 Flow 可能多次请求 AOI 切图，每次收到请求都应完成一次切换并回复一次确认。
+完成事件不返回单独 ACK。节点收到有效确认并等待配置的稳定延时后才继续下游；写入 Socket 成功不等于切图完成。节点不改变上游图像或测量结果。
 
-Flow 发来的其他文本可能按原文转发，因此 Relay 发给外部程序的内容不保证永远都是 JSON。只连通主 Socket 也不能证明 Relay 已连接或 Flow 已收到确认。
+| 节点属性 | 行为 |
+| --- | --- |
+| 等待超时 `TimeoutMs` | 默认 5000 ms，必须大于零；覆盖发送请求和等待确认。到期失败，不自动重发 |
+| 完成后延时 `DelayMs` | 默认 0 ms，不得为负；从收到确认后开始，等待画面稳定，不计入确认超时 |
+| 严格匹配 `RequireMatchingMsgId` | 默认关闭以兼容旧客户端自建确认 ID；开启后必须回显请求的 MsgID |
+
+全项目一次只允许一个切图节点执行，包含完成后延时；并行请求直接失败，不排队或覆盖前一个等待。确认必须来自本次发送使用的、仍处于活动状态的连接；报文携带非空 SN 且节点产品 SN 非空时还必须一致。没有等待、已经确认、错误连接或严格模式下 ID 不匹配的确认被忽略，确认事件本身不会切换项目的控制连接。
+
+**旧客户端兼容模式不能区分同一连接上迟到的上一次确认与当前请求。** 客户端必须每次切图只确认一次；需要排除这种误确认时，开启严格匹配并让客户端回显 MsgID。现有 IntegrationDemo / SemiAuto 自动确认自行生成 MsgID，使用它们时保持兼容模式，或先适配客户端的回显行为。
+
+流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待；其他客户端覆盖活动控制连接也会失败。主 Socket 的半包/粘包限制仍见本手册的 TCP 接收说明，新增节点不改变其接收分帧实现。
+
+迁移旧模板时，将专用于中转的通用传感器切图节点替换为「外部切图」，保留上下游连线并核对原来的超时和成功后延时。旧服务端 Flow 必须改用宿主进程中的 Flow 执行，不能在旧服务里直接运行这个项目节点。确认没有其它指令引用后，才清理该专用传感器连接配置。项目不再提供中转监听，也不再在启动时关闭并重开通用传感器；旧模板不会被自动改写。
 
 ## 11. 最终结果：ProjectARVRResult
 
@@ -429,7 +430,7 @@ Flow 发来的其他文本可能按原文转发，因此 Relay 发给外部程�
 | 设置返回 `1 / Partial applied` | 检查 `Applied` 和 `NotFound`，重新查询当前组和索引 |
 | 切图确认后没有单独响应 | 成功路径原本就没有 ACK，应等待下一条切图请求或最终结果 |
 | 结果发到另一个连接 | 是否有其他客户端发送过 ARVR 请求并覆盖当前推送连接 |
-| AOI 卡住 | Relay 是否启动、Flow 是否连接、请求是否为精确文本 `1`、确认是否真正转发到 Flow |
+| AOI 卡住 | 外部切图节点、主 Socket 活动连接、回执 SN/MsgID、等待超时和稳定延时 |
 
 ## 14. 并发与安全限制
 

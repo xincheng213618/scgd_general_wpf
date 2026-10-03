@@ -4,7 +4,7 @@ knowledge_type: "reference"
 status: "current"
 summary: "ARVRPro 项目入口、Socket 自动化、输出与历史结果查询；流程组、实例 Recipe 和 Demura 各有对应操作主题。"
 aliases: ["现场数据库离线查看","打开现场数据","ArvrOfflineDataSource","ARVR 历史原图删了还能看结果吗","保存结果图会不会重复画标记","ProjectARVRPro","ResultImageFileCandidates","SavedSourceImageFileName","SavedResultImageFileName","结果统计","统计日期记忆","CycleTimeStatisticsWindow","ARVR 项目"]
-code_paths: ["Projects/ProjectARVRPro/Offline/","Projects/ProjectARVRPro/ARVRWindow.xaml","Projects/ProjectARVRPro/TestResultViewWindow.xaml","Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/FlowRunningNodeTracker.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
+code_paths: ["Projects/ProjectARVRPro/Offline/","Projects/ProjectARVRPro/ARVRWindow.xaml","Projects/ProjectARVRPro/TestResultViewWindow.xaml","Projects/ProjectARVRPro/ThunderbirdSerialDebugWindow.xaml","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/FlowRuntimeEstimateCache.cs","Projects/ProjectARVRPro/FlowRunningNodeTracker.cs","Projects/ProjectARVRPro/ResultImagePresentation.cs","Projects/ProjectARVRPro/ProjectARVRReuslt.cs","Projects/ProjectARVRPro/ViewResultManager.cs","Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml","Projects/ProjectARVRPro/CycleTimeStatisticsWindow.xaml.cs","Projects/ProjectARVRPro/ResultStatisticsTheme.xaml","Projects/ProjectARVRPro/ResultStatistics.cs","Projects/ProjectARVRPro/ResultTimeline.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs"]
 test_paths: ["Test/ProjectARVRPro.Tests/OfflineDataSourceTests.cs","Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj","Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs","Test/ProjectARVRPro.Tests/ResultJsonPayloadStorageTests.cs","Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs","Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs","Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs","Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs"]
 related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol","projects.arvr-pro-processes","projects.arvr-pro-demura","projects.capabilities"]
 ---
@@ -26,7 +26,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | 切图失败 | `PictureSwitchConfig`、雷鸟串口、返回值和超时 |
 | RunAll 只跑一部分 | `AllowTestFailures`、Flow 模板名、切图和预处理错误 |
 | CSV 或 Socket 字段不对 | `UseLegacyARVROutput`、标准 CSV、Legacy 输出、客户 XLSX |
-| AOI 流程卡住 | 主 Socket、`SocketRelay`、`AOITestSwitchImageComplete` |
+| AOI 流程卡住 | 主 Socket、外部切图节点的等待状态、`AOITestSwitchImageComplete` |
 | Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
 | 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProjectARVRProProcessGroups.json` 和 Recipe 配置；升级时核对旧共享文件迁移日志 |
 
@@ -36,7 +36,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 | 项目 | 通信方式 | 流程组织 | 典型风险 |
 | --- | --- | --- | --- |
-| `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图、Legacy 输出、SocketRelay |
+| `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图回执、Legacy 输出、控制连接归属 |
 | `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
 客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。手工维护项目 `ProjectARVRPro.csproj` 的 `VersionPrefix`；打包器从主 DLL 的文件版本生成 manifest 版本，不手工同步 `manifest.json`。最低宿主要求读取 manifest 的 `requires`。
@@ -65,7 +65,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 “正在执行”同时列出本次流程内尚未结束的节点，以逗号分隔；节点结束后从列表移除，其余并行节点继续显示。同一节点有多次重叠执行时，只显示一个名称，直到这些执行全部结束才移除；名称相同的不同节点分别跟踪。列表过长时主提示省略，悬停提示和详情保留完整名单。重新准备、切换流程和关闭窗口时清空运行列表，结束状态保留最后启动节点用于诊断；上一轮执行的迟到事件不更新本轮列表。
 
-主界面分隔线、结果明细表格、流程配置提示和串口/Socket 中转日志界面使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。切换黑白主题时，普通背景、说明文字和按钮状态随主题更新；断开连接后的状态文字也保留动态资源引用。结果明细的隔行背景在行样式中设置，避免覆盖选中与悬停高亮。明细选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色；连接状态和图像标记保留各自的业务颜色。
+主界面分隔线、结果明细表格、流程配置提示和串口调试界面使用 [ColorVision.Themes](../ui-components/ColorVision.Themes.md) 的动态画刷。切换黑白主题时，普通背景、说明文字和按钮状态随主题更新；断开连接后的状态文字也保留动态资源引用。结果明细的隔行背景在行样式中设置，避免覆盖选中与悬停高亮。明细选中行的结果文字跟随行前景色，未选中时保留 PASS/FAIL 业务颜色；连接状态和图像标记保留各自的业务颜色。
 
 ## 长期运行与结果视图刷新
 
@@ -88,7 +88,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | `Services/SocketControl.cs` | `ProjectARVRInit`、`SwitchPGCompleted` 等 JSON handler |
 | `Services/RunAllSocket.cs` | Socket 触发一键执行 |
 | `Services/SwitchGroupSocket.cs` | 外部切换流程组 |
-| `SocketRelay/` | AOI Flow 与外部 Client 的中转层 |
+| `Flow/ExternalImageSwitchNode.cs` | 向外部 Client 请求切图并等待完成确认的本地节点 |
 | `ObjectiveTestResult.cs` | 聚合结果模型 |
 | `ViewResultManager.cs` | 本地结果、SQLite、CSV 和输出配置 |
 | `TestResultViewWindow.xaml.cs` | 结果查看和导出 |
@@ -105,9 +105,9 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 | `SwitchPGCompleted` | 外部确认切图完成，触发当前步骤 |
 | `SwitchGroup` | 切换当前流程组 |
 | `RunAll` | 一键执行当前组内启用步骤 |
-| `AOITestSwitchImageComplete` | AOI 切图完成信号，经 Relay 回给 Flow |
+| `AOITestSwitchImageComplete` | AOI 切图完成信号，完成当前外部切图节点的等待 |
 
-详细请求与响应、索引约定、状态码、并发限制及 AOI 中转见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
+详细请求与响应、索引约定、状态码、并发限制及 AOI 切图见 [TCP 通讯协议](./project-arvr-pro-protocol.md)，可运行的客户端示例见 [Integration Demo](./project-arvr-pro-integration-demo.md)。
 
 ## 输出和兼容
 
@@ -222,7 +222,7 @@ W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v�
 | RunAll | 当前组启用步骤按顺序执行，失败策略符合配置 |
 | Recipe | 限值、修正、PASS/FAIL 和窗口显示一致 |
 | 输出 | SQLite、CSV、Legacy、客户 XLSX、Socket 结果都符合当前配置 |
-| AOI Relay | Flow 请求、外部确认、Relay 转发三段都可追踪 |
+| 外部切图节点 | 请求、完成确认、超时/停止和稳定延时可追踪；验证客户端回执归属 |
 | 交付包 | `.cvxp` 内含 DLL、manifest、README、CHANGELOG |
 
 ## 本地构建与测试

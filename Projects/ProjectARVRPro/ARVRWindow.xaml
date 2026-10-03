@@ -284,7 +284,6 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Content="{display:DisplayText Key='设置'}" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
                     <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
-                    <Button Content="{display:DisplayText Key='中转'}" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2" Margin="2,0"/>
                     <StackPanel Orientation="Horizontal" Margin="2,0">
                         <TextBlock Text="{display:DisplayText Key='当前组:'}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                         <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}"

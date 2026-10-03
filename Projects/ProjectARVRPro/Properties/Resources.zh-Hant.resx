@@ -185,9 +185,6 @@
   <data name="导出 CSV" xml:space="preserve">
     <value>導出 CSV</value>
   </data>
-  <data name="就绪" xml:space="preserve">
-    <value>就緒</value>
-  </data>
   <data name="执行" xml:space="preserve">
     <value>執行</value>
   </data>
@@ -220,9 +217,6 @@
   </data>
   <data name="测试次数" xml:space="preserve">
     <value>測試次數</value>
-  </data>
-  <data name="消息日志" xml:space="preserve">
-    <value>消息日誌</value>
   </data>
   <data name="添加组" xml:space="preserve">
     <value>添加組</value>
@@ -284,9 +278,6 @@
   <data name="1.0 / 默认端口 6666" xml:space="preserve">
     <value>1.0 / 默認端口 6666</value>
   </data>
-  <data name="Flow(Client) → [AOITestSwitchImage] → 中转Server → SocketControl.Current.Stream → 外部Client" xml:space="preserve">
-    <value>Flow(Client) → [AOITestSwitchImage] → 中轉Server → SocketControl.Current.Stream → 外部Client</value>
-  </data>
   <data name="L/R 全批次" xml:space="preserve">
     <value>L/R 全批次</value>
   </data>
@@ -311,9 +302,6 @@
   <data name="Socket 协议：" xml:space="preserve">
     <value>Socket 協議：</value>
   </data>
-  <data name="Socket中转服务器" xml:space="preserve">
-    <value>Socket中轉服務器</value>
-  </data>
   <data name="TV畸变" xml:space="preserve">
     <value>TV畸變</value>
   </data>
@@ -325,15 +313,6 @@
   </data>
   <data name="▼ 向下切图" xml:space="preserve">
     <value>▼ 向下切圖</value>
-  </data>
-  <data name="● Flow未连接" xml:space="preserve">
-    <value>● Flow未連接</value>
-  </data>
-  <data name="● 外部Client未连接" xml:space="preserve">
-    <value>● 外部Client未連接</value>
-  </data>
-  <data name="● 服务器未启动" xml:space="preserve">
-    <value>● 服務器未啓動</value>
   </data>
   <data name="● 未连接" xml:space="preserve">
     <value>● 未連接</value>
@@ -358,12 +337,6 @@
   </data>
   <data name="下载服务：" xml:space="preserve">
     <value>下載服務：</value>
-  </data>
-  <data name="中转" xml:space="preserve">
-    <value>中轉</value>
-  </data>
-  <data name="中转服务器 (Flow作为Client连接此服务器)" xml:space="preserve">
-    <value>中轉服務器 (Flow作爲Client連接此服務器)</value>
   </data>
   <data name="主体 SN" xml:space="preserve">
     <value>主體 SN</value>
@@ -410,9 +383,6 @@
   <data name="修改处理类型" xml:space="preserve">
     <value>修改處理類型</value>
   </data>
-  <data name="停止服务器" xml:space="preserve">
-    <value>停止服務器</value>
-  </data>
   <data name="全批次 CT" xml:space="preserve">
     <value>全批次 CT</value>
   </data>
@@ -458,12 +428,6 @@
   <data name="双击查看测试项，右键查看更多操作" xml:space="preserve">
     <value>雙擊查看測試項，右鍵查看更多操作</value>
   </data>
-  <data name="发送到Flow" xml:space="preserve">
-    <value>發送到Flow</value>
-  </data>
-  <data name="发送到外部Client" xml:space="preserve">
-    <value>發送到外部Client</value>
-  </data>
   <data name="只合并全局相邻、L→R 且主体 SN 相同的两条完成记录" xml:space="preserve">
     <value>只合並全局相鄰、L→R 且主體 SN 相同的兩條完成記錄</value>
   </data>
@@ -472,9 +436,6 @@
   </data>
   <data name="名称用于流程组列表显示，后续可以单独修改。" xml:space="preserve">
     <value>名稱用於流程組列表顯示，後續可以單獨修改。</value>
-  </data>
-  <data name="启动服务器" xml:space="preserve">
-    <value>啓動服務器</value>
   </data>
   <data name="启用 L/R 联合统计" xml:space="preserve">
     <value>啓用 L/R 聯合統計</value>
@@ -493,9 +454,6 @@
   </data>
   <data name="复制组" xml:space="preserve">
     <value>複製組</value>
-  </data>
-  <data name="外部Client  → [AOITestSwitchImageComplete] → SocketManager → Handler → 中转Server → Flow" xml:space="preserve">
-    <value>外部Client  → [AOITestSwitchImageComplete] → SocketManager → Handler → 中轉Server → Flow</value>
   </data>
   <data name="外部对接" xml:space="preserve">
     <value>外部對接</value>
@@ -553,9 +511,6 @@
   </data>
   <data name="成功率" xml:space="preserve">
     <value>成功率</value>
-  </data>
-  <data name="手动发送 (调试用)" xml:space="preserve">
-    <value>手動發送 (調試用)</value>
   </data>
   <data name="打开下载目录" xml:space="preserve">
     <value>打開下載目錄</value>
@@ -710,9 +665,6 @@
   <data name="流程项" xml:space="preserve">
     <value>流程項</value>
   </data>
-  <data name="消息流向" xml:space="preserve">
-    <value>消息流向</value>
-  </data>
   <data name="清除日志" xml:space="preserve">
     <value>清除日誌</value>
   </data>
@@ -727,9 +679,6 @@
   </data>
   <data name="用于手动切换测试和历史结果解析，不参与一键执行顺序。" xml:space="preserve">
     <value>用於手動切換測試和歷史結果解析，不參與一鍵執行順序。</value>
-  </data>
-  <data name="监听IP" xml:space="preserve">
-    <value>監聽IP</value>
   </data>
   <data name="确定并保存" xml:space="preserve">
     <value>確定並保存</value>
@@ -842,15 +791,6 @@
   <data name="Demo 文件校验失败：" xml:space="preserve">
     <value>Demo 文件校驗失敗：</value>
   </data>
-  <data name="Flow已连接: {0}" xml:space="preserve">
-    <value>Flow已連接: {0}</value>
-  </data>
-  <data name="Flow未连接, 无法转发" xml:space="preserve">
-    <value>Flow未連接, 無法轉發</value>
-  </data>
-  <data name="Flow连接断开: {0}" xml:space="preserve">
-    <value>Flow連接斷開: {0}</value>
-  </data>
   <data name="L/R 全批次产量与 CT 趋势" xml:space="preserve">
     <value>L/R 全批次產量與 CT 趨勢</value>
   </data>
@@ -894,17 +834,8 @@
   <data name="{0} · 全批次 CT {1} · L→R 等待 {2} · {3:N0} 个流程" xml:space="preserve">
     <value>{0} · 全批次 CT {1} · L→R 等待 {2} · {3:N0} 個流程</value>
   </data>
-  <data name="● Flow已连接" xml:space="preserve">
-    <value>● Flow已連接</value>
-  </data>
-  <data name="● 外部Client已连接" xml:space="preserve">
-    <value>● 外部Client已連接</value>
-  </data>
   <data name="● 已连接 {0}" xml:space="preserve">
     <value>● 已連接 {0}</value>
-  </data>
-  <data name="● 服务器已启动 {0}:{1}" xml:space="preserve">
-    <value>● 服務器已啓動 {0}:{1}</value>
   </data>
   <data name="上限：结果需小于或等于此值" xml:space="preserve">
     <value>上限：結果需小於或等於此值</value>
@@ -972,9 +903,6 @@
   </data>
   <data name="处理 Demo 下载文件失败：" xml:space="preserve">
     <value>處理 Demo 下載文件失敗：</value>
-  </data>
-  <data name="外部Client未连接, 无法转发" xml:space="preserve">
-    <value>外部Client未連接, 無法轉發</value>
   </data>
   <data name="导入后将替换当前流程组和解析映射，共 {0} 个组、{1} 条解析映射。是否继续？" xml:space="preserve">
     <value>導入後將替換當前流程組和解析映射，共 {0} 個組、{1} 條解析映射。是否繼續？</value>
@@ -1074,9 +1002,6 @@
   </data>
   <data name="暂不可用" xml:space="preserve">
     <value>暫不可用</value>
-  </data>
-  <data name="服务器已启动, 监听 {0}:{1}" xml:space="preserve">
-    <value>服務器已啓動, 監聽 {0}:{1}</value>
   </data>
   <data name="未加载" xml:space="preserve">
     <value>未加載</value>
@@ -1242,9 +1167,6 @@
   <data name="读取首页统计失败：{0}" xml:space="preserve">
     <value>讀取首頁統計失敗：{0}</value>
   </data>
-  <data name="转发失败: {0}" xml:space="preserve">
-    <value>轉發失敗: {0}</value>
-  </data>
   <data name="这份资料未提供所选消息库。" xml:space="preserve">
     <value>這份資料未提供所選消息庫。</value>
   </data>
@@ -1296,5 +1218,50 @@
   </data>
   <data name="按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。" xml:space="preserve">
     <value>按所選統計週期，彙總每個完整 L/R 全批次的左右流程運行時間後取平均；不含 PG 和 L→R 等待。任一側缺少流程記錄時不計入運行時間平均值。</value>
+  </data>
+  <data name="ExternalSwitch_Title" xml:space="preserve">
+    <value>外部切圖</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutLabel" xml:space="preserve">
+    <value>等待逾時(ms)</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutDescription" xml:space="preserve">
+    <value>傳送切圖請求並等待完成回覆的最長時間，必須大於零。</value>
+  </data>
+  <data name="ExternalSwitch_DelayLabel" xml:space="preserve">
+    <value>完成後延時(ms)</value>
+  </data>
+  <data name="ExternalSwitch_DelayDescription" xml:space="preserve">
+    <value>收到完成回覆後等待畫面穩定，再繼續下游；零表示不額外等待。</value>
+  </data>
+  <data name="ExternalSwitch_MatchLabel" xml:space="preserve">
+    <value>嚴格比對 MsgID</value>
+  </data>
+  <data name="ExternalSwitch_MatchDescription" xml:space="preserve">
+    <value>開啟後外部程式必須回傳請求 MsgID；關閉相容舊程式，一次只允許一個等待，無法區分延遲的舊回覆。</value>
+  </data>
+  <data name="ExternalSwitch_InvalidTimeout" xml:space="preserve">
+    <value>切圖等待逾時必須大於零。</value>
+  </data>
+  <data name="ExternalSwitch_InvalidDelay" xml:space="preserve">
+    <value>切圖完成後延時不能為負數。</value>
+  </data>
+  <data name="ExternalSwitch_Busy" xml:space="preserve">
+    <value>已有外部切圖正在等待完成，請循序連接切圖節點。</value>
+  </data>
+  <data name="ExternalSwitch_NotConnected" xml:space="preserve">
+    <value>外部控制用戶端未連線或連線已關閉。</value>
+  </data>
+  <data name="ExternalSwitch_ConnectionChanged" xml:space="preserve">
+    <value>外部控制連線已中斷或切換，切圖等待終止。</value>
+  </data>
+  <data name="ExternalSwitch_Timeout: {0}" xml:space="preserve">
+    <value>等待外部切圖完成逾時（{0} ms）。</value>
+  </data>
+  <data name="ExternalSwitch_Summary: {0}" xml:space="preserve">
+    <value>等待完成 · {0} ms</value>
+  </data>
+  <data name="ExternalSwitch_Completed" xml:space="preserve">
+    <value>外部切圖完成</value>
   </data>
 </root>

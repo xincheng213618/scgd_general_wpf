@@ -1,4 +1,3 @@
-using System;
 using System.Drawing;
 
 namespace ST.Library.UI.NodeEditor;
@@ -12,20 +11,24 @@ public sealed class STNodeVisualTheme
 	private STNodeVisualTheme(bool isDark)
 	{
 		IsDark = isDark;
-		Canvas = ColorTranslator.FromHtml(isDark ? "#202124" : "#F3F5F8");
-		Surface = ColorTranslator.FromHtml(isDark ? "#303238" : "#FFFFFF");
+		Canvas = ColorTranslator.FromHtml(isDark ? "#222426" : "#E7EBF0");
+		Surface = ColorTranslator.FromHtml(isDark ? "#383A3E" : "#FFFFFF");
+		GridMajor = ColorTranslator.FromHtml(isDark ? "#303337" : "#D1D7DF");
+		GridMinor = ColorTranslator.FromHtml(isDark ? "#292C2F" : "#DEE3E9");
 		Text = ColorTranslator.FromHtml(isDark ? "#ECEEF2" : "#202936");
 		SecondaryText = ColorTranslator.FromHtml(isDark ? "#B4BBC6" : "#626E7F");
-		Border = ColorTranslator.FromHtml(isDark ? "#535862" : "#C4CBD5");
-		Accent = ColorTranslator.FromHtml(isDark ? "#78ACFF" : "#2563B8");
-		Success = ColorTranslator.FromHtml(isDark ? "#62C99A" : "#21805A");
-		Error = ColorTranslator.FromHtml(isDark ? "#FF8B8B" : "#C43D4B");
-		Warning = ColorTranslator.FromHtml(isDark ? "#E4BC69" : "#976614");
+		Border = ColorTranslator.FromHtml(isDark ? "#484C52" : "#C8D0DB");
+		Accent = ColorTranslator.FromHtml(isDark ? "#559BE0" : "#2878BF");
+		Success = ColorTranslator.FromHtml(isDark ? "#47A36D" : "#328355");
+		Error = ColorTranslator.FromHtml(isDark ? "#D45C5C" : "#C44949");
+		Warning = ColorTranslator.FromHtml(isDark ? "#B68B2D" : "#A47A21");
 	}
 
 	public bool IsDark { get; }
 	public Color Canvas { get; }
 	public Color Surface { get; }
+	public Color GridMajor { get; }
+	public Color GridMinor { get; }
 	public Color Text { get; }
 	public Color SecondaryText { get; }
 	public Color Border { get; }
@@ -54,22 +57,23 @@ public sealed class STNodeVisualTheme
 		return Color.FromArgb(255, color);
 	}
 
-	public Color TitleSurface(Color accent) => Blend(Surface, ResolveAccent(accent), IsDark ? 0.19f : 0.09f);
+	public Color TitleSurface(Color color)
+	{
+		int rgb = color.ToArgb() & 0xFFFFFF;
+		if (rgb == 0x1E90FF || rgb == 0x0000FF)
+			return ColorTranslator.FromHtml(IsDark ? "#286FB2" : "#2676BF");
+		if (rgb == 0x006400 || rgb == 0x008000 || rgb == 0x00FF00 || rgb == 0x228B22)
+			return ColorTranslator.FromHtml(IsDark ? "#328657" : "#287B4D");
+		return ResolveAccent(color);
+	}
+
+	public Color TitleProgress(Color color)
+	{
+		int rgb = color.ToArgb() & 0xFFFFFF;
+		return rgb == 0x00BFFF || rgb == 0x1E90FF
+			? ColorTranslator.FromHtml(IsDark ? "#4389C8" : "#438CC9") : ResolveAccent(color);
+	}
 
 	public Color ResolveText(Color color) => color.ToArgb() == Color.White.ToArgb()
 		? Text : color.ToArgb() == Color.Gray.ToArgb() ? SecondaryText : color;
-
-	internal static Color Blend(Color background, Color foreground, float amount) => Color.FromArgb(
-		(int)Math.Round(background.R + (foreground.R - background.R) * amount),
-		(int)Math.Round(background.G + (foreground.G - background.G) * amount),
-		(int)Math.Round(background.B + (foreground.B - background.B) * amount));
-}
-
-public enum STNodeExecutionState
-{
-	Idle,
-	Running,
-	Succeeded,
-	Failed,
-	Canceled
 }

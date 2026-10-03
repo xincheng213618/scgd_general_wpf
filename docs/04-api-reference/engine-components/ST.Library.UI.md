@@ -52,6 +52,8 @@ related: ["flow.architecture","flow.runtime","flow.workspace","operations.main-w
 `STNodeOption.Text` 值及端口顺序保持不变，因此该规则只释放节点正文的显示空间，
 不改变连线、执行或保存兼容性。自动尺寸计算也只计入实际绘制的端口文字。
 
+`FlowEditorCanvas` 将当前黑白主题映射到 `STNodeEditor.VisualTheme`：画布保留原有方格，降低网格对比度；节点正文、端口、连线和边框随主题切换。标题保留实色背景，`TitleProgress` 继续在整块标题内填充。颜色映射只作用于绘制，不回写节点类别颜色、进度或端口数据类型，也不改变节点尺寸、排列及执行面板。
+
 当前由 `FlowProcessing/Editor/FlowEditorCanvas.xaml` 声明 `<st:STNodeEditor />`，
 `ViewFlow` 组合 Canvas，`FlowEngineToolWindow` 再承载 standalone `ViewFlow`。
 主/独立窗口命令与文档目标由[工作区契约](../../01-user-guide/workflow/design.md)维护，

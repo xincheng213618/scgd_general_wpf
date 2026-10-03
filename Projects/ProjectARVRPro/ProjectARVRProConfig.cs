@@ -45,7 +45,6 @@ namespace ProjectARVRPro
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
-        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
 
         [Browsable(false)]
         [JsonIgnore]

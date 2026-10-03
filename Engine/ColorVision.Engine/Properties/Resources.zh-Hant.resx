@@ -1510,9 +1510,6 @@
   <data name="BulkEdit" xml:space="preserve">
     <value>統一編輯</value>
   </data>
-  <data name="ArchiveAll" xml:space="preserve">
-    <value>全部歸檔</value>
-  </data>
   <data name="BatchResults" xml:space="preserve">
     <value>批次結果</value>
   </data>
@@ -2619,12 +2616,6 @@
   </data>
   <data name="Flow_LastExecutionLabel" xml:space="preserve">
     <value>上次執行：</value>
-  </data>
-  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
-    <value>全部歸檔指令已經發送</value>
-  </data>
-  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
-    <value>歸檔指令已經發送</value>
   </data>
   <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
     <value>批次 {0} 結果</value>
@@ -7877,4 +7868,18 @@
   <data name="清空勾选表会删除表内全部记录，不受保留月数限制。" xml:space="preserve"><value>清空勾選資料表會刪除表內全部記錄，不受保留月數限制。</value></data>
   <data name="全部数据清理" xml:space="preserve"><value>全部資料清理</value></data>
   <data name="将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>將清空 {0} 中全部 {1:N0} 張可用資料表。</value></data>
+  <data name="Sensor_ConvertEncoding" xml:space="preserve"><value>轉換內容…</value></data>
+  <data name="Sensor_ConversionHint" xml:space="preserve"><value>轉換會同時處理傳送與回傳指令，保持通訊位元組不變。</value></data>
+  <data name="Sensor_ConversionSuccess" xml:space="preserve"><value>已轉換為 {0}，傳送與回傳指令已同步更新。</value></data>
+  <data name="Sensor_ConversionFailed" xml:space="preserve"><value>無法無損轉換為 {0}。請檢查內容或選擇其他編碼，原內容已保留。</value></data>
+  <data name="Sensor_NoneHint" xml:space="preserve"><value>None 用於呼叫範本，不是指令編碼。</value></data>
+  <data name="Sensor_DeleteCommand" xml:space="preserve"><value>刪除指令</value></data>
+  <data name="Sensor_EmptyCommands" xml:space="preserve"><value>還沒有指令，按「新增指令」開始編輯。</value></data>
+  <data name="Sensor_DeleteType" xml:space="preserve"><value>刪除類型…</value></data>
+  <data name="Sensor_DeleteTypePrompt" xml:space="preserve"><value>刪除感測器類型「{0}」？&#10;&#10;將一併刪除該類型下的 {1} 個範本及其指令：&#10;{2}&#10;&#10;其他類型不受影響。引用這些範本的流程需另行調整，此操作無法復原。</value></data>
+  <data name="Sensor_DeleteTypeFailed" xml:space="preserve"><value>刪除類型失敗：{0}</value></data>
+  <data name="Sensor_TypeNotFound" xml:space="preserve"><value>感測器類型已不存在，請重新開啟範本選單。</value></data>
+  <data name="Sensor_TypeInUse" xml:space="preserve"><value>以下裝置仍使用此類型，請先更換裝置的感測器類型：{0}</value></data>
+  <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>其他類型的範本仍引用此類型的指令定義，請先解除引用。</value></data>
+  <data name="Sensor_ConversionKeepHex" xml:space="preserve"><value>轉換結果包含舊範本無法安全儲存的逗號或逸出文字，請保留 Hex。</value></data>
 </root>

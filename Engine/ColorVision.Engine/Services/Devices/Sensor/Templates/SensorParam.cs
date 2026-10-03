@@ -168,6 +168,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             BracketTextToResponseCommand = new RelayCommand(_ => ApplyBracketTextToResponse());
             RequestToBracketTextCommand = new RelayCommand(_ => ShowRequestAsBracketText());
             ResponseToBracketTextCommand = new RelayCommand(_ => ShowResponseAsBracketText());
+            ConvertEncodingCommand = new RelayCommand(target => { if (target is SensorCmdType type) TryConvertEncoding(type); });
             ParseRequestString();
         }
 
@@ -175,6 +176,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public RelayCommand BracketTextToResponseCommand { get; }
         public RelayCommand RequestToBracketTextCommand { get; }
         public RelayCommand ResponseToBracketTextCommand { get; }
+        public RelayCommand ConvertEncodingCommand { get; }
 
 
         public void ParseRequestString()
@@ -245,17 +247,49 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         private bool _isLoading;
 
+        public bool TryConvertEncoding(SensorCmdType target)
+        {
+            try
+            {
+                string request = SensorCommandTextFormatter.ConvertEncoding(Request, SensorCmdType, target);
+                string response = SensorCommandTextFormatter.ConvertEncoding(Response, SensorCmdType, target);
+                // The legacy service splits ValueA on commas; the editor expands request escapes.
+                if (target != SensorCmdType.Hex && (request.Contains(',') || response.Contains(',') ||
+                    request.Contains("\\r") || request.Contains("\\n") || request.Contains("\\t")))
+                {
+                    ConvertStatus = Properties.Resources.Sensor_ConversionKeepHex;
+                    return false;
+                }
+                _isLoading = true;
+                try
+                {
+                    Request = request;
+                    Response = response;
+                    SensorCmdType = target;
+                }
+                finally { _isLoading = false; }
+                GenerateRequestString();
+                ConvertStatus = string.Format(Properties.Resources.Sensor_ConversionSuccess, target);
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or FormatException)
+            {
+                ConvertStatus = string.Format(Properties.Resources.Sensor_ConversionFailed, target);
+                return false;
+            }
+        }
+
         private void ApplyBracketTextToRequest()
         {
+            if (!TryConvertEncoding(SensorCmdType.Hex)) return;
             Request = SensorCommandTextFormatter.BracketTextToHex(BracketText);
-            SensorCmdType = SensorCmdType.Hex;
             ConvertStatus = Properties.Resources.Sensor_ConvertedToRequest;
         }
 
         private void ApplyBracketTextToResponse()
         {
+            if (!TryConvertEncoding(SensorCmdType.Hex)) return;
             Response = SensorCommandTextFormatter.BracketTextToHex(BracketText);
-            SensorCmdType = SensorCmdType.Hex;
             ConvertStatus = Properties.Resources.Sensor_ConvertedToResponse;
         }
 

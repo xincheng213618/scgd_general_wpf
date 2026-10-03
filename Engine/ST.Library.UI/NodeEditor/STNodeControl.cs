@@ -275,7 +275,7 @@ public class STNodeControl
 		m_sf = new StringFormat();
 		m_sf.Alignment = StringAlignment.Center;
 		m_sf.LineAlignment = StringAlignment.Center;
-		_Font = new Font("Segoe UI", 9f);
+		_Font = new Font("courier new", 8.25f);
 		Width = 75;
 		Height = 23;
 	}

@@ -185,9 +185,6 @@
   <data name="导出 CSV" xml:space="preserve">
     <value>Export CSV</value>
   </data>
-  <data name="就绪" xml:space="preserve">
-    <value>Ready</value>
-  </data>
   <data name="执行" xml:space="preserve">
     <value>Execute</value>
   </data>
@@ -220,9 +217,6 @@
   </data>
   <data name="测试次数" xml:space="preserve">
     <value>Measurement Count</value>
-  </data>
-  <data name="消息日志" xml:space="preserve">
-    <value>Message Log</value>
   </data>
   <data name="添加组" xml:space="preserve">
     <value>Add group</value>
@@ -284,9 +278,6 @@
   <data name="1.0 / 默认端口 6666" xml:space="preserve">
     <value>1.0 / Default port 6666</value>
   </data>
-  <data name="Flow(Client) → [AOITestSwitchImage] → 中转Server → SocketControl.Current.Stream → 外部Client" xml:space="preserve">
-    <value>Flow (Client) → [AOITestSwitchImage] → Relay Server → SocketControl.Current.Stream → External Client</value>
-  </data>
   <data name="L/R 全批次" xml:space="preserve">
     <value>Full L/R Batches</value>
   </data>
@@ -311,9 +302,6 @@
   <data name="Socket 协议：" xml:space="preserve">
     <value>Socket protocol:</value>
   </data>
-  <data name="Socket中转服务器" xml:space="preserve">
-    <value>Socket Relay Server</value>
-  </data>
   <data name="TV畸变" xml:space="preserve">
     <value>TV Distortion</value>
   </data>
@@ -325,15 +313,6 @@
   </data>
   <data name="▼ 向下切图" xml:space="preserve">
     <value>▼ Next Pattern</value>
-  </data>
-  <data name="● Flow未连接" xml:space="preserve">
-    <value>● Flow Disconnected</value>
-  </data>
-  <data name="● 外部Client未连接" xml:space="preserve">
-    <value>● External Client Disconnected</value>
-  </data>
-  <data name="● 服务器未启动" xml:space="preserve">
-    <value>● Server Stopped</value>
   </data>
   <data name="● 未连接" xml:space="preserve">
     <value>● Disconnected</value>
@@ -358,12 +337,6 @@
   </data>
   <data name="下载服务：" xml:space="preserve">
     <value>Download service:</value>
-  </data>
-  <data name="中转" xml:space="preserve">
-    <value>Relay</value>
-  </data>
-  <data name="中转服务器 (Flow作为Client连接此服务器)" xml:space="preserve">
-    <value>Relay Server (Flow connects as a client)</value>
   </data>
   <data name="主体 SN" xml:space="preserve">
     <value>Base SN</value>
@@ -410,9 +383,6 @@
   <data name="修改处理类型" xml:space="preserve">
     <value>Change Processing Type</value>
   </data>
-  <data name="停止服务器" xml:space="preserve">
-    <value>Stop Server</value>
-  </data>
   <data name="全批次 CT" xml:space="preserve">
     <value>Full Batch CT</value>
   </data>
@@ -458,12 +428,6 @@
   <data name="双击查看测试项，右键查看更多操作" xml:space="preserve">
     <value>Double-click to view test items; right-click for more actions</value>
   </data>
-  <data name="发送到Flow" xml:space="preserve">
-    <value>Send to Flow</value>
-  </data>
-  <data name="发送到外部Client" xml:space="preserve">
-    <value>Send to External Client</value>
-  </data>
   <data name="只合并全局相邻、L→R 且主体 SN 相同的两条完成记录" xml:space="preserve">
     <value>Combine only two globally adjacent completed L→R records with the same base SN</value>
   </data>
@@ -472,9 +436,6 @@
   </data>
   <data name="名称用于流程组列表显示，后续可以单独修改。" xml:space="preserve">
     <value>This name appears in the flow group list and can be changed later.</value>
-  </data>
-  <data name="启动服务器" xml:space="preserve">
-    <value>Start Server</value>
   </data>
   <data name="启用 L/R 联合统计" xml:space="preserve">
     <value>Enable combined L/R statistics</value>
@@ -493,9 +454,6 @@
   </data>
   <data name="复制组" xml:space="preserve">
     <value>Copy Group</value>
-  </data>
-  <data name="外部Client  → [AOITestSwitchImageComplete] → SocketManager → Handler → 中转Server → Flow" xml:space="preserve">
-    <value>External Client → [AOITestSwitchImageComplete] → SocketManager → Handler → Relay Server → Flow</value>
   </data>
   <data name="外部对接" xml:space="preserve">
     <value>External Integration</value>
@@ -553,9 +511,6 @@
   </data>
   <data name="成功率" xml:space="preserve">
     <value>Success Rate</value>
-  </data>
-  <data name="手动发送 (调试用)" xml:space="preserve">
-    <value>Manual Send (Debug)</value>
   </data>
   <data name="打开下载目录" xml:space="preserve">
     <value>Open Download Folder</value>
@@ -710,9 +665,6 @@
   <data name="流程项" xml:space="preserve">
     <value>Flow Item</value>
   </data>
-  <data name="消息流向" xml:space="preserve">
-    <value>Message Routing</value>
-  </data>
   <data name="清除日志" xml:space="preserve">
     <value>Clear Log</value>
   </data>
@@ -727,9 +679,6 @@
   </data>
   <data name="用于手动切换测试和历史结果解析，不参与一键执行顺序。" xml:space="preserve">
     <value>Used for manual test switching and historical result parsing; excluded from Run All.</value>
-  </data>
-  <data name="监听IP" xml:space="preserve">
-    <value>Listen IP</value>
   </data>
   <data name="确定并保存" xml:space="preserve">
     <value>Confirm and Save</value>
@@ -842,15 +791,6 @@
   <data name="Demo 文件校验失败：" xml:space="preserve">
     <value>Demo file verification failed:</value>
   </data>
-  <data name="Flow已连接: {0}" xml:space="preserve">
-    <value>Flow connected: {0}</value>
-  </data>
-  <data name="Flow未连接, 无法转发" xml:space="preserve">
-    <value>Flow is disconnected; cannot forward</value>
-  </data>
-  <data name="Flow连接断开: {0}" xml:space="preserve">
-    <value>Flow disconnected: {0}</value>
-  </data>
   <data name="L/R 全批次产量与 CT 趋势" xml:space="preserve">
     <value>Full L/R Batch Output and CT Trends</value>
   </data>
@@ -894,17 +834,8 @@ Candidate messages within one second before and after this run; verify associati
   <data name="{0} · 全批次 CT {1} · L→R 等待 {2} · {3:N0} 个流程" xml:space="preserve">
     <value>{0} · Full Batch CT {1} · L→R Wait {2} · {3:N0} Flows</value>
   </data>
-  <data name="● Flow已连接" xml:space="preserve">
-    <value>● Flow Connected</value>
-  </data>
-  <data name="● 外部Client已连接" xml:space="preserve">
-    <value>● External Client Connected</value>
-  </data>
   <data name="● 已连接 {0}" xml:space="preserve">
     <value>● Connected {0}</value>
-  </data>
-  <data name="● 服务器已启动 {0}:{1}" xml:space="preserve">
-    <value>● Server Started {0}:{1}</value>
   </data>
   <data name="上限：结果需小于或等于此值" xml:space="preserve">
     <value>Upper limit: result must be at or below this value</value>
@@ -972,9 +903,6 @@ Candidate messages within one second before and after this run; verify associati
   </data>
   <data name="处理 Demo 下载文件失败：" xml:space="preserve">
     <value>Failed to process downloaded Demo file:</value>
-  </data>
-  <data name="外部Client未连接, 无法转发" xml:space="preserve">
-    <value>External client is disconnected; cannot forward</value>
   </data>
   <data name="导入后将替换当前流程组和解析映射，共 {0} 个组、{1} 条解析映射。是否继续？" xml:space="preserve">
     <value>Import will replace the current flow groups and parsing mappings: {0} groups, {1} mappings. Continue?</value>
@@ -1074,9 +1002,6 @@ Candidate messages within one second before and after this run; verify associati
   </data>
   <data name="暂不可用" xml:space="preserve">
     <value>Currently Unavailable</value>
-  </data>
-  <data name="服务器已启动, 监听 {0}:{1}" xml:space="preserve">
-    <value>Server started, listening on {0}:{1}</value>
   </data>
   <data name="未加载" xml:space="preserve">
     <value>Not Loaded</value>
@@ -1242,9 +1167,6 @@ Each database is an independent snapshot; images are not automatically imported 
   <data name="读取首页统计失败：{0}" xml:space="preserve">
     <value>Failed to read overview statistics: {0}</value>
   </data>
-  <data name="转发失败: {0}" xml:space="preserve">
-    <value>Forwarding failed: {0}</value>
-  </data>
   <data name="这份资料未提供所选消息库。" xml:space="preserve">
     <value>The selected message database is not included in this data source.</value>
   </data>
@@ -1296,5 +1218,50 @@ Automatically saved settings will remain.</value>
   </data>
   <data name="按所选统计周期，汇总每个完整 L/R 全批次的左右流程运行时间后取平均；不含 PG 和 L→R 等待。任一侧缺少流程记录时不计入运行时间平均值。" xml:space="preserve">
     <value>Average of the summed left and right flow runtimes per complete L/R batch in the selected period; excludes PG and L→R waiting. Pairs missing flow records on either side are excluded from the runtime average.</value>
+  </data>
+  <data name="ExternalSwitch_Title" xml:space="preserve">
+    <value>External image switch</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutLabel" xml:space="preserve">
+    <value>Acknowledgement timeout (ms)</value>
+  </data>
+  <data name="ExternalSwitch_TimeoutDescription" xml:space="preserve">
+    <value>Maximum time to send the request and receive its completion acknowledgement; must be positive.</value>
+  </data>
+  <data name="ExternalSwitch_DelayLabel" xml:space="preserve">
+    <value>Delay after acknowledgement (ms)</value>
+  </data>
+  <data name="ExternalSwitch_DelayDescription" xml:space="preserve">
+    <value>Wait for the image to settle after acknowledgement before continuing; zero adds no delay.</value>
+  </data>
+  <data name="ExternalSwitch_MatchLabel" xml:space="preserve">
+    <value>Require matching MsgID</value>
+  </data>
+  <data name="ExternalSwitch_MatchDescription" xml:space="preserve">
+    <value>Require the client to echo the request MsgID. Off supports legacy clients with one pending request, but cannot distinguish a late acknowledgement from an earlier request.</value>
+  </data>
+  <data name="ExternalSwitch_InvalidTimeout" xml:space="preserve">
+    <value>Image-switch timeout must be positive.</value>
+  </data>
+  <data name="ExternalSwitch_InvalidDelay" xml:space="preserve">
+    <value>Image-switch settling delay cannot be negative.</value>
+  </data>
+  <data name="ExternalSwitch_Busy" xml:space="preserve">
+    <value>An external image switch is already pending. Connect image-switch nodes sequentially.</value>
+  </data>
+  <data name="ExternalSwitch_NotConnected" xml:space="preserve">
+    <value>The external control client is not connected or its connection is closed.</value>
+  </data>
+  <data name="ExternalSwitch_ConnectionChanged" xml:space="preserve">
+    <value>The external control connection closed or changed. Image-switch waiting has ended.</value>
+  </data>
+  <data name="ExternalSwitch_Timeout: {0}" xml:space="preserve">
+    <value>Timed out waiting for external image-switch completion ({0} ms).</value>
+  </data>
+  <data name="ExternalSwitch_Summary: {0}" xml:space="preserve">
+    <value>Await completion · {0} ms</value>
+  </data>
+  <data name="ExternalSwitch_Completed" xml:space="preserve">
+    <value>External image switch completed</value>
   </data>
 </root>
