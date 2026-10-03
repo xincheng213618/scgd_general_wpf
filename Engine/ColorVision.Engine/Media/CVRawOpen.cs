@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Media
             }
 
             string? filePath = GetCurrentFilePath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 return false;
             }
@@ -191,7 +191,7 @@ namespace ColorVision.Engine.Media
         private void ShowManualCieDialog()
         {
             string? filePath = GetCurrentFilePath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_NoCalculableCvRaw, "ColorVision");
                 return;
@@ -709,7 +709,7 @@ namespace ColorVision.Engine.Media
                 Order = 301,
                 Command = new RelayCommand(a =>
                 {
-                    if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                    if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && (CVFileReadCache.GetCachedLength(FilePath).HasValue || File.Exists(FilePath)))
                     {
                         new ExportCVCIE(FilePath).ShowDialog();
                     }

@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("图像文件路径为空。", nameof(filePath));
             string fullPath = Path.GetFullPath(filePath);
-            if (!File.Exists(fullPath)) throw new FileNotFoundException("图像文件不存在。", fullPath);
+            if (!CVFileReadCache.GetCachedLength(fullPath).HasValue && !File.Exists(fullPath)) throw new FileNotFoundException("图像文件不存在。", fullPath);
 
             int dataOffset;
             CVCIEFile fileInfo;
@@ -36,24 +36,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return FlowNodeTiming.Run("DecodeImage", () => LoadBitmap(fullPath, exposureOverride, gainOverride));
         }
 
-        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode)
+        public static string CreateCapturePath(string basePath, string deviceCode)
         {
-            using var saveStage = FlowNodeTiming.Measure("SaveImage");
-            using LocalFlowFrameLease lease = frame.Acquire();
-            if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
-            {
-                throw new InvalidOperationException("The primary frame cannot be saved before its mirror operation completes.");
-            }
             string root = string.IsNullOrWhiteSpace(basePath)
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision")
                 : basePath;
             string safeDeviceCode = string.IsNullOrWhiteSpace(deviceCode) ? "CameraLocal" : deviceCode;
             string directory = Path.Combine(root, safeDeviceCode, "Data", DateTime.Now.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(directory);
-            string stem = $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}";
+            return Path.Combine(directory, $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.cvraw");
+        }
+
+        public static void SaveCapture(LocalFlowFrame frame, string rawPath, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
+        {
+            using var saveStage = FlowNodeTiming.Measure("SaveImage");
+            using LocalFlowFrameLease lease = frame.Acquire();
+            if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
+                throw new InvalidOperationException("The primary frame cannot be saved before its mirror operation completes.");
+            if (saveMode != CVFileSaveMode.MemoryOnly) Directory.CreateDirectory(Path.GetDirectoryName(rawPath)!);
             if (lease.HasRaw)
             {
-                string rawPath = Path.Combine(directory, stem + ".cvraw");
                 if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvRaw))
                 {
                     throw new InvalidOperationException("The RAW mirror operation failed; the frame cannot be saved safely.");
@@ -80,7 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         rawPath,
                         rawFile,
                         lease.RawLength,
-                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength)))
+                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength), saveMode))
                     {
                         throw new IOException($"保存 CVRAW 失败：{rawPath}");
                     }
@@ -98,6 +99,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             float[]? exposureOverride,
             float? gainOverride)
         {
+            DateTime captureTime = CVFileReadCache.GetCachedLength(filePath).HasValue ? DateTime.Now : File.GetLastWriteTime(filePath);
             using Stream stream = CVFileReadCache.OpenRead(filePath);
             using BinaryReader reader = new(stream);
             stream.Position = dataOffset;
@@ -121,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Exposure = CloneExposure(exposureOverride ?? fileInfo.Exp),
                 SourceFilePath = filePath,
                 CalibrationTemplate = snapshot?.Template ?? string.Empty,
-                CaptureTime = File.GetLastWriteTime(filePath),
+                CaptureTime = captureTime,
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
             LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, isCie ? 0 : (int)dataLength, isCie ? (int)dataLength : 0);
@@ -246,9 +248,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (source == IntPtr.Zero || length <= 0)
                 throw new ArgumentException("The source image buffer is empty.", nameof(source));
 
-            // FileStream consumes this span synchronously. SaveCapture keeps the frame
-            // lease alive for the entire call, so the backing pointer cannot be freed
-            // before the payload is completely written.
+            // The writer consumes this span before returning, including when it only
+            // copies to cache and queues disk IO. The frame lease covers that copy.
             stream.Write(new ReadOnlySpan<byte>(source.ToPointer(), length));
         }
     }

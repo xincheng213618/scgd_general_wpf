@@ -35,7 +35,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 本地自动曝光沿用原生 `CM_GetAutoExpTime`，回填曝光、饱和度和显示配置；取图自动曝光在生成帧元数据之前完成。自动曝光下拉框在本地模式仅选择是否启用原生曝光，不应用服务 V1/V2 模板参数。`IsAutoExpWithND=true` 和非空 HDR 模板会明确报不支持；ND 手动控制、对焦、电机操作在主面板本地模式下禁用。校正模板仍由校正组覆盖增益，资源按模板文件引用解析，不要求服务校准设备在线。
 
-本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况；开启时按本地文件规则保存 CVRAW，并包含已执行的色度校正参数。关闭文件保存仍预览内存图并写数据库。此选项用于主面板/POI/定时本地取图、普通 L/BV 节点的本地转发和本地相机管理窗口；独立 `LocalCameraNode` 使用节点自己的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
+本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况；开启时按本地文件规则保存 CVRAW，并包含已执行的色度校正参数。关闭文件保存仍预览内存图并写数据库。此选项用于主面板/POI/定时本地取图和本地相机管理窗口；流程中的 `LVCameraNode` 本地转发和 `LocalCameraNode` 使用节点自己的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
 
 相机卡片和结果详情的登记、首次显示、首结果及提前释放边界见[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)。
 
@@ -75,7 +75,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 本地分支使用节点的曝光、增益、平均次数、校正模板和翻转；校正组存在增益配置时仍覆盖节点增益。POI、POI Filter 和 POI Revise 不解析、不执行，保存在节点中的这些模板配置不变，服务分支仍完整传递它们。此处忽略的是 POI 修正，取图校正模板仍生效。
 
-结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时创建并提交设备预览；关闭时跳过预览快照，不复制 RAW/CIE 或转换显示图。文件保存遵循显示配置 `SaveLocalCaptureFiles`（默认开启）；开启时保存 CVRAW，并包含已执行的色度校正参数，不会另建手动取图批次。
+结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时创建并提交设备预览；关闭时跳过预览快照，不复制 RAW/CIE 或转换显示图。先分配 CVRAW 路径并同步保存数据库主记录，再按节点的 `SaveFiles` / `SaveAsynchronously` 保存图像，后续色度参数追加继承相同模式，不会另建手动取图批次。旧画布缺少这两个字段时默认同步保存；原来通过设备显示配置关闭 L/BV 流程存图的配置，升级后需在节点关闭“保存文件”。服务分支的请求协议保持不变，这两个选项仅控制本地分支。
 
 转发沿用原节点消息 ID、超时和停止处理。采集返回前命令已超时或流程已停止时，晚到帧会释放，不写结果记录、不继续下游；原生采集不能即时中断，采集链已经生成的文件可能保留。流程启动及其它服务节点的 MQTT/服务配置前提不变，转发一个相机节点不代表整个流程可脱离服务运行。
 
@@ -89,12 +89,16 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | `Gain` / `AvgCount` | 0 / 1；增益必须有限且非负，平均次数至少为 1 |
 | `CalibTempName` | 空；非空时须按名称找到该物理相机的校正模板 |
 | `AutoConnect` | `true`；会话未打开时按设备配置连接，空 `CameraID` 自动搜索并按绑定或单相机规则选择；拒绝 Live 模式、无法唯一选择相机和原生打开错误 |
-| `IsAutoExp` / `SaveFiles` | 均为 `false`；分别控制本地自动曝光和文件保存 |
+| `IsAutoExp` / `SaveFiles` / `SaveAsynchronously` | 自动曝光默认 `false`，保存文件默认 `true`，异步保存默认 `false`。保存开启时可选同步/异步；保存关闭时仅缓存，数据库记录仍保留 |
 | `FlipMode` | `None`；方向及校正顺序由本地帧处理链执行 |
 
 关闭自动连接后，须先通过本地相机管理建立测量会话，否则提示“本地相机尚未打开”。`LocalCameraCaptureService` 也会拒绝 Live 模式测量。此服务的进程级 `CaptureLock` 串行化所有本地测量请求，同时通过设备会话锁访问句柄；设备不同也不表示这些测量会并行执行。
 
-取帧后节点查找 `action.SerialNumber` 对应的流程批次，保存测量主记录，再经 `SetCurrentFrame` 交接内存帧并发布 `ResultMessageBus` 通知。找不到批次或保存主记录失败会使节点失败。**`SaveFiles=false` 只跳过图像文件保存，仍写数据库并向下游交接帧。** 相机结果视图的自动刷新开启时，节点复制内存预览，按设备只保留最新待显示快照；关闭时跳过快照创建及显示转换，仍保存结果记录并向下游传递原内存帧。主面板手动取图的显式显示请求仍创建快照。预览转换或显示错误记录到日志，不改变已有采集和数据库成功结果。已生成的最新快照可随对应记录重选；同时关闭存图和自动刷新时，本次结果没有供历史重选的图像，重新开启自动刷新只影响后续取图。
+取帧后节点先生成唯一 CVRAW 路径，查找 `action.SerialNumber` 对应的流程批次并保存测量主记录，然后按节点配置写图像缓存/磁盘，最后经 `SetCurrentFrame` 交接内存帧并发布 `ResultMessageBus` 通知。找不到批次或保存主记录失败会使节点失败，并且不会开始图像保存。`SaveFiles=true, SaveAsynchronously=false` 等待写盘；两者均为 `true` 时完成缓存复制和写盘排队即可返回；`SaveFiles=false` 只写缓存。后续参数追加继承缓存条目的模式。缺少新异步字段的旧流程默认同步，已有 `SaveFiles` 值继续保留；新建节点默认保存。
+
+数据库路径在三种模式下均可用于缓存查找；异步/仅缓存要求全局 CVRAW 缓存开启。调用只识别磁盘文件的旧服务时，由流程配置者选择同步保存，不自动等待或补写。数据库中的取图耗时记录写库前已完成的采集/校正，节点结果另记录保存调用耗时；异步耗时包含复制和排队，不代表后台落盘完成。若上一批整图写盘占满缓存槽位，新图在保存入口等待一个槽位释放后再继续，避免后台写盘积压占用越来越多整图内存；数据库记录仍已同步写入。
+
+相机结果视图的自动刷新开启时，节点复制内存预览，按设备只保留最新待显示快照；关闭时跳过预览转换，仍保存结果并传递原内存帧。主面板手动取图仍强制显示。历史记录可从仍驻留的 CVRAW 缓存重新打开；仅缓存图像被淘汰或清理后，按普通缺失文件处理。预览转换失败写日志，不改变已有采集和数据库成功结果。
 
 ### 流程帧的寿命与读写限制
 
@@ -102,7 +106,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 复制 `CVStartCFC` 会共享 RuntimeResources；流程进入 `DoFinishingCore` 后在 finally 中释放这些资源。消费者应在根引用仍有效时调用 `Acquire()`，持有并最终 Dispose `LocalFlowFrameLease`。已取得的租约延长共享存储寿命；根对象 Dispose 后不能再从该根 Acquire，即使其它租约仍存活。租约自己的 Dispose 幂等，之后访问其指针会抛 ObjectDisposedException。
 
-**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；同步读写或生成独立快照的协议尚需由异步消费者补齐；当前相机设备预览在交接下游前复制 RAW/CIE，UI 不持有原生指针或流程帧租约。
+**租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；异步消费者必须自行复制稳定快照；CVRAW 保存先完成像素复制，后台任务不持有可变流程帧，参数尾块独立替换；当前相机设备预览在交接下游前复制 RAW/CIE，UI 不持有原生指针或流程帧租约。
 
 `IsMirrorReady` 与缓冲区各自的 flip 状态也要一起判断：有 CIE 时最终翻转可只作用于 CIE，RAW 仍保留传感器方向；无校正模板的节点可发布尚未应用方向的 RAW。不能仅凭 FlipMode 判断显示坐标已与 POI 一致。设备视图快照的范围及后续优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
@@ -111,8 +115,8 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 本地测量的保存开关开启时，`LocalFrameFileService.SaveCapture` 按下列规则写文件：
 
 - 根目录取 `Device.Config.FileServerCfg.DataBasePath`；为空时使用用户“文档”目录下的 `ColorVision`。
-- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `Local_yyyyMMdd_HHmmss_fff.cvraw`；色度校正参数保存在 CVRAW 尾部，旧服务生成的 `.cvcie` 保留读取兼容。
-- RAW 与参数保存失败不会撤销已写出的内容。流程节点在文件保存之后写数据库，数据库失败也可能留下已生成的图像。
+- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `Local_yyyyMMdd_HHmmss_fff_<唯一标识>.cvraw`；色度校正参数保存在 CVRAW 尾部，旧服务生成的 `.cvcie` 保留读取兼容。
+- 流程节点先写数据库再保存图像；RAW 与参数保存失败不会撤销数据库或已写出的内容。异步失败记录日志，不重试、不等待退出时完成。主面板和独立本地校正保持原来的同步保存流程。
 
 因此应分别确认采集、文件和数据库结果，不能仅凭文件存在判断整个节点成功。图像转换与导出格式见[CVRAW/CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)。
 
@@ -140,7 +144,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 | CSV 导出 | 先选择一条记录；只导出该记录。保存对话框确认后代码会追加 `.csv`，文件名无需再次填写此后缀 |
 | 清空列表或删除选中行 | 只移除当前视图集合中的行，不删除数据库记录或图像文件 |
 
-最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，旧的无文件记录无法重新打开。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
+最新本地结果选择时使用 `LocalCameraPreview` 的独立快照；其它结果的显示链仍是 `ViewResultImage.FileUrl → OpenImage(string?) → ImageView.OpenImage(filePath)`，空路径清空图像。`SaveFiles=false` 的本地流程结果可立即预览，也继续供下游使用；新的本地结果替换旧快照后，流程记录仍可从驻留文件缓存打开；缓存和磁盘都没有时无法重新打开。主面板和本地管理窗口的 RAW 预览均使用 CVRAW 解码链的 BGR 显示约定和源行步长；16 位三通道只在显示副本中转为 WPF 的 RGB48，不交换绿蓝通道、不缩放采样值、不修改源缓冲；校正处理和可选 CIE 真彩显示是独立步骤。预览方向调整只作用于显示副本；RAW 与 CIE 色彩/坐标的实机验证和进一步性能优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。
 
 自动流程在 `AutoRefreshView=false` 时跳过内存预览复制，结果仍可加入列表；主面板手动取图的强制显示请求不受此开关阻止。直接快照显示先清理文件状态，带完整 CIE 时继续挂载内存测量数据。实时帧、取图快照和 CVRAW 文件槽位分别拥有自己的像素：覆盖或统一释放文件/校正缓存不会释放已经显示的独立帧。文件读取缓冲复用也不会消除实时流和取图快照现有的复制与冻结成本。
 

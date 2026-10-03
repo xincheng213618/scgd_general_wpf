@@ -1,3 +1,4 @@
+using ColorVision.FileIO;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -10,7 +11,7 @@ namespace Conoscope.Core
         public static void OpenModule(string? filePath = null)
         {
             ConoscopeWindow window = GetOrCreateWindow();
-            if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            if (!string.IsNullOrWhiteSpace(filePath) && (CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 window.OpenConoscope(filePath);
             }
@@ -19,7 +20,7 @@ namespace Conoscope.Core
         public static void OpenFromImageView(EditorContext context)
         {
             string? filePath = context.Config.FilePath;
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 MessageBox.Show(Conoscope.Properties.Resources.MsgImageViewFilePathUnavailable, Conoscope.Properties.Resources.TitleHint, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;

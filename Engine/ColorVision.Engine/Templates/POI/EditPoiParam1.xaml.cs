@@ -1,4 +1,5 @@
-﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.FileIO;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CS0169,CS8601,CS8602,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -303,7 +304,7 @@ namespace ColorVision.Engine.Templates.POI
             bool loadExistingPoi = KBJson.Height != 0 && KBJson.Width != 0;
             if (loadExistingPoi)
             {
-                if (File.Exists(PoiConfig.BackgroundFilePath))
+                if ((CVFileReadCache.GetCachedLength(PoiConfig.BackgroundFilePath).HasValue || File.Exists(PoiConfig.BackgroundFilePath)))
                     ImageView.OpenImage(PoiConfig.BackgroundFilePath);
                 else
                     CreateImage(KBJson.Width, KBJson.Height, Colors.White, false);
@@ -1095,7 +1096,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 foreach (var item in recentItems)
                 {
-                    if (File.Exists(item.FileUrl))
+                    if ((CVFileReadCache.GetCachedLength(item.FileUrl).HasValue || File.Exists(item.FileUrl)))
                     {
                         ImageView.OpenImage(item.FileUrl);
                         PoiConfig.BackgroundFilePath = item.FileUrl;

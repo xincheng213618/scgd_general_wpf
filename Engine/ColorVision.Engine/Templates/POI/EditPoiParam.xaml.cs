@@ -1,4 +1,5 @@
-﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.FileIO;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1805,CS0414,CS8601,CS8602,CS8604,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
@@ -117,7 +118,7 @@ namespace ColorVision.Engine.Templates.POI
             bool loadExistingPoi = PoiParam.Height != 0 && PoiParam.Width != 0;
             if (loadExistingPoi)
             {
-                if (File.Exists(PoiConfig.BackgroundFilePath))
+                if ((CVFileReadCache.GetCachedLength(PoiConfig.BackgroundFilePath).HasValue || File.Exists(PoiConfig.BackgroundFilePath)))
                 {
                     ImageView.OpenImage(PoiConfig.BackgroundFilePath);
                 }
@@ -1135,7 +1136,7 @@ namespace ColorVision.Engine.Templates.POI
                 if (!allowCieFile && IsCieFile(path))
                     continue;
 
-                if (File.Exists(path))
+                if ((CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path)))
                 {
                     filePath = path;
                     return true;

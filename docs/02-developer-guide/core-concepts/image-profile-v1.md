@@ -60,7 +60,7 @@ CVCIE 结果窗口的数据源提供：
 
 文件头没有可靠的单位声明，因此 Y/XYZ 的单位留空，不写为 `cd/m²` 或 `DN`；不能单凭 CVCIE 扩展名声称其 Y 已经是经标定的物理亮度 Lv。x/y 单位为 `1`（无量纲）。窗口标题、图例、统计、采样表及完整 CSV/JSON 均用 `CIE Y`、`CIE x`、`CIE y` 等明确区分。32-bit float 提升到 double 参与计算，64-bit double 不降为 float；不归一化、不夹紧负数。
 
-`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。从磁盘打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。CVRAW 命中文件缓存时，显示阶段只注册剖面工厂，不读取磁盘指纹；实际执行剖面分析仍要求文件可用，文件不可用只影响该工具，不阻止缓存图像显示。
+`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和未命中缓存的 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。从磁盘打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。CVRAW 命中文件缓存时，显示阶段只注册剖面工厂，不读取磁盘指纹；实际执行优先从缓存复制 RAW 像素并取得校正参数，随即归还缓存流；文件尚未落盘或仅缓存时也可计算，测量结束释放独立副本。未命中才使用磁盘映射。
 
 测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
 

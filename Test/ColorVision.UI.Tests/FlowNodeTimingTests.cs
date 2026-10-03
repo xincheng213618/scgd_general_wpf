@@ -29,7 +29,7 @@ public class FlowNodeTimingTests
             var timing = new FlowNodeTiming();
             using (timing.Activate())
             {
-                LocalFrameFileService.SaveCapture(frame, directory, "test");
+                LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(directory, "test"));
                 using var loaded = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(frame.CvRawFilePath));
                 using var lease = loaded.Acquire();
                 Assert.Equal(length, lease.RawLength);

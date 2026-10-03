@@ -108,7 +108,7 @@ public sealed class RawColorCalibrationTests
             Assert.Equal(last, File.ReadAllBytes(path));
             // A failed attempt is not a new parameter snapshot; run successfully before saving.
             LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "saved", default);
-            LocalFrameFileService.SaveCapture(frame, root, "camera");
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             Assert.Empty(frame.CvCieFilePath);
             Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
             Assert.True(CVFileUtil.Read(frame.CvRawFilePath, out CVCIEFile savedRaw));

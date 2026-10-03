@@ -1221,7 +1221,7 @@ namespace ProjectARVRPro
                     .Where(x => !string.IsNullOrWhiteSpace(x.FileUrl))
                     .OrderBy(x => x.ZIndex ?? int.MaxValue)
                     .ThenBy(x => x.Id)
-                    .FirstOrDefault(x => File.Exists(x.FileUrl));
+                    .FirstOrDefault(x => ColorVision.FileIO.CVFileReadCache.GetCachedLength(x.FileUrl).HasValue || File.Exists(x.FileUrl));
 
                 if (!string.IsNullOrWhiteSpace(image?.FileUrl))
                     result.FileName = image.FileUrl;

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <xs:schema id="root">
@@ -4448,10 +4448,10 @@
 4. 將 OUT 連接到後續本地校正、POI 或其他算法節點。</value>
   </data>
   <data name="Flow_LocalCamera_Processing" xml:space="preserve">
-    <value>相機採集 RAW → 空間/普通校正 → 色度校正並生成 CIE（模板包含時）→ 圖像翻轉 → 保存文件。下游 POI 始終使用最終方向的圖像座標。</value>
+    <value>相機採集 RAW → 空間/普通校正 → 色度校正（可保留參數按需計算）→ 圖像翻轉 → 寫入資料庫 → 按節點設定同步儲存、非同步儲存或僅快取 CVRAW。下游 POI 使用最終方向的圖像座標。</value>
   </data>
   <data name="Flow_LocalCamera_Notes" xml:space="preserve">
-    <value>X 表示上下翻轉，Y 表示左右鏡像，XY 表示旋轉 180°；不支持 90°/270°旋轉。未選擇校正模板時不會提前翻轉 RAW，方向配置會保留到下游本地校正完成後再應用。</value>
+    <value>X 表示上下翻轉，Y 表示左右鏡像，XY 表示旋轉 180°；不支持 90°/270°旋轉。未選擇校正模板時不會提前翻轉 RAW，方向配置會保留到下游本地校正完成後再應用。 儲存檔案預設開啟；非同步儲存預設關閉。關閉儲存檔案後，圖像與後續追加的色度參數僅保留在快取；舊版服務需要磁碟檔案時使用同步儲存。</value>
   </data>
   <data name="TemplateBrowserActionError" xml:space="preserve">
     <value>{0}：{1}</value>

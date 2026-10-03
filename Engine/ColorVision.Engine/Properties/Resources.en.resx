@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -4226,8 +4226,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>Property descriptions</value></data>
   <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>Captures one RAW frame from a local physical camera and optionally performs local calibration, image flipping, and file saving.</value></data>
   <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. Select the device code and configure the exposure time, gain, and average count.&#xA;2. Select a calibration template when calibration is required; leave it empty to output RAW only.&#xA;3. Enable auto connect, auto exposure, file saving, and image flipping as needed.&#xA;4. Connect OUT to a downstream local calibration, POI, or other algorithm node.</value></data>
-  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration and CIE generation (when included in the template) → image flip → file save. Downstream POI nodes always use coordinates in the final image orientation.</value></data>
-  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes.</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration (optionally replayed from saved parameters) → image flip → database insert → synchronous save, asynchronous save, or cache-only CVRAW. Downstream POI uses the final image orientation.</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes. File saving is enabled by default; asynchronous saving is disabled. Disabling file saving keeps the image and later color parameters only in cache. Use synchronous saving for legacy services that require a disk file.</value></data>
 
   <data name="本地关注点布点(Re)" xml:space="preserve"><value>Local POI Layout (Remap)</value></data>
   <data name="本地关注点布点(参数)" xml:space="preserve"><value>Local POI Layout (Parameters)</value></data>

@@ -25,7 +25,8 @@ public sealed class ExportCieTests
     [InlineData(1, true, true)]
     [InlineData(1, false, true)]
     [InlineData(3, true, false)]
-    public void CalibratedRawExportsFloatMeasurementChannelsWithoutCreatingCvcie(int channels, bool includeSource, bool canReplay)
+    [InlineData(3, false, true, true)]
+    public void CalibratedRawExportsFloatMeasurementChannelsWithoutCreatingCvcie(int channels, bool includeSource, bool canReplay, bool memoryOnly = false)
     {
         string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-calibrated-{Guid.NewGuid():N}");
         string sourcePath = Path.Combine(root, "sample.cvraw");
@@ -33,14 +34,14 @@ public sealed class ExportCieTests
         Directory.CreateDirectory(root);
         try
         {
-            byte[] raw = WritePatternedRawFixture(sourcePath, rows: 2, cols: 3, channels);
+            byte[] raw = WritePatternedRawFixture(sourcePath, rows: 2, cols: 3, channels, memoryOnly ? CVFileSaveMode.MemoryOnly : CVFileSaveMode.Synchronous);
             new ColorCalibrationSnapshot
             {
                 Width = 3, Height = 2, RawBpp = 16, Channels = channels,
                 TransformKind = channels == 1 ? 2 : 0, Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4],
                 Exposure = [1, 1, 1], Template = "export"
             }.Save(sourcePath, canReplay);
-            byte[] original = File.ReadAllBytes(sourcePath);
+            byte[]? original = memoryOnly ? null : File.ReadAllBytes(sourcePath);
             var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
             {
                 SavePath = outputPath, Name = "measurement.v1", IsExportSrc = includeSource
@@ -82,7 +83,8 @@ public sealed class ExportCieTests
                 Assert.Equal(name, parameters.ExportedChannel);
                 Assert.Equal(32, parameters.Bpp);
             }
-            Assert.Equal(original, File.ReadAllBytes(sourcePath));
+            if (memoryOnly) Assert.False(File.Exists(sourcePath));
+            else Assert.Equal(original, File.ReadAllBytes(sourcePath));
             Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
         }
         finally
@@ -565,7 +567,7 @@ public sealed class ExportCieTests
         return data;
     }
 
-    private static byte[] WritePatternedRawFixture(string filePath, int rows, int cols, int channels)
+    private static byte[] WritePatternedRawFixture(string filePath, int rows, int cols, int channels, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
     {
         ushort[] values = new ushort[rows * cols * channels];
         ushort[] pattern = [0, 1, 255, 256, 1024, 32768, 65535];
@@ -573,7 +575,7 @@ public sealed class ExportCieTests
             values[i] = pattern[i % pattern.Length];
         byte[] data = new byte[values.Length * sizeof(ushort)];
         Buffer.BlockCopy(values, 0, data, 0, data.Length);
-        WriteCieFile(filePath, CVType.Raw, rows, cols, bpp: 16, channels, data);
+        WriteCieFile(filePath, CVType.Raw, rows, cols, bpp: 16, channels, data, saveMode: saveMode);
         return data;
     }
 
@@ -586,7 +588,7 @@ public sealed class ExportCieTests
         return values;
     }
 
-    private static void WriteCieFile(string filePath, CVType fileType, int rows, int cols, int bpp, int channels, byte[] data, string? srcFileName = null)
+    private static void WriteCieFile(string filePath, CVType fileType, int rows, int cols, int bpp, int channels, byte[] data, string? srcFileName = null, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
     {
         using CVCIEFile file = new()
         {
@@ -601,7 +603,7 @@ public sealed class ExportCieTests
             SrcFileName = srcFileName,
             Data = data,
         };
-        Assert.True(CVFileUtil.WriteCIEFile(filePath, file));
+        Assert.True(CVFileUtil.WriteCIEFile(filePath, file, saveMode));
     }
 
     private static void EnsureExportWindowTestResources()

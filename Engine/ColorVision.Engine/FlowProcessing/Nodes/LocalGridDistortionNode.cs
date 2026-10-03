@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -496,8 +496,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
         {
             FlowNodeTiming.Skip("OpenImage");
-            string file = currentFrame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? currentFrame.CvCieFilePath : currentFrame.CvRawFilePath;
-            imageFile = string.IsNullOrWhiteSpace(file) ? null : file;
+            imageFile = currentFrame.ResolveResultImageFilePath();
             return currentFrame;
         }
         int sourceMasterId = -1;

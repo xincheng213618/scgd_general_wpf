@@ -1347,8 +1347,9 @@ public sealed class ResultStatisticsTests
         public void Dispose()
         {
             SqliteConnection.ClearAllPools();
-            if (File.Exists(Path))
-                File.Delete(Path);
+            // Read-only queries can leave SQLite WAL and shared-memory sidecars.
+            foreach (string path in new[] { Path, Path + "-wal", Path + "-shm" })
+                File.Delete(path);
             if (Directory.Exists(_directory))
                 Directory.Delete(_directory);
         }

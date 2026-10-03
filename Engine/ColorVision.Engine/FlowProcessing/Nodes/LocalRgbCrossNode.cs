@@ -1,4 +1,4 @@
-﻿using ColorVision.ImageEditor.EditorTools.Algorithms;
+using ColorVision.ImageEditor.EditorTools.Algorithms;
 using ColorVision.Algorithms;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Algorithms;
@@ -153,8 +153,7 @@ public sealed class LocalRgbCrossNode : LocalFlowNodeBase
         if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
         {
             FlowNodeTiming.Skip("OpenImage");
-            string file = currentFrame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? currentFrame.CvCieFilePath : currentFrame.CvRawFilePath;
-            imageFile = string.IsNullOrWhiteSpace(file) ? null : file;
+            imageFile = currentFrame.ResolveResultImageFilePath();
             return currentFrame;
         }
         int sourceMasterId = -1;

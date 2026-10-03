@@ -26,7 +26,7 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 | 来源 | 责任与前提 |
 | --- | --- |
 | 已有 CVCIE | 从本地文件读取内嵌通道；不要求相机硬件。文件格式、通道读取及版本限制见 [FileIO](../../engine-components/ColorVision.FileIO.md) |
-| 已校正 CVRAW | 从原始像素及文件尾部保存的色度校正快照还原 XYZ；不要求另存 CVCIE 或连接相机。只有匹配像素布局且 `CanReplay=true` 的三通道校正可用于完整分析 |
+| 已校正 CVRAW | 从原始像素及尾部保存的色度校正快照还原 XYZ；缓存命中时使用独立 RAW 副本，尚未落盘或仅缓存也可打开；不要求另存 CVCIE 或连接相机。只有匹配像素布局且 `CanReplay=true` 的三通道校正可用于完整分析 |
 | Ribbon 测量采集 | `ConoscopeCaptureWorkflow` 调用 Engine Flow 或服务列表中的 `DeviceCamera`，需要对应模板/设备服务与结果记录 |
 | MVS 观察相机 | `MVSViewManager`、`MvsCaptureSession` 和观察窗口管理预览/光栅；另需海康驱动及 `MvCameraControl.dll`，不是 Engine 测量相机的替代实现 |
 
@@ -44,7 +44,7 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 | 窗口操作成功 | 业务成功且有文件时调用 `OpenConoscope`，然后将按钮操作标为成功 | 不等待文档首屏或完整 XYZ 加载 |
 | 文档/显示 | 由下节事件、数据状态和 View 渲染另行完成 | 与 Flow/消息状态、按钮计时结果不同 |
 
-Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回退当前 `FlowEngineManager.Batch`；因此该回退不能被描述为严格绑定本次结果。有效批次下最多查询结果10轮，每次未找到后等待300ms，并取枚举中第一个可用测量文件。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序找现存文件，不负责下载远端 URL。
+Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回退当前 `FlowEngineManager.Batch`；因此该回退不能被描述为严格绑定本次结果。有效批次下最多查询结果10轮，每次未找到后等待300ms，并取枚举中第一个可用测量文件。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序查找；CVRAW 先检查进程内文件缓存，命中即可使用，未命中才检查磁盘，不负责下载远端 URL。
 
 `CaptureCameraAsync` 按相机配置选择单曝光或 R/G/B 三曝光，传入选中的标定参数，以及 ID 为 `-1` 的自动曝光/JSON 模板参数。它复用的是 [Engine 相机契约](../../../01-user-guide/devices/camera.md)，Flow 执行另见 [FlowExecutionSession](../../../01-user-guide/workflow/execution.md)。
 

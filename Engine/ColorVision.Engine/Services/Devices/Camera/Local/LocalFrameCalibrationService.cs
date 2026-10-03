@@ -1,5 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
+using ColorVision.FileIO;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
@@ -96,7 +97,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 string rawPath = frame.CvRawFilePath;
                 bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
                 if (!canReplay) rawPath = frame.Metadata.SourceFilePath;
-                if (!string.IsNullOrWhiteSpace(rawPath) && File.Exists(rawPath)
+                if (!string.IsNullOrWhiteSpace(rawPath) && (CVFileReadCache.GetCachedLength(rawPath).HasValue || File.Exists(rawPath))
                     && string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
                     FlowNodeTiming.Run("SaveColorParameters", () => snapshot.Save(rawPath, canReplay));
             }

@@ -351,6 +351,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ? frame.CvCieFilePath
                 : frame.CvRawFilePath;
             if (!string.IsNullOrWhiteSpace(primaryFile)) return primaryFile;
+            // A calibrated RAW replaces a locally generated CVCIE only when its
+            // pixel coordinates still match the primary CIE buffer used by the algorithm.
+            if (frame.ColorCalibration?.CanReplay == true && frame.IsRawFlipApplied == frame.IsCieFlipApplied
+                && !string.IsNullOrWhiteSpace(frame.CvRawFilePath)) return frame.CvRawFilePath;
 
             bool sourceStillMatchesPrimary = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw
                 && frame.Metadata.FlipMode == CVImageFlipMode.None

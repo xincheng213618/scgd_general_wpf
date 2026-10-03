@@ -82,6 +82,8 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal("filter-legacy", first.POIFilterTempName);
         Assert.Equal("revise-legacy", first.POIReviseTempName);
         Assert.Equal(CVImageFlipMode.Y, first.FlipMode);
+        Assert.True(first.SaveFiles);
+        Assert.False(first.SaveAsynchronously);
         Assert.Equal(80, first.Left);
         Assert.Equal(100, first.Top);
         Assert.Equal("legacy-bv-second", second.NodeName);
@@ -89,6 +91,22 @@ public sealed class LvCameraNodeMigrationTests
         Assert.Equal(420, second.Left);
         Assert.Same(second.GetAllInputOptions()[0], Assert.Single(first.GetAllOutputOptions()[0].ConnectedOption));
     }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void SaveOptionsRoundTripThroughCanvas(bool saveFiles, bool asynchronously) => StaTest.Run(() =>
+    {
+        using var container = new CVNodeContainer();
+        container.LoadCanvas(ReadLegacyCanvas(null));
+        var node = Assert.IsType<LVCameraNode>(container.Nodes[0]);
+        node.SaveFiles = saveFiles;
+        node.SaveAsynchronously = asynchronously;
+        container.LoadCanvas(container.GetCanvasData());
+        var restored = Assert.IsType<LVCameraNode>(container.Nodes[0]);
+        Assert.Equal(saveFiles, restored.SaveFiles);
+        Assert.Equal(asynchronously, restored.SaveAsynchronously);
+    });
 
     [Fact]
     public void NameFallbackRequiresOneTypeAndPrefersTheFullName() => StaTest.Run(() =>

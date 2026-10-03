@@ -21,7 +21,7 @@ public sealed class OfflineCameraFlowTests
             try
             {
                 using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata { Width = 1, Height = 1, Channels = 1, SourceBpp = 16 }, 2, 0);
-                LocalFrameFileService.SaveCapture(frame, directory, "synthetic-camera");
+                LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(directory, "synthetic-camera"));
                 using var editor = new STNodeEditor();
                 using var control = new FlowEngineControl(editor, false, new FlowNodeManager()) { PersistResults = false };
                 var start = new DisconnectedMqttStart { NodeName = "offline" };

@@ -33,7 +33,7 @@ public sealed class FlowExecutionStatusTests
     {
         var status = FlowExecutionStatusInfo.Finished("flow2", "Completed", "{\"result\":false}", 1234);
         Assert.Equal("流程执行完成", status.Message);
-        Assert.Equal("用时 1234 ms", status.ElapsedText);
+        Assert.Equal("1234 ms", status.ElapsedText);
         Assert.Contains("{\"result\":false}", status.Details);
         Assert.Equal(FlowExecutionStatusKind.Completed, status.Kind);
     }
@@ -42,7 +42,7 @@ public sealed class FlowExecutionStatusTests
     public void ElapsedTimeKeepsTotalMillisecondsAndDoesNotProduceNegativeRemainingEstimate()
     {
         var status = FlowExecutionStatusInfo.Running("flow2", "L/BV相机", 3_665_800, 60000);
-        Assert.Equal("已用 3665800 ms", status.ElapsedText);
+        Assert.Equal("3665800 ms", status.ElapsedText);
         Assert.DoesNotContain("预计剩余", status.Details);
         Assert.Contains("上次执行", status.Details);
     }

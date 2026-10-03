@@ -151,7 +151,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
                 if (canReuseExistingCie || canReuseCalibratedRaw)
                 {
-                    if (AllowAcceleration || !sourceFrame.HasCie)
+                    if (sourceFrame.HasRaw && (AllowAcceleration || !sourceFrame.HasCie))
                         LocalFrameCalibrationService.ReuseColorCalibration(sourceFrame, AllowAcceleration);
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;

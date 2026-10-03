@@ -42,7 +42,7 @@ public class LocalCameraResultTests
         try
         {
             using var frame = CreateFrame(true);
-            LocalFrameFileService.SaveCapture(frame, root, "camera");
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             Assert.True(File.Exists(frame.CvRawFilePath));
             Assert.Empty(frame.CvCieFilePath);
             Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
@@ -81,7 +81,7 @@ public class LocalCameraResultTests
             using (var lease = frame.Acquire())
                 Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length);
 
-            LocalFrameFileService.SaveCapture(frame, root, "camera");
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             using var legacy = new CVCIEFile
             {
                 Version = 1,

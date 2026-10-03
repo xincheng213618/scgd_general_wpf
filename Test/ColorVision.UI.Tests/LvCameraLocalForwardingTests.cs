@@ -2,6 +2,7 @@ using ColorVision.Engine;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.FileIO;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -11,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,17 +21,30 @@ namespace ColorVision.UI.Tests;
 
 public sealed class LvCameraLocalForwardingTests
 {
-    [Fact]
-    public void ConsecutiveLvNodesUseCurrentLocalSessionAndKeepFlowResults() => Run(async () =>
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.Asynchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public void ConsecutiveLvNodesUseCurrentLocalSessionAndKeepFlowResults(CVFileSaveMode saveMode) => Run(async () =>
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: false, expectedExecutions: 2);
         using var graph = new Graph(scope.CreateNode(), scope.CreateNode());
+        foreach (LVCameraNode node in graph.Nodes)
+        {
+            node.SaveFiles = saveMode != CVFileSaveMode.MemoryOnly;
+            node.SaveAsynchronously = saveMode == CVFileSaveMode.Asynchronous;
+        }
         graph.End.Inspect = action =>
         {
             Assert.True(action.TryAcquireCurrentFrame(out var lease));
             using (lease!) Assert.Equal(new byte[] { 11, 22 }, lease!.CopyRawToArray());
             Assert.Equal(102, action.Data["MasterId"]);
             Assert.Equal(100, action.Data["MasterResultType"]);
+            string path = scope.Services.Frames[^1].CvRawFilePath;
+            Assert.True(CVFileUtil.Read(path, out CVCIEFile raw));
+            using (raw) Assert.Equal(new byte[] { 11, 22 }, raw.Data);
+            if (saveMode == CVFileSaveMode.Synchronous) Assert.True(File.Exists(path));
+            if (saveMode == CVFileSaveMode.MemoryOnly) Assert.False(File.Exists(path));
         };
         FlowEngineEventArgs finished = await graph.StartAsync();
         await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -56,6 +71,7 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Equal(3, (int?)payload["AverageCount"]);
             Assert.NotNull(payload["FrameId"]);
             Assert.NotNull(payload["Timing"]);
+            Assert.Equal(saveMode.ToString(), (string?)payload["SaveMode"]);
         }
         foreach (LocalCameraCaptureRequest request in scope.Services.Requests)
         {
@@ -64,7 +80,7 @@ public sealed class LvCameraLocalForwardingTests
             Assert.Equal(17, request.CameraParameters.Gain);
             Assert.Equal(3, request.CameraParameters.AvgCount);
             Assert.Equal(CVImageFlipMode.Y, request.FlipMode);
-            Assert.True(request.SaveFiles);
+            Assert.False(request.SaveFiles); // Persistence must precede the file/cache publication.
         }
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
     });
@@ -224,7 +240,7 @@ public sealed class LvCameraLocalForwardingTests
     private sealed class TestLvNode(CaptureScope scope, bool immediateTimeout) : LVCameraNode
     {
         protected override int GetMaxDelay() => immediateTimeout ? 0 : base.GetMaxDelay();
-        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request);
+        protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request) => scope.CreateExecution(request, SaveMode);
     }
 
     private sealed class InspectEndNode : CVEndNode
@@ -288,6 +304,9 @@ public sealed class LvCameraLocalForwardingTests
     private sealed class CaptureScope : IDisposable
     {
         private readonly IConfigService previousConfig = ConfigService.Instance;
+        private readonly bool cacheEnabled = CVFileReadCache.IsEnabled;
+        private readonly int maximumEntries = CVFileReadCache.MaximumEntries;
+        private readonly string directory = Path.Combine(Path.GetTempPath(), "lv-save-" + Guid.NewGuid().ToString("N"));
         private readonly int expectedExecutions;
         private int disposedExecutions;
         public DeviceCamera Camera { get; }
@@ -298,9 +317,13 @@ public sealed class LvCameraLocalForwardingTests
         public CaptureScope(bool localOpen, bool preferLocal, int expectedExecutions = 1)
         {
             this.expectedExecutions = expectedExecutions;
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = true;
+            CVFileReadCache.MaximumEntries = 1;
             ConfigService.SetInstance(new ConfigHandler());
             Camera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
             Camera.Config = new() { Code = "lv-test" };
+            Camera.Config.FileServerCfg.DataBasePath = directory;
             Camera.SysResourceModel = new SysResourceModel { Code = "lv-test" };
             Backend = new CameraBackendState(preferLocal);
             if (localOpen) { Backend.BeginLocalOpen(); Backend.SetLocalStatus(DeviceStatusType.Opened); }
@@ -309,9 +332,9 @@ public sealed class LvCameraLocalForwardingTests
 
         public LVCameraNode CreateNode(bool immediateTimeout = false) => new TestLvNode(this, immediateTimeout);
 
-        public FlowLocalExecution? CreateExecution(CVMQTTRequest request)
+        public FlowLocalExecution? CreateExecution(CVMQTTRequest request, CVFileSaveMode saveMode)
         {
-            FlowLocalExecution? execution = LocalLvCameraExecution.CreateForDevice(Camera, request, Services);
+            FlowLocalExecution? execution = LocalLvCameraExecution.CreateForDevice(Camera, request, Services, saveMode);
             return execution == null ? null : new TrackedExecution(execution, () =>
             {
                 if (System.Threading.Interlocked.Increment(ref disposedExecutions) == expectedExecutions)
@@ -322,6 +345,13 @@ public sealed class LvCameraLocalForwardingTests
         public void Dispose()
         {
             Services.Release.TrySetResult();
+            // Drain only in the fixture so temporary files cannot race its cleanup.
+            ((Task)typeof(CVFileReadCache).GetMethod("QueueWrite", BindingFlags.NonPublic | BindingFlags.Static)!
+                .Invoke(null, new object[] { (Action)(() => { }) })!).GetAwaiter().GetResult();
+            CVFileReadCache.Release();
+            CVFileReadCache.MaximumEntries = maximumEntries;
+            CVFileReadCache.IsEnabled = cacheEnabled;
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
             ConfigService.SetInstance(previousConfig);
         }
     }
@@ -355,6 +385,9 @@ public sealed class LvCameraLocalForwardingTests
         }
         public MeasureResultImgModel Save(CVStartCFC action, int zIndex, LocalCameraCaptureRequest request, LocalCameraCaptureResult capture)
         {
+            Assert.False(string.IsNullOrWhiteSpace(capture.Frame.CvRawFilePath));
+            Assert.False(File.Exists(capture.Frame.CvRawFilePath));
+            Assert.Null(CVFileReadCache.GetCachedLength(capture.Frame.CvRawFilePath));
             if (FailSave) throw new InvalidOperationException("save failed");
             Saved.Add((action.SerialNumber, zIndex));
             return new MeasureResultImgModel { Id = 100 + Saved.Count, ZIndex = zIndex, BatchId = 55 };
