@@ -85,7 +85,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
-        [STNodeProperty("保存文件", "保存 CVRAW（包含已执行的色度校正参数）；未开启加速且有 CIE 数据时同时保存 CVCIE。", true)]
+        [STNodeProperty("保存文件", "保存 CVRAW（包含已执行的色度校正参数），导出时可生成 XYZ 通道。", true)]
         public bool SaveFiles { get => _SaveFiles; set { _SaveFiles = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]

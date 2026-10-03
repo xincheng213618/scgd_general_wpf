@@ -123,7 +123,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 - **只在实际色度/亮度校正成功后更新** `colorvision.calibration.color`；普通打开、查看通道、POI、仅基本校正都不写参数。
 - 本地校正与手动 RAW 校正保存实际执行的系数、曝光、布局、模板和时间。Native 路径从已加载的校正上下文提取参数，不在计算完成后重新读可能已改变的 `.dat`。
 - Flow 本地校正/校正+实时 POI/相机取图的可选加速路径可直接提取参数而不生成完整 CIE；基础校正仍执行。`LocalFrameFileService.Load` 将 CVRAW 内嵌的 JSON 参数交给帧租约，本地 POI 可直接测量 RAW 区域；布局不匹配、缺失参数或 `CanReplay=false` 不允许回放。此流程路径不会采用显示测量源的累计区域阈值来缓存完整 XYZ。
-- 对已有对应 CVRAW，无论保存图像开关是否启用都更新当前参数。保存图像时，新 RAW 和 CVCIE 各带同一快照；没有落盘 RAW 的纯内存采集只能先随帧保留参数，不能凭空修改一个不存在的文件。
+- 对已有对应 CVRAW，无论保存图像开关是否启用都更新当前参数。本地保存只生成 CVRAW，并携带当前校正快照；CVCIE 保留旧服务结果读取兼容。没有落盘 RAW 的纯内存采集只能先随帧保留参数，不能凭空修改一个不存在的文件。
 - 基本校正已经改变 RAW 像素时，新保存的校正后 RAW 可以重放色度矩阵；原始传感器 RAW 仅记录该快照并标记 `CanReplay=false`，避免在未经过相同基本校正的像素上套矩阵。恢复完整基本校正链不属于此参数版本。
 - 只读或被占用的 RAW 会报告写入失败。参数更新使用排他文件句柄、`Flush(true)` 和遇到写异常时的尽力回滚；不承诺进程崩溃或断电原子性。校验失败后打开器保留 RAW 显示并禁用这组色度能力，不修改像素来“修复”参数。
 
@@ -135,7 +135,7 @@ Reader 仅接受版本 1、2、3。`Bpp` 在通道计算中是**每通道采样�
 
 ## 写入不是验证，也不是原子提交
 
-`WriteCIEFile(path, CVCIEFile)` 直接以 `FileMode.Create` / `FileShare.None` 打开目标，已有文件会先被截断。随后异常返回 false **不恢复原文件**；也不自动创建父目录、临时文件或备份。`WriteCVRaw` / `WriteCVCIE` 只是这个 writer 的包装，不增加扩展名、版本或尺寸检查。
+`WriteCIEFile(path, CVCIEFile)` 是 CVRAW 共用的底层容器 writer，直接以 `FileMode.Create` / `FileShare.None` 打开目标，已有文件会先被截断。随后异常返回 false **不恢复原文件**；也不自动创建父目录、临时文件或备份。`WriteCVRaw` 只是这个 writer 的包装，不增加扩展名、版本或尺寸检查。
 
 两个 writer 都按 GBK 编码源文件名，代码中有 UTF-8 回退；reader 固定 GBK，不能据此承诺编码自动识别。写出 Exp 不足的通道补 0、多余曝光截断；写出 Cols 再 Rows；仅 Version=2 使用 64 位数据长度。`FilePath`、`FileExtType` 不进入二进制格式，NDPort 当前也未写出。
 
@@ -207,7 +207,7 @@ Engine 的 CVCIE 关联原图加载入口是 `CvRawLayerController.LoadSourceFil
 - `LumFourColorCalibrationSession.SetMode` 使用 `LumFourColorCorrectionMode`，单点建立一组，RGBW 建立四组数据；`IsComplete` 同时检查组数和各组有效性。两个窗口显示“单点”和“RGBW 四色”，切换时清除测量数据与旧结果，未知模式值拒绝。从采集窗口打开手工窗口时带入当前模式。
 - `LumFourColorSourceSnapshot.SaveCopy` 使用原文档的 `SerializeCorrection` 按原格式另存，默认文件名带 `_Corrected`；另存禁止覆盖原文件并复核内容指纹，不自动安装到校正模板。历史 `_PythonRGB_XYZ` 文件属于未与原矩阵合成的独立 XYZ→XYZ 变换，不是本入口输出的完整校正系数；不能据其 `a…i` 外观认定可用于原文件替换。
 - `LumFourColorCalibrationWorkflowWindow` 显示“用户校正”，可从相机属性的“校准与校正”分组、校正文件管理及“应用与工具”进入。`DeviceCamera.UserCalibrationCommand` 使用现有命令元数据分组并通过 `ShowWindow(camera: this)` 带入当前相机，复用已有窗口时忙碌状态不允许切换上下文。单点采集一组相机 POI 与光谱仪数据，RGBW 按相同过程完成四组；相机侧与光谱侧的采集顺序不限。侧栏显示相机、光谱各一行 Y/x/y 六个输入框；图像来源、POI、曝光、XYZ、光谱结果 ID 与完整相对光谱放入默认折叠的“测量详情”。
-- `LumFourColorRecentImages` 与 POI 导图使用同一 `MeasureResultImgModel` 拍摄记录表，独立连接按当前逻辑相机 `DeviceCode` 查询最近 100 条（时间、ID 倒序）；列表刷新不默认选中，不改变现有测量。“导入最新图像”明确取第一条，导入前清除旧相机数据，查询或文件加载失败不复用旧数据、不自动跳到更早记录。仅使用记录自身的 `FileUrl` / `RawFile`，优先 CVCIE 路径，不猜测同目录替代文件。导入复核设备归属、拍摄成功、文件存在及三通道浮点 CVCIE；RAW/普通预览图拒绝。读取在后台执行，按原 CVCIE 路径加载内嵌 XYZ，再应用当前 POI 模板或手动画点；不访问真实相机、不修改记录，文件的校正来源仍待核对。
+- `LumFourColorRecentImages` 与 POI 导图使用同一 `MeasureResultImgModel` 拍摄记录表，独立连接按当前逻辑相机 `DeviceCode` 查询最近 100 条（时间、ID 倒序）；列表刷新不默认选中，不改变现有测量。“导入最新图像”明确取第一条，导入前清除旧相机数据，查询或文件加载失败不复用旧数据、不自动跳到更早记录。仅使用记录自身的 `FileUrl` / `RawFile`，优先 CVCIE 路径，不猜测同目录替代文件。导入复核设备归属、拍摄成功、文件存在及三通道浮点 CVCIE，或带可重放三通道色度参数的 CVRAW；无可重放参数的 RAW/普通预览图拒绝。读取在后台执行，从旧 CVCIE 加载内嵌 XYZ，或从 CVRAW 重放参数生成浮点 XYZ，再应用当前 POI 模板或手动画点；不访问真实相机、不修改记录，文件的校正来源仍待核对。
 - `LumFourColorPoiEditor` 复用 `ImageView` 的圆形、矩形绘图及尺寸面板，右键编辑复用 `DrawingVisualBaseDVContextMenu` 的属性编辑器。菜单提供编辑、删除、绘制与 POI 模板入口，预览区域不接受另外打开、拖入或裁剪图片，以免显示图与测量帧脱离。每个色块一个 POI；形状或位置改变立即撤销旧测量，绘制结束后交给 `PoiMeasurementService.CalculateRaw` 重算并同步选中框，保留原始负值，越界区域不能用于计算。
 - POI 模板经 `TemplatePoi.Params` 选择，已有数据库模板在应用时重新读取点列表，仅取第一个点；模板声明的图像宽高须与当前帧一致。支持圆形、中心矩形和左上角矩形，圆形按既有模板的 `PixWidth` 直径语义转换。应用前清除旧读数，无效首点不跳过、读取失败不回用旧点。带入后的绘图属性独立于原模板，仍可手动画点、拖动或右键编辑；取图后继续应用当前选中的模板。
 - 相机采集复用 `LocalCameraCaptureService`，未连接时按当前设备 Camera ID、测量模式和位深自动连接，选择的校正模板必须启用四色或多色校正并生成 CIE；在连接相机前检查模板类型与文件结构匹配，采集记录校正文件内容指纹。模板启用多色时带入其 `Gain/pa` 文件，不误用模板中未启用的四色文件。无设备环境可加载已有 `.cvcie` 验证 POI 和计算链；重新取图只清除该色块的 POI 与相机测量值，保留已采集的光谱。
@@ -229,7 +229,7 @@ Engine 的 CVCIE 关联原图加载入口是 `CvRawLayerController.LoadSourceFil
 - 当前托管套件不包含 CVRAW 真实样本与计时报告宿主；现场复核应只读输入，并把输出和计时报告写入独立目录。文件复制计时可能受操作系统缓存影响，不能作为现场 CT 收益。
 - `CVFileMetadataTests`：v1/v2/v3 读取兼容、像素字节不变、参数替换与收缩、未知记录保留、损坏尾部拒绝覆盖，以及只读/占用失败。
 - 16 位四通道仅验证输入缓冲，编辑器当前的 `ImageSourceMetadata` 不接受 Rgba64；本优化不扩展显示格式。使用同一真实样本环境变量可记录连续读取的托管分配和耗时；这些结果不证明其它处理链零分配或现场不会产生内存碎片。
-- `RawColorCalibrationTests` 与 Native `--calibration-smoke`：已加载参数快照、8/16 位及两种布局、亮度/单色/四色/多色重放与原校正输出逐字节一致、POI/封闭区域及完整缓存对照、仅成功校正写回和 RAW/CVCIE 快照匹配。
+- `RawColorCalibrationTests` 与 Native `--calibration-smoke`：已加载参数快照、8/16 位及两种布局、亮度/单色/四色/多色重放与原校正输出逐字节一致、POI/封闭区域及完整缓存对照、仅成功校正写回和保存 RAW 的快照匹配。
 - `CalibratedRawDisplayTests`：RAW 身份、色度能力、无 sRGB 图层、X/Y/Z 与原图切换，打开和切换不写文件。这些测试不代替真实屏幕、远程校正服务或采集硬件验收。
 
 - `Test/Conoscope.Tests/CvcieChannelReaderTests.cs`：合成 v1/v2 文件、只取指定平面但保留 header 元数据、越界索引返回 false。fixture 填入未创建的关联文件名仍可读目标平面，但没有验证存在可读源图时是否访问它；“不跟随”的完整结论来自源码。可选真实样本仅在设置 `CONOSCOPE_REAL_SAMPLE` 时读取，未设置时直接返回，不证明真实样本通过。

@@ -4657,8 +4657,8 @@
   <data name="与服务实时关注点算法一致；None 使用上游布点结果中的类型" xml:space="preserve">
     <value>與服務實時關注點算法一致；None 使用上游布點結果中的類型</value>
   </data>
-  <data name="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" xml:space="preserve">
-    <value>與本地相機取圖節點一致：保存 CVRAW，有校正結果時同時保存 CVCIE</value>
+  <data name="与本地相机取图节点一致：保存 CVRAW，包含已执行的色度校正参数" xml:space="preserve">
+    <value>與本地相機取圖節點一致：儲存 CVRAW，包含已執行的色度校正參數</value>
   </data>
   <data name="严重级别" xml:space="preserve">
     <value>嚴重級別</value>
@@ -7052,8 +7052,8 @@
   <data name="刷新模板" xml:space="preserve">
     <value>刷新模板</value>
   </data>
-  <data name="加载 {0} 的 CVCIE 图像" xml:space="preserve">
-    <value>加載 {0} 的 CVCIE 圖像</value>
+  <data name="加载 {0} 的 CVRAW / CVCIE 图像" xml:space="preserve">
+    <value>加載 {0} 的 CVRAW / CVCIE 圖像</value>
   </data>
   <data name="历史算法结果图像像素宽度" xml:space="preserve">
     <value>歷史算法結果圖像像素寬度</value>
@@ -7278,8 +7278,8 @@
   <data name="模板字典未找到，ID={0}" xml:space="preserve">
     <value>模板字典未找到，ID={0}</value>
   </data>
-  <data name="模板待核对：CVCIE 未记录所用校正文件。" xml:space="preserve">
-    <value>模板待覈對：CVCIE 未記錄所用校正文件。</value>
+  <data name="模板待核对：导入图像未记录所用校正文件的内容指纹。" xml:space="preserve">
+    <value>模板待核對：匯入圖像未記錄所用校正檔案的內容指紋。</value>
   </data>
   <data name="模板读取失败，已禁止保存以保护原数据。{0}" xml:space="preserve">
     <value>模板讀取失敗，已禁止保存以保護原數據。{0}</value>

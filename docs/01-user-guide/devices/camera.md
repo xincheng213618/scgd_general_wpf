@@ -35,7 +35,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 本地自动曝光沿用原生 `CM_GetAutoExpTime`，回填曝光、饱和度和显示配置；取图自动曝光在生成帧元数据之前完成。自动曝光下拉框在本地模式仅选择是否启用原生曝光，不应用服务 V1/V2 模板参数。`IsAutoExpWithND=true` 和非空 HDR 模板会明确报不支持；ND 手动控制、对焦、电机操作在主面板本地模式下禁用。校正模板仍由校正组覆盖增益，资源按模板文件引用解析，不要求服务校准设备在线。
 
-本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况；开启时按本地文件规则保存 CVRAW，存在校正结果时同时保存 CVCIE。关闭文件保存仍预览内存图并写数据库。此选项用于主面板/POI/定时本地取图、普通 L/BV 节点的本地转发和本地相机管理窗口；独立 `LocalCameraNode` 使用节点自己的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
+本地主面板取图按原有手动取图含义创建独立批次（不归档）和测量图像记录，数据库保存成功才报告命令成功。显示配置中的“本地取图保存文件”（`SaveLocalCaptureFiles`）默认开启，包括已有配置缺少此字段的情况；开启时按本地文件规则保存 CVRAW，并包含已执行的色度校正参数。关闭文件保存仍预览内存图并写数据库。此选项用于主面板/POI/定时本地取图、普通 L/BV 节点的本地转发和本地相机管理窗口；独立 `LocalCameraNode` 使用节点自己的保存设置。已取到图但数据库保存失败时显示当前图并报告失败，不把预览成功当作落库成功。
 
 相机卡片和结果详情的登记、首次显示、首结果及提前释放边界见[设备详情视图按需初始化](../../04-api-reference/engine-components/device-service-chain.md#设备详情视图按需初始化)。
 
@@ -75,7 +75,7 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 本地分支使用节点的曝光、增益、平均次数、校正模板和翻转；校正组存在增益配置时仍覆盖节点增益。POI、POI Filter 和 POI Revise 不解析、不执行，保存在节点中的这些模板配置不变，服务分支仍完整传递它们。此处忽略的是 POI 修正，取图校正模板仍生效。
 
-结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时创建并提交设备预览；关闭时跳过预览快照，不复制 RAW/CIE 或转换显示图。文件保存遵循显示配置 `SaveLocalCaptureFiles`（默认开启）；开启时保存 CVRAW，存在校正结果时同时保存 CVCIE，不会另建手动取图批次。
+结果归入原流程 `SerialNumber` 对应的批次和节点 `ZIndex`，保存图像主记录，以 `MasterResultType=100` 和 `MasterId` 交接结果，通过 `SetCurrentFrame` 交给下游并发布结果通知。相机结果视图的自动刷新开启时创建并提交设备预览；关闭时跳过预览快照，不复制 RAW/CIE 或转换显示图。文件保存遵循显示配置 `SaveLocalCaptureFiles`（默认开启）；开启时保存 CVRAW，并包含已执行的色度校正参数，不会另建手动取图批次。
 
 转发沿用原节点消息 ID、超时和停止处理。采集返回前命令已超时或流程已停止时，晚到帧会释放，不写结果记录、不继续下游；原生采集不能即时中断，采集链已经生成的文件可能保留。流程启动及其它服务节点的 MQTT/服务配置前提不变，转发一个相机节点不代表整个流程可脱离服务运行。
 
@@ -111,8 +111,8 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 本地测量的保存开关开启时，`LocalFrameFileService.SaveCapture` 按下列规则写文件：
 
 - 根目录取 `Device.Config.FileServerCfg.DataBasePath`；为空时使用用户“文档”目录下的 `ColorVision`。
-- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `Local_yyyyMMdd_HHmmss_fff.cvraw`，有 CIE 数据时再保存同名 `.cvcie`。
-- 文件逐个保存；后续文件失败不会撤销已写出的文件。流程节点在文件保存之后写数据库，数据库失败也可能留下已生成的图像。
+- 子目录为 `<DeviceCode>/Data/yyyy-MM-dd`，文件名为 `Local_yyyyMMdd_HHmmss_fff.cvraw`；色度校正参数保存在 CVRAW 尾部，旧服务生成的 `.cvcie` 保留读取兼容。
+- RAW 与参数保存失败不会撤销已写出的内容。流程节点在文件保存之后写数据库，数据库失败也可能留下已生成的图像。
 
 因此应分别确认采集、文件和数据库结果，不能仅凭文件存在判断整个节点成功。图像转换与导出格式见[CVRAW/CVCIE 图像导出](../../04-api-reference/engine-components/cv-image-export.md)。
 

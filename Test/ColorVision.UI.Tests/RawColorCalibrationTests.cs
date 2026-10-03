@@ -78,7 +78,7 @@ public sealed class RawColorCalibrationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SuccessfulColorCalibrationUpdatesOnlyLastSnapshotAndSavingCopiesItToRawAndCie(bool legacy)
+    public void SuccessfulColorCalibrationUpdatesOnlyLastSnapshotAndSavingCopiesItToRaw(bool legacy)
     {
         AppContext.TryGetSwitch("ColorVision.UseLegacyLocalCalibration", out bool previousLegacy);
         AppContext.SetSwitch("ColorVision.UseLegacyLocalCalibration", legacy);
@@ -109,13 +109,16 @@ public sealed class RawColorCalibrationTests
             // A failed attempt is not a new parameter snapshot; run successfully before saving.
             LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "saved", default);
             LocalFrameFileService.SaveCapture(frame, root, "camera");
-            Assert.True(CVFileUtil.Read(frame.CvCieFilePath, out CVCIEFile cie));
-            using (cie)
+            Assert.Empty(frame.CvCieFilePath);
+            Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
+            Assert.True(CVFileUtil.Read(frame.CvRawFilePath, out CVCIEFile savedRaw));
+            using (savedRaw)
             {
-                var saved = ColorCalibrationSnapshot.Read(frame.CvCieFilePath, cie)!;
+                var saved = ColorCalibrationSnapshot.Read(frame.CvRawFilePath, savedRaw)!;
                 Assert.Equal("saved", saved.Template);
-                Assert.Equal(CVFileMetadata.Read(frame.CvRawFilePath)[ColorCalibrationSnapshot.PropertyKind].Value,
-                    CVFileMetadata.Read(frame.CvCieFilePath)[ColorCalibrationSnapshot.PropertyKind].Value);
+                Assert.True(saved.CanReplay);
+                Assert.Equal(CVFileMetadata.Read(path)[ColorCalibrationSnapshot.PropertyKind].Value,
+                    CVFileMetadata.Read(frame.CvRawFilePath)[ColorCalibrationSnapshot.PropertyKind].Value);
             }
         }
         finally

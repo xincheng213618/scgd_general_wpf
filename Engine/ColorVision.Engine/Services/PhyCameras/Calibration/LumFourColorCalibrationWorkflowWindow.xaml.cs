@@ -354,8 +354,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
 
             OpenFileDialog dialog = new()
             {
-                Title = LocalizedText.Format($"加载 {sample.Name} 的 CVCIE 图像"),
-                Filter = "CVCIE 文件 (*.cvcie)|*.cvcie|所有文件 (*.*)|*.*",
+                Title = LocalizedText.Format($"加载 {sample.Name} 的 CVRAW / CVCIE 图像"),
+                Filter = "CVRAW / CVCIE (*.cvraw;*.cvcie)|*.cvraw;*.cvcie|所有文件 (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
             };
@@ -604,7 +604,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             poiEditor?.ShowSample(sample);
             CurrentTargetText.Text = sample == null ? LocalizedText.Get("相机图像") : LocalizedText.Format($"{sample.Name} · 相机图像与 POI");
             CameraQualityText.Text = sample?.Frame == null ? "" :
-                sample.Frame.CalibrationHash == null ? LocalizedText.Get("模板待核对：CVCIE 未记录所用校正文件。") :
+                sample.Frame.CalibrationHash == null ? LocalizedText.Get("模板待核对：导入图像未记录所用校正文件的内容指纹。") :
                 sample.Frame.CalibrationHash == sourceSnapshot?.Hash ? LocalizedText.Get("图像所用色度校正文件与原文件一致。") : LocalizedText.Get("模板不一致：当前图像使用了另一份色度校正文件。");
             EmptyImagePanel.Visibility = sample?.HasImage == true ? Visibility.Collapsed : Visibility.Visible;
             SpectrumGrid.ItemsSource = sample?.Spectrum;

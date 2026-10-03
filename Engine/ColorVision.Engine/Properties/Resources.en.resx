@@ -4313,7 +4313,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="本地相机管理" xml:space="preserve"><value>Local Camera Management</value></data>
   <data name="同步本地取图节点参数" xml:space="preserve"><value>Synchronize local capture node parameters</value></data>
   <data name="查看已缓存的校正文件和内存占用" xml:space="preserve"><value>View cached calibration files and memory usage</value></data>
-  <data name="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW and also save CVCIE when calibration results are available</value></data>
+  <data name="与本地相机取图节点一致：保存 CVRAW，包含已执行的色度校正参数" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW with the applied color calibration parameters</value></data>
   <data name="统一曝光 (ms)" xml:space="preserve"><value>Unified Exposure (ms)</value></data>
   <data name="同步四路" xml:space="preserve"><value>Synchronize Four Channels</value></data>
   <data name="新增" xml:space="preserve"><value>Add</value></data>
@@ -6045,8 +6045,8 @@ Open the spectrum log?</value>
   <data name="刷新模板" xml:space="preserve">
     <value>Refresh Templates</value>
   </data>
-  <data name="加载 {0} 的 CVCIE 图像" xml:space="preserve">
-    <value>Load CVCIE image for {0}</value>
+  <data name="加载 {0} 的 CVRAW / CVCIE 图像" xml:space="preserve">
+    <value>Load CVRAW / CVCIE image for {0}</value>
   </data>
   <data name="历史算法结果图像像素宽度" xml:space="preserve">
     <value>Historical Algorithm Result Image Pixel Width</value>
@@ -6271,8 +6271,8 @@ Open the spectrum log?</value>
   <data name="模板字典未找到，ID={0}" xml:space="preserve">
     <value>Template dictionary not found, ID={0}</value>
   </data>
-  <data name="模板待核对：CVCIE 未记录所用校正文件。" xml:space="preserve">
-    <value>Template requires review: CVCIE did not record the correction file used.</value>
+  <data name="模板待核对：导入图像未记录所用校正文件的内容指纹。" xml:space="preserve">
+    <value>Template requires review: the imported image does not include a content fingerprint of the correction file used.</value>
   </data>
   <data name="模板读取失败，已禁止保存以保护原数据。{0}" xml:space="preserve">
     <value>Failed to read template; saving is disabled to protect original data. {0}</value>

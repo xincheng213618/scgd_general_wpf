@@ -97,7 +97,7 @@ public sealed class LocalDeferredColorCalibrationTests
             var action = new FlowEngineLib.Base.CVStartCFC("deferred-reuse");
             using var resources = action.RuntimeResources;
             action.SetCurrentFrame(full);
-            LocalCalibrationNode node = new() { AllowAcceleration = true, SaveFiles = true, CalibTempName = "test" };
+            LocalCalibrationNode node = new() { AllowAcceleration = true, CalibTempName = "test" };
             var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
             using var execution = (IDisposable)execute.Invoke(node, [action])!;
             Assert.False(full.HasCie);
@@ -156,7 +156,8 @@ public sealed class LocalDeferredColorCalibrationTests
         Assert.Equal(expectedDefault, (bool)property.GetValue(node)!);
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("True"), ["SaveFiles"] = System.Text.Encoding.UTF8.GetBytes("True") });
         Assert.True((bool)property.GetValue(node)!);
-        Assert.True((bool)type.GetProperty("SaveFiles")!.GetValue(node)!);
+        if (node is LocalCameraNode camera) Assert.True(camera.SaveFiles);
+        else Assert.Null(type.GetProperty("SaveFiles"));
         Assert.Contains("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("False") });
         Assert.False((bool)property.GetValue(node)!);

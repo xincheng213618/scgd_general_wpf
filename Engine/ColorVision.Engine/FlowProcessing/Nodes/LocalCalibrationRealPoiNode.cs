@@ -369,7 +369,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 POIWidth,
                 POIHeight,
                 UseROI,
-                SaveFiles,
                 AllowAcceleration,
                 InputPriority = "CurrentFrameThenFile",
                 InputPorts = InputPortNames

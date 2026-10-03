@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.POI;
@@ -812,16 +813,30 @@ public sealed class LumFourColorWorkflowSafetyTests
     }
 
     [Fact]
-    public void RecentImagesRejectOtherCamerasFailedCapturesAndRawPreviewData()
+    public void RecentImagesRequireSuccessfulOwnedCapturesAndReplayableXyz()
     {
         string rawPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cvraw");
         try
         {
-            using var raw = new CVCIEFile { Version = 1, Cols = 1, Rows = 1, Bpp = 32, Channels = 3, Exp = [1, 1, 1], Data = new byte[12] };
-            Assert.True(CVFileUtil.WriteCIEFile(rawPath, raw));
+            using var raw = new CVCIEFile { Version = 1, FileExtType = CVType.Raw, Cols = 1, Rows = 1, Bpp = 16, Channels = 3, Exp = [1, 1, 1], Data = [1, 0, 2, 0, 3, 0] };
+            Assert.True(CVFileUtil.WriteCVRaw(rawPath, raw));
             var row = new LumFourColorRecentImage(1, "A", DateTime.Now, rawPath, 0);
             Assert.Contains("当前相机", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "B")).Message);
             Assert.Contains("拍摄失败", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row with { ResultCode = 1 }, "A")).Message);
+            Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
+            var snapshot = new ColorCalibrationSnapshot
+            {
+                Width = 1, Height = 1, RawBpp = 16, Channels = 3,
+                Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4], Exposure = [1, 1, 1]
+            };
+            snapshot.Save(rawPath, canReplay: true);
+            byte[] original = File.ReadAllBytes(rawPath);
+            var calibrated = LumFourColorRecentImages.Load(row, "A");
+            Assert.Equal(32, calibrated.BitsPerChannel);
+            Assert.Equal(new[] { 6f, -6f, 4f }, Enumerable.Range(0, 3).Select(channel => BitConverter.ToSingle(calibrated.Data, channel * sizeof(float))));
+            Assert.Null(calibrated.CalibrationHash);
+            Assert.Equal(original, File.ReadAllBytes(rawPath));
+            snapshot.Save(rawPath, canReplay: false);
             Assert.Contains("XYZ", Assert.Throws<InvalidOperationException>(() => LumFourColorRecentImages.Load(row, "A")).Message);
             var items = LumFourColorRecentImages.CreateList([new MeasureResultImgModel { Id = 1, DeviceCode = "A", FileUrl = "preview.png", RawFile = "result.cvcie" }], "A");
             Assert.Equal("result.cvcie", Assert.Single(items).FilePath);

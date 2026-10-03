@@ -975,17 +975,6 @@ namespace ColorVision.FileIO
         }
 
         /// <summary>
-        /// Writes a CVCIE file (convenience wrapper for WriteCIEFile).
-        /// </summary>
-        /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>True if the file was written successfully; otherwise, false.</returns>
-        public static bool WriteCVCIE(string filePath, CVCIEFile fileInfo)
-        {
-            return WriteCIEFile(filePath, fileInfo);
-        }
-
-        /// <summary>
         /// Writes image Data to a file in CVCIE format with specified parameters.
         /// </summary>
         /// <param name="filePath">The path where the file should be written.</param>
