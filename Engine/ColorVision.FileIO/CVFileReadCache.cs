@@ -153,19 +153,11 @@ namespace ColorVision.FileIO
             }
         }
 
-        /// <summary>Looks up cached content by path without accessing the disk file.</summary>
-        public static bool TryGetCachedLength(string filePath, out long length)
+        /// <summary>Returns the cached length without accessing the disk file, or null on a miss.</summary>
+        public static long? GetCachedLength(string filePath)
         {
-            length = 0;
-            if (!IsRaw(filePath)) return false;
-            string path = Path.GetFullPath(filePath);
-            lock (Sync)
-            {
-                CacheEntry entry = isEnabled ? FindEntry(path) : null;
-                if (entry == null) return false;
-                length = entry.Length;
-                return true;
-            }
+            if (!IsRaw(filePath)) return null;
+            lock (Sync) return isEnabled ? FindEntry(Path.GetFullPath(filePath))?.Length : null;
         }
 
         // Disk and cache receive the same bytes; publish the key only after the file closes.
@@ -429,40 +421,39 @@ namespace ColorVision.FileIO
         // Do not expose UnmanagedMemoryStream.PositionPointer or writable cache memory to consumers.
         private sealed class CachedReadStream : Stream
         {
-            private readonly CacheEntry entry;
-            private Stream memory;
-            private Stream Memory => memory ?? throw new ObjectDisposedException(nameof(CachedReadStream));
+            private CacheEntry entry;
+            private readonly Stream memory;
             internal CachedReadStream(CacheEntry entry, Stream memory) { this.entry = entry; this.memory = memory; }
             ~CachedReadStream() { Dispose(false); }
-            public override bool CanRead => memory != null;
-            public override bool CanSeek => memory != null;
+            public override bool CanRead => entry != null;
+            public override bool CanSeek => entry != null;
             public override bool CanWrite => false;
-            public override long Length => Memory.Length;
-            public override long Position { get => Memory.Position; set => Memory.Position = value; }
-            public override int Read(byte[] destination, int offset, int count) => Memory.Read(destination, offset, count);
+            public override long Length => memory.Length;
+            public override long Position { get => memory.Position; set => memory.Position = value; }
+            public override int Read(byte[] destination, int offset, int count) => memory.Read(destination, offset, count);
 #if NETCOREAPP
-            public override int Read(Span<byte> destination) => Memory.Read(destination);
+            public override int Read(Span<byte> destination) => memory.Read(destination);
 #endif
-            public override int ReadByte() => Memory.ReadByte();
-            public override long Seek(long offset, SeekOrigin origin) => Memory.Seek(offset, origin);
+            public override int ReadByte() => memory.ReadByte();
+            public override long Seek(long offset, SeekOrigin origin) => memory.Seek(offset, origin);
             public override void Flush() { }
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] source, int offset, int count) => throw new NotSupportedException();
             protected override void Dispose(bool disposing)
             {
-                Stream owned = Interlocked.Exchange(ref memory, null);
+                CacheEntry owned = Interlocked.Exchange(ref entry, null);
                 if (owned != null)
                 {
-                    try { owned.Dispose(); }
+                    try { memory.Dispose(); }
                     finally
                     {
                         lock (Sync)
                         {
-                            entry.Readers--;
-                            if (entry.IsRetired && entry.Readers == 0)
+                            owned.Readers--;
+                            if (owned.IsRetired && owned.Readers == 0)
                             {
-                                FreeBuffer(entry);
-                                Entries.Remove(entry);
+                                FreeBuffer(owned);
+                                Entries.Remove(owned);
                             }
                             Monitor.PulseAll(Sync);
                         }

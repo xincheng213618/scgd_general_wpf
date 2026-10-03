@@ -30,7 +30,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
 | 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProjectARVRProProcessGroups.json` 和 Recipe 配置；升级时核对旧共享文件迁移日志 |
 
-结果列表工具栏的“缓存管理”打开 Engine 的进程级“本地缓存管理”，以两个 Tab 查看校正缓存与默认开启的单槽位 CVRAW 文件缓存，“释放全部”一并释放。结果图片按数据库记录中的文件路径优先查找缓存，命中时直接读取内存，不要求磁盘文件存在，也不打开磁盘句柄或检查修改时间；未命中才使用磁盘文件。图片仍通过 `ImageView.OpenImage` → `CVRawOpen` 打开，并沿用显示位图的复用逻辑。旁边的“释放截图缓存”只释放本窗口截图导出缓冲，与文件槽位用途不同。
+结果列表工具栏的“缓存管理”打开 Engine 的进程级“本地缓存管理”，以两个 Tab 查看校正缓存与默认开启的单槽位 CVRAW 文件缓存，“释放全部”一并释放。结果图片按数据库记录中的文件路径先查缓存，命中后直接读取内存，不要求磁盘文件存在；未命中才进入原有文件及缺图处理。图片仍通过 `ImageView.OpenImage` → `CVRawOpen` 打开，并沿用显示位图的复用逻辑。旁边的“释放截图缓存”只释放本窗口截图导出缓冲，与文件槽位用途不同。
 
 ## 项目边界和版本
 

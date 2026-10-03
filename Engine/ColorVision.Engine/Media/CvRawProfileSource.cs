@@ -40,6 +40,9 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
 
     internal static IReadOnlyList<ImageProfileSourceOption> CreateOptions(string path)
     {
+        // Displaying cached pixels must not depend on the profile tool's disk mapping.
+        if (CVFileReadCache.GetCachedLength(path).HasValue)
+            return [new("原始图像 / CIE 全部通道", token => new CvRawProfileSource(path, true, token))];
         FileInfo identity = new(path);
         long length = identity.Length;
         DateTime modified = identity.LastWriteTimeUtc;

@@ -58,6 +58,7 @@ public sealed class CvRawProfileTests
                 }
             }
             Assert.Equal(original, File.ReadAllBytes(path));
+            CVFileReadCache.Release(); // Exercise the disk-backed profile's file identity check.
             var choices = CvRawProfileSource.CreateOptions(path);
             File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(1));
             Assert.Throws<IOException>(() => choices[0].Open(default));

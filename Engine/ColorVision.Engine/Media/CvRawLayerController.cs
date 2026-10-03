@@ -265,7 +265,7 @@ namespace ColorVision.Engine.Media
 
         private FileStamp GetFileStamp()
         {
-            if (_liveXyz != null || _rawColor != null) return default;
+            if (_liveXyz != null || _rawColor != null || CVFileReadCache.GetCachedLength(_filePath).HasValue) return default;
             FileInfo file = new(_filePath);
             return new FileStamp(file.Length, file.LastWriteTimeUtc);
         }

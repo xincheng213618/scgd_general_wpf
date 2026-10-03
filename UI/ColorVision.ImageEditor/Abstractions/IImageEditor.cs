@@ -11,12 +11,7 @@ namespace ColorVision.ImageEditor.Abstractions
     public interface IImageOpen
     {
         void OpenImage(EditorContext context, string? filePath);
-    }
-
-    /// <summary>Lets an opener expose cached content without requiring a disk file.</summary>
-    public interface IImageOpenFileCache
-    {
-        bool TryGetCachedLength(string filePath, out long length);
+        long? GetCachedFileLength(string filePath) => null;
     }
 
     /// <summary>Ends the current file's lifetime, independently of toolbar activation.

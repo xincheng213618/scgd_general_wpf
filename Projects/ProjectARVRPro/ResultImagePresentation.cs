@@ -28,7 +28,7 @@ internal static class ResultImageFileCandidates
         Func<string, bool>? fileExists = null)
     {
         ArgumentNullException.ThrowIfNull(result);
-        fileExists ??= path => CVFileReadCache.TryGetCachedLength(path, out _) || File.Exists(path);
+        fileExists ??= path => CVFileReadCache.GetCachedLength(path).HasValue || File.Exists(path);
 
         List<ResultImageFileCandidate> candidates = [];
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
