@@ -186,7 +186,7 @@ public sealed class LvCameraLocalForwardingTests
     {
         using var scope = new CaptureScope(localOpen: true, preferLocal: true);
         scope.Services.BlockCapture = true;
-        using var graph = new Graph(scope.CreateNode());
+        using var graph = new Graph(scope.CreateNode(immediateTimeout: true));
         Task<FlowEngineEventArgs> completion = graph.StartAsync();
         await scope.Services.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
         // Changing the next-open preference does not change this in-flight request.
@@ -202,15 +202,26 @@ public sealed class LvCameraLocalForwardingTests
         Assert.All(scope.Services.Frames, frame => Assert.Throws<ObjectDisposedException>(() => frame.Acquire()));
     });
 
-    [Fact]
-    public void ExpiredLocalCommandCannotPublishAResult() => Run(async () =>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void NodeTimeoutAppliesOnlyToServiceBranch(bool local) => Run(async () =>
     {
-        using var scope = new CaptureScope(localOpen: true, preferLocal: true);
+        using var scope = new CaptureScope(localOpen: local, preferLocal: local);
         using var graph = new Graph(scope.CreateNode(immediateTimeout: true));
-        Assert.Equal(StatusTypeEnum.OverTime, (await graph.StartAsync()).Status);
-        await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.Equal(0, graph.Start.PublishCount);
-        Assert.Empty(scope.Services.Saved);
+        Assert.Equal(local ? StatusTypeEnum.Completed : StatusTypeEnum.OverTime, (await graph.StartAsync()).Status);
+        if (local)
+        {
+            await scope.Disposed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Single(scope.Services.Saved);
+            Assert.Single(scope.Services.PublishedNodeIds);
+        }
+        else
+        {
+            Assert.Empty(scope.Services.Requests);
+            Assert.Empty(scope.Services.Saved);
+        }
+        Assert.Equal(local ? 0 : 1, graph.Start.PublishCount);
         Assert.Single(graph.Ends);
     });
 
@@ -358,6 +369,7 @@ public sealed class LvCameraLocalForwardingTests
 
     private sealed class TrackedExecution(FlowLocalExecution inner, Action disposed) : FlowLocalExecution
     {
+        public override bool UseNodeTimeout => inner.UseNodeTimeout;
         public override void Execute() => inner.Execute();
         public override object Complete(CVStartCFC action) => inner.Complete(action);
         public override void Dispose() { inner.Dispose(); disposed(); }

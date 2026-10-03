@@ -51,6 +51,8 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     private bool commandReleased;
     private readonly FlowNodeTiming timing = new();
 
+    public override bool UseNodeTimeout => false;
+
     internal static FlowLocalExecution? Create(CVMQTTRequest request, CVFileSaveMode saveMode)
     {
         DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
