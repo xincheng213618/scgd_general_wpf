@@ -68,12 +68,14 @@ related: ["ui.index", "ui.discovery", "ui.database-query", "ui.sqlite-storage", 
 
 ## 查询和查看消息
 
-打开窗口时，`SocketMessageManager.LoadAll` 按消息 ID 排序加载记录。“消息设置”中默认查询数量为 `100`、排序为 `Desc`；传入正数时单次加载最多 `1000` 条，非正值会回退到配置值，配置本身未做有效范围校验。这些是查询参数，实时新增消息不会按此数量自动裁剪，也不构成数据库保留策略。
+打开窗口时，`SocketMessageManager.LoadAll` 按消息 ID 排序加载记录。“消息设置”中默认查询数量为 `100`、排序为 `Desc`；非正参数回退到配置值，最终加载数量限制在 `1～1000` 条。实时列表最多保留 `1000` 条，新增时按当前排序从旧记录一端移除超额行；只裁剪内存列表，数据库历史仍可查询。高级查询的加载范围由其查询条件决定，后续实时新增仍执行上述列表上限。
 
 1. 点击“查询”或按 `F5`，按消息设置重新加载列表。需要数据库条件查询时选择“高级查询”，条件与整表操作见[通用查询](./database-query.md)。
 2. 用搜索框与“全部 / 接收 / 发送”筛选。搜索不区分大小写，只匹配当前已加载记录的客户端端点、`EventName`、`MsgID`、响应码和 `ContentPreview`，不会搜索数据库全文。预览按最多 96 个 UTF-16 code unit 的前缀生成；截断规则见 [SQLite 正文存储](./sqlite-storage.md)。
 3. 选中一条记录，在详情区查看端点、事件、消息 ID、响应码和按 ID 加载的完整正文。默认“格式化查看”仅改变 JSON 显示，纯文本保持原文；“复制原文”和“格式化复制”按各自方式复制，不修改存储内容。
 4. 使用“重置筛选”或 `Esc` 清除关键词与方向，`Ctrl+F` 定位搜索框。默认启用“自动滚动”；多窗口共享消息集合，但筛选各自独立。
+
+实时消息正文成功落库后即从列表对象释放，只保留短预览；查看详情、复制和重发按 ID 加载完整正文。已加载正文随对应行留在内存中，行被淘汰且没有其它引用后可回收。
 
 | 操作 | 影响范围 |
 | --- | --- |
@@ -136,7 +138,7 @@ INFO 结构化日志以进程内 `RecordSequence` 关联协议派发、后台落
 
 | 事件 | 字段与边界 |
 | --- | --- |
-| `SocketMessageTiming` | 提交后给出 `MessageId`；`PersistenceQueueMs` 是入队至后台开始执行的间隔，`StorageGateWaitMs` 是存储锁排队，`StorageWriteMs` 是事务写入/正文压缩，`PersistMs` 包含后台前缀准备、存储锁排队和提交，不包含 `PersistenceQueueMs`。后面三个字段相互重叠；`PersistenceAwaited=false` / `UiUpdateAwaited=false` 表示协议调用方没有等待落库或界面追加 |
+| `SocketMessageTiming` | 提交后给出 `MessageId`；`PersistenceQueueMs` 是入队至后台开始执行的间隔，`StorageGateWaitMs` 是存储锁排队，`StorageWriteMs` 是事务写入/正文压缩，进一步分成 `BeginTransactionMs`（包括取得连接及开始事务）、`InsertMs`（插入消息）、`PayloadSaveMs`（压缩正文并更新）和 `CommitMs`（提交事务）。这些子项已包含在 `StorageWriteMs` 中，`PersistMs` 包含后台前缀准备、存储锁排队和提交，不包含 `PersistenceQueueMs`。后面三个字段相互重叠；`PersistenceAwaited=false` / `UiUpdateAwaited=false` 表示协议调用方没有等待落库或界面追加 |
 | `SocketReceiveDispatchTiming` | JSON 正常解析路径中，`DecodeAndDeserializeMs` 包含字节解码、原始消息日志及反序列化；`RecordMessageMs` 是消息快照及入队调用耗时，不含数据库写入；二者之和为 `ReceiveToDispatchMs`，不含 handler 内部执行/等待。`DispatchRequestedAt` 位于诊断日志写出之前，不是实际 handler 已开始的证明 |
 | `SocketMessageUiTiming` | `UiQueueMs` 是后台 UI 投递到开始执行的间隔，`UiUpdateMs` 是列表追加/集合通知耗时；两者发生在独立 UI 路径，不能再次相加到同步回包派发或 PG 耗时 |
 

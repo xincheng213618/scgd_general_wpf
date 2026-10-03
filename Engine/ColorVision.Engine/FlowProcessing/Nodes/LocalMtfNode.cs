@@ -46,8 +46,7 @@ internal sealed class LocalMtfNodeServices : ILocalMtfNodeServices
     public static LocalMtfNodeServices Instance { get; } = new();
     public LocalRealPoiParameters LoadPoi(int masterId, int resultType, string templateName)
     {
-        LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(masterId, resultType, "IN_IMG", templateName,
-            FlowEngineLib.Node.POI.POIPointTypes.None, 0, 0);
+        LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(masterId, resultType, "IN_IMG");
         if (parameters.Poi.PoiPoints.Count == 0 && parameters.Poi.Id > 0) PoiParam.LoadPoiDetailFromDB(parameters.Poi);
         return parameters;
     }

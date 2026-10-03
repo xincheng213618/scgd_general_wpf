@@ -4226,8 +4226,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>Property descriptions</value></data>
   <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>Captures one RAW frame from a local physical camera and optionally performs local calibration, image flipping, and file saving.</value></data>
   <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. Select the device code and configure the exposure time, gain, and average count.&#xA;2. Select a calibration template when calibration is required; leave it empty to output RAW only.&#xA;3. Enable auto connect, auto exposure, file saving, and image flipping as needed.&#xA;4. Connect OUT to a downstream local calibration, POI, or other algorithm node.</value></data>
-  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration (optionally replayed from saved parameters) → image flip → database insert → synchronous save, asynchronous save, or cache-only CVRAW. Downstream POI uses the final image orientation.</value></data>
-  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes. File saving is enabled by default; asynchronous saving is disabled. Disabling file saving keeps the image and later color parameters only in cache. Use synchronous saving for legacy services that require a disk file.</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration (optionally replayed from saved parameters) → image flip → database insert → save or cache-only CVRAW. Downstream POI uses the final image orientation.</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes. File saving is enabled by default and completes before the node continues. Disabling file saving keeps the image and later color parameters only in cache. Enable file saving for legacy services that require a disk file.</value></data>
 
   <data name="本地关注点布点(Re)" xml:space="preserve"><value>Local POI Layout (Remap)</value></data>
   <data name="本地关注点布点(参数)" xml:space="preserve"><value>Local POI Layout (Parameters)</value></data>
@@ -4707,7 +4707,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="保留最近" xml:space="preserve"><value>Keep the latest</value></data>
   <data name="个月" xml:space="preserve"><value>month(s)</value></data>
   <data name="清理过期数据" xml:space="preserve"><value>Clean Expired Data</value></data>
-  <data name="清理前创建完整备份（推荐）" xml:space="preserve"><value>Create a full backup before cleanup (recommended)</value></data>
   <data name="清空选中表" xml:space="preserve"><value>Clear Selected Tables</value></data>
   <data name="可清理数据表" xml:space="preserve"><value>Cleanable Tables</value></data>
   <data name="全选可用表" xml:space="preserve"><value>Select All Available Tables</value></data>
@@ -4740,7 +4739,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="将清空以下 {0:N0} 张数据表：" xml:space="preserve"><value>The following {0:N0} table(s) will be cleared:</value></data>
   <data name="此操作不可撤销，是否继续？" xml:space="preserve"><value>This operation cannot be undone. Continue?</value></data>
   <data name="正在清空选中的 {0:N0} 张数据表..." xml:space="preserve"><value>Clearing the selected {0:N0} table(s)...</value></data>
-  <data name="危险操作：将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>Dangerous operation: all {1:N0} available table(s) in {0} will be cleared.</value></data>
   <data name="全部数据清理后无法撤销，是否确定继续？" xml:space="preserve"><value>Clearing all data cannot be undone. Are you sure you want to continue?</value></data>
   <data name="正在清空 {0} 全部数据..." xml:space="preserve"><value>Clearing all data from {0}...</value></data>
   <data name="该迁移没有可用的完整备份能力，已拒绝执行。" xml:space="preserve"><value>This migration has no full-backup capability and was refused.</value></data>
@@ -4912,15 +4910,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="可用数据表" xml:space="preserve"><value>Available Tables</value></data>
   <data name="数据行数" xml:space="preserve"><value>Total Rows</value></data>
   <data name="创建完整备份" xml:space="preserve"><value>Create Full Backup</value></data>
-  <data name="备份策略" xml:space="preserve"><value>Backup Policy</value></data>
   <data name="历史数据清理" xml:space="preserve"><value>Historical Data Cleanup</value></data>
   <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>Remove expired records from the current database based on the retention period in months.</value></data>
   <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>All cleanup operations require confirmation.</value></data>
-  <data name="危险操作" xml:space="preserve"><value>Danger Zone</value></data>
   <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>Empty all cleanable tables in the current database. This cannot be undone directly.</value></data>
   <data name="清空当前库全部可清理表" xml:space="preserve"><value>Empty All Cleanable Tables in Current Database</value></data>
   <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>Table cleanup affects only checked tables. To clean a main table, also select all existing related detail tables.</value></data>
-  <data name="未启用清理前备份。" xml:space="preserve"><value>Backup before cleanup is not enabled.</value></data>
   <data name="PoiAutoFitSize" xml:space="preserve"><value>Auto-fit size</value></data>
   <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>Estimate the circle radius or rectangle size from the quadrilateral and grid counts, and use Internal placement. Gaps, overlaps and integer rounding are allowed. You can adjust the values manually; click Draw to generate points.</value></data>
   <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>Cannot fit the sampling size. Check that the quadrilateral is valid, row and column counts are at least 1, and the area can contain a whole-pixel sampling window. Set the size manually for an area collapsed to a point.</value></data>
@@ -6870,4 +6865,13 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>Same flow and node · {0} runs · {1} messages · Latest 500 flow runs plus the opened run; select a row, then set a baseline to compare side by side.</value></data>
   <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>The record has no flow identity or node ID. Only this execution is shown; other batches cannot be reliably linked.</value></data>
   <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>Flow Overview / Node Analysis / Compare Batches</value></data>
+  <data name="勾选" xml:space="preserve"><value>Check</value></data>
+  <data name="清空勾选表" xml:space="preserve"><value>Empty Checked Tables</value></data>
+  <data name="已勾选 {0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>{0:N0} tables checked · {1:N0} rows</value></data>
+  <data name="尚未勾选数据表" xml:space="preserve"><value>No tables checked</value></data>
+  <data name="{0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>{0:N0} tables · {1:N0} rows</value></data>
+  <data name="按保留月数清理当前库，不受表格勾选影响。" xml:space="preserve"><value>Clean the current database by the retention period in months, regardless of which tables are checked.</value></data>
+  <data name="清空勾选表会删除表内全部记录，不受保留月数限制。" xml:space="preserve"><value>Emptying checked tables deletes all their records, regardless of the retention period.</value></data>
+  <data name="全部数据清理" xml:space="preserve"><value>All Data Cleanup</value></data>
+  <data name="将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>All {1:N0} available tables in {0} will be emptied.</value></data>
 </root>

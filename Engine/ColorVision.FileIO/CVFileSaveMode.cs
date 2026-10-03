@@ -2,8 +2,7 @@ namespace ColorVision.FileIO
 {
     public enum CVFileSaveMode
     {
-        Synchronous,
-        Asynchronous,
-        MemoryOnly
+        Synchronous = 0,
+        MemoryOnly = 2
     }
 }

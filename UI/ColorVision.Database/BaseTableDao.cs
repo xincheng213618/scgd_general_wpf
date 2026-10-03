@@ -249,13 +249,13 @@ namespace ColorVision.Database
                 using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 if (item.Id <= 0)
                 {
-                    var newId = db.Insertable(item).ExecuteReturnIdentity();
+                    var newId = DatabaseCommandTiming.Execute(db, "Insert." + typeof(T).Name, () => db.Insertable(item).ExecuteReturnIdentity());
                     item.Id = newId;
                     return 1; // 规范：返回受影响行数
                 }
                 else
                 {
-                    return db.Updateable(item).Where(x => x.Id == item.Id).ExecuteCommand();
+                    return DatabaseCommandTiming.Execute(db, "Update." + typeof(T).Name, () => db.Updateable(item).Where(x => x.Id == item.Id).ExecuteCommand(), item.Id.ToString());
                 }
             }, -1);
         }

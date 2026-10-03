@@ -41,6 +41,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
+        public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
         private readonly LocalFlowTemplateStorage localStorage;
         private readonly Func<bool> isMySqlConnected;
@@ -65,6 +66,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void PreviewMouseDoubleClick(int index)
         {
+            if (index < 0 || index >= TemplateParams.Count) return;
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
         public override bool ExitsTemplateName(string templateName)

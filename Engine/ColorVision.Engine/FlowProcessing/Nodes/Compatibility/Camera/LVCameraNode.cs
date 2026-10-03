@@ -1,8 +1,12 @@
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using FlowEngineLib.Base;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System.ComponentModel;
+using System.Linq;
 
 namespace FlowEngineLib;
 
@@ -16,18 +20,17 @@ namespace FlowEngineLib;
 public class LVCameraNode : BaseCameraNode
 {
 	private bool saveFiles = true;
-	private bool saveAsynchronously;
+
+	[Browsable(false), JsonIgnore]
+	public bool ShowLocalCameraSettings => ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+		.Any(camera => camera.Code == DeviceCode && camera.CameraBackend.OpensLocally) == true;
 
 	[Category("本地相机")]
-	[STNodeProperty("保存文件", "仅本地取图分支生效；关闭时只写 CVRAW 缓存。数据库始终先写入，后续色度参数沿用此设置。", true)]
+	[PropertyVisibility(nameof(ShowLocalCameraSettings))]
+	[STNodeProperty("保存文件", "仅本地取图分支生效；启用时保存 CVRAW，写入完成后继续；关闭时只写缓存。数据库始终先写入，后续色度参数沿用此设置。", true)]
 	public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
 
-	[Category("本地相机")]
-	[STNodeProperty("异步保存", "仅本地取图且保存文件时生效；开启后后台顺序写入图像和色度参数。旧服务需要读取图像时请关闭此项。", true)]
-	public bool SaveAsynchronously { get => saveAsynchronously; set { saveAsynchronously = value; OnPropertyChanged(); } }
-
-	internal CVFileSaveMode SaveMode => !SaveFiles ? CVFileSaveMode.MemoryOnly
-		: SaveAsynchronously ? CVFileSaveMode.Asynchronous : CVFileSaveMode.Synchronous;
+	internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;
 
 	protected override FlowLocalExecution? CreateLocalExecution(CVMQTTRequest request)
 		=> LocalLvCameraExecution.Create(request, SaveMode);

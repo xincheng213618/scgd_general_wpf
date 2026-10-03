@@ -164,7 +164,7 @@ public class STNodeControl
 	{
 		get
 		{
-			return _ForeColor;
+			return _Owner?.Owner?.VisualTheme?.ResolveText(_ForeColor) ?? _ForeColor;
 		}
 		set
 		{
@@ -275,7 +275,7 @@ public class STNodeControl
 		m_sf = new StringFormat();
 		m_sf.Alignment = StringAlignment.Center;
 		m_sf.LineAlignment = StringAlignment.Center;
-		_Font = new Font("courier new", 8.25f);
+		_Font = new Font("Segoe UI", 9f);
 		Width = 75;
 		Height = 23;
 	}
@@ -290,7 +290,7 @@ public class STNodeControl
 		graphics.FillRectangle(solidBrush, 0, 0, Width, Height);
 		if (!string.IsNullOrEmpty(_Text))
 		{
-			solidBrush.Color = _ForeColor;
+			solidBrush.Color = ForeColor;
 			graphics.DrawString(_Text, _Font, solidBrush, ClientRectangle, m_sf);
 		}
 		if (this.Paint != null)

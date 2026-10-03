@@ -275,9 +275,9 @@ namespace ProjectLUX
 
         public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return Task.CompletedTask;
 
-            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+            flowEngine.LoadFromBase64(template.Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
             foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {

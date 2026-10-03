@@ -63,6 +63,13 @@ namespace ColorVision.SocketProtocol
         }
         private string? _content;
 
+        // Called after commit, before publishing the row to the UI.
+        internal void UnloadContent()
+        {
+            _content = null;
+            IsContentLoaded = false;
+        }
+
         /// <summary>
         /// 列表使用的短预览，避免查询或解压完整正文。
         /// </summary>

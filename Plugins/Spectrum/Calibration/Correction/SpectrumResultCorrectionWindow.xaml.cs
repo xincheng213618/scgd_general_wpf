@@ -28,9 +28,10 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
             return;
         }
 
+        Window? owner = Application.Current?.GetActiveWindow();
         if (!mainWindow.TryGetCorrectionResult(out ViewResultSpectrum? result, out string reason))
         {
-            MessageBox.Show(mainWindow, reason, LocalizedText.Get("光谱校正"), MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(owner, reason, LocalizedText.Get("光谱校正"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -38,13 +39,13 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
         {
             new SpectrumResultCorrectionWindow(result!, SpectrometerManager.Instance)
             {
-                Owner = mainWindow,
+                Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             }.ShowDialog();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(mainWindow, ex.GetBaseException().Message, LocalizedText.Get("无法打开光谱校正"),
+            MessageBox.Show(owner, ex.GetBaseException().Message, LocalizedText.Get("无法打开光谱校正"),
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

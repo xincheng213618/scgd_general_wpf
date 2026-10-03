@@ -109,7 +109,13 @@ namespace ProjectARVRPro
         private long? _currentSwitchPreparationMilliseconds;
         private long _currentPictureSwitchMilliseconds;
         private long _currentPreProcessingMilliseconds;
+        private double _currentBatchCreateMs;
+        private double _currentNodeRecorderStartMs;
         private long _currentFlowFinalizeMilliseconds;
+        private double _currentFlowRunRecordMs;
+        private double _currentBatchFinalizeMs;
+        private double _currentNodeRecorderFlushMs;
+        private bool? _currentNodeRecorderFlushed;
         private readonly FlowRuntimeEstimateCache _flowRuntimeEstimates = new();
         private FlowRuntimeEstimateKey _currentRuntimeEstimateKey;
         private double _currentRuntimeEstimateLookupMs;
@@ -212,7 +218,13 @@ namespace ProjectARVRPro
             _currentSwitchPreparationMilliseconds = null;
             _currentPictureSwitchMilliseconds = 0;
             _currentPreProcessingMilliseconds = 0;
+            _currentBatchCreateMs = 0;
+            _currentNodeRecorderStartMs = 0;
             _currentFlowFinalizeMilliseconds = 0;
+            _currentFlowRunRecordMs = 0;
+            _currentBatchFinalizeMs = 0;
+            _currentNodeRecorderFlushMs = 0;
+            _currentNodeRecorderFlushed = null;
             _currentRuntimeEstimateLookupMs = 0;
             _currentStartupWorkMs = 0;
             _currentRefreshServicesMs = 0;
@@ -280,8 +292,14 @@ namespace ProjectARVRPro
                 StartupOtherMs = Math.Round(Math.Max(0, _currentStartupWorkMs - _currentRefreshTotalMs - _currentRuntimeEstimateLookupMs), 3),
                 PictureSwitchMs = _currentPictureSwitchMilliseconds,
                 PreProcessingMs = _currentPreProcessingMilliseconds,
+                BatchCreateMs = Math.Round(_currentBatchCreateMs, 3),
+                NodeRecorderStartMs = Math.Round(_currentNodeRecorderStartMs, 3),
                 FlowMs = Math.Max(0, result.RunTime),
                 FlowFinalizeMs = _currentFlowFinalizeMilliseconds,
+                FlowRunRecordMs = Math.Round(_currentFlowRunRecordMs, 3),
+                BatchFinalizeMs = Math.Round(_currentBatchFinalizeMs, 3),
+                NodeRecorderFlushMs = Math.Round(_currentNodeRecorderFlushMs, 3),
+                NodeRecorderFlushed = _currentNodeRecorderFlushed,
                 BatchLookupMs = Math.Max(0, batchLookupMilliseconds),
                 ProcessExecuteMs = Math.Max(0, processExecutionMilliseconds),
                 ViewResultSaveMs = Math.Max(0, viewResultSaveMilliseconds),
@@ -625,7 +643,7 @@ namespace ProjectARVRPro
 
         public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return Task.CompletedTask;
 
             Stopwatch refreshTiming = Stopwatch.StartNew();
             MqttRCService.GetInstance().QueryServices();
@@ -640,7 +658,7 @@ namespace ProjectARVRPro
             double detachedAt = refreshTiming.Elapsed.TotalMilliseconds;
             _currentRefreshDetachNodesMs = detachedAt - _currentRefreshServicesMs;
 
-            string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
+            string Refreshdata = template.Value.DataBase64;
             flowEngine.LoadFromBase64(Refreshdata, MqttRCService.GetInstance().ServiceTokens);
             double loadedAt = refreshTiming.Elapsed.TotalMilliseconds;
             _currentRefreshLoadGraphMs = loadedAt - detachedAt;
@@ -972,6 +990,7 @@ namespace ProjectARVRPro
 
         private void CreateCurrentFlowBatch()
         {
+            long batchStartedAt = Stopwatch.GetTimestamp();
             _currentFlowBatch = new MeasureBatchModel
             {
                 TId = _currentFlowTemplateId > 0 ? _currentFlowTemplateId : null,
@@ -984,10 +1003,13 @@ namespace ProjectARVRPro
                 DbType = SqlSugar.DbType.MySql,
                 IsAutoCloseConnection = true,
             });
-            _currentFlowBatch.Id = db.Insertable(_currentFlowBatch).ExecuteReturnIdentity();
+            _currentFlowBatch.Id = DatabaseCommandTiming.Execute(db, "ARVR.CreateBatch", () => db.Insertable(_currentFlowBatch).ExecuteReturnIdentity(), CurrentFlowResult.Code);
             CurrentFlowResult.BatchId = _currentFlowBatch.Id;
+            _currentBatchCreateMs = Stopwatch.GetElapsedTime(batchStartedAt).TotalMilliseconds;
+            long recorderStartedAt = Stopwatch.GetTimestamp();
             _flowNodeExecutionRecorder.StartRun(_currentFlowBatch.Id, CurrentFlowResult.Code);
             _runningFlowNodes.Reset(CurrentFlowResult.Code);
+            _currentNodeRecorderStartMs = Stopwatch.GetElapsedTime(recorderStartedAt).TotalMilliseconds;
         }
 
         private async Task FinalizeCurrentFlowRunAsync(FlowControlData flowResult)
@@ -1001,13 +1023,16 @@ namespace ProjectARVRPro
             CurrentFlowResult.RunTime = elapsedMilliseconds;
             CurrentFlowResult.FlowStatus = flowResult.FlowStatus;
 
+            long runRecordStarted = Stopwatch.GetTimestamp();
             FlowNodeRecordDataBaseHelper.RecordFlowRun(
                 _currentFlowTemplateId,
                 FlowName,
                 serialNumber,
                 flowResult.FlowStatus,
                 elapsedMilliseconds);
+            _currentFlowRunRecordMs = Stopwatch.GetElapsedTime(runRecordStarted).TotalMilliseconds;
 
+            long batchFinalizeStarted = Stopwatch.GetTimestamp();
             try
             {
                 MeasureBatchModel? batch = _currentFlowBatch;
@@ -1027,17 +1052,22 @@ namespace ProjectARVRPro
                         DbType = SqlSugar.DbType.MySql,
                         IsAutoCloseConnection = true,
                     });
-                    db.Updateable(batch).ExecuteCommand();
+                    DatabaseCommandTiming.Execute(db, "ARVR.FinalizeBatch", () => db.Updateable(batch).ExecuteCommand(), serialNumber);
                 }
             }
             catch (Exception ex)
             {
                 log.Error($"回写流程批次失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
             }
+            finally
+            {
+                _currentBatchFinalizeMs = Stopwatch.GetElapsedTime(batchFinalizeStarted).TotalMilliseconds;
+            }
 
+            long recorderFlushStarted = Stopwatch.GetTimestamp();
             try
             {
-                await _flowNodeExecutionRecorder.CompleteRunAsync(
+                _currentNodeRecorderFlushed = await _flowNodeExecutionRecorder.CompleteRunAsync(
                     serialNumber,
                     flushTimeout: TimeSpan.FromSeconds(5));
             }
@@ -1047,6 +1077,7 @@ namespace ProjectARVRPro
             }
             finally
             {
+                _currentNodeRecorderFlushMs = Stopwatch.GetElapsedTime(recorderFlushStarted).TotalMilliseconds;
                 _currentFlowBatch = null;
             }
         }

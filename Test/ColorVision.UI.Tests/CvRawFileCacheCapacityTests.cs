@@ -1,5 +1,6 @@
 using ColorVision.FileIO;
 using System.IO;
+using System.Reflection;
 
 namespace ColorVision.UI.Tests;
 
@@ -133,6 +134,137 @@ public sealed class CvRawFileCacheCapacityTests
         Assert.Equal(beforeB.CapacityBytes, afterB.CapacityBytes);
         Assert.Equal(beforeB.ContentBytes, afterB.ContentBytes);
         Assert.Equal(new byte[] { 7, 8, 9 }, CVFileMetadata.Read(files.A)["cache-test"].Value);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task SlowDiskOpenOrReadDoesNotBlockOtherFilesAndRetiredLoadStaysReadable(bool pauseOpen, bool disableCache)
+    {
+        using CacheFiles files = new(maximumEntries: 2);
+        files.ReadAndAssert(files.A);
+        using ManualResetEventSlim entered = new(false);
+        using ManualResetEventSlim resume = new(false);
+        void Pause() { entered.Set(); resume.Wait(); }
+        using ControlledReadStream source = new(File.ReadAllBytes(files.B), pauseOpen ? () => { } : Pause);
+        Task<Stream> load = Task.Run(() => OpenWithSource(files.B, () =>
+        {
+            if (pauseOpen) Pause();
+            return source;
+        }));
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+            await Task.Run(() =>
+            {
+                Assert.Null(CVFileReadCache.GetCachedLength(files.B));
+                files.ReadAndAssert(files.A);
+                using CVCIEFile raw = CacheFiles.CreateRaw(91);
+                Assert.True(CVFileUtil.WriteCVRaw(files.C, raw, CVFileSaveMode.MemoryOnly));
+                CVFileMetadata.SetProperty(files.C, "during-load", 1, [2, 3]);
+                Assert.Equal(new byte[] { 2, 3 }, CVFileMetadata.Read(files.C)["during-load"].Value);
+                using Stream retained = CVFileReadCache.OpenRead(files.C);
+                if (disableCache) CVFileReadCache.IsEnabled = false;
+                else CVFileReadCache.MaximumEntries = 1;
+            }).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            resume.Set();
+            using Stream read = await load.WaitAsync(TimeSpan.FromSeconds(10));
+            files.AssertContent(files.B, read);
+        }
+        if (disableCache) Assert.Empty(CVFileReadCache.GetSnapshot().Entries);
+        else AssertPaths(files.C);
+        Assert.Equal(0, CVFileReadCache.GetSnapshot().ActiveReaders);
+    }
+
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public async Task SameFileWriterWaitsForDiskLoadAndPreservesOriginalReader(CVFileSaveMode mode)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        byte[] original = File.ReadAllBytes(files.A);
+        using ManualResetEventSlim entered = new(false);
+        using ManualResetEventSlim resume = new(false);
+        using ControlledReadStream source = new(original, () => { entered.Set(); resume.Wait(); });
+        Task<Stream> load = Task.Run(() => OpenWithSource(files.A, () => source));
+        TaskCompletionSource written = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Thread writer = new(() =>
+        {
+            try
+            {
+                using CVCIEFile raw = CacheFiles.CreateRaw(91);
+                Assert.True(CVFileUtil.WriteCVRaw(files.A, raw, mode));
+                written.SetResult();
+            }
+            catch (Exception ex) { written.SetException(ex); }
+        }) { IsBackground = true };
+        try
+        {
+            Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+            writer.Start();
+            Assert.True(SpinWait.SpinUntil(() => written.Task.IsCompleted
+                || (writer.ThreadState & ThreadState.WaitSleepJoin) != 0, TimeSpan.FromSeconds(10)));
+            Assert.False(written.Task.IsCompleted);
+            Assert.Null(CVFileReadCache.GetCachedLength(files.A));
+        }
+        finally
+        {
+            resume.Set();
+            using Stream read = await load.WaitAsync(TimeSpan.FromSeconds(10));
+            await written.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            using MemoryStream copy = new();
+            read.CopyTo(copy);
+            Assert.Equal(original, copy.ToArray());
+        }
+        Assert.True(CVFileUtil.ReadCVRaw(files.A, out CVCIEFile saved));
+        using (saved) Assert.Equal(Enumerable.Repeat((byte)91, 6), saved.Data);
+        Assert.Equal(0, CVFileReadCache.GetSnapshot().ActiveReaders);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedDiskFillDoesNotLeavePinnedOrPartiallyPublishedCache(bool outOfMemory)
+    {
+        using CacheFiles files = new(maximumEntries: 1);
+        byte[] original = File.ReadAllBytes(files.A);
+        using ControlledReadStream source = new(original, () =>
+        {
+            if (outOfMemory) throw new OutOfMemoryException();
+            throw new IOException("Simulated read failure.");
+        });
+        if (outOfMemory)
+        {
+            using Stream fallback = OpenWithSource(files.A, () => source);
+            Assert.Same(source, fallback);
+            Assert.Equal(0, fallback.Position);
+        }
+        else
+        {
+            TargetInvocationException failure = Assert.Throws<TargetInvocationException>(() => OpenWithSource(files.A, () => source));
+            Assert.IsType<IOException>(failure.InnerException);
+        }
+        Assert.Null(CVFileReadCache.GetCachedLength(files.A));
+        Assert.Empty(CVFileReadCache.GetSnapshot().Entries);
+        files.ReadAndAssert(files.B);
+    }
+
+    private static Stream OpenWithSource(string path, Func<Stream> openFile)
+        => (Stream)typeof(CVFileReadCache).GetMethod("OpenReadCore", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, [path, true, openFile])!;
+
+    private sealed class ControlledReadStream(byte[] bytes, Action beforeCopy) : MemoryStream(bytes)
+    {
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            beforeCopy();
+            base.CopyTo(destination, bufferSize);
+        }
     }
 
     private static void AssertPaths(params string[] paths)

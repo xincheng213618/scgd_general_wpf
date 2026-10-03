@@ -132,7 +132,7 @@ namespace ColorVision.Rbac
                 
                 if (userLoginResult == null)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, LocalizedText.Get("用户名或者密码不正确"), LocalizedText.Get("登录失败"), MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("用户名或者密码不正确"), LocalizedText.Get("登录失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 

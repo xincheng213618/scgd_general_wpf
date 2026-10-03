@@ -98,6 +98,39 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	private STNode _HoverNode;
 
 	private Color _GridColor = Color.Black;
+	private STNodeVisualTheme _VisualTheme;
+
+	[Browsable(false)]
+	public STNodeVisualTheme VisualTheme
+	{
+		get => _VisualTheme;
+		set
+		{
+			_VisualTheme = value;
+			if (value != null)
+			{
+				BackColor = value.Canvas;
+				ForeColor = value.Text;
+				BorderHoverColor = value.Accent;
+				BorderSelectedColor = value.Accent;
+				BorderActiveColor = value.Accent;
+				SelectedRectangleColor = value.Accent;
+				HighLineColor = value.Accent;
+				LocationBackColor = value.Surface;
+				LocationForeColor = value.SecondaryText;
+				MarkBackColor = value.Surface;
+				MarkForeColor = value.Text;
+			}
+			Invalidate();
+		}
+	}
+
+	internal Color GetOptionColor(STNodeOption option)
+	{
+		Color color = option.DotColor != Color.Transparent ? option.DotColor
+			: _TypeColor.TryGetValue(option.DataType, out Color typeColor) ? typeColor : _UnknownTypeColor;
+		return _VisualTheme?.ResolveAccent(color) ?? color;
+	}
 
 	private Color _BorderColor = Color.Black;
 
@@ -594,11 +627,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	{
 		get
 		{
-			return _MarkBackColor;
+			return _MarkForeColor;
 		}
 		set
 		{
-			_MarkBackColor = value;
+			_MarkForeColor = value;
 			Invalidate();
 		}
 	}
@@ -1710,6 +1743,17 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected virtual void OnDrawGrid(DrawingTools dt, int nWidth, int nHeight)
 	{
 		Graphics graphics = dt.Graphics;
+		if (_VisualTheme != null)
+		{
+			// Dots remain a positioning aid without competing with connections when zoomed out.
+			float spacing = 24f * _CanvasScale;
+			while (spacing < 16f) spacing *= 2f;
+			using SolidBrush dots = new SolidBrush(STNodeVisualTheme.Blend(_VisualTheme.Canvas, _VisualTheme.Border, 0.58f));
+			for (float x = _CanvasOffsetX % spacing; x < nWidth; x += spacing)
+				for (float y = _CanvasOffsetY % spacing; y < nHeight; y += spacing)
+					graphics.FillRectangle(dots, x, y, 1f, 1f);
+			return;
+		}
 		using Pen pen = new Pen(Color.FromArgb(65, _GridColor));
 		using Pen pen2 = new Pen(Color.FromArgb(30, _GridColor));
 		float num = 20f * _CanvasScale;
@@ -1783,6 +1827,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected virtual void OnDrawNodeSelection(DrawingTools dt, STNode node)
 	{
 		bool isActive = _ActiveNode == node;
+		if (_VisualTheme != null)
+		{
+			float scale = Math.Max(_CanvasScale, 0.2f);
+			bool emphasized = isActive || node.IsSelected;
+			DrawNodeOutline(dt.Graphics, node.Rectangle,
+				emphasized || _HoverNode == node ? _VisualTheme.Accent : _VisualTheme.Border,
+				(emphasized ? 2f : 1f) / scale, inset: true);
+			return;
+		}
 		if (!isActive && !node.IsSelected)
 		{
 			return;
@@ -1844,18 +1897,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				{
 					continue;
 				}
-				if (outputOption.DotColor != Color.Transparent)
-				{
-					m_p_line.Color = outputOption.DotColor;
-				}
-				else if (outputOption.DataType == typeFromHandle)
-				{
-					m_p_line.Color = _UnknownTypeColor;
-				}
-				else
-				{
-					m_p_line.Color = (_TypeColor.ContainsKey(outputOption.DataType) ? _TypeColor[outputOption.DataType] : _UnknownTypeColor);
-				}
+				m_p_line.Color = GetOptionColor(outputOption);
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
 					float x1 = outputOption.DotLeft + outputOption.DotSize;
@@ -1876,7 +1918,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				}
 			}
 		}
-		m_p_line_hover.Color = _HighLineColor;
+		m_p_line_hover.Color = _VisualTheme == null ? _HighLineColor : Color.FromArgb(65, _HighLineColor);
 		if (m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover))
 		{
 			graphics.DrawPath(m_p_line_hover, m_gp_hover);

@@ -388,10 +388,9 @@ namespace ProjectKB
 
             FlowTemplate.SelectionChanged += (s, e) =>
             {
-                if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
+                if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> template)
                 {
-                    string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    RecipeManager.SetCurrentTemplate(Name);
+                    RecipeManager.SetCurrentTemplate(template.Key);
                     RecipeManager.Save();
 
                 }

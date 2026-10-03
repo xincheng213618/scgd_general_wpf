@@ -47,9 +47,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             };
         }
 
-        public FlowEngineToolWindow(FlowParam flowParam) : this()
+        public FlowEngineToolWindow(FlowParam? flowParam) : this()
         {
-            View.OpenStandaloneFlowParam(flowParam, true);
+            if (flowParam != null) View.OpenStandaloneFlowParam(flowParam, true);
         }
 
         public void OpenFlow(string filePath)

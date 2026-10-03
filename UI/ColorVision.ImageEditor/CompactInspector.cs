@@ -548,7 +548,7 @@ namespace ColorVision.ImageEditor
 
             Window window = new Window
             {
-                Owner = Application.Current?.MainWindow,
+                Owner = Application.Current?.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Content = colorPicker,
                 Width = 250,

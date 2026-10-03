@@ -180,7 +180,7 @@ W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v�
 | 流程执行 | `FlowStartedAt` → `FlowCompletedAt` | 与流程运行 stopwatch 对应的主执行段 |
 | 执行后处理/保存 | `FlowCompletedAt` → `ResultProcessingCompletedAt` | 流程收尾、客户结果读取与解析、结果记录保存；旧日志不能把整段等同于纯解析耗时 |
 
-每个成功流程还会输出一条 `ARVRFlowPhaseTiming` 结构化 INFO 日志，并携带 `SN`、`Model` 和 `BatchId`。其中 `SwitchWaitMs`、`SwitchPreparationMs`、`PictureSwitchMs`、`PreProcessingMs` 和 `FlowMs` 对应启动前与执行阶段；`FlowFinalizeMs`、`BatchLookupMs`、`ProcessExecuteMs`、`ViewResultSaveMs`、`ObjectiveResultSaveMs`、`LinkSaveMs` 和 `ResultProcessingTimestampPersistMs` 用于继续拆分流程结束后的约束路径。`ResultProcessingTimestampPersisted` 用于确认阶段终点是否写回 SQLite，`ImageExportIncludedInCt` 明确后台图像导出不属于该阶段的 CT 归因。后续反馈诊断应优先按同一 `SN + Model + BatchId` 汇总这些字段，而不是从相邻日志行估算。
+每个成功流程还会输出一条 `ARVRFlowPhaseTiming` 结构化 INFO 日志，并携带 `SN`、`Model` 和 `BatchId`。其中 `SwitchWaitMs`、`SwitchPreparationMs`、`PictureSwitchMs`、`PreProcessingMs` 和 `FlowMs` 对应启动前与执行阶段；`FlowFinalizeMs`、`BatchLookupMs`、`ProcessExecuteMs`、`ViewResultSaveMs`、`ObjectiveResultSaveMs`、`LinkSaveMs` 和 `ResultProcessingTimestampPersistMs` 用于继续拆分流程结束后的约束路径。`FlowFinalizeMs` 内进一步分为 `FlowRunRecordMs`（SQLite 运行记录入队并等待写入结果，包含排队或超时等待）、`BatchFinalizeMs`（MySQL 批次查询/回写）和 `NodeRecorderFlushMs`（结束节点记录并等待 SQLite 队列刷新）；`NodeRecorderFlushed` 保留刷新返回结果，未取得结果时为 null。这些子阶段已包含在父阶段中，不能重复相加。批次创建/回写的慢调用还会输出 `DatabaseCommandTiming`，区分打开连接和 SQL 调用，按流程 Code 关联。`ResultProcessingTimestampPersisted` 用于确认阶段终点是否写回 SQLite，`ImageExportIncludedInCt` 明确后台图像导出不属于该阶段的 CT 归因。后续反馈诊断应优先按同一 `SN + Model + BatchId` 汇总这些字段，而不是从相邻日志行估算。
 
 `ResultImageDimensionsFromProcessCache` 表示本次结果保存前已从解析阶段的 batch 图像查询中解析出有效宽高。正常内置流程该字段为 `true` 时，`ViewResultSaveMs` 不再包含第二次尺寸查询；若为 `false`，保存层可能因兼容回退仍访问 MySQL，应结合 `ViewResultSaveMs` 和尺寸数据继续诊断。
 
@@ -196,6 +196,8 @@ W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v�
 | `RefreshAttachNodesMs` | 枚举新节点并挂接显示、诊断事件 |
 | `RefreshTotalMs` | 上述四项 Refresh 子段之和；不能再与其子段相加 |
 | `StartupOtherMs` | `StartupWorkMs - RefreshTotalMs - RuntimeEstimateLookupMs` 的非负余项；包括本轮上下文准备等，不能全部解释成线程等待 |
+| `BatchCreateMs` | `FlowStartedAt` 后创建批次模型、构造 MySQL 客户端、插入并取得批次 ID 的耗时；包含在 `FlowMs` 中，不属于 `StartupWorkMs`，也不是服务端纯 SQL 耗时 |
+| `NodeRecorderStartMs` | 批次建立后初始化节点记录器和运行节点跟踪状态的耗时，包含在 `FlowMs` 中；此调用本身不写 SQLite |
 
 原始回包到业务派发应结合宿主的 [Socket 计时](../ui-components/ColorVision.SocketProtocol.md#回包派发与界面刷新计时)，不能把消息列表后台排队时间重复计入 PG 或 CT。
 

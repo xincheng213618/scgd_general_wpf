@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 instance.Activate();
                 return;
             }
-            Window? owner = Application.Current.MainWindow;
+            Window? owner = Application.Current.GetActiveWindow();
             if (owner?.IsLoaded != true) owner = null;
             instance = new LocalCalibrationCacheManagerWindow
             {

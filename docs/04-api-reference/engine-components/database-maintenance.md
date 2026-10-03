@@ -34,8 +34,8 @@ related: ["engine.index", "engine.mysql-maintenance", "ui.sqlite-storage", "ui.d
 | 接口 | 宿主使用方式 | 不可推断 |
 | --- | --- | --- |
 | `IDatabaseCleanupSourceProvider` | 身份、描述、排序、`LoadTables`、`CleanupHistory(keepMonths)`、`CleanupAll` | 不提供统一预览、删除集合、日期列或事务 |
-| `IDatabaseCleanupSelectionProvider` | 显示复选和“清空选中表”，传入表名列表 | 不自动补齐主从依赖或验证 provider 的白名单 |
-| `IDatabaseCleanupBackupProvider` | 显示单独备份与“清理前备份”选项 | “完整”内容由实现决定，不包含自动还原承诺 |
+| `IDatabaseCleanupSelectionProvider` | 显示复选和“清空勾选表”，传入表名列表 | 不自动补齐主从依赖或验证 provider 的白名单 |
+| `IDatabaseCleanupBackupProvider` | 显示单独“创建完整备份”按钮，内部保留清理前备份能力 | “完整”内容由实现决定，不包含自动还原承诺 |
 | `IDatabaseCleanupMaintenanceProvider` | 将备份和动作委托给 provider 的组合入口 | 同一维护锁不等于同一数据库事务，也不锁住其它进程 |
 | `IDatabaseCleanupMigrationProvider` | 显示 provider 的迁移按钮和确认文案，并通过 `HasPendingMigration()` 判断当前库是否仍需迁移 | 直接 API 不因宿主存在就自动备份或获得授权；旧 provider 未实现检查时默认保留可执行状态 |
 | `IDatabaseCleanupOptimizationProvider` | 显示 provider 的手动优化按钮和确认文案 | 不统一提供 dry-run、自动备份、事务回滚或低负载窗口 |
@@ -57,23 +57,27 @@ Socket/Flow 的锁与迁移实现见 [SQLite 正文存储](../ui-components/sqli
 
 `RefreshAsync` 在后台调用 `LoadTables` 后替换 `Tables`，并调用迁移 provider 的 `HasPendingMigration()` 刷新迁移状态；按表名保留仍存在的选择。不存在的表不能选中，`ExistingRowCount` 和空间只是 provider 返回值的加总，未声明共同时间点或按保留月数筛选。刷新失败不清除之前成功的表快照，退出 busy 后旧快照仍可能让普通清理按钮可用；迁移按钮在完成首次状态检查前保持禁用。
 
-通常按钮要求 `!IsBusy` 和至少一张存在的表；选表入口还要求 selection 能力及非空选择。这是当前快照的可执行状态，不是“已完成针对本次删除的预览”门禁。直接 provider 调用不依赖这些 UI 条件。
+通常按钮要求 `!IsBusy` 和至少一张存在的表；选表入口还要求 selection 能力及非空勾选。保留月数输入实时校验，必须是大于 0 的整数，无效时提示错误并禁用历史清理按钮。这是当前快照的可执行状态，不是“已完成针对本次删除的预览”门禁。直接 provider 调用不依赖这些 UI 条件。
+
+历史清理按保留月数处理当前数据库，不受表格勾选影响；“清空勾选表”删除所勾选表内的全部记录，不受保留月数限制。表统计和勾选行数都不是历史清理的待删除数量，窗口不显示截止日期预览。
+
+“全部数据清理”区域默认展开，仅处理当前数据库，执行前仍二次确认该数据源的全部可清理表范围及不可撤销提示。
 
 | 确认入口 | 已捕获参数 | 未固定的状态 |
 | --- | --- | --- |
-| 保留月数清理 | 默认文本为 `3`；解析正整数，在确认前捕获 `keepMonths` | 没有统一最大月数；截止时间由 provider 计算，不保存待删除行集合，也不受当前选表限制 |
-| 清空选中表 | 确认前捕获存在且选中的表名数组，随后传给 `CleanupTables` | 未捕获表中记录、连接配置或主从依赖闭包 |
+| 保留月数清理 | 默认文本为 `3`；实时校验正整数，在确认前捕获 `keepMonths` | 没有统一最大月数；截止时间由 provider 计算，不保存待删除行集合，也不受当前勾选表限制 |
+| 清空勾选表 | 确认前捕获存在且勾选的表名数组，随后传给 `CleanupTables`，清空其全部记录 | 不受保留月数限制；未捕获表中记录、连接配置或主从依赖闭包 |
 | 清空当前库可清理表 | 弹窗使用当前快照的可用表数量 | 执行只调用 `CleanupAll()`，不传弹窗中的表名/行数；provider 可重新发现当前库 |
 | 优化 | provider 的说明，以及“不会删除业务数据、不会自动创建完整备份”的二次提示 | 没有通用 dry-run；不冻结连接、schema、已有索引、数据库负载或临时空间 |
 | 迁移 | provider 的说明及强制备份提示 | 没有通用 dry-run、版本批准或恢复协议 |
 
-确认与实际执行之间，provider 若重新读取可变连接配置、系统时间或 schema，宿主不会冻结这些值。XAML 提示“清理主表时需同时选择所有现存关联明细表”，但宿主只捕获选择，没有实现依赖校验；MySQL 当前缺少对应强制门禁的事实见专有契约，不能把提示当成代码保证。
+确认与实际执行之间，provider 若重新读取可变连接配置、系统时间或 schema，宿主不会冻结这些值。“清空勾选表”按钮提示“清理主表时需同时选择所有现存关联明细表”，但宿主只捕获选择，没有实现依赖校验；MySQL 当前缺少对应强制门禁的事实见专有契约，不能把提示当成代码保证。
 
 ## 备份、执行与失败分层
 
-每个 source 的 `BackupBeforeCleanup` 默认 false，界面“推荐”文字不表示默认勾选或持久策略。普通清理可在没有自动备份的情况下继续；provider 不支持备份时会提示需已有可恢复副本，但宿主不验证副本。单独点击创建备份也不会登记一个后续清理必须匹配的批准记录。
+窗口不显示备份策略卡片或清理前备份复选框；支持备份的 source 仍提供独立“创建完整备份”按钮。每个 source 的 `BackupBeforeCleanup` 默认 false，普通清理默认不自动备份；内部仍保留该属性及清理前备份执行能力，不作为界面的持久策略。所有清理仍需二次确认，确认框说明本次是否自动创建备份；provider 不支持备份时会提示需已有可恢复副本，但宿主不验证副本。单独点击创建备份也不会登记一个后续清理必须匹配的批准记录。
 
-迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后会再次调用 `HasPendingMigration()`，没有待迁移内容时直接禁用按钮并结束，不创建重复备份；仍需迁移时才以 `forceBackup: true` 调用执行包装。优化入口则明确关闭可选备份路径：即使当前 source 勾选了“清理前备份”，宿主也不会为 `ExecuteOptimization()` 自动创建备份。优化确认中的“不删除业务数据”只描述该 provider 的动作范围，不代表 DDL 没有持久 schema 变更、可以事务回滚或无需按现场制度留存备份。
+迁移入口不同：缺少 backup 能力直接拒绝；经用户确认后会再次调用 `HasPendingMigration()`，没有待迁移内容时直接禁用按钮并结束，不创建重复备份；仍需迁移时才以 `forceBackup: true` 调用执行包装。优化入口则明确关闭可选备份路径：即使内部将当前 source 的 `BackupBeforeCleanup` 设置为 true，宿主也不会为 `ExecuteOptimization()` 自动创建备份。优化确认中的“不删除业务数据”只描述该 provider 的动作范围，不代表 DDL 没有持久 schema 变更、可以事务回滚或无需按现场制度留存备份。
 
 备份和动作按以下方式运行：
 

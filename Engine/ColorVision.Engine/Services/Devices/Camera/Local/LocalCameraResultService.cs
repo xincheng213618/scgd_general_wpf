@@ -5,6 +5,7 @@ using FlowEngineLib.Algorithm;
 using System;
 using ColorVision.Database;
 using FlowEngineLib.Base;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -15,10 +16,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             if (!action.PersistResults)
                 return CreateModel(0, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure);
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
+            MeasureBatchModel batch = FlowNodeTiming.Run("ResolveBatch", () => BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber))
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
-            MeasureResultImgModel model = CreateModel(batch.Id, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure);
-            int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+            MeasureResultImgModel model = FlowNodeTiming.Run("BuildResultModel", () => CreateModel(batch.Id, zIndex, frame, capture, cameraParameters, calibration, isAutoExposure));
+            int masterId = FlowNodeTiming.Run("InsertResult", () => MeasureImgResultDao.Instance.SaveAndReturnId(model));
             if (masterId <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
             model.Id = masterId;
             return model;

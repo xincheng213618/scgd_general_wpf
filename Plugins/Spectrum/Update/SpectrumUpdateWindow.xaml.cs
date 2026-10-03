@@ -59,7 +59,7 @@ internal static class SpectrumUpdateCoordinator
             return;
         }
 
-        Window? owner = MainWindow.Instance ?? Application.Current?.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive);
+        Window? owner = Application.Current?.GetActiveWindow();
         if (owner != null)
         {
             ShowWindow(owner, null);

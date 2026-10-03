@@ -223,7 +223,7 @@ namespace ColorVision.Solution.Fusion
                     Content = imageView,
                     Width = 800,
                     Height = 600,
-                    Owner = Application.Current.MainWindow,
+                    Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
                 ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);

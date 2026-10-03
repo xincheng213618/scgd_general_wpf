@@ -165,7 +165,7 @@ namespace ProjectARVRPro
 
         public void OpenFlowEngineTool()
         {
-            new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.GetParamOrDefault(TemplateSelectedIndex)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public event EventHandler<string> SNChanged;

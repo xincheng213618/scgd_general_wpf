@@ -386,12 +386,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData + " : " + ex.Message);
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData + " : " + ex.Message);
             }
         }
 

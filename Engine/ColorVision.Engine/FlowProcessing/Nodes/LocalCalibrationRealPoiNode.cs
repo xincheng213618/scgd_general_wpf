@@ -17,7 +17,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using ServicePoiPointTypes = FlowEngineLib.Node.POI.POIPointTypes;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
@@ -125,73 +124,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     {
         private static readonly string[] InputPortNames = { "IN_IMG", "IN_POI" };
         private string imageFilePath = string.Empty;
-        private string poiTempName = string.Empty;
-        private string poiFilterTempName = string.Empty;
-        private string poiReviseTempName = string.Empty;
-        private ServicePoiPointTypes poiType;
-        private float poiWidth = 10;
-        private float poiHeight = 10;
         private bool useROI;
 
         [Category("本地校正")]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         [STNodeProperty("备用图像文件", "上游没有本地内存帧时读取此文件；有上游帧时忽略", true)]
         public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 模板", "校正后直接在 CIE 内存上计算的 POI 模板", true)]
-        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
-        public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Browsable(false)]
-        // Kept only so existing serialized node payloads can still be opened.
-        public string POIFilterTempName { get => poiFilterTempName; set { poiFilterTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Browsable(false)]
-        // Kept only so existing serialized node payloads can still be opened.
-        public string POIReviseTempName { get => poiReviseTempName; set { poiReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 类型", "与服务实时关注点算法一致；None 使用上游布点结果中的类型", true)]
-        public ServicePoiPointTypes POIType
-        {
-            get => poiType;
-            set
-            {
-                poiType = value;
-                if (poiType == ServicePoiPointTypes.Circle) poiHeight = poiWidth;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIHeight));
-            }
-        }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 宽度", "POI 类型为圆或矩形时覆盖上游布点宽度", true)]
-        public float POIWidth
-        {
-            get => poiWidth;
-            set
-            {
-                poiWidth = NormalizePoiSize(value);
-                if (POIType == ServicePoiPointTypes.Circle) poiHeight = poiWidth;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIHeight));
-            }
-        }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 高度", "POI 类型为圆或矩形时覆盖上游布点高度", true)]
-        public float POIHeight
-        {
-            get => poiHeight;
-            set
-            {
-                poiHeight = NormalizePoiSize(value);
-                if (POIType == ServicePoiPointTypes.Circle) poiWidth = poiHeight;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIWidth));
-            }
-        }
 
         [Category("高级")]
         [STNodeProperty("使用 ROI", "输入 POI 为全幅坐标且当前图像来自物理相机 ROI 时，将 POI 临时转换为 ROI 图像坐标；全幅或历史图像保持关闭", true)]
@@ -246,14 +184,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
-            LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(
-                poiInputMasterId,
-                poiInputResultType,
-                InputPortNames[0],
-                POITempName,
-                POIType,
-                POIWidth,
-                POIHeight);
+            LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(poiInputMasterId, poiInputResultType, InputPortNames[0]);
             using LocalCalibrationExecution execution = ExecuteCalibration(action);
             if (!execution.Frame.HasCie && execution.Frame.ColorCalibration == null)
             {
@@ -364,22 +295,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 ImageFilePath,
                 CalibTempName,
-                POITempName,
-                POIType,
-                POIWidth,
-                POIHeight,
                 UseROI,
                 AllowAcceleration,
                 InputPriority = "CurrentFrameThenFile",
                 InputPorts = InputPortNames
             });
-        }
-
-        private static float NormalizePoiSize(float value)
-        {
-            if (value <= 0) return 1;
-            int size = checked((int)Math.Ceiling(value));
-            return size % 2 == 0 ? size : size + 1;
         }
     }
 }

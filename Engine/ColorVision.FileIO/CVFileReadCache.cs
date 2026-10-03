@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.FileIO
 {
@@ -21,7 +20,7 @@ namespace ColorVision.FileIO
         private static long accessSequence;
         private static bool isEnabled = true;
         private static int maximumEntries = 1;
-        private static Task lastWrite = Task.CompletedTask;
+        private static readonly object WriteSync = new object();
 
         /// <summary>Disabling bypasses the cache; borrowed entries are freed when their final reader returns.</summary>
         public static bool IsEnabled
@@ -112,6 +111,12 @@ namespace ColorVision.FileIO
         {
             if (!IsRaw(filePath)) return OpenFile(filePath);
             string path = Path.GetFullPath(filePath);
+            return OpenReadCore(path, populateCache, () => OpenFile(path));
+        }
+
+        private static Stream OpenReadCore(string path, bool populateCache, Func<Stream> openFile)
+        {
+            CacheEntry entry = null;
             lock (Sync)
             {
                 CacheEntry existing = isEnabled ? FindEntry(path) : null;
@@ -121,36 +126,68 @@ namespace ColorVision.FileIO
                     existing.HitCount++;
                     return Borrow(existing);
                 }
-
-                FileStream file = OpenFile(path);
-                try
+                if (isEnabled)
                 {
-                    if (!isEnabled) return file;
                     misses++;
-                    if (!populateCache || file.Length <= 0 || file.Length > int.MaxValue) return file;
-                    CacheEntry entry = GetWritableEntry();
-                    if (entry == null) return file;
-                    ForgetFile(entry);
-                    try
+                    entry = populateCache ? GetWritableEntry() : null;
+                    if (entry != null)
                     {
-                        EnsureCapacity(entry, file.Length);
-                        using (Stream destination = OpenBuffer(entry, file.Length, FileAccess.Write)) file.CopyTo(destination);
-                        Remember(entry, path, file.Length);
+                        ForgetFile(entry);
+                        entry.FilePath = path;
+                        entry.IsLoading = true;
+                        entry.Readers++; // Pin the buffer while disk I/O runs outside Sync.
                     }
-                    catch (OutOfMemoryException ex)
-                    {
-                        if (entry.Capacity == 0) Entries.Remove(entry);
-                        Debug.WriteLine("CVRAW cache unavailable: " + ex.Message);
-                        file.Position = 0;
-                        return file;
-                    }
-                    file.Dispose();
-                    return Borrow(entry);
                 }
-                catch
+            }
+
+            Stream file = null;
+            bool completed = false;
+            try
+            {
+                file = openFile();
+                if (entry == null) return file;
+                long length = file.Length;
+                if (length <= 0 || length > int.MaxValue) return file;
+                lock (Sync) EnsureCapacity(entry, length);
+                using (Stream destination = OpenBuffer(entry, length, FileAccess.Write))
                 {
-                    file.Dispose();
-                    throw;
+                    file.CopyTo(destination);
+                    if (destination.Position != length) throw new EndOfStreamException("Incomplete CVRAW cache snapshot.");
+                }
+                file.Dispose();
+                file = null;
+                lock (Sync)
+                {
+                    entry.Length = length;
+                    if (!entry.IsRetired && FindEntry(path) == null) Remember(entry, path, length);
+                    else Retire(entry);
+                    Stream result = Borrow(entry);
+                    completed = true;
+                    return result;
+                }
+            }
+            catch (OutOfMemoryException ex) when (file != null)
+            {
+                Debug.WriteLine("CVRAW cache unavailable: " + ex.Message);
+                file.Position = 0;
+                return file;
+            }
+            catch
+            {
+                file?.Dispose();
+                throw;
+            }
+            finally
+            {
+                if (entry != null)
+                {
+                    lock (Sync)
+                    {
+                        entry.IsLoading = false;
+                        entry.Readers--;
+                        if (!completed || entry.IsRetired) Retire(entry);
+                        Monitor.PulseAll(Sync);
+                    }
                 }
             }
         }
@@ -162,147 +199,118 @@ namespace ColorVision.FileIO
             lock (Sync) return isEnabled ? FindEntry(Path.GetFullPath(filePath))?.Length : null;
         }
 
-        // The caller's pixels are copied before return; disk jobs never read mutable runtime frames.
+        // Save on the calling thread; disk I/O never holds the cache lookup lock.
         internal static bool WriteFile(string path, long fileLength, Action<Stream> write, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
         {
-            if (saveMode < CVFileSaveMode.Synchronous || saveMode > CVFileSaveMode.MemoryOnly)
+            // Previously compiled callers may still pass the retired asynchronous value.
+            if ((int)saveMode == 1) saveMode = CVFileSaveMode.Synchronous;
+            if (saveMode != CVFileSaveMode.Synchronous && saveMode != CVFileSaveMode.MemoryOnly)
                 throw new ArgumentOutOfRangeException(nameof(saveMode));
             if (!IsRaw(path))
             {
-                if (saveMode != CVFileSaveMode.Synchronous) throw new NotSupportedException("Deferred saving requires CVRAW.");
+                if (saveMode != CVFileSaveMode.Synchronous) throw new NotSupportedException("Memory-only saving requires CVRAW.");
                 using (Stream file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None)) write(file);
                 return true;
             }
             string fullPath = Path.GetFullPath(path);
-            Task pending = null;
-            lock (Sync)
+            lock (WriteSync)
             {
-                // A slow disk applies backpressure before copying another whole image.
-                // Queued writers retain their buffers until completion; never overwrite them.
-                while (isEnabled && Entries.Count(item => item.Writers != 0) >= maximumEntries)
-                    Monitor.Wait(Sync);
-                if (saveMode != CVFileSaveMode.Synchronous && !isEnabled)
-                    throw new InvalidOperationException("Asynchronous and memory-only saving require the CVRAW cache.");
-                CacheEntry entry = FindEntry(fullPath);
-                if (entry != null && (entry.Readers != 0 || entry.Writers != 0)) { Retire(entry); entry = null; }
-                if (isEnabled && fileLength > 0 && fileLength <= int.MaxValue)
+                CacheEntry entry;
+                lock (Sync)
                 {
-                    entry = entry ?? GetWritableEntry();
-                    if (entry == null && saveMode != CVFileSaveMode.Synchronous)
+                    while (HasFileLoad(fullPath)) Monitor.Wait(Sync);
+                    if (saveMode == CVFileSaveMode.MemoryOnly && !isEnabled)
+                        throw new InvalidOperationException("Memory-only saving requires the CVRAW cache.");
+                    entry = FindEntry(fullPath);
+                    if (entry != null && entry.Readers != 0) { Retire(entry); entry = null; }
+                    if (isEnabled && fileLength > 0 && fileLength <= int.MaxValue)
                     {
-                        // Readers may still own the previous snapshot after its cache key is retired.
-                        int activeEntries = 0;
-                        foreach (CacheEntry candidate in Entries) if (!candidate.IsRetired) activeEntries++;
-                        if (activeEntries >= maximumEntries) Retire(FindOldest(requireIdle: false));
-                        entry = new CacheEntry();
-                        Entries.Add(entry);
+                        entry = entry ?? GetWritableEntry();
+                        if (entry == null && saveMode == CVFileSaveMode.MemoryOnly)
+                        {
+                            // Readers may still own the previous snapshot after its cache key is retired.
+                            int activeEntries = 0;
+                            foreach (CacheEntry candidate in Entries) if (!candidate.IsRetired) activeEntries++;
+                            if (activeEntries >= maximumEntries) Retire(FindOldest(requireIdle: false));
+                            entry = new CacheEntry();
+                            Entries.Add(entry);
+                        }
+                        if (entry != null)
+                        {
+                            ForgetFile(entry);
+                            try { EnsureCapacity(entry, fileLength); }
+                            catch (OutOfMemoryException) when (saveMode == CVFileSaveMode.Synchronous)
+                            {
+                                Retire(entry);
+                                entry = null;
+                            }
+                        }
                     }
+                    else entry = null;
                     if (entry != null)
                     {
-                        ForgetFile(entry);
-                        try { EnsureCapacity(entry, fileLength); }
-                        catch (OutOfMemoryException) when (saveMode == CVFileSaveMode.Synchronous)
+                        try
                         {
-                            Retire(entry);
-                            entry = null;
-                        }
-                    }
-                }
-                else entry = null;
-                if (entry == null)
-                {
-                    if (saveMode != CVFileSaveMode.Synchronous) throw new InvalidOperationException("The CVRAW snapshot could not be cached.");
-                    pending = QueueWrite(() =>
-                    {
-                        using (Stream file = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None)) write(file);
-                    });
-                }
-                else
-                {
-                    try
-                    {
-                        using (Stream memory = OpenBuffer(entry, fileLength, FileAccess.Write))
-                        {
-                            write(memory);
-                            if (memory.Position != fileLength) throw new InvalidDataException("CVRAW writer did not write its declared length.");
-                        }
-                        entry.SaveMode = saveMode;
-                        Remember(entry, fullPath, fileLength);
-                        if (saveMode != CVFileSaveMode.MemoryOnly)
-                        {
-                            CacheEntry owned = entry;
-                            owned.Writers++;
-                            pending = QueueWrite(() =>
+                            using (Stream memory = OpenBuffer(entry, fileLength, FileAccess.Write))
                             {
-                                try
-                                {
-                                    using (Stream memory = OpenBuffer(owned, fileLength, FileAccess.Read))
-                                    using (Stream file = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None)) memory.CopyTo(file);
-                                }
-                                finally
-                                {
-                                    lock (Sync)
-                                    {
-                                        owned.Writers--;
-                                        if (owned.IsRetired && owned.Readers == 0 && owned.Writers == 0) Retire(owned);
-                                        Monitor.PulseAll(Sync);
-                                    }
-                                }
-                            });
+                                write(memory);
+                                if (memory.Position != fileLength) throw new InvalidDataException("CVRAW writer did not write its declared length.");
+                            }
+                            entry.SaveMode = saveMode;
+                            Remember(entry, fullPath, fileLength);
+                            if (saveMode == CVFileSaveMode.MemoryOnly) return true;
+                            entry.Writers++; // Pin the buffer until this synchronous disk write returns.
+                        }
+                        catch { Retire(entry); throw; }
+                    }
+                    else if (saveMode == CVFileSaveMode.MemoryOnly)
+                        throw new InvalidOperationException("The CVRAW snapshot could not be cached.");
+                }
+                try
+                {
+                    using (Stream file = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        if (entry == null) write(file);
+                        else using (Stream memory = OpenBuffer(entry, fileLength, FileAccess.Read)) memory.CopyTo(file);
+                    }
+                }
+                finally
+                {
+                    if (entry != null)
+                    {
+                        lock (Sync)
+                        {
+                            entry.Writers--;
+                            if (entry.IsRetired && entry.Readers == 0) Retire(entry);
+                            Monitor.PulseAll(Sync);
                         }
                     }
-                    catch { Retire(entry); throw; }
                 }
             }
-            if (saveMode == CVFileSaveMode.Synchronous) pending.GetAwaiter().GetResult();
             return true;
         }
 
-        // Publish a complete metadata tail. Existing readers retain their previous tail;
-        // background full-file writes read only the immutable original buffer.
+        // Publish a complete metadata tail; existing readers retain their previous tail.
         internal static void UpdateMetadata(string path, Func<Stream, FileTail> update)
         {
             string fullPath = Path.GetFullPath(path);
-            Task pending;
-            CVFileSaveMode saveMode = CVFileSaveMode.Synchronous;
-            lock (Sync)
+            lock (WriteSync)
             {
-                CacheEntry entry = IsRaw(path) && isEnabled ? FindEntry(fullPath) : null;
-                if (entry == null)
+                FileTail tail = null;
+                lock (Sync)
                 {
-                    pending = QueueWrite(() =>
+                    while (HasFileLoad(fullPath)) Monitor.Wait(Sync);
+                    CacheEntry entry = IsRaw(path) && isEnabled ? FindEntry(fullPath) : null;
+                    if (entry != null)
                     {
-                        using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                            CVFileMetadata.ReplaceTail(file, update(file));
-                    });
+                        using (Stream current = Borrow(entry)) tail = update(current);
+                        entry.Tail = tail;
+                        Remember(entry, fullPath, checked(tail.Offset + tail.Bytes.Length));
+                        if (entry.SaveMode == CVFileSaveMode.MemoryOnly) return;
+                    }
                 }
-                else
-                {
-                    FileTail tail;
-                    using (Stream current = Borrow(entry)) tail = update(current);
-                    entry.Tail = tail;
-                    Remember(entry, fullPath, checked(tail.Offset + tail.Bytes.Length));
-                    saveMode = entry.SaveMode;
-                    if (saveMode == CVFileSaveMode.MemoryOnly) return;
-                    pending = QueueWrite(() =>
-                    {
-                        using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                            CVFileMetadata.ReplaceTail(file, tail);
-                    });
-                }
-            }
-            if (saveMode == CVFileSaveMode.Synchronous) pending.GetAwaiter().GetResult();
-        }
-
-        private static Task QueueWrite(Action write)
-        {
-            lock (Sync)
-            {
-                Task pending = lastWrite.ContinueWith(_ => write(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-                lastWrite = pending;
-                pending.ContinueWith(failed => Trace.TraceError("CVRAW disk write failed: " + failed.Exception),
-                    CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-                return pending;
+                using (FileStream file = new FileStream(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                    CVFileMetadata.ReplaceTail(file, tail ?? update(file));
             }
         }
 
@@ -310,7 +318,11 @@ namespace ColorVision.FileIO
         private static FileStream OpenFile(string path) => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         private static CacheEntry FindEntry(string path)
-            => Entries.Find(entry => !entry.IsRetired && string.Equals(entry.FilePath, path, StringComparison.OrdinalIgnoreCase));
+            => Entries.Find(entry => !entry.IsRetired && !entry.IsLoading && string.Equals(entry.FilePath, path, StringComparison.OrdinalIgnoreCase));
+
+        // Only a writer to this same file waits for its disk reader; Monitor.Wait releases Sync.
+        private static bool HasFileLoad(string path)
+            => Entries.Any(entry => entry.IsLoading && string.Equals(entry.FilePath, path, StringComparison.OrdinalIgnoreCase));
 
         private static CacheEntry FindOldest(bool requireIdle)
         {
@@ -406,9 +418,10 @@ namespace ColorVision.FileIO
         private static Stream Borrow(CacheEntry entry)
         {
             Stream memory = OpenBuffer(entry, entry.Tail == null ? entry.Length : entry.Tail.Offset, FileAccess.Read);
+            Stream result = new CachedReadStream(entry, memory, entry.Tail?.Bytes);
             entry.Readers++;
             entry.LastAccessSequence = ++accessSequence;
-            return new CachedReadStream(entry, memory, entry.Tail?.Bytes);
+            return result;
         }
 
         private sealed class CacheEntry
@@ -425,6 +438,7 @@ namespace ColorVision.FileIO
             internal long AllocationCount;
             internal long LastAccessSequence;
             internal bool IsRetired;
+            internal bool IsLoading;
         }
 
         internal sealed class FileTail

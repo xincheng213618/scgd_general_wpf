@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
   
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
-                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             else

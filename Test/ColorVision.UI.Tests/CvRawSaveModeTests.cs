@@ -1,7 +1,6 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.FileIO;
 using System.IO;
-using System.Reflection;
 
 namespace ColorVision.UI.Tests;
 
@@ -12,8 +11,6 @@ public sealed class CvRawSaveModeTests
     {
         var node = new LocalCameraNode();
         Assert.Equal(CVFileSaveMode.Synchronous, node.SaveMode);
-        node.SaveAsynchronously = true;
-        Assert.Equal(CVFileSaveMode.Asynchronous, node.SaveMode);
         node.SaveFiles = false;
         Assert.Equal(CVFileSaveMode.MemoryOnly, node.SaveMode);
     }
@@ -44,110 +41,36 @@ public sealed class CvRawSaveModeTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AsyncSaveOwnsPixelsAndOrdersMetadataAfterCacheReleaseOrReplacement(bool replaceWithNextImage)
+    [InlineData(true, CVFileSaveMode.Synchronous)]
+    [InlineData(false, CVFileSaveMode.Synchronous)]
+    [InlineData(true, (CVFileSaveMode)1)]
+    [InlineData(false, (CVFileSaveMode)1)]
+    public void SaveAndMetadataCompleteBeforeReturnIncludingRetiredMode(bool cacheEnabled, CVFileSaveMode mode)
     {
         using CacheScope scope = new();
-        using ManualResetEventSlim allowWrite = new(false);
-        Task blocker = QueueWrite(() => allowWrite.Wait());
-        Task? completion = null;
-        TaskCompletionSource? nextSaved = null;
-        string nextPath = scope.Path + ".next.cvraw";
-        byte[] nextPixels = [6, 5, 4, 3, 2, 1];
-        try
-        {
-            using CVCIEFile raw = CreateRaw();
-            byte[] pixels = (byte[])raw.Data.Clone();
-            Assert.True(CVFileUtil.WriteCVRaw(scope.Path, raw, CVFileSaveMode.Asynchronous));
-            Array.Fill(raw.Data, (byte)99);
-            CVFileMetadata.SetProperty(scope.Path, "color", 1, [1]);
-            CVFileMetadata.SetProperty(scope.Path, "color", 2, [2, 3]);
-            CVFileMetadata.SetProperty(scope.Path, "other", 1, [4]);
-            AssertPixels(scope.Path, pixels);
-            Assert.Equal(2u, CVFileMetadata.Read(scope.Path)["color"].Version);
-            Assert.False(File.Exists(scope.Path));
-            if (replaceWithNextImage)
-            {
-                nextSaved = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                Thread nextWriter = new(() =>
-                {
-                    try
-                    {
-                        using CVCIEFile next = CreateRaw();
-                        next.Data = (byte[])nextPixels.Clone();
-                        Assert.True(CVFileUtil.WriteCVRaw(nextPath, next, CVFileSaveMode.Asynchronous));
-                        Assert.True(File.Exists(scope.Path));
-                        Array.Fill(next.Data, (byte)88);
-                        CVFileMetadata.SetProperty(nextPath, "color", 3, [9, 8]);
-                        nextSaved.SetResult();
-                    }
-                    catch (Exception ex) { nextSaved.SetException(ex); }
-                }) { IsBackground = true };
-                long allocations = CVFileReadCache.GetSnapshot().AllocationCount;
-                nextWriter.Start();
-                // Observe the actual blocked thread; the timeout only bounds a hung test.
-                Assert.True(SpinWait.SpinUntil(() => nextSaved.Task.IsCompleted
-                    || (nextWriter.ThreadState & ThreadState.WaitSleepJoin) != 0, TimeSpan.FromSeconds(10)));
-                Assert.False(nextSaved.Task.IsCompleted);
-                Assert.Null(CVFileReadCache.GetCachedLength(nextPath));
-                allowWrite.Set();
-                await nextSaved.Task;
-                AssertPixels(nextPath, nextPixels);
-                Assert.Equal(allocations, CVFileReadCache.GetSnapshot().AllocationCount);
-            }
-            else CVFileReadCache.Release();
-            Assert.Null(CVFileReadCache.GetCachedLength(scope.Path));
-            completion = QueueWrite(() => { });
-            allowWrite.Set();
-            await completion;
-            CVFileReadCache.Release();
-            AssertPixels(scope.Path, pixels);
-            Assert.Equal(new byte[] { 2, 3 }, CVFileMetadata.Read(scope.Path)["color"].Value);
-            Assert.Equal(new byte[] { 4 }, CVFileMetadata.Read(scope.Path)["other"].Value);
-            if (replaceWithNextImage)
-            {
-                AssertPixels(nextPath, nextPixels);
-                Assert.Equal(new byte[] { 9, 8 }, CVFileMetadata.Read(nextPath)["color"].Value);
-            }
-        }
-        finally
-        {
-            allowWrite.Set();
-            if (nextSaved != null) await nextSaved.Task;
-            await (completion ?? QueueWrite(() => { }));
-            await blocker;
-            File.Delete(nextPath);
-        }
-    }
-
-    [Fact]
-    public async Task SynchronousSaveWaitsForDiskQueue()
-    {
-        using CacheScope scope = new();
-        using ManualResetEventSlim allowWrite = new(false);
-        Task blocker = QueueWrite(() => allowWrite.Wait());
-        TaskCompletionSource copied = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        CVFileReadCache.IsEnabled = cacheEnabled;
         using CVCIEFile raw = CreateRaw();
-        Task<bool> save = Task.Run(() => CVFileUtil.WriteCVRaw(scope.Path, raw, raw.Data.Length, stream =>
+        byte[] pixels = (byte[])raw.Data.Clone();
+        int caller = Environment.CurrentManagedThreadId;
+        int writer = -1;
+        Assert.True(CVFileUtil.WriteCVRaw(scope.Path, raw, raw.Data.Length, stream =>
         {
+            writer = Environment.CurrentManagedThreadId;
+            if (!cacheEnabled) Assert.IsType<FileStream>(stream);
             stream.Write(raw.Data);
-            copied.SetResult();
-        }));
-        try
-        {
-            await copied.Task;
-            Assert.False(save.IsCompleted);
-            Assert.False(File.Exists(scope.Path));
-        }
-        finally { allowWrite.Set(); }
-        Assert.True(await save);
-        await blocker;
-        Assert.True(File.Exists(scope.Path));
+        }, mode));
+        Assert.Equal(caller, writer);
+        Array.Fill(raw.Data, (byte)99);
+        CVFileMetadata.SetProperty(scope.Path, "color", 1, [1, 2, 3]);
+        CVFileMetadata.SetProperty(scope.Path, "color", 2, [4, 5]);
+        // Opening exclusively verifies that no disk writer remains after return.
+        using (var file = new FileStream(scope.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            Assert.True(file.Length > pixels.Length);
+        CVFileReadCache.Release();
+        AssertPixels(scope.Path, pixels);
+        Assert.Equal(new byte[] { 4, 5 }, CVFileMetadata.Read(scope.Path)["color"].Value);
+        Assert.Equal(2u, CVFileMetadata.Read(scope.Path)["color"].Version);
     }
-
-    private static Task QueueWrite(Action action) => (Task)typeof(CVFileReadCache)
-        .GetMethod("QueueWrite", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, [action])!;
 
     private static CVCIEFile CreateRaw() => new()
         { Version = 1, Cols = 3, Rows = 2, Bpp = 8, Channels = 1, Exp = [10], Data = [1, 2, 3, 4, 5, 6] };

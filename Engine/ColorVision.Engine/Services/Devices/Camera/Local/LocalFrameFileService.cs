@@ -248,8 +248,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (source == IntPtr.Zero || length <= 0)
                 throw new ArgumentException("The source image buffer is empty.", nameof(source));
 
-            // The writer consumes this span before returning, including when it only
-            // copies to cache and queues disk IO. The frame lease covers that copy.
+            // The writer consumes this span before returning, including cache-only saves.
+            // The frame lease covers the entire save call.
             stream.Write(new ReadOnlySpan<byte>(source.ToPointer(), length));
         }
     }

@@ -69,6 +69,8 @@ ARVRPro 的现场只读窗口可将数据库路径、来源标签和完整运行
 
 **相机与校正：**本地相机记录连接、锁等待、参数设置、自动曝光、源图尺寸查询（`GetSourceFrameInfo`）、帧分配、SDK 取图等边界。`CaptureFrame` 是整个 SDK 调用，不能进一步推断实际曝光、读出与传输。L/BV 本地响应同时保留 `Backend=Local`、设备编号、图像尺寸/位深/通道、实际曝光/增益、平均次数、RAW/CIE 缓冲区字节数及校正后端，供相同负载之间比较；这些字段不证明服务配置开关的状态。校正记录资源加载/缓存检查和算法执行；存图记录数据复制及 RAW/CIE 文件写入。`PublishPreview` / `PublishResult` 表示向界面或结果链提交的调用，不是屏幕实际绘制完成时间。
 
+本地相机启用结果持久化时，`PersistResult` 内进一步记录 `ResolveBatch`（按 SN 查询批次）、`BuildResultModel`（组装及序列化图像记录）和 `InsertResult`（保存记录并取得 ID）。数据库阶段包含客户端调用及连接等待，不能直接当作数据库服务端 SQL 执行时间；父阶段已经包含这些子阶段，不能重复相加。相机结果插入使用公共 DAO；慢写或失败时另有 `DatabaseCommandTiming`，成功插入可按其 `Result` 对应相机 `MasterId`，进一步区分连接取得和命令执行（包含自动提交），不记录 SQL 正文或参数。登记仍先于存图完成，计时不改变结果交接顺序，也不额外写库。
+
 原有 `TotalTime`、`CaptureTime`、`CalibrationTime`、`SaveTime` 的含义和业务结果结构保持兼容。例如发光区节点原有 `TotalTime` 仍是算法耗时，打开文件时间查看新 `Timing`；不能把两者相加。`Timing` 为完成日志保留字段，扩展本地节点时不要将其用作业务结果字段。
 
 计时只在已激活的执行上下文中收集时间戳和有限条目，使用完成消息一次性保存，经[SQLite Payload 存储](../ui-components/sqlite-storage.md)压缩并按所选消息惰性读取。不逐阶段写文件/数据库，不在像素循环中打点，不全量读取历史 Payload；旧日志没有阶段数据时不会回填。

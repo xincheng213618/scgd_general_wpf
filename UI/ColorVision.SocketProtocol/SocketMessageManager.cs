@@ -36,6 +36,7 @@ namespace ColorVision.SocketProtocol
     /// </summary>
     public class SocketMessageManager : ViewModelBase, IDisposable
     {
+        private const int MaximumDisplayedMessages = 1000;
         private static readonly ILog log = LogManager.GetLogger(typeof(SocketMessageManager));
         private static SocketMessageManager? _instance;
         private static readonly object _locker = new();
@@ -150,7 +151,7 @@ namespace ColorVision.SocketProtocol
         public void LoadAll(int count = 100)
         {
             // 限制最大加载数量以避免内存问题
-            int effectiveCount = count <= 0 ? Config.Count : Math.Min(count, 1000);
+            int effectiveCount = Math.Clamp(count <= 0 ? Config.Count : count, 1, MaximumDisplayedMessages);
             List<SocketMessage> dbList = new();
             RunAfterPendingMessages(() =>
             {
@@ -213,15 +214,21 @@ namespace ColorVision.SocketProtocol
                 double gateRequestedAt = timing.Elapsed.TotalMilliseconds;
                 double gateEnteredAt = 0;
                 double committedAt = 0;
+                double transactionStartedAt = 0;
+                double insertedAt = 0;
+                double payloadSavedAt = 0;
                 SocketMessagePayloadStorage.RunDatabaseMaintenance(() =>
                 {
                     gateEnteredAt = timing.Elapsed.TotalMilliseconds;
                     _db.Ado.BeginTran();
+                    transactionStartedAt = timing.Elapsed.TotalMilliseconds;
                     int insertedId;
                     try
                     {
                         insertedId = _db.Insertable(message).ExecuteReturnIdentity();
+                        insertedAt = timing.Elapsed.TotalMilliseconds;
                         SocketMessagePayloadStorage.Save(_db, insertedId, content);
+                        payloadSavedAt = timing.Elapsed.TotalMilliseconds;
                         _db.Ado.CommitTran();
                     }
                     catch
@@ -231,6 +238,7 @@ namespace ColorVision.SocketProtocol
                     }
                     committedAt = timing.Elapsed.TotalMilliseconds;
                     message.Id = insertedId;
+                    message.UnloadContent();
                     QueueMessageForDisplay(message);
                 });
                 log.Info(JsonConvert.SerializeObject(new
@@ -245,6 +253,10 @@ namespace ColorVision.SocketProtocol
                     PersistenceQueueMs = Math.Round(queueMs, 3),
                     StorageGateWaitMs = Math.Round(gateEnteredAt - gateRequestedAt, 3),
                     StorageWriteMs = Math.Round(committedAt - gateEnteredAt, 3),
+                    BeginTransactionMs = Math.Round(transactionStartedAt - gateEnteredAt, 3),
+                    InsertMs = Math.Round(insertedAt - transactionStartedAt, 3),
+                    PayloadSaveMs = Math.Round(payloadSavedAt - insertedAt, 3),
+                    CommitMs = Math.Round(committedAt - payloadSavedAt, 3),
                     PersistMs = Math.Round(committedAt, 3),
                     UiUpdateAwaited = false,
                     PersistenceAwaited = false,
@@ -317,6 +329,9 @@ namespace ColorVision.SocketProtocol
                 Stopwatch updateTiming = Stopwatch.StartNew();
                 try
                 {
+                    // Only retire displayed rows; persisted history remains queryable.
+                    while (Messages.Count >= MaximumDisplayedMessages)
+                        Messages.RemoveAt(Config.OrderByType == OrderByType.Desc ? Messages.Count - 1 : 0);
                     if (Config.OrderByType == OrderByType.Desc)
                         Messages.Insert(0, message);
                     else

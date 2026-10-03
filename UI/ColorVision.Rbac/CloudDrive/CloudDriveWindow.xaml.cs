@@ -20,8 +20,8 @@ public partial class CloudDriveWindow : Window
     public static void ShowCloudDrive()
     {
         _window ??= new CloudDriveWindow();
-        if (Application.Current?.MainWindow is { IsVisible: true } mainWindow && mainWindow != _window && mainWindow is not RbacManagerWindow)
-            _window.Owner = mainWindow;
+        if (Application.Current?.GetActiveWindow() is { IsVisible: true } owner && owner != _window && owner is not RbacManagerWindow)
+            _window.Owner = owner;
         _window.Show();
         if (_window.WindowState == WindowState.Minimized) _window.WindowState = WindowState.Normal;
         _window.Activate();

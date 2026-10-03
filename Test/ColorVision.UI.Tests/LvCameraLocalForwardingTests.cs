@@ -23,7 +23,6 @@ public sealed class LvCameraLocalForwardingTests
 {
     [Theory]
     [InlineData(CVFileSaveMode.Synchronous)]
-    [InlineData(CVFileSaveMode.Asynchronous)]
     [InlineData(CVFileSaveMode.MemoryOnly)]
     public void ConsecutiveLvNodesUseCurrentLocalSessionAndKeepFlowResults(CVFileSaveMode saveMode) => Run(async () =>
     {
@@ -32,7 +31,6 @@ public sealed class LvCameraLocalForwardingTests
         foreach (LVCameraNode node in graph.Nodes)
         {
             node.SaveFiles = saveMode != CVFileSaveMode.MemoryOnly;
-            node.SaveAsynchronously = saveMode == CVFileSaveMode.Asynchronous;
         }
         graph.End.Inspect = action =>
         {
@@ -356,9 +354,6 @@ public sealed class LvCameraLocalForwardingTests
         public void Dispose()
         {
             Services.Release.TrySetResult();
-            // Drain only in the fixture so temporary files cannot race its cleanup.
-            ((Task)typeof(CVFileReadCache).GetMethod("QueueWrite", BindingFlags.NonPublic | BindingFlags.Static)!
-                .Invoke(null, new object[] { (Action)(() => { }) })!).GetAwaiter().GetResult();
             CVFileReadCache.Release();
             CVFileReadCache.MaximumEntries = maximumEntries;
             CVFileReadCache.IsEnabled = cacheEnabled;

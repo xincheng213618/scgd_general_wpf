@@ -3031,11 +3031,9 @@
   <data name="可用数据表" xml:space="preserve"><value>可用資料表</value></data>
   <data name="数据行数" xml:space="preserve"><value>資料列數</value></data>
   <data name="创建完整备份" xml:space="preserve"><value>建立完整備份</value></data>
-  <data name="备份策略" xml:space="preserve"><value>備份策略</value></data>
   <data name="历史数据清理" xml:space="preserve"><value>歷史資料清理</value></data>
   <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>依保留月數清理目前資料庫中的過期記錄。</value></data>
   <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>所有清理操作都需要再次確認。</value></data>
-  <data name="危险操作" xml:space="preserve"><value>危險操作</value></data>
   <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>清空目前資料庫的所有可清理資料表，無法直接復原。</value></data>
   <data name="清空当前库全部可清理表" xml:space="preserve"><value>清空目前資料庫所有可清理資料表</value></data>
   <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>按表清理僅處理勾選項目；清理主表時，需同時選擇所有現存的關聯明細表。</value></data>
@@ -3043,7 +3041,6 @@
   <data name="操作前会先创建完整备份；备份失败时不会继续。" xml:space="preserve"><value>操作前會先建立完整備份；備份失敗時不會繼續。</value></data>
   <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>目前找不到可清理的資料表。</value></data>
   <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>目前的資料來源不支援自動備份，請確認已有可還原的副本。</value></data>
-  <data name="未启用清理前备份。" xml:space="preserve"><value>未啟用清理前備份。</value></data>
   <data name="PoiAutoFitSize" xml:space="preserve"><value>自動適配尺寸</value></data>
   <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>根據四邊形與行列數估算圓半徑或矩形寬高，並切換為區域內布點。允許間隙、重疊與整數取整誤差；可繼續手動調整，按下繪製後產生點位。</value></data>
   <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>無法自動適配尺寸：請確認四邊形有效、行列數至少為1，且區域足以容納整數像素的取樣窗。縮進為單點時請手動設定尺寸。</value></data>
@@ -4448,10 +4445,10 @@
 4. 將 OUT 連接到後續本地校正、POI 或其他算法節點。</value>
   </data>
   <data name="Flow_LocalCamera_Processing" xml:space="preserve">
-    <value>相機採集 RAW → 空間/普通校正 → 色度校正（可保留參數按需計算）→ 圖像翻轉 → 寫入資料庫 → 按節點設定同步儲存、非同步儲存或僅快取 CVRAW。下游 POI 使用最終方向的圖像座標。</value>
+    <value>相機採集 RAW → 空間/普通校正 → 色度校正（可保留參數按需計算）→ 圖像翻轉 → 寫入資料庫 → 按節點設定儲存或僅快取 CVRAW。下游 POI 使用最終方向的圖像座標。</value>
   </data>
   <data name="Flow_LocalCamera_Notes" xml:space="preserve">
-    <value>X 表示上下翻轉，Y 表示左右鏡像，XY 表示旋轉 180°；不支持 90°/270°旋轉。未選擇校正模板時不會提前翻轉 RAW，方向配置會保留到下游本地校正完成後再應用。 儲存檔案預設開啟；非同步儲存預設關閉。關閉儲存檔案後，圖像與後續追加的色度參數僅保留在快取；舊版服務需要磁碟檔案時使用同步儲存。</value>
+    <value>X 表示上下翻轉，Y 表示左右鏡像，XY 表示旋轉 180°；不支持 90°/270°旋轉。未選擇校正模板時不會提前翻轉 RAW，方向配置會保留到下游本地校正完成後再應用。 儲存檔案預設開啟，寫入完成後才繼續。關閉儲存檔案後，圖像與後續追加的色度參數僅保留在快取；舊版服務需要磁碟檔案時應開啟儲存檔案。</value>
   </data>
   <data name="TemplateBrowserActionError" xml:space="preserve">
     <value>{0}：{1}</value>
@@ -4887,9 +4884,6 @@
   </data>
   <data name="占用空间" xml:space="preserve">
     <value>佔用空間</value>
-  </data>
-  <data name="危险操作：将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve">
-    <value>危險操作：將清空 {0} 中全部 {1:N0} 張可用數據表。</value>
   </data>
   <data name="历史记录加载失败：{0}" xml:space="preserve">
     <value>歷史記錄加載失敗：{0}</value>
@@ -5925,9 +5919,6 @@
   </data>
   <data name="清理分析记录失败：{0}" xml:space="preserve">
     <value>清理分析記錄失敗：{0}</value>
-  </data>
-  <data name="清理前创建完整备份（推荐）" xml:space="preserve">
-    <value>清理前創建完整備份（推薦）</value>
   </data>
   <data name="清理当前流程" xml:space="preserve">
     <value>清理當前流程</value>
@@ -7877,4 +7868,13 @@
   <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>同流程、同節點 · {0} 次執行 · {1} 條訊息 · 查詢最近 500 次流程執行及目前執行；選擇一列查看，設為基準後並排比對。</value></data>
   <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>目前記錄缺少流程身分或節點 ID，僅顯示本次執行，無法可靠關聯其他批次。</value></data>
   <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>流程概覽 / 節點分析 / 跨批次比對</value></data>
+  <data name="勾选" xml:space="preserve"><value>勾選</value></data>
+  <data name="清空勾选表" xml:space="preserve"><value>清空勾選資料表</value></data>
+  <data name="已勾选 {0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>已勾選 {0:N0} 張資料表 · {1:N0} 筆資料</value></data>
+  <data name="尚未勾选数据表" xml:space="preserve"><value>尚未勾選資料表</value></data>
+  <data name="{0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>{0:N0} 張資料表 · {1:N0} 筆資料</value></data>
+  <data name="按保留月数清理当前库，不受表格勾选影响。" xml:space="preserve"><value>依保留月數清理目前資料庫，不受資料表勾選影響。</value></data>
+  <data name="清空勾选表会删除表内全部记录，不受保留月数限制。" xml:space="preserve"><value>清空勾選資料表會刪除表內全部記錄，不受保留月數限制。</value></data>
+  <data name="全部数据清理" xml:space="preserve"><value>全部資料清理</value></data>
+  <data name="将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>將清空 {0} 中全部 {1:N0} 張可用資料表。</value></data>
 </root>
