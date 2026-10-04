@@ -106,7 +106,7 @@ namespace ColorVision.Copilot
             var selected = SelectByMessageCount(source, maximumMessages)
                 .Select(message => new CopilotRequestMessage(
                     message.Role,
-                    TruncateContent(message.Content, perMessageLimit))
+                    TruncateContent(message, perMessageLimit))
                 {
                     IsSteering = message.IsSteering,
                 })
@@ -162,7 +162,7 @@ namespace ColorVision.Copilot
                 var budget = perMessageBudget + (index >= messages.Count - remainder ? 1 : 0);
                 messages[index] = new CopilotRequestMessage(
                     messages[index].Role,
-                    TruncateContent(messages[index].Content, budget))
+                    TruncateContent(messages[index], budget))
                 {
                     IsSteering = messages[index].IsSteering,
                 };
@@ -239,7 +239,26 @@ namespace ColorVision.Copilot
             return messages.Skip(startIndex).ToArray();
         }
 
-        private static string TruncateContent(string value, int maximumWeight)
+        private static string TruncateContent(CopilotRequestMessage message, int maximumWeight)
+        {
+            if (CopilotTokenEstimator.EstimateTextWeight(message.Content) <= maximumWeight)
+                return message.Content;
+
+            var (body, terminalEvidence) = CopilotChatMessage.SplitModelTerminalEvidence(message.Role, message.Content);
+            if (terminalEvidence.Length == 0)
+                return TruncateText(message.Content, maximumWeight);
+
+            var evidenceWeight = CopilotTokenEstimator.EstimateTextWeight(terminalEvidence);
+            if (evidenceWeight > maximumWeight)
+                throw new InvalidOperationException("The conversation history budget cannot preserve the assistant's terminal-state evidence. Increase the history budget or reduce attachment context.");
+            if (maximumWeight - evidenceWeight <= 2)
+                return terminalEvidence;
+
+            var retainedBody = TruncateText(body, checked((int)(maximumWeight - evidenceWeight - 2)));
+            return retainedBody.Length == 0 ? terminalEvidence : retainedBody.TrimEnd() + "\n\n" + terminalEvidence;
+        }
+
+        private static string TruncateText(string value, int maximumWeight)
         {
             if (CopilotTokenEstimator.EstimateTextWeight(value) <= maximumWeight)
                 return value;

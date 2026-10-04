@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ClientModel;
@@ -63,6 +64,8 @@ namespace ColorVision.Copilot
         internal const int DefaultMaximumAttempts = 3;
         private const int MaximumBufferedPreambleUpdates = 64;
         private const string RetryAfterDataKey = "ColorVision.Copilot.ProviderRetryAfter";
+        private const string BufferedAttemptUsageDataKey = "ColorVision.Copilot.ProviderBufferedAttemptUsage";
+        internal const string DiscardedAttemptsUsageDataKey = "ColorVision.Copilot.ProviderDiscardedAttemptsUsage";
         private static readonly TimeSpan MaximumServerRetryDelay = TimeSpan.FromMinutes(2);
 
         private readonly int _maximumAttempts;
@@ -94,17 +97,44 @@ namespace ColorVision.Copilot
             var materializedMessages = messages is Microsoft.Extensions.AI.ChatMessage[] array
                 ? array
                 : messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
+            var discardedUsage = CopilotTokenUsage.Empty;
 
             for (var attempt = 1; ; attempt++)
             {
                 try
                 {
-                    return await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+                    var response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+                    if (discardedUsage.HasAny)
+                    {
+                        var combinedUsage = CopilotTokenBudgetChatClient.ExtractResponseUsage(response).Add(discardedUsage);
+                        response.Usage ??= new UsageDetails();
+                        response.Usage.InputTokenCount = combinedUsage.InputTokens;
+                        response.Usage.OutputTokenCount = combinedUsage.OutputTokens;
+                        response.Usage.TotalTokenCount = combinedUsage.EffectiveTotalTokens;
+                        response.Usage.CachedInputTokenCount = combinedUsage.CachedInputTokens;
+                    }
+                    return response;
                 }
-                catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
+                catch (Exception ex)
                 {
+                    if (!TryCreateRetry(ex, attempt, out var retry, cancellationToken))
+                    {
+                        if (discardedUsage.HasAny)
+                            ex.Data[DiscardedAttemptsUsageDataKey] = discardedUsage;
+                        throw;
+                    }
+                    discardedUsage = discardedUsage.Add(ExtractFailureUsage(ex));
                     CopilotProviderNotificationObserver.Notify(_onRetry, retry, "retry");
-                    await _delayAsync(retry.Delay, cancellationToken);
+                    try
+                    {
+                        await _delayAsync(retry.Delay, cancellationToken);
+                    }
+                    catch (Exception delayFailure)
+                    {
+                        if (discardedUsage.HasAny)
+                            delayFailure.Data[DiscardedAttemptsUsageDataKey] = discardedUsage;
+                        throw;
+                    }
                 }
             }
         }
@@ -120,7 +150,9 @@ namespace ColorVision.Copilot
 
             for (var attempt = 1; ; attempt++)
             {
-                CopilotStreamingAttempt? streamingAttempt;
+                cancellationToken.ThrowIfCancellationRequested();
+                CopilotStreamingAttempt? streamingAttempt = null;
+                ExceptionDispatchInfo? openFailure = null;
                 try
                 {
                     streamingAttempt = await OpenStreamingAttemptAsync(
@@ -128,10 +160,41 @@ namespace ColorVision.Copilot
                         options,
                         cancellationToken);
                 }
-                catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
+                catch (Exception ex)
                 {
-                    CopilotProviderNotificationObserver.Notify(_onRetry, retry, "retry");
-                    await _delayAsync(retry.Delay, cancellationToken);
+                    openFailure = ExceptionDispatchInfo.Capture(ex);
+                }
+                if (openFailure != null)
+                {
+                    var failedUsageUpdate = CreateUsageUpdate(ExtractFailureUsage(openFailure.SourceException));
+                    if (failedUsageUpdate != null)
+                        yield return failedUsageUpdate;
+                    if (TryCreateRetry(openFailure.SourceException, attempt, out var retry, cancellationToken))
+                    {
+                        CopilotProviderNotificationObserver.Notify(_onRetry, retry, "retry");
+                        await _delayAsync(retry.Delay, cancellationToken);
+                        continue;
+                    }
+                    openFailure.Throw();
+                }
+
+                if (streamingAttempt?.Enumerator == null)
+                    cancellationToken.ThrowIfCancellationRequested();
+                if (streamingAttempt?.Enumerator == null
+                    && TryCreateEmptyResponseRetry(
+                        streamingAttempt?.BufferedUpdates ?? Array.Empty<ChatResponseUpdate>(),
+                        attempt,
+                        cancellationToken,
+                        out var emptyRetry))
+                {
+                    // Keep only the completed attempt's usage. Its role, response identity and
+                    // finish marker must not close the logical response before the next attempt.
+                    var usageUpdate = CreateUsageUpdate(CopilotTokenBudgetChatClient.ExtractUsage(
+                        streamingAttempt?.BufferedUpdates.SelectMany(update => update.Contents)));
+                    if (usageUpdate != null)
+                        yield return usageUpdate;
+                    CopilotProviderNotificationObserver.Notify(_onRetry, emptyRetry, "retry");
+                    await _delayAsync(emptyRetry.Delay, cancellationToken);
                     continue;
                 }
 
@@ -140,18 +203,98 @@ namespace ColorVision.Copilot
 
                 await using (streamingAttempt)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     foreach (var update in streamingAttempt.BufferedUpdates)
                         yield return update;
 
                     var enumerator = streamingAttempt.Enumerator;
                     if (enumerator != null)
                     {
-                        while (await enumerator.MoveNextAsync())
+                        while (true)
+                        {
+                            var hasNext = false;
+                            try
+                            {
+                                hasNext = await enumerator.MoveNextAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                streamingAttempt.Failure = ExceptionDispatchInfo.Capture(ex);
+                            }
+                            if (streamingAttempt.Failure != null)
+                            {
+                                // Native failed Responses carry terminal usage only on the exception;
+                                // that adapter has not published a prior usage snapshot for this attempt.
+                                var failedUsageUpdate = CreateUsageUpdate(
+                                    CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(
+                                        streamingAttempt.Failure.SourceException));
+                                if (failedUsageUpdate != null)
+                                    yield return failedUsageUpdate;
+                                streamingAttempt.Failure.Throw();
+                            }
+                            if (!hasNext)
+                                break;
                             yield return enumerator.Current;
+                        }
                     }
                 }
                 yield break;
             }
+        }
+
+        private bool TryCreateEmptyResponseRetry(
+            IReadOnlyList<ChatResponseUpdate> updates,
+            int failedAttempt,
+            CancellationToken cancellationToken,
+            out CopilotProviderRetryInfo retry)
+        {
+            retry = null!;
+            if (failedAttempt >= _maximumAttempts
+                || cancellationToken.IsCancellationRequested
+                || updates.Any(update => update.FinishReason.HasValue
+                    && CopilotProviderFinishReasonClassifier.Classify(update.FinishReason.Value.Value)
+                        != CopilotChatFinishKind.Complete))
+            {
+                return false;
+            }
+
+            var delay = _delayFactory(failedAttempt);
+            if (delay < TimeSpan.Zero)
+                delay = TimeSpan.Zero;
+            if (delay > MaximumServerRetryDelay)
+                return false;
+            retry = new CopilotProviderRetryInfo(
+                failedAttempt, failedAttempt + 1, _maximumAttempts,
+                delay, "empty response", StatusCode: null);
+            return true;
+        }
+
+        internal static CopilotTokenUsage ExtractFailureUsage(Exception exception)
+        {
+            var usage = CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception);
+            var discardedUsage = CopilotTokenUsage.Empty;
+            foreach (var candidate in EnumerateExceptionChain(exception))
+            {
+                if (candidate.Data[BufferedAttemptUsageDataKey] is CopilotTokenUsage bufferedUsage)
+                    usage = usage.MergeProgress(bufferedUsage);
+                if (candidate.Data[DiscardedAttemptsUsageDataKey] is CopilotTokenUsage previousAttempts)
+                    discardedUsage = discardedUsage.Add(previousAttempts);
+            }
+            return usage.Add(discardedUsage);
+        }
+
+        internal static ChatResponseUpdate? CreateUsageUpdate(CopilotTokenUsage usage)
+        {
+            return !usage.HasAny ? null : new ChatResponseUpdate
+            {
+                Contents = [new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = usage.InputTokens,
+                    OutputTokenCount = usage.OutputTokens,
+                    TotalTokenCount = usage.EffectiveTotalTokens,
+                    CachedInputTokenCount = usage.CachedInputTokens,
+                })],
+            };
         }
 
         private async Task<CopilotStreamingAttempt?> OpenStreamingAttemptAsync(
@@ -196,8 +339,12 @@ namespace ColorVision.Copilot
                         enumerator: null,
                         bufferedUpdates.ToArray());
             }
-            catch
+            catch (Exception exception)
             {
+                var bufferedUsage = CopilotTokenBudgetChatClient.ExtractUsage(
+                    bufferedUpdates.SelectMany(update => update.Contents));
+                if (bufferedUsage.HasAny)
+                    exception.Data[BufferedAttemptUsageDataKey] = bufferedUsage;
                 if (enumerator != null)
                 {
                     try
@@ -222,8 +369,21 @@ namespace ColorVision.Copilot
             public IReadOnlyList<ChatResponseUpdate> BufferedUpdates { get; } =
                 bufferedUpdates;
 
-            public ValueTask DisposeAsync() =>
-                Enumerator?.DisposeAsync() ?? ValueTask.CompletedTask;
+            public ExceptionDispatchInfo? Failure { get; set; }
+
+            public async ValueTask DisposeAsync()
+            {
+                if (Enumerator == null)
+                    return;
+                try
+                {
+                    await Enumerator.DisposeAsync();
+                }
+                catch when (Failure != null)
+                {
+                    // Enumerator cleanup must not replace the provider failure.
+                }
+            }
         }
 
         private bool TryCreateRetry(
@@ -253,6 +413,7 @@ namespace ColorVision.Copilot
 
             return EnumerateExceptionChain(exception).Any(candidate => candidate is AnthropicApiException
                 or AnthropicSseException
+                or CopilotProviderPayloadException
                 or ClientResultException
                 or HttpRequestException
                 or TimeoutException
@@ -363,6 +524,11 @@ namespace ColorVision.Copilot
             var candidates = EnumerateExceptionChain(exception).ToArray();
             foreach (var candidate in candidates)
             {
+                if (candidate is CopilotProviderPayloadException payloadException)
+                {
+                    failureKind = payloadException.ErrorCode;
+                    return payloadException.IsTransient;
+                }
                 if (candidate is AnthropicApiException apiException)
                 {
                     statusCode = (int)apiException.StatusCode;

@@ -103,13 +103,57 @@ public sealed class CopilotFinalAnswerCancellationTests
         Assert.DoesNotContain(fixture.Events, item => item.Type == CopilotAgentEventType.Completed);
     }
 
+    [Fact]
+    public async Task SettledContextRejectionUsageSurvivesControlledRunCancellation()
+    {
+        var provider = new SettledContextRejectionChatClient();
+        using var fixture = new RunFixture(withRunControl: true, provider);
+        provider.CancelRun = () =>
+        {
+            Assert.True(fixture.Request.RunControl!.RequestCancel());
+            fixture.CallerCancellation.Cancel();
+        };
+
+        var result = await fixture.Start().WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(CopilotAgentStopReason.Cancelled, result.StopReason);
+        Assert.Equal(1, provider.Calls);
+        Assert.Equal(0, fixture.Tool.CallCount);
+        Assert.Empty(result.StepRecords);
+        Assert.Null(result.SessionCheckpoint);
+        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.Equal(0, result.Budget.ContextRecoveryCount);
+        Assert.Equal(20, result.Budget.ReportedTotalTokens);
+        Assert.Equal(3, result.Budget.ReportedCachedInputTokens);
+        Assert.False(result.Budget.UsedEstimatedUsage);
+        var publishedBudget = fixture.Events.Last(item => item.Type == CopilotAgentEventType.BudgetUpdated).Budget!;
+        Assert.Equal(20, publishedBudget.ReportedTotalTokens);
+        Assert.Equal(20, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(12, result.Usage.InputTokens);
+        Assert.Equal(8, result.Usage.OutputTokens);
+        Assert.Equal(3, result.Usage.EffectiveCachedInputTokens);
+
+        var turnState = CopilotTurnEventReducer.Reduce(
+            CopilotTurnEventState.Create(CopilotAgentMode.Code),
+            new CopilotTurnStartedEvent(CopilotAgentMode.Code));
+        foreach (var agentEvent in fixture.Events)
+            turnState = CopilotTurnEventReducer.Reduce(turnState, new CopilotTurnAgentEvent(agentEvent));
+        turnState = CopilotTurnEventReducer.Reduce(
+            turnState, new CopilotTurnPlanUpdatedEvent(CopilotTurnPlanSnapshot.FromTaskLedger(result.TaskLedger)));
+        turnState = CopilotTurnEventReducer.Reduce(turnState, new CopilotTurnTokenUsageUpdatedEvent(result.Usage));
+        var turnResult = CopilotTurnResult.FromAgent(CopilotAgentMode.Code, result.Usage, result);
+        turnState = CopilotTurnEventReducer.Reduce(turnState, new CopilotTurnCompletedEvent(turnResult));
+        Assert.Same(turnResult, CopilotTurnEventReducer.RequireCompletion(turnState));
+    }
+
     private sealed class RunFixture : IDisposable
     {
         private readonly DirectoryInfo _directory = Directory.CreateTempSubdirectory("CopilotFinalAnswerCancellationTests-");
         private readonly CancellationTokenSource _linkedCancellation;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _runtime;
 
-        public RunFixture(bool withRunControl)
+        public RunFixture(bool withRunControl, IChatClient? provider = null)
         {
             _linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 CallerCancellation.Token, TimeBudgetCancellation.Token);
@@ -123,7 +167,7 @@ public sealed class CopilotFinalAnswerCancellationTests
                 new CopilotToolRegistry([Tool]),
                 new CopilotAgentContextBuilder(),
                 new CopilotToolExecutor(),
-                _ => Provider,
+                _ => provider ?? Provider,
                 new EmptyExternalToolProvider(),
                 capabilityCatalog,
                 new CopilotAgentSkillUsageStore(_directory.FullName));
@@ -262,8 +306,42 @@ public sealed class CopilotFinalAnswerCancellationTests
                 ? [new FunctionCallContent("validation-call", "colorvision_run_workspace_validation", new Dictionary<string, object?>()), usage]
                 : [usage])
             {
-                FinishReason = call == 1 ? ChatFinishReason.ToolCalls : ChatFinishReason.Stop,
+                // This fixture targets cancellation inside finalization. An explicit length
+                // limit reaches that business boundary without normal empty-response retries.
+                FinishReason = call == 1 ? ChatFinishReason.ToolCalls : ChatFinishReason.Length,
             };
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SettledContextRejectionChatClient : IChatClient
+    {
+        private readonly CopilotProviderPayloadException _rejection = new(
+            "Synthetic maximum context length exceeded.", "context_length_exceeded", false, "",
+            new CopilotTokenUsage(12, 8, 20, 3));
+
+        public Action CancelRun { get; set; } = null!;
+        public int Calls { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls++;
+            CancelRun();
+            // The rejection and its official terminal usage have settled. Cancellation
+            // guards retain that fault; the runtime must retain its billing as it stops.
+            return Task.FromException<ChatResponse>(_rejection);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await GetResponseAsync(messages, options, cancellationToken);
+            yield break;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

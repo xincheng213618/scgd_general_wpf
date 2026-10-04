@@ -167,6 +167,7 @@ namespace ColorVision.Copilot
             if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
                 return true;
             if (TryCreateProviderPayloadException(
+                config.ProviderType,
                 payload,
                 "Provider stream",
                 config.ApiKey,
@@ -302,14 +303,22 @@ namespace ColorVision.Copilot
                 && statusElement.ValueKind == JsonValueKind.String)
             {
                 var status = statusElement.GetString() ?? string.Empty;
-                if (string.Equals(status, "incomplete", StringComparison.OrdinalIgnoreCase)
-                    && response.TryGetProperty("incomplete_details", out var details)
-                    && details.ValueKind == JsonValueKind.Object
-                    && details.TryGetProperty("reason", out var reasonElement)
-                    && reasonElement.ValueKind == JsonValueKind.String
-                    && !string.IsNullOrWhiteSpace(reasonElement.GetString()))
+                if (string.Equals(status, "incomplete", StringComparison.OrdinalIgnoreCase))
                 {
-                    finishReason = reasonElement.GetString()!;
+                    finishReason = "incomplete";
+                    if (response.TryGetProperty("incomplete_details", out var details)
+                        && details.ValueKind == JsonValueKind.Object
+                        && details.TryGetProperty("reason", out var reasonElement)
+                        && reasonElement.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(reasonElement.GetString()))
+                    {
+                        var reason = NormalizeFinishReason(reasonElement.GetString());
+                        // An explicit incomplete status cannot be promoted to success by
+                        // a missing or incompatible provider-specific reason.
+                        if (reason.Length > 0
+                            && CopilotProviderFinishReasonClassifier.Classify(reason) != CopilotChatFinishKind.Complete)
+                            finishReason = reason;
+                    }
                     return true;
                 }
 
@@ -367,6 +376,7 @@ namespace ColorVision.Copilot
         }
 
         private static bool TryCreateProviderPayloadException(
+            CopilotProviderType providerType,
             string payload,
             string sourceLabel,
             string? apiKey,
@@ -399,7 +409,10 @@ namespace ColorVision.Copilot
                     message,
                     errorCode,
                     CopilotProviderErrorPolicy.IsTransientPayload(providerError.Code, providerError.Type),
-                    requestId);
+                    requestId,
+                    providerType == CopilotProviderType.AnthropicCompatible
+                        ? ExtractAnthropicUsage(root)
+                        : ExtractOpenAiUsage(root));
                 return true;
             }
             catch (JsonException)

@@ -6,6 +6,14 @@ namespace ColorVision.Copilot
 {
     public static class CopilotAgentConversationMemory
     {
+        private const string TruncationSuffix = "\n...<conversation memory truncated>";
+        private const string HistoryTruncationSuffix = "\n...<conversation history truncated>";
+
+        private readonly record struct ComparisonKey(
+            CopilotRequestMessage Message,
+            CopilotRequestMessage BoundedMessage,
+            bool IsTruncated);
+
         public static IReadOnlyList<CopilotRequestMessage> Merge(
             IReadOnlyList<CopilotRequestMessage>? previousMemory,
             IEnumerable<CopilotRequestMessage>? visibleHistory,
@@ -51,14 +59,16 @@ namespace ColorVision.Copilot
             // Checkpoint memory is more tightly bounded than the visible request
             // history, so it can contain the initial goal plus only a recent tail.
             // Align both ordered sequences and resume after their last shared item.
-            var commonSuffixLengths = BuildCommonSuffixLengths(previous, visible);
+            var previousKeys = CreateComparisonKeys(previous);
+            var visibleKeys = CreateComparisonKeys(visible);
+            var commonSuffixLengths = BuildCommonSuffixLengths(previousKeys, visibleKeys);
 
             var previousCursor = 0;
             var visibleCursor = 0;
             var lastSharedVisibleIndex = -1;
             while (previousCursor < previous.Length && visibleCursor < visible.Length)
             {
-                if (AreEqual(previous[previousCursor], visible[visibleCursor]))
+                if (AreEqual(previousKeys[previousCursor], visibleKeys[visibleCursor]))
                 {
                     lastSharedVisibleIndex = visibleCursor;
                     previousCursor++;
@@ -114,8 +124,18 @@ namespace ColorVision.Copilot
             var content = (message.Content ?? string.Empty).Trim();
             if (content.Length > CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
             {
-                const string suffix = "\n...<conversation memory truncated>";
-                content = content[..(CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - suffix.Length)] + suffix;
+                var (body, terminalSuffix) = CopilotChatMessage.SplitModelTerminalEvidence(role, content);
+                var ending = TruncationSuffix + (terminalSuffix.Length == 0 ? string.Empty : "\n\n" + terminalSuffix);
+                var retainedLength = Math.Min(body.Length,
+                    Math.Max(0, CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - ending.Length));
+                if (retainedLength > 0
+                    && retainedLength < body.Length
+                    && char.IsHighSurrogate(body[retainedLength - 1])
+                    && char.IsLowSurrogate(body[retainedLength]))
+                {
+                    retainedLength--;
+                }
+                content = body[..retainedLength] + ending;
             }
             return new CopilotRequestMessage(role, content)
             {
@@ -134,7 +154,9 @@ namespace ColorVision.Copilot
 
             // The suffix LCS table lets the merge preserve both input orders while
             // interleaving checkpoint-only injected messages with visible-only history.
-            var commonSuffixLengths = BuildCommonSuffixLengths(previousMemory, visibleHistory);
+            var previousKeys = CreateComparisonKeys(previousMemory);
+            var visibleKeys = CreateComparisonKeys(visibleHistory);
+            var commonSuffixLengths = BuildCommonSuffixLengths(previousKeys, visibleKeys);
 
             var merged = new List<CopilotRequestMessage>(
                 previousMemory.Length + visibleHistory.Length);
@@ -144,8 +166,8 @@ namespace ColorVision.Copilot
                 && visibleCursor < visibleHistory.Length)
             {
                 if (AreEqual(
-                    previousMemory[previousCursor],
-                    visibleHistory[visibleCursor]))
+                    previousKeys[previousCursor],
+                    visibleKeys[visibleCursor]))
                 {
                     merged.Add(previousMemory[previousCursor]);
                     previousCursor++;
@@ -213,7 +235,37 @@ namespace ColorVision.Copilot
             + "\n"
             + message.Content;
 
-        private static bool AreEqual(CopilotRequestMessage left, CopilotRequestMessage right)
+        private static ComparisonKey[] CreateComparisonKeys(CopilotRequestMessage[] messages)
+        {
+            // Match the checkpoint's weighted content limit without shortening the
+            // visible messages returned to the caller. Keep complete messages distinct;
+            // bounded matching is only valid when one side carries a known truncation.
+            return messages.Select(message => new ComparisonKey(
+                message,
+                CopilotConversationHistoryWindow.Select(
+                    [message],
+                    1,
+                    CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength,
+                    CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)[0],
+                IsTruncated(message))).ToArray();
+        }
+
+        private static bool IsTruncated(CopilotRequestMessage message)
+        {
+            var (body, _) = CopilotChatMessage.SplitModelTerminalEvidence(message.Role, message.Content);
+            body = body.TrimEnd();
+            return body.EndsWith(TruncationSuffix, StringComparison.Ordinal)
+                || body.EndsWith(HistoryTruncationSuffix, StringComparison.Ordinal);
+        }
+
+        private static bool AreEqual(ComparisonKey left, ComparisonKey right)
+        {
+            return AreMessagesEqual(left.Message, right.Message)
+                || ((left.IsTruncated || right.IsTruncated)
+                    && AreMessagesEqual(left.BoundedMessage, right.BoundedMessage));
+        }
+
+        private static bool AreMessagesEqual(CopilotRequestMessage left, CopilotRequestMessage right)
         {
             return string.Equals(left.Role, right.Role, StringComparison.Ordinal)
                 && string.Equals(left.Content, right.Content, StringComparison.Ordinal)
@@ -221,8 +273,8 @@ namespace ColorVision.Copilot
         }
 
         private static int[,] BuildCommonSuffixLengths(
-            CopilotRequestMessage[] previous,
-            CopilotRequestMessage[] visible)
+            ComparisonKey[] previous,
+            ComparisonKey[] visible)
         {
             var commonSuffixLengths = new int[previous.Length + 1, visible.Length + 1];
             for (var previousIndex = previous.Length - 1; previousIndex >= 0; previousIndex--)

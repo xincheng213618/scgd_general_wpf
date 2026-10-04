@@ -1,6 +1,8 @@
 using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using Newtonsoft.Json;
+using System;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -173,30 +175,58 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string ModelContent
-        {
-            get
-            {
-                var content = IsContentDisplayOnly
-                    ? string.Empty
-                    : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
-                if (IsUser)
-                    return content;
+        public string ModelContent => GetHistoryContent(useRequestContent: true);
 
-                var modelContent = content;
-                if (WasResponseInterrupted)
-                    modelContent = AppendModelMarker(modelContent, ResponseInterruptionModelMarker);
-                if (RequestMode != CopilotAgentMode.Chat
-                    && AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
-                {
-                    var marker = IncompleteAgentOutcomeModelMarkerPrefix
-                        + AgentStopReason
-                        + IncompleteAgentOutcomeModelMarkerSuffix;
-                    modelContent = AppendModelMarker(modelContent, marker);
-                }
-                return modelContent;
+        internal string GetHistoryContent(bool useRequestContent)
+        {
+            var content = IsContentDisplayOnly
+                ? string.Empty
+                : useRequestContent && !string.IsNullOrWhiteSpace(RequestContent) ? RequestContent : Content;
+            if (IsUser)
+                return content;
+
+            var modelContent = content;
+            if (WasResponseInterrupted)
+                modelContent = AppendModelMarker(modelContent, ResponseInterruptionModelMarker);
+            if (RequestMode != CopilotAgentMode.Chat
+                && AgentStopReason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
+            {
+                modelContent = AppendModelMarker(modelContent, FormatIncompleteAgentModelMarker(AgentStopReason));
             }
+            return modelContent;
         }
+
+        private static readonly string[] IncompleteAgentModelMarkers = Enum.GetValues<CopilotAgentStopReason>()
+            .Where(reason => reason is not (CopilotAgentStopReason.None or CopilotAgentStopReason.Completed))
+            .Select(FormatIncompleteAgentModelMarker)
+            .ToArray();
+
+        internal static (string Body, string Suffix) SplitModelTerminalEvidence(string role, string content)
+        {
+            if (!string.Equals(role, "assistant", StringComparison.Ordinal))
+                return (content, string.Empty);
+
+            var body = content.TrimEnd();
+            var suffix = string.Empty;
+            foreach (var marker in IncompleteAgentModelMarkers)
+            {
+                if (!body.EndsWith(marker, StringComparison.Ordinal))
+                    continue;
+                suffix = marker;
+                body = body[..^marker.Length].TrimEnd();
+                break;
+            }
+            if (body.EndsWith(ResponseInterruptionModelMarker, StringComparison.Ordinal))
+            {
+                body = body[..^ResponseInterruptionModelMarker.Length].TrimEnd();
+                suffix = suffix.Length == 0 ? ResponseInterruptionModelMarker
+                    : ResponseInterruptionModelMarker + "\n\n" + suffix;
+            }
+            return suffix.Length == 0 ? (content, string.Empty) : (body, suffix);
+        }
+
+        private static string FormatIncompleteAgentModelMarker(CopilotAgentStopReason reason) =>
+            IncompleteAgentOutcomeModelMarkerPrefix + reason + IncompleteAgentOutcomeModelMarkerSuffix;
 
         private static string AppendModelMarker(string content, string marker) =>
             string.IsNullOrWhiteSpace(content)

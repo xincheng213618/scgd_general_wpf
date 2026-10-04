@@ -1,6 +1,8 @@
+using Microsoft.Extensions.AI;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -8,6 +10,103 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotProviderPayloadErrorTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task InactivityTimeoutPreservesSettledOfficialUsage(bool streaming, bool hasPriorContent)
+    {
+        using var callerCancellation = new CancellationTokenSource();
+        var provider = new SettledCancellationChatClient(hasPriorContent);
+        using var client = new CopilotTokenBudgetChatClient(
+            new CopilotProviderInactivityChatClient(provider,
+                firstResponseTimeout: hasPriorContent ? TimeSpan.FromSeconds(30) : TimeSpan.FromMilliseconds(25),
+                streamingUpdateTimeout: TimeSpan.FromMilliseconds(25)),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                MaxOutputTokens = 1_024,
+                RequestTokenBudget = 4_096,
+            });
+        var updates = new List<ChatResponseUpdate>();
+        async Task InvokeAsync()
+        {
+            if (streaming)
+            {
+                await foreach (var update in client.GetStreamingResponseAsync(
+                    [new ChatMessage(ChatRole.User, "Keep the settled bill when the provider stalls.")],
+                    cancellationToken: callerCancellation.Token))
+                {
+                    updates.Add(update);
+                }
+            }
+            else
+            {
+                await client.GetResponseAsync(
+                    [new ChatMessage(ChatRole.User, "Keep the settled bill when the provider stalls.")],
+                    cancellationToken: callerCancellation.Token);
+            }
+        }
+
+        var failure = await Assert.ThrowsAsync<CopilotProviderInactivityException>(
+            () => InvokeAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+
+        Assert.Equal(hasPriorContent ? CopilotProviderInactivityPhase.StreamingUpdate : CopilotProviderInactivityPhase.FirstResponse,
+            failure.Phase);
+        Assert.False(callerCancellation.IsCancellationRequested);
+        var settledFailure = Assert.IsAssignableFrom<OperationCanceledException>(provider.SettledFailure);
+        Assert.True(settledFailure.CancellationToken.IsCancellationRequested);
+        Assert.NotEqual(callerCancellation.Token, settledFailure.CancellationToken);
+        var reportedUsage = new CopilotTokenUsage(12, 8, 20, 3);
+        Assert.Equal(reportedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(settledFailure));
+        Assert.Equal(reportedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure));
+        Assert.Equal(hasPriorContent ? "Partial." : string.Empty, string.Concat(updates.Select(update => update.Text)));
+        Assert.Equal(1, client.Snapshot.ProviderCalls);
+        Assert.Equal(12, client.Snapshot.ReportedInputTokens);
+        Assert.Equal(8, client.Snapshot.ReportedOutputTokens);
+        Assert.Equal(20, client.Snapshot.ReportedTotalTokens);
+        Assert.Equal(20, client.Snapshot.ConsumedTokens);
+        Assert.Equal(3, client.Snapshot.ReportedCachedInputTokens);
+        Assert.False(client.Snapshot.UsedEstimatedUsage);
+    }
+
+    [Theory]
+    [InlineData(false, "missing", "incomplete")]
+    [InlineData(true, "missing", "incomplete")]
+    [InlineData(false, "empty", "incomplete")]
+    [InlineData(true, "empty", "incomplete")]
+    [InlineData(false, "stop", "incomplete")]
+    [InlineData(true, "stop", "incomplete")]
+    [InlineData(false, "max_output_tokens", "max_output_tokens")]
+    [InlineData(true, "max_output_tokens", "max_output_tokens")]
+    public async Task IncompleteResponsesRemainIncompleteWhenTheirReasonIsUnavailable(bool streaming, string reason, string expectedFinishReason)
+    {
+        var response = new Dictionary<string, object?>
+        {
+            ["status"] = "incomplete",
+            ["output_text"] = "Partial summary.",
+            ["usage"] = new { input_tokens = 100, output_tokens = 10, total_tokens = 110 },
+        };
+        if (reason != "missing")
+            response["incomplete_details"] = new { reason = reason == "empty" ? "" : reason };
+        var body = JsonSerializer.Serialize(response);
+        using var handler = new SequentialHandler(_ => streaming
+            ? CreateStreamingResponse("data: {\"type\":\"response.output_text.delta\",\"delta\":\"Partial summary.\"}\n\n"
+                + "data: " + JsonSerializer.Serialize(new { type = "response.incomplete", response }) + "\n\n")
+            : CreateJsonResponse(body));
+        using var httpClient = new HttpClient(handler);
+
+        var result = await CreateService(httpClient, maximumAttempts: 1).CompleteReplyDetailedAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible),
+            [new CopilotRequestMessage("user", "Summarize earlier conversation.")], CancellationToken.None);
+
+        Assert.Equal("Partial summary.", result.Content);
+        Assert.Equal(expectedFinishReason, result.StreamResult.FinishReason);
+        Assert.True(result.IsIncomplete);
+        Assert.Equal(110, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(1, handler.CallCount);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -414,6 +513,142 @@ public sealed class CopilotProviderPayloadErrorTests
         Assert.Equal("req_response_failed", retry.RequestId);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RetriedPayloadUsageIsIncludedInSuccessfulResultAndUpdates(bool streaming)
+    {
+        using var handler = new SequentialHandler(call => call < 3
+            ? CreateFailedOpenAiResponse(streaming, "server_error", new CopilotTokenUsage(6 * call, 4 * call, 10 * call, call))
+            : streaming
+                ? CreateStreamingResponse("data: {\"choices\":[{\"delta\":{\"content\":\"Recovered.\"},\"finish_reason\":\"stop\"}],"
+                    + "\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15,\"prompt_tokens_details\":{\"cached_tokens\":2}}}\n\n"
+                    + "data: [DONE]\n\n")
+                : CreateJsonResponse("{\"choices\":[{\"message\":{\"content\":\"Recovered.\"},\"finish_reason\":\"stop\"}],"
+                    + "\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15,\"prompt_tokens_details\":{\"cached_tokens\":2}}}"));
+        using var httpClient = new HttpClient(handler);
+        var retries = new List<CopilotProviderRetryInfo>();
+        var usageUpdates = new List<CopilotTokenUsage>();
+        var deltas = new List<CopilotStreamDelta>();
+
+        var result = await CreateService(httpClient, maximumAttempts: 3).StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Keep the bill of failed attempts.")],
+            deltas.Add, retries.Add, usageUpdates.Add, CancellationToken.None);
+
+        Assert.Equal(new CopilotTokenUsage(28, 17, 45, 5), result.Usage);
+        Assert.Equal(new[]
+        {
+            new CopilotTokenUsage(6, 4, 10, 1),
+            new CopilotTokenUsage(18, 12, 30, 3),
+            result.Usage,
+        }, usageUpdates);
+        Assert.Equal("Recovered.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(3, handler.CallCount);
+        Assert.Equal(2, retries.Count);
+    }
+
+    [Theory]
+    [InlineData(false, "server_error")]
+    [InlineData(true, "server_error")]
+    [InlineData(false, "insufficient_quota")]
+    [InlineData(true, "insufficient_quota")]
+    public async Task FinalPayloadFailurePreservesAllAttemptUsage(bool streaming, string finalCode)
+    {
+        var lastUsage = new CopilotTokenUsage(10, 5, 15, 2);
+        using var handler = new SequentialHandler(call => CreateFailedOpenAiResponse(
+            streaming, call < 3 ? "server_error" : finalCode,
+            call < 3 ? new CopilotTokenUsage(6 * call, 4 * call, 10 * call, call) : lastUsage,
+            "req_test-key_failed"));
+        using var httpClient = new HttpClient(handler);
+        var retries = new List<CopilotProviderRetryInfo>();
+        var usageUpdates = new List<CopilotTokenUsage>();
+        var deltas = new List<CopilotStreamDelta>();
+
+        var failure = await Assert.ThrowsAsync<CopilotProviderPayloadException>(() => CreateService(httpClient, 3).StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Keep settled usage on failure.")],
+            deltas.Add, retries.Add, usageUpdates.Add, CancellationToken.None));
+
+        var expectedUsage = new CopilotTokenUsage(28, 17, 45, 5);
+        Assert.Equal(lastUsage, failure.ReportedUsage);
+        Assert.Equal(expectedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure));
+        Assert.Equal(expectedUsage, usageUpdates.Last());
+        Assert.Equal(finalCode, failure.ErrorCode);
+        Assert.Equal(finalCode == "server_error", failure.IsTransient);
+        Assert.Equal("req_redacted_failed", failure.RequestId);
+        Assert.DoesNotContain("test-key", failure.Message, StringComparison.Ordinal);
+        Assert.Equal(3, handler.CallCount);
+        Assert.Equal(2, retries.Count);
+        Assert.Empty(deltas);
+    }
+
+    [Fact]
+    public async Task CancellationDuringBilledPayloadBackoffPreservesUsageWithoutSendingAnotherRequest()
+    {
+        var reportedUsage = new CopilotTokenUsage(12, 8, 20, 3);
+        using var handler = new SequentialHandler(_ => CreateFailedOpenAiResponse(true, "server_error", reportedUsage));
+        using var httpClient = new HttpClient(handler);
+        using var cancellation = new CancellationTokenSource();
+        var service = new CopilotChatService(httpClient, 3, _ => TimeSpan.Zero, (_, token) =>
+        {
+            cancellation.Cancel();
+            return Task.FromCanceled(token);
+        });
+        var usageUpdates = new List<CopilotTokenUsage>();
+
+        var failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Cancel during retry.")],
+            _ => Assert.Fail("A failed response must not emit content."), onRetry: null, usageUpdates.Add, cancellation.Token));
+
+        Assert.Equal(cancellation.Token, failure.CancellationToken);
+        Assert.Equal(reportedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure));
+        Assert.Equal(reportedUsage, usageUpdates.Last());
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task PayloadUsageMergesWithPriorUsageSnapshotWithoutEnablingReplay()
+    {
+        var reportedUsage = new CopilotTokenUsage(12, 8, 20, 3);
+        using var failedResponse = CreateFailedOpenAiResponse(true, "server_error", reportedUsage);
+        var failureEvent = await failedResponse.Content.ReadAsStringAsync();
+        using var handler = new SequentialHandler(_ => CreateStreamingResponse(
+            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":4,\"total_tokens\":16,\"prompt_tokens_details\":{\"cached_tokens\":3}}}\n\n"
+            + failureEvent));
+        using var httpClient = new HttpClient(handler);
+        var usageUpdates = new List<CopilotTokenUsage>();
+        var retries = new List<CopilotProviderRetryInfo>();
+
+        var failure = await Assert.ThrowsAsync<CopilotProviderPayloadException>(() => CreateService(httpClient, 3).StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Do not replay a usage-only response.")],
+            _ => Assert.Fail("This response has no content."), retries.Add, usageUpdates.Add, CancellationToken.None));
+
+        Assert.Equal(reportedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure));
+        Assert.Equal(reportedUsage, usageUpdates.Last());
+        Assert.Equal(1, handler.CallCount);
+        Assert.Empty(retries);
+    }
+
+    [Fact]
+    public async Task FinalHttpFailureWithoutReportedUsageKeepsOnlyPreviouslyBilledAttempts()
+    {
+        var reportedUsage = new CopilotTokenUsage(12, 8, 20, 3);
+        using var handler = new SequentialHandler(call => call == 1
+            ? CreateFailedOpenAiResponse(true, "server_error", reportedUsage)
+            : CreateJsonResponse("{\"error\":{\"code\":\"authentication_error\",\"message\":\"Credential rejected.\"}}", statusCode: HttpStatusCode.Unauthorized));
+        using var httpClient = new HttpClient(handler);
+        var retries = new List<CopilotProviderRetryInfo>();
+        var usageUpdates = new List<CopilotTokenUsage>();
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => CreateService(httpClient, 3).StreamReplyAsync(
+            CreateProfile(CopilotProviderType.OpenAICompatible), [new CopilotRequestMessage("user", "Do not estimate an HTTP error bill.")],
+            _ => Assert.Fail("A failed response must not emit content."), retries.Add, usageUpdates.Add, CancellationToken.None));
+
+        Assert.Equal(reportedUsage, CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(failure));
+        Assert.Equal(reportedUsage, usageUpdates.Last());
+        Assert.Equal(2, handler.CallCount);
+        Assert.Single(retries);
+    }
+
     [Fact]
     public async Task SuccessfulJsonErrorPayloadIsNotMisreportedAsEmptyResponse()
     {
@@ -553,6 +788,29 @@ public sealed class CopilotProviderPayloadErrorTests
             + "data: [DONE]\n\n";
     }
 
+    private static HttpResponseMessage CreateFailedOpenAiResponse(
+        bool streaming,
+        string code,
+        CopilotTokenUsage usage,
+        string requestId = "req_billed_failure")
+    {
+        var response = new
+        {
+            status = "failed",
+            error = new { code, message = "Generation failed for test-key." },
+            usage = new
+            {
+                input_tokens = usage.InputTokens,
+                output_tokens = usage.OutputTokens,
+                total_tokens = usage.TotalTokens,
+                input_tokens_details = new { cached_tokens = usage.CachedInputTokens },
+            },
+        };
+        return streaming
+            ? CreateStreamingResponse("data: " + JsonSerializer.Serialize(new { type = "response.failed", response }) + "\n\n", requestId)
+            : CreateJsonResponse(JsonSerializer.Serialize(response), requestId);
+    }
+
     private static string CreateCompletedAnthropicStream(string content)
     {
         return "event: content_block_delta\n"
@@ -561,6 +819,43 @@ public sealed class CopilotProviderPayloadErrorTests
             + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n"
             + "event: message_stop\n"
             + "data: {\"type\":\"message_stop\"}\n\n";
+    }
+
+    private sealed class SettledCancellationChatClient(bool hasPriorContent) : IChatClient
+    {
+        public OperationCanceledException? SettledFailure { get; private set; }
+
+        public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            throw await WaitForSettledCancellationAsync(cancellationToken);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (hasPriorContent)
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "Partial.");
+            throw await WaitForSettledCancellationAsync(cancellationToken);
+        }
+
+        private async Task<OperationCanceledException> WaitForSettledCancellationAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException exception)
+            {
+                SettledFailure = exception;
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception, new CopilotTokenUsage(12, 8, 20, 3));
+                return exception;
+            }
+            throw new InvalidOperationException("The provider's linked cancellation was not observed.");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class SequentialHandler(

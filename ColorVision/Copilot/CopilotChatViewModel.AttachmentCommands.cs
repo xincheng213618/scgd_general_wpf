@@ -64,6 +64,7 @@ namespace ColorVision.Copilot
                 return 0;
 
             var conversation = EnsureConversation();
+            var messageEditSnapshot = _composerDraftBeforeMessageEdit;
             var cancellation = BeginAuxiliaryOperation();
             _fileAttachmentCts = cancellation;
             IsBusy = true;
@@ -75,7 +76,8 @@ namespace ColorVision.Copilot
                     CancellationToken.None);
                 var existingPaths = await resolveTask.WaitAsync(cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation)
+                    || !ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit))
                     return 0;
 
                 return AddResolvedFileAttachments(existingPaths, conversation);
@@ -354,6 +356,7 @@ namespace ColorVision.Copilot
         private async Task<bool> SaveClipboardImageAttachmentAsync(BitmapSource image)
         {
             var conversation = EnsureConversation();
+            var messageEditSnapshot = _composerDraftBeforeMessageEdit;
             if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Image))
                 return false;
 
@@ -369,7 +372,8 @@ namespace ColorVision.Copilot
                     CancellationToken.None);
                 var imagePath = await saveTask.WaitAsync(cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation)
+                    || !ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit))
                 {
                     CopilotChatStateStore.TryDeleteManagedAttachmentFile(_stateStore.AttachmentDirectoryPath, imagePath);
                     return false;

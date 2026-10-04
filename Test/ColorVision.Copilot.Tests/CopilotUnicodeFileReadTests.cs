@@ -40,6 +40,22 @@ public sealed class CopilotUnicodeFileReadTests : IDisposable
         Assert.Equal(before, await File.ReadAllBytesAsync(path));
     }
 
+    [Fact]
+    public async Task SearchPreviewKeepsSupplementaryCharacterBoundaryValid()
+    {
+        var source = new string('x', 219) + "🔬 tail";
+        var path = Path.Combine(_directory.FullName, "preview.log");
+        await File.WriteAllTextAsync(path, source, GetEncoding("utf8"));
+
+        var search = CopilotGrepTextCapability.Search([_directory.FullName], "tail", null, CancellationToken.None);
+
+        Assert.True(search.Success, search.ErrorMessage);
+        var match = Assert.Single(search.Matches);
+        Assert.Equal(source, match.LineText);
+        Assert.NotEmpty(new UTF8Encoding(false, true).GetBytes(search.Content));
+        Assert.Contains(new string('x', 219) + "...", search.Content);
+    }
+
     [Theory]
     [InlineData("utf8")]
     [InlineData("utf8-bom")]

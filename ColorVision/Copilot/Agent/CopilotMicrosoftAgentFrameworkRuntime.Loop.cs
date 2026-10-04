@@ -559,9 +559,10 @@ namespace ColorVision.Copilot
                         providerInterrupted = providerFailure != null;
                         contextWindowExceeded = providerFailure?.Code == "provider_context_window";
                     }
-                    catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
+                    catch (OperationCanceledException ex) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
                         || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
                     {
+                        usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                         (controlIntent, timeBudgetExhausted) = HandleRunCancellation(
                             request, timeBudgetCancellation, callerCancellationToken, stopwatch, taskEventJournalBuilder, emit);
                         hasModelFinalAnswer = false;
@@ -857,7 +858,10 @@ namespace ColorVision.Copilot
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
                 StepRecords = bridge.StepRecords,
-                Usage = usage.Add(bridge.DelegatedUsage),
+                // Codex emits cumulative snapshots; the budget already counts each request and delegated usage once.
+                Usage = request.Profile.IsLocalCodex
+                    ? CopilotTurnRuntime.GetReportedTokenUsage(budgetSnapshot)
+                    : usage.Add(bridge.DelegatedUsage),
                 Budget = budgetSnapshot,
                 TaskLedger = taskLedger,
                 StopReason = stopReason,

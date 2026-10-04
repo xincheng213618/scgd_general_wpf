@@ -71,15 +71,23 @@ Anthropic 官方适配器的 `AnthropicSseException` 进入同一供应商错误
 
 临时授权不会扩大 Review 模式、工具 Schema、意图策略、工作区范围、执行契约、并发闸门、超时或审计边界，也不会追溯批准已经等待的 Framework Action。任务结束、失败、取消、超时、工作区变化或应用重启都会撤销临时 grant，新会话和 conversation branch 也不会继承；显式复核者配置不是这份短期 grant，不能混用其生命周期。
 
+Responses Agent 以原生 `response.incomplete` 终端状态为准：`max_output_tokens` 映射为 `Length`，`content_filter` 映射为 `ContentFilter`；原因缺失或未知仍明确标为不完整，不因 SDK 缺少结束标记而允许工具执行。终端内已经报告的输入、输出、总量、缓存与推理用量继续保留，不能因工具被抑制而丢失。`CopilotOpenAiAgentChatClientFactoryTests` 通过真实 SDK 和受控 HTTP 覆盖流式、非流式终态及零工具执行，不连接真实模型服务。
+
+原生 `response.failed` 在流式和非流式路径均进入结构化供应商错误，不把已生成的函数参数视为执行许可。错误 code／type 沿用现有瞬态与账户限制分类，不伪造 HTTP 状态或把 response ID 当作 request ID；只有尚无实质输出的瞬态失败允许有限重试。失败终端已经报告的用量随原始失败保留，重试丢弃的尝试仍计入运行总量；函数或参数进展后发生失败时，不派发缓冲中的调用，也不重放该尝试。除首个实质输出前的上下文拒绝外，供应商未报告账单时才沿用原有预算估算，估算不作为实际用量。
+
 ### 流清理与原始失败
 
 停止请求不能证明工具已经停止。取消等待宽限结束后，若工具只有 `Running` / `ToolStarted` 而没有权威终态，`CopilotHostedTurnCompletion` 与任务 journal 的收尾均记录 `Interrupted` / `tool_outcome_unknown`；不能根据本轮 `Cancelled` 状态推导工具也已取消。尚未开始的调用和仍待审批的调用继续单独标记，已有权威成功、失败或取消结果不被覆盖。`CopilotHostedTurnCompletionTests` 用仍未结束的受控 producer 验证取消、暂停及中断的呈现，journal 与 checkpoint 的恢复边界见[任务与工具结果](./copilot-agent-session-and-tools.md#显式有界重试)。
+
+`CopilotTurnEventStream` 将调用方取消和消费者提前释放转为非阻塞取消请求；生产者注册的取消回调即使阻塞或抛错，也不能阻止事件缓冲清理和有界关闭，或替换已经发生的供应商失败。等待期限结束后只停止宿主等待并观察迟到任务，不保证任意生产者已经退出。`CopilotTurnEventStreamTests` 通过受控回调与生产者验证这两个取消入口及原始错误保留。
 
 `CopilotCancellationGuardChatClient` 在流读取失败或取消后保留原异常，清理阶段的次要异常不能改变 HTTP 分类、请求 ID 或重试资格；同步抛出的读取错误和两次更新之间的取消也遵循这一规则。没有先前失败时，清理自身的异常仍向上传播，不能伪装成成功。宿主给清理过程单独设置等待预算：真正超过预算时分离并观察后续清理，清理自身抛出的 `TimeoutException` 不冒充宿主超时。尚未结束的读取先被观察，完成后才释放枚举器，避免并发调用 `MoveNextAsync` 和 `DisposeAsync`。`CopilotProviderStreamCleanupTests` 与 `CopilotProviderStreamCleanupTimeoutTests` 用受控异步枚举器核验原错误优先、取消、延迟清理和清理超时来源；不声称第三方 SDK 内部任意同步阻塞都可被抢占。
 
 ### OpenAI HTTP 重试预算
 
 `CopilotOpenAiAgentChatClientFactory` 为 Chat Completions 和 Responses 共用的 `OpenAIClientOptions` 设置 `ClientRetryPolicy(0)`，关闭 SDK 内部重试。重试只由 ColorVision 的供应商重试层执行，因此一次预算尝试对应一次 HTTP 请求，不会被 SDK 再放大为四次。429/503 等瞬态失败按宿主上限重试，401 等永久失败不重试；正文、推理内容或工具调用已经发布后，不重放这一模型调用。已完成工具后发起的下一次模型调用可以在尚无新输出时有限重试，但不会重新执行此前工具。`CopilotOpenAiProviderRetryTests` 使用正式工厂、正式适配器和受控回环 HTTP，核验两条路由的实际请求数、`ProviderCalls`、估算用量及工具完成后的 `ProviderFailure` 检查点，不连接真实供应商账户。
+
+Agent 流正常结束却没有正文、推理、工具调用或其他实质输出时，同样使用这份最多三次的尝试预算，保留原消息与工具配置；只有结束原因明确成功或未提供时才允许空响应重试。长度限制、内容过滤、其他明确终止原因和任何实质输出都不进入此路径。丢弃尝试的消息身份与结束标记不传给下一轮，但已知用量按单次尝试合并并保留，使运行总量与内层预算一致；取消或预算耗尽会阻止下一次请求。重试耗尽后仍交给原有有界最终回答恢复处理，其独立模型调用继续受同一运行总预算约束。
 
 Responses SDK 在参数分片收齐后才产生完整 `FunctionCallContent`；非空 `response.function_call_arguments.delta` 已构成响应进展，重试、连接恢复、空闲超时和首响应耗时采用相同判定。发布参数分片后断流不自动重放，未完成参数也不成为可执行工具调用。没有正文、推理或参数进展的流仍受 64 条前导元数据上限约束，空参数分片不刷新进展。`CopilotOpenAiAgentChatClientFactoryTests` 经真实 SDK 覆盖长参数分片和纯元数据流，`CopilotProviderConnectionRecoveryTests` 覆盖参数未完成时中断且不重试的边界。
 
@@ -113,6 +121,10 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 `CopilotAnthropicHttpErrorHandler` 只处理失败响应：错误正文最多读取 256 KiB，脱敏后交 SDK 的类型化异常工厂；超限或正文读取 I/O 失败仍保留原 HTTP 状态，不把 401 改判为可重试的网络错误。响应头的请求 ID 与退避时间绑定同一次请求，`Retry-After-Ms` 优先、无效时回退 `Retry-After`，保留完整等待时间并遵守上述两分钟自动等待准入规则。成功响应原样交给 SDK，错误响应在抛出前释放。上下文窗口分类同时检查类型化 HTTP 状态，401 即使带有长度超限文字也不能触发压缩重发；400/413 的合法上下文错误仍可被识别。`CopilotAnthropicHttpFailureTests` 使用本机回环服务核验正式生产适配器，`CopilotAnthropicHttpErrorBoundaryTests` 补充响应所有权、并发头隔离、脱敏、长度和状态边界；均不调用真实供应商账户。
 
 上下文超限恢复只在首个模型输出之前压缩并重发一次。`CopilotContextWindowRecoveryChatClient` 在首次或第二次超限拒绝后的恢复决策处均检查调用方取消；取消已发生时保留取消语义，不再包装成“压缩后仍耗尽上下文”。未取消的第二次拒绝仍报告有界恢复耗尽，不增加重试次数。`CopilotContextWindowRecoveryCancellationTests` 通过正式取消、超时、预算和重试包装链覆盖流式与非流式路径，不要求 Provider 一定先返回取消异常。
+
+纯元数据或用量事件不关闭这次恢复机会；正文、推理或工具参数等实质进展仍立即关闭，不能重放已有输出或工具调用。被超限恢复丢弃的尝试若报告正式用量，仍计入请求预算和最终用量；同一尝试的重复表示只合并一次，不同尝试累加。首个实质输出前被超限拒绝且没有正式用量的请求不估算消耗，已有输出后的中断继续遵循原估算边界。`CopilotOpenAiAgentChatClientFactoryTests` 通过真实 Responses SDK 与受控 HTTP 核验一次恢复、出站历史缩短、已计费用量保留与未计费拒绝的预算；`CopilotContextWindowRecoveryCancellationTests` 还验证已结算拒绝后取消或再次超限的异常用量保留。
+
+供应商响应已经返回、或流式 `MoveNext` 已完成并取得带正式用量的终态时，随后观察到的取消仍保留取消语义，并只通过内部异常元数据携带已结算账单；不把该响应的正文、角色、工具或完成效果发给下游。预算与恢复链保留这笔正式用量，不将它替换为输入估算，也不因取消开始新请求。尚未取得响应、普通元数据或没有正式终态账单的流式取消继续遵循原估算边界。`CopilotContextWindowRecoveryCancellationTests` 以实际包装链覆盖恢复后流式／非流式 Stop 与 Length 响应的结算、取消及无重发边界。
 
 ## 多会话活动投影
 
@@ -174,23 +186,31 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 
 窗口始终保留最初用户目标和最近一轮，字符超限时优先删除完整的旧 `user -> assistant` 轮次，避免留下失去问题来源的孤立回复。无用户消息的异常历史只做有界截断，不会构造默认空目标。Chat 附件上下文占用一个独立槽位，并计入同一个自适应字符预算；`/context` 显示本轮实际解析出的条数、总字符和单条字符上限。
 
+裁剪 assistant 正文时，窗口先为末尾完整的固定终态说明预留同一权重预算，再截取正文；截断提示位于这些说明之前。只有开标签、正文中间的标签或 user／摘要 user 文本继续按普通正文处理，裁剪不从文本反推任务状态或授权。完整终态说明恰好占满预算时允许只保留说明；预算连说明都放不下时拒绝该次历史投影。Agent 的可见历史由原消息状态生成同一终态说明，同时继续使用用户消息的显示正文，不重放旧 `RequestContent` 中的附件。`CopilotConversationCompactionIntegrityTests` 覆盖真实 Chat／Agent 请求构造、首个 Agent prompt、标签对照和预算边界；本地完整消息与 UI 正文不被改写。
+
 该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口为其他上下文组成留出稳定余量，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。`CopilotAgentContextBuilder` 同时从实际 user-role 组装结果派生只读 provenance：以稳定的 source / form / trust 和保留项数、字符数区分历史 recall、用户目标与问题、配置 catalog、应用/附件/工具 snapshot、项目 instructions 和宿主回答约束；运行诊断只记录这些元数据，不记录正文、路径或凭据。该快照不持久、不参与恢复，也不成为会话或 prompt 的第二个 owner；Harness 指令仍由当前 Profile 和运行时单独提供。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code `/compact`](https://code.claude.com/docs/en/commands) 对长对话主动压缩的原则一致。
 
 ## 压缩摘要不能升级完成证据
+
+普通 Chat 与 Agent 使用已有摘要时，也从被摘要遮蔽的本地原消息状态生成历史终态说明，放在同一摘要 user 消息的模型摘要之前。这样旧摘要遗漏终态、或切换到更小模型窗口后裁剪摘要正文，仍可保留原回答中断与非完成 stop reason；引用标签不产生会话状态或授权，历史边界也不等于当前任务失败。说明计入同一文本预算，不新增历史消息、不改写原摘要或检查点格式。`CopilotConversationCompactionIntegrityTests` 覆盖合法旧摘要保存重开后的两条请求投影，以及源状态为空时摘要引用标签的对照。
 
 旧摘要可能遗漏早期回答中断或 `Paused` / `Blocked` 等结构化终态。再次压缩时，Planner 从旧边界以内的本地原消息提取缺失的精确 opening marker，作为独立宿主约束加入模型输入，避免要求模型猜测从未收到的终态。约束占用同一输入权重和消息槽位，空间不足则不开始压缩；它不计入被替换原文的权重或历史字符计数，不能放宽“新摘要必须缩短”的检查。原摘要不会被自动补写，模型返回值仍须通过终态完整性、收敛和源修订校验。`CopilotCompactionTerminalEvidenceRequestTests` 覆盖实际出站消息组合、两种预算边界、计数及无需补充约束的对照。
 
 主动 `/compact` 使用 `CopilotConversationCompactionPlanner` 选择最早的完整 `user -> assistant` 轮次，并保留最近一轮原文。`CopilotConversationCompactionTerminalEvidence` 从本地仍完整保存的原始 assistant 消息重新计算截至边界的回答中断与非完成 Agent stop reason，不依赖旧摘要是否正确转述；压缩提示要求每种 `<assistant_response_interrupted>` 和 `<agent_turn_incomplete stop_reason="...">` opening marker 至少原样保留一次。摘要完成后 `EnsurePreserved` 再做确定性校验，遗漏任何所需 marker 时拒绝写入 `conversation.Compaction`，因此模型生成的摘要不能把部分工作升级成完成证据；`EnsureSummaryShrinks` 还要求新摘要连同历史上下文标记的估算权重严格小于被替换消息，拒绝形式上成功但实际扩大上下文的结果。用户提供的聚焦要求仍会进入摘要请求，但终态完整性与收敛约束放在其后，不能被聚焦要求静默删除。该契约结合 [Codex `/compact` 保留关键细节](https://learn.chatgpt.com/docs/developer-commands?surface=cli#keep-transcripts-lean-with-compact)、[Claude Code compaction 的结构化摘要与自定义聚焦](https://code.claude.com/docs/en/sessions#manage-context-within-a-session)，以及 grok `PriorTurnInterrupt` 的结构化中断原因。
 
+摘要的单条历史预算及收敛检查包含宿主添加的前导说明和由源状态生成的历史终态说明，不只计算模型返回的正文。完整摘要消息超过预算时保留原历史与已报告的压缩用量，并拒绝应用结果，避免下一次历史窗口裁剪刚生成的摘要。`CopilotRequestAdmissionLifetimeTests` 通过实际压缩和下一次历史构造验证正文与旧前导说明放得下、加上历史终态说明后放不下的拒绝边界及完整消息恰好放得下的对照。
+
 ## 回答终态与模型可见的中断证据
 
 普通 Chat 对 OpenAI-compatible 与 Anthropic-compatible 的每个非空 SSE `data` 事件验证 JSON 语法（`[DONE]` 结束标记除外）。损坏的 JSON 立即形成不可自动重试的 `invalid_response_format`，保留已发布的正文和用量，不再跳过坏事件并靠后续结束标记宣称回答完整。HTTP 成功状态中的非流式 JSON 正文语法损坏也使用相同错误；诊断只保留固定说明与脱敏请求 ID，不包含原始载荷或解析器异常正文。合法的未知 JSON 事件、注释心跳、多行 `data` 仍兼容。`CopilotProviderPayloadErrorTests` 覆盖两类供应商的损坏事件、进展保留、无重放和协议扩展对照。
+
+Responses 的明确 `status=incomplete` 在普通 Chat 和标题／压缩辅助请求中也保持不完整终态；缺失或空的 `incomplete_details.reason`，以及与该状态冲突的成功原因，均不能把部分输出升级为完整回答。有效的长度限制等原因仍保留其分类，正文和已报告用量不被丢弃。`CopilotProviderPayloadErrorTests` 覆盖流式与非流式的这些组合；未提供明确终态的旧兼容接口继续遵循原有规则。
 
 `CopilotChatMessage.ModelContent` 为所有未完整结束的 assistant 轮次附加固定 `<assistant_response_interrupted>` 标记：流式截断、已有部分正文的 Chat/Agent 取消、无正文失败、暂停，以及排队轮次在调用模型和工具前取消都会形成模型可见的终结边界；显示正文、用户可见错误和 `ResponseInterruptionDetail` 不会作为该标记的一部分重新注入。这样下一次请求既能保留已完成工作，也不会把悬空用户消息当成仍待执行的授权或把未完成步骤当作成功；新尝试开始时会清除旧标记。Agent Framework 正常返回但 `AgentStopReason` 不是 `Completed` 时不伪装成传输中断，而是在 `ModelContent` 追加独立的 `<agent_turn_incomplete stop_reason="...">` 标记；`AwaitingUser`、`ApprovalDenied`、`BudgetExhausted`、`TaskPassLimit`、`Blocked`、`Paused`、`Cancelled`、`IncompleteOutput`、`ProviderFailure` 和 `Interrupted` 都保留结构化枚举值，UI、正文与 `/copy` 语义不变。只有 `IsResponseContentTruncated` 代表真实回答正文不完整，即使 Agent stop reason 为 `Completed` 也会转入回答中断边界。Agent 主循环统一复用 Chat 的 Provider 终态分类：`Length` 可执行一次禁用业务工具的有界收尾，只有收尾完整时才用新正文替换原部分回答；`ContentFilter` 不自动重试，避免把策略停止当成可绕过的瞬时错误；`ToolCalls` 或未知的明确终态可进入同一有界收尾，但不能直接证明完成。最终仍为长度上限、内容过滤、工具请求或未知终态的主循环或收尾结果会保留允许正文并落为专用 Provider blocker，不再进入窄证据改写或来源附录。缺失终态继续按 Framework 的兼容语义处理，不把旧 Provider 的自然结束误判为失败。`CopilotHostedTurnCompletion.PrepareTerminalEvidence` 在持续目标评估前关闭缺失终态的工具 trace 并提交该截断标记；`CopilotGoalContinuationPolicy` 将 `Completed` 加回答中断解析为不完整输出，跳过独立完成评估并暂停目标，同时保留原始 Agent stop reason 供任务审计。该组合还进入已有的 `Finalize` 恢复通道：`CopilotAgentRecoveryRequest` 只有在 stop reason 为 `Completed` 且携带可信的上一回答中断状态时才接受该形态，运行时继续复用禁用全部工具的 final-answer-only 路径；只有带可显示正文且 Provider 未报告明确的非成功终态才退休旧 checkpoint。若收到空输出或明确的非成功终态，允许返回的部分正文会保留，写入对应 Provider blocker，并以 `IncompleteOutput` 刷新 checkpoint，供下一次继续使用“重试最终回答”；`CopilotAgentTaskIndex` 将它显示为“等待最终回答”，而不是把任务重新排入执行。
 
 主工具循环、禁用工具的最终回答和委派收尾使用统一的输出格式指令：保留用户指定字段名、大小写、类型和单位；输出字段名不要求在源文件中原样存在。用户要求的翻译、字段映射、计算或单位换算在依据明确时用于生成回答，不等于修改源文件；源码引用仍保留标识符原拼写。不为寻找输出键名而扫描无关文件，也不把未知状态强行转成 false 等确定值。明确要求仅 JSON 时不生成代码围栏或周边说明。这是对模型的指令约束，不是 Provider JSON Schema 强制验证；执行证据和失败状态仍独立判定，不能因为 JSON 可解析就认定任务已完成。
 
-禁用工具的有界补回答与显式“重试最终回答”同样保留供应商失败原因：HTTP 拒绝、过载或传输错误以 `ProviderFailure` 和具体 Provider blocker 保存，不改成“模型没有返回正文”；上下文超限保留 `provider_context_window`。已有部分回答在补回答失败时不被覆盖，先前的长度终态也不能覆盖后来发生的接口错误。供应商自行抛出的超时取消与用户取消分开处理：调用方未取消时仍按有界重试和供应商失败收尾，用户取消、暂停和总时间预算保留原有语义。失败重试只刷新结果和 journal，不解除旧可执行会话的未知写入或未配对工具调用限制；只有成功取得完整最终回答才退休旧 checkpoint。`CopilotFinalAnswerRecoverySafetyTests` 覆盖连续失败、保存重开、随后成功及零工具执行，`CopilotAnthropicHttpFailureTests` 和 `CopilotOpenAiProviderRetryTests` 使用正式 SDK 核验补回答的 HTTP 请求数、错误原因和出站请求不携带工具。
+禁用工具的有界补回答与显式“重试最终回答”同样保留供应商失败原因：HTTP 拒绝、过载或传输错误以 `ProviderFailure` 和具体 Provider blocker 保存，不改成“模型没有返回正文”；上下文超限保留 `provider_context_window`。上下文压缩后仍被拒绝时，两次尝试已报告的官方用量继续计入预算与最终结果，不因恢复耗尽丢失，也不从旧 checkpoint 继承账单。已有部分回答在补回答失败时不被覆盖，先前的长度终态也不能覆盖后来发生的接口错误。供应商自行抛出的超时取消与用户取消分开处理：调用方未取消时仍按有界重试和供应商失败收尾，用户取消、暂停和总时间预算保留原有语义。失败重试只刷新结果和 journal，不解除旧可执行会话的未知写入或未配对工具调用限制；只有成功取得完整最终回答才退休旧 checkpoint。`CopilotFinalAnswerRecoverySafetyTests` 覆盖连续失败、上下文恢复耗尽后的用量保留、保存重开、随后成功及零工具执行，`CopilotAnthropicHttpFailureTests` 和 `CopilotOpenAiProviderRetryTests` 使用正式 SDK 核验补回答的 HTTP 请求数、错误原因和出站请求不携带工具。
 
 ## 业务评测
 
@@ -251,7 +271,11 @@ pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 
 异常、取消或暂停收尾使用当前 Assistant 已经接收的 Provider usage，保留输入、输出和缓存用量。没有已报告用量时清除该轮与 `conversation.LastUsage`，不继承上一轮数据，也不从 Agent 的估算预算推算账单。`CopilotHostedTurnUsageTests` 经真实 ViewModel 的请求调度、用量事件和失败／取消路径验证这一边界。
 
+Agent 的已结算响应用量在处理同一更新的取消信号前记录；取消仍阻止后续正文、工具和审批处理，不撤回已经报告的消耗。`CopilotFinalAnswerCancellationTests` 经正式运行链验证上下文拒绝与受控取消同时发生时，预算、运行结果和 Turn 终态都保留同一输入、输出与缓存用量；只取消集成调用方令牌仍沿原规则传播取消异常。
+
 `CopilotHostedTurnCompletion` 保存真实 Provider 返回用量与独立的回答终态，不能因回答被标为中断就抹去已报告的消耗，也不能从 Agent 的估算预算制造 Provider 账单。`CopilotConversationUsageDiagnostics.Capture` 聚合已结束回答的 `ReportedUsage`，并单独加入 `CompactionUsage` 和 `TitleGenerationUsage`；活动、已跟踪、未报告和中断回答分别计数。Agent 时延、工具调用、委派与重试指标来自本地任务快照，不是同一口径的账户用量。
+
+自动标题生成失败或取消时，Provider 已报告的输入、输出和缓存用量仍计入来源会话；一次生成过程内的重试用量累加后只结算一次，未报告时不估算。失败不覆盖原标题；生成被替换或用户已经命名也不丢弃已知用量。已删除的会话或已释放的 ViewModel 不接收迟到结果。
 
 `/usage session` 还可显示当前 Profile 最近一次可识别的 Provider 响应头限额快照；它可能过期，不是套餐余额，也不会为显示报告请求账户 API。`daily|weekly|cumulative` 由 `CopilotConversationStatistics` 按本机日期汇总最近7天、最近30天或全部历史的消息活动；当前实现逐消息累计，与 session 额外加入的压缩/标题调用不是完全相同的口径，不能假定两种视图总量必然相等。
 

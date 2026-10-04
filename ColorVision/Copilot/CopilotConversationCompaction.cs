@@ -59,16 +59,18 @@ namespace ColorVision.Copilot
             var history = new List<CopilotRequestMessage>();
             var compaction = conversation.Compaction;
             if (hasCompactionSummary && compaction != null)
-                history.Add(CreateSummaryMessage(compaction));
+            {
+                var terminalEvidence = CopilotConversationCompactionTerminalEvidence.Capture(
+                    conversation.Messages.Take(startIndex));
+                history.Add(CreateSummaryMessage(compaction, terminalEvidence));
+            }
 
             for (var index = startIndex;
                 index < endIndex;
                 index++)
             {
                 var message = conversation.Messages[index];
-                var content = useModelContent
-                    ? message.ModelContent
-                    : message.IsContentDisplayOnly ? string.Empty : message.Content;
+                var content = message.GetHistoryContent(useRequestContent: useModelContent);
                 if (string.IsNullOrWhiteSpace(content))
                     continue;
 
@@ -117,10 +119,19 @@ namespace ColorVision.Copilot
                 endIndex);
         }
 
-        internal static CopilotRequestMessage CreateSummaryMessage(CopilotConversationCompaction compaction)
+        internal static CopilotRequestMessage CreateSummaryMessage(
+            CopilotConversationCompaction compaction,
+            CopilotConversationCompactionTerminalEvidence? terminalEvidence = null)
         {
             ArgumentNullException.ThrowIfNull(compaction);
-            return new CopilotRequestMessage("user", SummaryPreamble + compaction.Summary);
+            return new CopilotRequestMessage("user", BuildSummaryContent(compaction.Summary, terminalEvidence));
+        }
+
+        private static string BuildSummaryContent(string summary, CopilotConversationCompactionTerminalEvidence? terminalEvidence)
+        {
+            var historicalContext = terminalEvidence?.BuildHistoricalContext() ?? string.Empty;
+            return historicalContext.Length == 0 ? SummaryPreamble + summary
+                : historicalContext + "\n\n" + SummaryPreamble + summary;
         }
 
         private static (int BoundaryIndex, int EndIndexExclusive) ResolveHistoryBounds(
@@ -144,19 +155,23 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(conversation);
             var compaction = conversation.Compaction;
-            if (compaction?.IsStructurallyValid() != true
-                || FindMessageIndex(conversation, compaction.ThroughMessageId) < 0)
-            {
+            if (compaction?.IsStructurallyValid() != true)
                 return 0;
-            }
 
-            return CopilotTokenEstimator.EstimateTextWeight(CreateSummaryMessage(compaction).Content);
+            var boundaryIndex = FindMessageIndex(conversation, compaction.ThroughMessageId);
+            if (boundaryIndex < 0)
+                return 0;
+            var terminalEvidence = CopilotConversationCompactionTerminalEvidence.Capture(
+                conversation.Messages.Take(boundaryIndex + 1));
+            return CopilotTokenEstimator.EstimateTextWeight(CreateSummaryMessage(compaction, terminalEvidence).Content);
         }
 
-        internal static long EstimateSummaryWeight(string summary)
+        internal static long EstimateSummaryWeight(
+            string summary,
+            CopilotConversationCompactionTerminalEvidence? terminalEvidence = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(summary);
-            return CopilotTokenEstimator.EstimateTextWeight(SummaryPreamble + summary.Trim());
+            return CopilotTokenEstimator.EstimateTextWeight(BuildSummaryContent(summary.Trim(), terminalEvidence));
         }
 
         public static int CountMessagesAfterBoundary(CopilotConversationRecord conversation)

@@ -74,6 +74,10 @@ namespace ColorVision.Copilot
                     var approvalRequests = new List<ToolApprovalRequestContent>();
                     await foreach (var update in agent.RunStreamingAsync(messages, session, null, agentLoopCancellationToken))
                     {
+                        // Settled provider billing remains valid when cancellation arrives
+                        // with the response; further response effects still stop below.
+                        foreach (var usageContent in update.Contents.OfType<UsageContent>())
+                            usage = usage.Add(ToCopilotUsage(usageContent.Details));
                         agentLoopCancellationToken.ThrowIfCancellationRequested();
                         if (frameworkApprovalAwaitingProviderUpdate)
                         {
@@ -102,8 +106,6 @@ namespace ColorVision.Copilot
                                 $"The provider produced its first update; {deferredBackgroundSignalMessages.Count} delayed background signal(s) are now marked delivered and will not be replayed."));
                         }
 
-                        foreach (var usageContent in update.Contents.OfType<UsageContent>())
-                            usage = usage.Add(ToCopilotUsage(usageContent.Details));
                         if (update.FinishReason.HasValue)
                             providerFinishReason = update.FinishReason;
 

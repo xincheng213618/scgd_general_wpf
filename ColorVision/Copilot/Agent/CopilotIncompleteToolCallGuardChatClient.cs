@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,7 +31,8 @@ namespace ColorVision.Copilot
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            var response = await base.GetResponseAsync(messages, options, cancellationToken);
+            var response = await base.GetResponseAsync(
+                PrepareRequestMessages(messages), options, cancellationToken);
             SuppressIncompleteCalls(
                 response.Messages.SelectMany(message => message.Contents),
                 response.FinishReason);
@@ -45,28 +47,68 @@ namespace ColorVision.Copilot
             List<ChatResponseUpdate>? bufferedUpdates = null;
             var providerHandledCallIds = new HashSet<string>(StringComparer.Ordinal);
             ChatFinishReason? finishReason = null;
-            await foreach (var update in base.GetStreamingResponseAsync(messages, options, cancellationToken))
+            var enumerator = base.GetStreamingResponseAsync(
+                PrepareRequestMessages(messages), options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            ExceptionDispatchInfo? streamFailure = null;
+            try
             {
-                foreach (var result in update.Contents.OfType<FunctionResultContent>())
+                while (true)
                 {
-                    if (!string.IsNullOrWhiteSpace(result.CallId))
-                        providerHandledCallIds.Add(result.CallId.Trim());
-                }
-                if (update.FinishReason.HasValue)
-                    finishReason = update.FinishReason;
+                    var hasNext = false;
+                    try
+                    {
+                        hasNext = await enumerator.MoveNextAsync();
+                    }
+                    catch (Exception exception)
+                    {
+                        streamFailure = ExceptionDispatchInfo.Capture(exception);
+                    }
+                    if (streamFailure != null)
+                    {
+                        // Tools and partial buffered content remain withheld on failure, but
+                        // their attempt's billing must still reach the outer run exactly once.
+                        var usageUpdate = CopilotProviderRetryChatClient.CreateUsageUpdate(
+                            CopilotTokenBudgetChatClient.ExtractUsage(
+                                bufferedUpdates?.SelectMany(update => update.Contents)));
+                        if (usageUpdate != null)
+                            yield return usageUpdate;
+                        streamFailure.Throw();
+                    }
+                    if (!hasNext)
+                        break;
+                    var update = enumerator.Current;
+                    foreach (var result in update.Contents.OfType<FunctionResultContent>())
+                    {
+                        if (!string.IsNullOrWhiteSpace(result.CallId))
+                            providerHandledCallIds.Add(result.CallId.Trim());
+                    }
+                    if (update.FinishReason.HasValue)
+                        finishReason = update.FinishReason;
 
-                if (bufferedUpdates != null)
-                {
-                    bufferedUpdates.Add(update);
-                    continue;
-                }
-                if (update.Contents.OfType<FunctionCallContent>().Any(call => !call.InformationalOnly))
-                {
-                    bufferedUpdates = [update];
-                    continue;
-                }
+                    if (bufferedUpdates != null)
+                    {
+                        bufferedUpdates.Add(update);
+                        continue;
+                    }
+                    if (update.Contents.OfType<FunctionCallContent>().Any(call => !call.InformationalOnly))
+                    {
+                        bufferedUpdates = [update];
+                        continue;
+                    }
 
-                yield return update;
+                    yield return update;
+                }
+            }
+            finally
+            {
+                try
+                {
+                    await enumerator.DisposeAsync();
+                }
+                catch when (streamFailure != null)
+                {
+                    // Preserve the provider failure rather than a secondary cleanup error.
+                }
             }
 
             if (bufferedUpdates == null)
@@ -78,6 +120,46 @@ namespace ColorVision.Copilot
                 providerHandledCallIds);
             foreach (var update in bufferedUpdates)
                 yield return update;
+        }
+
+        private static IReadOnlyList<ChatMessage> PrepareRequestMessages(IEnumerable<ChatMessage> messages)
+        {
+            var preparedMessages = messages.ToList();
+            var resultCallIds = preparedMessages
+                .SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>()
+                .Where(result => !string.IsNullOrWhiteSpace(result.CallId))
+                .Select(result => result.CallId.Trim())
+                .ToHashSet(StringComparer.Ordinal);
+
+            bool IsSuppressedOrphan(AIContent content) =>
+                content is FunctionCallContent { InformationalOnly: true } call
+                && !resultCallIds.Contains((call.CallId ?? string.Empty).Trim());
+
+            // Informational evidence survives in AgentSession, including older checkpoints.
+            // Ordinary function-call history still needs a paired result on the provider wire.
+            // Native ToolCallContent and calls with results remain available for provider replay.
+            for (var index = preparedMessages.Count - 1; index >= 0; index--)
+            {
+                var message = preparedMessages[index];
+                if (!message.Contents.Any(IsSuppressedOrphan))
+                    continue;
+
+                var contents = message.Contents.Where(content => !IsSuppressedOrphan(content)).ToList();
+                if (contents.Count == 0)
+                {
+                    preparedMessages.RemoveAt(index);
+                    continue;
+                }
+
+                var preparedMessage = message.Clone();
+                preparedMessage.Contents = contents;
+                // SDK adapters may prefer a raw message over its portable contents.
+                preparedMessage.RawRepresentation = null;
+                preparedMessages[index] = preparedMessage;
+            }
+
+            return preparedMessages;
         }
 
         private void SuppressIncompleteCalls(

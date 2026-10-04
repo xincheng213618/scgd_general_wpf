@@ -49,12 +49,14 @@ namespace ColorVision.Copilot
             string message,
             string errorCode,
             bool isTransient,
-            string requestId)
+            string requestId,
+            CopilotTokenUsage reportedUsage = default)
             : base(message)
         {
             ErrorCode = errorCode ?? string.Empty;
             IsTransient = isTransient;
             RequestId = CopilotProviderRequestId.Normalize(requestId);
+            ReportedUsage = reportedUsage;
             CopilotProviderRequestId.Preserve(this, RequestId);
         }
 
@@ -63,6 +65,8 @@ namespace ColorVision.Copilot
         public bool IsTransient { get; }
 
         public string RequestId { get; }
+
+        public CopilotTokenUsage ReportedUsage { get; }
     }
 
     public sealed partial class CopilotChatService

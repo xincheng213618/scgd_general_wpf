@@ -18,7 +18,11 @@ namespace ColorVision.Copilot
     // One owner, one stdout reader. No shell, listening port, credential copying, or global config writes.
     internal sealed class CopilotCodexAppServer : ICopilotCodexAppServer
     {
+        internal const int MaximumProtocolMessageCharacters = 16 * 1024 * 1024;
         private readonly Process _process;
+        private readonly StreamWriter _stdinWriter;
+        private readonly CopilotBoundedTextLineReader _stdoutReader;
+        private readonly StreamReader _stderrReader;
         private readonly Queue<JsonObject> _notifications = new();
         private int _nextId;
         private bool _disposed;
@@ -53,12 +57,20 @@ namespace ColorVision.Copilot
             try
             {
                 _process.Start();
-                _process.StandardInput.AutoFlush = true;
+                _stdinWriter = _process.StandardInput;
+                _stdinWriter.AutoFlush = true;
+                _stdoutReader = new CopilotBoundedTextLineReader(
+                    _process.StandardOutput, MaximumProtocolMessageCharacters, "Codex protocol");
                 // Drain stderr without retaining configuration, account details or other sensitive output.
-                _process.ErrorDataReceived += (_, _) => { };
-                _process.BeginErrorReadLine();
+                _stderrReader = _process.StandardError;
+                CopilotCancellationBoundary.ObserveLateFault(DrainStandardErrorAsync(_stderrReader.BaseStream));
             }
-            catch { _process.Dispose(); throw; }
+            catch
+            {
+                try { Dispose(); }
+                catch { }
+                throw;
+            }
         }
 
         internal static readonly string[] IsolationSettings =
@@ -127,7 +139,7 @@ namespace ColorVision.Copilot
             await SendAsync(new { id, method, @params = parameters }, cancellationToken).ConfigureAwait(false);
             while (true)
             {
-                var message = await ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                var message = await ReadProtocolMessageAsync(_stdoutReader, cancellationToken).ConfigureAwait(false);
                 if (message["method"] == null && message["id"]?.ToString() == id.ToString(System.Globalization.CultureInfo.InvariantCulture))
                 {
                     if (message["error"] != null)
@@ -139,19 +151,63 @@ namespace ColorVision.Copilot
         }
 
         internal Task SendAsync(object message, CancellationToken cancellationToken) =>
-            _process.StandardInput.WriteLineAsync(System.Text.Json.JsonSerializer.Serialize(message).AsMemory(), cancellationToken);
+            _stdinWriter.WriteLineAsync(System.Text.Json.JsonSerializer.Serialize(message).AsMemory(), cancellationToken);
 
         public Task<JsonObject> ReadAsync(CancellationToken cancellationToken) =>
-            _notifications.TryDequeue(out var message) ? Task.FromResult(message) : ReadLineAsync(cancellationToken);
+            _notifications.TryDequeue(out var message) ? Task.FromResult(message) : ReadProtocolMessageAsync(_stdoutReader, cancellationToken);
 
-        private async Task<JsonObject> ReadLineAsync(CancellationToken cancellationToken)
+        internal static async Task<JsonObject> ReadProtocolMessageAsync(
+            CopilotBoundedTextLineReader reader,
+            CancellationToken cancellationToken)
         {
-            var line = await _process.StandardOutput.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            string? line;
+            try
+            {
+                line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (InvalidOperationException exception)
+            {
+                throw new InvalidOperationException("Codex 返回了无效或过大的协议消息。", exception);
+            }
             if (line == null)
                 throw new IOException("本机 Codex 已退出，连接中断。请重新检测或检查 Codex 是否可正常使用。");
-            if (line.Length > 16 * 1024 * 1024 || JsonNode.Parse(line) is not JsonObject message)
+            if (JsonNode.Parse(line) is not JsonObject message)
                 throw new InvalidOperationException("Codex 返回了无效或过大的协议消息。");
             return message;
+        }
+
+        internal static async Task DrainStandardErrorAsync(Stream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            var buffer = new byte[4096];
+            try
+            {
+                while (await stream.ReadAsync(buffer.AsMemory()).ConfigureAwait(false) != 0)
+                {
+                }
+            }
+            catch (Exception exception) when (exception is IOException or ObjectDisposedException or OperationCanceledException)
+            {
+            }
+        }
+
+        internal static void StopOwnedProcess(Process process, TextWriter? standardInput)
+        {
+            try
+            {
+                standardInput?.Close();
+            }
+            catch (InvalidOperationException) { }
+            catch (IOException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            try
+            {
+                if (!process.WaitForExit(500)) process.Kill(entireProcessTree: true);
+            }
+            catch (InvalidOperationException) { }
+            catch (IOException) { }
+            catch (System.ComponentModel.Win32Exception) { }
         }
 
         public void Dispose()
@@ -160,13 +216,17 @@ namespace ColorVision.Copilot
             _disposed = true;
             try
             {
-                _process.StandardInput.Close();
-                if (!_process.WaitForExit(500)) _process.Kill(entireProcessTree: true);
+                StopOwnedProcess(_process, _stdinWriter);
             }
-            catch (InvalidOperationException) { }
-            catch (IOException) { }
-            catch (System.ComponentModel.Win32Exception) { }
-            finally { _process.Dispose(); }
+            finally
+            {
+                try { _stdoutReader?.Dispose(); }
+                finally
+                {
+                    try { _stderrReader?.Dispose(); }
+                    finally { _process.Dispose(); }
+                }
+            }
         }
     }
 }

@@ -385,6 +385,17 @@ namespace ColorVision.Copilot
             return changed;
         }
 
+        public bool SuppressRestartDispatchForConversation(string conversationId)
+        {
+            var changed = false;
+            foreach (var run in _taskHost.QueuedRuns)
+            {
+                if (string.Equals(run.ConversationId, conversationId, StringComparison.Ordinal))
+                    changed |= MarkRecoveryDispatching(run.Id);
+            }
+            return changed;
+        }
+
         public bool PreserveForRestart()
         {
             var knownRunIds = _state.QueuedFollowUpRecoveries

@@ -48,6 +48,12 @@ namespace ColorVision.Copilot
         public static bool IsTransientPayload(string? code, string? type)
             => !IsPermanent(code) && !IsPermanent(type) && (IsTransient(code) || IsTransient(type));
 
+        public static void PreservePayloadError(Exception exception, string code, string type)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            exception.Data[ErrorDataKey] = new ErrorCode(code, type);
+        }
+
         internal static ErrorCode FindHttpError(Exception exception)
         {
             for (var current = exception; current != null; current = current.InnerException)
