@@ -86,6 +86,31 @@ namespace ColorVision.Copilot
                 onEvent,
                 cancellationToken);
 
+        private async Task<CopilotImageUnderstandingResult> AnalyzeImagesForTurnAsync(
+            CopilotTurnRequest request,
+            CopilotTurnEventSink eventSink,
+            CancellationToken cancellationToken)
+        {
+            CopilotImageUnderstandingResult result;
+            try
+            {
+                result = await _imageUnderstandingService.AnalyzeAsync(
+                    request.Profile,
+                    request.UserText,
+                    request.HostContext.Attachments,
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                eventSink.OnTokenUsageUpdated(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception));
+                throw;
+            }
+
+            // Image analysis may already be billed when another preparation task fails or is cancelled.
+            eventSink.OnTokenUsageUpdated(result.Usage);
+            return result;
+        }
+
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
             CopilotTurnEventSink eventSink,
@@ -104,10 +129,9 @@ namespace ColorVision.Copilot
                     cancellationToken)
                 : Task.FromResult(requestContent);
             var imageUnderstandingTask = rebuildRequestContext
-                ? _imageUnderstandingService.AnalyzeAsync(
-                    request.Profile,
-                    prompt,
-                    request.HostContext.Attachments,
+                ? AnalyzeImagesForTurnAsync(
+                    request,
+                    eventSink,
                     cancellationToken)
                 : Task.FromResult(CopilotImageUnderstandingResult.Empty);
             var attachmentContextTask = captureAttachmentContext
@@ -131,7 +155,6 @@ namespace ColorVision.Copilot
             }
 
             eventSink.OnRequestPrepared(new CopilotPreparedTurnRequest(requestContent, attachmentContextCaptured));
-            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
             var history = await CopilotConversationRequestBuilder.BuildChatHistoryAsync(
                 request.HostContext.ConversationHistory,
                 requestContent,
@@ -172,10 +195,9 @@ namespace ColorVision.Copilot
                 recoveryTaskContext.EffectiveUserText,
                 request.Mode,
                 request.HostContext);
-            var imageUnderstandingTask = _imageUnderstandingService.AnalyzeAsync(
-                request.Profile,
-                request.UserText,
-                request.HostContext.Attachments,
+            var imageUnderstandingTask = AnalyzeImagesForTurnAsync(
+                request,
+                eventSink,
                 cancellationToken);
             var contextItemsTask = _contextRegistry.CaptureAsync(
                 requestPlan.ContextRequest,
@@ -216,7 +238,6 @@ namespace ColorVision.Copilot
                 : null;
             if (reviewTarget != null)
                 eventSink.OnReviewEntered(reviewTarget);
-            eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage);
 
             CopilotTurnAnswerLifecycleState? reviewAnswer = reviewTarget != null
                 ? CopilotTurnAnswerLifecycleState.Empty

@@ -36,6 +36,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 图片入库与像素分析共用 `CopilotImagePayloadLoader` / `CopilotImageInputBudget`：除文件签名、尺寸和字节预算外，还要求 Skia 首帧像素解码返回 `Success`。截断或损坏的像素数据在整个附件批次写入前拒绝，也不能到达分析 Provider；缩放不能把部分解码结果重新编码成看似有效的图片。未缩放且成功解码的图片保留原字节，GIF 仍保留原动画数据；这不是逐帧或严格文件尾校验，像素已完整解码的 PNG 即使缺少 IEND 仍可接受。`CopilotImagePayloadValidationTests` 覆盖小图、大图缩放、混合批次和受控 Provider 请求，不修改用户源文件。
 
+图片分析失败、取消或未返回可用正文时，Provider 已报告的图片分析用量仍计入本轮 assistant 消息与原会话。并行上下文准备被取消时，同样保留已成功分析的用量；图片分析与主回答按独立调用各计一次，未报告用量时不估算账单。`CopilotChatViewModelProfileIsolationTests` 通过真实发送入口、Runtime、有效托管图片与受控 HTTP 验证这些边界，不代表真实供应商调用验收。
+
 `/mention [查询]` 和 `+` 菜单只打开当前光标位置的 `@` 查询，不自行选择对象、建立附件或提交请求。查询限定单行、最多80字符；候选最多12项，文件索引最多5,000项并跳过依赖/构建目录，同一未闭合 mention 复用结果，新 mention 重新取样。异步结果由会话键、版本和取消状态约束；索引中 Enter/Tab 都被引用层消费；索引结束且无候选时 Tab 仍被消费，但 Enter 会继续进入正常提交链，不能保证未闭合的查询文本不会发送。
 
 关联查询只读取 `@` 到当前光标的范围，后面的正文、换行或另一个引用不属于查询。补全文件、上下文或 Skill 时只替换该范围，保留后文，并把光标停在补全内容之后；键盘和候选按钮使用同一交接。移动光标或选择文本会刷新候选并使旧异步结果失效；光标进入已闭合的 `@[标题]` 不重新打开该引用。光标位置只关联当前 Composer 版本，不复制草稿；菜单插入、`/mention` 和完成动作通过原子文本与光标通知避免绑定中间状态覆盖目标位置。`CopilotComposerMentionCaretTests` 覆盖真实 WPF 文本绑定、菜单、按键和按钮调用，`CopilotComposerMentionRangeTests` 覆盖解析及后文保留边界。

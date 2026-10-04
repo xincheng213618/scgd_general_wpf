@@ -266,7 +266,11 @@ namespace ColorVision.Copilot
                 cancellationToken).ConfigureAwait(false);
             var analysis = NormalizeAnalysis(reply.Content);
             if (analysis.Length == 0)
-                throw new InvalidOperationException("模型没有返回可用的图片解析结果。");
+            {
+                var exception = new InvalidOperationException("模型没有返回可用的图片解析结果。");
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception, reply.Usage);
+                throw exception;
+            }
 
             var context = string.Join(Environment.NewLine,
             [

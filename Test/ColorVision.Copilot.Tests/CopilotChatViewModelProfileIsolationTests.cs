@@ -135,6 +135,179 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat, "reported-payload-failure")]
+    [InlineData(CopilotAgentMode.Auto, "reported-payload-failure")]
+    [InlineData(CopilotAgentMode.Chat, "unreported-payload-failure")]
+    [InlineData(CopilotAgentMode.Chat, "reasoning-only-analysis")]
+    [InlineData(CopilotAgentMode.Chat, "billed-backoff-cancel")]
+    [InlineData(CopilotAgentMode.Chat, "image-success-main-success")]
+    [InlineData(CopilotAgentMode.Auto, "image-success-context-cancel")]
+    public async Task ImageAnalysisUsageSurvivesHostedFailureAndCancellationWithoutDoubleBilling(
+        CopilotAgentMode mode, string scenario)
+    {
+        var root = Directory.CreateTempSubdirectory("CopilotImageUsage-").FullName;
+        var attachmentRoot = Path.Combine(root, "managed");
+        var sourcePath = Path.Combine(root, "source.png");
+        await File.WriteAllBytesAsync(sourcePath, Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+        var profile = CreateProfile("image-usage-profile", "Image usage", "image-usage-model");
+        var reasoningOnly = scenario == "reasoning-only-analysis";
+        profile.BaseUrl = reasoningOnly ? "https://unit.test/v1/chat/completions" : "https://unit.test/v1/responses";
+        profile.SupportsImageInput = true;
+        Assert.Equal(!reasoningOnly, CopilotOpenAiRequestPolicy.UsesResponsesApi(profile));
+        var config = CreateConfig(profile, "image-usage-test-token");
+        var conversation = CreateConversation(profile, "image-usage-conversation", "Describe the attached image.");
+        conversation.DraftRequestMode = mode;
+        conversation.SetCustomTitle("Image analysis billing");
+        conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(sourcePath, "Image evidence"));
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id, Conversations = [conversation],
+        };
+        var cancelDuringContextCapture = scenario == "image-success-context-cancel";
+        var cancelled = scenario is "billed-backoff-cancel" or "image-success-context-cancel";
+        var succeeds = scenario == "image-success-main-success";
+        var imageResponse = JObject.Parse("""
+            {"id":"resp_image_usage","object":"response","status":"failed","output":[],
+             "error":{"code":"insufficient_quota","type":"insufficient_quota","message":"Controlled image analysis failure."},
+             "usage":{"input_tokens":12,"output_tokens":8,"total_tokens":20,"input_tokens_details":{"cached_tokens":3}}}
+            """);
+        if (scenario == "unreported-payload-failure")
+            imageResponse.Remove("usage");
+        if (scenario == "billed-backoff-cancel")
+        {
+            imageResponse["error"]!["code"] = "server_error";
+            imageResponse["error"]!["type"] = "server_error";
+        }
+        if (succeeds || cancelDuringContextCapture)
+        {
+            imageResponse["status"] = "completed";
+            imageResponse.Remove("error");
+            imageResponse["output"] = JArray.Parse("""
+                [{"type":"message","role":"assistant","content":[{"type":"output_text","text":"The image contains one visible pixel."}]}]
+                """);
+        }
+        var imageBody = reasoningOnly ? """
+            {"choices":[{"message":{"role":"assistant","reasoning_content":"Only private visual reasoning."},"finish_reason":"stop"}],
+             "usage":{"prompt_tokens":12,"completion_tokens":8,"total_tokens":20,"prompt_tokens_details":{"cached_tokens":3}}}
+            """ : imageResponse.ToString(Newtonsoft.Json.Formatting.None);
+        const string MainResponse = """
+            {"id":"resp_main_usage","object":"response","status":"completed",
+             "output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"The completed image answer."}]}],
+             "usage":{"input_tokens":20,"output_tokens":10,"total_tokens":30,"input_tokens_details":{"cached_tokens":5}}}
+            """;
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var contextProvider = cancelDuringContextCapture
+            ? new ImageUsageContextProvider(new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)) : null;
+        using var contextRegistration = contextProvider == null ? null : CopilotAgentExtensionRegistry.Shared.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.image-usage." + Guid.NewGuid().ToString("N"),
+                SourceName = "Image usage cancellation context",
+                ContextProviders = [contextProvider],
+            });
+        var imageResponseDisposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new ImageUsageHandler(succeeds ? [imageBody, MainResponse] : [imageBody],
+            cancelDuringContextCapture ? imageResponseDisposed : null);
+        using var client = new HttpClient(handler);
+        var taskHost = new CopilotAgentTaskHost();
+        var service = scenario == "billed-backoff-cancel"
+            ? new CopilotChatService(client, 3, _ => TimeSpan.Zero, (_, token) =>
+            {
+                var active = Assert.IsType<CopilotHostedAgentRun>(taskHost.ActiveRun);
+                Assert.Equal(conversation.Id, active.ConversationId);
+                Assert.True(taskHost.RequestCancel(active.Id));
+                return token.IsCancellationRequested ? Task.FromCanceled(token) : Task.Delay(Timeout.InfiniteTimeSpan, token);
+            })
+            : new CopilotChatService(client);
+        var viewModel = new CopilotChatViewModel(service, new InMemoryStateStore(state, attachmentRoot),
+            config, new CopilotTurnRuntime(service), taskHost);
+        var started = new TaskCompletionSource<CopilotHostedAgentRun>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<CopilotAgentTaskHostChangedEventArgs> observeRun = (_, args) =>
+        {
+            if (args.Run.ConversationId != conversation.Id)
+                return;
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Started)
+                started.TrySetResult(args.Run);
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Completed)
+                completed.TrySetResult();
+        };
+        taskHost.Changed += observeRun;
+        CopilotHostedAgentRun? hostedRun = null;
+        try
+        {
+            Assert.True(viewModel.SelectedProfile!.SupportsImageInput);
+            Assert.True(viewModel.SendCommand.CanExecute(null));
+            viewModel.SendCommand.Execute(null);
+            hostedRun = await started.Task.WaitAsync(TestTimeout);
+            Assert.Equal(mode, hostedRun.Mode);
+            if (cancelDuringContextCapture)
+            {
+                await contextProvider!.Entered.Task.WaitAsync(TestTimeout);
+                await imageResponseDisposed.Task.WaitAsync(TestTimeout);
+                Assert.Single(handler.Requests);
+                Assert.True(taskHost.RequestCancel(hostedRun.Id));
+            }
+            if (cancelled)
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => hostedRun.Completion.WaitAsync(TestTimeout));
+            else
+                await hostedRun.Completion.WaitAsync(TestTimeout);
+            await completed.Task.WaitAsync(TestTimeout);
+
+            var user = Assert.Single(conversation.Messages, message => message.IsUser);
+            var assistant = Assert.Single(conversation.Messages, message => message.Role == CopilotChatRole.Assistant);
+            Assert.Equal(attachmentRoot, Path.GetDirectoryName(Assert.Single(user.Attachments).Value));
+            Assert.False(assistant.IsThinkingInProgress);
+            Assert.Null(taskHost.ActiveRun);
+            var requests = handler.Requests.ToArray();
+            Assert.Equal(succeeds ? 2 : 1, requests.Length);
+            Assert.Contains(reasoningOnly ? "image_url" : "input_image", requests[0].Body, StringComparison.Ordinal);
+            Assert.Equal(reasoningOnly ? "/v1/chat/completions" : "/v1/responses", requests[0].Path);
+            Assert.Equal(!succeeds, assistant.WasResponseInterrupted);
+            Assert.Equal(cancelled, hostedRun.CancellationToken.IsCancellationRequested);
+            if (reasoningOnly)
+                Assert.Contains("模型没有返回可用的图片解析结果", assistant.ResponseInterruptionDetail, StringComparison.Ordinal);
+            if (succeeds)
+            {
+                Assert.DoesNotContain("input_image", requests[1].Body, StringComparison.Ordinal);
+                Assert.Contains("[Attached Image Analysis]", requests[1].Body, StringComparison.Ordinal);
+                Assert.Equal("The completed image answer.", assistant.Content);
+            }
+            var expectedUsage = scenario == "unreported-payload-failure" ? CopilotTokenUsage.Empty
+                : succeeds ? new CopilotTokenUsage(32, 18, 50, 8) : new CopilotTokenUsage(12, 8, 20, 3);
+            Assert.Equal(expectedUsage, assistant.ReportedUsage);
+            Assert.Equal(expectedUsage, conversation.LastUsage);
+        }
+        finally
+        {
+            contextProvider?.Release();
+            taskHost.Shutdown();
+            try
+            {
+                if (contextProvider?.Entered.Task.IsCompletedSuccessfully == true)
+                    await contextProvider.Exited.Task.WaitAsync(TestTimeout);
+                var pendingRun = hostedRun ?? (started.Task.IsCompletedSuccessfully ? await started.Task : null);
+                if (pendingRun != null)
+                {
+                    try { await pendingRun.Completion.WaitAsync(TestTimeout); }
+                    catch (OperationCanceledException) { }
+                }
+            }
+            finally
+            {
+                taskHost.Changed -= observeRun;
+                viewModel.Dispose();
+                var fullRoot = Path.GetFullPath(root);
+                var tempRoot = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                Assert.StartsWith(tempRoot, fullRoot, StringComparison.OrdinalIgnoreCase);
+                Assert.StartsWith("CopilotImageUsage-", Path.GetFileName(fullRoot), StringComparison.Ordinal);
+                Directory.Delete(fullRoot, recursive: true);
+            }
+        }
+    }
+
     [Fact]
     public void DisposingChatViewModelSynchronouslyCommitsItsAcceptedPendingAnswer()
     {
@@ -3752,6 +3925,57 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Action<CopilotAgentEvent> onEvent,
             CancellationToken cancellationToken) =>
             Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
+    }
+
+    private sealed class ImageUsageContextProvider(TaskCompletionSource release) : ICopilotContextProvider
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Exited { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int Order => int.MinValue;
+        public bool CanProvide(CopilotContextScope scope) => scope == CopilotContextScope.Agent;
+        public void Release() => release.TrySetResult();
+
+        public async Task<CopilotContextItem?> CaptureAsync(CopilotContextRequest request, CancellationToken cancellationToken)
+        {
+            Entered.TrySetResult();
+            try
+            {
+                await release.Task.WaitAsync(cancellationToken);
+                return null;
+            }
+            finally { Exited.TrySetResult(); }
+        }
+    }
+
+    private sealed class ImageUsageHandler(string[] responses, TaskCompletionSource? responseDisposed = null) : HttpMessageHandler
+    {
+        private int _requestCount;
+        public ConcurrentQueue<(string Path, string Body)> Requests { get; } = new();
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Enqueue((request.RequestUri!.AbsolutePath,
+                await request.Content!.ReadAsStringAsync(cancellationToken)));
+            var index = Interlocked.Increment(ref _requestCount) - 1;
+            Assert.True(index < responses.Length, "The provider received an unexpected additional image or main request.");
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = responseDisposed == null
+                    ? new StringContent(responses[index], System.Text.Encoding.UTF8, "application/json")
+                    : new ImageUsageContent(responses[index], responseDisposed),
+            };
+        }
+    }
+
+    private sealed class ImageUsageContent(string body, TaskCompletionSource disposed)
+        : StringContent(body, System.Text.Encoding.UTF8, "application/json")
+    {
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing)
+                disposed.TrySetResult();
+        }
     }
 
     private sealed class GatedCompactionHandler : HttpMessageHandler
