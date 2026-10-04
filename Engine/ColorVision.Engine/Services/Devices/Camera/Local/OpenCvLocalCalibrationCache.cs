@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,12 +31,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IntPtr ciePointer,
             float[] exposure,
             LocalCalibrationRoi calibrationRoi,
-            bool allowAcceleration = false)
+            bool allowAcceleration = false,
+            CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW pointer is null.", nameof(rawPointer));
+            LocalFrameMirrorService.ValidateFlipMode(rawOutputFlip);
+            bool hasBasicCalibration = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
+            if (rawOutputFlip != CVImageFlipMode.None
+                && (!hasBasicCalibration || (!allowAcceleration && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))))
+                throw new ArgumentException("合并翻转要求校正包含常规步骤且输出 RAW。", nameof(rawOutputFlip));
 
             if (allowAcceleration && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))
             {
@@ -49,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (deferredResult != OpenCVCalibration.CalibrationOk)
                     throw CreateNativeException("读取色度校正参数失败", deferredResult, colorContext.Context);
                 DeviceCameraCalibrationFile[] basicFiles = calibrationFiles.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
-                if (basicFiles.Length > 0) Execute(layout, basicFiles, rawPointer, IntPtr.Zero, exposure, calibrationRoi);
+                if (basicFiles.Length > 0) Execute(layout, basicFiles, rawPointer, IntPtr.Zero, exposure, calibrationRoi, rawOutputFlip: rawOutputFlip);
                 else FlowNodeTiming.Skip("CalibrationAlgorithm");
                 return deferred;
             }
@@ -58,7 +65,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             CalibrationExecutionOptionsV1 options = CreateExecutionOptions(exposure, calibrationRoi);
             (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
             using var computeStage = FlowNodeTiming.Measure("CalibrationAlgorithm");
-            int result = OpenCVCalibration.M_CalibrationExecute(
+            int result = rawOutputFlip != CVImageFlipMode.None
+                ? OpenCVCalibration.M_CalibrationExecuteRawWithFlipV1(
+                    cachedContext.Context, checked((uint)layout.Width), checked((uint)layout.Height),
+                    checked((uint)layout.Bpp), checked((uint)layout.Channels), rawPointer, rawByteLength,
+                    in options, (int)rawOutputFlip)
+                : OpenCVCalibration.M_CalibrationExecute(
                 cachedContext.Context,
                 checked((uint)layout.Width),
                 checked((uint)layout.Height),

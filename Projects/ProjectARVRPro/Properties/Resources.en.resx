@@ -1267,4 +1267,12 @@ Automatically saved settings will remain.</value>
   <data name="ExternalSwitch_Completed" xml:space="preserve">
     <value>External image switch completed</value>
   </data>
+  <data name="累计产量" xml:space="preserve"><value>Cumulative production</value></data>
+  <data name="每小时产量" xml:space="preserve"><value>Hourly production</value></data>
+  <data name="每小时产量（组）" xml:space="preserve"><value>Hourly production (batches)</value></data>
+  <data name="每小时平均 CT" xml:space="preserve"><value>Hourly average CT</value></data>
+  <data name="每小时{0}产量与平均 CT" xml:space="preserve"><value>Hourly {0} production and average CT</value></data>
+  <data name="月度汇总" xml:space="preserve"><value>Monthly summary</value></data>
+  <data name="图表统计方式" xml:space="preserve"><value>Chart statistics mode</value></data>
+  <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>Count by batch completion time. Hourly production includes PASS and FAIL; empty hours count as 0.</value></data>
 </root>

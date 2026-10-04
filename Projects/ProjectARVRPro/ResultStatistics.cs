@@ -198,6 +198,36 @@ namespace ProjectARVRPro
 
     public static class ResultStatisticsTrendBuilder
     {
+        public static IReadOnlyList<ResultStatisticsTrendPoint> BuildHourly(
+            IReadOnlyList<ResultStatisticsTrendPoint> details,
+            DateTime from,
+            DateTime toExclusive)
+        {
+            ArgumentNullException.ThrowIfNull(details);
+            ResultStatisticsCalculator.ValidateRange(from, toExclusive);
+            Dictionary<DateTime, ResultStatisticsTrendPoint> hourly = details
+                .Where(item => item.TotalCount > 0 && item.Time >= from && item.Time < toExclusive)
+                .GroupBy(item => new DateTime(item.Time.Year, item.Time.Month, item.Time.Day, item.Time.Hour, 0, 0))
+                .ToDictionary(group => group.Key, group =>
+                {
+                    int count = group.Sum(item => item.TotalCount);
+                    return new ResultStatisticsTrendPoint
+                    {
+                        Time = group.Key,
+                        TotalCount = count,
+                        AverageCtMilliseconds = group.Sum(item => item.AverageCtMilliseconds * item.TotalCount) / count,
+                    };
+                });
+            List<ResultStatisticsTrendPoint> points = [];
+            for (DateTime hour = new(from.Year, from.Month, from.Day, from.Hour, 0, 0); hour < toExclusive; hour = hour.AddHours(1))
+            {
+                points.Add(hourly.TryGetValue(hour, out ResultStatisticsTrendPoint? point)
+                    ? point
+                    : new ResultStatisticsTrendPoint { Time = hour });
+            }
+            return points;
+        }
+
         public static IReadOnlyList<ResultStatisticsTrendPoint> BuildMonthly(ResultStatistics statistics)
         {
             ArgumentNullException.ThrowIfNull(statistics);

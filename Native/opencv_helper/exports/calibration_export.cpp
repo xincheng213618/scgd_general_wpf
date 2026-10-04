@@ -245,6 +245,40 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteRawWithFlipV1(
+    void* context,
+    std::uint32_t width,
+    std::uint32_t height,
+    std::uint32_t bitsPerChannel,
+    std::uint32_t channels,
+    std::uint8_t* rawData,
+    std::uint64_t rawByteLength,
+    const MCalibrationExecutionOptionsV1* options,
+    std::int32_t flipMode)
+{
+    if (context == nullptr || rawData == nullptr || flipMode < -1 || flipMode > 1
+        || (options != nullptr && options->structSize < sizeof(*options))
+        || rawByteLength > (std::numeric_limits<std::size_t>::max)()) {
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Invalid RAW calibration/mirror arguments");
+    }
+    try {
+        ExecutionOptions executionOptions = convertOptions(options);
+        executionOptions.rawOutputFlip = flipMode;
+        const ImageView raw{ width, height, bitsPerChannel, channels, rawData, static_cast<std::size_t>(rawByteLength) };
+        const int result = asContext(context)->execute(raw, nullptr, 0, executionOptions)
+            ? M_CALIBRATION_OK : M_CALIBRATION_EXECUTE_FAILED;
+        if (result == M_CALIBRATION_OK) globalError.clear();
+        else cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, result);
+        return result;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while calibrating/mirroring RAW");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteToV1(
     void* context,
     std::uint32_t width,

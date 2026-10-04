@@ -32,10 +32,12 @@ public sealed class LocalDeferredColorCalibrationTests
         => ComparePaths(type, bpp, flip, false, false);
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void BasicStagesStillRunBeforeDeferredColor(bool legacy)
-        => ComparePaths(CalibrationType.LumFourColor, 16, CVImageFlipMode.Y, true, legacy);
+    [InlineData(false, CVImageFlipMode.X)]
+    [InlineData(false, CVImageFlipMode.Y)]
+    [InlineData(false, CVImageFlipMode.XY)]
+    [InlineData(true, CVImageFlipMode.Y)]
+    public void BasicStagesStillRunBeforeDeferredColor(bool legacy, CVImageFlipMode flip)
+        => ComparePaths(CalibrationType.LumFourColor, 16, flip, true, legacy);
 
     [Theory]
     [InlineData(CalibrationType.Luminance)]
@@ -60,6 +62,12 @@ public sealed class LocalDeferredColorCalibrationTests
             DeviceCameraCalibrationFile dark = new("dark", CalibrationType.DarkNoise, "dark", "dark.dat", darkPath);
             // Native semantics move color last even when the template lists it first.
             DeviceCameraCalibrationFile[] files = basic ? [color, dark] : [color];
+            if (basic && !legacy)
+            {
+                string spatialPath = Path.Combine(root, "color_diff.dat");
+                File.WriteAllText(spatialPath, """{"CalibDis":1,"MeasDis":1,"CenterCol":48,"CenterRow":36,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":73,"w":97}""");
+                files = [color, dark, new("spatial", CalibrationType.ColorDiff, "spatial", "color_diff.dat", spatialPath)];
+            }
             using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(97, 73, bpp, type == CalibrationType.Luminance ? 1 : 3);
             using LocalFlowFrame full = CreateFrame(raw, flip);
             using LocalFlowFrame fast = CreateFrame(raw, flip);
@@ -90,6 +98,15 @@ public sealed class LocalDeferredColorCalibrationTests
             // Switching back to full color on already-oriented RAW must not mirror twice.
             LocalFrameCalibrationService.ReuseColorCalibration(fast, allowAcceleration: false);
             Assert.True(fast.HasCie);
+            using (LocalFlowFrameLease fullLease = full.Acquire())
+            using (LocalFlowFrameLease fastLease = fast.Acquire())
+            {
+                float[] fullCie = new float[fullLease.CieLength / sizeof(float)];
+                float[] fastCie = new float[fastLease.CieLength / sizeof(float)];
+                Marshal.Copy(fullLease.CiePointer, fullCie, 0, fullCie.Length);
+                Marshal.Copy(fastLease.CiePointer, fastCie, 0, fastCie.Length);
+                Assert.Equal(fullCie, fastCie);
+            }
             Assert.Equal(expected, Measure(fast));
             LocalFrameCalibrationService.ReuseColorCalibration(fast, allowAcceleration: true);
             Assert.False(fast.HasCie);

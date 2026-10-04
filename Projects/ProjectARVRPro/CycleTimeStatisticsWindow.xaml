@@ -246,7 +246,19 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TextBlock x:Name="HomeTrendHeading" Text="{display:DisplayText Key='产量与 CT 趋势'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="16,0,0,0">
+                                    <TextBlock x:Name="HomeMonthlyTrendText" Text="{display:DisplayText Key='月度汇总'}" Visibility="Collapsed" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                    <ComboBox x:Name="HomeTrendMode" MinWidth="132" Style="{StaticResource CompactQueryComboBox}"
+                                              SelectionChanged="HomeTrendMode_SelectionChanged" SelectedIndex="0"
+                                              ToolTip="{display:DisplayText Key='按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。'}"
+                                              AutomationProperties.Name="{display:DisplayText Key='图表统计方式'}">
+                                        <ComboBoxItem Content="{display:DisplayText Key='累计产量'}"/>
+                                        <ComboBoxItem Content="{display:DisplayText Key='每小时产量'}"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <TextBlock x:Name="HomeTrendHeading" Text="{display:DisplayText Key='产量与 CT 趋势'}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </DockPanel>
                             <ScottPlot:WpfPlot x:Name="HomeTrendPlot" Grid.Row="1" MinHeight="120"/>
                             <TextBlock x:Name="HomeTrendEmptyText" Grid.Row="1"
                                        Text="{display:DisplayText Key='当前范围暂无趋势数据'}"

@@ -18,6 +18,7 @@ namespace ProjectARVRPro
     {
         public int SelectedTabIndex { get; set; }
         public ResultStatisticsPeriodMode HomePeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public bool HomeHourlyProduction { get; set; }
         public DateTime HomeAnchorDate { get; set; } = DateTime.Today;
         public ResultStatisticsPeriodMode RecordPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
         public DateTime RecordAnchorDate { get; set; } = DateTime.Today;

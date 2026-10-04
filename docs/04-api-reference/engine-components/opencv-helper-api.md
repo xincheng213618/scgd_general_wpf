@@ -187,6 +187,10 @@ Geometric transforms that cannot safely run in place share one context-owned
 RAW-sized work buffer and ping-pong through it. Consecutive Distortion and
 ColorDiff therefore require no intermediate full-frame copy.
 
+`M_CalibrationExecuteRawWithFlipV1(context, width, height, bitsPerChannel, channels, rawData, rawByteLength, options, flipMode)` 是仅输出 RAW 的校正加翻转入口：`flipMode` 为 `0`（上下）、`1`（左右）或 `-1`（两者），结果等价于先执行原校正再翻转。它拒绝含亮度/色度转换的模板；平面 RAW 逐通道翻转，失败后不能消费输出。最后一步为 `ColorDiff` 且上下翻转时直接按目标行写出；其他组合保留末尾翻转，也可与末尾工作缓冲复制合并。原执行接口和 `MCalibrationExecutionOptionsV1` 的布局、行为保持不变。
+
+Engine 仅在 `opencv_helper` 后端、包含常规校正且主输出为 RAW、该帧尚未翻转时使用新入口；成功后登记 RAW 的翻转状态。生成完整 CIE、仅追加色度参数、旧版校正后端和无翻转配置保持原路径，后续生成 CIE 继承已有 RAW 方向。合并路径的翻转耗时计入 `CalibrationAlgorithm`，独立 `MirrorImage` 记为跳过；比较性能时应合计这两个阶段。
+
 `AngleShift` 保留整数/小数光心、各通道多项式、整数采样坐标及越界补零规则。16-bit 三通道输入在 IPP 启用且 `interpolate_ratio` 为 2、3、4 时，可缓存分块区域与局部采样坐标，只对需要的区域执行同一套 `INTER_CUBIC`；裁剪区域包含完整插值邻域，不把分块边缘当作图像边缘。复用的分块图像缓冲总计不超过 64 MiB（不含坐标表和 RAW 工作缓冲）。8-bit、其他倍率、IPP 关闭，或分块会增加处理量/需要过大区域时，保留完整图像放大路径；执行上下文切换这些条件时重建对应坐标，不改进程全局线程或 IPP 设置。`Test/opencv_helper_test/test_calibration.cpp` 的校准 smoke 覆盖随机/极值图、边缘、光心小数、后端与位深切换，并要求与完整放大参考逐字节一致。
 
 `M_CalibrationExecuteToV1` borrows a read-only source RAW pointer. It can write

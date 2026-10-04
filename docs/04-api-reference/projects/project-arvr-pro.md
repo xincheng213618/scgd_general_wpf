@@ -151,6 +151,8 @@ W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v�
 
 `CycleTimeStatisticsWindow` 默认提供首页指标与 CT 趋势、批次记录及流程查询；顶部右侧“统计设置”可启用 L/R 联合统计，选择会保存到窗口专属的 `CycleTimeStatisticsWindowConfig` 并在重新打开应用后恢复，不写入 `ProjectARVRProConfig`。启用后增加“全批次记录”页面并在首页追加一行紧凑的全批次指标。该窗口配置同时保存主统计窗口的位置和尺寸；界面使用与启动恢复窗口相同的主题调色板、标题层级和弱边框圆角卡片，样式在项目包本地的 `ResultStatisticsTheme.xaml` 中定义，不依赖宿主 `ColorVision` 程序集的资源。筛选区在窗口变窄时换行，表格保留分页、虚拟化、右键操作和详情入口。
 
+首页图表右上角可切换“累计产量”和“每小时产量”，默认显示逐条批次 CT 与累计产量。小时模式按结束时间归入 `[整点, 下一整点)`，柱形表示该小时完成的批次数（包含 PASS 和 FAIL），折线表示这些批次的平均 CT；空小时产量为 0，平均 CT 留空。日、周、月查询均支持小时模式，L/R 联合统计开启时按完整全批次的结束时间计数；“全部”周期继续显示月度汇总。同一应用会话内重新打开本机窗口会恢复图表选择，离线窗口保留独立状态；切换只重绘已查询的数据，不重新读取数据库。
+
 查看现场反馈时，在结果统计顶部选择“打开现场数据”（反馈 ZIP 或 `ProjectARVRPro.db`），也可用“打开资料文件夹”选择数据库所在目录或包含 `Database` 的上级目录。`ArvrOfflineDataSource` 在 `%LOCALAPPDATA%/ColorVision/OfflineData/<独立标识>/` 准备独立副本，新窗口标注来源和“只读”，默认显示该资料最新记录所在日期。ZIP 只提取结果库与同目录的 `FlowNodeRecords.db`、`SocketMessages.db`、`MsgRecords.db` 及导出说明；文件夹/数据库导入使用 SQLite backup 包含已提交的 WAL 内容。它不覆盖本机运行库、不改全局数据库路径、不启动写入队列，也不共用本机统计窗口的查询状态。副本保留在本地供排查，位置可从来源提示查看。
 
 同一设备的多次反馈可用 `Scripts/merge_feedback.py` 手动聚合，以扩展可查询的历史范围。需要 Python 3.11 或更新版本，仅使用标准库。从仓库根目录运行 `py .\Scripts\merge_feedback.py "D:\Feedback\<机器名>"` 只预览；需要生成或更新时手动加 `--apply`。`--feedback-id <原始 feedbackId>` 可重复使用以选择部分反馈。脚本核对 `SystemInfo.txt` / 反馈元数据中的机器名与设备目录名，以原始 `feedbackId` 识别来源，按 `serverReceivedAt`、旧 `createdAt`、目录时间依次确定快照顺序，不使用文件修改时间，也不使用反馈上传客户端的版本代替采集时主程序版本。接收反馈、启动程序和打开统计窗口均不会触发聚合。

@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private SemaphoreSlim NativeGate => useLegacyCalibration ? LegacyNativeGate : openCvGate;
 
         public string BackendName => useLegacyCalibration ? "cvCamera" : "opencv_helper";
+        public bool SupportsRawOutputFlip => !useLegacyCalibration;
 
         /// <summary>
         /// Returns a coherent snapshot of the process-wide immutable native
@@ -82,7 +84,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             IntPtr ciePointer,
             float[] exposure,
             LocalCalibrationRoi calibrationRoi,
-            bool allowAcceleration = false)
+            bool allowAcceleration = false,
+            CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ArgumentNullException.ThrowIfNull(calibrationFiles);
             ArgumentNullException.ThrowIfNull(exposure);
@@ -94,8 +97,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (!useLegacyCalibration)
                 {
-                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration);
+                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
                 }
+                if (rawOutputFlip != CVImageFlipMode.None) throw new NotSupportedException("旧版校正后端不支持合并 RAW 翻转。");
                 CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
                 DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
                 if (colorFiles.Length > 1)

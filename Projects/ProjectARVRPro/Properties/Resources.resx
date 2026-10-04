@@ -1247,4 +1247,12 @@
   <data name="ExternalSwitch_Completed" xml:space="preserve">
     <value>外部切图完成</value>
   </data>
+  <data name="累计产量" xml:space="preserve"><value>累计产量</value></data>
+  <data name="每小时产量" xml:space="preserve"><value>每小时产量</value></data>
+  <data name="每小时产量（组）" xml:space="preserve"><value>每小时产量（组）</value></data>
+  <data name="每小时平均 CT" xml:space="preserve"><value>每小时平均 CT</value></data>
+  <data name="每小时{0}产量与平均 CT" xml:space="preserve"><value>每小时{0}产量与平均 CT</value></data>
+  <data name="月度汇总" xml:space="preserve"><value>月度汇总</value></data>
+  <data name="图表统计方式" xml:space="preserve"><value>图表统计方式</value></data>
+  <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。</value></data>
 </root>

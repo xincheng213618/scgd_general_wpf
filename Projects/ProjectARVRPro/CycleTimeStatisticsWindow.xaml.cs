@@ -81,6 +81,10 @@ namespace ProjectARVRPro
         private string _snIndexStatus = string.Empty;
         private string _flowStatus = string.Empty;
         private string _flowNameIndexStatus = string.Empty;
+        private IReadOnlyList<ResultStatisticsTrendPoint> _homeTrendPoints = [];
+        private ResultStatisticsPeriodMode _homeTrendPeriodMode;
+        private ResultStatisticsPeriodRange _homeTrendRange = ResultStatisticsPeriod.GetRange(ResultStatisticsPeriodMode.Day, DateTime.Today);
+        private bool _homeTrendCombined;
 
         public CycleTimeStatisticsWindow() : this(null) { }
 
@@ -436,6 +440,7 @@ namespace ProjectARVRPro
         private void RestoreSearchState()
         {
             HomePeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.HomePeriodMode);
+            HomeTrendMode.SelectedIndex = _windowState.HomeHourlyProduction ? 1 : 0;
             HomeAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.HomeAnchorDate);
             RecordPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.RecordPeriodMode);
             RecordAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.RecordAnchorDate);
@@ -464,6 +469,7 @@ namespace ProjectARVRPro
 
             _windowState.SelectedTabIndex = Math.Max(0, StatisticsTabs.SelectedIndex);
             _windowState.HomePeriodMode = GetSelectedPeriodMode(HomePeriodMode);
+            _windowState.HomeHourlyProduction = HomeTrendMode.SelectedIndex == 1;
             _windowState.HomeAnchorDate = (HomeAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
             _windowState.RecordPeriodMode = GetSelectedPeriodMode(RecordPeriodMode);
             _windowState.RecordAnchorDate = (RecordAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
@@ -1202,10 +1208,24 @@ namespace ProjectARVRPro
         {
             string unit = combined ? "L/R 全批次" : "单侧批次";
             HomeTrendHeading.Text = combined ? LocalizedText.Get("L/R 全批次产量与 CT 趋势") : LocalizedText.Get("单侧批次产量与 CT 趋势");
+            HomeTrendMode.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
+            HomeMonthlyTrendText.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Visible : Visibility.Collapsed;
+            HomeTrendPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic
+            {
+                MinimumTickSpacing = 45,
+                IntegerTicksOnly = mode == ResultStatisticsPeriodMode.All || HomeTrendMode.SelectedIndex == 1,
+            };
+            HomeTrendPlot.Plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic { MinimumTickSpacing = 45 };
             if (mode == ResultStatisticsPeriodMode.All)
             {
                 HomeTrendPlot.Plot.Title($"月产量与平均{unit} CT");
                 HomeTrendPlot.Plot.YLabel("产量（组）");
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
+            }
+            else if (HomeTrendMode.SelectedIndex == 1)
+            {
+                HomeTrendPlot.Plot.Title(LocalizedText.Format($"每小时{LocalizedText.Get(unit)}产量与平均 CT"));
+                HomeTrendPlot.Plot.YLabel(LocalizedText.Get("每小时产量（组）"));
                 HomeTrendPlot.Plot.Axes.Right.Label.Text = LocalizedText.Get("平均 CT（秒）");
             }
             else
@@ -1216,6 +1236,14 @@ namespace ProjectARVRPro
             }
         }
 
+        private void HomeTrendMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_restoringSearchState || !_windowLoaded || _closed)
+                return;
+            CaptureSearchState();
+            RenderHomeTrend(_homeTrendPoints, _homeTrendPeriodMode, _homeTrendRange.From, _homeTrendRange.ToExclusive, _homeTrendCombined);
+        }
+
         private void RenderHomeTrend(
             IReadOnlyList<ResultStatisticsTrendPoint> points,
             ResultStatisticsPeriodMode mode,
@@ -1223,6 +1251,10 @@ namespace ProjectARVRPro
             DateTime toExclusive,
             bool combined)
         {
+            _homeTrendPoints = points;
+            _homeTrendPeriodMode = mode;
+            _homeTrendRange = new(from, toExclusive);
+            _homeTrendCombined = combined;
             HomeTrendPlot.Plot.Clear();
             ConfigureHomeTrendPresentation(mode, combined);
             bool hasData = points.Any(item => item.TotalCount > 0);
@@ -1235,8 +1267,10 @@ namespace ProjectARVRPro
 
             if (mode == ResultStatisticsPeriodMode.All)
                 RenderHomeMonthlyTrend(points);
+            else if (HomeTrendMode.SelectedIndex == 1)
+                RenderHomeHourlyTrend(ResultStatisticsTrendBuilder.BuildHourly(points, from, toExclusive), mode, from, toExclusive);
             else
-                RenderHomeDetailTrend(points, from, toExclusive);
+                RenderHomeDetailTrend(points, mode, from, toExclusive);
 
             HomeTrendPlot.Plot.ShowLegend(ScottPlot.Alignment.UpperRight);
             HomeTrendPlot.Refresh();
@@ -1281,8 +1315,45 @@ namespace ProjectARVRPro
             HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
         }
 
+        private void RenderHomeHourlyTrend(
+            IReadOnlyList<ResultStatisticsTrendPoint> points,
+            ResultStatisticsPeriodMode mode,
+            DateTime from,
+            DateTime toExclusive)
+        {
+            double hourWidth = TimeSpan.FromHours(1).TotalDays;
+            var bars = points.Select(item => new ScottPlot.Bar
+            {
+                Position = item.Time.ToOADate() + hourWidth / 2,
+                Value = item.TotalCount,
+                Size = hourWidth * 0.8,
+                Label = mode == ResultStatisticsPeriodMode.Day && item.TotalCount > 0 ? item.TotalCount.ToString() : string.Empty,
+                FillColor = ScottPlot.Color.FromHex("#F59E0B"),
+            }).ToArray();
+            ScottPlot.Plottables.BarPlot productionPlot = HomeTrendPlot.Plot.Add.Bars(bars);
+            productionPlot.LegendText = LocalizedText.Get("每小时产量");
+            productionPlot.ValueLabelStyle.FontSize = 11;
+            productionPlot.ValueLabelStyle.ForeColor = GetPlotColor("GlobalTextBrush", "#303030");
+
+            double[] times = bars.Select(item => item.Position).ToArray();
+            double[] averageCtSeconds = points.Select(item => item.TotalCount > 0 ? item.AverageCtMilliseconds / 1000d : double.NaN).ToArray();
+            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(times, averageCtSeconds);
+            ctPlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            ctPlot.LegendText = LocalizedText.Get("每小时平均 CT");
+            ctPlot.Color = ScottPlot.Color.FromHex("#4D8DFF");
+            ctPlot.LineWidth = 2;
+            ctPlot.MarkerSize = 5;
+
+            ConfigureHomeTimeAxis(mode, from, toExclusive);
+            HomeTrendPlot.Plot.Axes.Left.Min = 0;
+            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
+            HomeTrendPlot.Plot.Axes.Right.Min = 0;
+            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
+        }
+
         private void RenderHomeDetailTrend(
             IReadOnlyList<ResultStatisticsTrendPoint> points,
+            ResultStatisticsPeriodMode mode,
             DateTime from,
             DateTime toExclusive)
         {
@@ -1331,13 +1402,27 @@ namespace ProjectARVRPro
             cumulativePlot.LineWidth = 2;
             cumulativePlot.MarkerSize = 0;
 
-            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.DateTimeAutomatic();
-            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = -25;
-            HomeTrendPlot.Plot.Axes.SetLimitsX(rangeStart, rangeEnd);
+            ConfigureHomeTimeAxis(mode, from, toExclusive);
             HomeTrendPlot.Plot.Axes.Left.Min = 0;
             HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, ctSeconds.DefaultIfEmpty(0).Max() * 1.15);
             HomeTrendPlot.Plot.Axes.Right.Min = 0;
             HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, points.Count * 1.05);
+        }
+
+        private void ConfigureHomeTimeAxis(ResultStatisticsPeriodMode mode, DateTime from, DateTime toExclusive)
+        {
+            var ticks = new ScottPlot.TickGenerators.DateTimeAutomatic();
+            ticks.LabelFormatter = time =>
+            {
+                TimeSpan tickSize = ticks.TimeUnit?.MinSize ?? TimeSpan.FromHours(1);
+                string timeFormat = tickSize < TimeSpan.FromSeconds(1) ? "HH:mm:ss.fff" : tickSize < TimeSpan.FromMinutes(1) ? "HH:mm:ss" : "HH:mm";
+                return mode == ResultStatisticsPeriodMode.Day && time == toExclusive
+                    ? "24:00"
+                    : time.ToString(mode == ResultStatisticsPeriodMode.Day ? timeFormat : $"MM/dd\n{timeFormat}");
+            };
+            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = ticks;
+            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = 0;
+            HomeTrendPlot.Plot.Axes.SetLimitsX(from.ToOADate(), toExclusive.ToOADate());
         }
 
         private void UpdateStatusText()

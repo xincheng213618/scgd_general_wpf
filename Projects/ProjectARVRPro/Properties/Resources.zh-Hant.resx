@@ -1267,4 +1267,12 @@
   <data name="ExternalSwitch_Completed" xml:space="preserve">
     <value>外部切圖完成</value>
   </data>
+  <data name="累计产量" xml:space="preserve"><value>累計產量</value></data>
+  <data name="每小时产量" xml:space="preserve"><value>每小時產量</value></data>
+  <data name="每小时产量（组）" xml:space="preserve"><value>每小時產量（組）</value></data>
+  <data name="每小时平均 CT" xml:space="preserve"><value>每小時平均 CT</value></data>
+  <data name="每小时{0}产量与平均 CT" xml:space="preserve"><value>每小時{0}產量與平均 CT</value></data>
+  <data name="月度汇总" xml:space="preserve"><value>月度彙總</value></data>
+  <data name="图表统计方式" xml:space="preserve"><value>圖表統計方式</value></data>
+  <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>按批次結束時間統計；每小時產量包含 PASS 和 FAIL，空小時計為 0。</value></data>
 </root>

@@ -119,6 +119,38 @@ public sealed class ResultStatisticsTests
         Assert.All(points, item => Assert.Equal(2_000d, item.AverageCtMilliseconds));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(31)]
+    public void HourlyTrendFillsEmptyHoursAndCountsCompletionBoundariesWithoutLosingRecords(int days)
+    {
+        DateTime from = new(2026, 8, 1);
+        DateTime toExclusive = from.AddDays(days);
+        ResultStatisticsSample[] samples =
+        [
+            new() { Id = 1, StartTime = from.AddSeconds(-20), EndTime = from },
+            new() { Id = 2, StartTime = from.AddHours(1).AddSeconds(-40), EndTime = from.AddHours(1) },
+            new() { Id = 3, StartTime = from.AddHours(1).AddSeconds(40), EndTime = from.AddHours(1).AddMinutes(1) },
+            new() { Id = 4, StartTime = toExclusive.AddSeconds(-11), EndTime = toExclusive.AddSeconds(-1) },
+            new() { Id = 5, StartTime = toExclusive.AddSeconds(-10), EndTime = toExclusive },
+        ];
+        IReadOnlyList<ResultStatisticsTrendPoint> details = ResultStatisticsTrendBuilder.BuildDetails(samples, ResultStatisticsPeriodMode.Day);
+        IReadOnlyList<ResultStatisticsTrendPoint> points = ResultStatisticsTrendBuilder.BuildHourly(details, from, toExclusive);
+
+        Assert.Equal(days * 24, points.Count);
+        Assert.Equal(from, points[0].Time);
+        Assert.Equal(toExclusive.AddHours(-1), points[^1].Time);
+        Assert.Equal(4, points.Sum(item => item.TotalCount));
+        Assert.Equal(1, points[0].TotalCount);
+        Assert.Equal(20_000, points[0].AverageCtMilliseconds);
+        Assert.Equal(2, points[1].TotalCount);
+        Assert.Equal(30_000, points[1].AverageCtMilliseconds);
+        Assert.Equal(1, points[^1].TotalCount);
+        Assert.Equal(10_000, points[^1].AverageCtMilliseconds);
+        Assert.All(points.Skip(2).SkipLast(1), point => Assert.Equal(0, point.TotalCount));
+    }
+
     [Fact]
     public void TimelineBuilderUsesMeasuredPhaseBoundariesAndLeavesOnlyRealGapsUnknown()
     {
