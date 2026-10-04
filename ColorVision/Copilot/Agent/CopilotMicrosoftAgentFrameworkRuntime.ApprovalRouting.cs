@@ -17,7 +17,7 @@ namespace ColorVision.Copilot
             CopilotAutomaticApprovalDenialCircuitBreaker automaticReviewCircuitBreaker,
             CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
             Action<CopilotAgentEvent> emit,
-            CopilotTokenUsage usage,
+            Action<CopilotTokenUsage> addReviewUsage,
             CancellationToken cancellationToken)
         {
             BeginFrameworkApprovalRouting();
@@ -153,7 +153,8 @@ namespace ColorVision.Copilot
                                         handle.Action,
                                         permissionOutcome.Decision.Reason,
                                         cancellationToken);
-                                    usage = usage.Add(automaticReview.Usage);
+                                    // Keep settled review billing even if a later approval wait is cancelled.
+                                    addReviewUsage(automaticReview.Usage);
                                     circuitBreakerSnapshot = isExplicitAutoReview
                                         ? automaticReviewCircuitBreaker.Observe(automaticReview.Verdict)
                                         : default;
@@ -227,8 +228,9 @@ namespace ColorVision.Copilot
                                 decision = await handle.Decision;
                                 cancellationToken.ThrowIfCancellationRequested();
                             }
-                            catch (OperationCanceledException)
+                            catch (OperationCanceledException ex)
                             {
+                                addReviewUsage(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                                 bridge.CancelApproval(
                                     reservation,
                                     "The approval request was cancelled with the Agent run.");
@@ -261,13 +263,12 @@ namespace ColorVision.Copilot
                         approvalRoutingCompleted = true;
                         return new CopilotFrameworkApprovalRoutingResult(
                             responses,
-                            usage,
                             circuitBreakerSnapshot);
                     }
                 }
 
                 approvalRoutingCompleted = true;
-                return new CopilotFrameworkApprovalRoutingResult(responses, usage, null);
+                return new CopilotFrameworkApprovalRoutingResult(responses, null);
             }
             finally
             {
@@ -278,7 +279,6 @@ namespace ColorVision.Copilot
 
         private sealed record CopilotFrameworkApprovalRoutingResult(
             List<AIContent> Responses,
-            CopilotTokenUsage Usage,
             CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? CircuitBreakerSnapshot);
     }
 }

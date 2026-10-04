@@ -170,9 +170,8 @@ namespace ColorVision.Copilot
                         automaticReviewCircuitBreaker,
                         taskEventJournalBuilder,
                         emit,
-                        usage,
+                        reviewUsage => usage = usage.Add(reviewUsage),
                         cancellationToken);
-                    usage = approvalRouting.Usage;
                     if (approvalRouting.CircuitBreakerSnapshot is { IsTripped: true } circuitBreakerSnapshot)
                     {
                         automaticReviewCircuitBreakerSnapshot = circuitBreakerSnapshot;

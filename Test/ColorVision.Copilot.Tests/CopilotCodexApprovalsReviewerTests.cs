@@ -291,11 +291,15 @@ public sealed class CopilotCodexApprovalsReviewerTests
     }
 
     [Theory]
-    [InlineData("deny", 1)]
-    [InlineData("quota", 1)]
-    [InlineData("provider_canceled", 3)]
-    public async Task RuntimeAutomaticReviewPreservesOfficialBillingWithoutExecutingClosedAction(string outcome, int reviewAttempts)
+    [InlineData("deny", 1, CopilotAgentControlIntent.None)]
+    [InlineData("quota", 1, CopilotAgentControlIntent.None)]
+    [InlineData("provider_canceled", 3, CopilotAgentControlIntent.None)]
+    [InlineData("provider_canceled", 1, CopilotAgentControlIntent.Pause)]
+    [InlineData("provider_canceled", 1, CopilotAgentControlIntent.Cancel)]
+    public async Task RuntimeAutomaticReviewPreservesOfficialBillingWithoutExecutingClosedAction(
+        string outcome, int reviewAttempts, CopilotAgentControlIntent controlIntent)
     {
+        var controlled = controlIntent != CopilotAgentControlIntent.None;
         using var workspace = new ReviewerWorkspaceScope();
         using var provider = new BilledApprovalChatClient(outcome);
         var tool = new ApprovalBillingProbe();
@@ -318,6 +322,7 @@ public sealed class CopilotCodexApprovalsReviewerTests
             Mode = CopilotAgentMode.Code, HarnessFeatures = CopilotAgentHarnessFeatures.None,
             CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(CopilotCodexApprovalPolicyMode.OnRequest),
             CodexApprovalsReviewer = CopilotCodexApprovalsReviewer.AutoReview, CodexGuardianApprovalEnabled = true,
+            RunControl = controlled ? new CopilotAgentRunControl() : null,
             RunBudgetOverride = new CopilotAgentRunBudgetOverride
             {
                 RequestTokenBudget = 32_768, MaxToolCalls = 2, MaxAgentPasses = 1, TotalDuration = TimeSpan.FromSeconds(10),
@@ -336,29 +341,59 @@ public sealed class CopilotCodexApprovalsReviewerTests
                 if (item.ToolExecution?.State == CopilotToolExecutionState.AwaitingApproval)
                     action = Assert.Single(CopilotMcpConfirmationStore.Instance.GetPendingActions(), pending =>
                         pending.ActionId == item.ToolResult?.Approval?.ActionId);
+                if (controlled && item.ProviderRetry != null)
+                {
+                    Assert.Equal(1, item.ProviderRetry.FailedAttempt);
+                    Assert.Equal(40, events.Last(item => item.Budget != null).Budget!.ReportedTotalTokens);
+                    Assert.Equal(1, provider.ReviewCalls);
+                    Assert.Equal(1, provider.StreamingCalls);
+                    Assert.Equal(0, tool.ExecutionCount);
+                    Assert.True(controlIntent == CopilotAgentControlIntent.Pause
+                        ? request.RunControl!.RequestPause()
+                        : request.RunControl!.RequestCancel());
+                    cancellation.Cancel();
+                }
             }, cancellation.Token);
 
-            var expectedTotal = 35 + reviewAttempts * 20;
+            var expectedTotal = (controlled ? 20 : 35) + reviewAttempts * 20;
             Assert.Equal(expectedTotal, result.Budget.ReportedTotalTokens);
-            Assert.Equal(22 + reviewAttempts * 12, result.Budget.ReportedInputTokens);
-            Assert.Equal(13 + reviewAttempts * 8, result.Budget.ReportedOutputTokens);
-            Assert.Equal(5 + reviewAttempts * 3, result.Budget.ReportedCachedInputTokens);
+            Assert.Equal((controlled ? 12 : 22) + reviewAttempts * 12, result.Budget.ReportedInputTokens);
+            Assert.Equal((controlled ? 8 : 13) + reviewAttempts * 8, result.Budget.ReportedOutputTokens);
+            Assert.Equal((controlled ? 3 : 5) + reviewAttempts * 3, result.Budget.ReportedCachedInputTokens);
             Assert.Equal(expectedTotal, result.Budget.ConsumedTokens);
             Assert.False(result.Budget.UsedEstimatedUsage);
-            Assert.Equal(reviewAttempts + 2, result.Budget.ProviderCalls);
+            Assert.Equal(reviewAttempts + (controlled ? 1 : 2), result.Budget.ProviderCalls);
             Assert.Equal(reviewAttempts, provider.ReviewCalls);
-            Assert.Equal(2, provider.StreamingCalls);
-            Assert.Equal(reviewAttempts - 1, events.Count(item => item.ProviderRetry != null));
-            Assert.False(cancellation.IsCancellationRequested);
+            Assert.Equal(controlled ? 1 : 2, provider.StreamingCalls);
+            Assert.Equal(controlled ? 1 : reviewAttempts - 1, events.Count(item => item.ProviderRetry != null));
+            Assert.Equal(controlled, cancellation.IsCancellationRequested);
             Assert.Equal(0, tool.ExecutionCount);
-            var denied = Assert.Single(result.StepRecords);
-            Assert.Equal(CopilotToolExecutionState.Denied, denied.Execution.State);
-            Assert.Equal(outcome == "deny" ? "automatic_review_denied" : "automatic_review_unavailable", denied.Observation.FailureCode);
+            var closed = Assert.Single(result.StepRecords);
+            Assert.Equal(controlled ? CopilotToolExecutionState.Cancelled : CopilotToolExecutionState.Denied, closed.Execution.State);
+            Assert.Equal(controlled ? "approval_cancelled" : outcome == "deny" ? "automatic_review_denied" : "automatic_review_unavailable", closed.Observation.FailureCode);
             Assert.NotNull(action);
-            Assert.Equal(ConfirmableActionStatus.Rejected, action.Status);
-            Assert.Equal(outcome == "deny" ? "automatic-review" : "automatic-review-unavailable", action.ApprovalDecisionSource);
+            Assert.Equal(controlled ? ConfirmableActionStatus.Cancelled : ConfirmableActionStatus.Rejected, action.Status);
+            if (!controlled)
+                Assert.Equal(outcome == "deny" ? "automatic-review" : "automatic-review-unavailable", action.ApprovalDecisionSource);
             Assert.DoesNotContain(action, CopilotMcpConfirmationStore.Instance.GetPendingActions());
-            Assert.True(provider.ReceivedClosedToolResult);
+            Assert.Equal(!controlled, provider.ReceivedClosedToolResult);
+            if (controlled)
+            {
+                var expectedStopReason = controlIntent == CopilotAgentControlIntent.Pause
+                    ? CopilotAgentStopReason.Paused : CopilotAgentStopReason.Cancelled;
+                Assert.Equal(expectedStopReason, result.StopReason);
+                Assert.Contains(result.TaskEventJournal.Events, item =>
+                    item.Type == CopilotAgentTaskEventType.RunStopped && item.State == expectedStopReason.ToString());
+                if (controlIntent == CopilotAgentControlIntent.Cancel)
+                    Assert.Null(result.SessionCheckpoint);
+                else
+                {
+                    Assert.NotNull(result.SessionCheckpoint);
+                    Assert.False(string.IsNullOrWhiteSpace(result.SessionCheckpoint.SerializedSessionJson));
+                    Assert.Contains(result.SessionCheckpoint.TaskEventJournal.Events, item =>
+                        item.Type == CopilotAgentTaskEventType.RunStopped && item.State == CopilotAgentStopReason.Paused.ToString());
+                }
+            }
             Assert.Equal(expectedTotal, result.Usage.TotalTokens);
             Assert.Equal(result.Budget.ReportedInputTokens, result.Usage.InputTokens);
             Assert.Equal(result.Budget.ReportedOutputTokens, result.Usage.OutputTokens);
