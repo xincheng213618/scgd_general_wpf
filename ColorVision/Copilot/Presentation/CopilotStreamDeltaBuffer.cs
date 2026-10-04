@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
                 new PendingDeltaBatch(),
                 maximumPendingCharacters,
                 maximumPendingSegments,
-                postOnTargetThread: false,
+                postOnTargetThread: true,
                 isOnTargetThread);
         }
 

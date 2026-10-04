@@ -96,6 +96,8 @@ TaskHost 在同一调度锁内提交取消状态、复核本地命令的后继�
 
 执行前建立 prepared turn 和消息后会等待保存：Flush 失败时回滚未保存消息并恢复输入；成功后才移除该恢复记录并继续执行。Runtime 在进入 Provider / Agent 执行前还通过 `StatePersistenceBarrierEvent` 请求保存屏障。这样调度、输入消费、保存完成和模型执行分别有明确的交接点。
 
+Chat 与 Agent 的流式 UI 更新通过现有同步上下文合并相邻片段；在 UI 线程收到片段时也只安排一次待处理提交，达到缓冲上限时同步刷新。正文重置和保存屏障先 Flush，正常结束、取消或失败在应用终态前 Complete，保留片段顺序及尾部文本。没有同步上下文时仍直接应用。ViewModel 在目标 UI 线程释放接线，以及应用退出同步保存前，会先刷新当前轮次已接受的 UI 更新；这不表示等待 Provider 结束或确认外部操作结果。缓冲已开始 Complete、仍有提交待处理时，目标线程仍可 Flush，后续 Enqueue 继续被拒绝。
+
 ## 检查点与任务事件的所有权
 
 `CopilotTurnEvent` 是单轮执行的瞬时协议，经过协议校验并由 `CopilotTurnEventReducer` 汇总为运行结果；会话恢复使用持久化 checkpoint 和有界 task journal。普通 Chat 消息、UI trace 和 `/context` 的模型表面计数各有用途，不替代这份恢复状态；模型表面是从消息与压缩边界派生的投影，不另存一份事实源。journal 字段与事件类型见[结构化任务事件](./copilot-agent-tool-contracts.md#结构化任务事件-journal)。

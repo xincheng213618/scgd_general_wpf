@@ -510,6 +510,7 @@ namespace ColorVision.Copilot
             var streamContext = dispatcher == null
                 ? SynchronizationContext.Current
                 : new DispatcherSynchronizationContext(dispatcher);
+            var streamThreadId = Environment.CurrentManagedThreadId;
             CopilotStreamDeltaBuffer? deltaBuffer = null;
             CopilotAgentEventBuffer? eventBuffer = null;
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
@@ -561,6 +562,17 @@ namespace ColorVision.Copilot
                 taskEventJournalBaseline);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
             var hideAgentReasoning = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHideAgentReasoning;
+            Action flushTurnUiUpdates = () =>
+            {
+                if (streamContext != null
+                    && !(dispatcher?.CheckAccess() ?? Environment.CurrentManagedThreadId == streamThreadId))
+                {
+                    throw new InvalidOperationException("Copilot shutdown updates must be flushed on their UI thread.");
+                }
+                deltaBuffer?.FlushAsync().GetAwaiter().GetResult();
+                eventBuffer?.FlushAsync().GetAwaiter().GetResult();
+            };
+            Interlocked.Exchange(ref _flushActiveTurnUiUpdates, flushTurnUiUpdates);
             try
             {
                 try
@@ -668,10 +680,17 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
-                    if (deltaBuffer != null)
-                        await deltaBuffer.CompleteAsync();
-                    if (eventBuffer != null)
-                        await eventBuffer.CompleteAsync();
+                    try
+                    {
+                        if (deltaBuffer != null)
+                            await deltaBuffer.CompleteAsync();
+                        if (eventBuffer != null)
+                            await eventBuffer.CompleteAsync();
+                    }
+                    finally
+                    {
+                        Interlocked.CompareExchange(ref _flushActiveTurnUiUpdates, null, flushTurnUiUpdates);
+                    }
                 }
             }
             catch (OperationCanceledException) when (

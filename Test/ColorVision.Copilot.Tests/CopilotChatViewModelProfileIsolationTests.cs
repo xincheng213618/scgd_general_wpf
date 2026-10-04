@@ -136,6 +136,66 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public void DisposingChatViewModelSynchronouslyCommitsItsAcceptedPendingAnswer()
+    {
+        StaTest.Run(() =>
+        {
+            var profile = CreateProfile("pending-chat-profile", "Pending Chat", "pending-chat-model");
+            var config = CreateConfig(profile, "pending-chat-test-token");
+            var conversation = CreateConversation(profile, "pending-chat-conversation", "Reply before this view closes.");
+            conversation.DraftRequestMode = CopilotAgentMode.Chat;
+            var runtime = new GatedFailingTurnRuntime(emitPendingChatDelta: true);
+            var taskHost = new CopilotAgentTaskHost();
+            using var solutionManagerScope = new IsolatedSolutionManagerScope();
+            var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+            var context = new HeldChatSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            CopilotHostedAgentRun? hostedRun = null;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                Assert.True(viewModel.SendCommand.CanExecute(null));
+                viewModel.SendCommand.Execute(null);
+                Assert.True(runtime.PendingChatDeltaAccepted.IsCompletedSuccessfully);
+                hostedRun = Assert.IsType<CopilotHostedAgentRun>(taskHost.ActiveRun);
+                Assert.False(hostedRun.Completion.IsCompleted);
+                var assistant = Assert.Single(conversation.Messages, message => message.Role == CopilotChatRole.Assistant);
+                Assert.Empty(assistant.Content);
+
+                viewModel.Dispose();
+
+                Assert.Equal(GatedFailingTurnRuntime.PendingChatTail, assistant.Content);
+                Assert.False(hostedRun.Completion.IsCompleted);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                context.Release();
+                hostedRun ??= taskHost.ActiveRun;
+                taskHost.Shutdown();
+                runtime.Release();
+                try
+                {
+                    if (hostedRun != null)
+                    {
+                        try
+                        {
+                            hostedRun.Completion.WaitAsync(TestTimeout).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException)
+                        {
+                        }
+                    }
+                }
+                finally
+                {
+                    viewModel.Dispose();
+                }
+            }
+        });
+    }
+
+    [Fact]
     public void ClipboardImageCanCreateMultipleMissingStorageDirectories()
     {
         StaTest.Run(() =>
@@ -3610,10 +3670,15 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         Model = model,
     };
 
-    private sealed class GatedFailingTurnRuntime : ICopilotTurnRuntime
+    private sealed class GatedFailingTurnRuntime(bool emitPendingChatDelta = false) : ICopilotTurnRuntime
     {
+        public const string PendingChatTail = "Accepted Chat tail before the view closes.";
         private readonly TaskCompletionSource _release =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _pendingChatDeltaAccepted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task PendingChatDeltaAccepted => _pendingChatDeltaAccepted.Task;
 
         public Task<CopilotTurnRequest> Entered => _entered.Task;
 
@@ -3625,8 +3690,16 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             _entered.TrySetResult(request);
+            if (emitPendingChatDelta)
+            {
+                yield return new CopilotTurnStartedEvent(request.TaskId, request.Mode);
+                yield return new CopilotTurnRequestPreparedEvent(new CopilotPreparedTurnRequest(request.UserText, false));
+                yield return new CopilotTurnChatDeltaEvent(new CopilotStreamDelta(string.Empty, PendingChatTail));
+                _pendingChatDeltaAccepted.TrySetResult();
+            }
             await _release.Task.WaitAsync(cancellationToken);
-            yield return new CopilotTurnStartedEvent("profile-isolation-turn", request.Mode);
+            if (!emitPendingChatDelta)
+                yield return new CopilotTurnStartedEvent("profile-isolation-turn", request.Mode);
             throw new InvalidOperationException("Expected profile-isolation test failure.");
         }
 
@@ -3808,6 +3881,39 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         {
             if (ReferenceEquals(InstanceField.GetValue(null), _testInstance))
                 InstanceField.SetValue(null, _previousInstance);
+        }
+    }
+
+    private sealed class HeldChatSynchronizationContext : SynchronizationContext
+    {
+        private readonly object _syncRoot = new();
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+        private bool _released;
+
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            lock (_syncRoot)
+            {
+                if (!_released)
+                {
+                    _callbacks.Enqueue((callback, state));
+                    return;
+                }
+            }
+            base.Post(callback, state);
+        }
+
+        public void Release()
+        {
+            (SendOrPostCallback Callback, object? State)[] callbacks;
+            lock (_syncRoot)
+            {
+                _released = true;
+                callbacks = _callbacks.ToArray();
+                _callbacks.Clear();
+            }
+            foreach (var callback in callbacks)
+                base.Post(callback.Callback, callback.State);
         }
     }
 
