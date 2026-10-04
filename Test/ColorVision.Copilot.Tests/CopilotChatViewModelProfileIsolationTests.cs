@@ -22,6 +22,119 @@ public sealed class CopilotChatViewModelProfileIsolationTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChatSendCommitsStateBeforeTheProviderAndRejectsPersistenceFailure(bool persistFails)
+    {
+        const string Prompt = "Answer the captured Chat request.";
+        const string SaveError = "Expected Chat state persistence failure.";
+        var profile = CreateProfile("chat-barrier-profile", "Chat barrier", "chat-barrier-model");
+        var config = CreateConfig(profile, "chat-barrier-test-token");
+        var conversation = CreateConversation(profile, "chat-barrier-conversation", Prompt);
+        conversation.DraftRequestMode = CopilotAgentMode.Chat;
+        conversation.SetCustomTitle("Chat persistence barrier");
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id,
+            Conversations = [conversation],
+        };
+        var saveEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failSaves = persistFails ? 1 : 0;
+        var stateStore = new InMemoryStateStore(state, saveSerializedAsync: async cancellationToken =>
+        {
+            if (conversation.Messages.Count == 0)
+                return;
+            saveEntered.TrySetResult();
+            await releaseSave.Task.WaitAsync(cancellationToken);
+            if (Volatile.Read(ref failSaves) != 0)
+                throw new IOException(SaveError);
+        });
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var handler = new GatedCompactionHandler();
+        handler.Respond("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"Captured Chat answer.\"},\"finish_reason\":\"stop\"}]}");
+        using var client = new HttpClient(handler);
+        var service = new CopilotChatService(client);
+        var taskHost = new CopilotAgentTaskHost();
+        var viewModel = new CopilotChatViewModel(service, stateStore, config, new CopilotTurnRuntime(service), taskHost);
+        var started = new TaskCompletionSource<CopilotHostedAgentRun>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<CopilotAgentTaskHostChangedEventArgs> observeRun = (_, args) =>
+        {
+            if (args.Run.ConversationId != conversation.Id)
+                return;
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Started)
+                started.TrySetResult(args.Run);
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Completed)
+                completed.TrySetResult();
+        };
+        taskHost.Changed += observeRun;
+        CopilotHostedAgentRun? hostedRun = null;
+        try
+        {
+            Assert.True(viewModel.SendCommand.CanExecute(null));
+            viewModel.SendCommand.Execute(null);
+            hostedRun = await started.Task.WaitAsync(TestTimeout);
+            Assert.Equal(CopilotAgentMode.Chat, hostedRun.Mode);
+            await saveEntered.Task.WaitAsync(TestTimeout);
+            Assert.Equal(0, handler.RequestCount);
+            Assert.False(hostedRun.Completion.IsCompleted);
+            releaseSave.TrySetResult();
+            await hostedRun.Completion.WaitAsync(TestTimeout);
+            await completed.Task.WaitAsync(TestTimeout);
+
+            var userMessage = Assert.Single(conversation.Messages, message => message.IsUser);
+            var assistantMessage = Assert.Single(conversation.Messages, message => message.Role == CopilotChatRole.Assistant);
+            Assert.Equal(Prompt, userMessage.Content);
+            Assert.False(assistantMessage.IsThinkingInProgress);
+            Assert.Null(taskHost.ActiveRun);
+            if (persistFails)
+            {
+                Assert.Equal(0, handler.RequestCount);
+                Assert.True(viewModel.HasStatePersistenceNotice);
+                Assert.Contains(SaveError, viewModel.StatePersistenceNoticeToolTip, StringComparison.Ordinal);
+                Assert.Contains(SaveError, assistantMessage.Content, StringComparison.Ordinal);
+                Assert.True(assistantMessage.WasResponseInterrupted);
+                Assert.Contains(SaveError, assistantMessage.ResponseInterruptionDetail, StringComparison.Ordinal);
+                Assert.Empty(userMessage.RequestContent);
+            }
+            else
+            {
+                Assert.Equal(1, handler.RequestCount);
+                Assert.StartsWith(Prompt, userMessage.RequestContent, StringComparison.Ordinal);
+                Assert.Equal("Captured Chat answer.", assistantMessage.Content);
+                Assert.False(assistantMessage.WasResponseInterrupted);
+                Assert.False(viewModel.HasStatePersistenceNotice);
+            }
+        }
+        finally
+        {
+            Volatile.Write(ref failSaves, 0);
+            releaseSave.TrySetResult();
+            taskHost.Shutdown();
+            try
+            {
+                var pendingRun = hostedRun ?? (started.Task.IsCompletedSuccessfully ? await started.Task : null);
+                if (pendingRun != null)
+                {
+                    try
+                    {
+                        await pendingRun.Completion.WaitAsync(TestTimeout);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+            }
+            finally
+            {
+                taskHost.Changed -= observeRun;
+                viewModel.Dispose();
+            }
+        }
+    }
+
     [Fact]
     public void ClipboardImageCanCreateMultipleMissingStorageDirectories()
     {

@@ -581,13 +581,16 @@ namespace ColorVision.Copilot
                             case CopilotTurnStatePersistenceBarrierEvent barrier:
                                 try
                                 {
-                                    if (eventBuffer == null)
+                                    if (deltaBuffer == null && eventBuffer == null)
                                     {
                                         throw new InvalidOperationException(
-                                            "Agent state persistence requires an active event buffer.");
+                                            "Copilot state persistence requires an active UI update buffer.");
                                     }
 
-                                    await eventBuffer.FlushAsync();
+                                    if (deltaBuffer != null)
+                                        await deltaBuffer.FlushAsync();
+                                    if (eventBuffer != null)
+                                        await eventBuffer.FlushAsync();
                                     await FlushStatePersistenceBarrierAsync();
                                     barrier.TryCommit();
                                 }
