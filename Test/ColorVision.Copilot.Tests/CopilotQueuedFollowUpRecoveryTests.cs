@@ -66,28 +66,48 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         Assert.Equal(0, state.ResumedQueuedFollowUpCount);
     }
 
-    [Fact]
-    public void StartupRestoresAQueueItemWithAnInvalidHostContextToItsDraft()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StartupRestoresAnUnresumableQueueItemAndItsConversationSuccessorsToDrafts(bool invalidHostContext)
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-        var durable = CreateRecovery("queued-run-1", conversation.Id, "resume in the captured workspace");
+        conversation.DraftText = "newer draft";
+        var otherConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        const string firstPrompt = "resume in the captured workspace";
+        var laterPrompt = invalidHostContext ? firstPrompt : "verify after the first request";
+        var durable = CreateRecovery("queued-run-1", conversation.Id, firstPrompt,
+            invalidHostContext ? CopilotAgentMode.Code : CopilotAgentMode.Auto);
         durable.ProfileId = "profile";
-        durable.ResumeAfterRestart = true;
-        durable.HostContext = new CopilotQueuedFollowUpHostContext
+        durable.ResumeAfterRestart = invalidHostContext;
+        if (invalidHostContext)
         {
-            SolutionDirectoryPath = "relative-workspace",
-        };
+            durable.HostContext = new CopilotQueuedFollowUpHostContext
+            {
+                SolutionDirectoryPath = "relative-workspace",
+            };
+        }
+        var successor = CreateRecovery("queued-run-2", conversation.Id, laterPrompt,
+            invalidHostContext ? CopilotAgentMode.Review : CopilotAgentMode.Auto);
+        successor.ProfileId = "profile";
+        successor.ResumeAfterRestart = true;
+        var independent = CreateRecovery("queued-run-3", otherConversation.Id, "independent conversation");
+        independent.ProfileId = "profile";
+        independent.ResumeAfterRestart = true;
         var state = new CopilotChatState
         {
-            Conversations = [conversation],
-            QueuedFollowUpRecoveries = [durable],
+            Conversations = [conversation, otherConversation],
+            QueuedFollowUpRecoveries = [durable, independent, successor],
         };
 
         Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
 
-        Assert.Empty(state.QueuedFollowUpRecoveries);
-        Assert.Equal("resume in the captured workspace", conversation.DraftText);
-        Assert.Equal(1, state.RecoveredQueuedFollowUpCount);
+        Assert.Same(independent, Assert.Single(state.QueuedFollowUpRecoveries));
+        Assert.Equal("newer draft" + Environment.NewLine + Environment.NewLine
+            + CopilotQueuedFollowUpRecovery.FormatRestoredDraft(
+                invalidHostContext ? [$"[Code] {firstPrompt}", $"[Review] {laterPrompt}"] : [firstPrompt, laterPrompt]), conversation.DraftText);
+        Assert.Empty(otherConversation.DraftText);
+        Assert.Equal(2, state.RecoveredQueuedFollowUpCount);
     }
 
     [Fact]

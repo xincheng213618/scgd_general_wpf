@@ -324,6 +324,7 @@ namespace ColorVision.Copilot
             var resumableRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var draftRecoveries = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
+            var blockedConversationIds = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var record in originalRecords)
             {
@@ -341,13 +342,15 @@ namespace ColorVision.Copilot
                 if (record.IsAutomaticGoalContinuation)
                     continue;
 
-                if (record.CanResumeAfterRestart(composerState)
+                if (!blockedConversationIds.Contains(conversationId)
+                    && record.CanResumeAfterRestart(composerState)
                     && resumableRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns)
                 {
                     resumableRecords.Add(record);
                 }
                 else
                 {
+                    blockedConversationIds.Add(conversationId);
                     draftRecoveries.Add(record);
                 }
             }
@@ -417,7 +420,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static int RestoreRecordsToDrafts(
+        internal static int RestoreRecordsToDrafts(
             CopilotChatState state,
             IEnumerable<CopilotQueuedFollowUpRecoveryRecord?> records)
         {

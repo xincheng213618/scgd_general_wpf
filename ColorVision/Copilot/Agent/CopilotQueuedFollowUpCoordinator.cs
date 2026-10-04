@@ -74,6 +74,7 @@ namespace ColorVision.Copilot
         public bool HasContinuationForGoal(string conversationId, string goalId) =>
             _itemsByRunId.Values.Any(item =>
                 string.Equals(item.ConversationId, conversationId, StringComparison.Ordinal)
+                && !item.IsLocalCommand
                 && (!item.IsAutomaticGoalContinuation
                     || string.Equals(item.GoalId, goalId, StringComparison.Ordinal)));
 
@@ -347,6 +348,14 @@ namespace ColorVision.Copilot
 
         public bool RestoreRecoveryToDraft(string runId) =>
             CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(_state, runId);
+
+        public int RestoreRecoveriesToDraft(IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> records)
+        {
+            var restoredCount = CopilotQueuedFollowUpRecovery.RestoreRecordsToDrafts(_state, records);
+            foreach (var record in records)
+                RemoveRecovery(record.RunId);
+            return restoredCount;
+        }
 
         public bool RemoveRecovery(string runId)
         {

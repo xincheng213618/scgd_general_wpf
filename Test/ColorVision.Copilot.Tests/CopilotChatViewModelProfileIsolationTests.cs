@@ -964,6 +964,128 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
+    [Theory]
+    [InlineData("/status")]
+    [InlineData("/goal pause")]
+    [InlineData("/goal clear")]
+    public async Task QueuedLocalCommandPreservesGoalContinuationOrAppliesExplicitGoalControl(string localCommand)
+    {
+        const string newerDraft = "Preserve this draft while the queued command runs.";
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "queued-goal-command-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var parentMessages = CompleteParentTurnForQueuedCommand(conversation);
+        var now = DateTimeOffset.UtcNow;
+        var continuedGoal = CopilotConversationGoal.Create("Finish the verified runtime slice", now)
+            .WithTurnOutcome(CopilotConversationGoalState.Active, CopilotTokenUsage.Empty,
+                elapsedSeconds: 2, evaluated: true, continued: true, "More verified work remains.", now);
+        var newerAttachment = CopilotAttachmentItem.CreateContext("Evidence attached to the newer draft.");
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        conversation.Goal = continuedGoal;
+        var activeRun = taskHost.Start(conversation.Id, CopilotAgentMode.Auto, async _ =>
+        {
+            activeStarted.TrySetResult();
+            await releaseActive.Task;
+        });
+        CopilotHostedAgentRun? localRun = null;
+        CopilotHostedAgentRun? automaticRun = null;
+        var startedAgentRuns = new ConcurrentQueue<string>();
+        EventHandler<CopilotAgentTaskHostChangedEventArgs> observeStarted = (_, args) =>
+        {
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Started
+                && args.Run.IsAgent && args.Run.Id != activeRun.Id)
+                startedAgentRuns.Enqueue(args.Run.Id);
+        };
+        taskHost.Changed += observeStarted;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = localCommand;
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            var localItem = Assert.Single(viewModel.QueuedFollowUps);
+            localRun = Assert.Single(taskHost.QueuedRuns);
+            Assert.True(localItem.IsLocalCommand);
+            Assert.False(localRun.IsAgent);
+            viewModel.InputText = newerDraft;
+            conversation.Attachments.Add(newerAttachment);
+
+            Assert.True(TryQueueGoalContinuation(viewModel, activeRun, conversation,
+                parentMessages[1], profile, new CopilotAgentHostContextSnapshot("", "", []),
+                new CopilotTurnRuntimeConfigSnapshot(new CopilotAgentDefaultsConfig(), []),
+                continuedGoal.Id, "More verified work remains."));
+            var automaticItem = Assert.Single(viewModel.QueuedFollowUps, item => item.IsAutomaticGoalContinuation);
+            automaticRun = Assert.Single(taskHost.QueuedRuns, run => run.Id == automaticItem.RunId);
+            Assert.False(automaticItem.IsLocalCommand);
+            Assert.Equal(continuedGoal.Id, automaticItem.GoalId);
+            Assert.Equal(new[] { localRun.Id, automaticRun.Id }, taskHost.QueuedRuns.Select(run => run.Id));
+            Assert.False(runtime.Entered.IsCompleted);
+
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            await localRun.Completion.WaitAsync(TestTimeout);
+            if (localCommand == "/status")
+            {
+                var request = await runtime.Entered.WaitAsync(TestTimeout);
+                Assert.Same(automaticRun, taskHost.ActiveRun);
+                Assert.Equal(automaticRun.Id, Assert.Single(startedAgentRuns));
+                Assert.Single(taskHost.ScheduledRuns);
+                Assert.Equal(automaticItem.Prompt, request.UserText);
+                Assert.Equal(continuedGoal.Objective, request.ActiveGoalText);
+                Assert.Empty(request.HostContext.Attachments);
+                Assert.Equal(CopilotConversationGoalState.Active, conversation.Goal!.State);
+                Assert.Contains("/status", viewModel.LocalCommandResultTitle, StringComparison.Ordinal);
+            }
+            else
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                    () => automaticRun.Completion.WaitAsync(TestTimeout));
+                Assert.False(runtime.Entered.IsCompleted);
+                Assert.Empty(startedAgentRuns);
+                Assert.Null(taskHost.ActiveRun);
+                Assert.Empty(taskHost.ScheduledRuns);
+                if (localCommand == "/goal pause")
+                    Assert.Equal(CopilotConversationGoalState.Paused, conversation.Goal!.State);
+                else
+                    Assert.Null(conversation.Goal);
+            }
+
+            Assert.Empty(taskHost.QueuedRuns);
+            Assert.Empty(viewModel.QueuedFollowUps);
+            Assert.Equal(newerDraft, viewModel.InputText);
+            Assert.Equal(newerDraft, conversation.DraftText);
+            Assert.Equal(newerAttachment.Id, Assert.Single(conversation.Attachments).Id);
+            Assert.Equal(localCommand == "/status" ? 4 : 2, conversation.Messages.Count);
+            Assert.Same(parentMessages[1], conversation.Messages[1]);
+            Assert.Equal(CopilotAgentStopReason.Completed, parentMessages[1].AgentStopReason);
+            Assert.False(parentMessages[1].WasResponseInterrupted);
+            if (conversation.Goal != null)
+                Assert.Equal(continuedGoal.TurnCount, conversation.Goal.TurnCount);
+        }
+        finally
+        {
+            var ownedRuns = taskHost.ScheduledRuns
+                .Concat(new[] { activeRun, localRun, automaticRun }.OfType<CopilotHostedAgentRun>())
+                .Distinct().ToArray();
+            taskHost.Shutdown();
+            releaseActive.TrySetResult();
+            try
+            {
+                await ShutdownQueuedCommandHostAsync(taskHost, runtime, ownedRuns);
+            }
+            finally
+            {
+                taskHost.Changed -= observeStarted;
+                viewModel.Dispose();
+            }
+        }
+    }
+
     [Fact]
     public async Task UserQuestionAnswerStateChangesOnlyWhenTheRuntimeEventArrives()
     {
@@ -2687,6 +2809,140 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             releaseActive.TrySetResult();
             if (!activeRun.Completion.IsCompleted)
                 await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt()
+    {
+        const string firstPrompt = "First update the configuration using the captured evidence.";
+        const string laterPrompt = "Then validate the configuration after that update.";
+        const string newerDraft = "Preserve this newer draft before the recovered requests.";
+        var profileA = CreateProfile("profile-a", "Profile A", "model-a");
+        var profileB = CreateProfile("profile-b", "Profile B", "model-b");
+        var config = CreateConfig(profileA, "missing-queued-profile-test-token");
+        config.Profiles.Add(profileB);
+        var conversation = CreateConversation(profileA, "conversation-a", string.Empty);
+        var originalMessages = CompleteParentTurnForQueuedCommand(conversation);
+        var firstAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the first request.");
+        var laterAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the later request.");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("Evidence attached to the newer draft.");
+        conversation.Attachments.Add(firstAttachment);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profileA.Id, Conversations = [conversation],
+        };
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var root = Directory.CreateTempSubdirectory("CopilotQueuedMissingProfile-").FullName;
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state), config, runtime, taskHost);
+        var activeRun = taskHost.Start(conversation.Id, CopilotAgentMode.Auto, async _ =>
+        {
+            activeStarted.TrySetResult();
+            await releaseActive.Task;
+        });
+        CopilotHostedAgentRun? firstRun = null;
+        CopilotHostedAgentRun? laterRun = null;
+        var restartedHost = new CopilotAgentTaskHost();
+        var restartedRuntime = new GatedFailingTurnRuntime();
+        CopilotChatViewModel? restartedViewModel = null;
+
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            viewModel.InputText = firstPrompt;
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            firstRun = Assert.Single(taskHost.QueuedRuns);
+            viewModel.SelectedProfile = profileB;
+            viewModel.InputText = laterPrompt;
+            conversation.Attachments.Add(laterAttachment);
+            Assert.True(viewModel.TryQueueCurrentRunFollowUp());
+            laterRun = Assert.Single(taskHost.QueuedRuns, run => run.Id != firstRun.Id);
+            viewModel.InputText = newerDraft;
+            conversation.Attachments.Add(newerAttachment);
+
+            var diskStore = new CopilotChatStateStore(root);
+            diskStore.Save(state);
+            var reloadedState = diskStore.Load();
+            Assert.Equal(new[] { firstRun.Id, laterRun.Id }, reloadedState.QueuedFollowUpRecoveries.Select(record => record.RunId));
+            Assert.Equal(new[] { profileA.Id, profileB.Id }, reloadedState.QueuedFollowUpRecoveries.Select(record => record.ProfileId));
+            Assert.Equal(new[] { firstAttachment.Id, laterAttachment.Id }, reloadedState.QueuedFollowUpRecoveries
+                .Select(record => Assert.Single(record.ComposerState!.Attachments).Id));
+            Assert.False(runtime.Entered.IsCompleted);
+            taskHost.Shutdown();
+            releaseActive.TrySetResult();
+            await ShutdownQueuedCommandHostAsync(taskHost, runtime, activeRun, firstRun, laterRun);
+            viewModel.Dispose();
+            Assert.True(config.Profiles.Remove(profileA));
+
+            restartedViewModel = new CopilotChatViewModel(new CopilotChatService(),
+                new InMemoryStateStore(reloadedState, diskStore.AttachmentDirectoryPath), config, restartedRuntime, restartedHost);
+            var restored = Assert.Single(restartedViewModel.Conversations);
+
+            Assert.Null(restartedHost.ActiveRun);
+            Assert.Empty(restartedHost.ScheduledRuns);
+            Assert.False(restartedRuntime.Entered.IsCompleted);
+            Assert.Empty(restartedViewModel.QueuedFollowUps);
+            Assert.Empty(reloadedState.QueuedFollowUpRecoveries);
+            Assert.StartsWith(newerDraft, restored.DraftText, StringComparison.Ordinal);
+            Assert.Contains(firstPrompt, restored.DraftText, StringComparison.Ordinal);
+            Assert.Contains(laterPrompt, restored.DraftText, StringComparison.Ordinal);
+            Assert.True(restored.DraftText.IndexOf(firstPrompt, StringComparison.Ordinal)
+                < restored.DraftText.IndexOf(laterPrompt, StringComparison.Ordinal));
+            Assert.Equal(restored.DraftText, restartedViewModel.InputText);
+            var expectedAttachments = new[] { newerAttachment, firstAttachment, laterAttachment };
+            Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
+                restored.Attachments.Select(item => (item.Id, item.Value)));
+            Assert.Equal(originalMessages.Select(message => (message.Id, message.Content)),
+                restored.Messages.Select(message => (message.Id, message.Content)));
+            Assert.Equal(CopilotAgentStopReason.Completed, restored.Messages[1].AgentStopReason);
+            Assert.False(restored.Messages[1].WasResponseInterrupted);
+            Assert.False(restored.Messages[1].IsThinkingInProgress);
+
+            var recoveredDraft = restored.DraftText;
+            restartedViewModel.SendCommand.Execute(null);
+            var request = await restartedRuntime.Entered.WaitAsync(TestTimeout);
+
+            Assert.NotNull(restartedHost.ActiveRun);
+            Assert.Equal(profileB.Id, request.Profile.Id);
+            Assert.Equal(recoveredDraft, request.UserText);
+            Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
+                request.HostContext.Attachments.Select(item => (item.Id, item.Value)));
+            Assert.Equal(string.Empty, restartedViewModel.InputText);
+            Assert.Empty(restored.Attachments);
+        }
+        finally
+        {
+            var originalRuns = new[] { activeRun, firstRun, laterRun }.OfType<CopilotHostedAgentRun>().ToArray();
+            var restartedRuns = restartedHost.ScheduledRuns.ToArray();
+            taskHost.Shutdown();
+            releaseActive.TrySetResult();
+            restartedRuntime.Release();
+            restartedHost.Shutdown();
+            try
+            {
+                try
+                {
+                    await ShutdownQueuedCommandHostAsync(taskHost, runtime, originalRuns);
+                }
+                finally
+                {
+                    await ShutdownQueuedCommandHostAsync(restartedHost, restartedRuntime, restartedRuns);
+                }
+            }
+            finally
+            {
+                restartedViewModel?.Dispose();
+                viewModel.Dispose();
+                var resolvedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                var resolvedTemp = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
+                Assert.True(string.Equals(Path.GetDirectoryName(resolvedRoot), resolvedTemp, StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(resolvedRoot).StartsWith("CopilotQueuedMissingProfile-", StringComparison.Ordinal));
+                Directory.Delete(resolvedRoot, recursive: true);
+            }
         }
     }
 
