@@ -704,7 +704,7 @@ namespace ColorVision.Copilot
         private bool CanApplyAuxiliaryConversationResult(CopilotConversationRecord? conversation) =>
             Volatile.Read(ref _disposeState) == 0
             && conversation != null
-            && Conversations.Contains(conversation);
+            && (Conversations.Contains(conversation) || ReferenceEquals(_conversationPendingDeletion, conversation));
 
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {

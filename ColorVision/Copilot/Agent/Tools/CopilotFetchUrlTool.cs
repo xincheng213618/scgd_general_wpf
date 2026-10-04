@@ -60,12 +60,13 @@ namespace ColorVision.Copilot
 
             var requestedOutcomes = await FetchBatchAsync(urls, cancellationToken).ConfigureAwait(false);
             var remainingSlots = MaxResourcesPerRequest - requestedOutcomes.Length;
+            var visitedUrls = new HashSet<string>(
+                urls.Select(CopilotWebPageToolSupport.NormalizeUrlComparisonKey), StringComparer.Ordinal);
             var discoveredUrls = requestedOutcomes
                 .Where(outcome => outcome.Page != null)
                 .SelectMany(outcome => outcome.Page!.Value.DiscoveredResourceUrls)
                 .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Where(url => !urls.Contains(url, StringComparer.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(url => visitedUrls.Add(CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url)))
                 .Take(remainingSlots)
                 .ToArray();
             var discoveredOutcomes = await FetchBatchAsync(discoveredUrls, cancellationToken).ConfigureAwait(false);

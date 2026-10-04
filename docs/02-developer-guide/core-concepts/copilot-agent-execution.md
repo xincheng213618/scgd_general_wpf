@@ -269,13 +269,13 @@ pwsh -NoProfile -File .\Scripts\evaluate_copilot.ps1 -Profile DeepSeek
 
 ## 用量观察与分支去重
 
-异常、取消或暂停收尾使用当前 Assistant 已经接收的 Provider usage，保留输入、输出和缓存用量。没有已报告用量时清除该轮与 `conversation.LastUsage`，不继承上一轮数据，也不从 Agent 的估算预算推算账单。`CopilotHostedTurnUsageTests` 经真实 ViewModel 的请求调度、用量事件和失败／取消路径验证这一边界。
+异常、取消或暂停收尾使用当前 Assistant 已经接收的 Provider usage，保留输入、输出和缓存用量。没有已报告用量时清除该轮与 `conversation.LastUsage`，不继承上一轮数据，也不从 Agent 的估算预算推算账单。兼容旧 `LastUsage` 时只回填最新且未中断的 Assistant；较新的中断消息不能使其用量被记到更早的未知用量消息上。`CopilotHostedTurnUsageTests` 经真实 ViewModel 的请求调度、用量事件和失败／取消路径，再经过两次真实磁盘 Save／Load，验证归属和聚合用量不变。
 
 Agent 的已结算响应用量在处理同一更新的取消信号前记录；取消仍阻止后续正文、工具和审批处理，不撤回已经报告的消耗。`CopilotFinalAnswerCancellationTests` 经正式运行链验证上下文拒绝与受控取消同时发生时，预算、运行结果和 Turn 终态都保留同一输入、输出与缓存用量；只取消集成调用方令牌仍沿原规则传播取消异常。
 
 `CopilotHostedTurnCompletion` 保存真实 Provider 返回用量与独立的回答终态，不能因回答被标为中断就抹去已报告的消耗，也不能从 Agent 的估算预算制造 Provider 账单。`CopilotConversationUsageDiagnostics.Capture` 聚合已结束回答的 `ReportedUsage`，并单独加入 `CompactionUsage` 和 `TitleGenerationUsage`；活动、已跟踪、未报告和中断回答分别计数。Agent 时延、工具调用、委派与重试指标来自本地任务快照，不是同一口径的账户用量。
 
-自动标题生成失败或取消时，Provider 已报告的输入、输出和缓存用量仍计入来源会话；一次生成过程内的重试用量累加后只结算一次，未报告时不估算。失败不覆盖原标题；生成被替换或用户已经命名也不丢弃已知用量。已删除的会话或已释放的 ViewModel 不接收迟到结果。
+自动标题生成失败或取消时，Provider 已报告的输入、输出和缓存用量仍计入来源会话；一次生成过程内的重试用量累加后只结算一次，未报告时不估算。失败不覆盖原标题；生成被替换或用户已经命名也不丢弃已知用量。已成功删除的会话或已释放的 ViewModel 不接收迟到结果；删除保存尚未完成时的归属与失败恢复见[会话导航、回顾与出口](./copilot-local-interactions.md#会话导航、回顾与出口)。
 
 `/usage session` 还可显示当前 Profile 最近一次可识别的 Provider 响应头限额快照；它可能过期，不是套餐余额，也不会为显示报告请求账户 API。`daily|weekly|cumulative` 由 `CopilotConversationStatistics` 按本机日期汇总最近7天、最近30天或全部历史的消息活动；当前实现逐消息累计，与 session 额外加入的压缩/标题调用不是完全相同的口径，不能假定两种视图总量必然相等。
 

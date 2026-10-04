@@ -60,11 +60,12 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(text))
                 return results;
 
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             foreach (Match match in HttpUrlRegex.Matches(text))
             {
                 var candidate = match.Value.Trim().TrimEnd(UrlTrimCharacters);
                 if (!string.IsNullOrWhiteSpace(candidate)
-                    && !results.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+                    && visitedUrls.Add(NormalizeUrlComparisonKey(candidate)))
                 {
                     results.Add(candidate);
                 }
@@ -72,6 +73,9 @@ namespace ColorVision.Copilot
 
             return results;
         }
+
+        internal static string NormalizeUrlComparisonKey(string value) =>
+            Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri.AbsoluteUri : value;
 
         public static string NormalizeWebPageUrl(string value)
         {
@@ -327,6 +331,7 @@ namespace ColorVision.Copilot
         private static List<string> ExtractRelatedResourceUrls(Uri pageUri, HtmlDocument document)
         {
             var results = new List<string>();
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var nodes = document.DocumentNode.SelectNodes("//a[@href]|//link[@href]") ?? Enumerable.Empty<HtmlNode>();
             foreach (var node in nodes)
             {
@@ -336,8 +341,8 @@ namespace ColorVision.Copilot
                 if (!IsSameOrigin(pageUri, candidate) || !IsStructuredResourceLink(node, candidate))
                     continue;
 
-                var normalized = candidate.GetLeftPart(UriPartial.Path);
-                if (!results.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                var normalized = RemoveFragment(candidate).AbsoluteUri;
+                if (visitedUrls.Add(normalized))
                     results.Add(normalized);
                 if (results.Count >= 8)
                     break;
@@ -348,7 +353,7 @@ namespace ColorVision.Copilot
         private static List<CopilotWebPageLink> ExtractRelatedPageLinks(Uri pageUri, HtmlDocument document)
         {
             var results = new List<CopilotWebPageLink>();
-            var visitedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var currentPageUrl = RemoveFragment(pageUri).AbsoluteUri;
             var nodes = document.DocumentNode.SelectNodes("//a[@href]") ?? Enumerable.Empty<HtmlNode>();
             foreach (var node in nodes)
@@ -367,7 +372,7 @@ namespace ColorVision.Copilot
 
                 var normalizedUri = RemoveFragment(candidate);
                 var normalizedUrl = normalizedUri.AbsoluteUri;
-                if (string.Equals(normalizedUrl, currentPageUrl, StringComparison.OrdinalIgnoreCase)
+                if (string.Equals(normalizedUrl, currentPageUrl, StringComparison.Ordinal)
                     || !visitedUrls.Add(normalizedUrl))
                 {
                     continue;

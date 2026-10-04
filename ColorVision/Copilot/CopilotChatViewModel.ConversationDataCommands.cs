@@ -15,6 +15,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private CopilotConversationRecord? _conversationPendingDeletion;
+
         private async Task ExportConversationFromCommandAsync(CopilotLocalCommand command, string requestedFileName)
         {
             var conversation = SelectedConversation;
@@ -292,6 +294,8 @@ namespace ColorVision.Copilot
             CommandManager.InvalidateRequerySuggested();
             try
             {
+                // Auxiliary results still belong to this object until deletion is durable.
+                _conversationPendingDeletion = target;
                 var deletedTitle = target.Title;
                 var wasSelected = ReferenceEquals(target, SelectedConversation);
                 var previousProfileId = SelectedProfile?.Id;
@@ -361,6 +365,8 @@ namespace ColorVision.Copilot
             }
             finally
             {
+                if (ReferenceEquals(_conversationPendingDeletion, target))
+                    _conversationPendingDeletion = null;
                 _isEndingConversation = false;
                 CommandManager.InvalidateRequerySuggested();
             }

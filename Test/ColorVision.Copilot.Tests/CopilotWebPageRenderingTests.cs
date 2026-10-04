@@ -1,8 +1,149 @@
+using System.Collections.Concurrent;
+
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotWebPageRenderingTests
 {
     private static readonly Uri PageUri = new("https://public.example/page");
+
+    [Theory]
+    [InlineData(false, "path-case")]
+    [InlineData(true, "path-case")]
+    [InlineData(false, "query-case")]
+    [InlineData(true, "query-case")]
+    [InlineData(false, "authority-case")]
+    [InlineData(true, "authority-case")]
+    [InlineData(false, "exact-duplicate")]
+    [InlineData(true, "exact-duplicate")]
+    public async Task RequestPreparationAndFetchUrlPreserveDistinctTargetsAndFirstOccurrence(
+        bool useFetchTool, string scenario)
+    {
+        var (first, second, expectedCount) = scenario switch
+        {
+            "path-case" => ("https://public.example/Report", "https://public.example/report", 2),
+            "query-case" => ("https://public.example/page?id=ABC", "https://public.example/page?id=abc", 2),
+            "authority-case" => ("HTTPS://PUBLIC.example/Page", "https://public.example/Page", 1),
+            "exact-duplicate" => ("https://public.example/same", "https://public.example/same", 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario)),
+        };
+        var expectedUrls = expectedCount == 1 ? new[] { first } : new[] { first, second };
+        var capturedUrls = new ConcurrentQueue<string>();
+        Task<CopilotFetchedWebPageContent> LoadPage(string url, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            capturedUrls.Enqueue(url);
+            return Task.FromResult(new CopilotFetchedWebPageContent(url, "Captured page", string.Empty,
+                "Evidence for " + url));
+        }
+
+        var prompt = $"Compare {first} and {second}";
+        string content;
+        if (useFetchTool)
+        {
+            var result = await new CopilotFetchUrlTool(LoadPage).ExecuteAsync(
+                new CopilotAgentRequest { UserText = prompt, Mode = CopilotAgentMode.Web },
+                new CopilotAgentToolInput { Query = prompt }, CancellationToken.None);
+            Assert.True(result.Success);
+            content = result.Content;
+            Assert.Contains($"input_urls_total: {expectedCount}", content, StringComparison.Ordinal);
+            Assert.Contains($"input_urls_attempted: {expectedCount}", content, StringComparison.Ordinal);
+            Assert.Contains("input_urls_omitted: 0", content, StringComparison.Ordinal);
+            Assert.Contains("input_set_complete: true", content, StringComparison.Ordinal);
+        }
+        else
+        {
+            content = await new CopilotConversationRequestBuilder(LoadPage).BuildUserRequestContentAsync(
+                prompt, liveContext: null, CancellationToken.None);
+            Assert.Contains($"Prefetch scope: attempted the first {expectedCount} of {expectedCount} unique URL(s).",
+                content, StringComparison.Ordinal);
+        }
+
+        Assert.Equal(expectedUrls.Order(StringComparer.Ordinal), capturedUrls.Order(StringComparer.Ordinal));
+        var previousBlockPosition = -1;
+        foreach (var url in expectedUrls)
+        {
+            var blockPosition = content.IndexOf("[Web Page Fetched] " + url, StringComparison.Ordinal);
+            Assert.True(blockPosition > previousBlockPosition);
+            Assert.Contains("Evidence for " + url, content, StringComparison.Ordinal);
+            previousBlockPosition = blockPosition;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FetchUrlReadsCaseDistinctDiscoveredResourceOnce(bool queryCase)
+    {
+        const string requested = "https://public.example/Report?format=JSON";
+        var discovered = queryCase
+            ? "https://public.example/Report?format=json"
+            : "https://public.example/report?format=JSON";
+        var capturedUrls = new ConcurrentQueue<string>();
+        Task<CopilotFetchedWebPageContent> LoadPage(string url, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            capturedUrls.Enqueue(url);
+            var page = new CopilotFetchedWebPageContent(url, "Captured page", string.Empty, "Evidence for " + url);
+            return Task.FromResult(url == requested ? page with
+            {
+                RelatedResourceUrls =
+                [
+                    requested,
+                    "https://PUBLIC.example/Report?format=JSON",
+                    discovered,
+                    discovered.Replace("public.example", "PUBLIC.example", StringComparison.Ordinal),
+                ],
+            } : page);
+        }
+
+        var result = await new CopilotFetchUrlTool(LoadPage).ExecuteAsync(
+            new CopilotAgentRequest { UserText = "Read " + requested, Mode = CopilotAgentMode.Web },
+            new CopilotAgentToolInput { Query = requested }, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(new[] { requested, discovered }, capturedUrls);
+        Assert.Contains("input_urls_total: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains("input_set_complete: true", result.Content, StringComparison.Ordinal);
+        Assert.Contains("discovered_urls_attempted: 1", result.Content, StringComparison.Ordinal);
+        foreach (var url in new[] { requested, discovered })
+        {
+            Assert.Contains("[Web Page Fetched] " + url, result.Content, StringComparison.Ordinal);
+            Assert.Contains("Evidence for " + url, result.Content, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StaticLinksPreserveCaseDistinctResourcesAndPagesWithoutFragments(bool queryCase)
+    {
+        const string firstResource = "https://public.example/Report.json?format=JSON";
+        var secondResource = queryCase
+            ? "https://public.example/Report.json?format=json"
+            : "https://public.example/report.json?format=JSON";
+        var source = new Uri(queryCase
+            ? "https://public.example/Report?view=ABC"
+            : "https://public.example/PAGE");
+        var firstPage = queryCase ? "https://public.example/Report?view=Abc" : "https://public.example/Page";
+        var secondPage = queryCase ? "https://public.example/Report?view=abc" : "https://public.example/page";
+        var page = CopilotWebPageToolSupport.ExtractWebPageContent(source, $"""
+            <html><body>
+            <a href="{firstResource.Replace("public.example", "PUBLIC.example", StringComparison.Ordinal)}#top">First JSON</a>
+            <a href="{firstResource}#duplicate">Duplicate JSON</a>
+            <a href="{secondResource}#bottom">Second JSON</a>
+            <a href="{firstPage.Replace("public.example", "PUBLIC.example", StringComparison.Ordinal)}#top">First page</a>
+            <a href="{firstPage}#duplicate">Duplicate page</a>
+            <a href="{secondPage}#bottom">Second page</a>
+            </body></html>
+            """);
+
+        Assert.Equal(new[] { firstResource, secondResource }, page.DiscoveredResourceUrls);
+        Assert.Equal(new[]
+        {
+            new CopilotWebPageLink(firstPage, "First page"),
+            new CopilotWebPageLink(secondPage, "Second page"),
+        }, page.DiscoveredPageLinks);
+    }
 
     [Fact]
     public async Task EmptyApplicationShellUsesRenderedBodyAndReportsItsSource()
