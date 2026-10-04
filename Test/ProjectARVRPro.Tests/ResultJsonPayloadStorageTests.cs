@@ -6,6 +6,33 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultJsonPayloadStorageTests
 {
+    [Fact]
+    public void LiveListEvictionPreservesHistoryAndAnExportStillOwningTheResult()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        var store = new ResultStatisticsDataStore(database.Path);
+        store.InitializeSchema();
+        const string json = "{\"result\":\"历史结果仍可回看\"}";
+        var exporting = new ProjectARVRReuslt { SN = "old", ViewResultJson = json };
+        using (SqlSugarClient db = database.CreateClient())
+        {
+            exporting.Id = db.Insertable(exporting).ExecuteReturnIdentity();
+            ResultJsonPayloadStorage.SaveViewResultJson(db, exporting.Id, json);
+        }
+
+        var live = new System.Collections.ObjectModel.ObservableCollection<ProjectARVRReuslt>();
+        ViewResultManager.AddLiveResult(live, exporting);
+        ProjectARVRReuslt latest = null!;
+        for (int i = 0; i < ViewResultManager.MaximumLiveResults; i++)
+            ViewResultManager.AddLiveResult(live, latest = new ProjectARVRReuslt { SN = i.ToString() });
+
+        Assert.Equal(ViewResultManager.MaximumLiveResults, live.Count);
+        Assert.Same(latest, live[0]);
+        Assert.DoesNotContain(exporting, live);
+        Assert.Equal(json, exporting.ViewResultJson);
+        Assert.Equal(json, store.LoadViewResultJson(new ProjectARVRReuslt { Id = exporting.Id }));
+    }
+
     [Theory]
     [InlineData("{\"name\":\"中文结果\",\"value\":123.45}")]
     [InlineData("{\"emoji\":\"测试🧪\",\"items\":[1,2,3]}")]

@@ -17,6 +17,10 @@ public sealed class FlowPerformanceSamplerTests
         Assert.Null(sample.SystemCpuPercent);
         Assert.Null(sample.ProcessIoWriteMiBPerSecond);
         Assert.Null(sample.Gen0Collections);
+        Assert.Null(sample.WindowGcPauseMs);
+        Assert.Null(sample.WindowGcPausePercent);
+        Assert.Null(sample.AvailablePhysicalMiB);
+        Assert.Null(sample.ProcessPageFaultsPerSecond);
     }
 
     [Fact]
@@ -27,12 +31,18 @@ public sealed class FlowPerformanceSamplerTests
             ProcessorCount = 4, ProcessCpuTicks = TimeSpan.FromSeconds(10).Ticks,
             SystemCpu = new(1000, 5000, 3000), IoReadBytes = 10, IoWriteBytes = 20,
             AllocatedBytes = 1024, Gen0 = 10, Gen1 = 5, Gen2 = 3,
+            GcPauseTicks = TimeSpan.FromSeconds(10).Ticks,
+            PageFaultCount = 100,
         };
         var end = start with
         {
             ProcessCpuTicks = TimeSpan.FromSeconds(16).Ticks, SystemCpu = new(2000, 7500, 4500),
             IoReadBytes = 10 + 30 * (ulong)MiB, IoWriteBytes = 20 + 60 * (ulong)MiB,
             AllocatedBytes = 1024 + 30 * MiB, Gen0 = 13, Gen1 = 6, Gen2 = 3,
+            GcPauseTicks = TimeSpan.FromSeconds(11.5).Ticks, GcPausePercent = 0.1,
+            AvailablePhysicalBytes = 2048 * (ulong)MiB, PhysicalMemoryLoadPercent = 75,
+            GcFragmentedBytes = 3 * MiB, CvRawCacheBytes = 350 * MiB, CvRawCacheEntries = 1, CvRawCacheReaders = 2,
+            PageFaultCount = 700,
         };
         var sample = FlowPerformanceMetrics.Create(end, start, 30, 1.5);
         Assert.Equal(5, sample.ProcessCpuPercent);
@@ -43,6 +53,16 @@ public sealed class FlowPerformanceSamplerTests
         Assert.Equal(3, sample.Gen0Collections);
         Assert.Equal(1, sample.Gen1Collections);
         Assert.Equal(0, sample.Gen2Collections);
+        Assert.Equal(1500, sample.WindowGcPauseMs);
+        Assert.Equal(5, sample.WindowGcPausePercent); // Window rate differs from the process-lifetime percentage.
+        Assert.Equal(0.1, sample.GcPausePercent);
+        Assert.Equal(2048, sample.AvailablePhysicalMiB);
+        Assert.Equal(75u, sample.PhysicalMemoryLoadPercent);
+        Assert.Equal(3, sample.GcFragmentedMiB);
+        Assert.Equal(350, sample.CvRawCacheMiB);
+        Assert.Equal(1, sample.CvRawCacheEntries);
+        Assert.Equal(2, sample.CvRawCacheReaders);
+        Assert.Equal(20, sample.ProcessPageFaultsPerSecond);
     }
 
     [Fact]
@@ -104,13 +124,15 @@ public sealed class FlowPerformanceSamplerTests
     [Fact]
     public void MissingOrResetCountersRemainUnknown()
     {
-        var previous = new FlowPerformanceReading { IoWriteBytes = 10, ProcessCpuTicks = 100, SystemCpu = new(50, 100, 100) };
-        var current = new FlowPerformanceReading { IoWriteBytes = 1, ProcessCpuTicks = 1, SystemCpu = new(1, 1, 1) };
+        var previous = new FlowPerformanceReading { IoWriteBytes = 10, ProcessCpuTicks = 100, SystemCpu = new(50, 100, 100), GcPauseTicks = 10, PageFaultCount = uint.MaxValue };
+        var current = new FlowPerformanceReading { IoWriteBytes = 1, ProcessCpuTicks = 1, SystemCpu = new(1, 1, 1), GcPauseTicks = 1, PageFaultCount = 1 };
         var sample = FlowPerformanceMetrics.Create(current, previous, 30, 0);
         Assert.Null(sample.ProcessIoReadMiBPerSecond);
         Assert.Null(sample.ProcessIoWriteMiBPerSecond);
         Assert.Null(sample.ProcessCpuPercent);
         Assert.Null(sample.SystemCpuPercent);
+        Assert.Null(sample.WindowGcPauseMs);
+        Assert.Null(sample.ProcessPageFaultsPerSecond);
     }
 
     [Fact]
@@ -120,7 +142,10 @@ public sealed class FlowPerformanceSamplerTests
         Assert.True(sampler.TrySample(out var sample));
         Assert.True(sample!.WorkingSetMiB > 0);
         Assert.True(sample.PrivateMiB > 0);
+        Assert.True(sample.AvailablePhysicalMiB > 0);
+        Assert.InRange(sample.PhysicalMemoryLoadPercent!.Value, 0u, 100u);
         Assert.Equal(Environment.ProcessorCount, sample.ProcessorCount);
+        Assert.NotNull(FlowPerformanceSampler.ReadCurrent().PageFaultCount);
     }
 
     [Fact]

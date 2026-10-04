@@ -49,6 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         internal object SyncRoot { get; } = new();
+        internal LocalCameraRawBufferPool RawBufferPool { get; private set; } = new();
 
         public IntPtr Handle
         {
@@ -126,6 +127,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
                     if (native.IsOpen(manager))
                     {
+                        RawBufferPool.Dispose();
+                        RawBufferPool = new LocalCameraRawBufferPool();
                         openedCameraId = cameraId;
                         OpenedMode = takeImageMode;
                         openedBpp = imageBpp;
@@ -243,7 +246,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ObjectDisposedException.ThrowIf(disposed, this);
                 if (handle == IntPtr.Zero || !native.IsOpen(handle))
                 {
-                    backend.SetLocalStatus(DeviceStatusType.Closed);
+                    RefreshStatus();
                     throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
                 }
                 ensureAvailable(openedCameraId);
@@ -254,7 +257,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private void RefreshStatus()
         {
-            backend.SetLocalStatus(IsOpen
+            bool isOpen = IsOpen;
+            if (!isOpen) RawBufferPool.Dispose();
+            backend.SetLocalStatus(isOpen
                 ? (OpenedMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened)
                 : DeviceStatusType.Closed);
         }
@@ -265,6 +270,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (disposed) return;
                 disposed = true;
+                RawBufferPool.Dispose();
                 if (handle == IntPtr.Zero) return;
 
                 try

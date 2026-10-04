@@ -108,6 +108,10 @@ related: ["engine.devices", "operations.device-configuration", "operations.physi
 
 复制 `CVStartCFC` 会共享 RuntimeResources；流程进入 `DoFinishingCore` 后在 finally 中释放这些资源。消费者应在根引用仍有效时调用 `Acquire()`，持有并最终 Dispose `LocalFlowFrameLease`。已取得的租约延长共享存储寿命；根对象 Dispose 后不能再从该根 Acquire，即使其它租约仍存活。租约自己的 Dispose 幂等，之后访问其指针会抛 ObjectDisposedException。
 
+本地测量取图的 RAW 内存由相机会话持有的 `LocalCameraRawBufferPool` 复用，最多保留一块与最近申请字节数匹配的空闲缓冲。池为空时直接申请，同一流程可同时持有多张图，不等待其它帧归还；最后一个使用者释放后，空闲槽已满或大小不匹配的缓冲直接释放。帧标识、曝光、校正与翻转状态每次独立创建，CIE 内存及文件加载帧沿用直接申请释放。每台相机闲置占用最多为当前一张 RAW 的大小，例如 9568×6380、三通道 16-bit 约 349 MiB；这不是流程在用图像的总内存上限。相机确认关闭或设备释放时清空池，重新打开使用新池，旧帧的晚到归还直接释放。池只复用工作内存，不承担 CVRAW 历史图像缓存或文件保存；验证入口为 `LocalCameraSessionTests` 的多帧租约、尺寸变化、状态重置与关闭重开测试。
+
+节点阶段耗时在 `AllocateFrame` 下记录 `AllocateRawBuffer` 或 `ReuseRawBuffer`，据此区分实际申请与复用。各已完成阶段附带 `ProcessGcPauseMs` 和 `ThreadCpuMs`：前者是阶段期间整个进程的 GC 暂停增量，嵌套阶段不能相加；后者只统计执行线程，不包含相机 SDK 内部工作线程，阶段跨线程完成或计数不可用时为空。CPU 时间粒度较粗，短阶段为零不代表没有计算，墙钟与线程 CPU 的差额也不能全部归因于磁盘等待。慢数据库命令的 `DatabaseCommandTiming` 同样记录进程 GC 暂停增量，便于与卡顿时刻对照。
+
 **租约不是不可变图像快照。** 下游 `LocalCalibrationNode` 可对同一帧执行 `CalibrateInPlace`：修改 RAW、重新分配 CIE、更新 Metadata，再处理方向。`ResizeCieBuffer` 会释放旧 CIE 地址，不等待其它租约归零；租约保留取得时的 Metadata/MasterId，而指针和长度读取共享存储。因此跨线程长期保留指针或同时执行预览和校正，不能仅靠 Acquire 保证数据一致或地址稳定；异步消费者必须自行复制稳定快照。CVRAW 保存返回前完成像素写入或缓存复制，参数尾块独立替换；当前相机设备预览在交接下游前复制 RAW/CIE，UI 不持有原生指针或流程帧租约。
 
 `IsMirrorReady` 与缓冲区各自的 flip 状态也要一起判断：有 CIE 时最终翻转可只作用于 CIE，RAW 仍保留传感器方向；无校正模板的节点可发布尚未应用方向的 RAW。不能仅凭 FlipMode 判断显示坐标已与 POI 一致。设备视图快照的范围及后续优化见[内存预览设计](../../02-developer-guide/engine-development/local-camera-memory-preview.md)。

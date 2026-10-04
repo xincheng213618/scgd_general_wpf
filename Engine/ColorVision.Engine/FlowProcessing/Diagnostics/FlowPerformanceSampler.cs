@@ -1,3 +1,4 @@
+using ColorVision.FileIO;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -78,6 +79,10 @@ internal sealed class FlowPerformanceSampler(Func<FlowPerformanceReading> read, 
         IoCounters? io = GetProcessIoCounters(process.Handle, out IoCounters counters) ? counters : null;
         SystemCpuTimes? system = GetSystemTimes(out ulong idle, out ulong kernel, out ulong user)
             ? new(idle, kernel, user) : null;
+        MemoryStatus memory = new() { Length = (uint)Marshal.SizeOf<MemoryStatus>() };
+        bool hasMemoryStatus = GlobalMemoryStatusEx(ref memory);
+        bool hasProcessMemory = GetProcessMemoryInfo(process.Handle, out ProcessMemoryCounters processMemory, (uint)Marshal.SizeOf<ProcessMemoryCounters>());
+        CVFileReadCacheSnapshot rawCache = CVFileReadCache.GetSnapshot();
         return new()
         {
             ProcessorCount = Environment.ProcessorCount, ProcessCpuTicks = process.TotalProcessorTime.Ticks,
@@ -85,6 +90,12 @@ internal sealed class FlowPerformanceSampler(Func<FlowPerformanceReading> read, 
             WorkingSetBytes = process.WorkingSet64, PrivateBytes = process.PrivateMemorySize64,
             ManagedHeapBytes = GC.GetTotalMemory(false), GcCommittedBytes = gc.TotalCommittedBytes,
             AllocatedBytes = GC.GetTotalAllocatedBytes(false), GcPausePercent = gc.PauseTimePercentage,
+            GcPauseTicks = GC.GetTotalPauseDuration().Ticks, GcFragmentedBytes = gc.FragmentedBytes,
+            AvailablePhysicalBytes = hasMemoryStatus ? memory.AvailablePhysical : null,
+            PhysicalMemoryLoadPercent = hasMemoryStatus ? memory.MemoryLoad : null,
+            PageFaultCount = hasProcessMemory ? processMemory.PageFaultCount : null,
+            CvRawCacheBytes = rawCache.CapacityBytes, CvRawCacheEntries = rawCache.Entries.Count,
+            CvRawCacheReaders = rawCache.ActiveReaders,
             Gen0 = GC.CollectionCount(0), Gen1 = GC.CollectionCount(1), Gen2 = GC.CollectionCount(2),
             ThreadPoolThreads = ThreadPool.ThreadCount, AvailableWorkers = workers,
             AvailableIoThreads = ioThreads, PendingWorkItems = ThreadPool.PendingWorkItemCount,
@@ -97,6 +108,30 @@ internal sealed class FlowPerformanceSampler(Func<FlowPerformanceReading> read, 
         public ulong ReadOperationCount, WriteOperationCount, OtherOperationCount;
         public ulong ReadTransferCount, WriteTransferCount, OtherTransferCount;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MemoryStatus
+    {
+        public uint Length, MemoryLoad;
+        public ulong TotalPhysical, AvailablePhysical, TotalPageFile, AvailablePageFile;
+        public ulong TotalVirtual, AvailableVirtual, AvailableExtendedVirtual;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ProcessMemoryCounters
+    {
+        public uint Size, PageFaultCount;
+        public nuint PeakWorkingSetSize, WorkingSetSize, QuotaPeakPagedPoolUsage, QuotaPagedPoolUsage;
+        public nuint QuotaPeakNonPagedPoolUsage, QuotaNonPagedPoolUsage, PagefileUsage, PeakPagefileUsage;
+    }
+
+    [DllImport("psapi.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetProcessMemoryInfo(IntPtr process, out ProcessMemoryCounters counters, uint size);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MemoryStatus status);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -206,6 +241,14 @@ internal sealed record FlowPerformanceReading
     public long GcCommittedBytes { get; init; }
     public long AllocatedBytes { get; init; }
     public double GcPausePercent { get; init; }
+    public long? GcPauseTicks { get; init; }
+    public long GcFragmentedBytes { get; init; }
+    public ulong? AvailablePhysicalBytes { get; init; }
+    public uint? PhysicalMemoryLoadPercent { get; init; }
+    public uint? PageFaultCount { get; init; }
+    public long CvRawCacheBytes { get; init; }
+    public int CvRawCacheEntries { get; init; }
+    public int CvRawCacheReaders { get; init; }
     public int Gen0 { get; init; }
     public int Gen1 { get; init; }
     public int Gen2 { get; init; }
@@ -232,6 +275,15 @@ internal sealed record FlowPerformanceMetrics
     public int? Gen1Collections { get; init; }
     public int? Gen2Collections { get; init; }
     public double GcPausePercent { get; init; }
+    public double? WindowGcPauseMs { get; init; }
+    public double? WindowGcPausePercent { get; init; }
+    public double GcFragmentedMiB { get; init; }
+    public double? AvailablePhysicalMiB { get; init; }
+    public uint? PhysicalMemoryLoadPercent { get; init; }
+    public double? ProcessPageFaultsPerSecond { get; init; }
+    public double CvRawCacheMiB { get; init; }
+    public int CvRawCacheEntries { get; init; }
+    public int CvRawCacheReaders { get; init; }
     public int ThreadPoolThreads { get; init; }
     public int AvailableWorkers { get; init; }
     public int AvailableIoThreads { get; init; }
@@ -241,6 +293,9 @@ internal sealed record FlowPerformanceMetrics
     internal static FlowPerformanceMetrics Create(FlowPerformanceReading current, FlowPerformanceReading? previous, double? seconds, double samplingMs)
     {
         bool window = previous != null && seconds > 0;
+        double? gcPauseMs = window && current.GcPauseTicks.HasValue && previous!.GcPauseTicks.HasValue
+            && current.GcPauseTicks >= previous.GcPauseTicks
+            ? (current.GcPauseTicks.Value - previous.GcPauseTicks.Value) / (double)TimeSpan.TicksPerMillisecond : null;
         double? systemCpu = null;
         if (window && current.SystemCpu is { } end && previous!.SystemCpu is { } start
             && end.Idle >= start.Idle && end.Kernel >= start.Kernel && end.User >= start.User)
@@ -269,6 +324,17 @@ internal sealed record FlowPerformanceMetrics
             Gen1Collections = window ? Math.Max(0, current.Gen1 - previous!.Gen1) : null,
             Gen2Collections = window ? Math.Max(0, current.Gen2 - previous!.Gen2) : null,
             GcPausePercent = Math.Round(current.GcPausePercent, 3), ThreadPoolThreads = current.ThreadPoolThreads,
+            WindowGcPauseMs = gcPauseMs.HasValue ? Math.Round(gcPauseMs.Value, 3) : null,
+            WindowGcPausePercent = gcPauseMs.HasValue ? Math.Round(gcPauseMs.Value / (seconds!.Value * 10), 3) : null,
+            GcFragmentedMiB = Math.Round(current.GcFragmentedBytes / 1048576d, 3),
+            AvailablePhysicalMiB = current.AvailablePhysicalBytes.HasValue
+                ? Math.Round(current.AvailablePhysicalBytes.Value / 1048576d, 3) : null,
+            PhysicalMemoryLoadPercent = current.PhysicalMemoryLoadPercent,
+            ProcessPageFaultsPerSecond = window && current.PageFaultCount.HasValue && previous!.PageFaultCount.HasValue
+                && current.PageFaultCount >= previous.PageFaultCount
+                ? Math.Round((current.PageFaultCount.Value - previous.PageFaultCount.Value) / seconds!.Value, 3) : null,
+            CvRawCacheMiB = Math.Round(current.CvRawCacheBytes / 1048576d, 3),
+            CvRawCacheEntries = current.CvRawCacheEntries, CvRawCacheReaders = current.CvRawCacheReaders,
             AvailableWorkers = current.AvailableWorkers, AvailableIoThreads = current.AvailableIoThreads,
             PendingWorkItems = current.PendingWorkItems, SamplingMs = Math.Round(samplingMs, 3),
         };

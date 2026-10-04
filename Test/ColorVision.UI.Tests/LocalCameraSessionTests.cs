@@ -3,6 +3,10 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using Newtonsoft.Json.Linq;
+using FlowEngineLib.Algorithm;
+using FlowEngineLib.Base;
+using System.Runtime.InteropServices;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.UI.Tests;
 
@@ -246,10 +250,168 @@ public class LocalCameraSessionTests
         Assert.Equal(0, cameraCfg.Value<int>("eh"));
     }
 
+    [Fact]
+    public void FlowFramesStayExclusiveUntilTheirLastLeaseIsReleased()
+    {
+        using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        using var resources = new FlowRuntimeResources();
+        using var first = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+        using var second = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+        resources.Set("first", first);
+        resources.Set("second", second);
+        using var firstLease = first.Acquire();
+        using var secondLease = second.Acquire();
+        IntPtr firstPointer = firstLease.RawPointer;
+        IntPtr secondPointer = secondLease.RawPointer;
+        Assert.NotEqual(firstPointer, secondPointer);
+        Marshal.WriteByte(firstPointer, 11);
+        Marshal.WriteByte(secondPointer, 22);
+
+        resources.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => first.Acquire());
+        using var third = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+        using var thirdLease = third.Acquire();
+        Assert.NotEqual(firstPointer, thirdLease.RawPointer);
+        Assert.NotEqual(secondPointer, thirdLease.RawPointer);
+        Assert.Equal(11, Marshal.ReadByte(firstPointer));
+        Assert.Equal(22, Marshal.ReadByte(secondPointer));
+
+        firstLease.Dispose();
+        using var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+        using var nextLease = next.Acquire();
+        Assert.Equal(firstPointer, nextLease.RawPointer);
+        Marshal.WriteByte(nextLease.RawPointer, 33);
+        first.Dispose();
+        firstLease.Dispose();
+        Assert.Equal(33, Marshal.ReadByte(nextLease.RawPointer));
+        Assert.Equal(22, Marshal.ReadByte(secondLease.RawPointer));
+    }
+
+    [Fact]
+    public void ReusingRawMemoryCreatesFreshImageIdentityAndCalibrationState()
+    {
+        var timing = new FlowNodeTiming();
+        using var activation = timing.Activate();
+        using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        using var first = LocalFlowFrame.Allocate(new LocalFrameMetadata
+        {
+            Width = 2, Height = 1, Channels = 1, SourceBpp = 16,
+            PrimaryBufferKind = LocalFrameBufferKind.CvRaw, FlipMode = CVImageFlipMode.Y,
+            Exposure = [10], CalibrationTemplate = "previous", IsMirrorReady = true
+        }, 4, 8, session.RawBufferPool);
+        first.MasterId = 42;
+        first.CvRawFilePath = "previous.cvraw";
+        first.MarkPrimaryBufferFlipApplied();
+        IntPtr pointer;
+        using (var lease = first.Acquire()) pointer = lease.RawPointer;
+        first.Dispose();
+
+        LocalFrameMetadata metadata = new()
+        {
+            Width = 2, Height = 1, Channels = 1, SourceBpp = 16,
+            PrimaryBufferKind = LocalFrameBufferKind.CvRaw, FlipMode = CVImageFlipMode.Y,
+            Exposure = [20], IsMirrorReady = true
+        };
+        using var next = LocalFlowFrame.Allocate(metadata, 4, 0, session.RawBufferPool);
+        using var nextLease = next.Acquire();
+        Assert.Equal(pointer, nextLease.RawPointer);
+        Assert.NotEqual(first.FrameId, next.FrameId);
+        Assert.Same(metadata, next.Metadata);
+        Assert.Equal(-1, next.MasterId);
+        Assert.Empty(next.CvRawFilePath);
+        Assert.Null(next.ColorCalibration);
+        Assert.False(next.IsRawFlipApplied);
+        Assert.False(next.HasCie);
+        Assert.Equal(IntPtr.Zero, nextLease.CiePointer);
+        Assert.Equal(new[] { "AllocateRawBuffer", "ReuseRawBuffer" }, timing.Finish().Stages.Select(stage => stage.Name));
+    }
+
+    [Fact]
+    public void SizeChangesPreserveTheNewBufferWhenAnOlderSizeReturnsLate()
+    {
+        using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        using var old = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+        using var oldLease = old.Acquire();
+        Marshal.WriteByte(oldLease.RawPointer, 15, 17);
+        IntPtr currentPointer;
+        using (var current = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, session.RawBufferPool))
+        using (var currentLease = current.Acquire())
+        {
+            currentPointer = currentLease.RawPointer;
+            Assert.NotEqual(oldLease.RawPointer, currentPointer);
+            Marshal.WriteByte(currentPointer, 63, 29);
+            Assert.Equal(17, Marshal.ReadByte(oldLease.RawPointer, 15));
+        }
+        old.Dispose();
+        oldLease.Dispose();
+
+        using var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, session.RawBufferPool);
+        using var nextLease = next.Acquire();
+        Assert.Equal(currentPointer, nextLease.RawPointer);
+        Assert.Equal(64, nextLease.RawLength);
+        Assert.Equal(29, Marshal.ReadByte(nextLease.RawPointer, 63));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClosingOrDisposingTheCameraRetiresItsPoolButKeepsOutstandingImagesValid(bool dispose)
+    {
+        using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        var oldPool = session.RawBufferPool;
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, oldPool);
+        using var lease = frame.Acquire();
+        Marshal.WriteByte(lease.RawPointer, 37);
+        using (var idle = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, oldPool)) { }
+
+        if (dispose) session.Dispose();
+        else session.Close(true);
+        Assert.Throws<ObjectDisposedException>(() => oldPool.Rent(16));
+        Assert.Equal(37, Marshal.ReadByte(lease.RawPointer));
+        if (!dispose)
+        {
+            session.Open("camera-2", TakeImageMode.Measure_Normal, 16);
+            Assert.NotSame(oldPool, session.RawBufferPool);
+            using var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
+            using var nextLease = next.Acquire();
+            Assert.NotEqual(lease.RawPointer, nextLease.RawPointer);
+            Marshal.WriteByte(nextLease.RawPointer, 41);
+            frame.Dispose();
+            lease.Dispose();
+            Assert.Equal(41, Marshal.ReadByte(nextLease.RawPointer));
+            Assert.Throws<ObjectDisposedException>(() => oldPool.Rent(16));
+        }
+    }
+
+    [Fact]
+    public void FailedCloseKeepsTheExistingPoolUsableUntilTheCameraActuallyCloses()
+    {
+        var native = new FakeNative { IgnoreClose = true };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+        var pool = session.RawBufferPool;
+        IntPtr pointer;
+        using (var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, pool))
+        using (var lease = frame.Acquire()) pointer = lease.RawPointer;
+        Assert.Throws<InvalidOperationException>(() => session.Close(true));
+        Assert.Same(pool, session.RawBufferPool);
+        using (var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, pool))
+        using (var lease = next.Acquire()) Assert.Equal(pointer, lease.RawPointer);
+
+        native.IgnoreClose = false;
+        session.Close(true);
+        Assert.Throws<ObjectDisposedException>(() => pool.Rent(16));
+    }
+
     private sealed class FakeNative : ILocalCameraNative
     {
         public IReadOnlyList<string> CameraIds { get; init; } = [];
         public bool FailDiscovery { get; init; }
+        public bool IgnoreClose { get; set; }
         public int Scans, Initializations, Opens;
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public string? OpenedId;
@@ -270,7 +432,7 @@ public class LocalCameraSessionTests
             opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS;
             return OpenResult;
         }
-        public void Close(IntPtr handle) => opened = false;
+        public void Close(IntPtr handle) { if (!IgnoreClose) opened = false; }
         public void DetachCallback(IntPtr handle) { }
         public bool UpdateCalibration(IntPtr handle, string json) => true;
         public void Release(IntPtr handle) { }

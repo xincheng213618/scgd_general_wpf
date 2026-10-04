@@ -69,6 +69,10 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 ## 长期运行与结果视图刷新
 
+运行中追加结果时，主窗口列表最多驻留最近 1,000 条，避免结果 JSON 和列表对象随生产次数持续累积；从列表淘汰不删除 SQLite 历史，也不修改仍被后台图像导出持有的结果对象。手动历史查询仍按“默认查询条数”加载，下一次追加实时结果时恢复驻留上限。只读结果文本不保留撤销历史。
+
+`ARVRFlowPhaseTiming` 同时记录 `DisplayedResultCount` 和 `AwaitingAutomaticImageSnapshotCount`，后者仅表示尚未交给图像快照处理的结果，不是正在编码的任务数；`OutstandingImageExportCount` 统计已启动而未完成的导出任务，包含空间检查、排队、编码、写盘及路径登记，不能直接当作同时编码数。进程的 `FlowPerformanceSample` 每 30 秒至多后台采样一次，记录系统可用物理内存、内存负载、GC 碎片、CVRAW 缓存容量/条数/借用数，进程页面错误速率 `ProcessPageFaultsPerSecond`，以及相邻采样间的 `WindowGcPauseMs` / `WindowGcPausePercent`。原 `GcPausePercent` 仍为进程启动以来累计比例，不能用来排除短时停顿；页面错误包含软缺页，不能直接认定磁盘换页；这些指标帮助归因，不等同于对象堆快照或硬缺页证据。
+
 所有继承 `ViewConfigBase` 的读图与结果视图都保留 `AutoRefreshView` 开关，便于调试时自动打开最新图像或绘制结果。ARVRPro 主窗口结果列表工具栏提供“视图刷新管理”：窗口从已注册配置和当前设备控制项动态发现相机、算法、校正、光谱、SMU、第三方算法等视图，不把范围写死为三个类型；同类配置存在多个设备实例时合并为一项并列出实际影响数量和名称。
 
 窗口中的逐项开关和“一键关闭全部刷新”只修改草稿，点击“确定并保存”后才统一应用并通过 `ConfigService.SaveConfigs` 写入配置文件，下次启动继续保持；取消不改变运行配置。当前已加载且仍开启自动刷新的项目使用橙色行背景与汇总警示，主窗口入口同时显示开启项数量；未加载的配置仍可预先关闭并持久化，但不计入运行时警示。保存失败时必须恢复进入窗口前的运行值并明确提示，不得出现本次运行已经关闭而文件未保存的半应用状态。关闭自动刷新不关闭视图、不修改查询数量，也不禁止之后重新开启调试功能。

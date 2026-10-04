@@ -316,6 +316,7 @@ namespace ProjectARVRPro
 
     public class ViewResultManager : ViewModelBase,IDisposable
     {
+        internal const int MaximumLiveResults = 1000;
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
@@ -419,7 +420,7 @@ namespace ProjectARVRPro
             });
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
-                AddViewResult(item);
+                AddLiveResult(ViewResluts, item);
         }
 
         internal bool MarkResultProcessingCompleted(ProjectARVRReuslt item, DateTime completedAt)
@@ -523,9 +524,12 @@ namespace ProjectARVRPro
             });
         }
 
-        private void AddViewResult(ProjectARVRReuslt item)
+        internal static void AddLiveResult(ObservableCollection<ProjectARVRReuslt> results, ProjectARVRReuslt item)
         {
-            ViewResluts.Insert(0, item);
+            results.Insert(0, item);
+            // History remains in SQLite. Do not mutate evicted items: an image export may still own them.
+            while (results.Count > MaximumLiveResults)
+                results.RemoveAt(results.Count - 1);
         }
 
         public int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)

@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     FlipMode = request.FlipMode,
                     IsMirrorReady = calibrationFiles.Count > 0
                 };
-                frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength));
+                frame = FlowNodeTiming.Run("AllocateFrame", () => LocalFlowFrame.Allocate(metadata, rawLength, cieLength, device.LocalCameraSession.RawBufferPool));
 
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {

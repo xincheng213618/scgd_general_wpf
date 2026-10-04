@@ -14,6 +14,7 @@ public static class DatabaseCommandTiming
     public static int Execute(SqlSugarClient db, string operation, Func<int> command, string? correlationId = null)
     {
         long started = Stopwatch.GetTimestamp();
+        long gcPauseStarted = GC.GetTotalPauseDuration().Ticks;
         double? openMs = null;
         double? executeMs = null;
         int? result = null;
@@ -49,6 +50,7 @@ public static class DatabaseCommandTiming
                     // Includes the server's implicit commit and client-side command/connection handling.
                     ExecuteMs = executeMs.HasValue ? Math.Round(executeMs.Value, 3) : (double?)null,
                     TotalMs = Math.Round(totalMs, 3),
+                    ProcessGcPauseMs = Math.Round(Math.Max(0, GC.GetTotalPauseDuration().Ticks - gcPauseStarted) / (double)TimeSpan.TicksPerMillisecond, 3),
                 }));
             }
         }

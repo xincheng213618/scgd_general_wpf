@@ -312,6 +312,9 @@ namespace ProjectARVRPro
                 FlowCompletionToResultProcessingCompleteMs = GetElapsedMilliseconds(result.FlowCompletedAt, result.ResultProcessingCompletedAt),
                 FlowCompletionToPersistedMs = GetElapsedMilliseconds(result.FlowCompletedAt, persistedAt),
                 ImageExportIncludedInCt = false,
+                DisplayedResultCount = ViewResluts.Count,
+                AwaitingAutomaticImageSnapshotCount = _automaticImageExportResults.Count,
+                OutstandingImageExportCount = Volatile.Read(ref _outstandingImageExports),
             };
             log.Info($"ARVR阶段耗时: {JsonConvert.SerializeObject(timing)}");
         }
@@ -2071,7 +2074,7 @@ namespace ProjectARVRPro
                 || (result.BatchId > 0 && item.BatchId == result.BatchId));
             if (displayResult == null)
             {
-                ViewResluts.Insert(0, result);
+                ViewResultManager.AddLiveResult(ViewResluts, result);
                 displayResult = result;
             }
 
@@ -2469,6 +2472,8 @@ namespace ProjectARVRPro
             ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow();
         }
 
+        private int _outstandingImageExports;
+
         private async Task ExportImagesAsync(
             ImageViewSnapshot? snapshot,
             bool saveResultImage,
@@ -2492,6 +2497,7 @@ namespace ProjectARVRPro
             ProjectImageExportAttempt? exportAttempt = null;
             ResultStorageSpaceManager.WriteLease? storageWrite = null;
             ProjectImageExportAttemptResult exportResult = new();
+            Interlocked.Increment(ref _outstandingImageExports);
             try
             {
                 if (_isDisposed)
@@ -2564,37 +2570,41 @@ namespace ProjectARVRPro
             }
             finally
             {
-                exportStopwatch?.Stop();
-                if (exportAttempt != null)
+                try
                 {
-                    exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
-                        log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
-                    exportAttempt.Dispose();
-                }
-                ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
-                    exportResult,
-                    includeOverlays,
-                    result.SavedResultImageFileName);
-                if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
-                {
-                    try
+                    exportStopwatch?.Stop();
+                    if (exportAttempt != null)
                     {
-                        ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                        exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
+                            log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
+                        exportAttempt.Dispose();
                     }
-                    catch (Exception ex)
+                    ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
+                        exportResult,
+                        includeOverlays,
+                        result.SavedResultImageFileName);
+                    if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
                     {
-                        log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
+                        try
+                        {
+                            ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
+                        }
                     }
+                    LogExportedImage("8位标记图", exportResult.RenderedFileName);
+                    LogExportedImage("原位深原图", exportResult.SourceFileName);
+                    if (exportStopwatch != null)
+                    {
+                        string outcome = exportCompleted ? "完成" : "结束（含失败）";
+                        log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
+                    }
+                    storageWrite?.Dispose();
+                    snapshot?.Dispose();
                 }
-                LogExportedImage("8位标记图", exportResult.RenderedFileName);
-                LogExportedImage("原位深原图", exportResult.SourceFileName);
-                if (exportStopwatch != null)
-                {
-                    string outcome = exportCompleted ? "完成" : "结束（含失败）";
-                    log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
-                }
-                storageWrite?.Dispose();
-                snapshot?.Dispose();
+                finally { Interlocked.Decrement(ref _outstandingImageExports); }
             }
         }
 
