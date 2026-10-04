@@ -513,6 +513,8 @@ namespace ColorVision.Copilot
                         ? userMessage.Attachments
                         : queuedFollowUp.SubmissionContext.Attachments)
                     .WithConversationHistory(CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, userMessage));
+            if (queuedFollowUp == null && userMessage.AttachmentSnapshotCaptured && !refreshExternalContext)
+                turnSnapshot = turnSnapshot.WithAttachments(userMessage.Attachments);
             if (!TryPrepareExplicitSkillMcpDependencies(
                 prompt,
                 userMessage.AgentSkillReference,

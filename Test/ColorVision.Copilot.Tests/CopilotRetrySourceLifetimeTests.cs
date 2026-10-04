@@ -23,6 +23,8 @@ public sealed class CopilotRetrySourceLifetimeTests
     [InlineData("unchanged")]
     [InlineData("switch")]
     [InlineData("switch-and-edit-other")]
+    [InlineData("context-retry")]
+    [InlineData("context-refresh")]
     public void RetryRevalidatesItsOriginalTurnAfterImageAdmission(string transition)
     {
         StaTest.Run(() =>
@@ -32,12 +34,38 @@ public sealed class CopilotRetrySourceLifetimeTests
                 TestTimeout,
                 "Retry admission did not finish.");
             var previousContext = SynchronizationContext.Current;
+            var hasContextTransition = transition is "context-retry" or "context-refresh";
+            var refreshExternalContext = transition == "context-refresh";
+            var contextSourceId = "retry-context:" + fixture.Conversation.Id;
+            var previousLiveContext = hasContextTransition ? CopilotLiveContextRegistry.Current : null;
+            CopilotAttachmentItem? originalContext = null;
+            CopilotAttachmentItem? newerContext = null;
             Task? retry = null;
             try
             {
+                if (hasContextTransition)
+                {
+                    var staged = fixture.ViewModel.QueueExternalPrompt(OriginalPrompt,
+                        startNewConversation: false, sendNow: false,
+                        contextAttachmentTitle: "Saved measurement snapshot",
+                        contextAttachmentSourceId: contextSourceId,
+                        contextAttachmentItems: [new CopilotContextItem { Title = "Measurement", Content = "Original measured result" }]);
+                    Assert.True(staged.Accepted);
+                    Assert.False(staged.WasSent);
+                    originalContext = Assert.Single(fixture.Conversation.Attachments).CreateSnapshot();
+                    fixture.OriginalUser.Attachments.Add(originalContext.CreateSnapshot());
+                    CopilotLiveContextRegistry.Publish(new CopilotLiveContext
+                    {
+                        SourceId = contextSourceId,
+                        Title = "Current measurement",
+                        Summary = "Latest measurement summary",
+                        AttachmentTitle = "Current measurement snapshot",
+                        SnapshotItems = [new CopilotContextItem { Title = "Measurement", Content = "Latest measured result" }],
+                    });
+                }
                 SynchronizationContext.SetSynchronizationContext(context);
                 Assert.True(fixture.ViewModel.RetryMessageCommand.CanExecute(fixture.OriginalAssistant));
-                retry = InvokeTask(fixture.ViewModel, "RetryMessageAsync", [fixture.OriginalAssistant, false],
+                retry = InvokeTask(fixture.ViewModel, "RetryMessageAsync", [fixture.OriginalAssistant, refreshExternalContext],
                     [typeof(CopilotChatMessage), typeof(bool)]);
                 Assert.True(context.WaitForCallback(TestTimeout));
                 Assert.False(retry.IsCompleted);
@@ -48,7 +76,19 @@ public sealed class CopilotRetrySourceLifetimeTests
                 // Keep the first admission continuation suspended while later UI work
                 // completes through its own normal request path.
                 SynchronizationContext.SetSynchronizationContext(previousContext);
-                if (transition is "replacement" or "editing")
+                if (hasContextTransition)
+                {
+                    var staged = fixture.ViewModel.QueueExternalPrompt("Newer composer draft",
+                        startNewConversation: false, sendNow: false,
+                        contextAttachmentTitle: "Newer draft measurement snapshot",
+                        contextAttachmentSourceId: contextSourceId,
+                        contextAttachmentItems: [new CopilotContextItem { Title = "Measurement", Content = "Newer draft measured result" }]);
+                    Assert.True(staged.Accepted);
+                    Assert.False(staged.WasSent);
+                    newerContext = Assert.Single(fixture.Conversation.Attachments);
+                    Assert.NotEqual(originalContext!.Id, newerContext.Id);
+                }
+                else if (transition is "replacement" or "editing")
                 {
                     Assert.True(fixture.ViewModel.EditMessageCommand.CanExecute(fixture.OriginalUser));
                     fixture.ViewModel.EditMessageCommand.Execute(fixture.OriginalUser);
@@ -98,7 +138,7 @@ public sealed class CopilotRetrySourceLifetimeTests
                 context.Complete(retry);
                 retry.GetAwaiter().GetResult();
 
-                if (transition is "unchanged" or "switch" or "switch-and-edit-other")
+                if (transition is "unchanged" or "switch" or "switch-and-edit-other" or "context-retry" or "context-refresh")
                 {
                     var request = Assert.Single(fixture.Runtime.Requests);
                     Assert.Equal(OriginalPrompt, request.UserText);
@@ -106,6 +146,34 @@ public sealed class CopilotRetrySourceLifetimeTests
                     Assert.Same(fixture.OriginalUser, fixture.Conversation.Messages[0]);
                     Assert.NotSame(fixture.OriginalAssistant, fixture.Conversation.Messages[1]);
                     Assert.Equal(2, fixture.Conversation.Messages.Count);
+                    if (hasContextTransition)
+                    {
+                        Assert.Equal(refreshExternalContext, request.RefreshExternalContext);
+                        var sentContext = Assert.Single(request.HostContext.Attachments,
+                            attachment => attachment.Type == CopilotAttachmentType.Context);
+                        Assert.Equal(originalContext!.Id, sentContext.Id);
+                        Assert.DoesNotContain("Newer draft measured result", sentContext.Value, StringComparison.Ordinal);
+                        var savedContext = Assert.Single(fixture.OriginalUser.Attachments,
+                            attachment => attachment.Type == CopilotAttachmentType.Context);
+                        Assert.Equal((originalContext.Id, originalContext.Title, originalContext.Value),
+                            (savedContext.Id, savedContext.Title, savedContext.Value));
+                        Assert.Equal(contextSourceId, request.HostContext.LiveContext?.SourceId);
+                        Assert.Equal("Latest measurement summary", request.HostContext.LiveContext?.Summary);
+                        Assert.Equal("Latest measured result", Assert.Single(request.HostContext.LiveContext!.SnapshotItems).Content);
+                        Assert.Equal("Newer composer draft", fixture.ViewModel.InputText);
+                        Assert.Same(newerContext, Assert.Single(fixture.Conversation.Attachments));
+                        Assert.Contains("Newer draft measured result", newerContext!.Value, StringComparison.Ordinal);
+                        if (refreshExternalContext)
+                        {
+                            Assert.Contains("Latest measured result", sentContext.Value, StringComparison.Ordinal);
+                            Assert.DoesNotContain("Original measured result", sentContext.Value, StringComparison.Ordinal);
+                        }
+                        else
+                        {
+                            Assert.Equal(originalContext.Value, sentContext.Value);
+                        }
+                        Assert.Equal(refreshExternalContext ? "Current measurement snapshot" : originalContext.Title, sentContext.Title);
+                    }
                     if (transition.StartsWith("switch", StringComparison.Ordinal))
                     {
                         Assert.Same(fixture.OtherConversation, fixture.ViewModel.SelectedConversation);
@@ -132,10 +200,23 @@ public sealed class CopilotRetrySourceLifetimeTests
             }
             finally
             {
-                SynchronizationContext.SetSynchronizationContext(context);
-                if (retry is { IsCompleted: false })
-                    context.Complete(retry);
-                SynchronizationContext.SetSynchronizationContext(previousContext);
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (retry is { IsCompleted: false })
+                        context.Complete(retry);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                    if (hasContextTransition)
+                    {
+                        if (previousLiveContext == null)
+                            CopilotLiveContextRegistry.Clear(contextSourceId);
+                        else
+                            CopilotLiveContextRegistry.Publish(previousLiveContext);
+                    }
+                }
             }
         }, TimeSpan.FromSeconds(40), "Retry source test did not finish.");
     }
