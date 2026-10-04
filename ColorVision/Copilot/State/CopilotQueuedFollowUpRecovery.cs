@@ -480,12 +480,12 @@ namespace ColorVision.Copilot
                         ? restoredDraft
                         : existingDraft + Environment.NewLine + Environment.NewLine + restoredDraft;
                 }
-                var recoveredSkillReference = pair.Value.Count == 1
-                    ? pair.Value[0].AgentSkillReference
-                    : null;
+                var recoveredSkillReference = pair.Value[0].AgentSkillReference;
                 if (string.IsNullOrWhiteSpace(existingDraft)
-                    && pair.Value.Count == 1
-                    && recoveredSkillReference?.IsExplicitlyInvokedBy(conversation.DraftText) == true)
+                    && recoveredSkillReference?.IsExplicitlyInvokedBy(conversation.DraftText) == true
+                    && pair.Value.All(recovery => recovery.AgentSkillReference is { } reference
+                        && reference.IsStructurallyValid()
+                        && recoveredSkillReference.Matches(reference.Name, reference.SkillFilePath)))
                 {
                     conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }

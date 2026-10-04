@@ -2986,16 +2986,22 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Theory]
-    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, false)]
-    [InlineData(true, CopilotAgentTaskHost.DefaultMaxQueuedRuns, false)]
-    [InlineData(false, 1, false)]
-    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, true)]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "none")]
+    [InlineData(true, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "none")]
+    [InlineData(false, 1, "none")]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "review")]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "skill")]
     public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt(
-        bool secondRecordIsLegacy, int restartedHostCapacity, bool sameReviewTarget)
+        bool secondRecordIsLegacy, int restartedHostCapacity, string preservedReference)
     {
-        const string firstPrompt = "First update the configuration using the captured evidence.";
-        const string laterPrompt = "Then validate the configuration after that update.";
-        var newerDraft = sameReviewTarget ? string.Empty : "Preserve this newer draft before the recovered requests.";
+        const string skillName = "queued-recovery-duplicate-skill";
+        var sameReviewTarget = preservedReference == "review";
+        var sameSkillReference = preservedReference == "skill";
+        var preservesReference = sameReviewTarget || sameSkillReference;
+        var skillInvocation = sameSkillReference ? "$" + skillName + " " : string.Empty;
+        var firstPrompt = skillInvocation + "First update the configuration using the captured evidence.";
+        var laterPrompt = skillInvocation + "Then validate the configuration after that update.";
+        var newerDraft = preservesReference ? string.Empty : "Preserve this newer draft before the recovered requests.";
         var profileA = CreateProfile("profile-a", "Profile A", "model-a");
         var profileB = CreateProfile("profile-b", "Profile B", "model-b");
         var config = CreateConfig(profileA, "missing-queued-profile-test-token");
@@ -3032,20 +3038,42 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         var restartedHost = new CopilotAgentTaskHost(restartedHostCapacity);
         var restartedRuntime = new GatedFailingTurnRuntime();
         CopilotChatViewModel? restartedViewModel = null;
+        CopilotLocalCommand? skillCompletion = null;
+        CopilotAgentSkillReference? skillReference = null;
 
         try
         {
             await activeStarted.Task.WaitAsync(TestTimeout);
+            if (sameSkillReference)
+            {
+                var firstSkillDirectory = Directory.CreateDirectory(Path.Combine(root, ".agents", "skills", "first")).FullName;
+                var selectedSkillDirectory = Directory.CreateDirectory(Path.Combine(root, ".agents", "skills", "second")).FullName;
+                File.WriteAllText(Path.Combine(firstSkillDirectory, "SKILL.md"),
+                    "---\nname: " + skillName + "\ndescription: First implementation\n---\nUse the first implementation.");
+                var selectedSkillPath = Path.Combine(selectedSkillDirectory, "SKILL.md");
+                File.WriteAllText(selectedSkillPath,
+                    "---\nname: " + skillName + "\ndescription: Selected implementation\n---\nUse the selected implementation.");
+                var skills = CopilotAgentSkillCatalog.Discover([root], overrides: null,
+                    applicationBaseDirectory: root, userProfileDirectory: root);
+                Assert.Equal(2, skills.Count);
+                Assert.All(skills, skill => Assert.Empty(skill.Dependencies));
+                skillCompletion = Assert.Single(CopilotLocalCommandCatalog.Suggest("$queued-recovery-duplicate", skills),
+                    command => command.AgentSkillReference?.SkillFilePath == selectedSkillPath);
+                skillReference = Assert.IsType<CopilotAgentSkillReference>(skillCompletion.AgentSkillReference);
+                Assert.True(viewModel.TryCompleteLocalCommand(skillCompletion));
+            }
             viewModel.InputText = firstPrompt;
             Assert.True(viewModel.TryQueueCurrentRunFollowUp());
             firstRun = Assert.Single(taskHost.QueuedRuns);
             viewModel.SelectedProfile = profileB;
+            if (sameSkillReference)
+                Assert.True(viewModel.TryCompleteLocalCommand(skillCompletion));
             viewModel.InputText = laterPrompt;
             conversation.Attachments.Add(laterAttachment);
             Assert.True(viewModel.TryQueueCurrentRunFollowUp());
             laterRun = Assert.Single(taskHost.QueuedRuns, run => run.Id != firstRun.Id);
             viewModel.InputText = newerDraft;
-            if (!sameReviewTarget)
+            if (!preservesReference)
                 conversation.Attachments.Add(newerAttachment);
 
             var diskStore = new CopilotChatStateStore(root);
@@ -3077,6 +3105,14 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                     Assert.Equal(reviewTarget.Revision, record.ComposerState.WorkspaceReviewTarget?.Revision);
                 });
             }
+            if (sameSkillReference)
+            {
+                Assert.All(reloadedState.QueuedFollowUpRecoveries, record =>
+                {
+                    Assert.Equal(skillReference!.Name, record.ComposerState!.AgentSkillReference?.Name);
+                    Assert.Equal(skillReference.SkillFilePath, record.ComposerState.AgentSkillReference?.SkillFilePath);
+                });
+            }
             Assert.False(runtime.Entered.IsCompleted);
             taskHost.Shutdown();
             releaseActive.TrySetResult();
@@ -3101,7 +3137,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.True(restored.DraftText.IndexOf(firstPrompt, StringComparison.Ordinal)
                 < restored.DraftText.IndexOf(laterPrompt, StringComparison.Ordinal));
             Assert.Equal(restored.DraftText, restartedViewModel.InputText);
-            var expectedAttachments = sameReviewTarget ? new[] { firstAttachment, laterAttachment }
+            var expectedAttachments = preservesReference ? new[] { firstAttachment, laterAttachment }
                 : new[] { newerAttachment, firstAttachment, laterAttachment };
             Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
                 restored.Attachments.Select(item => (item.Id, item.Value)));
@@ -3115,6 +3151,11 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 Assert.Equal(CopilotAgentMode.Review, restored.DraftRequestMode);
                 Assert.Equal(reviewTarget!.Target, restored.DraftWorkspaceReviewTarget?.Target);
                 Assert.Equal(reviewTarget.Revision, restored.DraftWorkspaceReviewTarget?.Revision);
+            }
+            if (sameSkillReference)
+            {
+                Assert.Equal(skillReference!.Name, restored.DraftAgentSkillReference?.Name);
+                Assert.Equal(skillReference.SkillFilePath, restored.DraftAgentSkillReference?.SkillFilePath);
             }
 
             var recoveredDraft = restored.DraftText;
@@ -3131,6 +3172,11 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 Assert.Equal(CopilotAgentMode.Review, request.Mode);
                 Assert.Equal(reviewTarget!.Target, request.WorkspaceReviewTarget?.Target);
                 Assert.Equal(reviewTarget.Revision, request.WorkspaceReviewTarget?.Revision);
+            }
+            if (sameSkillReference)
+            {
+                Assert.Equal(skillReference!.Name, request.AgentSkillReference?.Name);
+                Assert.Equal(skillReference.SkillFilePath, request.AgentSkillReference?.SkillFilePath);
             }
             Assert.Equal(string.Empty, restartedViewModel.InputText);
             Assert.Empty(restored.Attachments);
