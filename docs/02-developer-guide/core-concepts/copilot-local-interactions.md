@@ -56,6 +56,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 网页附件、`FetchUrl` 和搜索深读共用 `CopilotWebPageToolSupport`。URL 去重使用规范化绝对地址，保留路径和查询参数的大小写差异及首项顺序；静态 HTML 解析得到的同源资源和普通页面链接保留完整查询并去掉 fragment。先下载并提取静态 HTML 或结构化资源；HTML 正文为空、内容稀疏或短正文包含脚本时，自动调用 `CopilotWebPageBrowserRenderer`，使用现有 WebView2 Runtime 执行页面 JavaScript 后提取可见正文、标题和同源链接。普通静态网页与 JSON 等结构化内容不启动浏览器。结果标明 `static HTTP content` 或 `browser-rendered DOM`，不会把未渲染的空页面当成已成功访问。
 
+浏览器从前 100 个链接元素提取候选，在宿主按完整规范化 URL 去重后最多返回 12 条同源链接，保留首项顺序和标签；重复链接不占用最终名额。浏览器链接保留 fragment，以支持不同 hash 路由目标，不能套用静态 HTML 的去 fragment 规则。`CopilotWebPageRenderingTests` 覆盖路径、查询和 hash 路由的独立目标，以及 authority 大小写归一化。
+
 生产加载共用 40 秒总期限，覆盖 DNS、重定向、正文读取和浏览器等待；浏览器阶段最多 25 秒，导航后等待有界的正文稳定与资源空闲。静态传输独立测试入口保留 20 秒期限。取消会停止传输并释放本次浏览器控制器；WebView2 不可用、需要登录或仍无正文时报告具体阶段，已有少量静态正文则保留并明确提示不足。`CopilotWebPageDeadlineTests` 与 `CopilotWebPageRenderingTests` 覆盖超时、取消、静态与渲染路径选择、失败回退、来源标记及链接提取；受控测试不代表特定站点验收。
 
 浏览器使用独立 InPrivate profile，不复用编辑器或用户浏览器的登录态；无登录、点击、表单提交、下载、弹窗、主机对象或应用消息桥接。资源只允许 GET，每个请求与重定向仍通过原有公开地址、DNS/NAT64 和连接校验，不因完全访问而绕过网页读取边界；WebView2 未接管的网络通道使用不可用代理，Worker、子框架及 WebSocket 连接由限制策略阻止。最多 96 个资源、单资源 4 MiB、合计 24 MiB，正文仍最多 12,000 字符；部分资源失败会保留提示。此能力用于读取动态正文，不代表浏览器交互操作或视觉页面审计。

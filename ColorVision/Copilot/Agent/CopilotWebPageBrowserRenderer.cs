@@ -27,7 +27,7 @@ namespace ColorVision.Copilot
               description: (document.querySelector('meta[name="description"]')?.content || '').slice(0,1000),
               links: Array.from(document.querySelectorAll('a[href]')).slice(0,100)
                 .map(a => ({url:a.href, text:a.innerText.trim().slice(0,160)}))
-                .filter(a => a.text && a.url.startsWith(location.origin + '/')).slice(0,12)}))()
+                .filter(a => a.text && a.url.startsWith(location.origin + '/'))}))()
             """;
 
         internal static Task<CopilotFetchedWebPageContent> RenderAsync(Uri uri, CancellationToken token) =>
@@ -212,10 +212,13 @@ namespace ColorVision.Copilot
             if (!CopilotWebPageToolSupport.IsPotentiallyPublicWebPageUri(uri))
                 throw new InvalidOperationException("浏览器返回了范围外的网页地址。");
             var text = root.GetProperty("text").GetString() ?? string.Empty;
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var links = root.GetProperty("links").EnumerateArray()
                 .Select(link => new CopilotWebPageLink(link.GetProperty("url").GetString() ?? string.Empty, link.GetProperty("text").GetString() ?? string.Empty))
                 .Where(link => Uri.TryCreate(link.Url, UriKind.Absolute, out var target)
                     && CopilotWebPageToolSupport.IsPotentiallyPublicWebPageUri(target) && target.GetLeftPart(UriPartial.Authority) == uri.GetLeftPart(UriPartial.Authority))
+                .Select(link => link with { Url = CopilotWebPageToolSupport.NormalizeUrlComparisonKey(link.Url) })
+                .Where(link => visitedUrls.Add(link.Url))
                 .Take(CopilotWebPageToolSupport.MaxDiscoveredPageLinks).ToArray();
             return new CopilotFetchedWebPageContent(uri.AbsoluteUri, root.GetProperty("title").GetString() ?? uri.Host,
                 root.GetProperty("description").GetString() ?? string.Empty,

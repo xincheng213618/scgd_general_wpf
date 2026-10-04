@@ -200,16 +200,36 @@ public sealed class CopilotWebPageRenderingTests
         Assert.Contains("Runtime unavailable", error.Message);
     }
 
-    [Fact]
-    public void RenderedLinksKeepUrlAndTextAndExcludeOtherOrigins()
+    [Theory]
+    [InlineData("/Report", "/report")]
+    [InlineData("/page?view=ABC", "/page?view=abc")]
+    [InlineData("/app#/routeA", "/app#/routeB")]
+    public void RenderedLinksKeepUrlAndTextAndExcludeOtherOrigins(string firstTarget, string secondTarget)
     {
-        var page = CopilotWebPageBrowserRenderer.ParseRenderedPage("""
-            {"url":"https://public.example/page","title":"Title","text":"Rendered text","description":"Description",
-             "links":[{"url":"https://public.example/about","text":"About"},{"url":"https://elsewhere.example/","text":"External"}]}
-            """);
-        var link = Assert.Single(page.DiscoveredPageLinks);
-        Assert.Equal("https://public.example/about", link.Url);
-        Assert.Equal("About", link.Text);
+        var firstUrl = "https://public.example" + firstTarget;
+        var secondUrl = "https://public.example" + secondTarget;
+        var links = new List<CopilotWebPageLink>
+        {
+            new("https://elsewhere.example/", "External"),
+            new("https://PUBLIC.example" + firstTarget, "First target"),
+        };
+        links.AddRange(Enumerable.Repeat(new CopilotWebPageLink(firstUrl, "Duplicate target"),
+            CopilotWebPageToolSupport.MaxDiscoveredPageLinks - 1));
+        links.Add(new CopilotWebPageLink(secondUrl, "Second target"));
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            url = PageUri.AbsoluteUri, title = "Title", text = "Rendered text", description = "Description",
+            links = links.Select(link => new { url = link.Url, text = link.Text }),
+        });
+        var page = CopilotWebPageBrowserRenderer.ParseRenderedPage(json);
+
+        Assert.Equal(new[]
+        {
+            new CopilotWebPageLink(firstUrl, "First target"),
+            new CopilotWebPageLink(secondUrl, "Second target"),
+        }, page.DiscoveredPageLinks);
+        Assert.Equal(PageUri.AbsoluteUri, page.Url);
+        Assert.Equal("Rendered text", page.Content);
         Assert.True(page.BrowserRendered);
     }
 

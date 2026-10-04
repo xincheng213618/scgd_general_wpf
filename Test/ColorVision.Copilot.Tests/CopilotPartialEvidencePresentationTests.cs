@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -158,6 +159,106 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         Assert.NotEqual(CopilotToolResultContract.InvalidOutputFailureCode, result.FailureCode);
         Assert.NotEmpty(result.ErrorMessage);
         Assert.Empty(result.PartialResultMessage);
+    }
+
+    [Theory]
+    [InlineData("mixed-fetch")]
+    [InlineData("mixed-search")]
+    [InlineData("all-failed-fetch")]
+    [InlineData("omitted-fetch")]
+    [InlineData("unavailable-deep-read")]
+    public async Task WebPartialEvidenceSurvivesResultCaptureAndActivityProjection(string kind)
+    {
+        const string pageUrl = "https://public.example/page";
+        const string failedUrl = "https://public.example/unavailable.json";
+        const string omittedUrl = "https://public.example/omitted";
+        var loadedUrls = new ConcurrentQueue<string>();
+        Task<CopilotFetchedWebPageContent> LoadPage(string url, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            loadedUrls.Enqueue(url);
+            if (url == failedUrl || kind is "all-failed-fetch" or "unavailable-deep-read")
+                throw new IOException("Controlled web fetch failure.");
+            return Task.FromResult(new CopilotFetchedWebPageContent(url, "Captured page", string.Empty,
+                "Captured web evidence for " + url,
+                kind == "mixed-search" && url == pageUrl ? [failedUrl] : []));
+        }
+
+        var fetch = new CopilotFetchUrlTool(LoadPage);
+        var isSearch = kind is "mixed-search" or "unavailable-deep-read";
+        ICopilotTool tool = isSearch ? new CopilotWebSearchTool(
+            (searchQuery, _) => Task.FromResult(new CopilotWebSearchResult
+            {
+                Success = true, Query = searchQuery, Provider = "controlled-search", Summary = "Found a search lead.",
+                Content = "Search leads for " + pageUrl,
+                Hits = [new() { Rank = 1, Title = "Selected page", Url = pageUrl, Snippet = "Search lead." }],
+            }),
+            (request, url, token) => fetch.ExecuteAsync(request, new() { Query = url }, token)) : fetch;
+        var query = kind switch
+        {
+            "mixed-fetch" => pageUrl + " " + failedUrl,
+            "omitted-fetch" => pageUrl + " https://public.example/second https://public.example/third " + omittedUrl,
+            _ => pageUrl,
+        };
+        var rawResult = await tool.ExecuteAsync(new() { Mode = CopilotAgentMode.Web, UserText = query },
+            new() { Query = query }, CancellationToken.None);
+        var captured = CopilotToolResultContract.Capture(tool.Name, rawResult);
+        Assert.NotEqual(CopilotToolResultContract.InvalidOutputFailureCode, captured.FailureCode);
+        Assert.Equal(rawResult.Content, captured.Content);
+        var observation = CopilotToolObservation.FromResult(captured);
+        Assert.Equal(captured.Content, observation.Content);
+        Assert.Equal(captured.PartialResultMessage, observation.PartialResultMessage);
+        var entry = CopilotAgentTraceEntry.FromResult(new()
+        {
+            ToolName = tool.Name, CallId = "web-partial-evidence", Access = CopilotToolAccess.ReadOnly,
+            State = captured.Success ? CopilotToolExecutionState.Completed : CopilotToolExecutionState.Failed,
+        }, captured);
+        if (kind == "all-failed-fetch")
+        {
+            Assert.False(captured.Success);
+            Assert.Equal(rawResult.FailureKind, captured.FailureKind);
+            Assert.Contains("Controlled web fetch failure.", captured.ErrorMessage, StringComparison.Ordinal);
+            Assert.Empty(captured.PartialResultMessage);
+            Assert.False(observation.Success);
+            Assert.True(entry.IsFailure);
+            Assert.Contains("[Web Page Fetch Failed] " + pageUrl, captured.Content, StringComparison.Ordinal);
+            Assert.Equal(new[] { pageUrl }, loadedUrls);
+            return;
+        }
+
+        Assert.True(captured.Success, captured.ErrorMessage);
+        Assert.Empty(captured.ErrorMessage);
+        Assert.NotEmpty(captured.PartialResultMessage);
+        Assert.True(observation.Success);
+        Assert.True(entry.HasPartialResult);
+        Assert.True(entry.IsVisibleInActivity);
+        Assert.False(entry.IsFailure);
+        Assert.Equal(captured.PartialResultMessage, entry.PartialResultMessage);
+        Assert.Contains("结果不完整", entry.ActivityLabel);
+        Assert.NotEmpty(entry.ActivityDescription);
+        if (isSearch)
+            Assert.Contains("Search leads for " + pageUrl, captured.Content, StringComparison.Ordinal);
+        if (kind == "unavailable-deep-read")
+        {
+            Assert.Contains("[Selected Search Result Deep Read Unavailable] " + pageUrl, captured.Content, StringComparison.Ordinal);
+            Assert.Equal(new[] { pageUrl }, loadedUrls);
+        }
+        else
+        {
+            Assert.Contains("Captured web evidence for " + pageUrl, captured.Content, StringComparison.Ordinal);
+            if (kind == "omitted-fetch")
+            {
+                Assert.Contains("input_set_complete: false", captured.Content, StringComparison.Ordinal);
+                Assert.Contains("omitted_input_url: " + omittedUrl, captured.Content, StringComparison.Ordinal);
+                Assert.Equal(new[] { pageUrl, "https://public.example/second", "https://public.example/third" }, loadedUrls);
+            }
+            else
+            {
+                Assert.Contains("[Web Page Fetch Failed] " + failedUrl, captured.Content, StringComparison.Ordinal);
+                Assert.Contains("all_attempts_succeeded: false", captured.Content, StringComparison.Ordinal);
+                Assert.Equal(new[] { pageUrl, failedUrl }, loadedUrls);
+            }
+        }
     }
 
     [Theory]

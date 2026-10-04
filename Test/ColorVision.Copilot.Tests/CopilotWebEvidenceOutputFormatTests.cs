@@ -21,11 +21,78 @@ public sealed class CopilotWebEvidenceOutputFormatTests
     [InlineData("The observed value is 7.", true, false)]
     public async Task WebEvidenceKeepsJsonParseableAndProseCited(string answer, bool finalAnswerRecovery, bool structured)
     {
+        var output = await RunWebEvidenceAsync(answer, finalAnswerRecovery, structured,
+            "FetchUrl", FixtureWebTool.Content, [SourceUrl]);
+        if (structured)
+        {
+            Assert.Equal(answer, output);
+            using var parsed = JsonDocument.Parse(output);
+            Assert.Contains(parsed.RootElement.ValueKind, new[] { JsonValueKind.Object, JsonValueKind.Array });
+        }
+        else
+        {
+            Assert.StartsWith(answer, output, StringComparison.Ordinal);
+            Assert.Contains("来源：", output, StringComparison.Ordinal);
+            Assert.Contains(SourceUrl, output, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("https://public.example/Report", "https://public.example/report", false, true)]
+    [InlineData("https://public.example/Report", "https://public.example/report", true, true)]
+    [InlineData("https://public.example/reference?id=ABC", "https://public.example/reference?id=abc", false, true)]
+    [InlineData("https://public.example/reference?id=ABC", "https://public.example/reference?id=abc", true, true)]
+    [InlineData("https://public.example/Report?id=ABC", "HTTPS://PUBLIC.EXAMPLE/Report?id=ABC", false, false)]
+    [InlineData("https://public.example/Report?id=ABC", "HTTPS://PUBLIC.EXAMPLE/Report?id=ABC", true, false)]
+    public async Task FinalAnswerRecognizesOnlyTheSameNormalizedSourceUrl(
+        string sourceUrl, string citedUrl, bool finalAnswerRecovery, bool expectAppendix)
+    {
+        var answer = $"The observed value is 7. Source: <{citedUrl}>.";
+        var content = CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(
+            new CopilotFetchedWebPageContent(sourceUrl, "Reference", string.Empty, "value=7"));
+        var output = await RunWebEvidenceAsync(answer, finalAnswerRecovery, false, "FetchUrl", content, [sourceUrl]);
+
+        if (expectAppendix)
+        {
+            Assert.StartsWith(answer, output, StringComparison.Ordinal);
+            Assert.Contains("来源：", output, StringComparison.Ordinal);
+            Assert.Contains($"- <{sourceUrl}>", output, StringComparison.Ordinal);
+        }
+        else
+            Assert.Equal(answer, output);
+    }
+
+    [Theory]
+    [InlineData("FetchUrl", false)]
+    [InlineData("FetchUrl", true)]
+    [InlineData("WebSearch", false)]
+    [InlineData("WebSearch", true)]
+    public async Task FinalAnswerPreservesCaseDistinctReturnedSourcesInOrder(string toolName, bool queryCase)
+    {
+        var sources = queryCase
+            ? new[] { "https://public.example/reference?id=ABC", "https://public.example/reference?id=abc" }
+            : new[] { "https://public.example/Report", "https://public.example/report" };
+        var content = toolName == "FetchUrl"
+            ? string.Join("\n\n", sources.Select(url => CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(
+                new CopilotFetchedWebPageContent(url, "Reference", string.Empty, "value=7"))))
+            : $"Search results for reference:\n1. First reference\n   URL: {sources[0]}\n   Snippet: value=7\n"
+                + $"2. Second reference\n   URL: {sources[1]}\n   Snippet: value=7";
+        const string answer = "The observed value is 7.";
+        var output = await RunWebEvidenceAsync(answer, false, false, toolName, content, sources);
+
+        Assert.StartsWith(answer, output, StringComparison.Ordinal);
+        Assert.Contains("来源：", output, StringComparison.Ordinal);
+        Assert.Equal(sources, CopilotWebPageToolSupport.ExtractHttpUrls(output));
+    }
+
+    private static async Task<string> RunWebEvidenceAsync(string answer, bool finalAnswerRecovery, bool structured,
+        string toolName, string content, IReadOnlyList<string> sourceUrls)
+    {
         var directory = Directory.CreateTempSubdirectory("CopilotWebEvidenceOutput-");
         try
         {
-            var tool = new FixtureWebTool();
-            var client = new FixtureChatClient(answer, finalAnswerRecovery);
+            var tool = new FixtureWebTool(toolName, content);
+            var client = new FixtureChatClient(answer, finalAnswerRecovery, toolName);
             var catalog = new CopilotCapabilityCatalog();
             catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "web-output-fixture", "Web output fixture", [tool]);
             var runtime = new CopilotMicrosoftAgentFrameworkRuntime(new CopilotToolRegistry([tool]),
@@ -35,7 +102,7 @@ public sealed class CopilotWebEvidenceOutputFormatTests
             {
                 ConversationId = "web-output-conversation", TaskId = "web-output-task",
                 WorkspacePath = directory.FullName,
-                UserText = $"Read {SourceUrl} and return the observed value" + (structured ? " as JSON only." : "."),
+                UserText = $"Read {string.Join(" ", sourceUrls)} and return the observed value" + (structured ? " as JSON only." : "."),
                 Mode = CopilotAgentMode.Code, HarnessFeatures = CopilotAgentHarnessFeatures.None,
                 Profile = new CopilotProfileConfig
                 {
@@ -55,21 +122,12 @@ public sealed class CopilotWebEvidenceOutputFormatTests
             Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
             var step = Assert.Single(result.StepRecords);
             Assert.True(step.Observation.Success);
-            Assert.Contains(SourceUrl, step.Observation.Content, StringComparison.Ordinal);
+            Assert.Equal(toolName, step.Execution.ToolName);
+            foreach (var sourceUrl in sourceUrls)
+                Assert.Contains(sourceUrl, step.Observation.Content, StringComparison.Ordinal);
             Assert.Equal(1, tool.Calls);
             Assert.Equal(finalAnswerRecovery ? 1 : 0, client.FinalAnswerCalls);
-            if (structured)
-            {
-                Assert.Equal(answer, output.ToString());
-                using var parsed = JsonDocument.Parse(output.ToString());
-                Assert.Contains(parsed.RootElement.ValueKind, new[] { JsonValueKind.Object, JsonValueKind.Array });
-            }
-            else
-            {
-                Assert.StartsWith(answer, output.ToString(), StringComparison.Ordinal);
-                Assert.Contains("来源：", output.ToString(), StringComparison.Ordinal);
-                Assert.Contains(SourceUrl, output.ToString(), StringComparison.Ordinal);
-            }
+            return output.ToString();
         }
         finally
         {
@@ -90,7 +148,7 @@ public sealed class CopilotWebEvidenceOutputFormatTests
     {
         var appendix = CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
             [new() { ToolCall = new() { ToolName = "FetchUrl" }, Observation = new() { Success = true, Content = FixtureWebTool.Content } }],
-            [new FixtureWebTool()], answer);
+            [new FixtureWebTool("FetchUrl", FixtureWebTool.Content)], answer);
         Assert.Contains(SourceUrl, appendix, StringComparison.Ordinal);
     }
 
@@ -102,7 +160,7 @@ public sealed class CopilotWebEvidenceOutputFormatTests
         var answer = new string('[', depth) + "{\"value\":7}" + new string(']', depth);
         Assert.Empty(CopilotWebEvidenceSourceLedger.BuildMissingSourceAppendix(
             [new() { ToolCall = new() { ToolName = "FetchUrl" }, Observation = new() { Success = true, Content = FixtureWebTool.Content } }],
-            [new FixtureWebTool()], answer));
+            [new FixtureWebTool("FetchUrl", FixtureWebTool.Content)], answer));
     }
 
     private sealed class EmptyExternalTools : ICopilotExternalToolProvider
@@ -111,10 +169,10 @@ public sealed class CopilotWebEvidenceOutputFormatTests
             Task.FromResult(new CopilotExternalToolLease());
     }
 
-    private sealed class FixtureWebTool : ICopilotAgentDrivenTool
+    private sealed class FixtureWebTool(string name, string content) : ICopilotAgentDrivenTool
     {
         public const string Content = "[Web Page Fetched] " + SourceUrl + "\nvalue=7";
-        public string Name => "FetchUrl";
+        public string Name => name;
         public string Description => "Read the fixture web reference.";
         public int Calls { get; private set; }
         public bool CanHandle(CopilotAgentRequest request) => true;
@@ -123,11 +181,11 @@ public sealed class CopilotWebEvidenceOutputFormatTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             Calls++;
-            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Reference read.", Content = Content });
+            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Reference read.", Content = content });
         }
     }
 
-    private sealed class FixtureChatClient(string answer, bool finalAnswerRecovery) : IChatClient
+    private sealed class FixtureChatClient(string answer, bool finalAnswerRecovery, string toolName) : IChatClient
     {
         private int _streamingCalls;
         public int FinalAnswerCalls { get; private set; }
@@ -146,7 +204,8 @@ public sealed class CopilotWebEvidenceOutputFormatTests
             Assert.InRange(call, 1, 2);
             if (call == 1)
             {
-                var tool = Assert.Single(options!.Tools!.OfType<AIFunction>(), f => f.Name.Contains("fetch_url", StringComparison.Ordinal));
+                var functionName = toolName == "WebSearch" ? "web_search" : "fetch_url";
+                var tool = Assert.Single(options!.Tools!.OfType<AIFunction>(), f => f.Name.Contains(functionName, StringComparison.Ordinal));
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                     [new FunctionCallContent("fetch-fixture", tool.Name, new Dictionary<string, object?>())]) { FinishReason = ChatFinishReason.ToolCalls };
             }

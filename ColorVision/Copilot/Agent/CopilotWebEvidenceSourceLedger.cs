@@ -49,7 +49,7 @@ namespace ColorVision.Copilot
                 {
                     var normalized = NormalizePublicSourceUrl(url);
                     if (!string.IsNullOrWhiteSpace(normalized)
-                        && !evidenceUrls.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                        && !evidenceUrls.Contains(normalized, StringComparer.Ordinal))
                     {
                         evidenceUrls.Add(normalized);
                     }
@@ -62,7 +62,7 @@ namespace ColorVision.Copilot
             var citedUrls = CopilotWebPageToolSupport.ExtractHttpUrls(answer)
                 .Select(NormalizePublicSourceUrl)
                 .Where(url => !string.IsNullOrWhiteSpace(url))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet(StringComparer.Ordinal);
             if (evidenceUrls.Any(citedUrls.Contains))
                 return string.Empty;
 
@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
             {
                 return ExtractRegexUrls(FetchedPageUrlRegex, content)
                     .Concat(ExtractRegexUrls(SearchResultUrlRegex, content))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Distinct(StringComparer.Ordinal)
                     .ToArray();
             }
 
