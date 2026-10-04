@@ -745,9 +745,9 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
         }
 
-        private void RestoreDurableQueuedFollowUps()
+        private void RestoreQueuedFollowUpsAfterRestart()
         {
-            var records = _followUpQueue.GetResumableRecoveries();
+            var records = _followUpQueue.GetStartupRecoveries();
             if (records.Count == 0)
                 return;
 
@@ -761,14 +761,15 @@ namespace ColorVision.Copilot
                 if (!record.TryGetNormalized(
                         out var runId,
                         out var conversationId,
-                        out var composerState)
-                    || !record.CanResumeAfterRestart(composerState))
+                        out var composerState))
                 {
                     continue;
                 }
 
-                if (blockedConversationIds.Contains(conversationId))
+                if (blockedConversationIds.Contains(conversationId)
+                    || !record.CanResumeAfterRestart(composerState))
                 {
+                    blockedConversationIds.Add(conversationId);
                     draftRecoveries.Add(record);
                     continue;
                 }

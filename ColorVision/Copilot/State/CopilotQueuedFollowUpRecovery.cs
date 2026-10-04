@@ -303,7 +303,7 @@ namespace ColorVision.Copilot
                         or CopilotAgentStopReason.Completed);
         }
 
-        internal static bool PrepareForRestartDispatch(CopilotChatState state)
+        internal static bool PrepareForRestartDispatch(CopilotChatState state, bool deferQueuedDraftRecovery = false)
         {
             ArgumentNullException.ThrowIfNull(state);
             state.RecoveredQueuedFollowUpCount = 0;
@@ -321,7 +321,7 @@ namespace ColorVision.Copilot
                 .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var originalRecords = state.QueuedFollowUpRecoveries.ToArray();
-            var resumableRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
+            var retainedRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var draftRecoveries = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
             var blockedConversationIds = new HashSet<string>(StringComparer.Ordinal);
@@ -342,11 +342,13 @@ namespace ColorVision.Copilot
                 if (record.IsAutomaticGoalContinuation)
                     continue;
 
-                if (!blockedConversationIds.Contains(conversationId)
-                    && record.CanResumeAfterRestart(composerState)
-                    && resumableRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns)
+                // The ViewModel classifies the whole queue before combining drafts, including host/profile failures.
+                if (deferQueuedDraftRecovery
+                    || (!blockedConversationIds.Contains(conversationId)
+                        && record.CanResumeAfterRestart(composerState)
+                        && retainedRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns))
                 {
-                    resumableRecords.Add(record);
+                    retainedRecords.Add(record);
                 }
                 else
                 {
@@ -356,11 +358,11 @@ namespace ColorVision.Copilot
             }
 
             state.RecoveredQueuedFollowUpCount = RestoreRecordsToDrafts(state, draftRecoveries);
-            var changed = !originalRecords.SequenceEqual(resumableRecords);
+            var changed = !originalRecords.SequenceEqual(retainedRecords);
             if (changed)
             {
                 state.QueuedFollowUpRecoveries.Clear();
-                foreach (var record in resumableRecords)
+                foreach (var record in retainedRecords)
                     state.QueuedFollowUpRecoveries.Add(record);
             }
             return changed;

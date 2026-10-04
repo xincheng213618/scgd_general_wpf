@@ -113,11 +113,8 @@ namespace ColorVision.Copilot
         public bool TryGet(string runId, out CopilotQueuedFollowUp? item) =>
             _itemsByRunId.TryGetValue(runId, out item);
 
-        public IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> GetResumableRecoveries() =>
-            _state.QueuedFollowUpRecoveries
-                .Where(record => record?.ResumeAfterRestart == true)
-                .Take(MaxQueuedRuns)
-                .ToArray();
+        public IReadOnlyList<CopilotQueuedFollowUpRecoveryRecord> GetStartupRecoveries() =>
+            _state.QueuedFollowUpRecoveries.ToArray();
 
         public IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments() =>
             _state.QueuedFollowUpRecoveries

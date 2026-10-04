@@ -2981,8 +2981,12 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
-    [Fact]
-    public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt()
+    [Theory]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns)]
+    [InlineData(true, CopilotAgentTaskHost.DefaultMaxQueuedRuns)]
+    [InlineData(false, 1)]
+    public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt(
+        bool secondRecordIsLegacy, int restartedHostCapacity)
     {
         const string firstPrompt = "First update the configuration using the captured evidence.";
         const string laterPrompt = "Then validate the configuration after that update.";
@@ -3015,7 +3019,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         });
         CopilotHostedAgentRun? firstRun = null;
         CopilotHostedAgentRun? laterRun = null;
-        var restartedHost = new CopilotAgentTaskHost();
+        var restartedHost = new CopilotAgentTaskHost(restartedHostCapacity);
         var restartedRuntime = new GatedFailingTurnRuntime();
         CopilotChatViewModel? restartedViewModel = null;
 
@@ -3035,9 +3039,20 @@ public sealed class CopilotChatViewModelProfileIsolationTests
 
             var diskStore = new CopilotChatStateStore(root);
             diskStore.Save(state);
+            if (secondRecordIsLegacy)
+            {
+                var document = JObject.Parse(File.ReadAllText(diskStore.StateFilePath));
+                var records = Assert.IsType<JArray>(document[nameof(CopilotChatState.QueuedFollowUpRecoveries)]);
+                var laterRecord = Assert.IsType<JObject>(records[1]);
+                Assert.Equal(laterRun.Id, laterRecord[nameof(CopilotQueuedFollowUpRecoveryRecord.RunId)]?.Value<string>());
+                Assert.True(laterRecord.Remove(nameof(CopilotQueuedFollowUpRecoveryRecord.ResumeAfterRestart)));
+                File.WriteAllText(diskStore.StateFilePath, document.ToString(Newtonsoft.Json.Formatting.None));
+            }
             var reloadedState = diskStore.Load();
             Assert.Equal(new[] { firstRun.Id, laterRun.Id }, reloadedState.QueuedFollowUpRecoveries.Select(record => record.RunId));
             Assert.Equal(new[] { profileA.Id, profileB.Id }, reloadedState.QueuedFollowUpRecoveries.Select(record => record.ProfileId));
+            Assert.Equal(new[] { true, !secondRecordIsLegacy },
+                reloadedState.QueuedFollowUpRecoveries.Select(record => record.ResumeAfterRestart));
             Assert.Equal(new[] { firstAttachment.Id, laterAttachment.Id }, reloadedState.QueuedFollowUpRecoveries
                 .Select(record => Assert.Single(record.ComposerState!.Attachments).Id));
             Assert.False(runtime.Entered.IsCompleted);
@@ -3056,6 +3071,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.False(restartedRuntime.Entered.IsCompleted);
             Assert.Empty(restartedViewModel.QueuedFollowUps);
             Assert.Empty(reloadedState.QueuedFollowUpRecoveries);
+            Assert.Equal(2, reloadedState.RecoveredQueuedFollowUpCount);
+            Assert.Equal(0, reloadedState.ResumedQueuedFollowUpCount);
             Assert.StartsWith(newerDraft, restored.DraftText, StringComparison.Ordinal);
             Assert.Contains(firstPrompt, restored.DraftText, StringComparison.Ordinal);
             Assert.Contains(laterPrompt, restored.DraftText, StringComparison.Ordinal);

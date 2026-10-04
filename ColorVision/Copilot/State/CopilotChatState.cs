@@ -126,14 +126,15 @@ namespace ColorVision.Copilot
             return EnsureInitialized(config, normalizeRestoredConversations: false);
         }
 
-        internal bool EnsureInitializedAfterRestore(CopilotConfig config)
+        internal bool EnsureInitializedAfterRestore(CopilotConfig config, bool deferQueuedDraftRecovery = false)
         {
-            return EnsureInitialized(config, normalizeRestoredConversations: true);
+            return EnsureInitialized(config, normalizeRestoredConversations: true, deferQueuedDraftRecovery);
         }
 
         private bool EnsureInitialized(
             CopilotConfig config,
-            bool normalizeRestoredConversations)
+            bool normalizeRestoredConversations,
+            bool deferQueuedDraftRecovery = false)
         {
             ArgumentNullException.ThrowIfNull(config);
 
@@ -232,7 +233,7 @@ namespace ColorVision.Copilot
             changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
             if (normalizeRestoredConversations)
-                changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
+                changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this, deferQueuedDraftRecovery);
 
             var activeConversations = Conversations
                 .Where(conversation => !conversation.IsArchived)
