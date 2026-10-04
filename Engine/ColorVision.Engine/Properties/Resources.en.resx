@@ -6879,4 +6879,9 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="Sensor_TypeInUse" xml:space="preserve"><value>These devices still use this type. Change their sensor type first: {0}</value></data>
   <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>Templates of other types reference these command definitions. Remove those references first.</value></data>
   <data name="Sensor_ConversionKeepHex" xml:space="preserve"><value>The result contains commas or escapes that the legacy template cannot safely store. Keep Hex.</value></data>
+  <data name="相机取图缓冲" xml:space="preserve"><value>Camera Capture Buffers</value></data>
+  <data name="每台相机最多保留一块空闲 RAW 缓冲。只统计和释放空闲内存，不影响在用图像；后续取图可重新申请和复用。" xml:space="preserve"><value>Each camera retains at most one idle RAW buffer. Only idle memory is counted and released; images in use are unaffected. Later captures can allocate and reuse buffers again.</value></data>
+  <data name="仅统计空闲取图缓冲，不含正在使用的图像。" xml:space="preserve"><value>Only idle capture buffers are counted; images in use are excluded.</value></data>
+  <data name="已释放 {0} 空闲取图缓冲。在用图像不受影响，后续取图可重新申请和复用。" xml:space="preserve"><value>Released {0} of idle capture buffers. Images in use are unaffected; later captures can allocate and reuse buffers again.</value></data>
+  <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>Capture buffers cannot be disabled. Use Release Cache instead.</value></data>
 </root>

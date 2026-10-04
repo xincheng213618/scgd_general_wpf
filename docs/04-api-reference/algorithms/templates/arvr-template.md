@@ -97,7 +97,7 @@ Flow 的 `LocalMtfNode` 位于自定义节点 **MTF计算(V2)**。图像连接 `
 
 结果处理器先匹配 `ViewResultAlg.ResultType`，再执行各自的 `CanHandle1` 条件。上表标注的版本是**返回结果的 `Version`**；JSON 模板、请求版本和返回版本是不同层次，选择 JSON 模板不保证结果一定进入 V2 处理器。三个 `ARVR.*` 事件对应的结果枚举为 `ARVR_BinocularFusion`、`ARVR_SFR_FindROI`、`ARVR_DetectScreenDefects`。
 
-`ViewHandleDistortion2` 仅接受 2.0 结果。旧模板、调试和结果读取入口均已淘汰；已有远端流程引用不会自动改写，应重新选择畸变2.0模板或改用本地节点。数据库旧记录不会删除，但不再提供专用明细显示、叠加和 CSV 导出。V2 无明细失败记录显示失败原因和参数；成功记录使用一条 JSON 文件明细。[本地点阵畸变 V2](../detectors/grid-distortion-v2.md) 也通过此结构交给 ProjectARVRPro，定位后可选择 TV、九点口径；相对光学估计默认不发布到既有光学字段。公共装载、显示和保存链路见 [Engine 结果展示](../../engine-components/result-handoff-chain.md)。
+`ViewHandleDistortion2` 仅接受 2.0 结果。旧模板、调试和结果读取入口均已淘汰；已有远端流程引用不会自动改写，应重新选择畸变2.0模板或改用本地节点。数据库旧记录不会删除，但不再提供专用明细显示、叠加和 CSV 导出。V2 无明细失败记录显示失败原因和参数；成功记录使用一条 JSON 文件明细。[本地点阵畸变 V2](../detectors/grid-distortion-v2.md) 也通过此结构交给 ProjectARVRPro，定位后可选择 TV、九点口径；有效的相对光学估计自动写入既有光学字段，并标明未经独立标定。公共装载、显示和保存链路见 [Engine 结果展示](../../engine-components/result-handoff-chain.md)。
 
 ## SFR 曲线与 CSV
 

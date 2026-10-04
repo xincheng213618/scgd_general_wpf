@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Services.Caches
     internal static class CacheManagerService
     {
         public static IReadOnlyList<ICacheModule> Modules { get; } = Array.AsReadOnly<ICacheModule>(
-            new ICacheModule[] { new CalibrationCacheModule(), new ImageFileCacheModule() });
+            new ICacheModule[] { new CalibrationCacheModule(), new ImageFileCacheModule(), new CameraRawBufferCacheModule() });
 
         public static ICacheModule? GetById(string id)
             => Modules.FirstOrDefault(module => string.Equals(module.Id, id, StringComparison.Ordinal));

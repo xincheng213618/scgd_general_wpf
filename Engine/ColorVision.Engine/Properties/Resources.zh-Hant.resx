@@ -7882,4 +7882,9 @@
   <data name="Sensor_TypeInUse" xml:space="preserve"><value>以下裝置仍使用此類型，請先更換裝置的感測器類型：{0}</value></data>
   <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>其他類型的範本仍引用此類型的指令定義，請先解除引用。</value></data>
   <data name="Sensor_ConversionKeepHex" xml:space="preserve"><value>轉換結果包含舊範本無法安全儲存的逗號或逸出文字，請保留 Hex。</value></data>
+  <data name="相机取图缓冲" xml:space="preserve"><value>相機擷取緩衝</value></data>
+  <data name="每台相机最多保留一块空闲 RAW 缓冲。只统计和释放空闲内存，不影响在用图像；后续取图可重新申请和复用。" xml:space="preserve"><value>每台相機最多保留一塊閒置 RAW 緩衝。只統計和釋放閒置記憶體，不影響使用中的影像；後續擷取可重新配置和重用。</value></data>
+  <data name="仅统计空闲取图缓冲，不含正在使用的图像。" xml:space="preserve"><value>僅統計閒置擷取緩衝，不含使用中的影像。</value></data>
+  <data name="已释放 {0} 空闲取图缓冲。在用图像不受影响，后续取图可重新申请和复用。" xml:space="preserve"><value>已釋放 {0} 閒置擷取緩衝。使用中的影像不受影響，後續擷取可重新配置和重用。</value></data>
+  <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>擷取緩衝不支援停用，請使用釋放快取。</value></data>
 </root>

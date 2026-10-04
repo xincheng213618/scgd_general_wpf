@@ -30,7 +30,7 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 | Demura 烧录失败 | [PG 连接、GECS 指令及烧录诊断](./project-arvr-pro-demura.md) |
 | 重启后配置丢失 | `%APPDATA%/ColorVision/Config/ProjectARVRProProcessGroups.json` 和 Recipe 配置；升级时核对旧共享文件迁移日志 |
 
-结果列表工具栏的“缓存管理”打开 Engine 的进程级“本地缓存管理”，以两个 Tab 查看校正缓存与默认开启的单槽位 CVRAW 文件缓存，“释放全部”一并释放。结果图片按数据库记录中的文件路径先查缓存，命中后直接读取内存，不要求磁盘文件存在；未命中才进入原有文件及缺图处理。图片仍通过 `ImageView.OpenImage` → `CVRawOpen` 打开，并沿用显示位图的复用逻辑。旁边的“释放截图缓存”只释放本窗口截图导出缓冲，与文件槽位用途不同。
+结果列表工具栏的“缓存管理”打开 Engine 的进程级“本地缓存管理”，按模块查看校正缓存、图像文件缓存与相机取图缓冲，“释放全部”逐项释放。相机取图缓冲只清理空闲工作内存，不影响在用图像；图像文件缓存默认保留 1 个 CVRAW 文件，数量可调整。结果图片按数据库记录中的文件路径先查缓存，命中后直接读取内存，不要求磁盘文件存在；未命中才进入原有文件及缺图处理。图片仍通过 `ImageView.OpenImage` → `CVRawOpen` 打开，并沿用显示位图的复用逻辑。旁边的“释放截图缓存”只释放本窗口截图导出缓冲，与文件槽位用途不同。
 
 ## 项目边界和版本
 
@@ -117,7 +117,9 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 结果输出由 `ViewResultManager.Config` 控制，覆盖 SQLite、标准 CSV、Legacy CSV、客户 XLSX 和 Socket `ProjectARVRResult.Data`。`UseLegacyARVROutput` 会影响 CSV 和 Socket `Data`，改字段前先确认客户解析程序使用新版还是旧版。
 
-W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。新指标对 W255 已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认范围为 `0–0.02`，并参与 W255 PASS/FAIL 判定；旧配置没有该字段时使用此默认值。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
+新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
+
+W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。新指标对 W255 已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认 Min/Max 均为 `0`，表示不约束；设置非零限值后按对应上下限参与 W255 PASS/FAIL 判定。旧配置没有该字段时使用此默认值，已保存的限值保持原值。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
 
 ## 历史结果图回退与持久化
 

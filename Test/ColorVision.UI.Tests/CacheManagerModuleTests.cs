@@ -5,11 +5,68 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using cvColorVision;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class CacheManagerModuleTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReleasingRawBuffersClearsOnlyIdleMemoryAndKeepsThePoolUsable(bool releaseAll)
+    {
+        using CacheFixture fixture = new();
+        CVFileReadCacheSnapshot imageBefore = CVFileReadCache.GetSnapshot();
+        CalibrationSharedCacheEntry calibrationBefore = fixture.CalibrationEntry;
+        using var firstPool = new LocalCameraRawBufferPool();
+        using var secondPool = new LocalCameraRawBufferPool();
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, firstPool);
+        using var lease = frame.Acquire();
+        Marshal.WriteByte(lease.RawPointer, 63, 37);
+        frame.Dispose();
+        using (var idle = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, firstPool)) { }
+        using (var idle = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 128, 0, secondPool)) { }
+        CameraRawBufferCacheModule module = new(() => [("camera-1", firstPool), ("camera-2", secondPool)]);
+        Assert.IsType<CameraRawBufferCacheModule>(CacheManagerService.GetById(module.Id));
+        CacheModuleSnapshot before = module.GetSnapshot();
+        Assert.Equal(192UL, before.MemoryBytes);
+        Assert.Equal(new[] { "camera-1", "camera-2" }, before.Entries.Select(entry => entry.Name));
+        Assert.False(before.CanToggle);
+
+        CacheModuleReleaseResult result = releaseAll
+            ? Assert.Single(await CacheManagerService.ReleaseAllAsync([module]))
+            : await CacheManagerService.ReleaseAsync(module);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal(before.MemoryBytes, result.ReleasedBytes);
+        Assert.Equal(0UL, module.GetSnapshot().MemoryBytes);
+        Assert.Empty(module.GetSnapshot().Entries);
+        Assert.Equal(37, Marshal.ReadByte(lease.RawPointer, 63));
+        Assert.Equal(0UL, (await module.ReleaseAsync()).ReleasedBytes);
+        CVFileReadCacheSnapshot imageAfter = CVFileReadCache.GetSnapshot();
+        Assert.Equal(imageBefore.FilePath, imageAfter.FilePath);
+        Assert.Equal(imageBefore.CapacityBytes, imageAfter.CapacityBytes);
+        Assert.Equal(imageBefore.AllocationCount, imageAfter.AllocationCount);
+        Assert.Equal(calibrationBefore, fixture.CalibrationEntry);
+        fixture.AssertFilesUnchanged();
+
+        // The cleared pool can allocate immediately; the older leased image is still independent.
+        using (var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, firstPool))
+        using (var nextLease = next.Acquire())
+        {
+            Assert.NotEqual(lease.RawPointer, nextLease.RawPointer);
+            Marshal.WriteByte(nextLease.RawPointer, 63, 41);
+            Assert.Equal(37, Marshal.ReadByte(lease.RawPointer, 63));
+            lease.Dispose();
+            Assert.Equal(41, Marshal.ReadByte(nextLease.RawPointer, 63));
+        }
+        Assert.Equal(64UL, module.GetSnapshot().MemoryBytes);
+        Assert.Equal(64UL, (await module.ReleaseAsync()).ReleasedBytes);
+        using (var next = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 128, 0, secondPool)) { }
+        Assert.Equal(128UL, module.GetSnapshot().MemoryBytes);
+    }
+
     [Fact]
     public async Task SnapshotFailureKeepsHealthyModuleAvailableAndIdentifiesFailedModule()
     {

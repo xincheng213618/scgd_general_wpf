@@ -838,7 +838,7 @@ Candidate messages within one second before and after this run; verify associati
     <value>● Connected {0}</value>
   </data>
   <data name="上限：结果需小于或等于此值" xml:space="preserve">
-    <value>Upper limit: result must be at or below this value</value>
+    <value>Upper limit: result must be at or below this value; 0 means no limit</value>
   </data>
   <data name="下载完成，正在校验文件…" xml:space="preserve">
     <value>Download complete; verifying file…</value>
@@ -847,7 +847,10 @@ Candidate messages within one second before and after this run; verify associati
     <value>Download service unavailable. Copy the link and open it in your browser.</value>
   </data>
   <data name="下限：结果需大于或等于此值" xml:space="preserve">
-    <value>Lower limit: result must be at or above this value</value>
+    <value>Lower limit: result must be at or above this value; 0 means no limit</value>
+  </data>
+  <data name="x 表示应用 K/B 修正后的判定值" xml:space="preserve">
+    <value>x is the value used for limit checks after K/B correction</value>
   </data>
   <data name="仍有已加载的读图或结果视图在自动刷新，点击查看" xml:space="preserve">
     <value>Some loaded image or result views still refresh automatically; click to view</value>

@@ -17481,6 +17481,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 相机取图缓冲 的本地化字符串。
+        /// </summary>
+        public static string 相机取图缓冲 {
+            get {
+                return ResourceManager.GetString("相机取图缓冲", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 相机图像 的本地化字符串。
         /// </summary>
         public static string 相机图像 {

@@ -838,7 +838,7 @@
     <value>● 已連接 {0}</value>
   </data>
   <data name="上限：结果需小于或等于此值" xml:space="preserve">
-    <value>上限：結果需小於或等於此值</value>
+    <value>上限：結果需小於或等於此值；0 表示不限</value>
   </data>
   <data name="下载完成，正在校验文件…" xml:space="preserve">
     <value>下載完成，正在校驗文件…</value>
@@ -847,7 +847,10 @@
     <value>下載服務不可用，請複製下載鏈接後在瀏覽器中打開。</value>
   </data>
   <data name="下限：结果需大于或等于此值" xml:space="preserve">
-    <value>下限：結果需大於或等於此值</value>
+    <value>下限：結果需大於或等於此值；0 表示不限</value>
+  </data>
+  <data name="x 表示应用 K/B 修正后的判定值" xml:space="preserve">
+    <value>x 表示套用 K/B 修正後的判定值</value>
   </data>
   <data name="仍有已加载的读图或结果视图在自动刷新，点击查看" xml:space="preserve">
     <value>仍有已加載的讀圖或結果視圖在自動刷新，點擊查看</value>

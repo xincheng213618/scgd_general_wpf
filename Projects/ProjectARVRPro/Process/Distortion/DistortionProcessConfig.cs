@@ -37,5 +37,11 @@ namespace ProjectARVRPro.Process.Distortion
         [Description("结果图绘制使用的9点来源")]
         public DistortionPointSource PointSource { get => _PointSource; set { _PointSource = value; OnPropertyChanged(); } }
         private DistortionPointSource _PointSource = DistortionPointSource.TV;
+
+        [Category("显示配置")]
+        [DisplayName("绘制点阵连线")]
+        [Description("在原有点标记后追加九点行列连线与四角参考边框；仅绘制完整有序的九点，不重新运行算法。")]
+        public bool DrawGridOverlay { get => _DrawGridOverlay; set { _DrawGridOverlay = value; OnPropertyChanged(); } }
+        private bool _DrawGridOverlay = true;
     }
 }

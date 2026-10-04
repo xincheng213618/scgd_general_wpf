@@ -94,23 +94,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             double scaleX = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiX));
             double scaleY = LuminousAreaDetector.GetPixelToDipScale(imageContext.Config.GetProperties<double>(ImageViewPropertyKeys.DpiY));
             Point Position(GridDistortionPoint point) => new(point.X * scaleX, point.Y * scaleY);
-            double zoom = AlgorithmResultOverlay.GetZoom(drawContext);
-            Pen gridPen = new(Brushes.DeepSkyBlue, 1 / zoom);
-            Pen referencePen = new(Brushes.OrangeRed, 2 / zoom);
-            Dictionary<(int Row, int Col), GridDistortionPoint> grid = result.Points.ToDictionary(p => (p.Row, p.Col));
+            GridDistortionOverlayRenderer.AppendLines(drawContext,
+                result.Points.OrderBy(point => point.Row).ThenBy(point => point.Col).Select(Position).ToArray(),
+                result.ExpectedRows, result.ExpectedCols, AlgorithmResultOverlay.GridDistortionTag);
             foreach (GridDistortionPoint point in result.Points)
             {
-                if (grid.TryGetValue((point.Row, point.Col + 1), out GridDistortionPoint? right))
-                    AlgorithmResultOverlay.AddLine(drawContext, Position(point), Position(right), gridPen, AlgorithmResultOverlay.GridDistortionTag);
-                if (grid.TryGetValue((point.Row + 1, point.Col), out GridDistortionPoint? bottom))
-                    AlgorithmResultOverlay.AddLine(drawContext, Position(point), Position(bottom), gridPen, AlgorithmResultOverlay.GridDistortionTag);
                 bool reference = result.ReferencePointIds.Contains(point.Id);
                 AlgorithmResultOverlay.AddLabel(drawContext, Position(point), $"{(reference ? "参考 " : string.Empty)}({point.Row + 1},{point.Col + 1})",
                     reference ? Brushes.OrangeRed : Brushes.DeepSkyBlue, AlgorithmResultOverlay.GridDistortionTag);
             }
-            GridDistortionPoint[] referencePoints = result.ReferencePointIds.Select(id => result.Points.Single(p => p.Id == id)).ToArray();
-            foreach ((int start, int end) in new[] { (0, 2), (2, 8), (8, 6), (6, 0) })
-                AlgorithmResultOverlay.AddLine(drawContext, Position(referencePoints[start]), Position(referencePoints[end]), referencePen, AlgorithmResultOverlay.GridDistortionTag);
         }
     }
 

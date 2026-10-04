@@ -12,6 +12,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private int currentLength;
         private bool disposed;
 
+        internal int IdleBytes
+        {
+            get { lock (sync) return idlePointer == IntPtr.Zero ? 0 : currentLength; }
+        }
+
         internal IntPtr Rent(int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
@@ -56,16 +61,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             Marshal.FreeHGlobal(pointer);
         }
 
-        public void Dispose()
+        // Detach only the idle slot; checked-out frames retain their own buffers.
+        internal int ReleaseIdle()
         {
             IntPtr pointer;
+            int releasedBytes;
             lock (sync)
             {
-                disposed = true;
                 pointer = idlePointer;
+                releasedBytes = pointer == IntPtr.Zero ? 0 : currentLength;
                 idlePointer = IntPtr.Zero;
             }
             if (pointer != IntPtr.Zero) Marshal.FreeHGlobal(pointer);
+            return releasedBytes;
+        }
+
+        public void Dispose()
+        {
+            lock (sync) disposed = true;
+            ReleaseIdle();
             GC.SuppressFinalize(this);
         }
 

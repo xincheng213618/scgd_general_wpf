@@ -45,7 +45,6 @@ internal sealed record LocalGridDistortionPersistenceRequest
     public GridDistortionAnalysis? Analysis { get; init; }
     public GridTvFormula TvFormula { get; init; }
     public GridPoint9Formula Point9Formula { get; init; }
-    public bool PublishOpticalEstimate { get; init; }
     public string ResultDirectory { get; init; } = string.Empty;
 }
 
@@ -103,7 +102,7 @@ internal static class LocalGridDistortionResultPersistence
 
         GridDistortionResult result = request.Result ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少明细。");
         GridDistortionAnalysis analysis = request.Analysis ?? throw new InvalidOperationException("成功的本地点阵畸变结果缺少指标分析。");
-        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis, request.TvFormula, request.Point9Formula, request.PublishOpticalEstimate));
+        string resultFilePath = WriteResultFile(request.ResultDirectory, BuildLegacyResultJson(result, analysis, request.TvFormula, request.Point9Formula));
         try
         {
             int masterId = SaveDatabaseCore(master, resultFilePath, static () => new SqlSugarLocalFlowResultTransaction<DetailCommonModel>());
@@ -121,7 +120,7 @@ internal static class LocalGridDistortionResultPersistence
     }
 
     internal static string BuildLegacyResultJson(GridDistortionResult result, GridDistortionAnalysis analysis,
-        GridTvFormula tvFormula, GridPoint9Formula point9Formula, bool publishOpticalEstimate)
+        GridTvFormula tvFormula, GridPoint9Formula point9Formula)
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(analysis);
@@ -139,7 +138,7 @@ internal static class LocalGridDistortionResultPersistence
         }).ToArray();
         object? opticalResult = null;
         var optical = analysis.Optical;
-        if (publishOpticalEstimate && optical.IsAvailable && optical.OpticRatioPercent is double opticRatio
+        if (optical.IsAvailable && optical.OpticRatioPercent is double opticRatio
             && double.IsFinite(opticRatio) && optical.MaxErrorPointId is int worstId && pointsById.TryGetValue(worstId, out var worstPoint))
         {
             opticalResult = new
@@ -158,7 +157,7 @@ internal static class LocalGridDistortionResultPersistence
             MetricDefinition,
             analysis.FormulaVersion,
             Units = "percent",
-            OutputSelection = new { TvFormula = tvFormula.ToString(), Point9Formula = point9Formula.ToString(), PublishOpticalEstimate = publishOpticalEstimate },
+            OutputSelection = new { TvFormula = tvFormula.ToString(), Point9Formula = point9Formula.ToString() },
             PointOrder = "row-major, top-to-bottom, left-to-right",
             ReferencePointOrder = "TL,TC,TR,ML,C,MR,BL,BC,BR",
             KeystoneAxes = point9Formula == GridPoint9Formula.OppositeEdgeMean
@@ -271,7 +270,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     private double minimumContrast = 0.02;
     private GridTvFormula tvFormula;
     private GridPoint9Formula point9Formula = GridPoint9Formula.OppositeEdgeMean;
-    private bool publishOpticalEstimate;
 
     [Category("本地点阵畸变")]
     [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
@@ -317,10 +315,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     [STNodeProperty("九点输出口径", "新建节点默认对边平均九点；结果 JSON 沿用 Point9_distortion 字段结构。旧 P9 三跨度可选，全部方案都会保存在分析结果中。", true)]
     public GridPoint9Formula Point9Formula { get => point9Formula; set { point9Formula = value; OnPropertyChanged(); } }
 
-    [Category("畸变输出")]
-    [STNodeProperty("输出相对光学估计", "默认关闭。启用后仅将通过残差校验的居中一阶径向模型估计写入 ARVR 光学畸变项；假设等间距平面点阵与居中光轴，未经独立标定。", true)]
-    public bool PublishOpticalEstimate { get => publishOpticalEstimate; set { publishOpticalEstimate = value; OnPropertyChanged(); } }
-
     [Category("本地点阵畸变")]
     [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
     [STNodeProperty("结果目录", "可选；留空保存到当前用户 LocalAppData 下 ColorVision\\Results\\GridDistortion。", true)]
@@ -350,7 +344,6 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
         string configuredDirectory = ResultDirectory;
         GridTvFormula selectedTvFormula = TvFormula;
         GridPoint9Formula selectedPoint9Formula = Point9Formula;
-        bool selectedPublishOptical = PublishOpticalEstimate;
         if (!Enum.IsDefined(selectedTvFormula) || !Enum.IsDefined(selectedPoint9Formula)) throw new InvalidOperationException("畸变输出口径无效。");
         int zIndex = ZIndex;
         string nodeId = NodeID;
@@ -379,7 +372,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
                 SearchRegionPoiTemplate = configuredTemplate,
                 SearchRegion = new { roi.X, roi.Y, roi.Width, roi.Height },
                 Options = options,
-                OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString(), PublishOpticalEstimate = selectedPublishOptical },
+                OutputSelection = new { TvFormula = selectedTvFormula.ToString(), Point9Formula = selectedPoint9Formula.ToString() },
                 Detection = detection,
                 PrimaryBufferKind = lease.Metadata.PrimaryBufferKind.ToString(),
                 SourceFilePath = lease.Metadata.SourceFilePath,
@@ -395,7 +388,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             {
                 Action = action, ImageFilePath = imageFile, ZIndex = zIndex,
                 TotalTime = totalTime, Parameters = parameters, ResultDirectory = configuredDirectory,
-                TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula, PublishOpticalEstimate = selectedPublishOptical
+                TvFormula = selectedTvFormula, Point9Formula = selectedPoint9Formula
             };
             GridDistortionAnalysis analysis;
             try
@@ -451,7 +444,7 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
     {
         ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber,
         ImageFilePath, SearchRegion, SearchRegionPoiTemplate, ExpectedRows, ExpectedCols, BrightTarget, MinimumContrast, ResultDirectory,
-        TvFormula, Point9Formula, PublishOpticalEstimate, Algorithm = "GridDistortionV2"
+        TvFormula, Point9Formula, Algorithm = "GridDistortionV2"
     });
 
     internal static void ValidateDetection(GridDistortionResult result, GridDistortionOptions options, int width, int height)

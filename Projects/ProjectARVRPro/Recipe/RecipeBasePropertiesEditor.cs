@@ -18,21 +18,21 @@ namespace ProjectARVRPro.Recipe
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
-             if (property.GetValue(obj) is not RecipeBase recipeBase) return null;
+            if (property.GetValue(obj) is not RecipeBase recipeBase) return null;
 
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
 
 
             var grid = new Grid() { HorizontalAlignment = HorizontalAlignment.Right, Width = 420 };
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(16) });
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(60) });
             grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(60) });
 
             var labelStyle = new Style(typeof(TextBlock))
             {
@@ -47,12 +47,8 @@ namespace ProjectARVRPro.Recipe
 
             TextBlock CreateHintLabel(string text, string tooltip)
             {
-                return new TextBlock() { Text = text, ToolTip = tooltip, Style = labelStyle };
+                return new TextBlock() { Text = text, ToolTip = LocalizedText.Get(tooltip), Style = labelStyle };
             }
-
-            var labelMin = CreateHintLabel("≥", "下限：结果需大于或等于此值");
-            Grid.SetColumn(labelMin, 0);
-            grid.Children.Add(labelMin);
 
             Binding bindingMin = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Min");
             bindingMin.UpdateSourceTrigger = UpdateSourceTrigger.Default;
@@ -60,12 +56,17 @@ namespace ProjectARVRPro.Recipe
             var textboxMin = PropertyEditorHelper.CreateSmallTextBox(bindingMin);
             textboxMin.ToolTip = LocalizedText.Get("下限：结果需大于或等于此值");
             textboxMin.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
-            Grid.SetColumn(textboxMin, 1);
+            Grid.SetColumn(textboxMin, 0);
             grid.Children.Add(textboxMin);
 
-            var labelMax = CreateHintLabel("≤", "上限：结果需小于或等于此值");
-            Grid.SetColumn(labelMax, 2);
-            grid.Children.Add(labelMax);
+            var labelRange = new TextBlock
+            {
+                Text = "≤ x ≤",
+                ToolTip = LocalizedText.Get("x 表示应用 K/B 修正后的判定值"),
+                Style = labelStyle
+            };
+            Grid.SetColumn(labelRange, 1);
+            grid.Children.Add(labelRange);
 
             Binding bindingMax = PropertyEditorHelper.CreateTwoWayBinding(recipeBase, "Max");
             bindingMax.UpdateSourceTrigger = UpdateSourceTrigger.Default;
@@ -73,7 +74,7 @@ namespace ProjectARVRPro.Recipe
             var textboxMax = PropertyEditorHelper.CreateSmallTextBox(bindingMax);
             textboxMax.ToolTip = LocalizedText.Get("上限：结果需小于或等于此值");
             textboxMax.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
-            Grid.SetColumn(textboxMax, 3);
+            Grid.SetColumn(textboxMax, 2);
             grid.Children.Add(textboxMax);
 
             var labelFix = CreateHintLabel("K", "修正系数 K：修正后 = 原值 * K + B");

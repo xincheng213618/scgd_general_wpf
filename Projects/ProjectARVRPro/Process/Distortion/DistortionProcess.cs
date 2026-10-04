@@ -44,7 +44,7 @@ namespace ProjectARVRPro.Process.Distortion
                                 distortionResult.OpticDistortion.OpticRatio = recipeConfig.OpticDistortion.Apply(distortionResult.OpticDistortion.OpticRatio);
 
                                 testResult.OpticDistortion = Build(
-                                    "Optic_Distortion",
+                                    nameof(DistortionTestResult.OpticDistortion),
                                     distortionResult.OpticDistortion.OpticRatio,
                                     recipeConfig.OpticDistortion.Min,
                                     recipeConfig.OpticDistortion.Max);
@@ -160,7 +160,7 @@ namespace ProjectARVRPro.Process.Distortion
                 Circle.TextAttribute.FontSize = 20;
                 ctx.ImageView.AddVisual(Circle);
             }
-
+            DistortionResultOverlay.AppendGrid(ctx.ImageView, testResult.Points, Config.DrawGridOverlay);
         }
 
         public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)

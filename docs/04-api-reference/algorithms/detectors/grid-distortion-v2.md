@@ -35,11 +35,10 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 | --- | --- | --- |
 | `TvFormula` | `Standard` | 选择标准 TV 或其半值 |
 | `Point9Formula` | `OppositeEdgeMean` | 新建节点默认输出对边均值九点；旧本地三跨度仍可选，已保存节点继续使用各自记录的口径 |
-| `PublishOpticalEstimate` | `false` | 明确启用后才将相对估计映射到既有 `Optic_Distortion` 字段 |
 
 流程执行会写入既有结果数据库和节点结果目录，需要已有流程批次及数据库连接；ImageView 单次分析不要求数据库。成功记录的类型为 `Distortion`（9）、版本为 `2.0`，一条 `DetailCommon` 指向唯一结果 JSON 文件。默认把对边均值九点的六项数值写入既有 `Point9_distortion` 字段名，`TV_distortion`、`Point9_distortion`、`Optic_Distortion` 保持 `Distortion2View` 与 ProjectARVRPro 消费的 JSON 结构；兼容的是读取格式，不代表沿用旧 P9 公式或旧梯形轴定义。数值已经是百分数，不再乘 100。
 
-全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。默认 `Optic_Distortion` 为 null；显式启用后仍标明是未标定估计，并省略含义未确认的 `t`。CSV 对此缺失项留空，不补零。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
+全部分析同时保存在 `LocalGridDistortionAnalysis`、结果文件和主记录参数中。节点共用一次定位和分析，自动输出 TV、九点以及通过残差校验的相对光学估计；`Optic_Distortion` 仍标明是未标定估计，并省略含义未确认的 `t`。光学模型无效时该字段为 null，CSV 留空，不补零。已保存节点中的旧光学输出开关不再生效，重新保存后不再写入；TV 和九点口径仍按各自配置输出。原有客户配方、判定限和协议字段由 ProjectARVRPro 负责。
 
 算法结构化拒绝和分析几何退化可保存失败主记录，不生成成功明细，也不替换上游有效主记录引用；事务提交后才更新当前结果引用。提交后的消息发布失败不撤销已保存结果。帧加载、方向/ROI 等前置错误及未包装的意外异常不保证产生失败主记录。`TotalTime` 记录定位调用耗时，不含派生分析、文件、数据库和通知。
 
