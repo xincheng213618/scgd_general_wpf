@@ -360,6 +360,66 @@ public sealed class CopilotSecretRedactionTests
     }
 
     [Theory]
+    [InlineData("Authorization: Digest username=\"alpha-private\", response=\"omega-private\"; realm=\"gamma-private\"\r\ntrace-visible")]
+    [InlineData("prefix Authorization=Digest username=\"alpha-private\", response=\"omega-private\"; trace-visible")]
+    [InlineData(" \tProxy-Authorization: Digest username=\"alpha-private\", response=\"omega-private\"\r\ntrace-visible")]
+    [InlineData("Authorization: \"alpha-private\"; opaque-field=\"omega-private\"\r\ntrace-visible; detail-field=visible")]
+    [InlineData("prefix Authorization=\"alpha-private;escaped\\\"omega-private\"; trace-visible")]
+    public void OutputArchiveRedactsAuthorizationHeadersBeforePublishingCanonicalPages(string source)
+    {
+        var expected = CopilotMcpAuditLogger.RedactText(source);
+        var privateValues = new[] { "alpha-private", "omega-private", "gamma-private" };
+        Assert.Contains("trace-visible", expected, StringComparison.Ordinal);
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate("BackgroundOutput", "stdout");
+        Assert.NotNull(archive);
+
+        foreach (var character in source)
+        {
+            archive!.Append(character.ToString());
+            var livePage = archive.Read(0, CopilotOutputArchiveLimits.DefaultReadCharacters, CancellationToken.None);
+            Assert.True(livePage.Available, livePage.ErrorMessage);
+            Assert.True(expected.StartsWith(livePage.Content, StringComparison.Ordinal),
+                "Published archive characters must remain a continuous prefix of the canonical redacted output.");
+            Assert.Equal(livePage.Content.Length, livePage.ReturnedCharacters);
+            Assert.Equal(livePage.ReturnedCharacters, livePage.NextOffsetCharacters);
+            foreach (var value in privateValues)
+            {
+                Assert.DoesNotContain(value, livePage.Content, StringComparison.Ordinal);
+                var search = archive.Search(value, 0, CancellationToken.None);
+                Assert.True(search.Available, search.ErrorMessage);
+                Assert.False(search.Matched);
+            }
+        }
+
+        archive!.Complete();
+        var combined = new StringBuilder();
+        var offset = 0;
+        while (true)
+        {
+            var page = archive.Read(offset, maximumCharacters: 7, CancellationToken.None);
+            Assert.True(page.Available, page.ErrorMessage);
+            Assert.Equal(offset, page.OffsetCharacters);
+            Assert.True(page.NextOffsetCharacters > offset);
+            Assert.InRange(page.NextOffsetCharacters, offset + 1, expected.Length);
+            Assert.Equal(page.Content.Length, page.ReturnedCharacters);
+            Assert.Equal(offset + page.ReturnedCharacters, page.NextOffsetCharacters);
+            Assert.Equal(expected[offset..page.NextOffsetCharacters], page.Content);
+            Assert.Equal(expected.Length, page.ArchivedCharacters);
+            foreach (var value in privateValues)
+                Assert.DoesNotContain(value, page.Content, StringComparison.Ordinal);
+            combined.Append(page.Content);
+            offset = page.NextOffsetCharacters;
+            if (page.EndOfAvailableOutput)
+                break;
+        }
+
+        Assert.Equal(expected, combined.ToString());
+        Assert.Equal(source.Length, archive.ObservedCharacters);
+        Assert.Equal(expected.Length, archive.ArchivedCharacters);
+        Assert.False(archive.IsTruncated);
+    }
+
+    [Theory]
     [InlineData("comma", false)]
     [InlineData("comma", true)]
     [InlineData("semicolon", false)]

@@ -613,6 +613,10 @@ namespace ColorVision.Copilot
         internal bool SuppressModelOutput { get; init; }
 
         internal CopilotToolOutputArchiveReadResult? ToolOutputArchiveRead { get; init; }
+
+        internal CopilotShellCommandOutputArchiveReadResult? ShellOutputArchiveRead { get; init; }
+
+        internal CopilotBackgroundShellCommandOutputReadResult? BackgroundShellOutputArchiveRead { get; init; }
     }
 
     internal sealed record CopilotWorkspaceMutationFileSnapshot(

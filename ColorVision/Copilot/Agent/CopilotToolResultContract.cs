@@ -262,6 +262,8 @@ namespace ColorVision.Copilot
                 BackgroundShellCommands = Freeze(result.BackgroundShellCommands),
                 SuppressModelOutput = result.SuppressModelOutput,
                 ToolOutputArchiveRead = result.ToolOutputArchiveRead,
+                ShellOutputArchiveRead = result.ShellOutputArchiveRead,
+                BackgroundShellOutputArchiveRead = result.BackgroundShellOutputArchiveRead,
             };
         }
 

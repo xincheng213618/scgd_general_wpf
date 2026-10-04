@@ -61,9 +61,9 @@ namespace ColorVision.Copilot
             var result = outcome.EffectiveModelResult;
             if (result.SuppressModelOutput)
                 return CreateResult(outcome, string.Empty, contentTruncated: false);
-            var archiveRead = result.ToolOutputArchiveRead;
-            var content = archiveRead?.Success == true && archiveRead.Snapshot != null && archiveRead.Page != null
-                ? BuildArchivePageContent(archiveRead.Snapshot, archiveRead.Page)
+            var archivePage = GetArchivePage(result);
+            var content = archivePage != null
+                ? BuildArchivePageContent(result, archivePage)
                 : SanitizeMultiline(result.Content);
             var budget = ResolveBudget(toolOutputTokenLimit);
             if (budget.MaximumSerializedWeight == 0)
@@ -412,8 +412,9 @@ namespace ColorVision.Copilot
         private static (string Content, bool Truncated, string? Summary) CompactModelContent(
             CopilotToolExecutionOutcome outcome, string content, int maximumCharacters)
         {
-            var archiveRead = outcome.EffectiveModelResult.ToolOutputArchiveRead;
-            if (archiveRead?.Success != true || archiveRead.Snapshot == null || archiveRead.Page == null)
+            var result = outcome.EffectiveModelResult;
+            var page = GetArchivePage(result);
+            if (page == null)
             {
                 var compacted = CompactContent(outcome.Execution?.ToolName ?? string.Empty, content, maximumCharacters);
                 return (compacted, compacted.Length < content.Length, null);
@@ -421,7 +422,6 @@ namespace ColorVision.Copilot
 
             // Archive cursors refer to a contiguous prefix of the stored page.
             // Never compact a middle segment while keeping the original cursor.
-            var page = archiveRead.Page;
             var maximumBodyCharacters = Math.Min(page.Content.Length, maximumCharacters);
             while (maximumBodyCharacters >= 0)
             {
@@ -436,9 +436,9 @@ namespace ColorVision.Copilot
                     NextOffsetCharacters = nextOffset,
                     EndOfAvailableOutput = page.EndOfAvailableOutput && body.Length == page.Content.Length,
                 };
-                var formatted = BuildArchivePageContent(archiveRead.Snapshot, modelPage);
+                var formatted = BuildArchivePageContent(result, modelPage);
                 if (formatted.Length <= maximumCharacters)
-                    return (formatted, body.Length < page.Content.Length, CopilotReadToolOutputTool.BuildPageSummary(archiveRead.Snapshot, modelPage));
+                    return (formatted, body.Length < page.Content.Length, BuildArchivePageSummary(result, modelPage));
                 if (body.Length == 0)
                     break;
                 maximumBodyCharacters = Math.Max(0, body.Length - (formatted.Length - maximumCharacters));
@@ -448,12 +448,57 @@ namespace ColorVision.Copilot
             return (string.Empty, true, string.Empty);
         }
 
-        private static string BuildArchivePageContent(CopilotToolOutputArchiveSnapshot snapshot, CopilotRedactedOutputArchivePage page) =>
-            CopilotReadToolOutputTool.BuildPageContent(snapshot with
+        private static CopilotRedactedOutputArchivePage? GetArchivePage(CopilotToolResult result)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
+                return result.ToolOutputArchiveRead.Page;
+            if (result.ShellOutputArchiveRead?.Success == true)
+                return result.ShellOutputArchiveRead.Page;
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+                return result.BackgroundShellOutputArchiveRead.Page;
+            return null;
+        }
+
+        private static string BuildArchivePageContent(CopilotToolResult result, CopilotRedactedOutputArchivePage page)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
             {
-                ToolName = SanitizeInline(snapshot.ToolName, 120),
-                CallId = SanitizeInline(snapshot.CallId, 128),
-            }, page);
+                var snapshot = result.ToolOutputArchiveRead.Snapshot!;
+                return CopilotReadToolOutputTool.BuildPageContent(snapshot with
+                {
+                    ToolName = SanitizeInline(snapshot.ToolName, 120),
+                    CallId = SanitizeInline(snapshot.CallId, 128),
+                }, page);
+            }
+            if (result.ShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.ShellOutputArchiveRead;
+                return CopilotReadShellCommandOutputTool.BuildPageContent(read.Snapshot!, read.Stream, page);
+            }
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.BackgroundShellOutputArchiveRead;
+                return CopilotReadBackgroundShellCommandOutputTool.BuildPageContent(read.Snapshot!, read.Stream, page);
+            }
+            return string.Empty;
+        }
+
+        private static string BuildArchivePageSummary(CopilotToolResult result, CopilotRedactedOutputArchivePage page)
+        {
+            if (result.ToolOutputArchiveRead?.Success == true)
+                return CopilotReadToolOutputTool.BuildPageSummary(result.ToolOutputArchiveRead.Snapshot!, page);
+            if (result.ShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.ShellOutputArchiveRead;
+                return CopilotReadShellCommandOutputTool.BuildPageSummary(read.Snapshot!, read.Stream, page);
+            }
+            if (result.BackgroundShellOutputArchiveRead?.Success == true)
+            {
+                var read = result.BackgroundShellOutputArchiveRead;
+                return CopilotReadBackgroundShellCommandOutputTool.BuildPageSummary(read.Snapshot!, read.Stream, page);
+            }
+            return string.Empty;
+        }
 
         private static string CompactContent(string toolName, string content, int maximumCharacters)
         {

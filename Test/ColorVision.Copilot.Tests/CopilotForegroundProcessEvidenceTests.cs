@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -11,6 +12,125 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Path.GetTempPath(),
         "ColorVisionCopilotForegroundProcessEvidenceTests",
         Guid.NewGuid().ToString("N")));
+
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(256, false)]
+    [InlineData(256, true)]
+    public async Task ShellModelPagesContinueFromTheLastDeliveredCharacter(int? tokenLimit, bool unicode)
+    {
+        var request = CreateRequest(tokenLimit);
+        var stream = unicode ? "stderr" : "stdout";
+        var canonical = " \t" + string.Concat(Enumerable.Range(0, 3_000).Select(index =>
+            unicode ? $"{index:D4}界😀|" : $"{index:D4}row|")) + "tail\t ";
+        using var registry = new CopilotShellCommandOutputArchiveRegistry();
+        using var capture = new CopilotShellCommandOutputCapture();
+        var splitAt = unicode ? canonical.IndexOf("😀", StringComparison.Ordinal) + 1 : canonical.Length / 2;
+        if (unicode)
+        {
+            capture.AppendStandardError(canonical[..splitAt]);
+            capture.AppendStandardError(canonical[splitAt..]);
+        }
+        else
+        {
+            capture.AppendStandardOutput(canonical[..splitAt]);
+            capture.AppendStandardOutput(canonical[splitAt..]);
+        }
+        capture.Complete();
+        var snapshot = registry.Retain(request.ConversationId, capture, new CopilotShellProcessResult(
+            ExitCode: 0,
+            TimedOut: false,
+            StandardOutput: unicode ? string.Empty : canonical,
+            StandardError: unicode ? canonical : string.Empty,
+            Duration: TimeSpan.Zero)
+        {
+            StandardOutputTruncated = !unicode,
+            StandardErrorTruncated = unicode,
+        });
+        Assert.NotNull(snapshot);
+        Assert.Equal(canonical.Length, unicode ? snapshot.ArchivedStandardErrorCharacters : snapshot.ArchivedStandardOutputCharacters);
+        var tool = new CopilotReadShellCommandOutputTool(registry);
+        var combined = new StringBuilder();
+        var offset = 0;
+        while (true)
+        {
+            var events = new List<CopilotAgentEvent>();
+            var outcome = await new CopilotToolExecutor([]).ExecuteAsync(new CopilotToolInvocation
+            {
+                CallId = $"call:shell-model-page-{stream}-{offset}",
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = tool,
+                AgentRequest = request,
+                ToolInput = new CopilotAgentToolInput
+                {
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["archiveId"] = snapshot.Id,
+                        ["stream"] = stream,
+                        ["offsetCharacters"] = offset,
+                        ["maximumCharacters"] = CopilotOutputArchiveLimits.MaximumReadCharacters,
+                    },
+                },
+            }, events.Add, CancellationToken.None);
+            Assert.True(outcome.Result.Success, outcome.Result.ErrorMessage);
+            var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+            CopilotAgentEventProtocol.Validate(terminal);
+            Assert.Equal(outcome.FormattedModelResult, terminal.ModelToolResult);
+            Assert.Null(outcome.ToolOutputArchive);
+            var result = JObject.Parse(terminal.ModelToolResult);
+            Assert.Null(result["content_archive"]);
+            var modelContent = result["content"]!.Value<string>()!
+                .Replace("\r\n", "\n", StringComparison.Ordinal);
+            if (tokenLimit.HasValue)
+            {
+                var maximumWeight = tokenLimit.Value * CopilotTokenEstimator.AsciiCharactersPerToken;
+                Assert.InRange(terminal.ModelToolResult.Length, 1, maximumWeight);
+                Assert.True(CopilotTokenEstimator.EstimateTextWeight(terminal.ModelToolResult) <= maximumWeight);
+            }
+            else
+            {
+                Assert.InRange(terminal.ModelToolResult.Length, 1, CopilotFrameworkToolResultFormatter.MaxSerializedCharacters);
+                Assert.InRange(modelContent.Length, 1, CopilotFrameworkToolResultFormatter.MaxContentCharacters);
+            }
+            const string contentMarker = "\ncontent:\n";
+            var contentStart = modelContent.IndexOf(contentMarker, StringComparison.Ordinal);
+            Assert.True(contentStart >= 0, "The model page must retain its complete header and content boundary.");
+            var header = modelContent[..contentStart].Split('\n')
+                .Select(line => line.Split(": ", 2, StringSplitOptions.None))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+            var body = modelContent[(contentStart + contentMarker.Length)..];
+            var returned = int.Parse(header["returned_characters"], CultureInfo.InvariantCulture);
+            var next = int.Parse(header["next_offset_characters"], CultureInfo.InvariantCulture);
+            var endOfOutput = header["end_of_output"] == "true";
+            Assert.Equal(snapshot.Id, header["archive_id"]);
+            Assert.Equal(stream, header["stream"]);
+            Assert.Equal(offset, int.Parse(header["offset_characters"], CultureInfo.InvariantCulture));
+            Assert.True(next > offset, "Each delivered model page must advance its continuation cursor.");
+            Assert.InRange(next, offset + 1, canonical.Length);
+            Assert.Equal(body.Length, returned);
+            Assert.Equal(offset + returned, next);
+            Assert.Equal(canonical[offset..next], body);
+            Assert.Equal(canonical.Length, int.Parse(header["archived_characters"], CultureInfo.InvariantCulture));
+            Assert.Equal("false", header["archive_truncated"]);
+            Assert.Equal(next == canonical.Length, endOfOutput);
+            Assert.Equal(
+                $"Read {returned} archived {stream} character(s) from shell output archive {snapshot.Id}; "
+                    + (endOfOutput ? "reached the archive end." : "more archived output is available."),
+                result["summary"]!.Value<string>());
+            Assert.False(char.IsLowSurrogate(body[0]));
+            Assert.False(char.IsHighSurrogate(body[^1]));
+            combined.Append(body);
+            offset = next;
+            if (endOfOutput)
+                break;
+        }
+        Assert.Equal(canonical, combined.ToString());
+        Assert.Single(registry.GetSnapshots(request.ConversationId));
+    }
 
     [Fact]
     public async Task ShellArchiveCredentialsRemainRedactedThroughSmallRuntimePages()
@@ -95,6 +215,82 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
                 offset = nextOffset;
             }
             Assert.Equal(expected, output.ToString());
+        }
+    }
+
+    [Theory]
+    [InlineData("password=alpha\"omega\"gamma; trace-visible", "trace-visible", new string[] { "alpha", "omega", "gamma" }, "")]
+    [InlineData("\"password=alpha\" visible-trace", "visible-trace", new string[] { "alpha" }, "")]
+    [InlineData("password=\"alpha\"gamma; trace-visible", "trace-visible", new string[] { "alpha", "gamma" }, "password=\"<redacted>\"")]
+    public async Task ShellArchiveQuotedAssignmentsHideTheWholeValueAndPreservePublicTrace(
+        string source, string publicTrace, string[] secrets, string expectedQuotedBoundary)
+    {
+        var request = CreateRequest();
+        using var registry = new CopilotShellCommandOutputArchiveRegistry();
+        using var capture = new CopilotShellCommandOutputCapture();
+        foreach (var character in source)
+            capture.AppendStandardOutput(character.ToString());
+        capture.Complete();
+        var snapshot = registry.Retain(request.ConversationId, capture, new CopilotShellProcessResult(
+            ExitCode: 0,
+            TimedOut: false,
+            StandardOutput: source,
+            StandardError: string.Empty,
+            Duration: TimeSpan.Zero)
+        {
+            StandardOutputTruncated = true,
+        });
+        Assert.NotNull(snapshot);
+        Assert.Equal(source.Length, snapshot.ObservedStandardOutputCharacters);
+        var read = registry.Read(request.ConversationId, snapshot.Id, CopilotShellCommandOutputStream.StandardOutput,
+            0, CopilotOutputArchiveLimits.MaximumReadCharacters, CancellationToken.None);
+        Assert.True(read.Success, read.ErrorMessage);
+        var canonical = Assert.IsType<CopilotRedactedOutputArchivePage>(read.Page);
+        var tool = new CopilotReadShellCommandOutputTool(registry);
+        var events = new List<CopilotAgentEvent>();
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(new CopilotToolInvocation
+        {
+            CallId = "call:shell-quoted-assignment",
+            Round = 1,
+            Attempt = 1,
+            MaxAttempts = 1,
+            RuntimeName = "test",
+            Tool = tool,
+            AgentRequest = request,
+            ToolInput = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?> { ["archiveId"] = snapshot.Id },
+            },
+        }, events.Add, CancellationToken.None);
+        Assert.True(outcome.Result.Success, outcome.Result.ErrorMessage);
+        var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+        CopilotAgentEventProtocol.Validate(terminal);
+        Assert.Equal(outcome.FormattedModelResult, terminal.ModelToolResult);
+        Assert.Null(outcome.ToolOutputArchive);
+        var result = JObject.Parse(terminal.ModelToolResult);
+        Assert.Null(result["content_archive"]);
+        var content = result["content"]!.Value<string>()!.Replace("\r\n", "\n", StringComparison.Ordinal);
+        const string contentMarker = "\ncontent:\n";
+        var bodyStart = content.IndexOf(contentMarker, StringComparison.Ordinal);
+        Assert.True(bodyStart >= 0, content);
+        var body = content[(bodyStart + contentMarker.Length)..];
+        Assert.Equal(canonical.Content, body);
+        Assert.Equal(body.Length, canonical.ReturnedCharacters);
+        Assert.Equal(body.Length, canonical.NextOffsetCharacters);
+        Assert.Equal(body.Length, snapshot.ArchivedStandardOutputCharacters);
+        Assert.True(canonical.EndOfAvailableOutput);
+        Assert.Contains($"returned_characters: {body.Length}\n", content, StringComparison.Ordinal);
+        Assert.Contains($"next_offset_characters: {body.Length}\n", content, StringComparison.Ordinal);
+        Assert.Contains($"archived_characters: {body.Length}\n", content, StringComparison.Ordinal);
+        Assert.Contains("end_of_output: true\n", content, StringComparison.Ordinal);
+        Assert.Contains(publicTrace, canonical.Content, StringComparison.Ordinal);
+        Assert.Contains(publicTrace, body, StringComparison.Ordinal);
+        if (expectedQuotedBoundary.Length > 0)
+            Assert.Contains(expectedQuotedBoundary, canonical.Content, StringComparison.Ordinal);
+        foreach (var secret in secrets)
+        {
+            Assert.DoesNotContain(secret, canonical.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain(secret, terminal.ModelToolResult, StringComparison.Ordinal);
         }
     }
 
@@ -355,12 +551,13 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
             Directory.Delete(_root, recursive: true);
     }
 
-    private CopilotAgentRequest CreateRequest() => new()
+    private CopilotAgentRequest CreateRequest(int? toolOutputTokenLimit = null) => new()
     {
         ConversationId = "foreground-process-evidence",
         WritableLocalRootPaths = [_root],
         SearchRootPaths = [_root],
         PreferredShell = CopilotShellKind.PowerShell,
+        ToolOutputTokenLimitOverride = toolOutputTokenLimit,
     };
 
     private static CopilotAgentToolInput CreateValidationInput(string projectPath, string task) => new()

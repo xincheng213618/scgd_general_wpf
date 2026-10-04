@@ -38,6 +38,7 @@ namespace ColorVision.Copilot
     {
         private static readonly string[] SensitiveMarkers =
         [
+            "proxy-authorization",
             "private_key",
             "private-key",
             "privatekey",
@@ -550,7 +551,10 @@ namespace ColorVision.Copilot
         {
             None,
             Assignment,
+            AssignmentRemainder,
             Bearer,
+            AuthorizationLine,
+            AuthorizationInline,
         }
     }
 }
