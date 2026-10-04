@@ -299,66 +299,26 @@ namespace ColorVision.Copilot
 
         private CopilotAgentSessionResumeRestriction GetSessionResumeRestriction()
         {
-            if (SessionResumeRestriction == CopilotAgentSessionResumeRestriction.UncertainToolOutcome
-                || LatestRunHasUncertainToolOutcome())
-            {
-                return CopilotAgentSessionResumeRestriction.UncertainToolOutcome;
-            }
-            if (SessionResumeRestriction == CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall
-                || LatestRunHasUnresolvedProviderToolCall())
-            {
-                return CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall;
-            }
-            return SessionResumeRestriction;
-        }
-
-        private bool LatestRunHasUncertainToolOutcome()
-        {
+            var restriction = CopilotAgentTaskEventJournal.MergeSessionResumeRestrictions(
+                SessionResumeRestriction,
+                TaskEventJournal.TrimmedSessionResumeRestriction);
             var latestRun = TaskEventJournal.Events.LastOrDefault(item =>
                 item.Type == CopilotAgentTaskEventType.RunStarted);
             if (latestRun == null)
-                return false;
+                return restriction;
 
             var runEvents = TaskEventJournal.Events
                 .Where(item => string.Equals(item.RunId, latestRun.RunId, StringComparison.Ordinal))
                 .ToArray();
-            if (runEvents.Any(item => item.Type == CopilotAgentTaskEventType.ToolCompleted
-                && string.Equals(
-                    CopilotToolFailureCode.Normalize(item.FailureCode),
-                    CopilotToolFailureCode.OutcomeUnknown,
-                    StringComparison.Ordinal)))
+            foreach (var item in runEvents)
             {
-                return true;
+                restriction = CopilotAgentTaskEventJournal.MergeSessionResumeRestrictions(
+                    restriction,
+                    CopilotAgentTaskEventJournal.GetToolResumeRestriction(runEvents, item));
+                if (restriction == CopilotAgentSessionResumeRestriction.UncertainToolOutcome)
+                    break;
             }
-
-            return runEvents
-                .Where(item => item.Type == CopilotAgentTaskEventType.ToolStarted)
-                .Any(start => !runEvents.Any(item =>
-                    item.Sequence > start.Sequence
-                    && ((item.Type == CopilotAgentTaskEventType.ToolCompleted
-                            && string.Equals(item.SubjectId, start.SubjectId, StringComparison.Ordinal))
-                        || ((item.Type is CopilotAgentTaskEventType.ApprovalRequested
-                                or CopilotAgentTaskEventType.ApprovalDenied)
-                            && (string.Equals(item.SubjectId, start.SubjectId, StringComparison.Ordinal)
-                                || item.RelatedIds.Contains(start.SubjectId, StringComparer.Ordinal))))));
-        }
-
-        private bool LatestRunHasUnresolvedProviderToolCall()
-        {
-            var latestRun = TaskEventJournal.Events.LastOrDefault(item =>
-                item.Type == CopilotAgentTaskEventType.RunStarted);
-            if (latestRun == null)
-                return false;
-
-            var runEvents = TaskEventJournal.Events
-                .Where(item => string.Equals(item.RunId, latestRun.RunId, StringComparison.Ordinal))
-                .ToArray();
-            return runEvents
-                .Where(item => item.Type == CopilotAgentTaskEventType.ProviderToolCallPersisted)
-                .Any(call => !runEvents.Any(item =>
-                    item.Type == CopilotAgentTaskEventType.ProviderToolResultPersisted
-                    && item.Sequence > call.Sequence
-                    && string.Equals(item.SubjectId, call.SubjectId, StringComparison.Ordinal)));
+            return restriction;
         }
 
         public bool IsStructurallyValid()

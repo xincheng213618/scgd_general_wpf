@@ -116,7 +116,7 @@ Agent Framework checkpoint 保存目录 revision，以及每个能力的稳定 I
 
 `CopilotAgentTaskEventJournalRegistry` 是当前选中会话 journal 的内存诊断投影。`PublishSelectedTaskEventJournal` 读取 `CurrentAgentTaskEventJournal`，发布有效非空快照；没有可用 journal 时清空 registry。会话切换及请求保存时都会发布，因此 `PublishedAtUtc` 是投影发布时间，不是磁盘保存回执。
 
-checkpoint、独立 journal 与正式运行结果的所有权及提交规则统一见[检查点与任务事件的所有权](./copilot-view-model-architecture.md#检查点与任务事件的所有权)。有界窗口的比较只能验证仍保留的证据，不承诺无限历史的完整性；恢复操作还必须遵守下列提问与工具终态契约。
+checkpoint、独立 journal 与正式运行结果的所有权及提交规则统一见[检查点与任务事件的所有权](./copilot-view-model-architecture.md#检查点与任务事件的所有权)。有界窗口的比较只能验证仍保留的证据，不承诺无限历史的完整性；恢复操作还必须遵守下列提问与工具终态契约。裁剪当前运行尚未配对的 provider 调用、尚未结清的工具执行或结果未知记录时，journal 的 `TrimmedSessionResumeRestriction` 保存保守恢复限制，随独立 journal 和 checkpoint 持久化；丢失细节不能被解释为工具已完成。相同运行的后续快照和加载归一化不能弱化该限制，恢复提示明确说明早期细节已被裁剪并要求先核对外部状态。真正开始新运行后才清除旧运行的裁剪限制；新建 session 前仍先按原 checkpoint 判定是否需要重新规划。旧数据缺少该字段时按 `None` 读取，日志容量和 schema 版本保持兼容。`CopilotAgentTaskEventJournalIntegrityTests` 覆盖容量裁剪、持久化往返、后续调用结清和新运行的边界。
 
 进入结构化提问等待态前，运行时必须先发布包含 `UserQuestionRequested` 的增量 checkpoint；发布失败会立即记录 `UserQuestionResolved(Cancelled)` 并向模型返回拒绝，不留下仅存在于内存的长期等待。
 

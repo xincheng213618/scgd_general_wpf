@@ -986,6 +986,233 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.False(compatibility.CanResume);
     }
 
+    [Theory]
+    [InlineData("provider_call", CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall)]
+    [InlineData("tool_started", CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome)]
+    [InlineData("unknown_outcome", CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome)]
+    public void UnsettledToolCannotResumeAfterJournalCapacityRollOver(
+        string toolState,
+        CopilotAgentCheckpointCompatibilityKind expectedCompatibility)
+    {
+        const string callId = "unsettled-rollover-call";
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        if (toolState == "provider_call")
+        {
+            journal.RecordProviderToolHistory(CreateProviderCallDelta(callId));
+        }
+        else
+        {
+            journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(callId)));
+            if (toolState == "unknown_outcome")
+            {
+                journal.Observe(CopilotAgentEvent.FromToolResult(
+                    new CopilotToolResult
+                    {
+                        ToolName = "IntegrityTool",
+                        Success = false,
+                        Summary = "The interrupted write has no confirmed external outcome.",
+                        FailureCode = CopilotToolFailureCode.OutcomeUnknown,
+                    },
+                    CreateExecution(
+                        callId,
+                        CopilotToolExecutionState.Interrupted,
+                        completedAtUtc: DateTimeOffset.UtcNow)));
+            }
+        }
+
+        for (var index = 0; index < CopilotAgentTaskEventJournal.MaxEvents; index++)
+        {
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot { Mode = "execute" },
+                $"checkpoint-{index}");
+        }
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.InRange(snapshot.Events.Count, 1, CopilotAgentTaskEventJournal.MaxEvents);
+        var restored = Assert.IsType<CopilotAgentTaskEventJournalSnapshot>(
+            Newtonsoft.Json.JsonConvert.DeserializeObject<CopilotAgentTaskEventJournalSnapshot>(
+                Newtonsoft.Json.JsonConvert.SerializeObject(snapshot)));
+        Assert.True(restored.IsStructurallyValid());
+        Assert.InRange(restored.Events.Count, 1, CopilotAgentTaskEventJournal.MaxEvents);
+        foreach (var candidate in new[] { snapshot, restored })
+        {
+            var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+                CopilotAgentSessionCheckpoint.Create(
+                    profile,
+                    "{}",
+                    capabilitySnapshot,
+                    taskEventJournal: candidate));
+            var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
+
+            Assert.Equal(expectedCompatibility, compatibility.Kind);
+            Assert.True(compatibility.RequiresReplan);
+            Assert.False(compatibility.CanResume);
+            var prompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(candidate);
+            Assert.Contains("bounded", prompt, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("trim", prompt, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var settledRun = new CopilotAgentTaskEventJournalBuilder(restored);
+        settledRun.RecordRunStarted();
+        settledRun.RecordStop(CopilotAgentStopReason.Completed);
+        var settledCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            CopilotAgentSessionCheckpoint.Create(
+                profile,
+                "{}",
+                capabilitySnapshot,
+                taskEventJournal: settledRun.Snapshot()));
+        var settledCompatibility = settledCheckpoint.EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, settledCompatibility.Kind);
+        Assert.False(settledCompatibility.RequiresReplan);
+        Assert.True(settledCompatibility.CanResume);
+    }
+
+    [Theory]
+    [InlineData(true, CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall)]
+    [InlineData(false, CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome)]
+    public void SettlingLaterToolCannotClearAnEarlierTrimmedUnsettledCall(
+        bool providerCall,
+        CopilotAgentCheckpointCompatibilityKind expectedCompatibility)
+    {
+        const string earlierCallId = "earlier-unsettled-call";
+        const string laterCallId = "later-settled-call";
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        if (providerCall)
+            journal.RecordProviderToolHistory(CreateProviderCallDelta(earlierCallId));
+        else
+            journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(earlierCallId)));
+
+        for (var index = 0; index < CopilotAgentTaskEventJournal.MaxEvents - 2; index++)
+        {
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot { Mode = "execute" },
+                $"checkpoint-{index}");
+        }
+        if (providerCall)
+        {
+            journal.RecordProviderToolHistory(CreateProviderCallDelta(laterCallId));
+            journal.RecordProviderToolHistory(CreateProviderResultDelta(laterCallId));
+        }
+        else
+        {
+            journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution(laterCallId)));
+            journal.Observe(CopilotAgentEvent.FromToolResult(
+                new CopilotToolResult
+                {
+                    ToolName = "IntegrityTool",
+                    Success = true,
+                    Summary = "The later tool completed with a confirmed result.",
+                },
+                CreateExecution(
+                    laterCallId,
+                    CopilotToolExecutionState.Completed,
+                    completedAtUtc: DateTimeOffset.UtcNow)));
+        }
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+
+        var snapshot = journal.Snapshot();
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.InRange(snapshot.Events.Count, 1, CopilotAgentTaskEventJournal.MaxEvents);
+        Assert.Contains(snapshot.Events, item =>
+            item.SubjectId == CopilotAgentTaskEventIds.ForCall(laterCallId)
+            && item.Type == (providerCall
+                ? CopilotAgentTaskEventType.ProviderToolResultPersisted
+                : CopilotAgentTaskEventType.ToolCompleted));
+        var checkpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            CopilotAgentSessionCheckpoint.Create(
+                profile,
+                "{}",
+                capabilitySnapshot,
+                taskEventJournal: snapshot));
+
+        var compatibility = checkpoint.EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(expectedCompatibility, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void TrimmedToolRestrictionCannotBeWeakenedByJournalLineageOrLoadNormalization()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var strongOpen = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = journal.Snapshot().Events,
+            TrimmedSessionResumeRestriction = CopilotAgentSessionResumeRestriction.UncertainToolOutcome,
+        };
+        var forwardBuilder = new CopilotAgentTaskEventJournalBuilder(strongOpen, journal.RunId);
+        forwardBuilder.RecordTaskLedger(
+            new CopilotAgentTaskLedgerSnapshot { Mode = "execute" },
+            "next-checkpoint");
+        var strongForward = forwardBuilder.Snapshot();
+        Assert.True(CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(strongForward, strongOpen));
+
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var strongStopped = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = journal.Snapshot().Events,
+            TrimmedSessionResumeRestriction = CopilotAgentSessionResumeRestriction.UncertainToolOutcome,
+        };
+        Assert.True(strongStopped.IsStructurallyValid());
+        foreach (var weakerRestriction in new[]
+        {
+            CopilotAgentSessionResumeRestriction.None,
+            CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall,
+        })
+        {
+            var weakStopped = new CopilotAgentTaskEventJournalSnapshot
+            {
+                Events = strongStopped.Events,
+                TrimmedSessionResumeRestriction = weakerRestriction,
+            };
+            var weakForward = new CopilotAgentTaskEventJournalSnapshot
+            {
+                Events = strongForward.Events,
+                TrimmedSessionResumeRestriction = weakerRestriction,
+            };
+            Assert.False(CopilotAgentTaskEventJournal.AreEquivalent(strongStopped, weakStopped));
+            Assert.False(CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(weakForward, strongOpen));
+            Assert.True(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(strongStopped, weakStopped));
+            Assert.False(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(weakStopped, strongStopped));
+
+            var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, "Profile");
+            conversation.AgentSessionCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+                CopilotAgentSessionCheckpoint.Create(
+                    profile,
+                    "{}",
+                    capabilitySnapshot,
+                    taskEventJournal: weakStopped));
+            conversation.LatestAgentTaskEventJournal = strongStopped;
+
+            Assert.True(conversation.EnsureValid());
+
+            var normalized = Assert.IsType<CopilotAgentSessionCheckpoint>(conversation.AgentSessionCheckpoint);
+            var compatibility = normalized.EvaluateFor(profile, capabilitySnapshot);
+            Assert.Equal(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, compatibility.Kind);
+            Assert.True(compatibility.RequiresReplan);
+            Assert.False(compatibility.CanResume);
+            Assert.Null(conversation.LatestAgentTaskEventJournal);
+        }
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = strongStopped.Events,
+            TrimmedSessionResumeRestriction = (CopilotAgentSessionResumeRestriction)int.MaxValue,
+        }.IsStructurallyValid());
+    }
+
     [Fact]
     public void LaterSettledRunCanResumeAfterHistoricalUnknownToolOutcome()
     {
