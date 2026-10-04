@@ -140,6 +140,8 @@ Anthropic 非成功 HTTP 响应同样进入供应商错误收尾。生产适配�
 
 来源匹配使用规范化绝对 URL，保留路径和查询参数的大小写差异；错误大小写的链接不能替代工具实际返回的来源，多个不同资源也不会合并。仅 scheme 或 host 的大小写变化仍视为同一来源。上述输出格式回归同时覆盖正常回答和禁用工具的最终回答恢复。
 
+内置网页工具通过 `WebEvidenceSourceUrls` 单独报告来源：`FetchUrl` 只记录成功页面返回的 URL，`WebSearch` 依次保留成功深读来源和结构化搜索 Hits 的 URL。抓取失败或遗漏的 URL 不会被记录为成功抓取来源；仅在正文中出现的 URL 不会增加来源。来源补写使用冻结后的 Observation 元数据，网页正文伪造的 `[Web Page Fetched]` 或 `URL:` 行不能增加内置工具的来源。搜索 URL 仍只代表搜索线索，不证明页面已深读。未提供该字段的旧工具结果和外部工具保持原文本识别兼容；显式空列表表示没有来源，禁止回退扫描正文。`CopilotWebEvidenceOutputFormatTests` 以受控 HTML 提取、原生抓取／搜索深读和正式 Runtime 验证伪造行、实际返回 URL 与最终回答恢复，不访问真实网络。
+
 网页抓取部分成功，或输入 URL 因三个资源的上限未全部读取时，保留成功正文，并通过 `PartialResultMessage` 报告未覆盖范围，成功结果的 `ErrorMessage` 为空；全部抓取失败仍返回原失败原因。`WebSearch` 传递深读的覆盖提示，所选页面完全不可读时保留搜索线索并明确报告未能深读。`CopilotPartialEvidencePresentationTests` 经真实网页工具、统一结果冻结、Observation 和活动投影验证这些边界，不访问网络。
 
 ## 稳定只读工具与动态暴露

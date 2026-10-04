@@ -13,6 +13,8 @@ namespace ColorVision.Copilot
 
         public string Content { get; init; } = string.Empty;
 
+        public IReadOnlyList<string>? WebEvidenceSourceUrls { get; init; }
+
         public string ErrorMessage { get; init; } = string.Empty;
 
         public CopilotToolFailureKind FailureKind { get; init; }
@@ -36,6 +38,7 @@ namespace ColorVision.Copilot
                 Summary = Summary,
                 PartialResultMessage = PartialResultMessage,
                 Content = Content,
+                WebEvidenceSourceUrls = WebEvidenceSourceUrls,
                 ErrorMessage = ErrorMessage,
                 FailureKind = !Success && FailureKind == CopilotToolFailureKind.None
                     ? CopilotToolFailureKind.Unspecified

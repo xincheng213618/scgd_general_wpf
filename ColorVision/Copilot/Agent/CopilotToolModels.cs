@@ -564,6 +564,9 @@ namespace ColorVision.Copilot
 
         public string Content { get; init; } = string.Empty;
 
+        /// <summary>Producer-reported web sources. Null retains legacy text discovery; an empty list explicitly reports no sources.</summary>
+        public IReadOnlyList<string>? WebEvidenceSourceUrls { get; init; }
+
         public string ErrorMessage { get; init; } = string.Empty;
 
         public CopilotToolFailureKind FailureKind { get; init; }
@@ -675,6 +678,8 @@ namespace ColorVision.Copilot
 
         public string Content { get; init; } = string.Empty;
 
+        public IReadOnlyList<string>? WebEvidenceSourceUrls { get; init; }
+
         public string ErrorMessage { get; init; } = string.Empty;
 
         public CopilotToolFailureKind FailureKind { get; init; }
@@ -720,6 +725,7 @@ namespace ColorVision.Copilot
                 Summary = result?.Summary ?? string.Empty,
                 PartialResultMessage = result?.PartialResultMessage ?? string.Empty,
                 Content = result?.Content ?? string.Empty,
+                WebEvidenceSourceUrls = result?.WebEvidenceSourceUrls == null ? null : Freeze(result.WebEvidenceSourceUrls),
                 ErrorMessage = result?.ErrorMessage ?? string.Empty,
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
                 FailureCode = result?.Success == false ? CopilotToolFailureCode.Normalize(result.FailureCode) : string.Empty,

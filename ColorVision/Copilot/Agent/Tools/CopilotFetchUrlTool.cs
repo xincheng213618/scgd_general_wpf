@@ -55,6 +55,7 @@ namespace ColorVision.Copilot
                     Summary = "No fetchable web page URL was detected.",
                     ErrorMessage = "The current request has no processable web page URL; the planner can provide a complete URL in input.query.",
                     FailureKind = CopilotToolFailureKind.Validation,
+                    WebEvidenceSourceUrls = Array.Empty<string>(),
                 };
             }
 
@@ -112,6 +113,8 @@ namespace ColorVision.Copilot
                     ? $"Fetched {successCount}/{attemptedCount} web resources ({urls.Length}/{resolvedUrls.Count} input URLs attempted, {discoveredUrls.Length} discovered)."
                     : $"Failed to fetch any web resources from {attemptedCount} URLs.",
                 Content = builder.ToString().TrimEnd(),
+                WebEvidenceSourceUrls = outcomes.Where(outcome => outcome.Page != null)
+                    .Select(outcome => outcome.Page!.Value.Url).ToArray(),
                 PartialResultMessage = successCount > 0 ? string.Join(" ", partialCoverage) : string.Empty,
                 ErrorMessage = successCount > 0 ? string.Empty : string.Join("; ", errors),
                 FailureKind = successCount == 0 && failureKinds.Length > 0 && failureKinds.All(kind => kind == CopilotToolFailureKind.Transient)

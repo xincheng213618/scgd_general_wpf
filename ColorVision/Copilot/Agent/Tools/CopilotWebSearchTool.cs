@@ -91,6 +91,8 @@ namespace ColorVision.Copilot
                     fetchResult.Content,
                 }),
                 FailureKind = CopilotToolFailureKind.None,
+                WebEvidenceSourceUrls = (fetchResult.WebEvidenceSourceUrls ?? Array.Empty<string>())
+                    .Concat(searchOnlyResult.WebEvidenceSourceUrls ?? Array.Empty<string>()).ToArray(),
             };
         }
 
@@ -122,6 +124,7 @@ namespace ColorVision.Copilot
                     + Environment.NewLine
                     + "Use another returned result with FetchUrl only when full page evidence is still required.",
                 FailureKind = CopilotToolFailureKind.None,
+                WebEvidenceSourceUrls = searchResult.WebEvidenceSourceUrls,
             };
         }
 

@@ -135,6 +135,7 @@ namespace ColorVision.Copilot
                 Summary = source.Summary ?? string.Empty,
                 PartialResultMessage = source.PartialResultMessage ?? string.Empty,
                 Content = source.Content ?? string.Empty,
+                WebEvidenceSourceUrls = source.WebEvidenceSourceUrls == null ? null : Freeze(source.WebEvidenceSourceUrls),
                 ErrorMessage = source.ErrorMessage ?? string.Empty,
                 FailureKind = source.FailureKind,
                 FailureCode = source.FailureCode ?? string.Empty,

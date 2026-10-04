@@ -25,6 +25,8 @@ related: ["copilot.runtime","copilot.execution","copilot.session-tools","copilot
 8. 失败时填写 `FailureKind`。只有可安全重复的瞬时故障才使用 `Transient`；参数错误、权限拒绝、资源不存在、冲突和内部错误不能伪装成可重试故障。
 9. 只在组合根注册一次；注册表会拒绝空名称和忽略大小写的重复名称。
 
+网页来源元数据 `WebEvidenceSourceUrls` 随工具结果、Observation 和运行快照冻结；`null` 保留旧文本识别，空集合明确表示无来源，集合中的空元素会被统一结果契约拒绝。它只服务来源补写，不授予访问权限或证明全文读取完成，也不扩展 checkpoint 的恢复格式。
+
 ## 输入校验与无效调用
 
 模型提交的工具参数即使未通过 Schema，也属于一次真实的 Agent 工具尝试：运行时会在执行闸门和审批之前拒绝它，消耗一次工具调用预算，并生成 `Failed + Validation` 的 step、ToolResult、任务事件和审计记录。非法参数的审计只保留字段名，不保存字段值；这类失败不可自动重试，但模型可以根据结构化错误改用修正后的参数再次调用。受保护工具同样先校验参数，非法调用不会创建 Pending Action。

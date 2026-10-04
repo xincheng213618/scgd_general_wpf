@@ -198,6 +198,7 @@ namespace ColorVision.Copilot
                 Success = original.Success,
                 Summary = "PostToolUse hook feedback.",
                 Content = feedback,
+                WebEvidenceSourceUrls = original.WebEvidenceSourceUrls,
                 FailureKind = original.FailureKind,
                 FailureCode = original.FailureCode,
                 ProcessOperation = original.ProcessOperation,

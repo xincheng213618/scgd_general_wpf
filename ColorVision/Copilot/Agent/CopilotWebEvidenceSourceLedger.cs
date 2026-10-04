@@ -40,12 +40,15 @@ namespace ColorVision.Copilot
                     : step.Execution.ToolName;
                 if (step?.Observation.Success != true
                     || !webToolNames.Contains(toolName)
-                    || string.IsNullOrWhiteSpace(step.Observation.Content))
+                    || (step.Observation.WebEvidenceSourceUrls == null && string.IsNullOrWhiteSpace(step.Observation.Content)))
                 {
                     continue;
                 }
 
-                foreach (var url in ExtractEvidenceUrls(toolName, step.Observation.Content))
+                // Native producers report source identity separately from untrusted
+                // page text. Only legacy tools without metadata use text discovery.
+                foreach (var url in step.Observation.WebEvidenceSourceUrls
+                    ?? ExtractEvidenceUrls(toolName, step.Observation.Content))
                 {
                     var normalized = NormalizePublicSourceUrl(url);
                     if (!string.IsNullOrWhiteSpace(normalized)

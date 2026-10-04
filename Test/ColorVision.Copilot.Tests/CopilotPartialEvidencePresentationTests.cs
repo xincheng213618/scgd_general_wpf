@@ -208,6 +208,16 @@ public sealed class CopilotPartialEvidencePresentationTests : IDisposable
         var observation = CopilotToolObservation.FromResult(captured);
         Assert.Equal(captured.Content, observation.Content);
         Assert.Equal(captured.PartialResultMessage, observation.PartialResultMessage);
+        var expectedSources = kind switch
+        {
+            "all-failed-fetch" => Array.Empty<string>(),
+            "omitted-fetch" => [pageUrl, "https://public.example/second", "https://public.example/third"],
+            "mixed-search" => [pageUrl, pageUrl],
+            _ => new[] { pageUrl },
+        };
+        Assert.NotNull(captured.WebEvidenceSourceUrls);
+        Assert.Equal(expectedSources, captured.WebEvidenceSourceUrls);
+        Assert.Equal(expectedSources, observation.WebEvidenceSourceUrls);
         var entry = CopilotAgentTraceEntry.FromResult(new()
         {
             ToolName = tool.Name, CallId = "web-partial-evidence", Access = CopilotToolAccess.ReadOnly,
