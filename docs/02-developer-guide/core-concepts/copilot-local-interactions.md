@@ -62,6 +62,8 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 同地址的网页附件刷新也替换草稿中的快照：较早开始的发送继续使用原网页内容，不能消费后来刷新的网页。编辑消息期间开始的网页读取绑定本次编辑，等待时取消编辑后，完成结果不会附加到恢复后的草稿；刷新时原网页已不在附件集合，也不重新回填。停止读取或关闭 ViewModel 后不附加迟到结果。`CopilotWebPageAttachmentAdmissionTests` 通过实际 ViewModel 的网页加载流程、可控加载结果和真实图片准入验证，不打开网页输入对话框或访问网络。
 
+Chat 消息的“刷新附件与网页后重新生成”和 `/retry refresh` 会按网页附件的 Source 重新加载正文，复用现有地址、重定向、下载预算与取消边界；加载失败时把明确的失败诊断交给模型，不把旧缓存伪装成刷新结果。首次发送和普通重试继续使用已捕获的网页快照，刷新也不改写来源附件对象；实际组装的请求正文仍保存到原 user 消息，供后续 Chat 历史使用。`CopilotTurnTranscriptReplayTests` 验证缓存重试、刷新失败的真实 Runtime 出站正文与回放结果一致，并用受控加载核验新正文和静态上下文隔离；`CopilotRequestPreparationCancellationTests` 覆盖刷新加载尚未返回时的取消。
+
 剪贴板图片在后台编码为托管 PNG 后，须在原会话仍存在且操作未取消时才加入附件。取消或关闭发生在编码完成与 UI 续体执行之间时，也会清理本次尚未附加的图片；后台尚未结束则在完成后清理，失败继续被观察。清理使用已有根内路径与重解析点检查，不删除先前附件，也不改变草稿。`CopilotChatViewModelProfileIsolationTests` 用冻结的合成图片和受控 STA 续体覆盖正常附加、取消与关闭，不读取系统剪贴板。
 
 剪贴板保存和 `CopilotImageAttachmentAdmission` 的内容寻址保存共用 `PrepareStorageDirectory`：创建目录前后都检查目录及祖先的 reparse point，复用已有图片前也检查目标文件路径，不向符号链接或目录联接指向的位置写入附件。普通图片准入按 `Storage` 失败报告，保留原始输入供重试；读取端已有的拒绝链接路径规则保持不变。回归使用临时目录链接验证拒绝时不会在目标侧创建目录或文件，并保留普通保存与去重检查；这些路径检查不保证对检查后发生的并发文件系统替换提供原子隔离。

@@ -2,8 +2,10 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotRequestPreparationCancellationTests
 {
-    [Fact]
-    public async Task WebContextCancellationDoesNotWaitForBlockingLoaderPrefix()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WebContextCancellationDoesNotWaitForBlockingLoaderPrefix(bool attachmentRefresh)
     {
         using var started = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
@@ -23,10 +25,15 @@ public sealed class CopilotRequestPreparationCancellationTests
                 completed.Set();
             }
         });
-        var requestTask = Task.Run(() => builder.BuildUserRequestContentAsync(
-            "inspect https://example.invalid/context",
-            liveContext: null,
-            cancellation.Token));
+        var requestTask = Task.Run(() => attachmentRefresh
+            ? builder.BuildRequestAttachmentContextBlockAsync(
+                [CopilotAttachmentItem.CreateWebPage("https://example.invalid/context", "Saved page", "Old cached evidence")],
+                refreshWebPages: true,
+                cancellation.Token)
+            : builder.BuildUserRequestContentAsync(
+                "inspect https://example.invalid/context",
+                liveContext: null,
+                cancellation.Token));
 
         try
         {

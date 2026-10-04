@@ -550,7 +550,7 @@ namespace ColorVision.Copilot
                 assistantMessage,
                 turnSnapshot,
                 queuedFollowUp.RuntimeConfigSnapshot,
-                refreshExternalContext: true,
+                refreshExternalContext: queuedFollowUp.Mode != CopilotAgentMode.Chat,
                 isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation);
         }
 

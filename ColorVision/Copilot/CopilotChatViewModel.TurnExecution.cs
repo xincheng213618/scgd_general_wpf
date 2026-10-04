@@ -211,7 +211,7 @@ namespace ColorVision.Copilot
                 assistantMessage,
                 turnSnapshot,
                 runtimeConfigSnapshot,
-                refreshExternalContext: true,
+                refreshExternalContext: requestMode != CopilotAgentMode.Chat,
                 isAutomaticGoalContinuation: false);
 
             CopilotHostedAgentRun? hostedRun;

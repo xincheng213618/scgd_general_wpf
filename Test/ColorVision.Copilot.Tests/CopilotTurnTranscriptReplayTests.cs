@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -173,9 +174,22 @@ public sealed class CopilotTurnTranscriptReplayTests
         Assert.Throws<NotSupportedException>(() => persistedToolNames[0] = "RewriteWorkspace");
     }
 
-    [Fact]
-    public async Task CapturedChatRuntimeTranscriptReplaysToTheSameCompletion()
+    [Theory]
+    [InlineData("baseline")]
+    [InlineData("cached-page")]
+    [InlineData("refresh-page")]
+    public async Task CapturedChatRuntimeTranscriptReplaysToTheSameCompletion(string scenario)
     {
+        const string PageUrl = "https://192.0.2.1/captured-page";
+        const string CachedPageBody = "Original cached webpage evidence.";
+        const string CachedRequestContent = "test prompt\nSaved webpage observation: " + CachedPageBody;
+        var hasPage = scenario != "baseline";
+        var attachment = hasPage ? CopilotAttachmentItem.CreateWebPage(PageUrl, "Captured page", CachedPageBody) : null;
+        if (hasPage)
+        {
+            // The literal documentation address is rejected before DNS or HTTP connection.
+            Assert.False(CopilotWebPageToolSupport.IsPotentiallyPublicWebPageUri(new Uri(PageUrl)));
+        }
         using var handler = new StaticChatHandler();
         using var httpClient = new HttpClient(handler);
         var runtime = new CopilotTurnRuntime(new CopilotChatService(httpClient));
@@ -193,13 +207,13 @@ public sealed class CopilotTurnTranscriptReplayTests
             profile,
             CopilotAgentMode.Chat,
             "test prompt",
-            existingRequestContent: string.Empty,
-            chatAttachmentContextCaptured: false,
-            refreshExternalContext: true,
+            existingRequestContent: hasPage ? CachedRequestContent : string.Empty,
+            chatAttachmentContextCaptured: hasPage,
+            refreshExternalContext: scenario != "cached-page",
             new CopilotAgentHostContextSnapshot(
                 activeDocumentPath: null,
                 solutionDirectoryPath: null,
-                attachments: null,
+                attachments: hasPage ? [attachment!] : null,
                 liveContext: null,
                 conversationHistory: null,
                 additionalReadRootPaths: null,
@@ -228,11 +242,56 @@ public sealed class CopilotTurnTranscriptReplayTests
         var emitted = Assert.IsType<CopilotTurnCompletedEvent>(transcript[^1]).Result;
 
         Assert.Same(emitted, replayed);
-        Assert.Equal("test prompt", replayed.PreparedUserMessageContent);
+        var prepared = Assert.Single(transcript.OfType<CopilotTurnRequestPreparedEvent>()).Request;
+        Assert.Equal(prepared.Content, replayed.PreparedUserMessageContent);
+        Assert.Equal(hasPage, prepared.ChatAttachmentContextCaptured);
+        Assert.Equal(hasPage, replayed.ChatAttachmentContextCaptured);
+        var outbound = JObject.Parse(Assert.Single(handler.Payloads));
+        var outboundMessages = Assert.IsType<JArray>(outbound["messages"]);
+        Assert.Equal(prepared.Content, outboundMessages.Last!["content"]!.Value<string>());
         Assert.Equal(
             ["started", "state-persistence-barrier", "request-prepared", "chat-delta", "completed"],
             transcript.Where(turnEvent => turnEvent is not CopilotTurnRuntimeDiagnosticEvent)
                 .Select(GetStableEventKind));
+        if (scenario == "refresh-page")
+        {
+            Assert.Contains("[Web Page Fetch Failed] " + PageUrl, prepared.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain(CachedPageBody, prepared.Content, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Equal(hasPage ? CachedRequestContent : "test prompt", prepared.Content);
+        }
+    }
+
+    [Fact]
+    public async Task WebAttachmentRefreshUsesFetchedEvidenceWithoutChangingStoredSnapshots()
+    {
+        const string PageUrl = "https://public.test/captured-page";
+        const string CachedBody = "Original cached webpage evidence.";
+        const string UpdatedBody = "Current webpage evidence from the requested refresh.";
+        var page = CopilotAttachmentItem.CreateWebPage(PageUrl, "Saved page", CachedBody);
+        var context = CopilotAttachmentItem.CreateContext("Static measurement evidence.", title: "Saved context", source: "measurement");
+        var loaderCalls = 0;
+        var builder = new CopilotConversationRequestBuilder((url, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            Assert.Equal(PageUrl, url);
+            loaderCalls++;
+            return Task.FromResult(new CopilotFetchedWebPageContent(url, "Current page", string.Empty, UpdatedBody));
+        });
+
+        var cached = await builder.BuildRequestAttachmentContextBlockAsync([page, context], false, CancellationToken.None);
+        Assert.Equal(0, loaderCalls);
+        Assert.Contains(CachedBody, cached, StringComparison.Ordinal);
+        var refreshed = await builder.BuildRequestAttachmentContextBlockAsync([page, context], true, CancellationToken.None);
+        Assert.Equal(1, loaderCalls);
+        Assert.Contains(UpdatedBody, refreshed, StringComparison.Ordinal);
+        Assert.Contains("Current page", refreshed, StringComparison.Ordinal);
+        Assert.DoesNotContain(CachedBody, refreshed, StringComparison.Ordinal);
+        Assert.Contains(context.Value, refreshed, StringComparison.Ordinal);
+        Assert.Equal((PageUrl, "Saved page", CachedBody), (page.Source, page.Title, page.Value));
+        Assert.Equal("Static measurement evidence.", context.Value);
     }
 
     private static string GetStableEventKind(CopilotTurnEvent turnEvent) => turnEvent switch
@@ -248,15 +307,18 @@ public sealed class CopilotTurnTranscriptReplayTests
 
     private sealed class StaticChatHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(
+        public List<string> Payloads { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            Payloads.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
             const string Json = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"captured answer\"},\"finish_reason\":\"stop\"}]}";
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(Json, Encoding.UTF8, "application/json"),
-            });
+            };
         }
     }
 }

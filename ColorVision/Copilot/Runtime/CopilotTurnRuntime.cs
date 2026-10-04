@@ -111,9 +111,10 @@ namespace ColorVision.Copilot
                     cancellationToken)
                 : Task.FromResult(CopilotImageUnderstandingResult.Empty);
             var attachmentContextTask = captureAttachmentContext
-                ? CopilotConversationRequestBuilder.BuildAttachmentContextBlockAsync(
+                ? _conversationRequestBuilder.BuildRequestAttachmentContextBlockAsync(
                     request.HostContext.Attachments,
-                    cancellationToken: cancellationToken)
+                    request.RefreshExternalContext,
+                    cancellationToken)
                 : Task.FromResult(string.Empty);
 
             await Task.WhenAll(requestContentTask, imageUnderstandingTask, attachmentContextTask).ConfigureAwait(false);
