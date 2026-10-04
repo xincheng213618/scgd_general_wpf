@@ -129,7 +129,22 @@ namespace ColorVision.Copilot
 
             var snapshot = result.Snapshot;
             var page = result.Page;
-            var content = new StringBuilder()
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = BuildPageSummary(snapshot, page),
+                Content = BuildPageContent(snapshot, page),
+                ToolOutputArchiveRead = result,
+            });
+        }
+
+        internal static string BuildPageSummary(CopilotToolOutputArchiveSnapshot snapshot, CopilotRedactedOutputArchivePage page) =>
+            $"Read {page.ReturnedCharacters} redacted character(s) from archived {snapshot.ToolName} output; "
+            + (page.EndOfAvailableOutput ? "reached the archive end." : "more archived output is available.");
+
+        internal static string BuildPageContent(CopilotToolOutputArchiveSnapshot snapshot, CopilotRedactedOutputArchivePage page) =>
+            new StringBuilder()
                 .AppendLine("[Tool Output Archive]")
                 .Append("archive_id: ").AppendLine(snapshot.Id)
                 .Append("source_tool: ").AppendLine(snapshot.ToolName)
@@ -150,18 +165,6 @@ namespace ColorVision.Copilot
                 .AppendLine("content:")
                 .Append(page.Content.Length == 0 ? "<empty>" : page.Content)
                 .ToString();
-            return Task.FromResult(new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = true,
-                Summary =
-                    $"Read {page.ReturnedCharacters} redacted character(s) from archived {snapshot.ToolName} output; "
-                    + (page.EndOfAvailableOutput
-                        ? "reached the archive end."
-                        : "more archived output is available."),
-                Content = content,
-            });
-        }
 
         private static bool TryReadArchiveId(
             CopilotAgentToolInput input,

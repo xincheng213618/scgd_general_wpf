@@ -162,6 +162,71 @@ public sealed class CopilotSecretRedactionTests
     }
 
     [Theory]
+    [InlineData("comma", false)]
+    [InlineData("comma", true)]
+    [InlineData("semicolon", false)]
+    [InlineData("semicolon", true)]
+    [InlineData("escaped-quote", false)]
+    [InlineData("escaped-quote", true)]
+    [InlineData("single-quote", false)]
+    [InlineData("single-quote", true)]
+    [InlineData("leading-separator", true)]
+    public void OutputArchiveRedactsCompleteQuotedCredentialsAcrossAppendBoundaries(string kind, bool splitAppend)
+    {
+        var credential = kind switch
+        {
+            "leading-separator" => ",archive-before;archive-after",
+            "semicolon" => "archive-before;archive-after",
+            "escaped-quote" => "archive-before\\\"archive-after",
+            _ => "archive-before,archive-after",
+        };
+        var quote = kind == "single-quote" ? "'" : "\"";
+        var source = $"{{{quote}Authorization{quote}:{quote}{credential}{quote},{quote}trace{quote}:{quote}visible{quote}}}";
+        var expected = source.Replace(credential, "<redacted>", StringComparison.Ordinal);
+        Assert.Equal(expected, CopilotMcpAuditLogger.RedactText(source));
+
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate("ToolOutput", "content");
+        Assert.NotNull(archive);
+        if (splitAppend)
+        {
+            var splitAt = kind == "escaped-quote"
+                ? source.IndexOf('\\') + 1
+                : source.IndexOf(kind == "semicolon" ? ';' : ',');
+            archive!.Append(source[..splitAt]);
+            archive.Append(source[splitAt..]);
+        }
+        else
+        {
+            archive!.Append(source);
+        }
+        archive.Complete();
+        var page = archive.Read(0, CopilotOutputArchiveLimits.DefaultReadCharacters, CancellationToken.None);
+
+        Assert.True(page.Available, page.ErrorMessage);
+        Assert.DoesNotContain("archive-before", page.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("archive-after", page.Content, StringComparison.Ordinal);
+        Assert.Equal(expected, page.Content);
+        Assert.True(page.EndOfAvailableOutput);
+    }
+
+    [Theory]
+    [InlineData("\"")]
+    [InlineData("'")]
+    public void OutputArchivePreservesEmptyQuotedCredentialsAndFollowingText(string quote)
+    {
+        var source = $"{{{quote}Authorization{quote}:{quote}{quote},{quote}trace{quote}:{quote}visible{quote}}}";
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate("ToolOutput", "content");
+        Assert.NotNull(archive);
+        archive!.Append(source);
+        archive.Complete();
+        var page = archive.Read(0, CopilotOutputArchiveLimits.DefaultReadCharacters, CancellationToken.None);
+
+        Assert.True(page.Available, page.ErrorMessage);
+        Assert.Equal(source, page.Content);
+        Assert.True(page.EndOfAvailableOutput);
+    }
+
+    [Theory]
     [InlineData("Bearer of good news")]
     [InlineData("Bearer shortsecret")]
     [InlineData("A bearer shortsecret appears in ordinary prose.")]

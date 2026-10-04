@@ -8,6 +8,9 @@ namespace ColorVision.Copilot
 {
     internal sealed partial class CopilotTemporaryRedactedOutputArchive
     {
+        private char _sensitiveValueQuote;
+        private bool _sensitiveValueEscapePending;
+
         private static string ReadCharacters(
             FileStream stream,
             int count,
@@ -67,10 +70,12 @@ namespace ColorVision.Copilot
 
                     var delimiter = _pendingRaw[delimiterIndex];
                     _pendingRaw.Remove(0, delimiterIndex);
-                    if (delimiter is '"' or '\'')
+                    if (_sensitiveValueQuote == '\0' && (delimiter is '"' or '\''))
                         _pendingRaw.Remove(0, 1);
                     _sensitiveValueTerminator =
                         SensitiveValueTerminator.None;
+                    _sensitiveValueQuote = '\0';
+                    _sensitiveValueEscapePending = false;
                     continue;
                 }
 
@@ -145,6 +150,7 @@ namespace ColorVision.Copilot
 
             if (pending[index] is ':' or '=')
             {
+                var valueQuote = '\0';
                 index++;
                 while (index < pending.Length
                     && char.IsWhiteSpace(pending[index]))
@@ -154,6 +160,7 @@ namespace ColorVision.Copilot
                 if (index < pending.Length
                     && pending[index] is '"' or '\'')
                 {
+                    valueQuote = pending[index];
                     index++;
                 }
                 if (index >= pending.Length)
@@ -165,7 +172,13 @@ namespace ColorVision.Copilot
                     _pendingRaw.Clear();
                     return true;
                 }
-                if (IsAssignmentValueDelimiter(pending[index]))
+                if (valueQuote != '\0' && pending[index] == valueQuote)
+                {
+                    WriteUnderLock(pending.AsSpan(0, index + 1));
+                    _pendingRaw.Remove(0, index + 1);
+                    return true;
+                }
+                if (valueQuote == '\0' && IsAssignmentValueDelimiter(pending[index]))
                 {
                     WriteUnderLock(pending.AsSpan(0, 1));
                     _pendingRaw.Remove(0, 1);
@@ -177,6 +190,8 @@ namespace ColorVision.Copilot
                 _pendingRaw.Remove(0, index);
                 _sensitiveValueTerminator =
                     SensitiveValueTerminator.Assignment;
+                _sensitiveValueQuote = valueQuote;
+                _sensitiveValueEscapePending = false;
                 return true;
             }
 
@@ -316,13 +331,29 @@ namespace ColorVision.Copilot
             return bestIndex;
         }
 
-        private static int FindSensitiveValueDelimiter(
+        private int FindSensitiveValueDelimiter(
             StringBuilder value,
             SensitiveValueTerminator terminator)
         {
             for (var index = 0; index < value.Length; index++)
             {
                 var character = value[index];
+                if (_sensitiveValueQuote != '\0')
+                {
+                    if (_sensitiveValueEscapePending)
+                    {
+                        _sensitiveValueEscapePending = false;
+                        continue;
+                    }
+                    if (character == '\\')
+                    {
+                        _sensitiveValueEscapePending = true;
+                        continue;
+                    }
+                    if (character == _sensitiveValueQuote)
+                        return index;
+                    continue;
+                }
                 if (terminator == SensitiveValueTerminator.Bearer
                     ? IsBearerValueDelimiter(character)
                     : IsAssignmentValueDelimiter(character))

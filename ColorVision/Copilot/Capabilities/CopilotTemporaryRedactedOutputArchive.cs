@@ -40,9 +40,11 @@ namespace ColorVision.Copilot
         [
             "private_key",
             "private-key",
+            "privatekey",
             "authorization",
             "access_key",
             "access-key",
+            "accesskey",
             "password",
             "api_key",
             "api-key",

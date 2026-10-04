@@ -261,6 +261,7 @@ namespace ColorVision.Copilot
                 WorkspaceMutation = Snapshot(result.WorkspaceMutation),
                 BackgroundShellCommands = Freeze(result.BackgroundShellCommands),
                 SuppressModelOutput = result.SuppressModelOutput,
+                ToolOutputArchiveRead = result.ToolOutputArchiveRead,
             };
         }
 

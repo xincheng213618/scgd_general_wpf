@@ -611,6 +611,8 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotBackgroundShellCommandEvidence>();
 
         internal bool SuppressModelOutput { get; init; }
+
+        internal CopilotToolOutputArchiveReadResult? ToolOutputArchiveRead { get; init; }
     }
 
     internal sealed record CopilotWorkspaceMutationFileSnapshot(
