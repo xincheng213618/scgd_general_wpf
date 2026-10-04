@@ -2020,10 +2020,10 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     private static CopilotChatMessage[] CompleteParentTurnForQueuedCommand(CopilotConversationRecord conversation,
-        CopilotWorkspaceReviewTargetContext? reviewTarget = null)
+        CopilotWorkspaceReviewTargetContext? reviewTarget = null, CopilotAgentMode? requestMode = null)
     {
         conversation.SetCustomTitle("Queued command restart fixture");
-        var mode = reviewTarget == null ? CopilotAgentMode.Auto : CopilotAgentMode.Review;
+        var mode = requestMode ?? (reviewTarget == null ? CopilotAgentMode.Auto : CopilotAgentMode.Review);
         var prompt = reviewTarget == null ? "Complete the parent request."
             : new CopilotWorkspaceReviewRequest(reviewTarget.Target, reviewTarget.Revision, string.Empty).BuildPrompt();
         var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
@@ -2991,12 +2991,14 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     [InlineData(false, 1, "none")]
     [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "review")]
     [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "skill")]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, "newer_auto")]
     public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt(
         bool secondRecordIsLegacy, int restartedHostCapacity, string preservedReference)
     {
         const string skillName = "queued-recovery-duplicate-skill";
         var sameReviewTarget = preservedReference == "review";
         var sameSkillReference = preservedReference == "skill";
+        var preservesNewerAutoMode = preservedReference == "newer_auto";
         var preservesReference = sameReviewTarget || sameSkillReference;
         var skillInvocation = sameSkillReference ? "$" + skillName + " " : string.Empty;
         var firstPrompt = skillInvocation + "First update the configuration using the captured evidence.";
@@ -3011,8 +3013,9 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         {
             Target = CopilotWorkspaceReviewTarget.BaseBranch, Revision = "origin/develop",
         } : null;
-        var parentMode = sameReviewTarget ? CopilotAgentMode.Review : CopilotAgentMode.Auto;
-        var originalMessages = CompleteParentTurnForQueuedCommand(conversation, reviewTarget);
+        var parentMode = sameReviewTarget ? CopilotAgentMode.Review
+            : preservesNewerAutoMode ? CopilotAgentMode.Plan : CopilotAgentMode.Auto;
+        var originalMessages = CompleteParentTurnForQueuedCommand(conversation, reviewTarget, parentMode);
         var firstAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the first request.");
         var laterAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the later request.");
         var newerAttachment = CopilotAttachmentItem.CreateContext("Evidence attached to the newer draft.");
@@ -3072,7 +3075,18 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             conversation.Attachments.Add(laterAttachment);
             Assert.True(viewModel.TryQueueCurrentRunFollowUp());
             laterRun = Assert.Single(taskHost.QueuedRuns, run => run.Id != firstRun.Id);
-            viewModel.InputText = newerDraft;
+            if (preservesNewerAutoMode)
+            {
+                var staged = viewModel.QueueExternalPrompt(newerDraft,
+                    startNewConversation: false, sendNow: false, mode: CopilotAgentMode.Auto);
+                Assert.True(staged.Accepted);
+                Assert.False(staged.WasSent);
+                Assert.Equal(CopilotAgentMode.Auto, conversation.DraftRequestMode);
+            }
+            else
+            {
+                viewModel.InputText = newerDraft;
+            }
             if (!preservesReference)
                 conversation.Attachments.Add(newerAttachment);
 
@@ -3094,6 +3108,15 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 reloadedState.QueuedFollowUpRecoveries.Select(record => record.ResumeAfterRestart));
             Assert.Equal(new[] { firstAttachment.Id, laterAttachment.Id }, reloadedState.QueuedFollowUpRecoveries
                 .Select(record => Assert.Single(record.ComposerState!.Attachments).Id));
+            if (preservesNewerAutoMode)
+            {
+                var savedConversation = Assert.Single(reloadedState.Conversations);
+                Assert.Equal(newerDraft, savedConversation.DraftText);
+                Assert.Equal(CopilotAgentMode.Auto, savedConversation.DraftRequestMode);
+                Assert.All(savedConversation.Messages, message => Assert.Equal(CopilotAgentMode.Plan, message.RequestMode));
+                Assert.All(reloadedState.QueuedFollowUpRecoveries,
+                    record => Assert.Equal(CopilotAgentMode.Plan, record.ComposerState!.RequestMode));
+            }
             if (sameReviewTarget)
             {
                 Assert.DoesNotContain(reviewTarget!.Revision, firstPrompt, StringComparison.Ordinal);
@@ -3146,6 +3169,12 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.Equal(CopilotAgentStopReason.Completed, restored.Messages[1].AgentStopReason);
             Assert.False(restored.Messages[1].WasResponseInterrupted);
             Assert.False(restored.Messages[1].IsThinkingInProgress);
+            if (preservesNewerAutoMode)
+            {
+                Assert.Equal(CopilotAgentMode.Auto, restored.DraftRequestMode);
+                Assert.Contains("[Plan] " + firstPrompt, restored.DraftText, StringComparison.Ordinal);
+                Assert.Contains("[Plan] " + laterPrompt, restored.DraftText, StringComparison.Ordinal);
+            }
             if (sameReviewTarget)
             {
                 Assert.Equal(CopilotAgentMode.Review, restored.DraftRequestMode);
@@ -3167,6 +3196,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.Equal(recoveredDraft, request.UserText);
             Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
                 request.HostContext.Attachments.Select(item => (item.Id, item.Value)));
+            if (preservesNewerAutoMode)
+                Assert.Equal(CopilotAgentMode.Auto, request.Mode);
             if (sameReviewTarget)
             {
                 Assert.Equal(CopilotAgentMode.Review, request.Mode);

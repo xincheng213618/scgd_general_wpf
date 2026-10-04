@@ -463,7 +463,10 @@ namespace ColorVision.Copilot
                     .Select(recovery => recovery.RequestMode)
                     .Distinct()
                     .ToArray();
-                var hasExistingModeConflict = conversation.DraftRequestMode != CopilotAgentMode.Auto
+                var existingDraft = (conversation.DraftText ?? string.Empty).TrimEnd();
+                var preserveExistingMode = !string.IsNullOrWhiteSpace(existingDraft)
+                    || conversation.DraftRequestMode != CopilotAgentMode.Auto;
+                var hasExistingModeConflict = preserveExistingMode
                     && recoveredModes.Any(mode => mode != conversation.DraftRequestMode);
                 var prompts = recoveredModes.Length <= 1 && !hasExistingModeConflict
                     ? pair.Value.Select(recovery => recovery.Text).ToArray()
@@ -473,7 +476,6 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(restoredDraft))
                     continue;
 
-                var existingDraft = (conversation.DraftText ?? string.Empty).TrimEnd();
                 if (!string.Equals(existingDraft.Trim(), restoredDraft.Trim(), StringComparison.Ordinal))
                 {
                     conversation.DraftText = string.IsNullOrWhiteSpace(existingDraft)
@@ -501,8 +503,7 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(existingDraft) && recoveredReviewTarget != null)
                     conversation.DraftWorkspaceReviewTarget = recoveredReviewTarget;
                 RestoreAttachments(conversation, pair.Value);
-                if (conversation.DraftRequestMode == CopilotAgentMode.Auto
-                    && recoveredModes.Length == 1)
+                if (!preserveExistingMode && recoveredModes.Length == 1)
                 {
                     conversation.DraftRequestMode = recoveredModes[0];
                 }
