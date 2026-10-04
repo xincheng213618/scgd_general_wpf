@@ -66,6 +66,29 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         Assert.Equal(0, state.ResumedQueuedFollowUpCount);
     }
 
+    [Fact]
+    public void OversizedRecoveryRecordCannotBecomeAValidQueuedPrefix()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var prompt = new string('x', CopilotQueuedFollowUpRecoveryRecord.MaximumPromptCharacters + 1);
+        var recovery = CreateRecovery("oversized-run", conversation.Id, prompt);
+        recovery.ProfileId = "profile";
+        recovery.ResumeAfterRestart = true;
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation],
+            QueuedFollowUpRecoveries = [recovery],
+        };
+
+        Assert.False(recovery.TryGetNormalized(out _, out _, out _));
+        Assert.Equal(prompt, recovery.ComposerState!.Text);
+        Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+        Assert.Empty(conversation.DraftText);
+        Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
+        Assert.Equal(0, state.ResumedQueuedFollowUpCount);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

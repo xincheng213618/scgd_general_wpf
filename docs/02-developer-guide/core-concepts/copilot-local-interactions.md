@@ -74,9 +74,9 @@ related: ["copilot.runtime", "copilot.configuration", "copilot.view-model", "cop
 
 编辑最新消息后发送，会捕获本次编辑会话的身份与原 user / assistant 对象。图片保存等待期间取消编辑、重新打开同一消息、切换会话后编辑其他消息，或由较新的发送替换原轮次，都会使旧发送退出；它不能替换历史、清除 checkpoint 或结束后来开始的编辑。同一次编辑中继续输入新草稿仍允许提交已捕获的旧文本，新文本和新增附件留在草稿。`CopilotMessageEditAdmissionTests` 用真实图片保存与受控 UI 续体验证上述边界；有效编辑本身不触发自动压缩。
 
-`Ctrl+E` 打开本机 `CopilotTextInputWindow`，不启动 `$EDITOR` 或创建第二套 composer。`CopilotComposerEditorSnapshot` 限制 UTF-16 安全文本长度并夹紧光标，不 trim 首尾空白；确认才写回，取消只恢复焦点/光标。
+`Ctrl+E` 打开本机 `CopilotTextInputWindow`，不启动 `$EDITOR` 或创建第二套 composer。`CopilotComposerEditorSnapshot` 保留完整正文并按实际文本长度夹紧光标，不 trim 首尾空白；确认才写回，取消只恢复焦点/光标。恢复时合并出的草稿即使超过发送上限，打开编辑器后直接确认也不会截断。窗口的手工输入上限与发送准入仍由现有字符限制控制；`CopilotComposerSessionTests` 用真实 STA 窗口验证完整正文、Unicode 尾部、光标边界及手工输入上限。
 
-`Ctrl+S` 用 `CopilotComposerStash` 捕获当前会话文本、光标、附件与一次性请求状态：非空输入且没有 stash 才捕获并清空；空输入才恢复并消费；已有 stash 不被新非空输入覆盖。不触发发送，不保存临时授权。stash 随 chat-state 持久化，其附件计入引用与孤儿清理，不能按“当前消息为空”当成可丢弃内容。
+`Ctrl+S` 用 `CopilotComposerStash` 捕获当前会话文本、光标、附件与一次性请求状态：非空输入且没有 stash 才捕获并清空；空输入才恢复并消费；已有 stash 不被新非空输入覆盖。不触发发送，不保存临时授权。stash 随 chat-state 持久化，其附件计入引用与孤儿清理，不能按“当前消息为空”当成可丢弃内容。暂存、快照复制和重载归一化都保留完整草稿，包括多条合法排队请求恢复后合并出的超长正文；发送和单条排队恢复准入仍独立校验待提交正文的长度，不能截成合法前缀。状态文件仍受现有总字节上限约束，超限明确报保存失败，不以截断正文完成保存。`CopilotChatViewModelProfileIsolationTests` 经真实 Save／Load 和公开暂存／恢复验证完整正文、较新输入、请求状态及附件，并验证超长草稿仍不能发送。
 
 `/history` 与输入框 Ctrl+R 搜索可见 user `Content`，默认当前会话；弹层内 Ctrl+S 切换全部本地会话。当前会话以消息列表顺序判断新旧，跨会话按时间判断；搜索结果去重并限长预览，选中仍恢复完整可见请求。不读隐藏 `RequestContent`、附件正文或 trace。Enter/Tab/点击只把选中项放回草稿，Esc 恢复打开前草稿，不发送。历史搜索独占这些按键，因此弹层内 Ctrl+S 不操作 stash；侧栏搜索的 Ctrl+R 则是重命名候选，不是提示历史。
 

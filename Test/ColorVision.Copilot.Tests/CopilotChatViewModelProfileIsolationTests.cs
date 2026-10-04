@@ -1404,6 +1404,175 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("exactcap")]
+    [InlineData("oversized_merged")]
+    public async Task ComposerStashPreservesCompleteDraftAcrossSaveLoadWithoutReplacingNewerInput(string draftKind)
+    {
+        const string tailMarker = "FINAL_RECOVERY_END_91D44";
+        const string newerDraft = "Keep this newer input while the original draft remains stashed.";
+        var maximumCharacters = CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "composer-stash-roundtrip-test-token");
+        var originalDraft = draftKind == "exactcap"
+            ? new string('x', maximumCharacters - tailMarker.Length) + tailMarker
+            : "Draft to keep complete." + Environment.NewLine + tailMarker;
+        var conversation = CreateConversation(profile, "conversation-a",
+            draftKind == "oversized_merged" ? string.Empty : originalDraft);
+        conversation.SetCustomTitle("Composer stash roundtrip");
+        conversation.DraftRequestMode = CopilotAgentMode.Review;
+        conversation.DraftWorkspaceReviewTarget = CopilotWorkspaceReviewTargetContext.WorkingTree();
+        var firstAttachment = CopilotAttachmentItem.CreateContext("Evidence belonging to the first recovered request.");
+        var laterAttachment = CopilotAttachmentItem.CreateContext("Evidence belonging to the later recovered request.");
+        var newerAttachment = CopilotAttachmentItem.CreateContext("Evidence belonging to the newer draft.");
+        var originalAttachments = new[] { firstAttachment, laterAttachment };
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id, Conversations = [conversation],
+        };
+        var recoveryPrompts = new[]
+        {
+            new string('a', maximumCharacters / 2) + "FIRST_RECOVERY_END_7AC21",
+            new string('b', maximumCharacters / 2) + tailMarker,
+        };
+        if (draftKind == "oversized_merged")
+        {
+            for (var index = 0; index < recoveryPrompts.Length; index++)
+            {
+                Assert.True(recoveryPrompts[index].Length <= maximumCharacters);
+                state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
+                {
+                    RunId = $"recovered-request-{index}", ConversationId = conversation.Id, ProfileId = profile.Id,
+                    Prompt = recoveryPrompts[index], ResumeAfterRestart = false,
+                    ComposerState = CopilotComposerStash.Capture(recoveryPrompts[index], recoveryPrompts[index].Length,
+                        CopilotAgentMode.Review, [originalAttachments[index]],
+                        CopilotWorkspaceReviewTargetContext.WorkingTree()),
+                });
+            }
+        }
+        else
+        {
+            foreach (var attachment in originalAttachments)
+                conversation.Attachments.Add(attachment);
+        }
+        var root = Directory.CreateTempSubdirectory("CopilotComposerStash-").FullName;
+        var diskStore = new CopilotChatStateStore(root);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var restartedRuntime = new GatedFailingTurnRuntime();
+        var restartedHost = new CopilotAgentTaskHost();
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        CopilotChatViewModel? viewModel = null;
+        CopilotChatViewModel? restartedViewModel = null;
+        try
+        {
+            diskStore.Save(state);
+            var loadedState = diskStore.Load();
+            viewModel = new CopilotChatViewModel(new CopilotChatService(),
+                new InMemoryStateStore(loadedState, diskStore.AttachmentDirectoryPath), config, runtime, taskHost);
+            var loadedConversation = Assert.Single(viewModel.Conversations);
+            var completeDraft = viewModel.InputText;
+            if (draftKind == "oversized_merged")
+            {
+                Assert.True(completeDraft.Length > viewModel.ComposerMaximumCharacters);
+                Assert.Contains(recoveryPrompts[0], completeDraft, StringComparison.Ordinal);
+                Assert.Contains(recoveryPrompts[1], completeDraft, StringComparison.Ordinal);
+                Assert.True(completeDraft.IndexOf(recoveryPrompts[0], StringComparison.Ordinal)
+                    < completeDraft.IndexOf(recoveryPrompts[1], StringComparison.Ordinal));
+            }
+            else
+            {
+                Assert.Equal(originalDraft, completeDraft);
+            }
+            Assert.EndsWith(tailMarker, completeDraft, StringComparison.Ordinal);
+            Assert.Empty(loadedState.QueuedFollowUpRecoveries);
+            Assert.Null(taskHost.ActiveRun);
+            Assert.False(runtime.Entered.IsCompleted);
+            var caretIndex = completeDraft.Length - 2;
+
+            Assert.True(viewModel.TryToggleComposerStash(caretIndex, out var capturedCaretIndex));
+
+            Assert.Equal(-1, capturedCaretIndex);
+            Assert.Equal(string.Empty, viewModel.InputText);
+            Assert.Empty(loadedConversation.Attachments);
+            var stash = Assert.IsType<CopilotComposerStash>(loadedConversation.ComposerStash);
+            Assert.Equal(completeDraft, stash.Text);
+            Assert.Equal(caretIndex, stash.CaretIndex);
+            Assert.Equal(CopilotAgentMode.Review, stash.RequestMode);
+            Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, stash.WorkspaceReviewTarget?.Target);
+            Assert.Equal(originalAttachments.Select(item => (item.Id, item.Value)),
+                stash.Attachments.Select(item => (item.Id, item.Value)));
+
+            viewModel.InputText = newerDraft;
+            loadedConversation.Attachments.Add(newerAttachment);
+            Assert.True(viewModel.TryToggleComposerStash(newerDraft.Length, out var unchangedCaretIndex));
+            Assert.Equal(-1, unchangedCaretIndex);
+            Assert.Equal(newerDraft, viewModel.InputText);
+            Assert.Equal(newerAttachment.Id, Assert.Single(loadedConversation.Attachments).Id);
+            Assert.Equal(completeDraft, loadedConversation.ComposerStash!.Text);
+            diskStore.Save(loadedState);
+            var reloadedState = diskStore.Load();
+            viewModel.Dispose();
+            viewModel = null;
+
+            restartedViewModel = new CopilotChatViewModel(new CopilotChatService(),
+                new InMemoryStateStore(reloadedState, diskStore.AttachmentDirectoryPath), config, restartedRuntime, restartedHost);
+            var restoredConversation = Assert.Single(restartedViewModel.Conversations);
+            Assert.Equal(newerDraft, restartedViewModel.InputText);
+            Assert.Equal(newerAttachment.Id, Assert.Single(restoredConversation.Attachments).Id);
+            Assert.Equal(completeDraft, restoredConversation.ComposerStash!.Text);
+            Assert.True(restartedViewModel.TryToggleComposerStash(newerDraft.Length, out _));
+            Assert.Equal(newerDraft, restartedViewModel.InputText);
+            Assert.Equal(completeDraft, restoredConversation.ComposerStash!.Text);
+            restartedViewModel.InputText = string.Empty;
+            restoredConversation.Attachments.Clear();
+
+            Assert.True(restartedViewModel.TryToggleComposerStash(0, out var restoredCaretIndex));
+
+            Assert.Equal(caretIndex, restoredCaretIndex);
+            Assert.Equal(completeDraft, restartedViewModel.InputText);
+            Assert.Equal(completeDraft, restoredConversation.DraftText);
+            Assert.EndsWith(tailMarker, restartedViewModel.InputText, StringComparison.Ordinal);
+            Assert.Null(restoredConversation.ComposerStash);
+            Assert.Equal(CopilotAgentMode.Review, restoredConversation.DraftRequestMode);
+            Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, restoredConversation.DraftWorkspaceReviewTarget?.Target);
+            Assert.Equal(originalAttachments.Select(item => (item.Id, item.Value)),
+                restoredConversation.Attachments.Select(item => (item.Id, item.Value)));
+            if (draftKind == "oversized_merged")
+            {
+                restartedViewModel.SendCommand.Execute(null);
+                Assert.Equal("输入过长", restartedViewModel.LocalCommandResultTitle);
+                Assert.Equal(completeDraft, restartedViewModel.InputText);
+                Assert.Equal(originalAttachments.Select(item => (item.Id, item.Value)),
+                    restoredConversation.Attachments.Select(item => (item.Id, item.Value)));
+            }
+            Assert.Null(restartedHost.ActiveRun);
+            Assert.Empty(restartedHost.ScheduledRuns);
+            Assert.False(restartedRuntime.Entered.IsCompleted);
+            Assert.Empty(restoredConversation.Messages);
+        }
+        finally
+        {
+            try
+            {
+                await ShutdownQueuedCommandHostAsync(taskHost, runtime);
+                await ShutdownQueuedCommandHostAsync(restartedHost, restartedRuntime);
+            }
+            finally
+            {
+                viewModel?.Dispose();
+                restartedViewModel?.Dispose();
+                var resolvedRoot = Path.GetFullPath(root);
+                Assert.Equal(Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar),
+                    Path.GetDirectoryName(resolvedRoot), ignoreCase: true);
+                Assert.StartsWith("CopilotComposerStash-", Path.GetFileName(resolvedRoot), StringComparison.Ordinal);
+                if (Directory.Exists(resolvedRoot))
+                    Directory.Delete(resolvedRoot, recursive: true);
+            }
+        }
+    }
+
     [Fact]
     public async Task ScheduledTurnConsumesCapturedAttachmentsButPreservesAttachmentsAddedDuringScheduling()
     {

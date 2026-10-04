@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows.Controls;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -96,6 +97,46 @@ public sealed class CopilotComposerSessionTests
 
         Assert.True(changed);
         Assert.Equal(editedText, session.Text);
+    }
+
+    [Theory]
+    [InlineData(32, -1, 0)]
+    [InlineData(CopilotConversationHistoryWindow.MaximumContentCharacterLimit, int.MaxValue,
+        CopilotConversationHistoryWindow.MaximumContentCharacterLimit)]
+    [InlineData(CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 2, int.MaxValue,
+        CopilotConversationHistoryWindow.MaximumContentCharacterLimit + 2)]
+    public void ExpandedEditorPreservesRestoredTextAndKeepsManualEntryLimit(
+        int textLength, int caretIndex, int expectedCaretIndex)
+    {
+        StaTest.Run(() =>
+        {
+            const string finalEmoji = "🚀";
+            var restoredText = new string('p', textLength - finalEmoji.Length) + finalEmoji;
+            var session = new CopilotComposerSession();
+            session.Load(CreateConversation("conversation-one", restoredText));
+            CopilotTextInputWindow? window = null;
+            try
+            {
+                window = new CopilotTextInputWindow("Edit the recovered draft", "Preserve the complete draft.",
+                    session.Text, isMultiline: true,
+                    maximumLength: CopilotConversationHistoryWindow.MaximumContentCharacterLimit,
+                    initialCaretIndex: caretIndex, acceptsTab: true);
+                var input = Assert.IsType<TextBox>(window.FindName("InputTextBox"));
+
+                Assert.Equal(CopilotConversationHistoryWindow.MaximumContentCharacterLimit, input.MaxLength);
+                Assert.Equal(restoredText, window.RawResultText);
+
+                var snapshot = CopilotComposerEditorSnapshot.Capture(window.RawResultText, caretIndex);
+
+                Assert.Equal(restoredText, snapshot.Text);
+                Assert.EndsWith(finalEmoji, snapshot.Text, StringComparison.Ordinal);
+                Assert.Equal(expectedCaretIndex, snapshot.CaretIndex);
+            }
+            finally
+            {
+                window?.Close();
+            }
+        });
     }
 
     [Fact]

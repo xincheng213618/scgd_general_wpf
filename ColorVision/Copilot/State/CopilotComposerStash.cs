@@ -43,7 +43,7 @@ namespace ColorVision.Copilot
             CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
             CopilotAgentSkillReference? agentSkillReference = null)
         {
-            var normalizedText = CopilotComposerTextLimits.Bound(text);
+            var normalizedText = text ?? string.Empty;
             return new CopilotComposerStash
             {
                 Text = normalizedText,
@@ -75,7 +75,7 @@ namespace ColorVision.Copilot
         internal bool EnsureValid()
         {
             var changed = false;
-            var normalizedText = CopilotComposerTextLimits.Bound(Text);
+            var normalizedText = Text ?? string.Empty;
             if (!string.Equals(Text, normalizedText, StringComparison.Ordinal))
             {
                 Text = normalizedText;
