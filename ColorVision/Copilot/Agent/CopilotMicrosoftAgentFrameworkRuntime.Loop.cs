@@ -611,6 +611,7 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent Skill history could not be updated ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
                 }
             }
+            var cacheUsage = request.Profile.IsLocalCodex ? CopilotTurnRuntime.GetReportedTokenUsage(budgetSnapshot) : usage;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
@@ -632,8 +633,8 @@ namespace ColorVision.Copilot
                     || budgetSnapshot.ProviderStreamInactivityTimeoutCount > 0
                     ? $" · inactivity timeouts first-content {budgetSnapshot.ProviderFirstContentTimeoutCount:N0}, stream {budgetSnapshot.ProviderStreamInactivityTimeoutCount:N0}"
                     : string.Empty)
-                + (usage.CachedInputTokens.HasValue
-                    ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"
+                + (cacheUsage.CachedInputTokens.HasValue
+                    ? $" · cache reads {cacheUsage.EffectiveCachedInputTokens:N0}/{cacheUsage.InputTokens:N0} input tokens ({cacheUsage.CachedInputPercentage:0.#}%)"
                     : " · cache reads unavailable")
                 + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
                 + (budgetSnapshot.ToolBudgetExhausted ? " · tool limit reached" : string.Empty)

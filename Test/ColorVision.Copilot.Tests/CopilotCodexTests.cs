@@ -254,6 +254,7 @@ public sealed class CopilotCodexTests
             conversation.Messages.Add(assistant);
             var turn = CopilotTurnEventState.Create(request.Mode, request.TaskId);
             CopilotAgentRunResult? runResult = null;
+            var budgetDiagnostics = new List<string>();
             await foreach (var turnEvent in CopilotTurnEventStream.RunAsync(request.TaskId, request.Mode, async (sink, token) =>
             {
                 runResult = await runtime.RunAsync(request, agentEvent =>
@@ -261,6 +262,9 @@ public sealed class CopilotCodexTests
                     sink.OnAgentEvent(agentEvent);
                     if (agentEvent.Type == CopilotAgentEventType.BudgetUpdated)
                         sink.OnTokenUsageUpdated(CopilotTurnRuntime.GetReportedTokenUsage(agentEvent.Budget!));
+                    if (agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+                        && agentEvent.Text.StartsWith("Agent budget used ", StringComparison.Ordinal))
+                        budgetDiagnostics.Add(agentEvent.Text);
                 }, token);
                 sink.OnPlanUpdated(CopilotTurnPlanSnapshot.FromTaskLedger(runResult.TaskLedger));
                 sink.OnTokenUsageUpdated(runResult.Usage);
@@ -297,6 +301,9 @@ public sealed class CopilotCodexTests
             Assert.Equal(expectedUsage, CopilotTurnEventReducer.RequireCompletion(turn).Usage);
             Assert.Equal(expectedUsage, assistant.ReportedUsage);
             Assert.Equal(expectedUsage, conversation.LastUsage);
+            Assert.Contains(
+                $" · cache reads {expectedUsage.EffectiveCachedInputTokens:N0}/{expectedUsage.InputTokens:N0} input tokens ({expectedUsage.CachedInputPercentage:0.#}%)",
+                Assert.Single(budgetDiagnostics), StringComparison.Ordinal);
         }
         finally
         {
