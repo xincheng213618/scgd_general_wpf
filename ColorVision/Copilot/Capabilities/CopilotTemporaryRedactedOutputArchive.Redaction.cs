@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace ColorVision.Copilot
@@ -10,6 +11,13 @@ namespace ColorVision.Copilot
     {
         private char _sensitiveValueQuote;
         private bool _sensitiveValueEscapePending;
+        private bool _openAiCredentialContinuation;
+        private int _hiddenPendingCharacters;
+        private bool _hasPreviousRawCharacter;
+        private char _previousRawCharacter;
+        private static readonly Regex AwsAccessKeyIdRegex = new(
+            @"\bAKIA[0-9A-Z]{16}\b",
+            RegexOptions.Compiled);
 
         private static string ReadCharacters(
             FileStream stream,
@@ -49,11 +57,29 @@ namespace ColorVision.Copilot
         {
             while (_pendingRaw.Length > 0)
             {
-                if (_archivedCharacters >= _maximumCharacters)
+                if (_archivedCharacters >= _maximumCharacters
+                    && _hiddenPendingCharacters == 0
+                    && !_openAiCredentialContinuation
+                    && _sensitiveValueTerminator == SensitiveValueTerminator.None)
                 {
-                    _pendingRaw.Clear();
+                    ConsumePendingPrefix(_pendingRaw.Length);
                     _isTruncated = true;
                     return;
+                }
+
+                if (_openAiCredentialContinuation)
+                {
+                    var end = 0;
+                    while (end < _pendingRaw.Length
+                        && IsAsciiLetterOrDigit(_pendingRaw[end]))
+                    {
+                        end++;
+                    }
+                    var reachesPendingEnd = end == _pendingRaw.Length;
+                    RetainMaskedCredentialTail(end);
+                    if (reachesPendingEnd && !flushAll)
+                        return;
+                    _openAiCredentialContinuation = false;
                 }
 
                 if (_sensitiveValueTerminator
@@ -64,14 +90,14 @@ namespace ColorVision.Copilot
                         _sensitiveValueTerminator);
                     if (delimiterIndex < 0)
                     {
-                        _pendingRaw.Clear();
+                        ConsumePendingPrefix(_pendingRaw.Length);
                         return;
                     }
 
                     var delimiter = _pendingRaw[delimiterIndex];
-                    _pendingRaw.Remove(0, delimiterIndex);
+                    ConsumePendingPrefix(delimiterIndex);
                     if (_sensitiveValueQuote == '\0' && (delimiter is '"' or '\''))
-                        _pendingRaw.Remove(0, 1);
+                        ConsumePendingPrefix(1);
                     _sensitiveValueTerminator =
                         SensitiveValueTerminator.None;
                     _sensitiveValueQuote = '\0';
@@ -80,9 +106,10 @@ namespace ColorVision.Copilot
                 }
 
                 var pending = _pendingRaw.ToString();
-                var markerIndex = FindSensitiveMarker(
+                var markerIndex = FindRedactionCandidate(
                     pending,
-                    out var marker);
+                    out var marker,
+                    out var candidateKind);
                 if (markerIndex < 0)
                 {
                     var retainedCharacters = flushAll
@@ -93,28 +120,124 @@ namespace ColorVision.Copilot
                     var writeLength = GetUnicodeSafePrefixLength(
                         pending,
                         pending.Length - retainedCharacters);
-                    WriteUnderLock(
-                        pending.AsSpan(0, writeLength));
-                    _pendingRaw.Remove(
-                        0,
-                        writeLength);
+                    WritePendingPrefix(pending, writeLength);
+                    ConsumePendingPrefix(writeLength);
                     return;
                 }
 
                 if (markerIndex > 0)
                 {
-                    WriteUnderLock(pending.AsSpan(0, markerIndex));
-                    _pendingRaw.Remove(0, markerIndex);
+                    WritePendingPrefix(pending, markerIndex);
+                    ConsumePendingPrefix(markerIndex);
                     continue;
                 }
 
-                if (!TryProcessSensitiveMarkerUnderLock(
-                        marker,
-                        flushAll))
+                var processed = candidateKind == RedactionCandidateKind.Assignment
+                    ? TryProcessSensitiveMarkerUnderLock(marker, flushAll)
+                    : TryProcessStandaloneCredentialUnderLock(candidateKind, flushAll);
+                if (!processed)
                 {
                     return;
                 }
             }
+        }
+
+        private bool TryProcessStandaloneCredentialUnderLock(
+            RedactionCandidateKind candidateKind,
+            bool flushAll)
+        {
+            var pending = _pendingRaw.ToString();
+            if (candidateKind == RedactionCandidateKind.OpenAiCredential)
+            {
+                const int prefixCharacters = 3;
+                const int minimumCredentialCharacters = 20;
+                var end = prefixCharacters;
+                while (end < pending.Length && IsAsciiLetterOrDigit(pending[end]))
+                    end++;
+                if (end - prefixCharacters < minimumCredentialCharacters)
+                {
+                    if (end == pending.Length && !flushAll)
+                        return false;
+                    ReleaseRejectedCandidateCharacter();
+                    return true;
+                }
+
+                WriteUnderLock("<redacted>".AsSpan());
+                _openAiCredentialContinuation = end == pending.Length && !flushAll;
+                RetainMaskedCredentialTail(end);
+                return true;
+            }
+
+            const int awsCredentialCharacters = 20;
+            var credentialEnd = 4;
+            while (credentialEnd < pending.Length
+                && credentialEnd < awsCredentialCharacters
+                && IsAsciiUpperLetterOrDigit(pending[credentialEnd]))
+            {
+                credentialEnd++;
+            }
+            if (credentialEnd < awsCredentialCharacters)
+            {
+                if (credentialEnd == pending.Length && !flushAll)
+                    return false;
+                ReleaseRejectedCandidateCharacter();
+                return true;
+            }
+            if (pending.Length == awsCredentialCharacters && !flushAll)
+                return false;
+
+            // A bounded context window delegates Unicode word-boundary semantics
+            // to the same .NET regex used by whole-text credential redaction.
+            var candidate = pending[..Math.Min(pending.Length, awsCredentialCharacters + 1)];
+            var expectedIndex = _hasPreviousRawCharacter ? 1 : 0;
+            var window = _hasPreviousRawCharacter
+                ? _previousRawCharacter + candidate
+                : candidate;
+            var match = AwsAccessKeyIdRegex.Match(window);
+            if (!match.Success
+                || match.Index != expectedIndex
+                || match.Length != awsCredentialCharacters)
+            {
+                ReleaseRejectedCandidateCharacter();
+                return true;
+            }
+
+            WriteUnderLock("<redacted>".AsSpan());
+            RetainMaskedCredentialTail(awsCredentialCharacters);
+            return true;
+        }
+
+        private void RetainMaskedCredentialTail(int count)
+        {
+            // A credential can end in all or part of an assignment name. Keep
+            // that bounded raw suffix for the existing parser, but never emit it.
+            var retained = Math.Min(count, MaximumMarkerCharacters);
+            ConsumePendingPrefix(count - retained);
+            _hiddenPendingCharacters = Math.Max(_hiddenPendingCharacters, retained);
+        }
+
+        private void WritePendingPrefix(string pending, int count)
+        {
+            var hidden = Math.Min(count, _hiddenPendingCharacters);
+            WriteUnderLock(pending.AsSpan(hidden, count - hidden));
+        }
+
+        private void ReleaseRejectedCandidateCharacter()
+        {
+            // Re-enter marker scanning rather than writing an entire rejected
+            // candidate that could contain an ordinary sensitive assignment.
+            WritePendingPrefix(_pendingRaw.ToString(0, 1), 1);
+            ConsumePendingPrefix(1);
+        }
+
+        private void ConsumePendingPrefix(int count)
+        {
+            if (count == 0)
+                return;
+            _previousRawCharacter = _pendingRaw[count - 1];
+            _hasPreviousRawCharacter = true;
+            _pendingRaw.Remove(0, count);
+            _hiddenPendingCharacters = Math.Max(0, _hiddenPendingCharacters - count);
         }
 
         private bool TryProcessSensitiveMarkerUnderLock(
@@ -143,8 +266,8 @@ namespace ColorVision.Copilot
                 if (!flushAll)
                     return false;
 
-                WriteUnderLock(pending.AsSpan());
-                _pendingRaw.Clear();
+                WritePendingPrefix(pending, pending.Length);
+                ConsumePendingPrefix(_pendingRaw.Length);
                 return true;
             }
 
@@ -168,26 +291,26 @@ namespace ColorVision.Copilot
                     if (!flushAll)
                         return false;
 
-                    WriteUnderLock(pending.AsSpan());
-                    _pendingRaw.Clear();
+                    WritePendingPrefix(pending, pending.Length);
+                    ConsumePendingPrefix(_pendingRaw.Length);
                     return true;
                 }
                 if (valueQuote != '\0' && pending[index] == valueQuote)
                 {
-                    WriteUnderLock(pending.AsSpan(0, index + 1));
-                    _pendingRaw.Remove(0, index + 1);
+                    WritePendingPrefix(pending, index + 1);
+                    ConsumePendingPrefix(index + 1);
                     return true;
                 }
                 if (valueQuote == '\0' && IsAssignmentValueDelimiter(pending[index]))
                 {
-                    WriteUnderLock(pending.AsSpan(0, 1));
-                    _pendingRaw.Remove(0, 1);
+                    WritePendingPrefix(pending, 1);
+                    ConsumePendingPrefix(1);
                     return true;
                 }
 
-                WriteUnderLock(pending.AsSpan(0, index));
+                WritePendingPrefix(pending, index);
                 WriteUnderLock("<redacted>".AsSpan());
-                _pendingRaw.Remove(0, index);
+                ConsumePendingPrefix(index);
                 _sensitiveValueTerminator =
                     SensitiveValueTerminator.Assignment;
                 _sensitiveValueQuote = valueQuote;
@@ -203,16 +326,16 @@ namespace ColorVision.Copilot
                 && index > whitespaceStart
                 && !IsBearerValueDelimiter(pending[index]))
             {
-                WriteUnderLock(pending.AsSpan(0, index));
+                WritePendingPrefix(pending, index);
                 WriteUnderLock("<redacted>".AsSpan());
-                _pendingRaw.Remove(0, index);
+                ConsumePendingPrefix(index);
                 _sensitiveValueTerminator =
                     SensitiveValueTerminator.Bearer;
                 return true;
             }
 
-            WriteUnderLock(pending.AsSpan(0, 1));
-            _pendingRaw.Remove(0, 1);
+            WritePendingPrefix(pending, 1);
+            ConsumePendingPrefix(1);
             return true;
         }
 
@@ -329,6 +452,41 @@ namespace ColorVision.Copilot
                 marker = candidate;
             }
             return bestIndex;
+        }
+
+        private static int FindRedactionCandidate(
+            string value,
+            out string marker,
+            out RedactionCandidateKind candidateKind)
+        {
+            var index = FindSensitiveMarker(value, out marker);
+            candidateKind = RedactionCandidateKind.Assignment;
+            var openAiIndex = value.IndexOf("sk-", StringComparison.Ordinal);
+            if (openAiIndex >= 0 && (index < 0 || openAiIndex < index))
+            {
+                index = openAiIndex;
+                candidateKind = RedactionCandidateKind.OpenAiCredential;
+            }
+            var awsIndex = value.IndexOf("AKIA", StringComparison.Ordinal);
+            if (awsIndex >= 0 && (index < 0 || awsIndex < index))
+            {
+                index = awsIndex;
+                candidateKind = RedactionCandidateKind.AwsCredential;
+            }
+            return index;
+        }
+
+        private static bool IsAsciiLetterOrDigit(char value) =>
+            value is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9';
+
+        private static bool IsAsciiUpperLetterOrDigit(char value) =>
+            value is >= 'A' and <= 'Z' or >= '0' and <= '9';
+
+        private enum RedactionCandidateKind
+        {
+            Assignment,
+            OpenAiCredential,
+            AwsCredential,
         }
 
         private int FindSensitiveValueDelimiter(

@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Text;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -10,6 +11,92 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Path.GetTempPath(),
         "ColorVisionCopilotForegroundProcessEvidenceTests",
         Guid.NewGuid().ToString("N")));
+
+    [Fact]
+    public async Task ShellArchiveCredentialsRemainRedactedThroughSmallRuntimePages()
+    {
+        const string standardOutput = "trace-start|sk-abcdefghijklmnopqrstuvwxyz123456|trace-end";
+        const string standardError = "error-start|AKIAABCDEFGHIJKLMNOP|error-end";
+        var request = CreateRequest();
+        using var registry = new CopilotShellCommandOutputArchiveRegistry();
+        using var capture = new CopilotShellCommandOutputCapture();
+        capture.AppendStandardOutput(standardOutput[..15]);
+        capture.AppendStandardOutput(standardOutput[15..]);
+        capture.AppendStandardError(standardError[..14]);
+        capture.AppendStandardError(standardError[14..]);
+        capture.Complete();
+        var snapshot = registry.Retain(request.ConversationId, capture, new CopilotShellProcessResult(
+            ExitCode: 0,
+            TimedOut: false,
+            StandardOutput: standardOutput,
+            StandardError: standardError,
+            Duration: TimeSpan.Zero)
+        {
+            StandardOutputTruncated = true,
+            StandardErrorTruncated = true,
+        });
+        Assert.NotNull(snapshot);
+        Assert.Equal(standardOutput.Length, snapshot.ObservedStandardOutputCharacters);
+        Assert.Equal(standardError.Length, snapshot.ObservedStandardErrorCharacters);
+
+        var tool = new CopilotReadShellCommandOutputTool(registry);
+        foreach (var (stream, expected) in new[]
+        {
+            ("stdout", "trace-start|<redacted>|trace-end"),
+            ("stderr", "error-start|<redacted>|error-end"),
+        })
+        {
+            var output = new StringBuilder();
+            var offset = 0;
+            while (true)
+            {
+                var events = new List<CopilotAgentEvent>();
+                var outcome = await new CopilotToolExecutor([]).ExecuteAsync(new CopilotToolInvocation
+                {
+                    CallId = $"call:shell-archive-{stream}-{offset}",
+                    Round = 1,
+                    Attempt = 1,
+                    MaxAttempts = 1,
+                    RuntimeName = "test",
+                    Tool = tool,
+                    AgentRequest = request,
+                    ToolInput = new CopilotAgentToolInput
+                    {
+                        Arguments = new Dictionary<string, object?>
+                        {
+                            ["archiveId"] = snapshot.Id,
+                            ["stream"] = stream,
+                            ["offsetCharacters"] = offset,
+                            ["maximumCharacters"] = 7,
+                        },
+                    },
+                }, events.Add, CancellationToken.None);
+                Assert.True(outcome.Result.Success, outcome.Result.ErrorMessage);
+                var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+                CopilotAgentEventProtocol.Validate(terminal);
+                Assert.Equal(outcome.FormattedModelResult, terminal.ModelToolResult);
+                Assert.Null(outcome.ToolOutputArchive);
+                var content = JObject.Parse(terminal.ModelToolResult)["content"]!.Value<string>()!
+                    .Replace("\r\n", "\n", StringComparison.Ordinal);
+                const string contentMarker = "content:\n";
+                var bodyStart = content.IndexOf(contentMarker, StringComparison.Ordinal);
+                Assert.True(bodyStart >= 0, content);
+                var body = content[(bodyStart + contentMarker.Length)..];
+                output.Append(body);
+                var nextOffset = offset + body.Length;
+                Assert.Contains($"offset_characters: {offset}\n", content, StringComparison.Ordinal);
+                Assert.Contains($"returned_characters: {body.Length}\n", content, StringComparison.Ordinal);
+                Assert.Contains($"next_offset_characters: {nextOffset}\n", content, StringComparison.Ordinal);
+                Assert.Contains($"archived_characters: {expected.Length}\n", content, StringComparison.Ordinal);
+                Assert.Contains("archive_truncated: false\n", content, StringComparison.Ordinal);
+                if (content.Contains("end_of_output: true\n", StringComparison.Ordinal))
+                    break;
+                Assert.True(nextOffset > offset);
+                offset = nextOffset;
+            }
+            Assert.Equal(expected, output.ToString());
+        }
+    }
 
     [Fact]
     public async Task ShellContainmentFailureUsesStableFailureCode()
