@@ -489,10 +489,14 @@ namespace ColorVision.Copilot
                 {
                     conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }
-                var recoveredReviewTarget = pair.Value.Count == 1
-                    && pair.Value[0].RequestMode == CopilotAgentMode.Review
-                    && pair.Value[0].WorkspaceReviewTarget?.IsStructurallyValid() == true
-                        ? pair.Value[0].WorkspaceReviewTarget?.CreateSnapshot()
+                var firstReviewTarget = pair.Value[0].WorkspaceReviewTarget;
+                var recoveredReviewTarget = firstReviewTarget?.IsStructurallyValid() == true
+                    && pair.Value.All(recovery => recovery.RequestMode == CopilotAgentMode.Review
+                        && recovery.WorkspaceReviewTarget is { } target
+                        && target.IsStructurallyValid()
+                        && target.Target == firstReviewTarget.Target
+                        && string.Equals(target.Revision, firstReviewTarget.Revision, StringComparison.Ordinal))
+                        ? firstReviewTarget.CreateSnapshot()
                         : null;
                 if (string.IsNullOrWhiteSpace(existingDraft) && recoveredReviewTarget != null)
                     conversation.DraftWorkspaceReviewTarget = recoveredReviewTarget;

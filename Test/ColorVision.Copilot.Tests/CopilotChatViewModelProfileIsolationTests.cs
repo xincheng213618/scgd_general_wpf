@@ -2019,16 +2019,20 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
-    private static CopilotChatMessage[] CompleteParentTurnForQueuedCommand(CopilotConversationRecord conversation)
+    private static CopilotChatMessage[] CompleteParentTurnForQueuedCommand(CopilotConversationRecord conversation,
+        CopilotWorkspaceReviewTargetContext? reviewTarget = null)
     {
         conversation.SetCustomTitle("Queued command restart fixture");
-        var userMessage = new CopilotChatMessage(CopilotChatRole.User, "Complete the parent request.")
+        var mode = reviewTarget == null ? CopilotAgentMode.Auto : CopilotAgentMode.Review;
+        var prompt = reviewTarget == null ? "Complete the parent request."
+            : new CopilotWorkspaceReviewRequest(reviewTarget.Target, reviewTarget.Revision, string.Empty).BuildPrompt();
+        var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
         {
-            RequestMode = CopilotAgentMode.Auto,
+            RequestMode = mode, WorkspaceReviewTarget = reviewTarget,
         };
         var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "The parent request is complete.")
         {
-            RequestMode = CopilotAgentMode.Auto, AgentStopReason = CopilotAgentStopReason.Completed,
+            RequestMode = mode, AgentStopReason = CopilotAgentStopReason.Completed,
         };
         assistantMessage.MarkThinkingStarted();
         conversation.Messages.Add(userMessage);
@@ -2982,21 +2986,27 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Theory]
-    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns)]
-    [InlineData(true, CopilotAgentTaskHost.DefaultMaxQueuedRuns)]
-    [InlineData(false, 1)]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, false)]
+    [InlineData(true, CopilotAgentTaskHost.DefaultMaxQueuedRuns, false)]
+    [InlineData(false, 1, false)]
+    [InlineData(false, CopilotAgentTaskHost.DefaultMaxQueuedRuns, true)]
     public async Task MissingQueuedProfileRestoresLaterFollowUpInOrderInsteadOfDispatchingPastIt(
-        bool secondRecordIsLegacy, int restartedHostCapacity)
+        bool secondRecordIsLegacy, int restartedHostCapacity, bool sameReviewTarget)
     {
         const string firstPrompt = "First update the configuration using the captured evidence.";
         const string laterPrompt = "Then validate the configuration after that update.";
-        const string newerDraft = "Preserve this newer draft before the recovered requests.";
+        var newerDraft = sameReviewTarget ? string.Empty : "Preserve this newer draft before the recovered requests.";
         var profileA = CreateProfile("profile-a", "Profile A", "model-a");
         var profileB = CreateProfile("profile-b", "Profile B", "model-b");
         var config = CreateConfig(profileA, "missing-queued-profile-test-token");
         config.Profiles.Add(profileB);
         var conversation = CreateConversation(profileA, "conversation-a", string.Empty);
-        var originalMessages = CompleteParentTurnForQueuedCommand(conversation);
+        var reviewTarget = sameReviewTarget ? new CopilotWorkspaceReviewTargetContext
+        {
+            Target = CopilotWorkspaceReviewTarget.BaseBranch, Revision = "origin/develop",
+        } : null;
+        var parentMode = sameReviewTarget ? CopilotAgentMode.Review : CopilotAgentMode.Auto;
+        var originalMessages = CompleteParentTurnForQueuedCommand(conversation, reviewTarget);
         var firstAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the first request.");
         var laterAttachment = CopilotAttachmentItem.CreateContext("Evidence captured with the later request.");
         var newerAttachment = CopilotAttachmentItem.CreateContext("Evidence attached to the newer draft.");
@@ -3012,7 +3022,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         var root = Directory.CreateTempSubdirectory("CopilotQueuedMissingProfile-").FullName;
         using var solutionManagerScope = new IsolatedSolutionManagerScope();
         var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state), config, runtime, taskHost);
-        var activeRun = taskHost.Start(conversation.Id, CopilotAgentMode.Auto, async _ =>
+        var activeRun = taskHost.Start(conversation.Id, parentMode, async _ =>
         {
             activeStarted.TrySetResult();
             await releaseActive.Task;
@@ -3035,7 +3045,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.True(viewModel.TryQueueCurrentRunFollowUp());
             laterRun = Assert.Single(taskHost.QueuedRuns, run => run.Id != firstRun.Id);
             viewModel.InputText = newerDraft;
-            conversation.Attachments.Add(newerAttachment);
+            if (!sameReviewTarget)
+                conversation.Attachments.Add(newerAttachment);
 
             var diskStore = new CopilotChatStateStore(root);
             diskStore.Save(state);
@@ -3055,6 +3066,17 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 reloadedState.QueuedFollowUpRecoveries.Select(record => record.ResumeAfterRestart));
             Assert.Equal(new[] { firstAttachment.Id, laterAttachment.Id }, reloadedState.QueuedFollowUpRecoveries
                 .Select(record => Assert.Single(record.ComposerState!.Attachments).Id));
+            if (sameReviewTarget)
+            {
+                Assert.DoesNotContain(reviewTarget!.Revision, firstPrompt, StringComparison.Ordinal);
+                Assert.DoesNotContain(reviewTarget.Revision, laterPrompt, StringComparison.Ordinal);
+                Assert.All(reloadedState.QueuedFollowUpRecoveries, record =>
+                {
+                    Assert.Equal(CopilotAgentMode.Review, record.ComposerState!.RequestMode);
+                    Assert.Equal(reviewTarget.Target, record.ComposerState.WorkspaceReviewTarget?.Target);
+                    Assert.Equal(reviewTarget.Revision, record.ComposerState.WorkspaceReviewTarget?.Revision);
+                });
+            }
             Assert.False(runtime.Entered.IsCompleted);
             taskHost.Shutdown();
             releaseActive.TrySetResult();
@@ -3079,7 +3101,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.True(restored.DraftText.IndexOf(firstPrompt, StringComparison.Ordinal)
                 < restored.DraftText.IndexOf(laterPrompt, StringComparison.Ordinal));
             Assert.Equal(restored.DraftText, restartedViewModel.InputText);
-            var expectedAttachments = new[] { newerAttachment, firstAttachment, laterAttachment };
+            var expectedAttachments = sameReviewTarget ? new[] { firstAttachment, laterAttachment }
+                : new[] { newerAttachment, firstAttachment, laterAttachment };
             Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
                 restored.Attachments.Select(item => (item.Id, item.Value)));
             Assert.Equal(originalMessages.Select(message => (message.Id, message.Content)),
@@ -3087,6 +3110,12 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.Equal(CopilotAgentStopReason.Completed, restored.Messages[1].AgentStopReason);
             Assert.False(restored.Messages[1].WasResponseInterrupted);
             Assert.False(restored.Messages[1].IsThinkingInProgress);
+            if (sameReviewTarget)
+            {
+                Assert.Equal(CopilotAgentMode.Review, restored.DraftRequestMode);
+                Assert.Equal(reviewTarget!.Target, restored.DraftWorkspaceReviewTarget?.Target);
+                Assert.Equal(reviewTarget.Revision, restored.DraftWorkspaceReviewTarget?.Revision);
+            }
 
             var recoveredDraft = restored.DraftText;
             restartedViewModel.SendCommand.Execute(null);
@@ -3097,6 +3126,12 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Assert.Equal(recoveredDraft, request.UserText);
             Assert.Equal(expectedAttachments.Select(item => (item.Id, item.Value)),
                 request.HostContext.Attachments.Select(item => (item.Id, item.Value)));
+            if (sameReviewTarget)
+            {
+                Assert.Equal(CopilotAgentMode.Review, request.Mode);
+                Assert.Equal(reviewTarget!.Target, request.WorkspaceReviewTarget?.Target);
+                Assert.Equal(reviewTarget.Revision, request.WorkspaceReviewTarget?.Revision);
+            }
             Assert.Equal(string.Empty, restartedViewModel.InputText);
             Assert.Empty(restored.Attachments);
         }

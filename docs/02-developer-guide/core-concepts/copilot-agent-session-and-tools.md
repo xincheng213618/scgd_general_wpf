@@ -29,7 +29,7 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 `CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列。steering 调整当前轮，queue 等待下一轮取得执行权，不能把两者按键固定写死。它有以下边界：
 
 - follow-up 只能绑定当前活动的 Agent conversation；Chat 模式、其他 conversation、关闭中的 Host 和满队列全部 fail closed。普通调度入口仍拒绝同一 conversation 重复入队，只有专用 follow-up 入口允许。
-- `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。
+- `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。多条 Review 请求恢复到空草稿并保留 Review 模式时，所有审查目标都有效且 `Target`、`Revision` 完全一致才保留共同目标，重新发送仍使用原分支或提交范围；冲突、缺失或混合模式不挑选某一项的目标，也不覆盖较新草稿的目标。`CopilotQueuedFollowUpReviewTargetTests` 保护目标快照及冲突边界，`CopilotChatViewModelProfileIsolationTests` 经公开排队、真实 Save／Load 与显式重发验证共同分支目标。
 - 新建的耐久恢复记录也保存版本化的活动文档、解决方案根、附加只读根和 Live Context 快照。重启恢复只在当前解决方案根仍匹配、原活动文档与附加根仍存在时复用这份提交上下文；否则把请求和附件恢复到原会话草稿，不用当前窗口上下文自动执行。旧版缺少宿主快照的记录为兼容仍按旧路径恢复；临时授权、审批决定和 checkpoint 不由这份宿主快照持久化。
 - 启动恢复中，用户排队项因不可续作、原 Profile 缺失、宿主上下文失效或重新准入失败而退回草稿时，同会话后续项也退回草稿，不能越过前项自动执行。ViewModel 在状态归一化时保留有效用户请求的结构化记录，待全部启动资格检查完成后，按捕获的队列顺序一次追加正文和附件，保留较新草稿、重复请求和混合模式标记；旧格式记录与耐久记录混合时也不因检查阶段不同而倒序。读取完整启动队列后，由 Host 执行容量准入，不能提前截取记录而遗漏待恢复的后续输入；其他会话仍按原规则恢复。独立状态恢复仍保留原有直接转回草稿的行为。`CopilotQueuedFollowUpRecoveryTests` 覆盖不可续作前项与会话隔离，`CopilotChatViewModelProfileIsolationTests` 通过公开排队、真实 Save／Load 和显式重发验证缺失 Profile、旧格式混合及较小 Host 容量的交接。
 - 排队本地命令转换成后续模型请求时同样保留入队时的模型、运行配置与宿主上下文，只更新执行时的会话历史。`/plan`、`/review`、`/verify` 不因等待期间切换文档而改变目标；`/init` 的目标说明也从提交快照生成，显式 direct prompt 仍不消费排队附件或新草稿。`/retry` 对已捕获附件快照的消息保留原附件与历史边界，不把排队命令的 Composer 附件当成原消息附件；旧消息未捕获附件快照时仍沿用回退规则，但使用入队时的附件，不读取后来修改的草稿。
