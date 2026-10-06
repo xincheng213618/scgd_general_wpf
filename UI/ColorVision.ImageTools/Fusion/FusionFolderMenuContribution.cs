@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageTools.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Solution.Explorer;
@@ -27,7 +28,7 @@ namespace ColorVision.Solution.Fusion
                 {
                     GuidId = "Fusion",
                     Order = 50,
-                    Header = "景深融合(_F)",
+                    Header = LocalizedText.Get("景深融合(_F)"),
                     Command = new RelayCommand(
                         _ => OpenFusion(folderNode.DirectoryInfo),
                         _ => folderNode.DirectoryInfo.Exists),

@@ -321,6 +321,21 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(
     float* cieData,
     std::uint64_t cieFloatCount,
     const MCalibrationExecutionOptionsV1* options);
+// Basic-only calibration followed by RAW mirroring. flipMode is 0 (vertical),
+// 1 (horizontal), or -1 (both), as in cv::flip. Color/CIE templates are rejected.
+// Final output is equivalent to M_CalibrationExecute then mirroring; eligible
+// final stages write mirrored output directly. V1 options and old exports keep
+// their original layout and behavior. Output is undefined after a failure.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteRawWithFlipV1(
+    void* context,
+    std::uint32_t width,
+    std::uint32_t height,
+    std::uint32_t bitsPerChannel,
+    std::uint32_t channels,
+    std::uint8_t* rawData,
+    std::uint64_t rawByteLength,
+    const MCalibrationExecutionOptionsV1* options,
+    std::int32_t flipMode);
 // Read-only-source variant. correctedRawData may be null when the selected
 // template contains a luminance/color transform. Source RAW, corrected RAW and
 // CIE ranges must not overlap. Output buffers are undefined after a failure,

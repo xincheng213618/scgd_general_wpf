@@ -20,12 +20,13 @@ const commits = ['2026-09-01','2026-09-07','2026-09-13','2026-09-18'].map((date,
 }));
 const weeks = ['2026-08-31','2026-09-07','2026-09-14'].map(week_start=>({week_start,code_lines:160,
   added_lines:10,deleted_lines:4,net_growth:6,commits:1,week_status:'完整周'}));
+const days = Array.from({length:18},(_,i)=>({date:`2026-09-${String(i+1).padStart(2,'0')}`,code_lines:160}));
 const fixture = process.env.CODE_HISTORY_ARTIFACT
   ? JSON.parse(fs.readFileSync(process.env.CODE_HISTORY_ARTIFACT,'utf8')).analysis
   : {worktree:{files,projects,languages:[{language:'C#',code:150},{language:'MSBuild',code:10}],
       total:{files:3,code:160,comments:15,blank:7,lines:182},project_count:2,project_definition_count:2,skipped:0,
       root:'fixture',scannedAt:'2026-09-18T12:00:00Z'},
-    history:{commits,weeks,ref:'HEAD',head:'abc12345',branch:'test',first:'2026-09-01',last:'2026-09-18',
+    history:{commits,days,weeks,ref:'HEAD',head:'abc12345',branch:'test',first:'2026-09-01',last:'2026-09-18',
       generatedAt:'2026-09-18T12:00:00Z',recent_week:{start:'2026-09-07',end:'2026-09-13',available:true,churn:28,net:12,added:20,deleted:8,commits:2,active_days:2},
       previous_week:{start:'2026-08-31',end:'2026-09-06',available:false,churn:14,net:6,added:10,deleted:4,commits:1,active_days:1}},
     summary:{latest_weekly_churn:21,latest_complete_weeks:2,commits:4}};
@@ -56,6 +57,38 @@ test('all four views render real data without exceptions or non-finite values',(
     assert.ok(html.length>500);
     assert.doesNotMatch(html,/NaN|Infinity|undefined/);
   }
+});
+test('scale uses daily snapshots through the endpoint while comparisons and export stay weekly',()=>{
+  const a=app(),html=a.run('overview()');
+  const scale=html.slice(html.indexOf('代码规模的演进'),html.indexOf('最近一周，变化有多大？'));
+  assert.match(scale,/Git 精确日快照/);
+  assert.ok(scale.includes(fixture.history.last));
+  assert.equal((scale.match(/<circle /g)||[]).length,fixture.history.days.length);
+  assert.ok(html.includes(`${fixture.history.recent_week.start} — ${fixture.history.recent_week.end}`));
+  assert.equal(a.run('exported===H.weeks'),true);
+});
+test('scale zoom and date windows stay within history and leave other statistics unchanged',()=>{
+  const a=app(),activity=a.run('JSON.stringify([S.start,S.end,S.grain,H.recent_week,H.previous_week])');
+  const click=dataset=>a.events.click({target:{closest:()=>({dataset,disabled:false})}});
+  click({scaleRange:'30'});
+  assert.equal(a.run('scaleRows().length'),Math.min(30,fixture.history.days.length));
+  click({scaleZoom:'0.5'});
+  const days=a.run('dayCount(S.scaleStart,S.scaleEnd)');
+  click({scaleMove:'-1'});
+  assert.equal(a.run('dayCount(S.scaleStart,S.scaleEnd)'),days);
+  click({scaleMove:'1'});
+  assert.equal(a.run('S.scaleEnd===H.last'),true);
+  a.run('while(dayCount(S.scaleStart,S.scaleEnd)>1)zoomScale(0.5)');
+  assert.equal(a.run('scaleRows().length'),1);
+  assert.doesNotMatch(a.run('overview()'),/NaN|Infinity|undefined/);
+  a.run('while(dayCount(S.scaleStart,S.scaleEnd)<dayCount(H.first,H.last))zoomScale(2)');
+  assert.equal(a.run('S.scaleStart===H.first&&S.scaleEnd===H.last'),true);
+  a.events.change({target:{id:'scale-start',value:fixture.history.last}});
+  assert.equal(a.run('scaleRows().length'),1);
+  a.events.change({target:{id:'scale-end',value:fixture.history.first}});
+  assert.equal(a.run('S.scaleStart===H.first&&S.scaleEnd===H.first'),true);
+  assert.equal(a.run('JSON.stringify([S.start,S.end,S.grain,H.recent_week,H.previous_week])'),activity);
+  assert.equal(a.run('exported===H.weeks'),true);
 });
 test('each project and its subdirectories can be opened, and file totals reconcile',()=>{
   const a=app();

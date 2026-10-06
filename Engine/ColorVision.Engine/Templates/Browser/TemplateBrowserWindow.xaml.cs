@@ -1,4 +1,4 @@
-using ColorVision.Engine.Templates.Flow;
+﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using EngineResources = ColorVision.Engine.Properties.Resources;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -58,13 +59,13 @@ public partial class TemplateBrowserWindow : Window
         items = new ListCollectionView(browserItems);
         InitializeComponent();
         this.ApplyCaption();
-        HeadingText.Text = $"{options.Label}模板";
-        NewLabel.Text = $"新建{options.Label}";
+        HeadingText.Text = string.Format(EngineResources.TemplateBrowserHeading, options.Label);
+        NewLabel.Text = string.Format(EngineResources.TemplateBrowserNew, options.Label);
         NewButton.ToolTip = NewLabel.Text;
         System.Windows.Automation.AutomationProperties.SetName(NewButton, NewLabel.Text);
-        SearchPlaceholder.Text = $"搜索{options.Label}名称";
+        SearchPlaceholder.Text = string.Format(EngineResources.TemplateBrowserSearch, options.Label);
         System.Windows.Automation.AutomationProperties.SetName(SearchBox, SearchPlaceholder.Text);
-        TileModeButton.ToolTip = options.HasCovers ? "封面平铺" : "图标平铺";
+        TileModeButton.ToolTip = options.HasCovers ? EngineResources.TemplateBrowserCoverTiles : EngineResources.TemplateBrowserIconTiles;
         Title = template.Title;
         listView = TemplateList.View;
         listPanel = TemplateList.ItemsPanel;
@@ -75,11 +76,11 @@ public partial class TemplateBrowserWindow : Window
         foreach (var item in browserItems) item.PropertyChanged += Item_PropertyChanged;
         UpdateEmptyState();
         UpdateStatus();
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (_, _) => TryAction(Create, "新建失败")));
-        CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => TryAction(Delete, "删除失败"), (_, e) => e.CanExecute = Selected != null));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (_, _) => TryAction(Create, EngineResources.TemplateBrowserCreateFailed)));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => TryAction(Delete, EngineResources.TemplateBrowserDeleteFailed), (_, e) => e.CanExecute = Selected != null));
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (_, _) =>
         {
-            TryAction(SaveRenames, "保存失败");
+            TryAction(SaveRenames, EngineResources.TemplateBrowserSaveFailed);
             UpdateStatus();
         }, (_, e) => e.CanExecute = renamed.Count > 0));
         CommandBindings.Add(new CommandBinding(Commands.ReName, (_, _) => BeginRename(), (_, e) => e.CanExecute = Selected != null));
@@ -92,7 +93,7 @@ public partial class TemplateBrowserWindow : Window
         TemplateList.SelectionChanged += (_, _) => UpdateStatus();
         TemplateList.SizeChanged += (_, _) =>
         {
-            if (!IsTileMode && listView is GridView grid) grid.Columns[2].Width = Math.Max(150, TemplateList.ActualWidth - 126);
+            if (!IsTileMode && listView is GridView grid) grid.Columns[2].Width = Math.Max(150, TemplateList.ActualWidth - 138);
             UpdateTileSize();
             QueueCoverRefresh();
         };
@@ -142,12 +143,12 @@ public partial class TemplateBrowserWindow : Window
         }
         if (!renamed.Any(SourceItems.Contains)) return;
         Keyboard.ClearFocus();
-        var result = MessageBox.Show(this, "是否保存名称修改？", Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var result = MessageBox.Show(this, EngineResources.TemplateBrowserSavePrompt, Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         if (result == MessageBoxResult.Cancel) e.Cancel = true;
         else if (result == MessageBoxResult.Yes)
         {
             try { SaveRenames(); }
-            catch (Exception ex) { e.Cancel = true; log.Warn("Saving template names failed.", ex); MessageBox.Show(this, ex.Message, "保存失败", MessageBoxButton.OK, MessageBoxImage.Warning); }
+            catch (Exception ex) { e.Cancel = true; log.Warn("Saving template names failed.", ex); MessageBox.Show(this, ex.Message, EngineResources.TemplateBrowserSaveFailed, MessageBoxButton.OK, MessageBoxImage.Warning); }
         }
     }
 
@@ -181,10 +182,10 @@ public partial class TemplateBrowserWindow : Window
     private void UpdateStatus()
     {
         if (CountText == null) return;
-        CountText.Text = items.Count == browserItems.Count ? $"{browserItems.Count} 个{options.Label}模板" : $"{items.Count} / {browserItems.Count} 个{options.Label}模板";
+        CountText.Text = items.Count == browserItems.Count ? string.Format(EngineResources.TemplateBrowserCount, browserItems.Count, options.Label) : string.Format(EngineResources.TemplateBrowserFilteredCount, items.Count, browserItems.Count, options.Label);
         int marked = browserItems.Count(item => item.IsSelected);
-        SelectionText.Text = marked > 0 ? $"已勾选 {marked} 项" : Selected == null ? "未选择模板" : "已选择 1 项";
-        DeleteButton.Content = marked > 0 ? $"删除 ({marked})" : "删除";
+        SelectionText.Text = marked > 0 ? string.Format(EngineResources.TemplateBrowserCheckedCount, marked) : Selected == null ? EngineResources.TemplateBrowserNoSelection : EngineResources.TemplateBrowserOneSelected;
+        DeleteButton.Content = marked > 0 ? string.Format(EngineResources.TemplateBrowserDeleteCount, marked) : EngineResources.Delete;
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -239,7 +240,7 @@ public partial class TemplateBrowserWindow : Window
         Keyboard.ClearFocus();
         if (renamed.Any(SourceItems.Contains))
         {
-            var result = MessageBox.Show(this, "是否保存重命名后打开旧版管理？选择“否”将放弃未保存的重命名。", Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            var result = MessageBox.Show(this, EngineResources.TemplateBrowserLegacyPrompt, Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (result == MessageBoxResult.Cancel) return;
             if (result == MessageBoxResult.Yes) SaveRenames();
         }
@@ -253,7 +254,7 @@ public partial class TemplateBrowserWindow : Window
         TemplateList.SelectedItem = selected != null && items.Contains(selected) ? selected : items.Cast<object>().FirstOrDefault();
         Title = template.Title;
         QueueCoverRefresh();
-    }, "打开旧版管理失败");
+    }, EngineResources.TemplateBrowserLegacyFailed);
 
     internal void RegisterCover(FlowTemplateCover cover) { covers.Add(cover); QueueCoverRefresh(); }
     internal void UnregisterCover(FlowTemplateCover cover) { covers.Remove(cover); cover.Cancel(); }
@@ -281,7 +282,7 @@ public partial class TemplateBrowserWindow : Window
     private void UpdateEmptyState()
     {
         EmptyText.Visibility = items.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
-        EmptyText.Text = string.IsNullOrWhiteSpace(SearchBox.Text) ? $"暂无{options.Label}模板" : "没有找到匹配的模板";
+        EmptyText.Text = string.IsNullOrWhiteSpace(SearchBox.Text) ? string.Format(EngineResources.TemplateBrowserEmpty, options.Label) : EngineResources.TemplateBrowserNoMatches;
     }
 
     private void Search_TextChanged(object sender, TextChangedEventArgs e)
@@ -298,7 +299,7 @@ public partial class TemplateBrowserWindow : Window
     internal void OpenSelected()
     {
         int index = SourceIndex;
-        if (index >= 0) TryAction(() => template.PreviewMouseDoubleClick(index), "打开失败");
+        if (index >= 0) TryAction(() => template.PreviewMouseDoubleClick(index), EngineResources.TemplateBrowserOpenFailed);
     }
 
     private void Open_Click(object sender, RoutedEventArgs e) => OpenSelected();
@@ -314,7 +315,7 @@ public partial class TemplateBrowserWindow : Window
         if (sender is ContextMenu { PlacementTarget: FrameworkElement { DataContext: TemplateBase item } }) TemplateList.SelectedItem = item;
     }
 
-    private void BeginRename() { if (Selected is { } item) { renamed.Add(item); item.IsEditMode = true; StatusText.Text = "名称有修改，点击保存应用"; UpdateStatus(); } }
+    private void BeginRename() { if (Selected is { } item) { renamed.Add(item); item.IsEditMode = true; StatusText.Text = EngineResources.TemplateBrowserUnsavedNames; UpdateStatus(); } }
     private void RenameBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (sender is TextBox { IsVisible: true } box) { box.Focus(); box.SelectAll(); }
@@ -334,7 +335,7 @@ public partial class TemplateBrowserWindow : Window
             template.ImportName = template.NewCreateFileName($"{template.GetTemplateName(index)}_Copy");
             template.OpenCreate();
         });
-    }, "复制失败");
+    }, EngineResources.TemplateBrowserCopyFailed);
 
     private void CreateFrom(Action action)
     {
@@ -355,7 +356,7 @@ public partial class TemplateBrowserWindow : Window
         if (targets.Length == 0) targets = [Selected!];
         string names = string.Join("\n", targets.Take(8).Select(item => item.Key));
         if (targets.Length > 8) names += "\n…";
-        if (MessageBox.Show(this, $"删除以下 {targets.Length} 个{options.Label}模板？\n\n{names}", Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(this, string.Format(EngineResources.TemplateBrowserDeletePrompt, targets.Length, options.Label, names), Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
         DeleteItems(targets);
         renamed.RemoveWhere(item => !SourceItems.Contains(item));
         TemplateList.SelectedItem = items.Cast<object>().FirstOrDefault();
@@ -376,22 +377,22 @@ public partial class TemplateBrowserWindow : Window
         Keyboard.ClearFocus();
         foreach (var item in renamed.Where(SourceItems.Contains)) { item.IsEditMode = false; options.SaveName(item); }
         renamed.Clear();
-        StatusText.Text = "名称已保存";
+        StatusText.Text = EngineResources.TemplateBrowserNamesSaved;
         UpdateStatus();
     }
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
     private void ClearSearch_Click(object sender, RoutedEventArgs e) { SearchBox.Clear(); SearchBox.Focus(); }
-    private void Export_Click(object sender, RoutedEventArgs e) { if (SourceIndex >= 0) TryAction(() => template.Export(SourceIndex), "导出失败"); }
+    private void Export_Click(object sender, RoutedEventArgs e) { if (SourceIndex >= 0) TryAction(() => template.Export(SourceIndex), EngineResources.TemplateBrowserExportFailed); }
     private void Import_Click(object sender, RoutedEventArgs e) => TryAction(() => CreateFrom(() =>
     {
         template.ClearCreateTemplateSource();
         if (template.Import()) new TemplateCreate(template, true) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-    }), "导入失败");
+    }), EngineResources.TemplateBrowserImportFailed);
 
     private void TryAction(Action action, string message)
     {
         try { action(); }
-        catch (Exception ex) { log.Warn(message, ex); MessageBox.Show(this, $"{message}：{ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception ex) { log.Warn(message, ex); MessageBox.Show(this, string.Format(EngineResources.TemplateBrowserActionError, message, ex.Message), Title, MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
     private void TemplateList_MouseDown(object sender, MouseButtonEventArgs e)
@@ -455,13 +456,13 @@ public partial class TemplateBrowserWindow : Window
     private async Task SaveDatabaseOrderAsync(TemplateBase selected, int from, int to)
     {
         IsEnabled = false;
-        StatusText.Text = "正在保存排序…";
+        StatusText.Text = EngineResources.TemplateBrowserSavingOrder;
         try
         {
             bool saved = await template.SwapTemplateOrderAsync(from, to);
             if (isClosed) return;
             TemplateList.SelectedItem = selected;
-            StatusText.Text = saved ? "排序已保存，其他模板列表已同步" : "排序保存失败，请重新打开管理窗口核对后重试";
+            StatusText.Text = saved ? EngineResources.TemplateBrowserOrderSaved : EngineResources.TemplateBrowserOrderFailed;
             UpdateStatus();
         }
         finally { IsEnabled = true; }

@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+using log4net;
 using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
@@ -72,9 +73,9 @@ namespace ProjectARVRPro
         {
             if (!_controller.IsConnected)
             {
-                TogglePortButton.Content = "连接";
+                TogglePortButton.Content = LocalizedText.Get("连接");
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
-                ConnectionStatusText.Text = "● 未连接";
+                ConnectionStatusText.Text = LocalizedText.Get("● 未连接");
                 ConnectionStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 SetControlButtonsEnabled(false);
                 return;
@@ -89,9 +90,9 @@ namespace ProjectARVRPro
 
             TimeoutTextBox.Text = timeout.ToString();
 
-            TogglePortButton.Content = "断开";
+            TogglePortButton.Content = LocalizedText.Get("断开");
             TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36));
-            ConnectionStatusText.Text = $"● 已连接 {portName}";
+            ConnectionStatusText.Text = LocalizedText.Format($"● 已连接 {portName}");
             ConnectionStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
             ComPortComboBox.IsEnabled = false;
             BaudRateComboBox.IsEnabled = false;
@@ -115,7 +116,7 @@ namespace ProjectARVRPro
                 int level = i - 0x20;
                 BrightnessComboBox.Items.Add(new ComboBoxItem
                 {
-                    Content = $"档位 {level} (0x{i:X2})",
+                    Content = LocalizedText.Format($"档位 {level} (0x{i:X2})"),
                     Tag = i
                 });
             }
@@ -178,9 +179,9 @@ namespace ProjectARVRPro
 
                 _controller.Open(portName, baudRate, timeout);
 
-                TogglePortButton.Content = "断开";
+                TogglePortButton.Content = LocalizedText.Get("断开");
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36));
-                ConnectionStatusText.Text = $"● 已连接 {portName}";
+                ConnectionStatusText.Text = LocalizedText.Format($"● 已连接 {portName}");
                 ConnectionStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
                 ComPortComboBox.IsEnabled = false;
                 BaudRateComboBox.IsEnabled = false;
@@ -210,15 +211,15 @@ namespace ProjectARVRPro
             {
                 _controller.Close();
 
-                TogglePortButton.Content = "连接";
+                TogglePortButton.Content = LocalizedText.Get("连接");
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
-                ConnectionStatusText.Text = "● 未连接";
+                ConnectionStatusText.Text = LocalizedText.Get("● 未连接");
                 ConnectionStatusText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
                 ComPortComboBox.IsEnabled = true;
                 BaudRateComboBox.IsEnabled = true;
                 SetControlButtonsEnabled(false);
 
-                CurrentBrightnessText.Text = "未知";
+                CurrentBrightnessText.Text = LocalizedText.Get("未知");
 
                 UpdateStatus("已断开");
                 SaveThunderbirdConfig();
@@ -397,7 +398,7 @@ namespace ProjectARVRPro
                 return;
 
             int level = (int)BrightnessSlider.Value;
-            SliderValueText.Text = $"档位 {level} (0x{0x20 + level:X2})";
+            SliderValueText.Text = LocalizedText.Format($"档位 {level} (0x{0x20 + level:X2})");
 
             if (level >= 0 && level < BrightnessComboBox.Items.Count)
                 BrightnessComboBox.SelectedIndex = level;
@@ -441,11 +442,11 @@ namespace ProjectARVRPro
         /// </summary>
         private void UpdateBrightnessDisplay(int level, int registerValue)
         {
-            CurrentBrightnessText.Text = $"档位 {level} (0x{registerValue:X2})";
+            CurrentBrightnessText.Text = LocalizedText.Format($"档位 {level} (0x{registerValue:X2})");
 
             _suppressSliderEvent = true;
             BrightnessSlider.Value = level;
-            SliderValueText.Text = $"档位 {level} (0x{registerValue:X2})";
+            SliderValueText.Text = LocalizedText.Format($"档位 {level} (0x{registerValue:X2})");
             _suppressSliderEvent = false;
 
             if (level >= 0 && level < BrightnessComboBox.Items.Count)

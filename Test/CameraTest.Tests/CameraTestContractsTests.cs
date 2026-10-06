@@ -11,6 +11,16 @@ namespace CameraTest.Tests;
 public sealed class CameraTestContractsTests
 {
     [Fact]
+    public void OldCameraProfilesIgnoreConfigurationFileAndSaveWithoutIt()
+    {
+        var profile = JsonSerializer.Deserialize<TestProfile>("{\"SchemaVersion\":1,\"Camera\":{\"CameraId\":\"camera-test\",\"ConfigurationFile\":\"missing/sys.cfg\"}}", ProfileStore.JsonOptions)!;
+        profile.Validate();
+        Assert.Equal("camera-test", profile.Camera.CameraId);
+        using var saved = JsonDocument.Parse(JsonSerializer.Serialize(profile, ProfileStore.JsonOptions));
+        Assert.False(saved.RootElement.GetProperty("Camera").TryGetProperty("ConfigurationFile", out _));
+    }
+
+    [Fact]
     public void OldProfilesDefaultToReadableMtfLabelsAndVideoSettingsRoundTrip()
     {
         var old = JsonSerializer.Deserialize<TestProfile>("{\"SchemaVersion\":1}", ProfileStore.JsonOptions)!;

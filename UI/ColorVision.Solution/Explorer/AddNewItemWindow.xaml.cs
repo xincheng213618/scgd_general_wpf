@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -76,7 +77,7 @@ namespace ColorVision.Solution.Explorer
                     out string errorMessage))
                 {
                     FileNameTextBox.Clear();
-                    MessageBox.Show(this, errorMessage, "读取模板失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, errorMessage, LocalizedText.Get("读取模板失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 FileNameTextBox.Text = fileName;
@@ -110,14 +111,14 @@ namespace ColorVision.Solution.Explorer
         {
             if (TemplateListView.SelectedItem is not INewItemTemplate template)
             {
-                MessageBox.Show(this, "请选择一个模板", "添加新建项", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请选择一个模板"), LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string fileName = FileNameTextBox.Text?.Trim() ?? "";
             if (string.IsNullOrEmpty(fileName))
             {
-                MessageBox.Show(this, "请输入文件名", "添加新建项", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请输入文件名"), LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -125,20 +126,20 @@ namespace ColorVision.Solution.Explorer
             char[] invalidChars = Path.GetInvalidFileNameChars();
             if (fileName.IndexOfAny(invalidChars) >= 0)
             {
-                MessageBox.Show(this, "文件名包含无效字符", "添加新建项", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("文件名包含无效字符"), LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string fullPath = Path.Combine(_targetDirectory, fileName);
             if (Directory.Exists(fullPath))
             {
-                MessageBox.Show(this, $"同名文件夹 \"{fileName}\" 已存在", "添加新建项", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Format($"同名文件夹 \"{fileName}\" 已存在"), LocalizedText.Get("添加新建项"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             OverwriteExisting = false;
             if (File.Exists(fullPath))
             {
-                var result = MessageBox.Show(this, $"文件 \"{fileName}\" 已存在，是否覆盖？", "添加新建项",
+                var result = MessageBox.Show(this, LocalizedText.Format($"文件 \"{fileName}\" 已存在，是否覆盖？"), LocalizedText.Get("添加新建项"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result != MessageBoxResult.Yes)
                     return;

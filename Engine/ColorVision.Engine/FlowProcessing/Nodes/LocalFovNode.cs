@@ -324,7 +324,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "FOV计算")]
+    [STNode("Flow_CustomNodes", "FOV计算", CategoryOrder = 9900)]
     public sealed class LocalFovNode : LocalFlowNodeBase
     {
         internal const int CalculationFailureResultCode = -1;

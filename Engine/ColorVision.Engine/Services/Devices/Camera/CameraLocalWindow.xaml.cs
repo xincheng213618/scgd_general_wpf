@@ -63,7 +63,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         CameraModel m_eCameraMdl = CameraModel.QHY_USB;
         CameraMode m_eCameraMode = CameraMode.CV_MODE;
 
-        public string strPathSysCfg = "cfg\\sys.cfg";
 
         public DeviceCamera Device { get; set; }
 
@@ -76,6 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = Device;
+            Closed += (_, _) => Dispose();
             Device.CameraBackend.Changed += Backend_Changed;
             if (_sourceNode != null)
             {
@@ -251,26 +251,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string ResolvePreferredCameraId(IReadOnlyList<string> cameraIds)
         {
-            if (!string.IsNullOrWhiteSpace(Device.Config.CameraID)
-                && cameraIds.Contains(Device.Config.CameraID, StringComparer.OrdinalIgnoreCase))
-            {
-                return Device.Config.CameraID;
-            }
-
-            string cameraCode = Device.Config.CameraCode ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(cameraCode))
-            {
-                foreach (string cameraId in cameraIds)
-                {
-                    string md5 = ColorVision.Common.Utilities.Tool.GetMD5(cameraId);
-                    if (md5.Contains(cameraCode, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return cameraId;
-                    }
-                }
-            }
-
-            return cameraIds.FirstOrDefault() ?? string.Empty;
+            return LocalCameraSession.SelectCameraId(cameraIds, Device.Config.CameraID, Device.Config.CameraCode);
         }
 
         private void InitializeCameraIdFromConfig()
@@ -287,6 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 cb_CM_ID.Items.Clear();
+                cb_CM_ID.Text = string.Empty;
                 foreach (string cameraId in cameraIds)
                 {
                     cb_CM_ID.Items.Add(cameraId);
@@ -413,7 +395,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             SaveLocalPreferences();
             SaveDisplayConfig();
-            Dispose();
         }
 
         cvCameraCSLib.QHYCCDProcCallBack callback;
@@ -800,12 +781,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 string cameraId = GetSelectedCameraId();
-                if (string.IsNullOrEmpty(cameraId))
-                {
-                    MessageBox.Show(Properties.Resources.NoCameraId);
-                    return;
-                }
-
                 if (Device.LocalCameraSession.IsOpen)
                 {
                     AttachLiveCallback();
@@ -823,6 +798,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     return;
                 }
 
+                cameraId = Device.Config.CameraID;
+                InitializeCameraIdFromConfig();
                 if (m_etakeImageMode != TakeImageMode.Live)
                 {
                     string sn = cvCameraCSLib.CM_GetSN(m_hCamHandle);
@@ -976,30 +953,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
-        private bool HasNativeCieResult(uint width, uint height, uint channels)
-        {
-            int centerX = checked((int)(width / 2));
-            int centerY = checked((int)(height / 2));
-            if (channels == 1)
-            {
-                float luminance = 0;
-                return cvCameraCSLib.CM_GetYCircle(m_hCamHandle, centerX, centerY, ref luminance, 1) != 0;
-            }
-
-            float xValue = 0, yValue = 0, zValue = 0;
-            return cvCameraCSLib.CM_GetXYZCircle(m_hCamHandle, centerX, centerY, ref xValue, ref yValue, ref zValue, 1) != 0;
-        }
-
-        private static void ShowMissingCieResultMessage()
-        {
-            log.Error("The native camera capture completed without producing a valid CIE buffer.");
-            MessageBox1.Show(Application.Current.GetActiveWindow(),
-                Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_GetFrame returned no CIE buffer", StringComparison.Ordinal), "ColorVision");
-        }
-
         private void ShowImageInView(WriteableBitmap writeableBitmap)
         {
-            ImageView.EditorContext.IImageOpen = null;
+            ImageView.ReleaseImageContent();
             ImageView.IEditorToolFactory.ApplyImageOpenTools(null);
             ImageView.SetLayerController(null);
             ImageView.Config.ClearProperties();
@@ -1213,6 +1169,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
             Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;
             _localRealtimePipeline.Dispose();
+            ImageView.Dispose();
+            rawArray = null;
+            srcrawArray = null;
             GC.SuppressFinalize(this);
         }
     }

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Themes;
 using System;
 using System.Diagnostics;
@@ -41,7 +42,7 @@ namespace ColorVision.Database
             }
 
             _isRunning = false;
-            StatusTextBlock.Text = success ? "恢复完成" : "恢复失败";
+            StatusTextBlock.Text = success ? LocalizedText.Get("恢复完成") : LocalizedText.Get("恢复失败");
             if (success)
                 RestoreProgressBar.Value = 100;
             DetailTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
@@ -78,7 +79,7 @@ namespace ColorVision.Database
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"ColorVision 重启失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Format($"ColorVision 重启失败：{ex.Message}"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

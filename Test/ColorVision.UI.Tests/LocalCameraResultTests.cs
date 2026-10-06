@@ -35,21 +35,20 @@ public class LocalCameraResultTests
         Assert.Null(serialized.Property("IsCVCIEFileSave"));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SavingCanKeepRawFileAndInMemoryCieWithoutWritingCieFile(bool includeCie)
+    [Fact]
+    public void SavingKeepsRawFileAndInMemoryCieWithoutWritingCieFile()
     {
         string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ColorVisionCameraTests", Guid.NewGuid().ToString("N")));
         try
         {
             using var frame = CreateFrame(true);
-            LocalFrameFileService.SaveCapture(frame, root, "camera", includeCie: includeCie);
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             Assert.True(File.Exists(frame.CvRawFilePath));
-            Assert.Equal(includeCie, File.Exists(frame.CvCieFilePath));
+            Assert.Empty(frame.CvCieFilePath);
+            Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
             Assert.True(frame.HasCie);
             var model = LocalCameraResultService.CreateModel(1, -1, frame, new LocalCameraCaptureResult { Frame = frame }, null, null, false);
-            Assert.Equal(includeCie ? frame.CvCieFilePath : frame.CvRawFilePath, model.FileUrl);
+            Assert.Equal(frame.CvRawFilePath, model.FileUrl);
         }
         finally
         {
@@ -82,7 +81,7 @@ public class LocalCameraResultTests
             using (var lease = frame.Acquire())
                 Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length);
 
-            LocalFrameFileService.SaveCapture(frame, root, "camera", includeCie: false);
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(root, "camera"));
             using var legacy = new CVCIEFile
             {
                 Version = 1,

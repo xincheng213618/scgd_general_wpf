@@ -116,4 +116,302 @@
   </resheader>
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </resheader>  </root>
+  </resheader>    <data name="上一页" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="上移" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="下一页" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="下移" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="全部" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="关闭" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="删除组" xml:space="preserve">
+    <value>Delete group</value>
+  </data>
+  <data name="删除选中" xml:space="preserve">
+    <value>Delete Selected</value>
+  </data>
+  <data name="名称" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="名称:" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="处理类" xml:space="preserve">
+    <value>Process Class</value>
+  </data>
+  <data name="处理类:" xml:space="preserve">
+    <value>Processor:</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="导出CSV" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="数量" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="时间" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="更新" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="更新时间" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="查询" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="次数" xml:space="preserve">
+    <value>Iterations</value>
+  </data>
+  <data name="流程模板" xml:space="preserve">
+    <value>Flow Template</value>
+  </data>
+  <data name="流程模板:" xml:space="preserve">
+    <value>Flow Template:</value>
+  </data>
+  <data name="测试" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="添加" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="添加组" xml:space="preserve">
+    <value>Add group</value>
+  </data>
+  <data name="结果" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="通用查询" xml:space="preserve">
+    <value>Generic Query</value>
+  </data>
+  <data name="重命名" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="(双击重命名)" xml:space="preserve">
+    <value>(Double-click to rename)</value>
+  </data>
+  <data name="ARVR检测 LUX" xml:space="preserve">
+    <value>ARVR Inspection LUX</value>
+  </data>
+  <data name="CT 趋势" xml:space="preserve">
+    <value>CT Trend</value>
+  </data>
+  <data name="Fix 配置" xml:space="preserve">
+    <value>Fix Configuration</value>
+  </data>
+  <data name="LUX 结果统计" xml:space="preserve">
+    <value>LUX Result Statistics</value>
+  </data>
+  <data name="ObjectiveTestResult 记录" xml:space="preserve">
+    <value>ObjectiveTestResult Records</value>
+  </data>
+  <data name="Process 配置" xml:space="preserve">
+    <value>Process Configuration</value>
+  </data>
+  <data name="Recipe 配置" xml:space="preserve">
+    <value>Recipe Configuration</value>
+  </data>
+  <data name="全部结果" xml:space="preserve">
+    <value>All Results</value>
+  </data>
+  <data name="创建/更新 ProcessMeta" xml:space="preserve">
+    <value>Create / Update ProcessMeta</value>
+  </data>
+  <data name="周" xml:space="preserve">
+    <value>Week</value>
+  </data>
+  <data name="在独立窗口编辑Fix配置" xml:space="preserve">
+    <value>Edit Fix configuration in a separate window</value>
+  </data>
+  <data name="在独立窗口编辑Process配置" xml:space="preserve">
+    <value>Edit Process configuration in a separate window</value>
+  </data>
+  <data name="在独立窗口编辑Recipe配置" xml:space="preserve">
+    <value>Edit Recipe configuration in a separate window</value>
+  </data>
+  <data name="复制组" xml:space="preserve">
+    <value>Copy Group</value>
+  </data>
+  <data name="导出结果" xml:space="preserve">
+    <value>Export Results</value>
+  </data>
+  <data name="平均 CT" xml:space="preserve">
+    <value>Average CT</value>
+  </data>
+  <data name="平均 CT (ms)" xml:space="preserve">
+    <value>Average CT (ms)</value>
+  </data>
+  <data name="当前组:" xml:space="preserve">
+    <value>Current group:</value>
+  </data>
+  <data name="按现有聚合结果记录统计；CT 为首次保存至最后更新的间隔，运行中的记录也会计入。" xml:space="preserve">
+    <value>Statistics use existing aggregate records. CT is the interval from first save to last update; running records are included.</value>
+  </data>
+  <data name="数据库维护" xml:space="preserve">
+    <value>Database Maintenance</value>
+  </data>
+  <data name="日" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="更新选中项" xml:space="preserve">
+    <value>Update Selected</value>
+  </data>
+  <data name="最后流程" xml:space="preserve">
+    <value>Last Flow</value>
+  </data>
+  <data name="月" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="查看Json" xml:space="preserve">
+    <value>View JSON</value>
+  </data>
+  <data name="查看测试结果" xml:space="preserve">
+    <value>View Test Results</value>
+  </data>
+  <data name="查看测试项" xml:space="preserve">
+    <value>View Test Items</value>
+  </data>
+  <data name="流程处理配置" xml:space="preserve">
+    <value>Flow Processing Configuration</value>
+  </data>
+  <data name="流程组管理" xml:space="preserve">
+    <value>Flow Group Management</value>
+  </data>
+  <data name="结果统计" xml:space="preserve">
+    <value>Result Statistics</value>
+  </data>
+  <data name="结果记录" xml:space="preserve">
+    <value>Result Records</value>
+  </data>
+  <data name="记录数" xml:space="preserve">
+    <value>Record Count</value>
+  </data>
+  <data name="请选择一个处理项" xml:space="preserve">
+    <value>Select a processing item</value>
+  </data>
+  <data name="通过率" xml:space="preserve">
+    <value>Pass Rate</value>
+  </data>
+  <data name="ObjectiveTestResult 为空，无法导出" xml:space="preserve">
+    <value>ObjectiveTestResult is empty; cannot export</value>
+  </data>
+  <data name="ViewResultJson为空" xml:space="preserve">
+    <value>ViewResultJson is empty</value>
+  </data>
+  <data name="{0} / {1} 页 · 共 {2:N0} 条" xml:space="preserve">
+    <value>Page {0} / {1} · {2:N0} Records</value>
+  </data>
+  <data name="{0} · 最短 CT {1} · 最长 CT {2}" xml:space="preserve">
+    <value>{0} · Minimum CT {1} · Maximum CT {2}</value>
+  </data>
+  <data name="历史结果图像像素宽度" xml:space="preserve">
+    <value>Historical Result Image Pixel Width</value>
+  </data>
+  <data name="历史结果图像像素高度" xml:space="preserve">
+    <value>Historical Result Image Pixel Height</value>
+  </data>
+  <data name="历史结果坐标空间宽度" xml:space="preserve">
+    <value>Historical Result Coordinate Width</value>
+  </data>
+  <data name="历史结果坐标空间高度" xml:space="preserve">
+    <value>Historical Result Coordinate Height</value>
+  </data>
+  <data name="名称重复" xml:space="preserve">
+    <value>Duplicate Names</value>
+  </data>
+  <data name="复制" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="导出 ObjectiveTestResult" xml:space="preserve">
+    <value>Export ObjectiveTestResult</value>
+  </data>
+  <data name="导出CSV失败: {0}" xml:space="preserve">
+    <value>Failed to export CSV: {0}</value>
+  </data>
+  <data name="导出失败：" xml:space="preserve">
+    <value>Export failed:</value>
+  </data>
+  <data name="导出完成：" xml:space="preserve">
+    <value>Export complete:</value>
+  </data>
+  <data name="当前组: {0}" xml:space="preserve">
+    <value>Current group: {0}</value>
+  </data>
+  <data name="当前组: 未设置" xml:space="preserve">
+    <value>Current group: Not Set</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="找不到批次号，请检查流程配置" xml:space="preserve">
+    <value>Batch number not found; check the flow configuration</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>Hint</value>
+  </data>
+  <data name="数据已成功导出到:&#10;{0}" xml:space="preserve">
+    <value>Data exported successfully to:
+{0}</value>
+  </data>
+  <data name="是否删除 {0} 测试结果？" xml:space="preserve">
+    <value>Delete test results for {0}?</value>
+  </data>
+  <data name="正在读取统计..." xml:space="preserve">
+    <value>Reading statistics...</value>
+  </data>
+  <data name="没有可导出的数据" xml:space="preserve">
+    <value>No data to export</value>
+  </data>
+  <data name="流程结果查询" xml:space="preserve">
+    <value>Flow Result Query</value>
+  </data>
+  <data name="确定要删除组 &quot;{0}&quot; 吗？" xml:space="preserve">
+    <value>Delete group "{0}"?</value>
+  </data>
+  <data name="组名重复" xml:space="preserve">
+    <value>Duplicate Group Name</value>
+  </data>
+  <data name="至少保留一个组" xml:space="preserve">
+    <value>At least one group must remain</value>
+  </data>
+  <data name="该记录没有可查看的测试结果。" xml:space="preserve">
+    <value>No test results are available for this record.</value>
+  </data>
+  <data name="请先选择一条记录" xml:space="preserve">
+    <value>Select a record first</value>
+  </data>
+  <data name="读取结果失败：{0}" xml:space="preserve">
+    <value>Failed to read results: {0}</value>
+  </data>
+  <data name="读取统计失败：{0}" xml:space="preserve">
+    <value>Failed to read statistics: {0}</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>Error</value>
+  </data>
+</root>

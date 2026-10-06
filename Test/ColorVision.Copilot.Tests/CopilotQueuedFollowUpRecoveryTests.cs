@@ -67,27 +67,70 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
     }
 
     [Fact]
-    public void StartupRestoresAQueueItemWithAnInvalidHostContextToItsDraft()
+    public void OversizedRecoveryRecordCannotBecomeAValidQueuedPrefix()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
-        var durable = CreateRecovery("queued-run-1", conversation.Id, "resume in the captured workspace");
-        durable.ProfileId = "profile";
-        durable.ResumeAfterRestart = true;
-        durable.HostContext = new CopilotQueuedFollowUpHostContext
-        {
-            SolutionDirectoryPath = "relative-workspace",
-        };
+        var prompt = new string('x', CopilotQueuedFollowUpRecoveryRecord.MaximumPromptCharacters + 1);
+        var recovery = CreateRecovery("oversized-run", conversation.Id, prompt);
+        recovery.ProfileId = "profile";
+        recovery.ResumeAfterRestart = true;
         var state = new CopilotChatState
         {
             Conversations = [conversation],
-            QueuedFollowUpRecoveries = [durable],
+            QueuedFollowUpRecoveries = [recovery],
+        };
+
+        Assert.False(recovery.TryGetNormalized(out _, out _, out _));
+        Assert.Equal(prompt, recovery.ComposerState!.Text);
+        Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
+        Assert.Empty(state.QueuedFollowUpRecoveries);
+        Assert.Empty(conversation.DraftText);
+        Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
+        Assert.Equal(0, state.ResumedQueuedFollowUpCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StartupRestoresAnUnresumableQueueItemAndItsConversationSuccessorsToDrafts(bool invalidHostContext)
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.DraftText = "newer draft";
+        var otherConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        const string firstPrompt = "resume in the captured workspace";
+        var laterPrompt = invalidHostContext ? firstPrompt : "verify after the first request";
+        var durable = CreateRecovery("queued-run-1", conversation.Id, firstPrompt,
+            invalidHostContext ? CopilotAgentMode.Code : CopilotAgentMode.Auto);
+        durable.ProfileId = "profile";
+        durable.ResumeAfterRestart = invalidHostContext;
+        if (invalidHostContext)
+        {
+            durable.HostContext = new CopilotQueuedFollowUpHostContext
+            {
+                SolutionDirectoryPath = "relative-workspace",
+            };
+        }
+        var successor = CreateRecovery("queued-run-2", conversation.Id, laterPrompt,
+            invalidHostContext ? CopilotAgentMode.Review : CopilotAgentMode.Auto);
+        successor.ProfileId = "profile";
+        successor.ResumeAfterRestart = true;
+        var independent = CreateRecovery("queued-run-3", otherConversation.Id, "independent conversation");
+        independent.ProfileId = "profile";
+        independent.ResumeAfterRestart = true;
+        var state = new CopilotChatState
+        {
+            Conversations = [conversation, otherConversation],
+            QueuedFollowUpRecoveries = [durable, independent, successor],
         };
 
         Assert.True(CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(state));
 
-        Assert.Empty(state.QueuedFollowUpRecoveries);
-        Assert.Equal("resume in the captured workspace", conversation.DraftText);
-        Assert.Equal(1, state.RecoveredQueuedFollowUpCount);
+        Assert.Same(independent, Assert.Single(state.QueuedFollowUpRecoveries));
+        Assert.Equal("newer draft" + Environment.NewLine + Environment.NewLine
+            + CopilotQueuedFollowUpRecovery.FormatRestoredDraft(
+                invalidHostContext ? [$"[Code] {firstPrompt}", $"[Review] {laterPrompt}"] : [firstPrompt, laterPrompt]), conversation.DraftText);
+        Assert.Empty(otherConversation.DraftText);
+        Assert.Equal(2, state.RecoveredQueuedFollowUpCount);
     }
 
     [Fact]
@@ -234,10 +277,17 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
         Assert.Equal(0, state.RecoveredQueuedFollowUpCount);
     }
 
-    [Fact]
-    public void RestoreRecordToDraftPreservesOtherQueuedRecoveries()
+    [Theory]
+    [InlineData(CopilotAgentMode.Auto, false)]
+    [InlineData(CopilotAgentMode.Auto, true)]
+    [InlineData(CopilotAgentMode.Plan, true)]
+    public void RestoreRecordToDraftPreservesOtherQueuedRecoveries(
+        CopilotAgentMode existingMode, bool hasNewerDraft)
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        const string newerDraft = "Keep this newer request in its selected mode.";
+        conversation.DraftText = hasNewerDraft ? newerDraft : string.Empty;
+        conversation.DraftRequestMode = existingMode;
         var reviewTarget = new CopilotWorkspaceReviewTargetContext
         {
             Target = CopilotWorkspaceReviewTarget.WorkingTree,
@@ -259,9 +309,14 @@ public sealed class CopilotQueuedFollowUpRecoveryTests
 
         Assert.True(CopilotQueuedFollowUpRecovery.RestoreRecordToDraft(state, "queued-run-1"));
 
-        Assert.Equal("restore this review", conversation.DraftText);
-        Assert.Equal(CopilotAgentMode.Review, conversation.DraftRequestMode);
-        Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, conversation.DraftWorkspaceReviewTarget?.Target);
+        Assert.Equal(hasNewerDraft
+            ? newerDraft + Environment.NewLine + Environment.NewLine + "[Review] restore this review"
+            : "restore this review", conversation.DraftText);
+        Assert.Equal(hasNewerDraft ? existingMode : CopilotAgentMode.Review, conversation.DraftRequestMode);
+        if (hasNewerDraft)
+            Assert.Null(conversation.DraftWorkspaceReviewTarget);
+        else
+            Assert.Equal(CopilotWorkspaceReviewTarget.WorkingTree, conversation.DraftWorkspaceReviewTarget?.Target);
         var remaining = Assert.Single(state.QueuedFollowUpRecoveries);
         Assert.Equal("queued-run-2", remaining.RunId);
         Assert.Equal(0, state.RecoveredQueuedFollowUpCount);

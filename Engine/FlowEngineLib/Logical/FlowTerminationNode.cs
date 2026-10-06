@@ -13,7 +13,7 @@ public enum FlowTerminationStatus
 	OverTime
 }
 
-[STNode("/01 运算", "以指定状态立即结束当前流程")]
+[STNode("运算", "以指定状态立即结束当前流程", CategoryOrder = 100)]
 public sealed class FlowTerminationNode : CVDeviceNode
 {
 	private FlowTerminationStatus terminationStatus;

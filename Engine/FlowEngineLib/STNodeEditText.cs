@@ -58,15 +58,16 @@ public class STNodeEditText<T> : STNodeControl
 			m_sf.FormatFlags |= StringFormatFlags.NoWrap;
 			m_sf.Trimming = StringTrimming.None;
 			m_sf.Alignment = StringAlignment.Near;
-			graphics.DrawString(base.Text, base.Font, Brushes.White, base.ClientRectangle, m_sf);
+			dt.SolidBrush.Color = ForeColor;
+			graphics.DrawString(base.Text, base.Font, dt.SolidBrush, base.ClientRectangle, m_sf);
 			m_sf.Alignment = StringAlignment.Far;
 			if (_IsLang)
 			{
-				graphics.DrawString(Lang.Get(_Value.ToString()), base.Font, Brushes.White, base.ClientRectangle, m_sf);
+				graphics.DrawString(Lang.Get(_Value.ToString()), base.Font, dt.SolidBrush, base.ClientRectangle, m_sf);
 			}
 			else
 			{
-				graphics.DrawString(_Value.ToString(), base.Font, Brushes.White, base.ClientRectangle, m_sf);
+				graphics.DrawString(_Value.ToString(), base.Font, dt.SolidBrush, base.ClientRectangle, m_sf);
 			}
 		}
 		finally

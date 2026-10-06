@@ -5,7 +5,7 @@ status: "current"
 summary: "反馈提交按服务端账号归属，普通用户只读本人记录，研发只读账号/API key可下载全部诊断附件，管理员独立更新状态；新目录使用北京时间和机器标识。"
 aliases: ["反馈收件箱", "我的反馈", "Feedback Inbox", "反馈上传", "feedback:read", "feedback:manage", "feedback_attachment_download", "download_feedback.ps1", "ownerUserId", "machineName", "serverReceivedAt", "feedback.json", ".admin.json"]
 code_paths: ["Web/Backend/feedback_service.py", "Web/Backend/services/feedback_admin.py", "Web/Backend/routes/public_api.py", "Web/Backend/routes/admin_api.py", "Web/Backend/services/permission_service.py", "Web/Backend/services/api_key_service.py", "Web/Frontend/src/pages/FeedbackPage.tsx", "Web/Frontend/src/services/admin.ts", "Scripts/download_feedback.ps1", "Scripts/configure_feedback.ps1", "UI/ColorVision.UI.Desktop/Feedback"]
-test_paths: ["Web/Backend/test_feedback_service.py", "Web/Backend/test_feedback_admin.py", "Web/Backend/test_feedback_routes.py", "Web/Backend/test_feedback_download_script.py", "Web/Frontend/tests/feedback.test.ts", "Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs"]
+test_paths: ["Web/Backend/test_feedback_service.py","Web/Backend/test_feedback_admin.py","Web/Backend/test_feedback_routes.py","Web/Backend/test_feedback_download_script.py","Web/Frontend/tests/feedback.test.ts"]
 related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-accounts", "delivery.artifact-delivery", "ui.desktop"]
 ---
 
@@ -19,7 +19,9 @@ related: ["delivery.backend", "delivery.backend-auth", "delivery.backend-account
 
 提交使用 multipart form。匿名旧客户端仍可提交；已登录数据库账号提交时，Backend 只使用已验证 Session 中的稳定 `user_id` 写入 `ownerUserId` / `ownerUsername`。客户端表单里的同名字段被忽略，`userName`、`machineName`、`machineInfo`、版本和客户端时间均是诊断信息，不是授权依据。
 
-桌面反馈窗口直接匿名提交，不再弹出 Web 账号密码对话框。Backend 仍兼容其他已登录客户端的 Session 归属，但 ColorVision 本地 RBAC 用户、Windows 用户名和机器名与 Web 账号不是同一身份，不能据此自动认领。
+桌面反馈窗口直接匿名提交。Backend 仍兼容其他已登录客户端的 Session 归属，但 ColorVision 本地 RBAC 用户、Windows 用户名和机器名与 Web 账号不是同一身份，不能据此自动认领。
+
+桌面窗口上传时在进度条内显示百分比，并在传输已有足够样本后按平均速度显示预计剩余时间；传输完成后等待服务端确认，只有成功响应才算发送成功。客户端流式发送附件，单次请求超时为 4 小时。当前提交是单次 multipart 请求，中断后需重新发送，不支持断点续传。
 
 | 字段 | 契约 |
 | --- | --- |

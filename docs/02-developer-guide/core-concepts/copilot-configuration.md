@@ -24,7 +24,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 | `CopilotConfig.Profiles` | provider 协议、模型、地址、API Key、生成参数和模型能力声明；不是会话历史 |
 | `CopilotConfig.AgentDefaults` | 全局 Agent 预算、压缩、Shell 偏好和 Skill 覆盖；不属于单个模型 Profile，技能开关与生效优先级见 [Copilot 技能](./copilot-skills.md) |
 | `CopilotConfig` 的 MCP / Web 字段 | 入站 Local MCP、外部 MCP client 配置和 Web Pref64；各入口的联网与落盘不同 |
-| `CopilotChatState` / `CopilotConversationRecord` | 活动 Profile ID、各会话选择、回答风格、消息与恢复状态；由独立的会话状态存储负责 |
+| `CopilotChatState` / `CopilotConversationRecord` | 活动 Profile ID、各会话选择、回答风格、默认访问模式、消息与恢复状态；由独立的会话状态存储负责。`完全访问` 作为 Composer 默认值持久保存，直到用户切回 `按需确认`；临时自动复核仍只绑定当前任务和工作区 |
 
 配置 JSON 路径、节合并、文件替换和重载导致的旧对象失效见[配置持久化与对象所有权](../../04-api-reference/ui-components/configuration.md)。Copilot 设置保存的是其中的 `CopilotConfig` 节，不另建一个 `config.toml` 或模型配置数据库。
 
@@ -38,7 +38,7 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 | `/context` | 当前输入模式、历史与工具结果预算、压缩状态、持续目标、指令与 Skill 数量、业务扩展及当前策略；Chat 模式保留会话相关信息，省略不参与该模式的 Agent 扩展详情 |
 | `/memory [open N]` | 个人与项目指令的发现目标、文件顺序、截断与预算；`open N` 打开对应源文件，发现清单不是当前任务已经注入的回执 |
 
-这些输出不列出外部 `config.toml` 的模型或功能覆盖来源。Profile 模型与提示主体来自 ColorVision 配置，本机 Codex 的空模型字段表示采用外部运行时默认模型；会话回答风格来自会话状态。内部策略快照仍用于说明实际权限，但不表示存在可编辑的外部 Codex 配置层。`/context` 的指令预览与 `/memory` 的发现结果，是否注入还取决于后续请求的本地证据需求、工作区补丁能力与模式。
+Profile 模型与提示主体来自 ColorVision 配置，本机 Codex 的空模型字段表示采用外部运行时默认模型；会话回答风格来自会话状态。`/context` 的指令预览与 `/memory` 的发现结果，是否注入还取决于后续请求的本地证据需求、工作区补丁能力与模式。
 
 `/debug-config` 只探测主配置 JSON 的 `CopilotConfig` 节、schema、属性存在性及 Profile ID，文件大于 16 MiB 时不解析。文件缺失、节缺失、损坏或不可读取时保留运行期值，标明“当前文件来源未证实”；更高版本 schema 会报告写入被阻止。文件元数据只说明命令执行时的文件状态，不能证明每个运行期键的启动来源。状态来源保留主文件、临时快照、备份、恢复快照和未来版本等区别。
 
@@ -55,11 +55,19 @@ related: ["copilot.runtime", "copilot.interactions", "copilot.lifecycle", "copil
 - 未登录时点击“登录 Codex”，通过 Codex 管理的官方浏览器登录完成认证；也可先在桌面版登录，再重新检测。关闭设置会取消等待。登录只改变 Codex 自己的登录状态，不在 ColorVision 配置中保存密码或 token。
 - 本机 Profile 不需要 API Key 或 Base URL。模型可从 Codex 返回的列表选择，留空使用其默认值；图片能力仍按模型声明。连接测试会发送一条短请求并消耗该账户额度，普通检测不启动模型推理。
 
-该接入使用实验性的 `codex app-server` stdio 协议，要求运行时支持动态工具及 `thread/inject_items`。不兼容、未登录、连接退出或额度不足时明确报错，不自动切换到另一账户或 Key。运行时文件路径和账户凭据不随 Profile 保存；本机 Codex Profile 只保存在本机配置中。
+该接入使用实验性的 `codex app-server` stdio 协议，要求运行时支持动态工具及 `thread/inject_items`。`thread/start` 和 `turn/start` 返回的会话、回合标识缺失或为空白时，立即报错并释放连接，不读取后续输出，避免失去通知筛选依据。不兼容、未登录、连接退出或额度不足时明确报错，不自动切换到另一账户或 Key。运行时文件路径和账户凭据不随 Profile 保存；本机 Codex Profile 只保存在本机配置中。
+
+ColorVision 在分块读取 stdout 时检查单行协议消息上限：最多 `16 × 1024 × 1024` 个 UTF-16 字符，换行不计；超限立即报错，不等待完整行或换行。连续消息共用一个读取器保留预读内容，支持 LF、CRLF 和非空的 EOF 末行；取消也会阻止交付已经缓存的下一行。stderr 按固定 4 KiB 字节块读取并直接丢弃；进程收尾显式关闭自有读取器，后台读取异常经过观察，不覆盖当前调用的结果。
+
+停止自有进程时，stdin 关闭的预期异常不会跳过后续等待和终止：仍等待最多 500 毫秒，未退出则终止自有进程树。`CopilotCodexTests` 用分块流验证分帧、上限、EOF、取消和错误流关闭，并用测试创建的本地子进程验证 stdin 关闭失败和已退出的收尾分支；不启动真实 Codex 或模型请求。
 
 `CopilotCodexChatClient` 将模型输出转换成现有聊天事件，将动态工具调用交回 Agent Framework 和 ColorVision 的权限、审批、预算与执行链；不会调用 Codex 中的工具来代替宿主审批。独立子进程关闭内置 Shell、外部 MCP、插件、Hook 和网页搜索，并使用只读沙箱。收到独立权限申请或非宿主管理的工具事件时停止本次调用。
 
+回复按消息条目的 `itemId` 累计流式内容，并在 `item/completed` 到达时补齐尚未显示的文本；同一条目的回合快照不重复输出。完整回复可以只出现在条目完成事件中，不能依赖 `turn/completed.items` 非空，也不能因先前消息已有增量而遗漏最终结论。条目和回合事件均核对当前 thread／turn 标识；没有条目标识的旧协议保留回合级防重复。完整文本与已显示增量不一致时明确报错，避免拼接出错误答案。协议依据见 [App Server 事件](https://learn.chatgpt.com/docs/app-server#events)。
+
 每次模型请求建立临时 Codex 会话，使用 ColorVision 保存的角色消息和真实工具结果重建历史；不把用户已有的 Codex 任务接管为当前聊天。工具请求发出后先结束该临时会话，再由宿主执行，下一次请求带上实际结果。因此每个工具后续推理有额外启动与历史传输开销。取消、超时和释放只结束本次创建的子进程，不关闭用户的 Codex 桌面应用。
+
+`thread/tokenUsage/updated.tokenUsage.total` 是该临时会话的累计用量快照。流式预算按进度合并；非流式回答使用最新快照，重复事件不重复计数。Agent 的最终结果和界面用量采用预算中已报告的官方用量：同一次请求只结算一次，不同模型请求及委派调用累加，不把预算估算当作官方账单。非流式调用失败或取消时，已观察到的官方用量随原异常保留，供预算和调用方记账；未报告的用量仍保持未知。`CopilotCodexTests` 使用实际 SDK 聚合、预算包装器与正式 Harness 验证累计快照、重复事件、跨工具续轮、失败和取消，以及结果、预算和 Turn 终态的用量一致性。
 
 工具交接可能早于 Codex 最终用量事件；这些步骤不伪造服务端 token 数，Agent 预算沿用现有的显式估算补足并显示估算状态。面板中已收到的用量不能当作 Codex 账户完整账单。生成参数以 App Server 支持范围为准：传递模型和推理强度，HTTP Profile 的温度及输出 token 上限不作为 Codex 服务端的限制；宿主仍执行整体时间、累计预算和工具次数门禁。
 
@@ -112,7 +120,7 @@ DeepSeek 的 `deepseek-flash` 对应 V4.1 Flash，包含原生图像理解；官
 
 `/model` 选择一个已经存在的 Profile，不改写其 provider、模型地址或凭据。`SelectModelProfile` 通过 `SelectedProfile` → `CopilotConversationSession.SelectProfile` 更新运行期选择、`ActiveProfileId` 和当前会话的 `ProfileId`，再由 `PersistState()` 请求保存会话状态。选择先在内存生效，状态保存由 `CopilotChatStatePersistenceCoordinator` 异步完成；命令的“后续请求将使用”不是耐久化回执，保存故障也没有在此选择方法中回滚。会话保存通知、重试与 Flush 属于[状态所有权](./copilot-view-model-architecture.md)。
 
-`/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别，归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
+`/reasoning`（兼容 `/effort`）才会修改当前 Profile 的 `ReasoningMode`。只接受 `CopilotReasoningCapabilities` 为该 Profile 声明的级别；本机 Codex 返回并显式选择的 GPT 推理模型也使用这些档位，选择值经 Agent Framework 传给 App Server。归一化后通过 `TryPersistConfigMutation` 克隆候选并使用上述三态提交；`NotPersisted` 保留原 Profile 并显示“推理模式未更改”，`PersistedButPublishFailed` 显示“已保存，但当前聊天界面未能刷新”。成功后重新绑定发布的 Profile，而不是原地修改旧对象；使用同一个 Profile 的后续请求会读取这个配置，不应描述成仅本会话风格。
 
 官方 `api.openai.com` 上的 GPT-6 Astra 提供 `Default/Low/Medium/High/XHigh/Max`，不提供 `Disabled/Enabled`；历史 `Disabled` 配置或 Codex `none/minimal` 覆盖发送前收敛为 `low`，`ultra` 收敛为 `max`。枚举新增值追加在已有数值之后，避免改变旧 JSON 中 `Default/Disabled/Enabled/High/Max` 的数字含义。伪装成 OpenAI vendor 的第三方兼容端点不会因此获得官方推理档位。
 

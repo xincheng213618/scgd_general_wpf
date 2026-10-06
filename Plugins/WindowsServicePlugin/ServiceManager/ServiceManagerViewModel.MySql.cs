@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -175,14 +176,22 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(MySqlManager.Config.Database))
+            {
+                ShowUiMessage("请先填写目标数据库名称。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string host = string.IsNullOrWhiteSpace(MySqlManager.Config.Host) ? "127.0.0.1" : MySqlManager.Config.Host.Trim();
             var confirm = ShowUiMessage(
-                $"将使用 root 账号执行数据库重置脚本：\n{sqlFilePath}\n\n该脚本会重建/覆盖部分数据库表，是否继续？",
+                $"将清除 {host}:{MySqlManager.GetConfiguredPort(Config.MySqlPort)} 上的数据库 {MySqlManager.Config.Database.Trim()}，再执行安装 SQL：\n{sqlFilePath}\n\n现有表和数据会被删除，旧流程、模板和资源不会回写。此操作不能撤销，是否继续？",
                 "重置数据库",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (confirm != MessageBoxResult.Yes)
                 return;
 
+            bool resetSucceeded = false;
             SetBusy(true, "正在重置数据库...");
             try
             {
@@ -192,16 +201,77 @@ namespace WindowsServicePlugin.ServiceManager
                     log.Info("数据库重置完成");
                     SyncManagedServiceConfigs();
                     SyncLegacyAppConfig();
+                    resetSucceeded = true;
                 }
                 else
                 {
                     log.Info("数据库重置失败");
+                    ShowUiMessage("数据库重置未完成，请查看服务日志确认目标库当前状态。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+            catch (Exception ex)
+            {
+                log.Error("数据库重置后的服务配置同步失败；请核对数据库和服务配置状态", ex);
+                ShowUiMessage("数据库可能已重建，但服务配置同步失败。请查看服务日志并核对目标库与服务配置。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 SetBusy(false);
                 RefreshAll();
+            }
+
+            if (resetSucceeded)
+                await PromptForRestartsAfterResetAsync();
+        }
+
+        private async Task PromptForRestartsAfterResetAsync()
+        {
+            bool serviceRestartFailed = false;
+            if (ShowUiMessage("数据库已按安装 SQL 重建。是否重启注册中心服务以加载新数据库？",
+                    "重置数据库", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                SetBusy(true, "正在重启注册中心服务...");
+                try
+                {
+                    bool restarted = await ServiceHostWindowsServiceController.ExecuteAsync(
+                        "RegistrationCenterService", ServiceHostServiceOperation.Restart, log.Info, "注册中心服务");
+                    serviceRestartFailed = !restarted;
+                    if (!restarted)
+                        ShowUiMessage("注册中心服务重启失败，请查看服务日志并检查实际服务状态。",
+                            "重置数据库", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (Exception ex)
+                {
+                    serviceRestartFailed = true;
+                    log.Error("注册中心服务重启失败", ex);
+                    ShowUiMessage("注册中心服务重启失败，请查看服务日志并检查实际服务状态。",
+                        "重置数据库", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    SetBusy(false);
+                    RefreshAll();
+                }
+            }
+
+            string restartPrompt = serviceRestartFailed
+                ? "注册中心服务重启未成功。是否仍要重启 ColorVision 软件？"
+                : "是否重启 ColorVision 软件以加载新数据库？";
+            if (ShowUiMessage(restartPrompt, "重置数据库", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                string applicationPath = Path.ChangeExtension(Application.ResourceAssembly.Location, ".exe");
+                Process? process = Process.Start(applicationPath, "-r");
+                if (process == null)
+                    throw new InvalidOperationException("未能创建新的应用进程。");
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                log.Error("ColorVision 重启失败", ex);
+                ShowUiMessage($"ColorVision 重启失败：{ex.Message}", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

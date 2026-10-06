@@ -138,9 +138,9 @@
                             </DockPanel>
 
                             <DockPanel Margin="0,2" Visibility="{Binding DisplayConfig.IsWithND, Converter={StaticResource bool2VisibilityConverter}}">
-                                <Button Click="GetNDport_Click" Content="Get" DockPanel.Dock="Right" />
+                                <Button Click="GetNDport_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                                 <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
-                                <TextBlock Text="NDPort" />
+                                <TextBlock Text="{x:Static properties:Resources.NDFilterPosition}" />
                                 <ComboBox x:Name="ComboBoxNDPort"
                                           MinWidth="96"
                                           Margin="5,0"
@@ -151,8 +151,8 @@
                             </DockPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable, Converter={StaticResource bool2VisibilityConverter}}">
-                            <Button Click="Button_Click_Shutter_Doopen" Content="Open Shutter" />
-                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="Close Shutter" />
+                            <Button Click="Button_Click_Shutter_Doopen" Content="{x:Static properties:Resources.OpenShutter}" />
+                            <Button Margin="5,0,0,0" Click="Button_Click_Shutter_Doclose" Content="{x:Static properties:Resources.CloseShutter}" />
                         </StackPanel>
 
                     </StackPanel>

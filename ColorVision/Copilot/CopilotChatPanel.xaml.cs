@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using LocalizedText = global::ColorVision.DisplayText;
+using ColorVision.Themes;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Docking;
 using System.Collections.Generic;
@@ -49,7 +50,7 @@ namespace ColorVision.Copilot
                 new DockPanelTitleAction(new RelayCommand(
                     _ => (DataContext as CopilotChatViewModel)?.OpenSettingsCommand.Execute(null),
                     _ => DataContext is CopilotChatViewModel vm && vm.OpenSettingsCommand.CanExecute(null)),
-                    "\uE713", "Copilot 设置"),
+                    "\uE713", LocalizedText.Get("Copilot 设置")),
             };
             InitializeComponent();
             BindPromptCaretToThemeResource(PromptTextBox);

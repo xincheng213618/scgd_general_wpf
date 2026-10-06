@@ -2,10 +2,10 @@
 knowledge_id: "algorithms.find-light-area"
 knowledge_type: "topic"
 status: "current"
-summary: "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。"
-aliases: ["发光区定位1","发光区检测模板","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","恢复Mysql发光区检测","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
+summary: "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。"
+aliases: ["发光区定位1","发光区检测模板","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
 code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
 related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","algorithms.template-management","engine.native-integration","engine.results"]
 ---
 
@@ -22,7 +22,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","
 3. 设置算法服务可读取的图像路径，点击 **计算**。输入助手检查模板及非空路径，不检查服务端文件可见性。
 4. 核对服务返回及相应历史结果。创建 `MsgRecord` 只表示建立请求记录并发起发送，不是算法计算或落库成功。
 
-`TemplateRoi : ITemplate<RoiParam>` 的编码为 `FindLightArea`、字典号为 `31`。下表是无明细的新空参数对象初值，现有模板以保存的明细为准；`MysqlRoi` 中三个参数项的默认值也均为 `1`。
+`TemplateRoi : ITemplate<RoiParam>` 的编码为 `FindLightArea`、字典号为 `31`。下表是无明细的新空参数对象初值，现有模板以保存的明细为准。
 
 | 参数 | 类型 / 新空对象初值 | 含义 |
 | --- | --- | --- |
@@ -32,11 +32,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","
 
 `AlgorithmRoi.Execute()` 将图像路径、文件类型和选中参数交给 `SendCommand()`。请求含 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType` 与 `TemplateParam = { ID: param.Id, Name: param.Name }`；手动入口传入的两个设备字段为空字符串，不在 `TemplateParam` 中展开三项参数。事件常量 `Event_LightArea2_GetData` 的值为 `OLED.GetRIAandPT`。
 
-### 模板加载与恢复限制
-
-模板加载按 `ModMasterModel.Pid == 31`、租户 `0`、未删除条件读取数据。程序集发现模板不代表数据库已有字典和模板；创建失败后，通用宿主可提示重置数据库相关项，需经用户确认才执行恢复 SQL。
-
-`MysqlRoi.GetRecover()` 存在字典关系不一致：主字典写入 ID `15`，参数项的 `pid` 却为 `31`，也与 `TemplateRoi.TemplateDicId = 31` 不一致；参数项使用普通 `INSERT`，重复执行可能遇到已有主键。不能把点击恢复当作字典已经修复。模板为空或创建失败时，应先核对现有主字典、参数项和模板所属字典，再处理数据库，不应反复运行恢复来试错。
+模板加载按 `ModMasterModel.Pid == 31`、租户 `0`、未删除条件读取数据。程序集发现模板不代表数据库已有字典和模板。
 
 ## 配置本地发光区定位(V2)
 
@@ -114,7 +110,7 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 | 现象 | 检查顺序 |
 | --- | --- |
-| 远端模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `31` 下的模板及选择项；字典恢复限制见上文 |
+| 远端模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `31` 下的模板及选择项 |
 | 远端服务收不到图像 | 核对事件 `OLED.GetRIAandPT`、`ImgFileName`、`FileType` 与服务端文件可见性 |
 | 结果页无点位或凸包异常 | 核对结果类型、主结果 ID、明细 `pid` 和浮点点位；区分检测失败、数据库未加载及整数凸包显示 |
 | V2 逐边证据不足 | 查看 `SideQuality` 的覆盖率、内点比例、边缘对比度、残差、最大缺口；检查暗角、漏光、遮挡后再调整门限 |
@@ -126,6 +122,6 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 `LocalFindLuminousAreaNodeTests.cs` 使用替代检测、保存、发布服务和事务对象检查节点输入优先级、POI 更新次序、四角顺序、失败主结果及提交/回滚流程，不能代替真实数据库或 native 验证。`FindLuminousAreaManualResultTests.cs` 检查手动诊断消息内容。
 
-`LuminousAreaNativeInteropTests.cs` 的真实 native 用例默认跳过，需要显式设置 `COLORVISION_RUN_LUMINOUS_NATIVE_V2_TESTS=1` 并具备兼容的 `opencv_helper.dll` 才会运行；普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
+普通 ABI 反射检查不等于执行了导出函数。C++ 合成回归位于 `Test/opencv_helper_test/test_find_luminous_area.cpp`。
 
 现场验收应保留有预期结果的图像集，覆盖透视、旋转、16 位输入、暗角、漏光、饱和、噪声、遮挡、裁边和多候选；分别检查成功角点误差、拒绝原因与事务落库。测试文件存在、native 返回正数或单张叠图都不表示这些链路已通过验收。

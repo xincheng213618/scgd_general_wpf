@@ -295,6 +295,280 @@ public sealed class CopilotConversationCompactionIntegrityTests
             + agentMarker);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RequestBuilderPreservesTerminalEvidenceWhenLongAssistantHistoryIsClipped(bool agentVisibleHistory)
+    {
+        var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotProfileConfig.DefaultMaxTokens);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var user = new CopilotChatMessage(CopilotChatRole.User, "Keep the current goal.")
+        {
+            RequestContent = "Keep the current goal.\nPreviously injected attachment context.",
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant,
+            new string('a', limits.MaximumContentCharacters + 1))
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        assistant.MarkResponseInterrupted("Provider detail must not become model instructions.");
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(assistant);
+        var originalContent = assistant.Content;
+        var originalModelContent = assistant.ModelContent;
+        var terminalSuffix = originalModelContent[originalContent.Length..];
+        Assert.Contains(CopilotChatMessage.ResponseInterruptionModelMarker, terminalSuffix, StringComparison.Ordinal);
+        Assert.Contains(CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(
+            CopilotAgentStopReason.Paused), terminalSuffix, StringComparison.Ordinal);
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+
+        var history = agentVisibleHistory
+            ? CopilotConversationRequestBuilder.BuildVisibleHistory(snapshot, limits)
+            : CopilotConversationRequestBuilder.BuildChatHistory(snapshot, "Continue from the known state.",
+                attachments: null, limits, includeAttachmentContext: false);
+
+        Assert.Equal(agentVisibleHistory ? ["user", "assistant"] : ["user", "assistant", "user"],
+            history.Select(message => message.Role).ToArray());
+        Assert.Equal(agentVisibleHistory ? user.Content : user.ModelContent, history[0].Content);
+        var retained = Assert.Single(history, message => message.Role == "assistant");
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(retained.Content) <= limits.MaximumContentCharacters);
+        Assert.True(history.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content))
+            <= limits.MaximumCharacters);
+        Assert.Equal(originalContent, assistant.Content);
+        Assert.Equal(originalModelContent, assistant.ModelContent);
+        Assert.Equal(CopilotAgentStopReason.Paused, assistant.AgentStopReason);
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.DoesNotContain(assistant.ResponseInterruptionDetail, retained.Content, StringComparison.Ordinal);
+        Assert.Contains("<conversation history truncated>", retained.Content, StringComparison.Ordinal);
+        Assert.EndsWith(terminalSuffix, retained.Content, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("user")]
+    [InlineData("summary")]
+    [InlineData("opening")]
+    [InlineData("middle")]
+    [InlineData("incomplete")]
+    public void RequestBuilderDoesNotPreserveQuotedOrIncompleteTerminalLabels(string sourceKind)
+    {
+        var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotProfileConfig.DefaultMaxTokens);
+        var terminal = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        terminal.MarkResponseInterrupted();
+        const string closingMarker = "</assistant_response_interrupted>";
+        var labels = sourceKind switch
+        {
+            "opening" => CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,
+            "middle" => terminal.ModelContent + "\nThis is quoted text within the answer.",
+            "incomplete" => CopilotChatMessage.ResponseInterruptionModelMarker[..^closingMarker.Length],
+            _ => terminal.ModelContent,
+        };
+        var payload = new string('a', limits.MaximumContentCharacters + 1) + "\n" + labels;
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var user = new CopilotChatMessage(CopilotChatRole.User,
+            sourceKind == "user" ? payload : "Earlier question.");
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant,
+            sourceKind is "user" or "summary" ? "Earlier answer." : payload);
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(assistant);
+        if (sourceKind == "summary")
+        {
+            conversation.Compaction = new CopilotConversationCompaction
+            {
+                StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+                Summary = payload,
+                ThroughMessageId = assistant.Id,
+            };
+        }
+
+        var history = CopilotConversationRequestBuilder.BuildChatHistory(
+            CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
+            "Next question.", attachments: null, limits, includeAttachmentContext: false);
+
+        var retained = sourceKind is "user" or "summary"
+            ? history[0]
+            : Assert.Single(history, message => message.Role == "assistant");
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(retained.Content) <= limits.MaximumContentCharacters);
+        Assert.Contains("<conversation history truncated>", retained.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain(CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,
+            retained.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain(CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(
+            CopilotAgentStopReason.Paused), retained.Content, StringComparison.Ordinal);
+        Assert.False(assistant.WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.None, assistant.AgentStopReason);
+        Assert.Equal(sourceKind == "user" ? payload : "Earlier question.", user.Content);
+        Assert.Equal(sourceKind is "user" or "summary" ? "Earlier answer." : payload, assistant.Content);
+        if (sourceKind == "summary")
+            Assert.Equal(payload, conversation.Compaction!.Summary);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void RestoredLongSummaryPreservesShadowedSourceTerminalEvidence(
+        bool agentVisibleHistory, bool summaryContainsMarkers)
+    {
+        var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotProfileConfig.DefaultMaxTokens);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Earlier goal.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+        });
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial earlier findings.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        assistant.MarkResponseInterrupted("Private provider failure detail.");
+        conversation.Messages.Add(assistant);
+        var sourceModelContent = assistant.ModelContent;
+        var markers = CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker + "\n"
+            + CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(CopilotAgentStopReason.Paused);
+        var tail = summaryContainsMarkers ? "\n" + markers : string.Empty;
+        var summary = new string('s', CopilotConversationCompaction.MaximumSummaryCharacters - tail.Length) + tail;
+        conversation.Compaction = new CopilotConversationCompaction
+        {
+            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+            Summary = summary,
+            ThroughMessageId = assistant.Id,
+            SourceMessageCount = conversation.Messages.Count,
+            SourceCharacters = conversation.Messages.Sum(message => message.ModelContent.Length),
+        };
+
+        var restored = Assert.IsType<CopilotConversationRecord>(
+            Newtonsoft.Json.JsonConvert.DeserializeObject<CopilotConversationRecord>(
+                Newtonsoft.Json.JsonConvert.SerializeObject(conversation)));
+        restored.EnsureValid();
+        var compaction = Assert.IsType<CopilotConversationCompaction>(restored.Compaction);
+        Assert.True(compaction.IsStructurallyValid());
+        Assert.True(CopilotConversationCompactionContext.EstimateSummaryWeight(compaction.Summary)
+            > limits.MaximumContentCharacters);
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(restored);
+
+        var history = agentVisibleHistory
+            ? CopilotConversationRequestBuilder.BuildVisibleHistory(snapshot, limits)
+            : CopilotConversationRequestBuilder.BuildChatHistory(snapshot, "Continue from the known state.",
+                attachments: null, limits, includeAttachmentContext: false);
+
+        Assert.Equal(agentVisibleHistory ? 1 : 2, history.Count);
+        Assert.All(history, message => Assert.Equal("user", message.Role));
+        var retained = history[0].Content;
+        Assert.Contains(CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker,
+            retained, StringComparison.Ordinal);
+        Assert.Contains(CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(CopilotAgentStopReason.Paused),
+            retained, StringComparison.Ordinal);
+        Assert.Contains("<conversation history truncated>", retained, StringComparison.Ordinal);
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(retained) <= limits.MaximumContentCharacters);
+        Assert.True(history.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content))
+            <= limits.MaximumCharacters);
+        Assert.DoesNotContain(assistant.ResponseInterruptionDetail, retained, StringComparison.Ordinal);
+        Assert.Equal(summary, compaction.Summary);
+        Assert.Equal(assistant.Id, compaction.ThroughMessageId);
+        Assert.Equal(sourceModelContent, restored.Messages[1].ModelContent);
+        Assert.True(restored.Messages[1].WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.Paused, restored.Messages[1].AgentStopReason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RequestBuilderHonorsExactTerminalEvidenceBudgetAndRejectsSmallerBudget(bool fitsExactly)
+    {
+        var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotProfileConfig.DefaultMaxTokens) with
+        {
+            MaximumContentCharacters = checked((int)CopilotTokenEstimator.EstimateTextWeight(
+                CopilotChatMessage.ResponseInterruptionModelMarker)) - (fitsExactly ? 0 : 1),
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Earlier question."));
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant,
+            new string('a', limits.MaximumContentCharacters + 1));
+        assistant.MarkResponseInterrupted();
+        conversation.Messages.Add(assistant);
+        var originalModelContent = assistant.ModelContent;
+
+        var snapshot = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+        if (fitsExactly)
+        {
+            var history = CopilotConversationRequestBuilder.BuildChatHistory(snapshot,
+                "Next question.", attachments: null, limits, includeAttachmentContext: false);
+            var retained = Assert.Single(history, message => message.Role == "assistant");
+            Assert.Equal(CopilotChatMessage.ResponseInterruptionModelMarker, retained.Content);
+            Assert.Equal(limits.MaximumContentCharacters,
+                CopilotTokenEstimator.EstimateTextWeight(retained.Content));
+        }
+        else
+        {
+            Assert.Throws<InvalidOperationException>(() => CopilotConversationRequestBuilder.BuildChatHistory(snapshot,
+                "Next question.", attachments: null, limits, includeAttachmentContext: false));
+        }
+
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Equal(originalModelContent, assistant.ModelContent);
+        Assert.Equal(CopilotAgentStopReason.None, assistant.AgentStopReason);
+    }
+
+    [Fact]
+    public void AgentFirstPromptKeepsTerminalEvidenceWithoutReplayingPriorUserAttachmentContext()
+    {
+        var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+            CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotProfileConfig.DefaultMaxTokens);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        const string priorAttachment = "Previously injected attachment context.";
+        var user = new CopilotChatMessage(CopilotChatRole.User, "Earlier question.")
+        {
+            RequestContent = "Earlier question.\n" + priorAttachment,
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant,
+            new string('a', limits.MaximumContentCharacters + 1))
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+        };
+        assistant.MarkResponseInterrupted();
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(assistant);
+        var originalModelContent = assistant.ModelContent;
+        var terminalSuffix = originalModelContent[assistant.Content.Length..];
+        var visibleHistory = CopilotConversationRequestBuilder.BuildVisibleHistory(
+            CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation), limits);
+        var request = new CopilotAgentRequest
+        {
+            UserText = "Continue from the known state.",
+            Mode = CopilotAgentMode.Code,
+            Profile = new CopilotProfileConfig { MaxTokens = CopilotProfileConfig.DefaultMaxTokens },
+            History = visibleHistory,
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+            },
+        };
+
+        var prepared = new CopilotAgentContextBuilder().BuildHarnessMessages(
+            request, Array.Empty<CopilotAgentStepRecord>(), minimalDelegatedFinalization: false);
+
+        Assert.Equal(user.Content, prepared.Messages[0].Content);
+        Assert.DoesNotContain(prepared.Messages,
+            message => message.Content.Contains(priorAttachment, StringComparison.Ordinal));
+        var retained = Assert.Single(prepared.Messages, message => message.Role == "assistant");
+        Assert.EndsWith(terminalSuffix, retained.Content, StringComparison.Ordinal);
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(retained.Content) <= limits.MaximumContentCharacters);
+        Assert.Equal(originalModelContent, assistant.ModelContent);
+        Assert.True(assistant.WasResponseInterrupted);
+        Assert.Equal(CopilotAgentStopReason.Paused, assistant.AgentStopReason);
+        Assert.Equal("Earlier question.\n" + priorAttachment, user.RequestContent);
+    }
+
     [Fact]
     public void EmptyCompactPromptUsesTheDefaultBodyAndKeepsHostIntegrity()
     {

@@ -14,4 +14,4 @@ onMounted(() => {
 
 # 内容已合并
 
-属性面板的可见行为、字段选择、修改与保存边界已合入 [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md)，与 `UI/ColorVision.UI/PropertyEditor/` 的实现和测试共同维护，不再区分使用手册与扩展说明。
+属性面板的可见行为、字段选择、修改与保存边界见 [PropertyGrid 属性编辑契约](../../04-api-reference/ui-components/property-grid.md)。

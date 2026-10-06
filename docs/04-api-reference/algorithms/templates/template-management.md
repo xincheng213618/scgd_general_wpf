@@ -3,8 +3,8 @@ knowledge_id: "algorithms.template-management"
 knowledge_type: "topic"
 status: "current"
 summary: "TemplateEditorWindow与TemplateCreateView的共享参数、创建来源、预览、索引和关闭语义；关闭不是通用回滚，筛选后的操作目标需单独核对。"
-aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplateSettingEdit","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
-code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplateSettingEdit.xaml.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
+aliases: ["模板类存在但列表不显示","模板编辑","模板创建","取消模板编辑","模板搜索后删除","TemplateEditorWindow","TemplateCreate","TemplateCreateView","TemplateCreateSourceKind","ApplyTemplateSource","IsUserControl","IsSideHide","TemplateSearchProvider","TemplatesExtension","放弃修改","放弃更改","模板未保存","关闭模板窗口","创建副本"]
+code_paths: ["Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml","Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs","Engine/ColorVision.Engine/Templates/TemplateCreateView.xaml.cs","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs","Engine/ColorVision.Engine/Templates/TemplatesExtension.cs"]
 test_paths: []
 related: ["engine.template-design","algorithms.template-menus","algorithms.json-templates","flow.workspace","ui.property-grid","ui.configuration"]
 ---
@@ -86,8 +86,6 @@ related: ["engine.template-design","algorithms.template-menus","algorithms.json-
 应用搜索按注册键与条目名称标识候选，执行时重新解析当前注册并查找索引；打开普通编辑器或专用入口的规则统一见[模板入口](./template-menu-entries.md)。搜索目录与窗口加载属于不同阶段，候选可见不代表数据库内容已经刷新。
 
 `TemplateSetting` 由 `ConfigService` 解析，是共享窗口配置，例如列表列可见性；取得配置对象不等于已保存文件，它也不同于数据库模板参数。该配置的保存与重载见[软件配置契约](../../ui-components/configuration.md)。
-
-`TemplateSettingEdit` 的数据库重置入口调用具体模板的 `GetMysqlCommand().GetRecover()`；确认后通过 `BatchSqlConsumer.ExecuteAfterCommit` 执行，提交后重载 `SymbolCache`。它不是普通模板列表刷新，可能改变字典/数据库内容；必须单独具备授权与可用恢复依据，不能为了排查“模板没出现”就执行。
 
 ## 验证入口与缺口
 

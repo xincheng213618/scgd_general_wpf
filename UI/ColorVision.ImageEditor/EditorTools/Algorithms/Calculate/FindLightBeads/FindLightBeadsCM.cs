@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
@@ -88,8 +89,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                         if (!ImageContext.IsCurrentImageRevision(revision)) return;
 
                         MessageBox.Show(
-                            $"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。",
-                            "错误",
+                            LocalizedText.Format($"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。"),
+                            LocalizedText.Get("错误"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     });

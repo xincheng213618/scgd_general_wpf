@@ -5,7 +5,7 @@ status: "current"
 summary: "定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。"
 aliases: ["终端面板","终端乱码","运行Python","F5","脚本工作目录","在终端中打开","运行脚本","新建 PowerShell","新建 CMD","进程已结束","终端已退出","启动终端失败","TerminalService","TerminalControl","ConPtyTerminal","ConPTY","TerminalScreenBuffer","AvalonEditControll","RunPythonCommand","TrySendCommand","BuildScriptStartupCommand"]
 code_paths: ["UI/ColorVision.Solution/Terminal","UI/ColorVision.Solution/Editor/TextEditor.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml.cs","UI/ColorVision.Solution/Editor/AvalonEditor/AvalonEditControll.xaml","UI/ColorVision.Solution/Workspace/EditorDocumentService.cs","UI/ColorVision.Solution/Workspace/DockLayoutManager.cs","UI/ColorVision.Solution/Workspace/ViewPanelMenuItems.cs","UI/ColorVision.Solution/Explorer/ScriptFileSupport.cs","UI/ColorVision.Solution/Explorer/SolutionResourceCommands.cs","UI/ColorVision.Solution/TreeViewControl.Command.cs","UI/ColorVision.UI/Environments.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/TerminalScreenBufferTests.cs","Test/ColorVision.UI.Tests/AvalonEditorSupportTests.cs","Test/ColorVision.UI.Tests/DockContentRegistrationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/TerminalScreenBufferTests.cs"]
 related: ["ui.solution","ui.documents","operations.index","operations.logs"]
 ---
 
@@ -84,7 +84,7 @@ ConPTY 用 UTF-8 编解码，通过带会话编号的输出队列交给 `Termina
 `CommandHistory` 根据提示行推断上下文，并把手工回车时追踪的输入保存到 `Environments.DirStateTerminal` 下的 `terminal_history*.txt`，每上下文最多 `1000` 条；两个会话不是各自独立的历史文件。自动发送命令和多行粘贴不构成完整可审计记录，也没有敏感命令过滤保证，不应在命令行粘贴凭据。
 
 - `TerminalScreenBufferTests` 覆盖换行、退格、光标移动、清屏、颜色、长行、缩放与快照；不证明所有 VT/IME/交互程序兼容。
-- `AvalonEditorSupportTests` 覆盖 Python 扩展识别、路径编码包装和部分保存编码；其中批处理路径测试会真实启动 PowerShell，ConPTY Job 测试会真实启动 CMD 并调用 `Kill`，不属于纯解析测试。Job 测试断言看到就绪输出，没有断言所有后代进程均退出。
-- `DockContentRegistrationTests` 检查延迟物化、关闭/隐藏重开及内存布局替换时的宿主和内容复用；使用合成内容，不启动 ConPTY，也不证明隐藏、关闭、退出时的进程生命周期。
+- 其中批处理路径测试会真实启动 PowerShell，ConPTY Job 测试会真实启动 CMD 并调用 `Kill`，不属于纯解析测试。Job 测试断言看到就绪输出，没有断言所有后代进程均退出。
+- 使用合成内容，不启动 ConPTY，也不证明隐藏、关闭、退出时的进程生命周期。
 
 当前未声明 F5 保存失败后不运行、双标签并发隔离、待运行请求覆盖、批次失败短路、取消确认与应用退出后全部进程消失的端到端覆盖。文档核验只读源码；真实验证需获准的合成脚本与隔离目录，并分别检查磁盘内容、输出和进程状态，不运行产品脚本或设备命令代替测试。通用输出定位见[日志来源与筛选](./log-viewer.md)。

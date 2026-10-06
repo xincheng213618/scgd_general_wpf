@@ -92,6 +92,7 @@ namespace ColorVision.Copilot
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
         private QueuedLocalCommandExecutionContext? _queuedLocalCommandExecution;
+        private Action? _flushActiveTurnUiUpdates;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -184,7 +185,7 @@ namespace ColorVision.Copilot
                 _ = TryPersistCurrentConfig(out _);
 
             _state = _stateStore.Load();
-            var stateChanged = _state.EnsureInitializedAfterRestore(_config);
+            var stateChanged = _state.EnsureInitializedAfterRestore(_config, deferQueuedDraftRecovery: true);
             stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
                 _state,
@@ -362,7 +363,7 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted += BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent += BackgroundShellCommandRegistry_OutputMonitorEvent;
-            RestoreDurableQueuedFollowUps();
+            RestoreQueuedFollowUpsAfterRestart();
             InitializeStateRecoveryNotice();
         }
 

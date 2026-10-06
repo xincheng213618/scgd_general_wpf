@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,7 +43,7 @@ namespace ColorVision.Copilot
                 "启动 Windows 语音输入",
                 message => MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "无法启动语音输入：" + message,
+                    LocalizedText.Get("无法启动语音输入：") + message,
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning));

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using ColorVision.Copilot.Mcp;
 using ColorVision.Common.MVVM;
@@ -125,7 +126,7 @@ namespace ColorVision.Copilot
                 var label = string.IsNullOrWhiteSpace(_currentLiveContext?.AttachmentTitle)
                     ? _currentLiveContext?.Title
                     : _currentLiveContext.AttachmentTitle;
-                return string.IsNullOrWhiteSpace(label) ? "上下文" : label.Trim();
+                return string.IsNullOrWhiteSpace(label) ? LocalizedText.Get("上下文") : label.Trim();
             }
         }
 
@@ -160,25 +161,25 @@ namespace ColorVision.Copilot
             {
                 if (IsPromptHistorySearchOpen)
                     return HasPromptHistorySearchResults
-                        ? "把选中的历史请求恢复到输入框"
-                        : "请修改历史搜索关键词";
+                        ? LocalizedText.Get("把选中的历史请求恢复到输入框")
+                        : LocalizedText.Get("请修改历史搜索关键词");
                 if (_isCompactingConversation)
-                    return "停止上下文压缩";
+                    return LocalizedText.Get("停止上下文压缩");
                 if (_isEndingConversation)
-                    return "正在保存会话变更，请稍候";
+                    return LocalizedText.Get("正在保存会话变更，请稍候");
                 if (_fileAttachmentCts != null)
-                    return "停止处理附件";
+                    return LocalizedText.Get("停止处理附件");
                 if (_webPageAttachmentCts != null)
-                    return "停止读取网页附件";
+                    return LocalizedText.Get("停止读取网页附件");
                 if (IsViewingQueuedRun)
-                    return "取消这个排队任务";
+                    return LocalizedText.Get("取消这个排队任务");
                 if (IsViewingActiveRun)
                 {
                     return ActiveHostedRun?.State switch
                     {
-                        CopilotHostedRunState.PauseRequested => "正在暂停当前 Agent 任务；再次点击将改为取消",
-                        CopilotHostedRunState.CancelRequested => "正在取消当前任务",
-                        _ => IsAgentRequestActive ? "停止当前 Agent 任务" : Properties.Resources.CopilotStopGeneration,
+                        CopilotHostedRunState.PauseRequested => LocalizedText.Get("正在暂停当前 Agent 任务；再次点击将改为取消"),
+                        CopilotHostedRunState.CancelRequested => LocalizedText.Get("正在取消当前任务"),
+                        _ => IsAgentRequestActive ? LocalizedText.Get("停止当前 Agent 任务") : Properties.Resources.CopilotStopGeneration,
                     };
                 }
                 if (IsBusy)
@@ -201,8 +202,20 @@ namespace ColorVision.Copilot
             set => SelectConversation(value, persist: true);
         }
 
-        public CopilotAgentAccessMode ComposerAccessMode =>
-            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+        public CopilotAgentAccessMode ComposerAccessMode
+        {
+            get
+            {
+                var conversationMode = SelectedConversation?.AccessMode
+                    ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+                if (conversationMode == CopilotAgentAccessMode.FullAccess)
+                    return conversationMode;
+
+                return _state.DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                    ? CopilotAgentAccessMode.UnrestrictedFullAccess
+                    : conversationMode;
+            }
+        }
 
         public bool IsComposerFullAccess => ComposerAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess;
 
@@ -212,17 +225,17 @@ namespace ColorVision.Copilot
 
         public bool IsComposerConfirmAccess => ComposerAccessMode == CopilotAgentAccessMode.ConfirmProtectedActions;
 
-        public string ComposerAccessModeLabel => IsComposerFullAccess ? "完全访问" : !IsComposerTemporaryAutoReview
-            ? "按需确认"
+        public string ComposerAccessModeLabel => IsComposerFullAccess ? LocalizedText.Get("完全访问") : !IsComposerTemporaryAutoReview
+            ? LocalizedText.Get("按需确认")
             : SelectedConversation?.IsFullAccessPreparedForNextTask == true
-                ? "自动复核 · 下一任务"
-                : "自动复核 · 本任务";
+                ? LocalizedText.Get("自动复核 · 下一任务")
+                : LocalizedText.Get("自动复核 · 本任务");
 
         public string ComposerAccessModeToolTip => IsComposerFullAccess
-            ? "完全访问：当前会话的受保护工具直接执行，无需逐次确认或模型复核。仅当前工作区有效，手动关闭、工作区变化或重启后撤销。"
+            ? LocalizedText.Get("完全访问：受保护工具直接执行，无需逐次确认或模型复核。该选择会保留，直到手动切换回按需确认。")
             : IsComposerTemporaryAutoReview
             ? BuildFullAccessToolTip()
-            : "受保护操作执行前逐次确认。可为下一任务临时授权；已有待审批操作始终需要单独决定。";
+            : LocalizedText.Get("受保护操作执行前逐次确认。可为下一任务临时授权；已有待审批操作始终需要单独决定。");
 
         internal bool TrySelectConversation(string? conversationId)
         {
@@ -255,7 +268,7 @@ namespace ColorVision.Copilot
                 var builder = new StringBuilder();
                 builder.AppendLine(profile.DisplayLabel);
                 builder.AppendLine(profile.SecondaryLabel);
-                builder.AppendLine($"推理：{profile.ReasoningLabel}");
+                builder.AppendLine(LocalizedText.Format($"推理：{profile.ReasoningLabel}"));
 
                 if (!string.IsNullOrWhiteSpace(profile.BaseUrl))
                     builder.AppendLine(profile.BaseUrl.Trim());
@@ -435,8 +448,8 @@ namespace ColorVision.Copilot
 
         public string PromptHistorySearchScopeLabel =>
             _promptHistorySearchScope == CopilotPromptHistorySearchScope.AllConversations
-                ? "全部会话"
-                : "当前会话";
+                ? LocalizedText.Get("全部会话")
+                : LocalizedText.Get("当前会话");
 
         public CopilotPromptHistorySearchItem? SelectedPromptHistorySearchResult
         {
@@ -579,15 +592,15 @@ namespace ColorVision.Copilot
             {
                 var pendingCount = _approvalCoordinator.TotalPendingCount;
                 if (pendingCount > 0)
-                    return pendingCount == 1 ? "等待确认" : $"等待确认 {pendingCount}";
+                    return pendingCount == 1 ? LocalizedText.Get("等待确认") : LocalizedText.Format($"等待确认 {pendingCount}");
 
                 if (HasRecentMcpFailures)
-                    return "控制异常";
+                    return LocalizedText.Get("控制异常");
 
                 if (!_config.McpEnabled)
                     return string.Empty;
 
-                return CopilotMcpServer.Instance.IsRunning ? "控制运行中" : "控制停止";
+                return CopilotMcpServer.Instance.IsRunning ? LocalizedText.Get("控制运行中") : LocalizedText.Get("控制停止");
             }
         }
 

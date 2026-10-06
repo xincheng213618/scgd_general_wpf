@@ -1,15 +1,25 @@
 using System;
 using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.End;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 public class CVEndNode : CVDeviceNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVEndNode));
+
+	private static int endDelayMilliseconds;
+
+	public static int EndDelayMilliseconds
+	{
+		get => Volatile.Read(ref endDelayMilliseconds);
+		set => Volatile.Write(ref endDelayMilliseconds, value is > 0 and <= 500 ? value : 0);
+	}
 
 	public STNodeOption m_in_start;
 
@@ -19,9 +29,13 @@ public class CVEndNode : CVDeviceNode
 		: base("EndNode", "EndNode", "EN1", "DEV01")
 	{
 		base.AutoSize = false;
-		base.Width = StandardNodeWidth;
-		base.Height = 100;
+		base.Width = CompactTerminalNodeWidth;
+		base.Height = base.TitleHeight + 3 * base.ItemHeight;
 	}
+
+	protected override int MinimumNodeWidth => CompactTerminalNodeWidth;
+
+	protected override bool ShouldDrawOptionText(STNodeOption op) => false;
 
 	protected override void OnCreate()
 	{
@@ -59,23 +73,28 @@ public class CVEndNode : CVDeviceNode
 		}
 	}
 
-	protected virtual void DoNodeEnded(CVStartCFC startAction)
+	protected virtual async void DoNodeEnded(CVStartCFC startAction)
 	{
-		if (startAction.TryDoFinishing())
+		try
 		{
+			int delay = EndDelayMilliseconds;
+			if (delay > 0 && startAction.IsRunning && !startAction.TryGetStopStatus(out _)
+				&& DateTime.Now - startAction.StartTime >= TimeSpan.FromSeconds(1))
+			{
+				await Task.Delay(delay).ConfigureAwait(false);
+				var startNode = startAction.GetStartNode();
+				if (startAction.RuntimeResources.IsDisposed || (startNode != null && startNode.GetCFC(startAction.SerialNumber)?.Id != startAction.Id))
+					return;
+			}
+			if (!startAction.TryDoFinishing())
+				return;
 			if (logger.IsDebugEnabled)
-			{
-				logger.DebugFormat("Flow Do Finishing => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
-			}
-			if (logger.IsInfoEnabled)
-			{
-				logger.InfoFormat("Flow Finished[{0}/{1}/{2}]", startAction.SerialNumber, startAction.FlowStatus.ToString(), startAction.GetTotalTime().ToString());
-			}
+				logger.DebugFormat("Flow Finished[{0}/{1}/{2}]", startAction.SerialNumber, startAction.FlowStatus, startAction.GetTotalTime());
 			startAction.FireFinished();
 		}
-		else if (logger.IsDebugEnabled)
+		catch (Exception ex)
 		{
-			logger.DebugFormat("Flow has Finished. => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
+			logger.Error("Flow end node failed.", ex);
 		}
 	}
 

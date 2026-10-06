@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using System;
 using System.Collections.Generic;
@@ -37,7 +38,7 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "无法打开附件：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    LocalizedText.Get("无法打开附件：") + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

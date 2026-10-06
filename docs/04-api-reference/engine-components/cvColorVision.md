@@ -2,9 +2,9 @@
 knowledge_id: "engine.native-bindings"
 knowledge_type: "reference"
 status: "current"
-summary: "定位供应商 native DLL 的相机、光谱、XYZ、PG 与源表绑定契约，以及内部版的交付边界。"
-aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","ConvertXYZ","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
-code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Color/ConvertXYZ.cs","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
+summary: "定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。"
+aliases: ["设备SDK入口在哪里","cvColorVision","cvCameraCSLib","CVCommCore","MQTTMessageLib","CVCommCore.dll","MQTTMessageLib.dll"]
+code_paths: ["Engine/cvColorVision/README.md","Engine/cvColorVision/Camera","Engine/cvColorVision/CVCommCore","Engine/cvColorVision/MQTTMessageLib","Engine/cvColorVision/Devices/Spectrometer/Spectrometer.cs","Engine/cvColorVision/cvColorVision.csproj"]
 test_paths: []
 related: ["engine.index","engine.native-integration","ui.core"]
 ---
@@ -12,6 +12,8 @@ related: ["engine.index","engine.native-integration","ui.core"]
 # cvColorVision
 
 `Engine/cvColorVision/` 是原生能力绑定层，通过 `DllImport` 暴露 `cvCamera.dll` 等底层接口给 C#。它不是纯托管视觉算法库，也不负责 WPF 界面、模板或工作流编排。
+
+本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧插件若引用早期 `cvColorVision.dll` 的句柄式 XYZ 采样 API，需要迁移到本地测量接口并重新编译；当前托管程序集不保证这些旧 API 的二进制兼容。
 
 ## 绑定与交付前提
 
@@ -23,7 +25,11 @@ OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，�
 
 Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `glaDevSys64.dll`、`xGUSB64.dll`、`xGCOM64.dll`、`xserial64.dll` 和 `FTD2XX.dll` 是否存在；缺少其中任一文件就报错。这只是输入存在性门禁，不校验 DLL 能否加载、导出是否匹配或真实设备能否打开。README 也作为 NuGet 包说明打包，但其仓库相对链接不保证包内含有对应知识文件。
 
-默认交付保留 `cfg/sys.cfg`，不再捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，本调整不代表移除了这些相机 SDK 或改变了相机类型枚举。仓库与 PluginKit 的共享文件清单、CameraTest 独立包均遵循此边界；主安装器的外部 AIP 文件也须同步移除对应文件、组件和目录引用。
+默认交付不含 `cfg/sys.cfg`。配套内部版 `cvCamera.dll` 的相机创建接口在配置路径为 `null` 或空字符串时初始化内置曝光、相机、XYZ 通道和空校准列表；显式文件路径仍保留兼容支持。WPF 的本地相机、视频和 CameraTest 会话使用空路径创建，物理相机及校准参数继续通过既有 JSON 接口注入。不能混用尚未支持空路径初始化的旧 DLL；仅删除配置文件不能替代 native 更新。
+
+配套内部版 `cvCamera.dll` 不再使用 `CameraAttribute.db` 或旧 `cvTableList` 数据表实现，也不再导入 `sqlite3.dll`。相机读出模式保留 SDK 默认值；制冷能力通过 SDK 查询，温控开关和目标温度使用现有相机配置，停止温控不再依赖属性库。默认交付不含 `cvTableList.dll` / `sqlite3.dll`，托管 SQLite 的 `SQLitePCLRaw` 与 `e_sqlite3.dll` 依赖继续保留。旧 DataTable / SQLiteBaseControl 的 C++ 导出已移除，依赖这些导出或导出序号的外部程序需重新核对。
+
+默认交付也不捆绑 `cfg_files` 中的 IKap `510.vlcf` 和 MIL 的位深映射/DCF 采集配置。HK 的 MVS、GenTL、MVFG 驱动分支不使用这组默认配置；相机驱动仍须按实际设备安装。IKap/MIL 设备需要另行提供与设备匹配的采集配置，这不代表移除了这些相机 SDK 或改变了相机类型枚举。
 
 原始配置在仓库 `docs/_history/device-configs/ikap-mil/` 归档，不参与运行输出和默认安装包。该目录的 `manifest.json` 记录原始路径、字节数和 SHA-256，`README.txt` 说明按设备恢复工程复制项、安装器和共享清单的方法。恢复前应核对设备型号与位深，并在真实采集卡上验收，不能直接将历史配置当作所有 IKap/MIL 设备的通用默认值。
 
@@ -37,9 +43,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 
 ## 签名与返回值不能统一推断
 
-当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等实际声明，不提供旧示例中的 `CM_Init(CameraType)`、`CM_GetImage(handle, buffer)`、`CM_SetExposureTime` 或 `CM_Uninit` 这一套通用生命周期 API。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
-
-`ConvertXYZ.CM_InitXYZ(IntPtr handle)` 返回 `int`，不是新建的 `IntPtr`；调用方持有并传入已有句柄。`CM_SetBufferXYZ` 的尺寸/通道参数为 `UInt32`，数组与指针重载均存在，且另有 `CM_ReleaseBuffer`。跨 native 边界须核对签名、缓冲区大小、所有权与释放顺序，不能只按方法名猜测资源生命周期。
+当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等声明。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。
 
@@ -51,7 +55,7 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | `EntryPointNotFoundException` | `EntryPoint` 名称、DLL 版本、供应商导出符号 |
 | `BadImageFormatException` | x86/x64 位数混用、AnyCPU 配置 |
 | `AccessViolationException` | `DllImport` 参数、数组长度、指针生命周期、释放顺序 |
-| XYZ/CCT/xy/uv 数值异常 | `CM_SetBufferXYZ` rows/cols/bpp/channels 和采样区域 |
+| XYZ/CCT/xy/uv 数值异常 | `PoiMeasurementService` 的平面 CIE 布局、RAW 校正快照与采样区域 |
 | PG/源表无响应 | 连接方式、端口/IP、Start/Stop 顺序、原生返回码日志 |
 
 ## 当前能力
@@ -59,7 +63,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
 | 相机/通用视觉 | `Camera/cvCameraCSLib.*.cs` | 相机打开关闭、预览、取帧、配置 JSON、自动曝光、ROI、采样、TIFF、对焦和多类检测函数 |
-| 色彩采样 | `Color/ConvertXYZ.cs` | XYZ 缓冲初始化/释放，Circle/Rect/批量点位采样，xyz/uv/CCT/主波长导出 |
 | 图卡 | `Devices/PatternGenerator/PG.cs` | PG 初始化、TCP/串口连接、Start/Stop/Reset、帧切换 |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` | 打开关闭、源模式、2/4 线、前后端口、电压电流、步进/扫描 |
 | 极薄入口 | `Algorithms.cs` 等 | 直接暴露少量底层函数 |
@@ -72,7 +75,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | native DLL 就位 | `cvCamera.dll` 及其实际依赖能在 Release/x64 输出目录加载；隔离加载不需要 OLED/CUDA，实际导出覆盖当前 C# 声明 |
 | 位数一致 | 主程序、插件、native DLL 都是 x64 |
 | 相机链路 | 初始化、枚举/打开、取帧、关闭和释放能按真实设备流程跑通 |
-| XYZ 采样 | `CM_InitXYZ`、`CM_SetBufferXYZ`、采样、`CM_ReleaseBuffer`、`CM_UnInitXYZ` 顺序清楚 |
 | PG 链路 | 初始化、连接、Start/Stop/Reset、上下切换或指定帧切换可被设备服务调用 |
 | 源表链路 | 打开、设置源模式、读电压电流、步进/扫描、关闭有明确调用顺序 |
 | 错误码 | 原生返回码能进入日志或上层异常，不被吞掉 |
@@ -117,7 +119,6 @@ Release 构建的 `ValidateGaolitongNativeDependencies` 会在 Build 前检查 `
 | 任务 | 先看 |
 | --- | --- |
 | 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
-| XYZ 采样 | `Color/ConvertXYZ.cs` |
 | 图卡 | `Devices/PatternGenerator/PG.cs` |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` |
 | 光谱仪 | `Devices/Spectrometer/` |

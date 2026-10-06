@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CS4014,CS8602,CS8604
 using ColorVision.Solution.Workspace;
 using Newtonsoft.Json;
@@ -175,8 +176,8 @@ namespace ColorVision.Solution.Explorer
                 Logger.Error($"保存解决方案失败: {ConfigFileInfo.FullName}", ex);
                 MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"无法保存解决方案配置。\n\n{ex.Message}",
-                    "保存解决方案失败",
+                    LocalizedText.Format($"无法保存解决方案配置。\n\n{ex.Message}"),
+                    LocalizedText.Get("保存解决方案失败"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return false;

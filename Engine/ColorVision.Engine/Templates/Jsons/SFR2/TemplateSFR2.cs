@@ -1,4 +1,3 @@
-using ColorVision.Database;
 using log4net;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
@@ -53,8 +52,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
         public string Description { get; set; } = "{\r\n  \"caclWay\": 1,\r\n  \"MaskRect\": {\r\n    \"h\": 0,\r\n    \"w\": 0,\r\n    \"x\": 0,\r\n    \"y\": 0,\r\n    \"enable\": false\r\n  },\r\n  \"debugCfg\": {\r\n    \"Debug\": false,\r\n    \"debugPath\": \"Result\\\\\\\\\",\r\n    \"debugImgResize\": 2\r\n  },\r\n  \"sfrAutoPoi1\": {\r\n    \"dst_roi_h\": 60,\r\n    \"dst_roi_w\": 60,\r\n    \"minLength\": 100,\r\n    \"active_Top\": true,\r\n    \"active_Left\": true,\r\n    \"active_Right\": true,\r\n    \"lowThreshold\": 20,\r\n    \"active_Bottom\": true,\r\n    \"highThreshold\": 40,\r\n    \"thresholdRatio\": 0.6\r\n  }\r\n}\r\n";
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlSFR2();
-
     }
 
 

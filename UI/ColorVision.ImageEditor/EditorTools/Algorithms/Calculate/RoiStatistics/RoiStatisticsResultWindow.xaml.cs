@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -40,7 +41,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 CandidatesGrid.ItemsSource = ToTable(candidates).DefaultView;
                 double pixelCount = Measurement("roi.pixel_count");
                 double badPixels = Measurement("roi.bad_pixel_candidate_count");
-                SummaryText.Text = $"ROI 像素：{pixelCount:N0}；通道：{summary.Rows.Count}；坏点候选：{badPixels:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。";
+                SummaryText.Text = LocalizedText.Format($"ROI 像素：{pixelCount:N0}；通道：{summary.Rows.Count}；坏点候选：{badPixels:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。");
                 RenderHistogram(histogram);
                 _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
                 Closed += (_, _) => DisposeOwnedState();
@@ -117,11 +118,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -132,11 +133,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             try
             {
                 AlgorithmResultExporter.ExportJson(_result, dialog.FileName);
-                MessageBox.Show(this, "导出完成。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("导出完成。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

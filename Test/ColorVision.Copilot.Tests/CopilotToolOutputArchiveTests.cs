@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
@@ -65,6 +67,165 @@ public sealed class CopilotToolOutputArchiveTests
         Assert.Equal(CopilotToolFailureKind.NotFound, otherConversation.FailureKind);
         Assert.Equal(1, registry.ClearConversation(request.ConversationId));
         Assert.Empty(registry.GetSnapshots(request.ConversationId));
+    }
+
+    [Theory]
+    [InlineData(256, false)]
+    [InlineData(256, true)]
+    [InlineData(null, false)]
+    [InlineData(null, true)]
+    public async Task ModelVisibleArchivePagesContinueFromTheLastReturnedCharacter(int? tokenLimit, bool unicode)
+    {
+        using var registry = new CopilotToolOutputArchiveRegistry();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "model-page-conversation",
+            TaskId = "model-page-task",
+            ToolOutputTokenLimitOverride = tokenLimit,
+        };
+        var original = " \t" + string.Concat(Enumerable.Range(0, 3_000).Select(index =>
+            unicode ? $"{index:D4}界😀|" : $"{index:D4}row|")) + "tail\t ";
+        var snapshot = registry.Retain(request.ConversationId, "ReadLocalFile", "call:original", original);
+        Assert.NotNull(snapshot);
+        Assert.Equal(original.Length, snapshot.ArchivedCharacters);
+        var readTool = new CopilotReadToolOutputTool(registry);
+        var combined = new StringBuilder();
+        var offset = 0;
+
+        while (true)
+        {
+            var page = await readTool.ExecuteAsync(
+                request,
+                CreateReadInput(snapshot.Id, offset),
+                CancellationToken.None);
+            var captured = CopilotToolResultContract.Capture(readTool.Name, page);
+            Assert.True(captured.Success);
+            var outcome = CreateOutcome(request, readTool, captured.Content, captured);
+            var formatted = CopilotToolOutputArchivePolicy.Format(outcome, tokenLimit, registry);
+            using var document = JsonDocument.Parse(formatted);
+            var modelContent = document.RootElement.GetProperty("content").GetString()!
+                .Replace("\r\n", "\n", StringComparison.Ordinal);
+            if (tokenLimit.HasValue)
+            {
+                var maximumWeight = tokenLimit.Value * CopilotTokenEstimator.AsciiCharactersPerToken;
+                Assert.InRange(formatted.Length, 1, maximumWeight);
+                Assert.True(CopilotTokenEstimator.EstimateTextWeight(formatted) <= maximumWeight);
+            }
+            else
+            {
+                Assert.InRange(formatted.Length, 1, CopilotFrameworkToolResultFormatter.MaxSerializedCharacters);
+                Assert.InRange(modelContent.Length, 1, CopilotFrameworkToolResultFormatter.MaxContentCharacters);
+            }
+            const string contentMarker = "\ncontent:\n";
+            var contentStart = modelContent.IndexOf(contentMarker, StringComparison.Ordinal);
+            Assert.True(contentStart >= 0, "The model-visible archive page must retain its header and content boundary.");
+            var header = modelContent[..contentStart].Split('\n')
+                .Select(line => line.Split(": ", 2, StringSplitOptions.None))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+            var body = modelContent[(contentStart + contentMarker.Length)..];
+            var returned = int.Parse(header["returned_characters"], CultureInfo.InvariantCulture);
+            var next = int.Parse(header["next_offset_characters"], CultureInfo.InvariantCulture);
+            var endOfOutput = header["end_of_output"] == "true";
+
+            Assert.Equal(offset, int.Parse(header["offset_characters"], CultureInfo.InvariantCulture));
+            Assert.True(next > offset, "Each model-visible archive page must advance its continuation cursor.");
+            Assert.InRange(next, offset + 1, original.Length);
+            Assert.Equal(body.Length, returned);
+            Assert.Equal(offset + returned, next);
+            Assert.Equal(original[offset..next], body);
+            Assert.Equal(next == original.Length, endOfOutput);
+            Assert.Equal(
+                $"Read {returned} redacted character(s) from archived ReadLocalFile output; "
+                    + (endOfOutput ? "reached the archive end." : "more archived output is available."),
+                document.RootElement.GetProperty("summary").GetString());
+            Assert.False(char.IsLowSurrogate(body[0]));
+            Assert.False(char.IsHighSurrogate(body[^1]));
+            combined.Append(body);
+            offset = next;
+            if (endOfOutput)
+                break;
+        }
+
+        Assert.Equal(original, combined.ToString());
+        Assert.Single(registry.GetSnapshots(request.ConversationId));
+    }
+
+    [Theory]
+    [InlineData("sk-abcdefghijklmnopqrstuvwxyz123456", "<redacted>")]
+    [InlineData("AKIAABCDEFGHIJKLMNOP", "<redacted>")]
+    [InlineData("accesskey=shortcredential;", "accesskey=<redacted>;")]
+    [InlineData("privatekey=\"shortcredential\";", "privatekey=\"<redacted>\";")]
+    public async Task CredentialsAreRedactedBeforeArchiveCoordinatesAreAssigned(string credential, string redactedCredential)
+    {
+        using var registry = new CopilotToolOutputArchiveRegistry();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "credential-page-conversation",
+            TaskId = "credential-page-task",
+        };
+        var original = " \tbefore|\0" + credential + "|after\t ";
+        var expected = original.Replace(credential, redactedCredential, StringComparison.Ordinal)
+            .Replace("\0", string.Empty, StringComparison.Ordinal);
+        var snapshot = registry.Retain(request.ConversationId, "ReadLocalFile", "call:credential", original);
+        Assert.NotNull(snapshot);
+        Assert.Equal(original.Length, snapshot.ObservedCharacters);
+        Assert.Equal(expected.Length, snapshot.ArchivedCharacters);
+        var stored = registry.Read(request.ConversationId, snapshot.Id, 0,
+            CopilotOutputArchiveLimits.MaximumReadCharacters, CancellationToken.None);
+        Assert.True(stored.Success);
+        Assert.Equal(expected, stored.Page!.Content);
+        Assert.Equal(expected.Length, stored.Page.NextOffsetCharacters);
+        var readTool = new CopilotReadToolOutputTool(registry);
+        var page = await readTool.ExecuteAsync(request, CreateReadInput(snapshot.Id), CancellationToken.None);
+        var captured = CopilotToolResultContract.Capture(readTool.Name, page);
+        Assert.True(captured.Success);
+        var formatted = CopilotToolOutputArchivePolicy.Format(
+            CreateOutcome(request, readTool, captured.Content, captured), SmallTokenLimit, registry);
+        using var document = JsonDocument.Parse(formatted);
+        var modelContent = document.RootElement.GetProperty("content").GetString()!
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        const string contentMarker = "\ncontent:\n";
+        var contentStart = modelContent.IndexOf(contentMarker, StringComparison.Ordinal);
+        Assert.True(contentStart >= 0);
+        var header = modelContent[..contentStart].Split('\n')
+            .Select(line => line.Split(": ", 2, StringSplitOptions.None))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+        var body = modelContent[(contentStart + contentMarker.Length)..];
+
+        Assert.Equal(expected, body);
+        Assert.DoesNotContain(credential, captured.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain(credential, formatted, StringComparison.Ordinal);
+        Assert.Equal(expected.Length, int.Parse(header["returned_characters"], CultureInfo.InvariantCulture));
+        Assert.Equal(expected.Length, int.Parse(header["next_offset_characters"], CultureInfo.InvariantCulture));
+        Assert.Equal(expected.Length, int.Parse(header["archived_characters"], CultureInfo.InvariantCulture));
+        Assert.Equal("true", header["end_of_output"]);
+        Assert.Single(registry.GetSnapshots(request.ConversationId));
+    }
+
+    [Theory]
+    [InlineData(32)]
+    [InlineData(128)]
+    public async Task ModelBudgetTooSmallForAnArchivePageExposesNoCursorOrCompletionSummary(int tokenLimit)
+    {
+        using var registry = new CopilotToolOutputArchiveRegistry();
+        var request = new CopilotAgentRequest { ConversationId = "small-page-budget", ToolOutputTokenLimitOverride = tokenLimit };
+        var snapshot = registry.Retain(request.ConversationId, "ReadLocalFile", "call:original", new string('x', 16_384));
+        Assert.NotNull(snapshot);
+        var tool = new CopilotReadToolOutputTool(registry);
+        var captured = CopilotToolResultContract.Capture(tool.Name,
+            await tool.ExecuteAsync(request, CreateReadInput(snapshot.Id), CancellationToken.None));
+        Assert.True(captured.Success);
+        var formatted = CopilotToolOutputArchivePolicy.Format(CreateOutcome(request, tool, captured.Content, captured), tokenLimit, registry);
+        using var document = JsonDocument.Parse(formatted);
+
+        Assert.True(document.RootElement.GetProperty("content_truncated").GetBoolean());
+        Assert.False(document.RootElement.TryGetProperty("summary", out _));
+        Assert.DoesNotContain("next_offset_characters", formatted, StringComparison.Ordinal);
+        Assert.DoesNotContain("<empty>", formatted, StringComparison.Ordinal);
+        Assert.True(CopilotTokenEstimator.EstimateTextWeight(formatted) <= tokenLimit * CopilotTokenEstimator.AsciiCharactersPerToken);
+        Assert.Single(registry.GetSnapshots(request.ConversationId));
     }
 
     [Fact]
@@ -230,6 +391,61 @@ public sealed class CopilotToolOutputArchiveTests
                     .GetProperty("content_archive")
                     .GetProperty("archive_id")
                     .GetString());
+
+            var readTool = new CopilotReadToolOutputTool(CopilotToolOutputArchiveRegistry.Shared);
+            var readEvents = new List<CopilotAgentEvent>();
+            var readOutcome = await new CopilotToolExecutor([]).ExecuteAsync(
+                new CopilotToolInvocation
+                {
+                    CallId = "call:runtime-archive-read",
+                    Round = 2,
+                    Attempt = 1,
+                    MaxAttempts = 1,
+                    RuntimeName = "test",
+                    Tool = readTool,
+                    AgentRequest = new CopilotAgentRequest
+                    {
+                        ConversationId = conversationId,
+                        TaskId = request.TaskId,
+                        ToolOutputTokenLimitOverride = SmallTokenLimit,
+                    },
+                    ToolInput = CreateReadInput(outcome.ToolOutputArchive.Id),
+                },
+                readEvents.Add,
+                CancellationToken.None);
+            Assert.True(readOutcome.Result.Success);
+            var nativeRead = Assert.IsType<CopilotToolOutputArchiveReadResult>(readOutcome.Result.ToolOutputArchiveRead);
+            Assert.NotNull(nativeRead.Page);
+            var readResultEvent = Assert.Single(readEvents, item => item.Type == CopilotAgentEventType.ToolResult);
+            var publishedResult = Assert.IsType<CopilotToolResult>(readResultEvent.ToolResult);
+            var publishedRead = Assert.IsType<CopilotToolOutputArchiveReadResult>(publishedResult.ToolOutputArchiveRead);
+            Assert.Equal(nativeRead.Page, publishedRead.Page);
+            Assert.Equal(readOutcome.FormattedModelResult, readResultEvent.ModelToolResult);
+            Assert.InRange(readResultEvent.ModelToolResult.Length, 1,
+                SmallTokenLimit * CopilotTokenEstimator.AsciiCharactersPerToken);
+            Assert.True(CopilotTokenEstimator.EstimateTextWeight(readResultEvent.ModelToolResult)
+                <= SmallTokenLimit * CopilotTokenEstimator.AsciiCharactersPerToken);
+            CopilotAgentEventProtocol.Validate(readResultEvent);
+            using var readDocument = JsonDocument.Parse(readResultEvent.ModelToolResult);
+            var modelContent = readDocument.RootElement.GetProperty("content").GetString()!
+                .Replace("\r\n", "\n", StringComparison.Ordinal);
+            const string contentMarker = "\ncontent:\n";
+            var contentStart = modelContent.IndexOf(contentMarker, StringComparison.Ordinal);
+            Assert.True(contentStart >= 0);
+            var header = modelContent[..contentStart].Split('\n')
+                .Select(line => line.Split(": ", 2, StringSplitOptions.None))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+            var body = modelContent[(contentStart + contentMarker.Length)..];
+
+            Assert.Equal(body.Length, int.Parse(header["returned_characters"], CultureInfo.InvariantCulture));
+            Assert.Equal(body.Length, int.Parse(header["next_offset_characters"], CultureInfo.InvariantCulture));
+            Assert.Equal(new string('x', body.Length), body);
+            Assert.True(body.Length < nativeRead.Page.ReturnedCharacters);
+            Assert.Equal("false", header["end_of_output"]);
+            Assert.Null(readOutcome.ToolOutputArchive);
+            Assert.False(readDocument.RootElement.TryGetProperty("content_archive", out _));
+            Assert.Single(CopilotToolOutputArchiveRegistry.Shared.GetSnapshots(conversationId));
         }
         finally
         {
@@ -406,7 +622,8 @@ public sealed class CopilotToolOutputArchiveTests
     private static CopilotToolExecutionOutcome CreateOutcome(
         CopilotAgentRequest request,
         ICopilotTool tool,
-        string content)
+        string content,
+        CopilotToolResult? result = null)
     {
         const string CallId = "call:tool-output-archive";
         return new CopilotToolExecutionOutcome
@@ -427,7 +644,7 @@ public sealed class CopilotToolOutputArchiveTests
                     ToolInput = CopilotAgentToolInput.Empty,
                 },
             },
-            Result = new CopilotToolResult
+            Result = result ?? new CopilotToolResult
             {
                 ToolName = tool.Name,
                 Success = true,
@@ -485,12 +702,13 @@ public sealed class CopilotToolOutputArchiveTests
         };
     }
 
-    private static CopilotAgentToolInput CreateReadInput(string archiveId) =>
+    private static CopilotAgentToolInput CreateReadInput(string archiveId, int offsetCharacters = 0) =>
         new()
         {
             Arguments = new Dictionary<string, object?>
             {
                 ["archiveId"] = archiveId,
+                ["offsetCharacters"] = offsetCharacters,
                 ["maximumCharacters"] = CopilotOutputArchiveLimits.MaximumReadCharacters,
             },
         };

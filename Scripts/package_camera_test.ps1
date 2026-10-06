@@ -24,8 +24,6 @@ function Test-CameraTestPackageFile([string]$RelativePath) {
     # Keep all declared managed/vendor DLL dependencies, including camera drivers omitted by Spectrum's filter.
     if ($path.EndsWith('.dll')) { return $true }
     if ($path -in @('cameratest.exe', 'cameratest.deps.json', 'cameratest.runtimeconfig.json', 'cameratest.dll.config')) { return $true }
-    # Keep the shared SDK configuration; device-specific capture-card profiles are supplied separately.
-    if ($path -eq 'cfg/sys.cfg') { return $true }
     return ($path -match '(^|/)(license|licence|notice|third-party-notices)(\.[a-z0-9_-]+)?\.(txt|md)$')
 }
 
@@ -33,7 +31,7 @@ function Assert-CameraTestPayload([string]$Folder) {
     $files = @(Get-ChildItem -LiteralPath $Folder -Recurse -File)
     foreach ($name in @('CameraTest.exe', 'CameraTest.dll', 'CameraTest.deps.json', 'CameraTest.runtimeconfig.json',
         'ColorVision.Engine.dll', 'ColorVision.Core.dll', 'ColorVision.ImageEditor.dll', 'cvColorVision.dll',
-        'cvCamera.dll', 'OpenCvSharpExtern.dll', 'opencv_helper.dll', 'sys.cfg')) {
+        'cvCamera.dll', 'OpenCvSharpExtern.dll', 'opencv_helper.dll')) {
         if (!($files.Name -contains $name)) { throw "Required runtime asset missing: $name" }
     }
     if ($files.Name -contains 'coreclr.dll' -or $files.Name -contains 'System.Private.CoreLib.dll') { throw 'This standard package must not embed the .NET runtime.' }

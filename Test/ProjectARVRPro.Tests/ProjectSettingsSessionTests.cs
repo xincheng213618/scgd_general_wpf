@@ -9,6 +9,30 @@ namespace ProjectARVRPro.Tests;
 public sealed class ProjectSettingsSessionTests
 {
     [Fact]
+    public void StorageReserveDefaultsRemainCompatibleAndInvalidValuesCannotBeSaved()
+    {
+        var results = JsonConvert.DeserializeObject<ViewResultManagerConfig>("{}")!;
+        Assert.False(results.AutoCleanupEnabled);
+        Assert.Equal(100, results.MinimumFreeSpaceGB);
+        var session = new ProjectSettingsSession(new(), results, false);
+        Assert.Equal(ProjectSettingsPage.Results, Assert.Single(session.Sections, section => section.Matches("MinimumFreeSpaceGB")).Id);
+        session.Results.AutoCleanupEnabled = true;
+        session.Results.MinimumFreeSpaceGB = 0;
+        Assert.Equal(ProjectSettingsPage.Results, session.Validate()!.Page);
+        Assert.Throws<InvalidOperationException>(() => session.Save(() => { }));
+        Assert.False(results.AutoCleanupEnabled);
+        session.Results.MinimumFreeSpaceGB = 80;
+        session.Save(() => { });
+        var restored = JsonConvert.DeserializeObject<ViewResultManagerConfig>(JsonConvert.SerializeObject(results))!;
+        Assert.True(restored.AutoCleanupEnabled);
+        Assert.Equal(80, restored.MinimumFreeSpaceGB);
+        session.RestoreDefaults();
+        session.Save(() => { });
+        Assert.False(results.AutoCleanupEnabled);
+        Assert.Equal(100, results.MinimumFreeSpaceGB);
+    }
+
+    [Fact]
     public void DraftAndDefaultsNeverChangeSourcesOrRuntimeState()
     {
         var project = new ProjectARVRProConfig { TryCountMax = 6, SN = "running", StepIndex = 3 };

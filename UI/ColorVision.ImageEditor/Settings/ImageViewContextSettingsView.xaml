@@ -18,7 +18,7 @@
                 BorderThickness="1"
                 Padding="12"
                 Visibility="{Binding IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBlock Text="无数据" Opacity="0.7" Foreground="{DynamicResource GlobalTextBrush}"/>
+            <TextBlock Text="{x:Static properties:Resources.ContextSettingsNoData}" Opacity="0.7" Foreground="{DynamicResource GlobalTextBrush}"/>
         </Border>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto"

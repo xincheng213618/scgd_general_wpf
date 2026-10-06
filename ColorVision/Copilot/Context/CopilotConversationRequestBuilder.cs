@@ -182,6 +182,23 @@ namespace ColorVision.Copilot
                 cancellationToken);
         }
 
+        internal Task<string> BuildRequestAttachmentContextBlockAsync(
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            bool refreshWebPages,
+            CancellationToken cancellationToken) =>
+            BuildAttachmentContextBlockCoreAsync(
+                attachments,
+                AttachmentContentLimit * CopilotTokenEstimator.AsciiCharactersPerToken,
+                refreshWebPages ? BuildRefreshedAttachmentBlockAsync : BuildAttachmentBlockAsync,
+                cancellationToken);
+
+        private ValueTask<string> BuildRefreshedAttachmentBlockAsync(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken) =>
+            attachment.Type == CopilotAttachmentType.WebPage
+                ? new ValueTask<string>(BuildWebPageContextBlockAsync(attachment.Source, cancellationToken))
+                : BuildAttachmentBlockAsync(attachment, cancellationToken);
+
         private static async Task<string> BuildAttachmentContextBlockCoreAsync(
             IEnumerable<CopilotAttachmentItem>? attachments,
             int maximumWeight,

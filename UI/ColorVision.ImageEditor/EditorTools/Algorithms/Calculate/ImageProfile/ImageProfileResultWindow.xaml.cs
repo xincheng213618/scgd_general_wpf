@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -53,14 +54,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 double count = measurements.Measurements.Single(item => item.Name == "profile.sample_count").Value;
                 double length = measurements.Measurements.Single(item => item.Name == "profile.path_length_pixels").Value;
                 double millimetres = measurements.Measurements.Single(item => item.Name == "profile.path_length_millimetres").Value;
-                SummaryText.Text = $"采样点：{count:N0}；界面预览：{previewRows.Length:N0}；路径：{length:G8} px / {millimetres:G8} mm。统计按完整数据计算并排除非有限值；标准差为总体标准差。";
+                SummaryText.Text = LocalizedText.Format($"采样点：{count:N0}；界面预览：{previewRows.Length:N0}；路径：{length:G8} px / {millimetres:G8} mm。统计按完整数据计算并排除非有限值；标准差为总体标准差。");
                 string[] cieChannels = samples.Columns.Select(column => column.Name)
                     .Where(name => name.StartsWith("CIE ", StringComparison.Ordinal) && !name.EndsWith("Status", StringComparison.Ordinal)).ToArray();
                 if (cieChannels.Length > 0)
                 {
                     string sourceName = string.Join(" / ", cieChannels);
-                    Title = $"灰度与颜色剖面 — {sourceName}";
-                    SummaryText.Text = "RGB/Gray 为 DN；XYZ 单位未声明；x/y 为无量纲色度。" + SummaryText.Text;
+                    Title = LocalizedText.Format($"灰度与颜色剖面 — {sourceName}");
+                    SummaryText.Text = LocalizedText.Get("RGB/Gray 为 DN；XYZ 单位未声明；x/y 为无量纲色度。") + SummaryText.Text;
                 }
                 Render(samples, chartRows);
                 ApplyPlotTheme(_themeManager.CurrentUITheme);
@@ -124,7 +125,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
 
         private void BuildChannelControls(string[] channels)
         {
-            ChannelPanel.Children.Add(new TextBlock { Text = "显示通道：", VerticalAlignment = System.Windows.VerticalAlignment.Center });
+            ChannelPanel.Children.Add(new TextBlock { Text = LocalizedText.Get("显示通道："), VerticalAlignment = System.Windows.VerticalAlignment.Center });
             foreach (string channel in channels)
             {
                 bool selected = !channels.Contains("CIE Y") || channel is "R" or "G" or "B" or "Gray" or "CIE Y";
@@ -337,7 +338,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

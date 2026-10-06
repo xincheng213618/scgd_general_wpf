@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/03_2 Algorithm")]
+[STNode("Algorithm", CategoryOrder = 320)]
 public class AlgorithmEQENode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmEQENode));

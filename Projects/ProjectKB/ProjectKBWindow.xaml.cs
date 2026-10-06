@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1805,CS4014,CS8601,CS8602,CS8604
+﻿using LocalizedText = global::ProjectKB.DisplayText;
+#pragma warning disable CA1805,CS4014,CS8601,CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
@@ -196,7 +197,7 @@ namespace ProjectKB
         {
             CloseOwnedAdminWindows();
             ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("空闲超时，已自动退出管理员模式");
-            MessageBox.Show(this, $"空闲超时（{AuthManager.IdleTimeoutMinutes}分钟），已自动退出管理员模式。\n如需编辑配置请重新登录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, LocalizedText.Format($"空闲超时（{AuthManager.IdleTimeoutMinutes}分钟），已自动退出管理员模式。\n如需编辑配置请重新登录。"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void CloseOwnedAdminWindows()
@@ -214,9 +215,9 @@ namespace ProjectKB
         {
             if (!AuthManager.IsPermissionControlEnabled)
             {
-                AuthModeText.Text = "🟡 全部权限";
+                AuthModeText.Text = LocalizedText.Get("🟡 全部权限");
                 AuthModeText.Foreground = Brushes.DarkGoldenrod;
-                AuthButton.Content = "权限未启用";
+                AuthButton.Content = LocalizedText.Get("权限未启用");
                 TestStatusBarItem.IsEnabled = true;
                 DatabaseCleanupButton.IsEnabled = true;
                 ChangePasswordButton.IsEnabled = true;
@@ -225,9 +226,9 @@ namespace ProjectKB
 
             bool isAdmin = AuthManager.IsAdmin;
 
-            AuthModeText.Text = isAdmin ? "🔧 管理员" : "🟢 产线";
+            AuthModeText.Text = isAdmin ? LocalizedText.Get("🔧 管理员") : LocalizedText.Get("🟢 产线");
             AuthModeText.Foreground = isAdmin ? Brushes.Orange : Brushes.Green;
-            AuthButton.Content = isAdmin ? "🔓 登出" : "🔐 登录";
+            AuthButton.Content = isAdmin ? LocalizedText.Get("🔓 登出") : LocalizedText.Get("🔐 登录");
 
             TestStatusBarItem.IsEnabled = true;
             DatabaseCleanupButton.IsEnabled = true;
@@ -238,7 +239,7 @@ namespace ProjectKB
         {
             if (!AuthManager.IsPermissionControlEnabled)
             {
-                MessageBox.Show(this, "ProjectKB权限控制未启用。可在“设置”中开启“启用权限控制”。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("ProjectKB权限控制未启用。可在“设置”中开启“启用权限控制”。"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -355,13 +356,13 @@ namespace ProjectKB
             {
                 log.Error("重启ColorVision服务超时", ex);
                 ExecutionStatus.Status = FlowExecutionStatusInfo.Notice("重启服务超时，已恢复按钮，可稍后重试", isError: true);
-                MessageBox.Show(this, $"重启服务超过 {RestartServicesTimeout.TotalMinutes:F0} 分钟未完成，请检查服务状态后重试。", "重启服务超时", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Format($"重启服务超过 {RestartServicesTimeout.TotalMinutes:F0} 分钟未完成，请检查服务状态后重试。"), LocalizedText.Get("重启服务超时"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
                 log.Error("重启ColorVision服务失败", ex);
                 ExecutionStatus.Status = FlowExecutionStatusInfo.Notice($"服务重启失败：{ex.Message}", isError: true);
-                MessageBox.Show(this, ex.Message, "重启服务失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("重启服务失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -387,10 +388,9 @@ namespace ProjectKB
 
             FlowTemplate.SelectionChanged += (s, e) =>
             {
-                if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
+                if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> template)
                 {
-                    string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    RecipeManager.SetCurrentTemplate(Name);
+                    RecipeManager.SetCurrentTemplate(template.Key);
                     RecipeManager.Save();
 
                 }
@@ -928,7 +928,7 @@ namespace ProjectKB
             var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
             if (Batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 ViewResultManager.Save(KBItemMaster);
                 return;
             }
@@ -1022,7 +1022,7 @@ namespace ProjectKB
 
             if (KBItemMaster.Items.Count == 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到对映的按键，请检查流程配置是否计算KB模板"), "ColorVision");
                 ViewResultManager.Save(KBItemMaster);
                 return;
             }
@@ -1656,7 +1656,7 @@ namespace ProjectKB
             {
                 ClearResultImageSurface();
                 log.Error($"读取 KB 历史结果失败，Id={kBItem.Id}", ex);
-                MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
+                MessageBox.Show(this, LocalizedText.Format($"结果明细读取失败：{ex.Message}"), "ProjectKB");
                 return;
             }
             listView.ScrollIntoView(kBItem);
@@ -1814,10 +1814,10 @@ namespace ProjectKB
             if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
             {
                 ImageView.Clear();
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ProjectKBWindow), "历史结果坐标空间宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ProjectKBWindow), "历史结果坐标空间高度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ProjectKBWindow), "历史结果图像像素宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ProjectKBWindow), "历史结果图像像素高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ProjectKBWindow), LocalizedText.Get("历史结果坐标空间宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ProjectKBWindow), LocalizedText.Get("历史结果坐标空间高度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ProjectKBWindow), LocalizedText.Get("历史结果图像像素宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ProjectKBWindow), LocalizedText.Get("历史结果图像像素高度"));
                 ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
                 ImageView.UpdateZoomAndScale();
             }
@@ -2037,12 +2037,12 @@ namespace ProjectKB
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
-            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
-            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 LV CSV..." });
-            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = "重新导出 LC CSV..." });
+            contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = LocalizedText.Get("复制") });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = LocalizedText.Get("重新导出 LV CSV...") });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = LocalizedText.Get("重新导出 LC CSV...") });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
-            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
             contextMenu.Opened += (s, e) => CommandManager.InvalidateRequerySuggested();
 
             listView1.PreviewMouseRightButtonDown += (s, e) =>
@@ -2068,7 +2068,7 @@ namespace ProjectKB
             MeasureBatchModel? batch = GetSelectedMeasureBatch();
             if (batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
 
@@ -2195,7 +2195,7 @@ namespace ProjectKB
         {
             if (IsUploadSNing)
             {
-                MessageBox.Show("上一次上传还未完成");
+                MessageBox.Show(LocalizedText.Get("上一次上传还未完成"));
             }
             Task.Run(UploadSN);
         }

@@ -5,7 +5,7 @@ status: "current"
 summary: "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。"
 aliases: ["本地FOV计算(V2)","FOV 计算 (V2)","FovDist","cameraDegrees","LocalFovNode","FovCalculator","FovImageViewRunner","HorizontalFieldOfViewAngle","DiagonalFieldOfViewAngle"]
 code_paths: ["UI/ColorVision.Core/FovCalculation.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FovCalculationTests.cs","Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"]
 related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results","flow.node-extension"]
 ---
 
@@ -99,10 +99,10 @@ leftDownToRightUp, leftUpToRightDown, message
 
 ## 验证边界
 
-托管专项测试验证上游角点不需像素且不受旧比例参数影响，并用已部署服务的样例四角验证精确角度换算至 `1e-6`；同时检查旧 JSON 字段、参数可见性、视场角计算结果可见性、ImageView 无相机/数据库耦合和叠图结构。原生集成测试以暗角渐变矩形验证几何边缘，并保留实验算法的失败特征对照。运行：
+当前托管自动化只保留 FOV 结果叠图的几何与标签契约，不再承担相机参数换算、原生定位或现场图像验收。最小相关检查为：
 
 ```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~FovCalculationTests"
+dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~AlgorithmResultOverlayTests"
 ```
 
-现场离线测试 `FovFieldImageTests` 通过环境变量 `COLORVISION_FOV_FIELD_IMAGE` 显式指定该 9568×6380 暗角 TIFF，`COLORVISION_FOV_FIELD_REPORT` 可指定 JSON 和叠图输出位置；未提供文件时跳过。`COLORVISION_RUN_LUMINOUS_NATIVE_V2_TESTS=1` 启用合成图原生集成回归。测试不连接生产数据库、不运行相机，不证明所有现场图像均能成功定位。正式同位替换验收仍应覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取。
+正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取；文档检查和叠图单测不能代替这些证据。

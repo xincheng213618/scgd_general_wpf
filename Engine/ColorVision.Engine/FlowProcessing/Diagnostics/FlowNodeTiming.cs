@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics;
@@ -103,13 +104,28 @@ internal sealed class FlowNodeTiming
 
     private static double Milliseconds(long start, long end) => Math.Round((end - start) * 1000d / Stopwatch.Frequency, 3);
 
+    private static ulong? ReadThreadCpuTicks()
+        => GetThreadTimes(GetCurrentThread(), out _, out _, out ulong kernel, out ulong user) ? kernel + user : null;
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentThread();
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetThreadTimes(IntPtr thread, out ulong creation, out ulong exit, out ulong kernel, out ulong user);
+
     internal sealed class Stage : IDisposable
     {
         private readonly FlowNodeTiming owner;
         private readonly Context previous;
         private readonly string name;
         private readonly long start = Stopwatch.GetTimestamp();
+        private readonly int threadId = Environment.CurrentManagedThreadId;
+        private readonly ulong? threadCpuStart = ReadThreadCpuTicks();
+        private readonly long gcPauseStart = GC.GetTotalPauseDuration().Ticks;
         private long? end;
+        private double? threadCpuMs;
+        private double? processGcPauseMs;
         private string status = "Running";
         internal int Id { get; }
 
@@ -130,13 +146,21 @@ internal sealed class FlowNodeTiming
             lock (owner.sync)
             {
                 if (end.HasValue || owner.snapshot != null) return;
+                ulong? cpuEnd = threadId == Environment.CurrentManagedThreadId ? ReadThreadCpuTicks() : null;
+                threadCpuMs = state == "Skipped" ? 0 : cpuEnd.HasValue && threadCpuStart.HasValue && cpuEnd >= threadCpuStart
+                    ? Math.Round((cpuEnd.Value - threadCpuStart.Value) / (double)TimeSpan.TicksPerMillisecond, 3) : null;
+                processGcPauseMs = state == "Skipped" ? 0
+                    : Math.Round(Math.Max(0, GC.GetTotalPauseDuration().Ticks - gcPauseStart) / (double)TimeSpan.TicksPerMillisecond, 3);
                 end = Stopwatch.GetTimestamp();
                 status = state;
             }
         }
 
         internal FlowNodeTimingStage ToSnapshot(long origin, long now) => new(Id, previous.ParentId, name,
-            Milliseconds(origin, start), status == "Skipped" ? 0 : Milliseconds(start, end ?? now), status);
+            Milliseconds(origin, start), status == "Skipped" ? 0 : Milliseconds(start, end ?? now), status)
+        {
+            ThreadCpuMs = threadCpuMs, ProcessGcPauseMs = processGcPauseMs
+        };
 
         public void Dispose()
         {
@@ -147,4 +171,9 @@ internal sealed class FlowNodeTiming
 }
 
 internal sealed record FlowNodeTimingSnapshot(int Version, string Unit, double TotalMs, int OmittedStages, IReadOnlyList<FlowNodeTimingStage> Stages);
-internal sealed record FlowNodeTimingStage(int Id, int? ParentId, string Name, double StartMs, double ElapsedMs, string Status);
+internal sealed record FlowNodeTimingStage(int Id, int? ParentId, string Name, double StartMs, double ElapsedMs, string Status)
+{
+    // Thread CPU excludes SDK worker threads. GC pause is process-wide and can overlap nested stages.
+    public double? ThreadCpuMs { get; init; }
+    public double? ProcessGcPauseMs { get; init; }
+}

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1863,CS8604
 #pragma warning disable CA1001
 using ColorVision.Common.MVVM;
@@ -14,7 +15,6 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using Newtonsoft.Json;
-using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,13 +29,13 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.Engine.Media
 {
     [FileExtension(".cvraw|.cvcie")]
-    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
+    public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IImageOpenContentLifetime, IIEditorToolContextMenu, IImageOpenEditorToolProvider, IImageOpenEditorToolLifecycle
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
+        public long? GetCachedFileLength(string filePath) => CVFileReadCache.GetCachedLength(filePath);
         private readonly object _bufferSync = new();
-        private readonly CvRawPixelBuffer _rawPixels = new();
+        private CvRawPixelBuffer _rawPixels = new();
         private readonly SemaphoreSlim _rawOpenGate = new(1, 1);
-        private bool _rawLifetimeRegistered;
         private long _latestOpenRequest;
         private CvcieMouseMagnifierManager? _cvcieMouseMagnifierManager;
         private CvcieDiagramEditorTool? _cvcieDiagramEditorTool;
@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Media
             }
 
             string? filePath = GetCurrentFilePath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 return false;
             }
@@ -191,7 +191,7 @@ namespace ColorVision.Engine.Media
         private void ShowManualCieDialog()
         {
             string? filePath = GetCurrentFilePath();
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath) || !(CVFileReadCache.GetCachedLength(filePath).HasValue || File.Exists(filePath)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Engine_Msg_NoCalculableCvRaw, "ColorVision");
                 return;
@@ -276,7 +276,7 @@ namespace ColorVision.Engine.Media
                             ReplaceMeasurementBuffer(null);
                             _loadBuffer = null;
                             EditorContext.Config.SetOpenerRuntime("IsCVCIE", false, nameof(CVRawOpen), "校正失败，继续显示原始 CVRAW");
-                            EditorContext.ImageView.OpenImage(mat.ToWriteableBitmap());
+                            EditorContext.ImageView.OpenImage(mat.CreateDisplayBitmap());
                             InitializeCvFileView(EditorContext.ImageView, filePath, "composite", raw.Channels >= 3);
                             EditorContext.ImageView.EditorContext.IEditorToolFactory.ApplyImageOpenTools(this);
                         }
@@ -344,7 +344,7 @@ namespace ColorVision.Engine.Media
 
         private CvRawLayerController? InitializeCvFileView(ImageView imageView, string filePath, string displayedLayerId, bool hasRgbLayers, CVCIEFile? loadedRaw = null)
         {
-            if (!File.Exists(filePath) || !CVFileUtil.IsCIEFile(filePath))
+            if (!CVFileUtil.IsCIEFile(filePath))
             {
                 return null;
             }
@@ -465,6 +465,7 @@ namespace ColorVision.Engine.Media
 
         public void AttachLiveCvcie(ImageView imageView, uint width, uint height, uint bpp, uint channels, byte[] xyzData, float[] exposure)
         {
+            imageView.ReleaseImageContent();
             PoiMeasurementBuffer measurementBuffer = new(
                 xyzData,
                 checked((int)width),
@@ -708,7 +709,7 @@ namespace ColorVision.Engine.Media
                 Order = 301,
                 Command = new RelayCommand(a =>
                 {
-                    if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                    if (EditorContext.Config.GetProperties<string>("FilePath") is string FilePath && (CVFileReadCache.GetCachedLength(FilePath).HasValue || File.Exists(FilePath)))
                     {
                         new ExportCVCIE(FilePath).ShowDialog();
                     }
@@ -788,7 +789,7 @@ namespace ColorVision.Engine.Media
                         catch (Exception error)
                         {
                             log.Error("CVCIE POI calculation failed.", error);
-                            MessageBox.Show(error.Message, "POI 区域测量", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(error.Message, LocalizedText.Get("POI 区域测量"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     })
                 };
@@ -816,13 +817,24 @@ namespace ColorVision.Engine.Media
         }
 
 
-        private async void ClearRawPixels(object? sender, EventArgs e)
+        public async Task ReleaseContentAsync(bool reuseBuffers)
         {
             Interlocked.Increment(ref _latestOpenRequest);
             ReplaceMeasurementBuffer(null);
+            _loadBuffer = null;
+            _probeOptions = null;
+            if (_bufferOwner != null && _bufferCleanup != null)
+                _bufferOwner.Config.Cleared -= _bufferCleanup;
+            _bufferOwner = null;
+            _bufferCleanup = null;
+            // A subsequent RAW read uses the same gate and may reuse its allocation after old readers exit.
+            if (reuseBuffers) return;
+            // Detach now: a later open must never be cleared by this asynchronous retirement.
+            CvRawPixelBuffer retired = _rawPixels;
+            _rawPixels = new();
             // Never block the UI waiting for a load that may itself be waiting to publish on the UI.
             await _rawOpenGate.WaitAsync();
-            try { _rawPixels.Clear(); }
+            try { retired.Clear(); }
             finally { _rawOpenGate.Release(); }
         }
 
@@ -834,11 +846,7 @@ namespace ColorVision.Engine.Media
             string requestedFilePath = filePath;
             long requestId = Interlocked.Increment(ref _latestOpenRequest);
             bool isRaw = string.Equals(Path.GetExtension(filePath), ".cvraw", StringComparison.OrdinalIgnoreCase);
-            if (!_rawLifetimeRegistered)
-            {
-                context.ImageView.ClearImageEventHandler += ClearRawPixels;
-                _rawLifetimeRegistered = true;
-            }
+            CvRawPixelBuffer rawPixels = _rawPixels;
             // Config.ClearProperties normally does this first. Also protect callers that invoke the opener directly.
             ReplaceMeasurementBuffer(null);
             _loadBuffer = null;
@@ -873,7 +881,7 @@ namespace ColorVision.Engine.Media
                     bool usesLuminance = false;
                     // A successful XYZ render needs only metadata, not another RAW/Y payload and conversion.
                     using CVCIEFile cVCIEFile = srgb != null ? ReadDisplayHeader(requestedFilePath)
-                        : isRaw ? _rawPixels.Read(requestedFilePath)
+                        : isRaw ? rawPixels.Read(requestedFilePath)
                         : CvRawLayerController.LoadSourceFile(requestedFilePath, out usesLuminance);
                     WriteableBitmap? displayBitmap = srgb;
                     if (displayBitmap == null && cVCIEFile.Channels == 1 && cVCIEFile.Bpp is 32 or 64)
@@ -922,7 +930,7 @@ namespace ColorVision.Engine.Media
                             OpenCvSharp.Mat sourceMat = mat!;
                             if (!sourceMat.MatUpdateWriteableBitmap(writeableBitmap))
                             {
-                                WriteableBitmap replacement = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(sourceMat);
+                                WriteableBitmap replacement = sourceMat.CreateDisplayBitmap();
                                 context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
                                 context.ImageView.UpdateZoomAndScale();
                             }
@@ -948,7 +956,7 @@ namespace ColorVision.Engine.Media
                         }
                         else
                         {
-                            WriteableBitmap replacement = mat!.ToWriteableBitmap();
+                            WriteableBitmap replacement = mat!.CreateDisplayBitmap();
                             context.ImageView.SetImageSource(replacement, context.ImageView.EnableEditorImageServices, configureDefaultLayerController: false);
                             context.ImageView.UpdateZoomAndScale();
                         }

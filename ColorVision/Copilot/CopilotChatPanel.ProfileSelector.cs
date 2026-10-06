@@ -22,11 +22,14 @@ namespace ColorVision.Copilot
         private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source
-                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem)
+                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem { DataContext: CopilotProfileConfig profile }
+                || DataContext is not CopilotChatViewModel viewModel)
             {
                 return;
             }
 
+            viewModel.SelectedProfile = profile;
+            e.Handled = true;
             Dispatcher.BeginInvoke(new Action(CloseProfileSelectorPopup), System.Windows.Threading.DispatcherPriority.Input);
         }
 

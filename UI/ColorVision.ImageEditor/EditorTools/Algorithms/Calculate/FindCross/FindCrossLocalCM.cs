@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -157,7 +158,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
             if (!TryNormalizeRoi(requestedRoi, lease.Image, out RoiRect roi))
             {
                 lease.Dispose();
-                MessageBox.Show("所选 ROI 与当前图像没有有效交集。", ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("所选 ROI 与当前图像没有有效交集。"), ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -186,7 +187,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
                         RenderResult(imageContext, drawContext, result);
                         if (uiOptions.ShowResultDialog)
                         {
-                            MessageBox.Show(BuildSummary(result), "本地 FindCross 结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show(BuildSummary(result), LocalizedText.Get("本地 FindCross 结果"), MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                     });
                 }
@@ -197,7 +198,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindCross
                         if (!imageContext.IsCurrentImageRevision(revision) ||
                             !AlgorithmResultOverlay.IsCurrentRequest(drawContext, AlgorithmResultOverlay.FindCrossTag, requestId)) return;
 
-                        MessageBox.Show($"本地 FindCross 计算异常：{ex.Message}", ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(LocalizedText.Format($"本地 FindCross 计算异常：{ex.Message}"), ColorVision.ImageEditor.Properties.Resources.Algorithm_FindCross, MessageBoxButton.OK, MessageBoxImage.Error);
                     });
                 }
             });

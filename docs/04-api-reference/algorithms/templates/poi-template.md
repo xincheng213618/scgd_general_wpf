@@ -5,7 +5,7 @@ status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
 aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow"]
 code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/PoiTemplateBrowserTests.cs","Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -111,6 +111,6 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/PoiTemplateBrowserTests.cs` 验证图标浏览不读明细、视图切换、编辑索引、排序隔离和重命名/删除；`Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs` 验证本地点位保存。另有 `Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
+`Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs` 验证本地点位保存。另有 `Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs`、`Test/ColorVision.UI.Tests/PoiPointModelTests.cs`。
 
 包编解码与点模型测试不替代现场数据库保存、MQTT POI 服务和各结果 handler 回放；修改 ID 或引用名时补充旧模板集成验证。

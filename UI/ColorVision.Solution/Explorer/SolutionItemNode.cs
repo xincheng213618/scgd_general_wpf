@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.IO;
 using System.Windows;
 
@@ -57,7 +58,7 @@ namespace ColorVision.Solution.Explorer
             if (showConfirmation
                 && MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"从解决方案中移除“{Name}”吗？磁盘文件不会被删除。",
+                    LocalizedText.Format($"从解决方案中移除“{Name}”吗？磁盘文件不会被删除。"),
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Question) != MessageBoxResult.OK)

@@ -165,6 +165,6 @@ ImageView 固定请求三张显示图，参数窗口没有输出计划开关。�
 
 `ImageComparisonV1Tests` 覆盖基础指标、整数/浮点差分、非有限与溢出、输入验证、输出选择/预算、取消及输入/结果释放；`ImageComparisonAdvancedV1Tests` 覆盖 schema 迁移、ROI、SSIM、已知偏移、低纹理及结果窗口/overlay。界面测试验证控件存在和生命周期，不等于覆盖文件选择、全部解码器、PNG/CSV 操作或实际 Blink/Split 交互。
 
-采样数量测试使用 257×257 方形输入，未覆盖上述狭长 ROI 上限缺口；参数测试也不能替代每个边界值的完整验证。`ImageAlgorithmPerformanceGateTests.ComparisonPipelineProbe` 仅在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时执行，关闭 SSIM/对齐并只请求 heatmap；它的 4K/8K 结果不能证明默认三图窗口或全部分析满足同样预算。探针会消耗较多 CPU/内存，比较性能须保持输入与配置一致。
+采样数量测试使用 257×257 方形输入，未覆盖上述狭长 ROI 上限缺口；参数测试也不能替代每个边界值的完整验证。当前托管套件不包含 4K/8K 性能探针，比较性能时须保持输入与配置一致，并分别记录 CPU、内存、对齐、SSIM、heatmap 和三图窗口成本。
 
 交付验证还应遵循[平台验收门禁](./image-algorithm-platform-v1.md#m0-验收门禁)。

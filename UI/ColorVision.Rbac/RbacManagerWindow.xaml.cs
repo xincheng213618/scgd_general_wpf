@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Rbac.DisplayText;
 #pragma warning disable CA1822,CA1860,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
@@ -172,7 +173,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "云盘", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("云盘"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -347,7 +348,7 @@ namespace ColorVision.Rbac
 
         private async void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("确定要退出登录吗？", "退出登录", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show(LocalizedText.Get("确定要退出登录吗？"), LocalizedText.Get("退出登录"), MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes)
                 return;
 

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -78,10 +79,10 @@ namespace ColorVision.Copilot
 
         public static string GetEffectiveLabel(CopilotCodexSandboxMode mode) => mode switch
         {
-            CopilotCodexSandboxMode.ReadOnly => "只读能力上限；写工具不暴露，旧计划或注入写调用也会拒绝",
-            CopilotCodexSandboxMode.WorkspaceWrite => "不扩大 ColorVision 原生可写根、访问模式或审批权限",
-            CopilotCodexSandboxMode.DangerFullAccess => "不映射为提权；仍受 ColorVision 原生访问与审批边界约束",
-            _ => "未配置；保留 ColorVision 原生访问与审批边界",
+            CopilotCodexSandboxMode.ReadOnly => LocalizedText.Get("只读能力上限；写工具不暴露，旧计划或注入写调用也会拒绝"),
+            CopilotCodexSandboxMode.WorkspaceWrite => LocalizedText.Get("不扩大 ColorVision 原生可写根、访问模式或审批权限"),
+            CopilotCodexSandboxMode.DangerFullAccess => LocalizedText.Get("不映射为提权；仍受 ColorVision 原生访问与审批边界约束"),
+            _ => LocalizedText.Get("未配置；保留 ColorVision 原生访问与审批边界"),
         };
     }
 
@@ -114,11 +115,11 @@ namespace ColorVision.Copilot
 
         public static string GetEffectiveLabel(CopilotCodexWebSearchMode mode) => mode switch
         {
-            CopilotCodexWebSearchMode.Disabled => "已禁用实时公网检索",
-            CopilotCodexWebSearchMode.Cached => "不支持 cached 后端；已保守禁用实时公网检索",
-            CopilotCodexWebSearchMode.Indexed => "不支持 indexed 后端；已保守禁用实时公网检索",
-            CopilotCodexWebSearchMode.Live => "已允许按请求意图实时公网检索",
-            _ => "未配置；保留 ColorVision 按请求意图实时检索",
+            CopilotCodexWebSearchMode.Disabled => LocalizedText.Get("已禁用实时公网检索"),
+            CopilotCodexWebSearchMode.Cached => LocalizedText.Get("不支持 cached 后端；已保守禁用实时公网检索"),
+            CopilotCodexWebSearchMode.Indexed => LocalizedText.Get("不支持 indexed 后端；已保守禁用实时公网检索"),
+            CopilotCodexWebSearchMode.Live => LocalizedText.Get("已允许按请求意图实时公网检索"),
+            _ => LocalizedText.Get("未配置；保留 ColorVision 按请求意图实时检索"),
         };
     }
 
@@ -657,10 +658,10 @@ namespace ColorVision.Copilot
         public string ConfigSourceLabel => ConfigSources switch
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+            CopilotProjectInstructionConfigSources.TrustedProject => LocalizedText.Get("受信项目 .codex/config.toml"),
             CopilotProjectInstructionConfigSources.CodexHome | CopilotProjectInstructionConfigSources.TrustedProject =>
-                "Codex Home + 受信项目 .codex/config.toml",
-            _ => UsesCodexConfig ? "Codex config.toml" : "ColorVision 默认",
+                LocalizedText.Get("Codex Home + 受信项目 .codex/config.toml"),
+            _ => UsesCodexConfig ? "Codex config.toml" : LocalizedText.Get("ColorVision 默认"),
         };
 
         public bool AllowsProjectCodexConfig => ProjectTrustLevel == CopilotCodexProjectTrustLevel.Trusted;
@@ -766,7 +767,7 @@ namespace ColorVision.Copilot
                 var layer = ModelInstructionsSource switch
                 {
                     CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-                    CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                    CopilotProjectInstructionConfigSources.TrustedProject => LocalizedText.Get("受信项目 .codex/config.toml"),
                     _ => string.Empty,
                 };
                 if (layer.Length == 0)
@@ -784,7 +785,7 @@ namespace ColorVision.Copilot
                 var layer = CompactPromptSource switch
                 {
                     CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-                    CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                    CopilotProjectInstructionConfigSources.TrustedProject => LocalizedText.Get("受信项目 .codex/config.toml"),
                     _ => string.Empty,
                 };
                 if (layer.Length == 0)
@@ -799,10 +800,10 @@ namespace ColorVision.Copilot
         {
             CopilotCodexProjectTrustLevel.Trusted => "Codex Home trust_level=trusted",
             CopilotCodexProjectTrustLevel.Untrusted =>
-                "Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml",
+                LocalizedText.Get("Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml"),
             CopilotCodexProjectTrustLevel.Invalid =>
-                "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
-            _ => "项目目录信任未决定；已跳过项目 .codex/config.toml",
+                LocalizedText.Get("Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml"),
+            _ => LocalizedText.Get("项目目录信任未决定；已跳过项目 .codex/config.toml"),
         };
 
         private static string FormatSourceLabel(
@@ -813,10 +814,10 @@ namespace ColorVision.Copilot
             var prefix = source switch
             {
                 CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-                CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                CopilotProjectInstructionConfigSources.TrustedProject => LocalizedText.Get("受信项目 .codex/config.toml"),
                 CopilotProjectInstructionConfigSources.CodexHome
                     | CopilotProjectInstructionConfigSources.TrustedProject when allowCombined =>
-                    "Codex Home + 受信项目 .codex/config.toml",
+                    LocalizedText.Get("Codex Home + 受信项目 .codex/config.toml"),
                 _ => string.Empty,
             };
             return prefix.Length == 0 || configKey.Length == 0

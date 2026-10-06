@@ -46,6 +46,8 @@ struct ExecutionOptions {
     std::array<std::uint32_t, 4> roi{}; // x, y, width, height
     std::array<std::uint32_t, 4> ob{};  // left, right, top, bottom
     std::array<float, 3> exposure{};
+    // Internal execution request; the public V1 options layout stays unchanged.
+    std::int32_t rawOutputFlip = -99; // -99: none, 0: vertical, 1: horizontal, -1: both
 };
 
 struct ColorTransform {
@@ -82,6 +84,14 @@ public:
         float* cieData,
         const ExecutionOptions& options,
         std::string& error) = 0;
+
+    // Optional exact fast path for two adjacent in-place stages. False must
+    // leave RAW untouched so the context can run the original stages normally.
+    virtual bool tryApplyWithNext(
+        const CalibrationItem&, const ImageView&, const ExecutionOptions&) const
+    {
+        return false;
+    }
 
     // Geometric transforms whose output depends on pixels that may be
     // overwritten require this path. Map corrections also implement it so a

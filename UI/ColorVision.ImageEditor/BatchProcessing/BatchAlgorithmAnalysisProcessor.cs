@@ -77,11 +77,11 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 BatchImageItem item = request.Items[index];
                 if (cancellationToken.IsCancellationRequested)
                     return new BatchAlgorithmAnalysisResult { Files = files, Cancelled = true };
-                progress?.Report(new BatchImageProgress { Item = item, Completed = index, Total = request.Items.Count, Status = "分析中..." });
+                progress?.Report(new BatchImageProgress { Item = item, Completed = index, Total = request.Items.Count, Status = Properties.Resources.BatchAnalyzing });
                 try
                 {
                     IBatchImageLoader loader = GetLoader(item.FilePath)
-                        ?? throw new NotSupportedException($"不支持的图像格式：{Path.GetExtension(item.FilePath)}");
+                        ?? throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(item.FilePath)));
                     using Mat source = loader.Load(item.FilePath);
                     AlgorithmInvocation invocation = CloneInvocation(request.Invocation, item.FilePath);
                     AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source);
@@ -124,7 +124,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         Item = item,
                         Completed = index + 1,
                         Total = request.Items.Count,
-                        Status = "完成",
+                        Status = Properties.Resources.BatchCompleted,
                         OutputPath = outputPaths[0],
                     });
                 }

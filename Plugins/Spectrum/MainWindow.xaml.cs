@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 #pragma warning disable CA1805,CA1822,CA1863,CS8604,CS8625
 using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
@@ -542,7 +543,7 @@ namespace Spectrum
                     return;
 
                 MessageBox.Show(this,
-                    result.IsSuccess ? "标定文件加载成功" : $"标定文件加载失败：{result.ErrorMessage}",
+                    result.IsSuccess ? LocalizedText.Get("标定文件加载成功") : LocalizedText.Format($"标定文件加载失败：{result.ErrorMessage}"),
                     SpectrumResources.PromptTitle,
                     MessageBoxButton.OK,
                     result.IsSuccess ? MessageBoxImage.Information : MessageBoxImage.Warning);
@@ -596,7 +597,7 @@ namespace Spectrum
             {
                 Button executeButton = new()
                 {
-                    Content = "执行自适应校零",
+                    Content = LocalizedText.Get("执行自适应校零"),
                     Margin = new Thickness(10, 10, 10, 0),
                     Padding = new Thickness(10, 4, 10, 4),
                     Foreground = System.Windows.Media.Brushes.White
@@ -981,7 +982,7 @@ namespace Spectrum
             {
                 MessageBox.Show(
                     this,
-                    $"以下辅助设备在 {waitTimeout.TotalSeconds:0} 秒内未结束当前操作，未能安全关闭：{deviceNames}。\n\n为避免中断设备通信，本次未强制释放。请确认设备状态；若下次启动连接异常，请重新连接或重启设备。",
+                    LocalizedText.Format($"以下辅助设备在 {waitTimeout.TotalSeconds:0} 秒内未结束当前操作，未能安全关闭：{deviceNames}。\n\n为避免中断设备通信，本次未强制释放。请确认设备状态；若下次启动连接异常，请重新连接或重启设备。"),
                     SpectrumResources.PromptTitle,
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1128,7 +1129,7 @@ namespace Spectrum
                 }
                 else if (result == SpectrometerManager.OperationBusy)
                 {
-                    MessageBox.Show("光谱仪驱动当前不可用。请先关闭直连诊断窗口；若刚才释放失败，请重启程序。");
+                    MessageBox.Show(LocalizedText.Get("光谱仪驱动当前不可用。请先关闭直连诊断窗口；若刚才释放失败，请重启程序。"));
                 }
                 else
                 {
@@ -2041,7 +2042,7 @@ namespace Spectrum
                 .ToList();
             if (selectedResults.Count == 0)
             {
-                MessageBox.Show(this, "请先选择要导出的数据。", SpectrumResources.PromptTitle,
+                MessageBox.Show(this, LocalizedText.Get("请先选择要导出的数据。"), SpectrumResources.PromptTitle,
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -2066,7 +2067,7 @@ namespace Spectrum
             catch (Exception ex)
             {
                 log.Error("光谱 CSV 导出失败", ex);
-                MessageBox.Show(this, $"导出失败：{ex.GetBaseException().Message}", SpectrumResources.PromptTitle,
+                MessageBox.Show(this, LocalizedText.Format($"导出失败：{ex.GetBaseException().Message}"), SpectrumResources.PromptTitle,
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

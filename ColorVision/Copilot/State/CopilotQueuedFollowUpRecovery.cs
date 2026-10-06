@@ -303,7 +303,7 @@ namespace ColorVision.Copilot
                         or CopilotAgentStopReason.Completed);
         }
 
-        internal static bool PrepareForRestartDispatch(CopilotChatState state)
+        internal static bool PrepareForRestartDispatch(CopilotChatState state, bool deferQueuedDraftRecovery = false)
         {
             ArgumentNullException.ThrowIfNull(state);
             state.RecoveredQueuedFollowUpCount = 0;
@@ -321,9 +321,10 @@ namespace ColorVision.Copilot
                 .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var originalRecords = state.QueuedFollowUpRecoveries.ToArray();
-            var resumableRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
+            var retainedRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var draftRecoveries = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
+            var blockedConversationIds = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var record in originalRecords)
             {
@@ -341,23 +342,27 @@ namespace ColorVision.Copilot
                 if (record.IsAutomaticGoalContinuation)
                     continue;
 
-                if (record.CanResumeAfterRestart(composerState)
-                    && resumableRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns)
+                // The ViewModel classifies the whole queue before combining drafts, including host/profile failures.
+                if (deferQueuedDraftRecovery
+                    || (!blockedConversationIds.Contains(conversationId)
+                        && record.CanResumeAfterRestart(composerState)
+                        && retainedRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns))
                 {
-                    resumableRecords.Add(record);
+                    retainedRecords.Add(record);
                 }
                 else
                 {
+                    blockedConversationIds.Add(conversationId);
                     draftRecoveries.Add(record);
                 }
             }
 
             state.RecoveredQueuedFollowUpCount = RestoreRecordsToDrafts(state, draftRecoveries);
-            var changed = !originalRecords.SequenceEqual(resumableRecords);
+            var changed = !originalRecords.SequenceEqual(retainedRecords);
             if (changed)
             {
                 state.QueuedFollowUpRecoveries.Clear();
-                foreach (var record in resumableRecords)
+                foreach (var record in retainedRecords)
                     state.QueuedFollowUpRecoveries.Add(record);
             }
             return changed;
@@ -417,7 +422,7 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        private static int RestoreRecordsToDrafts(
+        internal static int RestoreRecordsToDrafts(
             CopilotChatState state,
             IEnumerable<CopilotQueuedFollowUpRecoveryRecord?> records)
         {
@@ -458,7 +463,10 @@ namespace ColorVision.Copilot
                     .Select(recovery => recovery.RequestMode)
                     .Distinct()
                     .ToArray();
-                var hasExistingModeConflict = conversation.DraftRequestMode != CopilotAgentMode.Auto
+                var existingDraft = (conversation.DraftText ?? string.Empty).TrimEnd();
+                var preserveExistingMode = !string.IsNullOrWhiteSpace(existingDraft)
+                    || conversation.DraftRequestMode != CopilotAgentMode.Auto;
+                var hasExistingModeConflict = preserveExistingMode
                     && recoveredModes.Any(mode => mode != conversation.DraftRequestMode);
                 var prompts = recoveredModes.Length <= 1 && !hasExistingModeConflict
                     ? pair.Value.Select(recovery => recovery.Text).ToArray()
@@ -468,32 +476,34 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(restoredDraft))
                     continue;
 
-                var existingDraft = (conversation.DraftText ?? string.Empty).TrimEnd();
                 if (!string.Equals(existingDraft.Trim(), restoredDraft.Trim(), StringComparison.Ordinal))
                 {
                     conversation.DraftText = string.IsNullOrWhiteSpace(existingDraft)
                         ? restoredDraft
                         : existingDraft + Environment.NewLine + Environment.NewLine + restoredDraft;
                 }
-                var recoveredSkillReference = pair.Value.Count == 1
-                    ? pair.Value[0].AgentSkillReference
-                    : null;
+                var recoveredSkillReference = pair.Value[0].AgentSkillReference;
                 if (string.IsNullOrWhiteSpace(existingDraft)
-                    && pair.Value.Count == 1
-                    && recoveredSkillReference?.IsExplicitlyInvokedBy(conversation.DraftText) == true)
+                    && recoveredSkillReference?.IsExplicitlyInvokedBy(conversation.DraftText) == true
+                    && pair.Value.All(recovery => recovery.AgentSkillReference is { } reference
+                        && reference.IsStructurallyValid()
+                        && recoveredSkillReference.Matches(reference.Name, reference.SkillFilePath)))
                 {
                     conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }
-                var recoveredReviewTarget = pair.Value.Count == 1
-                    && pair.Value[0].RequestMode == CopilotAgentMode.Review
-                    && pair.Value[0].WorkspaceReviewTarget?.IsStructurallyValid() == true
-                        ? pair.Value[0].WorkspaceReviewTarget?.CreateSnapshot()
+                var firstReviewTarget = pair.Value[0].WorkspaceReviewTarget;
+                var recoveredReviewTarget = firstReviewTarget?.IsStructurallyValid() == true
+                    && pair.Value.All(recovery => recovery.RequestMode == CopilotAgentMode.Review
+                        && recovery.WorkspaceReviewTarget is { } target
+                        && target.IsStructurallyValid()
+                        && target.Target == firstReviewTarget.Target
+                        && string.Equals(target.Revision, firstReviewTarget.Revision, StringComparison.Ordinal))
+                        ? firstReviewTarget.CreateSnapshot()
                         : null;
                 if (string.IsNullOrWhiteSpace(existingDraft) && recoveredReviewTarget != null)
                     conversation.DraftWorkspaceReviewTarget = recoveredReviewTarget;
                 RestoreAttachments(conversation, pair.Value);
-                if (conversation.DraftRequestMode == CopilotAgentMode.Auto
-                    && recoveredModes.Length == 1)
+                if (!preserveExistingMode && recoveredModes.Length == 1)
                 {
                     conversation.DraftRequestMode = recoveredModes[0];
                 }

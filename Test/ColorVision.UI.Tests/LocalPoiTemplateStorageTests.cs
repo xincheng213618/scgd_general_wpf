@@ -245,8 +245,7 @@ public sealed class LocalPoiTemplateStorageTests
 
     private static async Task CloseEditorAsync(EditPoiParam editor)
     {
-        // EditPoiParam delays WM_CLOSE until its image cleanup has finished. Do not
-        // restore the shared configuration while a previous editor is still closing.
+        // Wait for the owner's cleanup before restoring the shared configuration.
         Task closed = WpfTestHost.Invoke(() =>
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -255,8 +254,7 @@ public sealed class LocalPoiTemplateStorageTests
             return completion.Task;
         });
         await closed.WaitAsync(TimeSpan.FromSeconds(10));
-        // These editors are never shown, so their native close hook may not have
-        // been installed. Explicitly release the image-view timers in the fixture.
-        WpfTestHost.Invoke(() => Assert.IsType<ImageView>(editor.FindName("ImageView")).Dispose());
+        WpfTestHost.Invoke(() => Assert.Throws<ObjectDisposedException>(() =>
+            Assert.IsType<ImageView>(editor.FindName("ImageView")).RegisterSettingsProvider(() => [])));
     }
 }

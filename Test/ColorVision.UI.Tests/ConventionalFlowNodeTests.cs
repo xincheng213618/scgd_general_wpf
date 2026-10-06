@@ -1,5 +1,7 @@
 using FlowEngineLib.Base;
+using FlowEngineLib.End;
 using FlowEngineLib.Logical;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System.Text;
 
@@ -10,6 +12,67 @@ public class ConventionalFlowNodeTests
     private static readonly string[] SingleInputPort = ["IN"];
     private static readonly string[] ConditionOutputPorts = ["OUT_TRUE", "OUT_FALSE", "OUT_ERROR"];
     private static readonly string[] RerouteOutputPort = ["OUT"];
+
+    [Fact]
+    public void StartAndEndNodesUseCompactTerminalLayoutWithoutEndPortLabels()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor();
+            using var start = new InspectableStartNode();
+            var end = new InspectableEndNode();
+            start.Create();
+            end.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(end);
+
+            Assert.Equal(start.CompactWidth, start.Width);
+            Assert.Equal(end.CompactWidth, end.Width);
+            Assert.True(start.Width < CVCommonNode.StandardNodeWidth);
+            Assert.True(end.Width < CVCommonNode.StandardNodeWidth);
+            Assert.Equal(start.TitleHeight + start.GetAllOutputOptions().Length * start.ItemHeight, start.Height);
+            Assert.Equal(end.TitleHeight + end.GetAllInputOptions().Length * end.ItemHeight, end.Height);
+            Assert.All(end.GetAllInputOptions(), option =>
+            {
+                Assert.False(string.IsNullOrWhiteSpace(option.Text));
+                Assert.False(end.DrawsOptionText(option));
+                Assert.True(option.DotRectangle.Width > 0);
+            });
+        });
+    }
+
+    [Fact]
+    public void NodeTitlesUseReadableSpacingAndLongCommonTitlesExpand()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor();
+            var node = new InspectableCommonNode();
+            node.Create();
+            editor.Nodes.Add(node);
+            node.Title = "A deliberately long flow node title that needs room";
+
+            Assert.Equal(26, node.TitleHeight);
+            Assert.Equal(node.TitleRectangle.X, node.TitleTextRectangle.X);
+            Assert.Equal(node.TitleRectangle.Y + 2, node.TitleTextRectangle.Y);
+            Assert.Equal(node.TitleRectangle.Size, node.TitleTextRectangle.Size);
+            Assert.True(node.Width > CVCommonNode.StandardNodeWidth);
+        });
+    }
+
+    [Fact]
+    public void LogicalAndDrawsItsInputDotWithoutAnInLabel()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var editor = new STNodeEditor();
+            var node = new InspectableLogicalAndNode();
+            node.Create();
+            editor.Nodes.Add(node);
+
+            Assert.False(node.HasInputLabelInk());
+        });
+    }
 
     [Fact]
     public void NodesExposeFixedFlowPorts()
@@ -231,6 +294,60 @@ public class ConventionalFlowNodeTests
         {
             base.OnCreate();
             Output = OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
+        }
+    }
+
+    private sealed class InspectableCommonNode : CVCommonNode
+    {
+        public System.Drawing.Rectangle TitleTextRectangle => GetTitleTextRectangle();
+
+        public InspectableCommonNode() : base("Test", "Test", "Test")
+        {
+        }
+    }
+
+    private sealed class InspectableStartNode : BaseStartNode
+    {
+        public int CompactWidth => CompactTerminalNodeWidth;
+
+        public InspectableStartNode() : base("Start_MQTT")
+        {
+        }
+    }
+
+    private sealed class InspectableEndNode : CVEndNode
+    {
+        public int CompactWidth => CompactTerminalNodeWidth;
+
+        public bool DrawsOptionText(STNodeOption option) => ShouldDrawOptionText(option);
+    }
+
+    private sealed class InspectableLogicalAndNode : LogicalANDNode
+    {
+        public bool HasInputLabelInk()
+        {
+            using var bitmap = new System.Drawing.Bitmap(Right + 10, Bottom + 10);
+            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+            using var pen = new System.Drawing.Pen(System.Drawing.Color.White);
+            using var brush = new System.Drawing.SolidBrush(System.Drawing.Color.White);
+            graphics.Clear(System.Drawing.Color.Transparent);
+            base.OnDrawBody(new DrawingTools { Graphics = graphics, Pen = pen, SolidBrush = brush });
+
+            int left = Left + 10;
+            int right = Math.Min(Left + Width / 2, bitmap.Width);
+            int top = Top + TitleHeight;
+            int bottom = Math.Min(top + ItemHeight, bitmap.Height);
+            for (int y = top; y < bottom; y++)
+            {
+                for (int x = left; x < right; x++)
+                {
+                    if (bitmap.GetPixel(x, y).A != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 

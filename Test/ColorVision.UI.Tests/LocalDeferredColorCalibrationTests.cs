@@ -32,10 +32,12 @@ public sealed class LocalDeferredColorCalibrationTests
         => ComparePaths(type, bpp, flip, false, false);
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void BasicStagesStillRunBeforeDeferredColor(bool legacy)
-        => ComparePaths(CalibrationType.LumFourColor, 16, CVImageFlipMode.Y, true, legacy);
+    [InlineData(false, CVImageFlipMode.X)]
+    [InlineData(false, CVImageFlipMode.Y)]
+    [InlineData(false, CVImageFlipMode.XY)]
+    [InlineData(true, CVImageFlipMode.Y)]
+    public void BasicStagesStillRunBeforeDeferredColor(bool legacy, CVImageFlipMode flip)
+        => ComparePaths(CalibrationType.LumFourColor, 16, flip, true, legacy);
 
     [Theory]
     [InlineData(CalibrationType.Luminance)]
@@ -60,6 +62,12 @@ public sealed class LocalDeferredColorCalibrationTests
             DeviceCameraCalibrationFile dark = new("dark", CalibrationType.DarkNoise, "dark", "dark.dat", darkPath);
             // Native semantics move color last even when the template lists it first.
             DeviceCameraCalibrationFile[] files = basic ? [color, dark] : [color];
+            if (basic && !legacy)
+            {
+                string spatialPath = Path.Combine(root, "color_diff.dat");
+                File.WriteAllText(spatialPath, """{"CalibDis":1,"MeasDis":1,"CenterCol":48,"CenterRow":36,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":73,"w":97}""");
+                files = [color, dark, new("spatial", CalibrationType.ColorDiff, "spatial", "color_diff.dat", spatialPath)];
+            }
             using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(97, 73, bpp, type == CalibrationType.Luminance ? 1 : 3);
             using LocalFlowFrame full = CreateFrame(raw, flip);
             using LocalFlowFrame fast = CreateFrame(raw, flip);
@@ -80,7 +88,7 @@ public sealed class LocalDeferredColorCalibrationTests
             // Repeated measurement never promotes the flow frame to full XYZ.
             for (int i = 0; i < 10; i++) Assert.Equal(expected, Measure(fast));
             Assert.False(fast.HasCie);
-            LocalFrameFileService.SaveCapture(fast, root, "camera");
+            LocalFrameFileService.SaveCapture(fast, LocalFrameFileService.CreateCapturePath(root, "camera"));
             Assert.Empty(fast.CvCieFilePath);
             Assert.Empty(Directory.GetFiles(root, "*.cvcie", SearchOption.AllDirectories));
             using LocalFlowFrame reopened = LocalFrameFileService.Load(fast.CvRawFilePath);
@@ -90,6 +98,15 @@ public sealed class LocalDeferredColorCalibrationTests
             // Switching back to full color on already-oriented RAW must not mirror twice.
             LocalFrameCalibrationService.ReuseColorCalibration(fast, allowAcceleration: false);
             Assert.True(fast.HasCie);
+            using (LocalFlowFrameLease fullLease = full.Acquire())
+            using (LocalFlowFrameLease fastLease = fast.Acquire())
+            {
+                float[] fullCie = new float[fullLease.CieLength / sizeof(float)];
+                float[] fastCie = new float[fastLease.CieLength / sizeof(float)];
+                Marshal.Copy(fullLease.CiePointer, fullCie, 0, fullCie.Length);
+                Marshal.Copy(fastLease.CiePointer, fastCie, 0, fastCie.Length);
+                Assert.Equal(fullCie, fastCie);
+            }
             Assert.Equal(expected, Measure(fast));
             LocalFrameCalibrationService.ReuseColorCalibration(fast, allowAcceleration: true);
             Assert.False(fast.HasCie);
@@ -97,7 +114,7 @@ public sealed class LocalDeferredColorCalibrationTests
             var action = new FlowEngineLib.Base.CVStartCFC("deferred-reuse");
             using var resources = action.RuntimeResources;
             action.SetCurrentFrame(full);
-            LocalCalibrationNode node = new() { AllowAcceleration = true, SaveFiles = true, CalibTempName = "test" };
+            LocalCalibrationNode node = new() { AllowAcceleration = true, CalibTempName = "test" };
             var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
             using var execution = (IDisposable)execute.Invoke(node, [action])!;
             Assert.False(full.HasCie);
@@ -111,8 +128,10 @@ public sealed class LocalDeferredColorCalibrationTests
         }
     }
 
-    [Fact]
-    public void ColorMetadataIsWrittenWithoutSavingCieAndNonReplayableRawIsRejected()
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous)]
+    [InlineData(CVFileSaveMode.MemoryOnly)]
+    public void ColorMetadataIsWrittenWithoutSavingCieAndNonReplayableRawIsRejected(CVFileSaveMode saveMode)
     {
         string root = Path.Combine(Path.GetTempPath(), $"cv-deferred-metadata-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
@@ -120,14 +139,16 @@ public sealed class LocalDeferredColorCalibrationTests
         try
         {
             using CVCIEFile raw = RawColorCalibrationTests.CreateRaw(97, 73, 16, 3);
-            Assert.True(CVFileUtil.WriteCVRaw(path, raw));
-            byte[] original = File.ReadAllBytes(path);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, saveMode));
+
             File.WriteAllText(calibration, ColorJson);
             using LocalFlowFrame frame = LocalFrameFileService.Load(path);
             using LocalCalibrationCacheManager cache = new("deferred-metadata");
             DeviceCameraCalibrationFile file = new("color", CalibrationType.LumFourColor, "color", "color.dat", calibration);
             LocalFrameCalibrationService.CalibrateInPlace(frame, cache, [file], "test", default, allowAcceleration: true);
-            Assert.Equal(original, File.ReadAllBytes(path).Take(original.Length));
+            Assert.True(CVFileUtil.Read(path, out CVCIEFile cachedRaw));
+            using (cachedRaw) Assert.Equal(raw.Data, cachedRaw.Data);
+            Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
             Assert.Empty(frame.CvCieFilePath);
             using (LocalFlowFrame reopened = LocalFrameFileService.Load(path)) Assert.Equal(Measure(frame), Measure(reopened));
             frame.ColorCalibration!.Save(path, canReplay: false);
@@ -156,10 +177,26 @@ public sealed class LocalDeferredColorCalibrationTests
         Assert.Equal(expectedDefault, (bool)property.GetValue(node)!);
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("True"), ["SaveFiles"] = System.Text.Encoding.UTF8.GetBytes("True") });
         Assert.True((bool)property.GetValue(node)!);
-        Assert.True((bool)type.GetProperty("SaveFiles")!.GetValue(node)!);
+        if (node is LocalCameraNode camera) Assert.True(camera.SaveFiles);
+        else Assert.Null(type.GetProperty("SaveFiles"));
         Assert.Contains("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("False") });
         Assert.False((bool)property.GetValue(node)!);
+    }
+
+    [Fact]
+    public void LegacyCieInputIsReusedWhenAccelerationIsEnabled()
+    {
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            { Width = 1, Height = 1, Channels = 3, PrimaryBufferKind = LocalFrameBufferKind.CvCie }, 0, 12);
+        var action = new FlowEngineLib.Base.CVStartCFC("legacy-cie");
+        using var resources = action.RuntimeResources;
+        action.SetCurrentFrame(frame);
+        LocalCalibrationNode node = new() { AllowAcceleration = true };
+        var execute = typeof(LocalCalibrationNodeBase).GetMethod("ExecuteCalibration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        using var execution = (IDisposable)execute.Invoke(node, [action])!;
+        Assert.True(frame.HasCie);
+        Assert.False(frame.HasRaw);
     }
 
     private static LocalFlowFrame CreateFrame(CVCIEFile raw, CVImageFlipMode flip)

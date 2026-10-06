@@ -146,7 +146,7 @@ namespace ColorVision.Copilot
 
                 if (string.IsNullOrWhiteSpace(normalizedTaskId)
                     || !string.Equals(_grant!.ConversationId, normalizedConversationId, StringComparison.Ordinal)
-                    || !WorkspaceMatches(_grant.WorkspacePath, normalizedWorkspacePath))
+                    || !WorkspaceMatches(_grant, normalizedWorkspacePath))
                 {
                     _grant = null;
                     return false;
@@ -230,7 +230,7 @@ namespace ColorVision.Copilot
                     && !string.IsNullOrWhiteSpace(normalizedTaskId)
                     && string.Equals(_grant!.ConversationId, normalizedConversationId, StringComparison.Ordinal)
                     && string.Equals(_grant.TaskId, normalizedTaskId, StringComparison.Ordinal)
-                    && WorkspaceMatches(_grant.WorkspacePath, normalizedWorkspacePath);
+                    && WorkspaceMatches(_grant, normalizedWorkspacePath);
             }
         }
 
@@ -240,7 +240,7 @@ namespace ColorVision.Copilot
             lock (_syncRoot)
             {
                 if (!IsGrantCurrentNoLock(DateTimeOffset.UtcNow)
-                    || WorkspaceMatches(_grant!.WorkspacePath, normalizedWorkspacePath))
+                    || WorkspaceMatches(_grant!, normalizedWorkspacePath))
                 {
                     return false;
                 }
@@ -258,6 +258,13 @@ namespace ColorVision.Copilot
         private static bool WorkspaceMatches(string grantedPath, string requestPath)
         {
             return string.Equals(grantedPath, requestPath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool WorkspaceMatches(FullAccessGrant grant, string requestPath)
+        {
+            return (grant.Mode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                && string.IsNullOrWhiteSpace(grant.WorkspacePath))
+                || WorkspaceMatches(grant.WorkspacePath, requestPath);
         }
 
         private static string NormalizeIdentifier(string? value)

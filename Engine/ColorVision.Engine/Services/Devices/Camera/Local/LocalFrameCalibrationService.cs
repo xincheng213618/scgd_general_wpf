@@ -1,6 +1,8 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
+using ColorVision.FileIO;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using System;
 using System.Collections.Generic;
@@ -70,6 +72,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             RawColorTransformV1? colorTransform;
             using (LocalFlowFrameLease lease = frame.Acquire())
             {
+                CVImageFlipMode rawOutputFlip = cacheManager.SupportsRawOutputFlip && plan.HasBasicCalibration
+                    && lease.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw && !lease.IsRawFlipApplied
+                    ? lease.Metadata.FlipMode : CVImageFlipMode.None;
                 colorTransform = cacheManager.Execute(
                     new LocalCalibrationLayout(
                         lease.Metadata.Width,
@@ -81,13 +86,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
                     normalizedExposure,
                     calibrationRoi,
-                    allowAcceleration);
+                    allowAcceleration,
+                    rawOutputFlip);
+                if (rawOutputFlip != CVImageFlipMode.None)
+                    lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvRaw);
                 if (plan.GeneratesCie && !allowAcceleration && sourceRawAlreadyMirrored)
                 {
                     lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
                 }
             }
-            FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
+            if (frame.IsFlipApplied) FlowNodeTiming.Skip("MirrorImage");
+            else FlowNodeTiming.Run("MirrorImage", () => LocalFrameMirrorService.ApplyPending(frame));
             if (colorTransform.HasValue)
             {
                 ColorCalibrationSnapshot snapshot = ColorCalibrationSnapshot.Create(colorTransform.Value,
@@ -96,7 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 string rawPath = frame.CvRawFilePath;
                 bool canReplay = !string.IsNullOrWhiteSpace(rawPath);
                 if (!canReplay) rawPath = frame.Metadata.SourceFilePath;
-                if (!string.IsNullOrWhiteSpace(rawPath) && File.Exists(rawPath)
+                if (!string.IsNullOrWhiteSpace(rawPath) && (CVFileReadCache.GetCachedLength(rawPath).HasValue || File.Exists(rawPath))
                     && string.Equals(Path.GetExtension(rawPath), ".cvraw", StringComparison.OrdinalIgnoreCase))
                     FlowNodeTiming.Run("SaveColorParameters", () => snapshot.Save(rawPath, canReplay));
             }

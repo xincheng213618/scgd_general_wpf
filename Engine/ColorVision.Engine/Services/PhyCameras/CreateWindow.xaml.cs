@@ -162,7 +162,18 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CreateConfig.CFW.NormalizeChannelCfgsForSave();
 
+            try
+            {
+                PhyCameraManager.EnsurePhysicalCameraDirectory(CreateConfig.FileServerCfg.FileBasePath, CreateConfig.Code);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, string.Format(Properties.Resources.CreateDirectoryFailed, ex.Message), Properties.Resources.CreateDevice, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             var sysResourceModel = PhyCameraManager.FindPhysicalCameraResource(SysResourceDao.Instance.GetAll(), CreateConfig.Code);
+            bool requiresCreation = PhyCameraManager.RequiresPhysicalCameraCreation(sysResourceModel);
             // 不存在则新建
             if (sysResourceModel == null)
             {
@@ -176,12 +187,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             // 赋值并保存
+            sysResourceModel.Name = CreateConfig.CameraID;
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
 
-            if (SysResourceDao.Instance.Save(sysResourceModel) < 0) return;
+            int saveResult = SysResourceDao.Instance.Save(sysResourceModel);
+            if (saveResult <= 0) return;
 
-            PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
-            PhyCameraManager.LoadPhyCamera();
+            PhysicalCameraCreationBatch creationBatch = new();
+            PhyCameraManager.CompletePhysicalCameraCreation(requiresCreation, sysResourceModel, saveResult, creationBatch);
+            _ = creationBatch.ActivateAsync();
             DialogResult = true;
             Close();
         }

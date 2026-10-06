@@ -13,13 +13,15 @@ namespace ColorVision.Copilot
                 TryCompletePromptHistorySearch();
                 return;
             }
-            if (_queuedLocalCommandExecution != null)
-                return;
             if (_isCompactingConversation)
             {
+                if (_queuedLocalCommandExecution is { } execution)
+                    _taskHost.RequestCancel(execution.HostedRun.Id);
                 _compactConversationCts?.RequestCancellation();
                 return;
             }
+            if (_queuedLocalCommandExecution != null)
+                return;
             if (_fileAttachmentCts != null)
             {
                 _fileAttachmentCts.RequestCancellation();

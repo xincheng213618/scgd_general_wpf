@@ -23,6 +23,7 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         [Display(Name = "PreProcess_CacheFolders", Description = "PreProcess_CacheFoldersDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
+        [CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 
@@ -106,42 +107,43 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                 try
                 {
+                    var scanTiming = System.Diagnostics.Stopwatch.StartNew();
                     // Parse file extensions
                     var extensions = ParseExtensions(fileExtensions);
 
-                    // Get all files matching the criteria
                     var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                    var allFiles = Directory.GetFiles(cachePath, "*.*", searchOption);
-
-                    // Filter by extensions if specified
-                    var files = extensions.Count > 0
-                        ? allFiles.Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant())).ToList()
-                        : allFiles.ToList();
-
-                    if (files.Count == 0)
-                    {
-                        log.Info($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
-                        continue;
-                    }
-
-                    // Calculate total size using File.GetLength() for better performance
                     long totalSize = 0;
-                    var fileSizes = new Dictionary<string, long>();
+                    int scannedFiles = 0;
+                    int matchedFiles = 0;
+                    int unreadableFiles = 0;
+                    var files = new List<(FileInfo Info, long Size)>();
 
-                    foreach (var file in files)
+                    // Directory enumeration pre-populates size and timestamps; reuse them instead of querying each path again.
+                    foreach (var file in new DirectoryInfo(cachePath).EnumerateFiles("*.*", searchOption))
                     {
+                        scannedFiles++;
+                        if (extensions.Count > 0 && !extensions.Contains(file.Extension)) continue;
+                        matchedFiles++;
                         try
                         {
-                            long fileSize = new FileInfo(file).Length;
+                            long fileSize = file.Length;
                             totalSize += fileSize;
-                            fileSizes[file] = fileSize;
+                            files.Add((file, fileSize));
                         }
                         catch
                         {
+                            unreadableFiles++;
                             // Skip files we can't access
                         }
                     }
-                    if (fileSizes.Count == 0)
+                    if (matchedFiles == 0)
+                    {
+                        log.Debug($"CacheCleanupPreProcess: 缓存目录中没有匹配的文件 {cachePath}");
+                        continue;
+                    }
+                    if (unreadableFiles > 0)
+                        log.Warn($"CacheCleanupPreProcess: 缓存扫描跳过了 {unreadableFiles} 个无法读取大小的文件，目录 {cachePath}");
+                    if (files.Count == 0)
                     {
                         continue;
                     }
@@ -149,21 +151,21 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
                     long triggerMB = triggerBytes / OneMb;
                     long targetMB = targetBytes / OneMb;
 
-                    log.Info($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
+                    scanTiming.Stop();
+                    log.Debug($"CacheCleanupPreProcess: 缓存目录 {cachePath} 当前大小 {totalSizeMB}MB, 缓存上限 {triggerMB}MB, 清理到 {targetMB}MB");
                     if (totalSize <= triggerBytes)
                     {
                         continue;
                     }
 
-                    // Need to cleanup - create FileInfo only for files we're going to process
-                    // Sort by last write time to delete oldest first
-                    var filesByDate = fileSizes.Keys
-                        .Select(f => new { Path = f, LastWriteTime = File.GetLastWriteTime(f), Size = fileSizes[f] })
-                        .OrderBy(f => f.LastWriteTime)
-                        .ToList();
+                    var filesByDate = files.OrderBy(f => f.Info.LastWriteTime);
 
                     int deletedCount = 0;
                     long deletedSize = 0;
+                    int deleteFailures = 0;
+                    DateTime? firstDeletedWriteTime = null;
+                    DateTime? lastDeletedWriteTime = null;
+                    var deleteTiming = System.Diagnostics.Stopwatch.StartNew();
 
                     foreach (var file in filesByDate)
                     {
@@ -172,19 +174,25 @@ namespace ColorVision.Engine.FlowProcessing.PreProcess
 
                         try
                         {
-                            File.Delete(file.Path);
+                            File.Delete(file.Info.FullName);
                             deletedSize += file.Size;
                             deletedCount++;
-                            log.Info($"删除文件: {Path.GetFileName(file.Path)} ({file.Size / 1024}KB)");
+                            firstDeletedWriteTime ??= file.Info.LastWriteTime;
+                            lastDeletedWriteTime = file.Info.LastWriteTime;
+                            if (log.IsDebugEnabled) log.Debug($"删除文件: {file.Info.Name} ({file.Size / 1024}KB)");
                         }
                         catch (Exception ex)
                         {
-                            log.Warn($"删除文件失败: {Path.GetFileName(file.Path)}", ex);
+                            deleteFailures++;
+                            log.Warn($"删除文件失败: {file.Info.Name}", ex);
                         }
                     }
 
                     long finalSize = (totalSize - deletedSize) / (1024 * 1024);
-                    log.Info($"CacheCleanupPreProcess: 清理完成。删除了 {deletedCount} 个缓存文件，释放了 {deletedSize / (1024 * 1024)}MB。当前大小: {finalSize}MB");
+                    log.InfoFormat("CacheCleanupPreProcess: 清理完成。Directory={0} FilesScanned={1} UnreadableFiles={2} DeletedFiles={3} DeleteFailures={4} ReleasedMiB={5} RemainingMiB={6} ScanMs={7:F3} DeleteMs={8:F3} BeforeMiB={9} TriggerMiB={10} TargetMiB={11} FirstDeletedWriteTime={12:O} LastDeletedWriteTime={13:O}",
+                        cachePath, scannedFiles, unreadableFiles, deletedCount, deleteFailures,
+                        deletedSize / OneMb, finalSize, scanTiming.Elapsed.TotalMilliseconds, deleteTiming.Elapsed.TotalMilliseconds,
+                        totalSizeMB, triggerMB, targetMB, firstDeletedWriteTime, lastDeletedWriteTime);
                 }
                 catch (Exception ex)
                 {

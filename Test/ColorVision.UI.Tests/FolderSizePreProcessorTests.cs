@@ -5,8 +5,12 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FolderSizePreProcessorTests
 {
-    [Fact]
-    public async Task CleanupRunsThroughBackgroundRunnerAndKeepsFlowSemantics()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task CleanupRunsThroughBackgroundRunnerAndKeepsFlowSemantics(bool includeSubfolders, bool atTriggerLimit)
     {
         string root = Path.Combine(Path.GetTempPath(), $"ColorVision_FolderSizePreProcessor_{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
@@ -14,8 +18,11 @@ public sealed class FolderSizePreProcessorTests
         try
         {
             string oldest = CreateFile(root, "oldest.cvraw", 100, DateTime.UtcNow.AddMinutes(-2));
-            string newest = CreateFile(root, "newest.cvraw", 100, DateTime.UtcNow.AddMinutes(-1));
+            string newest = CreateFile(root, "newest.CVRAW", 100, DateTime.UtcNow.AddMinutes(-1));
             string ignored = CreateFile(root, "ignored.txt", 500, DateTime.UtcNow.AddMinutes(-3));
+            string nestedDirectory = Path.Combine(root, "nested");
+            Directory.CreateDirectory(nestedDirectory);
+            string nestedOldest = CreateFile(nestedDirectory, "nested-oldest.cvraw", 100, DateTime.UtcNow.AddMinutes(-4));
             var runnerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var releaseRunner = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var processor = new FolderSizePreProcessor(async work =>
@@ -26,8 +33,9 @@ public sealed class FolderSizePreProcessorTests
             });
             processor.Config.FolderPaths = [root];
             processor.Config.FileExtensions = ".cvraw";
-            processor.Config.IncludeSubfolders = true;
-            processor.Config.TriggerSizeBytes = 150;
+            processor.Config.IncludeSubfolders = includeSubfolders;
+            long matchedBytes = includeSubfolders ? 300 : 200;
+            processor.Config.TriggerSizeBytes = atTriggerLimit ? matchedBytes : matchedBytes - 50;
             processor.Config.TargetSizeBytes = 100;
 
             Task<bool> cleanup = processor.PreProcess(new PreProcessContext());
@@ -40,9 +48,10 @@ public sealed class FolderSizePreProcessorTests
             releaseRunner.TrySetResult();
 
             Assert.True(await cleanup.WaitAsync(TimeSpan.FromSeconds(5)));
-            Assert.False(File.Exists(oldest));
+            Assert.Equal(atTriggerLimit, File.Exists(oldest));
             Assert.True(File.Exists(newest));
             Assert.True(File.Exists(ignored));
+            Assert.Equal(!includeSubfolders || atTriggerLimit, File.Exists(nestedOldest));
         }
         finally
         {

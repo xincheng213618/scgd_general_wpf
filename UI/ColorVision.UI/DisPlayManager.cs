@@ -109,13 +109,29 @@ namespace ColorVision.UI
                 e.Handled = true;
             };
         }
+
+        public static void AddViewConfig(this UserControl userControl, DockViewRegistration registration, string title)
+        {
+            var manager = DockViewManager.GetInstance();
+            registration.Title = title;
+            manager.RegisterView(registration);
+            userControl.MouseDoubleClick += (s, e) =>
+            {
+                if (e.ChangedButton != MouseButton.Left || DisplayPinButton.IsPinInput(e.OriginalSource as DependencyObject)) return;
+                manager.OpenView(registration);
+                e.Handled = true;
+            };
+        }
     }
 
     public class DisPlayGroupConfig : ViewModelBase
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
-        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayName)); } }
+
+        [Newtonsoft.Json.JsonIgnore, System.Text.Json.Serialization.JsonIgnore, Browsable(false)]
+        public string DisplayName => DisPlayManager.GetGroupDisplayName(this);
         private string _Name = string.Empty;
 
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
@@ -802,12 +818,12 @@ namespace ColorVision.UI
             return section;
         }
 
-        private static string GetGroupDisplayName(DisPlayGroupConfig group)
+        internal static string GetGroupDisplayName(DisPlayGroupConfig group)
         {
             if (IsDefaultGroup(group.Id))
-                return "默认";
+                return Properties.Resources.DisplayControlDefaultGroup;
 
-            return string.IsNullOrWhiteSpace(group.Name) ? "未命名分组" : group.Name.Trim();
+            return string.IsNullOrWhiteSpace(group.Name) ? Properties.Resources.DisplayControlUnnamedGroup : group.Name.Trim();
         }
 
         private static void AttachGroupDropFeedback(Border border)
@@ -859,13 +875,13 @@ namespace ColorVision.UI
         {
             var contextMenu = new ContextMenu();
 
-            var renameItem = new MenuItem { Header = "重命名" };
+            var renameItem = new MenuItem { Header = Properties.Resources.Rename };
             renameItem.Click += (s, e) => RenameGroup(group);
             contextMenu.Items.Add(renameItem);
 
             if (!IsDefaultGroup(group.Id))
             {
-                var deleteItem = new MenuItem { Header = "删除分组" };
+                var deleteItem = new MenuItem { Header = Properties.Resources.DisplayControlDeleteGroup };
                 deleteItem.Click += (s, e) => DeleteGroup(group);
                 contextMenu.Items.Add(deleteItem);
             }
@@ -1184,8 +1200,8 @@ namespace ColorVision.UI
 
         internal void CreateGroup()
         {
-            string defaultName = $"分组 {DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id)) + 1}";
-            string? name = ShowTextDialog("新建分组", "分组名称", defaultName);
+            string defaultName = string.Format(Properties.Resources.DisplayControlNewGroupName, DisPlayManagerConfig.Instance.Groups.Count(a => !IsDefaultGroup(a.Id)) + 1);
+            string? name = ShowTextDialog(Properties.Resources.DisplayControlCreateGroup, Properties.Resources.DisplayControlGroupName, defaultName);
             if (string.IsNullOrWhiteSpace(name))
                 return;
 
@@ -1202,7 +1218,7 @@ namespace ColorVision.UI
 
         internal void RenameGroup(DisPlayGroupConfig group)
         {
-            string? name = ShowTextDialog("重命名分组", "分组名称", group.Name);
+            string? name = ShowTextDialog(Properties.Resources.DisplayControlRenameGroup, Properties.Resources.DisplayControlGroupName, group.Name);
             if (string.IsNullOrWhiteSpace(name))
                 return;
 
@@ -1216,7 +1232,7 @@ namespace ColorVision.UI
             if (IsDefaultGroup(group.Id))
                 return;
 
-            MessageBoxResult result = MessageBox.Show(Application.Current.GetActiveWindow(), $"删除分组“{group.Name}”？分组内控件会移回默认分组。", "ColorVision", MessageBoxButton.OKCancel);
+            MessageBoxResult result = MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.DisplayControlDeleteGroupPrompt, group.Name), "ColorVision", MessageBoxButton.OKCancel);
             if (result != MessageBoxResult.OK)
                 return;
 
@@ -1266,8 +1282,8 @@ namespace ColorVision.UI
             };
             Grid.SetRow(buttons, 2);
 
-            var okButton = new Button { Content = "确定", Width = 70, Margin = new Thickness(0, 0, 6, 0), IsDefault = true };
-            var cancelButton = new Button { Content = "取消", Width = 70, IsCancel = true };
+            var okButton = new Button { Content = Properties.Resources.OK, MinWidth = 70, Padding = new Thickness(12, 4, 12, 4), Margin = new Thickness(0, 0, 6, 0), IsDefault = true };
+            var cancelButton = new Button { Content = Properties.Resources.Cancel, MinWidth = 70, Padding = new Thickness(12, 4, 12, 4), IsCancel = true };
             okButton.Click += (s, e) =>
             {
                 window.DialogResult = true;

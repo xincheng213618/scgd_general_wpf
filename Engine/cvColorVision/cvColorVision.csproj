@@ -49,17 +49,7 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="runtimes\win-x64\native\sqlite3.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="runtimes\win-x64\native\cvTableList.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
@@ -131,10 +121,6 @@
 			<Pack>true</Pack>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\FTD2XX.dll" Link="FTD2XX.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cfg\sys.cfg" Link="cfg\sys.cfg">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>

@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.FileIO;
+using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
 using log4net;
@@ -238,6 +240,13 @@ namespace ColorVision.Engine.Media
             };
         }
 
+        private static ColorCalibrationSnapshot? ReadReplayableCalibration(string filePath, CVCIEFile header)
+        {
+            if (header.FileExtType != CVType.Raw) return null;
+            ColorCalibrationSnapshot? snapshot = ColorCalibrationSnapshot.Read(filePath, header);
+            return snapshot?.CanReplay == true ? snapshot : null;
+        }
+
         public static int SaveToTif(VExportCIE export)
         {
             try
@@ -293,12 +302,16 @@ namespace ColorVision.Engine.Media
                     ? CVType.Src
                     : CVType.CIE;
 
+            ColorCalibrationSnapshot? calibration = ReadReplayableCalibration(fileName, cvcie);
             string? associatedSourcePath = cvcie.FileExtType == CVType.CIE
                 ? ResolveAssociatedSourcePath(fileName, cvcie.SrcFileName)
                 : null;
             int selectedImageCount = cvcie.FileExtType switch
             {
-                CVType.Raw or CVType.Src => export.IsExportSrc ? 1 : 0,
+                CVType.Raw or CVType.Src => (export.IsExportSrc ? 1 : 0) +
+                    (calibration != null && export.IsExportChannelY ? 1 : 0) +
+                    (calibration?.Channels == 3 && export.IsExportChannelX ? 1 : 0) +
+                    (calibration?.Channels == 3 && export.IsExportChannelZ ? 1 : 0),
                 CVType.CIE =>
                     (export.IsExportSrc && associatedSourcePath != null && CVFileUtil.IsCIEFile(associatedSourcePath) ? 1 : 0) +
                     (cvcie.Channels == 1 && export.IsExportChannelY ? 1 : 0) +
@@ -325,24 +338,34 @@ namespace ColorVision.Engine.Media
             switch (cvcie.FileExtType)
             {
                 case CVType.Raw:
+                case CVType.Src:
+                    if (selectedImageCount == 0) break;
+                    if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                        throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                     if (export.IsExportSrc)
                     {
-                        if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
-                            throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                         using (src = CreateMatFromCVCIEFile(cvcie))
                         {
-                            SaveImage(src, "Src", cvcie, "Src");
+                            SaveImage(src, "_Src", cvcie, "Src");
                         }
                     }
-                    break;
-                case CVType.Src:
-                    if (export.IsExportSrc)
+                    if (calibration != null && (export.IsExportChannelX || export.IsExportChannelY || export.IsExportChannelZ))
                     {
-                        if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
-                            throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
-                        using (src = CreateMatFromCVCIEFile(cvcie))
+                        using RawColorMeasurementSource colorSource = new(cvcie, calibration);
+                        for (int channel = 0; channel < calibration.Channels; channel++)
                         {
-                            SaveImage(src, "Src", cvcie, "Src");
+                            string channelName = calibration.Channels == 1 ? "Y" : channel == 0 ? "X" : channel == 1 ? "Y" : "Z";
+                            bool selected = channelName == "X" ? export.IsExportChannelX : channelName == "Y" ? export.IsExportChannelY : export.IsExportChannelZ;
+                            if (!selected) continue;
+                            using CVCIEFile channelFile = new()
+                            {
+                                FileExtType = CVType.Raw, FilePath = fileName, Version = cvcie.Version,
+                                Rows = cvcie.Rows, Cols = cvcie.Cols, Bpp = 32, Channels = cvcie.Channels,
+                                Gain = cvcie.Gain, Exp = calibration.Exposure, NDPort = cvcie.NDPort,
+                                Data = colorSource.CreateChannel(channel)
+                            };
+                            using Mat channelImage = CreateSingleChannelMat(channelFile, channelFile.Data);
+                            SaveImage(channelImage, "_" + channelName, channelFile, channelName);
                         }
                     }
                     break;
@@ -448,11 +471,16 @@ namespace ColorVision.Engine.Media
                     }
                 }
                 _CVCIEFile = cVCIEFile;
+                HasCieChannels = true;
 
             }
             else if (FileExtType is CVType.Raw or CVType.Src)
             {
                 IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
+                _CVCIEFile.FileExtType = FileExtType;
+                HasCieChannels = IsCanExportSrc && ReadReplayableCalibration(filePath, _CVCIEFile) != null;
+                IsExportChannelX = IsExportChannelZ = HasCieChannels && Channels == 3;
+                IsExportChannelY = HasCieChannels;
                 IsChannelOne = CVCIEFile.Channels == 0;
             }
 
@@ -508,14 +536,16 @@ namespace ColorVision.Engine.Media
             _ => FileExtType.ToString().ToUpperInvariant(),
         };
 
-        public IReadOnlyDictionary<string, ImageFormat> AvailableImageFormats => IsCVCIE
+        public bool HasCieChannels { get; }
+
+        public IReadOnlyDictionary<string, ImageFormat> AvailableImageFormats => HasCieChannels
             ? CvcieExportImageFormats
             : CvRawExportImageFormats;
 
-        public bool IsCieThreeChannel => IsCVCIE && Channels >= 3;
+        public bool IsCieThreeChannel => HasCieChannels && Channels >= 3;
 
         public string ExportFormatHint => IsTiff
-            ? $"TIFF · {Bpp}-bit · LZW / ZIP"
+            ? $"TIFF · {Bpp}-bit{(IsCVRaw && HasCieChannels ? " / CIE 32-bit" : string.Empty)} · LZW / ZIP"
             : IsPng
                 ? $"PNG · Auto · {(Bpp is 8 or 16 ? $"{Bpp}-bit" : "8-bit")}"
                 : "JPEG · Quality 100 · 8-bit";

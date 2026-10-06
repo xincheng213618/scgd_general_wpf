@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace FlowEngineLib.Logical;
 
-[STNode("/01 运算", "接收 A/B 任意一条路径的有效结果并继续执行")]
+[STNode("运算", "接收 A/B 任意一条路径的有效结果并继续执行", CategoryOrder = 100)]
 public sealed class AnyPathMergeNode : CVDeviceNode
 {
 	private STNodeOption output = STNodeOption.Empty;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
@@ -15,9 +14,5 @@ namespace ColorVision.Engine.Templates.ImageCropping
             TemplateParams = Params;
         }
 
-        public override IMysqlCommand? GetMysqlCommand()
-        {
-            return new MysqlImageCropping();
-        }
     }
 }

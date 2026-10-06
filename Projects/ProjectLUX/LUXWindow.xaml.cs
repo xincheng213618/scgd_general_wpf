@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
+﻿using LocalizedText = global::ProjectLUX.DisplayText;
+#pragma warning disable CA1805,CA1822,CS0168,CS0219,CS4014,CS8601
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
@@ -246,8 +247,8 @@ namespace ProjectLUX
         {
             string groupName = ProcessManager.ActiveGroup?.Name;
             ActiveGroupTextBlock.Text = string.IsNullOrWhiteSpace(groupName)
-                ? "当前组: 未设置"
-                : $"当前组: {groupName}";
+                ? LocalizedText.Get("当前组: 未设置")
+                : LocalizedText.Format($"当前组: {groupName}");
         }
 
         public void Delete()
@@ -255,7 +256,7 @@ namespace ProjectLUX
             if (listView1.SelectedIndex < 0) return;
             var item = listView1.SelectedItem as ProjectLUXReuslt;
             if (item == null) return;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"是否删除 {item.SN} 测试结果？"), "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
                 log.Info($"删除测试结果 {item.SN}");
@@ -274,9 +275,9 @@ namespace ProjectLUX
 
         public Task Refresh()
         {
-            if (FlowTemplate.SelectedIndex < 0) return Task.CompletedTask;
+            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return Task.CompletedTask;
 
-            flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+            flowEngine.LoadFromBase64(template.Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
             foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
@@ -582,7 +583,7 @@ namespace ProjectLUX
 
             if (Batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
                 return;
             }
             ProjectLUXReuslt result = CurrentFlowResult ?? new ProjectLUXReuslt();
@@ -960,10 +961,10 @@ namespace ProjectLUX
             if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
             {
                 ImageView.Clear();
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(LUXWindow), "历史结果坐标空间宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(LUXWindow), "历史结果坐标空间高度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(LUXWindow), "历史结果图像像素宽度");
-                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(LUXWindow), "历史结果图像像素高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(LUXWindow), LocalizedText.Get("历史结果坐标空间宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(LUXWindow), LocalizedText.Get("历史结果坐标空间高度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(LUXWindow), LocalizedText.Get("历史结果图像像素宽度"));
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(LUXWindow), LocalizedText.Get("历史结果图像像素高度"));
                 ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
                 ImageView.UpdateZoomAndScale();
             }
@@ -1395,7 +1396,7 @@ namespace ProjectLUX
             string defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             var dialog = new Microsoft.Win32.OpenFolderDialog
             {
-                Title = "导出 ObjectiveTestResult",
+                Title = LocalizedText.Get("导出 ObjectiveTestResult"),
                 InitialDirectory = defaultPath
             };
 
@@ -1406,12 +1407,12 @@ namespace ProjectLUX
                 string path = Path.Combine(dialog.FolderName, $"C_{sn}.csv");
                 ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, path);
                 log.Info("手动导出 ObjectiveTestResult：" + path);
-                MessageBox.Show(this, "导出完成：" + path, "ColorVision");
+                MessageBox.Show(this, LocalizedText.Get("导出完成：") + path, "ColorVision");
             }
             catch (Exception ex)
             {
                 log.Error("手动导出 ObjectiveTestResult 失败", ex);
-                MessageBox.Show(this, "导出失败：" + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, LocalizedText.Get("导出失败：") + ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

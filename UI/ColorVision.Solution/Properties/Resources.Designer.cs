@@ -2741,5 +2741,8 @@ namespace ColorVision.Solution.Properties {
                 return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
+        public static string Sol_View_More => ResourceManager.GetString("Sol_View_More", resourceCulture);
+        public static string Sol_Terminal_Title => ResourceManager.GetString("Sol_Terminal_Title", resourceCulture);
+        public static string Sol_Terminal_Run => ResourceManager.GetString("Sol_Terminal_Run", resourceCulture);
     }
 }

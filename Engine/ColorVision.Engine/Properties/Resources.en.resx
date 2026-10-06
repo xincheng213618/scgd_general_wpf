@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -544,7 +544,7 @@
     <value>Restore point created successfully</value>
   </data>
   <data name="ChangeNDPort" xml:space="preserve">
-    <value>Change NDPort</value>
+    <value>Set ND position</value>
   </data>
   <data name="AutoFocus" xml:space="preserve">
     <value>Autofocus</value>
@@ -732,9 +732,6 @@
 
   <data name="Aperture" xml:space="preserve">
     <value>Aperture F</value>
-  </data>
-  <data name="DataBaseConfig1" xml:space="preserve">
-    <value>Database configuration (if configuration fails)</value>
   </data>
   <data name="offline" xml:space="preserve">
     <value>Offline</value>
@@ -1493,9 +1490,6 @@
   <data name="VerifyJson" xml:space="preserve">
     <value>Verify JSON</value>
   </data>
-  <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
-    <value>No database reset option is configured.</value>
-  </data>
   <data name="InputTemplateName" xml:space="preserve">
     <value>Please enter the template name.</value>
   </data>
@@ -1638,12 +1632,6 @@
   <data name="TimeoutDuration" xml:space="preserve">
     <value>Timeout(ms)</value>
   </data>
-  <data name="RestoreMysqlAutoFocusTemplateSettings" xml:space="preserve">
-    <value>Restore MySQL AutoFocus template settings</value>
-  </data>
-  <data name="RestoreMysqlCameraRunParamTemplateSettings" xml:space="preserve">
-    <value>Restore MysqlCameraRunParam template settings</value>
-  </data>
   <data name="ParamInput" xml:space="preserve">
     <value>Input parameters</value>
   </data>
@@ -1674,9 +1662,6 @@
   
   <data name="BulkEdit" xml:space="preserve">
     <value>Unified Editing</value>
-  </data>
-  <data name="ArchiveAll" xml:space="preserve">
-    <value>All Archives</value>
   </data>
   <data name="BatchResults" xml:space="preserve">
     <value>Batch results</value>
@@ -1727,9 +1712,6 @@
   </data>
   <data name="ResetDatabasePrompt" xml:space="preserve">
     <value>Reset the database?</value>
-  </data>
-  <data name="RelatedItems" xml:space="preserve">
-    <value>Related items</value>
   </data>
   <data name="Debug" xml:space="preserve">
     <value>Debug</value>
@@ -3089,12 +3071,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_MeasureBatch_ConfigOptions" xml:space="preserve">
     <value>Configuration Options</value>
   </data>
-  <data name="Flow_MeasureBatch_ArchiveCommandSent" xml:space="preserve">
-    <value>Archive command has been sent</value>
-  </data>
-  <data name="Flow_MeasureBatch_AllArchiveCommandSent" xml:space="preserve">
-    <value>All archive commands have been sent</value>
-  </data>
   <data name="Flow_MeasureBatch_BatchResultTitle" xml:space="preserve">
     <value>Batch {0} Results</value>
   </data>
@@ -4132,7 +4108,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="GhostGrayscale" xml:space="preserve"><value>Ghost grayscale</value></data>
   <data name="OpenResultSetFormat" xml:space="preserve"><value>Open {0} result set</value></data>
   <data name="Score" xml:space="preserve"><value>Score</value></data>
-  <data name="ScreenDefect_RestoreDatabase" xml:space="preserve"><value>Restore screen-defect detection</value></data>
   <data name="SelectResultSetFormat" xml:space="preserve"><value>Select {0} result set</value></data>
   <data name="SfrWindowPreview" xml:space="preserve"><value>SFR window preview</value></data>
   <data name="SplitDiagram" xml:space="preserve"><value>Segmentation diagram</value></data>
@@ -4151,7 +4126,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="VideoCrossGuide_CrossNotFoundLowBrightness" xml:space="preserve"><value>Brightness is too low; cross not found</value></data>
   <data name="VideoCrossGuide_BrightCrossLinesNotFound" xml:space="preserve"><value>No sufficiently bright cross lines were found</value></data>
   <data name="VideoCrossGuide_InsufficientCoverage" xml:space="preserve"><value>Insufficient bright-line coverage. Row: {0:P0}; column: {1:P0}</value></data>
-  <data name="Flow_CustomNodes" xml:space="preserve"><value>99 Custom Nodes</value></data>
+  <data name="Flow_CustomNodes" xml:space="preserve"><value>Custom Nodes</value></data>
+  <data name="Flow_OtherNodes" xml:space="preserve"><value>Other</value></data>
   <data name="LocalImage_FilePathDesc" xml:space="preserve"><value>Path to the local image file</value></data>
   <data name="LocalImage_PathEmpty" xml:space="preserve"><value>The local image path is empty</value></data>
   <data name="LocalImage_FileNotFound" xml:space="preserve"><value>Local image not found: {0}</value></data>
@@ -4241,8 +4217,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>Property descriptions</value></data>
   <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>Captures one RAW frame from a local physical camera and optionally performs local calibration, image flipping, and file saving.</value></data>
   <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. Select the device code and configure the exposure time, gain, and average count.&#xA;2. Select a calibration template when calibration is required; leave it empty to output RAW only.&#xA;3. Enable auto connect, auto exposure, file saving, and image flipping as needed.&#xA;4. Connect OUT to a downstream local calibration, POI, or other algorithm node.</value></data>
-  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration and CIE generation (when included in the template) → image flip → file save. Downstream POI nodes always use coordinates in the final image orientation.</value></data>
-  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes.</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration (optionally replayed from saved parameters) → image flip → database insert → save or cache-only CVRAW. Downstream POI uses the final image orientation.</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes. File saving is enabled by default and completes before the node continues. Disabling file saving keeps the image and later color parameters only in cache. Enable file saving for legacy services that require a disk file.</value></data>
 
   <data name="本地关注点布点(Re)" xml:space="preserve"><value>Local POI Layout (Remap)</value></data>
   <data name="本地关注点布点(参数)" xml:space="preserve"><value>Local POI Layout (Parameters)</value></data>
@@ -4328,7 +4304,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="本地相机管理" xml:space="preserve"><value>Local Camera Management</value></data>
   <data name="同步本地取图节点参数" xml:space="preserve"><value>Synchronize local capture node parameters</value></data>
   <data name="查看已缓存的校正文件和内存占用" xml:space="preserve"><value>View cached calibration files and memory usage</value></data>
-  <data name="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW and also save CVCIE when calibration results are available</value></data>
+  <data name="与本地相机取图节点一致：保存 CVRAW，包含已执行的色度校正参数" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW with the applied color calibration parameters</value></data>
   <data name="统一曝光 (ms)" xml:space="preserve"><value>Unified Exposure (ms)</value></data>
   <data name="同步四路" xml:space="preserve"><value>Synchronize Four Channels</value></data>
   <data name="新增" xml:space="preserve"><value>Add</value></data>
@@ -4722,7 +4698,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="保留最近" xml:space="preserve"><value>Keep the latest</value></data>
   <data name="个月" xml:space="preserve"><value>month(s)</value></data>
   <data name="清理过期数据" xml:space="preserve"><value>Clean Expired Data</value></data>
-  <data name="清理前创建完整备份（推荐）" xml:space="preserve"><value>Create a full backup before cleanup (recommended)</value></data>
   <data name="清空选中表" xml:space="preserve"><value>Clear Selected Tables</value></data>
   <data name="可清理数据表" xml:space="preserve"><value>Cleanable Tables</value></data>
   <data name="全选可用表" xml:space="preserve"><value>Select All Available Tables</value></data>
@@ -4755,7 +4730,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="将清空以下 {0:N0} 张数据表：" xml:space="preserve"><value>The following {0:N0} table(s) will be cleared:</value></data>
   <data name="此操作不可撤销，是否继续？" xml:space="preserve"><value>This operation cannot be undone. Continue?</value></data>
   <data name="正在清空选中的 {0:N0} 张数据表..." xml:space="preserve"><value>Clearing the selected {0:N0} table(s)...</value></data>
-  <data name="危险操作：将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>Dangerous operation: all {1:N0} available table(s) in {0} will be cleared.</value></data>
   <data name="全部数据清理后无法撤销，是否确定继续？" xml:space="preserve"><value>Clearing all data cannot be undone. Are you sure you want to continue?</value></data>
   <data name="正在清空 {0} 全部数据..." xml:space="preserve"><value>Clearing all data from {0}...</value></data>
   <data name="该迁移没有可用的完整备份能力，已拒绝执行。" xml:space="preserve"><value>This migration has no full-backup capability and was refused.</value></data>
@@ -4898,7 +4872,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="高度" xml:space="preserve"><value>Height</value></data>
   <data name="高级设置" xml:space="preserve"><value>Advanced Settings</value></data>
   <data name="缓存大小" xml:space="preserve"><value>Cache Size</value></data>
-  <data name="计算色温波长" xml:space="preserve"><value>CCT Wavelength</value></data>
+  <data name="计算色温波长" xml:space="preserve"><value>Calculate CCT and wavelength</value></data>
   <data name="矩形" xml:space="preserve"><value>Rectangle</value></data>
   <data name="宽度" xml:space="preserve"><value>Width</value></data>
   <data name="使用本地校正" xml:space="preserve"><value>Use Local Correction</value></data>
@@ -4927,15 +4901,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="可用数据表" xml:space="preserve"><value>Available Tables</value></data>
   <data name="数据行数" xml:space="preserve"><value>Total Rows</value></data>
   <data name="创建完整备份" xml:space="preserve"><value>Create Full Backup</value></data>
-  <data name="备份策略" xml:space="preserve"><value>Backup Policy</value></data>
   <data name="历史数据清理" xml:space="preserve"><value>Historical Data Cleanup</value></data>
   <data name="按保留月数清理当前数据库中的过期记录。" xml:space="preserve"><value>Remove expired records from the current database based on the retention period in months.</value></data>
   <data name="所有清理操作都需要再次确认。" xml:space="preserve"><value>All cleanup operations require confirmation.</value></data>
-  <data name="危险操作" xml:space="preserve"><value>Danger Zone</value></data>
   <data name="清空当前库的全部可清理表，无法直接撤销。" xml:space="preserve"><value>Empty all cleanable tables in the current database. This cannot be undone directly.</value></data>
   <data name="清空当前库全部可清理表" xml:space="preserve"><value>Empty All Cleanable Tables in Current Database</value></data>
   <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表。" xml:space="preserve"><value>Table cleanup affects only checked tables. To clean a main table, also select all existing related detail tables.</value></data>
-  <data name="未启用清理前备份。" xml:space="preserve"><value>Backup before cleanup is not enabled.</value></data>
   <data name="PoiAutoFitSize" xml:space="preserve"><value>Auto-fit size</value></data>
   <data name="PoiAutoFitSizeToolTip" xml:space="preserve"><value>Estimate the circle radius or rectangle size from the quadrilateral and grid counts, and use Internal placement. Gaps, overlaps and integer rounding are allowed. You can adjust the values manually; click Draw to generate points.</value></data>
   <data name="PoiAutoFitSizeFailed" xml:space="preserve"><value>Cannot fit the sampling size. Check that the quadrilateral is valid, row and column counts are at least 1, and the area can contain a whole-pixel sampling window. Set the size manually for an area collapsed to a point.</value></data>
@@ -5162,4 +5133,1755 @@ Only license records will be removed. Device settings, exported files and record
   <data name="将释放当前进程所有相机的校正缓存和图像文件缓存槽位。&#xA;&#xA;等待正在执行的校正与图像复制完成，不删除磁盘文件。后续使用时会重新加载。是否继续？" xml:space="preserve"><value>Release calibration caches for all cameras and the image file cache slot in the current process?
 
 This waits for calibration and image copies to finish and keeps disk files. Caches reload on next use.</value></data>
+  <data name="POI模板" xml:space="preserve"><value>POI template</value></data>
+  <data name="过滤模板" xml:space="preserve"><value>Filter template</value></data>
+  <data name="修正模板" xml:space="preserve"><value>Correction template</value></data>
+  <data name="输出模板" xml:space="preserve"><value>Output template</value></data>
+  <data name="请先选择关注点模板" xml:space="preserve"><value>Select a POI template first</value></data>
+  <data name="需要选择关注点过滤模板" xml:space="preserve"><value>Select a POI filter template</value></data>
+  <data name="需要选择关注点修正模板" xml:space="preserve"><value>Select a POI correction template</value></data>
+  <data name="需要选择关注点输出模板" xml:space="preserve"><value>Select a POI output template</value></data>
+  <data name="Db" xml:space="preserve"><value>Database</value></data>
+  <data name="启用 CVRAW 文件缓存" xml:space="preserve"><value>Enable CVRAW file cache</value></data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变，可用于对比文件缓存效果。" xml:space="preserve"><value>Enabled by default. When disabled, files are read and written directly; cache slots are released after active reads finish. Display memory reuse remains enabled. Use this setting to compare file cache performance.</value></data>
+
+  <data name="FilterWheelSetPosition" xml:space="preserve"><value>Set position</value></data>
+  <data name="FilterWheelReadPosition" xml:space="preserve"><value>Read position</value></data>
+  <data name="NDFilterPosition" xml:space="preserve"><value>ND position</value></data>
+  <data name="OpenShutter" xml:space="preserve"><value>Open shutter</value></data>
+  <data name="CloseShutter" xml:space="preserve"><value>Close shutter</value></data>
+  <data name="ServiceConfigurations" xml:space="preserve">
+    <value>Service configurations</value>
+  </data>
+  <data name="CreateServiceAndDevice" xml:space="preserve">
+    <value>Create service configuration and add device</value>
+  </data>
+  <data name="LocalConfigurationCreated" xml:space="preserve">
+    <value>Local configuration created.</value>
+  </data>
+  <data name="ServiceType_Camera" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="ServiceType_PG" xml:space="preserve">
+    <value>Pattern generator (PG)</value>
+  </data>
+  <data name="ServiceType_Spectrum" xml:space="preserve">
+    <value>Spectrometer</value>
+  </data>
+  <data name="ServiceType_SMU" xml:space="preserve">
+    <value>Source measure unit (SMU)</value>
+  </data>
+  <data name="ServiceType_Sensor" xml:space="preserve">
+    <value>General sensor</value>
+  </data>
+  <data name="ServiceType_FileServer" xml:space="preserve">
+    <value>File service</value>
+  </data>
+  <data name="ServiceType_Algorithm" xml:space="preserve">
+    <value>Algorithm service</value>
+  </data>
+  <data name="ServiceType_FilterWheel" xml:space="preserve">
+    <value>Filter wheel</value>
+  </data>
+  <data name="ServiceType_Calibration" xml:space="preserve">
+    <value>Calibration service</value>
+  </data>
+  <data name="ServiceType_Motor" xml:space="preserve">
+    <value>Motor</value>
+  </data>
+  <data name="ServiceType_LightingControl" xml:space="preserve">
+    <value>Lighting control</value>
+  </data>
+  <data name="TemplateBrowserOpenEditor" xml:space="preserve">
+    <value>Open Editor</value>
+  </data>
+  <data name="TemplateBrowserLegacyManager" xml:space="preserve">
+    <value>Legacy Manager</value>
+  </data>
+  <data name="TemplateBrowserSwap" xml:space="preserve">
+    <value>Swap Positions</value>
+  </data>
+  <data name="TemplateBrowserHeading" xml:space="preserve">
+    <value>{0} Templates</value>
+  </data>
+  <data name="TemplateBrowserNew" xml:space="preserve">
+    <value>New {0}</value>
+  </data>
+  <data name="TemplateBrowserSearch" xml:space="preserve">
+    <value>Search {0} names</value>
+  </data>
+  <data name="TemplateBrowserCoverTiles" xml:space="preserve">
+    <value>Cover Tiles</value>
+  </data>
+  <data name="TemplateBrowserIconTiles" xml:space="preserve">
+    <value>Icon Tiles</value>
+  </data>
+  <data name="TemplateBrowserImportHint" xml:space="preserve">
+    <value>Import a template file</value>
+  </data>
+  <data name="TemplateBrowserExportHint" xml:space="preserve">
+    <value>Export the selected or checked templates</value>
+  </data>
+  <data name="TemplateBrowserMore" xml:space="preserve">
+    <value>More Actions</value>
+  </data>
+  <data name="TemplateBrowserTemplates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="TemplateBrowserSearchHint" xml:space="preserve">
+    <value>Search by name (Ctrl+F)</value>
+  </data>
+  <data name="TemplateBrowserClearSearch" xml:space="preserve">
+    <value>Clear Search</value>
+  </data>
+  <data name="TemplateBrowserTiles" xml:space="preserve">
+    <value>Tiles</value>
+  </data>
+  <data name="TemplateBrowserList" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="TemplateBrowserSelect" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="TemplateBrowserNumber" xml:space="preserve">
+    <value>No.</value>
+  </data>
+  <data name="TemplateBrowserDeleteHint" xml:space="preserve">
+    <value>Delete the selected or checked templates</value>
+  </data>
+  <data name="TemplateBrowserInteractionHint" xml:space="preserve">
+    <value>Drag to swap positions · Double-click to open</value>
+  </data>
+  <data name="TemplateBrowserSaveHint" xml:space="preserve">
+    <value>Save name changes</value>
+  </data>
+  <data name="TemplateBrowserCloseHint" xml:space="preserve">
+    <value>Close the template window</value>
+  </data>
+  <data name="TemplateBrowserCreateFailed" xml:space="preserve">
+    <value>Creation Failed</value>
+  </data>
+  <data name="TemplateBrowserDeleteFailed" xml:space="preserve">
+    <value>Deletion Failed</value>
+  </data>
+  <data name="TemplateBrowserSaveFailed" xml:space="preserve">
+    <value>Save Failed</value>
+  </data>
+  <data name="TemplateBrowserSavePrompt" xml:space="preserve">
+    <value>Save name changes?</value>
+  </data>
+  <data name="TemplateBrowserCount" xml:space="preserve">
+    <value>{0} {1} templates</value>
+  </data>
+  <data name="TemplateBrowserFilteredCount" xml:space="preserve">
+    <value>{0} / {1} {2} templates</value>
+  </data>
+  <data name="TemplateBrowserCheckedCount" xml:space="preserve">
+    <value>{0} checked</value>
+  </data>
+  <data name="TemplateBrowserNoSelection" xml:space="preserve">
+    <value>No template selected</value>
+  </data>
+  <data name="TemplateBrowserOneSelected" xml:space="preserve">
+    <value>1 selected</value>
+  </data>
+  <data name="TemplateBrowserDeleteCount" xml:space="preserve">
+    <value>Delete ({0})</value>
+  </data>
+  <data name="TemplateBrowserLegacyPrompt" xml:space="preserve">
+    <value>Save renamed templates before opening the legacy manager? Choose No to discard unsaved name changes.</value>
+  </data>
+  <data name="TemplateBrowserLegacyFailed" xml:space="preserve">
+    <value>Could Not Open Legacy Manager</value>
+  </data>
+  <data name="TemplateBrowserEmpty" xml:space="preserve">
+    <value>No {0} templates</value>
+  </data>
+  <data name="TemplateBrowserNoMatches" xml:space="preserve">
+    <value>No matching templates</value>
+  </data>
+  <data name="TemplateBrowserOpenFailed" xml:space="preserve">
+    <value>Open Failed</value>
+  </data>
+  <data name="TemplateBrowserUnsavedNames" xml:space="preserve">
+    <value>Names have changed. Click Save to apply.</value>
+  </data>
+  <data name="TemplateBrowserCopyFailed" xml:space="preserve">
+    <value>Copy Failed</value>
+  </data>
+  <data name="TemplateBrowserDeletePrompt" xml:space="preserve">
+    <value>Delete these {0} {1} templates?
+
+{2}</value>
+  </data>
+  <data name="TemplateBrowserNamesSaved" xml:space="preserve">
+    <value>Names saved</value>
+  </data>
+  <data name="TemplateBrowserExportFailed" xml:space="preserve">
+    <value>Export Failed</value>
+  </data>
+  <data name="TemplateBrowserImportFailed" xml:space="preserve">
+    <value>Import Failed</value>
+  </data>
+  <data name="TemplateBrowserSavingOrder" xml:space="preserve">
+    <value>Saving order…</value>
+  </data>
+  <data name="TemplateBrowserOrderSaved" xml:space="preserve">
+    <value>Order saved and other template lists synchronized</value>
+  </data>
+  <data name="TemplateBrowserOrderFailed" xml:space="preserve">
+    <value>Could not save the order. Reopen the manager, check the order, and try again.</value>
+  </data>
+  <data name="AppSecretTooltip" xml:space="preserve">
+    <value>App Secret</value>
+  </data>
+  <data name="DefaultCreateTemplateName" xml:space="preserve">
+    <value>default</value>
+  </data>
+  <data name="ToolTipAngleShift" xml:space="preserve">
+    <value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value>
+  </data>
+  <data name="ToolTipColorDiff" xml:space="preserve">
+    <value>Color correction (ColorDiff): corrects color difference between channels</value>
+  </data>
+  <data name="ToolTipColorShift" xml:space="preserve">
+    <value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value>
+  </data>
+  <data name="ToolTipDSNU" xml:space="preserve">
+    <value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value>
+  </data>
+  <data name="ToolTipDarkNoise" xml:space="preserve">
+    <value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value>
+  </data>
+  <data name="ToolTipDefectPoint" xml:space="preserve">
+    <value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value>
+  </data>
+  <data name="ToolTipDistortion" xml:space="preserve">
+    <value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value>
+  </data>
+  <data name="ToolTipFourColor" xml:space="preserve">
+    <value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value>
+  </data>
+  <data name="ToolTipLineArity" xml:space="preserve">
+    <value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value>
+  </data>
+  <data name="ToolTipLuminance" xml:space="preserve">
+    <value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value>
+  </data>
+  <data name="ToolTipMultiColor" xml:space="preserve">
+    <value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value>
+  </data>
+  <data name="ToolTipOneColor" xml:space="preserve">
+    <value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value>
+  </data>
+  <data name="ToolTipUniformity" xml:space="preserve">
+    <value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value>
+  </data>
+  <data name="AutoDetectKeyRegionsToolTip" xml:space="preserve">
+    <value>Auto-detect glowing key areas in image and create POI</value>
+  </data>
+  <data name="FrameSelectAreaToolTip" xml:space="preserve">
+    <value>Frame-select layout area on image</value>
+  </data>
+  <data name="ShowOnCieDiagramToolTip" xml:space="preserve">
+    <value>Show current result point on CIE chromaticity diagram</value>
+  </data>
+  <data name="DSNU" xml:space="preserve">
+    <value>DSNU</value>
+  </data>
+  <data name="Id" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="MacOrSn" xml:space="preserve">
+    <value>MAC/SN</value>
+  </data>
+  <data name="Roi" xml:space="preserve">
+    <value>ROI</value>
+  </data>
+  <data name="RoiX" xml:space="preserve">
+    <value>ROI X</value>
+  </data>
+  <data name="RoiY" xml:space="preserve">
+    <value>ROI Y</value>
+  </data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve">
+    <value>Show advanced properties such as node ID, token, and service name</value>
+  </data>
+  <data name="PG_ImageNumberTooltip" xml:space="preserve">
+    <value>Specify an image number</value>
+  </data>
+  <data name="PG_NextImageTooltip" xml:space="preserve">
+    <value>Next image</value>
+  </data>
+  <data name="PG_PreviousImageTooltip" xml:space="preserve">
+    <value>Previous image</value>
+  </data>
+  <data name="PG_SwitchImageTooltip" xml:space="preserve">
+    <value>Switch to the specified image</value>
+  </data>
+  <data name="POITransformTooltip" xml:space="preserve">
+    <value>Batch-adjust POI positions and sizes</value>
+  </data>
+  <data name="TemplateBrowserActionError" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="CVCIE 区域测量" xml:space="preserve">
+    <value>CVCIE Region Measurements</value>
+  </data>
+  <data name="Ctrl+C · 多选复制，包含表头，按当前显示精度" xml:space="preserve">
+    <value>Ctrl+C · Copy multiple selected rows with headers at the current display precision</value>
+  </data>
+  <data name="Ctrl+V 粘贴；Ctrl+C 复制选区" xml:space="preserve">
+    <value>Ctrl+V: Paste; Ctrl+C: Copy Selection</value>
+  </data>
+  <data name="RGBW 四色" xml:space="preserve">
+    <value>RGBW Colors</value>
+  </data>
+  <data name="SQL 恢复详情" xml:space="preserve">
+    <value>SQL Restore Details</value>
+  </data>
+  <data name="上传校正文件" xml:space="preserve">
+    <value>Upload calibration files</value>
+  </data>
+  <data name="上传校正组" xml:space="preserve">
+    <value>Upload calibration group</value>
+  </data>
+  <data name="上传此类型的校正文件" xml:space="preserve">
+    <value>Upload This Type of Calibration File</value>
+  </data>
+  <data name="下个未完成" xml:space="preserve">
+    <value>Next Unfinished</value>
+  </data>
+  <data name="为校正组配置文件 · 修改会在关闭窗口时保存" xml:space="preserve">
+    <value>Configure files for calibration groups · Changes are saved when the window closes</value>
+  </data>
+  <data name="仅修改图形回显，重新计算 POI 后生效。表格和 CSV 不受影响。" xml:space="preserve">
+    <value>Changes only the graphic display and takes effect after recalculating POI. Tables and CSV remain unchanged.</value>
+  </data>
+  <data name="仅调整显示精度；悬停数值可查看完整值" xml:space="preserve">
+    <value>Changes display precision only. Hover over a value to view its full precision.</value>
+  </data>
+  <data name="从文件夹选择 CVCIE 图像" xml:space="preserve">
+    <value>Choose a CVCIE Image from a Folder</value>
+  </data>
+  <data name="使用所选结果" xml:space="preserve">
+    <value>Use Selected Result</value>
+  </data>
+  <data name="使用模板中的第一个 POI" xml:space="preserve">
+    <value>Use the Template's First POI</value>
+  </data>
+  <data name="保留自定义文字、单位与换行，例如 Y:@Y:F1。可用字段：X、Y、Z、x、y、u、v、CCT、Wave。" xml:space="preserve">
+    <value>Preserve custom text, units, and line breaks, such as Y:@Y:F1. Available fields: X, Y, Z, x, y, u, v, CCT, Wave.</value>
+  </data>
+  <data name="修改后点击应用，搜索区域仍在节点面板设置。" xml:space="preserve">
+    <value>Click Apply after editing. Set the search region in the node panel as before.</value>
+  </data>
+  <data name="值" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="停止采集" xml:space="preserve">
+    <value>Stop Capture</value>
+  </data>
+  <data name="光圈" xml:space="preserve">
+    <value>Aperture</value>
+  </data>
+  <data name="光谱" xml:space="preserve">
+    <value>Spectrum</value>
+  </data>
+  <data name="光谱 IP 合格范围：30%～95%" xml:space="preserve">
+    <value>Acceptable Spectrum IP Range: 30%–95%</value>
+  </data>
+  <data name="CalibrationSpectrumLuminanceY" xml:space="preserve">
+    <value>Spectrum Y</value>
+  </data>
+  <data name="光谱 x" xml:space="preserve">
+    <value>Spectrum x</value>
+  </data>
+  <data name="CalibrationSpectrumChromaticityY" xml:space="preserve">
+    <value>Spectrum y</value>
+  </data>
+  <data name="光谱仪" xml:space="preserve">
+    <value>Spectrometer</value>
+  </data>
+  <data name="关闭窗口会保留连接；需要释放设备时，请点击断开。" xml:space="preserve">
+    <value>Closing the window keeps the connection. Click Disconnect to release the device.</value>
+  </data>
+  <data name="准备恢复..." xml:space="preserve">
+    <value>Preparing Restore...</value>
+  </data>
+  <data name="创建校正" xml:space="preserve">
+    <value>Create Calibration</value>
+  </data>
+  <data name="删除选中组" xml:space="preserve">
+    <value>Delete Selected Group</value>
+  </data>
+  <data name="勾选需要显示的数值，并分别设置小数位。" xml:space="preserve">
+    <value>Select the values to display and set decimal places individually.</value>
+  </data>
+  <data name="十字定位参数" xml:space="preserve">
+    <value>Cross Location Parameters</value>
+  </data>
+  <data name="单次采集" xml:space="preserve">
+    <value>Single Acquisition</value>
+  </data>
+  <data name="单点" xml:space="preserve">
+    <value>Single Point</value>
+  </data>
+  <data name="单点修正" xml:space="preserve">
+    <value>Single-point Correction</value>
+  </data>
+  <data name="原校正文件" xml:space="preserve">
+    <value>Original Calibration File</value>
+  </data>
+  <data name="参与当前校正" xml:space="preserve">
+    <value>Include in Current Calibration</value>
+  </data>
+  <data name="参数" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="另存为" xml:space="preserve">
+    <value>Save As</value>
+  </data>
+  <data name="启用校正" xml:space="preserve">
+    <value>Enable Calibration</value>
+  </data>
+  <data name="回显预览 · 示例数值" xml:space="preserve">
+    <value>Display Preview · Example Values</value>
+  </data>
+  <data name="图像导入" xml:space="preserve">
+    <value>Image Import</value>
+  </data>
+  <data name="图像渲染" xml:space="preserve">
+    <value>Image Rendering</value>
+  </data>
+  <data name="图像结果" xml:space="preserve">
+    <value>Image Results</value>
+  </data>
+  <data name="图形回显内容" xml:space="preserve">
+    <value>Graphic Display Content</value>
+  </data>
+  <data name="在 json.cn 中打开…" xml:space="preserve">
+    <value>Open in json.cn…</value>
+  </data>
+  <data name="在文件夹中显示" xml:space="preserve">
+    <value>Show in Folder</value>
+  </data>
+  <data name="备份原校正文件后替换，并重启 ColorVision 服务。" xml:space="preserve">
+    <value>Back up the original calibration file, replace it, and restart the ColorVision service.</value>
+  </data>
+  <data name="备份文件" xml:space="preserve">
+    <value>Backup File</value>
+  </data>
+  <data name="复制全部" xml:space="preserve">
+    <value>Copy All</value>
+  </data>
+  <data name="复制当前 JSON" xml:space="preserve">
+    <value>Copy Current JSON</value>
+  </data>
+  <data name="复制详情" xml:space="preserve">
+    <value>Copy Details</value>
+  </data>
+  <data name="复制选中行" xml:space="preserve">
+    <value>Copy Selected Rows</value>
+  </data>
+  <data name="定位校正文件" xml:space="preserve">
+    <value>Locate Calibration File</value>
+  </data>
+  <data name="对焦距离" xml:space="preserve">
+    <value>Focus Distance</value>
+  </data>
+  <data name="对焦距离 (m)" xml:space="preserve">
+    <value>Focus Distance (m)</value>
+  </data>
+  <data name="导入" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="导入最新图像" xml:space="preserve">
+    <value>Import Latest Image</value>
+  </data>
+  <data name="导出 CSV" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="导出完整计算值" xml:space="preserve">
+    <value>Export Full Calculation Values</value>
+  </data>
+  <data name="导出当前结果" xml:space="preserve">
+    <value>Export Current Result</value>
+  </data>
+  <data name="小数位" xml:space="preserve">
+    <value>Decimal Places</value>
+  </data>
+  <data name="属性与 JSON 内容同步" xml:space="preserve">
+    <value>Properties Stay in Sync with JSON</value>
+  </data>
+  <data name="已核对测量数据" xml:space="preserve">
+    <value>Measurement Data Verified</value>
+  </data>
+  <data name="应用" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="应用到节点" xml:space="preserve">
+    <value>Apply to Node</value>
+  </data>
+  <data name="当前文件在本机不可用" xml:space="preserve">
+    <value>The current file is unavailable on this computer</value>
+  </data>
+  <data name="当前模板包含自定义排版，未修改时完整保留。调整勾选或小数位后将按标准分组排版。" xml:space="preserve">
+    <value>The current template has a custom layout, which is preserved until edited. Changing selections or decimal places applies the standard grouped layout.</value>
+  </data>
+  <data name="恢复" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="恢复原始 POI 测量值" xml:space="preserve">
+    <value>Restore Original POI Measurements</value>
+  </data>
+  <data name="恢复原始光谱参考值" xml:space="preserve">
+    <value>Restore Original Spectrum Reference Values</value>
+  </data>
+  <data name="恢复默认参数…" xml:space="preserve">
+    <value>Restore Default Parameters…</value>
+  </data>
+  <data name="成像校正" xml:space="preserve">
+    <value>Imaging Correction</value>
+  </data>
+  <data name="所选设备最近 100 条亮度结果。请按采集时间、色块及 ND 核对；选中后点击使用。" xml:space="preserve">
+    <value>The selected device's latest 100 luminance results. Check acquisition time, color patch, and ND, then select a result and click Use.</value>
+  </data>
+  <data name="手工数值…" xml:space="preserve">
+    <value>Manual Values…</value>
+  </data>
+  <data name="打开配置文件夹" xml:space="preserve">
+    <value>Open Configuration Folder</value>
+  </data>
+  <data name="文件较大时可能需要一些时间，请勿关闭窗口" xml:space="preserve">
+    <value>Large files may take some time. Keep the window open.</value>
+  </data>
+  <data name="断开" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="显示到 CIE 图" xml:space="preserve">
+    <value>Show in CIE Diagram</value>
+  </data>
+  <data name="暂无图像" xml:space="preserve">
+    <value>No Image Available</value>
+  </data>
+  <data name="曝光" xml:space="preserve">
+    <value>Exposure</value>
+  </data>
+  <data name="更多 ▾" xml:space="preserve">
+    <value>More ▾</value>
+  </data>
+  <data name="更多采集设置" xml:space="preserve">
+    <value>More Acquisition Settings</value>
+  </data>
+  <data name="替换当前文件并重启服务" xml:space="preserve">
+    <value>Replace Current File and Restart Service</value>
+  </data>
+  <data name="最近图像" xml:space="preserve">
+    <value>Recent Images</value>
+  </data>
+  <data name="本地光谱仪" xml:space="preserve">
+    <value>Local Spectrometer</value>
+  </data>
+  <data name="本地十字定位 · 参数配置" xml:space="preserve">
+    <value>Local Cross Location · Parameters</value>
+  </data>
+  <data name="本机缺失" xml:space="preserve">
+    <value>Missing Locally</value>
+  </data>
+  <data name="查找" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="查找 JSON 文本 · Ctrl+F" xml:space="preserve">
+    <value>Find JSON Text · Ctrl+F</value>
+  </data>
+  <data name="校正文件管理" xml:space="preserve">
+    <value>Calibration File Management</value>
+  </data>
+  <data name="校正组" xml:space="preserve">
+    <value>Calibration Group</value>
+  </data>
+  <data name="校正组管理" xml:space="preserve">
+    <value>Calibration Group Management</value>
+  </data>
+  <data name="校零" xml:space="preserve">
+    <value>Zero Calibration</value>
+  </data>
+  <data name="校零与配置" xml:space="preserve">
+    <value>Zero Calibration and Settings</value>
+  </data>
+  <data name="核对色块、原校正文件及光谱 IP（30%～95%）；修改数据后需重新确认。" xml:space="preserve">
+    <value>Check the color patch, original calibration file, and spectrum IP (30%–95%). Confirm again after editing data.</value>
+  </data>
+  <data name="格式化" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="格式化 JSON，支持 Ctrl+Z 撤销" xml:space="preserve">
+    <value>Format JSON; Ctrl+Z can undo the change</value>
+  </data>
+  <data name="检查 JSON 语法，不执行算法或完整 Schema 校验" xml:space="preserve">
+    <value>Check JSON syntax without running the algorithm or complete schema validation</value>
+  </data>
+  <data name="检查语法" xml:space="preserve">
+    <value>Check Syntax</value>
+  </data>
+  <data name="检查配置" xml:space="preserve">
+    <value>Check Configuration</value>
+  </data>
+  <data name="模板参数" xml:space="preserve">
+    <value>Template Parameters</value>
+  </data>
+  <data name="模板校正配置" xml:space="preserve">
+    <value>Template Calibration Settings</value>
+  </data>
+  <data name="正在准备导出…" xml:space="preserve">
+    <value>Preparing Export…</value>
+  </data>
+  <data name="正在导出校正文件" xml:space="preserve">
+    <value>Exporting Calibration File</value>
+  </data>
+  <data name="测量数据" xml:space="preserve">
+    <value>Measurement Data</value>
+  </data>
+  <data name="测量详情" xml:space="preserve">
+    <value>Measurement Details</value>
+  </data>
+  <data name="添加组" xml:space="preserve">
+    <value>Add group</value>
+  </data>
+  <data name="焦距" xml:space="preserve">
+    <value>FocalLen</value>
+  </data>
+  <data name="焦距 (mm)" xml:space="preserve">
+    <value>Focal Length (mm)</value>
+  </data>
+  <data name="用户校正" xml:space="preserve">
+    <value>User Calibration</value>
+  </data>
+  <data name="用户校正 · 手工数值" xml:space="preserve">
+    <value>User Calibration · Manual Values</value>
+  </data>
+  <data name="目标" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="目标数据库" xml:space="preserve">
+    <value>Target Database</value>
+  </data>
+  <data name="相机" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="CalibrationCameraLuminanceY" xml:space="preserve">
+    <value>Camera Y</value>
+  </data>
+  <data name="相机 x" xml:space="preserve">
+    <value>Camera x</value>
+  </data>
+  <data name="CalibrationCameraChromaticityY" xml:space="preserve">
+    <value>Camera y</value>
+  </data>
+  <data name="相机记录" xml:space="preserve">
+    <value>Camera Records</value>
+  </data>
+  <data name="积分时间 (ms)" xml:space="preserve">
+    <value>Integration Time (ms)</value>
+  </data>
+  <data name="算法结果" xml:space="preserve">
+    <value>Algorithm Results</value>
+  </data>
+  <data name="粘贴" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="结果数据" xml:space="preserve">
+    <value>Result Data</value>
+  </data>
+  <data name="绘制 POI" xml:space="preserve">
+    <value>Draw POI</value>
+  </data>
+  <data name="编辑文本校正文件" xml:space="preserve">
+    <value>Edit Text Calibration File</value>
+  </data>
+  <data name="编辑校正文件" xml:space="preserve">
+    <value>Edit Calibration File</value>
+  </data>
+  <data name="自动校零（需遮光）" xml:space="preserve">
+    <value>Automatic Zero Calibration (Block the Light)</value>
+  </data>
+  <data name="自动积分" xml:space="preserve">
+    <value>Automatic integration</value>
+  </data>
+  <data name="自适应暗校正" xml:space="preserve">
+    <value>Adaptive Dark Calibration</value>
+  </data>
+  <data name="自适应校零" xml:space="preserve">
+    <value>Adaptive Zero Calibration</value>
+  </data>
+  <data name="色度校正" xml:space="preserve">
+    <value>Chromaticity Calibration</value>
+  </data>
+  <data name="计算校正" xml:space="preserve">
+    <value>Calculate Calibration</value>
+  </data>
+  <data name="计算结果" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="设备配置" xml:space="preserve">
+    <value>Device configuration</value>
+  </data>
+  <data name="设置" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="请先遮光，再进行校零。" xml:space="preserve">
+    <value>Block the light before zero calibration.</value>
+  </data>
+  <data name="连接" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="连续采集" xml:space="preserve">
+    <value>Continuous Acquisition</value>
+  </data>
+  <data name="选择已有…" xml:space="preserve">
+    <value>Choose Existing…</value>
+  </data>
+  <data name="选择已有光谱" xml:space="preserve">
+    <value>Choose Existing Spectrum</value>
+  </data>
+  <data name="选择文件" xml:space="preserve">
+    <value>Select File</value>
+  </data>
+  <data name="选择显示字段" xml:space="preserve">
+    <value>Choose Display Fields</value>
+  </data>
+  <data name="选择模板后应用第一个 POI；也可手动绘制" xml:space="preserve">
+    <value>Apply the first POI after selecting a template, or draw one manually</value>
+  </data>
+  <data name="选择模板后开始编辑" xml:space="preserve">
+    <value>Choose a Template to Begin Editing</value>
+  </data>
+  <data name="采集光谱" xml:space="preserve">
+    <value>Acquire Spectrum</value>
+  </data>
+  <data name="采集参数" xml:space="preserve">
+    <value>Acquisition settings</value>
+  </data>
+  <data name="采集时间" xml:space="preserve">
+    <value>Acquisition Time</value>
+  </data>
+  <data name="重启 ColorVision" xml:space="preserve">
+    <value>Restart ColorVision</value>
+  </data>
+  <data name="高级 · 自定义模板" xml:space="preserve">
+    <value>Advanced · Custom Template</value>
+  </data>
+  <data name="高级校准 · 中心补偿与镜头畸变" xml:space="preserve">
+    <value>Advanced Calibration · Center Compensation and Lens Distortion</value>
+  </data>
+  <data name="＋ 添加组" xml:space="preserve">
+    <value>＋ Add Group</value>
+  </data>
+  <data name="&#10;&#10;这些数据可能导致错误的校正结果。建议取消并重新采集。仍要使用本次数据继续计算吗？" xml:space="preserve">
+    <value>
+
+These data may produce incorrect corrections. Canceling and reacquiring is recommended. Continue calculating with these data?</value>
+  </data>
+  <data name=" · 本地" xml:space="preserve">
+    <value> · Local</value>
+  </data>
+  <data name="CVCIE 结果设置" xml:space="preserve">
+    <value>CVCIE Result Settings</value>
+  </data>
+  <data name="ColorVision 重启失败：{0}" xml:space="preserve">
+    <value>ColorVision restart failed: {0}</value>
+  </data>
+  <data name="FOV 参数无效" xml:space="preserve">
+    <value>Invalid FOV Parameters</value>
+  </data>
+  <data name="FOV 计算" xml:space="preserve">
+    <value>FOV Calculation</value>
+  </data>
+  <data name="FOV 计算失败。" xml:space="preserve">
+    <value>FOV calculation failed.</value>
+  </data>
+  <data name="FOV 计算结果" xml:space="preserve">
+    <value>FOV Results</value>
+  </data>
+  <data name="Ghost2.0模板管理" xml:space="preserve">
+    <value>Ghost2.0 Template Management</value>
+  </data>
+  <data name="KB 计算仅支持 8/16 位、1/3/4 通道图像，当前为 {0} 位 {1} 通道。" xml:space="preserve">
+    <value>KB calculation supports only 8/16-bit images with 1/3/4 channels; current image: {0} bit, {1} channels.</value>
+  </data>
+  <data name="KB 计算失败，错误码：{0}" xml:space="preserve">
+    <value>KB calculation failed, code: {0}</value>
+  </data>
+  <data name="MQTT 消息服务" xml:space="preserve">
+    <value>MQTT Messaging Service</value>
+  </data>
+  <data name="MTF 参数无效" xml:space="preserve">
+    <value>Invalid MTF Parameters</value>
+  </data>
+  <data name="MTF输入错误" xml:space="preserve">
+    <value>Invalid MTF input</value>
+  </data>
+  <data name="MySQL 模板" xml:space="preserve">
+    <value>MySQL Templates</value>
+  </data>
+  <data name="OLED AOI模板管理" xml:space="preserve">
+    <value>OLED AOI Template Management</value>
+  </data>
+  <data name="POI 区域测量" xml:space="preserve">
+    <value>POI Region Measurement</value>
+  </data>
+  <data name="POI 模板已保存" xml:space="preserve">
+    <value>POI template saved</value>
+  </data>
+  <data name="POI 模板读取失败：{0}" xml:space="preserve">
+    <value>Failed to read POI template: {0}</value>
+  </data>
+  <data name="{0} Height为0{1}" xml:space="preserve">
+    <value>{0} Height is 0{1}</value>
+  </data>
+  <data name="{0} X为0{1}" xml:space="preserve">
+    <value>{0} X is 0{1}</value>
+  </data>
+  <data name="{0} Y为0{1}" xml:space="preserve">
+    <value>{0} Y is 0{1}</value>
+  </data>
+  <data name="{0} width为0{1}" xml:space="preserve">
+    <value>{0} Width is 0{1}</value>
+  </data>
+  <data name="{0} · 只读 · {1}" xml:space="preserve">
+    <value>{0} · Read Only · {1}</value>
+  </data>
+  <data name="{0} · 相机图像与 POI" xml:space="preserve">
+    <value>{0} · Camera Image and POI</value>
+  </data>
+  <data name="{0} · 第一个 POI" xml:space="preserve">
+    <value>{0} · First POI</value>
+  </data>
+  <data name="{0} → {1} 光谱参考" xml:space="preserve">
+    <value>{0} → {1} Spectrum Reference</value>
+  </data>
+  <data name="{0} 个区域" xml:space="preserve">
+    <value>{0} Regions</value>
+  </data>
+  <data name="{0} 点" xml:space="preserve">
+    <value>{0} Points</value>
+  </data>
+  <data name="{0}失败，后续操作已停止。&#13;&#10;错误标识：{1} / {2} ({3})。&#13;&#10;请检查日志或联系管理员。" xml:space="preserve">
+    <value>{0} failed; subsequent operations stopped.
+Error ID: {1} / {2} ({3}).
+Check the logs or contact your administrator.</value>
+  </data>
+  <data name="● 已修改 · Ctrl+S 保存" xml:space="preserve">
+    <value>● Modified · Ctrl+S to Save</value>
+  </data>
+  <data name="上移 (Alt+↑)" xml:space="preserve">
+    <value>Move Up (Alt+↑)</value>
+  </data>
+  <data name="下移 (Alt+↓)" xml:space="preserve">
+    <value>Move Down (Alt+↓)</value>
+  </data>
+  <data name="亮度" xml:space="preserve">
+    <value>Brightness</value>
+  </data>
+  <data name="亮点检测模板管理" xml:space="preserve">
+    <value>Bright Spot Detection Templates</value>
+  </data>
+  <data name="仅包含 xy 色坐标的结果可显示到 CIE 色度图" xml:space="preserve">
+    <value>Only results containing xy chromaticity coordinates can be shown in the CIE diagram</value>
+  </data>
+  <data name="仅支持加载 .sql 备份文件。" xml:space="preserve">
+    <value>Only .sql backup files are supported.</value>
+  </data>
+  <data name="仍可双击打开流程编辑器" xml:space="preserve">
+    <value>Double-click to open the flow editor</value>
+  </data>
+  <data name="使用所选值" xml:space="preserve">
+    <value>Use Selected Value</value>
+  </data>
+  <data name="使用所选视场角" xml:space="preserve">
+    <value>Use Selected Field of View</value>
+  </data>
+  <data name="保存 POI 模板" xml:space="preserve">
+    <value>Save POI Template</value>
+  </data>
+  <data name="保存修正后的校正文件（保持原格式）" xml:space="preserve">
+    <value>Save Corrected Calibration File (Preserve Format)</value>
+  </data>
+  <data name="保存图表" xml:space="preserve">
+    <value>Save Chart</value>
+  </data>
+  <data name="保存失败: {0}" xml:space="preserve">
+    <value>Failed to save: {0}</value>
+  </data>
+  <data name="保存失败：{0}" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="保存成功" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="光谱取图失败：{0}&#10;&#10;是否打开光谱日志？" xml:space="preserve">
+    <value>Spectrum acquisition failed: {0}
+
+Open the spectrum log?</value>
+  </data>
+  <data name="切换标定分组对应的 ND 失败：{0}" xml:space="preserve">
+    <value>Failed to switch the ND for the calibration group: {0}</value>
+  </data>
+  <data name="刷新模板" xml:space="preserve">
+    <value>Refresh Templates</value>
+  </data>
+  <data name="加载 {0} 的 CVRAW / CVCIE 图像" xml:space="preserve">
+    <value>Load CVRAW / CVCIE image for {0}</value>
+  </data>
+  <data name="历史算法结果图像像素宽度" xml:space="preserve">
+    <value>Historical Algorithm Result Image Pixel Width</value>
+  </data>
+  <data name="历史算法结果图像像素高度" xml:space="preserve">
+    <value>Historical Algorithm Result Image Pixel Height</value>
+  </data>
+  <data name="历史算法结果坐标空间宽度" xml:space="preserve">
+    <value>Historical Algorithm Result Coordinate Width</value>
+  </data>
+  <data name="历史算法结果坐标空间高度" xml:space="preserve">
+    <value>Historical Algorithm Result Coordinate Height</value>
+  </data>
+  <data name="参数已应用到节点，请保存流程。" xml:space="preserve">
+    <value>Parameters applied to the node; save the flow.</value>
+  </data>
+  <data name="发光区定位" xml:space="preserve">
+    <value>LightArea-Localization</value>
+  </data>
+  <data name="发光区定位（需复核）" xml:space="preserve">
+    <value>Emitting Region Detection (Review Required)</value>
+  </data>
+  <data name="向下填充 (Ctrl+D)" xml:space="preserve">
+    <value>Fill Down (Ctrl+D)</value>
+  </data>
+  <data name="四边形角点无效，请重新框选" xml:space="preserve">
+    <value>Invalid quadrilateral corners; draw the region again</value>
+  </data>
+  <data name="图像所用色度校正文件与原文件一致。" xml:space="preserve">
+    <value>The image uses the same chromaticity correction file as the original.</value>
+  </data>
+  <data name="图表保存成功!" xml:space="preserve">
+    <value>Chart saved successfully!</value>
+  </data>
+  <data name="备份失败：{0}" xml:space="preserve">
+    <value>Backup failed: {0}</value>
+  </data>
+  <data name="备份：{0}" xml:space="preserve">
+    <value>Backup: {0}</value>
+  </data>
+  <data name="复制全部统计" xml:space="preserve">
+    <value>Copy All Statistics</value>
+  </data>
+  <data name="复制名称" xml:space="preserve">
+    <value>Copy Name</value>
+  </data>
+  <data name="复制数值" xml:space="preserve">
+    <value>Copy Values</value>
+  </data>
+  <data name="复制选中文字" xml:space="preserve">
+    <value>Copy Selected Text</value>
+  </data>
+  <data name="定位结果的四角点无效，请复核图像或重新框选" xml:space="preserve">
+    <value>The four located corners are invalid; review the image or draw the region again</value>
+  </data>
+  <data name="导入文件" xml:space="preserve">
+    <value>Import File</value>
+  </data>
+  <data name="导出失败: {0}" xml:space="preserve">
+    <value>Export failed: {0}</value>
+  </data>
+  <data name="导出成功" xml:space="preserve">
+    <value>Export Successful</value>
+  </data>
+  <data name="局部图像增强模板管理" xml:space="preserve">
+    <value>Local Image Enhancement Templates</value>
+  </data>
+  <data name="已保存到本地 POI 模板库" xml:space="preserve">
+    <value>Saved to local POI template library</value>
+  </data>
+  <data name="已保存到本地模板库" xml:space="preserve">
+    <value>Saved to local template library</value>
+  </data>
+  <data name="已保存：{0}" xml:space="preserve">
+    <value>Saved: {0}</value>
+  </data>
+  <data name="已准备来源" xml:space="preserve">
+    <value>Source prepared</value>
+  </data>
+  <data name="已取消计算，请处理待复核的数据。" xml:space="preserve">
+    <value>Calculation canceled; review the pending data.</value>
+  </data>
+  <data name="已复制表头及全部测量数据，可直接粘贴到 Excel。" xml:space="preserve">
+    <value>Headers and all measurement data copied; paste directly into Excel.</value>
+  </data>
+  <data name="已完成 {0} / {1}" xml:space="preserve">
+    <value>Completed {0} / {1}</value>
+  </data>
+  <data name="已导入文件" xml:space="preserve">
+    <value>File imported</value>
+  </data>
+  <data name="已恢复光谱原值" xml:space="preserve">
+    <value>Original spectrum values restored</value>
+  </data>
+  <data name="已恢复相机原值" xml:space="preserve">
+    <value>Original camera values restored</value>
+  </data>
+  <data name="已成功变换 {0} 个POI点" xml:space="preserve">
+    <value>Successfully transformed {0} POI points</value>
+  </data>
+  <data name="已有数据库维护任务正在执行，请稍候。" xml:space="preserve">
+    <value>A database maintenance task is already running; please wait.</value>
+  </data>
+  <data name="已粘贴，请核对色块顺序与测量来源。" xml:space="preserve">
+    <value>Pasted; verify patch order and measurement sources.</value>
+  </data>
+  <data name="已读取{0}" xml:space="preserve">
+    <value>Read {0}</value>
+  </data>
+  <data name="已选择光谱" xml:space="preserve">
+    <value>Spectrum selected</value>
+  </data>
+  <data name="布点四边形无效，或区域无法容纳当前采样窗尺寸" xml:space="preserve">
+    <value>Invalid layout quadrilateral, or the region cannot accommodate the current sampling window</value>
+  </data>
+  <data name="布点四边形无效，请重新定位或框选" xml:space="preserve">
+    <value>Invalid layout quadrilateral; locate or draw it again</value>
+  </data>
+  <data name="当前" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="当前相机暂无拍摄记录" xml:space="preserve">
+    <value>No acquisition records for the current camera</value>
+  </data>
+  <data name="恢复失败" xml:space="preserve">
+    <value>Restore Failed</value>
+  </data>
+  <data name="恢复完成" xml:space="preserve">
+    <value>Restore Complete</value>
+  </data>
+  <data name="恢复默认参数" xml:space="preserve">
+    <value>Restore Default Parameters</value>
+  </data>
+  <data name="成功检测到 {0} 个按键区域" xml:space="preserve">
+    <value>Detected {0} key regions</value>
+  </data>
+  <data name="批量编辑 ({0} 项)" xml:space="preserve">
+    <value>Batch Edit ({0} Items)</value>
+  </data>
+  <data name="批量设置半径..." xml:space="preserve">
+    <value>Set Radius for All...</value>
+  </data>
+  <data name="批量设置名称..." xml:space="preserve">
+    <value>Set Names for All...</value>
+  </data>
+  <data name="批量设置尺寸..." xml:space="preserve">
+    <value>Set Size for All...</value>
+  </data>
+  <data name="找不到刚拍摄的图像" xml:space="preserve">
+    <value>Cannot find the newly acquired image</value>
+  </data>
+  <data name="按键区域检测失败(错误码: {0})，请调整参数后重试" xml:space="preserve">
+    <value>Key region detection failed (code: {0}); adjust the parameters and retry</value>
+  </data>
+  <data name="搜索结果对应的流程版本已经变化，请重新搜索。" xml:space="preserve">
+    <value>The flow version has changed since these search results; search again.</value>
+  </data>
+  <data name="操作失败" xml:space="preserve">
+    <value>Operation Failed</value>
+  </data>
+  <data name="操作完成" xml:space="preserve">
+    <value>Operation Complete</value>
+  </data>
+  <data name="操作已取消。" xml:space="preserve">
+    <value>Operation canceled.</value>
+  </data>
+  <data name="数据已变化，请重新计算。" xml:space="preserve">
+    <value>Data changed; calculate again.</value>
+  </data>
+  <data name="数据已成功导出到:&#10;{0}" xml:space="preserve">
+    <value>Data exported successfully to:
+{0}</value>
+  </data>
+  <data name="数据库创建{0}模板失败" xml:space="preserve">
+    <value>Database {0} template creation failed</value>
+  </data>
+  <data name="文件" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="无法重置，请检查数据库相关配置" xml:space="preserve">
+    <value>Cannot reset, check DB config</value>
+  </data>
+  <data name="未找到光谱日志文件。" xml:space="preserve">
+    <value>Spectrum log file not found.</value>
+  </data>
+  <data name="未找到对应MTF" xml:space="preserve">
+    <value>Corresponding MTF not found</value>
+  </data>
+  <data name="未找到对应频率" xml:space="preserve">
+    <value>Corresponding frequency not found</value>
+  </data>
+  <data name="未检测到按键区域，请调整参数后重试" xml:space="preserve">
+    <value>No key regions detected; adjust the parameters and retry</value>
+  </data>
+  <data name="未配置光谱服务路径，无法定位光谱日志。" xml:space="preserve">
+    <value>Spectrum service path is not configured; cannot locate its log.</value>
+  </data>
+  <data name="本地模式请使用图像导入；服务图像需要连接 MySQL。" xml:space="preserve">
+    <value>Import images in local mode; service images require MySQL.</value>
+  </data>
+  <data name="本地模板 · {0}" xml:space="preserve">
+    <value>Local Template · {0}</value>
+  </data>
+  <data name="条纹 MTF 参数" xml:space="preserve">
+    <value>Stripe MTF Parameters</value>
+  </data>
+  <data name="校正数据待复核" xml:space="preserve">
+    <value>Correction Data Requires Review</value>
+  </data>
+  <data name="根据传感器尺寸和镜头有效焦距计算 cameraDegrees" xml:space="preserve">
+    <value>Calculate cameraDegrees from sensor size and effective lens focal length</value>
+  </data>
+  <data name="格式错误" xml:space="preserve">
+    <value>Invalid Format</value>
+  </data>
+  <data name="模板不一致：当前图像使用了另一份色度校正文件。" xml:space="preserve">
+    <value>Template mismatch: the current image used a different chromaticity correction file.</value>
+  </data>
+  <data name="模板创建发生异常：" xml:space="preserve">
+    <value>Error creating template:</value>
+  </data>
+  <data name="模板字典未找到，ID={0}" xml:space="preserve">
+    <value>Template dictionary not found, ID={0}</value>
+  </data>
+  <data name="模板待核对：导入图像未记录所用校正文件的内容指纹。" xml:space="preserve">
+    <value>Template requires review: the imported image does not include a content fingerprint of the correction file used.</value>
+  </data>
+  <data name="模板读取失败，已禁止保存以保护原数据。{0}" xml:space="preserve">
+    <value>Failed to read template; saving is disabled to protect original data. {0}</value>
+  </data>
+  <data name="正在导出 0%（{0} 个文件）…" xml:space="preserve">
+    <value>Exporting 0% ({0} Files)…</value>
+  </data>
+  <data name="正在导出 {0}%…" xml:space="preserve">
+    <value>Exporting {0}%…</value>
+  </data>
+  <data name="正在导出 {0}%：{1}" xml:space="preserve">
+    <value>Exporting {0}%: {1}</value>
+  </data>
+  <data name="正在执行…" xml:space="preserve">
+    <value>Running…</value>
+  </data>
+  <data name="正在替换文件并重启服务…" xml:space="preserve">
+    <value>Replacing files and restarting the service…</value>
+  </data>
+  <data name="正在生成预览…" xml:space="preserve">
+    <value>Generating Preview…</value>
+  </data>
+  <data name="没有可变换的POI点" xml:space="preserve">
+    <value>No POI points to transform</value>
+  </data>
+  <data name="没有可计算的按键矩形。" xml:space="preserve">
+    <value>No key rectangles to calculate.</value>
+  </data>
+  <data name="流程已打开，但目标节点不存在。请重新保存流程并刷新搜索索引。" xml:space="preserve">
+    <value>Flow opened, but the target node does not exist. Save the flow again and refresh the search index.</value>
+  </data>
+  <data name="流程搜索" xml:space="preserve">
+    <value>Flow Search</value>
+  </data>
+  <data name="流程诊断 SQLite" xml:space="preserve">
+    <value>Flow Diagnostics SQLite</value>
+  </data>
+  <data name="添加失败" xml:space="preserve">
+    <value>Add failed</value>
+  </data>
+  <data name="清空关注点" xml:space="preserve">
+    <value>Clear Focus Point</value>
+  </data>
+  <data name="点阵数的行列不能小于1" xml:space="preserve">
+    <value>Array rows and columns cannot be less than 1</value>
+  </data>
+  <data name="现有" xml:space="preserve">
+    <value>Existing</value>
+  </data>
+  <data name="用默认参数替换当前内容？此操作会丢弃当前草稿，保存后才写入模板。" xml:space="preserve">
+    <value>Replace the current contents with defaults? This discards the current draft; the template is updated only after saving.</value>
+  </data>
+  <data name="相机图像" xml:space="preserve">
+    <value>Camera Image</value>
+  </data>
+  <data name="相机视场角计算" xml:space="preserve">
+    <value>Camera Field of View Calculation</value>
+  </data>
+  <data name="真彩 sRGB（XYZ）" xml:space="preserve">
+    <value>True-color sRGB (XYZ)</value>
+  </data>
+  <data name="矩形区域无效，请重新框选" xml:space="preserve">
+    <value>Invalid rectangular region; draw it again</value>
+  </data>
+  <data name="移动到末尾" xml:space="preserve">
+    <value>Move to End</value>
+  </data>
+  <data name="移动到首位" xml:space="preserve">
+    <value>Move to Beginning</value>
+  </data>
+  <data name="空流程" xml:space="preserve">
+    <value>Empty Flow</value>
+  </data>
+  <data name="管理 POI 模板…" xml:space="preserve">
+    <value>Manage POI Templates…</value>
+  </data>
+  <data name="结果已导出。" xml:space="preserve">
+    <value>Results exported.</value>
+  </data>
+  <data name="绘制圆形" xml:space="preserve">
+    <value>Draw Circle</value>
+  </data>
+  <data name="绘制的个数不能小于1" xml:space="preserve">
+    <value>Draw count cannot be less than 1</value>
+  </data>
+  <data name="绘制矩形" xml:space="preserve">
+    <value>Draw Rectangle</value>
+  </data>
+  <data name="统计详情 · 均匀性 / 色度" xml:space="preserve">
+    <value>Statistics Details · Uniformity / Chromaticity</value>
+  </data>
+  <data name="编辑…" xml:space="preserve">
+    <value>Edit…</value>
+  </data>
+  <data name="编辑当前 POI 模板…" xml:space="preserve">
+    <value>Edit Current POI Template…</value>
+  </data>
+  <data name="缩进后的布点区域只能生成1×1点阵" xml:space="preserve">
+    <value>The inset layout region can generate only a 1×1 grid</value>
+  </data>
+  <data name="缺陷检测V2模板管理" xml:space="preserve">
+    <value>Defect Detection V2 Templates</value>
+  </data>
+  <data name="行 {0}，列 {1} · {2} 行" xml:space="preserve">
+    <value>Line {0}, Column {1} · {2} Lines</value>
+  </data>
+  <data name="解串扰模板管理" xml:space="preserve">
+    <value>Crosstalk Correction Templates</value>
+  </data>
+  <data name="解析检测结果失败: {0}" xml:space="preserve">
+    <value>Failed to parse inspection results: {0}</value>
+  </data>
+  <data name="解析模板文件时出错: {0}" xml:space="preserve">
+    <value>Error parsing template file: {0}</value>
+  </data>
+  <data name="计算" xml:space="preserve">
+    <value>Calculate</value>
+  </data>
+  <data name="计算 cameraDegrees" xml:space="preserve">
+    <value>Calculate cameraDegrees</value>
+  </data>
+  <data name="计算完成" xml:space="preserve">
+    <value>Calculation Complete</value>
+  </data>
+  <data name="设置到折线布点" xml:space="preserve">
+    <value>Apply to Polyline Point Layout</value>
+  </data>
+  <data name="该模板未配置四色 / 多色校正文件，可手动选择原文件。" xml:space="preserve">
+    <value>This template has no four-color / multi-color correction file; select the original file manually.</value>
+  </data>
+  <data name="语法检查不等于算法参数有效性检查。" xml:space="preserve">
+    <value>Syntax validation does not validate algorithm parameters.</value>
+  </data>
+  <data name="语法检查通过 · " xml:space="preserve">
+    <value>Syntax Valid · </value>
+  </data>
+  <data name="语法正确 · 无新修改" xml:space="preserve">
+    <value>Syntax Valid · No New Changes</value>
+  </data>
+  <data name="请先修正 JSON 配置。" xml:space="preserve">
+    <value>Correct the JSON configuration first.</value>
+  </data>
+  <data name="请先加载图像" xml:space="preserve">
+    <value>Please load an image first</value>
+  </data>
+  <data name="请先加载实际图像" xml:space="preserve">
+    <value>Load an actual image first</value>
+  </data>
+  <data name="请先打开待计算图像。" xml:space="preserve">
+    <value>Open the image to calculate first.</value>
+  </data>
+  <data name="请先采集一条结果。" xml:space="preserve">
+    <value>Acquire a result first.</value>
+  </data>
+  <data name="请等待当前流程加载或执行完成后再保存。" xml:space="preserve">
+    <value>Wait for the current flow to finish loading or running before saving.</value>
+  </data>
+  <data name="请至少启用 CalKey 或 CalHalo。" xml:space="preserve">
+    <value>Enable at least CalKey or CalHalo.</value>
+  </data>
+  <data name="请输入正确的格式：宽度,高度 (例如: 100,50)" xml:space="preserve">
+    <value>Enter width,height (for example: 100,50)</value>
+  </data>
+  <data name="请选择点布局区域" xml:space="preserve">
+    <value>Select the point layout region</value>
+  </data>
+  <data name="选中文字后 Ctrl+C；右键复制数值或全部统计" xml:space="preserve">
+    <value>Select text and press Ctrl+C; right-click to copy values or all statistics</value>
+  </data>
+  <data name="选择 POI 模板…" xml:space="preserve">
+    <value>Select POI Template…</value>
+  </data>
+  <data name="选择原色度校正文件" xml:space="preserve">
+    <value>Select Original Chromaticity Correction File</value>
+  </data>
+  <data name="选择字段…" xml:space="preserve">
+    <value>Select Field…</value>
+  </data>
+  <data name="配置有效。" xml:space="preserve">
+    <value>Configuration valid.</value>
+  </data>
+  <data name="配置条纹 MTF…" xml:space="preserve">
+    <value>Configure Stripe MTF…</value>
+  </data>
+  <data name="采集完成" xml:space="preserve">
+    <value>Acquisition Complete</value>
+  </data>
+  <data name="采集完成  {0:HH:mm:ss}  积分 {1:0.###} ms" xml:space="preserve">
+    <value>Acquisition Complete  {0:HH:mm:ss}  Integration {1:0.###} ms</value>
+  </data>
+  <data name="预览不可用" xml:space="preserve">
+    <value>Preview Unavailable</value>
+  </data>
+  <data name="频率输入错误" xml:space="preserve">
+    <value>Invalid frequency input</value>
+  </data>
+  <data name="黑画面检测模板管理" xml:space="preserve">
+    <value>Black Screen Detection Templates</value>
+  </data>
+  <data name="默认" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="{0} 组" xml:space="preserve">
+    <value>{0} Groups</value>
+  </data>
+  <data name="增益：{0:G7}" xml:space="preserve">
+    <value>Gain: {0:G7}</value>
+  </data>
+  <data name="峰值 AD：{0:G9}" xml:space="preserve">
+    <value>Peak AD: {0:G9}</value>
+  </data>
+  <data name="操作" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="时间：{0:yyyy-MM-dd HH:mm:ss}" xml:space="preserve">
+    <value>Time: {0:yyyy-MM-dd HH:mm:ss}</value>
+  </data>
+  <data name="曝光：{0}" xml:space="preserve">
+    <value>Exposure: {0}</value>
+  </data>
+  <data name="积分时间：{0:G7} ms" xml:space="preserve">
+    <value>Integration Time: {0:G7} ms</value>
+  </data>
+  <data name="结果 ID：{0}" xml:space="preserve">
+    <value>Result ID: {0}</value>
+  </data>
+  <data name="灯条Poi中心计算" xml:space="preserve">
+    <value>LED Strip POI Center</value>
+  </data>
+  <data name="发光区裁剪" xml:space="preserve">
+    <value>Emitting Area Crop</value>
+  </data>
+  <data name="AA布点" xml:space="preserve">
+    <value>AA Point Layout</value>
+  </data>
+  <data name="POI分析" xml:space="preserve">
+    <value>POI Analysis</value>
+  </data>
+  <data name="畸变2.0" xml:space="preserve">
+    <value>Distortion 2.0</value>
+  </data>
+  <data name="亮点检测" xml:space="preserve">
+    <value>Bright Spot Detection</value>
+  </data>
+  <data name="缺陷检测V2" xml:space="preserve">
+    <value>Defect Detection V2</value>
+  </data>
+  <data name="黑画面检测" xml:space="preserve">
+    <value>Black Screen Detection</value>
+  </data>
+  <data name="发光区定位1" xml:space="preserve">
+    <value>Emitting Area Location 1</value>
+  </data>
+  <data name="键盘检测1" xml:space="preserve">
+    <value>Keyboard Detection 1</value>
+  </data>
+  <data name="发光区1" xml:space="preserve">
+    <value>Emitting Area 1</value>
+  </data>
+  <data name="关注点布点" xml:space="preserve">
+    <value>POI Layout</value>
+  </data>
+  <data name="亚像素级灯珠检测" xml:space="preserve">
+    <value>Subpixel LED Detection</value>
+  </data>
+  <data name="SFR寻边" xml:space="preserve">
+    <value>SFR Edge Detection</value>
+  </data>
+  <data name="EmittingAreaLocation," xml:space="preserve">
+    <value>Emitting Area Location</value>
+  </data>
+  <data name="定位算法" xml:space="preserve">
+    <value>Positioning Algorithms</value>
+  </data>
+  <data name="基础算法" xml:space="preserve">
+    <value>Basic Algorithms</value>
+  </data>
+  <data name="数据提取算法" xml:space="preserve">
+    <value>Data Extraction Algorithms</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="灯条检测模板" xml:space="preserve">
+    <value>LED Strip Template</value>
+  </data>
+  <data name="灯珠检测模板" xml:space="preserve">
+    <value>LED Detection Template</value>
+  </data>
+  <data name="发光区裁剪模板" xml:space="preserve">
+    <value>Emitting Area Crop Template</value>
+  </data>
+  <data name="发光区检测模板" xml:space="preserve">
+    <value>Emitting Area Template</value>
+  </data>
+  <data name="关注点模板" xml:space="preserve">
+    <value>POI Template</value>
+  </data>
+  <data name="黑画面检测模板" xml:space="preserve">
+    <value>Black Screen Template</value>
+  </data>
+  <data name="畸变模板" xml:space="preserve">
+    <value>Distortion Template</value>
+  </data>
+  <data name="键盘检测模板" xml:space="preserve">
+    <value>Keyboard Template</value>
+  </data>
+  <data name="亮点检测模板" xml:space="preserve">
+    <value>Bright Spot Template</value>
+  </data>
+  <data name="缺陷检测V2模板" xml:space="preserve">
+    <value>Defect Detection V2 Template</value>
+  </data>
+  <data name="双目融合模板" xml:space="preserve">
+    <value>Binocular Fusion Template</value>
+  </data>
+  <data name="AA布点模板" xml:space="preserve">
+    <value>AA Point Layout Template</value>
+  </data>
+  <data name="AAFindPoints模板" xml:space="preserve">
+    <value>AA Point Location Template</value>
+  </data>
+  <data name="AOI模板" xml:space="preserve">
+    <value>AOI Template</value>
+  </data>
+  <data name="BlackMura模板" xml:space="preserve">
+    <value>Black Mura Template</value>
+  </data>
+  <data name="BuildPoi模板" xml:space="preserve">
+    <value>POI Layout Template</value>
+  </data>
+  <data name="Distortion模板" xml:space="preserve">
+    <value>Distortion Template</value>
+  </data>
+  <data name="FindCross模板" xml:space="preserve">
+    <value>Cross Positioning Template</value>
+  </data>
+  <data name="FocusPoints模板" xml:space="preserve">
+    <value>Focus Points Template</value>
+  </data>
+  <data name="FOV2.0模板" xml:space="preserve">
+    <value>FOV 2.0 Template</value>
+  </data>
+  <data name="Ghost模板" xml:space="preserve">
+    <value>Ghost Template</value>
+  </data>
+  <data name="ImageROI模板" xml:space="preserve">
+    <value>Image ROI Template</value>
+  </data>
+  <data name="LedCheck模板" xml:space="preserve">
+    <value>LED Detection Template</value>
+  </data>
+  <data name="LEDStripDetection模板" xml:space="preserve">
+    <value>LED Strip Template</value>
+  </data>
+  <data name="MTF2.0模板" xml:space="preserve">
+    <value>MTF 2.0 Template</value>
+  </data>
+  <data name="POI分析模板" xml:space="preserve">
+    <value>POI Analysis Template</value>
+  </data>
+  <data name="SFR2.0模板" xml:space="preserve">
+    <value>SFR 2.0 Template</value>
+  </data>
+  <data name="SFR模板" xml:space="preserve">
+    <value>SFR Template</value>
+  </data>
+  <data name="SFR寻边模板" xml:space="preserve">
+    <value>SFR Edge Template</value>
+  </data>
+  <data name="请先选择灯条检测模板" xml:space="preserve">
+    <value>Select an LED strip template first</value>
+  </data>
+  <data name="请先选择灯珠检测模板" xml:space="preserve">
+    <value>Select an LED detection template first</value>
+  </data>
+  <data name="请先选择发光区裁剪模板" xml:space="preserve">
+    <value>Select an emitting area crop template first</value>
+  </data>
+  <data name="请先选择发光区检测模板" xml:space="preserve">
+    <value>Select an emitting area template first</value>
+  </data>
+  <data name="请先选择黑画面检测模板" xml:space="preserve">
+    <value>Select a black screen template first</value>
+  </data>
+  <data name="请先选择畸变模板" xml:space="preserve">
+    <value>Select a distortion template first</value>
+  </data>
+  <data name="请先选择键盘检测模板" xml:space="preserve">
+    <value>Select a keyboard template first</value>
+  </data>
+  <data name="请先选择亮点检测模板" xml:space="preserve">
+    <value>Select a bright spot template first</value>
+  </data>
+  <data name="请先选择模板匹配参数" xml:space="preserve">
+    <value>Select template matching parameters first</value>
+  </data>
+  <data name="请先选择屏幕缺陷检测模板" xml:space="preserve">
+    <value>Select a screen defect detection template first</value>
+  </data>
+  <data name="请先选择缺陷检测V2模板" xml:space="preserve">
+    <value>Select a defect detection V2 template first</value>
+  </data>
+  <data name="请先选择双目融合模板" xml:space="preserve">
+    <value>Select a binocular fusion template first</value>
+  </data>
+  <data name="请先选择AA布点模板" xml:space="preserve">
+    <value>Select an AA point layout template first</value>
+  </data>
+  <data name="请先选择AAFindPoints模板" xml:space="preserve">
+    <value>Select an AA point location template first</value>
+  </data>
+  <data name="请先选择AOI模板" xml:space="preserve">
+    <value>Select an AOI template first</value>
+  </data>
+  <data name="请先选择BlackMura模板" xml:space="preserve">
+    <value>Select a black mura template first</value>
+  </data>
+  <data name="请先选择BuildPoi模板" xml:space="preserve">
+    <value>Select a POI layout template first</value>
+  </data>
+  <data name="请先选择Distortion模板" xml:space="preserve">
+    <value>Select a distortion template first</value>
+  </data>
+  <data name="请先选择FindCross模板" xml:space="preserve">
+    <value>Select a cross positioning template first</value>
+  </data>
+  <data name="请先选择FocusPoints模板" xml:space="preserve">
+    <value>Select a focus points template first</value>
+  </data>
+  <data name="请先选择FOV2.0模板" xml:space="preserve">
+    <value>Select an FOV 2.0 template first</value>
+  </data>
+  <data name="请先选择Ghost模板" xml:space="preserve">
+    <value>Select a ghost template first</value>
+  </data>
+  <data name="请先选择ImageROI模板" xml:space="preserve">
+    <value>Select an image ROI template first</value>
+  </data>
+  <data name="请先选择LEDStripDetection模板" xml:space="preserve">
+    <value>Select an LED strip template first</value>
+  </data>
+  <data name="请先选择MTF2.0模板" xml:space="preserve">
+    <value>Select an MTF 2.0 template first</value>
+  </data>
+  <data name="请先选择POI分析模板" xml:space="preserve">
+    <value>Select a POI analysis template first</value>
+  </data>
+  <data name="请先选择SFR2.0模板" xml:space="preserve">
+    <value>Select an SFR 2.0 template first</value>
+  </data>
+  <data name="请先选择SFR模板" xml:space="preserve">
+    <value>Select an SFR template first</value>
+  </data>
+  <data name="请先选择SFR寻边模板" xml:space="preserve">
+    <value>Select an SFR edge template first</value>
+  </data>
+  <data name="打开本地缓存管理，查看或释放校正与图像文件缓存。" xml:space="preserve">
+    <value>Open Local Cache Management to view or release calibration and image file caches.</value>
+  </data>
+  <data name="读取失败" xml:space="preserve">
+    <value>Read failed</value>
+  </data>
+  <data name="复用校正文件和相机上下文，减少重复加载。释放后会在下次校正时重新加载。" xml:space="preserve">
+    <value>Reuse calibration files and camera contexts to reduce repeated loading. Released caches reload on the next calibration.</value>
+  </data>
+  <data name="校正缓存不支持停用，请使用释放缓存。" xml:space="preserve">
+    <value>The calibration cache cannot be disabled. Use Release Cache instead.</value>
+  </data>
+  <data name="复用最近一次完整的 CVRAW 图像文件，减少重复读写。释放缓存会保留磁盘文件。" xml:space="preserve">
+    <value>Reuse the most recent complete CVRAW image file to reduce repeated reads and writes. Releasing the cache keeps disk files.</value>
+  </data>
+  <data name="图像文件槽位" xml:space="preserve">
+    <value>Image file slot</value>
+  </data>
+  <data name="单槽位复用 · 已分配 {0:N0} 次" xml:space="preserve">
+    <value>One reusable slot · {0:N0} allocations</value>
+  </data>
+  <data name="缓存内存" xml:space="preserve">
+    <value>Cached Memory</value>
+  </data>
+  <data name="缓存模块" xml:space="preserve">
+    <value>Cache Module</value>
+  </data>
+  <data name="缓存条目" xml:space="preserve">
+    <value>Cache Entries</value>
+  </data>
+  <data name="内存占用" xml:space="preserve">
+    <value>Memory Usage</value>
+  </data>
+  <data name="活动引用" xml:space="preserve">
+    <value>Active References</value>
+  </data>
+  <data name="搜索缓存模块或文件…" xml:space="preserve">
+    <value>Search cache modules or files…</value>
+  </data>
+  <data name="搜索缓存模块或文件" xml:space="preserve">
+    <value>Search cache modules or files</value>
+  </data>
+  <data name="释放选中" xml:space="preserve">
+    <value>Release Selected</value>
+  </data>
+  <data name="缓存模块：{0:N0}" xml:space="preserve">
+    <value>Cache Modules: {0:N0}</value>
+  </data>
+  <data name="模块详情" xml:space="preserve">
+    <value>Module Details</value>
+  </data>
+  <data name="没有匹配的缓存模块。" xml:space="preserve">
+    <value>No matching cache modules.</value>
+  </data>
+  <data name="当前模块没有缓存文件。" xml:space="preserve">
+    <value>This module has no cached files.</value>
+  </data>
+  <data name="选择模块以查看缓存详情。" xml:space="preserve">
+    <value>Select a module to view cache details.</value>
+  </data>
+  <data name="最后刷新：{0:HH:mm:ss}" xml:space="preserve">
+    <value>Last Refreshed: {0:HH:mm:ss}</value>
+  </data>
+  <data name="校正内存为估算值" xml:space="preserve">
+    <value>Calibration memory is estimated</value>
+  </data>
+  <data name="总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>Totals include only connected cache modules.</value>
+  </data>
+  <data name="正在释放缓存…" xml:space="preserve">
+    <value>Releasing cache…</value>
+  </data>
+  <data name="将释放“{0}”模块的缓存。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>Release the cache for “{0}”?
+
+Active cache operations will finish first. Disk files will be kept, and the cache will reload when needed. Continue?</value>
+  </data>
+  <data name="将释放所有缓存模块。&#xA;&#xA;等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？" xml:space="preserve">
+    <value>Release all cache modules?
+
+Active cache operations will finish first. Disk files will be kept, and the caches will reload when needed. Continue?</value>
+  </data>
+  <data name="正在使用" xml:space="preserve">
+    <value>In use</value>
+  </data>
+  <data name="校正内存为估算值；总量只统计已接入的缓存模块。" xml:space="preserve">
+    <value>Calibration memory is estimated; totals include only connected cache modules.</value>
+  </data>
+  <data name="默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变。" xml:space="preserve">
+    <value>Enabled by default. When disabled, files are read and written directly; the slot is released after active reads finish. Display memory reuse remains unchanged.</value>
+  </data>
+  <data name="文件大小" xml:space="preserve">
+    <value>File Size</value>
+  </data>
+  <data name="已关闭（直接读写文件）" xml:space="preserve">
+    <value>Disabled (direct file access)</value>
+  </data>
+  <data name="数量上限" xml:space="preserve">
+    <value>Entry Limit</value>
+  </data>
+  <data name="默认保留 1 个完整 CVRAW 图像文件，可调整；减少数量后释放多余缓存，磁盘文件保留。" xml:space="preserve">
+    <value>Keep one complete CVRAW image file by default. The limit is adjustable; reducing it releases excess caches and keeps disk files.</value>
+  </data>
+  <data name="缓存上限：{0:N0} 个 · 已分配 {1:N0} 次" xml:space="preserve">
+    <value>Cache Limit: {0:N0} entries · {1:N0} allocations</value>
+  </data>
+  <data name="图像缓存数量上限" xml:space="preserve">
+    <value>Image Cache Entry Limit</value>
+  </data>
+  <data name="等待读取完成后释放" xml:space="preserve">
+    <value>Waiting for reads to finish before release</value>
+  </data>
+  <data name="请输入大于零的缓存数量。" xml:space="preserve">
+    <value>Enter a cache entry limit greater than zero.</value>
+  </data>
+
+  <data name="Camera_LocalBindingUnavailable" xml:space="preserve"><value>The bound camera could not be uniquely identified. Refresh the camera list and select a camera ID in the local camera manager before connecting.</value></data>
+  <data name="Camera_LocalDiscoveryFailed" xml:space="preserve"><value>Failed to discover local cameras. Check the camera model, connection, and driver.</value></data>
+  <data name="Camera_LocalNotFound" xml:space="preserve"><value>No local camera was found. Check the camera model, connection, and driver.</value></data>
+  <data name="Camera_LocalSelectionRequired" xml:space="preserve"><value>Multiple local cameras were found. Refresh the camera list and select a camera ID in the local camera manager before connecting.</value></data>
+  <data name="跨批次比对" xml:space="preserve"><value>Compare Batches</value></data>
+  <data name="返回节点分析" xml:space="preserve"><value>Back to Node Analysis</value></data>
+  <data name="设为比对基准" xml:space="preserve"><value>Set as Baseline</value></data>
+  <data name="筛选批次 / SN / 消息" xml:space="preserve"><value>Filter Batch / SN / Message</value></data>
+  <data name="比对基准" xml:space="preserve"><value>Baseline</value></data>
+  <data name="当前选择" xml:space="preserve"><value>Current Selection</value></data>
+  <data name="响应消息" xml:space="preserve"><value>Response</value></data>
+  <data name="发送消息" xml:space="preserve"><value>Request</value></data>
+  <data name="执行时间" xml:space="preserve"><value>Execution Time</value></data>
+  <data name="节点耗时" xml:space="preserve"><value>Node Duration</value></data>
+  <data name="消息 ID" xml:space="preserve"><value>Message ID</value></data>
+  <data name="无消息记录" xml:space="preserve"><value>No Messages</value></data>
+  <data name="等待" xml:space="preserve"><value>Waiting</value></data>
+  <data name="请选择消息" xml:space="preserve"><value>Select a Message</value></data>
+  <data name="未记录正文" xml:space="preserve"><value>No Payload Recorded</value></data>
+  <data name="{0} · 跨批次比对" xml:space="preserve"><value>{0} · Compare Batches</value></data>
+  <data name="正在加载同流程、同节点的消息…" xml:space="preserve"><value>Loading messages for the same flow and node…</value></data>
+  <data name="同流程、同节点 · {0} 次运行 · {1} 条消息 · 查询最近 500 次流程运行及当前运行；选择一行查看，设为基准后并排比对。" xml:space="preserve"><value>Same flow and node · {0} runs · {1} messages · Latest 500 flow runs plus the opened run; select a row, then set a baseline to compare side by side.</value></data>
+  <data name="当前记录缺少流程身份或节点 ID，仅显示本次执行，无法可靠关联其他批次。" xml:space="preserve"><value>The record has no flow identity or node ID. Only this execution is shown; other batches cannot be reliably linked.</value></data>
+  <data name="流程概览 / 节点分析 / 跨批次比对" xml:space="preserve"><value>Flow Overview / Node Analysis / Compare Batches</value></data>
+  <data name="勾选" xml:space="preserve"><value>Check</value></data>
+  <data name="清空勾选表" xml:space="preserve"><value>Empty Checked Tables</value></data>
+  <data name="已勾选 {0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>{0:N0} tables checked · {1:N0} rows</value></data>
+  <data name="尚未勾选数据表" xml:space="preserve"><value>No tables checked</value></data>
+  <data name="{0:N0} 张表 · {1:N0} 行" xml:space="preserve"><value>{0:N0} tables · {1:N0} rows</value></data>
+  <data name="按保留月数清理当前库，不受表格勾选影响。" xml:space="preserve"><value>Clean the current database by the retention period in months, regardless of which tables are checked.</value></data>
+  <data name="清空勾选表会删除表内全部记录，不受保留月数限制。" xml:space="preserve"><value>Emptying checked tables deletes all their records, regardless of the retention period.</value></data>
+  <data name="全部数据清理" xml:space="preserve"><value>All Data Cleanup</value></data>
+  <data name="将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>All {1:N0} available tables in {0} will be emptied.</value></data>
+  <data name="Sensor_ConvertEncoding" xml:space="preserve"><value>Convert content…</value></data>
+  <data name="Sensor_ConversionHint" xml:space="preserve"><value>Convert both request and response while preserving their bytes.</value></data>
+  <data name="Sensor_ConversionSuccess" xml:space="preserve"><value>Converted to {0}. Request and response have both been updated.</value></data>
+  <data name="Sensor_ConversionFailed" xml:space="preserve"><value>Cannot convert to {0} without loss. Check the content or choose another encoding. Original content is unchanged.</value></data>
+  <data name="Sensor_NoneHint" xml:space="preserve"><value>None selects a template; it is not a command encoding.</value></data>
+  <data name="Sensor_DeleteCommand" xml:space="preserve"><value>Delete command</value></data>
+  <data name="Sensor_EmptyCommands" xml:space="preserve"><value>No commands yet. Choose Add command to begin.</value></data>
+  <data name="Sensor_DeleteType" xml:space="preserve"><value>Delete type…</value></data>
+  <data name="Sensor_DeleteTypePrompt" xml:space="preserve"><value>Delete sensor type &quot;{0}&quot;?&#10;&#10;This also deletes its {1} templates and their commands:&#10;{2}&#10;&#10;Other types are unaffected. Update any flows referencing these templates. This cannot be undone.</value></data>
+  <data name="Sensor_DeleteTypeFailed" xml:space="preserve"><value>Could not delete type: {0}</value></data>
+  <data name="Sensor_TypeNotFound" xml:space="preserve"><value>Sensor type no longer exists. Reopen the template menu.</value></data>
+  <data name="Sensor_TypeInUse" xml:space="preserve"><value>These devices still use this type. Change their sensor type first: {0}</value></data>
+  <data name="Sensor_TypeSharedCommands" xml:space="preserve"><value>Templates of other types reference these command definitions. Remove those references first.</value></data>
+  <data name="Sensor_ConversionKeepHex" xml:space="preserve"><value>The result contains commas or escapes that the legacy template cannot safely store. Keep Hex.</value></data>
+  <data name="相机取图缓冲" xml:space="preserve"><value>Camera Capture Buffers</value></data>
+  <data name="每台相机最多保留一块空闲 RAW 缓冲。只统计和释放空闲内存，不影响在用图像；后续取图可重新申请和复用。" xml:space="preserve"><value>Each camera retains at most one idle RAW buffer. Only idle memory is counted and released; images in use are unaffected. Later captures can allocate and reuse buffers again.</value></data>
+  <data name="仅统计空闲取图缓冲，不含正在使用的图像。" xml:space="preserve"><value>Only idle capture buffers are counted; images in use are excluded.</value></data>
+  <data name="已释放 {0} 空闲取图缓冲。在用图像不受影响，后续取图可重新申请和复用。" xml:space="preserve"><value>Released {0} of idle capture buffers. Images in use are unaffected; later captures can allocate and reuse buffers again.</value></data>
+  <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>Capture buffers cannot be disabled. Use Release Cache instead.</value></data>
 </root>

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Solution.Terminal;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
@@ -248,7 +249,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
                 _isUpdatingHighlightingSelection = false;
             }
 
-            highlightingComboBox.Text = highlightingDefinition?.Name ?? "纯文本";
+            highlightingComboBox.Text = highlightingDefinition?.Name ?? LocalizedText.Get("纯文本");
             ScheduleFoldings();
         }
 
@@ -457,7 +458,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             SetDirty(!textEditor.Document.UndoStack.IsOriginalFile);
             DiagnosticButton.Visibility = Visibility.Collapsed;
             Minimap.ErrorLine = null;
-            if (SymbolPanel.Visibility == Visibility.Visible) { SymbolList.ItemsSource = null; SymbolHint.Text = "正在更新文档声明…"; }
+            if (SymbolPanel.Visibility == Visibility.Visible) { SymbolList.ItemsSource = null; SymbolHint.Text = LocalizedText.Get("正在更新文档声明…"); }
             ScheduleFoldings();
         }
 

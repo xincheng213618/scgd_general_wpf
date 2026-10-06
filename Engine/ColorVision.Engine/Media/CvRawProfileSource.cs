@@ -14,9 +14,10 @@ namespace ColorVision.Engine.Media;
 /// <summary>Reads original RAW and replays calibration only at the sampled pixels.</summary>
 internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
 {
-    private readonly FileStream _stream;
-    private readonly MemoryMappedFile _mapping;
-    private readonly MemoryMappedViewAccessor _view;
+    private readonly Stream _stream;
+    private readonly byte[]? _cachedPixels;
+    private readonly MemoryMappedFile? _mapping;
+    private readonly MemoryMappedViewAccessor? _view;
     private readonly long _payloadStart;
     private readonly int _bpp;
     private readonly int _channels;
@@ -40,6 +41,9 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
 
     internal static IReadOnlyList<ImageProfileSourceOption> CreateOptions(string path)
     {
+        // Displaying cached pixels must not depend on the profile tool's disk mapping.
+        if (CVFileReadCache.GetCachedLength(path).HasValue)
+            return [new("原始图像 / CIE 全部通道", token => new CvRawProfileSource(path, true, token))];
         FileInfo identity = new(path);
         long length = identity.Length;
         DateTime modified = identity.LastWriteTimeUtc;
@@ -59,7 +63,7 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     internal CvRawProfileSource(string path, bool calibrated, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        _stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        _stream = CVFileReadCache.OpenRead(path, populateCache: false);
         try
         {
             int headerEnd = CVFileUtil.ReadCIEFileHeader(path, out CVCIEFile header);
@@ -84,9 +88,18 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
                     throw new InvalidDataException("CVRAW 像素数据不完整。");
             }
             token.ThrowIfCancellationRequested();
-            _mapping = MemoryMappedFile.CreateFromFile(_stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
-            try { _view = _mapping.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read); }
-            catch { _mapping.Dispose(); throw; }
+            if (_stream is FileStream file)
+            {
+                _mapping = MemoryMappedFile.CreateFromFile(file, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
+                try { _view = _mapping.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read); }
+                catch { _mapping.Dispose(); throw; }
+            }
+            else
+            {
+                _cachedPixels = GC.AllocateUninitializedArray<byte>(checked(Width * Height * _channels * (_bpp / 8)));
+                _stream.ReadExactly(_cachedPixels);
+                _stream.Dispose();
+            }
             _token = token;
         }
         catch { _stream.Dispose(); throw; }
@@ -121,8 +134,10 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     private double ReadRaw(long pixel, int channel)
     {
         long element = _interleaved || _channels == 1 ? pixel * _channels + channel : (2 - channel) * (long)Width * Height + pixel;
-        long offset = checked(_payloadStart + element * (_bpp / 8));
-        return _bpp == 8 ? _view.ReadByte(offset) : _view.ReadUInt16(offset);
+        long offset = checked(element * (_bpp / 8));
+        if (_cachedPixels != null) return _bpp == 8 ? _cachedPixels[checked((int)offset)] : BitConverter.ToUInt16(_cachedPixels, checked((int)offset));
+        offset += _payloadStart;
+        return _bpp == 8 ? _view!.ReadByte(offset) : _view!.ReadUInt16(offset);
     }
 
     private unsafe float[] TransformPixel(long pixel)
@@ -151,6 +166,6 @@ internal sealed class CvRawProfileSource : IImageProfileMeasurementSource
     {
         if (_disposed) return;
         _disposed = true;
-        _view.Dispose(); _mapping.Dispose(); _stream.Dispose();
+        _view?.Dispose(); _mapping?.Dispose(); _stream.Dispose();
     }
 }

@@ -252,8 +252,11 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
         }
     }
 
-    [Fact]
-    public async Task GoalContinuationLookupMatchesGoalIdentityAndKeepsUserFollowUpsEligible()
+    [Theory]
+    [InlineData("/status")]
+    [InlineData("/plan task")]
+    [InlineData("/unknown")]
+    public async Task GoalContinuationLookupMatchesGoalIdentityAndKeepsUserFollowUpsEligible(string localCommand)
     {
         var state = new CopilotChatState();
         var busyHost = await StartBusyHostAsync("conversation-1");
@@ -270,6 +273,15 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
                 out _));
 
             Assert.True(queue.HasContinuationForGoal("conversation-1", "goal-old"));
+            Assert.False(queue.HasContinuationForGoal("conversation-1", "goal-new"));
+
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", localCommand, isLocalCommand: true),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out _,
+                out _));
+
             Assert.False(queue.HasContinuationForGoal("conversation-1", "goal-new"));
 
             Assert.True(queue.TrySchedule(

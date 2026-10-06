@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -35,7 +36,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.MoireAnalysis
             if (filtered != null) FilteredPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(filtered.Image);
             SuggestionsGrid.ItemsSource = ToTable(suggestions).DefaultView;
             double score = Value(summary, "moire.score");
-            SummaryText.Text = $"周期频谱证据评分={score:F2}/100（{Classification(score)}）；候选={Value(summary, "moire.candidate_count"):N0}；候选功率比例={Value(summary, "moire.candidate_power_fraction"):P2}；最大突出度={Value(summary, "moire.maximum_prominence"):G6}。评分是频谱证据，不是摩尔纹成因证明。";
+            SummaryText.Text = LocalizedText.Format($"周期频谱证据评分={score:F2}/100（{Classification(score)}）；候选={Value(summary, "moire.candidate_count"):N0}；候选功率比例={Value(summary, "moire.candidate_power_fraction"):P2}；最大突出度={Value(summary, "moire.maximum_prominence"):G6}。评分是频谱证据，不是摩尔纹成因证明。");
             Closed += (_, _) => DisposeOwnedState();
         }
 

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -47,13 +48,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             }
             catch (Exception exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "轮廓提取", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("轮廓提取"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前图像 revision。", "轮廓提取", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("无法确定当前图像 revision。"), LocalizedText.Get("轮廓提取"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -73,7 +74,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             {
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "轮廓提取", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("轮廓提取"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -97,7 +98,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "轮廓提取", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(progressWindow.Owner, exception.Message, LocalizedText.Get("轮廓提取"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -123,7 +124,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(progressWindow.Owner, message, "轮廓提取失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(progressWindow.Owner, message, LocalizedText.Get("轮廓提取失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -143,7 +144,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             {
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "轮廓提取结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("轮廓提取结果"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.Present(image, invocation.InvocationId, resultWindow))
@@ -161,7 +162,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             ContourAnalysisParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "轮廓提取参数",
+                Title = LocalizedText.Get("轮廓提取参数"),
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -181,7 +182,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ContourAnalys
             ContourAnalysisEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "ContourAnalysis", Order = 6, Header = "轮廓提取" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Localization.Id, GuidId = "ContourAnalysis", Order = 6, Header = LocalizedText.Get("轮廓提取") },
                 Item("ContourAnalysisWholeImage", "整图...", 0, tool.Execute, hasRoi: false),
                 Item("ContourAnalysisRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle), hasRoi: true),
                 Item("ContourAnalysisCircle", "圆形 ROI...", 2, () => tool.Execute(SelectShapeType.Circle), hasRoi: true),

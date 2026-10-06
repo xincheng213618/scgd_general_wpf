@@ -7,6 +7,7 @@
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.Solution"
                     xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
                     xmlns:ad="clr-namespace:AvalonDock;assembly=AvalonDock"
                     xmlns:chrome="clr-namespace:ColorVision.Themes"
@@ -116,7 +117,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type uiDocking:DockPanelTitleAction}">
                                             <Button x:Name="PanelTitleActionButton"
-                                                AutomationProperties.Name="{Binding ToolTip, TargetNullValue=操作, FallbackValue=操作}"
+                                                AutomationProperties.Name="{Binding ToolTip, TargetNullValue={display:DisplayText Key='操作'}, FallbackValue={display:DisplayText Key='操作'}}"
                                                 Command="{Binding Command}"
                                                 CommandParameter="{Binding CommandParameter}"
                                                 Style="{StaticResource DockingCaptionButtonStyle}"

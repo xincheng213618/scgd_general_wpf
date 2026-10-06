@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,7 @@ namespace ColorVision.Copilot
                 }
 
                 conversation.AgentRunStatusLabel = queuePositions.TryGetValue(conversation.Id, out var position)
-                    ? $"排队 {position}"
+                    ? LocalizedText.Format($"排队 {position}")
                     : string.Empty;
             }
         }

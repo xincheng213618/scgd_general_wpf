@@ -122,7 +122,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     Item = item,
                     Completed = index,
                     Total = request.Items.Count,
-                    Status = "处理中...",
+                    Status = Properties.Resources.BatchProcessing,
                 });
 
                 var sourceRead = false;
@@ -130,7 +130,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 try
                 {
                     var loader = GetLoader(item.FilePath)
-                        ?? throw new NotSupportedException($"不支持的图像格式：{Path.GetExtension(item.FilePath)}");
+                        ?? throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(item.FilePath)));
                     outputPath = BatchImageOutput.CreateOutputPath(
                         item,
                         request.OutputDirectory,
@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         Item = item,
                         Completed = index + 1,
                         Total = request.Items.Count,
-                        Status = "完成",
+                        Status = Properties.Resources.BatchCompleted,
                         OutputPath = outputPath,
                     });
                 }
@@ -197,7 +197,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         Item = item,
                         Completed = index,
                         Total = request.Items.Count,
-                        Status = "已取消",
+                        Status = Properties.Resources.BatchCanceled,
                     });
                     return new BatchImageRunResult { Files = results, Cancelled = true };
                 }
@@ -216,7 +216,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                         Item = item,
                         Completed = index + 1,
                         Total = request.Items.Count,
-                        Status = $"失败：{ex.Message}",
+                        Status = string.Format(Properties.Resources.BatchFailed, ex.Message),
                     });
                 }
             }

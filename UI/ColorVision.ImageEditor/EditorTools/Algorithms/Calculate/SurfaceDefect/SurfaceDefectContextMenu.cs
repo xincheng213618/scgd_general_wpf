@@ -67,7 +67,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
                     OwnerGuid = AlgorithmMenuGroups.Defects.Id,
                     GuidId = "SurfaceDefectMura",
                     Order = 1,
-                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "...",
+                    Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "…",
                     Command = command
                 }
             };
@@ -103,7 +103,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SurfaceDefect
                 return menuItems;
             }
 
-            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "..." };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SurfaceDefects + "…" };
             item.Click += (_, _) => new SurfaceDefectEditorTool(_imageContext, _drawContext).Execute(roi);
             menuItems.Add(item);
             return menuItems;

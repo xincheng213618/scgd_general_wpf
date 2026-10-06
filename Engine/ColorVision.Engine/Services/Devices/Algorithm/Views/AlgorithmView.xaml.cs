@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
@@ -97,6 +98,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
+                // A deferred dock shell must own its context before loading child bindings.
+                DataContext = Config;
                 InitializeComponent();
                 // A deferred shell may already have raised WPF Initialized before its XAML was loaded.
                 UserControl_Initialized(this, EventArgs.Empty);
@@ -121,7 +124,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isInitialized = true;
-            this.DataContext = Config;
             ImageView = new ImageView();
             ListView = listViewSide;
             SideTextBox = TextBoxside;
@@ -180,7 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
   
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not ViewResultAlg result)
             {
-                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             else
@@ -344,10 +346,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), "历史算法结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), "历史算法结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), "历史算法结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), "历史算法结果图像像素高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果坐标空间高度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素宽度"));
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), LocalizedText.Get("历史算法结果图像像素高度"));
             ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
             ImageView.UpdateZoomAndScale();
         }
@@ -478,6 +480,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
             {
                 listView1.SelectionChanged -= listView1_SelectionChanged;

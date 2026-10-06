@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using Newtonsoft.Json;
 using System;
 
@@ -27,9 +28,9 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string StatusLabel => State switch
         {
-            CopilotConversationActivityState.NeedsInput => "需要输入",
-            CopilotConversationActivityState.Ready => "待查看",
-            CopilotConversationActivityState.Blocked => "任务受阻",
+            CopilotConversationActivityState.NeedsInput => LocalizedText.Get("需要输入"),
+            CopilotConversationActivityState.Ready => LocalizedText.Get("待查看"),
+            CopilotConversationActivityState.Blocked => LocalizedText.Get("任务受阻"),
             _ => string.Empty,
         };
 

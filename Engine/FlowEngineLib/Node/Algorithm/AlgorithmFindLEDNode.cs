@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_2 Algorithm")]
+[STNode("Algorithm", CategoryOrder = 320)]
 public class AlgorithmFindLEDNode : CVBaseServerNode
 {
 	private CVOLED_Channel _Color;

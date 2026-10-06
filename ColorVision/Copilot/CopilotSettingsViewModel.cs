@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822
+﻿using LocalizedText = global::ColorVision.DisplayText;
+#pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
@@ -112,7 +113,7 @@ namespace ColorVision.Copilot
                 {
                     GroupName = "其他",
                     IconText = "+",
-                    Label = "自定义",
+                    Label = LocalizedText.Get("自定义"),
                     Description = "手动配置兼容接口",
                     SearchKeywords = "custom 自定义",
                     VendorType = CopilotVendorType.Custom,
@@ -157,12 +158,12 @@ namespace ColorVision.Copilot
 
             ProviderOptions = new ReadOnlyCollection<CopilotProviderOption>(new[]
             {
-                new CopilotProviderOption { Label = "OpenAI 兼容（Chat / Responses）", Value = CopilotProviderType.OpenAICompatible },
+                new CopilotProviderOption { Label = LocalizedText.Get("OpenAI 兼容（Chat / Responses）"), Value = CopilotProviderType.OpenAICompatible },
                 new CopilotProviderOption { Label = "Anthropic Messages", Value = CopilotProviderType.AnthropicCompatible },
             });
             ShellOptions = new ReadOnlyCollection<CopilotShellOption>(new[]
             {
-                new CopilotShellOption { Label = "自动（PowerShell）", Value = CopilotShellKind.Auto },
+                new CopilotShellOption { Label = LocalizedText.Get("自动（PowerShell）"), Value = CopilotShellKind.Auto },
                 new CopilotShellOption { Label = "PowerShell", Value = CopilotShellKind.PowerShell },
                 new CopilotShellOption { Label = "CMD", Value = CopilotShellKind.CommandPrompt },
             });
@@ -470,10 +471,10 @@ namespace ColorVision.Copilot
 
         private static string FormatProviderLabel(CopilotProviderType providerType)
         {
-            if (providerType == CopilotProviderType.LocalCodex) return "本机 Codex";
+            if (providerType == CopilotProviderType.LocalCodex) return LocalizedText.Get("本机 Codex");
             return providerType == CopilotProviderType.AnthropicCompatible
                 ? "Anthropic Messages"
-                : "OpenAI 兼容（Chat / Responses）";
+                : LocalizedText.Get("OpenAI 兼容（Chat / Responses）");
         }
 
         private void ClearQuickAddFeedback()

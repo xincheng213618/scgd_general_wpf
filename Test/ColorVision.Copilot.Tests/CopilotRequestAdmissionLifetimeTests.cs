@@ -262,7 +262,124 @@ public sealed class CopilotRequestAdmissionLifetimeTests
         }, TimeSpan.FromSeconds(30), "The admission-lifetime STA test did not finish.");
     }
 
-    private sealed class CompactionHandler : HttpMessageHandler
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompactionReservesTheSummaryPreambleWithinTheHistoryMessageBudget(bool fitsWithPreamble)
+    {
+        StaTest.Run(() =>
+        {
+            var profile = new CopilotProfileConfig
+            {
+                Id = "compaction-budget-profile", Name = "Compaction budget",
+                VendorType = CopilotVendorType.Custom, ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "compaction-budget-test-key", BaseUrl = "https://unit.test/v1",
+                Model = "compaction-budget-model", MaxTokens = 8_192,
+            };
+            var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+            conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, new string('u', 15_000))
+            {
+                RequestMode = CopilotAgentMode.Auto,
+            });
+            var originalAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, new string('a', 15_000))
+            {
+                RequestMode = CopilotAgentMode.Auto,
+                AgentStopReason = CopilotAgentStopReason.Paused,
+            };
+            originalAnswer.MarkResponseInterrupted();
+            conversation.Messages.Add(originalAnswer);
+            conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Keep the recent request."));
+            conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Keep the recent answer."));
+            var originalMessages = conversation.Messages.ToArray();
+            var limits = CopilotConversationRequestBuilder.ResolveHistoryLimits(
+                CopilotAgentTokenBudget.MinimumContextWindowTokens, profile.MaxTokens);
+            var preambleWeight = CopilotTokenEstimator.EstimateTextWeight(
+                CopilotConversationCompactionContext.CreateSummaryMessage(new CopilotConversationCompaction()).Content);
+            var terminalEvidence = CopilotConversationCompactionTerminalEvidence.Capture([originalAnswer]);
+            var hostContextWeight = CopilotTokenEstimator.EstimateTextWeight(
+                CopilotConversationCompactionContext.CreateSummaryMessage(new CopilotConversationCompaction(), terminalEvidence).Content);
+            var markers = CopilotConversationCompactionTerminalEvidence.ResponseInterruptedMarker + "\n"
+                + CopilotConversationCompactionTerminalEvidence.FormatAgentMarker(CopilotAgentStopReason.Paused);
+            var rawSummaryWeight = fitsWithPreamble
+                ? limits.MaximumContentCharacters - checked((int)hostContextWeight)
+                : limits.MaximumContentCharacters - checked((int)preambleWeight);
+            var summary = new string('s', rawSummaryWeight - markers.Length - 1) + "\n" + markers;
+            Assert.True(CopilotTokenEstimator.EstimateTextWeight(summary) <= limits.MaximumContentCharacters);
+            Assert.Equal(fitsWithPreamble, CopilotConversationCompactionContext.EstimateSummaryWeight(summary, terminalEvidence)
+                <= limits.MaximumContentCharacters);
+            var config = new CopilotConfig
+            {
+                SchemaVersion = CopilotConfig.CurrentSchemaVersion,
+                McpBearerToken = "compaction-budget-test-token", Profiles = [profile],
+                AgentDefaults = new CopilotAgentDefaultsConfig
+                {
+                    ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    AutoCompactConversationHistory = false,
+                },
+            };
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id, ActiveProfileId = profile.Id,
+                Conversations = [conversation],
+            };
+            using var solutionScope = new IsolatedSolutionManagerScope();
+            using var handler = new CompactionHandler(summary);
+            using var client = new HttpClient(handler);
+            using var viewModel = new CopilotChatViewModel(new CopilotChatService(client),
+                new InMemoryStateStore(state, Path.GetTempPath()), config,
+                new RecordingTurnRuntime(), new CopilotAgentTaskHost());
+            var compact = typeof(CopilotChatViewModel).GetMethod(
+                "CompactConversationAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var command = CopilotLocalCommandCatalog.FindExact("/compact");
+            Assert.NotNull(command);
+            using var context = new PausedAdmissionSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            Task<bool>? operation = null;
+            bool applied;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                operation = Assert.IsAssignableFrom<Task<bool>>(compact.Invoke(viewModel,
+                    [command, string.Empty, true, null, null, null, null, null]));
+                context.Complete(operation);
+                applied = operation.GetAwaiter().GetResult();
+            }
+            finally
+            {
+                if (operation is { IsCompleted: false })
+                    context.Complete(operation);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+
+            Assert.Single(handler.Payloads);
+            Assert.Equal(originalMessages, conversation.Messages.ToArray());
+            Assert.Equal(1, conversation.CompactionUsage?.RequestCount);
+            Assert.Equal(110, conversation.CompactionUsage?.Usage.TotalTokens);
+            var outbound = CopilotConversationRequestBuilder.BuildChatHistory(
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation),
+                "Continue the task.", attachments: null, limits, includeAttachmentContext: false);
+            if (applied)
+            {
+                Assert.NotNull(conversation.Compaction);
+                Assert.Equal(summary, conversation.Compaction.Summary);
+                var retainedSummary = Assert.Single(outbound, message =>
+                    message.Content.Contains("# Earlier conversation summary", StringComparison.Ordinal));
+                Assert.Equal(CopilotConversationCompactionContext.CreateSummaryMessage(
+                    conversation.Compaction, terminalEvidence).Content, retainedSummary.Content);
+                Assert.Contains(markers, retainedSummary.Content, StringComparison.Ordinal);
+                Assert.Equal(limits.MaximumContentCharacters,
+                    CopilotTokenEstimator.EstimateTextWeight(retainedSummary.Content));
+            }
+            else
+            {
+                Assert.Null(conversation.Compaction);
+                Assert.Contains("单条历史预算", viewModel.LocalCommandResultText, StringComparison.Ordinal);
+            }
+            Assert.Equal(fitsWithPreamble, applied);
+        }, TimeSpan.FromSeconds(30), "The compaction message-budget STA test did not finish.");
+    }
+
+    private sealed class CompactionHandler(string summary = "Captured origin summary") : HttpMessageHandler
     {
         public List<string> Payloads { get; } = [];
 
@@ -272,10 +389,18 @@ public sealed class CopilotRequestAdmissionLifetimeTests
             Payloads.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("""
-                    {"choices":[{"message":{"role":"assistant","content":"Captured origin summary"},"finish_reason":"stop"}],
-                    "usage":{"prompt_tokens":100,"completion_tokens":10,"total_tokens":110}}
-                    """, Encoding.UTF8, "application/json"),
+                Content = new StringContent(new JObject
+                {
+                    ["choices"] = new JArray(new JObject
+                    {
+                        ["message"] = new JObject { ["role"] = "assistant", ["content"] = summary },
+                        ["finish_reason"] = "stop",
+                    }),
+                    ["usage"] = new JObject
+                    {
+                        ["prompt_tokens"] = 100, ["completion_tokens"] = 10, ["total_tokens"] = 110,
+                    },
+                }.ToString(), Encoding.UTF8, "application/json"),
             };
         }
     }

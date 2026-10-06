@@ -227,6 +227,69 @@ bool TouchesBorder(const std::vector<cv::Point>& contour, const cv::Size& size)
         || bounds.br().x >= size.width - 1 || bounds.br().y >= size.height - 1;
 }
 
+// A rasterized convex polygon has one filled span per row. Apply the exact
+// ellipse-kernel erosion/intersection and dilation/union to those spans.
+// Fall back when the raster is not row-convex; keep OpenCV's morphology border
+// values (255 for erosion and 0 for dilation), including clipped polygons.
+bool PolygonBandsFromSpans(const cv::Mat& mask, const cv::Mat& kernel, cv::Mat& inner, cv::Mat& outer)
+{
+    std::vector<cv::Vec2i> spans(mask.rows, cv::Vec2i(-1, -1));
+    for (int y = 0; y < mask.rows; ++y) {
+        const uchar* row = mask.ptr<uchar>(y);
+        int left = 0;
+        while (left < mask.cols && row[left] == 0) ++left;
+        if (left == mask.cols) continue;
+        int right = mask.cols - 1;
+        while (row[right] == 0) --right;
+        for (int x = left; x <= right; ++x) if (row[x] == 0) return false;
+        spans[y] = {left, right};
+    }
+    const int rx = kernel.cols / 2, ry = kernel.rows / 2;
+    std::vector<cv::Vec3i> support;
+    for (int y = 0; y < kernel.rows; ++y) {
+        const uchar* row = kernel.ptr<uchar>(y);
+        int left = 0;
+        while (left < kernel.cols && row[left] == 0) ++left;
+        if (left == kernel.cols) continue;
+        int right = kernel.cols - 1;
+        while (row[right] == 0) --right;
+        // The caller uses an ellipse; each kernel row must contain the anchor.
+        if (left > rx || right < rx) return false;
+        for (int x = left; x <= right; ++x) if (row[x] == 0) return false;
+        support.emplace_back(y - ry, left - rx, right - rx);
+    }
+    inner = cv::Mat::zeros(mask.size(), CV_8U);
+    outer = cv::Mat::zeros(mask.size(), CV_8U);
+    std::vector<cv::Vec2i> intervals;
+    intervals.reserve(support.size());
+    for (int y = 0; y < mask.rows; ++y) {
+        int erodedLeft = 0, erodedRight = mask.cols - 1;
+        intervals.clear();
+        for (const cv::Vec3i& k : support) {
+            const int sourceY = y + k[0];
+            if (sourceY < 0 || sourceY >= mask.rows) continue;
+            const cv::Vec2i s = spans[sourceY];
+            if (s[0] < 0) { erodedRight = -1; continue; }
+            if (s[0] > 0) erodedLeft = std::max(erodedLeft, s[0] - k[1]);
+            if (s[1] < mask.cols - 1) erodedRight = std::min(erodedRight, s[1] - k[2]);
+            const int left = std::max(0, s[0] - k[2]);
+            const int right = std::min(mask.cols - 1, s[1] - k[1]);
+            if (left <= right) intervals.emplace_back(left, right);
+        }
+        if (erodedLeft <= erodedRight) std::fill_n(inner.ptr<uchar>(y) + erodedLeft, erodedRight - erodedLeft + 1, uchar(255));
+        std::sort(intervals.begin(), intervals.end(), [](const cv::Vec2i& a, const cv::Vec2i& b) { return a[0] < b[0]; });
+        int left = -1, right = -1;
+        auto flush = [&] { if (left >= 0) std::fill_n(outer.ptr<uchar>(y) + left, right - left + 1, uchar(255)); };
+        for (const cv::Vec2i& span : intervals) {
+            if (left < 0) { left = span[0]; right = span[1]; }
+            else if (span[0] <= right + 1) right = std::max(right, span[1]);
+            else { flush(); left = span[0]; right = span[1]; }
+        }
+        flush();
+    }
+    return true;
+}
+
 double PolygonContrast(const cv::Mat& gray, const std::array<cv::Point2f, 4>& quad)
 {
     std::vector<cv::Point> polygon;
@@ -235,18 +298,34 @@ double PolygonContrast(const cv::Mat& gray, const std::array<cv::Point2f, 4>& qu
         polygon.emplace_back(cvRound(point.x), cvRound(point.y));
     }
 
-    cv::Mat mask = cv::Mat::zeros(gray.size(), CV_8U);
-    cv::fillConvexPoly(mask, polygon, cv::Scalar(255));
     const int radius = std::max(2, cvRound(std::min(gray.cols, gray.rows) * 0.006));
+    const int padding = radius + 2;
+    cv::Rect bounds = cv::boundingRect(polygon);
+    bounds.x -= padding;
+    bounds.y -= padding;
+    bounds.width += 2 * padding;
+    bounds.height += 2 * padding;
+    bounds &= cv::Rect(0, 0, gray.cols, gray.rows);
+    if (bounds.empty()) {
+        return 0.0;
+    }
+    const cv::Mat localGray = gray(bounds);
+    for (cv::Point& point : polygon) {
+        point -= bounds.tl();
+    }
+    cv::Mat mask = cv::Mat::zeros(bounds.size(), CV_8U);
+    cv::fillConvexPoly(mask, polygon, cv::Scalar(255));
     const cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(radius * 2 + 1, radius * 2 + 1));
     cv::Mat inner;
     cv::Mat outer;
-    cv::erode(mask, inner, kernel);
-    cv::dilate(mask, outer, kernel);
+    if (!PolygonBandsFromSpans(mask, kernel, inner, outer)) {
+        cv::erode(mask, inner, kernel);
+        cv::dilate(mask, outer, kernel);
+    }
     outer.setTo(0, mask);
 
-    const double inside = cv::mean(gray, inner.empty() ? mask : inner)[0];
-    const double outside = cv::countNonZero(outer) > 0 ? cv::mean(gray, outer)[0] : inside;
+    const double inside = cv::mean(localGray, inner.empty() ? mask : inner)[0];
+    const double outside = cv::countNonZero(outer) > 0 ? cv::mean(localGray, outer)[0] : inside;
     return inside - outside;
 }
 
@@ -320,6 +399,27 @@ std::array<cv::Point2f, 4> RobustBoxFromContour(const std::vector<cv::Point>& co
     });
 }
 
+cv::Point CropBinarySupport(cv::Mat& binary, const cv::Mat& kernel)
+{
+    cv::Rect bounds = cv::boundingRect(binary);
+    if (bounds.empty()) {
+        return {};
+    }
+    // Opening has two passes; closing with two iterations has four.
+    // Keep their entire dependency footprint, including image-edge clipping.
+    const int padding = 6 * (kernel.cols / 2) + 2;
+    bounds.x -= padding;
+    bounds.y -= padding;
+    bounds.width += padding * 2;
+    bounds.height += padding * 2;
+    bounds &= cv::Rect(0, 0, binary.cols, binary.rows);
+    if (bounds.size() != binary.size()) {
+        // Isolate morphology from the parent Mat beyond the cropped region.
+        binary = binary(bounds).clone();
+    }
+    return bounds.tl();
+}
+
 std::vector<CoarseCandidate> FindCoarseCandidates(
     const cv::Mat& gray,
     const FindLuminousAreaV2Config& config)
@@ -328,13 +428,25 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
     cv::Mat gray8;
     gray.convertTo(gray8, CV_8U, 255.0);
 
-    static constexpr std::array<double, 3> sigmas{ 0.8, 1.6, 3.0 };
-    for (size_t sigmaIndex = 0; sigmaIndex < sigmas.size(); ++sigmaIndex) {
-        const double sigma = sigmas[sigmaIndex];
+    struct Scale
+    {
         cv::Mat blurred;
-        cv::GaussianBlur(gray8, blurred, cv::Size(), sigma, sigma, cv::BORDER_REPLICATE);
+        cv::Mat kernel;
+    };
+    struct Observation
+    {
+        int sigmaIndex;
+        double threshold;
+    };
+    static constexpr std::array<double, 3> sigmas{ 0.8, 1.6, 3.0 };
+    std::array<Scale, sigmas.size()> scales;
+    std::vector<Observation> tasks;
+    for (int sigmaIndex = 0; sigmaIndex < static_cast<int>(sigmas.size()); ++sigmaIndex) {
+        const double sigma = sigmas[sigmaIndex];
+        Scale& scale = scales[sigmaIndex];
+        cv::GaussianBlur(gray8, scale.blurred, cv::Size(), sigma, sigma, cv::BORDER_REPLICATE);
         cv::Mat temporary;
-        const double otsu = cv::threshold(blurred, temporary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU) / 255.0;
+        const double otsu = cv::threshold(scale.blurred, temporary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU) / 255.0;
         // Low thresholds keep a dark side of a strongly sloped display in the
         // same coarse component as its bright side. Later line evidence and
         // confidence checks, rather than this threshold, decide acceptance.
@@ -348,54 +460,71 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
                 return std::abs(left - right) <= 0.01;
             }),
             thresholds.end());
-
+        const int radius = std::max(1, cvRound(sigma * 1.5));
+        scale.kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(radius * 2 + 1, radius * 2 + 1));
         for (double threshold : thresholds) {
-            cv::Mat binary;
-            cv::threshold(blurred, binary, threshold * 255.0, 255, cv::THRESH_BINARY);
-            const int radius = std::max(1, cvRound(sigma * 1.5));
-            const cv::Mat kernel = cv::getStructuringElement(
-                cv::MORPH_ELLIPSE,
-                cv::Size(radius * 2 + 1, radius * 2 + 1));
-            cv::morphologyEx(binary, binary, cv::MORPH_OPEN, kernel);
-            cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2);
-
-            std::vector<std::vector<cv::Point>> contours;
-            cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-            for (const auto& contour : contours) {
-                const double contourArea = std::abs(cv::contourArea(contour));
-                const double areaRatio = contourArea / static_cast<double>(gray.total());
-                if (areaRatio < config.minAreaRatio || areaRatio > config.maxAreaRatio || contour.size() < 4) {
-                    continue;
-                }
-                const bool border = TouchesBorder(contour, gray.size());
-                if (border && !config.allowBorder) {
-                    continue;
-                }
-                const auto appendCandidate = [&](const std::array<cv::Point2f, 4>& quad) {
-                    CoarseCandidate candidate;
-                    candidate.quad = quad;
-                    candidate.areaRatio = areaRatio;
-                    candidate.touchesBorder = border;
-                    candidate.sigmaMask = 1U << static_cast<unsigned int>(sigmaIndex);
-                    const double quadArea = std::abs(SignedArea(candidate.quad));
-                    if (quadArea < 25.0) {
-                        return;
-                    }
-                    const double fill = Clamp01(contourArea / quadArea);
-                    candidate.contrast = PolygonContrast(gray, candidate.quad);
-                    const double areaScore = Clamp01(std::log1p(areaRatio * 200.0) / std::log(21.0));
-                    candidate.score = 2.2 * Clamp01(candidate.contrast / 0.25)
-                        + 0.9 * fill + 0.7 * areaScore - (border ? 0.35 : 0.0);
-                    if (candidate.contrast > 0.01) {
-                        candidates.push_back(candidate);
-                    }
-                };
-                appendCandidate(QuadFromContour(contour));
-                appendCandidate(RobustBoxFromContour(contour));
-            }
+            tasks.push_back({ sigmaIndex, threshold });
         }
     }
 
+    std::vector<std::vector<CoarseCandidate>> observations(tasks.size());
+    const auto evaluate = [&](int taskIndex) {
+        const int sigmaIndex = tasks[taskIndex].sigmaIndex;
+        const double threshold = tasks[taskIndex].threshold;
+        const cv::Mat& blurred = scales[sigmaIndex].blurred;
+        const cv::Mat& kernel = scales[sigmaIndex].kernel;
+        auto& candidates = observations[taskIndex];
+        cv::Mat binary;
+        cv::threshold(blurred, binary, threshold * 255.0, 255, cv::THRESH_BINARY);
+        const cv::Point binaryOffset = CropBinarySupport(binary, kernel);
+        cv::morphologyEx(binary, binary, cv::MORPH_OPEN, kernel);
+        cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel, cv::Point(-1, -1), 2);
+
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, binaryOffset);
+        for (const auto& contour : contours) {
+            const double contourArea = std::abs(cv::contourArea(contour));
+            const double areaRatio = contourArea / static_cast<double>(gray.total());
+            if (areaRatio < config.minAreaRatio || areaRatio > config.maxAreaRatio || contour.size() < 4) {
+                continue;
+            }
+            const bool border = TouchesBorder(contour, gray.size());
+            if (border && !config.allowBorder) {
+                continue;
+            }
+            const auto appendCandidate = [&](const std::array<cv::Point2f, 4>& quad) {
+                CoarseCandidate candidate;
+                candidate.quad = quad;
+                candidate.areaRatio = areaRatio;
+                candidate.touchesBorder = border;
+                candidate.sigmaMask = 1U << static_cast<unsigned int>(sigmaIndex);
+                const double quadArea = std::abs(SignedArea(candidate.quad));
+                if (quadArea < 25.0) {
+                    return;
+                }
+                const double fill = Clamp01(contourArea / quadArea);
+                candidate.contrast = PolygonContrast(gray, candidate.quad);
+                const double areaScore = Clamp01(std::log1p(areaRatio * 200.0) / std::log(21.0));
+                candidate.score = 2.2 * Clamp01(candidate.contrast / 0.25)
+                    + 0.9 * fill + 0.7 * areaScore - (border ? 0.35 : 0.0);
+                if (candidate.contrast > 0.01) {
+                    candidates.push_back(candidate);
+                }
+            };
+            appendCandidate(QuadFromContour(contour));
+            appendCandidate(RobustBoxFromContour(contour));
+        }
+    };
+    // Preserve every observation and concatenate in the original sigma/threshold
+    // order. Parallel completion order must not change ties, votes or fit seeds.
+    cv::parallel_for_(cv::Range(0, static_cast<int>(tasks.size())), [&](const cv::Range& range) {
+        for (int index = range.start; index < range.end; ++index) {
+            evaluate(index);
+        }
+    }, static_cast<double>(tasks.size()));
+    for (const auto& batch : observations) {
+        candidates.insert(candidates.end(), batch.begin(), batch.end());
+    }
     std::sort(candidates.begin(), candidates.end(), [](const CoarseCandidate& left, const CoarseCandidate& right) {
         return left.score > right.score;
     });
@@ -1256,9 +1385,16 @@ FindLuminousAreaV2Result FindLuminousAreaV2(
     bestRejected.failureReason = "InsufficientSideSupport";
     double bestRejectedScore = -1.0;
     std::vector<SuccessfulCandidate> successfulCandidates;
+    // Each fit uses its original candidate-index seed. Gather in original
+    // candidate order so parallel completion never changes tie resolution.
+    std::vector<FindLuminousAreaV2Result> fittedCandidates(coarseCandidates.size());
+    cv::parallel_for_(cv::Range(0, static_cast<int>(coarseCandidates.size())), [&](const cv::Range& range) {
+        for (int index = range.start; index < range.end; ++index) {
+            fittedCandidates[index] = EvaluateCandidate(normalized, coarseCandidates[index], scaledConfig, index);
+        }
+    }, static_cast<double>(coarseCandidates.size()));
     for (size_t index = 0; index < coarseCandidates.size(); ++index) {
-        FindLuminousAreaV2Result candidate = EvaluateCandidate(
-            normalized, coarseCandidates[index], scaledConfig, static_cast<int>(index));
+        FindLuminousAreaV2Result candidate = std::move(fittedCandidates[index]);
         double candidateScore = candidate.confidence;
         if (!candidate.hasCorners) {
             candidateScore = 0.0;

@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/07 传感器")]
+[STNode("传感器", CategoryOrder = 700)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.CommonSensorNode")]
 public class CommonSensorNode : CVBaseServerNode
 {

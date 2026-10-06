@@ -1,7 +1,6 @@
 #pragma warning disable CA1859,CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Cache;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
@@ -48,11 +47,7 @@ namespace ColorVision.Engine.Services
         [CommandDisplayAttribute("Copy", Order = -10), BrowsableAttribute(false)]
         public RelayCommand CopyCommand { get; set; }
 
-        [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999, CategoryOrder = 4)]
-        [Category("MaintenanceDiagnostics")]
-        [Description("CommandResetHint")]
-        public RelayCommand ResetCommand { get; set; }
-        [CommandDisplayAttribute("RestartService",Order =-2, CategoryOrder = 4)]
+        [CommandDisplayAttribute("RestartService",Order =-2, CategoryOrder = 4), Browsable(false)]
         [Category("MaintenanceDiagnostics")]
         [Description("CommandRestartHint")]
         public RelayCommand RefreshCommand { get; set; }
@@ -61,11 +56,6 @@ namespace ColorVision.Engine.Services
         [Category("DeviceConnection")]
         [Description("CommandEditConfigHint")]
         public RelayCommand EditCommand { get; set; }
-
-        [CommandDisplay("FileSavePath",Order =-1, CategoryOrder = 3)]
-        [Category("DataLogs")]
-        [Description("CommandSavePathHint")]
-        public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
         public SysResourceModel SysResourceModel { get; set; }
@@ -148,12 +138,6 @@ namespace ColorVision.Engine.Services
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
-            ResetCommand = new RelayCommand(a =>
-            {
-                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"{ColorVision.Engine.Properties.Resources.ConfirmReset} {Name}?", "ColorVision", MessageBoxButton.OKCancel);
-                if (result == MessageBoxResult.OK)
-                    Config = new T();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => { });
 
@@ -196,7 +180,6 @@ namespace ColorVision.Engine.Services
 
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
-            UpdateFilecfgCommand = new RelayCommand(a => UpdateFilecfg(), a=> Config is IFileServerCfg);
         }
 
         public override CopilotBusinessContextBundle CaptureCopilotContext()
@@ -222,24 +205,6 @@ namespace ColorVision.Engine.Services
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), result.StatusMessage, "ColorVision", MessageBoxButton.OK,
                     result.IsAvailable ? MessageBoxImage.Warning : MessageBoxImage.Information);
-            }
-        }
-
-        public void UpdateFilecfg()
-        {
-            if (Config is IFileServerCfg fileServerCfg)
-            {
-                var oldvalue = fileServerCfg.FileServerCfg.Clone();
-
-                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                window.Closed += (s, e) =>
-                {
-                    if (!fileServerCfg.FileServerCfg.EqualMax(oldvalue))
-                    {
-                        Save();
-                    }
-                };
-                window.ShowDialog();
             }
         }
 

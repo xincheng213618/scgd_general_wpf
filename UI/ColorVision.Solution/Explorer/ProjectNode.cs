@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Solution.Editor;
@@ -188,7 +189,7 @@ namespace ColorVision.Solution.Explorer
                 if (showConfirmation
                     && MessageBox.Show(
                         Application.Current?.GetActiveWindow(),
-                        $"从解决方案中移除项目“{Name}”吗？项目文件和目录不会被删除。",
+                        LocalizedText.Format($"从解决方案中移除项目“{Name}”吗？项目文件和目录不会被删除。"),
                         "ColorVision",
                         MessageBoxButton.OKCancel,
                         MessageBoxImage.Question) != MessageBoxResult.OK)
@@ -485,7 +486,7 @@ namespace ColorVision.Solution.Explorer
             ShowLoadErrorCommand = new RelayCommand(_ => MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
                 BuildDiagnosticMessage(),
-                "项目加载错误",
+                LocalizedText.Get("项目加载错误"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning));
         }
@@ -512,7 +513,7 @@ namespace ColorVision.Solution.Explorer
             if (showConfirmation
                 && MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"从解决方案中移除项目引用“{Name}”吗？",
+                    LocalizedText.Format($"从解决方案中移除项目引用“{Name}”吗？"),
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Question) != MessageBoxResult.OK)

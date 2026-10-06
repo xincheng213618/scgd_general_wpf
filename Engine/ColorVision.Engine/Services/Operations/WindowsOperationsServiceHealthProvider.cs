@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.MQTT;
 using ColorVision.UI.Desktop.Operations;
 using ColorVision.UI.ServiceHost;
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Services.Operations
                 : new OperationsServiceHealthItem
                 {
                     ServiceId = OperationsServiceIds.MqttBroker,
-                    Title = "MQTT 消息服务",
+                    Title = LocalizedText.Get("MQTT 消息服务"),
                     Status = "not_applicable",
                     Installed = false,
                     Healthy = true,

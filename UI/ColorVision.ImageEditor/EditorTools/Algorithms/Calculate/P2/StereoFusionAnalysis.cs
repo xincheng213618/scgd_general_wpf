@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -23,7 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
                     OwnerGuid = AlgorithmMenuGroups.Stereo.Id,
                     GuidId = "P2StereoBinocularLocalAnalysis",
                     Order = 1,
-                    Header = "双目标定融合...",
+                    Header = LocalizedText.Get("双目标定融合..."),
                     Command = command
                 }
             };
@@ -34,7 +35,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             using ImageFrameLease? lease = ImageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("当前没有可作为左图的图像。", "双目标定融合", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前没有可作为左图的图像。"), LocalizedText.Get("双目标定融合"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

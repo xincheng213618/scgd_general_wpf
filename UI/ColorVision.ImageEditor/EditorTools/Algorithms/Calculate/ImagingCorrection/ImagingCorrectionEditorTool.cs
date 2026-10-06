@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using System;
@@ -29,7 +30,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             }
             catch (Exception exception)
             {
-                MessageBox.Show(exception.Message, "成像校正", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(exception.Message, LocalizedText.Get("成像校正"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -54,12 +55,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             catch (Exception exception)
             {
                 foreach (AlgorithmInput input in references.Where(value => value.Ownership == AlgorithmInputOwnership.Transferred && !value.Image.IsDisposed)) input.Image.Dispose();
-                MessageBox.Show(exception.Message, "成像校正", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(exception.Message, LocalizedText.Get("成像校正"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (result.Status != AlgorithmResultStatus.Succeeded)
             {
-                MessageBox.Show(string.Join(Environment.NewLine, result.Failures.Select(value => $"[{value.Code}] {value.Message}")), "成像校正", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(string.Join(Environment.NewLine, result.Failures.Select(value => $"[{value.Code}] {value.Message}")), LocalizedText.Get("成像校正"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 result.Dispose();
                 return;
             }
@@ -71,7 +72,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             catch (Exception exception)
             {
                 result.Dispose();
-                MessageBox.Show(exception.Message, "成像校正", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(exception.Message, LocalizedText.Get("成像校正"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

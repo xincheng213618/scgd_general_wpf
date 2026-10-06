@@ -1,11 +1,11 @@
-﻿#pragma warning disable CA1863,CS8625
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing;
 using ColorVision.Themes;
 using ColorVision.Engine.FlowProcessing.PostProcess;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -63,7 +63,7 @@ namespace ColorVision.Engine
 
         private void PopulateContextMenu()
         {
-            var nodeAnalysisMenuItem = new MenuItem { Header = "流程执行分析" };
+            var nodeAnalysisMenuItem = new MenuItem { Header = LocalizedText.Get("流程执行分析") };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
                 var window = new FlowExecutionAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -565,20 +565,9 @@ namespace ColorVision.Engine
                     Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner
                 }.Show();
         }
-        private void Arch_Click(object sender, RoutedEventArgs e)
+        private void OpenCleanupWindow_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.MeasureBatchModel.Code !=null)
-            {
-                MqttRCService.GetInstance().Archived(viewBatchResult.MeasureBatchModel.Code);
-                MessageBox.Show(Properties.Resources.Flow_MeasureBatch_ArchiveCommandSent);
-                Frame.Refresh();
-            }
-        }
-
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-            MqttRCService.GetInstance().ArchivedAll();
-            MessageBox.Show(Properties.Resources.Flow_MeasureBatch_AllArchiveCommandSent);
+            DatabaseCleanupWindow.OpenWindow(Window.GetWindow(this));
         }
 
         private void AdvanceQuery_Click(object sender, RoutedEventArgs e)

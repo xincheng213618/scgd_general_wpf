@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
-using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.Engine.Services.Devices.LightingController;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
@@ -13,6 +12,7 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using System;
 using System.Collections.Generic;
 
@@ -136,6 +136,16 @@ namespace ColorVision.Engine.Services.Devices
                 : null;
         }
 
+        internal static void ApplyDefaultLicense(ServiceTypes serviceType, DeviceServiceConfig config, IEnumerable<LicenseModel> licenses, DateTimeOffset now)
+        {
+            if (serviceType is ServiceTypes.Camera or ServiceTypes.Calibration or ServiceTypes.Spectrum
+                || config is ConfigCamera or ConfigCalibration or ConfigSpectrum
+                || !string.IsNullOrWhiteSpace(config.SN)) return;
+
+            LicenseModel? selectedLicense = PhyLicenseDao.FindUsableCameraLicense(licenses, now);
+            if (selectedLicense != null) config.SN = selectedLicense.MacAddress!;
+        }
+
         private static void RegisterDefaults()
         {
             Register(new DeviceServiceFactory<ConfigCamera>(
@@ -159,17 +169,6 @@ namespace ColorVision.Engine.Services.Devices
             Register(new DeviceServiceFactory<ConfigSensor>(
                 ServiceTypes.Sensor,
                 sysResourceModel => new DeviceSensor(sysResourceModel)));
-
-            Register(new DeviceServiceFactory<ConfigFileServer>(
-                ServiceTypes.FileServer,
-                sysResourceModel => new DeviceFileServer(sysResourceModel),
-                configureConfig: (config, _) =>
-                {
-                    int fromPort = Random.Shared.Next(6500, 6599);
-                    config.Endpoint = "127.0.0.1";
-                    config.PortRange = $"{fromPort}-{fromPort + 5}";
-                    config.FileBasePath = "D:\\CVTest";
-                }));
 
             Register(new DeviceServiceFactory<ConfigAlgorithm>(
                 ServiceTypes.Algorithm,

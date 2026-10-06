@@ -262,6 +262,7 @@ namespace ColorVision.Engine.FlowProcessing
                 completedHandlers = FlowCompleted;
                 FlowRuntimeActivityRegistry.MarkCompleted(this, data.FlowStatus, data.TotalTime);
             }
+            Diagnostics.FlowPerformanceSampler.QueueIfDue(data.SerialNumber, null, null, data.StartNodeName);
             try
             {
                 if (uiDispatcher == null || uiDispatcher.CheckAccess())

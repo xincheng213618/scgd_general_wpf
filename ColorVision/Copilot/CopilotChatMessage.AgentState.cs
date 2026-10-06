@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -124,19 +125,19 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string AgentRecoveryActionLabel => HasRecoverableFinalAnswer
-                ? "重试最终回答"
+                ? LocalizedText.Get("重试最终回答")
                 : AgentTraceEntries?.LastOrDefault(entry => entry != null
             && entry.IsFailure
             && entry.RetryEligible
             && entry.Access == CopilotToolAccess.ReadOnly
             && entry.Idempotency == CopilotToolIdempotency.Idempotent) != null
-                ? "重试只读检查"
-                : "继续任务";
+                ? LocalizedText.Get("重试只读检查")
+                : LocalizedText.Get("继续任务");
 
         [JsonIgnore]
         public string AgentRecoveryToolTip => HasRecoverableFinalAnswer
-            ? "仅使用已保存的上下文和证据生成最终回答；不会再次调用工具"
-            : "从当前 AgentSession 继续未完成任务；写操作仍需重新审批";
+            ? LocalizedText.Get("仅使用已保存的上下文和证据生成最终回答；不会再次调用工具")
+            : LocalizedText.Get("从当前 AgentSession 继续未完成任务；写操作仍需重新审批");
 
         [JsonIgnore]
         public bool HasAgentBlockers => !IsUser && AgentBlockers.Count > 0;
@@ -151,48 +152,48 @@ namespace ColorVision.Copilot
                 var blocker = AgentBlockers[0];
                 return blocker.Kind switch
                 {
-                    CopilotAgentBlockerKind.UserDecision => "需要您的决定",
-                    CopilotAgentBlockerKind.Approval => "操作未获批准",
-                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_interrupted" => "模型连接中断",
-                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_request_rejected" => "模型请求被拒绝",
-                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_unavailable" => "模型服务暂时不可用",
-                    CopilotAgentBlockerKind.ProviderOutput => "模型未返回最终回答",
-                    _ when !string.IsNullOrWhiteSpace(blocker.ToolName) => $"{blocker.ToolName} 无法继续",
-                    _ => "任务暂时受阻",
+                    CopilotAgentBlockerKind.UserDecision => LocalizedText.Get("需要您的决定"),
+                    CopilotAgentBlockerKind.Approval => LocalizedText.Get("操作未获批准"),
+                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_interrupted" => LocalizedText.Get("模型连接中断"),
+                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_request_rejected" => LocalizedText.Get("模型请求被拒绝"),
+                    CopilotAgentBlockerKind.ProviderOutput when blocker.Code == "provider_unavailable" => LocalizedText.Get("模型服务暂时不可用"),
+                    CopilotAgentBlockerKind.ProviderOutput => LocalizedText.Get("模型未返回最终回答"),
+                    _ when !string.IsNullOrWhiteSpace(blocker.ToolName) => LocalizedText.Format($"{blocker.ToolName} 无法继续"),
+                    _ => LocalizedText.Get("任务暂时受阻"),
                 };
             }
         }
 
         [JsonIgnore]
-        public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "计划" : "执行";
+        public string AgentTaskModeLabel => string.Equals(AgentTaskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase) ? LocalizedText.Get("计划") : LocalizedText.Get("执行");
 
         [JsonIgnore]
         public string AgentTaskProgressLabel => RequestMode == CopilotAgentMode.Plan
-            ? $"{AgentTaskLedger.TotalCount} 个计划步骤"
-            : $"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成";
+            ? LocalizedText.Format($"{AgentTaskLedger.TotalCount} 个计划步骤")
+            : LocalizedText.Format($"{AgentTaskLedger.CompletedCount}/{AgentTaskLedger.TotalCount} 已完成");
 
         [JsonIgnore]
         public string AgentStopReasonLabel => AgentStopReason switch
         {
-            CopilotAgentStopReason.None when IsExecutionInProgress => "任务执行中",
-            CopilotAgentStopReason.None when HasIncompleteAgentTasks => "任务尚未完成",
-            CopilotAgentStopReason.Completed when RequestMode == CopilotAgentMode.Plan => "计划已生成",
-            CopilotAgentStopReason.Completed => "任务完成",
-            CopilotAgentStopReason.AwaitingUser => "等待用户决定",
-            CopilotAgentStopReason.ApprovalDenied => "审批未通过",
-            CopilotAgentStopReason.BudgetExhausted => "本轮预算已用尽",
-            CopilotAgentStopReason.TaskPassLimit => "达到本轮继续上限",
-            CopilotAgentStopReason.Blocked => "任务受阻",
-            CopilotAgentStopReason.Paused => "任务已暂停",
-            CopilotAgentStopReason.Cancelled => "任务已取消",
-            CopilotAgentStopReason.IncompleteOutput => "未收到最终回答",
-            CopilotAgentStopReason.ProviderFailure => "模型服务异常",
-            CopilotAgentStopReason.Interrupted => "应用中断后可恢复",
-            _ => "Agent 已停止",
+            CopilotAgentStopReason.None when IsExecutionInProgress => LocalizedText.Get("任务执行中"),
+            CopilotAgentStopReason.None when HasIncompleteAgentTasks => LocalizedText.Get("任务尚未完成"),
+            CopilotAgentStopReason.Completed when RequestMode == CopilotAgentMode.Plan => LocalizedText.Get("计划已生成"),
+            CopilotAgentStopReason.Completed => LocalizedText.Get("任务完成"),
+            CopilotAgentStopReason.AwaitingUser => LocalizedText.Get("等待用户决定"),
+            CopilotAgentStopReason.ApprovalDenied => LocalizedText.Get("审批未通过"),
+            CopilotAgentStopReason.BudgetExhausted => LocalizedText.Get("本轮预算已用尽"),
+            CopilotAgentStopReason.TaskPassLimit => LocalizedText.Get("达到本轮继续上限"),
+            CopilotAgentStopReason.Blocked => LocalizedText.Get("任务受阻"),
+            CopilotAgentStopReason.Paused => LocalizedText.Get("任务已暂停"),
+            CopilotAgentStopReason.Cancelled => LocalizedText.Get("任务已取消"),
+            CopilotAgentStopReason.IncompleteOutput => LocalizedText.Get("未收到最终回答"),
+            CopilotAgentStopReason.ProviderFailure => LocalizedText.Get("模型服务异常"),
+            CopilotAgentStopReason.Interrupted => LocalizedText.Get("应用中断后可恢复"),
+            _ => LocalizedText.Get("Agent 已停止"),
         };
 
         [JsonIgnore]
-        public string AgentTaskSummaryToolTip => $"Agent 任务 · {AgentTaskModeLabel} · {AgentTaskProgressLabel}{Environment.NewLine}{AgentStopReasonLabel}";
+        public string AgentTaskSummaryToolTip => LocalizedText.Format($"Agent 任务 · {AgentTaskModeLabel} · {AgentTaskProgressLabel}{Environment.NewLine}{AgentStopReasonLabel}");
 
         [JsonIgnore]
         public bool HasAppliedCodexSandboxMode => !IsUser
@@ -244,14 +245,14 @@ namespace ColorVision.Copilot
                 if (totalProviderCalls > 0)
                 {
                     parts.Add(delegatedProviderCalls > 0
-                        ? $"父 {Math.Max(0, totalProviderCalls - delegatedProviderCalls)} / 子 {delegatedProviderCalls}"
-                        : $"模型 {totalProviderCalls}");
+                        ? LocalizedText.Format($"父 {Math.Max(0, totalProviderCalls - delegatedProviderCalls)} / 子 {delegatedProviderCalls}")
+                        : LocalizedText.Format($"模型 {totalProviderCalls}"));
                 }
                 var totalTokens = Math.Max(AgentRunBudget.ConsumedTokens, GetDelegatedConsumedTokens());
                 if (totalTokens > 0)
                     parts.Add($"{FormatTokenCount(totalTokens)} tokens");
                 if (AgentRunBudget.UsedDelegatedDirectAnswer)
-                    parts.Add("委派直返");
+                    parts.Add(LocalizedText.Get("委派直返"));
                 return string.Join(" · ", parts);
             }
         }
@@ -278,39 +279,39 @@ namespace ColorVision.Copilot
                 var builder = new StringBuilder();
                 if (HasAppliedCodexSandboxMode)
                 {
-                    builder.Append("Codex 沙箱约束：")
+                    builder.Append(LocalizedText.Get("Codex 沙箱约束："))
                         .Append(AppliedCodexSandboxMode)
                         .Append(" · ")
                         .Append(AppliedCodexSandboxModeLabel)
                         .AppendLine();
                 }
-                builder.Append("模型调用：").Append(totalProviderCalls);
+                builder.Append(LocalizedText.Get("模型调用：")).Append(totalProviderCalls);
                 if (delegatedProviderCalls > 0)
                 {
-                    builder.Append("（父 ").Append(parentProviderCalls)
-                        .Append(" / 子 ").Append(delegatedProviderCalls).Append('）');
+                    builder.Append(LocalizedText.Get("（父 ")).Append(parentProviderCalls)
+                        .Append(LocalizedText.Get(" / 子 ")).Append(delegatedProviderCalls).Append('）');
                 }
                 builder.AppendLine();
-                builder.Append("令牌：").Append(totalTokens.ToString("N0"));
+                builder.Append(LocalizedText.Get("令牌：")).Append(totalTokens.ToString("N0"));
                 if (delegatedTokens > 0)
                 {
-                    builder.Append("（父 ").Append(parentTokens.ToString("N0"))
-                        .Append(" / 子 ").Append(delegatedTokens.ToString("N0")).Append('）');
+                    builder.Append(LocalizedText.Get("（父 ")).Append(parentTokens.ToString("N0"))
+                        .Append(LocalizedText.Get(" / 子 ")).Append(delegatedTokens.ToString("N0")).Append('）');
                 }
                 if (AgentRunBudget.RequestTokenBudget > 0)
                     builder.Append(" / ").Append(AgentRunBudget.RequestTokenBudget.ToString("N0"));
                 if (AgentRunBudget.UsedEstimatedUsage)
-                    builder.Append("（包含估算）");
+                    builder.Append(LocalizedText.Get("（包含估算）"));
                 builder.AppendLine();
                 if (AgentRunBudget.ReportedInputTokens > 0
                     || AgentRunBudget.ReportedOutputTokens > 0
                     || AgentRunBudget.ReportedTotalTokens > 0)
                 {
-                    builder.Append("提供商用量：输入 ")
+                    builder.Append(LocalizedText.Get("提供商用量：输入 "))
                         .Append(AgentRunBudget.ReportedInputTokens.ToString("N0"))
-                        .Append(" · 输出 ")
+                        .Append(LocalizedText.Get(" · 输出 "))
                         .Append(AgentRunBudget.ReportedOutputTokens.ToString("N0"))
-                        .Append(" · 总计 ")
+                        .Append(LocalizedText.Get(" · 总计 "))
                         .Append(AgentRunBudget.ReportedTotalTokens.ToString("N0"));
                     if (AgentRunBudget.ReportedCachedInputTokens.HasValue)
                     {
@@ -318,7 +319,7 @@ namespace ColorVision.Copilot
                             AgentRunBudget.ReportedCachedInputTokens.Value,
                             0,
                             AgentRunBudget.ReportedInputTokens);
-                        builder.Append(" · 缓存输入 ")
+                        builder.Append(LocalizedText.Get(" · 缓存输入 "))
                             .Append(cachedInputTokens.ToString("N0"));
                         if (AgentRunBudget.ReportedInputTokens > 0)
                         {
@@ -329,66 +330,66 @@ namespace ColorVision.Copilot
                     }
                     else
                     {
-                        builder.Append(" · 缓存未上报");
+                        builder.Append(LocalizedText.Get(" · 缓存未上报"));
                     }
                     builder.AppendLine();
                 }
                 if (AgentRunBudget.ProviderRetryCount > 0)
                 {
-                    builder.Append("提供商重试：")
+                    builder.Append(LocalizedText.Get("提供商重试："))
                         .Append(AgentRunBudget.ProviderRetryCount.ToString("N0"))
-                        .Append(" 次");
+                        .Append(LocalizedText.Get(" 次"));
                     if (AgentRunBudget.ProviderRetryDelayMs > 0)
                     {
-                        builder.Append(" · 计划等待 ")
+                        builder.Append(LocalizedText.Get(" · 计划等待 "))
                             .Append(FormatTraceDuration(AgentRunBudget.ProviderRetryDelayMs));
                     }
                     if (AgentRunBudget.ProviderRateLimitRetryCount > 0)
                     {
-                        builder.Append(" · 限流 ")
+                        builder.Append(LocalizedText.Get(" · 限流 "))
                             .Append(AgentRunBudget.ProviderRateLimitRetryCount.ToString("N0"))
-                            .Append(" 次");
+                            .Append(LocalizedText.Get(" 次"));
                     }
                     builder.AppendLine();
                 }
                 if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0
                     || AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
                 {
-                    builder.Append("模型停顿中止：");
+                    builder.Append(LocalizedText.Get("模型停顿中止："));
                     if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
                     {
-                        builder.Append("首内容 ")
+                        builder.Append(LocalizedText.Get("首内容 "))
                             .Append(AgentRunBudget.ProviderFirstContentTimeoutCount.ToString("N0"))
-                            .Append(" 次");
+                            .Append(LocalizedText.Get(" 次"));
                     }
                     if (AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
                     {
                         if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
                             builder.Append(" · ");
-                        builder.Append("流式输出 ")
+                        builder.Append(LocalizedText.Get("流式输出 "))
                             .Append(AgentRunBudget.ProviderStreamInactivityTimeoutCount.ToString("N0"))
-                            .Append(" 次");
+                            .Append(LocalizedText.Get(" 次"));
                     }
                     builder.AppendLine();
                 }
                 if (AgentRunBudget.ProviderResponseCount > 0
                     || AgentRunBudget.ProviderCallDurationTotalMs > 0)
                 {
-                    builder.Append("模型延迟：");
+                    builder.Append(LocalizedText.Get("模型延迟："));
                     var hasLatencyValue = false;
                     if (AgentRunBudget.ProviderResponseCount > 0)
                     {
                         var averageFirstResponseLatencyMs =
                             AgentRunBudget.ProviderFirstResponseLatencyTotalMs
                             / AgentRunBudget.ProviderResponseCount;
-                        builder.Append("首响应平均 ")
+                        builder.Append(LocalizedText.Get("首响应平均 "))
                             .Append(FormatTraceDuration(averageFirstResponseLatencyMs))
-                            .Append(" · 最慢 ")
+                            .Append(LocalizedText.Get(" · 最慢 "))
                             .Append(FormatTraceDuration(AgentRunBudget.ProviderFirstResponseLatencyMaxMs));
                         hasLatencyValue = true;
                         if (AgentRunBudget.ProviderResponseCount < totalProviderCalls)
                         {
-                            builder.Append(" · 有效响应 ")
+                            builder.Append(LocalizedText.Get(" · 有效响应 "))
                                 .Append(AgentRunBudget.ProviderResponseCount)
                                 .Append(" / ")
                                 .Append(totalProviderCalls);
@@ -398,31 +399,31 @@ namespace ColorVision.Copilot
                     {
                         if (hasLatencyValue)
                             builder.Append(" · ");
-                        builder.Append("调用累计 ")
+                        builder.Append(LocalizedText.Get("调用累计 "))
                             .Append(FormatTraceDuration(AgentRunBudget.ProviderCallDurationTotalMs));
                     }
                     builder.AppendLine();
                 }
                 if (AgentRunBudget.ProviderStreamChunkCount > 0)
                 {
-                    builder.Append("流式输出：")
+                    builder.Append(LocalizedText.Get("流式输出："))
                         .Append(AgentRunBudget.ProviderStreamChunkCount.ToString("N0"))
-                        .Append(" 个内容片段");
+                        .Append(LocalizedText.Get(" 个内容片段"));
                     if (AgentRunBudget.ProviderStreamInterChunkLatencyCount > 0)
                     {
                         var averageInterChunkLatencyMs =
                             AgentRunBudget.ProviderStreamInterChunkLatencyTotalMs
                             / AgentRunBudget.ProviderStreamInterChunkLatencyCount;
-                        builder.Append(" · 片段间平均 ")
+                        builder.Append(LocalizedText.Get(" · 片段间平均 "))
                             .Append(FormatTraceDuration(averageInterChunkLatencyMs))
-                            .Append(" · 最慢 ")
+                            .Append(LocalizedText.Get(" · 最慢 "))
                             .Append(FormatTraceDuration(AgentRunBudget.ProviderStreamInterChunkLatencyMaxMs));
                     }
                     builder.AppendLine();
                 }
                 if (AgentRunBudget.PeakEstimatedInputTokens > 0)
                 {
-                    builder.Append("峰值输入（估算）：")
+                    builder.Append(LocalizedText.Get("峰值输入（估算）："))
                         .Append(AgentRunBudget.PeakEstimatedInputTokens.ToString("N0"));
                     if (AgentRunBudget.InputBudgetTokens > 0)
                     {
@@ -433,9 +434,9 @@ namespace ColorVision.Copilot
                 }
                 if (AgentRunBudget.ContextRecoveryCount > 0)
                 {
-                    builder.Append("窗口恢复：")
+                    builder.Append(LocalizedText.Get("窗口恢复："))
                         .Append(AgentRunBudget.ContextRecoveryCount.ToString("N0"))
-                        .Append(" 次");
+                        .Append(LocalizedText.Get(" 次"));
                     var recoveryInputTokensBefore = Math.Max(
                         0,
                         AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
@@ -445,11 +446,11 @@ namespace ColorVision.Copilot
                             AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter,
                             0,
                             recoveryInputTokensBefore);
-                        builder.Append(" · 累计输入（估算）")
+                        builder.Append(LocalizedText.Get(" · 累计输入（估算）"))
                             .Append(recoveryInputTokensBefore.ToString("N0"))
                             .Append(" → ")
                             .Append(recoveryInputTokensAfter.ToString("N0"))
-                            .Append(" tokens（缩减 ")
+                            .Append(LocalizedText.Get(" tokens（缩减 "))
                             .Append(((recoveryInputTokensBefore - recoveryInputTokensAfter) * 100d
                                 / recoveryInputTokensBefore).ToString("0.#"))
                             .Append("%）");
@@ -457,28 +458,28 @@ namespace ColorVision.Copilot
                     builder.AppendLine();
                 }
                 var delegatedToolCalls = GetDelegatedToolCalls();
-                builder.Append("工具调用：");
+                builder.Append(LocalizedText.Get("工具调用："));
                 if (delegatedToolCalls > 0)
-                    builder.Append("父 ");
+                    builder.Append(LocalizedText.Get("父 "));
                 builder.Append(AgentRunBudget.ToolCalls);
                 if (AgentRunBudget.MaxToolCalls > 0)
                     builder.Append(" / ").Append(AgentRunBudget.MaxToolCalls);
                 if (delegatedToolCalls > 0)
-                    builder.Append(" · 子 ").Append(delegatedToolCalls);
+                    builder.Append(LocalizedText.Get(" · 子 ")).Append(delegatedToolCalls);
                 if (AgentRunBudget.RegisteredToolCount > 0
                     || AgentRunBudget.AvailableToolCount > 0
                     || AgentRunBudget.AvailableToolDefinitionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append(hasDelegatedToolSurface ? "父工具面：" : "工具面：")
+                    builder.Append(hasDelegatedToolSurface ? LocalizedText.Get("父工具面：") : LocalizedText.Get("工具面："))
                         .Append(AgentRunBudget.AvailableToolCount)
                         .Append(" / ")
                         .Append(AgentRunBudget.RegisteredToolCount);
                     if (AgentRunBudget.AvailableToolDefinitionCharacters > 0)
                     {
-                        builder.Append(" · 定义 ")
+                        builder.Append(LocalizedText.Get(" · 定义 "))
                             .Append(AgentRunBudget.AvailableToolDefinitionCharacters.ToString("N0"))
-                            .Append(" 字符");
+                            .Append(LocalizedText.Get(" 字符"));
                     }
                 }
                 if (delegatedToolSurface.RegisteredToolCount > 0
@@ -486,40 +487,40 @@ namespace ColorVision.Copilot
                     || delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append("子工具面（峰值）：")
+                    builder.Append(LocalizedText.Get("子工具面（峰值）："))
                         .Append(delegatedToolSurface.AvailableToolCount)
                         .Append(" / ")
                         .Append(delegatedToolSurface.RegisteredToolCount);
                     if (delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
                     {
-                        builder.Append(" · 定义 ")
+                        builder.Append(LocalizedText.Get(" · 定义 "))
                             .Append(delegatedToolSurface.AvailableToolDefinitionCharacters.ToString("N0"))
-                            .Append(" 字符");
+                            .Append(LocalizedText.Get(" 字符"));
                     }
                 }
                 if (AgentRunBudget.HarnessInstructionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append(hasDelegatedToolSurface ? "父运行指令：" : "运行指令：")
+                    builder.Append(hasDelegatedToolSurface ? LocalizedText.Get("父运行指令：") : LocalizedText.Get("运行指令："))
                         .Append(AgentRunBudget.HarnessInstructionCharacters.ToString("N0"))
-                        .Append(" 字符");
+                        .Append(LocalizedText.Get(" 字符"));
                 }
                 if (delegatedToolSurface.HarnessInstructionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append("子运行指令（峰值）：")
+                    builder.Append(LocalizedText.Get("子运行指令（峰值）："))
                         .Append(delegatedToolSurface.HarnessInstructionCharacters.ToString("N0"))
-                        .Append(" 字符");
+                        .Append(LocalizedText.Get(" 字符"));
                 }
                 if (AgentRunBudget.ElapsedMs > 0)
                 {
                     builder.AppendLine();
-                    builder.Append("运行耗时：").Append(FormatTraceDuration(AgentRunBudget.ElapsedMs));
+                    builder.Append(LocalizedText.Get("运行耗时：")).Append(FormatTraceDuration(AgentRunBudget.ElapsedMs));
                     if (AgentRunBudget.TotalDurationMs > 0)
                         builder.Append(" / ").Append(FormatTraceDuration(AgentRunBudget.TotalDurationMs));
                 }
                 if (AgentRunBudget.UsedDelegatedDirectAnswer)
-                    builder.AppendLine().Append("委派直返：是（省略第二次父级模型调用）");
+                    builder.AppendLine().Append(LocalizedText.Get("委派直返：是（省略第二次父级模型调用）"));
                 return builder.ToString();
             }
         }

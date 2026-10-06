@@ -254,7 +254,7 @@ function escapeMarkdown(value) { return value.replace(/([\\`*_[\]<>])/gu, '\\$1'
 export function renderKnowledgeIndex(catalog) {
   const lines = ['---', 'generated_knowledge_index: true', 'search: false', 'editLink: false', 'prev: false', 'next: false', '---', '', '# 项目知识地图', '',
     '> 由 Markdown 元数据生成。不要手工编辑；在仓库根目录运行 `node docs/.vitepress/scripts/knowledge.mjs generate`。', '',
-    '从现有 `AGENTS.md` 读取工作约束，再按源码职责进入模块；索引只负责定位，修改前核对正文、关联源码及测试。`规划`、`历史`不是当前能力。', '',
+    '`docs/` 是 `AGENTS.md` 的按需知识扩展。已知主题时直接读取正文和必要源码；归属不清时使用下面的地图或离线检索。', '',
     '离线检索：`node docs/.vitepress/scripts/knowledge.mjs search "问题或代码符号"`；反向映射：`node docs/.vitepress/scripts/knowledge.mjs impact "仓库相对路径"`。', '',
     `共 ${catalog.entries.length} 个主题；默认 CLI 搜索只返回 current，使用 \`--all\` 明确包含规划与历史。`, '',
     '## 按源码根与模块定位', '',
@@ -274,7 +274,7 @@ export function renderCodeIndex(group) {
   const lines = ['---', 'generated_knowledge_index: true', 'search: false', 'editLink: false', 'prev: false', 'next: false', '---', '', `# ${group.title} 源码知识`, '',
     '> 自动生成的源码目录。修改主题 Markdown 的 `code_paths` 后运行 `node docs/.vitepress/scripts/knowledge.mjs generate`；不要手工编辑。', '',
     '返回[知识总入口](../index.md)。只读与当前模块有关的主题，再核对其中的源码、测试和状态；`规划`、`历史`不代表当前能力。', '',
-    '以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。', '']
+    '以下关联用于按源码定位和变更复核，不是完整调用图或主题所有权。跨模块链接保留在地图中，网页侧栏只列地图入口。', '']
   for (const module of group.modules) {
     lines.push(`## ${escapeMarkdown(module.title)} {#${module.anchor}}`, '')
     for (const entry of module.entries) {
@@ -304,16 +304,9 @@ export function createNavigationData(catalog) {
   const codeGroups = codeCatalogGroups(catalog)
   return {
     generated: 'knowledge.mjs; edit Markdown metadata, not this file',
-    navItems: [item('首页', '/'), item('知识地图', '/knowledge/'),
-      { text: { root: '源码模块' }, items: codeGroups.map((group) => item(group.title, `/knowledge/code/${group.key}`)) },
-      { text: { root: '能力领域' }, items: groups.map((group) => item(group.title, `/knowledge/domains/${group.key}`)) },
-      item('GitHub', 'https://github.com/xincheng213618/scgd_general_wpf')],
+    navItems: [item('首页', '/'), item('知识地图', '/knowledge/'), item('GitHub', 'https://github.com/xincheng213618/scgd_general_wpf')],
     sidebarItems: [{ text: { root: '检索入口' }, collapsed: false, items: [item('项目知识入口', '/'), item('源码知识地图', '/knowledge/')] },
-      ...codeGroups.map((group) => ({ text: { root: group.title }, link: `/knowledge/code/${group.key}`, collapsed: true,
-        items: group.modules.map((module) => ({ text: { root: module.title }, link: `/knowledge/code/${group.key}#${module.anchor}`, collapsed: true,
-          items: module.entries.filter((entry) => entry.url !== '/').map((entry) => item(label(entry), entry.url)),
-        })),
-      })),
+      { text: { root: '源码模块' }, collapsed: true, items: codeGroups.map((group) => item(group.title, `/knowledge/code/${group.key}`)) },
       { text: { root: '能力领域（补充检索）' }, collapsed: true, items: groups.map((group) => item(group.title, `/knowledge/domains/${group.key}`)) }],
   }
 }

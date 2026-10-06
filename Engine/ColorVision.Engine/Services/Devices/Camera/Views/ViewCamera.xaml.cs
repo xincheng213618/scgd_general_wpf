@@ -83,6 +83,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // A deferred dock shell already inherits its host's context when XAML bindings are created.
+            DataContext = Config;
             InitializeComponent();
             // A registered shell may already have raised FrameworkElement.Initialized.
             UserControl_Initialized(this, EventArgs.Empty);
@@ -94,7 +96,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || _isInitialized) return;
             _isInitialized = true;
 
-            this.DataContext = Config;
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
@@ -185,7 +186,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.SelectDataFirst, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.SelectDataFirst, "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -370,6 +371,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             _localResultSubscription?.Dispose();
             _localResultSubscription = null;
 
+            if (ReferenceEquals(Config.GridViewColumnVisibilitys, GridViewColumnVisibilitys))
+                Config.GridViewColumnVisibilitys = new ObservableCollection<GridViewColumnVisibility>(GridViewColumnVisibilitys.Select(column =>
+                    new GridViewColumnVisibility { ColumnName = column.ColumnName, IsVisible = column.IsVisible, IsSortD = column.IsSortD }));
             if (listView1 != null)
                 DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
             localPreview = null;

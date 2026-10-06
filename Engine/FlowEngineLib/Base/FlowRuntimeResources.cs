@@ -12,6 +12,10 @@ public sealed class FlowRuntimeResources : IDisposable
 {
 	private readonly ConcurrentDictionary<string, object> resources = new(StringComparer.Ordinal);
 	private int disposed;
+	private readonly CancellationTokenSource stopped = new CancellationTokenSource();
+	private readonly CancellationToken stopToken;
+	public FlowRuntimeResources() => stopToken = stopped.Token;
+	public CancellationToken StopToken => stopToken;
 
 	public bool IsDisposed => Volatile.Read(ref disposed) != 0;
 
@@ -85,11 +89,13 @@ public sealed class FlowRuntimeResources : IDisposable
 			return;
 		}
 
-		foreach (var item in resources)
+		try { stopped.Cancel(); }
+		finally
 		{
-			if (resources.TryRemove(item.Key, out object value))
+			stopped.Dispose();
+			foreach (var item in resources)
 			{
-				DisposeValue(value);
+				if (resources.TryRemove(item.Key, out object value)) DisposeValue(value);
 			}
 		}
 	}

@@ -1,7 +1,7 @@
-using ColorVision.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -13,7 +13,10 @@ namespace ColorVision.ImageEditor.Draw
         private readonly DrawEditorContext _draw;
         private readonly ImageViewConfig _config;
         private readonly DrawCanvas _canvas;
-        private readonly string _layoutDebounceKey;
+        private readonly object _zoomSync = new();
+        private readonly DispatcherTimer _layoutTimer;
+        private DispatcherOperation? _pendingZoom;
+        private DispatcherOperation? _pendingLayout;
         private double _oldZoomRatio;
         private bool _isUpdatedRender;
         private bool _attached;
@@ -24,7 +27,8 @@ namespace ColorVision.ImageEditor.Draw
             _draw = draw;
             _config = config;
             _canvas = draw.DrawCanvas;
-            _layoutDebounceKey = "ImageLayoutUpdatedRender" + draw.Id;
+            _layoutTimer = new DispatcherTimer(DispatcherPriority.Background, _canvas.Dispatcher) { Interval = TimeSpan.FromMilliseconds(20) };
+            _layoutTimer.Tick += OnLayoutTimerTick;
         }
 
         // Components initialize first; the host attaches presentation subscriptions afterwards.
@@ -40,6 +44,7 @@ namespace ColorVision.ImageEditor.Draw
             _config.DrawingTextFontSizeChanged += OnDrawingTextFontSizeChanged;
             _draw.Zoombox.ContentMatrixChanged += OnContentMatrixChanged;
             _draw.Zoombox.LayoutUpdated += OnLayoutUpdated;
+            _draw.Zoombox.Unloaded += OnViewportUnloaded;
             _canvas.IsLayoutUpdated = _config.IsLayoutUpdated;
             _canvas.TextFontSizeOverride = _config.DrawingTextFontSize;
             UpdateScale();
@@ -69,6 +74,7 @@ namespace ColorVision.ImageEditor.Draw
 
         private void OnLayoutUpdatedChanged(object? sender, bool value)
         {
+            _layoutTimer.Stop();
             _canvas.IsLayoutUpdated = value;
             UpdateScale();
             _canvas.ApplyLayoutScaleToVisuals();
@@ -91,8 +97,19 @@ namespace ColorVision.ImageEditor.Draw
             double scale = GetScale();
             _canvas.Scale = scale;
             if (_config.IsLayoutUpdated)
-                DebounceTimer.AddOrResetTimerDispatcher(_layoutDebounceKey, 20, () => RenderLayoutScale(scale));
+            {
+                _layoutTimer.Stop();
+                _layoutTimer.Start();
+            }
         }
+
+        private void OnLayoutTimerTick(object? sender, EventArgs e)
+        {
+            _layoutTimer.Stop();
+            RenderLayoutScale(GetScale());
+        }
+
+        private void OnViewportUnloaded(object sender, RoutedEventArgs e) => CancelPendingZoom();
 
         private void RenderLayoutScale(double scale)
         {
@@ -108,19 +125,51 @@ namespace ColorVision.ImageEditor.Draw
 
         internal void ZoomToFit()
         {
-            if (_disposed) return;
             if (!_canvas.Dispatcher.CheckAccess())
             {
-                _canvas.Dispatcher.BeginInvoke(ZoomToFit);
+                lock (_zoomSync)
+                {
+                    if (_disposed || _pendingZoom?.Status is DispatcherOperationStatus.Pending or DispatcherOperationStatus.Executing) return;
+                    _pendingZoom = _canvas.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                    {
+                        lock (_zoomSync) _pendingZoom = null;
+                        ZoomToFit();
+                    }));
+                }
                 return;
             }
-            _draw.Zoombox.ZoomUniform();
-            _canvas.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+
+            lock (_zoomSync)
             {
                 if (_disposed) return;
-                UpdateScale();
-                _canvas.ApplyLayoutScaleToVisuals();
-            }));
+                _pendingZoom?.Abort();
+                _pendingZoom = null;
+            }
+            _draw.Zoombox.ZoomUniform();
+            lock (_zoomSync)
+            {
+                if (_disposed || _pendingLayout?.Status == DispatcherOperationStatus.Pending) return;
+                _pendingLayout = _canvas.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+                {
+                    lock (_zoomSync) _pendingLayout = null;
+                    _layoutTimer.Stop();
+                    RenderLayoutScale(GetScale());
+                }));
+            }
+        }
+
+        internal void CancelPendingZoom()
+        {
+            _canvas.Dispatcher.VerifyAccess();
+            lock (_zoomSync)
+            {
+                _pendingZoom?.Abort();
+                _pendingZoom = null;
+                _pendingLayout?.Abort();
+                _pendingLayout = null;
+            }
+            _layoutTimer.Stop();
+            _draw.Zoombox.CancelPendingZoom();
         }
 
         private void UpdateScale() => _canvas.Scale = GetScale();
@@ -214,9 +263,13 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
-            DebounceTimer.Cancel(_layoutDebounceKey);
+            lock (_zoomSync)
+            {
+                if (_disposed) return;
+                _disposed = true;
+            }
+            CancelPendingZoom();
+            _layoutTimer.Tick -= OnLayoutTimerTick;
             if (!_attached) return;
             _canvas.VisualsAdd -= OnVisualsAdded;
             _canvas.VisualsRemove -= OnVisualsRemoved;
@@ -226,6 +279,7 @@ namespace ColorVision.ImageEditor.Draw
             _config.DrawingTextFontSizeChanged -= OnDrawingTextFontSizeChanged;
             _draw.Zoombox.ContentMatrixChanged -= OnContentMatrixChanged;
             _draw.Zoombox.LayoutUpdated -= OnLayoutUpdated;
+            _draw.Zoombox.Unloaded -= OnViewportUnloaded;
         }
     }
 }

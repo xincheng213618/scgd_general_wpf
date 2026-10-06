@@ -127,6 +127,7 @@ namespace ColorVision.Copilot
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             try
             {
+                FlushActiveTurnUiUpdates();
                 PublishSelectedTaskEventJournal();
                 _statePersistenceCoordinator.SaveSynchronouslyAndStop();
             }
@@ -161,6 +162,7 @@ namespace ColorVision.Copilot
             if (Interlocked.Exchange(ref _disposeState, 1) == 1)
                 return;
 
+            FlushActiveTurnUiUpdates();
             _conversationTitleCoordinator.Dispose();
             _followUpQueue.Changed -= FollowUpQueue_Changed;
             CancelAllAuxiliaryOperations();
@@ -194,6 +196,27 @@ namespace ColorVision.Copilot
             CancelComposerReferenceRefresh(resetSession: true);
             _statePersistenceCoordinator.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void FlushActiveTurnUiUpdates()
+        {
+            var flush = Interlocked.Exchange(ref _flushActiveTurnUiUpdates, null);
+            if (flush == null)
+                return;
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
+                    flush();
+                else
+                    CopilotUiDispatcher.Invoke(flush);
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot UI updates could not be flushed during shutdown: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
         }
 
 

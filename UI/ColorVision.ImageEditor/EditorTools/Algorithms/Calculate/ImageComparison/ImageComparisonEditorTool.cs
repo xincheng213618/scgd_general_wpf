@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -34,7 +35,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             if (parameters == null) return;
             OpenFileDialog dialog = new()
             {
-                Title = "选择要与当前图像比较的图像",
+                Title = LocalizedText.Get("选择要与当前图像比较的图像"),
                 Filter = "图像文件|*.bmp;*.gif;*.ico;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp|所有文件|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
@@ -87,7 +88,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             {
                 referenceInput?.Image.Dispose();
                 candidateInput?.Image.Dispose();
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("图像比较"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -96,7 +97,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             {
                 referenceInput.Image.Dispose();
                 candidateInput.Image.Dispose();
-                AlgorithmAnalysisMessageBox.Show(windowOwner, "当前图像在创建比较快照时已改变，请重试。", "图像比较", MessageBoxButton.OK, MessageBoxImage.Information);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, LocalizedText.Get("当前图像在创建比较快照时已改变，请重试。"), LocalizedText.Get("图像比较"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -134,7 +135,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(referenceInput.Image.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(candidateInput.Image.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("图像比较"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -160,7 +161,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(candidateInput.Image.Dispose, ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 if (!progressWindow.WasCancelled)
-                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "图像比较", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("图像比较"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -187,7 +188,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, message, "图像比较失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, message, LocalizedText.Get("图像比较失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -206,7 +207,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 previous,
                 out Exception? presentationFailure);
             if (!shown && presentationFailure != null)
-                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, "图像比较结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, LocalizedText.Get("图像比较结果"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private static ImageComparisonParameters? EditParameters(Window? owner)
@@ -214,7 +215,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             ImageComparisonParameters parameters = new();
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "图像比较参数",
+                Title = LocalizedText.Get("图像比较参数"),
                 Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -259,7 +260,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                     OwnerGuid = AlgorithmMenuGroups.Statistics.Id,
                     GuidId = "ImageComparison",
                     Order = 3,
-                    Header = "图像比较",
+                    Header = LocalizedText.Get("图像比较"),
                 },
                 Item("ImageComparisonWhole", "全图比较...", 0, tool.Execute, hasRoi: false),
                 Item("ImageComparisonRectangle", "矩形 ROI...", 1, () => tool.Execute(SelectShapeType.Rectangle), hasRoi: true),

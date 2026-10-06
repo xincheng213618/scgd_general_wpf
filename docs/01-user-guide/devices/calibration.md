@@ -5,7 +5,7 @@ status: "current"
 summary: "校准服务绑定物理相机并执行本地文件或MQTT校正；模板按Native执行链选用存在的校正文件，输出、显示、落库与缓存删除是不同完成边界。"
 aliases: ["用户校正", "导入最新图像", "最近拍摄图像", "校准服务","本地校正","标定资源","校准模板打不开","校正参数设置","四色校正采集","LumFourColorCalibrationSession","CalibrationControl","CalibrationSlotDefinitions","清理校准缓存","UseLocalCalibration","DeviceCalibration","LocalFileCalibrationService","MQTTCalibration"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/LocalFileCalibrationService.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/MQTTCalibration.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/Views/ViewCalibration.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Calibration/InfoCalibration.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationControl.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Group/CalibrationSlotDefinitions.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflow.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorCalibrationWorkflowWindow.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/Calibration/LumFourColorPoiEditor.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheService.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCalibrationCacheManagerWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/CalibrationEditorInteractionTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs","Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"]
 related: ["engine.devices","operations.device-configuration","operations.physical-camera","flow.session"]
 ---
 
@@ -32,7 +32,7 @@ related: ["engine.devices","operations.device-configuration","operations.physica
 相机属性的“校准与校正”分组提供“用户校正”，打开时带入当前相机；也可从校正文件管理或“应用与工具”进入。“用户校正”默认使用较大的窗口（1600×1060，受屏幕工作区限制），图像与光谱参考并排显示，相机测量值放在侧栏，为 9566×6548 等横向图像保留显示空间。图像等比缩放，横向色块列出两侧状态。计算模式为“单点”和“RGBW 四色”，单点只需一组；默认 RGBW 需要 R/G/B/W 四组，W 必须有有效数据，采集顺序不限。两种模式都基于原校正矩阵生成完整校正系数。
 
 1. 选择相机和校正模板时，模板中配置的四色校正文件会自动填入原文件栏；模板启用多色校正时带入对应的多色文件。也可点击“选择文件”手动指定。文件不存在或无法读取会提示，不能静默使用之前模板带入的文件。多设备时不默认选择第一台，模板需显式选择；真机取图要求模板启用与文件格式匹配的四色或多色校正。
-2. 选中色块，点击“相机取图”或“图像导入”。“导入最新图像”直接读取当前相机最新一条拍摄记录；“最近图像”点击“刷新”后可从列表选择并“导入”。列表来自与 POI 编辑器相同的拍摄结果表，按时间和 ID 倒序显示当前相机最近 100 条记录，不默认选中。最新记录缺文件、拍摄失败或没有 CVCIE XYZ 数据时提示失败，不自动换成旧图。文件夹导入继续保留。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
+2. 选中色块，点击“相机取图”或“图像导入”。“导入最新图像”直接读取当前相机最新一条拍摄记录；“最近图像”点击“刷新”后可从列表选择并“导入”。列表来自与 POI 编辑器相同的拍摄结果表，按时间和 ID 倒序显示当前相机最近 100 条记录，不默认选中。最新记录缺文件、拍摄失败或没有可用的 XYZ 数据时提示失败，不自动换成旧图。文件夹导入继续保留。图像使用 `ImageView`，默认圆形 POI，可切换矩形；拖动绘制后自动读取原始 XYZ/x/y。选中区域后可拖动位置、调整尺寸，通过右键“编辑”设置位置和尺寸，或使用图像内的尺寸面板。“绘制 POI”保留手动画点，每个色块只保留一个区域。选择“POI 模板”并点击“应用”可带入模板的第一个点；后续取图也使用已选模板，仍可手动调整，不修改原模板。模板明确记录的图像尺寸必须匹配，第一个点须为圆形或矩形，不自动跳过无效点。形状及绘图默认尺寸通过 `LumFourColorPoiOptions` 保存；区域超出图像或尺寸无效时清除旧测量并提示调整。
 3. “测量数据”中相机、光谱各有 Y、CIE x、CIE y，共六个可编辑值，可直接录入或修改已有测量值。光谱也可点击“采集光谱”，或在“选择已有…”中选择当前光谱仪最近 100 条亮度测量中的一条。历史列表按时间、ID、Y/x/y、IP 和 ND 展示，不默认选中记录；导入前后都限定设备归属，光通量 / EQE 数据不能作为亮度 Y。
 4. 当前模式的数据齐全后点击右侧测量面板底部的“计算校正”（位于保存按钮上方）。通过核对或明确确认待复核项后，可在底部“另存为”，或点击“替换当前文件并重启服务”。
 
@@ -44,7 +44,7 @@ RGBW 使用四组参考色度和 W 的参考亮度确定新矩阵；文件格式
 
 主界面保留输入、采集按钮、简短状态和完成数量；“测量详情”默认折叠，内含图像来源、POI、曝光、原始光谱结果 ID、时间、IP 与波形。原始记录仅供核对，不能证明手动修改后的值已通过质量验证。
 
-光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；文件夹及最近记录导入的 CVCIE 不含校正模板身份，显示“模板待核对”。最近记录还保留设备、结果 ID、拍摄时间和路径供核对；有记录不表示校正来源已验证。RAW、普通预览图、非三通道浮点图像不能作为 XYZ 测量输入。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
+光谱 IP 使用原始峰值 AD / 65535 × 100%，工艺范围为 **30%～95%，含端点**。低于范围提示增加积分时间或调整 ND，高于范围提示降低积分时间或调整 ND；缺失 IP 标为无法判断，不补 0 或视为合格。真实取图记录所用四色校正文件的内容指纹，计算时与原文件核对；文件夹及最近记录支持旧 CVCIE 和带可重放三通道校正参数的 CVRAW；它们不能证明当前校正文件的内容指纹，仍显示“模板待核对”。最近记录还保留设备、结果 ID、拍摄时间和路径供核对；有记录不表示校正来源已验证。无可重放参数的 RAW、普通预览图及非三通道测量图像不能作为 XYZ 测量输入。范围异常、缺失 IP / 采集时间和模板未核实 / 不一致在计算前集中确认一次，默认取消；选择继续仅表示操作员接受本次风险，不表示程序已验证数据正确。自动亮度预览不能判断相机过曝，仍须核对原图曝光、当前色块、测量位置和 ND。
 
 NaN/Infinity、零 CIE y、XYZ 换算溢出、采集/导入中的非法峰值 AD、空光谱、波长重复 / 倒序，以及多组未修改参考值重复使用同一设备同一结果 ID 会阻止完成或计算。有限负 XYZ、Y/x/y、光谱和矩阵系数原样保留。重采 / 重选一侧会先撤销该侧旧值；失败后不能回用。重画开始即清除旧 POI 读数。更换原文件、相机或相机模板清空相机侧；更换光谱仪清空光谱侧；另一侧保留。切换任一计算模式都会清空测量值、重建会话。任一输入改变或计算失败都会使旧结果失效。
 
@@ -73,7 +73,7 @@ MQTT 请求传的是文件名/路径，不是上传文件内容；“本机存�
 
 ## 结果显示与历史落库不是同一件事
 
-本地校正调用 `LocalFrameFileService.SaveCapture`，按 `Config.FileServerCfg.DataBasePath` 和校准设备 Code 保存输出，优先选择 CVCIE，其次 CVRAW；没有生成可用文件会抛错。随后创建 `MeasureResultImgModel`，记录源文件、模板、曝光和 `Backend` 等信息。
+本地校正调用 `LocalFrameFileService.SaveCapture`，按 `Config.FileServerCfg.DataBasePath` 和校准设备 Code 保存 CVRAW，色度校正参数随文件保存；没有生成可用文件会抛错。随后创建 `MeasureResultImgModel`，文件类型与位深对应保存的 RAW，并记录源文件、模板、曝光和 `Backend` 等信息。
 
 `TryPersist` 在 MySQL 未连接时直接跳过；连接后尝试关联/创建批次并保存图像结果，失败会记日志，但已生成文件仍可用。`RunLocalCalibrationAsync` 可直接 `View.ShowResult(model)`，因此“本地操作完成并显示图像”不证明历史批次和结果记录已写入数据库。需要历史重开能力时必须另核对持久化记录及文件存续。
 
@@ -85,7 +85,7 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 | 入口 | 实际作用与安全边界 |
 | --- | --- |
-| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 分为“校正缓存”和“图像文件缓存”两个 Tab；后者默认启用，全进程共用 1 个 CVRAW 槽位，换路径复用容量。Tab 与“全局选项 → 常规 → 文件归档 → 启用 CVRAW 文件缓存”共用一个持久开关；关闭后直接读写文件，在途读取结束后释放槽位，显示内存复用保留。“释放全部”等待校正与图像读取完成，统一释放两类缓存，保留磁盘标定和图像文件；仍被其它活动校正上下文引用的内存不强制释放 |
+| `ReleaseLocalCalibrationCacheCommand` / 本地缓存管理 | 按模块查看校正缓存、图像文件缓存与相机取图缓冲，支持“释放选中”和“释放全部”。图像文件缓存与全局选项共用启用开关及数量上限，默认保留 1 个 CVRAW 文件；相机取图缓冲仅释放空闲 RAW 工作内存，在用图像不受影响。释放保留磁盘标定和图像文件，但仅缓存图像会丢失；仍被活动校正上下文引用的内存不强制释放。详见[缓存管理契约](../../04-api-reference/engine-components/ColorVision.FileIO.md) |
 | `InfoCalibration.ServiceCache_Click` → `MQTTCalibration.CacheClear` | 界面先提示永久删除，再发远端 `Event_Delete_Data`；必须按远端删除操作授权，不能当作无副作用的排障动作 |
 | `ViewCalibration` 清空列表/删除结果项 | 从当前 `ViewResults` 移除，不代表删除数据库结果、输出文件或校准缓存 |
 
@@ -97,11 +97,13 @@ MQTT 结果入口和 `ResultMessageBus` 的校准图像通知都由 `ViewCalibra
 
 `Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs` 消费流程当前内存帧，或从输入结果/文件路径加载帧；不会读取手动显示的 `UseLocalCalibration` 来决定后端。可复用的 CIE 帧可以直接沿流程传递，RAW 帧按模板校正，所以手动文件入口“不含 RAW 的 CVCIE 报错”不能扩展为整个 Flow 都不支持 CIE。
 
-仅“校正+实时 POI”节点的“允许加速”默认开启，普通“校正”和本地“相机取图”节点仍默认关闭。新建节点以及旧流程中未保存 `AllowAcceleration` 字段的节点采用各自默认值；已经明确保存的开启或关闭值仍按原配置恢复。开启后仍按原顺序执行基础/空间校正，从同一次加载的色度资源提取系数和曝光，只保留校正后的 RAW 与参数，不分配整幅 CIE/XYZ 缓冲。POI 按点、圆或矩形覆盖的像素计算，保留逐像素浮点转换及现有色度公式，不固定为九点，也不会因重复测量转为整幅 XYZ 缓存。需要完整 CIE 指针的其它下游须关闭加速；仅有 CIE、没有可回放 RAW 的输入不能转换为加速帧。
+仅“校正+实时 POI”节点的“允许加速”默认开启，普通“校正”和本地“相机取图”节点仍默认关闭。新建节点以及旧流程中未保存 `AllowAcceleration` 字段的节点采用各自默认值；已经明确保存的开启或关闭值仍按原配置恢复。开启后仍按原顺序执行基础/空间校正，从同一次加载的色度资源提取系数和曝光，只保留校正后的 RAW 与参数，不分配整幅 CIE/XYZ 缓冲。POI 按点、圆或矩形覆盖的像素计算，保留逐像素浮点转换及现有色度公式，不固定为九点，也不会因重复测量转为整幅 XYZ 缓存。需要完整 CIE 指针的其它下游须关闭加速；仅有 CIE、没有可回放 RAW 的旧版输入保持原 CIE 内存，不转换为加速帧。
 
-两个校正节点的“保存校正文件”现为“保存 CIE 文件”，默认关闭，仍使用原序列化字段 `SaveFiles` 兼容旧流程；它只请求保存 CVCIE，不再请求另存 RAW。开启加速后隐藏并忽略此保存选项。已有 CVRAW 的色度参数尾块仍自动更新，不受保存 CIE 开关影响；若没有 RAW 文件则参数随内存帧传递，并不会为写参数而创建新文件。基础校正改变了源像素而没有保存校正后 RAW 时，原文件的参数标记 `CanReplay=false`，不能把原始像素当成校正后数据回放。本地相机的“保存文件”仍控制 RAW 落盘；加速时保存 CVRAW 与参数，省略 CVCIE。
+两个本地校正节点自动更新已有 CVRAW 的色度参数尾块，先更新缓存，继承取图节点的同步、异步或仅缓存策略；缓存命中不要求磁盘文件存在；若没有 RAW 文件则参数随内存帧传递，并不会为写参数而创建新文件。本地相机的“保存文件”控制 CVRAW 落盘，包含已执行的色度参数。本地链路只生成 CVRAW，CVCIE 用于兼容读取旧服务结果；旧流程里校正节点的 `SaveFiles` 字段加载时被忽略，相机节点的同名字段继续有效。基础校正改变了源像素而没有保存校正后 RAW 时，原文件的参数标记 `CanReplay=false`，不能把原始像素当成校正后数据回放。
 
 本地“POI”和“实时 POI”优先使用当前帧，无帧时读取上游图像结果文件；同时接受完整 CIE 与包含 `colorvision.calibration.color` JSON 尾块的 CVRAW。RAW 输入必须具备与图像布局匹配、可回放的参数，并已完成所需翻转；参数缺失、损坏或不可回放时明确报错，不自动用未校正 RAW 计算。此能力不要求外置 JSON 文件。`LocalDeferredColorCalibrationTests` 覆盖完整/加速路径对照、翻转、基础校正组合、旧后端及保存重读；真机取图与长时间现场内存趋势仍需独立验证。
+
+“实时 POI”和“校正+实时 POI”的 `IN_POI` 必须连接上游布点结果，沿用结果中的点位、类型、宽度和高度（原 `None` 语义），不再选择备用 POI 模板或覆盖点位类型、尺寸。输入数据可来自数据库明细或上游布点文件；缺少有效结果时明确提示连接上游布点节点。旧流程保存的 POI 模板、类型、尺寸及过滤/修正字段按未知属性规则忽略，重新保存后不再写出；节点类型与输入端口保持兼容。
 
 只有“校正+实时 POI”节点兼容外部 CVRAW 把文件头曝光写成全 0 的情况：它按 `IN_IMG` 的结果 ID 读取 `MeasureResultImgModel.Params`，从根级 `ExpTime`（旧相机结果）或 `Exposure`（本地校正结果）恢复全部为有限正数的曝光值。有效文件头始终优先；文件头不是全 0、数据库记录不存在、JSON 无效或记录曝光仍非正时继续按原校正校验报错。普通“校正”节点及手动文件校正不启用该回退，避免把不匹配记录的曝光套到其他输入。
 

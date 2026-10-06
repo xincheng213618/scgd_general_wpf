@@ -30,7 +30,7 @@ namespace ColorVision.Solution.Workspace
                     TargetName = MenuItemConstants.MainWindowTarget,
                     OwnerGuid = MenuItemConstants.View,
                     GuidId = MorePanelsGuid,
-                    Header = "更多",
+                    Header = Properties.Resources.Sol_View_More,
                     Order = 90,
                     Visibility = Visibility.Visible,
                     Command = new RelayCommand(_ => { })

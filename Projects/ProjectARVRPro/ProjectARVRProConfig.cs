@@ -18,6 +18,7 @@ namespace ProjectARVRPro
     {
         public int SelectedTabIndex { get; set; }
         public ResultStatisticsPeriodMode HomePeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
+        public bool HomeHourlyProduction { get; set; }
         public DateTime HomeAnchorDate { get; set; } = DateTime.Today;
         public ResultStatisticsPeriodMode RecordPeriodMode { get; set; } = ResultStatisticsPeriodMode.Day;
         public DateTime RecordAnchorDate { get; set; } = DateTime.Today;
@@ -45,7 +46,6 @@ namespace ProjectARVRPro
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
-        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
 
         [Browsable(false)]
         [JsonIgnore]
@@ -165,7 +165,7 @@ namespace ProjectARVRPro
 
         public void OpenFlowEngineTool()
         {
-            new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.GetParamOrDefault(TemplateSelectedIndex)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public event EventHandler<string> SNChanged;

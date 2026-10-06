@@ -5,7 +5,7 @@ status: "current"
 summary: "定位 HImage 所有权、OpenCV/CUDA PInvoke、ImageCompute 融合分流、位图桥接与默认关闭的原生日志。"
 aliases: ["原生图像调用缺少DLL","ColorVision.Core","HImage","OpenCVMediaHelper","ImageCompute","NativeLogBridge","原生日志初始化","BmwSfrAnalyzer","SfrChromaticAberration"]
 code_paths: ["UI/ColorVision.Core/HImage.cs","UI/ColorVision.Core/HImageExtension.cs","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/ImageCompute.cs","UI/ColorVision.Core/NativeLogBridge.cs","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/README.md","UI/ColorVision.Core/BmwSfrAnalyzer.cs","UI/ColorVision.Core/SfrChromaticAberration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs","Test/ColorVision.UI.Tests/BmwSfrAnalysisTests.cs","Test/CameraTest.Tests/ChromaticAberrationTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HImageAbiTests.cs","Test/ColorVision.UI.Tests/HImageExtensionCopyTests.cs","Test/ColorVision.UI.Tests/NativeLogBridgeTests.cs","Test/ColorVision.UI.Tests/VideoFrameCopyTests.cs","Test/CameraTest.Tests/ChromaticAberrationTests.cs"]
 related: ["ui.index","engine.native-integration","ui.image-editor","ui.image-fusion","ui.image-frames"]
 ---
 
@@ -57,7 +57,7 @@ ImageEditor 使用普通绘制矩形作为搜索外框：一个外框包含一�
 
 通过窗口的 **调整当前 SFR 矩形…** 也可分别修改每一边的原图 X、Y、宽度和高度，内部框必须完整位于本目标外框内；确认后只重算该边并更新主图回显。**测量参数 / 重新分析** 使用当前四个内部框，因此同一结果窗口内的调整会保留；从主图重新执行 BMW 定位会按当前四边参数重新生成内部框。**测量框与显示** 将显示项和已有测量框参数集中在一个属性窗口；其中“四边测量框”设置四边共用的长度、宽度与中心距离，几何参数实际改变后重新定位及计算；默认全为 0，沿用自动大小和距离。“显示与指标”可设置固定屏幕字号、字号、点位名称、四边名称、刃边拟合虚线与显示指标。指标包括 MTF50（默认）、MTF10、指定频率 MTF（默认 0.25）及 MTF@0.5，频率响应为百分数。虚线来自当前通道的拟合结果并裁限在测量框内，未获得拟合时不绘制；默认显示数值和红色靶标中心十字；中心十字、原图中心坐标、测量框尺寸、框中心距靶标中心的距离分别受开关控制，定位失败不绘制中心。显示选项只刷新叠加层，不触发测量；取消窗口不提交测量框或显示参数。完整 JSON 保存调整后的 ROI、输入参数与全部结果，CSV 包含各通道指标及有效曲线采样。输入编码和质量门限在结果窗口设置，默认 Unknown 仅诊断；SNR、对比度、拟合残差等门限用于判断测量可靠性，不是产品合格判据，也不代表国标规定的统一 MTF50 下限。
 
-原生验证入口为 `opencv_helper_test.exe --bmw-only`，V2 诊断与旧 SFR 回归为 `--sfr-only`，其中 `Test/opencv_helper_test/test_sfr_analysis.cpp` 以已知高斯传递函数验证带周期纹理的移框、变宽准确性，并验证曲线边缘和逐行抖动仍被拒绝；托管测试为 `BmwSfrAnalysisTests`、`BmwDrawingSelectionTests` 与 `BmwSfrUiTests`，真实 DLL 用例需 `COLORVISION_RUN_SFR_NATIVE_TESTS=1`。`Test/opencv_helper_test/verify_bmw_sfr.py` 接受显式原图 ROI，可用 `--dll` 指定待验证构建，输出原图和 DLL 哈希、参数、逐通道结果与叠图；原图不修改。合成用例或离线图验证不能替代真实交互、成像系统精度和现场验收。
+原生验证入口为 `opencv_helper_test.exe --bmw-only`，V2 诊断与旧 SFR 回归为 `--sfr-only`，其中 `Test/opencv_helper_test/test_sfr_analysis.cpp` 以已知高斯传递函数验证带周期纹理的移框、变宽准确性，并验证曲线边缘和逐行抖动仍被拒绝；`Test/opencv_helper_test/verify_bmw_sfr.py` 接受显式原图 ROI，可用 `--dll` 指定待验证构建，输出原图和 DLL 哈希、参数、逐通道结果与叠图；原图不修改。合成用例或离线图验证不能替代真实交互、成像系统精度和现场验收。
 
 ## CUDA 选择与 Fusion
 
@@ -105,6 +105,5 @@ Core 当前目标框架为 `net8.0-windows7.0;net10.0-windows7.0`，native 资�
 | `HImageAbiTests` | 托管声明的布局、大小和字段偏移，不能独自证明实际 native DLL 的 ABI |
 | `HImageExtensionCopyTests`、`VideoFrameCopyTests` | 位图复制、行填充和格式等边界；后者不等于真实视频采集或解码验收 |
 | `NativeLogBridgeTests` | 默认参数、导出前缀、回调解码与隔离；另含真实 helper 日志回传调用 |
-| `LuminousAreaNativeInteropTests` | 声明检查及亮区 V2 集成；真实导出用例有 `COLORVISION_RUN_LUMINOUS_NATIVE_V2_TESTS=1` 门禁 |
 
 运行前区分纯托管检查、加载真实 DLL 和实际设备验证。交付时还需核对包资产及上层实际打开、显示和释放结果；测试文件存在或托管构建成功，都不能证明相机、CUDA 设备和全部 native 导出已验证。

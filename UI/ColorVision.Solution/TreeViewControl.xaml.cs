@@ -305,16 +305,6 @@ namespace ColorVision.Solution
             ScheduleWorkspaceStateSave();
         }
 
-        private void ExplorerMoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button { ContextMenu: { } menu } button)
-            {
-                menu.PlacementTarget = button;
-                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                menu.IsOpen = true;
-            }
-        }
-
         private void ClearSelection()
         {
             _selectionService.Clear();

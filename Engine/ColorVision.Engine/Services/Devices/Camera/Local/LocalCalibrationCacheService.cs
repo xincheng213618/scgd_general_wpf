@@ -46,10 +46,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             ArgumentNullException.ThrowIfNull(cameras);
             return Task.Run(() => LocalCalibrationCacheManager.RunWithExclusiveSharedCacheAccess(
-                () => ReleaseAll(cameras)));
+                () => Release(cameras, includeImageFile: true)));
         }
 
-        private static LocalCalibrationCacheReleaseSummary ReleaseAll(IReadOnlyList<DeviceCamera> cameras)
+        public static Task<LocalCalibrationCacheReleaseSummary> ReleaseCalibrationAsync()
+            => ReleaseCalibrationAsync(ServiceManager.GetInstance());
+
+        internal static Task<LocalCalibrationCacheReleaseSummary> ReleaseCalibrationAsync(ServiceManager serviceManager)
+        {
+            ArgumentNullException.ThrowIfNull(serviceManager);
+            DeviceCamera[] cameras = serviceManager.DeviceServices.OfType<DeviceCamera>().Distinct().ToArray();
+            return ReleaseCalibrationAsync(cameras);
+        }
+
+        internal static Task<LocalCalibrationCacheReleaseSummary> ReleaseCalibrationAsync(IReadOnlyList<DeviceCamera> cameras)
+        {
+            ArgumentNullException.ThrowIfNull(cameras);
+            return Task.Run(() => LocalCalibrationCacheManager.RunWithExclusiveSharedCacheAccess(
+                () => Release(cameras, includeImageFile: false)));
+        }
+
+        public static Task<long> ReleaseImageFileAsync() => Task.Run(CVFileReadCache.Release);
+
+        private static LocalCalibrationCacheReleaseSummary Release(IReadOnlyList<DeviceCamera> cameras, bool includeImageFile)
         {
             int contextsReleased = 0;
             List<LocalCalibrationCacheReleaseFailure> errors = new();
@@ -77,13 +96,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             long imageFileBytesReleased = 0;
-            try
+            if (includeImageFile)
             {
-                imageFileBytesReleased = CVFileReadCache.Release();
-            }
-            catch (Exception ex)
-            {
-                errors.Add(new LocalCalibrationCacheReleaseFailure("CVRAW", ex.Message));
+                try
+                {
+                    imageFileBytesReleased = CVFileReadCache.Release();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(new LocalCalibrationCacheReleaseFailure("CVRAW", ex.Message));
+                }
             }
 
             return new LocalCalibrationCacheReleaseSummary(

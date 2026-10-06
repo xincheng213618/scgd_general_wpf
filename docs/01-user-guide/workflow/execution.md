@@ -2,7 +2,7 @@
 knowledge_id: "flow.session"
 knowledge_type: "topic"
 status: "current"
-summary: "从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
+summary: "从工作流程面板或流程编辑器开始执行；流程停止请求与结果返回按启动准备、引擎和前后处理收尾分阶段判断，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。"
 aliases: ["工作流程","流程编辑器","流程启动","流程运行","流程卡住","流程没结束","执行流程","停止流程","已经取消执行","执行耗时","流程后处理","RunFlowCommand","StopFlowCommand","RunFinalized","执行调试","StopFlow","CVBaseServerNode","FlowExecutionSession","FlowJob"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/DisplayFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml","Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowExecutionSession.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunExecutor.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowRunFinalizer.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowControl.cs","Engine/ColorVision.Engine/FlowProcessing/PostProcess/PostProcessExecution.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/FlowJob.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/OfflineCameraFlowTests.cs","Test/ColorVision.UI.Tests/FlowFinalizedExecutionApiTests.cs","Test/ColorVision.UI.Tests/FlowRunFinalizerTests.cs"]

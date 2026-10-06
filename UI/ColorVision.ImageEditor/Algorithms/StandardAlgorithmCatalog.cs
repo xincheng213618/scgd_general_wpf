@@ -76,13 +76,13 @@ namespace ColorVision.ImageEditor.Algorithms
                 presentation: Presentation(9, Entry("MedianBlur", 2, resourceKey: "MedianFilter", group: AlgorithmMenuGroups.Filters))), "MedianBlur");
             catalog.Register(Descriptor(StandardAlgorithmIds.Morphology, "形态学操作", "像素处理", "腐蚀、膨胀、开闭运算、梯度、顶帽或黑帽。", new MorphologyParameters(), CommonFormats, "_morphology",
                 presentation: Presentation(12,
-                    Entry("Erode", 3, "腐蚀", group: AlgorithmMenuGroups.Morphology),
-                    Entry("Dilate", 4, "膨胀", group: AlgorithmMenuGroups.Morphology),
-                    Entry("MorphologyEx", 5, "形态学操作", group: AlgorithmMenuGroups.Morphology))), "Morphology", "Erode", "Dilate", "MorphologyEx");
+                    Entry("Erode", 3, "腐蚀", resourceKey: "Algorithm_Erode", group: AlgorithmMenuGroups.Morphology),
+                    Entry("Dilate", 4, "膨胀", resourceKey: "Algorithm_Dilate", group: AlgorithmMenuGroups.Morphology),
+                    Entry("MorphologyEx", 5, "形态学操作", resourceKey: "Algorithm_MorphologyEx", group: AlgorithmMenuGroups.Morphology))), "Morphology", "Erode", "Dilate", "MorphologyEx");
             catalog.Register(Descriptor(StandardAlgorithmIds.Denoise, "降噪滤波", "像素处理", "双边滤波或均值滤波；颜色 Sigma 按 0..255 标称刻度映射，四通道 alpha 保持不变。", new DenoiseParameters(), CommonFormats, "_denoise",
                 presentation: Presentation(13,
-                    Entry("BilateralFilter", 3, "双边滤波", group: AlgorithmMenuGroups.Filters),
-                    Entry("Blur", 4, "均值滤波", group: AlgorithmMenuGroups.Filters))) with { Version = new AlgorithmVersion(1, 1, 0) }, "Denoise", "BilateralFilter", "Blur");
+                    Entry("BilateralFilter", 3, "双边滤波", resourceKey: "Algorithm_BilateralFilter", group: AlgorithmMenuGroups.Filters),
+                    Entry("Blur", 4, "均值滤波", resourceKey: "Algorithm_Blur", group: AlgorithmMenuGroups.Filters))) with { Version = new AlgorithmVersion(1, 1, 0) }, "Denoise", "BilateralFilter", "Blur");
             catalog.Register(Descriptor(StandardAlgorithmIds.AutoLevels, "自动色阶", "像素处理", "按输入全局最小值和最大值拉伸到位深标称范围。", new NoAlgorithmParameters(), CommonFormats, "_autolevels",
                 presentation: Presentation(3, Entry("AutoLevelsAdjust", 2, resourceKey: "AutoLevelsAdjustment", group: AlgorithmMenuGroups.Tone))), "AutoLevels", "AutoLevelsAdjust");
             catalog.Register(Descriptor(StandardAlgorithmIds.WhiteBalance, "白平衡", "像素处理", "缩放 B/G/R 通道；四通道 alpha 保持不变。", new WhiteBalanceParameters(), ColorFormats, "_whitebalance",
@@ -243,7 +243,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 new GeometricTransformParameters(),
                 CommonFormats,
                 "_transform",
-                presentation: Presentation(30, Entry("GeometricTransform", 1, "几何变换...", group: AlgorithmMenuGroups.Correction))) with
+                presentation: Presentation(30, Entry("GeometricTransform", 1, "几何变换...", resourceKey: "Algorithm_GeometricTransform", group: AlgorithmMenuGroups.Correction))) with
             {
                 OutputFormats = CommonFormats,
                 OutputFormatPolicy = "primary=same-as-input; validity-mask=gray8",
@@ -258,7 +258,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 "_registered",
                 AlgorithmHostCapabilities.Interactive | AlgorithmHostCapabilities.Flow | AlgorithmHostCapabilities.Headless
                     | AlgorithmHostCapabilities.Local | AlgorithmHostCapabilities.Deterministic | AlgorithmHostCapabilities.MultiInput,
-                Presentation(null, Entry("ImageRegistration", 2, "图像配准...", group: AlgorithmMenuGroups.Correction))) with
+                Presentation(null, Entry("ImageRegistration", 2, "图像配准...", resourceKey: "Algorithm_ImageRegistration", group: AlgorithmMenuGroups.Correction))) with
             {
                 MinimumInputCount = 2,
                 MaximumInputCount = 2,
@@ -273,7 +273,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 new LensDistortionCorrectionParameters(),
                 CommonFormats,
                 "_undistorted",
-                presentation: Presentation(31, Entry("LensDistortionCorrection", 3, "镜头畸变校正...", group: AlgorithmMenuGroups.Correction))) with
+                presentation: Presentation(31, Entry("LensDistortionCorrection", 3, "镜头畸变校正...", resourceKey: "Algorithm_LensDistortionCorrection", group: AlgorithmMenuGroups.Correction))) with
             {
                 OutputFormats = CommonFormats,
                 OutputFormatPolicy = "primary=same-as-input; canvas=same-as-input; validity-mask=gray8",
@@ -287,7 +287,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 CommonFormats,
                 "_corrected",
                 CommonCapabilities | AlgorithmHostCapabilities.MultiInput,
-                Presentation(32, Entry("ImagingCorrection", 4, "成像校正...", group: AlgorithmMenuGroups.Correction))) with
+                Presentation(32, Entry("ImagingCorrection", 4, "成像校正...", resourceKey: "Algorithm_ImagingCorrection", group: AlgorithmMenuGroups.Correction))) with
             {
                 MinimumInputCount = 1,
                 MaximumInputCount = 5,
@@ -303,7 +303,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 CommonFormats,
                 string.Empty,
                 CommonCapabilities,
-                Presentation(null, Entry("FrequencySpectrum", 5, "FFT / 频域分析...", group: AlgorithmMenuGroups.ImageQuality))) with
+                Presentation(null, Entry("FrequencySpectrum", 5, "FFT / 频域分析...", resourceKey: "Algorithm_FrequencySpectrum", group: AlgorithmMenuGroups.ImageQuality))) with
             {
                 OutputFormats = new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Gray8 },
                 OutputFormatPolicy = "magnitude-and-power=gray8-display; quantitative-values=measurement/table/structured-data",
@@ -318,7 +318,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 CommonFormats,
                 string.Empty,
                 CommonCapabilities,
-                Presentation(null, Entry("MoireAnalysis", 6, "摩尔纹分析...", group: AlgorithmMenuGroups.ImageQuality))) with
+                Presentation(null, Entry("MoireAnalysis", 6, "摩尔纹分析...", resourceKey: "Algorithm_MoireAnalysis", group: AlgorithmMenuGroups.ImageQuality))) with
             {
                 OutputFormats = new HashSet<AlgorithmImageFormat> { AlgorithmImageFormat.Gray8, AlgorithmImageFormat.Gray32Float },
                 OutputFormatPolicy = "spectrum-and-heatmap=gray8-display; optional-filtered-luminance=gray32float",

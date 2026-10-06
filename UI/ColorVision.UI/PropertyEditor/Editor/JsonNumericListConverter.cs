@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.UI.DisplayText;
 using ColorVision.UI;
 using ColorVision.UI.PropertyEditor.Editor.List;
 using Newtonsoft.Json;
@@ -37,7 +38,7 @@ namespace System.ComponentModel
             };
 
             var textBox = PropertyEditorHelper.CreateSmallTextBox(binding);
-            textBox.ToolTip = "输入 JSON 数组，例如: [1, 2, 3]";
+            textBox.ToolTip = LocalizedText.Get("输入 JSON 数组，例如: [1, 2, 3]");
             textBox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
 
             if (CollectionTypeHelper.TryGetElementType(property.PropertyType, out var elementType) &&

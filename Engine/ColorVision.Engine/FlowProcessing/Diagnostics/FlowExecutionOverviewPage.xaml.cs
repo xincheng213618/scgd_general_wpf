@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -12,6 +13,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private readonly FlowExecutionAnalysisSession _session;
         private readonly Action<FlowNodeRecord> _openNode;
+        private readonly Action<FlowNodeRecord> _compareNode;
         private readonly Action<FlowNodeRecord> _locateNode;
         private readonly Action _openMessages;
         private readonly Action _clearCurrentFlow;
@@ -20,6 +22,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         internal FlowExecutionOverviewPage(
             FlowExecutionAnalysisSession session,
             Action<FlowNodeRecord> openNode,
+            Action<FlowNodeRecord> compareNode,
             Action<FlowNodeRecord> locateNode,
             Action openMessages,
             Action clearCurrentFlow,
@@ -27,6 +30,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _openNode = openNode ?? throw new ArgumentNullException(nameof(openNode));
+            _compareNode = compareNode ?? throw new ArgumentNullException(nameof(compareNode));
             _locateNode = locateNode ?? throw new ArgumentNullException(nameof(locateNode));
             _openMessages = openMessages ?? throw new ArgumentNullException(nameof(openMessages));
             _clearCurrentFlow =
@@ -119,13 +123,25 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             TimelineEmptyText.Visibility = hasRecords ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        private void Page_Loaded(object sender, RoutedEventArgs e)
+        private async void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Let the node list and summary paint before initializing the chart library.
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (!IsLoaded || _isTimelineRendered)
+                return;
+
+            ShowTimeline();
+        }
+
+        private void ShowTimeline()
         {
             if (_isTimelineRendered)
                 return;
 
             _isTimelineRendered = true;
-            RenderTimeline();
+            var plot = new ScottPlot.WPF.WpfPlot();
+            TimelineHost.Content = plot;
+            RenderTimeline(plot);
         }
 
         private void OpenMessagesButton_Click(object sender, RoutedEventArgs e)
@@ -142,6 +158,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             if (sender is Button { Tag: FlowNodeRecord record })
                 _openNode(record);
+        }
+
+        private void CompareNodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: FlowNodeRecord record })
+                _compareNode(record);
         }
 
         private void LocateNodeButton_Click(object sender, RoutedEventArgs e)
@@ -198,25 +220,25 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return null;
         }
 
-        private void RenderTimeline()
+        private void RenderTimeline(ScottPlot.WPF.WpfPlot timelinePlot)
         {
-            TimelinePlot.Plot.Clear();
-            TimelinePlot.Plot.Legend.ManualItems.Clear();
-            TimelinePlot.Plot.Legend.IsVisible = false;
+            timelinePlot.Plot.Clear();
+            timelinePlot.Plot.Legend.ManualItems.Clear();
+            timelinePlot.Plot.Legend.IsVisible = false;
 
             if (_session.Records.Count == 0)
             {
-                TimelinePlot.Plot.Title(string.Empty);
-                TimelinePlot.Plot.XLabel(string.Empty);
-                TimelinePlot.Plot.YLabel(string.Empty);
-                TimelinePlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic();
-                TimelinePlot.Plot.Axes.NumericTicksBottom();
-                TimelinePlot.Plot.Axes.SetLimits(0, 1, 0, 1);
-                TimelinePlot.Refresh();
+                timelinePlot.Plot.Title(string.Empty);
+                timelinePlot.Plot.XLabel(string.Empty);
+                timelinePlot.Plot.YLabel(string.Empty);
+                timelinePlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic();
+                timelinePlot.Plot.Axes.NumericTicksBottom();
+                timelinePlot.Plot.Axes.SetLimits(0, 1, 0, 1);
+                timelinePlot.Refresh();
                 return;
             }
 
-            SetupChineseFonts();
+            SetupChineseFonts(timelinePlot);
             DateTime baseTime = _session.Records.Min(item => item.StartTime);
             double totalMs = _session.Records.Max(item =>
                 ((item.EndTime ?? item.StartTime) - baseTime).TotalMilliseconds);
@@ -259,28 +281,28 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 ticks.Add(new ScottPlot.Tick(yPosition, $"{index + 1}. {nodeName}"));
             }
 
-            ScottPlot.Plottables.BarPlot barPlot = TimelinePlot.Plot.Add.Bars(bars.ToArray());
+            ScottPlot.Plottables.BarPlot barPlot = timelinePlot.Plot.Add.Bars(bars.ToArray());
             barPlot.Horizontal = true;
-            TimelinePlot.Plot.Axes.Left.TickGenerator =
+            timelinePlot.Plot.Axes.Left.TickGenerator =
                 new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-            TimelinePlot.Plot.Title(EngineLocalization.Format($"执行时序 · Batch {_session.BatchId}"));
-            TimelinePlot.Plot.XLabel(EngineLocalization.Get("时间 (ms)"));
-            TimelinePlot.Plot.YLabel(string.Empty);
-            TimelinePlot.Plot.Axes.AutoScale();
-            TimelinePlot.Plot.Axes.SetLimitsX(0, totalMs * 1.04);
-            TimelinePlot.Plot.Axes.Margins(left: 0, bottom: 0.08);
-            TimelinePlot.Refresh();
+            timelinePlot.Plot.Title(EngineLocalization.Format($"执行时序 · Batch {_session.BatchId}"));
+            timelinePlot.Plot.XLabel(EngineLocalization.Get("时间 (ms)"));
+            timelinePlot.Plot.YLabel(string.Empty);
+            timelinePlot.Plot.Axes.AutoScale();
+            timelinePlot.Plot.Axes.SetLimitsX(0, totalMs * 1.04);
+            timelinePlot.Plot.Axes.Margins(left: 0, bottom: 0.08);
+            timelinePlot.Refresh();
         }
 
-        private void SetupChineseFonts()
+        private static void SetupChineseFonts(ScottPlot.WPF.WpfPlot timelinePlot)
         {
             string chineseFont = ScottPlot.Fonts.Detect("中文");
-            TimelinePlot.Plot.Axes.Title.Label.FontName = chineseFont;
-            TimelinePlot.Plot.Axes.Left.Label.FontName = chineseFont;
-            TimelinePlot.Plot.Axes.Bottom.Label.FontName = chineseFont;
-            TimelinePlot.Plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
-            TimelinePlot.Plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
-            TimelinePlot.Plot.Legend.FontName = chineseFont;
+            timelinePlot.Plot.Axes.Title.Label.FontName = chineseFont;
+            timelinePlot.Plot.Axes.Left.Label.FontName = chineseFont;
+            timelinePlot.Plot.Axes.Bottom.Label.FontName = chineseFont;
+            timelinePlot.Plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
+            timelinePlot.Plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
+            timelinePlot.Plot.Legend.FontName = chineseFont;
         }
     }
 }

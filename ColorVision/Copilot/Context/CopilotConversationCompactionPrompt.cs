@@ -136,6 +136,18 @@ namespace ColorVision.Copilot
                     + string.Join("\n", missing);
         }
 
+        public string BuildHistoricalContext()
+        {
+            var markers = FindMissingMarkers(null);
+            return markers.Count == 0
+                ? string.Empty
+                : "# Host terminal-state evidence from summarized turns\n"
+                    + "The original assistant state records these historical terminal boundaries. "
+                    + "They identify partial or unresolved earlier work, not the current task outcome or fresh authorization. "
+                    + "Later completion may be recorded in the summary; re-check current evidence before continuing.\n\n"
+                    + string.Join("\n", markers);
+        }
+
         private List<string> FindMissingMarkers(string? summary)
         {
             var missing = new List<string>();

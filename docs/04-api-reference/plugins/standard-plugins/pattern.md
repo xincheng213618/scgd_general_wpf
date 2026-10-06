@@ -81,11 +81,11 @@ Pattern 进入开发解决方案 `scgd_general_wpf.sln`，不进入主发布 `bu
 | 清空输出目录 | 确认后递归删除配置的生成目录并重建 |
 | 模板删除/重命名 | 直接删除或移动文件，不是只改列表 |
 
-列表使用 `ListCollectionView` 筛选；复制、删除与重命名按当前选中的模板对象定位文件，搜索结果下标不再用于索引原集合。导入和清空前应备份实际配置目录，默认目录内的用户默认文件也可能受影响。
+列表使用 `ListCollectionView` 筛选；复制、删除与重命名按当前选中的模板对象定位文件。导入和清空前应备份实际配置目录，默认目录内的用户默认文件也可能受影响。
 
 ## 图片投影
 
-宿主“工具 → 图片投影工具”由 Pattern 程序集中的 `MenuImageProjector` 提供；图卡窗口通过 `OpenImageProjectorCommand` 打开同一个 `ImageProjectorWindow`，不是复制另一份投影实现。独立 `Pattern.exe` 可先进入图卡窗口，再从投影入口打开该窗口；不再提供独立 `ImageProjector.exe`。
+宿主“工具 → 图片投影工具”由 Pattern 程序集中的 `MenuImageProjector` 提供；图卡窗口通过 `OpenImageProjectorCommand` 打开同一个 `ImageProjectorWindow`，不是复制另一份投影实现。独立 `Pattern.exe` 可先进入图卡窗口，再从投影入口打开该窗口。
 
 1. 添加图片并核对预览。列表保存的是文件路径，不复制图片；移除列表项不删除原文件。
 2. 选择目标显示器与显示模式。默认优先第一个非主屏，否则第一个屏幕；保存的显示器名称仍存在时恢复该选择。
@@ -117,7 +117,7 @@ dotnet build .\Plugins\Pattern\Pattern.csproj -c Release -p:Platform=x64
 dotnet test .\Test\Pattern.Tests\Pattern.Tests.csproj -c Release -p:Platform=x64
 ```
 
-完整本地输出包含可启动的 `Pattern.exe`、runtimeconfig 和依赖；投影实现编译进 `Pattern.dll`，不再生成 `ImageProjector.dll` 或 `ImageProjector.exe`。启动应用会读取/可能保存用户配置并打开窗口，需使用预期工作目录；测试投影还需确认目标屏幕。`.cvxp` 会剥离宿主共享文件，不是上述完整输出的替代品。
+完整本地输出包含可启动的 `Pattern.exe`、runtimeconfig 和依赖；投影实现编译进 `Pattern.dll`。启动应用会读取/可能保存用户配置并打开窗口，需使用预期工作目录；测试投影还需确认目标屏幕。`.cvxp` 会剥离宿主共享文件，不是上述完整输出的替代品。
 
 普通构建不执行 HostCopy。需要接入开发宿主时，显式提供有效 `SolutionDir` 和 `EnablePatternHostCopy=true`。这会写入该目录下当前 `Configuration` 的 `ColorVision/bin/x64/<Configuration>/net10.0-windows/Plugins/Pattern`，不双写 Debug/Release；调试期间写入的插件可能被后续发布输出收集，正式发布前应核对目录。
 

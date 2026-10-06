@@ -1,9 +1,11 @@
 using FlowEngineLib.Algorithm;
+using System.ComponentModel;
 
 namespace FlowEngineLib.Node.Algorithm;
 
 public class OLEDCombineQuaterImagesParams : AlgorithmParam
 {
+	[CollectionEditorType(typeof(TextSelectFilePropertiesEditor))]
 	public string[] InputImageFiles { get; set; }
 
 	public int[] InputImages_MasterId { get; set; }

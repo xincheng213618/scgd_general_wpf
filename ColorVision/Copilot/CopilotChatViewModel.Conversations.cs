@@ -432,6 +432,7 @@ namespace ColorVision.Copilot
             _composerSession.Load(selectedConversation);
             SynchronizeSelectedConversationComposerDraft();
             _ = CaptureHostedTurnSnapshot(Array.Empty<CopilotAttachmentItem>());
+            EnsurePersistentFullAccess(selectedConversation);
             NotifyComposerTextChanged(synchronizeDraft: false);
 
             OnPropertyChanged(nameof(SelectedConversation));
@@ -703,7 +704,7 @@ namespace ColorVision.Copilot
         private bool CanApplyAuxiliaryConversationResult(CopilotConversationRecord? conversation) =>
             Volatile.Read(ref _disposeState) == 0
             && conversation != null
-            && Conversations.Contains(conversation);
+            && (Conversations.Contains(conversation) || ReferenceEquals(_conversationPendingDeletion, conversation));
 
         private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {

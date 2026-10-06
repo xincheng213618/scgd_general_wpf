@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Application;
 using CameraTest.Models;
 using ColorVision.Common.MVVM;
@@ -35,7 +36,7 @@ public partial class CameraTestWindow
         CameraPaneColumn.Width = new GridLength(hide ? 0 : _cameraPaneWidth);
         CameraSplitterColumn.Width = new GridLength(hide ? 0 : 10);
         CameraPane.Visibility = CameraSplitter.Visibility = hide ? Visibility.Collapsed : Visibility.Visible;
-        CameraPaneButton.Content = hide ? "相机面板" : "收起相机";
+        CameraPaneButton.Content = hide ? LocalizedText.Get("相机面板") : LocalizedText.Get("收起相机");
     }
 
     private void RefreshTargetFilter()
@@ -176,7 +177,7 @@ public partial class CameraTestWindow
         if (MeasurementOverview.Lowest(Metrics.Items.OfType<MetricRow>(), OverviewMetric.SelectedIndex, _profile.Display.Frequency) is not { } row) return;
         Metrics.SelectedItem = row;
         if (Metrics.IsVisible) Metrics.ScrollIntoView(row);
-        StatusText.Text = $"本帧当前范围最低值：{row.Target} · {row.Edge} · {row.Channel}；仅用于调焦比较。";
+        StatusText.Text = LocalizedText.Format($"本帧当前范围最低值：{row.Target} · {row.Edge} · {row.Channel}；仅用于调焦比较。");
     }
 
     private void FocusLabels_Click(object sender, RoutedEventArgs e) { if (_ready) RenderOverlays(); }
@@ -214,38 +215,38 @@ public partial class CameraTestWindow
         string chart = GetChartTypeText(_result?.Targets.FirstOrDefault(t => t.Id == selected?.Target));
         SelectedMetricCaption.Text = $"{(chart.Length > 0 ? chart + " · " : "")}{channel} · {name}{(metric >= 2 ? " · %" : " · cy/px")}";
         RefreshDirectionReadouts(selected);
-        ResultSummary.Text = _result == null ? "每条边一行，通道横向对比"
-            : $"{_result.Targets.Count(t => t.Located)}/{_result.Targets.Count} 点已定位 · {Overview.Items.Count} 条边";
+        ResultSummary.Text = _result == null ? LocalizedText.Get("每条边一行，通道横向对比")
+            : LocalizedText.Format($"{_result.Targets.Count(t => t.Located)}/{_result.Targets.Count} 点已定位 · {Overview.Items.Count} 条边");
         LowestButton.IsEnabled = !_closing && MeasurementOverview.Lowest(Metrics.Items.OfType<MetricRow>(), metric, _profile.Display.Frequency) != null;
         bool noChannels = SelectedPlotChannels().Count == 0;
         int failedCount = _result?.Targets.Count(t => !t.Located) ?? 0;
         FailedTargetsButton.Visibility = failedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        FailedTargetsButton.Content = $"处理未定位 ({failedCount})";
+        FailedTargetsButton.Content = LocalizedText.Format($"处理未定位 ({failedCount})");
         FailedTargetsButton.IsEnabled = !noChannels && !_closing;
         int missingCount = Metrics.Items.OfType<MetricRow>().Count(row => MeasurementOverview.Missing(row, metric, _profile.Display.Frequency));
         MissingResultsButton.Visibility = missingCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        MissingResultsButton.Content = $"查看缺值 ({missingCount})";
+        MissingResultsButton.Content = LocalizedText.Format($"查看缺值 ({missingCount})");
         MissingResultsButton.IsEnabled = !noChannels && !_closing;
-        ResultHint.Text = noChannels ? "勾选至少一个通道，查看曲线与结果。"
-            : _result == null ? GetRegionError() ?? (_frame == null ? "打开图像或连接相机取图。" : _profile.Regions.Count == 0 ? ChartSelectionHint : "测量点已就绪，点击“开始分析”。")
-            : selected == null ? "当前范围没有结果。"
+        ResultHint.Text = noChannels ? LocalizedText.Get("勾选至少一个通道，查看曲线与结果。")
+            : _result == null ? GetRegionError() ?? (_frame == null ? LocalizedText.Get("打开图像或连接相机取图。") : _profile.Regions.Count == 0 ? ChartSelectionHint : LocalizedText.Get("测量点已就绪，点击“开始分析”。"))
+            : selected == null ? LocalizedText.Get("当前范围没有结果。")
             : MeasurementOverview.Missing(selected, metric, _profile.Display.Frequency) ? MeasurementOverview.Describe(selected, metric, _profile.Display.Frequency)
-            : missingCount > 0 ? $"当前筛选范围有 {missingCount} 项缺值，点击“查看缺值”逐项检查，或点击对应通道单元格。"
-            : MeasurementOverview.Explain(selected.Status) is { Length: > 0 } reason ? reason : "点击数值切换通道，点击图上刃边可定位结果。";
+            : missingCount > 0 ? LocalizedText.Format($"当前筛选范围有 {missingCount} 项缺值，点击“查看缺值”逐项检查，或点击对应通道单元格。")
+            : MeasurementOverview.Explain(selected.Status) is { Length: > 0 } reason ? reason : LocalizedText.Get("点击数值切换通道，点击图上刃边可定位结果。");
         bool unknownEncoding = selected?.Status.Contains("unknown_input_encoding", StringComparison.Ordinal) == true;
         bool clipping = selected?.Status.Contains("clipped_pixels", StringComparison.Ordinal) == true;
         CheckSignalButton.Visibility = unknownEncoding || clipping ? Visibility.Visible : Visibility.Collapsed;
         bool selectedMissing = selected != null && MeasurementOverview.Missing(selected, metric, _profile.Display.Frequency);
         if (unknownEncoding && !selectedMissing && missingCount == 0)
-            ResultHint.Text = clipping ? "输入编码待确认 · 像素存在削顶风险" : "输入编码待确认 · 当前数值仅供调试";
-        else if (clipping && !selectedMissing && missingCount == 0) ResultHint.Text = "像素存在削顶风险，请检查曝光。";
+            ResultHint.Text = clipping ? LocalizedText.Get("输入编码待确认 · 像素存在削顶风险") : LocalizedText.Get("输入编码待确认 · 当前数值仅供调试");
+        else if (clipping && !selectedMissing && missingCount == 0) ResultHint.Text = LocalizedText.Get("像素存在削顶风险，请检查曝光。");
         ResultHint.ToolTip = selected == null ? ResultHint.Text : MeasurementOverview.Describe(selected, metric, _profile.Display.Frequency);
         var target = _result?.Targets.FirstOrDefault(t => t.Id == selected?.Target);
         bool failed = target is { Located: false } || selected is { Analysis: null } || selected?.ChannelAnalysis is { Valid: false };
         RecoveryActions.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
         ExpandRegionButton.Visibility = ChartTypeSupport.Selection(_profile.MeasurementRoi) == 0 && target is { Located: false, Reason: "target_not_found" } ? Visibility.Visible : Visibility.Collapsed;
         ExpandRegionButton.IsEnabled = failed && !_busy && !_live && !_closing && CanExpandSelectedRegion();
-        EmptyPlotText.Text = noChannels ? "尚未选择通道" : failed ? "本条刃边没有可用曲线\n请按下方提示调整选框或测量参数" : _result == null ? "分析后，点击结果或图上的刃边查看曲线" : "所选结果没有可用曲线";
+        EmptyPlotText.Text = noChannels ? LocalizedText.Get("尚未选择通道") : failed ? LocalizedText.Get("本条刃边没有可用曲线\n请按下方提示调整选框或测量参数") : _result == null ? LocalizedText.Get("分析后，点击结果或图上的刃边查看曲线") : LocalizedText.Get("所选结果没有可用曲线");
     }
 
     private ISelectVisual? SelectedSearchDrawing()
@@ -279,7 +280,7 @@ public partial class CameraTestWindow
         string? target = (Metrics.SelectedItem as MetricRow)?.Target;
         drawing.SetRect(after);
         var draw = ImageView.EditorContext.DrawEditorContext;
-        draw.DrawCanvas.AddActionCommand(new ActionCommand(() => drawing.SetRect(before), () => drawing.SetRect(after)) { Header = "扩大靶标选框" });
+        draw.DrawCanvas.AddActionCommand(new ActionCommand(() => drawing.SetRect(before), () => drawing.SetRect(after)) { Header = LocalizedText.Get("扩大靶标选框") });
         draw.SelectionVisual.SetRender(drawing);
         await AnalyzeCurrentFrameAsync();
         var row = Metrics.Items.OfType<MetricRow>().FirstOrDefault(r => r.Target == target);

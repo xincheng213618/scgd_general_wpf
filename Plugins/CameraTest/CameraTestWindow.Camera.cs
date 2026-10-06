@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using cvColorVision;
 using System.Globalization;
 using System.Windows;
@@ -84,7 +85,7 @@ public partial class CameraTestWindow
         if (!(exposure ? _exposureInputDirty : _gainInputDirty)) return;
         if (!float.TryParse(input.Text, out float value) || !float.IsFinite(value) || (exposure ? value <= 0 : value < 0))
         {
-            StatusText.Text = exposure ? "曝光时间必须大于 0。" : "增益必须大于或等于 0。";
+            StatusText.Text = exposure ? LocalizedText.Get("曝光时间必须大于 0。") : LocalizedText.Get("增益必须大于或等于 0。");
             return;
         }
         if (exposure) _exposureInputDirty = false;
@@ -115,7 +116,7 @@ public partial class CameraTestWindow
         }
         if (exposure) _pendingExposure = value;
         else _pendingGain = value;
-        ExposureInput.ToolTip = GainInput.ToolTip = "正在应用参数…";
+        ExposureInput.ToolTip = GainInput.ToolTip = LocalizedText.Get("正在应用参数…");
         _acquisitionTimer.Stop();
         _acquisitionTimer.Start();
     }
@@ -147,7 +148,7 @@ public partial class CameraTestWindow
                 if (gain.HasValue) _profile.Camera.Gain = gain.Value;
             }
             ResetFocus();
-            StatusText.Text = "曝光 / 增益已应用。";
+            StatusText.Text = LocalizedText.Get("曝光 / 增益已应用。");
         }
         finally
         {

@@ -1,5 +1,6 @@
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Solution.Mru;
@@ -18,6 +19,81 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ExportCieTests
 {
+    [Theory]
+    [InlineData(3, true, true)]
+    [InlineData(3, false, true)]
+    [InlineData(1, true, true)]
+    [InlineData(1, false, true)]
+    [InlineData(3, true, false)]
+    [InlineData(3, false, true, true)]
+    public void CalibratedRawExportsFloatMeasurementChannelsWithoutCreatingCvcie(int channels, bool includeSource, bool canReplay, bool memoryOnly = false)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"colorvision-export-calibrated-{Guid.NewGuid():N}");
+        string sourcePath = Path.Combine(root, "sample.cvraw");
+        string outputPath = Path.Combine(root, "output");
+        Directory.CreateDirectory(root);
+        try
+        {
+            byte[] raw = WritePatternedRawFixture(sourcePath, rows: 2, cols: 3, channels, memoryOnly ? CVFileSaveMode.MemoryOnly : CVFileSaveMode.Synchronous);
+            new ColorCalibrationSnapshot
+            {
+                Width = 3, Height = 2, RawBpp = 16, Channels = channels,
+                TransformKind = channels == 1 ? 2 : 0, Coefficients = [2, 0, 0, 0, -3, 0, 0, 0, 4],
+                Exposure = [1, 1, 1], Template = "export"
+            }.Save(sourcePath, canReplay);
+            byte[]? original = memoryOnly ? null : File.ReadAllBytes(sourcePath);
+            var export = new VExportCIE(sourcePath, new MruPathService(new MemoryMruPathStore([])))
+            {
+                SavePath = outputPath, Name = "measurement.v1", IsExportSrc = includeSource
+            };
+            Assert.True(export.IsCVRaw);
+            Assert.False(export.IsCVCIE);
+            Assert.Equal(canReplay, export.HasCieChannels);
+            Assert.Equal(canReplay && channels == 3, export.IsCieThreeChannel);
+            Assert.Equal(canReplay ? 1 : 3, export.AvailableImageFormats.Count);
+            VExportCIE.SaveToTifOrThrow(export);
+
+            int count = (includeSource ? 1 : 0) + (canReplay ? channels : 0);
+            Assert.Equal(count, Directory.GetFiles(outputPath).Length);
+            if (includeSource)
+            {
+                string path = Path.Combine(outputPath, "measurement.v1" + (count > 1 ? "_Src" : "") + ".tiff");
+                using Mat source = Cv2.ImRead(path, ImreadModes.Unchanged);
+                Assert.Equal(MatType.CV_16U, source.Depth());
+                byte[] actual = new byte[raw.Length];
+                Marshal.Copy(source.Data, actual, 0, actual.Length);
+                Assert.Equal(raw, actual);
+            }
+            for (int channel = 0; canReplay && channel < channels; channel++)
+            {
+                string name = channels == 1 ? "Y" : new[] { "X", "Y", "Z" }[channel];
+                string path = Path.Combine(outputPath, "measurement.v1" + (count > 1 ? "_" + name : "") + ".tiff");
+                using Mat image = Cv2.ImRead(path, ImreadModes.Unchanged);
+                Assert.Equal(MatType.CV_32FC1, image.Type());
+                Assert.Equal(2, image.Rows);
+                Assert.Equal(3, image.Cols);
+                float[] actual = new float[6];
+                Marshal.Copy(image.Data, actual, 0, actual.Length);
+                float scale = channels == 1 ? 2 : new[] { 2f, -3f, 4f }[channel];
+                float[] expected = Enumerable.Range(0, 6).Select(pixel =>
+                    scale * BitConverter.ToUInt16(raw, (pixel * channels + (channels == 1 ? 0 : 2 - channel)) * sizeof(ushort))).ToArray();
+                Assert.Equal(expected, actual);
+                ColorVisionTiffParameters parameters = ReadTiffParameters(path);
+                Assert.Equal("CVRAW", parameters.SourceType);
+                Assert.Equal(name, parameters.ExportedChannel);
+                Assert.Equal(32, parameters.Bpp);
+            }
+            if (memoryOnly) Assert.False(File.Exists(sourcePath));
+            else Assert.Equal(original, File.ReadAllBytes(sourcePath));
+            Assert.Empty(Directory.EnumerateFiles(root, "*.cvcie", SearchOption.AllDirectories));
+        }
+        finally
+        {
+            Assert.StartsWith(Path.GetTempPath(), Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void RememberExportLocationPreservesTheBoundSavePathDuringListRefresh()
     {
@@ -491,7 +567,7 @@ public sealed class ExportCieTests
         return data;
     }
 
-    private static byte[] WritePatternedRawFixture(string filePath, int rows, int cols, int channels)
+    private static byte[] WritePatternedRawFixture(string filePath, int rows, int cols, int channels, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
     {
         ushort[] values = new ushort[rows * cols * channels];
         ushort[] pattern = [0, 1, 255, 256, 1024, 32768, 65535];
@@ -499,7 +575,7 @@ public sealed class ExportCieTests
             values[i] = pattern[i % pattern.Length];
         byte[] data = new byte[values.Length * sizeof(ushort)];
         Buffer.BlockCopy(values, 0, data, 0, data.Length);
-        WriteCieFile(filePath, CVType.Raw, rows, cols, bpp: 16, channels, data);
+        WriteCieFile(filePath, CVType.Raw, rows, cols, bpp: 16, channels, data, saveMode: saveMode);
         return data;
     }
 
@@ -512,7 +588,7 @@ public sealed class ExportCieTests
         return values;
     }
 
-    private static void WriteCieFile(string filePath, CVType fileType, int rows, int cols, int bpp, int channels, byte[] data, string? srcFileName = null)
+    private static void WriteCieFile(string filePath, CVType fileType, int rows, int cols, int bpp, int channels, byte[] data, string? srcFileName = null, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
     {
         using CVCIEFile file = new()
         {
@@ -527,7 +603,7 @@ public sealed class ExportCieTests
             SrcFileName = srcFileName,
             Data = data,
         };
-        Assert.True(CVFileUtil.WriteCIEFile(filePath, file));
+        Assert.True(CVFileUtil.WriteCIEFile(filePath, file, saveMode));
     }
 
     private static void EnsureExportWindowTestResources()

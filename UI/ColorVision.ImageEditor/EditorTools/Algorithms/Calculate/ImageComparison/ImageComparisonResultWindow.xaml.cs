@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -61,7 +62,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 SplitReference.Source = _reference;
                 SplitCandidate.Source = _candidate;
                 BlinkImage.Source = _reference;
-                BlinkLabel.Text = "当前图像";
+                BlinkLabel.Text = LocalizedText.Get("当前图像");
                 MetricsGrid.ItemsSource = ToTable(table).DefaultView;
                 AlignmentGrid.ItemsSource = ToTable(alignment).DefaultView;
                 DifferenceKind_SelectionChanged(this, null!);
@@ -75,7 +76,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
                 string shiftY = Display(alignmentRow["EstimatedShiftY"]);
                 string confidence = Display(alignmentRow["Confidence"]);
                 string ssimText = ssim.HasValue ? ssim.Value.ToString("G10", CultureInfo.InvariantCulture) : "N/A";
-                SummaryText.Text = $"候选：{candidateName}；MSE={mse:G10}，RMSE={rmse:G10}，PSNR={(double.IsPositiveInfinity(psnr) ? "Infinity" : psnr.ToString("G10", CultureInfo.InvariantCulture))} dB，SSIM={ssimText}；对齐预检={alignmentStatus}，候选偏移=({shiftX}, {shiftY}) px，置信度={confidence}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。";
+                SummaryText.Text = LocalizedText.Format($"候选：{candidateName}；MSE={mse:G10}，RMSE={rmse:G10}，PSNR={(double.IsPositiveInfinity(psnr) ? "Infinity" : psnr.ToString("G10", CultureInfo.InvariantCulture))} dB，SSIM={ssimText}；对齐预检={alignmentStatus}，候选偏移=({shiftX}, {shiftY}) px，置信度={confidence}。差分数值 artifact 保持原始位深；对齐预检只报告，不修改图像。");
                 _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
                 Closed += (_, _) => DisposeOwnedState();
             }
@@ -102,12 +103,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             if (_blinkTimer.IsEnabled)
             {
                 _blinkTimer.Stop();
-                BlinkButton.Content = "开始";
+                BlinkButton.Content = LocalizedText.Get("开始");
             }
             else
             {
                 _blinkTimer.Start();
-                BlinkButton.Content = "停止";
+                BlinkButton.Content = LocalizedText.Get("停止");
             }
         }
 
@@ -120,7 +121,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
         {
             _showCandidate = !_showCandidate;
             BlinkImage.Source = _showCandidate ? _candidate : _reference;
-            BlinkLabel.Text = _showCandidate ? "候选图像" : "当前图像";
+            BlinkLabel.Text = _showCandidate ? LocalizedText.Get("候选图像") : LocalizedText.Get("当前图像");
         }
 
         private void ViewTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -128,7 +129,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             if (ViewTabs.SelectedIndex != 1 && _blinkTimer?.IsEnabled == true)
             {
                 _blinkTimer.Stop();
-                BlinkButton.Content = "开始";
+                BlinkButton.Content = LocalizedText.Get("开始");
             }
         }
 
@@ -179,7 +180,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "保存失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("保存失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -190,11 +191,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -205,11 +206,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparis
             try
             {
                 AlgorithmResultExporter.ExportJson(_result, dialog.FileName);
-                MessageBox.Show(this, "导出完成。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("导出完成。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

@@ -6,6 +6,8 @@ using FlowEngineLib.Base;
 using System;
 using System.Linq;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.FileIO;
+using System.Diagnostics;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local;
 
@@ -42,30 +44,34 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
     private readonly string serialNumber;
     private readonly string nodeId;
     private readonly int zIndex;
+    private readonly CVFileSaveMode saveMode;
     private LocalCameraCaptureResult? capture;
     private bool frameTransferred;
     private bool disposed;
     private bool commandReleased;
     private readonly FlowNodeTiming timing = new();
 
-    internal static FlowLocalExecution? Create(CVMQTTRequest request)
+    public override bool UseNodeTimeout => false;
+
+    internal static FlowLocalExecution? Create(CVMQTTRequest request, CVFileSaveMode saveMode)
     {
         DeviceCamera? device = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
             .FirstOrDefault(camera => string.Equals(camera.Code, request.DeviceCode, StringComparison.Ordinal));
-        return CreateForDevice(device, request, new LocalLvCameraServices());
+        return CreateForDevice(device, request, new LocalLvCameraServices(), saveMode);
     }
 
-    internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalLvCameraServices services)
+    internal static FlowLocalExecution? CreateForDevice(DeviceCamera? device, CVMQTTRequest request, ILocalLvCameraServices services, CVFileSaveMode saveMode)
     {
         if (device == null || !device.CameraBackend.OpensLocally) return null;
         // Reuse the current owner, or select the next-open preference when closed; keep this request on that backend.
-        return new LocalLvCameraExecution(device, request, services);
+        return new LocalLvCameraExecution(device, request, services, saveMode);
     }
 
-    private LocalLvCameraExecution(DeviceCamera device, CVMQTTRequest request, ILocalLvCameraServices services)
+    private LocalLvCameraExecution(DeviceCamera device, CVMQTTRequest request, ILocalLvCameraServices services, CVFileSaveMode saveMode)
     {
         this.device = device;
         this.services = services;
+        this.saveMode = saveMode;
         serialNumber = request.SerialNumber;
         nodeId = request.DeviceNodeCode;
         zIndex = request.ZIndex;
@@ -95,7 +101,7 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
         {
             Device = device, CameraParameters = cameraParameters, Calibration = calibration,
             FlipMode = parameters.FlipMode, IsAutoExposure = false,
-            SaveFiles = device.DisplayConfig.SaveLocalCaptureFiles
+            SaveFiles = false
         };
     }
 
@@ -121,21 +127,33 @@ internal sealed class LocalLvCameraExecution : FlowLocalExecution
             throw new OperationCanceledException("流程已停止，本地取图结果不再交接。");
         if (!string.Equals(action.SerialNumber, serialNumber, StringComparison.Ordinal))
             throw new InvalidOperationException("本地取图结果与当前流程批次不匹配。");
+        LocalFlowFrame frame = capture.Frame;
+        frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code);
         MeasureResultImgModel model = FlowNodeTiming.Run("PersistResult", () => services.Save(action, zIndex, captureRequest, capture));
         if (model.Id <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
-        LocalFlowFrame frame = capture.Frame;
+        Stopwatch saveTimer = Stopwatch.StartNew();
+        LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, saveMode);
+        int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
         frame.MasterId = model.Id;
         action.SetCurrentFrame(frame);
         frameTransferred = true;
         action.MasterValue(null, model.Id, 100);
         FlowNodeTiming.Run("PublishResult", () => services.Publish(action, nodeId, zIndex, captureRequest, capture, model));
+        using LocalFlowFrameLease diagnosticLease = frame.Acquire();
         return new
         {
             MasterId = model.Id, MasterResultType = 100, MasterValue = (string?)null,
             FrameId = frame.FrameId.ToString("N"), frame.HasRaw, frame.HasCie,
+            Backend = "Local", DeviceCode = device.Code,
+            frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, frame.Metadata.Channels,
+            frame.Metadata.Exposure, frame.Metadata.Gain,
+            AverageCount = captureRequest.CameraParameters?.AvgCount ?? 1,
+            RawBytes = diagnosticLease.RawLength, CieBytes = diagnosticLease.CieLength,
+            capture.CalibrationBackend,
             frame.CvRawFilePath, frame.CvCieFilePath,
-            TotalTime = capture.TotalTimeMs, CaptureTime = capture.CaptureTimeMs,
-            CalibrationTime = capture.CalibrationTimeMs, SaveTime = capture.SaveTimeMs,
+            TotalTime = checked(capture.TotalTimeMs + saveTime), CaptureTime = capture.CaptureTimeMs,
+            CalibrationTime = capture.CalibrationTimeMs, SaveTime = saveTime,
+            SaveMode = saveMode.ToString(),
             Timing = timing.Finish()
         };
     }

@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+		Microsoft ResX Schema
+
+		Version 1.3
+
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
+		associated with the data types.
+
+		Example:
+
+		... ado.net/XML headers & schema ...
+		<resheader name="resmimetype">text/microsoft-resx</resheader>
+		<resheader name="version">1.3</resheader>
+		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+		<data name="Name1">this is my long string</data>
+		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+			[base64 mime encoded serialized .NET Framework object]
+		</data>
+		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+			[base64 mime encoded string representing a byte array form of the .NET Framework object]
+		</data>
+
+		There are any number of "resheader" rows that contain simple
+		name/value pairs.
+
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
+		mimetype set.
+
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
+		extensible. For a given mimetype the value must be set accordingly:
+
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
+		read any of the formats listed below.
+
+		mimetype: application/x-microsoft.net.object.binary.base64
+		value   : The object must be serialized with
+			: System.Serialization.Formatters.Binary.BinaryFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.soap.base64
+		value   : The object must be serialized with
+			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.bytearray.base64
+		value   : The object must be serialized into a byte array
+			: using a System.ComponentModel.TypeConverter
+			: and then encoded with base64 encoding.
+	-->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="上传图像与文件，分享给任何一台电脑" xml:space="preserve">
+    <value>Upload images and files to share with any computer</value>
+  </data>
+  <data name="云盘" xml:space="preserve">
+    <value>Cloud Drive</value>
+  </data>
+  <data name="云盘 · ColorVision" xml:space="preserve">
+    <value>Cloud Drive · ColorVision</value>
+  </data>
+  <data name="分享文件" xml:space="preserve">
+    <value>Share File</value>
+  </data>
+  <data name="后台上传" xml:space="preserve">
+    <value>Upload in Background</value>
+  </data>
+  <data name="复制链接" xml:space="preserve">
+    <value>Copy Link</value>
+  </data>
+  <data name="开始 / 继续上传" xml:space="preserve">
+    <value>Start / Resume Upload</value>
+  </data>
+  <data name="打开网页" xml:space="preserve">
+    <value>Open Web Page</value>
+  </data>
+  <data name="持有链接或二维码的人均可下载。到期后需重新上传。" xml:space="preserve">
+    <value>Anyone with the link or QR code can download the file. Upload it again after expiration.</value>
+  </data>
+  <data name="无需账号，上传文件并通过链接或二维码分享" xml:space="preserve">
+    <value>Upload files and share them by link or QR code without an account</value>
+  </data>
+  <data name="暂停上传" xml:space="preserve">
+    <value>Pause Upload</value>
+  </data>
+  <data name="本机上传记录 · 可拖入文件或文件夹" xml:space="preserve">
+    <value>Local Upload History · Drop Files or Folders Here</value>
+  </data>
+  <data name="移除本机记录" xml:space="preserve">
+    <value>Remove Local Record</value>
+  </data>
+  <data name="继续 / 重试选中项" xml:space="preserve">
+    <value>Resume / Retry Selected</value>
+  </data>
+  <data name="选择已完成的文件，即可生成分享二维码。" xml:space="preserve">
+    <value>Select a completed file to generate a sharing QR code.</value>
+  </data>
+  <data name="选择文件" xml:space="preserve">
+    <value>Select File</value>
+  </data>
+  <data name="选择文件夹" xml:space="preserve">
+    <value>Choose Folder</value>
+  </data>
+  <data name="隐藏窗口并继续上传，可从用户中心重新打开" xml:space="preserve">
+    <value>Hide the window and continue uploading; reopen it from User Center</value>
+  </data>
+  <data name="RBAC 数据库初始化失败: {0}&#10;&#10;数据库路径: {1}" xml:space="preserve">
+    <value>RBAC database initialization failed: {0}
+
+Database path: {1}</value>
+  </data>
+  <data name="{0:yyyy-MM-dd} · {1:N0} 次流程" xml:space="preserve">
+    <value>{0:yyyy-MM-dd} · {1:N0} Flow Executions</value>
+  </data>
+  <data name="上传完成后会显示下载链接和二维码。" xml:space="preserve">
+    <value>The download link and QR code appear after upload.</value>
+  </data>
+  <data name="不能删除当前登录的用户。" xml:space="preserve">
+    <value>Cannot delete the signed-in user.</value>
+  </data>
+  <data name="不能禁用当前登录的用户。" xml:space="preserve">
+    <value>Cannot disable the signed-in user.</value>
+  </data>
+  <data name="两次输入的密码不一致" xml:space="preserve">
+    <value>Passwords do not match</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="保存中..." xml:space="preserve">
+    <value>Saving...</value>
+  </data>
+  <data name="保存失败" xml:space="preserve">
+    <value>Save Failed</value>
+  </data>
+  <data name="保存失败: {0}" xml:space="preserve">
+    <value>Failed to save: {0}</value>
+  </data>
+  <data name="保存成功" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="保存权限失败，请重试。" xml:space="preserve">
+    <value>Failed to save permissions. Retry.</value>
+  </data>
+  <data name="保存用户详情时出现异常：" xml:space="preserve">
+    <value>Error saving user details:</value>
+  </data>
+  <data name="分享已过期，请重新添加文件并上传。" xml:space="preserve">
+    <value>Share expired. Add the files again and upload.</value>
+  </data>
+  <data name="分享链接已复制，可发送给其他人。" xml:space="preserve">
+    <value>Share link copied; you can send it to others.</value>
+  </data>
+  <data name="创建中..." xml:space="preserve">
+    <value>Creating...</value>
+  </data>
+  <data name="创建用户" xml:space="preserve">
+    <value>Create User</value>
+  </data>
+  <data name="创建角色失败: {0}" xml:space="preserve">
+    <value>Failed to create role: {0}</value>
+  </data>
+  <data name="删除用户失败: {0}" xml:space="preserve">
+    <value>Failed to delete user: {0}</value>
+  </data>
+  <data name="加载失败" xml:space="preserve">
+    <value>Load failed</value>
+  </data>
+  <data name="加载数据失败: {0}" xml:space="preserve">
+    <value>Failed to load data: {0}</value>
+  </data>
+  <data name="加载角色权限失败: {0}" xml:space="preserve">
+    <value>Failed to load role permissions: {0}</value>
+  </data>
+  <data name="发生错误: {0}" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="只有管理员才能访问权限管理功能。" xml:space="preserve">
+    <value>Only administrators can manage permissions.</value>
+  </data>
+  <data name="只有管理员才能访问用户管理功能。" xml:space="preserve">
+    <value>Only administrators can manage users.</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="启用用户失败: {0}" xml:space="preserve">
+    <value>Failed to enable user: {0}</value>
+  </data>
+  <data name="密码修改成功！" xml:space="preserve">
+    <value>Password changed successfully!</value>
+  </data>
+  <data name="密码已重置" xml:space="preserve">
+    <value>Password Reset</value>
+  </data>
+  <data name="密码重置成功！&#10;&#10;用户: {0}&#10;新密码: {1}&#10;&#10;请妥善保管此密码。" xml:space="preserve">
+    <value>Password reset successfully!
+
+User: {0}
+New password: {1}
+
+Keep this password secure.</value>
+  </data>
+  <data name="密码长度至少 6 位" xml:space="preserve">
+    <value>Password must contain at least 6 characters</value>
+  </data>
+  <data name="就绪 - 共{0}个角色，{1}个权限" xml:space="preserve">
+    <value>Ready - {0} Roles, {1} Permissions</value>
+  </data>
+  <data name="已加载角色 [{0}] 的权限配置（已分配 {1} 个权限）" xml:space="preserve">
+    <value>Permissions for role [{0}] loaded ({1} assigned)</value>
+  </data>
+  <data name="已选择 {0} 个角色" xml:space="preserve">
+    <value>{0} roles selected</value>
+  </data>
+  <data name="当前权限: {0}" xml:space="preserve">
+    <value>Current permissions: {0}</value>
+  </data>
+  <data name="当前用户无权修改用户角色。" xml:space="preserve">
+    <value>You do not have permission to change user roles.</value>
+  </data>
+  <data name="当前用户无权创建新用户。" xml:space="preserve">
+    <value>You do not have permission to create users.</value>
+  </data>
+  <data name="当前用户无权创建角色。" xml:space="preserve">
+    <value>You do not have permission to create roles.</value>
+  </data>
+  <data name="当前用户无权删除用户。" xml:space="preserve">
+    <value>You do not have permission to delete users.</value>
+  </data>
+  <data name="当前用户无权启用/禁用用户。" xml:space="preserve">
+    <value>You do not have permission to enable or disable users.</value>
+  </data>
+  <data name="当前用户无权重置密码。" xml:space="preserve">
+    <value>You do not have permission to reset passwords.</value>
+  </data>
+  <data name="您正在使用默认密码登录，为了账户安全，请立即修改密码。" xml:space="preserve">
+    <value>You signed in with the default password. Change it immediately to secure your account.</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="成功为角色 [{0}] 分配了 {1} 个权限。" xml:space="preserve">
+    <value>Assigned {1} permissions to role [{0}].</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>Hint</value>
+  </data>
+  <data name="操作拒绝" xml:space="preserve">
+    <value>Operation Denied</value>
+  </data>
+  <data name="数据库错误" xml:space="preserve">
+    <value>Database Error</value>
+  </data>
+  <data name="无" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="更新用户角色失败: {0}" xml:space="preserve">
+    <value>Failed to update user role: {0}</value>
+  </data>
+  <data name="有效" xml:space="preserve">
+    <value>Valid</value>
+  </data>
+  <data name="未登录" xml:space="preserve">
+    <value>Signed Out</value>
+  </data>
+  <data name="未选择" xml:space="preserve">
+    <value>Not Selected</value>
+  </data>
+  <data name="权限不足" xml:space="preserve">
+    <value>Insufficient Permissions</value>
+  </data>
+  <data name="权限不足：只有管理员可以修改角色" xml:space="preserve">
+    <value>Insufficient permissions: only administrators can modify roles</value>
+  </data>
+  <data name="权限不足：只有管理员可以创建角色" xml:space="preserve">
+    <value>Insufficient permissions: only administrators can create roles</value>
+  </data>
+  <data name="权限保存成功 - 已分配 {0} 个权限" xml:space="preserve">
+    <value>Permissions Saved - {0} Assigned</value>
+  </data>
+  <data name="权限缓存统计: {0}" xml:space="preserve">
+    <value>Permission Cache Statistics: {0}</value>
+  </data>
+  <data name="权限缓存统计: 不可用" xml:space="preserve">
+    <value>Permission Cache Statistics: Unavailable</value>
+  </data>
+  <data name="正在保存权限分配..." xml:space="preserve">
+    <value>Saving permission assignments...</value>
+  </data>
+  <data name="正在创建..." xml:space="preserve">
+    <value>Creating...</value>
+  </data>
+  <data name="正在创建新用户，请稍候..." xml:space="preserve">
+    <value>Creating user; please wait...</value>
+  </data>
+  <data name="正在加载数据..." xml:space="preserve">
+    <value>Loading data...</value>
+  </data>
+  <data name="正在加载角色 [{0}] 的权限..." xml:space="preserve">
+    <value>Loading permissions for role [{0}]...</value>
+  </data>
+  <data name="注册" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="注册成功" xml:space="preserve">
+    <value>Registration Successful</value>
+  </data>
+  <data name="注册成功，请使用新账户登录" xml:space="preserve">
+    <value>Registration successful; sign in with your new account</value>
+  </data>
+  <data name="用户 '{0}' 创建成功！" xml:space="preserve">
+    <value>User '{0}' created successfully!</value>
+  </data>
+  <data name="用户 '{0}' 已启用" xml:space="preserve">
+    <value>User '{0}' enabled</value>
+  </data>
+  <data name="用户 '{0}' 已禁用" xml:space="preserve">
+    <value>User '{0}' disabled</value>
+  </data>
+  <data name="用户ID: {0} | 当前角色: {1}" xml:space="preserve">
+    <value>User ID: {0} | Current Role: {1}</value>
+  </data>
+  <data name="用户删除成功！" xml:space="preserve">
+    <value>User deleted successfully!</value>
+  </data>
+  <data name="用户名和密码不能为空" xml:space="preserve">
+    <value>Username and password are required</value>
+  </data>
+  <data name="用户名已存在或创建失败" xml:space="preserve">
+    <value>Username already exists or creation failed</value>
+  </data>
+  <data name="用户名或者密码不正确" xml:space="preserve">
+    <value>Incorrect username or password</value>
+  </data>
+  <data name="登  录" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="登录中..." xml:space="preserve">
+    <value>Signing in...</value>
+  </data>
+  <data name="登录失败" xml:space="preserve">
+    <value>Sign In Failed</value>
+  </data>
+  <data name="登录失败: {0}" xml:space="preserve">
+    <value>Sign in failed: {0}</value>
+  </data>
+  <data name="登录用户: {0} | 会话: {1}" xml:space="preserve">
+    <value>Signed-in User: {0} | Session: {1}</value>
+  </data>
+  <data name="确定要删除用户 '{0}' 吗？&#10;&#10;此操作将进行逻辑删除，用户数据将被保留但标记为已删除状态。" xml:space="preserve">
+    <value>Delete user '{0}'?
+
+This is a logical deletion; user data will be retained and marked as deleted.</value>
+  </data>
+  <data name="确定要退出登录吗？" xml:space="preserve">
+    <value>Sign out?</value>
+  </data>
+  <data name="确定要重置用户 '{0}' 的密码吗？&#10;&#10;将生成一个新的随机密码。" xml:space="preserve">
+    <value>Reset the password for user '{0}'?
+
+A new random password will be generated.</value>
+  </data>
+  <data name="确认删除" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="确认重置" xml:space="preserve">
+    <value>Confirm Reset</value>
+  </data>
+  <data name="禁用用户失败: {0}" xml:space="preserve">
+    <value>Failed to disable user: {0}</value>
+  </data>
+  <data name="移除后将不再保留这条本机续传记录和分享链接。已发送的分享在到期前仍然有效。" xml:space="preserve">
+    <value>Removal deletes this local resume record and share link. Previously sent shares remain valid until they expire.</value>
+  </data>
+  <data name="编辑用户角色 - {0}" xml:space="preserve">
+    <value>Edit User Role - {0}</value>
+  </data>
+  <data name="自动登录中..." xml:space="preserve">
+    <value>Signing in automatically...</value>
+  </data>
+  <data name="角色代码已存在或创建失败！" xml:space="preserve">
+    <value>Role code already exists or creation failed!</value>
+  </data>
+  <data name="角色创建成功！" xml:space="preserve">
+    <value>Role created successfully!</value>
+  </data>
+  <data name="角色名称和代码不能为空。" xml:space="preserve">
+    <value>Role name and code are required.</value>
+  </data>
+  <data name="角色更新失败！" xml:space="preserve">
+    <value>Failed to update role!</value>
+  </data>
+  <data name="角色更新成功！" xml:space="preserve">
+    <value>Role updated successfully!</value>
+  </data>
+  <data name="请先登录后再编辑用户信息。" xml:space="preserve">
+    <value>Sign in before editing user information.</value>
+  </data>
+  <data name="请输入用户名和密码" xml:space="preserve">
+    <value>Enter your username and password</value>
+  </data>
+  <data name="退出登录" xml:space="preserve">
+    <value>Logout</value>
+  </data>
+  <data name="选择要分享的文件" xml:space="preserve">
+    <value>Select Files to Share</value>
+  </data>
+  <data name="选择要打包分享的文件夹" xml:space="preserve">
+    <value>Select Folder to Package and Share</value>
+  </data>
+  <data name="重置密码失败: {0}" xml:space="preserve">
+    <value>Failed to reset password: {0}</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="首次登录 - 请修改默认密码" xml:space="preserve">
+    <value>First Sign In - Change Default Password</value>
+  </data>
+  <data name="首次登录必须修改默认密码。" xml:space="preserve">
+    <value>You must change the default password on first sign in.</value>
+  </data>
+</root>

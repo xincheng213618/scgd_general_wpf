@@ -5,7 +5,7 @@ status: "current"
 summary: "MySQL 结果表的手动关联索引优化、历史删除、整表截断和SQL备份；在线DDL、并发、部分成功、备份与恢复边界分别说明。"
 aliases: ["MySQL结果清理", "删除批次", "历史结果清理", "结果关联索引", "索引优化", "优化结果查询索引", "ALGORITHM=INPLACE", "LOCK=NONE", "GET_LOCK", "结果表备份", "完整SQL备份", "清理事务回滚", "主从表清理", "清理管理员权限", "MySqlResultCleanupProvider", "ExecuteOptimization", "CleanupHistory", "CleanupTables", "FindUnknownDetailTables", "ValidateCleanupTableNames", "MySqlLocalServicesManager", "BackupAllMysql", "mysqldump", "FOREIGN_KEY_CHECKS", "t_scgd_algorithm_result_master", "t_scgd_measure_batch"]
 code_paths: ["Engine/ColorVision.Engine/Mysql/MySqlResultCleanupProvider.cs", "Engine/ColorVision.Engine/Mysql/MySqlLocalServicesManager.cs", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml", "Engine/ColorVision.Engine/Mysql/MySqlToolWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/DatabaseCleanupWindowViewModel.cs", "UI/ColorVision.Database/MySqlControl.cs", "UI/ColorVision.Database/MySqlSetting.cs", "UI/ColorVision.Database/MySqlProtocolDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/DatabaseCleanupWindowTests.cs", "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs"]
 related: ["engine.database-maintenance", "engine.mysql-recovery", "engine.results", "ui.database", "ui.sqlite-storage", "operations.data"]
 ---
 
@@ -110,6 +110,6 @@ MySQL 进程使用 `ProcessStartInfo.ArgumentList`，不通过 shell 拼接重�
 
 ## 验证范围
 
-`DatabaseCleanupWindowTests.cs` 检查白名单拒绝、去重和顺序、未知明细检测辅助方法，以及 fake 组合维护分派；它没有证明真实主从选择闭包、数据库事务或现场在线 DDL。`MySqlBackupRestoreSafetyTests.cs` 检查进程参数、字符集、密码不在命令行、方法返回路径的类型、进程内维护门串行/嵌套，以及源码中入口/防护代码的存在。
+它没有证明真实主从选择闭包、数据库事务或现场在线 DDL。`MySqlBackupRestoreSafetyTests.cs` 检查进程参数、字符集、密码不在命令行、方法返回路径的类型、进程内维护门串行/嵌套，以及源码中入口/防护代码的存在。
 
 这些测试不是实际 `mysqldump/mysql`、生产表引擎、并发写入、metadata lock、索引构建临时空间、DDL 部分成功、删除后恢复、截断中途异常或断电恢复演练。

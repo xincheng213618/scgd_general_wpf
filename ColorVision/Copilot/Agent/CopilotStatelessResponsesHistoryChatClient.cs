@@ -21,10 +21,12 @@ namespace ColorVision.Copilot
     {
         private const string ResponseMessageJsonKey = "ColorVision.OpenAI.Responses.MessageJson";
         private const string PlainReasoningItemIdKey = "ColorVision.OpenAI.Responses.PlainReasoningItemId";
+        private readonly string _apiKey;
 
-        public CopilotStatelessResponsesHistoryChatClient(IChatClient innerClient)
+        public CopilotStatelessResponsesHistoryChatClient(IChatClient innerClient, string apiKey)
             : base(innerClient)
         {
+            _apiKey = apiKey;
         }
 
         public override async Task<ChatResponse> GetResponseAsync(
@@ -36,6 +38,10 @@ namespace ColorVision.Copilot
                 PrepareMessages(messages),
                 options,
                 cancellationToken).ConfigureAwait(false);
+            if (response.RawRepresentation is ResponseResult { Status: ResponseStatus.Failed } failedResponse)
+                throw CreateFailedResponseException(failedResponse);
+            if (response.RawRepresentation is ResponseResult { Status: ResponseStatus.Incomplete } incompleteResponse)
+                response.FinishReason = GetIncompleteFinishReason(incompleteResponse);
             foreach (var message in response.Messages)
             {
                 AddMessageHistoryMarker(message, message.RawRepresentation as MessageResponseItem);
@@ -59,6 +65,31 @@ namespace ColorVision.Copilot
                 options,
                 cancellationToken).ConfigureAwait(false))
             {
+                if (update.RawRepresentation is StreamingResponseFailedUpdate failed)
+                    throw CreateFailedResponseException(failed.Response);
+
+                // The upstream adapter surfaces an incomplete terminal event only as
+                // metadata. Restore its authoritative finish and billing before guards.
+                if (update.RawRepresentation is StreamingResponseIncompleteUpdate incomplete)
+                {
+                    var preservedUpdate = update.Clone();
+                    preservedUpdate.FinishReason = GetIncompleteFinishReason(incomplete.Response);
+                    if (!preservedUpdate.Contents.OfType<UsageContent>().Any()
+                        && incomplete.Response.Usage is { } usage)
+                    {
+                        preservedUpdate.Contents = [.. preservedUpdate.Contents, new UsageContent(new UsageDetails
+                        {
+                            InputTokenCount = usage.InputTokenCount,
+                            OutputTokenCount = usage.OutputTokenCount,
+                            TotalTokenCount = usage.TotalTokenCount,
+                            CachedInputTokenCount = usage.InputTokenDetails?.CachedTokenCount,
+                            ReasoningTokenCount = usage.OutputTokenDetails?.ReasoningTokenCount,
+                        }) { RawRepresentation = usage }];
+                    }
+                    yield return preservedUpdate;
+                    continue;
+                }
+
                 if (update.RawRepresentation is StreamingResponseReasoningTextDeltaUpdate plainReasoning)
                 {
                     var preservedUpdate = update.Clone();
@@ -82,6 +113,47 @@ namespace ColorVision.Copilot
 
                 yield return update;
             }
+        }
+
+        private CopilotProviderPayloadException CreateFailedResponseException(ResponseResult response)
+        {
+            var code = SanitizeErrorCode(response.Error?.Code.ToString());
+            var type = SanitizeErrorCode(response.Error?.Kind);
+            var preferredCode = code.Length > 0 ? code : type;
+            var suffix = preferredCode.Length > 0 ? $" ({preferredCode})" : string.Empty;
+            var detail = string.IsNullOrWhiteSpace(response.Error?.Message)
+                ? "The provider reported a failed response."
+                : response.Error.Message;
+            var message = CopilotUserFacingErrorFormatter.Sanitize($"Responses API error{suffix}: {detail}", _apiKey);
+            var usage = response.Usage is { } reported
+                ? new CopilotTokenUsage(reported.InputTokenCount, reported.OutputTokenCount,
+                    reported.TotalTokenCount, reported.InputTokenDetails?.CachedTokenCount)
+                : CopilotTokenUsage.Empty;
+            // A response id is not an HTTP request id. Carry billing separately so
+            // buffered calls can be discarded without losing the failed attempt's usage.
+            var exception = new CopilotProviderPayloadException(message, preferredCode,
+                CopilotProviderErrorPolicy.IsTransientPayload(code, type), requestId: string.Empty, reportedUsage: usage);
+            CopilotProviderErrorPolicy.PreservePayloadError(exception, code, type);
+            return exception;
+        }
+
+        private string SanitizeErrorCode(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+            // Redact the complete credential before filtering or truncating a protocol token.
+            if (!string.IsNullOrEmpty(_apiKey))
+                value = value.Replace(_apiKey, "redacted", StringComparison.Ordinal);
+            return new string(value.Where(character => char.IsLetterOrDigit(character)
+                || character is '_' or '-' or '.').Take(64).ToArray());
+        }
+
+        private static ChatFinishReason GetIncompleteFinishReason(ResponseResult response)
+        {
+            var reason = response.IncompleteStatusDetails?.Reason;
+            return reason == ResponseIncompleteStatusReason.MaxOutputTokens ? ChatFinishReason.Length
+                : reason == ResponseIncompleteStatusReason.ContentFilter ? ChatFinishReason.ContentFilter
+                : new ChatFinishReason("incomplete");
         }
 
         private static ChatMessage[] PrepareMessages(IEnumerable<ChatMessage> messages)

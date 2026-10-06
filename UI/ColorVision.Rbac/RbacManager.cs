@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1822,CS4014
+﻿using LocalizedText = global::ColorVision.Rbac.DisplayText;
+#pragma warning disable CA1822,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Rbac.Services;
 using ColorVision.Rbac.Services.Auth;
@@ -22,19 +23,19 @@ namespace ColorVision.Rbac
         public static string SqliteDbPath { get; set; } = DirectoryPath + "Rbac.db";
 
         private SqlSugarClient db;
-        public RelayCommand LoginCommand { get; set; } 
+        public RelayCommand LoginCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenUserManagerCommand { get; set; }
         public RelayCommand OpenPermissionManagerCommand { get; set; }
 
         public RbacManagerConfig Config => RbacManagerConfig.Instance;
-        
+
         // 核心服务
         public IAuthService AuthService { get; set; }
         public IUserService UserService { get; set; }
         public IPermissionService PermissionService { get; set; }
         public IAuditLogService AuditLogService { get; set; }
-        
+
         public IRoleService RoleService { get; set; }
         public ISessionService SessionService { get; set; }
         public IPermissionChecker PermissionChecker { get; set; }
@@ -44,7 +45,7 @@ namespace ColorVision.Rbac
 
         public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
-        {  
+        {
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
@@ -65,8 +66,8 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"RBAC 数据库初始化失败: {ex.Message}\n\n数据库路径: {SqliteDbPath}", 
-                    "数据库错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"RBAC 数据库初始化失败: {ex.Message}\n\n数据库路径: {SqliteDbPath}"),
+                    LocalizedText.Get("数据库错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
 
@@ -75,14 +76,14 @@ namespace ColorVision.Rbac
             AuthService = new AuthService(db);
             UserService = new UserService(db);
             PermissionService = new PermissionService(db);
-            
+
             RoleService = new RoleService(db, AuditLogService);
             SessionService = new SessionService(db);
             PermissionChecker = new PermissionChecker(db);
-            
+
             // 启动会话清理后台服务
             _sessionCleanupService = new SessionCleanupService(SessionService, TimeSpan.FromHours(1));
-            
+
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
             InitAdmin();
@@ -122,10 +123,10 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("只有管理员才能访问用户管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("只有管理员才能访问用户管理功能。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
+
             new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
@@ -133,10 +134,10 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("只有管理员才能访问权限管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("只有管理员才能访问权限管理功能。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
+
             new PermissionManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
@@ -182,7 +183,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权创建角色。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权创建角色。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
@@ -193,17 +194,17 @@ namespace ColorVision.Rbac
             }
             catch (Exceptions.PermissionDeniedException ex)
             {
-                MessageBox.Show(ex.Message, "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             catch (Exceptions.RbacException ex)
             {
-                MessageBox.Show($"创建角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"创建角色失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"创建角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"创建角色失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -268,7 +269,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权创建新用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权创建新用户。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             var result = await UserService.CreateUserAsync(username, password, remark, roleIds);
@@ -291,7 +292,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权修改用户角色。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权修改用户角色。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             try
@@ -313,7 +314,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"更新用户角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"更新用户角色失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -337,12 +338,12 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权删除用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权删除用户。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             if (Config.LoginResult?.User?.Id == userId)
             {
-                MessageBox.Show("不能删除当前登录的用户。", "操作拒绝", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("不能删除当前登录的用户。"), LocalizedText.Get("操作拒绝"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             try
@@ -364,7 +365,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"删除用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"删除用户失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -373,7 +374,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权启用/禁用用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权启用/禁用用户。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             try
@@ -395,7 +396,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"启用用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"启用用户失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -404,12 +405,12 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权启用/禁用用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权启用/禁用用户。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             if (Config.LoginResult?.User?.Id == userId)
             {
-                MessageBox.Show("不能禁用当前登录的用户。", "操作拒绝", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("不能禁用当前登录的用户。"), LocalizedText.Get("操作拒绝"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             try
@@ -431,7 +432,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"禁用用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"禁用用户失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -440,7 +441,7 @@ namespace ColorVision.Rbac
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
-                MessageBox.Show("当前用户无权重置密码。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前用户无权重置密码。"), LocalizedText.Get("权限不足"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return null;
             }
             try
@@ -462,7 +463,7 @@ namespace ColorVision.Rbac
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"重置密码失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(LocalizedText.Format($"重置密码失败: {ex.Message}"), LocalizedText.Get("错误"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
         }

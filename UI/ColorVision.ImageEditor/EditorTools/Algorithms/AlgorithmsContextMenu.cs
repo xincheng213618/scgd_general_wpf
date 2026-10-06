@@ -96,7 +96,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     OwnerGuid = "Algorithms",
                     GuidId = "BatchImageProcessing",
                     Order = 0,
-                    Header = "批量执行算法...",
+                    Header = ColorVision.ImageEditor.Properties.Resources.ImageView_BatchProcessing,
                     Command = new RelayCommand(_ => ShowBatchWindow()),
                 },
                 new()
@@ -122,7 +122,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 OwnerGuid = AlgorithmMenuGroups.ImageQuality.Id,
                 GuidId = "BmwSfr",
                 Order = 2,
-                Header = "四边 SFR…",
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FourEdgeSfr,
                 Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
             });
 

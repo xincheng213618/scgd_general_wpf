@@ -564,6 +564,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
+                queuedCommandExecution?.HostedRun.SuppressAutomaticFollowUpDispatch();
                 ShowLocalCommandResult(command, "压缩未开始：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
                 return false;
             }
@@ -577,6 +578,18 @@ namespace ColorVision.Copilot
             _isCompactingConversation = true;
             IsBusy = true;
             ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
+            var usageRecorded = false;
+            void RecordReportedFailureUsage(Exception exception)
+            {
+                if (usageRecorded || !CanApplyAuxiliaryConversationResult(conversation))
+                    return;
+                var usage = CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception);
+                if (!usage.HasAny)
+                    return;
+                conversation.RecordCompactionUsage(usage, DateTimeOffset.UtcNow);
+                usageRecorded = true;
+                PersistState();
+            }
             try
             {
                 var reply = await _chatService.CompleteReplyDetailedAsync(
@@ -586,6 +599,7 @@ namespace ColorVision.Copilot
                 if (CanApplyAuxiliaryConversationResult(conversation))
                 {
                     conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
+                    usageRecorded = true;
                     PersistState();
                 }
                 else if (Volatile.Read(ref _disposeState) == 1)
@@ -596,7 +610,7 @@ namespace ColorVision.Copilot
                 queuedCommandExecution?.HostedRun.CancellationToken.ThrowIfCancellationRequested();
                 if (reply.IsIncomplete)
                     throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
-                var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
+                var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight, compactionPlan.TerminalEvidence);
                 if (summary.Length == 0)
                     throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
                 compactionPlan.TerminalEvidence.EnsurePreserved(summary);
@@ -630,15 +644,18 @@ namespace ColorVision.Copilot
                 RefreshComposerTokenEstimate();
                 return true;
             }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested
+            catch (OperationCanceledException ex) when (cancellation.IsCancellationRequested
                 || queuedCommandExecution?.HostedRun.CancellationToken.IsCancellationRequested == true)
             {
+                RecordReportedFailureUsage(ex);
                 ShowLocalCommandResult(
                     command,
-                    "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。");
+                    "上下文压缩已取消，原有对话和压缩摘要均未改变；Provider 已经报告的 Token 用量仍会计入本会话。");
             }
             catch (Exception ex)
             {
+                queuedCommandExecution?.HostedRun.SuppressAutomaticFollowUpDispatch();
+                RecordReportedFailureUsage(ex);
                 ShowLocalCommandResult(command, "压缩失败：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
             }
             finally
@@ -748,7 +765,10 @@ namespace ColorVision.Copilot
             RunUiOperation(() => CompactConversationAsync(command, string.Empty), "压缩上下文");
         }
 
-        private static string NormalizeCompactSummary(string summary, int maximumWeight)
+        private static string NormalizeCompactSummary(
+            string summary,
+            int maximumWeight,
+            CopilotConversationCompactionTerminalEvidence terminalEvidence)
         {
             var normalized = (summary ?? string.Empty).Trim();
             if (normalized.Length > CopilotConversationCompaction.MaximumSummaryCharacters)
@@ -756,7 +776,8 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException(
                     $"模型返回的压缩摘要超过 {CopilotConversationCompaction.MaximumSummaryCharacters:N0} 字符安全上限，未应用结果。请缩小聚焦范围后重试。");
             }
-            if (CopilotTokenEstimator.EstimateTextWeight(normalized) > maximumWeight)
+            if (normalized.Length > 0
+                && CopilotConversationCompactionContext.EstimateSummaryWeight(normalized, terminalEvidence) > maximumWeight)
             {
                 throw new InvalidOperationException(
                     "模型返回的压缩摘要超过当前会话可安全保留的单条历史预算，未应用结果。请缩小聚焦范围后重试。");

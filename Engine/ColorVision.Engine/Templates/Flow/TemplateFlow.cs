@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Templates.Browser;
 #pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
@@ -40,6 +41,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
+        public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
         private readonly LocalFlowTemplateStorage localStorage;
         private readonly Func<bool> isMySqlConnected;
@@ -64,6 +66,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void PreviewMouseDoubleClick(int index)
         {
+            if (index < 0 || index >= TemplateParams.Count) return;
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
         public override bool ExitsTemplateName(string templateName)
@@ -120,7 +123,7 @@ namespace ColorVision.Engine.Templates.Flow
                     if (oldIndex != index) TemplateParams.Move(oldIndex, index);
                 }
             }
-            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? " · 本地" : " · MySQL");
+            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 

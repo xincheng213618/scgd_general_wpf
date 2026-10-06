@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectKB.DisplayText;
 using System.Windows;
 using System.Windows.Input;
 
@@ -72,7 +73,7 @@ namespace ProjectKB.Auth
 
             if (KBAuthManager.GetInstance().ChangePassword(oldPassword, newPassword))
             {
-                MessageBox.Show(this, "管理员密码已修改。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("管理员密码已修改。"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
                 DialogResult = true;
                 return;
             }

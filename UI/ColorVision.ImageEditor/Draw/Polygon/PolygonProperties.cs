@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
@@ -80,8 +81,8 @@ namespace ColorVision.ImageEditor.Draw
         {
             return new CompactInspectorItem[]
             {
-                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(this.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = "旋转角度" },
-                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(IsClosed), Label = "闭合", ShowLabel = true, Order = 0, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = "闭合区域可计算 POI" },
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(this.Rotation), Label = "θ°", ShowLabel = true, Width = 65, Order = 45, EditorKind = CompactInspectorEditorKind.Number, ToolTip = LocalizedText.Get("旋转角度") },
+                new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(IsClosed), Label = LocalizedText.Get("闭合"), ShowLabel = true, Order = 0, EditorKind = CompactInspectorEditorKind.Toggle, ToolTip = LocalizedText.Get("闭合区域可计算 POI") },
                 new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(Brush), Order = 10, EditorKind = CompactInspectorEditorKind.Brush, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineColor },
                 new CompactInspectorPropertyItem { Source = this, PropertyName = nameof(StrokeThickness), Icon = CompactInspectorIcons.CreateText("━"), Width = 56, Order = 20, EditorKind = CompactInspectorEditorKind.Number, ToolTip = ColorVision.ImageEditor.Properties.Resources.Draw_LineWidth },
             };

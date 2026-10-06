@@ -16,13 +16,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
-        private (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
+        private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;
         private bool previewQueued;
         private long previewVersion;
 
         internal void PublishLocalPreview(LocalFlowFrame frame, MeasureResultImgModel? model, bool forceDisplay)
         {
-            if (IsDisposed || Application.Current == null) return;
+            ViewCamera? view = ExistingView;
+            if (IsDisposed || Application.Current == null || view == null) return;
             // Skip the full RAW/CIE snapshot for automatic captures while refresh is disabled.
             if (!forceDisplay && !ViewCameraConfig.Instance.AutoRefreshView) return;
             long version = Interlocked.Increment(ref previewVersion);
@@ -31,22 +32,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 LocalCameraPreview preview = LocalCameraPreview.Create(frame);
                 lock (previewSync)
                 {
-                    if (IsDisposed || version != Volatile.Read(ref previewVersion)) return;
-                    pendingPreview = (model, preview, forceDisplay);
+                    if (IsDisposed || !ReferenceEquals(ExistingView, view) || version != Volatile.Read(ref previewVersion)) return;
+                    pendingPreview = (view, model, preview, forceDisplay);
                     if (previewQueued) return;
                     previewQueued = true;
                 }
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    (MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
+                    (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pending;
                     lock (previewSync)
                     {
                         pending = pendingPreview;
                         pendingPreview = null;
                         previewQueued = false;
                     }
-                    if (IsDisposed || pending == null) return;
-                    try { ViewShell.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
+                    if (IsDisposed || pending == null || !ReferenceEquals(ExistingView, pending.Value.View)) return;
+                    try { pending.Value.View.ShowLocalResult(pending.Value.Model, pending.Value.Preview, pending.Value.Force); }
                     catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览显示失败。", ex); }
                 });
             }
@@ -77,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             });
         }
 
-        internal void EnsureLocalCameraAvailable()
+        internal void EnsureLocalCameraAvailable(string? cameraId = null)
         {
             CameraBackend.EnsureLocalAvailable();
             if (CameraBackend.LocalOwned) return;
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (ReferenceEquals(other, this)) continue;
                 bool samePhysical = (!string.IsNullOrEmpty(Config.CameraCode) && Config.CameraCode == other.Config.CameraCode)
-                    || (!string.IsNullOrEmpty(Config.CameraID) && Config.CameraID == other.Config.CameraID);
+                    || (!string.IsNullOrEmpty(cameraId ?? Config.CameraID) && string.Equals(cameraId ?? Config.CameraID, other.Config.CameraID, StringComparison.OrdinalIgnoreCase));
                 if (samePhysical && (other.CameraBackend.LocalOwned || other.CameraBackend.VideoOwned || other.CameraBackend.ServiceMayOwnCamera))
                     throw new InvalidOperationException($"同一物理相机已由设备 {other.Code} 占用，请先关闭该设备。");
             }

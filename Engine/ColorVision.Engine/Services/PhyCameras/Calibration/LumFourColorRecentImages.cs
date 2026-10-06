@@ -1,3 +1,4 @@
+using ColorVision.FileIO;
 using ColorVision.Database;
 using SqlSugar;
 using System;
@@ -43,7 +44,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (!string.Equals(image.DeviceCode, deviceCode, StringComparison.Ordinal))
                 throw new InvalidOperationException("图像不属于当前相机，请刷新后重新选择。");
             if (image.ResultCode != 0) throw new InvalidOperationException("该次拍摄失败，请选择成功的图像。");
-            if (string.IsNullOrWhiteSpace(image.FilePath) || !File.Exists(image.FilePath))
+            if (string.IsNullOrWhiteSpace(image.FilePath) || !(CVFileReadCache.GetCachedLength(image.FilePath).HasValue || File.Exists(image.FilePath)))
                 throw new InvalidOperationException("该图像文件不存在，请重新选择或使用图像导入。");
             var frame = LumFourColorCieService.Load(image.FilePath);
             // A database result does not establish which calibration coefficients were used.

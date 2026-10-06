@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS4014
+﻿using LocalizedText = global::ProjectKB.DisplayText;
+#pragma warning disable CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using System.Collections.ObjectModel;
@@ -88,7 +89,7 @@ namespace ProjectKB.Modbus
             Task.Run(() =>
             {
                 bool IsConnect = ModbusControl.TestConnect(ModbusConfig);
-                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
+                Dispatcher.BeginInvoke(() => MessageBox.Show(LocalizedText.Format($"连接{(IsConnect ? LocalizedText.Get("成功") : LocalizedText.Get("失败"))}"), "ColorVision"));
             });
         }
 

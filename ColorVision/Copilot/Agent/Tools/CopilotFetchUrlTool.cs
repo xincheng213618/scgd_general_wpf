@@ -55,17 +55,19 @@ namespace ColorVision.Copilot
                     Summary = "No fetchable web page URL was detected.",
                     ErrorMessage = "The current request has no processable web page URL; the planner can provide a complete URL in input.query.",
                     FailureKind = CopilotToolFailureKind.Validation,
+                    WebEvidenceSourceUrls = Array.Empty<string>(),
                 };
             }
 
             var requestedOutcomes = await FetchBatchAsync(urls, cancellationToken).ConfigureAwait(false);
             var remainingSlots = MaxResourcesPerRequest - requestedOutcomes.Length;
+            var visitedUrls = new HashSet<string>(
+                urls.Select(CopilotWebPageToolSupport.NormalizeUrlComparisonKey), StringComparer.Ordinal);
             var discoveredUrls = requestedOutcomes
                 .Where(outcome => outcome.Page != null)
                 .SelectMany(outcome => outcome.Page!.Value.DiscoveredResourceUrls)
                 .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Where(url => !urls.Contains(url, StringComparer.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(url => visitedUrls.Add(CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url)))
                 .Take(remainingSlots)
                 .ToArray();
             var discoveredOutcomes = await FetchBatchAsync(discoveredUrls, cancellationToken).ConfigureAwait(false);
@@ -76,6 +78,11 @@ namespace ColorVision.Copilot
             var reportedOmittedInputUrls = omittedInputUrls.Take(MaxReportedOmittedInputUrls).ToArray();
             var errors = outcomes.Where(outcome => outcome.Page == null).Select(outcome => $"{outcome.Url}: {outcome.Error}").ToArray();
             var failureKinds = outcomes.Where(outcome => outcome.Page == null).Select(outcome => outcome.FailureKind).ToArray();
+            var partialCoverage = new List<string>();
+            if (omittedInputUrls.Length > 0)
+                partialCoverage.Add($"{omittedInputUrls.Length} input URL(s) were omitted by this request's resource limit.");
+            if (errors.Length > 0)
+                partialCoverage.Add($"{errors.Length} web resource(s) could not be read: {string.Join("; ", errors)}");
 
             var builder = new StringBuilder();
             builder.AppendLine("[Web Fetch Scope]");
@@ -106,7 +113,10 @@ namespace ColorVision.Copilot
                     ? $"Fetched {successCount}/{attemptedCount} web resources ({urls.Length}/{resolvedUrls.Count} input URLs attempted, {discoveredUrls.Length} discovered)."
                     : $"Failed to fetch any web resources from {attemptedCount} URLs.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Length == 0 ? string.Empty : string.Join("; ", errors),
+                WebEvidenceSourceUrls = outcomes.Where(outcome => outcome.Page != null)
+                    .Select(outcome => outcome.Page!.Value.Url).ToArray(),
+                PartialResultMessage = successCount > 0 ? string.Join(" ", partialCoverage) : string.Empty,
+                ErrorMessage = successCount > 0 ? string.Empty : string.Join("; ", errors),
                 FailureKind = successCount == 0 && failureKinds.Length > 0 && failureKinds.All(kind => kind == CopilotToolFailureKind.Transient)
                     ? CopilotToolFailureKind.Transient
                     : successCount == 0 ? CopilotToolFailureKind.Unspecified : CopilotToolFailureKind.None,

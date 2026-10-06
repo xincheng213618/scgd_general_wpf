@@ -732,18 +732,24 @@ public sealed class CopilotAgentSkillCatalogTests
         }
     }
 
-    [Fact]
-    public void QueuedFollowUpRecoveryRestoresTheSelectedSkillReferenceToTheDraft()
+    [Theory]
+    [InlineData("single")]
+    [InlineData("conflicting_same_name_path")]
+    [InlineData("missing_reference")]
+    public void QueuedFollowUpRecoveryRestoresTheSelectedSkillReferenceToTheDraft(string recoveryCase)
     {
         var skillDirectory = CreateTemporaryDirectory();
         try
         {
+            const string firstPrompt = "$shared-skill continue";
+            const string secondPrompt = "$shared-skill verify the continuation";
             var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
             var reference = new CopilotAgentSkillReference
             {
                 Name = "shared-skill",
                 SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
             };
+            Assert.True(reference.IsStructurallyValid());
             var state = new CopilotChatState
             {
                 Conversations = [conversation],
@@ -754,7 +760,7 @@ public sealed class CopilotAgentSkillCatalogTests
                         RunId = "run-1",
                         ConversationId = conversation.Id,
                         ComposerState = CopilotComposerStash.Capture(
-                            "$shared-skill continue",
+                            firstPrompt,
                             0,
                             CopilotAgentMode.Auto,
                             Array.Empty<CopilotAttachmentItem>(),
@@ -762,11 +768,40 @@ public sealed class CopilotAgentSkillCatalogTests
                     },
                 ],
             };
+            if (recoveryCase != "single")
+            {
+                var secondReference = recoveryCase == "conflicting_same_name_path"
+                    ? new CopilotAgentSkillReference
+                    {
+                        Name = reference.Name,
+                        SkillFilePath = Path.Combine(skillDirectory, "second-source", "SKILL.md"),
+                    }
+                    : null;
+                if (secondReference != null)
+                    Assert.True(secondReference.IsExplicitlyInvokedBy(secondPrompt));
+                state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
+                {
+                    RunId = "run-2",
+                    ConversationId = conversation.Id,
+                    ComposerState = CopilotComposerStash.Capture(secondPrompt, 0,
+                        CopilotAgentMode.Auto, Array.Empty<CopilotAttachmentItem>(),
+                        agentSkillReference: secondReference),
+                });
+            }
 
             Assert.True(CopilotQueuedFollowUpRecovery.RestoreToDrafts(state));
 
-            Assert.Equal("$shared-skill continue", conversation.DraftText);
-            Assert.Equal(reference.SkillFilePath, conversation.DraftAgentSkillReference?.SkillFilePath);
+            if (recoveryCase == "single")
+            {
+                Assert.Equal(firstPrompt, conversation.DraftText);
+                Assert.Equal(reference.SkillFilePath, conversation.DraftAgentSkillReference?.SkillFilePath);
+            }
+            else
+            {
+                Assert.Equal(CopilotQueuedFollowUpRecovery.FormatRestoredDraft([firstPrompt, secondPrompt]),
+                    conversation.DraftText);
+                Assert.Null(conversation.DraftAgentSkillReference);
+            }
             Assert.Empty(state.QueuedFollowUpRecoveries);
         }
         finally

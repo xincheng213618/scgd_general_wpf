@@ -5,7 +5,7 @@ status: "current"
 summary: "实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。"
 aliases: ["通用查询", "高级查询", "查询窗口", "查询条件保存", "筛选结果", "SQL预览", "清空条件", "清空表", "截断表", "查询取消", "GenericQueryWindow", "GenericQuery", "QueryCondition", "QueryOperator", "GenericQueryConditionSupport", "GenericQuerySessionStore", "GenericQueryBaseConfig"]
 code_paths: ["UI/ColorVision.Database/GenericQueryWindow.xaml", "UI/ColorVision.Database/GenericQueryWindow.xaml.cs", "UI/ColorVision.Database/GenericQueryConditionSupport.cs", "UI/ColorVision.Database/GenericQuerySessionStore.cs", "UI/ColorVision.Database/IEntity.cs", "Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs","Test/ColorVision.UI.Tests/FlowResultPresentationTests.cs"]
+test_paths: []
 related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-protocol"]
 ---
 
@@ -77,6 +77,6 @@ Socket 的实际查询子类用自己的维护锁，并将 SQLite 截断改为�
 - `Engine/ColorVision.Engine/Messages/MessagesListManager.cs`：查询 `MsgRecord` 并替换 `MsgRecords`，在 finally 释放连接；这与 Socket 的库和集合不同。
 - `UI/ColorVision.SocketProtocol/SocketMessageManager.cs`：定制查询、SQLite 整表操作及维护锁接入；列表与压缩正文按 ID 读取的责任分开。
 
-`Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs` 覆盖友好字段名与排除项、值解析、布尔与重复范围、空白跳过、两种泛型查询与会话恢复、行内换字段和类型控件切换，以及无查询前副作用时非法条件不清旧结果。窗口测试覆盖字段搜索隔离、Enter 不查询、未确认字段阻止查询、清除后关闭不保存空行，以及深浅主题下默认/最小宽度的输入布局；使用临时 SQLite 与 STA/WPF 控件，不访问业务数据库。引用不表示本次已经运行。
+窗口测试覆盖字段搜索隔离、Enter 不查询、未确认字段阻止查询、清除后关闭不保存空行，以及深浅主题下默认/最小宽度的输入布局；使用临时 SQLite 与 STA/WPF 控件，不访问业务数据库。引用不表示本次已经运行。
 
 现有专项测试不覆盖未应用的数量/排序、SQL 数量限制显示、跨连接共享状态、转换器部分失败、关闭/取消时序、整表操作和实际 MySQL。上述执行边界来自源码核对，不是对用户数据库的运行验收。

@@ -56,7 +56,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             OutputFormatComboBox.ItemsSource = new[]
             {
-                new BatchOutputFormatItem(BatchOutputFormat.SameAsSource, "与源格式相同"),
+                new BatchOutputFormatItem(BatchOutputFormat.SameAsSource, Properties.Resources.BatchSameAsSource),
                 new BatchOutputFormatItem(BatchOutputFormat.Png, "PNG"),
                 new BatchOutputFormatItem(BatchOutputFormat.Jpeg, "JPEG"),
                 new BatchOutputFormatItem(BatchOutputFormat.Bmp, "BMP"),
@@ -95,7 +95,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             SuffixTextBox.Text = algorithm.Suffix;
             AlgorithmOptionsContent.Content = algorithm.IsFormatOnly || algorithm.Options is NoAlgorithmParameters
-                ? new TextBlock { Text = "此算法无需额外参数", Opacity = 0.7 }
+                ? new TextBlock { Text = Properties.Resources.BatchNoExtraParameters, Opacity = 0.7 }
                 : PropertyEditorHelper.GenPropertyEditorControl(algorithm.Options, showCategoryHeader: false);
         }
 
@@ -119,7 +119,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             using System.Windows.Forms.FolderBrowserDialog dialog = new()
             {
-                Description = "选择包含待处理图像的文件夹",
+                Description = Properties.Resources.BatchSelectInputFolder,
                 UseDescriptionForTitle = true,
                 ShowNewFolderButton = false,
             };
@@ -138,7 +138,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             catch (Exception ex)
             {
                 Log.Error(ex);
-                MessageBox.Show(this, ex.Message, "添加文件夹失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, ex.Message, Properties.Resources.BatchAddFolderFailed, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             using System.Windows.Forms.FolderBrowserDialog dialog = new()
             {
-                Description = "选择结果图像的保存目录",
+                Description = Properties.Resources.BatchSelectOutputFolder,
                 UseDescriptionForTitle = true,
                 ShowNewFolderButton = true,
                 SelectedPath = Directory.Exists(OutputDirectoryTextBox.Text) ? OutputDirectoryTextBox.Text : string.Empty,
@@ -192,7 +192,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             if (Files.Count == 0)
             {
-                MessageBox.Show(this, "请先添加需要处理的图像。", "批量执行", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, Properties.Resources.BatchAddImagesFirst, Properties.Resources.BatchRunTitle, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -205,7 +205,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             string suffix = SuffixTextBox.Text ?? string.Empty;
             if (suffix.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             {
-                MessageBox.Show(this, "文件名后缀包含无效字符。", "批量执行", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, Properties.Resources.BatchInvalidSuffix, Properties.Resources.BatchRunTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -218,7 +218,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, $"输出目录无效：{ex.Message}", "批量执行", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, string.Format(Properties.Resources.BatchInvalidOutputFolder, ex.Message), Properties.Resources.BatchRunTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -258,9 +258,9 @@ namespace ColorVision.ImageEditor.BatchProcessing
             }
 
             string message = summary.Cancelled
-                ? $"已取消。成功 {summary.Succeeded} 个，失败 {summary.Failed} 个。"
-                : $"处理完成。成功 {summary.Succeeded} 个，失败 {summary.Failed} 个。";
-            MessageBox.Show(this, message, "批量执行", MessageBoxButton.OK,
+                ? string.Format(Properties.Resources.BatchCanceledSummary, summary.Succeeded, summary.Failed)
+                : string.Format(Properties.Resources.BatchCompletedSummary, summary.Succeeded, summary.Failed);
+            MessageBox.Show(this, message, Properties.Resources.BatchRunTitle, MessageBoxButton.OK,
                 summary.Failed == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
 
@@ -286,7 +286,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 .Select(extension => $"*{extension}")
                 .ToArray();
             string pattern = string.Join(';', extensions);
-            return $"支持的图像文件 ({pattern})|{pattern}|所有文件 (*.*)|*.*";
+            return string.Format(Properties.Resources.BatchFileFilter, pattern);
         }
 
         private void SetProcessingState(bool isProcessing, int total)
@@ -309,14 +309,14 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         private void UpdateFileCount()
         {
-            FileCountTextBlock.Text = $"共 {Files.Count} 个文件";
+            FileCountTextBlock.Text = string.Format(Properties.Resources.BatchFileCount, Files.Count);
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             _cancellationTokenSource?.Cancel();
             CancelButton.IsEnabled = false;
-            ProgressTextBlock.Text = "正在取消...";
+            ProgressTextBlock.Text = Properties.Resources.BatchCanceling;
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

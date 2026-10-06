@@ -64,6 +64,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
                 var request = Assert.Single(fixture.Runtime.Requests);
                 Assert.Equal(fixture.Conversation.Id, request.ConversationId);
                 Assert.Equal(Prompt, request.UserText);
+                Assert.False(request.RefreshExternalContext);
                 var sentPage = Assert.Single(request.HostContext.Attachments, item => item.Type == CopilotAttachmentType.WebPage);
                 Assert.Equal(PageUrl, sentPage.Source);
                 Assert.Equal(OriginalBody, sentPage.Value);

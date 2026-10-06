@@ -203,6 +203,7 @@ namespace ColorVision.Copilot
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {
+                hostedRun.SuppressAutomaticFollowUpDispatch();
                 CopilotUiDispatcher.Invoke(() =>
                     RestoreQueuedFollowUpAfterImageAdmissionFailure(queuedFollowUp, ex));
                 return;
@@ -266,11 +267,7 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
-                        && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
-                    {
-                        SynchronizeSelectedDraftAfterQueuedRecovery();
-                    }
+                    RestoreUnpreparedQueuedFollowUpDraft(queuedFollowUp);
                     PersistState(immediate: true);
                 });
                 throw;
@@ -289,11 +286,7 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
-                        && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
-                    {
-                        SynchronizeSelectedDraftAfterQueuedRecovery();
-                    }
+                    RestoreUnpreparedQueuedFollowUpDraft(queuedFollowUp);
                     PersistState(immediate: true);
                 });
                 throw;
@@ -481,6 +474,7 @@ namespace ColorVision.Copilot
         {
             if (queuedFollowUp.IsAutomaticGoalContinuation)
             {
+                _followUpQueue.SuppressRestartDispatchForConversation(queuedFollowUp.ConversationId);
                 _followUpQueue.RemoveRecovery(queuedFollowUp.RunId);
                 var conversation = Conversations.FirstOrDefault(candidate =>
                     string.Equals(
@@ -508,6 +502,7 @@ namespace ColorVision.Copilot
 
         private void RestoreUnpreparedQueuedFollowUpDraft(CopilotQueuedFollowUp queuedFollowUp)
         {
+            _followUpQueue.SuppressRestartDispatchForConversation(queuedFollowUp.ConversationId);
             if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId)
                 && string.Equals(SelectedConversation?.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
             {
@@ -555,7 +550,7 @@ namespace ColorVision.Copilot
                 assistantMessage,
                 turnSnapshot,
                 queuedFollowUp.RuntimeConfigSnapshot,
-                refreshExternalContext: true,
+                refreshExternalContext: queuedFollowUp.Mode != CopilotAgentMode.Chat,
                 isAutomaticGoalContinuation: queuedFollowUp.IsAutomaticGoalContinuation);
         }
 
@@ -563,6 +558,7 @@ namespace ColorVision.Copilot
             CopilotQueuedFollowUp queuedFollowUp,
             CopilotPreparedHostedTurn preparedTurn)
         {
+            _followUpQueue.SuppressRestartDispatchForConversation(queuedFollowUp.ConversationId);
             preparedTurn.Conversation.Messages.Remove(preparedTurn.AssistantMessage);
             preparedTurn.Conversation.Messages.Remove(preparedTurn.UserMessage);
             var goal = preparedTurn.Conversation.Goal;
@@ -749,24 +745,32 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
         }
 
-        private void RestoreDurableQueuedFollowUps()
+        private void RestoreQueuedFollowUpsAfterRestart()
         {
-            var records = _followUpQueue.GetResumableRecoveries();
+            var records = _followUpQueue.GetStartupRecoveries();
             if (records.Count == 0)
                 return;
 
             var hostWasIdle = _followUpQueue.ScheduledRuns.Count == 0;
             var firstAutoDispatchRunId = string.Empty;
             var restoredCount = 0;
-            var restoredDraftCount = 0;
+            var draftRecoveries = new List<CopilotQueuedFollowUpRecoveryRecord>();
+            var blockedConversationIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var record in records)
             {
                 if (!record.TryGetNormalized(
                         out var runId,
                         out var conversationId,
-                        out var composerState)
+                        out var composerState))
+                {
+                    continue;
+                }
+
+                if (blockedConversationIds.Contains(conversationId)
                     || !record.CanResumeAfterRestart(composerState))
                 {
+                    blockedConversationIds.Add(conversationId);
+                    draftRecoveries.Add(record);
                     continue;
                 }
 
@@ -775,8 +779,8 @@ namespace ColorVision.Copilot
                 var profile = _config.FindProfile(record.ProfileId);
                 if (conversation == null || profile == null)
                 {
-                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
-                        restoredDraftCount++;
+                    blockedConversationIds.Add(conversationId);
+                    draftRecoveries.Add(record);
                     continue;
                 }
 
@@ -784,8 +788,8 @@ namespace ColorVision.Copilot
                     && (conversation.Goal?.IsActive != true
                         || !string.Equals(conversation.Goal.Id, record.GoalId, StringComparison.Ordinal)))
                 {
-                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
-                        restoredDraftCount++;
+                    blockedConversationIds.Add(conversationId);
+                    draftRecoveries.Add(record);
                     continue;
                 }
 
@@ -805,8 +809,8 @@ namespace ColorVision.Copilot
                             out var recoveredContext)
                         || recoveredContext == null)
                     {
-                        if (_followUpQueue.RestoreRecoveryToDraft(runId))
-                            restoredDraftCount++;
+                        blockedConversationIds.Add(conversationId);
+                        draftRecoveries.Add(record);
                         continue;
                     }
                     submissionContext = recoveredContext;
@@ -839,8 +843,8 @@ namespace ColorVision.Copilot
                     queuedFollowUp,
                     ExecuteQueuedFollowUpAsync))
                 {
-                    if (_followUpQueue.RestoreRecoveryToDraft(runId))
-                        restoredDraftCount++;
+                    blockedConversationIds.Add(conversationId);
+                    draftRecoveries.Add(record);
                     continue;
                 }
 
@@ -852,6 +856,7 @@ namespace ColorVision.Copilot
                 restoredCount++;
             }
 
+            var restoredDraftCount = _followUpQueue.RestoreRecoveriesToDraft(draftRecoveries);
             _followUpQueue.RecordStartupRecovery(restoredCount, restoredDraftCount);
             if (restoredDraftCount > 0)
                 SynchronizeSelectedDraftAfterQueuedRecovery();

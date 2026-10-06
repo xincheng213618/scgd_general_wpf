@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Engine.Services.Devices.Spectrum.Local.LocalSpectrumWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="本地光谱仪" Width="1280" Height="800" MinWidth="920" MinHeight="600"
+             xmlns:display="clr-namespace:ColorVision.Engine"
+        Title="{display:EngineLang Key='本地光谱仪'}" Width="1280" Height="800" MinWidth="920" MinHeight="600"
         Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
@@ -35,10 +36,10 @@
                 <TextBlock Text="{Binding Config.Name}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding Config.SN}" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,5,0,14"/>
                 <UniformGrid Columns="2">
-                    <Button Content="连接" Tag="Open" Click="Command_Click" Margin="0,0,4,0"/>
-                    <Button Content="断开" Tag="Close" Click="Command_Click" Margin="4,0,0,0"/>
+                    <Button Content="{display:EngineLang Key='连接'}" Tag="Open" Click="Command_Click" Margin="0,0,4,0"/>
+                    <Button Content="{display:EngineLang Key='断开'}" Tag="Close" Click="Command_Click" Margin="4,0,0,0"/>
                 </UniformGrid>
-                <TextBlock Text="采集参数" FontWeight="SemiBold" Margin="0,20,0,10"/>
+                <TextBlock Text="{display:EngineLang Key='采集参数'}" FontWeight="SemiBold" Margin="0,20,0,10"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -48,40 +49,40 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="积分时间 (ms)" Margin="0,0,12,8"/>
+                    <TextBlock Text="{display:EngineLang Key='积分时间 (ms)'}" Margin="0,0,12,8"/>
                     <TextBox Grid.Column="1" MinHeight="30" Margin="0,0,0,8" VerticalContentAlignment="Center"
                              Text="{Binding DisplayConfig.IntTime, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/>
-                    <TextBlock Grid.Row="1" Text="平均次数" Margin="0,0,12,8"/>
+                    <TextBlock Grid.Row="1" Text="{display:EngineLang Key='平均次数'}" Margin="0,0,12,8"/>
                     <TextBox Grid.Row="1" Grid.Column="1" MinHeight="30" Margin="0,0,0,8" VerticalContentAlignment="Center"
                              Text="{Binding DisplayConfig.AveNum, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/>
                 </Grid>
-                <CheckBox Content="自动积分" IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
-                <CheckBox Content="自动校零（需遮光）" IsChecked="{Binding DisplayConfig.IsAutoDark}"/>
-                <CheckBox Content="自适应暗校正" IsChecked="{Binding DisplayConfig.IsShutter}"/>
+                <CheckBox Content="{display:EngineLang Key='自动积分'}" IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
+                <CheckBox Content="{display:EngineLang Key='自动校零（需遮光）'}" IsChecked="{Binding DisplayConfig.IsAutoDark}"/>
+                <CheckBox Content="{display:EngineLang Key='自适应暗校正'}" IsChecked="{Binding DisplayConfig.IsShutter}"/>
                 <UniformGrid Columns="2" Margin="0,12,0,8">
-                    <Button Content="单次采集" Tag="GetData" Click="Command_Click" Margin="0,0,4,0"/>
-                    <Button Content="连续采集" Tag="GetDataAuto" Click="Command_Click" Margin="4,0,0,0"/>
+                    <Button Content="{display:EngineLang Key='单次采集'}" Tag="GetData" Click="Command_Click" Margin="0,0,4,0"/>
+                    <Button Content="{display:EngineLang Key='连续采集'}" Tag="GetDataAuto" Click="Command_Click" Margin="4,0,0,0"/>
                 </UniformGrid>
-                <Button Content="停止采集" Tag="GetDataAutoStop" Click="Command_Click"/>
-                <TextBlock Text="校零与配置" FontWeight="SemiBold" Margin="0,20,0,10"/>
+                <Button Content="{display:EngineLang Key='停止采集'}" Tag="GetDataAutoStop" Click="Command_Click"/>
+                <TextBlock Text="{display:EngineLang Key='校零与配置'}" FontWeight="SemiBold" Margin="0,20,0,10"/>
                 <UniformGrid Columns="2" Margin="0,0,0,8">
-                    <Button Content="校零" Tag="InitDark" Click="Command_Click" Margin="0,0,4,0" ToolTip="请先遮光，再进行校零。"/>
-                    <Button Content="自适应校零" Tag="InitAutoDark" Click="Command_Click" Margin="4,0,0,0"/>
+                    <Button Content="{display:EngineLang Key='校零'}" Tag="InitDark" Click="Command_Click" Margin="0,0,4,0" ToolTip="{display:EngineLang Key='请先遮光，再进行校零。'}"/>
+                    <Button Content="{display:EngineLang Key='自适应校零'}" Tag="InitAutoDark" Click="Command_Click" Margin="4,0,0,0"/>
                 </UniformGrid>
                 <UniformGrid Columns="2" Margin="0,0,0,8">
-                    <Button Content="设备配置" Command="{Binding EditCommand}" Margin="0,0,4,0"/>
-                    <Button Content="校正组" Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0"/>
+                    <Button Content="{display:EngineLang Key='设备配置'}" Command="{Binding EditCommand}" Margin="0,0,4,0"/>
+                    <Button Content="{display:EngineLang Key='校正组'}" Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0"/>
                 </UniformGrid>
-                <Button Content="更多采集设置" Command="{Binding EditDisplayConfigCommand}"/>
-                <TextBlock Text="结果" FontWeight="SemiBold" Margin="0,20,0,10"/>
-                <Button Content="导出当前结果" Click="Export_Click"/>
-                <Button x:Name="ApplyNodeButton" Content="应用到节点" Click="ApplyNode_Click" Visibility="Collapsed" Margin="0,8,0,0"/>
+                <Button Content="{display:EngineLang Key='更多采集设置'}" Command="{Binding EditDisplayConfigCommand}"/>
+                <TextBlock Text="{display:EngineLang Key='结果'}" FontWeight="SemiBold" Margin="0,20,0,10"/>
+                <Button Content="{display:EngineLang Key='导出当前结果'}" Click="Export_Click"/>
+                <Button x:Name="ApplyNodeButton" Content="{display:EngineLang Key='应用到节点'}" Click="ApplyNode_Click" Visibility="Collapsed" Margin="0,8,0,0"/>
             </StackPanel>
         </ScrollViewer>
         <ContentControl x:Name="ResultHost" Grid.Column="1" Margin="12" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
         <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{DynamicResource SecondaryRegionBrush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,8">
-            <TextBlock x:Name="Message" Text="关闭窗口会保留连接；需要释放设备时，请点击断开。" TextWrapping="Wrap"/>
+            <TextBlock x:Name="Message" Text="{display:EngineLang Key='关闭窗口会保留连接；需要释放设备时，请点击断开。'}" TextWrapping="Wrap"/>
         </Border>
     </Grid>
 </Window>

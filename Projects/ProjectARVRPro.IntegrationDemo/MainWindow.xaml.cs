@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.IntegrationDemo.DisplayText;
 using ProjectARVRPro;
 using ProjectARVRPro.Process.W51;
 using System;
@@ -53,7 +54,7 @@ namespace ProjectARVRPro.IntegrationDemo
                 string requestParams = eventName == "GetProcessEnable" ? string.Empty : CommandParamsTextBox.Text.Trim();
                 if ((eventName == "SwitchGroup" || eventName == "SetProcessEnable") && string.IsNullOrWhiteSpace(requestParams))
                 {
-                    MessageBox.Show(this, eventName + " 需要填写 Params。", "缺少参数", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, eventName + LocalizedText.Get(" 需要填写 Params。"), LocalizedText.Get("缺少参数"), MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
@@ -62,7 +63,7 @@ namespace ProjectARVRPro.IntegrationDemo
             catch (Exception ex)
             {
                 AppendLog("Send command failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "发送失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("发送失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -98,7 +99,7 @@ namespace ProjectARVRPro.IntegrationDemo
         {
             if (_currentResult == null)
             {
-                MessageBox.Show(this, "请先加载或接收 ProjectARVRResult。", "无结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("请先加载或接收 ProjectARVRResult。"), LocalizedText.Get("无结果"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -122,7 +123,7 @@ namespace ProjectARVRPro.IntegrationDemo
             catch (Exception ex)
             {
                 AppendLog("Connect failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("连接失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 Disconnect();
             }
         }
@@ -295,7 +296,7 @@ namespace ProjectARVRPro.IntegrationDemo
             catch (Exception ex)
             {
                 AppendLog("Parse failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "解析失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("解析失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -311,7 +312,7 @@ namespace ProjectARVRPro.IntegrationDemo
             catch (Exception ex)
             {
                 AppendLog("Parse/export failed: " + ex.Message);
-                MessageBox.Show(this, ex.Message, "解析或导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, ex.Message, LocalizedText.Get("解析或导出失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

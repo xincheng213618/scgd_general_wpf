@@ -115,7 +115,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
             button.Click += (_, _) =>
             {
-                var owner = Window.GetWindow(button) ?? Application.Current?.MainWindow;
+                var owner = Window.GetWindow(button) ?? Application.Current?.GetActiveWindow();
                 var window = new RoiEditorWindow(config)
                 {
                     WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner

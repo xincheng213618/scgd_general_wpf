@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1863
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1863
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
@@ -325,14 +326,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             try
             {
                 CalibrationExportPlan plan = CalibrationArchivePlanBuilder.Create(PhyCamera);
-                ExportStatusText.Text = $"正在导出 0%（{plan.EntryCount} 个文件）…";
+                ExportStatusText.Text = LocalizedText.Format($"正在导出 0%（{plan.EntryCount} 个文件）…");
                 Progress<CalibrationExportProgress> progress = new(value =>
                 {
                     ExportProgressBar.Value = value.Percent;
                     string fileName = Path.GetFileName(value.EntryPath);
                     ExportStatusText.Text = string.IsNullOrEmpty(fileName)
-                        ? $"正在导出 {value.Percent}%…"
-                        : $"正在导出 {value.Percent}%：{fileName}";
+                        ? LocalizedText.Format($"正在导出 {value.Percent}%…")
+                        : LocalizedText.Format($"正在导出 {value.Percent}%：{fileName}");
                 });
 
                 await Task.Run(() => CalibrationExportArchive.CreateOrReplace(zipFilePath, plan, progress));

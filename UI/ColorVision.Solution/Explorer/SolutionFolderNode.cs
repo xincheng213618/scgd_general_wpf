@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Common.NativeMethods;
 using System.Windows;
 
@@ -89,7 +90,7 @@ namespace ColorVision.Solution.Explorer
             if (showConfirmation
                 && MessageBox.Show(
                     Application.Current?.GetActiveWindow(),
-                    $"从解决方案中移除文件夹“{Name}”吗？其中的项目和子文件夹将移动到上一级。",
+                    LocalizedText.Format($"从解决方案中移除文件夹“{Name}”吗？其中的项目和子文件夹将移动到上一级。"),
                     "ColorVision",
                     MessageBoxButton.OKCancel,
                     MessageBoxImage.Question) != MessageBoxResult.OK)

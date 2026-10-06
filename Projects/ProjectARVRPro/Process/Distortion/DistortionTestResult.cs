@@ -24,8 +24,18 @@ namespace ProjectARVRPro.Process.Distortion
         /// <summary>
         /// 光学畸变(%) 测试项
         /// </summary>
-        [JsonProperty("Optic_Distortion")]
         public ObjectiveTestItem OpticDistortion { get; set; }
+
+        // 兼容历史结果读取；只有 setter，新的输出仍使用 OpticDistortion。
+        [JsonProperty("Optic_Distortion")]
+        private ObjectiveTestItem? LegacyOpticDistortion
+        {
+            set
+            {
+                if (value != null && OpticDistortion == null)
+                    OpticDistortion = value;
+            }
+        }
 
         /// <summary>
         /// 9点上畸变(%) 测试项

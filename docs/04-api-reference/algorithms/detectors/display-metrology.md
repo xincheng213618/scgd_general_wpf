@@ -5,7 +5,7 @@ status: "current"
 summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
 aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
-test_paths: ["Test/ColorVision.UI.Tests/DisplayMetrologyTests.cs", "Test/ColorVision.UI.Tests/DustDetectionTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPlatformTests.cs", "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
 ---
 
@@ -46,13 +46,15 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 
 这适用于已知行列、每格一个完整亮点/亮十字/孤立亮图形；不提供自然图像匹配、任意点阵索引恢复或不同靶标形状间的对应保证。阈值截取质心会受光斑形状影响；每视场的像素位移要结合相机光学畸变及角度标定才能转成模块色差角。
 
-十字 RGB 分离模式（算法版本 `1.5.0`）先对各颜色通道分别最大值池化，再用通道并集定位搜索区域内候选，不依赖整幅图九等分。定位背景使用中位数，噪声使用 MAD，先在 `背景 + max(MinimumContrast, 6×MAD)` 处寻找发光轮廓，再按每个候选自身峰值提取包络；紧凑实心噪点通过行列投影筛除。亮目标不会以全图统一峰值阈值截断较暗目标。候选至少包含 5 个采样像素且宽高均不少于 3 个采样格；细于此尺度的图案不在当前检测能力内。候选根据互不重叠的行/列包络和配置行列数分组，按从上到下、从左到右编号 P1–PN。某个交点缺失时保留该点为空；无法确定配置的行列布局时拒绝整阵列索引，不猜测缺失行的位置。多目标、额外候选、排序歧义、ROI 与其他目标相交以及触边均有独立原因。
+十字 RGB 分离模式（算法版本 `1.6.0`）先对各颜色通道分别最大值池化，再用通道并集定位搜索区域内候选，不依赖整幅图九等分。定位背景使用中位数，噪声使用 MAD，先在 `背景 + max(MinimumContrast, 6×MAD)` 处寻找发光轮廓，再按每个候选自身峰值提取包络；紧凑实心噪点通过行列投影筛除。亮目标不会以全图统一峰值阈值截断较暗目标。候选至少包含 5 个采样像素且宽高均不少于 3 个采样格；细于此尺度的图案不在当前检测能力内。候选根据互不重叠的行/列包络和配置行列数分组，按从上到下、从左到右编号 P1–PN。某个交点缺失时保留该点为空；无法确定配置的行列布局时拒绝整阵列索引，不猜测缺失行的位置。多目标、额外候选、排序歧义、ROI 与其他目标相交以及触边均有独立原因。
 
 搜索矩形至少为 32×32 像素且必须完整位于原图内；框选坐标按当前帧 DPI 换算为像素，左上取 floor、右下取 ceil。只读取搜索区域内的信号，框外反光及其他目标不参与定位。输出 ROI、边缘、轴和叠图仍是原图坐标，定位预览通过 `sourceOriginX/Y` 和 `sourcePixelsPerPreviewPixel` 标明偏移与倍率。缩小搜索区域会改变定位采样倍率，因此候选包络与边缘公共采样位置可能变化；原分辨率边缘测量方式不变。框选不裁改原图，输入快照及尺寸预算仍按整帧计算。
 
-每个目标 ROI 内分别读取原始 R/G/B 信号。ROI 背景使用中位数，行列强度投影仅用于确认唯一的窄轴带；测量在各半臂的公共采样位置进行，取候选跨度的 10%–25% 和 75%–90%，避开端点衰减及交叉中心。每个截面以中位数估计背景，信号跨度须超过 `max(6×MAD, 2 个量化步长)`，避免亮中心通过 `MinimumContrast` 后仍用固定满量程门槛拒绝较暗外臂；float32 的步长底值为 1e-6。随后按自身背景到峰值的比例阈值线性插值边缘，避免强横臂的峰值截掉弱竖臂；从算法 1.3.0 起，多个阈值段若在半阈值亮区内连通，按同一亮臂的最外侧阈值交点测量；默认测量阈值仍为 50%，25% 仅用于连通性判断，不对边缘做平滑或改变测量阈值。被低于半阈值的暗区隔开的多亮带仍剔除；接受的浅凹陷截面记录 `valid_connected_shoulder` 和原始阈值段数。每条半臂均须满足可配置的最小覆盖率（默认 0.5）。对应边缘为有效截面的中位数，轴位置为两侧中位边缘的中点。这是近水平/垂直十字的采样带代表值，不是旋转直线拟合或逐像素最大色边；明显倾斜、弯曲、宽条纹及行列包络重叠不承诺正确索引/测量。目标阈值、最小跨度和覆盖率是检测参数，不是产品合格阈值。
+每个目标 ROI 内分别读取原始 R/G/B 信号。ROI 背景使用中位数，行列强度投影用于窄轴带初筛；测量在各半臂的公共采样位置进行，取候选跨度的 10%–25% 和 75%–90%，避开端点衰减及交叉中心。每个截面以中位数估计背景，信号跨度须超过 `max(6×MAD, 2 个量化步长)`，避免亮中心通过 `MinimumContrast` 后仍用固定满量程门槛拒绝较暗外臂；float32 的步长底值为 1e-6。随后按自身背景到峰值的比例阈值线性插值边缘，避免强横臂的峰值截掉弱竖臂。对应边缘为可测截面的中位数，轴位置为两侧中位边缘的中点。这是近水平/垂直十字的采样带代表值，不是旋转直线拟合或逐像素最大色边；明显倾斜、弯曲、宽条纹及行列包络重叠不承诺正确索引/测量。
 
-`RGB-cross-separation` 以 G 为参考，分别给出 `rToGMaximumEdge_px` 与 `bToGMaximumEdge_px`：对应左、右、上、下边缘偏移的绝对值最大值。原三通道极差字段保留原义用于兼容。该表同时保留每通道边缘/轴坐标、R−G/B−G 轴偏移、覆盖率、剔除数、饱和样本数及逐点原因。`RGB-cross-profile-quality` 可追溯采样位置、阈值段数和有效截面边缘。缺失、低对比度、臂覆盖不足和多峰歧义输出 `INVALID` 与空分离值；有效通道仍保留自身坐标及叠图，不能把部分通道成功当作三通道有效。饱和样本给出警告：其阈值边缘可能有偏，不据此宣称测量精度。没有有效点时仅输出计数和诊断，不输出虚构的零最大值/RMS。
+托管算法 1.6.0 按“找到十字且有可测边缘就输出数值”处理多峰与覆盖不足：同一截面存在多个前景阈值段时，取全部阈值段的最外侧交点，包括被深暗谷分开的同强度亮带，不再挑选主峰或因多峰而拒绝通道。阈值仍默认 50%，不平滑信号或补零；轴投影多段记录 `<通道>:multiple_axis_bands`，截面多段记录 `valid_multi_peak_envelope` 及 `<通道>:multiple_arm_bands` 警告。每条半臂低于配置的覆盖率（默认 0.5）时记录 `<通道>:partial_arm_coverage`，使用其余可测截面；横臂或竖臂完全没有可测截面时仍留空。多峰外包络描述检测到的亮带边界，不据此推断哪一个峰是物理主像。目标阈值和最小跨度用于检测，覆盖率用于质量提示，均不是产品合格阈值。
+
+`RGB-cross-separation` 以 G 为参考，分别给出 `rToGMaximumEdge_px` 与 `bToGMaximumEdge_px`：对应左、右、上、下边缘偏移的绝对值最大值。原三通道极差字段保留原义用于兼容。该表同时保留每通道边缘/轴坐标、R−G/B−G 轴偏移、覆盖率、剔除数、饱和样本数及逐点原因。`RGB-cross-profile-quality` 可追溯采样位置、阈值段数、可测截面边缘与剔除原因。结果窗口使用“RGB 测量完整点数 / RGB 测量不完整点数”，后者包括只缺一个通道的点；“十字候选数”表示定位候选，不是杂散光数。缺失、低对比度、非十字形态、触边或没有可测横/竖臂边缘输出 `INVALID` 与空分离值；多峰和覆盖不足警告本身不使已有数值失效。可测通道仍保留自身坐标及叠图，不能把部分通道成功当作三通道完整。饱和样本给出警告：其阈值边缘可能有偏，不据此宣称测量精度。零只表示计算出的对应边缘重合；没有有效点时仅输出计数和诊断，不输出虚构的零最大值/RMS。
 
 允许的最大边缘分离默认留空，结果为 `MEASURED`，不输出整图合格结论。显式配置产品规格后，R-G、B-G 两组边缘分离均小于或等于该值为 OK，任意点 NG 或无效时总体为 NG；已有数值阈值 JSON 仍可读取。R/G/B artifact 是带采样倍率元数据的 8-bit 最大值池化定位预览，不能用于亚像素计量；所有测量和叠图坐标来自原分辨率信号。
 
@@ -62,11 +64,11 @@ ImageView 和本地流程节点共用 `RgbCrossConfigurationWindow` 独立配置
 
 Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置独立的十字检测参数，不选择或读取 FindCross 算法模板；该模板保留给外部实现使用。旧流程保存的 `TemplateName` 加载时忽略，其他节点配置继续兼容。独立配置窗口提供中文表单和 JSON 切换，包含行列数、前景阈值、最小十字跨度、轴带阈值、臂截面覆盖率、最小信号跨度和输入解码指数；行列数各支持 1–16，默认 3×3，单十字设为 1×1；始终使用 RGB 三通道，产品判定留在结果解析中。参数保存于节点 `ParameterJson`，旧节点缺少该字段时使用默认值；应用前与执行前均校验，取消不回写，无效或未知字段不静默忽略。搜索区域优先读取发光区 POI，其次固定矩形，最后整图。关注点和手动区域属于同一组：配置关注点时隐藏手动区域，清空后恢复显示并保留原矩形值。结果文件写入配置目录；留空时读取算法服务 `FileServerCfg.DataBasePath`，按 `<数据基础路径>/<服务 Code>/Data/yyyy-MM-dd` 保存，每次运行读取配置和当天日期。优先使用 `DEV.Algorithm.Default`，否则使用唯一的算法服务；无服务或存在歧义时提示配置，手动结果目录可覆盖默认路径。主记录复用 `FindCross=63`、版本 `2.0`，本地记录 `TId=null`、`TName=LocalRgbCross`，保存 `BatchId/Zindex/ImgFile`，公共明细保存 `ResultFileName`；主表与明细使用同一事务，入库失败清理新建 JSON。检测完成但部分点无效仍保存可复核的 `INVALID` 测量，不伪造产品通过结论。只有持久化成功后才设置下游结果 ID 并发布通知。ARVRPro 的十字 RGB 解析按同一类型和版本读取，原单十字使用原格式。
 
-可独立交付的 C++ 测量实现位于 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`，无 WPF、数据库或合格判定依赖，使用 C++17 与 nlohmann/json；`Test/opencv_helper_test/rgb_cross_standalone` 可用 CMake 编译 CLI 和合成自测。生产 ImageView/Flow 目前继续调用托管实现，C++ 是同口径独立入口，并非现有 `M_FindCrossLocal` 导出的替换。交付验证应逐点对比两端几何、有效性和分离值，不能只比较汇总计数。
+可独立交付的 C++ 测量实现位于 `Native/opencv_helper/algorithm/find_cross/rgb_cross.h/.cpp`，无 WPF、数据库或合格判定依赖，使用 C++17 与 nlohmann/json；`Test/opencv_helper_test/rgb_cross_standalone` 可用 CMake 编译 CLI 和合成自测。生产 ImageView/Flow 目前继续调用托管实现，C++ 是同口径独立入口，并非现有 `M_FindCrossLocal` 导出的替换。独立 C++ 入口目前没有托管 1.6.0 的多峰外包络和覆盖不足保留数值策略，相同输入的有效性可能不同。交付验证应逐点对比两端几何、有效性和分离值，不能只比较汇总计数。
 
 没有直接调用单十字 `FindCrossLocal`：`pattern_cross.cpp` 的 `ConvertToGrayFloat` 会混合颜色，而 `PatternCrossResult` 提供轴交点、角度、端点和臂质量，不提供通道对应的双侧阈值边缘。其 `SampleAxis` 内部有原图背景滤除、单目标候选及光学坐标语义，也不是可直接调用的中立边缘 API。这里采用独立的逐通道截面质量检查与中位数测量；单十字功能及 Engine 结果链保持独立。当前没有像素到角度的自动换算，不能替代相机/镜头色差基线与现场误报漏报验收。
 
-合成回归在 `DisplayMetrologyTests.cs`、`DisplayRgbCrossTests.cs`，包含平移紧凑阵列、相同外轮廓的臂分离、弱竖臂、缺点、缺通道、额外目标、触边、排序歧义，以及局部次峰剔除、逐半臂覆盖门槛、G 基准两组偏移、曝光与背景噪声变化、弱外臂。`DisplayRgbCrossSiteTests.cs` 是显式启用的 CVCIE v2 / BGR16 只读现场路径；默认跳过，不把缺少现场文件算作已验证。它使用生产 Runner，保存原文件前后 SHA-256、参数、每点 JSON/CSV、汇总、截面质量、通道预览及原图/叠图对照。PowerShell 示例：`./Scripts/validate_rgb_cross.ps1 -Source C:/samples/array.cvraw -OutputDirectory C:/validation/rgb-cross`。工作树没有 native DLL 时，可显式传入 `-OpenCvHelperBinary` 指向已有匹配 DLL；脚本不下载、不发布，也不改原文件。现场图没有人工真值，测试完成仅代表路径执行和原文件未变，不保证九点全部有效或满足产品规格。
+现场复核可显式运行 `./Scripts/validate_rgb_cross.ps1 -Source C:/samples/array.cvraw -OutputDirectory C:/validation/rgb-cross`，保存参数、逐点 JSON/CSV、汇总、截面质量、通道预览及原图/叠图对照。工作树没有 native DLL 时，可显式传入 `-OpenCvHelperBinary` 指向已有匹配 DLL；脚本不下载、不发布，也不改原文件。现场图没有人工真值，脚本完成仅代表路径执行和原文件未变，不保证九点全部有效或满足产品规格。
 
 双目至少需要三个有效且非共线的对应目标。用最小二乘拟合左图到右图的相似变换，同时保留原始逐格位移与拟合残差；不把对齐后的零误差当作产品误差。旋转正值为图像坐标下的顺时针。当前不做稳健外点剔除，残差须结合格点表解释。只比较均匀白场时关闭“测量目标位置”；信号比仍要求相同采集条件，彩色图额外给出 B/G/R 各通道比值，不输出校准色差。
 
@@ -96,7 +98,7 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 
 坐标与叠图转换回原图像素；“原图等效面积”是分析面积乘 X/Y 缩放系数，不能当作原分辨率精确分割。两幅掩膜为分析分辨率，`dust-analysis` 与掩膜元数据保存尺寸和缩放系数。小于分析分辨率、非常宽或浅的污斑、排除边缘和非最大成像区域可能漏检；浅纹理也可能误报。输出仅为暗斑候选，不区别灰尘、划痕、坏点或光学缺陷，不给出产品 PASS/FAIL。
 
-`DustDetectionTests.cs` 覆盖圆形成像、缺口排除、原图坐标映射、8/16/float 输入、无信号与输入只读。现场路径由 `COLORVISION_DUST_SOURCE` 和 `COLORVISION_DUST_OUTPUT` 显式开启，运行 `dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter FullyQualifiedName~DustSiteImages`；输出目录须在样本目录外。该路径逐图通过生产 Runner 执行，保存参数、结果、掩膜、标框预览与前后 SHA-256。默认跳过现场样本，不把未标注图片当作检出率真值。
+当前托管套件不包含灰尘现场样本宿主。现场验收应在样本目录外写入参数、结果、掩膜、标框预览与前后 SHA-256，并为样本提供人工真值；未标注图片不能用于宣称检出率。
 
 ### Eyebox
 
@@ -149,7 +151,7 @@ python Scripts/generate_display_metrology_samples.py
 ## 验证
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~DisplayMetrologyTests|FullyQualifiedName~AlgorithmReleaseGateTests|FullyQualifiedName~ImageAlgorithmPlatformTests"
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~AlgorithmReleaseGateTests"
 ```
 
 用例覆盖已知位移/旋转/倍率、不同位深、强度比、点线与 Mura 位置、Eyebox 空洞与网格面积、高斯理论 MTF50、无效样本、预算、取消、PNG 导入和结果窗口所有权。测试存在或文档构建成功不等于已经运行；本次执行结果以实际日志为准。现场仍需验证采集重复性、不同模组/背景/缺陷尺度、误报漏报、运动扫描标定以及完整量产结果交接。

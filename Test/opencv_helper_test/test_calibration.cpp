@@ -287,41 +287,52 @@ void writeText(const std::filesystem::path& path, std::string_view value)
     if (!output) throw std::runtime_error("Unable to write synthetic calibration file");
 }
 
-std::vector<std::uint8_t> referenceFisheyeDistortion(
+std::vector<std::uint8_t> referenceDistortion(
     const std::vector<std::uint8_t>& sourceBytes,
     int width,
     int height,
     int cameraCenterX,
-    int cameraCenterY)
+    int cameraCenterY,
+    int bits,
+    int channels,
+    bool fisheye,
+    int roiX,
+    int roiY)
 {
     std::array<float, 9> cameraValues{
-        10.0F, 0.0F, static_cast<float>(width / 2),
-        0.0F, 10.0F, static_cast<float>(height / 2),
+        10.0F, 0.0F, static_cast<float>(fisheye ? width / 2 : cameraCenterX - roiX),
+        0.0F, 10.0F, static_cast<float>(fisheye ? height / 2 : cameraCenterY - roiY),
         0.0F, 0.0F, 1.0F
     };
-    std::array<float, 4> distortionValues{};
+    std::array<float, 5> distortionValues{ 0.01F, -0.003F, 0.0001F, 0.0002F, 0.0F };
     cv::Mat camera(3, 3, CV_32FC1, cameraValues.data());
-    cv::Mat distortion(4, 1, CV_32FC1, distortionValues.data());
+    cv::Mat distortion(fisheye ? 4 : 5, 1, CV_32FC1, distortionValues.data());
     const cv::Size size(width, height);
-    cv::Mat newCamera;
-    cv::fisheye::estimateNewCameraMatrixForUndistortRectify(
-        camera, distortion, size, cv::Matx33d::eye(), newCamera, 0.0, size);
     cv::Mat mapX;
     cv::Mat mapY;
-    cv::fisheye::initUndistortRectifyMap(
-        camera, distortion, cv::Matx33d::eye(), newCamera, size,
-        CV_32FC1, mapX, mapY);
-
-    cv::Mat source(height, width, CV_16UC3,
+    cv::Mat source(height, width, CV_MAKETYPE(bits == 8 ? CV_8U : CV_16U, channels),
         const_cast<std::uint8_t*>(sourceBytes.data()));
     cv::Mat translated;
-    const cv::Matx23f translation(
-        1.0F, 0.0F, static_cast<float>(width / 2 - cameraCenterX),
-        0.0F, 1.0F, static_cast<float>(height / 2 - cameraCenterY));
-    cv::warpAffine(
-        source, translated, translation, size,
-        cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+    if (fisheye) {
+        cv::Mat newCamera;
+        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(
+            camera, distortion, size, cv::Matx33d::eye(), newCamera, 0.0, size);
+        cv::fisheye::initUndistortRectifyMap(
+            camera, distortion, cv::Matx33d::eye(), newCamera, size,
+            CV_32FC1, mapX, mapY);
+        const cv::Matx23f translation(
+            1.0F, 0.0F, static_cast<float>(width / 2 - cameraCenterX + roiX),
+            0.0F, 1.0F, static_cast<float>(height / 2 - cameraCenterY + roiY));
+        cv::warpAffine(source, translated, translation, size, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+    }
+    else {
+        translated = source;
+        const cv::Mat newCamera = cv::getOptimalNewCameraMatrix(camera, distortion, size, 0.0, size);
+        cv::initUndistortRectifyMap(camera, distortion, cv::Mat(), newCamera, size, CV_32FC1, mapX, mapY);
+    }
     cv::Mat result;
+    // Independent legacy oracle retains floating maps and the materialized
+    // fisheye translation, including interpolation and zero-border behavior.
     cv::remap(
         translated, result, mapX, mapY,
         cv::INTER_LINEAR, cv::BORDER_CONSTANT);
@@ -843,6 +854,134 @@ void runSmallBudgetCacheCoverage()
     releaseCalibrationCache();
 }
 
+void verifyAdjacentMapEquivalence(const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width = 17, height = 11, channels = 3;
+    const std::array<std::uint16_t, 8> levels{ 0, 1, 100, 101, 32767, 32768, 65534, 65535 };
+    const std::array<float, 8> gains{ 0.0F, 0.125F, 0.9999F, 1.0F, 1.0001F, 1.5F, 2.0F, 100.0F };
+    std::vector<std::uint16_t> offsets(width * height * channels);
+    std::vector<float> factors(offsets.size());
+    for (std::size_t i = 0; i < offsets.size(); ++i) {
+        offsets[i] = levels[(i / levels.size()) % levels.size()];
+        factors[i] = gains[(i / (levels.size() * levels.size())) % gains.size()];
+    }
+    const auto dsnu = directory / "adjacent_dsnu.dat";
+    const auto uniformity = directory / "adjacent_uniformity.dat";
+    writeMap(dsnu, 16, 16, offsets, channels, width, height);
+    writeMap(uniformity, 32, 16, factors, channels, width, height);
+    Context first = createContext(), second = createContext(), combined = createContext();
+    requireResult(M_CalibrationLoadFileW(first.get(), 4, dsnu.c_str()), first.get(), "load adjacent DSNU");
+    requireResult(M_CalibrationLoadFileW(second.get(), 5, uniformity.c_str()), second.get(), "load adjacent Uniformity");
+
+    // The same ordered stages must be byte-identical both when combined and
+    // when executed independently, including zero clamp, fractions and saturation.
+    // Planar and ROI layouts exercise the original path beside the full BGR path.
+    for (bool reverse : { false, true }) {
+        requireResult(M_CalibrationClear(combined.get()), combined.get(), "clear adjacent maps");
+        requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 5 : 4,
+            (reverse ? uniformity : dsnu).c_str()), combined.get(), "load adjacent first");
+        requireResult(M_CalibrationLoadFileW(combined.get(), reverse ? 4 : 5,
+            (reverse ? dsnu : uniformity).c_str()), combined.get(), "load adjacent second");
+        for (int layout = 0; layout < 3; ++layout) {
+            const std::uint32_t imageWidth = layout == 2 ? 5 : width;
+            const std::uint32_t imageHeight = layout == 2 ? 5 : height;
+            std::vector<std::uint16_t> expected(imageWidth * imageHeight * channels);
+            for (std::size_t i = 0; i < expected.size(); ++i) expected[i] = levels[i % levels.size()];
+            auto actual = expected;
+            MCalibrationExecutionOptionsV1 options{};
+            options.structSize = sizeof(options);
+            options.interleavedBgr = layout == 1 ? 0 : 1;
+            if (layout == 2) {
+                options.roiX = 1; options.roiY = 2;
+                options.roiWidth = imageWidth; options.roiHeight = imageHeight;
+            }
+            const auto run = [&](void* context, std::vector<std::uint16_t>& pixels) {
+                requireResult(M_CalibrationExecute(context, imageWidth, imageHeight, 16, channels,
+                    reinterpret_cast<std::uint8_t*>(pixels.data()), pixels.size() * sizeof(std::uint16_t),
+                    nullptr, 0, &options), context, "execute adjacent maps");
+            };
+            run(reverse ? second.get() : first.get(), expected);
+            run(reverse ? first.get() : second.get(), expected);
+            run(combined.get(), actual);
+            if (actual != expected) throw std::runtime_error("Adjacent maps changed ordered calibration output");
+        }
+    }
+}
+
+void verifyRawOutputFlip(const std::filesystem::path& directory)
+{
+    const auto distortion = directory / "mirror_distortion.json";
+    const auto colorDiff = directory / "mirror_color_diff.json";
+    const auto dark = directory / "mirror_dark.json";
+    const auto color = directory / "mirror_color.json";
+    writeText(distortion, R"({"alpha":0.0,"cameraMatrix":[10,0,8,0,10,6,0,0,1],"distCoeffs":[0.01,-0.003,0.0001,0.0002,0],"h":13,"w":17,"useFisheye":false})");
+    writeText(colorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":6,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":13,"w":17})");
+    writeText(dark, R"({"DarkNoiseRatio":2})");
+    writeText(color, R"({"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1})");
+    const std::array<std::vector<int>, 7> chains{{ {}, {0}, {11}, {14}, {11,14}, {14,11}, {14,0} }};
+    int cases = 0;
+    for (const auto& chain : chains) {
+        Context context = createContext();
+        for (int type : chain) {
+            const auto& file = type == 11 ? distortion : type == 14 ? colorDiff : dark;
+            requireResult(M_CalibrationLoadFileW(context.get(), type, file.c_str()), context.get(), "load mirror chain");
+        }
+        for (int bits : { 8, 16 }) {
+            // BGR, planar RGB, and individual R/G/B exercise distinct writers.
+            for (int layout = 0; layout < 5; ++layout) {
+                for (bool roi : { false, true }) {
+                    const int width = roi ? 9 : 17, height = roi ? 7 : 13;
+                    const int channels = layout < 2 ? 3 : 1;
+                    MCalibrationExecutionOptionsV1 options{};
+                    options.structSize = sizeof(options);
+                    options.interleavedBgr = layout != 1;
+                    options.rgbType = layout < 2 ? 0 : layout - 1;
+                    options.exposureX = options.exposureY = options.exposureZ = 1;
+                    if (roi) {
+                        options.roiX = 2; options.roiY = 1;
+                        options.roiWidth = width; options.roiHeight = height;
+                    }
+                    std::vector<std::uint8_t> source(width * height * channels * bits / 8);
+                    for (std::size_t i = 0; i < source.size(); ++i) source[i] = static_cast<std::uint8_t>(i * 37 + 11);
+                    auto calibrated = source;
+                    requireResult(M_CalibrationExecute(context.get(), width, height, bits, channels,
+                        calibrated.data(), calibrated.size(), nullptr, 0, &options), context.get(), "baseline mirror calibration");
+                    for (int flip : { 0, 1, -1 }) {
+                        auto expected = calibrated;
+                        const bool planar = layout == 1;
+                        const std::size_t planeBytes = planar ? expected.size() / 3 : expected.size();
+                        for (int plane = 0; plane < (planar ? 3 : 1); ++plane) {
+                            cv::Mat image(height, width, CV_MAKETYPE(bits == 8 ? CV_8U : CV_16U, planar ? 1 : channels),
+                                expected.data() + plane * planeBytes);
+                            cv::flip(image, image, flip);
+                        }
+                        auto actual = source;
+                        requireResult(M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, bits, channels,
+                            actual.data(), actual.size(), &options, flip), context.get(), "combined RAW calibration/mirror");
+                        if (actual != expected) throw std::runtime_error("Combined calibration/mirror changed pixels or stage order");
+                        ++cases;
+                    }
+                    auto invalid = source;
+                    if (M_CalibrationExecuteRawWithFlipV1(context.get(), width, height, bits, channels,
+                        invalid.data(), invalid.size(), &options, 2) != M_CALIBRATION_INVALID_ARGUMENT || invalid != source)
+                        throw std::runtime_error("Invalid flip mode was not rejected before mutation");
+                }
+            }
+        }
+    }
+    Context colorContext = createContext();
+    requireResult(M_CalibrationLoadFileW(colorContext.get(), 8, color.c_str()), colorContext.get(), "load rejected color chain");
+    std::vector<std::uint8_t> source(17 * 13 * 3 * 2, 37), actual = source;
+    MCalibrationExecutionOptionsV1 options{};
+    options.structSize = sizeof(options);
+    options.interleavedBgr = 1;
+    options.exposureX = options.exposureY = options.exposureZ = 1;
+    if (M_CalibrationExecuteRawWithFlipV1(colorContext.get(), 17, 13, 16, 3,
+        actual.data(), actual.size(), &options, 0) != M_CALIBRATION_EXECUTE_FAILED || actual != source)
+        throw std::runtime_error("RAW-only mirror entry accepted a CIE template or modified RAW on rejection");
+    std::cout << "calibration_mirror_exact_cases," << cases << std::endl;
+}
+
 void runSyntheticCoverage()
 {
     TemporaryDirectory directory(
@@ -852,6 +991,8 @@ void runSyntheticCoverage()
     verifyConcurrentSharedMapLoad(directory.path);
     verifyReleaseLinearizesWithInFlightLoad(directory.path);
     verifyProcessFileCacheAcrossGroups(directory.path);
+    verifyAdjacentMapEquivalence(directory.path);
+    verifyRawOutputFlip(directory.path);
 
     const auto dark = directory.path / "dark.json";
     writeText(dark, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
@@ -1190,12 +1331,6 @@ void runSyntheticCoverage()
 
     constexpr int fisheyeWidth = 12;
     constexpr int fisheyeHeight = 10;
-    std::vector<std::uint16_t> fisheyePixels(fisheyeWidth * fisheyeHeight * 3);
-    for (std::size_t index = 0; index < fisheyePixels.size(); ++index) {
-        fisheyePixels[index] = static_cast<std::uint16_t>((index * 37 + 11) % 4096);
-    }
-    std::vector<std::uint8_t> fisheyeSource(fisheyePixels.size() * sizeof(std::uint16_t));
-    std::memcpy(fisheyeSource.data(), fisheyePixels.data(), fisheyeSource.size());
     const std::array<std::pair<int, int>, 5> fisheyeCenters{{
         { 6, 5 },   // zero offset
         { 4, 4 },   // positive X/Y offset
@@ -1203,25 +1338,59 @@ void runSyntheticCoverage()
         { -6, 5 },  // positive X offset equals width
         { 6, 15 },  // negative Y offset equals height
     }};
-    for (std::size_t index = 0; index < fisheyeCenters.size(); ++index) {
-        const auto [centerX, centerY] = fisheyeCenters[index];
-        std::ostringstream calibration;
-        calibration
-            << "{\"alpha\":0.0,\"cameraMatrix\":[10.0,0.0," << centerX
-            << ",0.0,10.0," << centerY
-            << ",0.0,0.0,1.0],\"distCoeffs\":[0.0,0.0,0.0,0.0],"
-            << "\"h\":" << fisheyeHeight << ",\"w\":" << fisheyeWidth
-            << ",\"useFisheye\":true}";
-        const auto calibrationFile = directory.path
-            / ("fisheye_offset_" + std::to_string(index) + ".json");
-        writeText(calibrationFile, calibration.str());
-
-        std::vector<std::uint8_t> actual = fisheyeSource;
-        runOne(11, calibrationFile, fisheyeWidth, fisheyeHeight, 16, 3, actual);
-        const auto expected = referenceFisheyeDistortion(
-            fisheyeSource, fisheyeWidth, fisheyeHeight, centerX, centerY);
-        if (actual != expected) {
-            throw std::runtime_error("Fisheye integer-offset folding changed pixels");
+    for (bool fisheye : { false, true }) {
+        for (std::size_t index = 0; index < fisheyeCenters.size(); ++index) {
+            const auto [centerX, centerY] = fisheyeCenters[index];
+            std::ostringstream calibration;
+            calibration
+                << "{\"alpha\":0.0,\"cameraMatrix\":[10.0,0.0," << centerX
+                << ",0.0,10.0," << centerY
+                << ",0.0,0.0,1.0],\"distCoeffs\":[0.01,-0.003,0.0001,0.0002,0.0],"
+                << "\"h\":" << fisheyeHeight << ",\"w\":" << fisheyeWidth
+                << ",\"useFisheye\":" << (fisheye ? "true" : "false") << "}";
+            const auto calibrationFile = directory.path
+                / ("distortion_map_" + std::to_string(fisheye) + "_" + std::to_string(index) + ".json");
+            writeText(calibrationFile, calibration.str());
+            Context context = createContext();
+            requireResult(M_CalibrationLoadFileW(context.get(), 11, calibrationFile.c_str()),
+                context.get(), "load distortion map equivalence");
+            for (int bits : { 8, 16 }) {
+                for (int channels : { 1, 3 }) {
+                    for (bool roi : { false, true }) {
+                        const int width = roi ? 8 : fisheyeWidth;
+                        const int height = roi ? 6 : fisheyeHeight;
+                        MCalibrationExecutionOptionsV1 options{};
+                        options.structSize = sizeof(options);
+                        options.interleavedBgr = 1;
+                        options.exposureX = options.exposureY = options.exposureZ = 1.0F;
+                        if (roi) {
+                            options.roiX = 1; options.roiY = 2;
+                            options.roiWidth = width; options.roiHeight = height;
+                        }
+                        std::vector<std::uint8_t> source(width * height * channels * bits / 8);
+                        for (std::size_t sample = 0; sample < source.size(); ++sample) {
+                            source[sample] = static_cast<std::uint8_t>(sample * 37 + 11);
+                        }
+                        const auto expected = referenceDistortion(
+                            source, width, height, centerX, centerY, bits, channels, fisheye,
+                            options.roiX, options.roiY);
+                        const auto original = source;
+                        auto actual = source;
+                        requireResult(M_CalibrationExecute(context.get(), width, height, bits, channels,
+                            actual.data(), actual.size(), nullptr, 0, &options), context.get(), "execute distortion maps");
+                        if (actual != expected) {
+                            throw std::runtime_error("Cached distortion maps changed interpolation or border pixels");
+                        }
+                        std::fill(actual.begin(), actual.end(), 0xA5);
+                        requireResult(M_CalibrationExecuteToV1(context.get(), width, height, bits, channels,
+                            source.data(), source.size(), actual.data(), actual.size(), nullptr, 0, &options),
+                            context.get(), "execute read-only distortion maps");
+                        if (actual != expected || source != original) {
+                            throw std::runtime_error("Cached distortion maps changed read-only output or source");
+                        }
+                    }
+                }
+            }
         }
     }
 

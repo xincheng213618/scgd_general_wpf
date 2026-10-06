@@ -1,4 +1,5 @@
 using ColorVision.FileIO;
+using ColorVision.ImageEditor.Documents;
 using System;
 using System.IO;
 using System.Text;
@@ -48,6 +49,13 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        internal void Clear() => pixels = null;
+        internal void Clear()
+        {
+            long releasedBytes = pixels?.LongLength ?? 0;
+            pixels = null;
+            // This can run after a cancelled in-flight load, when no bitmap was published.
+            // Request reclamation only after the serialized reader has retired its array.
+            _ = ImageMemoryReclaimer.RequestCollection(releasedBytes);
+        }
     }
 }

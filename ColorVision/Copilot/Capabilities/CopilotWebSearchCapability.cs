@@ -47,6 +47,7 @@ namespace ColorVision.Copilot
                 Success = Success,
                 Summary = Summary,
                 Content = Content,
+                WebEvidenceSourceUrls = Success ? Hits.Select(hit => hit.Url).ToArray() : Array.Empty<string>(),
                 ErrorMessage = ErrorMessage,
                 FailureKind = FailureKind,
             };

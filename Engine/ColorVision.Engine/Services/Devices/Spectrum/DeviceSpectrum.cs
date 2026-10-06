@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1863,CS8601,CS8604
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1863,CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Logging;
@@ -253,7 +254,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
-            ContextMenu.Items.Add(new MenuItem() { Header = "本地光谱仪", Command = OpenLocalSpectrumManagerCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = LocalizedText.Get("本地光谱仪"), Command = OpenLocalSpectrumManagerCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SpectrumLog, Command = OpenSpectrumLogCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.CalibrationGroup, Command = OpenCalibrationGroupWindowCommand });
         }
@@ -982,7 +983,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string? baseDir = string.IsNullOrWhiteSpace(mainServicePath) ? null : Directory.GetParent(mainServicePath)?.FullName;
             if (string.IsNullOrWhiteSpace(baseDir))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "未配置光谱服务路径，无法定位光谱日志。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("未配置光谱服务路径，无法定位光谱日志。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -994,7 +995,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到光谱日志文件。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("未找到光谱日志文件。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

@@ -1,4 +1,3 @@
-using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -12,11 +11,8 @@ using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using ServicePoiPointTypes = FlowEngineLib.Node.POI.POIPointTypes;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
@@ -28,43 +24,25 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal static class LocalRealPoiInputResolver
     {
-        public static LocalRealPoiParameters Resolve(
-            int inputMasterId,
-            int inputResultType,
-            string imageInputName,
-            string poiTemplateName,
-            ServicePoiPointTypes poiType,
-            float poiWidth,
-            float poiHeight)
+        public static LocalRealPoiParameters Resolve(int inputMasterId, int inputResultType, string imageInputName)
         {
-            int sourceMasterId = -1;
-            PoiParam poi;
-            if (inputMasterId > 0)
+            if (inputMasterId <= 0)
             {
-                if (inputResultType is (int)CVCommCore.CVResultType.Camera_Img
-                    or (int)CVCommCore.CVResultType.Algorithm_Calibration)
-                {
-                    throw new InvalidOperationException($"IN_POI 接收到的是图像结果：MasterId={inputMasterId}，ResultType={inputResultType}。当前两条输入线可能接反；图像应连接 {imageInputName}，关注点布点应连接 IN_POI。");
-                }
-                sourceMasterId = inputMasterId;
-                poi = BuildPoiFromInput(inputMasterId, inputResultType, poiType);
+                throw new InvalidOperationException("IN_POI 没有有效的布点结果，请连接上游关注点布点节点。");
             }
-            else
+            if (inputResultType is (int)CVCommCore.CVResultType.Camera_Img
+                or (int)CVCommCore.CVResultType.Algorithm_Calibration)
             {
-                if (string.IsNullOrWhiteSpace(poiTemplateName)) throw new InvalidOperationException("IN_POI 没有有效的布点结果，请选择备用 POI 模板。");
-                poi = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, poiTemplateName, StringComparison.Ordinal))?.Value
-                    ?? throw new InvalidOperationException($"找不到 POI 模板：{poiTemplateName}");
+                throw new InvalidOperationException($"IN_POI 接收到的是图像结果：MasterId={inputMasterId}，ResultType={inputResultType}。当前两条输入线可能接反；图像应连接 {imageInputName}，关注点布点应连接 IN_POI。");
             }
-
-            ApplyPoiTypeOverride(poi, poiType, poiWidth, poiHeight);
             return new LocalRealPoiParameters
             {
-                Poi = poi,
-                SourceMasterId = sourceMasterId
+                Poi = BuildPoiFromInput(inputMasterId, inputResultType),
+                SourceMasterId = inputMasterId
             };
         }
 
-        private static PoiParam BuildPoiFromInput(int masterId, int masterResultType, ServicePoiPointTypes poiType)
+        private static PoiParam BuildPoiFromInput(int masterId, int masterResultType)
         {
             List<PoiPointResultModel> details = PoiPointResultDao.Instance.GetAllByPid(masterId);
             PoiParam poi = new() { Id = masterId, Name = $"IN_POI#{masterId}" };
@@ -74,7 +52,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 {
                     Id = detail.PoiId ?? detail.Id,
                     Name = string.IsNullOrWhiteSpace(detail.PoiName) ? (detail.PoiId ?? detail.Id).ToString() : detail.PoiName,
-                    PointType = ResolvePointType(detail.PoiType, poiType),
+                    PointType = detail.PoiType.ToPoiShape(),
                     PixX = detail.PoiX ?? 0,
                     PixY = detail.PoiY ?? 0,
                     PixWidth = Math.Max(detail.PoiWidth ?? 1, 1),
@@ -96,7 +74,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         Id = pointId,
                         Name = pointId.ToString(),
-                        PointType = ResolvePointType(pointInfo.HeaderInfo.PointType, poiType),
+                        PointType = pointInfo.HeaderInfo.PointType.ToPoiShape(),
                         PixX = position.PixelX,
                         PixY = position.PixelY,
                         PixWidth = Math.Max(pointInfo.HeaderInfo.Width, 1),
@@ -113,36 +91,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             return poi;
         }
-
-        private static void ApplyPoiTypeOverride(PoiParam poi, ServicePoiPointTypes poiType, float poiWidth, float poiHeight)
-        {
-            if (poiType == ServicePoiPointTypes.None) return;
-            if (poiType == ServicePoiPointTypes.SubPixel)
-            {
-                throw new NotSupportedException("本地实时 POI 暂不支持亚像素类型，请使用服务实时关注点算法。");
-            }
-
-            PoiShape pointType = poiType.ToPoiShape();
-            foreach (PoiPoint point in poi.PoiPoints)
-            {
-                point.PointType = pointType;
-                if (poiType is ServicePoiPointTypes.SolidPoint or ServicePoiPointTypes.SolidPoint_KB)
-                {
-                    point.PixWidth = 1;
-                    point.PixHeight = 1;
-                }
-                else
-                {
-                    point.PixWidth = poiWidth;
-                    point.PixHeight = poiHeight;
-                }
-            }
-        }
-
-        private static PoiShape ResolvePointType(POIPointTypes sourceType, ServicePoiPointTypes poiType)
-            => sourceType == POIPointTypes.None && poiType != ServicePoiPointTypes.None
-                ? poiType.ToPoiShape()
-                : sourceType.ToPoiShape();
     }
 
     internal sealed class LocalRealPoiNodeResultData
@@ -158,71 +106,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public object? POIResult { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "实时 POI")]
+    [STNode("Flow_CustomNodes", "实时 POI", CategoryOrder = 9900)]
     public sealed class LocalRealPoiNode : LocalFlowNodeBase
     {
         private static readonly string[] InputPortNames = { "IN_CIE", "IN_POI" };
-        private string poiTempName = string.Empty;
-        private string poiFilterTempName = string.Empty;
-        private string poiReviseTempName = string.Empty;
-        private ServicePoiPointTypes poiType;
-        private float poiWidth = 10;
-        private float poiHeight = 10;
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 模板", "IN_POI 没有布点结果时使用的备用 POI 模板", true)]
-        [PropertyEditorType(typeof(PoiTemplatePropertiesEditor))]
-        public string POITempName { get => poiTempName; set { poiTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Browsable(false)]
-        // Kept only so existing serialized node payloads can still be opened.
-        public string POIFilterTempName { get => poiFilterTempName; set { poiFilterTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Browsable(false)]
-        // Kept only so existing serialized node payloads can still be opened.
-        public string POIReviseTempName { get => poiReviseTempName; set { poiReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 类型", "与服务实时关注点算法一致；None 使用上游布点结果中的类型", true)]
-        public ServicePoiPointTypes POIType
-        {
-            get => poiType;
-            set
-            {
-                poiType = value;
-                if (poiType == ServicePoiPointTypes.Circle) poiHeight = poiWidth;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIHeight));
-            }
-        }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 宽度", "POI 类型为圆或矩形时覆盖上游布点宽度", true)]
-        public float POIWidth
-        {
-            get => poiWidth;
-            set
-            {
-                poiWidth = NormalizePoiSize(value);
-                if (POIType == ServicePoiPointTypes.Circle) poiHeight = poiWidth;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIHeight));
-            }
-        }
-
-        [Category("实时 POI")]
-        [STNodeProperty("POI 高度", "POI 类型为圆或矩形时覆盖上游布点高度", true)]
-        public float POIHeight
-        {
-            get => poiHeight;
-            set
-            {
-                poiHeight = NormalizePoiSize(value);
-                if (POIType == ServicePoiPointTypes.Circle) poiWidth = poiHeight;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(POIWidth));
-            }
-        }
 
         public LocalRealPoiNode() : base("实时 POI", "LocalRealPOI", "Real_POI", InputPortNames)
         {
@@ -243,14 +130,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 string? imagePath = string.IsNullOrWhiteSpace(currentFrame!.CvCieFilePath) ? currentFrame.CvRawFilePath : currentFrame.CvCieFilePath;
                 _ = TryGetInputMasterResult(action, 1, out int poiInputMasterId, out int poiInputResultType, out _);
-                LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(
-                    poiInputMasterId,
-                    poiInputResultType,
-                    InputPortNames[0],
-                    POITempName,
-                    POIType,
-                    POIWidth,
-                    POIHeight);
+                LocalRealPoiParameters parameters = LocalRealPoiInputResolver.Resolve(poiInputMasterId, poiInputResultType, InputPortNames[0]);
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result;
@@ -330,20 +210,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ServiceName = NodeName,
                 EventName = OperatorCode,
                 action.SerialNumber,
-                POITempName,
-                POIType,
-                POIWidth,
-                POIHeight,
                 InputMode = "CurrentFrameThenInputFile",
                 InputPorts = InputPortNames
             });
-        }
-
-        private static float NormalizePoiSize(float value)
-        {
-            if (value <= 0) return 1;
-            int size = checked((int)Math.Ceiling(value));
-            return size % 2 == 0 ? size : size + 1;
         }
     }
 }

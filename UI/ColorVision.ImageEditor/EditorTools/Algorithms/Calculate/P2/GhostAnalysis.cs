@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -80,7 +81,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2
             using ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show("当前没有可分析的图像。", ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("当前没有可分析的图像。"), ColorVision.ImageEditor.Properties.Resources.Algorithm_GhostDetection, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 

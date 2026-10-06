@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CA1868
 using ColorVision.Solution.Explorer;
 using System.Diagnostics;
@@ -22,7 +23,7 @@ namespace ColorVision.Solution
                 return;
             }
 
-            SearchStatusText.Text = "正在搜索…";
+            SearchStatusText.Text = LocalizedText.Get("正在搜索…");
             SearchStatusText.Visibility = Visibility.Visible;
             _searchDebounceTimer.Start();
         }
@@ -71,7 +72,7 @@ namespace ColorVision.Solution
             }
             catch (Exception ex)
             {
-                SearchStatusText.Text = $"搜索失败：{ex.Message}";
+                SearchStatusText.Text = LocalizedText.Format($"搜索失败：{ex.Message}");
                 SearchStatusText.Visibility = Visibility.Visible;
             }
             finally
@@ -103,8 +104,8 @@ namespace ColorVision.Solution
 
             SolutionTreeView.ItemsSource = _searchResultNodes;
             SearchStatusText.Text = result.IsTruncated
-                ? $"显示前 {_searchResultNodes.Count} 项，请继续输入以缩小范围"
-                : $"找到 {_searchResultNodes.Count} 项";
+                ? LocalizedText.Format($"显示前 {_searchResultNodes.Count} 项，请继续输入以缩小范围")
+                : LocalizedText.Format($"找到 {_searchResultNodes.Count} 项");
             SearchStatusText.Visibility = Visibility.Visible;
         }
 

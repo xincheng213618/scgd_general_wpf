@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.ImageEditor.EditorTools.ThreeD;
 using Microsoft.Win32;
 using System;
@@ -87,7 +88,7 @@ namespace ColorVision.ImageEditor
             loaded = true;
             heightScale = ValidHeight(initialHeightScaleOverride is > 0 ? initialHeightScaleOverride.Value : Config.DefaultHeightScale);
             HeightValue.Text = heightScale.ToString("F1");
-            SourceInfo.Text = $"源图 {colorBitmap.PixelWidth:N0} × {colorBitmap.PixelHeight:N0} · 显示亮度 0–255";
+            SourceInfo.Text = LocalizedText.Format($"源图 {colorBitmap.PixelWidth:N0} × {colorBitmap.PixelHeight:N0} · 显示亮度 0–255");
             try
             {
                 renderer = new HeightMapDxRenderer();
@@ -117,7 +118,7 @@ namespace ColorVision.ImageEditor
             var cancellation = buildCancellation = new CancellationTokenSource();
             CancellationToken token = cancellation.Token;
             IsReady = false;
-            LoadingText.Text = "正在准备高度图…";
+            LoadingText.Text = LocalizedText.Get("正在准备高度图…");
             LoadingPanel.Visibility = Visibility.Visible;
             try
             {
@@ -142,7 +143,7 @@ namespace ColorVision.ImageEditor
                 LoadingPanel.Visibility = Visibility.Collapsed;
                 if (renderer.Bounds.IsEmpty)
                 {
-                    LoadingText.Text = "没有可显示的有效曲面（透明像素不会生成网格）。";
+                    LoadingText.Text = LocalizedText.Get("没有可显示的有效曲面（透明像素不会生成网格）。");
                     LoadingPanel.Visibility = Visibility.Visible;
                 }
                 ResetView(true);
@@ -155,9 +156,9 @@ namespace ColorVision.ImageEditor
         private void ShowFailure(Exception ex)
         {
             IsReady = false;
-            LoadingText.Text = $"高度图未能完成：{ex.Message}";
+            LoadingText.Text = LocalizedText.Format($"高度图未能完成：{ex.Message}");
             LoadingPanel.Visibility = Visibility.Visible;
-            StatusText.Text = "可在设置中降低细节后重试；需要可用的 DirectX 11 渲染设备。";
+            StatusText.Text = LocalizedText.Get("可在设置中降低细节后重试；需要可用的 DirectX 11 渲染设备。");
         }
 
         private void Viewport_RenderExceptionOccurred(object? sender, HelixToolkit.SharpDX.Utilities.RelayExceptionEventArgs e)
@@ -282,9 +283,9 @@ namespace ColorVision.ImageEditor
                 {
                     double sourceX = hit.Position.X / Math.Max(renderer.WorldWidth, 1) * (colorBitmap.PixelWidth - 1);
                     double sourceY = (1 - hit.Position.Y / Math.Max(renderer.WorldHeight, 1)) * (colorBitmap.PixelHeight - 1);
-                    HoverInfoText.Text = $"源图坐标 X {sourceX:F1}  Y {sourceY:F1}    采样灰度 {hit.Gray} / 255    Z(灰度) {hit.Gray / 255.0 * heightScale:F2}    曲面交点 Z {hit.Position.Z:F2}";
+                    HoverInfoText.Text = LocalizedText.Format($"源图坐标 X {sourceX:F1}  Y {sourceY:F1}    采样灰度 {hit.Gray} / 255    Z(灰度) {hit.Gray / 255.0 * heightScale:F2}    曲面交点 Z {hit.Position.Z:F2}");
                 }
-                else HoverInfoText.Text = "将鼠标移到曲面上读取显示亮度（0–255）；透明区域没有曲面。";
+                else HoverInfoText.Text = LocalizedText.Get("将鼠标移到曲面上读取显示亮度（0–255）；透明区域没有曲面。");
             }
         }
 
@@ -356,7 +357,7 @@ namespace ColorVision.ImageEditor
         private void UpdateStatus()
         {
             if (renderer == null || !IsReady) return;
-            StatusText.Text = $"{(usingInteractionMesh ? "交互细节" : "完整细节")} · 采样 {renderer.ActiveSample.Width} × {renderer.ActiveSample.Height} · 显示高度 {heightScale:F1} · 双线性亮度采样，未做深度重建";
+            StatusText.Text = LocalizedText.Format($"{(usingInteractionMesh ? LocalizedText.Get("交互细节") : LocalizedText.Get("完整细节"))} · 采样 {renderer.ActiveSample.Width} × {renderer.ActiveSample.Height} · 显示高度 {heightScale:F1} · 双线性亮度采样，未做深度重建");
         }
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -373,7 +374,7 @@ namespace ColorVision.ImageEditor
                 || !int.TryParse(TxtTargetX.Text, out int x) || x < 128 || x > 1024
                 || !int.TryParse(TxtTargetY.Text, out int y) || y < 128 || y > 1024)
             {
-                SettingsError.Text = "请输入上述范围内的整数。";
+                SettingsError.Text = LocalizedText.Get("请输入上述范围内的整数。");
                 return;
             }
             Config.DetailResolution = detail;
@@ -397,9 +398,9 @@ namespace ColorVision.ImageEditor
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 using var stream = File.Create(dialog.FileName);
                 encoder.Save(stream);
-                StatusText.Text = $"截图已保存：{dialog.FileName}";
+                StatusText.Text = LocalizedText.Format($"截图已保存：{dialog.FileName}");
             }
-            catch (Exception ex) { MessageBox.Show(this, ex.Message, "截图失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, LocalizedText.Get("截图失败"), MessageBoxButton.OK, MessageBoxImage.Error); }
         }
         private async void ExportModelButton_Click(object sender, RoutedEventArgs e)
         {
@@ -407,17 +408,17 @@ namespace ColorVision.ImageEditor
             var dialog = new SaveFileDialog { Filter = "OBJ Model|*.obj|STL Model|*.stl", DefaultExt = "obj", FileName = $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.obj" };
             if (dialog.ShowDialog(this) != true) return;
             exporting = true;
-            StatusText.Text = "正在导出完整细节模型…";
+            StatusText.Text = LocalizedText.Get("正在导出完整细节模型…");
             try
             {
                 // Capture the current immutable grid, LUT and display scale. A later reload or
                 // camera movement cannot change the model being written in the background.
                 await HeightMapModelExporter.ExportAsync(renderer.ExportGeometry, renderer.ExportLut, heightScale, dialog.FileName,
                     ModelViewer3DConfig.Instance.HideExportedTextureFiles, lifetimeCancellation.Token);
-                if (!isClosed) StatusText.Text = $"模型已导出：{dialog.FileName}";
+                if (!isClosed) StatusText.Text = LocalizedText.Format($"模型已导出：{dialog.FileName}");
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { if (!isClosed) MessageBox.Show(this, ex.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+            catch (Exception ex) { if (!isClosed) MessageBox.Show(this, ex.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error); }
             finally { exporting = false; }
         }
     }

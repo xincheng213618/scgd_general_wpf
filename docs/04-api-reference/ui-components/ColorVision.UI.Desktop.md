@@ -5,7 +5,7 @@ status: "current"
 summary: "桌面辅助壳层而非产品主入口：定位设置、市场下载、第三方工具、反馈和特权崩溃诊断。"
 aliases: ["设置窗口和插件市场在哪里","ColorVision.UI.Desktop","SettingWindow","MarketplacePackageDownloadService"]
 code_paths: ["UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj","UI/ColorVision.UI.Desktop/App.xaml","UI/ColorVision.UI.Desktop/App.xaml.cs","UI/ColorVision.UI.Desktop/MainWindow.xaml","UI/ColorVision.UI.Desktop/MainWindow.xaml.cs","UI/ColorVision.UI.Desktop/Settings/SettingWindow.xaml.cs","UI/ColorVision.UI.Desktop/Marketplace","UI/ColorVision.UI.Desktop/Download","UI/ColorVision.UI.Desktop/Wizards","UI/ColorVision.UI.Desktop/ThirdPartyApps","UI/ColorVision.UI.Desktop/Diagnostics","UI/ColorVision.UI.Desktop/Feedback","UI/ColorVision.UI.Desktop/README.md"]
-test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs","Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs","Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"]
 related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.configuration","ui.database","plugins.getting-started","platform.runtime"]
 ---
 
@@ -62,11 +62,11 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 
-桌面反馈窗口不再要求输入 Web 账号密码，点击“发送反馈”后直接匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
+点击“发送反馈”后匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。
 
 默认选中的配置收集器把当前 `ConfigHandler.ConfigFilePath` 读取为 JSON，在反馈 ZIP 中写为 `Config/ColorVisionConfig.json`。“流程前后处理配置”同时收集 `PreProcessConfig.json`、`PostProcessConfig.json`；加载 ProjectARVRPro 后，“ARVRPro 流程配置”按项目实际配置目录收集 `ProjectARVRProProcessGroups.json`，保留流程组、切图等待、相机覆盖参数与 Recipe。配置始终采集当前已保存文件，不受日志天数或文件修改时间限制，也不扫描历史备份、其他项目、认证文件或整个配置目录。
 
-配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。回归入口为 `Test/ColorVision.UI.Tests/FeedbackConfigurationSnapshotTests.cs` 和项目反馈收集器测试。
+配置收集统一使用 `FeedbackConfigurationSnapshot`，支持对象、数组和 `ConfigJson` 等嵌套 JSON 字符串；只解析 JSON 数据，不实例化 `$type` 指定的类型。它保留诊断字段，但递归遮盖名称表示密码、Token、Secret、API Key、连接字符串、凭据或 Cookie 的值；嵌套 JSON 字段无法解析时遮盖该字段，整份文件无效时仅附不含原始内容的 `.collection-error.txt`，其他文件继续收集。可选文件不存在时跳过，原始文件不直接进入反馈包。
 
 本地运行数据库通过同一 `IFeedbackLogCollector` 发现链加入诊断项，默认勾选、最近 7 天，在主窗口统一选择 1／3／7／14／30 天。“流程与节点耗时记录”导出 `FlowNodeRecords.db`，“Socket 通信记录”导出 `SocketMessages.db`，“MQTT 服务通信记录”导出 `MsgRecords.db` 中按发送、接收、创建或更新时间命中的请求、响应和超时状态，保留完整正文；加载 ProjectARVRPro 后还会出现“ARVRPro 测试与阶段耗时记录”，导出 `ProjectARVRPro.db`。路径来自各模块当前配置，不依赖固定安装目录；收集器不会初始化业务管理器或迁移源数据库。
 
@@ -125,6 +125,5 @@ related: ["ui.index","ui.framework","ui.settings","ui.wizards","ui.menus","ui.co
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs`、`Test/ColorVision.UI.Tests/FeedbackWindowLayoutTests.cs`、`Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs`、`Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs`。
 
 自动化测试只覆盖各自受测服务；联网下载、HKLM 写入、DNS 修改和反馈上传都需明确授权，不能作为默认文档验证步骤。

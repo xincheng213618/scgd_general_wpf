@@ -1,10 +1,10 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1859,CS8604
 using ColorVision.FileIO;
 using ColorVision.Engine.Services.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
 using log4net;
-using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,8 +30,9 @@ namespace ColorVision.Engine.Media
         private bool _disposed;
         private DisplayCache? _srgbCache;
         private DisplayCache? _channelCache;
+        internal const long DisplayCacheBudgetBytes = 128L * 1024 * 1024;
         private readonly record struct FileStamp(long Length, DateTime LastWriteTime);
-        private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap);
+        private sealed record DisplayCache(string LayerId, CvcieBrightnessMode Mode, double White, FileStamp Stamp, WriteableBitmap Bitmap, long Bytes);
 
         private CvRawLayerController(ImageView imageView, string filePath, bool isCie, IReadOnlyList<ImageLayerDescriptor> layers, string displayedLayerId,
             CVCIEFile? liveXyz = null, WriteableBitmap? liveSource = null, RawColorMeasurementSource? rawColor = null)
@@ -264,18 +265,36 @@ namespace ColorVision.Engine.Media
 
         private FileStamp GetFileStamp()
         {
-            if (_liveXyz != null || _rawColor != null) return default;
+            if (_liveXyz != null || _rawColor != null || CVFileReadCache.GetCachedLength(_filePath).HasValue) return default;
             FileInfo file = new(_filePath);
             return new FileStamp(file.Length, file.LastWriteTimeUtc);
         }
 
         private void StoreCache(string layerId, WriteableBitmap bitmap, CvcieBrightnessMode mode, double white, FileStamp stamp)
         {
-            // Retain display pixels only, never the multi-gigabyte XYZ input. Two entries at most.
-            long bytes = (long)bitmap.PixelWidth * bitmap.PixelHeight * bitmap.Format.BitsPerPixel / 8;
-            if (bytes > 512L * 1024 * 1024) return;
-            if (layerId == "cie-srgb") _srgbCache = new(layerId, mode, white, stamp, bitmap);
-            else if (layerId is "cie-x" or "cie-y" or "cie-z") _channelCache = new(layerId, mode, white, stamp, bitmap);
+            if (layerId != "cie-srgb" && layerId is not ("cie-x" or "cie-y" or "cie-z")) return;
+            // This is extra storage alongside the mutable display clone. Bound the sum, not each slot.
+            long stride = (((long)bitmap.PixelWidth * bitmap.Format.BitsPerPixel + 31) / 32) * 4;
+            long bytes = stride * bitmap.PixelHeight;
+            bool srgb = layerId == "cie-srgb";
+            if (srgb) _srgbCache = null;
+            else _channelCache = null;
+            if (bytes > DisplayCacheBudgetBytes)
+            {
+                _srgbCache = null;
+                _channelCache = null;
+                return;
+            }
+
+            DisplayCache? other = srgb ? _channelCache : _srgbCache;
+            if (bytes + (other?.Bytes ?? 0) > DisplayCacheBudgetBytes)
+            {
+                if (srgb) _channelCache = null;
+                else _srgbCache = null;
+            }
+            var entry = new DisplayCache(layerId, mode, white, stamp, bitmap, bytes);
+            if (srgb) _srgbCache = entry;
+            else _channelCache = entry;
         }
 
         public void Dispose()
@@ -345,7 +364,7 @@ namespace ColorVision.Engine.Media
             if (file.Channels == 1 && file.Bpp is 32 or 64) return MediaHelper.RenderFloatChannel(file, token);
             using OpenCvSharp.Mat mat = file.ToMat(showErrors: false);
             if (mat == null || mat.Empty()) throw new InvalidDataException("原图或通道数据无法显示。");
-            WriteableBitmap bitmap = mat.ToWriteableBitmap();
+            WriteableBitmap bitmap = mat.CreateDisplayBitmap();
             bitmap.Freeze();
             return bitmap;
         }
@@ -387,7 +406,7 @@ namespace ColorVision.Engine.Media
                 layers.Add(new ImageLayerDescriptor
                 {
                     Id = "cie-srgb",
-                    DisplayName = "真彩 sRGB（XYZ）",
+                    DisplayName = LocalizedText.Get("真彩 sRGB（XYZ）"),
                     Kind = ImageLayerKind.Derived,
                 });
             }

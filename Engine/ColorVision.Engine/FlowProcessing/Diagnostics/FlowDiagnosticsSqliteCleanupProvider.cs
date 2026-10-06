@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Database;
 using ColorVision.UI;
 using SqlSugar;
@@ -26,7 +27,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         ];
 
         public string Id => "flow-diagnostics-sqlite";
-        public string DisplayName => "流程诊断 SQLite";
+        public string DisplayName => LocalizedText.Get("流程诊断 SQLite");
         public string Description => $"数据库文件: {GetDatabasePath()}";
         public int Order => 22;
         public string MigrationActionName => "迁移并压缩流程消息";

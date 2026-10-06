@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_3 Image")]
+[STNode("Image", CategoryOrder = 330)]
 public class AlgorithmImageConvertNode : CVBaseServerNode
 {
 	private ImageFormatType _ImageFormat;

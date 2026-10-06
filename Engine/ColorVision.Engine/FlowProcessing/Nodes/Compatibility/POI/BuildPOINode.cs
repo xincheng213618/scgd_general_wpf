@@ -6,7 +6,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-[STNode("/03_1 关注点")]
+[STNode("关注点", CategoryOrder = 310)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.BuildPOINode")]
 public class BuildPOINode : CVBaseServerNode
 {
@@ -173,6 +173,7 @@ public class BuildPOINode : CVBaseServerNode
 	}
 
 	[STNodeProperty("CAD文件", "CAD文件", true)]
+	[System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.TextSelectFilePropertiesEditor))]
 	public string CAD_PosFileName
 	{
 		get

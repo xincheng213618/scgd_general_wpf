@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 
 namespace ColorVision.Copilot
@@ -32,11 +33,11 @@ namespace ColorVision.Copilot
         public static string GetEffectiveLabel(CopilotCodexApprovalsReviewer reviewer) => reviewer switch
         {
             CopilotCodexApprovalsReviewer.User =>
-                "符合条件的原生审批由 ColorVision 用户复核；不启动自动审查器。",
+                LocalizedText.Get("符合条件的原生审批由 ColorVision 用户复核；不启动自动审查器。"),
             CopilotCodexApprovalsReviewer.AutoReview =>
-                "on-request 或启用 sandbox_approval 的 granular 审批由独立审查器复核；它不扩大沙箱或工具权限。",
+                LocalizedText.Get("on-request 或启用 sandbox_approval 的 granular 审批由独立审查器复核；它不扩大沙箱或工具权限。"),
             _ =>
-                "未覆盖现有 ColorVision 行为：临时任务授权仍可对不支持临时完整访问的受保护工具启动自动复核。",
+                LocalizedText.Get("未覆盖现有 ColorVision 行为：临时任务授权仍可对不支持临时完整访问的受保护工具启动自动复核。"),
         };
 
         public static bool IsExplicitAutoReview(CopilotAgentRequest request)

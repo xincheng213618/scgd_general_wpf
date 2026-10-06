@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -63,7 +63,6 @@ namespace ColorVision.FileIO
         /// </summary>
         public static bool IsCIEFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
@@ -82,7 +81,6 @@ namespace ColorVision.FileIO
         }
         public static bool IsCVCIEFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
@@ -126,7 +124,6 @@ namespace ColorVision.FileIO
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
             cvcie = new CVCIEFile();
-            if (!File.Exists(filePath)) return -1;
             try
             {
                 using (Stream fs = CVFileReadCache.OpenRead(filePath, populateCache: false))
@@ -714,6 +711,9 @@ namespace ColorVision.FileIO
         /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo)
+            => WriteCIEFile(filePath, fileInfo, CVFileSaveMode.Synchronous);
+
+        public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo, CVFileSaveMode saveMode)
         {
             if (string.IsNullOrEmpty(filePath)) return false;
             if (fileInfo == null) return false;
@@ -729,7 +729,7 @@ namespace ColorVision.FileIO
                     {
                         stream.Write(data, 0, data.Length);
                     }
-                });
+                }, saveMode);
         }
 
         /// <summary>
@@ -741,11 +741,15 @@ namespace ColorVision.FileIO
         /// <param name="dataLength">The exact number of payload bytes the callback will write.</param>
         /// <param name="writeData">Writes exactly <paramref name="dataLength"/> bytes to the supplied stream.</param>
         /// <returns>True if the complete file was written successfully; otherwise, false.</returns>
+        public static bool WriteCIEFile(string filePath, CVCIEFile fileInfo, long dataLength, Action<Stream> writeData)
+            => WriteCIEFile(filePath, fileInfo, dataLength, writeData, CVFileSaveMode.Synchronous);
+
         public static bool WriteCIEFile(
             string filePath,
             CVCIEFile fileInfo,
             long dataLength,
-            Action<Stream> writeData)
+            Action<Stream> writeData,
+            CVFileSaveMode saveMode)
         {
             if (string.IsNullOrEmpty(filePath)) return false;
             if (fileInfo == null || writeData == null || dataLength < 0) return false;
@@ -835,7 +839,7 @@ namespace ColorVision.FileIO
                                 $"The CVCIE payload writer produced {fs.Position - dataStart} bytes; expected {dataLength} bytes.");
                         }
                     }
-                });
+                }, saveMode);
             }
             catch (Exception ex)
             {
@@ -961,31 +965,27 @@ namespace ColorVision.FileIO
         /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
         /// <returns>True if the file was written successfully; otherwise, false.</returns>
         public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo)
+            => WriteCVRaw(filePath, fileInfo, CVFileSaveMode.Synchronous);
+
+        public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo, CVFileSaveMode saveMode)
         {
-            return WriteCIEFile(filePath, fileInfo);
+            return WriteCIEFile(filePath, fileInfo, saveMode);
         }
 
         /// <summary>
         /// Writes a CVRAW file while streaming its pixel payload from a caller-owned buffer.
         /// </summary>
+        public static bool WriteCVRaw(string filePath, CVCIEFile fileInfo, long dataLength, Action<Stream> writeData)
+            => WriteCVRaw(filePath, fileInfo, dataLength, writeData, CVFileSaveMode.Synchronous);
+
         public static bool WriteCVRaw(
             string filePath,
             CVCIEFile fileInfo,
             long dataLength,
-            Action<Stream> writeData)
+            Action<Stream> writeData,
+            CVFileSaveMode saveMode)
         {
-            return WriteCIEFile(filePath, fileInfo, dataLength, writeData);
-        }
-
-        /// <summary>
-        /// Writes a CVCIE file (convenience wrapper for WriteCIEFile).
-        /// </summary>
-        /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>True if the file was written successfully; otherwise, false.</returns>
-        public static bool WriteCVCIE(string filePath, CVCIEFile fileInfo)
-        {
-            return WriteCIEFile(filePath, fileInfo);
+            return WriteCIEFile(filePath, fileInfo, dataLength, writeData, saveMode);
         }
 
         /// <summary>

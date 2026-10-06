@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Application;
 using ColorVision.Core;
 using ColorVision.Themes;
@@ -17,7 +18,7 @@ public partial class MeasurementDetailWindow : Window
         this.ApplyCaption();
         Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width - 24));
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height - 24));
-        IdentityText.Text = $"{snapshot.Target.Id} · {MeasurementOverview.Direction(snapshot.Edge.Id.ToString())}边";
+        IdentityText.Text = LocalizedText.Format($"{snapshot.Target.Id} · {MeasurementOverview.Direction(snapshot.Edge.Id.ToString())}边");
         RoiImage.Source = snapshot.Preview;
         RoiCanvas.Width = RoiImage.Width = snapshot.Preview.PixelWidth;
         RoiCanvas.Height = RoiImage.Height = snapshot.Preview.PixelHeight;
@@ -33,9 +34,9 @@ public partial class MeasurementDetailWindow : Window
             _ => "未知（未做 Gamma 解码，仅供诊断）"
         };
         var roi = snapshot.IsSearchPreview ? snapshot.Target.SearchRoi : snapshot.Edge.Roi;
-        ConditionsText.Text = $"原图 {m.Width} × {m.Height} · {m.BitDepth} bit · {m.Channels} 通道\n区域 ({roi.X}, {roi.Y}) · {roi.Width} × {roi.Height} px\n输入：{encoding}\n黑电平 {options.BlackLevel:G} · 白电平 {(options.WhiteLevel == 0 ? "类型满量程" : options.WhiteLevel.ToString("G"))}\n采集 {m.CapturedAt:yyyy-MM-dd HH:mm:ss.fff}\n算法 {snapshot.Edge.Analysis?.AlgorithmVersion ?? "未计算"}";
+        ConditionsText.Text = LocalizedText.Format($"原图 {m.Width} × {m.Height} · {m.BitDepth} bit · {m.Channels} 通道\n区域 ({roi.X}, {roi.Y}) · {roi.Width} × {roi.Height} px\n输入：{encoding}\n黑电平 {options.BlackLevel:G} · 白电平 {(options.WhiteLevel == 0 ? LocalizedText.Get("类型满量程") : options.WhiteLevel.ToString("G"))}\n采集 {m.CapturedAt:yyyy-MM-dd HH:mm:ss.fff}\n算法 {snapshot.Edge.Analysis?.AlgorithmVersion ?? LocalizedText.Get("未计算")}");
         ConditionsText.ToolTip = m.Source;
-        LimitsText.Text = $"本次质量门限：跨度 ≥ {options.MinimumContrast:P1}，信噪比 ≥ {options.MinimumSnr:G}，拟合残差 ≤ {options.MaximumFitRms:G} px。MTF50 / MTF10 在 0–0.5 cy/pixel 内查询；未穿过阈值时保留空值。";
+        LimitsText.Text = LocalizedText.Format($"本次质量门限：跨度 ≥ {options.MinimumContrast:P1}，信噪比 ≥ {options.MinimumSnr:G}，拟合残差 ≤ {options.MaximumFitRms:G} px。MTF50 / MTF10 在 0–0.5 cy/pixel 内查询；未穿过阈值时保留空值。");
         QualityGrid.ItemsSource = snapshot.Rows.Select(row =>
         {
             var c = row.ChannelAnalysis;
@@ -66,7 +67,7 @@ public partial class MeasurementDetailWindow : Window
         FrequencyValue.Text = MeasurementOverview.Format(row, 2, Snapshot.Frequency);
         NyquistValue.Text = MeasurementOverview.Format(row, 3, Snapshot.Frequency);
         DiagnosticText.Text = MeasurementOverview.Describe(row, 0, Snapshot.Frequency);
-        if (row.ChannelAnalysis is { Valid: true, Mtf10: null }) DiagnosticText.Text += "\nMTF10：曲线在 0–0.5 cy/pixel 内未穿过 10%，不填零。";
+        if (row.ChannelAnalysis is { Valid: true, Mtf10: null }) DiagnosticText.Text += LocalizedText.Get("\nMTF10：曲线在 0–0.5 cy/pixel 内未穿过 10%，不填零。");
         bool dark = ThemeManager.Current.CurrentUITheme == Theme.Dark;
         foreach (var (plot, mode) in new[] { (MtfPlot, 0), (EsfPlot, 1), (LsfPlot, 2) })
         {
@@ -75,8 +76,8 @@ public partial class MeasurementDetailWindow : Window
             else plot.Clear();
         }
         UnavailablePlot.Visibility = row.ChannelAnalysis is { Valid: true } ? Visibility.Collapsed : Visibility.Visible;
-        PreviewTitle.Text = Snapshot.IsSearchPreview ? "未生成单边框 · 显示搜索范围"
-            : row.ChannelAnalysis is { FitAvailable: true } ? "原始测量框 · 橙线为当前通道拟合边" : "原始测量框 · 暂无可用拟合线";
+        PreviewTitle.Text = Snapshot.IsSearchPreview ? LocalizedText.Get("未生成单边框 · 显示搜索范围")
+            : row.ChannelAnalysis is { FitAvailable: true } ? LocalizedText.Get("原始测量框 · 橙线为当前通道拟合边") : LocalizedText.Get("原始测量框 · 暂无可用拟合线");
         FitLine.Visibility = Visibility.Collapsed;
         // A failed quality gate may still contain a useful fitted edge. Do not hide that evidence.
         if (!Snapshot.IsSearchPreview && row.ChannelAnalysis is { FitAvailable: true } c)

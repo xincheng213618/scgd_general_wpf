@@ -46,32 +46,31 @@ namespace ColorVision.FileIO
             if (string.IsNullOrWhiteSpace(kind)) throw new ArgumentException("Property kind is required.", nameof(kind));
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (value.Length > MaximumMetadataBytes) throw new ArgumentOutOfRangeException(nameof(value));
-            CVFileReadCache.UpdateMetadata(filePath, () => SetPropertyCore(filePath, kind, version, value));
+            CVFileReadCache.UpdateMetadata(filePath, stream => SetPropertyCore(stream, kind, version, value));
         }
 
-        private static CVFileReadCache.FileTail SetPropertyCore(string filePath, string kind, uint version, byte[] value)
+        private static CVFileReadCache.FileTail SetPropertyCore(Stream stream, string kind, uint version, byte[] value)
         {
-            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            long pixelEnd = GetPixelEnd(stream);
+            Dictionary<string, CVFileProperty> properties = ReadProperties(stream, pixelEnd, true);
+            properties[kind] = new CVFileProperty(version, value);
+            return new CVFileReadCache.FileTail(pixelEnd, Serialize(properties, pixelEnd));
+        }
+
+        internal static void ReplaceTail(FileStream stream, CVFileReadCache.FileTail tail)
+        {
+            stream.Position = tail.Offset;
+            byte[] previous = ReadExactly(stream, checked((int)(stream.Length - tail.Offset)));
+            try
             {
-                long pixelEnd = GetPixelEnd(stream);
-                Dictionary<string, CVFileProperty> properties = ReadProperties(stream, pixelEnd, true);
-                properties[kind] = new CVFileProperty(version, value);
-                byte[] tail = Serialize(properties, pixelEnd);
-                stream.Position = pixelEnd;
-                byte[] previous = ReadExactly(stream, checked((int)(stream.Length - pixelEnd)));
-                try
-                {
-                    WriteTail(stream, pixelEnd, tail);
-                }
-                catch (Exception writeError)
-                {
-                    // Best-effort rollback for a reported write error. A process/power interruption
-                    // is detected by the footer/checksum on the next read, not claimed to be atomic.
-                    try { WriteTail(stream, pixelEnd, previous); }
-                    catch (Exception rollbackError) { throw new AggregateException("Metadata update and rollback failed; pixel data was not rewritten.", writeError, rollbackError); }
-                    throw;
-                }
-                return new CVFileReadCache.FileTail(pixelEnd, tail);
+                WriteTail(stream, tail.Offset, tail.Bytes);
+            }
+            catch (Exception writeError)
+            {
+                // Preserve the existing best-effort rollback contract for reported IO errors.
+                try { WriteTail(stream, tail.Offset, previous); }
+                catch (Exception rollbackError) { throw new AggregateException("Metadata update and rollback failed; pixel data was not rewritten.", writeError, rollbackError); }
+                throw;
             }
         }
 

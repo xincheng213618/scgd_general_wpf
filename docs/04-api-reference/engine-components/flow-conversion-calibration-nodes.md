@@ -11,13 +11,12 @@ related: ["flow.index","flow.templates","ui.property-grid"]
 
 # Flow 转换与校准节点
 
-当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。数据转换节点保留在 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供；`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` 只保留节点类型级补充面板，当前没有 `CalibrationNodeConfigurator`。
+数据转换节点位于 `FlowEngineLib`，使用模板编辑器的校准节点位于 Engine 的 `FlowProcessing/Nodes/Compatibility/Calibration/`；相关选择器和校准设备服务由 Engine 提供。
 
 ## 先查什么
 
 | 现象 | 第一检查点 |
 | --- | --- |
-| 找不到同名模板目录 | 这是正常现状，按 Flow 节点、`operatorCode`、参数对象追 |
 | 数据转换不像文件转换器 | `AlgDataConvertNode` 只覆盖当前枚举和上游结果转换 |
 | 图像转换输出不对 | `ImageFormat`、`Channel`、上游图像参数、输出文件名 |
 | 校准模板面板不出现 | 选中的 `DeviceCalibration` / `DeviceCamera` 是否有 `PhyCamera` |

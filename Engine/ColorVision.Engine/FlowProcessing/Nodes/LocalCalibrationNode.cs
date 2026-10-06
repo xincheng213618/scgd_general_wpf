@@ -84,18 +84,12 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     public abstract class LocalCalibrationNodeBase : LocalDeviceFlowNodeBase
     {
         private string calibTempName = string.Empty;
-        private bool saveFiles;
         private bool allowAcceleration;
 
         [Category("本地校正")]
         [STNodeProperty("校正模板", "对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传", true)]
         [PropertyEditorType(typeof(CalibrationTemplatePropertiesEditor))]
         public string CalibTempName { get => calibTempName; set { calibTempName = value ?? string.Empty; OnPropertyChanged(); } }
-
-        [Category("本地校正")]
-        [PropertyVisibility(nameof(AllowAcceleration), true)]
-        [STNodeProperty("保存 CIE 文件", "默认关闭；保存完整 CVCIE 文件。色度参数仍默认写入已有 CVRAW，不受此选项影响；加速模式下不保存 CIE。", true)]
-        public bool SaveFiles { get => saveFiles; set { saveFiles = value; OnPropertyChanged(); } }
 
         [Category("本地校正")]
         [STNodeProperty("允许加速", "开启后保留 RAW 和色度校正参数，不生成整幅 CIE 内存。本地 POI 按关注点区域计算；需要完整 CIE 的下游应关闭此项。", true)]
@@ -157,7 +151,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
                 if (canReuseExistingCie || canReuseCalibratedRaw)
                 {
-                    if (AllowAcceleration || !sourceFrame.HasCie)
+                    if (sourceFrame.HasRaw && (AllowAcceleration || !sourceFrame.HasCie))
                         LocalFrameCalibrationService.ReuseColorCalibration(sourceFrame, AllowAcceleration);
                     outputFrame = sourceFrame;
                     ownsOutputFrame = ownsSourceFrame;
@@ -165,11 +159,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     if (!outputFrame.IsFlipApplied)
                     {
                         throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
-                    }
-                    if (SaveFiles && !AllowAcceleration && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
-                    {
-                        DeviceCamera device = ResolveDevice(sourceFrame.Metadata.DeviceCode);
-                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw: false);
                     }
                 }
                 else if (sourceFrame.HasRaw)
@@ -192,10 +181,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     ownsOutputFrame = ownsSourceFrame;
                     ownsSourceFrame = false;
                     calibrated = true;
-                    if (SaveFiles && !AllowAcceleration && outputFrame.HasCie)
-                    {
-                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw: false);
-                    }
                 }
                 else
                 {
@@ -236,10 +221,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CameraFileType? outputFileType = cieFilePath != null
                 ? CameraFileType.CIEFile
                 : rawFilePath != null ? CameraFileType.RawFile : null;
-            if (SaveFiles && !AllowAcceleration && frame.HasCie && cieFilePath == null)
-            {
-                throw new InvalidOperationException("已启用“保存 CIE 文件”，但本地校正没有生成 CVCIE 文件。");
-            }
 
             MeasureResultImgModel model = new()
             {
@@ -299,7 +280,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 EventName = OperatorCode,
                 action.SerialNumber,
                 CalibTempName,
-                SaveFiles,
                 AllowAcceleration,
                 InputMode = "CurrentFrameThenInputFile"
             });
@@ -341,7 +321,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         protected static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    [STNode("Flow_CustomNodes", "校正")]
+    [STNode("Flow_CustomNodes", "校正", CategoryOrder = 9900)]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
         public LocalCalibrationNode() : base("校正", "LocalCalibration", "Calibration")

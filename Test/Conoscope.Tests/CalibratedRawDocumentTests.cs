@@ -56,6 +56,7 @@ public sealed class CalibratedRawDocumentTests
                 try { using var write = File.Open(rawPath, FileMode.Open, FileAccess.Write, FileShare.Read); }
                 catch (IOException) { sourceLockedDuringLoad = true; }
             };
+            CVFileReadCache.Release(); // This case verifies the disk-mapping lease.
             Assert.True(ConoscopeDocument.CanOpenFile(rawPath));
             Assert.True(ConoscopeDocument.CanOpenFile(ciePath));
             await document.OpenAsync(rawPath, null, NoPreprocess, false);
@@ -84,6 +85,41 @@ public sealed class CalibratedRawDocumentTests
             using var writableAfterLoad = File.Open(rawPath, FileMode.Open, FileAccess.Write, FileShare.None);
         }
         finally { File.Delete(rawPath); File.Delete(ciePath); File.Delete(exportPath); }
+    }
+
+    [Fact]
+    public async Task CacheOnlyRawOpensCompleteXyzWithoutDiskFile()
+    {
+        string path = TemporaryFile("cvraw");
+        bool enabled = CVFileReadCache.IsEnabled;
+        CVFileReadCache.IsEnabled = true;
+        try
+        {
+            using CVCIEFile raw = new()
+            {
+                Version = 2, Rows = 3, Cols = 3, Bpp = 8, Channels = 3,
+                Exp = [11, 22, 33], Data = Enumerable.Range(1, 27).Select(x => (byte)x).ToArray()
+            };
+            var transform = Transform(0, true);
+            Assert.True(CVFileUtil.WriteCVRaw(path, raw, CVFileSaveMode.MemoryOnly));
+            SaveCalibration(path, raw, transform);
+            Assert.True(ConoscopeDocument.CanOpenFile(path));
+            using var document = NewDocument();
+            await document.OpenAsync(path, null, NoPreprocess, false);
+            Assert.Null(document.LoadError);
+            Assert.True(document.HasXyzData);
+            float[] expected = TransformAll(raw, transform);
+            for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+            {
+                int pixel = y * 3 + x;
+                Assert.Equal(expected[pixel], document.X!.At<float>(y, x));
+                Assert.Equal(expected[9 + pixel], document.Y!.At<float>(y, x));
+                Assert.Equal(expected[18 + pixel], document.Z!.At<float>(y, x));
+            }
+            Assert.False(File.Exists(path));
+        }
+        finally { CVFileReadCache.Release(); CVFileReadCache.IsEnabled = enabled; }
     }
 
     [Theory]
@@ -117,6 +153,7 @@ public sealed class CalibratedRawDocumentTests
                 file.Position--;
                 file.WriteByte((byte)(value ^ 1));
             }
+            CVFileReadCache.Release(); // Read externally damaged disk bytes, not the valid cached snapshot.
             using var document = NewDocument();
             Assert.False(ConoscopeDocument.CanOpenFile(path));
             await document.OpenAsync(path, null, NoPreprocess, false);

@@ -1,5 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.FileIO;
+using System.Diagnostics;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -40,7 +42,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public string? CvCieFilePath { get; init; }
     }
 
-    [STNode("Flow_CustomNodes", "相机取图")]
+    [STNode("Flow_CustomNodes", "相机取图", CategoryOrder = 9900)]
     [FlowNodeDocumentation(
         "Flow_LocalCamera_Summary",
         Usage = "Flow_LocalCamera_Usage",
@@ -55,7 +57,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private int _AvgCount = 1;
         private bool _AutoConnect = true;
         private bool _IsAutoExp;
-        private bool _SaveFiles;
+        private bool _SaveFiles = true;
         private bool _AllowAcceleration;
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
@@ -85,7 +87,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         public bool IsAutoExp { get => _IsAutoExp; set { _IsAutoExp = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
-        [STNodeProperty("保存文件", "保存 CVRAW（包含已执行的色度校正参数）；未开启加速且有 CIE 数据时同时保存 CVCIE。", true)]
+        [STNodeProperty("保存文件", "启用时保存 CVRAW，写入完成后继续；关闭时仅保留缓存。数据库记录始终先写入，后续色度参数沿用此设置。", true)]
         public bool SaveFiles { get => _SaveFiles; set { _SaveFiles = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
@@ -145,14 +147,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Calibration = calibration,
                 FlipMode = FlipMode,
                 IsAutoExposure = IsAutoExp,
-                SaveFiles = SaveFiles,
+                SaveFiles = false,
                 AllowAcceleration = AllowAcceleration
             });
 
             LocalFlowFrame frame = capture.Frame;
             try
             {
+                frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code);
                 MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
+                Stopwatch saveTimer = Stopwatch.StartNew();
+                LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, SaveMode);
+                int saveTime = checked((int)Math.Min(saveTimer.ElapsedMilliseconds, int.MaxValue));
                 int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
@@ -164,13 +170,13 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),
-                    TotalTime = capture.TotalTimeMs,
+                    TotalTime = checked(capture.TotalTimeMs + saveTime),
                     CaptureTime = capture.CaptureTimeMs,
                     CalibrationTime = capture.CalibrationTimeMs,
                     FlipMode = currentFrame.Metadata.FlipMode.ToString(),
                     FlipApplied = currentFrame.IsFlipApplied,
                     FlipDeferred = currentFrame.Metadata.FlipMode != CVImageFlipMode.None && !currentFrame.Metadata.IsMirrorReady,
-                    SaveTime = capture.SaveTimeMs,
+                    SaveTime = saveTime,
                     CalibrationBackend = capture.CalibrationBackend,
                     MasterId = masterId,
                     HasRaw = currentFrame.HasRaw,
@@ -190,6 +196,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles, AllowAcceleration });
         }
+
+        internal CVFileSaveMode SaveMode => SaveFiles ? CVFileSaveMode.Synchronous : CVFileSaveMode.MemoryOnly;
 
         internal CameraRunParam BuildCameraParameters()
         {

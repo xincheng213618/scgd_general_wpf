@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Marketplace;
@@ -34,8 +35,8 @@ public partial class IntegrationDemoPanel : UserControl
     private void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
         Version? version = typeof(ProjectARVRLitePlugin).Assembly.GetName().Version;
-        CurrentPluginVersionText.Text = version?.ToString() ?? "未知";
-        OutputModeText.Text = ViewResultManager.GetInstance().Config.UseLegacyARVROutput ? "Legacy 扁平结果" : "标准嵌套结果";
+        CurrentPluginVersionText.Text = version?.ToString() ?? LocalizedText.Get("未知");
+        OutputModeText.Text = ViewResultManager.GetInstance().Config.UseLegacyARVROutput ? LocalizedText.Get("Legacy 扁平结果") : LocalizedText.Get("标准嵌套结果");
         ServiceUrlText.Text = MarketplaceConfig.ServiceBaseUrl;
         RunAllCommandTextBox.Text = "ProjectARVRPro.IntegrationDemo.exe --host <ColorVision-IP> --port 6666 --sn SN001 --mode runall";
         ParseCommandTextBox.Text = "ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\\project-arvr-result.json";
@@ -73,7 +74,7 @@ public partial class IntegrationDemoPanel : UserControl
         RefreshButton.IsEnabled = false;
         DownloadButton.IsEnabled = false;
         CopyDownloadLinkButton.IsEnabled = false;
-        StatusText.Text = "正在检查 Demo 最新版本…";
+        StatusText.Text = LocalizedText.Get("正在检查 Demo 最新版本…");
 
         try
         {
@@ -81,11 +82,11 @@ public partial class IntegrationDemoPanel : UserControl
             _latestRelease = release;
             _metadataLoaded = true;
             LatestVersionText.Text = release.Version;
-            VerifiedPluginVersionText.Text = string.IsNullOrWhiteSpace(release.VerifiedProjectARVRProVersion) ? "未注明" : release.VerifiedProjectARVRProVersion;
+            VerifiedPluginVersionText.Text = string.IsNullOrWhiteSpace(release.VerifiedProjectARVRProVersion) ? LocalizedText.Get("未注明") : release.VerifiedProjectARVRProVersion;
             ProtocolVersionText.Text = release.ProtocolVersion;
             RuntimeText.Text = string.IsNullOrWhiteSpace(release.RequiresDotNetFramework) ? ".NET Framework 4.8" : ".NET Framework " + release.RequiresDotNetFramework;
-            ReleaseNotesText.Text = string.IsNullOrWhiteSpace(release.ReleaseNotes) ? "本版本未提供更新说明。" : release.ReleaseNotes;
-            StatusText.Text = $"可下载 {release.FileName}（{FormatBytes(release.SizeBytes)}），下载后将自动校验 SHA-256。";
+            ReleaseNotesText.Text = string.IsNullOrWhiteSpace(release.ReleaseNotes) ? LocalizedText.Get("本版本未提供更新说明。") : release.ReleaseNotes;
+            StatusText.Text = LocalizedText.Format($"可下载 {release.FileName}（{FormatBytes(release.SizeBytes)}），下载后将自动校验 SHA-256。");
             DownloadButton.IsEnabled = !_isDownloading;
             CopyDownloadLinkButton.IsEnabled = true;
         }
@@ -96,11 +97,11 @@ public partial class IntegrationDemoPanel : UserControl
         {
             _latestRelease = null;
             _metadataLoaded = false;
-            LatestVersionText.Text = "暂不可用";
+            LatestVersionText.Text = LocalizedText.Get("暂不可用");
             VerifiedPluginVersionText.Text = "—";
             ProtocolVersionText.Text = "—";
             ReleaseNotesText.Text = "—";
-            StatusText.Text = "未能获取 Demo 发布信息。可能尚未发布，或当前无法连接下载服务。";
+            StatusText.Text = LocalizedText.Get("未能获取 Demo 发布信息。可能尚未发布，或当前无法连接下载服务。");
             Log.Warn("获取 ProjectARVRPro IntegrationDemo 发布信息失败。", ex);
         }
         finally
@@ -126,13 +127,13 @@ public partial class IntegrationDemoPanel : UserControl
         IDownloadService? downloadService = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
         if (downloadService == null)
         {
-            StatusText.Text = "下载服务不可用，请复制下载链接后在浏览器中打开。";
+            StatusText.Text = LocalizedText.Get("下载服务不可用，请复制下载链接后在浏览器中打开。");
             return;
         }
 
         _isDownloading = true;
         DownloadButton.IsEnabled = false;
-        StatusText.Text = $"正在下载 {release.FileName}…";
+        StatusText.Text = LocalizedText.Format($"正在下载 {release.FileName}…");
         try
         {
             Directory.CreateDirectory(_downloadDirectory);
@@ -146,7 +147,7 @@ public partial class IntegrationDemoPanel : UserControl
         {
             _isDownloading = false;
             DownloadButton.IsEnabled = true;
-            StatusText.Text = "启动 Demo 下载失败：" + ex.Message;
+            StatusText.Text = LocalizedText.Get("启动 Demo 下载失败：") + ex.Message;
             Log.Error("启动 ProjectARVRPro IntegrationDemo 下载失败。", ex);
         }
     }
@@ -157,11 +158,11 @@ public partial class IntegrationDemoPanel : UserControl
         {
             if (string.IsNullOrWhiteSpace(filePath))
             {
-                StatusText.Text = "Demo 下载失败，请检查下载窗口和网络状态后重试。";
+                StatusText.Text = LocalizedText.Get("Demo 下载失败，请检查下载窗口和网络状态后重试。");
                 return;
             }
 
-            StatusText.Text = "下载完成，正在校验文件…";
+            StatusText.Text = LocalizedText.Get("下载完成，正在校验文件…");
             (bool IsValid, string Error) verification = await Task.Run(() =>
             {
                 bool isValid = IntegrationDemoReleaseClient.VerifyPackage(filePath, release, out string error);
@@ -170,16 +171,16 @@ public partial class IntegrationDemoPanel : UserControl
             if (!verification.IsValid)
             {
                 TryDeleteInvalidDownload(filePath);
-                StatusText.Text = "Demo 文件校验失败：" + verification.Error;
+                StatusText.Text = LocalizedText.Get("Demo 文件校验失败：") + verification.Error;
                 return;
             }
 
-            StatusText.Text = $"Demo {release.Version} 下载并校验完成：{filePath}";
+            StatusText.Text = LocalizedText.Format($"Demo {release.Version} 下载并校验完成：{filePath}");
             PlatformHelper.OpenFolder(Path.GetDirectoryName(filePath));
         }
         catch (Exception ex)
         {
-            StatusText.Text = "处理 Demo 下载文件失败：" + ex.Message;
+            StatusText.Text = LocalizedText.Get("处理 Demo 下载文件失败：") + ex.Message;
             Log.Error("处理 ProjectARVRPro IntegrationDemo 下载文件失败。", ex);
         }
         finally
@@ -195,7 +196,7 @@ public partial class IntegrationDemoPanel : UserControl
             return;
 
         Clipboard.SetText(_releaseClient.GetDownloadUrl(_latestRelease));
-        StatusText.Text = "Demo 下载链接已复制。";
+        StatusText.Text = LocalizedText.Get("Demo 下载链接已复制。");
     }
 
     private void OpenDownloadDirectoryButton_Click(object sender, RoutedEventArgs e)
@@ -208,7 +209,7 @@ public partial class IntegrationDemoPanel : UserControl
     {
         string text = (sender as Button)?.Tag as string == "Parse" ? ParseCommandTextBox.Text : RunAllCommandTextBox.Text;
         Clipboard.SetText(text);
-        StatusText.Text = "命令已复制。";
+        StatusText.Text = LocalizedText.Get("命令已复制。");
     }
 
     private static void TryDeleteInvalidDownload(string filePath)

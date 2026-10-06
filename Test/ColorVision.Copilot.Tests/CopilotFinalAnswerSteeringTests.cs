@@ -23,7 +23,9 @@ public sealed class CopilotFinalAnswerSteeringTests
 
         var result = await run.WaitAsync(TimeSpan.FromSeconds(10));
 
-        Assert.Equal(2, fixture.Provider.StreamingCalls);
+        Assert.Equal(lengthLimited
+            ? CopilotProviderRetryChatClient.DefaultMaximumAttempts + 1
+            : CopilotProviderRetryChatClient.DefaultMaximumAttempts * 2, fixture.Provider.StreamingCalls);
         AssertSteeringOrder(fixture.Provider.LastStreamingInput);
         var delivered = fixture.Events
             .Where(item => item.Type == CopilotAgentEventType.SteeringDelivered)
@@ -206,7 +208,10 @@ public sealed class CopilotFinalAnswerSteeringTests
             cancellationToken.ThrowIfCancellationRequested();
             LastStreamingInput = string.Join("\n", messages.Select(message => message.Text));
             var call = ++StreamingCalls;
-            Assert.InRange(call, 1, exhaustToolBudget ? 1 : 2);
+            var initialAttempts = CopilotProviderRetryChatClient.DefaultMaximumAttempts;
+            var maximumStreamingCalls = exhaustToolBudget ? 1
+                : lengthLimited ? initialAttempts + 1 : initialAttempts * 2;
+            Assert.InRange(call, 1, maximumStreamingCalls);
             if (call == 1)
             {
                 FirstCallStarted.TrySetResult();
@@ -223,9 +228,12 @@ public sealed class CopilotFinalAnswerSteeringTests
             }
             else
             {
-                yield return new ChatResponseUpdate(ChatRole.Assistant, call == 2 && lengthLimited ? "Partial answer" : string.Empty)
+                // Exhaust the initial empty-response attempts before the framework delivers
+                // steering into its next inference; that inference ends explicitly or empty.
+                var explicitLengthLimit = call > initialAttempts && lengthLimited;
+                yield return new ChatResponseUpdate(ChatRole.Assistant, explicitLengthLimit ? "Partial answer" : string.Empty)
                 {
-                    FinishReason = call == 2 && lengthLimited ? ChatFinishReason.Length : ChatFinishReason.Stop,
+                    FinishReason = explicitLengthLimit ? ChatFinishReason.Length : ChatFinishReason.Stop,
                 };
             }
         }

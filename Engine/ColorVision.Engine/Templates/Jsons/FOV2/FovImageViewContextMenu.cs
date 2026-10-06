@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -111,14 +112,14 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
-                MessageBox.Show(editorContext.OwnerWindow, ex.Message, "FOV 参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(editorContext.OwnerWindow, ex.Message, LocalizedText.Get("FOV 参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show(editorContext.OwnerWindow, "请先打开待计算图像。", "FOV 计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(editorContext.OwnerWindow, LocalizedText.Get("请先打开待计算图像。"), LocalizedText.Get("FOV 计算"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -166,14 +167,14 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                         || !AlgorithmResultOverlay.IsCurrentRequest(drawContext, AlgorithmResultOverlay.FovTag, requestId)) return;
                     if (runResult.Calculation == null)
                     {
-                        MessageBox.Show(editorContext.OwnerWindow, runResult.Error ?? "FOV 计算失败。", "FOV 计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(editorContext.OwnerWindow, runResult.Error ?? LocalizedText.Get("FOV 计算失败。"), LocalizedText.Get("FOV 计算"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     Render(imageContext, drawContext, runResult.Calculation.Measurement);
                     MessageBox.Show(
                         editorContext.OwnerWindow,
                         BuildResultMessage(runResult),
-                        "FOV 计算结果",
+                        LocalizedText.Get("FOV 计算结果"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 });

@@ -6,7 +6,7 @@ summary: "按启动、跨模块调用、流程、模板与权限问题定位架�
 aliases: ["架构设计","模块关系"]
 code_paths: ["ColorVision/App.xaml.cs","Engine/ColorVision.Engine/FlowProcessing"]
 test_paths: []
-related: ["platform.system","platform.runtime","flow.architecture"]
+related: ["platform.system","platform.runtime","flow.architecture","platform.service-integration-roadmap"]
 ---
 
 # 架构设计
@@ -24,5 +24,6 @@ related: ["platform.system","platform.runtime","flow.architecture"]
 | 模板编辑、新建和关闭意味着什么？ | [编辑与创建宿主](../04-api-reference/algorithms/templates/template-management.md) |
 | Flow 模板如何处理并发保存和关联包？ | [Flow 模板契约](../04-api-reference/engine-components/template-flow-chain.md) |
 | 哪些授权真正存在，哪些没有统一接入？ | [权限边界](./security/overview.md)、[RBAC](./security/rbac.md) |
+| 如何让配套服务逐步成为 ColorVision 的内部组件？ | [服务整合演进规划](./service-integration-roadmap.md)（规划，非当前能力声明） |
 
 具体组件及源码关联见[生成的知识地图](../knowledge/index.md)。修改前核对目标主题的实现、测试和验证缺口；编号目录保留为稳定地址，不另规定阅读顺序。

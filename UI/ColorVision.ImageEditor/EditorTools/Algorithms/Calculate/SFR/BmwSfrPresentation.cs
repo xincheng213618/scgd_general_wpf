@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using System;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ internal static class BmwSfrPresentation
         double? value = result is not { Valid: true } ? null : response ? SfrCurveQueries.AtFrequency(result.Frequencies, result.Mtf, frequency)
             : settings.Metric == BmwSfrDisplayMetric.Mtf10 ? result.Mtf10 : result.Mtf50;
         string metric = result is not { Valid: true } ? "INVALID" : value.HasValue ? response ? value.Value.ToString("P1", CultureInfo.CurrentCulture) : Number(value)
-            : response ? "无数据" : "未交叉";
+            : response ? LocalizedText.Get("无数据") : LocalizedText.Get("未交叉");
         string label = settings.ShowEdgeNames ? EdgeName(edge.Id) : "";
         if (settings.ShowValues) label += (label.Length > 0 ? "  " : "") + (settings.CompactMetricLabels ? metric : $"{channel} {name} {metric}");
         var geometry = new List<string>();
@@ -53,7 +54,7 @@ internal static class BmwSfrPresentation
         if (settings.ShowCenterDistance && HasCenter(target))
         {
             double dx = edge.Roi.X + edge.Roi.Width / 2.0 - target!.CenterX, dy = edge.Roi.Y + edge.Roi.Height / 2.0 - target.CenterY;
-            geometry.Add($"距中心 {Math.Sqrt(dx * dx + dy * dy):F1} px");
+            geometry.Add(LocalizedText.Format($"距中心 {Math.Sqrt(dx * dx + dy * dy):F1} px"));
         }
         return label + (geometry.Count > 0 ? (label.Length > 0 ? "\n" : "") + string.Join(" · ", geometry) : "");
     }

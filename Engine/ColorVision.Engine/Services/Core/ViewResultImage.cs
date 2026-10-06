@@ -153,12 +153,9 @@ namespace ColorVision.Engine.Services
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 window.Content = imageView;
+                window.Closed += (_, _) => imageView.Dispose();
                 imageView.OpenImage(FileUrl);
                 window.Show();
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                {
-                    imageView.Clear();
-                }));
             }
             else
             {

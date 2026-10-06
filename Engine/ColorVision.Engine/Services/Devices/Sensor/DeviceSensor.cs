@@ -5,14 +5,17 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor
 {
-    public class DeviceSensor : DeviceService<ConfigSensor>
+    public partial class DeviceSensor : DeviceService<ConfigSensor>
     {
         public MQTTSensor DService { get; set; }
-        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
+        public DisplaySensorConfig DisplayConfig { get; }
 
         public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTSensor(Config);
+            DisplayConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplaySensorConfig>(Config.Code);
+            InitializeLocalSensor();
+            DService = new MQTTSensor(Config) { Device = this };
+            DService.RefreshBackendStatus();
             EditCommand = new RelayCommand(a =>
             {
                 EditSensor window = new(this);

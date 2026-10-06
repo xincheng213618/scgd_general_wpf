@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 #pragma warning disable CA1822
 using ColorVision.Common.MVVM;
 using log4net;
@@ -34,7 +35,7 @@ namespace Spectrum.Configs
             set { _isConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); }
         }
 
-        public string StatusText => IsConnected ? "已连接 (Connected)" : "未连接 (Disconnected)";
+        public string StatusText => IsConnected ? LocalizedText.Get("已连接 (Connected)") : LocalizedText.Get("未连接 (Disconnected)");
 
         public string LastErrorMessage
         {

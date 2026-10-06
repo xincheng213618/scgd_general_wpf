@@ -3,7 +3,7 @@ knowledge_id: "delivery.testing"
 knowledge_type: "reference"
 status: "current"
 summary: "按改动范围选择managed、native、脚本、后端和知识验证，不以局部通过代表完整验收。"
-aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","COLORVISION_IMAGE_ALGORITHM_PERF"]
+aliases: ["怎么测试","验证命令","dotnet test","测试入口","PerformanceProbe","测试维护","测试瘦身"]
 code_paths: ["Test","Scripts/tests","Web/Backend","package.json",".github/workflows/dotnet.yml"]
 test_paths: ["Test/ColorVision.Themes.Tests/ColorVision.Themes.Tests.csproj","Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj","Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj","Test/ColorVision.Copilot.Tests/CopilotConfigurationIsolationTests.cs"]
 related: ["delivery.index","delivery.prerequisites","delivery.native-testing","governance.retrieval","copilot.configuration"]
@@ -28,12 +28,11 @@ related: ["delivery.index","delivery.prerequisites","delivery.native-testing","g
 
 ## `ColorVision.UI.Tests`
 
-这是普通 UI 与主程序基础设施测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`；Copilot 测试不再由这个程序集承载。
+这是普通 UI 与主程序基础设施测试项目。工程声明 `TargetFramework=net10.0-windows`、`UseWPF=true`、`IsTestProject=true`。
 
 | 测试文件 | 覆盖面 |
 | --- | --- |
 | `ConfigServiceAdaptersTests.cs`、`ConfigHandlerPersistenceTests.cs` | 配置 adapter 与配置持久化 |
-| `PropertyEditorContractTests.cs`、`PropertyEditSessionTests.cs`、`ListEditorTests.cs` | PropertyGrid 契约、编辑会话和列表编辑器 |
 | `FindCrossResultOverlayTests.cs`、`AlgorithmResultOverlayTests.cs`、`AlgorithmOverlayManagerTests.cs` | 历史结果坐标、算法叠加内容、临时/持久Overlay生命周期；三者不是同一个职责 |
 | `Test/ProjectARVRPro.Tests/ResultImagePresentationTests.cs` | ProjectARVRPro 图像候选、保存路径与尺寸回退 |
 | `UniversalSortTests.cs` | 通用排序 |
@@ -58,7 +57,7 @@ dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --filter "Category=PerformanceProbe"
 ```
 
-这些命令会构建/运行测试并写入本地产物，不等同于纯文档校验。`ImageAlgorithmPerformanceGateTests` 中调用 `Enabled()` 的 4K/8K 探针，仅在 `COLORVISION_IMAGE_ALGORITHM_PERF=1` 时执行测量，否则记录说明后直接返回；不是这个分类里的所有测试都受同一个开关控制。测试整体通过不能证明所有大型性能测量已经执行，记录时需核对筛选、环境变量与实际输出。
+这些命令会构建/运行测试并写入本地产物，不等同于纯文档校验。`PerformanceProbe` 只表示需要单独观察的本地性能样本；整体通过不能替代目标机器上的交互、设备或端到端验收，记录时需核对筛选条件和实际输出。
 
 两个测试项目的 `AssemblyInfo.cs` 都禁用测试集合并行，原因是进程级注册器、状态和 WPF 服务共享。`UseWPF=true` 不会让所有测试线程自动成为 STA；两个项目通过源码链接共用 `Test/Shared/StaTest.cs`：只需独立 STA 的同步操作使用 `StaTest.Run`，有超时要求的测试保留各自时限和失败提示；需要共享 `Application` 和消息循环的操作使用 `WpfTestHost`。两者的线程生命周期不同，不为提速取消这些边界。
 
@@ -71,7 +70,7 @@ dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64
 dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp"
 ```
 
-Copilot 的配置契约见[配置与指令来源](./core-concepts/copilot-configuration.md)：模型、供应商、工具与审批由 ColorVision 管理，不加载全局或项目 `config.toml`。`CopilotConfigurationIsolationTests` 验证外部 TOML 不覆盖应用设置且项目指令仍可发现；这是当前负向隔离覆盖，不应当作过期加载测试删除。
+Copilot 的配置契约见[配置与指令来源](./core-concepts/copilot-configuration.md)：模型、供应商、工具与审批由 ColorVision 管理，不加载全局或项目 `config.toml`。`CopilotConfigurationIsolationTests` 验证外部 TOML 不覆盖应用设置且项目指令仍可发现。
 
 ## Spectrum 与 Conoscope
 
@@ -135,6 +134,7 @@ finally {
 
 - 优先验证输入输出、用户操作及失败后的状态。不要为私有成员名称、完整命令清单、源码字符串或装饰布局建立固定基线；需要兼容检查时，明确实际外部消费者。ABI、交付清单等无法由普通行为测试替代的检查仍按对应契约保留。
 - 相同逻辑使用代表性参数案例，重复线程样板复用现有 `StaTest` / `WpfTestHost`；保留不同失败原因和生命周期边界，不以减少行数或测试数量作为通过标准。本地验证按改动选择，性能探针也只在需要时于本地单独执行。
+- 允许为复现问题、探索行为、性能对比和业务迭代临时新增测试。完成本轮验证后，删除这些测试及专用 helper、样本、诊断开关和项目入口；通过不代表应长期保留，也不以归档、禁用或默认跳过代替删除。只有现有覆盖无法保护的稳定共享行为、兼容契约或失败/生命周期边界，才保留最小长期回归，并在任务报告中说明理由；不要求每次临时验证都转成永久测试。
 - 新增测试项目或关键测试类时，同步对应知识的 `test_paths` 和必要的验证说明，再生成目录；侧边栏自动派生，不手工维护。不要把 `Test/**/bin`、`Test/**/obj` 当成源码证据。
 - 修改 UI、Engine、插件或项目文档后，仍需运行 `npm run docs:build` 验证文档站。
 - 快速发布遵守根 `AGENTS.md` 的专用入口与范围，不因为本页列了测试就额外扩大发布流程。

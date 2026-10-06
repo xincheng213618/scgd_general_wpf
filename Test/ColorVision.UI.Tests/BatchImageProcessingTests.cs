@@ -93,7 +93,7 @@ public class BatchImageProcessingTests
 
         using Mat result = algorithm.Apply(source);
 
-        Assert.Equal("仅转换格式", algorithm.Name);
+        Assert.Equal(ColorVision.ImageEditor.Properties.Resources.BatchFormatOnly, algorithm.Name);
         Assert.Equal(string.Empty, algorithm.Suffix);
         Assert.NotSame(source, result);
         Assert.Equal(source.Type(), result.Type());

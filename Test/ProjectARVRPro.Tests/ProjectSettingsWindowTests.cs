@@ -41,6 +41,18 @@ public sealed class ProjectSettingsWindowTests
                 Assert.Equal(4, content.Children.Count);
                 Assert.All(content.Children.Cast<FrameworkElement>(), section => Assert.Equal(Visibility.Visible, section.Visibility));
                 Assert.Empty(Descendants<Expander>(window));
+                Assert.True(FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.AutoCleanupEnabled)).IsVisible);
+                Assert.False(FindEditor<TextBox>(window, nameof(ViewResultManagerConfig.MinimumFreeSpaceGB)).IsVisible);
+                FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.AutoCleanupEnabled)).IsChecked = true;
+                Pump();
+                Assert.True(results.AutoCleanupEnabled);
+                var reserve = FindEditor<TextBox>(window, nameof(ViewResultManagerConfig.MinimumFreeSpaceGB));
+                Assert.True(reserve.IsVisible);
+                reserve.Text = "80";
+                reserve.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Pump();
+                Assert.Equal(80, results.MinimumFreeSpaceGB);
+                Capture(window, $"settings-Results-storage-{width}-{(dark ? "dark" : "light")}.png");
                 Assert.True(FindEditor<TextBox>(window, nameof(ViewResultManagerConfig.CodeDateFormat)).IsVisible);
                 Assert.True(FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.UseLegacyARVROutput)).IsVisible);
                 Assert.True(FindEditor<ToggleButton>(window, nameof(ViewResultManagerConfig.IsSaveCustomXlsx)).IsVisible);
