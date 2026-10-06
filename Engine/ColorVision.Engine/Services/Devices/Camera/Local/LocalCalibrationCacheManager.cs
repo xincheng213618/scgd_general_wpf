@@ -345,15 +345,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 throw new InvalidOperationException("线性校正缓存尚未加载。");
             }
-            if (!cvCameraCSLib.CM_SCGD_SDP_LineArity(
+            int result = cvCameraCSLib.CM_SCGD_SDP_LineArity(
                 lineArityHandle,
                 layout.Width,
                 layout.Height,
                 layout.Bpp,
                 checked((uint)layout.Channels),
-                rawPointer))
+                rawPointer);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
             {
-                throw new InvalidOperationException($"执行本地校正失败：{loadedLineArity.Value.DisplayName}。");
+                throw LocalCameraCaptureService.CreateNativeException($"执行本地校正失败：{loadedLineArity.Value.DisplayName}", result);
             }
         }
 
@@ -420,7 +421,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             if (lineArityHandle != IntPtr.Zero)
             {
-                if (cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle))
+                if (cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle) == cvErrorDefine.CV_ERR_SUCCESS)
                 {
                     lineArityHandle = IntPtr.Zero;
                     if (loadedLineArity.HasValue) releasedItems++;

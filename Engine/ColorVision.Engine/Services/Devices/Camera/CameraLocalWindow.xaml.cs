@@ -34,7 +34,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private readonly LocalCameraNode? _sourceNode;
         private bool _isInitializingNodeSettings;
         private bool _isCapturing;
+        private bool _synchronizingSession;
         private bool _hasDisplayedCapture;
+        private readonly string _captureComparisonSession = Guid.NewGuid().ToString("N");
+        private int _captureComparisonIndex;
 
         private sealed class LocalCaptureDisplayResult
         {
@@ -77,11 +80,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DataContext = Device;
             Closed += (_, _) => Dispose();
             Device.CameraBackend.Changed += Backend_Changed;
-            if (_sourceNode != null)
-            {
-                Device.DisplayConfig.PropertyChanged += CaptureSettings_PropertyChanged;
-                Device.Config.PropertyChanged += CaptureSettings_PropertyChanged;
-            }
+            Device.DisplayConfig.PropertyChanged += CaptureSettings_PropertyChanged;
+            Device.Config.PropertyChanged += CaptureSettings_PropertyChanged;
         }
 
         private void Backend_Changed(object? sender, EventArgs e)
@@ -90,14 +90,33 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (_disposed) return;
                 bool connected = Device.CameraBackend.LocalOwned;
-                if (!connected) _localRealtimePipeline.Stop(resetRealtime: true);
+                SynchronizeSessionMode();
+                if (!connected || m_etakeImageMode != TakeImageMode.Live) _localRealtimePipeline.Stop(resetRealtime: true);
                 UpdateConnectionState(connected);
             });
         }
 
+        private void SynchronizeSessionMode()
+        {
+            var session = Device.LocalCameraSession;
+            lock (session.SyncRoot)
+            {
+                if (!session.IsOpen) return;
+                _synchronizingSession = true;
+                try
+                {
+                    m_etakeImageMode = session.OpenedMode;
+                    cb_get_mode.SelectedIndex = (int)m_etakeImageMode;
+                }
+                finally { _synchronizingSession = false; }
+            }
+        }
+
         private void CaptureSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (_isInitializingNodeSettings)
+            if (e.PropertyName is nameof(DisplayCameraConfig.UseHikMvs) or nameof(Configs.ConfigCamera.CameraModel) or nameof(Configs.ConfigCamera.CameraMode))
+                Dispatcher.BeginInvoke(() => { if (!_disposed) UpdateConnectionState(Device.CameraBackend.LocalOwned); });
+            if (_sourceNode == null || _isInitializingNodeSettings)
             {
                 return;
             }
@@ -115,14 +134,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             cb_CM_TYPE.SelectedIndex = (int)m_eCameraMdl;
             cb_CM_MODE.SelectedIndex = (int)m_eCameraMode;
+            _synchronizingSession = true;
             cb_get_mode.SelectedIndex = (int)m_etakeImageMode;
+            _synchronizingSession = false;
             cb_bpp.SelectedIndex = m_nBppIndex;
             cb_Channels.SelectedIndex = Device.Config.Channel == ImageChannel.Three ? 1 : 0;
             CBFlip.ItemsSource = Enum.GetValues<CVImageFlipMode>()
                 .Select(value => new KeyValuePair<string, CVImageFlipMode>(value.ToString(), value));
+            CBHikBayerQuality.ItemsSource = Enum.GetValues<HikBayerQuality>()
+                .Select(value => new KeyValuePair<string, HikBayerQuality>(EngineLocalization.Get($"Camera_HikBayerQuality{(int)value}"), value));
             InitializeCameraIdFromConfig();
 
             bool isConnected = Device.LocalCameraSession.IsOpen;
+            SynchronizeSessionMode();
             if (isConnected && m_etakeImageMode == TakeImageMode.Live)
             {
                 AttachLiveCallback();
@@ -200,12 +224,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_CM_TYPE.IsEnabled = canConfigure;
             cb_CM_MODE.IsEnabled = canConfigure;
             cb_CM_ID.IsEnabled = canConfigure;
-            cb_get_mode.IsEnabled = canConfigure;
+            cb_get_mode.IsEnabled = !_isCapturing && !_isRefreshingCameraIds;
+            bool usesMvs = m_eCameraMdl == CameraModel.HK_USB && m_eCameraMode != CameraMode.CV_MODE
+                && (isConnected ? Device.LocalCameraSession.OpenedUseHikMvs : Device.DisplayConfig.UseHikMvs);
+            for (int index = (int)TakeImageMode.Measure_Fast; index <= (int)TakeImageMode.Measure_FastEx; index++)
+                ((ComboBoxItem)cb_get_mode.Items[index]).IsEnabled = !usesMvs;
             cb_bpp.IsEnabled = canConfigure;
 
-            bool canCapture = isConnected && m_etakeImageMode != TakeImageMode.Live && !_isCapturing;
+            bool canCapture = isConnected && !_isCapturing;
             btn_Meas.IsEnabled = canCapture;
             btn_CalAutoExp.IsEnabled = isConnected && !_isCapturing;
+            HikCaptureTestButton.IsEnabled = canConfigure;
+        }
+
+        private void HikCaptureTest_Click(object sender, RoutedEventArgs e)
+        {
+            try { Diagnostics.HikCaptureTestSettings.Launch(Device); }
+            catch (Exception ex) { MessageBox1.Show(this, ex.Message, EngineLocalization.Get("HikTest_Title")); }
         }
 
         private void UpdateCameraIdRefreshState(bool isRefreshing)
@@ -239,8 +274,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             UInt32 channelCount = 0;
-            if (!cvCameraCSLib.CM_GetChannels(m_hCamHandle, ref channelCount))
+            int result = cvCameraCSLib.CM_GetChannels(m_hCamHandle, ref channelCount);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
             {
+                log.Error(LocalCameraCaptureService.CreateNativeException("查询本地相机通道失败", result));
                 return;
             }
 
@@ -279,7 +316,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     cb_CM_ID.SelectedItem = cameraIds.FirstOrDefault(id => id.Equals(preferredCameraId, StringComparison.OrdinalIgnoreCase));
                     cb_CM_ID.Text = preferredCameraId;
-                    cvCameraCSLib.CM_SetCameraID(m_hCamHandle, preferredCameraId);
+                    ReportCameraSettingFailure(cvCameraCSLib.CM_SetCameraID(m_hCamHandle, preferredCameraId), "设置本地相机 ID 失败");
                 }
             }
             finally
@@ -385,13 +422,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
+            SynchronizeSessionMode();
             UpdateCurrentConfigFromUi(GetSelectedCameraId());
             UpdateNodeSettingsFromWindow();
             _localRealtimePipeline.Stop(resetRealtime: true);
-            if (m_etakeImageMode == TakeImageMode.Live)
-            {
-                Device.LocalCameraSession.DetachCallback();
-            }
+            Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false);
 
             SaveLocalPreferences();
             SaveDisplayConfig();
@@ -407,11 +442,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
-            _localRealtimePipeline.Start(ImageView);
+            Device.LocalCameraSession.UseOpened(_ =>
+            {
+                if (Device.LocalCameraSession.OpenedMode != TakeImageMode.Live) return false;
+                Device.LocalCameraSession.RegisterPreview(handle => cvCameraCSLib.CM_SetCallBack(handle, callback, IntPtr.Zero), StopLivePreview);
+                _localRealtimePipeline.Start(ImageView);
+                return true;
+            });
         }
 
-        ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
+        private void StopLivePreview() => _localRealtimePipeline.Stop(resetRealtime: true);
+
+        int QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             var pixelFormat = RealtimeFramePresenter.GetPixelFormat(channels, bpp);
             int stride = RealtimeFramePresenter.GetDefaultStride(width, pixelFormat);
@@ -713,7 +755,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (m_hCamHandle == IntPtr.Zero) return;
             m_eCameraMdl = (CameraModel)cb_CM_TYPE.SelectedIndex;
             Device.Config.CameraModel = m_eCameraMdl;
-            cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
+            ReportCameraSettingFailure(cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode), "设置本地相机型号失败", showMessage: true);
         }
 
         private void cb_CM_ID_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -731,15 +773,48 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 string selectedCameraId => selectedCameraId.Trim(),
                 _ => GetSelectedCameraId()
             };
-            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
+            int result = cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                ReportCameraSettingFailure(result, "设置本地相机 ID 失败", showMessage: true);
+                return;
+            }
             Device.Config.CameraID = cameraId;
             SaveDeviceConfig();
         }
 
-        private void cb_get_mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void cb_get_mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            m_etakeImageMode = (TakeImageMode)cb_get_mode.SelectedIndex;
-            Device.Config.TakeImageMode = m_etakeImageMode;
+            if (_synchronizingSession || cb_get_mode.SelectedIndex < 0) return;
+            TakeImageMode selected = (TakeImageMode)cb_get_mode.SelectedIndex;
+            if (!Device.LocalCameraSession.IsOpen)
+            {
+                m_etakeImageMode = selected;
+                Device.Config.TakeImageMode = selected;
+                return;
+            }
+            if (_isCapturing || selected == Device.LocalCameraSession.OpenedMode) return;
+            _isCapturing = true;
+            UpdateConnectionState(_isConnected);
+            try
+            {
+                int result = await Task.Run(() => Device.LocalCameraSession.SwitchMode(selected, (int)Device.Config.ImageBpp));
+                if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("切换本地相机模式失败", result);
+                SynchronizeSessionMode();
+                Device.LocalCameraSession.UseOpened(_ => { ApplyCurrentCameraSettings(); return 0; });
+                if (selected == TakeImageMode.Live) AttachLiveCallback();
+            }
+            catch (Exception ex)
+            {
+                log.Error("切换本地相机模式失败", ex);
+                MessageBox1.Show(this, ex.Message, "ColorVision");
+            }
+            finally
+            {
+                SynchronizeSessionMode();
+                _isCapturing = false;
+                UpdateConnectionState(Device.CameraBackend.LocalOwned);
+            }
         }
 
         private void cb_bpp_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -755,11 +830,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
-            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+            int gainResult = cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+            if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地相机设置增益失败", gainResult);
 
             if (!Device.Config.IsExpThree)
             {
-                cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+                int exposureResult = cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+                if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地相机设置曝光失败", exposureResult);
             }
         }
 
@@ -820,7 +897,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     UpdateConnectionState(true);
                 }
             }
-            catch (Exception ex) { MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
+            catch (Exception ex)
+            {
+                log.Error("Local camera connection failed.", ex);
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
             finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
         }
 
@@ -901,11 +982,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private static LocalCaptureDisplayResult CaptureAndPrepareDisplay(LocalCameraCaptureRequest request)
+        private LocalCaptureDisplayResult CaptureAndPrepareDisplay(LocalCameraCaptureRequest request)
         {
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(request);
             using LocalFlowFrame frame = capture.Frame;
             using LocalFlowFrameLease lease = frame.Acquire();
+            // Temporary HK comparison marker; emitted after timed capture and before preview copies.
+            string exposure = string.Join("/", lease.Metadata.Exposure.Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            log.Info(FormattableString.Invariant($"[CameraCaptureCompare] Path=cvCamera HikUseMvs={request.Device.LocalCameraSession.OpenedUseHikMvs} HikBayerQuality={request.Device.LocalCameraSession.OpenedHikBayerQuality} HikOutputBgr={request.Device.LocalCameraSession.OpenedHikOutputBgr} Session={_captureComparisonSession} Index={++_captureComparisonIndex} Serial={request.Device.Config.CameraID} FrameId={frame.FrameId} ExposureMs={exposure} Gain={lease.Metadata.Gain} Width={lease.Metadata.Width} Height={lease.Metadata.Height} Bits={lease.Metadata.SourceBpp} Channels={lease.Metadata.Channels} Average={request.CameraParameters?.AvgCount} AutoExposure={request.IsAutoExposure} CaptureMs={capture.CaptureTimeMs} CalibrationMs={capture.CalibrationTimeMs} SaveMs={capture.SaveTimeMs} PipelineMs={capture.TotalTimeMs} SaveFiles={request.SaveFiles} Calibration={lease.Metadata.CalibrationTemplate} Flip={request.FlipMode}"));
             byte[] rawData = lease.CopyRawToArray();
             byte[] cieData = lease.CopyCieToArray();
             WriteableBitmap displayBitmap = LocalCameraPreview.CreateRawBitmap(rawData, lease.Metadata.SourceBpp, lease.Metadata.Channels, lease.Metadata.Width, lease.Metadata.Height);
@@ -1007,11 +1091,30 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 CameraRunParam parameters = BuildLocalCameraParameters();
-                await Task.Run(() => Device.LocalCameraSession.UseOpened(handle =>
+                if (m_etakeImageMode == TakeImageMode.Live)
                 {
-                    LocalCameraAutoExposure.Measure(Device, handle, parameters);
-                    return true;
+                    // Live already displays callback frames; retain its existing exposure-only path.
+                    await Task.Run(() => Device.LocalCameraSession.UseOpened(handle =>
+                    {
+                        LocalCameraAutoExposure.Measure(Device, handle, parameters);
+                        return 0;
+                    }));
+                    return;
+                }
+                LocalCameraPreview preview = await Task.Run(() => Device.LocalCameraSession.UseOpened(handle =>
+                {
+                    using LocalFlowFrame frame = LocalCameraAutoExposure.MeasureFrame(Device, handle, parameters);
+                    return LocalCameraPreview.Create(frame);
                 }));
+                rawArray = Array.Empty<byte>();
+                srcrawArray = Array.Empty<byte>();
+                src_w = checked((uint)preview.Metadata.Width);
+                src_h = checked((uint)preview.Metadata.Height);
+                src_bpp = checked((uint)preview.Metadata.SourceBpp);
+                src_channels = checked((uint)preview.Metadata.Channels);
+                // The preview owns its bitmap; the native/flow frame is already released.
+                preview.Show(ImageView);
+                FitFirstCaptureToWindow();
             }
             catch (Exception ex) { MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision"); }
             finally { _isCapturing = false; UpdateConnectionState(Device.CameraBackend.LocalOwned); }
@@ -1021,7 +1124,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (Device.DisplayConfig.ExpTime > 0)
             {
-                cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+                ReportCameraSettingFailure(cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime), "本地相机设置曝光失败", showMessage: true);
             }
             else
             {
@@ -1033,7 +1136,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (Device.DisplayConfig.Gain >= 0)
             {
-                cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+                ReportCameraSettingFailure(cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain), "本地相机设置增益失败", showMessage: true);
             }
             else
             {
@@ -1045,7 +1148,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
 
-            if ((nErr = cvCameraCSLib.CM_Reset(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+            if ((nErr = cvCameraCSLib.CM_Reset(m_hCamHandle, 1000)) != cvErrorDefine.CV_ERR_SUCCESS)
             {
                 string szMsg = "";
                 cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
@@ -1087,7 +1190,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (m_hCamHandle == IntPtr.Zero) return;
             m_eCameraMode = (CameraMode)cb_CM_MODE.SelectedIndex;
             Device.Config.CameraMode = m_eCameraMode;
-            cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
+            int result = cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                ReportCameraSettingFailure(result, "设置本地相机模式失败", showMessage: true);
+                return;
+            }
             RefreshChannelsFromCamera();
         }
 
@@ -1144,7 +1252,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
-            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+            ReportCameraSettingFailure(cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime), "本地相机设置曝光失败");
         }
 
         private void PreviewSliderLocalGain_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1154,7 +1262,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
-            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+            ReportCameraSettingFailure(cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain), "本地相机设置增益失败");
+        }
+
+        private void ReportCameraSettingFailure(int errorCode, string operation, bool showMessage = false)
+        {
+            if (errorCode == cvErrorDefine.CV_ERR_SUCCESS) return;
+            var error = LocalCameraCaptureService.CreateNativeException(operation, errorCode);
+            log.Error(error);
+            if (showMessage) MessageBox1.Show(Application.Current.GetActiveWindow(), error.Message, "ColorVision");
         }
 
         public void Dispose()
@@ -1165,6 +1281,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             _disposed = true;
+            Device.LocalCameraSession.StopPreview(StopLivePreview, closeCamera: false);
             Device.CameraBackend.Changed -= Backend_Changed;
             Device.DisplayConfig.PropertyChanged -= CaptureSettings_PropertyChanged;
             Device.Config.PropertyChanged -= CaptureSettings_PropertyChanged;

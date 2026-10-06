@@ -59,6 +59,15 @@
                         </ComboBox>
                     </DockPanel>
 
+                    <CheckBox Margin="78,3,0,3" Content="{engine:EngineLang Camera_UseHikMvs}" IsChecked="{Binding DisplayConfig.UseHikMvs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{engine:EngineLang Camera_UseHikMvsHint}" />
+
+                    <CheckBox Margin="78,3,0,3" Content="{engine:EngineLang Camera_HikOutputBgr}" IsChecked="{Binding DisplayConfig.HikOutputBgr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{engine:EngineLang Camera_HikOutputBgrHint}" />
+
+                    <DockPanel Margin="0,3" ToolTip="{engine:EngineLang Camera_HikBayerQualityHint}">
+                        <TextBlock Width="78" Text="{engine:EngineLang Camera_HikBayerQuality}" />
+                        <ComboBox x:Name="CBHikBayerQuality" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding DisplayConfig.HikBayerQuality, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </DockPanel>
+
                     <DockPanel Margin="0,3">
                         <Button x:Name="btn_RefreshCameraId" Width="64" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.RefreshDeviceList}" />
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CameraID}" />
@@ -69,10 +78,10 @@
                     <DockPanel Margin="0,3">
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CaptureMode}" />
                         <ComboBox x:Name="cb_get_mode" SelectionChanged="cb_get_mode_SelectionChanged">
-                            <ComboBoxItem Content="Measure_Normal" />
-                            <ComboBoxItem Content="Live" />
-                            <ComboBoxItem Content="Measure_Fast" />
-                            <ComboBoxItem Content="Measure_FastEx" />
+                            <ComboBoxItem Content="{engine:EngineLang 拍照（普通）}" />
+                            <ComboBoxItem Content="{engine:EngineLang 视频}" />
+                            <ComboBoxItem Content="{engine:EngineLang 拍照（快速）}" />
+                            <ComboBoxItem Content="{engine:EngineLang 拍照（快速扩展）}" />
                         </ComboBox>
                     </DockPanel>
 
@@ -99,6 +108,8 @@
                     </UniformGrid>
 
                     <Separator Margin="0,8" />
+
+                    <Button x:Name="HikCaptureTestButton" Margin="0,0,0,8" Click="HikCaptureTest_Click" Content="{engine:EngineLang HikTest_Title}" ToolTip="{engine:EngineLang HikTest_EntryHint}" />
 
                     <TextBlock Margin="0,0,0,6" FontWeight="Bold" Text="{x:Static properties:Resources.CaptureSettings}" />
                     <CheckBox Margin="0,0,0,6" Content="{x:Static properties:Resources.AutoExposure}" IsChecked="{Binding Config.IsAutoExpose, Mode=TwoWay}" />
@@ -161,7 +172,7 @@
                     </StackPanel>
 
                     <UniformGrid Margin="0,8,0,3" Columns="2">
-                        <Button x:Name="btn_Meas" Margin="0,0,3,0" Padding="5" Click="btn_Meas_Click" Content="{x:Static properties:Resources.Measure}" IsEnabled="False" />
+                        <Button x:Name="btn_Meas" Margin="0,0,3,0" Padding="5" Click="btn_Meas_Click" Content="{x:Static properties:Resources.Measure}" ToolTip="{engine:EngineLang 视频中取图会自动切换到拍照模式}" IsEnabled="False" />
                         <Button x:Name="btn_CalAutoExp" Margin="3,0,0,0" Padding="5" Click="btn_CalAutoExp_Click" Content="{x:Static properties:Resources.CalcAutoExposure}" IsEnabled="False" />
                     </UniformGrid>
                     <TextBlock x:Name="CaptureStatusText" Margin="0,4,0,0" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" />

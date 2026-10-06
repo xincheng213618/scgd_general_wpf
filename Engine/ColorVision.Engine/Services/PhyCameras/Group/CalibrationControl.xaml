@@ -71,12 +71,12 @@
                                 </Style>
                             </StackPanel.Style>
                             <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE8E5;" ToolTip="{display:EngineLang Key='在文件夹中显示'}" AutomationProperties.Name="{display:EngineLang Key='定位校正文件'}" Click="OpenCalibrationItem_Click" />
-                            <Button Content="&#xE70F;" ToolTip="{display:EngineLang Key='编辑文本校正文件'}" AutomationProperties.Name="{display:EngineLang Key='编辑校正文件'}" Click="EditCalibrationItem_Click">
+                            <Button Content="&#xE70F;" ToolTip="{display:EngineLang Key='编辑校正文件'}" AutomationProperties.Name="{display:EngineLang Key='编辑校正文件'}" Click="EditCalibrationItem_Click">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource IconActionButtonStyle}">
                                         <Setter Property="Visibility" Value="Hidden" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Resource.CanEditText}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding Resource.CanEdit}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>

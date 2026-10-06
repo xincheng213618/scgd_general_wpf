@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public CalibrationParam? Calibration { get; init; }
         public CVImageFlipMode FlipMode { get; init; } = CVImageFlipMode.None;
         public bool IsAutoExposure { get; init; }
+        public string? AutoExposureConfiguration { get; init; }
         public bool SaveFiles { get; init; }
         public bool AllowAcceleration { get; init; }
     }
@@ -55,7 +56,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             FlowNodeTiming.Run("WaitCamera", CaptureLock.Wait);
             try
             {
-                return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
+                lock (request.Device.LocalCameraSession.SyncRoot)
+                {
+                    request.Device.EnsureLocalMeasurementConnected(autoConnect: false);
+                    return FlowNodeTiming.Run("CapturePipeline", () => request.Device.LocalCameraSession.UseOpened(handle => CaptureCore(request, handle)));
+                }
             }
             finally
             {
@@ -89,10 +94,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int saveTimeMs = 0;
             try
             {
-                _ = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
-                if (!device.Config.IsExpThree) _ = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
+                int gainResult = FlowNodeTiming.Run("SetGain", () => cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain));
+                if (gainResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置增益失败", gainResult);
+                if (!device.Config.IsExpThree)
+                {
+                    int exposureResult = FlowNodeTiming.Run("SetExposure", () => cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime));
+                    if (exposureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机设置曝光失败", exposureResult);
+                }
 
-                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters));
+                if (request.IsAutoExposure) FlowNodeTiming.Run("AutoExposure", () => LocalCameraAutoExposure.Measure(device, cameraHandle, cameraParameters, request.AutoExposureConfiguration));
                 else FlowNodeTiming.Skip("AutoExposure");
                 string captureJson = BuildRawCaptureJson(device, cameraParameters, false);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;

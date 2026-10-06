@@ -1403,6 +1403,78 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 MVS 插值质量 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQuality {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 0 - 快速 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQuality0 {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQuality0", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1 - 均衡 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQuality1 {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQuality1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 2 - 最优 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQuality2 {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQuality2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 3 - 最优+ 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQuality3 {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQuality3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色取图，旧后端和灰度取图忽略此项。仅下次打开前设置，修改不会关闭相机或改变当前连接。 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikBayerQualityHint {
+            get {
+                return ResourceManager.GetString("Camera_HikBayerQualityHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MVS 输出 BGR（兼容旧流程） 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikOutputBgr {
+            get {
+                return ResourceManager.GetString("Camera_HikOutputBgr", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认开启，将 MVS 彩色输出转换为旧流程使用的 BGR 顺序；关闭保留 RGB，仅用于对照。仅下次打开前设置，修改不会关闭或改变当前连接；旧后端和灰度取图不受影响。 的本地化字符串。
+        /// </summary>
+        public static string Camera_HikOutputBgrHint {
+            get {
+                return ResourceManager.GetString("Camera_HikOutputBgrHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 建议将 HK 相机 ROI 的宽高设置为 {0} 的倍数。
         ///
         ///当前 ROI：Width={1}, Height={2}
@@ -1525,6 +1597,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 海康使用新取图 的本地化字符串。
+        /// </summary>
+        public static string Camera_UseHikMvs {
+            get {
+                return ResourceManager.GetString("Camera_UseHikMvs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。仅 HK_USB 的 BV/LV/LVTOBV 生效。只在下次打开前设置，修改不会关闭或切换当前连接。 的本地化字符串。
+        /// </summary>
+        public static string Camera_UseHikMvsHint {
+            get {
+                return ResourceManager.GetString("Camera_UseHikMvsHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 创建 的本地化字符串。
         /// </summary>
         public static string CameraActionCreate {
@@ -1584,6 +1674,240 @@ namespace ColorVision.Engine.Properties {
         public static string CameraLog {
             get {
                 return ResourceManager.GetString("CameraLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拍前自曝 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_AutoBeforeCapture {
+            get {
+                return ResourceManager.GetString("CameraPanel_AutoBeforeCapture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拍前自曝 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_AutoBeforeCaptureFull {
+            get {
+                return ResourceManager.GetString("CameraPanel_AutoBeforeCaptureFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自曝 ND 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_AutoExposureND {
+            get {
+                return ResourceManager.GetString("CameraPanel_AutoExposureND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 平均 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Averages {
+            get {
+                return ResourceManager.GetString("CameraPanel_Averages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校正 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Calibration {
+            get {
+                return ResourceManager.GetString("CameraPanel_Calibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Connect {
+            get {
+                return ResourceManager.GetString("CameraPanel_Connect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Disconnect {
+            get {
+                return ResourceManager.GetString("CameraPanel_Disconnect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未连接 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Disconnected {
+            get {
+                return ResourceManager.GetString("CameraPanel_Disconnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 HDR 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_HDR {
+            get {
+                return ResourceManager.GetString("CameraPanel_HDR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本机参数 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_LocalExposure {
+            get {
+                return ResourceManager.GetString("CameraPanel_LocalExposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量翻转 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MeasureFlip {
+            get {
+                return ResourceManager.GetString("CameraPanel_MeasureFlip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 更多拍照设置 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_MoreCapture {
+            get {
+                return ResourceManager.GetString("CameraPanel_MoreCapture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电机与对焦 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Motor {
+            get {
+                return ResourceManager.GetString("CameraPanel_Motor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 仅服务模式支持 ND 自动切换；本地自动曝光前请取消勾选 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_NDHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_NDHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 不使用 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_NotUsed {
+            get {
+                return ResourceManager.GetString("CameraPanel_NotUsed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预览翻转 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewFlip {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewFlip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预览中 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Previewing {
+            get {
+                return ResourceManager.GetString("CameraPanel_Previewing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预览设置 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewSettings {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 预览工具 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_PreviewTools {
+            get {
+                return ResourceManager.GetString("CameraPanel_PreviewTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已连接 · 待机 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Ready {
+            get {
+                return ResourceManager.GetString("CameraPanel_Ready", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 区域 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Region {
+            get {
+                return ResourceManager.GetString("CameraPanel_Region", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先断开服务相机，再开始本地预览 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_ServicePreviewHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_ServicePreviewHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频模式 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_StartPreview {
+            get {
+                return ResourceManager.GetString("CameraPanel_StartPreview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭视频 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_StopPreview {
+            get {
+                return ResourceManager.GetString("CameraPanel_StopPreview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 停止连续画面；本地相机保留连接 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_StopPreviewHint {
+            get {
+                return ResourceManager.GetString("CameraPanel_StopPreviewHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 操作中… 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_Working {
+            get {
+                return ResourceManager.GetString("CameraPanel_Working", resourceCulture);
             }
         }
         
@@ -7205,6 +7529,375 @@ namespace ColorVision.Engine.Properties {
         public static string HighSpeedHoming {
             get {
                 return ResourceManager.GetString("HighSpeedHoming", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 1 · 均衡 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Balanced {
+            get {
+                return ResourceManager.GetString("HikTest_Balanced", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法确定对应的 Bayer16 格式。请先在 MVS 中选择与传感器匹配的 Bayer 格式并关闭相机。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Bayer16Required {
+            get {
+                return ResourceManager.GetString("HikTest_Bayer16Required", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机序列号 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Camera {
+            get {
+                return ResourceManager.GetString("HikTest_Camera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测试已停止，相机已关闭。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Cancelled {
+            get {
+                return ResourceManager.GetString("HikTest_Cancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取一张 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Capture {
+            get {
+                return ResourceManager.GetString("HikTest_Capture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请先关闭当前相机和本地视频，再打开海康取图测试。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_CloseCamera {
+            get {
+                return ResourceManager.GetString("HikTest_CloseCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机已连接，等待手动取图。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Connected {
+            get {
+                return ResourceManager.GetString("HikTest_Connected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 转换 ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Convert {
+            get {
+                return ResourceManager.GetString("HikTest_Convert", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 报告已复制。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Copied {
+            get {
+                return ResourceManager.GetString("HikTest_Copied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制报告 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Copy {
+            get {
+                return ResourceManager.GetString("HikTest_Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 调用线程 CPU ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Cpu {
+            get {
+                return ResourceManager.GetString("HikTest_Cpu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 单帧总计 ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Cycle {
+            get {
+                return ResourceManager.GetString("HikTest_Cycle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 先关闭 cvCamera / MVS 客户端中的相机并停止流程。连接后，每点一次“取一张”只取一帧；相机保持连接，测完点击“关闭相机”。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Description {
+            get {
+                return ResourceManager.GetString("HikTest_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭当前相机后，在独立测试窗口使用 MVS 取图。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_EntryHint {
+            get {
+                return ResourceManager.GetString("HikTest_EntryHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光 (ms) 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Exposure {
+            get {
+                return ResourceManager.GetString("HikTest_Exposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 0 · 快速 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Fast {
+            get {
+                return ResourceManager.GetString("HikTest_Fast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 固定 Bayer16 → RGB48，复用输出缓冲；不校正、不翻转、不自动存图、不落库。原始帧需单独点击保存。首次取图单列，统计不含打开/设参/导出/界面时间。比较原取图前需核对尺寸、实际曝光、ADC 位深及插值质量；耗时更低不代表测量结果等价。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Footnote {
+            get {
+                return ResourceManager.GetString("HikTest_Footnote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 增益（SDK 原值） 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Gain {
+            get {
+                return ResourceManager.GetString("HikTest_Gain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Height {
+            get {
+                return ResourceManager.GetString("HikTest_Height", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 此测试仅支持 HK_USB 对应的海康 GigE / USB3 相机。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_HkOnly {
+            get {
+                return ResourceManager.GetString("HikTest_HkOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 帧 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Index {
+            get {
+                return ResourceManager.GetString("HikTest_Index", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入相机序列号、0–60000 ms 内的正曝光和非负增益。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_InvalidSettings {
+            get {
+                return ResourceManager.GetString("HikTest_InvalidSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未找到该序列号的相机，请刷新并选择设备。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_NotFound {
+            get {
+                return ResourceManager.GetString("HikTest_NotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 2 · 最优（默认） 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Optimal {
+            get {
+                return ResourceManager.GetString("HikTest_Optimal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 3 · 最优+ 的本地化字符串。
+        /// </summary>
+        public static string HikTest_OptimalPlus {
+            get {
+                return ResourceManager.GetString("HikTest_OptimalPlus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Bayer 插值质量 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Quality {
+            get {
+                return ResourceManager.GetString("HikTest_Quality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 尚未打开相机。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Ready {
+            get {
+                return ResourceManager.GetString("HikTest_Ready", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新相机 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Refresh {
+            get {
+                return ResourceManager.GetString("HikTest_Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接相机 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Run {
+            get {
+                return ResourceManager.GetString("HikTest_Run", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在操作相机… 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Running {
+            get {
+                return ResourceManager.GetString("HikTest_Running", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 轮次 的本地化字符串。
+        /// </summary>
+        public static string HikTest_RunNumber {
+            get {
+                return ResourceManager.GetString("HikTest_RunNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取一张并保存原始帧 的本地化字符串。
+        /// </summary>
+        public static string HikTest_SaveRaw {
+            get {
+                return ResourceManager.GetString("HikTest_SaveRaw", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 额外触发一帧，将插值前的 Bayer16 数据与参数保存为 ZIP；不保存已取过的帧。保存时间不计入取图统计。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_SaveRawTip {
+            get {
+                return ResourceManager.GetString("HikTest_SaveRawTip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请安装海康 x64 MVS 运行库和相机驱动（接口参考 MVS 4.3.2），然后重启程序。 的本地化字符串。
+        /// </summary>
+        public static string HikTest_SdkRequired {
+            get {
+                return ResourceManager.GetString("HikTest_SdkRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设参/清队列 ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Setup {
+            get {
+                return ResourceManager.GetString("HikTest_Setup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭相机 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Stop {
+            get {
+                return ResourceManager.GetString("HikTest_Stop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在停止；等待取图返回并关闭相机… 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Stopping {
+            get {
+                return ResourceManager.GetString("HikTest_Stopping", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 海康取图测试 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Title {
+            get {
+                return ResourceManager.GetString("HikTest_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取图合计 ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Total {
+            get {
+                return ResourceManager.GetString("HikTest_Total", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 触发到原始帧 ms 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Wait {
+            get {
+                return ResourceManager.GetString("HikTest_Wait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 宽 的本地化字符串。
+        /// </summary>
+        public static string HikTest_Width {
+            get {
+                return ResourceManager.GetString("HikTest_Width", resourceCulture);
             }
         }
         
@@ -17488,7 +18181,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("相机取图缓冲", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 相机图像 的本地化字符串。
         /// </summary>
@@ -17783,6 +18476,24 @@ namespace ColorVision.Engine.Properties {
         public static string 节点耗时 {
             get {
                 return ResourceManager.GetString("节点耗时", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频 的本地化字符串。
+        /// </summary>
+        public static string 视频 {
+            get {
+                return ResourceManager.GetString("视频", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频中取图会自动切换到拍照模式 的本地化字符串。
+        /// </summary>
+        public static string 视频中取图会自动切换到拍照模式 {
+            get {
+                return ResourceManager.GetString("视频中取图会自动切换到拍照模式", resourceCulture);
             }
         }
         

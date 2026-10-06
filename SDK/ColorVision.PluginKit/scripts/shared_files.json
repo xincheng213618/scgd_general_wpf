@@ -401,7 +401,6 @@
     "runtimes/win-x64/native/OpenCvSharpExtern.dll",
     "runtimes/win-x64/native/WebView2Loader.dll",
     "runtimes/win-x64/native/assimp.dll",
-    "runtimes/win-x64/native/cvCalibration.dll",
     "runtimes/win-x64/native/cvCamera.dll",
     "runtimes/win-x64/native/e_sqlite3.dll",
     "runtimes/win-x64/native/glfw3.dll",

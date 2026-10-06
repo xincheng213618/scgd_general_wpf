@@ -20,8 +20,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             LocalFrameMetadata metadata = lease.Metadata;
-            byte[] raw = lease.CopyRawToArray();
-            BitmapSource bitmap = CreateRawBitmap(raw, metadata.SourceBpp, metadata.Channels, metadata.Width, metadata.Height);
+            // Borrow RAW only during the synchronous copy into an independently owned display bitmap.
+            BitmapSource bitmap = CreateRawBitmap(lease.RawPointer, lease.RawLength, metadata.SourceBpp, metadata.Channels, metadata.Width, metadata.Height);
             if (!frame.IsRawFlipApplied && metadata.FlipMode != CVImageFlipMode.None)
             {
                 LocalFrameMirrorService.ValidateFlipMode(metadata.FlipMode);
@@ -33,7 +33,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return new LocalCameraPreview { Bitmap = bitmap, CieData = lease.CopyCieToArray(), Metadata = metadata, Exposure = (float[])metadata.Exposure.Clone() };
         }
 
-        internal static WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)
+        internal static unsafe WriteableBitmap CreateRawBitmap(byte[] raw, int bpp, int channels, int width, int height)
+        {
+            fixed (byte* pointer = raw)
+                return CreateRawBitmap((IntPtr)pointer, raw.Length, bpp, channels, width, height);
+        }
+
+        private static WriteableBitmap CreateRawBitmap(IntPtr raw, int length, int bpp, int channels, int width, int height)
         {
             MatType matType = (bpp, channels) switch
             {
@@ -44,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 _ => throw new InvalidOperationException("本地预览的 RAW 图像格式无效。")
             };
             int stride = checked(width * channels * (bpp / 8));
-            if (width <= 0 || height <= 0 || raw.Length != checked(stride * height))
+            if (width <= 0 || height <= 0 || raw == IntPtr.Zero || length != checked(stride * height))
                 throw new InvalidOperationException("本地预览的 RAW 图像格式或长度无效。");
             // Use the CVRAW decoder's BGR-to-WPF conversion, including BGR16 -> Rgb48.
             // The converter owns the display copy; neither source samples nor their order are changed.

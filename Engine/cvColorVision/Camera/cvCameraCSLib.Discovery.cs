@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.IO;
+using log4net;
+using log4net.Appender;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -48,41 +51,61 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetChannels",
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetChannels(IntPtr handle, ref uint nChl);
+        public unsafe static extern int CM_GetChannels(IntPtr handle, ref uint nChl);
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCameraID",
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void CM_SetCameraID(IntPtr handle, string szCameraId);
+        public unsafe static extern int CM_SetCameraID(IntPtr handle, string szCameraId);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetErrorMessage",
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_GetErrorMessage(int nErr, StringBuilder szMsg, ref int len);
+        public unsafe static extern int CM_GetErrorMessage(int nErr, StringBuilder szMsg, ref int len);
 
-        public static bool CM_GetErrorMessage(int nErr, ref string szMsg)
+        public static int CM_GetErrorMessage(int nErr, ref string szMsg)
         {
             StringBuilder builder = new StringBuilder(1024);
             int nLen = 1024;
 
-            if (CM_GetErrorMessage(nErr, builder, ref nLen))
+            int result = CM_GetErrorMessage(nErr, builder, ref nLen);
+            if (result == cvErrorDefine.CV_ERR_SUCCESS)
             {
                 szMsg = builder.ToString();
-                return true;
             }
-
-            return false;
+            return result;
         }
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Reset",
             CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_Reset(IntPtr handle);
+        public unsafe static extern int CM_Reset(IntPtr handle, int delayTimeMs);
 
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitResource",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void InitResource(IntPtr CallBackFunc, IntPtr hOperate_data);
+        public const string NativeLogDirectoryEnvironmentVariable = "COLORVISION_NATIVE_LOG_DIRECTORY";
+
+        public static void InitResource(IntPtr CallBackFunc, IntPtr hOperate_data)
+        {
+            // An explicit process setting takes precedence over the host's log4net directory.
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(NativeLogDirectoryEnvironmentVariable)))
+            {
+                FileAppender fileAppender = LogManager.GetRepository().GetAppenders().OfType<FileAppender>()
+                    .FirstOrDefault(appender => !string.IsNullOrWhiteSpace(appender.File));
+                if (fileAppender != null)
+                {
+                    string directory = Path.GetDirectoryName(Path.GetFullPath(fileAppender.File));
+                    Environment.SetEnvironmentVariable(NativeLogDirectoryEnvironmentVariable, directory);
+                }
+            }
+
+            int result = InitResourceNative(CallBackFunc, hOperate_data);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
+                throw new InvalidOperationException($"Native resource initialization failed ({result}); check {NativeLogDirectoryEnvironmentVariable}.");
+        }
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "InitResource", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private static extern int InitResourceNative(IntPtr CallBackFunc, IntPtr hOperate_data);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "ReleaseResource", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void ReleaseResource();
+        public unsafe static extern int ReleaseResource();
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManagerV1", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         // Null or empty selects the native defaults; explicit files remain supported for compatibility.
         public unsafe static extern IntPtr CM_CreatCameraManagerV1(CameraModel eMdl, CameraMode eMode, string cfgFilename);
@@ -94,17 +117,16 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCameraIDV1",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern int GetAllCameraIDV1(CameraModel eMdl, StringBuilder sn, int len);
       
-        public static bool GetAllCameraIDV1(CameraModel eMdl, ref string szText)
+        public static int GetAllCameraIDV1(CameraModel eMdl, ref string szText)
         {
             StringBuilder builder = new StringBuilder(1024);
 
-            if (GetAllCameraIDV1(eMdl, builder, 1024) == cvErrorDefine.CV_ERR_SUCCESS)
+            int result = GetAllCameraIDV1(eMdl, builder, 1024);
+            if (result == cvErrorDefine.CV_ERR_SUCCESS)
             {
                 szText = builder.ToString();
-                return true;
             }
-
-            return false;
+            return result;
         }
 
         public static CameraDiscoverySummary SearchCameraIds(IEnumerable<CameraModel> cameraModels, int bufferSize = 10240)

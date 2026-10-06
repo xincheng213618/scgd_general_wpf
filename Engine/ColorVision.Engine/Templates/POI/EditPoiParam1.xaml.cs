@@ -1884,7 +1884,7 @@ namespace ColorVision.Engine.Templates.POI
             byte[] source = new byte[rawValueArray.Length * sizeof(ushort)];
             Buffer.BlockCopy(rawValueArray, 0, source, 0, source.Length);
             byte[] luminance = new byte[rawValueArray.Length * sizeof(float)];
-            bool succeeded = cvCameraCSLib.CM_SCGD_SDP_Luminance(
+            int result = cvCameraCSLib.CM_SCGD_SDP_Luminance(
                 calibrationHandle,
                 (uint)rawValueArray.Length,
                 1,
@@ -1893,7 +1893,7 @@ namespace ColorVision.Engine.Templates.POI
                 source,
                 luminance,
                 exposure);
-            if (!succeeded)
+            if (result != cvErrorDefine.CV_ERR_SUCCESS)
                 return false;
 
             for (int index = 0; index < measurementIndexes.Count; index++)

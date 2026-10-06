@@ -189,12 +189,39 @@ public class LocalCameraResultTests
             using var mat = file.ToMat(showErrors: false);
             var decoded = mat.ToWriteableBitmap();
             var preview = LocalCameraPreview.CreateRawBitmap(raw, bpp, channels, width, height);
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = width, Height = height, SourceBpp = bpp, Channels = channels
+            }, raw.Length, 0);
+            using var lease = frame.Acquire();
+            Marshal.Copy(raw, 0, lease.RawPointer, raw.Length);
+            var framePreview = LocalCameraPreview.Create(frame).Bitmap;
             byte[] expected = new byte[raw.Length], actual = new byte[raw.Length];
             decoded.CopyPixels(expected, stride, 0);
             preview.CopyPixels(actual, stride, 0);
             Assert.Equal(decoded.Format, preview.Format);
             Assert.Equal(expected, actual);
+            framePreview.CopyPixels(actual, stride, 0);
+            Assert.Equal(decoded.Format, framePreview.Format);
+            Assert.Equal(expected, actual);
+            Assert.Equal(original, lease.CopyRawToArray());
             Assert.Equal(original, raw);
+        });
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(5)]
+    [InlineData(7)]
+    public void PreviewRejectsRawBufferThatDoesNotMatchMetadata(int rawLength)
+    {
+        StaTest.Run(() =>
+        {
+            using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+            {
+                Width = 2, Height = 1, SourceBpp = 8, Channels = 3
+            }, rawLength, 24);
+            Assert.Throws<InvalidOperationException>(() => LocalCameraPreview.Create(frame));
         });
     }
 
@@ -237,6 +264,50 @@ public class LocalCameraResultTests
         Assert.Equal(23, parameters.ExpTimeG);
         LocalCameraAutoExposure.ApplyExposure(parameters, [8], false);
         Assert.Equal(8, parameters.ExpTimeB);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AutoExposureFrameCarriesItsActualExposureAndOwnsPreviewAfterDisposal(bool threeChannels)
+    {
+        LocalFlowFrame frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+        {
+            Width = 3, Height = 2, SourceBpp = 8, Channels = 3,
+            DeviceCode = "camera", Gain = 2, FlipMode = CVImageFlipMode.Y,
+            PrimaryBufferKind = LocalFrameBufferKind.CvRaw, IsMirrorReady = true
+        }, 18, 0);
+        CameraRunParam parameters = new();
+        try
+        {
+            using (var lease = frame.Acquire()) Marshal.Copy(Enumerable.Repeat((byte)64, 18).ToArray(), 0, lease.RawPointer, 18);
+            LocalCameraAutoExposure.ApplyFrameResult(frame, parameters, [12, 23, 34], [70, 71, 72], threeChannels);
+            Assert.Equal(threeChannels ? new float[] { 12, 23, 34 } : new float[] { 12, 12, 12 }, frame.Metadata.Exposure);
+            Assert.Equal(2, frame.Metadata.Gain);
+            Assert.Equal(CVImageFlipMode.Y, frame.Metadata.FlipMode);
+            var preview = LocalCameraPreview.Create(frame);
+            frame.Dispose();
+            Assert.True(preview.Bitmap.IsFrozen);
+            Assert.Equal(frame.Metadata.Exposure, preview.Exposure);
+            byte[] pixels = new byte[18];
+            preview.Bitmap.CopyPixels(pixels, 9, 0);
+            Assert.All(pixels, value => Assert.Equal(64, value));
+        }
+        finally { frame.Dispose(); }
+    }
+
+    [Fact]
+    public void InvalidAutoExposureFrameResultDoesNotUpdateExposureOrMetadata()
+    {
+        using LocalFlowFrame frame = CreateFrame(false);
+        CameraRunParam parameters = new();
+        parameters.SetAllExposure(10);
+        Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.ApplyFrameResult(frame, parameters, [12, 23, 34], [float.NaN, 70, 70], false));
+        Assert.Equal(10, parameters.ExpTime);
+        Assert.Equal(new float[] { 10 }, frame.Metadata.Exposure);
+        Assert.Throws<InvalidOperationException>(() => LocalCameraAutoExposure.ApplyFrameResult(frame, parameters, [float.NaN, 23, 34], [70, 70, 70], false));
+        Assert.Equal(10, parameters.ExpTime);
+        Assert.Equal(new float[] { 10 }, frame.Metadata.Exposure);
     }
 
     private static LocalFlowFrame CreateFrame(bool cie, CVImageFlipMode flip = CVImageFlipMode.None) => LocalFlowFrame.Allocate(new LocalFrameMetadata

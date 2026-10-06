@@ -72,12 +72,12 @@
                                 </Style>
                             </StackPanel.Style>
                             <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE8E5;" ToolTip="{display:EngineLang Key='在文件夹中显示'}" AutomationProperties.Name="{display:EngineLang Key='定位校正文件'}" Click="OpenCalibration_Click" />
-                            <Button Content="&#xE70F;" ToolTip="{display:EngineLang Key='编辑文本校正文件'}" AutomationProperties.Name="{display:EngineLang Key='编辑校正文件'}" Click="EditCalibration_Click">
+                            <Button Content="&#xE70F;" ToolTip="{display:EngineLang Key='编辑校正文件'}" AutomationProperties.Name="{display:EngineLang Key='编辑校正文件'}" Click="EditCalibration_Click">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource IconActionButtonStyle}">
                                         <Setter Property="Visibility" Value="Hidden" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedResource.CanEditText}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedResource.CanEdit}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
@@ -85,6 +85,7 @@
                         </StackPanel>
                     </Grid>
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
+                        <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE710;" AutomationProperties.Name="创建此类校正" ToolTip="创建此类校正" Click="CreateCalibrationRow_Click" />
                         <Button Style="{StaticResource IconActionButtonStyle}" Content="&#xE898;" AutomationProperties.Name="{display:EngineLang Key='上传校正文件'}" Command="{Binding Group.UploadCalibrationItemCommand}" CommandParameter="{Binding SlotKey}" ToolTip="{display:EngineLang Key='上传此类型的校正文件'}" />
                         <Button Content="&#xE9D2;" ToolTip="{display:EngineLang Key='用户校正'}" AutomationProperties.Name="{display:EngineLang Key='用户校正'}" Click="CorrectFourColor_Click">
                             <Button.Style>
@@ -124,7 +125,7 @@
                 <Button Style="{StaticResource UpdateDialogTextButtonStyle}" Margin="0,0,8,0"
                         Click="LaunchFourColorCorrection_Click" Content="{display:EngineLang Key='用户校正'}" />
                 <Button Style="{StaticResource UpdateDialogSecondaryButtonStyle}"
-                        Command="{Binding OepnCalibrationToolCommand}" Content="{display:EngineLang Key='创建校正'}" />
+                        Click="CreateCalibration_Click" Content="{display:EngineLang Key='创建校正'}" />
             </StackPanel>
         </Grid>
 

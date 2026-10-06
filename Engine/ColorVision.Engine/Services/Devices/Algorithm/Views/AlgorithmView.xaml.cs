@@ -10,6 +10,7 @@ using log4net;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private bool _messageSubscribed;
         private IDisposable? _localResultSubscription;
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly ViewAlgorithmConfig _historyConfig;
+        private readonly ResultHistoryCollection<ViewResultAlg> _viewResults;
 
         private DeviceAlgorithm? Device { get; }
 
@@ -54,6 +57,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         internal AlgorithmView(DeviceAlgorithm? device, bool deferInitialization)
         {
+            _historyConfig = Config;
+            _viewResults = new ResultHistoryCollection<ViewResultAlg>(result => result.Id, _historyConfig.MaxHistoryCount);
+            _historyConfig.PropertyChanged += HistoryConfig_PropertyChanged;
             Device = device;
             if (Device != null)
             {
@@ -173,7 +179,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<ViewResultAlg> ViewResults { get; } = new ObservableCollection<ViewResultAlg>();
+        public ObservableCollection<ViewResultAlg> ViewResults => _viewResults;
+
+        private void HistoryConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (_isDisposed || e.PropertyName != nameof(ResultViewConfig.MaxHistoryCount)) return;
+            void ApplyLimit()
+            {
+                if (!_isDisposed) _viewResults.MaxCount = _historyConfig.MaxHistoryCount;
+            }
+            if (Dispatcher.CheckAccess()) ApplyLimit();
+            else Dispatcher.BeginInvoke(ApplyLimit);
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -226,6 +243,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (!_isDisposed && result != null)
             {
+                if (_viewResults.ContainsId(result.Id)) return;
                 EnsureInitialized();
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
@@ -234,8 +252,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 else
                     ViewResults.Add(ViewResultAlg);
 
-                if (Config.AutoRefreshView)
-                    RefreshResultListView();
+                if (Config.AutoRefreshView && _viewResults.ContainsId(result.Id))
+                {
+                    listView1.SelectedItem = ViewResultAlg;
+                    listView1.ScrollIntoView(ViewResultAlg);
+                }
                 if (Config.AutoSaveSideData)
                     SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
@@ -454,8 +475,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void AlgorithmResult_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (sender is ListViewItem { DataContext: ViewResultAlg result })
+            if (sender is ListViewItem { DataContext: ViewResultAlg result } item)
+            {
                 AlgorithmResultDataSaver.EnsureContextMenu(result);
+                result.ContextMenu.PlacementTarget = item;
+                result.ContextMenu.IsOpen = true;
+                e.Handled = true;
+            }
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -469,6 +495,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isDisposed = true;
+            _historyConfig.PropertyChanged -= HistoryConfig_PropertyChanged;
             Loaded -= View_Loaded;
             IsVisibleChanged -= View_IsVisibleChanged;
 
@@ -492,6 +519,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             if (listViewSide != null)
                 listViewSide.ItemsSource = null;
+            ViewResults.Clear();
             if (ImageView != null)
             {
                 ImageView.Dispose();
@@ -512,7 +540,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             foreach (var item in dbList)
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(item);
-                ViewResults.Add(ViewResultAlg);
+                _viewResults.QueryResults.Add(ViewResultAlg);
             }
         }
 
@@ -520,7 +548,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, ViewResults, t => new ViewResultAlg(t));
+            GenericQuery<AlgResultMasterModel, ViewResultAlg> genericQuery = new GenericQuery<AlgResultMasterModel, ViewResultAlg>(Db, _viewResults.QueryResults, t => new ViewResultAlg(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();

@@ -13,6 +13,177 @@ namespace ColorVision.UI.Tests;
 public class LocalCameraSessionTests
 {
     [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(-10030, 2, 1)]
+    public void LiveMeasurementRetainsIdentityOwnershipAndUsesConfiguredDepth(int switchResult, int opens, int closes)
+    {
+        var native = new FakeNative { SwitchResult = switchResult };
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { CameraID = "camera-1", ImageBpp = ImageBpp.bpp16, TakeImageMode = TakeImageMode.Live };
+        using var session = new LocalCameraSession(native, backend, config);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        var oldPool = session.RawBufferPool;
+        session.RegisterPreview(_ => 1, () => native.Events.Add("stop"));
+        native.Events.Clear();
+        backend.SetPreference(false);
+        native.OnSwitch = () =>
+        {
+            Assert.True(backend.RoutesLocally);
+            Assert.Throws<InvalidOperationException>(backend.EnsureServiceAvailable);
+        };
+
+        session.EnsureMeasurement(autoConnect: false);
+        session.EnsureMeasurement(autoConnect: false);
+
+        Assert.Equal(new[] { "stop", "detach", "switch" }, native.Events);
+        Assert.Equal(opens, native.Opens);
+        Assert.Equal(closes, native.Closes);
+        Assert.Equal(1, native.Switches);
+        Assert.Equal(1, native.Initializations);
+        Assert.Equal(0, native.Scans);
+        Assert.Equal("camera-1", native.OpenedId);
+        Assert.Equal(TakeImageMode.Measure_Normal, native.LastMode);
+        Assert.Equal(16, native.LastBpp);
+        Assert.Equal(TakeImageMode.Measure_Normal, config.TakeImageMode);
+        Assert.True(backend.RoutesLocally);
+        Assert.NotSame(oldPool, session.RawBufferPool);
+        Assert.Throws<ObjectDisposedException>(() => oldPool.Rent(16));
+    }
+
+    [Fact]
+    public void FastSwitchFailurePreservesTheOldModeAndNeverReopensOrUsesTheService()
+    {
+        var native = new FakeNative { SwitchResult = -10048 };
+        var backend = new CameraBackendState(true);
+        var config = new ConfigCamera { ImageBpp = ImageBpp.bpp16, TakeImageMode = TakeImageMode.Live };
+        using var session = new LocalCameraSession(native, backend, config);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        var pool = session.RawBufferPool;
+
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(false));
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(0, native.Closes);
+        Assert.Equal(TakeImageMode.Live, session.OpenedMode);
+        Assert.Equal(TakeImageMode.Live, config.TakeImageMode);
+        Assert.Equal(8, session.OpenedBpp);
+        Assert.Same(pool, session.RawBufferPool);
+        Assert.True(backend.LocalOwned);
+        Assert.Throws<InvalidOperationException>(backend.EnsureServiceAvailable);
+    }
+
+    [Fact]
+    public void LegacySwitchKeepsThePreferencesOfTheActualOpenSession()
+    {
+        bool useMvs = false, bgr = true;
+        int quality = 1;
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true),
+            getUseHikMvs: () => useMvs, getHikBayerQuality: () => quality, getHikOutputBgr: () => bgr);
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        useMvs = true; bgr = false; quality = 3;
+
+        Assert.Equal(1, session.SwitchMode(TakeImageMode.Measure_Normal, 16));
+        Assert.False(native.OpenedUseHikMvs);
+        Assert.True(native.OpenedHikOutputBgr);
+        Assert.Equal(1, native.OpenedHikBayerQuality);
+    }
+
+    [Fact]
+    public void ReplacedPreviewCannotDetachOrCloseTheCurrentOwner()
+    {
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        int firstStops = 0, secondStops = 0;
+        Action first = () => firstStops++;
+        Action second = () => secondStops++;
+        session.RegisterPreview(_ => 1, first);
+        session.RegisterPreview(_ => 1, second);
+        native.Events.Clear();
+
+        session.StopPreview(first, closeCamera: true);
+        Assert.Equal(1, firstStops);
+        Assert.Equal(0, secondStops);
+        Assert.Empty(native.Events);
+        Assert.True(session.IsOpen);
+        session.StopPreview(second, closeCamera: false);
+        Assert.Equal(1, secondStops);
+        Assert.Equal(new[] { "detach" }, native.Events);
+        Assert.True(session.IsOpen);
+        Assert.Equal(1, native.Opens);
+        Assert.Equal(0, native.Closes);
+        session.RegisterPreview(_ => 1, second);
+        session.StopPreview(second, closeCamera: true);
+        Assert.Equal(2, secondStops);
+        Assert.Equal(1, native.Closes);
+        Assert.False(session.IsOpen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClosedSessionHonorsAutoConnectAndNormalizesLivePreference(bool autoConnect)
+    {
+        var native = new FakeNative();
+        var config = new ConfigCamera { CameraID = "camera-1", ImageBpp = ImageBpp.bpp16, TakeImageMode = TakeImageMode.Live };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config);
+        if (autoConnect)
+        {
+            session.EnsureMeasurement(true);
+            Assert.Equal(TakeImageMode.Measure_Normal, session.OpenedMode);
+            Assert.Equal(16, session.OpenedBpp);
+            Assert.Equal(1, native.Opens);
+        }
+        else
+        {
+            Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(false));
+            Assert.Equal(0, native.Initializations);
+            Assert.Equal(0, native.Opens);
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void HikCapturePreferencesOnlyApplyOnTheNextOpen(int quality)
+    {
+        var preferences = Newtonsoft.Json.JsonConvert.DeserializeObject<ColorVision.Engine.Services.Devices.Camera.DisplayCameraConfig>("{}")!;
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), getUseHikMvs: () => preferences.UseHikMvs, getHikBayerQuality: () => (int)preferences.HikBayerQuality, getHikOutputBgr: () => preferences.HikOutputBgr);
+
+        Assert.True(preferences.UseHikMvs);
+        Assert.True(preferences.HikOutputBgr);
+        Assert.Equal(3, (int)preferences.HikBayerQuality);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.True(native.OpenedUseHikMvs);
+        Assert.Equal(3, native.OpenedHikBayerQuality);
+        Assert.True(native.OpenedHikOutputBgr);
+        preferences.UseHikMvs = false;
+        preferences.HikOutputBgr = false;
+        preferences.HikBayerQuality = (ColorVision.Engine.Services.Devices.Camera.HikBayerQuality)quality;
+        Assert.True(session.IsOpen);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(1, native.Opens);
+        Assert.True(session.OpenedUseHikMvs);
+        Assert.True(session.OpenedHikOutputBgr);
+        Assert.True(native.OpenedHikOutputBgr);
+        Assert.Equal(3, session.OpenedHikBayerQuality);
+        Assert.Equal(3, native.OpenedHikBayerQuality);
+
+        session.Close(true);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(2, native.Opens);
+        Assert.False(native.OpenedUseHikMvs);
+        Assert.False(session.OpenedUseHikMvs);
+        Assert.False(session.OpenedHikOutputBgr);
+        Assert.False(native.OpenedHikOutputBgr);
+        Assert.Equal(quality, session.OpenedHikBayerQuality);
+        Assert.Equal(quality, native.OpenedHikBayerQuality);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
@@ -407,12 +578,34 @@ public class LocalCameraSessionTests
         Assert.Throws<ObjectDisposedException>(() => pool.Rent(16));
     }
 
+    [Fact]
+    public void DisposeReleasesTheManagerWhenNativeCloseReportsAnError()
+    {
+        var error = new InvalidOperationException("close SDK error");
+        var native = new FakeNative { CloseError = error };
+        var session = new LocalCameraSession(native, new CameraBackendState(true));
+        session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
+
+        Assert.Same(error, Assert.Throws<InvalidOperationException>(session.Dispose));
+        Assert.Equal(1, native.Releases);
+        Assert.Equal(IntPtr.Zero, session.Handle);
+        session.Dispose();
+        Assert.Equal(1, native.Releases);
+    }
+
     private sealed class FakeNative : ILocalCameraNative
     {
         public IReadOnlyList<string> CameraIds { get; init; } = [];
         public bool FailDiscovery { get; init; }
         public bool IgnoreClose { get; set; }
-        public int Scans, Initializations, Opens;
+        public Exception? CloseError { get; set; }
+        public int Releases;
+        public int Scans, Initializations, Opens, Closes, Switches;
+        public int SwitchResult = cvErrorDefine.CV_ERR_CAM_TYPE_NOT;
+        public Action? OnSwitch;
+        public readonly List<string> Events = [];
+        public TakeImageMode LastMode;
+        public int LastBpp;
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public string? OpenedId;
         private bool opened;
@@ -425,16 +618,37 @@ public class LocalCameraSessionTests
         }
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp)
+        public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp)
+        {
+            Switches++;
+            Events.Add("switch");
+            OnSwitch?.Invoke();
+            if (SwitchResult == cvErrorDefine.CV_ERR_SUCCESS) { LastMode = mode; LastBpp = bpp; }
+            return SwitchResult;
+        }
+        public bool OpenedUseHikMvs;
+        public int OpenedHikBayerQuality;
+        public bool OpenedHikOutputBgr;
+        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
             Opens++;
+            LastMode = mode;
+            LastBpp = bpp;
             OpenedId = cameraId;
+            OpenedUseHikMvs = useHikMvs;
+            OpenedHikBayerQuality = hikBayerQuality;
+            OpenedHikOutputBgr = hikOutputBgr;
             opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS;
             return OpenResult;
         }
-        public void Close(IntPtr handle) { if (!IgnoreClose) opened = false; }
-        public void DetachCallback(IntPtr handle) { }
+        public void Close(IntPtr handle)
+        {
+            Closes++;
+            if (CloseError != null) throw CloseError;
+            if (!IgnoreClose) opened = false;
+        }
+        public void DetachCallback(IntPtr handle) { Events.Add("detach"); }
         public bool UpdateCalibration(IntPtr handle, string json) => true;
-        public void Release(IntPtr handle) { }
+        public void Release(IntPtr handle) { Releases++; }
     }
 }

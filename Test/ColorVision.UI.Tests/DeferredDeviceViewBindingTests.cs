@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes;
 using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -94,6 +95,9 @@ public sealed class DeferredDeviceViewBindingTests
                 Assert.Equal(BindingStatus.Active, height.Status);
                 Assert.NotNull(list.ItemsSource);
 
+                if (kind is "camera" or "algorithm")
+                    AssertResultMenuOpensLazily(view, list);
+
                 Button settings = Descendants(view).OfType<Button>().Single(button => ReferenceEquals(button.Command, config.EditCommand));
                 Assert.NotNull(settings.Command);
                 if (kind != "spectrum")
@@ -122,6 +126,42 @@ public sealed class DeferredDeviceViewBindingTests
                 ConfigService.SetInstance(previousConfig);
             }
         });
+    }
+
+    private static void AssertResultMenuOpensLazily(UserControl view, ListView list)
+    {
+        object result;
+        if (view is ViewCamera camera)
+        {
+            ViewResultImage image = new(new MeasureResultImgModel { Id = 1, FileUrl = string.Empty });
+            camera.ViewResults.Add(image);
+            result = image;
+        }
+        else
+        {
+            ViewResultAlg algorithm = new() { Id = 1 };
+            ((AlgorithmView)view).ViewResults.Add(algorithm);
+            result = algorithm;
+        }
+        PumpBindings();
+        list.UpdateLayout();
+        ListViewItem container = Assert.IsType<ListViewItem>(list.ItemContainerGenerator.ContainerFromIndex(0));
+        Assert.Null(result.GetType().GetField("_contextMenu", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(result));
+        // WPF exposes no public constructor for this routed input event.
+        ContextMenuEventArgs opening = (ContextMenuEventArgs)Activator.CreateInstance(typeof(ContextMenuEventArgs),
+            BindingFlags.Instance | BindingFlags.NonPublic, null, [container, true, 0d, 0d], null)!;
+        opening.RoutedEvent = ContextMenuService.ContextMenuOpeningEvent;
+        container.RaiseEvent(opening);
+        ContextMenu menu = (ContextMenu)result.GetType().GetProperty("ContextMenu")!.GetValue(result)!;
+        Assert.True(opening.Handled);
+        Assert.True(menu.IsOpen);
+        Assert.Same(container, menu.PlacementTarget);
+        Assert.NotEmpty(menu.Items);
+        menu.IsOpen = false;
+        // Drive the Closed boundary directly, independent of popup animation scheduling.
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.ClosedEvent, menu));
+        PumpBindings();
+        Assert.Null(menu.PlacementTarget);
     }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)

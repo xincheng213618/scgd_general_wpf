@@ -56,8 +56,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DisplayConfig_BackendPreferenceChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (IsDisposed || e.PropertyName != nameof(DisplayCameraConfig.UseLocalCamera)) return;
-            CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
+            if (IsDisposed) return;
+            if (e.PropertyName == nameof(DisplayCameraConfig.UseLocalCamera))
+                CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
+            else if (e.PropertyName != nameof(DisplayCameraConfig.UseHikMvs) && e.PropertyName != nameof(DisplayCameraConfig.HikBayerQuality) && e.PropertyName != nameof(DisplayCameraConfig.HikOutputBgr)) return;
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
@@ -107,18 +109,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void EnsureLocalMeasurementConnected(bool autoConnect)
         {
             EnsureLocalCameraAvailable();
-            if (LocalCameraSession.IsOpen)
-            {
-                if (LocalCameraSession.OpenedMode == TakeImageMode.Live)
-                    throw new InvalidOperationException("本地测量不能复用 Live 会话，请先关闭并以测量模式连接。");
-                return;
-            }
-            if (!autoConnect) throw new InvalidOperationException("本地相机尚未打开，请先连接相机。");
-            if (Config.TakeImageMode == TakeImageMode.Live)
-                throw new InvalidOperationException("本地取图不能使用 Live 模式，请将设备切换为测量模式。");
-            int result = LocalCameraSession.Open(Config.CameraID?.Trim() ?? string.Empty, Config.TakeImageMode, (int)Config.ImageBpp);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS)
-                throw LocalCameraCaptureService.CreateNativeException("本地相机打开失败", result);
+            LocalCameraSession.EnsureMeasurement(autoConnect);
         }
 
         internal CameraRunParam BuildLocalCameraParameters(double[]? exposure = null, CalibrationParam? calibration = null)
@@ -129,8 +120,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 AvgCount = DisplayConfig.AvgCount,
                 ExpTime = (float)(exposure?[0] ?? DisplayConfig.ExpTime),
                 ExpTimeR = (float)(exposure?[0] ?? DisplayConfig.ExpTimeR),
-                ExpTimeG = (float)(exposure?.ElementAtOrDefault(1) ?? DisplayConfig.ExpTimeG),
-                ExpTimeB = (float)(exposure?.ElementAtOrDefault(2) ?? DisplayConfig.ExpTimeB)
+                ExpTimeG = (float)(exposure is { Length: > 1 } ? exposure[1] : DisplayConfig.ExpTimeG),
+                ExpTimeB = (float)(exposure is { Length: > 2 } ? exposure[2] : DisplayConfig.ExpTimeB)
             };
             if (CalibrationGroupGainResolver.TryResolve(calibration, PhyCamera?.VisualChildren.OfType<GroupResource>() ?? Enumerable.Empty<GroupResource>(), out float gain, out _))
                 parameters.Gain = gain;

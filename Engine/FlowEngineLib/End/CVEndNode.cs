@@ -18,7 +18,7 @@ public class CVEndNode : CVDeviceNode
 	public static int EndDelayMilliseconds
 	{
 		get => Volatile.Read(ref endDelayMilliseconds);
-		set => Volatile.Write(ref endDelayMilliseconds, value is > 0 and <= 500 ? value : 0);
+		set => Volatile.Write(ref endDelayMilliseconds, value is > 0 and <= 1000 ? value : 0);
 	}
 
 	public STNodeOption m_in_start;
@@ -79,7 +79,7 @@ public class CVEndNode : CVDeviceNode
 		{
 			int delay = EndDelayMilliseconds;
 			if (delay > 0 && startAction.IsRunning && !startAction.TryGetStopStatus(out _)
-				&& DateTime.Now - startAction.StartTime >= TimeSpan.FromSeconds(1))
+				&& DateTime.Now - startAction.StartTime >= TimeSpan.FromSeconds(0.5))
 			{
 				await Task.Delay(delay).ConfigureAwait(false);
 				var startNode = startAction.GetStartNode();

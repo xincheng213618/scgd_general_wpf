@@ -20,7 +20,7 @@ public sealed class FlowEngineConfig : ViewModelBase, IConfig
         get => _flowEndDelayMilliseconds;
         set
         {
-            int delay = value is > 0 and <= 500 ? value : 0;
+            int delay = value is > 0 and <= 1000 ? value : 0;
             CVEndNode.EndDelayMilliseconds = delay;
             SetProperty(ref _flowEndDelayMilliseconds, delay);
         }

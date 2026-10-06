@@ -78,8 +78,8 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
             if (!IsConnected || _options == null) throw new InvalidOperationException("请先连接相机。");
             await Task.Run(() =>
             {
-                bool accepted = exposure ? cvCameraCSLib.CM_SetExpTime(_handle, value) : cvCameraCSLib.CM_SetGain(_handle, value);
-                if (!accepted) throw new InvalidOperationException(exposure ? "相机拒绝曝光设置。" : "相机拒绝增益设置。");
+                int code = exposure ? cvCameraCSLib.CM_SetExpTime(_handle, value) : cvCameraCSLib.CM_SetGain(_handle, value);
+                if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError(exposure ? "设置曝光" : "设置增益", code);
                 var next = _options.Copy();
                 if (exposure) next.ExposureMilliseconds = value;
                 else next.Gain = value;
@@ -109,17 +109,24 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
                 if (handle == IntPtr.Zero) throw new InvalidOperationException("创建相机 SDK 会话失败，请检查驱动、SDK 配置及许可证。");
                 try
                 {
-                    cvCameraCSLib.CM_SetCameraID(handle, copy.CameraId);
-                    if (!cvCameraCSLib.CM_SetTakeImageMode(handle, live ? TakeImageMode.Live : TakeImageMode.Measure_Normal)
-                        || !cvCameraCSLib.CM_SetImageBpp(handle, copy.BitDepth))
-                        throw new InvalidOperationException("相机拒绝采集模式或位深设置。");
-                    int code = cvCameraCSLib.CM_Open(handle);
+                    int code = cvCameraCSLib.CM_SetCameraID(handle, copy.CameraId);
+                    if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("设置相机 ID", code);
+                    code = cvCameraCSLib.CM_SetTakeImageMode(handle, live ? TakeImageMode.Live : TakeImageMode.Measure_Normal);
+                    if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("设置采集模式", code);
+                    code = cvCameraCSLib.CM_SetImageBpp(handle, copy.BitDepth);
+                    if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("设置位深", code);
+                    code = cvCameraCSLib.CM_Open(handle);
                     if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("连接相机", code);
-                    if (!cvCameraCSLib.CM_SetGain(handle, copy.Gain) || !cvCameraCSLib.CM_SetExpTime(handle, copy.ExposureMilliseconds))
-                        throw new InvalidOperationException("相机拒绝曝光或增益设置。");
+                    code = cvCameraCSLib.CM_SetGain(handle, copy.Gain);
+                    if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("设置增益", code);
+                    code = cvCameraCSLib.CM_SetExpTime(handle, copy.ExposureMilliseconds);
+                    if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("设置曝光", code);
                     lock (_frames) { _latest = null; _frameError = null; _acceptFrames = live; }
-                    if (live && !cvCameraCSLib.CM_SetCallBack(handle, _callback, IntPtr.Zero))
-                        throw new InvalidOperationException("注册相机连续帧回调失败。");
+                    if (live)
+                    {
+                        code = cvCameraCSLib.CM_SetCallBack(handle, _callback, IntPtr.Zero);
+                        if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("注册相机连续帧回调", code);
+                    }
                     _options = copy;
                     IsLive = live;
                     _handle = handle;
@@ -130,8 +137,9 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
                     if (handle != IntPtr.Zero)
                     {
                         lock (_frames) _acceptFrames = false;
-                        cvCameraCSLib.CM_UnregisterCallBack(handle);
-                        cvCameraCSLib.CM_Close(handle);
+                        _ = cvCameraCSLib.CM_UnregisterCallBack(handle);
+                        int closeResult = cvCameraCSLib.CM_Close(handle);
+                        if (closeResult != cvErrorDefine.CV_ERR_SUCCESS) log4net.LogManager.GetLogger(typeof(StandaloneCameraSession)).Warn(NativeError("清理相机会话", closeResult));
                         _ = cvCameraCSLib.ReleaseCameraManager(handle);
                     }
                 }
@@ -181,7 +189,7 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
         return new(pixels, (int)w, (int)h, (int)depth, (int)channels, stride, DateTimeOffset.Now);
     }
 
-    private ulong OnFrame(int imageType, IntPtr data, int width, int height, int lss, int depth, int channels, IntPtr userData)
+    private int OnFrame(int imageType, IntPtr data, int width, int height, int lss, int depth, int channels, IntPtr userData)
     {
         try
         {
@@ -227,8 +235,9 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
         IsLive = false;
         try
         {
-            cvCameraCSLib.CM_UnregisterCallBack(handle);
-            cvCameraCSLib.CM_Close(handle);
+            _ = cvCameraCSLib.CM_UnregisterCallBack(handle);
+            int closeResult = cvCameraCSLib.CM_Close(handle);
+            if (closeResult != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("关闭相机", closeResult);
         }
         finally
         {

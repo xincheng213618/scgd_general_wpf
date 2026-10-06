@@ -7,7 +7,7 @@ import unittest
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import app as marketplace_app
 from werkzeug.serving import make_server
@@ -16,7 +16,6 @@ from transfer_files import (
     ANONYMOUS_TRANSFER_FILE_TTL_SECONDS,
     TransferFileError,
     append_transfer_upload,
-    cleanup_expired_transfer_files,
     create_or_resume_transfer_upload,
     delete_transfer_file,
     get_transfer_upload_session,
@@ -233,7 +232,7 @@ class TransferFileServiceTests(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 409)
         self.assertEqual(target.read_bytes(), b"original")
 
-    def test_expired_anonymous_file_and_share_are_deleted(self):
+    def test_expired_anonymous_share_is_hidden_without_deleting_file(self):
         session = create_or_resume_transfer_upload(
             self.root,
             "temporary.bin",
@@ -254,9 +253,6 @@ class TransferFileServiceTests(unittest.TestCase):
         list_transfer_files(self.root)
         share_after_list = get_transfer_share(self.root, completed.share_token)
 
-        deleted = cleanup_expired_transfer_files(self.root, now=completed.expires_at + 1)
-
-        self.assertEqual(deleted, 1)
         self.assertTrue(share.temporary)
         self.assertTrue(share_after_list.temporary)
         self.assertEqual(share_after_list.expires_at, share.expires_at)
@@ -265,13 +261,42 @@ class TransferFileServiceTests(unittest.TestCase):
             ANONYMOUS_TRANSFER_FILE_TTL_SECONDS,
             delta=1,
         )
-        self.assertFalse((self.root / "temporary.bin").exists())
-        with self.assertRaises(TransferFileError) as context:
-            get_transfer_share(self.root, completed.share_token)
-        self.assertEqual(context.exception.status_code, 404)
+        metadata = self.root / ".transfer_shares" / f"{completed.share_token}.json"
+        original_metadata = metadata.read_bytes()
+        (self.root / "permanent.bin").write_bytes(b"permanent")
+        with patch("transfer_files.time.time", return_value=completed.expires_at - 1):
+            self.assertEqual([item.name for item in list_transfer_files(self.root)], ["permanent.bin", "temporary.bin"])
+        with patch("transfer_files.time.time", return_value=completed.expires_at):
+            self.assertEqual([item.name for item in list_transfer_files(self.root)], ["permanent.bin"])
+            with self.assertRaises(TransferFileError) as context:
+                get_transfer_share(self.root, completed.share_token)
+            self.assertEqual(context.exception.status_code, 410)
+            with self.assertRaises(TransferFileError) as context:
+                get_transfer_upload_session(
+                    self.root, completed.upload_id,
+                    owner_type=ANONYMOUS_TRANSFER_OWNER_TYPE, owner_id=completed.owner_id,
+                )
+            self.assertEqual(context.exception.status_code, 410)
+            with self.assertRaises(TransferFileError) as context:
+                create_or_resume_transfer_upload(
+                    self.root, completed.filename, completed.total_size, completed.fingerprint,
+                    owner_type=ANONYMOUS_TRANSFER_OWNER_TYPE, owner_id=completed.owner_id,
+                )
+            self.assertEqual(context.exception.status_code, 409)
+        # Cleaning old upload receipts must not resurrect the retained expired share.
+        with patch("transfer_files.time.time", return_value=completed.expires_at + 1):
+            create_or_resume_transfer_upload(
+                self.root, "new.bin", 0, "2" * 64, owner_type="user", owner_id="alice",
+            )
+            self.assertEqual([item.name for item in list_transfer_files(self.root)], ["new.bin", "permanent.bin"])
+            with self.assertRaises(TransferFileError) as context:
+                get_transfer_share(self.root, completed.share_token)
+            self.assertEqual(context.exception.status_code, 410)
+        self.assertEqual((self.root / "temporary.bin").read_bytes(), b"data")
+        self.assertEqual(metadata.read_bytes(), original_metadata)
 
-    def test_hourly_scheduler_job_deletes_expired_anonymous_files(self):
-        from services.scheduler import DEFAULT_JOBS, _run_transfer_file_cleanup
+    def test_legacy_scheduler_job_preserves_expired_anonymous_files(self):
+        from services.scheduler import DEFAULT_JOBS, run_job_now
 
         session = create_or_resume_transfer_upload(
             self.root,
@@ -291,15 +316,18 @@ class TransferFileServiceTests(unittest.TestCase):
         ).session
 
         with patch("transfer_files.time.time", return_value=completed.expires_at + 1):
-            summary = _run_transfer_file_cleanup(
-                self.root,
-                lambda: {"transfer_upload_dir": str(self.root)},
+            cache = Mock()
+            cache.jobs.start_run.return_value = 1
+            result = run_job_now(
+                cache, self.root, lambda: {"transfer_upload_dir": str(self.root)},
+                lambda: None, "transfer_file_cleanup",
             )
 
-        job = next(item for item in DEFAULT_JOBS if item["id"] == "transfer_file_cleanup")
-        self.assertEqual(job["interval_seconds"], 3600)
-        self.assertIn("Deleted 1", summary)
-        self.assertFalse((self.root / "scheduled.bin").exists())
+        self.assertFalse(any(item["id"] == "transfer_file_cleanup" for item in DEFAULT_JOBS))
+        self.assertEqual(result["status"], "success")
+        self.assertIn("files are retained", result["summary"])
+        self.assertEqual((self.root / "scheduled.bin").read_bytes(), b"data")
+        self.assertTrue((self.root / ".transfer_shares" / f"{completed.share_token}.json").is_file())
 
 
 class TransferRouteTests(unittest.TestCase):
@@ -446,7 +474,7 @@ class TransferRouteTests(unittest.TestCase):
         self.assertEqual(self.client.delete("/api/transfer/files/guest.bin", headers=headers).status_code, 401)
         self.assertTrue((self.storage / "Transfer" / "guest.bin").is_file())
 
-    def test_expired_anonymous_share_returns_gone_and_removes_file(self):
+    def test_expired_anonymous_share_returns_gone_and_preserves_file(self):
         marketplace_app.CONFIG["anonymous_transfer_upload_enabled"] = True
         headers = self._anonymous_upload_headers()
         created = self.client.post(
@@ -465,9 +493,17 @@ class TransferRouteTests(unittest.TestCase):
 
         with patch("transfer_files.time.time", return_value=expires_at + 1):
             response = self.client.get(f"/api/transfer/shares/{share_token}")
+            download = self.client.get(f"/api/transfer/shares/{share_token}/download")
+            listed = self.client.get("/api/transfer/files", headers=self._auth_headers())
+            receipt = self.client.get(f"/api/transfer/uploads/{created['upload_id']}", headers=headers)
 
         self.assertEqual(response.status_code, 410)
-        self.assertFalse((self.storage / "Transfer" / "expires.bin").exists())
+        self.assertEqual(download.status_code, 410)
+        self.assertEqual(receipt.status_code, 410)
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.get_json()["files"], [])
+        self.assertEqual(listed.get_json()["total_size"], 0)
+        self.assertEqual((self.storage / "Transfer" / "expires.bin").read_bytes(), b"data")
 
     def test_anonymous_upload_cannot_overwrite_existing_file(self):
         marketplace_app.CONFIG["anonymous_transfer_upload_enabled"] = True

@@ -49,11 +49,6 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
-		<None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="runtimes\win-x64\native\cvCalibration.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Pack>true</Pack>
-			<PackagePath>runtimes/win-x64/native</PackagePath>
-		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\msvcr100.dll" Link="runtimes\win-x64\native\msvcr100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>

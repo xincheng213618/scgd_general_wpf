@@ -189,6 +189,8 @@ Engine 的 CVCIE 关联原图加载入口是 `CvRawLayerController.LoadSourceFil
 
 这些校验只能发现格式、缺失、非有限和数值溢出问题。**全部数值有限但设备不匹配、矩阵系数填错或标定本身失准的 XYZ，无法仅凭标准 XYZ→sRGB 转换可靠识别。** 真彩预览可能仍然偏色；也不能用负数或超出 sRGB 色域作为坏校正的通用判断。校正正确性仍需相应设备、校正文件来源及已知参考测量的验证，不由显示转换自动修复。
 
+校正文件的通用参数编辑与离线生成归属 Engine，相应入口、保存边界和输入前提见[校正参数编辑与离线生成](../../01-user-guide/devices/calibration.md#校正参数编辑与离线生成)。下节描述基于已有矩阵的用户修正，不能用它的严格九项 `pa` 校验代替通用编辑器对 Native 数组附加项的保留契约。
+
 ### 四色校正系数转换
 
 `LumFourColorCorrectionCalculator` 提供单点与 RGBW 两种计算模式，沿用 MATLAB 算法，使用 `CVRawManualCieConfig` 承载基于原矩阵修正后的九个完整校正系数。输入统一为相机侧与光谱参考侧的 `Y/CIE x/CIE y`；`Yxy → XYZ` 使用原始有限数值，只要求作为分母的 CIE y 不为 0，不裁剪负 Y、负色度、中间反解通道或最终矩阵系数。

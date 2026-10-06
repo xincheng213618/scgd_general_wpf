@@ -3,12 +3,16 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
+using ColorVision.Engine.Services.PhyCameras.Calibration.Creation;
+using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI.Authorizations;
 using ColorVision.Themes;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -35,6 +39,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
 
         public string SlotKey => slot.Key;
+        public ServiceTypes ServiceType => slot.ServiceType;
         public GroupResource Group { get; }
         public ObservableCollection<CalibrationResource> Resources { get; }
         public string Title { get; }
@@ -149,8 +154,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             Init();
             DataContext = PhyCamera;
-            PhyCamera.VisualChildren.CollectionChanged +=(s,e) => Init();
+            PhyCamera.VisualChildren.CollectionChanged += CameraChildrenChanged;
         }
+
+        private void CameraChildrenChanged(object? sender, NotifyCollectionChangedEventArgs e) => Init();
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -207,6 +214,84 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if ((sender as FrameworkElement)?.DataContext is CalibrationEditRow row)
                 row.SelectedResource?.Edit();
+        }
+
+        private void CreateCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || !AccessControl.Check(PermissionMode.Administrator)) return;
+            if (ListView1.SelectedItem is not GroupResource group)
+            {
+                MessageBox.Show(this, "请先选择或添加校正组。", Properties.Resources.CalibrationFileManagement);
+                return;
+            }
+            var menu = new ContextMenu();
+            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            {
+                var item = new MenuItem { Header = CalibrationSlotPresentation.GetTitle(slot.Key) };
+                AddCreationChoices(item.Items, slot, group);
+                menu.Items.Add(item);
+            }
+            menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
+        }
+
+        private void CreateCalibrationRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.DataContext is not CalibrationEditRow row || !AccessControl.Check(PermissionMode.Administrator)) return;
+            var menu = new ContextMenu();
+            AddCreationChoices(menu.Items, CalibrationSlotDefinitions.ByKey[row.SlotKey], row.Group);
+            menu.PlacementTarget = button; menu.Placement = PlacementMode.Bottom; menu.IsOpen = true;
+        }
+
+        private void AddCreationChoices(ItemCollection items, CalibrationSlotDefinition slot, GroupResource group)
+        {
+            if (CalibrationCreationWindow.SupportsType(slot.ServiceType.ToCalibrationType()))
+            {
+                var measured = new MenuItem { Header = "从原始图像生成…" };
+                measured.Click += (_, _) => CreateCalibration(slot, group, measured: true);
+                items.Add(measured);
+            }
+            if (CalibrationResource.SupportsTextEditing(slot.ServiceType))
+            {
+                var manual = new MenuItem { Header = "手工填写参数…" };
+                manual.Click += (_, _) => CreateCalibration(slot, group, measured: false);
+                items.Add(manual);
+            }
+            if (items.Count == 0)
+            {
+                items.Add(new MenuItem { Header = "需先取得实测响应表；可导入后编辑", IsEnabled = false });
+                items.Add(new MenuItem { Header = "导入已有文件…", Command = group.UploadCalibrationItemCommand, CommandParameter = slot.Key });
+            }
+        }
+
+        private void CreateCalibration(CalibrationSlotDefinition slot, GroupResource group, bool measured)
+        {
+            try
+            {
+                string? createdPath;
+                ServiceTypes createdType = slot.ServiceType;
+                if (measured)
+                {
+                    var wizard = new CalibrationCreationWindow(slot.ServiceType.ToCalibrationType()) { Owner = this };
+                    if (wizard.ShowDialog() != true || wizard.CreatedFilePath == null) return;
+                    createdPath = wizard.CreatedFilePath;
+                    slot = CalibrationSlotDefinitions.AllSlots.First(item => item.ServiceType.ToCalibrationType() == wizard.CreatedType);
+                    createdType = slot.ServiceType;
+                }
+                else
+                {
+                    var editor = new CalibrationJsonEditorWindow(createdType) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    editor.ShowDialog();
+                    createdPath = editor.SavedFilePath;
+                }
+                if (createdPath == null) return;
+                if (group.ImportCalibrationFile(slot.Key, createdPath) == null) return;
+                ShowGroup(group);
+                MessageBox.Show(this, $"已创建并选用于校正组「{group.Name}」的{CalibrationSlotPresentation.GetTitle(slot.Key)}。", Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "创建或登记校正失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void CorrectFourColor_Click(object sender, RoutedEventArgs e)
@@ -282,6 +367,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            PhyCamera.VisualChildren.CollectionChanged -= CameraChildrenChanged;
             foreach (var item in groupResources)
             {
                 item.Save();

@@ -7887,4 +7887,100 @@
   <data name="仅统计空闲取图缓冲，不含正在使用的图像。" xml:space="preserve"><value>僅統計閒置擷取緩衝，不含使用中的影像。</value></data>
   <data name="已释放 {0} 空闲取图缓冲。在用图像不受影响，后续取图可重新申请和复用。" xml:space="preserve"><value>已釋放 {0} 閒置擷取緩衝。使用中的影像不受影響，後續擷取可重新配置和重用。</value></data>
   <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>擷取緩衝不支援停用，請使用釋放快取。</value></data>
+  <data name="HikTest_Title" xml:space="preserve"><value>海康取圖測試</value></data>
+  <data name="HikTest_EntryHint" xml:space="preserve"><value>關閉目前相機後，在獨立測試視窗使用 MVS 取圖。</value></data>
+  <data name="HikTest_HkOnly" xml:space="preserve"><value>此測試僅支援 HK_USB 對應的海康 GigE / USB3 相機。</value></data>
+  <data name="HikTest_CloseCamera" xml:space="preserve"><value>請先關閉目前相機和本地視訊，再開啟海康取圖測試。</value></data>
+  <data name="HikTest_Description" xml:space="preserve"><value>先關閉 cvCamera / MVS 用戶端中的相機並停止流程。連線後，每點一次「取一張」只取一幀；相機保持連線，測完點擊「關閉相機」。</value></data>
+  <data name="HikTest_Refresh" xml:space="preserve"><value>重新整理相機</value></data>
+  <data name="HikTest_Camera" xml:space="preserve"><value>相機序號</value></data>
+  <data name="HikTest_Exposure" xml:space="preserve"><value>曝光 (ms)</value></data>
+  <data name="HikTest_Gain" xml:space="preserve"><value>增益（SDK 原值）</value></data>
+  <data name="HikTest_Quality" xml:space="preserve"><value>Bayer 插值品質</value></data>
+  <data name="HikTest_Fast" xml:space="preserve"><value>0 · 快速</value></data>
+  <data name="HikTest_Balanced" xml:space="preserve"><value>1 · 均衡</value></data>
+  <data name="HikTest_Optimal" xml:space="preserve"><value>2 · 最佳（預設）</value></data>
+  <data name="HikTest_OptimalPlus" xml:space="preserve"><value>3 · 最佳+</value></data>
+  <data name="HikTest_Run" xml:space="preserve"><value>連線相機</value></data>
+  <data name="HikTest_Stop" xml:space="preserve"><value>關閉相機</value></data>
+  <data name="HikTest_Copy" xml:space="preserve"><value>複製報告</value></data>
+  <data name="HikTest_Ready" xml:space="preserve"><value>尚未開啟相機。</value></data>
+  <data name="HikTest_RunNumber" xml:space="preserve"><value>輪次</value></data>
+  <data name="HikTest_Index" xml:space="preserve"><value>幀</value></data>
+  <data name="HikTest_Total" xml:space="preserve"><value>取圖合計 ms</value></data>
+  <data name="HikTest_Wait" xml:space="preserve"><value>觸發至原始幀 ms</value></data>
+  <data name="HikTest_Convert" xml:space="preserve"><value>轉換 ms</value></data>
+  <data name="HikTest_Setup" xml:space="preserve"><value>設參/清佇列 ms</value></data>
+  <data name="HikTest_Cpu" xml:space="preserve"><value>呼叫執行緒 CPU ms</value></data>
+  <data name="HikTest_Width" xml:space="preserve"><value>寬</value></data>
+  <data name="HikTest_Height" xml:space="preserve"><value>高</value></data>
+  <data name="HikTest_Footnote" xml:space="preserve"><value>固定 Bayer16 → RGB48，重用輸出緩衝；不校正、不翻轉、不自動存圖、不寫入資料庫。原始幀需單獨點擊儲存。首次取圖單列，統計不含開啟/設參/匯出/介面時間。比較原取圖前需核對尺寸、實際曝光、ADC 位深及插值品質；耗時更低不代表量測結果等價。</value></data>
+  <data name="HikTest_InvalidSettings" xml:space="preserve"><value>請輸入相機序號、0–60000 ms 內的正曝光和非負增益。</value></data>
+  <data name="HikTest_NotFound" xml:space="preserve"><value>未找到該序號的相機，請重新整理並選擇裝置。</value></data>
+  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>無法確定對應的 Bayer16 格式。請先在 MVS 中選擇與感測器匹配的 Bayer 格式並關閉相機。</value></data>
+  <data name="HikTest_Cancelled" xml:space="preserve"><value>測試已停止，相機已關閉。</value></data>
+  <data name="HikTest_SdkRequired" xml:space="preserve"><value>請安裝海康 x64 MVS 執行階段與相機驅動程式（介面參考 MVS 4.3.2），然後重新啟動程式。</value></data>
+  <data name="HikTest_Running" xml:space="preserve"><value>正在操作相機…</value></data>
+  <data name="HikTest_Stopping" xml:space="preserve"><value>正在停止；等待取圖返回並關閉相機…</value></data>
+  <data name="HikTest_Copied" xml:space="preserve"><value>報告已複製。</value></data>
+  <data name="找到 {0} 台海康相机。" xml:space="preserve"><value>找到 {0} 台海康相機。</value></data>
+  <data name="首次取图 {0:F3} ms；等待后续样本。" xml:space="preserve"><value>首次取圖 {0:F3} ms；等待後續樣本。</value></data>
+  <data name="首次 {0:F3} ms；后续 {1} 帧：中位数 {2:F3} ms，P95 {3:F3} ms，平均 {4:F3} ms。" xml:space="preserve"><value>首次 {0:F3} ms；後續 {1} 幀：中位數 {2:F3} ms，P95 {3:F3} ms，平均 {4:F3} ms。</value></data>
+  <data name="HikTest_Cycle" xml:space="preserve"><value>單幀總計 ms</value></data>
+  <data name="HikTest_Capture" xml:space="preserve"><value>取一張</value></data>
+  <data name="HikTest_Connected" xml:space="preserve"><value>相機已連線，等待手動取圖。</value></data>
+  <data name="HikTest_SaveRaw" xml:space="preserve"><value>取一張並儲存原始幀</value></data>
+  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>額外觸發一幀，將插值前的 Bayer16 資料與參數儲存為 ZIP；不儲存已取過的幀。儲存時間不計入取圖統計。</value></data>
+  <data name="原始帧已保存：{0}" xml:space="preserve"><value>原始幀已儲存：{0}</value></data>
+  <data name="Camera_UseHikMvs" xml:space="preserve"><value>海康使用新取圖</value></data>
+  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>預設開啟，使用 MVS；關閉使用舊 SCGDCamLayer。僅 HK_USB 的 BV/LV/LVTOBV 生效。只在下次開啟前設定，修改不會關閉或切換目前連線。</value></data>
+  <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS 插值品質</value></data>
+  <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>預設 3（最優+）。0 快速、1 均衡、2 最優、3 最優+；只影響 MVS 彩色取圖，舊後端和灰階取圖忽略此項。僅下次開啟前設定，修改不會關閉相機或改變目前連線。</value></data>
+  <data name="Camera_HikBayerQuality0" xml:space="preserve"><value>0 - 快速</value></data>
+  <data name="Camera_HikBayerQuality1" xml:space="preserve"><value>1 - 均衡</value></data>
+  <data name="Camera_HikBayerQuality2" xml:space="preserve"><value>2 - 最優</value></data>
+  <data name="Camera_HikBayerQuality3" xml:space="preserve"><value>3 - 最優+</value></data>
+  <data name="Camera_HikOutputBgr" xml:space="preserve"><value>MVS 輸出 BGR（相容舊流程）</value></data>
+  <data name="Camera_HikOutputBgrHint" xml:space="preserve"><value>預設開啟，將 MVS 彩色輸出轉換為舊流程使用的 BGR 順序；關閉保留 RGB，僅供對照。僅下次開啟前設定，修改不會關閉或改變目前連線；舊後端和灰階取圖不受影響。</value></data>
+  <data name="拍照（普通）" xml:space="preserve">
+    <value>拍照（普通）</value>
+  </data>
+  <data name="视频" xml:space="preserve">
+    <value>影片</value>
+  </data>
+  <data name="拍照（快速）" xml:space="preserve">
+    <value>拍照（快速）</value>
+  </data>
+  <data name="拍照（快速扩展）" xml:space="preserve">
+    <value>拍照（快速擴充）</value>
+  </data>
+  <data name="视频中取图会自动切换到拍照模式" xml:space="preserve">
+    <value>影片中取圖會自動切換到拍照模式</value>
+  </data>
+  <data name="CameraPanel_Connect" xml:space="preserve"><value>打開</value></data>
+  <data name="CameraPanel_Disconnect" xml:space="preserve"><value>關閉</value></data>
+  <data name="CameraPanel_Disconnected" xml:space="preserve"><value>未連接</value></data>
+  <data name="CameraPanel_Ready" xml:space="preserve"><value>已連接 · 待機</value></data>
+  <data name="CameraPanel_Working" xml:space="preserve"><value>操作中…</value></data>
+  <data name="CameraPanel_Previewing" xml:space="preserve"><value>預覽中</value></data>
+  <data name="CameraPanel_StartPreview" xml:space="preserve"><value>視訊模式</value></data>
+  <data name="CameraPanel_StopPreview" xml:space="preserve"><value>關閉視訊</value></data>
+  <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>停止連續畫面；本地相機保留連接</value></data>
+  <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>請先斷開服務相機，再開始本地預覽</value></data>
+  <data name="CameraPanel_Calibration" xml:space="preserve"><value>校正</value></data>
+  <data name="CameraPanel_Averages" xml:space="preserve"><value>平均</value></data>
+  <data name="CameraPanel_MoreCapture" xml:space="preserve"><value>更多拍照設定</value></data>
+  <data name="CameraPanel_Motor" xml:space="preserve"><value>馬達與對焦</value></data>
+  <data name="CameraPanel_MeasureFlip" xml:space="preserve"><value>測量翻轉</value></data>
+  <data name="CameraPanel_PreviewFlip" xml:space="preserve"><value>預覽翻轉</value></data>
+  <data name="CameraPanel_AutoBeforeCapture" xml:space="preserve"><value>拍前自曝</value></data>
+  <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>自曝 ND</value></data>
+  <data name="CameraPanel_NDHint" xml:space="preserve"><value>僅服務模式支援 ND 自動切換；本地自動曝光前請取消勾選</value></data>
+  <data name="CameraPanel_HDR" xml:space="preserve"><value>HDR</value></data>
+  <data name="CameraPanel_PreviewTools" xml:space="preserve"><value>預覽工具</value></data>
+  <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>預覽設定</value></data>
+  <data name="CameraPanel_NotUsed" xml:space="preserve"><value>不使用</value></data>
+  <data name="CameraPanel_AutoBeforeCaptureFull" xml:space="preserve"><value>拍前自曝</value></data>
+  <data name="CameraPanel_Region" xml:space="preserve"><value>區域</value></data>
+  <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>本機參數</value></data>
 </root>

@@ -24,6 +24,23 @@ namespace ColorVision.Engine
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
+            // Camera diagnostics run without plugins, service initializers, configuration writes or databases.
+            if (e.Args.FirstOrDefault() == Services.Devices.Camera.Diagnostics.HikCaptureTestSettings.LaunchArgument)
+            {
+                try
+                {
+                    var settings = Services.Devices.Camera.Diagnostics.HikCaptureTestSettings.Parse(e.Args);
+                    Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(settings.Culture);
+                    MainWindow = new Services.Devices.Camera.Diagnostics.HikCaptureTestWindow(settings);
+                    MainWindow.Show();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "HK capture test");
+                    Shutdown(1);
+                }
+                return;
+            }
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
             ConfigHandler.GetInstance("ColorVisionConfig");
             LogConfig.Instance.SetLog();

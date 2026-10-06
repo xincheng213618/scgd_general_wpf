@@ -901,7 +901,7 @@ namespace ProjectARVRPro
                 CurrentFlowResult.FlowStartedAt = DateTime.Now;
                 stopwatch.Start();
 
-                CreateCurrentFlowBatch();
+                await CreateCurrentFlowBatchAsync();
 
                 _isFlowLifecycleActive = true;
                 if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
@@ -979,9 +979,12 @@ namespace ProjectARVRPro
             }
             finally
             {
-                _isFlowStartPending = false;
                 if (!flowStarted && !flowControl.IsFlowRun)
+                {
+                    await CompleteFlowNodeRecordingAsync();
                     _isFlowLifecycleActive = false;
+                }
+                _isFlowStartPending = false;
             }
         }
 
@@ -991,8 +994,14 @@ namespace ProjectARVRPro
             return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, serverNodes);
         }
 
-        private void CreateCurrentFlowBatch()
+        private async Task CreateCurrentFlowBatchAsync()
         {
+            if (_flowNodeExecutionRecorder.IsRecording())
+            {
+                log.Warn("流程已停止，收尾上一轮残留的节点诊断记录后继续执行");
+                await CompleteFlowNodeRecordingAsync();
+            }
+
             long batchStartedAt = Stopwatch.GetTimestamp();
             _currentFlowBatch = new MeasureBatchModel
             {
@@ -1067,21 +1076,28 @@ namespace ProjectARVRPro
                 _currentBatchFinalizeMs = Stopwatch.GetElapsedTime(batchFinalizeStarted).TotalMilliseconds;
             }
 
+            await CompleteFlowNodeRecordingAsync();
+            _currentFlowBatch = null;
+        }
+
+        private async Task CompleteFlowNodeRecordingAsync()
+        {
+            if (!_flowNodeExecutionRecorder.IsRecording())
+                return;
+
             long recorderFlushStarted = Stopwatch.GetTimestamp();
             try
             {
                 _currentNodeRecorderFlushed = await _flowNodeExecutionRecorder.CompleteRunAsync(
-                    serialNumber,
                     flushTimeout: TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {
-                log.Error($"结束流程节点统计失败 => batchId={CurrentFlowResult.BatchId}, serialNumber={serialNumber}", ex);
+                log.Error("结束流程节点统计失败", ex);
             }
             finally
             {
                 _currentNodeRecorderFlushMs = Stopwatch.GetElapsedTime(recorderFlushStarted).TotalMilliseconds;
-                _currentFlowBatch = null;
             }
         }
 
@@ -2869,7 +2885,7 @@ namespace ProjectARVRPro
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-                    CreateCurrentFlowBatch();
+                    await CreateCurrentFlowBatchAsync();
 
                     flowControl.FlowCompleted += completedHandler;
                     stopwatch.Reset();
@@ -2972,11 +2988,11 @@ namespace ProjectARVRPro
             {
                 string message = $"一键执行异常: {ex.Message}";
                 RecordFlowFailure(message);
+                flowControl.Stop();
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500);
                 if (CurrentFlowResult != null)
                 {
-                    flowControl.Stop();
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 500);
                     CurrentFlowResult.Msg = message;
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     if (_currentFlowBatch?.Id > 0)
@@ -3005,6 +3021,9 @@ namespace ProjectARVRPro
             }
             finally
             {
+                // Initialization or a reporting exception may have cleared the
+                // current result. The recording belongs to this window regardless.
+                await CompleteFlowNodeRecordingAsync();
                 _runAllSessionPrepared = false;
                 _isRunAllRunning = false;
             }

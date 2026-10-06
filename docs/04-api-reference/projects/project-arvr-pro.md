@@ -45,6 +45,8 @@ related: ["projects.index","projects.arvr-pro-demo","projects.arvr-pro-protocol"
 
 外部系统发送 `ProjectARVRInit`，或用户在窗口输入 SN 后，`ARVRWindow` 选择当前 `ProcessGroup` 并找到下一个启用的 `ProcessMeta`。步骤启用 `PictureSwitchConfig` 时先切图，再运行绑定的 FlowEngine 模板。该次启动选定的处理实例通过 `IProcess.Execute(ctx)` 读取 Engine 结果并应用自身 Recipe，最后写入 `ObjectiveTestResult`，按配置保存 SQLite、CSV、Legacy CSV、客户 XLSX，并通过 Socket 返回下一步或最终结果。
 
+直接执行 FlowEngine 的节点统计由窗口持有的 `FlowNodeExecutionRecorder` 记录。正常收尾、启动失败和一键执行异常退出均结束该记录；即使当前结果或产品 SN 已被初始化清空，也通过 `CompleteRunAsync()` 收尾记录器实际持有的运行。指定运行编号的结束调用仍须匹配当前记录，避免迟到的旧流程结束新流程。启动入口通过现有执行状态检查后，创建新批次前会收尾已停止流程的残留诊断；诊断落库超时或失败记录日志，不把残留诊断当作仍在执行，也不要求重启软件。`Test/ProjectARVRPro.Tests/FlowNodeExecutionRecorderTests.cs` 使用存储替身验证缺失当前编号时的收尾、下一轮启动、旧事件隔离和落库失败边界，不代替现场设备运行验收。
+
 ## 界面主题
 
 “结果保存”中的“空间不足时自动清理”默认关闭；开启后，“保留磁盘空间（GB）”默认100，必须大于0，按1 GB = 1024³字节计算。这是输出盘的剩余空间阈值，不是结果目录的容量上限。图像、原图快捷方式、CSV及客户XLSX保存前检查各自输出盘；空间充足时不扫描目录，不足时由 `ResultStorageSpaceManager` 按文件最后写入时间从旧到新删除已识别的ARVR导出图像、标准CSV和历史日汇总XLSX，达到阈值即停止。只检查配置的结果输出目录及已启用的客户报表目录；原始采集文件、数据库、快捷方式目标、未知文件及后台暂存文件不参与清理，不整目录删除。当前SN目录、正在写入的输出及当天XLSX汇总受保护；后台图像导出的保护保持到正式文件替换完成。所有保存入口均异步等待后台清理；CSV/XLSX 导出完成后才发送测试完成响应，等待期间拒绝下一轮初始化/启动，避免串用 SN 或结果。自动删除的导出文件不会回收，SQLite历史记录仍保留，历史图像能否显示继续取决于其候选文件是否存在。

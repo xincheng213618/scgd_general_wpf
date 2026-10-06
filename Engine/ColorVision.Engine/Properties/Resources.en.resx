@@ -6884,4 +6884,100 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="仅统计空闲取图缓冲，不含正在使用的图像。" xml:space="preserve"><value>Only idle capture buffers are counted; images in use are excluded.</value></data>
   <data name="已释放 {0} 空闲取图缓冲。在用图像不受影响，后续取图可重新申请和复用。" xml:space="preserve"><value>Released {0} of idle capture buffers. Images in use are unaffected; later captures can allocate and reuse buffers again.</value></data>
   <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>Capture buffers cannot be disabled. Use Release Cache instead.</value></data>
+  <data name="HikTest_Title" xml:space="preserve"><value>Hikrobot capture test</value></data>
+  <data name="HikTest_EntryHint" xml:space="preserve"><value>Close the current camera, then test MVS capture in a separate window.</value></data>
+  <data name="HikTest_HkOnly" xml:space="preserve"><value>This test supports Hikrobot GigE / USB3 cameras (HK_USB) only.</value></data>
+  <data name="HikTest_CloseCamera" xml:space="preserve"><value>Close the current camera and local video before opening this test.</value></data>
+  <data name="HikTest_Description" xml:space="preserve"><value>Close the camera in cvCamera / MVS and stop the flow. Connect, then click Capture one for each frame. The connection stays open until Close camera.</value></data>
+  <data name="HikTest_Refresh" xml:space="preserve"><value>Refresh cameras</value></data>
+  <data name="HikTest_Camera" xml:space="preserve"><value>Camera serial</value></data>
+  <data name="HikTest_Exposure" xml:space="preserve"><value>Exposure (ms)</value></data>
+  <data name="HikTest_Gain" xml:space="preserve"><value>Gain (SDK units)</value></data>
+  <data name="HikTest_Quality" xml:space="preserve"><value>Bayer interpolation</value></data>
+  <data name="HikTest_Fast" xml:space="preserve"><value>0 · Fast</value></data>
+  <data name="HikTest_Balanced" xml:space="preserve"><value>1 · Balanced</value></data>
+  <data name="HikTest_Optimal" xml:space="preserve"><value>2 · Optimal (default)</value></data>
+  <data name="HikTest_OptimalPlus" xml:space="preserve"><value>3 · Optimal+</value></data>
+  <data name="HikTest_Run" xml:space="preserve"><value>Connect camera</value></data>
+  <data name="HikTest_Stop" xml:space="preserve"><value>Close camera</value></data>
+  <data name="HikTest_Copy" xml:space="preserve"><value>Copy report</value></data>
+  <data name="HikTest_Ready" xml:space="preserve"><value>Camera is not open.</value></data>
+  <data name="HikTest_RunNumber" xml:space="preserve"><value>Run</value></data>
+  <data name="HikTest_Index" xml:space="preserve"><value>Frame</value></data>
+  <data name="HikTest_Total" xml:space="preserve"><value>Capture ms</value></data>
+  <data name="HikTest_Wait" xml:space="preserve"><value>Trigger to RAW ms</value></data>
+  <data name="HikTest_Convert" xml:space="preserve"><value>Convert ms</value></data>
+  <data name="HikTest_Setup" xml:space="preserve"><value>Setup / clear ms</value></data>
+  <data name="HikTest_Cpu" xml:space="preserve"><value>Calling thread CPU ms</value></data>
+  <data name="HikTest_Width" xml:space="preserve"><value>Width</value></data>
+  <data name="HikTest_Height" xml:space="preserve"><value>Height</value></data>
+  <data name="HikTest_Footnote" xml:space="preserve"><value>Bayer16 → RGB48, reusable output buffer. No calibration, flip, automatic image files or database writes. Capture raw files separately. First frame is separate; statistics exclude opening, setup, export and UI. Match dimensions, actual exposure, ADC depth and interpolation before comparing. Faster does not imply equivalent measurements.</value></data>
+  <data name="HikTest_InvalidSettings" xml:space="preserve"><value>Enter a camera serial, positive exposure up to 60000 ms and non-negative gain.</value></data>
+  <data name="HikTest_NotFound" xml:space="preserve"><value>Camera serial not found. Refresh and select a device.</value></data>
+  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>Cannot determine the matching Bayer16 format. Select the sensor-matching Bayer format in MVS, then close the camera.</value></data>
+  <data name="HikTest_Cancelled" xml:space="preserve"><value>Test stopped; camera closed.</value></data>
+  <data name="HikTest_SdkRequired" xml:space="preserve"><value>Install the Hikrobot x64 MVS runtime and camera driver (APIs based on MVS 4.3.2), then restart the application.</value></data>
+  <data name="HikTest_Running" xml:space="preserve"><value>Working with camera…</value></data>
+  <data name="HikTest_Stopping" xml:space="preserve"><value>Stopping; waiting for capture and camera cleanup…</value></data>
+  <data name="HikTest_Copied" xml:space="preserve"><value>Report copied.</value></data>
+  <data name="找到 {0} 台海康相机。" xml:space="preserve"><value>Found {0} Hikrobot camera(s).</value></data>
+  <data name="首次取图 {0:F3} ms；等待后续样本。" xml:space="preserve"><value>First frame {0:F3} ms; waiting for more samples.</value></data>
+  <data name="首次 {0:F3} ms；后续 {1} 帧：中位数 {2:F3} ms，P95 {3:F3} ms，平均 {4:F3} ms。" xml:space="preserve"><value>First {0:F3} ms; next {1} frames: median {2:F3} ms, P95 {3:F3} ms, mean {4:F3} ms.</value></data>
+  <data name="HikTest_Cycle" xml:space="preserve"><value>Frame total ms</value></data>
+  <data name="HikTest_Capture" xml:space="preserve"><value>Capture one</value></data>
+  <data name="HikTest_Connected" xml:space="preserve"><value>Camera connected; waiting for manual capture.</value></data>
+  <data name="HikTest_SaveRaw" xml:space="preserve"><value>Capture and save raw</value></data>
+  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>Trigger an extra frame and save pre-interpolation Bayer16 data and parameters as ZIP; previous frames are not retained. Export time is excluded from capture statistics.</value></data>
+  <data name="原始帧已保存：{0}" xml:space="preserve"><value>Raw frame saved: {0}</value></data>
+  <data name="Camera_UseHikMvs" xml:space="preserve"><value>Use new Hikrobot capture</value></data>
+  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>Enabled by default: MVS; disabled: legacy SCGDCamLayer. Applies to HK_USB BV/LV/LVTOBV only. Set before the next open; changing this preference does not close or switch the current connection.</value></data>
+  <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS Bayer quality</value></data>
+  <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>Default: 3 (Optimal+). 0 Fast, 1 Balanced, 2 Optimal, 3 Optimal+. Applies to MVS color capture only; ignored by legacy and monochrome capture. Set before the next open; editing does not close the camera or change the current connection.</value></data>
+  <data name="Camera_HikBayerQuality0" xml:space="preserve"><value>0 - Fast</value></data>
+  <data name="Camera_HikBayerQuality1" xml:space="preserve"><value>1 - Balanced</value></data>
+  <data name="Camera_HikBayerQuality2" xml:space="preserve"><value>2 - Optimal</value></data>
+  <data name="Camera_HikBayerQuality3" xml:space="preserve"><value>3 - Optimal+</value></data>
+  <data name="Camera_HikOutputBgr" xml:space="preserve"><value>MVS BGR output (legacy compatible)</value></data>
+  <data name="Camera_HikOutputBgrHint" xml:space="preserve"><value>Enabled by default: use the BGR channel order expected by existing calibration. Disable to keep RGB for comparison. Applies on the next open only; the current connection, legacy backend and monochrome capture are unchanged.</value></data>
+  <data name="拍照（普通）" xml:space="preserve">
+    <value>Capture (normal)</value>
+  </data>
+  <data name="视频" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="拍照（快速）" xml:space="preserve">
+    <value>Capture (fast)</value>
+  </data>
+  <data name="拍照（快速扩展）" xml:space="preserve">
+    <value>Capture (fast extended)</value>
+  </data>
+  <data name="视频中取图会自动切换到拍照模式" xml:space="preserve">
+    <value>Capturing during video automatically switches to capture mode.</value>
+  </data>
+  <data name="CameraPanel_Connect" xml:space="preserve"><value>Open</value></data>
+  <data name="CameraPanel_Disconnect" xml:space="preserve"><value>Close</value></data>
+  <data name="CameraPanel_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="CameraPanel_Ready" xml:space="preserve"><value>Connected · Ready</value></data>
+  <data name="CameraPanel_Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="CameraPanel_Previewing" xml:space="preserve"><value>Previewing</value></data>
+  <data name="CameraPanel_StartPreview" xml:space="preserve"><value>Video</value></data>
+  <data name="CameraPanel_StopPreview" xml:space="preserve"><value>Stop video</value></data>
+  <data name="CameraPanel_StopPreviewHint" xml:space="preserve"><value>Stop preview; keep the local camera connected</value></data>
+  <data name="CameraPanel_ServicePreviewHint" xml:space="preserve"><value>Disconnect the service camera before starting local preview</value></data>
+  <data name="CameraPanel_Calibration" xml:space="preserve"><value>Calib.</value></data>
+  <data name="CameraPanel_Averages" xml:space="preserve"><value>Avg.</value></data>
+  <data name="CameraPanel_MoreCapture" xml:space="preserve"><value>More capture settings</value></data>
+  <data name="CameraPanel_Motor" xml:space="preserve"><value>Motor and focus</value></data>
+  <data name="CameraPanel_MeasureFlip" xml:space="preserve"><value>Capture flip</value></data>
+  <data name="CameraPanel_PreviewFlip" xml:space="preserve"><value>Preview flip</value></data>
+  <data name="CameraPanel_AutoBeforeCapture" xml:space="preserve"><value>Auto exp.</value></data>
+  <data name="CameraPanel_AutoExposureND" xml:space="preserve"><value>AE + ND</value></data>
+  <data name="CameraPanel_NDHint" xml:space="preserve"><value>Automatic ND switching requires the service; uncheck before local auto exposure</value></data>
+  <data name="CameraPanel_HDR" xml:space="preserve"><value>HDR</value></data>
+  <data name="CameraPanel_PreviewTools" xml:space="preserve"><value>Preview tools</value></data>
+  <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>Preview settings</value></data>
+  <data name="CameraPanel_NotUsed" xml:space="preserve"><value>Not used</value></data>
+  <data name="CameraPanel_AutoBeforeCaptureFull" xml:space="preserve"><value>Auto before capture</value></data>
+  <data name="CameraPanel_Region" xml:space="preserve"><value>ROI</value></data>
+  <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>Local settings</value></data>
 </root>

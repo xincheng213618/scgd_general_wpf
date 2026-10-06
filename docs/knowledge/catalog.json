@@ -6597,9 +6597,17 @@
         "UseLocalCalibration",
         "DeviceCalibration",
         "LocalFileCalibrationService",
-        "MQTTCalibration"
+        "MQTTCalibration",
+        "校正文件编辑",
+        "校正文件创建",
+        "CalibrationJsonDocument",
+        "CalibrationBinaryDocument",
+        "CalibrationMapCreation",
+        "CalibrationColorCreation"
       ],
       "code_paths": [
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Editing",
+        "Engine/ColorVision.Engine/Services/PhyCameras/Calibration/Creation",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/DeviceCalibration.cs",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/ConfigCalibration.cs",
         "Engine/ColorVision.Engine/Services/Devices/Calibration/DisplayCalibration.xaml.cs",
@@ -6619,6 +6627,10 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CalibrationDocumentEditorTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationBinaryDocumentTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationMapCreationTests.cs",
+        "Test/ColorVision.UI.Tests/CalibrationColorCreationTests.cs",
         "Test/ColorVision.UI.Tests/CVRawManualCieCalculatorTests.cs",
         "Test/ColorVision.UI.Tests/LumFourColorWorkflowSafetyTests.cs"
       ],
