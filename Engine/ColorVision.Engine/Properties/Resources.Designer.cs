@@ -3498,24 +3498,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 数据加载 的本地化字符串。
-        /// </summary>
-        public static string DataLoad {
-            get {
-                return ResourceManager.GetString("DataLoad", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 数据加载模板管理 的本地化字符串。
-        /// </summary>
-        public static string DataLoadTemplateManagement {
-            get {
-                return ResourceManager.GetString("DataLoadTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 数据与日志 的本地化字符串。
         /// </summary>
         public static string DataLogs {
@@ -16786,7 +16768,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("启用相机取图缓冲", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 响应消息 的本地化字符串。
         /// </summary>
@@ -17018,6 +17000,15 @@ namespace ColorVision.Engine.Properties {
         public static string 定位算法 {
             get {
                 return ResourceManager.GetString("定位算法", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 实验功能 的本地化字符串。
+        /// </summary>
+        public static string 实验功能 {
+            get {
+                return ResourceManager.GetString("实验功能", resourceCulture);
             }
         }
         
@@ -17522,15 +17513,6 @@ namespace ColorVision.Engine.Properties {
         public static string 操作完成 {
             get {
                 return ResourceManager.GetString("操作完成", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 数据加载 的本地化字符串。
-        /// </summary>
-        public static string 数据加载 {
-            get {
-                return ResourceManager.GetString("数据加载", resourceCulture);
             }
         }
         

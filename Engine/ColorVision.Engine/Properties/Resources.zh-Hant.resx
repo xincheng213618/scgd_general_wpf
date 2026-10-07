@@ -624,9 +624,6 @@
   <data name="DistortionEvaluation" xml:space="preserve">
     <value>畸變評價</value>
   </data>
-  <data name="DataLoad" xml:space="preserve">
-    <value>資料載入</value>
-  </data>
   <data name="StereoFusion" xml:space="preserve">
     <value>雙目融合</value>
   </data>
@@ -1325,9 +1322,6 @@
 
 
   
-  <data name="DataLoadTemplateManagement" xml:space="preserve">
-    <value>資料載入模板管理</value>
-  </data>
   <data name="AADetectTemplateManagement" xml:space="preserve">
     <value>發光區檢測模板管理</value>
   </data>
@@ -3174,7 +3168,6 @@
   <data name="启用ND滤轮(自动曝光)" xml:space="preserve"><value>啟用ND濾輪(自動曝光)</value></data>
   <data name="图像裁剪2" xml:space="preserve"><value>影像裁剪2</value></data>
   <data name="布点ROI(区域)" xml:space="preserve"><value>布點ROI(區域)</value></data>
-  <data name="数据加载" xml:space="preserve"><value>資料載入</value></data>
   <data name="自动曝光模板" xml:space="preserve"><value>自動曝光範本</value></data>
   <data name="电压量程（V）" xml:space="preserve"><value>電壓量程（V）</value></data>
   <data name="电流量程（mA）" xml:space="preserve"><value>電流量程（mA）</value></data>

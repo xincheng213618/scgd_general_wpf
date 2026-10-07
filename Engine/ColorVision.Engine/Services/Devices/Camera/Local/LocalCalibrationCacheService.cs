@@ -9,8 +9,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal sealed record LocalCalibrationCacheReleaseFailure(string DeviceCode, string Message);
 
-    internal sealed record LocalCacheSnapshot(CalibrationSharedCacheSnapshot Calibration, CVFileReadCacheSnapshot ImageFile);
-
     internal sealed record LocalCalibrationCacheReleaseSummary(
         int DeviceCount,
         int ContextsReleased,
@@ -28,9 +26,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// </summary>
     internal static class LocalCalibrationCacheService
     {
-        public static LocalCacheSnapshot GetSnapshot()
-            => new(LocalCalibrationCacheManager.GetEntries(), CVFileReadCache.GetSnapshot());
-
         public static Task<LocalCalibrationCacheReleaseSummary> ReleaseAllAsync()
             => ReleaseAllAsync(ServiceManager.GetInstance());
 

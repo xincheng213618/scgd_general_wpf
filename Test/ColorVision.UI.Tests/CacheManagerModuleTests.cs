@@ -167,6 +167,42 @@ public sealed class CacheManagerModuleTests
         fixture.AssertFilesUnchanged();
     }
 
+    [Fact]
+    public void DeviceCalibrationCacheReleasesReloadsAndRejectsUseAfterDisposal()
+    {
+        using CacheFixture fixture = new();
+        uint originalOwners = fixture.CalibrationEntry.ActiveOwnerCount;
+        using LocalCalibrationCacheManager manager = new("cache-lifetime-test");
+        DeviceCameraCalibrationFile file = new("dark", CalibrationType.DarkNoise, "dark", "dark.dat", fixture.CalibrationPath);
+        byte[] raw = new byte[3 * 2 * sizeof(ushort)];
+        GCHandle pinned = GCHandle.Alloc(raw, GCHandleType.Pinned);
+        try
+        {
+            void Execute() => manager.Execute(new LocalCalibrationLayout(3, 2, 16, 1), [file],
+                pinned.AddrOfPinnedObject(), IntPtr.Zero, [10, 10, 10], default);
+
+            Execute();
+            Execute();
+            Assert.Equal(originalOwners + 1, fixture.CalibrationEntry.ActiveOwnerCount);
+            Assert.Equal(1, manager.ReleaseCache());
+            Assert.Equal(originalOwners, fixture.CalibrationEntry.ActiveOwnerCount);
+            Assert.Equal(0, manager.ReleaseCache());
+
+            Execute();
+            Assert.Equal(originalOwners + 1, fixture.CalibrationEntry.ActiveOwnerCount);
+            manager.Dispose();
+            manager.Dispose();
+            Assert.Equal(originalOwners, fixture.CalibrationEntry.ActiveOwnerCount);
+            Assert.Throws<ObjectDisposedException>(Execute);
+            Assert.Throws<ObjectDisposedException>(() => manager.ReleaseCache());
+            fixture.AssertFilesUnchanged();
+        }
+        finally
+        {
+            pinned.Free();
+        }
+    }
+
     private sealed class TestCacheModule(string id) : ICacheModule
     {
         private readonly CacheModuleSnapshot snapshot = new(id, id, $"{id} cache", 64, 1, 3, 1, 0, true, true,

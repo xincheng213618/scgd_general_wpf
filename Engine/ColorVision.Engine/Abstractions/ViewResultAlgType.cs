@@ -27,7 +27,6 @@ namespace ColorVision.Engine
         Compliance_Contrast_CIE_Y = 16,
         LEDStripDetection = 17,
         RealPOI = 18,
-        DataLoad = 19,
         POI_Y_V2 = 20,
         OLED_FindDotsArrayMem = 21,
         OLED_FindDotsArrayMem_File = 22,

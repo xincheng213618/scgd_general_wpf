@@ -12,7 +12,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// <summary>
     /// Owns a bounded LRU of opencv_helper calibration contexts. Parsed tables
     /// and geometric maps remain alive while their layout and ordered file set
-    /// stay cached. Callers provide synchronization.
+    /// stay cached. LocalCalibrationCacheManager validates inputs and provides
+    /// synchronization.
     /// </summary>
     internal sealed class OpenCvLocalCalibrationCache : IDisposable
     {
@@ -35,9 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            ArgumentNullException.ThrowIfNull(exposure);
-            if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW pointer is null.", nameof(rawPointer));
             LocalFrameMirrorService.ValidateFlipMode(rawOutputFlip);
             bool hasBasicCalibration = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
             if (rawOutputFlip != CVImageFlipMode.None

@@ -22,7 +22,6 @@ public enum CVResultType
 	Algorithm_Compliance_Contrast_CIE_Y = 16,
 	Algorithm_LEDStripDetection = 17,
 	Algorithm_RealPOI = 18,
-	Algorithm_DataLoad = 19,
 	Algorithm_POI_Y_V2 = 20,
 	Algorithm_FindDotsArrayMem = 21,
 	Algorithm_POI_LED_File = 22,

@@ -2,7 +2,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
@@ -88,11 +87,6 @@ public sealed class SensorTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj,
         () => FlowNodePropertyEditorRegistration.CreateSensorTemplate(obj), nameof(IFlowDeviceNode.DeviceCode), false);
-}
-
-public sealed class DataLoadTemplatePropertiesEditor : IPropertyEditor
-{
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateDataLoad());
 }
 
 public sealed class BlackMuraTemplatePropertiesEditor : IPropertyEditor

@@ -1,25 +1,25 @@
-using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
-    /// Owns the reusable native contexts used by process-local calibration nodes.
-    /// Image frames are owned separately by <see cref="LocalFlowFrame"/>.
+    /// Serializes one device's opencv_helper calibration cache and its lifetime.
+    /// Process-wide maintenance excludes execution across all devices; image
+    /// frames remain owned separately by <see cref="LocalFlowFrame"/>.
     /// </summary>
     internal sealed class LocalCalibrationCacheManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManager));
         private static readonly ReaderWriterLockSlim SharedCacheLifecycleGate = new(LockRecursionPolicy.NoRecursion);
         private readonly string deviceCode;
-        private readonly SemaphoreSlim openCvGate = new(1, 1);
-        private readonly OpenCvLocalCalibrationCache openCvCache = new();
+        private readonly Lock executionGate = new();
+        private readonly OpenCvLocalCalibrationCache cache = new();
         private bool disposed;
 
         public LocalCalibrationCacheManager(string deviceCode)
@@ -44,22 +44,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public static CalibrationSharedCacheReleaseResult ClearShared()
             => OpenCVCalibration.ClearCalibrationSharedCache();
 
-        public int CachedItemCount
-        {
-            get
-            {
-                openCvGate.Wait();
-                try
-                {
-                    return openCvCache.CachedItemCount;
-                }
-                finally
-                {
-                    openCvGate.Release();
-                }
-            }
-        }
-
         public RawColorTransformV1? Execute(
             LocalCalibrationLayout layout,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
@@ -74,33 +58,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(exposure);
             if (rawPointer == IntPtr.Zero) throw new ArgumentException("RAW 指针为空。", nameof(rawPointer));
 
-            SemaphoreSlim executionGate = FlowNodeTiming.Run("WaitCalibration", EnterExecution);
+            FlowNodeTiming.Run("WaitCalibration", EnterExecution);
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
+                return cache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
             }
             finally
             {
-                ExitExecution(executionGate);
+                ExitExecution();
             }
         }
 
         public int ReleaseCache()
         {
-            openCvGate.Wait();
-            try
+            lock (executionGate)
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                return openCvCache.Release();
-            }
-            finally
-            {
-                openCvGate.Release();
+                return cache.Release();
             }
         }
-
-        public Task<int> ReleaseCacheAsync() => Task.Run(ReleaseCache);
 
         /// <summary>
         /// Prevents new opencv_helper executions while a process-wide cache
@@ -123,33 +100,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public void Dispose()
         {
-            openCvGate.Wait();
-            try
+            lock (executionGate)
             {
                 if (disposed) return;
                 disposed = true;
                 try
                 {
-                    openCvCache.Dispose();
+                    cache.Dispose();
                 }
                 catch (Exception ex)
                 {
                     log.Error($"Release local calibration cache failed: {deviceCode}", ex);
                 }
             }
-            finally
-            {
-                openCvGate.Release();
-            }
         }
 
-        private SemaphoreSlim EnterExecution()
+        private void EnterExecution()
         {
+            // Always acquire the process gate before the device gate. Maintenance
+            // holds the write lock while releasing each device's cache.
             SharedCacheLifecycleGate.EnterReadLock();
             try
             {
-                openCvGate.Wait();
-                return openCvGate;
+                executionGate.Enter();
             }
             catch
             {
@@ -158,11 +131,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static void ExitExecution(SemaphoreSlim executionGate)
+        private void ExitExecution()
         {
             try
             {
-                executionGate.Release();
+                executionGate.Exit();
             }
             finally
             {

@@ -330,16 +330,6 @@
     "menu": "03_3 校正"
   },
   {
-    "type": "FlowEngineLib.Node.Algorithm.AlgDataLoadNode",
-    "request": {
-      "TemplateParam": {
-        "ID": -1,
-        "Name": "fixture-TempName"
-      }
-    },
-    "menu": null
-  },
-  {
     "type": "FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode",
     "request": {
       "OIndex": [

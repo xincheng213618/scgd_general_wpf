@@ -40,7 +40,7 @@ related: ["platform.architecture", "platform.service-host", "plugins.windows-ser
 | 安装、启停、维护 | `WindowsServicePlugin` 已管理服务包、MySQL/MQTT 安装、版本及备份；`ColorVisionServiceHost` 已提供本机权限代理 | 从逐项工具操作推进到按运行需求选组件、兼容版本预检和恢复验收；当前备份不等于整包自动回滚 | [服务包安装](../04-api-reference/plugins/standard-plugins/windows-service.md)、[权限服务主机](./components/service-host.md) |
 | 相机采集 | 本地会话、采集、预览、流程内存帧、后端占用保护已存在 | 本地相机仍通过 `cvColorVision` 调用 `cvCamera.dll`；部分结果落库仍依赖 MySQL；多进程设备占用需现场验收 | `LocalCameraNative.cs`、`DeviceCamera.Local.cs`、[相机契约](../01-user-guide/devices/camera.md) |
 | 光谱采集 | 本地窗口、共享会话、流程适配、校零和自动积分已有实现 | 仍使用原生光谱接口；外部快门自动控制、ND/端口操作及 EQE 同步频率本地支持不完整；离线历史仍不完整 | `LocalSpectrumSession.cs`、[光谱契约](../04-api-reference/engine-components/spectrum-device.md) |
-| 校正 | 本地校正默认采用自有 `opencv_helper`，文件/内存处理及用户校正已有入口 | 旧 native 后端由兼容开关保留；部分模板资源加载及流程结果保存仍依赖 MySQL；需逐项确认文件格式、数值和可追溯性 | `LocalCalibrationCacheManager.cs`、[校正契约](../01-user-guide/devices/calibration.md) |
+| 校正 | 本地校正采用自有 `opencv_helper`，文件/内存处理及用户校正已有入口 | 部分模板资源加载及流程结果保存仍依赖 MySQL；需逐项确认文件格式、数值和可追溯性 | `LocalCalibrationCacheManager.cs`、[校正契约](../01-user-guide/devices/calibration.md) |
 | 流程编排 | 自有 Flow 引擎、执行会话、诊断、本地模板已有实现；纯本地图可跳过注册中心要求 | 本地流程定义不保证每个节点离线；服务节点仍依赖 RC/token；部分本地算法和客户后处理依赖数据库 | `FlowExecutionSession.cs`、[执行契约](../01-user-guide/workflow/execution.md) |
 | 配置与模板 | 设备、许可证及部分模板已支持本地 SQLite；本地对象重连后仍保存到本地 | 当前新查询以连接状态选本地/MySQL；本地流程导入和服务 `.cvflow` 关联模板迁移的能力不同 | `LocalConfigurationDao.cs`、[流程模板](../04-api-reference/engine-components/template-flow-chain.md) |
 | 算法 | 自有统一 Runner/provider、Native 算法、Engine 本地节点及直接 native 工具已形成基础 | 同时存在统一算法、直接 native 工具及 Engine 模板/MQTT 三条链；要按实际算法和节点确认执行、参数及结果依赖 | [算法入口](../04-api-reference/algorithms/README.md) |
