@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.FileIO;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
@@ -11,6 +12,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     internal static class LocalFrameFileService
     {
         private const int CopyBufferSize = 1024 * 1024;
+        private static readonly object CapturePathSync = new();
+        private static readonly HashSet<string> CapturePaths = new(StringComparer.OrdinalIgnoreCase);
+        private static string? capturePathTimestamp;
 
         public static LocalFlowFrame Load(string filePath)
             => Load(filePath, null, null);
@@ -36,14 +40,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return FlowNodeTiming.Run("DecodeImage", () => LoadBitmap(fullPath, exposureOverride, gainOverride));
         }
 
-        public static string CreateCapturePath(string basePath, string deviceCode)
+        public static string CreateCapturePath(string basePath, string deviceCode, LocalFrameMetadata? metadata = null)
         {
             string root = string.IsNullOrWhiteSpace(basePath)
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision")
                 : basePath;
             string safeDeviceCode = string.IsNullOrWhiteSpace(deviceCode) ? "CameraLocal" : deviceCode;
-            string directory = Path.Combine(root, safeDeviceCode, "Data", DateTime.Now.ToString("yyyy-MM-dd"));
-            return Path.Combine(directory, $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.cvraw");
+            string templateName = string.Empty;
+            if (metadata?.IsMirrorReady == true && !string.IsNullOrWhiteSpace(metadata.CalibrationTemplate))
+            {
+                templateName = metadata.CalibrationTemplate.Trim();
+                foreach (char invalid in Path.GetInvalidFileNameChars()) templateName = templateName.Replace(invalid, '_');
+            }
+            lock (CapturePathSync)
+            {
+                DateTime captureTime = DateTime.Now;
+                string timestamp = captureTime.ToString("yyyyMMdd_HHmmss_fff");
+                string directory = Path.Combine(root, safeDeviceCode, "Data", captureTime.ToString("yyyy-MM-dd"));
+                // Reserve this millisecond's paths before callers save their database records and files.
+                if (timestamp != capturePathTimestamp)
+                {
+                    CapturePaths.Clear();
+                    capturePathTimestamp = timestamp;
+                }
+                for (int sequence = 1; ; sequence = checked(sequence + 1))
+                {
+                    string duplicateSuffix = sequence == 1 ? string.Empty : "_" + sequence;
+                    int maximumTemplateLength = 255 - timestamp.Length - duplicateSuffix.Length - "_.cvraw".Length;
+                    string templateSuffix = templateName.Length == 0 ? string.Empty : "_" + templateName[..Math.Min(templateName.Length, maximumTemplateLength)];
+                    string path = Path.Combine(directory, timestamp + templateSuffix + duplicateSuffix + ".cvraw");
+                    if (!File.Exists(path) && !CVFileReadCache.GetCachedLength(path).HasValue && CapturePaths.Add(Path.GetFullPath(path))) return path;
+                }
+            }
         }
 
         public static void SaveCapture(LocalFlowFrame frame, string rawPath, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)

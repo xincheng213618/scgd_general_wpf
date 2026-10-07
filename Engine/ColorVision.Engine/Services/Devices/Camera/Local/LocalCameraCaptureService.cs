@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 if (request.SaveFiles)
                 {
                     Stopwatch saveStopwatch = Stopwatch.StartNew();
-                    LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code));
+                    LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata));
                     saveStopwatch.Stop();
                     saveTimeMs = ToMilliseconds(saveStopwatch.ElapsedMilliseconds);
                 }

@@ -20,6 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private readonly ILocalCameraNative native;
         private readonly CameraBackendState backend;
         private readonly Action<string?> ensureAvailable;
+        private readonly Action ensureLicenseAvailable;
         private readonly Func<ConfigCamera> getConfig;
         private readonly Action saveConfig;
         private readonly Func<bool> getUseHikMvs;
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             native = new LocalCameraNative(device);
             backend = device.CameraBackend;
             ensureAvailable = device.EnsureLocalCameraAvailable;
+            ensureLicenseAvailable = device.EnsureLocalCameraLicense;
             getConfig = () => device.Config;
             saveConfig = device.SaveConfig;
             getUseHikMvs = () => device.DisplayConfig.UseHikMvs;
@@ -49,11 +51,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             getHikOutputBgr = () => device.DisplayConfig.HikOutputBgr;
         }
 
-        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null)
+        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null)
         {
             this.native = native;
             this.backend = backend;
             this.ensureAvailable = ensureAvailable ?? (_ => backend.EnsureLocalAvailable());
+            this.ensureLicenseAvailable = ensureLicenseAvailable ?? (() => { });
             ConfigCamera cameraConfig = config ?? new ConfigCamera();
             getConfig = () => cameraConfig;
             this.saveConfig = saveConfig ?? (() => { });
@@ -153,6 +156,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         OpenedHikOutputBgr = hikOutputBgr;
                         openedBpp = imageBpp;
                         loadedCalibrationJson = null;
+                        EnsureLicenseAvailable();
                     }
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && !string.Equals(configuredCameraId, cameraId, StringComparison.Ordinal))
                     {
@@ -166,6 +170,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     if (!IsOpen) config.CameraID = configuredCameraId!;
                     RefreshStatus();
                 }
+            }
+        }
+
+        private void EnsureLicenseAvailable()
+        {
+            try { ensureLicenseAvailable(); }
+            catch (LocalCameraLicenseException)
+            {
+                Close(unregisterCallback: true);
+                throw;
             }
         }
 

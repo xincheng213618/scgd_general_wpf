@@ -542,7 +542,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _crossGuideOverlayVisual.Clear();
                 _crossGuideProcessor.Reset();
             }
-            if (e.PropertyName == nameof(DisplayCameraConfig.IsGainControlledByCalibrationGroup)) RefreshPanelState();
+            if (e.PropertyName is nameof(DisplayCameraConfig.IsGainControlledByCalibrationGroup) or nameof(DisplayCameraConfig.GainSourceHint)) RefreshPanelState();
 
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
             {
@@ -1011,8 +1011,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Capture.AveragePanel.Visibility = Visible(!previewing && !Device.CameraBackend.VideoOwned);
             bool calibrationGain = DisplayCameraConfig.IsGainControlledByCalibrationGroup;
             bool hdrGain = state.ShowServiceSettings && CameraTemplateSelection.TryResolveRequired(Capture.ComboBoxHDRTemplate.SelectedValue, out ParamBase _);
-            Capture.GainPanel.Visibility = Visible(previewing || (!calibrationGain && !hdrGain));
-            Capture.GainPanel.ToolTip = previewing && calibrationGain ? EngineLocalization.Get("预览增益；测量使用校正组增益") : null;
+            Capture.GainPanel.Visibility = Visible(previewing || calibrationGain || !hdrGain);
+            Capture.GainPanel.IsEnabled = previewing || !calibrationGain;
+            Capture.GainPanel.ToolTip = calibrationGain
+                ? previewing ? EngineLocalization.Get("预览增益；测量使用校正组增益") : DisplayCameraConfig.GainSourceHint
+                : null;
             bool rgb = !previewing && UsesThreeCaptureExposures;
             Capture.SingleExposure.Visibility = Visible(!rgb);
             Capture.RgbExposure.Visibility = Visible(rgb);
@@ -2214,6 +2217,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return false;
             }
 
+            Device.EnsureLocalCameraLicense();
             errorMessage = string.Empty;
             return true;
         }

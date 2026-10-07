@@ -37,7 +37,7 @@
             </StackPanel>
         </StackPanel>
         <DockPanel Margin="0,0,0,2">
-            <DockPanel x:Name="GainPanel" DockPanel.Dock="Left" Margin="0,0,5,0">
+            <DockPanel x:Name="GainPanel" DockPanel.Dock="Left" Margin="0,0,5,0" ToolTipService.ShowOnDisabled="True">
                 <TextBlock Text="{x:Static properties:Resources.Gain}" Margin="0,0,3,0"/>
                 <TextBox Width="46" Text="{Binding DisplayConfig.Gain, StringFormat=F2}"/>
             </DockPanel>
