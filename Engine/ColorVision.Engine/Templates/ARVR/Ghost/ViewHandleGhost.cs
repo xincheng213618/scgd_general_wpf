@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
@@ -66,7 +65,6 @@ namespace ColorVision.Engine.Templates.Ghost
                 {
                     result.ViewResults.Add(item);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmGhost), ImageFilePath = result.FilePath })) });
             }
         }
 

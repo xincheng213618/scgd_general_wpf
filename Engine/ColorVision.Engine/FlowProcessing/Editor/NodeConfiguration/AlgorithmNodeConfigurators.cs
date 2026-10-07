@@ -1,6 +1,5 @@
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
@@ -50,7 +49,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node)context.Node;
             context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
-            context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
         }
     }
 
@@ -125,7 +123,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
-                        context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "Distortion2", new TemplateDistortion2());

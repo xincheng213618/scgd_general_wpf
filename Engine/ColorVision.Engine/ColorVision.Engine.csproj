@@ -35,24 +35,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="$(PkgSharpSevenZip_StrongName)\build\x64\7z.dll" Link="x64\7z.dll"
-			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-		<None Update="Services\Devices\Spectrum\Tools\zadig-2.4.exe"
-			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
-			  TargetPath="Tools\Spectrum\zadig-2.4.exe" />
-		<None Update="Services\Devices\Spectrum\Tools\zadig-NOTICE.txt"
-			  CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
-			  TargetPath="Tools\Spectrum\zadig-NOTICE.txt" />
+		<None Include="$(PkgSharpSevenZip_StrongName)\build\x64\7z.dll" Link="x64\7z.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+		<None Update="Services\Devices\Spectrum\Tools\zadig-2.4.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="Tools\Spectrum\zadig-2.4.exe" />
+		<None Update="Services\Devices\Spectrum\Tools\zadig-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="Tools\Spectrum\zadig-NOTICE.txt" />
 	</ItemGroup>
 
 
 	<ItemGroup>
-		<None Remove="Assets\Image\background0.png" />
 		<None Remove="Assets\Image\ColorVision.ico" />
 		<None Remove="Assets\Image\ColorVision.png" />
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
-		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
 		<None Remove="Assets\png\PowerToy.png" />
 		<None Remove="Templates\Jsons\**\*.schema.json" />
 		<None Remove="Templates\Jsons\Schemas\schema-index.json" />
@@ -96,14 +89,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Assets\Image\background0.png">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</Resource>
 		<Resource Include="Assets\Image\ColorVision.ico" />
 		<Resource Include="Assets\Image\ColorVision.png" />
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />
-		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
 		<Resource Include="Assets\png\PowerToy.png" />
 	</ItemGroup>
 
