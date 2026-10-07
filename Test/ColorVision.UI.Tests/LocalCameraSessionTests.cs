@@ -424,6 +424,7 @@ public class LocalCameraSessionTests
     [Fact]
     public void FlowFramesStayExclusiveUntilTheirLastLeaseIsReleased()
     {
+        using var cache = new RawBufferCacheScope();
         using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
         session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
         using var resources = new FlowRuntimeResources();
@@ -462,6 +463,7 @@ public class LocalCameraSessionTests
     [Fact]
     public void ReusingRawMemoryCreatesFreshImageIdentityAndCalibrationState()
     {
+        using var cache = new RawBufferCacheScope();
         var timing = new FlowNodeTiming();
         using var activation = timing.Activate();
         using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
@@ -502,6 +504,7 @@ public class LocalCameraSessionTests
     [Fact]
     public void SizeChangesPreserveTheNewBufferWhenAnOlderSizeReturnsLate()
     {
+        using var cache = new RawBufferCacheScope();
         using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
         session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
         using var old = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 16, 0, session.RawBufferPool);
@@ -531,6 +534,7 @@ public class LocalCameraSessionTests
     [InlineData(true)]
     public void ClosingOrDisposingTheCameraRetiresItsPoolButKeepsOutstandingImagesValid(bool dispose)
     {
+        using var cache = new RawBufferCacheScope();
         using var session = new LocalCameraSession(new FakeNative(), new CameraBackendState(true));
         session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
         var oldPool = session.RawBufferPool;
@@ -561,6 +565,7 @@ public class LocalCameraSessionTests
     [Fact]
     public void FailedCloseKeepsTheExistingPoolUsableUntilTheCameraActuallyCloses()
     {
+        using var cache = new RawBufferCacheScope();
         var native = new FakeNative { IgnoreClose = true };
         using var session = new LocalCameraSession(native, new CameraBackendState(true));
         session.Open("camera-1", TakeImageMode.Measure_Normal, 16);
@@ -591,6 +596,13 @@ public class LocalCameraSessionTests
         Assert.Equal(IntPtr.Zero, session.Handle);
         session.Dispose();
         Assert.Equal(1, native.Releases);
+    }
+
+    private sealed class RawBufferCacheScope : IDisposable
+    {
+        private readonly bool previous = LocalCameraRawBufferPool.IsCacheEnabled;
+        public RawBufferCacheScope() => LocalCameraRawBufferPool.IsCacheEnabled = true;
+        public void Dispose() => LocalCameraRawBufferPool.IsCacheEnabled = previous;
     }
 
     private sealed class FakeNative : ILocalCameraNative

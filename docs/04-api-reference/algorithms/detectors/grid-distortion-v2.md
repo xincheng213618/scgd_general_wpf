@@ -11,9 +11,9 @@ related: ["algorithms.arvr","algorithms.find-light-area","algorithms.find-cross"
 
 # 本地点阵畸变 V2
 
-V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径和居中投影径向模型的光学估计。ImageView 主指标表展示 TV、对边均值九点和相对光学估计；旧 P9 三跨度保留在全部分析 JSON，Flow 节点仍可选它写入 ARVR 字段。参数选择不重新找点。
+V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calculate` 同时计算 TV 的两种口径、九点的两种口径、四角几何和居中投影径向模型的光学估计。ImageView 主指标表展示 TV、对边均值九点、四角几何和相对光学估计；旧 P9 三跨度保留在全部分析 JSON，Flow 节点仍可选它写入 ARVR 字段。参数选择不重新找点。
 
-输入是完整的规则圆点阵，行列分别为 3～15 的奇数，可以是 3×3、7×7 或非正方形奇数阵列。多点图卡的九点指标取首行、中行、末行与首列、中列、末列的交点。缺点时拒绝计算，不用拟合点冒充实测点；当前不计算左右眼 `DIFF_H`/`DIFF_V`，这还需要配对输入和明确差值定义。
+输入是完整的规则圆点阵，行列分别为 3～15 的奇数，可以是 3×3、5×7、7×7 或其他非正方形奇数阵列。多点图卡的九点指标取首行、中行、末行与首列、中列、末列的交点。缺点时拒绝计算，不用拟合点冒充实测点；当前不计算左右眼 `DIFF_H`/`DIFF_V`，这还需要配对输入和明确差值定义。
 
 ## 使用入口
 
@@ -55,6 +55,8 @@ V2 用一次点阵定位得到完整点位，再由 `GridDistortionAnalysis.Calc
 | 旧本地九点 (%) | 宽度分母使用 `(Wt+Wm+Wb)/3` | 高度分母使用 `(Hl+Hc+Hr)/3` |
 
 旧本地梯形字段还保留既有命名：`KeystoneHoriz` 对应上、下宽度差，`KeystoneVert` 对应左、右高度差。它与两对边参考口径的轴名不同，不能只改分母后沿用字段解释。旧口径兼容的是本仓库 `distortion_p9.cpp` 的数学约定；使用 V2 定位器后，点位和最终数值不保证与旧定位器逐位一致，也不宣称等同于不可见的供应商服务实现。
+
+四角几何保存在 `Analysis.Geometry`：上下边倾斜角为 `atan2(|Δy|, |Δx|) × 180/π`，左右边为 `atan2(|Δx|, |Δy|) × 180/π`，均使用四角实测圆心连线，范围为 0～90°。`TopTiltDegrees`、`BottomTiltDegrees`、`LeftTiltDegrees`、`RightTiltDegrees` 保留四边角度，`MaximumTiltDegrees` 为四者最大值；基准是原图水平/垂直方向，包含整体旋转，不是器件空间倾角。`MaximumEdgeLengthDifferencePercent` 为两对边参考梯形比例绝对值的最大值，始终采用两对边平均长度，与旧 P9/TV 输出选择无关。ImageView 显示并可复制这些指标，全部分析 JSON、Flow 结果文件和主记录参数保存同一计算结果；Flow 同时提供 `LocalGridDistortionGeometry`、`LocalGridDistortionMaximumTiltDegrees` 和 `LocalGridDistortionMaximumEdgeLengthDifferencePercent`，并在 `LocalGridDistortionMetrics.Geometry` 中保留整体对象。原有百分比单位字段及 ARVR 字段口径不变，角度字段单位由 `Degrees` 明示。这两项汇总只描述四角范围的成像形状，不能替代中间点、四边弯曲和径向畸变分析；追加输出不自动设置客户判定限。
 
 ### 相对光学估计
 

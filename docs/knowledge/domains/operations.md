@@ -51,7 +51,7 @@ next: false
   物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。
 
 - [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
-  SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。
+  SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。
 
 - [终端进程、会话与脚本运行](../../01-user-guide/interface/terminal.md) — `operations.terminal`
   定义内嵌ConPTY会话、编辑器Python运行与外部CMD入口，区分命令提交、脚本结束、shell退出和强制释放。

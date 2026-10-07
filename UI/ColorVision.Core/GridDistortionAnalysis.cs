@@ -33,6 +33,17 @@ namespace ColorVision.Core
         public double KeystoneVerticalPercent { get; init; }
     }
 
+    /// <summary>Four-corner image geometry; inclination includes overall chart rotation.</summary>
+    public sealed record GridDistortionGeometryMetrics
+    {
+        public double TopTiltDegrees { get; init; }
+        public double BottomTiltDegrees { get; init; }
+        public double LeftTiltDegrees { get; init; }
+        public double RightTiltDegrees { get; init; }
+        public double MaximumTiltDegrees => Math.Max(Math.Max(TopTiltDegrees, BottomTiltDegrees), Math.Max(LeftTiltDegrees, RightTiltDegrees));
+        public double MaximumEdgeLengthDifferencePercent { get; init; }
+    }
+
     public sealed record GridDistortionVector(double X, double Y);
 
     public sealed record GridDistortionOpticalSample
@@ -82,6 +93,7 @@ namespace ColorVision.Core
         public GridDistortionTvMetrics HalfTv { get; init; } = new(0, 0);
         public GridDistortionPoint9Metrics ReferencePoint9 { get; init; } = new();
         public GridDistortionPoint9Metrics LegacyPoint9 { get; init; } = new();
+        public GridDistortionGeometryMetrics Geometry { get; init; } = new();
         public GridDistortionOpticalEstimate Optical { get; init; } = new();
 
         public static GridDistortionAnalysis Calculate(GridDistortionResult result)
@@ -141,11 +153,21 @@ namespace ColorVision.Core
             {
                 StandardTv = new(tvH, tvV), HalfTv = new(tvH / 2, tvV / 2),
                 ReferencePoint9 = reference, LegacyPoint9 = legacy,
+                Geometry = new()
+                {
+                    TopTiltDegrees = HorizontalTilt(tl, tr), BottomTiltDegrees = HorizontalTilt(bl, br),
+                    LeftTiltDegrees = VerticalTilt(tl, bl), RightTiltDegrees = VerticalTilt(tr, br),
+                    MaximumEdgeLengthDifferencePercent = Math.Max(Math.Abs(reference.KeystoneHorizontalPercent), Math.Abs(reference.KeystoneVerticalPercent))
+                },
                 Optical = GridDistortionOpticalModel.Calculate(grid, rows, cols, center)
             };
         }
 
         private static double Distance(GridDistortionPoint a, GridDistortionPoint b) => Math.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+
+        private static double HorizontalTilt(GridDistortionPoint a, GridDistortionPoint b) => Math.Atan2(Math.Abs(b.Y - a.Y), Math.Abs(b.X - a.X)) * 180 / Math.PI;
+
+        private static double VerticalTilt(GridDistortionPoint a, GridDistortionPoint b) => Math.Atan2(Math.Abs(b.X - a.X), Math.Abs(b.Y - a.Y)) * 180 / Math.PI;
 
         private static double SignedDistance(GridDistortionPoint point, GridDistortionPoint start, GridDistortionPoint end) =>
             ((end.X - start.X) * (point.Y - start.Y) - (end.Y - start.Y) * (point.X - start.X)) / Distance(start, end);

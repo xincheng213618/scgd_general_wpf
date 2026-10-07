@@ -18,7 +18,7 @@ namespace ColorVision.FileIO
         private static long misses;
         private static long allocations;
         private static long accessSequence;
-        private static bool isEnabled = true;
+        private static bool isEnabled;
         private static int maximumEntries = 1;
         private static readonly object WriteSync = new object();
 

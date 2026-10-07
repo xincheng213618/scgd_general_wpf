@@ -41,7 +41,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DataContext = Device;
             EnsureTimedButtonOperations();
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
-            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectedIndex = 0;
@@ -53,6 +52,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke(() => DService_DeviceStatusChanged(sender, e)); return; }
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
             void HideAllButtons()
             {
@@ -60,9 +60,15 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                 SetVisibility(StackPanelContent, Visibility.Collapsed);
                 SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+                SetVisibility(StackPanelOpen, Visibility.Collapsed);
             }
             // Default state
             HideAllButtons();
+            bool ready = e is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free;
+            UseLocalSmuCheckBox.IsEnabled = Device.SmuBackend.CanSwitch;
+            StackPanelOpen.IsEnabled = ready;
+            ButtonSourceMeter1.IsEnabled = e is not (DeviceStatusType.Opening or DeviceStatusType.Closing)
+                && (e != DeviceStatusType.Busy || Device.SmuBackend.LocalOwned);
 
             switch (e)
             {
@@ -70,6 +76,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     SetVisibility(ButtonUnauthorized, Visibility.Visible);
                     break;
                 case DeviceStatusType.Unknown:
+                    if (Device.SmuBackend.LocalOwned)
+                    {
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
+                    }
                     SetVisibility(TextBlockUnknow, Visibility.Visible);
                     break;
                 case DeviceStatusType.OffLine:
@@ -84,6 +95,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     break;
                 case DeviceStatusType.LiveOpened:
                 case DeviceStatusType.Opened:
+                case DeviceStatusType.Free:
+                case DeviceStatusType.Busy:
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(StackPanelContent, Visibility.Visible);
                     ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
@@ -103,6 +116,20 @@ namespace ColorVision.Engine.Services.Devices.SMU
             this.TryGetTimedButtonOperations()?.RefreshIdleState(ButtonSourceMeter1);
         }
 
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
+            DService_DeviceStatusChanged(sender, DService.DeviceStatus);
+        }
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e) => DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+        private void LocalSmuPreference_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!IsInitialized) return;
+            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+            DService_DeviceStatusChanged(sender, DService.DeviceStatus);
+        }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
@@ -114,7 +141,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             if (sender is Button button)
             {
                 EnsureTimedButtonOperations();
-                if (DService.DeviceStatus != DeviceStatusType.Opened)
+                if (!Device.SmuBackend.LocalOwned && DService.DeviceStatus is not (DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free))
                 {
                     MsgRecord msgRecord = DService.Open(Config.IsNet, Config.DevName);
                     ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
@@ -164,30 +191,36 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
             SMUSourceDisplayConfig sourceConfig = Device.DisplayConfig.CurrentSourceConfig;
-            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, sourceConfig.MeasureVal, sourceConfig.LmtVal, Device.DisplayConfig.Channel);
-            if (msgRecord != null)
+            MsgRecord? msgRecord = DService.StepData(Device.DisplayConfig.IsSourceV, sourceConfig.MeasureVal, sourceConfig.LmtVal, Device.DisplayConfig.Channel);
+            if (msgRecord != null && sender is Button button)
             {
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                ServicesHelper.SendTimedCommand(this, button, msgRecord, onTerminalStateChanged: (record, state) =>
                 {
-                    if (e == MsgRecordState.Fail)
+                    if (state == MsgRecordState.Fail)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{record.MsgReturn.Message}", "ColorVision");
                     }
-                };
+                });
             }
 
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
-            DService.CloseOutput();
-            Device.DisplayConfig.V = null;
-            Device.DisplayConfig.I = null;
+            bool local = Device.SmuBackend.OpensLocally;
+            MsgRecord record = DService.CloseOutput();
+            if (sender is Button button) ServicesHelper.SendTimedCommand(this, button, record, onTerminalStateChanged: (reply, state) =>
+            {
+                if (state == MsgRecordState.Fail) MessageBox.Show(Application.Current.GetActiveWindow(), reply.MsgReturn.Message, "ColorVision");
+            });
+            if (!local) { Device.DisplayConfig.V = null; Device.DisplayConfig.I = null; }
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> templateModel)
             {
                 EnsureTimedButtonOperations();
+                bool local = Device.SmuBackend.OpensLocally;
+                SMUChannelType channel = Device.DisplayConfig.Channel;
                 MsgRecord msgRecord = DService.Scan(templateModel.Value, Device.DisplayConfig.Channel);
                 if (msgRecord != null)
                 {
@@ -195,18 +228,22 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     {
                         if (state == MsgRecordState.Success)
                         {
+                            if (local) return;
                             if (record.MsgReturn.Code != 0)
                             {
-                                DService.CloseOutput();
+                                DService.CloseOutput(channel);
                                 MessageBox.Show($"GetData Eorr Code{record.MsgReturn.Code}");
                             }
                             else
                             {
                                 log.Info("DelyaClose1000");
                                 await Task.Delay(1000);
-                                DService.CloseOutput();
-                                Device.DisplayConfig.V = null;
-                                Device.DisplayConfig.I = null;
+                                if (Device.SmuBackend.OpensLocally) return;
+                                DService.CloseOutput(channel);
+                                var channelConfig = channel == SMUChannelType.A ? Device.DisplayConfig.ChannelA : Device.DisplayConfig.ChannelB;
+                                channelConfig.V = null;
+                                channelConfig.I = null;
+                                if (Device.DisplayConfig.Channel == channel) { Device.DisplayConfig.V = null; Device.DisplayConfig.I = null; }
                                 log.Info("DelyaClose1000 1");
                                 await Task.Delay(1000);
                             }
@@ -226,15 +263,17 @@ namespace ColorVision.Engine.Services.Devices.SMU
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
             operations.Register(ButtonSourceMeter1, options =>
             {
-                options.ContentFactory = stats => DService.DeviceStatus == DeviceStatusType.Opened
+                options.ContentFactory = stats => Device.SmuBackend.LocalOwned || DService.DeviceStatus is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free
                     ? ColorVision.Engine.Properties.Resources.Close
                     : TimedButtonOperationTextFormatter.BuildCompactContent(ColorVision.Engine.Properties.Resources.Open, stats);
-                options.ToolTipFactory = stats => DService.DeviceStatus == DeviceStatusType.Opened
+                options.ToolTipFactory = stats => Device.SmuBackend.LocalOwned || DService.DeviceStatus is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free
                     ? Properties.Resources.CloseSourceMeter
                     : TimedButtonOperationTextFormatter.BuildTooltip(Properties.Resources.OpenSourceMeter, stats);
             });
 
             operations.Register(MeasureDataButton);
+            operations.Register(StepMeasureDataButton);
+            operations.Register(CloseOutputButton);
 
             operations.Register(VIScanButton);
 

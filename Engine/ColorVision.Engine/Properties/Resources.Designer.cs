@@ -1403,7 +1403,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 MVS 插值质量 的本地化字符串。
+        ///   查找类似 MVS 拍照插值质量 的本地化字符串。
         /// </summary>
         public static string Camera_HikBayerQuality {
             get {
@@ -1448,7 +1448,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色取图，旧后端和灰度取图忽略此项。仅下次打开前设置，修改不会关闭相机或改变当前连接。 的本地化字符串。
+        ///   查找类似 默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色拍照，视频固定使用 2（最优）。旧后端和灰度取图忽略此项。拍照配置在下次打开相机时生效，切回拍照时恢复本次连接的配置。 的本地化字符串。
         /// </summary>
         public static string Camera_HikBayerQualityHint {
             get {
@@ -16778,6 +16778,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 启用相机取图缓冲 的本地化字符串。
+        /// </summary>
+        public static string 启用相机取图缓冲 {
+            get {
+                return ResourceManager.GetString("启用相机取图缓冲", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 响应消息 的本地化字符串。
         /// </summary>

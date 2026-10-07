@@ -44,6 +44,7 @@ namespace ProjectARVRPro.Process.Distortion
                                 continue;
 
                             ApplySelectedPoints(distortionResult, distortionData, Config.PointSource);
+                            DistortionGeometryResultBuilder.Apply(distortionData, recipeConfig, distortionResult, Config.ShowConfig);
 
                             if (distortionData.OpticDistortion != null)
                             {
@@ -125,7 +126,9 @@ namespace ProjectARVRPro.Process.Distortion
                                 distortionResult.DistortionLeft,
                                 distortionResult.DistortionRight,
                                 distortionResult.KeystoneHoriz,
-                                distortionResult.KeystoneVert);
+                                distortionResult.KeystoneVert,
+                                distortionResult.MaximumTiltDegrees,
+                                distortionResult.MaximumEdgeLengthDifferencePercent);
                         }
                     }
                 }
@@ -214,7 +217,7 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        private static void UpdateResult(IProcessExecutionContext ctx, params ObjectiveTestItem[] items)
+        private static void UpdateResult(IProcessExecutionContext ctx, params ObjectiveTestItem?[] items)
         {
             foreach (var item in items)
             {
@@ -223,7 +226,7 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        private static ObservableCollection<ObjectiveTestItem> CollectItems(DistortionTestResult result)
+        internal static ObservableCollection<ObjectiveTestItem> CollectItems(DistortionTestResult result)
         {
             ObservableCollection<ObjectiveTestItem> items = new ObservableCollection<ObjectiveTestItem>();
             AddIfNotNull(items, result.HorizontalTVDistortion);
@@ -235,6 +238,8 @@ namespace ProjectARVRPro.Process.Distortion
             AddIfNotNull(items, result.DistortionRight);
             AddIfNotNull(items, result.KeystoneHoriz);
             AddIfNotNull(items, result.KeystoneVert);
+            AddIfNotNull(items, result.MaximumTiltDegrees);
+            AddIfNotNull(items, result.MaximumEdgeLengthDifferencePercent);
             return items;
         }
 

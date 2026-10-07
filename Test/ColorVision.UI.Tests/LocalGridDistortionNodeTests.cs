@@ -237,6 +237,11 @@ public sealed class LocalGridDistortionNodeTests
             Assert.Equal(GridTvFormula.Half, persisted.TvFormula);
             Assert.Equal(GridPoint9Formula.LegacyThreeSpanMean, persisted.Point9Formula);
             Assert.Equal(result.Analysis.HalfTv.HorizontalPercent, action.Data["LocalGridDistortionHorizontalTvPercent"]);
+            Assert.Same(result.Analysis.Geometry, action.Data["LocalGridDistortionGeometry"]);
+            Assert.Equal(result.Analysis.Geometry.MaximumTiltDegrees, action.Data["LocalGridDistortionMaximumTiltDegrees"]);
+            Assert.Equal(result.Analysis.Geometry.MaximumEdgeLengthDifferencePercent, action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"]);
+            Assert.NotEqual(Math.Max(Math.Abs(result.Analysis.LegacyPoint9.KeystoneHorizontalPercent), Math.Abs(result.Analysis.LegacyPoint9.KeystoneVerticalPercent)), result.Analysis.Geometry.MaximumEdgeLengthDifferencePercent);
+            Assert.Equal(result.Analysis.Geometry.MaximumTiltDegrees, parameters["Analysis"]!["Geometry"]!.Value<double>("MaximumTiltDegrees"));
             Assert.NotNull(parameters["Analysis"]?["Optical"]);
             Assert.False(action.Data.ContainsKey("DIFF_H"));
             byte[] after = new byte[pixels.Length];
@@ -503,6 +508,8 @@ public sealed class LocalGridDistortionNodeTests
         Assert.Equal(result.RawJson, root["GridDistortion"]!.Value<string>("RawJson"));
         Assert.Null(root["DIFF_H"]);
         Assert.NotNull(root["Analysis"]?["Optical"]);
+        Assert.Equal(analysis.Geometry.MaximumTiltDegrees, root["Analysis"]!["Geometry"]!.Value<double>("MaximumTiltDegrees"));
+        Assert.Equal(analysis.Geometry.MaximumEdgeLengthDifferencePercent, root["Analysis"]!["Geometry"]!.Value<double>("MaximumEdgeLengthDifferencePercent"));
         Assert.Throws<InvalidOperationException>(() => LocalGridDistortionResultPersistence.BuildLegacyResultJson(result with { Success = false }, analysis, GridTvFormula.Standard, GridPoint9Formula.OppositeEdgeMean));
     }
 

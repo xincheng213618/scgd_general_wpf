@@ -77,8 +77,9 @@ namespace ColorVision.Engine.Services
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService ? Visibility.Visible : Visibility.Collapsed;
-            DetailTitle.Text = (TreeView1.SelectedItem as ServiceObjectBase)?.Name ?? Properties.Resources.WindowServiceTitle;
+            DetailHeader.DataContext = TreeView1.SelectedItem;
+            DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService or TerminalService ? Visibility.Visible : Visibility.Collapsed;
+            RenameServiceButton.Visibility = TreeView1.SelectedItem is TerminalService ? Visibility.Visible : Visibility.Collapsed;
             DetailSubtitle.Text = TreeView1.SelectedItem switch
             {
                 DeviceService device => device.Code,

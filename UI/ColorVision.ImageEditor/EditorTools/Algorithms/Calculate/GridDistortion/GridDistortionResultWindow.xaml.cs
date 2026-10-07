@@ -60,6 +60,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 互操作诊断：{result.InteropDiagnostic}
 
                 对边均值 9 点的 Keystone：水平 = (左高 − 右高) / 对边均值 × 100%；垂直 = (上宽 − 下宽) / 对边均值 × 100%。
+                四角几何：倾斜角包含整体旋转；最大边长差比例始终采用对边均值，与 TV/旧 P9 口径选择无关。
                 单张图没有左右眼配对信息，本次不生成 DIFF_H / DIFF_V。
                 """, CultureInfo.InvariantCulture);
             if (_analysis != null)
@@ -94,6 +95,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 Row("半值 TV", "Vertical TV", analysis.HalfTv.VerticalPercent, "%", "标准 Vertical TV / 2")
             };
             AddPoint9Rows(rows, analysis.ReferencePoint9);
+            GridDistortionGeometryMetrics geometry = analysis.Geometry;
+            rows.AddRange(new[]
+            {
+                Row("四角几何", "最大倾斜角", geometry.MaximumTiltDegrees, "°", "四边相对图像水平/垂直方向的夹角最大值；包含整体旋转"),
+                Row("四角几何", "最大边长差比例", geometry.MaximumEdgeLengthDifferencePercent, "%", "max(|左高 − 右高| / 左右高均值, |上宽 − 下宽| / 上下宽均值) × 100"),
+                Row("四角几何", "上边倾斜角", geometry.TopTiltDegrees, "°", "左上到右上连线相对图像水平线的夹角（0～90°）"),
+                Row("四角几何", "下边倾斜角", geometry.BottomTiltDegrees, "°", "左下到右下连线相对图像水平线的夹角（0～90°）"),
+                Row("四角几何", "左边倾斜角", geometry.LeftTiltDegrees, "°", "左上到左下连线相对图像垂直线的夹角（0～90°）"),
+                Row("四角几何", "右边倾斜角", geometry.RightTiltDegrees, "°", "右上到右下连线相对图像垂直线的夹角（0～90°）")
+            });
             GridDistortionOpticalEstimate optical = analysis.Optical;
             if (optical.IsAvailable && optical.OpticRatioPercent.HasValue && optical.MaxAbsoluteRatioPercent.HasValue)
             {

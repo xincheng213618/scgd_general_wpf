@@ -4,8 +4,8 @@
 
 ## 必要前提
 
-- Windows x64、Visual Studio C++/MSBuild 和 Windows SDK。测试项目当前使用 v145，helper 使用 v143；以各自 `.vcxproj` 为准，不通过随意降级 toolset 绕过缺项。
-- x64 OpenCV 属性表使用 `packages/opencv/x64/vc18/bin` / `lib`、版本后缀 4140；Debug 另带 `d`。还需要 `packages/nlohmann.props` 引用的头文件。
+- Windows x64、Visual Studio C++/MSBuild 和 Windows SDK。测试项目与 helper 均使用 v145；以各自 `.vcxproj` 为准，不通过随意降级 toolset 绕过缺项。
+- x64 OpenCV 属性表使用 `packages/opencv/x64/vc18/bin` / `lib`、版本后缀 500；Debug 另带 `d`。还需要 `packages/nlohmann.props` 引用的头文件。
 - x64 的 main 在 `test_find_luminous_area.cpp`，由项目正常编译；用 `--luminous-v2-only` 等既有参数选择专项，无需更改 main 或链接入口。
 - 完整 `scgd_general_wpf.sln` 的 Debug 配置把 helper 映射到 Release、测试映射到 Debug；直接项目构建的配置另行选择，不能混同。
 - 构建会写输出并通过 helper 复制 native runtime 到主程序构建目录。测试可能创建/清理临时文件、加载指定 DLL 或调用 GPU；样本和运行环境须符合所选专项的前提。

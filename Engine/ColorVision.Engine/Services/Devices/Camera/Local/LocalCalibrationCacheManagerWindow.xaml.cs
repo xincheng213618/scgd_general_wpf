@@ -22,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private static LocalCalibrationCacheManagerWindow? instance;
         private readonly ObservableCollection<CacheModuleViewItem> modules = new();
         private readonly CvRawFileCacheConfig imageCacheConfig;
+        private readonly CameraRawBufferCacheConfig cameraCacheConfig;
         private readonly ICollectionView modulesView;
         private bool isBusy;
         private bool isClosed;
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public LocalCalibrationCacheManagerWindow()
         {
             imageCacheConfig = CvRawFileCacheConfig.Current;
+            cameraCacheConfig = CameraRawBufferCacheConfig.Current;
             modulesView = CollectionViewSource.GetDefaultView(modules);
             modulesView.SortDescriptions.Add(new SortDescription(nameof(CacheModuleViewItem.MemoryBytes), ListSortDirection.Descending));
             modulesView.Filter = MatchesSearch;
@@ -40,7 +42,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 new Binding(nameof(CvRawFileCacheConfig.IsEnabled)) { Source = imageCacheConfig, Mode = BindingMode.OneWay });
             ImageCacheCountTextBox.SetBinding(TextBox.TextProperty,
                 new Binding(nameof(CvRawFileCacheConfig.MaximumEntries)) { Source = imageCacheConfig, Mode = BindingMode.OneWay });
-            imageCacheConfig.PropertyChanged += ImageCacheConfig_PropertyChanged;
+            CameraCacheEnabledCheckBox.SetBinding(ToggleButton.IsCheckedProperty,
+                new Binding(nameof(CameraRawBufferCacheConfig.IsEnabled)) { Source = cameraCacheConfig, Mode = BindingMode.OneWay });
+            imageCacheConfig.PropertyChanged += CacheConfig_PropertyChanged;
+            cameraCacheConfig.PropertyChanged += CacheConfig_PropertyChanged;
         }
 
         public static void OpenWindow()
@@ -71,7 +76,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private void Window_Closed(object? sender, EventArgs e)
         {
-            imageCacheConfig.PropertyChanged -= ImageCacheConfig_PropertyChanged;
+            imageCacheConfig.PropertyChanged -= CacheConfig_PropertyChanged;
+            cameraCacheConfig.PropertyChanged -= CacheConfig_PropertyChanged;
             isClosed = true;
             if (ReferenceEquals(instance, this)) instance = null;
         }
@@ -86,9 +92,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshAsync(showError: true);
 
         private async void ImageCacheEnabledCheckBox_Click(object sender, RoutedEventArgs e)
+            => await SetCacheEnabledAsync("ImageFile", ImageCacheEnabledCheckBox);
+
+        private async void CameraCacheEnabledCheckBox_Click(object sender, RoutedEventArgs e)
+            => await SetCacheEnabledAsync("CameraRawBuffer", CameraCacheEnabledCheckBox);
+
+        private async Task SetCacheEnabledAsync(string moduleId, CheckBox checkBox)
         {
-            if (isBusy || CacheManagerService.GetById("ImageFile") is not ICacheModule module) return;
-            bool enabled = ImageCacheEnabledCheckBox.IsChecked == true;
+            if (isBusy || CacheManagerService.GetById(moduleId) is not ICacheModule module) return;
+            bool enabled = checkBox.IsChecked == true;
             SetBusy(true, EngineLocalization.Get("正在读取缓存状态…"));
             try
             {
@@ -97,17 +109,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             catch (Exception ex)
             {
-                log.Error("Change image file cache setting failed.", ex);
+                log.Error($"Change {moduleId} cache setting failed.", ex);
                 StatusText.Text = EngineLocalization.Format($"读取缓存状态失败：{ex.Message}");
             }
             finally
             {
-                ImageCacheEnabledCheckBox.GetBindingExpression(ToggleButton.IsCheckedProperty)?.UpdateTarget();
+                checkBox.GetBindingExpression(ToggleButton.IsCheckedProperty)?.UpdateTarget();
                 if (!isClosed) SetBusy(false, string.Empty);
             }
         }
 
-        private async void ImageCacheConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private async void CacheConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if ((e.PropertyName != nameof(CvRawFileCacheConfig.IsEnabled) && e.PropertyName != nameof(CvRawFileCacheConfig.MaximumEntries)) || isClosed) return;
             if (!Dispatcher.CheckAccess())
@@ -264,7 +276,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             SelectedModuleErrorText.Text = selected?.Error ?? string.Empty;
             SelectedModuleErrorText.Visibility = selected?.Error == null ? Visibility.Collapsed : Visibility.Visible;
             CacheDetailsGrid.ItemsSource = selected?.Entries.Select(entry => new CacheEntryViewItem(entry)).ToArray();
-            ImageCacheOptionsPanel.Visibility = selected?.CanToggle == true ? Visibility.Visible : Visibility.Collapsed;
+            ImageCacheOptionsPanel.Visibility = selected?.Id == "ImageFile" ? Visibility.Visible : Visibility.Collapsed;
+            CameraCacheOptionsPanel.Visibility = selected?.Id == "CameraRawBuffer" ? Visibility.Visible : Visibility.Collapsed;
             EmptyDetailsText.Visibility = selected?.Entries.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
             EmptyDetailsText.Text = EngineLocalization.Get(selected == null ? "选择模块以查看缓存详情。" : "当前模块没有缓存文件。");
             ReleaseSelectedButton.IsEnabled = !isBusy && selected != null
@@ -279,6 +292,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             RefreshButton.IsEnabled = !busy;
             ReleaseAllButton.IsEnabled = !busy;
             ImageCacheEnabledCheckBox.IsEnabled = !busy;
+            CameraCacheEnabledCheckBox.IsEnabled = !busy;
             ImageCacheCountTextBox.IsEnabled = !busy;
             ApplyImageCacheCountButton.IsEnabled = !busy;
             LoadingText.Text = loadingText;

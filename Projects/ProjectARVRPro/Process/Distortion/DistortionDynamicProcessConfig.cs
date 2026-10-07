@@ -30,7 +30,7 @@ namespace ProjectARVRPro.Process.Distortion
 
         [Category("导出配置")]
         [DisplayName("单位")]
-        [Description("畸变结果单位")]
+        [Description("原有畸变项的导出单位；最大倾斜角固定为°，最大边长差比例固定为%。")]
         public string Unit { get => _Unit; set { _Unit = value; OnPropertyChanged(); } }
         private string _Unit = "%";
     }

@@ -312,6 +312,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isLocalVideoRoiVisualRemoveSubscribed;
         private bool _crossGuideOverlayAdded;
         private readonly object _localVideoHandleSync = new();
+        private readonly CameraPreviewParameterQueue _previewParameterUpdates;
         private int _disposeState;
         private bool _isInitialized;
         private bool _templateOptionsAreLocal;
@@ -339,6 +340,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _localRealtimePipeline = new CameraRealtimeFramePipeline();
             _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
             _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
+            _previewParameterUpdates = new CameraPreviewParameterQueue(ApplyPreviewParameterCore, ex => logger.Error("更新本地预览参数失败", ex));
             InitializeComponent();
         }
 
@@ -528,6 +530,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed || _isSyncingLocalVideoRoi) return;
             if (e.PropertyName == nameof(DisplayCameraConfig.IsLocalVideoOpen))
             {
+                _previewParameterUpdates.Clear();
                 EnsureTimedButtonOperations().RefreshIdleState(Actions.LocalVideoButton);
                 RefreshPanelState();
             }
@@ -979,10 +982,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             static Visibility Visible(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
             if (_templateOptionsAreLocal != Device.RoutesLocally) RefreshAutoExpTimeTemplateOptions();
             CameraPanelState idle = CameraPanelState.Create(Device.CameraBackend, previewing, false);
+            bool opening = _panelOperation?.MsgSend?.EventName == "Open";
+            bool closing = _panelOperation?.MsgSend?.EventName == "Close";
             Actions.ToolTip = state.Busy ? EngineLocalization.Get(state.StatusKey) : null;
-            Actions.OpenButton.Visibility = Visible(!state.Connected && (idle.CanConnect || state.Busy));
+            Actions.OpenButton.Visibility = Visible(opening || (!state.Connected && !closing && (idle.CanConnect || state.Busy)));
             Actions.OpenButton.IsEnabled = state.CanConnect;
-            Actions.CloseButton.Visibility = Visible(state.Connected);
+            Actions.CloseButton.Visibility = Visible(!opening && (state.Connected || closing));
             Actions.CloseButton.IsEnabled = !state.Busy;
             Actions.LocalVideoButton.IsEnabled = state.CanPreview;
             Capture.TakePhotoButton.IsEnabled = state.CanCapture;
@@ -1730,6 +1735,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DisposeCore()
         {
+            _previewParameterUpdates.Dispose();
             Device.ConfigChanged -= Device_ConfigChanged;
             Device.PropertyChanged -= CameraPanel_PropertyChanged;
             if (_panelConfig != null) _panelConfig.PropertyChanged -= CameraPanel_PropertyChanged;
@@ -2301,12 +2307,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void ApplyPreviewParameter(bool exposure)
         {
             if (IsDisposed || !DisplayCameraConfig.IsLocalVideoOpen || _isOpeningLocalVideo) return;
+            _previewParameterUpdates.Enqueue(exposure, exposure ? (float)DisplayCameraConfig.ExpTime : DisplayCameraConfig.Gain);
+        }
+
+        private void ApplyPreviewParameterCore(CameraPreviewParameterChange change)
+        {
             int Apply(IntPtr handle)
             {
-                int code = exposure ? cvCameraCSLib.CM_SetExpTime(handle, (float)DisplayCameraConfig.ExpTime)
-                    : cvCameraCSLib.CM_SetGain(handle, DisplayCameraConfig.Gain);
+                if (IsDisposed || !_previewParameterUpdates.IsCurrent(change)) return cvErrorDefine.CV_ERR_SUCCESS;
+                int code = change.Exposure ? cvCameraCSLib.CM_SetExpTime(handle, change.Value)
+                    : cvCameraCSLib.CM_SetGain(handle, change.Value);
                 if (code != cvErrorDefine.CV_ERR_SUCCESS)
-                    logger.Error(LocalCameraCaptureService.CreateNativeException(exposure ? "本地视频设置曝光失败" : "本地视频设置增益失败", code));
+                    logger.Error(LocalCameraCaptureService.CreateNativeException(change.Exposure ? "本地视频设置曝光失败" : "本地视频设置增益失败", code));
                 return code;
             }
             try
@@ -2322,7 +2334,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else lock (_localVideoHandleSync)
                 {
-                    if (DisplayCameraConfig.IsLocalVideoOpen && _legacyVideoHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(_legacyVideoHandle)) Apply(_legacyVideoHandle);
+                    if (_previewParameterUpdates.IsCurrent(change) && _legacyVideoHandle != IntPtr.Zero && cvCameraCSLib.CM_IsOpen(_legacyVideoHandle)) Apply(_legacyVideoHandle);
                 }
             }
             catch (Exception ex) { logger.Error("更新本地预览参数失败", ex); }

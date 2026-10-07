@@ -33,6 +33,8 @@ namespace ColorVision.UI.Desktop.Marketplace
     public interface IMarketplacePackageDownloader
     {
         DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName);
+        DownloadTask AddVerifiedDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName, string? expectedSha256)
+            => AddDownload(url, downloadDirectory, authorization, onCompleted, fileName);
         void CancelDownload(DownloadTask task);
     }
 
@@ -83,6 +85,11 @@ namespace ColorVision.UI.Desktop.Marketplace
 
     internal sealed class MarketplacePackageDownloaderAdapter : IMarketplacePackageDownloader
     {
+        public DownloadTask AddVerifiedDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName, string? expectedSha256)
+        {
+            return Aria2cDownloadManager.GetInstance().AddVerifiedDownload(url, downloadDirectory, authorization, onCompleted, fileName, expectedSha256);
+        }
+
         public DownloadTask AddDownload(string url, string downloadDirectory, string? authorization, Action<DownloadTask> onCompleted, string fileName)
         {
             return Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDirectory, authorization, onCompleted, fileName);
@@ -518,7 +525,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             try
             {
-                downloadTask = _downloader.AddDownload(downloadUrl, _ui.DownloadDirectory, _ui.Authorization, task =>
+                downloadTask = _downloader.AddVerifiedDownload(downloadUrl, _ui.DownloadDirectory, _ui.Authorization, task =>
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -551,7 +558,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     }
 
                     completionSource.TrySetResult(task.SavePath);
-                }, fileName);
+                }, fileName, request.ExpectedHash);
 
                 if (cancellationToken.IsCancellationRequested)
                 {

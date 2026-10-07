@@ -133,6 +133,8 @@ public sealed class LocalDeferredColorCalibrationTests
     [InlineData(CVFileSaveMode.MemoryOnly)]
     public void ColorMetadataIsWrittenWithoutSavingCieAndNonReplayableRawIsRejected(CVFileSaveMode saveMode)
     {
+        bool cacheEnabled = CVFileReadCache.IsEnabled;
+        CVFileReadCache.IsEnabled = true; // This fixture explicitly exercises the existing cache-only save contract.
         string root = Path.Combine(Path.GetTempPath(), $"cv-deferred-metadata-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         string path = Path.Combine(root, "input.cvraw"), calibration = Path.Combine(root, "color.dat");
@@ -159,6 +161,8 @@ public sealed class LocalDeferredColorCalibrationTests
         }
         finally
         {
+            CVFileReadCache.Release();
+            CVFileReadCache.IsEnabled = cacheEnabled;
             foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)) File.Delete(file);
         }
     }

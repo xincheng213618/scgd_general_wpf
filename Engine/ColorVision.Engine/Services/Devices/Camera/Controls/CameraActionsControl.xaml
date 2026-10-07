@@ -28,9 +28,9 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition x:Name="VideoColumn" Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Padding="4,2" MinHeight="30" FontSize="13" Margin="0,0,2,0" HorizontalAlignment="Stretch" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
-            <Button Padding="4,2" MinHeight="30" FontSize="13" Margin="0,0,2,0" HorizontalAlignment="Stretch" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
-            <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Stretch" Margin="0,0,2,0" Padding="4,2" MinHeight="30" FontSize="13"/>
+            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
+            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
+            <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Stretch" Margin="0,0,2,0"/>
         </Grid>
     </StackPanel>
 </UserControl>

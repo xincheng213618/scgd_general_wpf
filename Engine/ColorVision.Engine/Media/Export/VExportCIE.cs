@@ -61,26 +61,26 @@ namespace ColorVision.Engine.Media
             using Mat image = src.Clone();
             if (IsFormat(export.ExportImageFormat, ImageFormat.Tiff))
             {
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, export.TiffCompression));
+                Cv2.ImWrite(fileName, image, [new ImageEncodingParam(ImwriteFlags.TiffCompression, export.TiffCompression)]);
                 if (parameters != null)
                     TiffImageDescriptionWriter.Write(fileName, parameters.ToJson());
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Bmp))
             {
                 using Mat bmpImage = CreateBmpCompatibleMat(image);
-                bmpImage.SaveImage(fileName);
+                Cv2.ImWrite(fileName, bmpImage);
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Png))
             {
                 if (export.PngCompressionLevel == AutomaticPngCompressionLevel)
-                    image.SaveImage(fileName);
+                    Cv2.ImWrite(fileName, image);
                 else
-                    image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel));
+                    Cv2.ImWrite(fileName, image, [new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel)]);
             }
             else if (IsFormat(export.ExportImageFormat, ImageFormat.Jpeg))
             {
                 using Mat jpegImage = CreateBmpCompatibleMat(image);
-                jpegImage.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality));
+                Cv2.ImWrite(fileName, jpegImage, [new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality)]);
             }
             else
             {

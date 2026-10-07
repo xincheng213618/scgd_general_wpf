@@ -1,16 +1,64 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
-    /// <summary>Retains at most one idle RAW buffer for an open camera session.</summary>
+    /// <summary>Optionally retains at most one idle RAW buffer for an open camera session.</summary>
     internal sealed class LocalCameraRawBufferPool : IDisposable
     {
+        private static readonly object settingsSync = new();
+        private static readonly List<WeakReference<LocalCameraRawBufferPool>> pools = new();
+        private static bool isCacheEnabled;
         private readonly object sync = new();
         private IntPtr idlePointer;
         private int currentLength;
         private bool disposed;
+        private bool cacheEnabled;
+
+        internal LocalCameraRawBufferPool()
+        {
+            lock (settingsSync)
+            {
+                cacheEnabled = isCacheEnabled;
+                pools.RemoveAll(reference => !reference.TryGetTarget(out _));
+                pools.Add(new WeakReference<LocalCameraRawBufferPool>(this));
+            }
+        }
+
+        internal static bool IsCacheEnabled
+        {
+            get { lock (settingsSync) return isCacheEnabled; }
+            set
+            {
+                // Serialize policy changes with pool creation. Weak references do not prolong session ownership.
+                lock (settingsSync)
+                {
+                    isCacheEnabled = value;
+                    for (int index = pools.Count - 1; index >= 0; index--)
+                    {
+                        if (pools[index].TryGetTarget(out var pool)) pool.SetCacheEnabled(value);
+                        else pools.RemoveAt(index);
+                    }
+                }
+            }
+        }
+
+        private void SetCacheEnabled(bool enabled)
+        {
+            IntPtr pointer = IntPtr.Zero;
+            lock (sync)
+            {
+                cacheEnabled = enabled;
+                if (!enabled)
+                {
+                    pointer = idlePointer;
+                    idlePointer = IntPtr.Zero;
+                }
+            }
+            if (pointer != IntPtr.Zero) Marshal.FreeHGlobal(pointer);
+        }
 
         internal int IdleBytes
         {
@@ -52,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (pointer == IntPtr.Zero) return;
             lock (sync)
             {
-                if (!disposed && length == currentLength && idlePointer == IntPtr.Zero)
+                if (!disposed && cacheEnabled && length == currentLength && idlePointer == IntPtr.Zero)
                 {
                     idlePointer = pointer;
                     return;

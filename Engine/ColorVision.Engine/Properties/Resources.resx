@@ -3023,8 +3023,8 @@
   <data name="原始帧已保存：{0}" xml:space="preserve"><value>原始帧已保存：{0}</value></data>
   <data name="Camera_UseHikMvs" xml:space="preserve"><value>海康使用新取图</value></data>
   <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。仅 HK_USB 的 BV/LV/LVTOBV 生效。只在下次打开前设置，修改不会关闭或切换当前连接。</value></data>
-  <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS 插值质量</value></data>
-  <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色取图，旧后端和灰度取图忽略此项。仅下次打开前设置，修改不会关闭相机或改变当前连接。</value></data>
+  <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS 拍照插值质量</value></data>
+  <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色拍照，视频固定使用 2（最优）。旧后端和灰度取图忽略此项。拍照配置在下次打开相机时生效，切回拍照时恢复本次连接的配置。</value></data>
   <data name="Camera_HikBayerQuality0" xml:space="preserve"><value>0 - 快速</value></data>
   <data name="Camera_HikBayerQuality1" xml:space="preserve"><value>1 - 均衡</value></data>
   <data name="Camera_HikBayerQuality2" xml:space="preserve"><value>2 - 最优</value></data>
@@ -3072,4 +3072,7 @@
   <data name="CameraPanel_AutoBeforeCaptureFull" xml:space="preserve"><value>拍前自曝</value></data>
   <data name="CameraPanel_Region" xml:space="preserve"><value>区域</value></data>
   <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>本机参数</value></data>
+  <data name="启用相机取图缓冲" xml:space="preserve"><value>启用相机取图缓冲</value></data>
+  <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。</value></data>
+  <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。</value></data>
 </root>

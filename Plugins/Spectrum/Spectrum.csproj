@@ -8,7 +8,7 @@
     <DefineConstants>$(DefineConstants);SPECTRUM_ABOUT</DefineConstants>
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>2.3.3.18</VersionPrefix>
+	<VersionPrefix>2.3.3.19</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,9 +35,9 @@
 	<ItemGroup>
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.1" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.161" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp5" Version="5.0.0.20261003" />
+		<PackageReference Include="OpenCvSharp5.runtime.win" Version="5.0.0.20261003" />
+		<PackageReference Include="OpenCvSharp5.WpfExtensions" Version="5.0.0.20261003" />
 		<!-- Compatibility freeze: keep ScottPlot.WPF 5.0.56; see docs/04-api-reference/ui-components/component-handbook.md. -->
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.12" />

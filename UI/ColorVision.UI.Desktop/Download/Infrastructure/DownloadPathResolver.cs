@@ -20,7 +20,7 @@ namespace ColorVision.UI.Desktop.Download
 
                         dn = Uri.UnescapeDataString(dn).Trim();
                         if (!string.IsNullOrWhiteSpace(dn))
-                            return dn;
+                            return NormalizeFileName(dn);
                     }
                 }
                 catch
@@ -35,7 +35,7 @@ namespace ColorVision.UI.Desktop.Download
                 var uri = new Uri(url);
                 string fileName = Path.GetFileName(uri.LocalPath);
                 if (!string.IsNullOrWhiteSpace(fileName) && fileName != "/")
-                    return fileName;
+                    return NormalizeFileName(fileName);
             }
             catch
             {
@@ -44,10 +44,29 @@ namespace ColorVision.UI.Desktop.Download
             return $"download_{DateTime.Now:yyyyMMddHHmmss}";
         }
 
-        public static string GetUniqueFilePath(string directory, string fileName)
+        public static string NormalizeFileName(string fileName)
         {
+            // A URL display name is data, never a path supplied to the filesystem.
+            string name = Path.GetFileName(fileName.Replace('/', '\\')).Trim().TrimEnd('.');
+            foreach (char invalid in Path.GetInvalidFileNameChars())
+                name = name.Replace(invalid, '_');
+            if (string.IsNullOrWhiteSpace(name) || name is "." or "..")
+                name = "download";
+            string stem = Path.GetFileNameWithoutExtension(name);
+            if (stem.Equals("CON", StringComparison.OrdinalIgnoreCase) || stem.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+                stem.Equals("AUX", StringComparison.OrdinalIgnoreCase) || stem.Equals("NUL", StringComparison.OrdinalIgnoreCase) ||
+                (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase)) && stem[3] is >= '1' and <= '9'))
+                name = "_" + name;
+            return name;
+        }
+
+        public static string GetUniqueFilePath(string directory, string fileName, Func<string, bool>? isReserved = null)
+        {
+            directory = Path.GetFullPath(directory);
+            fileName = NormalizeFileName(fileName);
             string filePath = Path.Combine(directory, fileName);
-            if (!File.Exists(filePath) && !File.Exists(filePath + ".aria2"))
+            bool Available(string path) => !File.Exists(path) && !Directory.Exists(path) && !File.Exists(path + ".aria2") && isReserved?.Invoke(path) != true;
+            if (Available(filePath))
                 return filePath;
 
             string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
@@ -56,11 +75,11 @@ namespace ColorVision.UI.Desktop.Download
             for (int i = 1; i < 1000; i++)
             {
                 string candidate = Path.Combine(directory, $"{nameWithoutExt}({i}){ext}");
-                if (!File.Exists(candidate) && !File.Exists(candidate + ".aria2"))
+                if (Available(candidate))
                     return candidate;
             }
 
-            return Path.Combine(directory, $"{nameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{ext}");
+            return Path.Combine(directory, $"{nameWithoutExt}_{Guid.NewGuid():N}{ext}");
         }
     }
 }

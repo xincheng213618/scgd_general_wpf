@@ -77,6 +77,9 @@ namespace ColorVision.UI.Desktop.Download
         private int _totalPages = 1;
         private string? _searchKeyword;
         private DispatcherTimer? _searchTimer;
+        private CancellationTokenSource? _loadCancellation;
+        private bool _closed;
+        private bool _recordsBusy;
 
         public DownloadWindow()
         {
@@ -84,6 +87,9 @@ namespace ColorVision.UI.Desktop.Download
             this.ApplyCaption();
             Closed += (s, e) =>
             {
+                _closed = true;
+                _searchTimer?.Stop();
+                _loadCancellation?.Cancel();
                 if (_manager != null)
                 {
                     _manager.DownloadCompleted -= OnDownloadCompleted;
@@ -148,7 +154,8 @@ namespace ColorVision.UI.Desktop.Download
                     {
                         Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
+                            try { Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true }); }
+                            catch (Exception ex) { log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error("Auto-run failed.", ex); }
                         });
                     }
                     catch (Exception ex)
@@ -203,13 +210,34 @@ namespace ColorVision.UI.Desktop.Download
 
         private void LoadData()
         {
-            _totalRecords = _manager.GetTotalCount(_searchKeyword);
-            _totalPages = Math.Max(1, (int)Math.Ceiling((double)_totalRecords / _pageSize));
-            if (_currentPage > _totalPages) _currentPage = _totalPages;
-            if (_currentPage < 1) _currentPage = 1;
+            if (_closed) return;
+            _loadCancellation?.Cancel();
+            _loadCancellation = new CancellationTokenSource();
+            _ = LoadDataAsync(_loadCancellation);
+        }
 
-            _manager.LoadRecords(_searchKeyword, _pageSize, _currentPage);
-            UpdatePaginationUI();
+        private async Task LoadDataAsync(CancellationTokenSource cancellation)
+        {
+            try
+            {
+                var page = await _manager.LoadRecordsAsync(_searchKeyword, _pageSize, _currentPage, cancellation.Token);
+                if (_closed || cancellation.IsCancellationRequested) return;
+                _totalRecords = page.TotalCount;
+                _currentPage = page.Page;
+                _totalPages = Math.Max(1, (int)Math.Ceiling((double)_totalRecords / _pageSize));
+                UpdatePaginationUI();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error("Download records could not be loaded.", ex);
+                if (!_closed) StatusBarText.Text = ex.Message;
+            }
+            finally
+            {
+                if (ReferenceEquals(_loadCancellation, cancellation)) _loadCancellation = null;
+                cancellation.Dispose();
+            }
         }
 
         private void UpdatePaginationUI()
@@ -219,7 +247,7 @@ namespace ColorVision.UI.Desktop.Download
             CurrentPageTextBox.Text = _currentPage.ToString();
         }
 
-        private void BtnAddUrl_Click(object sender, RoutedEventArgs e)
+        private async void BtnAddUrl_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new AddDownloadDialog { Owner = this };
             if (dialog.ShowDialog() == true && dialog.DownloadUrls.Length > 0)
@@ -230,37 +258,44 @@ namespace ColorVision.UI.Desktop.Download
                     auth = $"{dialog.UserName}:{dialog.Password}";
                 }
                 string? savePath = !string.IsNullOrWhiteSpace(dialog.SaveDirectory) ? dialog.SaveDirectory : null;
-                foreach (var url in dialog.DownloadUrls)
+                string[] urls = dialog.DownloadUrls;
+                try
                 {
-                    _manager.AddDownload(url, savePath, auth);
+                    await Task.Run(() => { foreach (var url in urls) _manager.AddDownload(url, savePath, auth); });
+                    LoadData();
                 }
-                LoadData();
+                catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
             }
         }
 
-        private void ClearRecords_Click(object sender, RoutedEventArgs e)
+        private async void ClearRecords_Click(object sender, RoutedEventArgs e)
         {
+            if (_recordsBusy) return;
             var result = MessageBox.Show(Properties.Resources.ClearRecordsConfirm, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
-                _manager.ClearAllRecords();
-                _currentPage = 1;
-                LoadData();
+                _recordsBusy = true;
+                try { await _manager.ClearAllRecordsAsync(); _currentPage = 1; LoadData(); }
+                catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+                finally { _recordsBusy = false; }
             }
         }
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _searchTimer?.Stop();
-            _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            _searchTimer.Tick += (s, args) =>
+            if (_searchTimer == null)
             {
-                _searchTimer.Stop();
-                _searchKeyword = SearchTextBox.Text?.Trim();
-                if (string.IsNullOrEmpty(_searchKeyword)) _searchKeyword = null;
-                _currentPage = 1;
-                LoadData();
-            };
+                _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                _searchTimer.Tick += (s, args) =>
+                {
+                    _searchTimer.Stop();
+                    _searchKeyword = SearchTextBox.Text?.Trim();
+                    if (string.IsNullOrEmpty(_searchKeyword)) _searchKeyword = null;
+                    _currentPage = 1;
+                    LoadData();
+                };
+            }
             _searchTimer.Start();
         }
 
@@ -488,14 +523,16 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        private void DeleteTasks(IReadOnlyCollection<DownloadTask> tasks)
+        private async void DeleteTasks(IReadOnlyCollection<DownloadTask> tasks)
         {
-            if (tasks.Count == 0)
+            if (tasks.Count == 0 || _recordsBusy)
                 return;
 
             bool deleteFiles = ShouldDeleteFiles(tasks);
-            _manager.DeleteRecords(tasks.Select(t => t.Id).ToArray(), deleteFiles);
-            LoadData();
+            _recordsBusy = true;
+            try { await _manager.DeleteRecordsAsync(tasks.Select(t => t.Id).ToArray(), deleteFiles); LoadData(); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error); }
+            finally { _recordsBusy = false; }
         }
 
         private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject

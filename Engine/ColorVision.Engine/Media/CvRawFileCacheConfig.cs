@@ -10,12 +10,12 @@ namespace ColorVision.Engine.Media
     {
         public static CvRawFileCacheConfig Current => ConfigService.Instance.GetRequiredService<CvRawFileCacheConfig>();
 
-        private bool isEnabled = true;
+        private bool isEnabled;
         private int maximumEntries = 1;
 
         [Category("图像文件缓存"), DisplayName("启用 CVRAW 文件缓存")]
         [ConfigSetting(Order = 30, Section = ConfigSettingConstants.SectionFileArchive)]
-        [Description("默认开启。关闭后直接读写文件，已有读取完成后释放槽位；显示内存复用保持不变，可用于对比文件缓存效果。")]
+        [Description("默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。")]
         public bool IsEnabled
         {
             get => isEnabled;

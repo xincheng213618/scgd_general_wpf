@@ -4,14 +4,19 @@ namespace ColorVision.UI.Desktop.Download
 {
     public class DownloadTask : ViewModelBase
     {
+        internal DownloadTaskState Runtime { get; } = new();
+        internal string? DownloadDirectory { get; set; }
+        internal string? WorkingPath { get; set; }
+        internal string? ContentSha256 { get; set; }
+        public string? ExpectedSha256 { get; set; }
 
-        public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }
+        public int Id { get => _Id; set { if (_Id == value) return; _Id = value; OnPropertyChanged(); } }
         private int _Id;
 
-        public string Url { get => _Url; set { _Url = value; OnPropertyChanged(); } }
+        public string Url { get => _Url; set { if (_Url == value) return; _Url = value; OnPropertyChanged(); } }
         private string _Url = string.Empty;
 
-        public string FileName { get => _FileName; set { _FileName = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileIconSource)); } }
+        public string FileName { get => _FileName; set { if (_FileName == value) return; _FileName = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileIconSource)); } }
         private string _FileName = string.Empty;
 
         public System.Windows.Media.ImageSource? FileIconSource
@@ -35,10 +40,10 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
+        public string SavePath { get => _SavePath; set { if (_SavePath == value) return; _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = string.Empty;
 
-        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsWaitingOrFailed)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public DownloadStatus Status { get => _Status; set { if (_Status == value) return; _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsWaitingOrFailed)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private DownloadStatus _Status;
 
         public bool IsDownloading => Status == DownloadStatus.Downloading || Status == DownloadStatus.Waiting;
@@ -58,22 +63,22 @@ namespace ColorVision.UI.Desktop.Download
             _ => Status.ToString()
         };
 
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
+        public int ProgressValue { get => _ProgressValue; set { if (_ProgressValue == value) return; _ProgressValue = value; OnPropertyChanged(); } }
         private int _ProgressValue;
 
-        public long TotalBytes { get => _TotalBytes; set { _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public long TotalBytes { get => _TotalBytes; set { if (_TotalBytes == value) return; _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _TotalBytes;
 
-        public long DownloadedBytes { get => _DownloadedBytes; set { _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadedBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public long DownloadedBytes { get => _DownloadedBytes; set { if (_DownloadedBytes == value) return; _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadedBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _DownloadedBytes;
 
-        public string SpeedText { get => _SpeedText; set { _SpeedText = value; OnPropertyChanged(); } }
+        public string SpeedText { get => _SpeedText; set { if (_SpeedText == value) return; _SpeedText = value; OnPropertyChanged(); } }
         private string _SpeedText = string.Empty;
 
-        public string? ErrorMessage { get => _ErrorMessage; set { _ErrorMessage = value; OnPropertyChanged(); } }
+        public string? ErrorMessage { get => _ErrorMessage; set { if (_ErrorMessage == value) return; _ErrorMessage = value; OnPropertyChanged(); } }
         private string? _ErrorMessage;
 
-        public DateTime CreateTime { get => _CreateTime; set { _CreateTime = value; OnPropertyChanged(); } }
+        public DateTime CreateTime { get => _CreateTime; set { if (_CreateTime == value) return; _CreateTime = value; OnPropertyChanged(); } }
         private DateTime _CreateTime = DateTime.Now;
 
         public string TotalBytesText => FormatBytes(TotalBytes);

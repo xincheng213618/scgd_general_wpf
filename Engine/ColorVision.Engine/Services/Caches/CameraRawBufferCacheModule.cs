@@ -1,3 +1,4 @@
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using System;
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.Services.Caches
 
         public string Id => "CameraRawBuffer";
         public string Name => EngineLocalization.Get("相机取图缓冲");
-        public string Description => EngineLocalization.Get("每台相机最多保留一块空闲 RAW 缓冲。只统计和释放空闲内存，不影响在用图像；后续取图可重新申请和复用。");
+        public string Description => EngineLocalization.Get("默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。");
 
         public CacheModuleSnapshot GetSnapshot()
         {
@@ -23,7 +24,7 @@ namespace ColorVision.Engine.Services.Caches
                 .Select(item => new CacheEntrySnapshot(item.DeviceCode, string.Empty, 0, (ulong)item.Bytes, 0, 0,
                     EngineLocalization.Get("已缓存（可释放）"))).ToArray();
             ulong bytes = entries.Aggregate(0UL, (total, entry) => checked(total + entry.MemoryBytes));
-            return new CacheModuleSnapshot(Id, Name, Description, bytes, entries.Length, 0, 0, 0, true, false,
+            return new CacheModuleSnapshot(Id, Name, Description, bytes, entries.Length, 0, 0, 0, LocalCameraRawBufferPool.IsCacheEnabled, true,
                 EngineLocalization.Get("仅统计空闲取图缓冲，不含正在使用的图像。"), Array.AsReadOnly(entries));
         }
 
@@ -39,7 +40,11 @@ namespace ColorVision.Engine.Services.Caches
             });
         }
 
-        public void SetEnabled(bool enabled) => throw new NotSupportedException(EngineLocalization.Get("取图缓冲不支持停用，请使用释放缓存。"));
+        public void SetEnabled(bool enabled)
+        {
+            CameraRawBufferCacheConfig.Current.IsEnabled = enabled;
+            CameraRawBufferCacheConfig.SaveCurrent();
+        }
 
         private static IReadOnlyList<(string DeviceCode, LocalCameraRawBufferPool Pool)> ReadCameraPools()
         {

@@ -331,10 +331,14 @@ std::vector<std::uint8_t> referenceDistortion(
         cv::initUndistortRectifyMap(camera, distortion, cv::Mat(), newCamera, size, CV_32FC1, mapX, mapY);
     }
     cv::Mat result;
-    // Independent legacy oracle retains floating maps and the materialized
-    // fisheye translation, including interpolation and zero-border behavior.
+    // Retain legacy quantized interpolation and the materialized fisheye
+    // translation. OpenCV 5's floating-map remap uses different precision,
+    // so it is no longer an oracle for the fixed-map compatibility contract.
+    cv::Mat coordinates;
+    cv::Mat interpolation;
+    cv::convertMaps(mapX, mapY, coordinates, interpolation, CV_16SC2);
     cv::remap(
-        translated, result, mapX, mapY,
+        translated, result, coordinates, interpolation,
         cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
     std::vector<std::uint8_t> bytes(result.total() * result.elemSize());

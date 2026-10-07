@@ -88,7 +88,6 @@ public class SMUModelNode : SMUBaseNode
 		svrRecvResp = resp;
 		if (resp != null && resp.Status == ActionStatusEnum.Finish)
 		{
-			AddIVDataMy(resp, startCFC);
 			if (resp.EventName == "ModelGetData" && resp.Data != null && resp.Data.ScanRequestParam != null)
 			{
 				_channel = (SMUChannelType)resp.Data.ScanRequestParam.Channel;
@@ -101,6 +100,7 @@ public class SMUModelNode : SMUBaseNode
 				BuildValueData();
 				updateUI();
 			}
+			AddIVDataMy(resp, startCFC);
 		}
 	}
 

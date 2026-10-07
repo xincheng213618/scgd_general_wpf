@@ -22,16 +22,18 @@ public sealed class GridDistortionAnalysisTests
         Assert.Equal(0, analysis.LegacyPoint9.KeystoneVerticalPercent, 12);
         Assert.Equal(-1500 / (2 * sideHeight + 90), analysis.LegacyPoint9.TopPercent, 12);
         Assert.NotEqual(analysis.ReferencePoint9.TopPercent, analysis.LegacyPoint9.TopPercent);
+        Assert.Equal(22.22222222222222, analysis.Geometry.MaximumEdgeLengthDifferencePercent, 10);
         Assert.False(analysis.Optical.IsCalibrated);
         Assert.Equal("CenteredProjectiveBrownK1/v2", analysis.Optical.Method);
     }
 
     [Theory]
-    [InlineData(3)]
-    [InlineData(7)]
-    public void AsymmetricReferencePointsMatchIndependentGoldenValuesForBothConventions(int dimension)
+    [InlineData(3, 3)]
+    [InlineData(5, 7)]
+    [InlineData(7, 7)]
+    public void AsymmetricReferencePointsMatchIndependentGoldenValuesForBothConventions(int rows, int cols)
     {
-        GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(CreateAsymmetricGrid(dimension));
+        GridDistortionAnalysis analysis = GridDistortionAnalysis.Calculate(CreateAsymmetricGrid(rows, cols));
 
         // Golden values come directly from the nine coordinates below: Euclidean
         // edge lengths and signed perpendicular bow, not production metric fields.
@@ -51,6 +53,33 @@ public sealed class GridDistortionAnalysisTests
         Assert.Equal(-1.5304123553192657, analysis.LegacyPoint9.RightPercent, 10);
         Assert.Equal(4.609817128333842, analysis.LegacyPoint9.KeystoneHorizontalPercent, 10);
         Assert.Equal(4.783271633461019, analysis.LegacyPoint9.KeystoneVerticalPercent, 10);
+        Assert.Equal(0, analysis.Geometry.TopTiltDegrees, 10);
+        Assert.Equal(2.726310993906266, analysis.Geometry.BottomTiltDegrees, 10);
+        Assert.Equal(1.3639275316029187, analysis.Geometry.LeftTiltDegrees, 10);
+        Assert.Equal(4.289153328819018, analysis.Geometry.RightTiltDegrees, 10);
+        Assert.Equal(4.289153328819018, analysis.Geometry.MaximumTiltDegrees, 10);
+        Assert.Equal(4.626065853366646, analysis.Geometry.MaximumEdgeLengthDifferencePercent, 10);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(15)]
+    [InlineData(-15)]
+    public void CornerInclinationIncludesOverallRotationWhileEqualOppositeEdgesHaveZeroDifference(double degrees)
+    {
+        double radians = degrees * Math.PI / 180;
+        GridDistortionResult grid = CreateGrid(5, 7, (row, col) =>
+        {
+            double x = (col - 3) * 100, y = (row - 2) * 100;
+            return (700 + x * Math.Cos(radians) - y * Math.Sin(radians), 500 + x * Math.Sin(radians) + y * Math.Cos(radians));
+        });
+        GridDistortionGeometryMetrics geometry = GridDistortionAnalysis.Calculate(grid).Geometry;
+        Assert.Equal(Math.Abs(degrees), geometry.TopTiltDegrees, 10);
+        Assert.Equal(Math.Abs(degrees), geometry.BottomTiltDegrees, 10);
+        Assert.Equal(Math.Abs(degrees), geometry.LeftTiltDegrees, 10);
+        Assert.Equal(Math.Abs(degrees), geometry.RightTiltDegrees, 10);
+        Assert.Equal(Math.Abs(degrees), geometry.MaximumTiltDegrees, 10);
+        Assert.Equal(0, geometry.MaximumEdgeLengthDifferencePercent, 10);
     }
 
     [Fact]
@@ -170,7 +199,7 @@ public sealed class GridDistortionAnalysisTests
         Assert.Throws<ArgumentException>(() => GridDistortionAnalysis.Calculate(CreateGrid(3, (row, col) => (100 + (col + row) * 50, 100))));
     }
 
-    private static GridDistortionResult CreateAsymmetricGrid(int dimension)
+    private static GridDistortionResult CreateAsymmetricGrid(int rows, int cols)
     {
         (double X, double Y)[] anchors =
         [
@@ -178,13 +207,13 @@ public sealed class GridDistortionAnalysisTests
             (14, 52), (52, 52), (96, 54),
             (8, 94), (52, 88), (92, 90)
         ];
-        int half = (dimension - 1) / 2;
-        return CreateGrid(dimension, (row, col) =>
+        int halfRow = (rows - 1) / 2, halfCol = (cols - 1) / 2;
+        return CreateGrid(rows, cols, (row, col) =>
         {
             // Piecewise bilinear filling preserves the anchors exactly at rows
             // and columns 0/middle/last, while supplying every dense-grid point.
-            int blockRow = Math.Min(row / half, 1), blockCol = Math.Min(col / half, 1);
-            double v = (double)(row - blockRow * half) / half, u = (double)(col - blockCol * half) / half;
+            int blockRow = Math.Min(row / halfRow, 1), blockCol = Math.Min(col / halfCol, 1);
+            double v = (double)(row - blockRow * halfRow) / halfRow, u = (double)(col - blockCol * halfCol) / halfCol;
             var tl = anchors[blockRow * 3 + blockCol];
             var tr = anchors[blockRow * 3 + blockCol + 1];
             var bl = anchors[(blockRow + 1) * 3 + blockCol];

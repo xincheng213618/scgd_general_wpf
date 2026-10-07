@@ -313,7 +313,7 @@ namespace ProjectARVRPro.Process.AOI
             {
                 string destFile = Path.Combine(exportDir, Path.GetFileNameWithoutExtension(fileUrl) + ".tif");
                 log.Info("正在输出TIF原图 " + destFile);
-                src.SaveImage(destFile, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                Cv2.ImWrite(destFile, src, [new ImageEncodingParam(ImwriteFlags.TiffCompression, 1)]);
             }
         }
 

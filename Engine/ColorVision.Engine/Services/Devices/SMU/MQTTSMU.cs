@@ -24,6 +24,47 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
         public DeviceSMU Device { get; set; }
         private SMUScanParam? _lastScanParam;
+        public override DeviceStatusType DeviceStatus
+        {
+            get => Device?.SmuBackend?.Status ?? base.DeviceStatus;
+            set { if (Device?.SmuBackend == null) base.DeviceStatus = value; else Device.SmuBackend.ObserveService(value); }
+        }
+        internal void RefreshBackendStatus() => base.DeviceStatus = Device.SmuBackend.Status;
+
+        internal override MsgRecord PublishAsyncClient(MsgSend message, double timeout = 30000)
+        {
+            lock (Device.SmuBackend.Sync)
+            {
+                if (Device.SmuBackend.OpensLocally) return Device.RunLocalSmuCommand(message);
+                Device.EnsureOtherSmuBackends(false, Local.LocalSmuConnection.From(Config));
+                Device.SmuBackend.BeginServiceCommand(message.EventName);
+            }
+            try
+            {
+                MsgRecord record = base.PublishAsyncClient(message, timeout);
+                int completed = 0;
+                void Complete(object? sender, MsgRecordState state)
+                {
+                    if (state is not (MsgRecordState.Success or MsgRecordState.Fail or MsgRecordState.Timeout)
+                        || System.Threading.Interlocked.Exchange(ref completed, 1) != 0) return;
+                    record.MsgRecordStateChanged -= Complete;
+                    Device.SmuBackend.EndServiceCommand();
+                    if (state == MsgRecordState.Success && message.EventName is "Open" or "Close" or "Reopen")
+                        DeviceStatus = message.EventName == "Close" ? DeviceStatusType.Closed : DeviceStatusType.Opened;
+                }
+                record.MsgRecordStateChanged += Complete;
+                Complete(record, record.MsgRecordState);
+                return record;
+            }
+            catch { Device.SmuBackend.EndServiceCommand(); throw; }
+        }
+
+        public override void Dispose()
+        {
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
         public MQTTSMU(DeviceSMU deviceSMU) : base(deviceSMU.Config)
         {
             Device = deviceSMU;
@@ -39,6 +80,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
+            if (Device.SmuBackend.OpensLocally) return Task.CompletedTask;
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
@@ -179,7 +221,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public MsgRecord? GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
         {
-            if (Device.DisplayConfig.IsUseLimitSigned)
+            if (!Device.SmuBackend.OpensLocally && Device.DisplayConfig.IsUseLimitSigned)
             {
                 double V = isSourceV ? measureVal : lmtVal;
                 double I = isSourceV ? lmtVal : measureVal;
@@ -210,6 +252,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord? StepData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
+        {
+            if (!Device.SmuBackend.OpensLocally) return GetData(isSourceV, measureVal, lmtVal, channel);
+            return PublishAsyncClient(new MsgSend { EventName = "StepData", Params = new Local.LocalSmuParameters
+                { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal, Channel = channel } });
+        }
+
         public class SMUScanParam
         {
             public bool IsSourceV { set; get; }
@@ -223,6 +272,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         public MsgRecord? Scan(SMUParam smuParam, SMUChannelType channel)
         {
+            if (Device.SmuBackend.OpensLocally)
+                return PublishAsyncClient(new MsgSend { EventName = "Scan", Params = new
+                    { DeviceParam = Local.LocalSmuParameters.FromTemplate(smuParam, channel, true), IsCloseOutput = true } });
             bool isSourceV = smuParam.IsSourceV;
             double startMeasureVal = smuParam.StartMeasureVal;
             double stopMeasureVal = smuParam.StopMeasureVal;
@@ -306,7 +358,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return true;
         }
 
-        public MsgRecord CloseOutput()
+        public MsgRecord CloseOutput() => CloseOutput(Device.DisplayConfig.Channel);
+
+        public MsgRecord CloseOutput(SMUChannelType channel)
         {
             var Params = new Dictionary<string, object>();
             MsgSend msg = new()
@@ -314,7 +368,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 EventName = "CloseOutput",
                 Params = Params,
             };
-            Params.Add("Channel", Device.DisplayConfig.Channel);
+            Params.Add("Channel", channel);
 
             return PublishAsyncClient(msg);
         }

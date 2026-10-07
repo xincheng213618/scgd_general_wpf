@@ -259,7 +259,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 int result = register(manager);
                 if (result != cvErrorDefine.CV_ERR_SUCCESS)
                 {
-                    var failure = LocalCameraCaptureService.CreateNativeException("注册本地相机视频回调失败", result);
+                    var failure = LocalCameraCaptureService.CreateNativeException("启动本地相机视频失败", result);
                     onStopped();
                     try { native.DetachCallback(manager); }
                     catch (Exception ex) { log.Warn("清理失败的视频回调失败。", ex); }

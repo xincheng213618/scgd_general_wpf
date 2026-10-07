@@ -320,9 +320,12 @@ struct Type< Point3_<_Tp> > { enum { value = CV_MAKETYPE(Depth<_Tp>::value, 3) }
 
 /** @brief Template class for specifying the size of an image or rectangle.
 
-The class includes two members called width and height. The structure can be converted to and from
-the old OpenCV structures CvSize and CvSize2D32f . The same set of arithmetic and comparison
+The class includes two members called width and height. The same set of arithmetic and comparison
 operations as for Point_ is available.
+
+For a 1d matrix, the size is (width, 1) and for a 0d matrix, it is (1, 1).
+
+For an empty matrix, it is (0, 0).
 
 OpenCV defines the following Size_\<\> aliases:
 @code
@@ -910,6 +913,7 @@ public:
     @param epsilon The desired accuracy or change in parameters at which the iterative algorithm stops.
     */
     TermCriteria(int type, int maxCount, double epsilon);
+    TermCriteria(int maxCount, double epsilon);
 
     inline bool isValid() const
     {
@@ -971,10 +975,6 @@ public:
     //! the full constructor
     Moments(double m00, double m10, double m01, double m20, double m11,
             double m02, double m30, double m21, double m12, double m03 );
-    ////! the conversion from CvMoments
-    //Moments( const CvMoments& moments );
-    ////! the conversion to CvMoments
-    //operator CvMoments() const;
 
     //! @name spatial moments
     //! @{
@@ -2539,6 +2539,26 @@ TermCriteria::TermCriteria()
 inline
 TermCriteria::TermCriteria(int _type, int _maxCount, double _epsilon)
     : type(_type), maxCount(_maxCount), epsilon(_epsilon) {}
+
+inline TermCriteria::TermCriteria(int _maxCount, double _epsilon)
+{
+    type = 0;
+    if (_maxCount > 0)
+    {
+        maxCount = _maxCount;
+        type = COUNT;
+    }
+    else
+        maxCount = INT_MAX-1;
+
+    if (_epsilon > 0)
+    {
+        epsilon = _epsilon;
+        type |= EPS;
+    }
+    else
+        epsilon = DBL_EPSILON;
+}
 
 //! @endcond
 

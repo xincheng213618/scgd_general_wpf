@@ -39,7 +39,7 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/stereo.hpp>
 
 namespace cv {
 namespace ximgproc {
@@ -68,7 +68,7 @@ public:
 
     @param disparity_map_right optional argument, some implementations might also use the disparity map
     of the right view to compute confidence maps. If provided, it must be a single-channel CV_16S matrix.
-    Disparity values are expected to be scaled by 16 (one-pixel disparity corresponds to the value of 16).
+    Disparity values are expected to be scaled by 16 (one-pixel disparity corresponds to the value of 16).  
 
 
     @param ROI region of the disparity map to filter. Optional, usually it should be set automatically.

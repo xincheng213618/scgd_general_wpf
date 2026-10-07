@@ -1,4 +1,5 @@
 #include "binocular_fusion.h"
+#include <opencv2/geometry.hpp>
 
 #include <algorithm>
 #include <array>

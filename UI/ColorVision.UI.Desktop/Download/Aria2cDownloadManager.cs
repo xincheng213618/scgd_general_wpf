@@ -1,1460 +1,773 @@
 #pragma warning disable CA1822,CA1863
+using ColorVision.Update;
 using log4net;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
-using ColorVision.Update;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.Security.Cryptography;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.Download
 {
-
     public class Aria2cDownloadManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(Aria2cDownloadManager));
-        private static readonly string[] TellStatusKeys = { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage", "bittorrent", "files" };
-        private const int PollIntervalMs = 300;
-
-        private static Aria2cDownloadManager? _instance;
+        private static readonly string[] TellStatusKeys = { "status", "totalLength", "completedLength", "downloadSpeed", "errorMessage", "bittorrent", "files", "followedBy" };
         private static readonly object _locker = new();
-
-        public static Aria2cDownloadManager GetInstance()
-        {
-            lock (_locker)
-            {
-                if (_instance == null)
-                {
-                    var application = Application.Current;
-                    if (application?.Dispatcher != null && !application.Dispatcher.CheckAccess())
-                    {
-                        _instance = application.Dispatcher.InvokeAsync(() => new Aria2cDownloadManager()).Task.GetAwaiter().GetResult();
-                    }
-                    else
-                    {
-                        _instance = new Aria2cDownloadManager();
-                    }
-                }
-
-                return _instance;
-            }
-        }
-
-        public static Task StopExistingDaemonForUpdateHandoffAsync()
-        {
-            Aria2cDownloadManager? instance;
-            lock (_locker)
-            {
-                instance = _instance;
-            }
-
-            return instance?.StopDaemonForUpdateHandoffAsync() ?? Task.CompletedTask;
-        }
-
+        private static Aria2cDownloadManager? _instance;
         public static string DirectoryPath { get; set; } = Environments.DirDownloads;
         public static string DbPath { get; set; } = Path.Combine(DirectoryPath, "Downloads.db");
 
-        /// <summary>Protects resumable work without constructing a manager, loading its UI page, or starting network work.</summary>
+        public static Aria2cDownloadManager GetInstance()
+        {
+            // Never hold a lock while waiting for the dispatcher that may also request this singleton.
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+                return dispatcher.InvokeAsync(GetInstance).Task.GetAwaiter().GetResult();
+            lock (_locker) return _instance ??= new Aria2cDownloadManager();
+        }
+
+        public static Task StopExistingDaemonForUpdateHandoffAsync() => Volatile.Read(ref _instance)?.StopDaemonForUpdateHandoffAsync() ?? Task.CompletedTask;
+        public static SqlSugarClient CreateDbClient() => DownloadTaskStore.CreateDbClient(DbPath);
+
         public static bool IsPathProtectedFromCleanup(string filePath)
         {
             try
             {
-                if (File.Exists(filePath + ".aria2"))
-                    return true;
-                string normalizedPath = Path.GetFullPath(filePath);
-                Aria2cDownloadManager? instance = Volatile.Read(ref _instance);
-                if (instance != null && instance._activeTasks.Values.Concat(instance._localCopyTasks.Values).Any(task =>
-                    task.Status is not (DownloadStatus.Completed or DownloadStatus.FileDeleted) &&
-                    string.Equals(Path.GetFullPath(task.SavePath), normalizedPath, StringComparison.OrdinalIgnoreCase)))
-                    return true;
-                return DownloadTaskStore.IsPathProtectedFromCleanup(DbPath, normalizedPath);
+                if (File.Exists(filePath + ".aria2")) return true;
+                string path = Path.GetFullPath(filePath);
+                var instance = Volatile.Read(ref _instance);
+                if (instance != null && instance._knownTasks.Values.Any(task => task.Status is not (DownloadStatus.Completed or DownloadStatus.FileDeleted) &&
+                    Path.GetFullPath(task.SavePath).Equals(path, StringComparison.OrdinalIgnoreCase))) return true;
+                return DownloadTaskStore.IsPathProtectedFromCleanup(DbPath, path);
             }
-            catch
-            {
-                // A busy, unreadable, or unfamiliar task store is not evidence that its files are disposable.
-                return true;
-            }
+            catch { return true; }
         }
 
         public ObservableCollection<DownloadTask> Tasks { get; } = new();
+        private readonly ConcurrentDictionary<int, DownloadTask> _knownTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _activeTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _localCopyTasks = new();
         private readonly DownloadTaskStore _store;
-        private readonly Aria2Daemon _daemon;
-        private readonly Aria2RpcClient _rpcClient;
+        private readonly IAria2Daemon _daemon;
+        private readonly IAria2RpcClient _rpcClient;
         private readonly DownloadReuseService _reuseService;
+        private readonly DownloadManagerConfig _config;
+        private readonly DownloadCopyGate _copyGate = new();
         private readonly SemaphoreSlim _daemonLifecycleLock = new(1, 1);
-
-        private int _rpcPort = 6800;
-        private const string RpcSecret = "ColorVisionDL";
+        private readonly CancellationTokenSource _lifetime = new();
+        private readonly object _pathLock = new();
+        private readonly HashSet<string> _reservedPaths = new(StringComparer.OrdinalIgnoreCase);
+        private readonly object _pollLock = new();
+        private readonly bool _enablePolling;
+        private readonly bool _registerLifetime;
+        private readonly Func<bool> _getDirectMode;
+        private readonly string _rpcSecret = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         private Timer? _pollTimer;
+        private int _rpcPort;
+        private int _daemonGeneration;
         private int _disposeState;
         private int _isPollCallback;
-
-        /// <summary>
-        /// Current RPC port used by the aria2c daemon
-        /// </summary>
-        public int CurrentRpcPort => _rpcPort;
-
-        /// <summary>
-        /// Status message for the download service
-        /// </summary>
-        public string StatusMessage { get => _statusMessage; private set { _statusMessage = value; StatusMessageChanged?.Invoke(this, value); } }
+        private volatile bool _rpcReady;
+        private volatile bool _handoff;
         private string _statusMessage = string.Empty;
-
-        /// <summary>
-        /// Fired when the status message changes
-        /// </summary>
+        public DownloadManagerConfig Config => _config;
+        public int CurrentRpcPort => _rpcPort;
+        public bool IsAria2cRunning => _rpcReady && _daemon.IsRunning;
+        private bool IsStopping => Volatile.Read(ref _disposeState) != 0 || _handoff;
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            private set
+            {
+                if (_statusMessage == value) return;
+                _statusMessage = value;
+                foreach (EventHandler<string> handler in StatusMessageChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+                    try { handler(this, value); } catch (Exception ex) { log.Error("Download status subscriber failed.", ex); }
+            }
+        }
         public event EventHandler<string>? StatusMessageChanged;
-
-        /// <summary>
-        /// Fired when a download task completes (success or failure)
-        /// </summary>
         public event EventHandler<DownloadTask>? DownloadCompleted;
 
-        public DownloadManagerConfig Config => DownloadManagerConfig.Instance;
-        private bool IsDisposingOrDisposed => Volatile.Read(ref _disposeState) != 0;
+        private Aria2cDownloadManager() : this(DbPath, DownloadManagerConfig.Instance) { }
 
-        private void RunFireAndForget(Func<Task> operation, string failureMessage)
+        internal Aria2cDownloadManager(string dbPath, DownloadManagerConfig config, IAria2Daemon? daemon = null,
+            IAria2RpcClient? rpcClient = null, DownloadReuseService? reuseService = null, bool enablePolling = true, bool registerLifetime = true, Func<bool>? directMode = null)
         {
-            _ = RunFireAndForgetCoreAsync(operation, failureMessage);
-        }
-
-        private async Task RunFireAndForgetCoreAsync(Func<Task> operation, string failureMessage)
-        {
-            try
-            {
-                await operation().ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex)
-            {
-                log.Debug($"{failureMessage}: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                log.Error(failureMessage, ex);
-            }
-        }
-
-        private static void PostToDispatcher(Action action)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
-            {
-                action();
-                return;
-            }
-
-            dispatcher.InvokeAsync(() => RunDispatcherAction(action));
-        }
-
-        private static void RunOnDispatcher(Action action)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
-            {
-                action();
-                return;
-            }
-
-            dispatcher.InvokeAsync(action).Task.GetAwaiter().GetResult();
-        }
-
-        private static void RunDispatcherAction(Action action)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                log.Error("Dispatcher action failed.", ex);
-            }
-        }
-
-        private Aria2cDownloadManager()
-        {
-            Directory.CreateDirectory(DirectoryPath);
-            _store = new DownloadTaskStore(DbPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dbPath))!);
+            _store = new DownloadTaskStore(dbPath);
             _store.Initialize();
-
-            // Use configured port
-            _rpcPort = Config.RpcPort;
-            _daemon = new Aria2Daemon();
-            _rpcClient = new Aria2RpcClient(() => _rpcPort, RpcSecret);
-            _reuseService = new DownloadReuseService();
-
-            // Subscribe to config changes for live updates
-            Config.PropertyChanged += OnConfigPropertyChanged;
-
-            if (Application.Current != null)
+            _config = config;
+            _rpcPort = config.RpcPort;
+            _daemon = daemon ?? new Aria2Daemon();
+            _rpcClient = rpcClient ?? new Aria2RpcClient(() => _rpcPort, _rpcSecret);
+            _reuseService = reuseService ?? new DownloadReuseService();
+            _rpcReady = daemon?.IsRunning == true;
+            _enablePolling = enablePolling;
+            _registerLifetime = registerLifetime;
+            _getDirectMode = directMode ?? (() => UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates);
+            foreach (string path in _store.GetPendingPaths()) _reservedPaths.Add(Path.GetFullPath(path));
+            config.PropertyChanged += OnConfigPropertyChanged;
+            if (registerLifetime)
             {
-                Application.Current.Exit += OnApplicationExit;
-                Application.Current.SessionEnding += OnApplicationSessionEnding;
+                if (Application.Current != null)
+                {
+                    Application.Current.Exit += OnApplicationExit;
+                    Application.Current.SessionEnding += OnApplicationSessionEnding;
+                }
+                AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             }
-
-            // ProcessExit is kept as a last-resort fallback when WPF shutdown is bypassed.
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         }
 
         private void OnApplicationExit(object? sender, ExitEventArgs e) => Dispose();
-
         private void OnApplicationSessionEnding(object? sender, SessionEndingCancelEventArgs e) => Dispose();
-
         private void OnProcessExit(object? sender, EventArgs e) => Dispose();
 
-        /// <summary>
-        /// Cleanly shut down the aria2c daemon and release resources.
-        /// Called automatically on process exit.
-        /// </summary>
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposeState, 1) != 0)
-                return;
-
-            try { Config.PropertyChanged -= OnConfigPropertyChanged; }
-            catch { }
-
-            if (Application.Current != null)
+            if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
+            _lifetime.Cancel();
+            foreach (var task in _knownTasks.Values) task.Runtime.Stop(delete: false);
+            Config.PropertyChanged -= OnConfigPropertyChanged;
+            if (_registerLifetime)
             {
-                try { Application.Current.Exit -= OnApplicationExit; } catch { }
-                try { Application.Current.SessionEnding -= OnApplicationSessionEnding; } catch { }
+                if (Application.Current != null)
+                {
+                    Application.Current.Exit -= OnApplicationExit;
+                    Application.Current.SessionEnding -= OnApplicationSessionEnding;
+                }
+                AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
             }
-
-            try { AppDomain.CurrentDomain.ProcessExit -= OnProcessExit; }
-            catch { }
-
             StopAria2cDaemon();
             _daemon.Dispose();
             _rpcClient.Dispose();
             _reuseService.Dispose();
+            // Pending operations release their own cancellation sources after finishing.
+            foreach (var task in _knownTasks.Values)
+                _ = task.Runtime.Enqueue(() => { task.Runtime.ReleaseCancellationSources(); return Task.CompletedTask; });
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Handle config property changes and apply them to the running aria2c instance via RPC
-        /// </summary>
         private void OnConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            switch (e.PropertyName)
-            {
-                case nameof(DownloadManagerConfig.EnableSpeedLimit):
-                case nameof(DownloadManagerConfig.SpeedLimitMB):
-                    ApplySpeedLimitAsync();
-                    break;
-                case nameof(DownloadManagerConfig.MaxConcurrentTasks):
-                    ApplyMaxConcurrentTasksAsync();
-                    break;
-            }
+            if (e.PropertyName == nameof(DownloadManagerConfig.MaxConcurrentTasks)) _copyGate.NotifyCapacityChanged();
+            if (e.PropertyName is nameof(DownloadManagerConfig.MaxConcurrentTasks) or nameof(DownloadManagerConfig.EnableSpeedLimit) or nameof(DownloadManagerConfig.SpeedLimitMB))
+                RunFireAndForget(async () =>
+                {
+                    if (IsStopping || !IsAria2cRunning) return;
+                    var options = new Dictionary<string, string>
+                    {
+                        ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString(),
+                        ["max-overall-download-limit"] = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0"
+                    };
+                    await _rpcClient.CallAsync("aria2.changeGlobalOption", options).ConfigureAwait(false);
+                }, "Unable to apply download settings.");
         }
 
-        private void ApplySpeedLimitAsync()
+        private static async Task RunSafeAsync(Func<Task> action, string message)
         {
-            RunFireAndForget(async () =>
-            {
-                if (IsDisposingOrDisposed) return;
-                if (!IsAria2cRunning) return;
-                string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
-                var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
-                await _rpcClient.CallAsync("aria2.changeGlobalOption", options).ConfigureAwait(false);
-                PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
-                log.Info($"Speed limit applied: {limit}");
-            }, "Failed to apply speed limit.");
+            try { await action().ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { log.Error(message, ex); }
         }
-
-        private void ApplyMaxConcurrentTasksAsync()
+        private static void RunFireAndForget(Func<Task> action, string message) => _ = RunSafeAsync(action, message);
+        private static Task OnUIAsync(Action action)
         {
-            RunFireAndForget(async () =>
-            {
-                if (IsDisposingOrDisposed) return;
-                if (!IsAria2cRunning) return;
-                var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
-                await _rpcClient.CallAsync("aria2.changeGlobalOption", options).ConfigureAwait(false);
-                PostToDispatcher(() => StatusMessage = Properties.Resources.ConfigApplied);
-                log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
-            }, "Failed to apply max concurrent tasks.");
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess()) { action(); return Task.CompletedTask; }
+            if (dispatcher.HasShutdownStarted) return Task.CompletedTask;
+            return dispatcher.InvokeAsync(action).Task;
         }
+        private static void PostUI(Action action) => RunFireAndForget(() => OnUIAsync(action), "Download UI update failed.");
 
-        /// <summary>
-        /// Whether we have a working connection to an aria2c daemon (own process or reused)
-        /// </summary>
-        public bool IsAria2cRunning
-        {
-            get
-            {
-                return _daemon.IsRunning;
-            }
-        }
-
-        /// <summary>
-        /// Pre-load the aria2c daemon so it's ready when downloads are created.
-        /// Called when the DownloadWindow opens.
-        /// </summary>
-        public void PreloadAria2cAsync()
-        {
-            if (IsDisposingOrDisposed)
-                return;
-
-            RunFireAndForget(async () =>
-            {
-                if (IsDisposingOrDisposed) return;
-                await EnsureAria2cRunningAsync().ConfigureAwait(false);
-            }, "Preload aria2c failed.");
-        }
-
-        public static SqlSugarClient CreateDbClient()
-        {
-            return DownloadTaskStore.CreateDbClient(DbPath);
-        }
-
-        #region aria2c RPC Daemon
+        public void PreloadAria2cAsync() => RunFireAndForget(EnsureAria2cRunningAsync, "Unable to preload aria2c.");
 
         private async Task EnsureAria2cRunningAsync()
         {
-            if (IsDisposingOrDisposed)
-                return;
-
-            bool disableSystemProxy = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates;
-            if (_daemon.IsRunningForNetworkMode(disableSystemProxy))
-                return;
-
-            await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
+            if (IsStopping) throw new OperationCanceledException();
+            bool direct = _getDirectMode();
+            if (_rpcReady && _daemon.IsRunningForNetworkMode(direct)) return;
+            await _daemonLifecycleLock.WaitAsync(_lifetime.Token).ConfigureAwait(false);
             try
             {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                disableSystemProxy = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates;
-                if (_daemon.IsRunningForNetworkMode(disableSystemProxy))
-                    return;
-
-                if (_daemon.IsRunning)
-                    await Task.Run(StopAria2cDaemon).ConfigureAwait(false);
-
-                await StartAria2cDaemonAsync(disableSystemProxy).ConfigureAwait(false);
-            }
-            finally
-            {
-                _daemonLifecycleLock.Release();
-            }
-        }
-
-        private async Task StartAria2cDaemonAsync(bool disableSystemProxy)
-        {
-            if (IsDisposingOrDisposed)
-                return;
-
-            if (_daemon.IsRunning)
-                return;
-
-            int requestedPort = _rpcPort;
-            int preparedPort = _daemon.PreparePort(_rpcPort);
-            if (preparedPort != _rpcPort)
-            {
-                log.Warn($"Port {_rpcPort} is in use, switching to port {preparedPort}");
-                Application.Current?.Dispatcher.BeginInvoke(() =>
+                if (IsStopping) throw new OperationCanceledException();
+                direct = _getDirectMode();
+                if (_rpcReady && _daemon.IsRunningForNetworkMode(direct)) return;
+                StopAria2cDaemon();
+                _rpcPort = _daemon.PreparePort(Config.RpcPort);
+                _daemon.Start(_rpcPort, _rpcSecret, Config, direct);
+                using var startup = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                startup.CancelAfter(TimeSpan.FromSeconds(8));
+                while (true)
                 {
-                    StatusMessage = string.Format(Properties.Resources.PortSwitched, requestedPort, preparedPort);
-                });
-                _rpcPort = preparedPort;
-            }
-
-            _daemon.Start(_rpcPort, RpcSecret, Config, disableSystemProxy);
-
-            // Wait for RPC to be ready
-            for (int i = 0; i < 30; i++)
-            {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                await Task.Delay(100).ConfigureAwait(false);
-                try
-                {
-                    var response = await _rpcClient.CallAsync("aria2.getVersion").ConfigureAwait(false);
-                    if (response?["result"] != null)
+                    startup.Token.ThrowIfCancellationRequested();
+                    try
                     {
-                        log.Info("aria2c RPC daemon started successfully");
-                        UpdateServiceStatus();
-                        StartPolling();
-                        return;
+                        await _rpcClient.CallAsync("aria2.getVersion", startup.Token).ConfigureAwait(false);
+                        break;
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        await Task.Delay(100, startup.Token).ConfigureAwait(false);
                     }
                 }
-                catch { }
+                _rpcReady = true;
+                int generation = Interlocked.Increment(ref _daemonGeneration);
+                UpdateServiceStatus();
+                foreach (var task in _activeTasks.Values.Where(task => task.Runtime.GetGids().Length > 0 && task.Runtime.DaemonGeneration != generation))
+                    QueueStart(task, tryReuse: false, resume: false);
             }
-
-            log.Error("Failed to start aria2c RPC daemon");
-            StatusMessage = Properties.Resources.Aria2cStartFailed;
-            throw new Exception("Failed to start aria2c RPC daemon");
+            catch
+            {
+                StopAria2cDaemon();
+                throw;
+            }
+            finally { _daemonLifecycleLock.Release(); }
         }
 
         public async Task StopDaemonForUpdateHandoffAsync()
         {
-            if (IsDisposingOrDisposed)
-                return;
-
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            _handoff = true;
+            StopPolling();
             await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                await Task.Run(StopAria2cDaemon).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Unable to stop aria2c early for the application update handoff.", ex);
-            }
-            finally
-            {
-                stopwatch.Stop();
-                log.Info($"aria2c update-handoff shutdown completed in {stopwatch.ElapsedMilliseconds} ms.");
-                _daemonLifecycleLock.Release();
-            }
+            try { await Task.Run(StopAria2cDaemon).ConfigureAwait(false); }
+            finally { _daemonLifecycleLock.Release(); }
         }
 
         private void StopAria2cDaemon()
         {
+            _rpcReady = false;
             StopPolling();
-
             _daemon.Stop(() =>
             {
-                using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
-                _rpcClient.CallAsync("aria2.forceShutdown", cancellationTokenSource.Token)
-                    .GetAwaiter()
-                    .GetResult();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
+                _rpcClient.CallAsync("aria2.forceShutdown", timeout.Token).GetAwaiter().GetResult();
             });
-
             UpdateServiceStatus();
         }
 
-        /// <summary>
-        /// Update the service status message with connection state and port
-        /// </summary>
-        private void UpdateServiceStatus()
-        {
-            bool running = IsAria2cRunning;
-            string connText = running ? Properties.Resources.Aria2cConnected : Properties.Resources.Aria2cDisconnected;
-            string status = string.Format(Properties.Resources.Aria2cServiceStatus, connText, _rpcPort);
-            Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = status);
-        }
-
+        private void UpdateServiceStatus() => StatusMessage = string.Format(Properties.Resources.Aria2cServiceStatus,
+            IsAria2cRunning ? Properties.Resources.Aria2cConnected : Properties.Resources.Aria2cDisconnected, _rpcPort);
         private void StartPolling()
         {
-            if (IsDisposingOrDisposed)
-                return;
-
-            _pollTimer ??= new Timer(PollCallback, null, 0, PollIntervalMs);
+            if (!_enablePolling || IsStopping) return;
+            lock (_pollLock) _pollTimer ??= new Timer(_ => RunFireAndForget(() => PollAsync(waitForUpdates: false), "Download polling failed."), null, 0, 300);
         }
+        private void StopPolling() { lock (_pollLock) { _pollTimer?.Dispose(); _pollTimer = null; } }
 
-        private void StopPolling()
+        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null,
+            Action<DownloadTask>? onCompleted = null, string? fileName = null)
+            => AddVerifiedDownload(url, savePath, authorization, onCompleted, fileName, null);
+
+        public DownloadTask AddVerifiedDownload(string url, string? savePath = null, string? authorization = null,
+            Action<DownloadTask>? onCompleted = null, string? fileName = null, string? expectedSha256 = null)
         {
-            _pollTimer?.Dispose();
-            _pollTimer = null;
-        }
-
-        private void PollCallback(object? state)
-        {
-            _ = PollAsync();
-        }
-
-        private async Task PollAsync()
-        {
-            if (Interlocked.Exchange(ref _isPollCallback, 1) == 1)
-                return;
-
-            try
+            ObjectDisposedException.ThrowIf(IsStopping, this);
+            if (!Uri.TryCreate(url, UriKind.Absolute, out _)) throw new ArgumentException("A valid absolute download URL is required.", nameof(url));
+            expectedSha256 = DownloadReuseService.NormalizeSha256(expectedSha256);
+            string directory = Path.GetFullPath(savePath ?? Config.DefaultDownloadPath);
+            Directory.CreateDirectory(directory);
+            fileName = DownloadPathResolver.NormalizeFileName(fileName ?? DownloadPathResolver.GetFileNameFromUrl(url));
+            DownloadTask task;
+            lock (_pathLock)
             {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                var activeTasks = _activeTasks.Values.ToArray();
-                if (activeTasks.Length == 0)
+                string path = DownloadPathResolver.GetUniqueFilePath(directory, fileName, _reservedPaths.Contains);
+                var entry = new DownloadEntry
                 {
-                    // No active downloads — only stop the polling timer, keep aria2c process alive
-                    // for instant reuse when new downloads are added (avoids slow restart)
-                    StopPolling();
-                    UpdateServiceStatus();
-                    return;
-                }
-
-                // Get global stats for overall speed display
-                long globalSpeed = 0;
-                try
-                {
-                    var globalStat = await _rpcClient.CallAsync("aria2.getGlobalStat");
-                    if (globalStat != null)
-                    {
-                        globalSpeed = ParseLong(globalStat["result"]?["downloadSpeed"]);
-                    }
-                }
-                catch { }
-
-                string statusText = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
-                if (globalSpeed > 0)
-                    statusText += " | " + string.Format(Properties.Resources.GlobalSpeed, DownloadTask.FormatSpeed(globalSpeed));
-                StatusMessage = statusText;
-                foreach (var task in activeTasks)
-                {
-                    if (string.IsNullOrEmpty(task.Gid)) continue;
-
-                    try
-                    {
-                        var status = await _rpcClient.CallAsync("aria2.tellStatus", task.Gid, TellStatusKeys);
-
-                        if (status == null) continue;
-
-                        string? rpcStatus = status["result"]?["status"]?.ToString();
-                        long totalLength = ParseLong(status["result"]?["totalLength"]);
-                        long completedLength = ParseLong(status["result"]?["completedLength"]);
-                        long downloadSpeed = ParseLong(status["result"]?["downloadSpeed"]);
-
-                        // Update file name from BT metadata if available
-                        var btInfo = status["result"]?["bittorrent"]?["info"]?["name"]?.ToString();
-                        if (!string.IsNullOrEmpty(btInfo) && task.FileName != btInfo)
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() => task.FileName = btInfo);
-                            UpdateEntryFileName(task.Id, btInfo);
-                        }
-
-                        int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
-                        string speedText = DownloadTask.FormatSpeed(downloadSpeed);
-
-                        if (rpcStatus != "complete")
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.ProgressValue = progress;
-                                task.TotalBytes = totalLength;
-                                task.DownloadedBytes = completedLength;
-                                task.SpeedText = speedText;
-                            });
-                        }
-
-                        if (rpcStatus == "complete")
-                        {
-                            _activeTasks.TryRemove(task.Id, out _);
-
-                            if (TryGetCompletedFileMetrics(task, totalLength, completedLength, out long finalTotalBytes, out long finalDownloadedBytes, out string? completeError))
-                            {
-                                CompleteTask(task, finalTotalBytes, finalDownloadedBytes);
-                            }
-                            else
-                            {
-                                FailTask(task, completeError);
-                                log.Error($"Download completed with invalid file: {task.SavePath}. {completeError}");
-                            }
-                        }
-                        else if (rpcStatus == "error")
-                        {
-                            string? errorMsg = status["result"]?["errorMessage"]?.ToString();
-                            string? errorCode = status["result"]?["errorCode"]?.ToString();
-
-                            // errorCode "15" = "no URI" / no url available — often caused by stale .aria2 cache
-                            if (errorCode == "15" && TryClearStaleCacheFiles(task.SavePath))
-                            {
-                                log.Info($"Cleared stale cache for task {task.Id} ({task.FileName}), auto-retrying");
-                                _activeTasks.TryRemove(task.Id, out _);
-                                task.Gid = null;
-                                _ = StartDownloadAsync(task);
-                            }
-                            else
-                            {
-                                _activeTasks.TryRemove(task.Id, out _);
-                                FailTask(task, errorMsg ?? "Unknown error");
-                            }
-                        }
-                        else if (rpcStatus == "removed" || rpcStatus == "paused")
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.Status = DownloadStatus.Paused;
-                                task.SpeedText = string.Empty;
-                            });
-                            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-                            _activeTasks.TryRemove(task.Id, out _);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Poll status error for task {task.Id}: {ex.Message}");
-                    }
-                }
+                    Url = url, FileName = Path.GetFileName(path), SavePath = path, DownloadDirectory = directory,
+                    Status = (int)DownloadStatus.Waiting, Authorization = DownloadAuthorization.Encode(authorization),
+                    ExpectedSha256 = expectedSha256, CreateTime = DateTime.Now
+                };
+                if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) entry.DownloadDirectory = path;
+                else entry.WorkingPath = Path.Combine(directory, $".cvdownload-{Guid.NewGuid():N}.part");
+                entry.Id = _store.Insert(entry);
+                task = CreateTask(entry);
+                task.OnCompletedCallback = onCompleted;
+                task.LocalReuseSourcePath = Path.Combine(directory, fileName);
+                _reservedPaths.Add(path);
+                _knownTasks[task.Id] = task;
             }
-            catch (Exception ex)
-            {
-                log.Debug($"Poll callback error: {ex.Message}");
-            }
-            finally
-            {
-                Volatile.Write(ref _isPollCallback, 0);
-            }
-        }
-
-        private static long ParseLong(JToken? token)
-        {
-            return long.TryParse(token?.ToString(), out long value) ? value : 0;
-        }
-
-        #endregion
-
-        public void AutoRestartIncompleteDownloadsAsync()
-        {
-            if (IsDisposingOrDisposed)
-                return;
-
-            RunFireAndForget(() => Task.Run(AutoRestartIncompleteDownloads), "Auto-restart incomplete downloads failed.");
-        }
-
-        /// <summary>
-        /// Auto-restart incomplete downloads (Waiting, Downloading status) from previous session
-        /// </summary>
-        public void AutoRestartIncompleteDownloads()
-        {
-            try
-            {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                var incompleteEntries = _store.GetIncompleteEntries();
-
-                if (incompleteEntries.Count == 0) return;
-
-                log.Info($"Auto-restarting {incompleteEntries.Count} incomplete downloads");
-                StatusMessage = string.Format(Properties.Resources.AutoRestartingDownloads, incompleteEntries.Count);
-
-                foreach (var entry in incompleteEntries)
-                {
-                    var task = new DownloadTask
-                    {
-                        Id = entry.Id,
-                        Url = entry.Url,
-                        FileName = entry.FileName,
-                        SavePath = entry.SavePath,
-                        Status = DownloadStatus.Waiting,
-                        CreateTime = entry.CreateTime,
-                        Authorization = DecodeAuth(entry.Authorization)
-                    };
-
-                    _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
-                    Application.Current?.Dispatcher.BeginInvoke(() => Tasks.Insert(0, task));
-                    _ = StartDownloadAsync(task);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Auto-restart incomplete downloads failed: {ex.Message}", ex);
-            }
-        }
-
-        /// <summary>
-        /// Add a download task with default settings
-        /// </summary>
-        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null, string? fileName = null)
-        {
-            string targetDir = savePath ?? Config.DefaultDownloadPath;
-            Directory.CreateDirectory(targetDir);
-
-            fileName ??= DownloadPathResolver.GetFileNameFromUrl(url);
-            string preferredPath = Path.Combine(targetDir, fileName);
-            string filePath = DownloadPathResolver.GetUniqueFilePath(targetDir, fileName);
-            fileName = Path.GetFileName(filePath);
-            DownloadEntry? reusableEntry = null;
-
-            if (!string.Equals(filePath, preferredPath, StringComparison.OrdinalIgnoreCase))
-            {
-                reusableEntry = FindReusableCompletedEntry(url, targetDir, filePath, preferredPath);
-            }
-
-            var entry = new DownloadEntry
-            {
-                Url = url,
-                FileName = fileName,
-                SavePath = filePath,
-                Status = (int)DownloadStatus.Waiting,
-                CreateTime = DateTime.Now,
-                Authorization = EncodeAuth(authorization)
-            };
-
-            entry.Id = _store.Insert(entry);
-
-            var task = new DownloadTask
-            {
-                Id = entry.Id,
-                Url = url,
-                FileName = fileName,
-                SavePath = filePath,
-                Status = DownloadStatus.Waiting,
-                CreateTime = entry.CreateTime,
-                OnCompletedCallback = onCompleted,
-                Authorization = authorization
-            };
-
-            PostToDispatcher(() => Tasks.Insert(0, task));
-
-            if (reusableEntry != null && TryStartReuseCompletedDownload(task, reusableEntry))
-            {
-                return task;
-            }
-
-            if (!string.Equals(filePath, preferredPath, StringComparison.OrdinalIgnoreCase) &&
-                TryStartRemoteValidatedLocalReuse(task, preferredPath, authorization))
-            {
-                return task;
-            }
-
-            QueueRemoteDownload(task, authorization);
-
+            PostUI(() => Tasks.Insert(0, task));
+            QueueStart(task, tryReuse: true, resume: false);
             return task;
         }
 
-        private DownloadEntry? FindReusableCompletedEntry(string url, string targetDirectory, string destinationPath, string preferredSourcePath)
+        private static DownloadTask CreateTask(DownloadEntry entry) => new()
         {
-            var completedEntries = _store.GetCompletedEntriesByUrl(url);
+            Id = entry.Id, Url = entry.Url, FileName = entry.FileName, SavePath = entry.SavePath,
+            DownloadDirectory = entry.DownloadDirectory ?? Path.GetDirectoryName(entry.SavePath),
+            WorkingPath = entry.WorkingPath, ContentSha256 = entry.ContentSha256,
+            Status = (DownloadStatus)entry.Status, TotalBytes = entry.TotalBytes, DownloadedBytes = entry.DownloadedBytes,
+            ProgressValue = entry.TotalBytes > 0 ? (int)Math.Clamp(entry.DownloadedBytes * 100 / entry.TotalBytes, 0, 100) : 0,
+            CreateTime = entry.CreateTime, ErrorMessage = entry.ErrorMessage,
+            Authorization = DownloadAuthorization.Decode(entry.Authorization), ExpectedSha256 = entry.ExpectedSha256
+        };
 
-            var preferredEntry = completedEntries.FirstOrDefault(entry =>
-                string.Equals(entry.SavePath, preferredSourcePath, StringComparison.OrdinalIgnoreCase) &&
-                DownloadReuseService.CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
-
-            return preferredEntry ?? completedEntries.FirstOrDefault(entry =>
-                DownloadReuseService.CanReuseCompletedEntry(entry, targetDirectory, destinationPath));
+        private DownloadTask Resolve(DownloadTask task) => _knownTasks.GetOrAdd(task.Id, task);
+        internal Task WaitForTaskIdleAsync(DownloadTask task) => task.Runtime.Idle;
+        private void QueueStart(DownloadTask task, bool tryReuse, bool resume)
+        {
+            if (IsStopping || task.Runtime.IsDeleted) return;
+            task = Resolve(task);
+            var run = task.Runtime.Start(_lifetime.Token);
+            _activeTasks[task.Id] = task;
+            PostUI(() => { if (task.Runtime.IsCurrent(run.Version)) { task.Status = DownloadStatus.Waiting; task.ErrorMessage = null; task.SpeedText = string.Empty; } });
+            _ = task.Runtime.Enqueue(() => RunSafeAsync(() => StartTaskAsync(task, run.Version, run.Token, tryReuse, resume), "Download task operation failed."));
+            StartPolling();
         }
 
-        private bool TryStartReuseCompletedDownload(DownloadTask task, DownloadEntry sourceEntry)
+        private async Task StartTaskAsync(DownloadTask task, long version, CancellationToken token, bool tryReuse, bool resume)
         {
-            string targetDirectory = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-            if (!DownloadReuseService.CanReuseCompletedEntry(sourceEntry, targetDirectory, task.SavePath))
-                return false;
-
-            task.LocalReuseSourcePath = sourceEntry.SavePath;
-            task.LocalReuseRequiresRemoteValidation = false;
-            long expectedBytes = DownloadReuseService.GetReusableSourceLength(sourceEntry);
-            _ = StartLocalReuseCopyAsync(task, sourceEntry.SavePath, expectedBytes, task.Authorization, fallbackToRemoteOnFailure: true);
-
-            return true;
-        }
-
-        private bool TryStartRemoteValidatedLocalReuse(DownloadTask task, string sourcePath, string? authorization)
-        {
-            if (!DownloadReuseService.TryGetRemoteValidatedCandidate(task.Url, sourcePath, task.SavePath, out long expectedBytes))
-            {
-                return false;
-            }
-
-            task.LocalReuseSourcePath = sourcePath;
-            task.LocalReuseRequiresRemoteValidation = true;
-            _ = StartLocalReuseCopyAsync(task, sourcePath, expectedBytes, authorization, fallbackToRemoteOnFailure: true);
-            return true;
-        }
-
-        private async Task StartLocalReuseCopyAsync(DownloadTask task, string sourcePath, long expectedBytes, string? authorization, bool fallbackToRemoteOnFailure)
-        {
-            CancellationTokenSource? cancellationTokenSource = null;
-
             try
             {
-                if (IsDisposingOrDisposed)
-                    return;
-
-                if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-                    throw new FileNotFoundException("Local reuse source file not found.", sourcePath);
-
-                cancellationTokenSource = new CancellationTokenSource();
-                task.CancellationTokenSource = cancellationTokenSource;
-                _localCopyTasks[task.Id] = task;
-
-                if (task.LocalReuseRequiresRemoteValidation)
+                token.ThrowIfCancellationRequested();
+                if (!task.Runtime.IsRunning(version) || IsStopping) return;
+                _store.UpdateStatus(task.Id, DownloadStatus.Waiting);
+                // Recover a completed promotion if shutdown/cancellation happened before recording completion.
+                if (task.WorkingPath != null && !File.Exists(task.WorkingPath) && File.Exists(task.SavePath) && task.ContentSha256 != null)
                 {
-                    var validationInfo = await _reuseService.TryValidateLocalFileAgainstRemoteAsync(task.Url, sourcePath, authorization, cancellationTokenSource.Token).ConfigureAwait(false);
-                    if (validationInfo == null)
+                    string hash = await DownloadReuseService.ComputeSha256Async(task.SavePath, token).ConfigureAwait(false);
+                    if (hash.Equals(task.ContentSha256, StringComparison.OrdinalIgnoreCase))
                     {
-                        log.Info($"Remote validation did not match local duplicate, fallback to remote download. Source: {sourcePath}");
-                        task.LocalReuseSourcePath = null;
-                        task.LocalReuseRequiresRemoteValidation = false;
-                        ResetTaskToWaiting(task);
-                        QueueRemoteDownload(task, authorization);
+                        long length = new FileInfo(task.SavePath).Length;
+                        await CompleteTaskAsync(task, version, length, length).ConfigureAwait(false);
                         return;
                     }
-
-                    expectedBytes = validationInfo.ContentLength ?? expectedBytes;
-                    log.Info($"Validated local duplicate against remote. Source: {sourcePath}, ETag: {validationInfo.ETag ?? "-"}, LastModified: {validationInfo.LastModified?.ToString("O") ?? "-"}");
                 }
-
-                Application.Current?.Dispatcher.BeginInvoke(() =>
+                if (tryReuse && !File.Exists(task.SavePath) && !File.Exists(task.WorkingPath ?? task.SavePath))
                 {
-                    task.Status = DownloadStatus.Downloading;
-                    task.ProgressValue = 0;
-                    task.ErrorMessage = null;
-                    task.SpeedText = string.Empty;
-                    task.TotalBytes = expectedBytes > 0 ? expectedBytes : 0;
-                    task.DownloadedBytes = 0;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
-
-                var copyResult = await LocalFileCopyService.CopyAsync(
-                    sourcePath,
-                    task.SavePath,
-                    expectedBytes,
-                    progress =>
+                    string? source = task.LocalReuseSourcePath;
+                    if (string.IsNullOrWhiteSpace(source) || source.Equals(task.SavePath, StringComparison.OrdinalIgnoreCase) || !File.Exists(source) || File.Exists(source + ".aria2"))
+                        source = _store.GetCompletedEntriesByUrl(task.Url).FirstOrDefault(entry => DownloadReuseService.CanReuseCompletedEntry(entry,
+                            task.DownloadDirectory!, task.SavePath))?.SavePath;
+                    if (source != null)
                     {
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        _localCopyTasks[task.Id] = task;
+                        try
                         {
-                            task.TotalBytes = progress.TotalBytes;
-                            task.DownloadedBytes = progress.CopiedBytes;
-                            task.ProgressValue = progress.Progress;
-                            task.SpeedText = DownloadTask.FormatSpeed(progress.BytesPerSecond);
-                        });
-                    },
-                    cancellationTokenSource.Token).ConfigureAwait(false);
-
-                CompleteTask(task, copyResult.TotalBytes, copyResult.CompletedBytes);
-                log.Info($"Reused completed download by streamed local copy. Source: {sourcePath}, Target: {task.SavePath}");
-            }
-            catch (OperationCanceledException)
-            {
-                TryDeleteFile(task.SavePath);
-                Application.Current?.Dispatcher.BeginInvoke(() =>
+                            using var slot = await _copyGate.EnterAsync(() => Config.MaxConcurrentTasks, token).ConfigureAwait(false);
+                            var validation = await _reuseService.TryValidateLocalFileAgainstRemoteAsync(task.Url, source, task.Authorization, token, task.ExpectedSha256).ConfigureAwait(false);
+                            if (validation != null)
+                            {
+                                await UpdateTaskAsync(task, version, DownloadStatus.Downloading, validation.ContentLength ?? 0, 0, string.Empty, null).ConfigureAwait(false);
+                                _store.UpdateStatus(task.Id, DownloadStatus.Downloading);
+                                var copied = await LocalFileCopyService.CopyAsync(source, task.SavePath, validation.ContentLength ?? 0, progress =>
+                                    PostUI(() => { if (task.Runtime.IsCurrent(version)) ApplyProgress(task, progress.TotalBytes, progress.CopiedBytes, progress.BytesPerSecond); }),
+                                    token, validation.ContentSha256).ConfigureAwait(false);
+                                task.ContentSha256 = copied.ContentSha256;
+                                _store.UpdateContentHash(task.Id, copied.ContentSha256);
+                                await CompleteTaskAsync(task, version, copied.TotalBytes, copied.CompletedBytes).ConfigureAwait(false);
+                                return;
+                            }
+                        }
+                        catch (Exception ex) when (!token.IsCancellationRequested)
+                        {
+                            // A failed validation/copy cannot delete the final destination or a callback's result.
+                            log.Info($"Local reuse unavailable for task {task.Id}: {ex.Message}");
+                            if (File.Exists(task.SavePath)) throw new IOException("The download destination already exists; it was preserved.", ex);
+                        }
+                        finally { _localCopyTasks.TryRemove(task.Id, out _); }
+                    }
+                }
+                token.ThrowIfCancellationRequested();
+                await EnsureAria2cRunningAsync().ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                if (!task.Runtime.IsRunning(version) || IsStopping) return;
+                string[] existing = task.Runtime.DaemonGeneration == _daemonGeneration ? task.Runtime.GetGids() : Array.Empty<string>();
+                if (resume && existing.Length > 0)
                 {
-                    task.Status = DownloadStatus.Paused;
-                    task.ProgressValue = 0;
-                    task.DownloadedBytes = 0;
-                    task.SpeedText = string.Empty;
-                    task.ErrorMessage = null;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-                log.Info($"Local reuse copy canceled: {task.FileName}");
+                    try
+                    {
+                        foreach (string gid in existing) await _rpcClient.CallAsync("aria2.unpause", gid).ConfigureAwait(false);
+                        token.ThrowIfCancellationRequested();
+                        _store.UpdateStatus(task.Id, DownloadStatus.Waiting);
+                        StartPolling();
+                        return;
+                    }
+                    catch (Aria2RpcException) { /* Removed/stale GIDs are recreated using their intact partial files. */ }
+                }
+                await RemoveGidsAsync(existing).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                string newGid = Guid.NewGuid().ToString("N")[..16];
+                task.Gid = newGid;
+                task.Runtime.SetGids(new[] { newGid }, _daemonGeneration);
+                var options = new Dictionary<string, string> { ["dir"] = task.DownloadDirectory!, ["gid"] = newGid };
+                if (!task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+                {
+                    options["out"] = Path.GetFileName(task.WorkingPath ?? task.SavePath);
+                    if (task.ExpectedSha256 != null) options["checksum"] = "sha-256=" + task.ExpectedSha256;
+                }
+                if (!string.IsNullOrWhiteSpace(task.Authorization) && task.Authorization.Contains(':'))
+                {
+                    string[] auth = task.Authorization.Split(':', 2);
+                    options["http-user"] = auth[0]; options["http-passwd"] = auth[1];
+                }
+                // Observe the bounded addUri response even after cancellation, so an accepted GID can be removed.
+                await _rpcClient.CallAsync("aria2.addUri", new[] { task.Url }, options).ConfigureAwait(false);
+                if (!task.Runtime.IsRunning(version) || IsStopping)
+                {
+                    await RemoveGidsAsync(new[] { newGid }).ConfigureAwait(false);
+                    task.Gid = null;
+                    task.Runtime.SetGids(Array.Empty<string>(), _daemonGeneration);
+                    return;
+                }
+                _store.UpdateStatus(task.Id, DownloadStatus.Waiting);
+                StartPolling();
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested || IsStopping) { }
             catch (Exception ex)
             {
-                log.Warn($"Local reuse failed for {task.FileName}, fallback to remote download: {ex.Message}");
-                TryDeleteFile(task.SavePath);
-
-                if (fallbackToRemoteOnFailure)
-                {
-                    task.LocalReuseSourcePath = null;
-                    task.LocalReuseRequiresRemoteValidation = false;
-                    ResetTaskToWaiting(task);
-                    QueueRemoteDownload(task, authorization);
-                }
-                else
-                {
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        task.Status = DownloadStatus.Failed;
-                        task.ErrorMessage = ex.Message;
-                        task.SpeedText = string.Empty;
-                    });
-                    UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
-                }
+                await RemoveGidsAsync(task.Runtime.GetGids()).ConfigureAwait(false);
+                await FailTaskAsync(task, version, ex.Message).ConfigureAwait(false);
             }
-            finally
+            finally { _localCopyTasks.TryRemove(task.Id, out _); }
+        }
+
+        private async Task RemoveGidsAsync(string[] gids)
+        {
+            if (!_daemon.IsRunning) return;
+            foreach (string gid in gids)
             {
-                _localCopyTasks.TryRemove(task.Id, out _);
-                if (ReferenceEquals(task.CancellationTokenSource, cancellationTokenSource))
-                    task.CancellationTokenSource = null;
-                cancellationTokenSource?.Dispose();
+                try { await _rpcClient.CallAsync("aria2.remove", gid).ConfigureAwait(false); }
+                catch (Aria2RpcException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)) { }
+                catch (Exception ex)
+                {
+                    log.Warn($"Unable to remove owned GID {gid}; stopping the owned daemon.", ex);
+                    await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
+                    try { StopAria2cDaemon(); }
+                    finally { _daemonLifecycleLock.Release(); }
+                    if (!_activeTasks.IsEmpty) StartPolling();
+                    return;
+                }
             }
         }
 
-        private static bool TryGetCompletedFileMetrics(DownloadTask task, long rpcTotalLength, long rpcCompletedLength, out long totalBytes, out long downloadedBytes, out string? errorMessage)
+        public void PauseDownload(DownloadTask task) => StopTask(task, remove: false);
+        public void CancelDownload(DownloadTask task) => StopTask(task, remove: true);
+        private void StopTask(DownloadTask requested, bool remove)
         {
-            totalBytes = rpcTotalLength;
-            downloadedBytes = rpcCompletedLength;
-            errorMessage = null;
-
-            bool isMagnet = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase);
-            if (!isMagnet)
+            var task = Resolve(requested);
+            if (!task.Runtime.IsRunning(task.Runtime.Version)) return;
+            long version = task.Runtime.Stop(delete: false);
+            PostUI(() => { if (task.Runtime.IsCurrent(version)) { task.Status = DownloadStatus.Paused; task.SpeedText = string.Empty; } });
+            _ = task.Runtime.Enqueue(() => RunSafeAsync(async () =>
             {
-                if (string.IsNullOrWhiteSpace(task.SavePath) || !File.Exists(task.SavePath))
-                {
-                    errorMessage = "Downloaded file was not found.";
-                    return false;
-                }
-
-                if (File.Exists(task.SavePath + ".aria2"))
-                {
-                    errorMessage = "Downloaded file still has an aria2 cache file.";
-                    return false;
-                }
-
-                long fileLength;
+                if (!task.Runtime.IsCurrent(version) || IsStopping) return;
+                string[] gids = task.Runtime.DaemonGeneration == _daemonGeneration ? task.Runtime.GetGids() : Array.Empty<string>();
                 try
                 {
-                    fileLength = new FileInfo(task.SavePath).Length;
+                    foreach (string gid in gids) await _rpcClient.CallAsync(remove ? "aria2.remove" : "aria2.pause", gid).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    errorMessage = ex.Message;
-                    return false;
+                    log.Warn("Unable to stop an owned download through RPC; stopping the owned daemon.", ex);
+                    await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
+                    try { StopAria2cDaemon(); }
+                    finally { _daemonLifecycleLock.Release(); }
                 }
-
-                if (fileLength <= 0)
+                if (remove) { task.Gid = null; task.Runtime.SetGids(Array.Empty<string>(), _daemonGeneration); }
+                if (task.Runtime.IsCurrent(version))
                 {
-                    errorMessage = "Downloaded file is empty.";
-                    return false;
+                    _store.UpdateBytes(task.Id, task.TotalBytes, task.DownloadedBytes);
+                    _store.UpdateStatus(task.Id, DownloadStatus.Paused);
+                    task.Runtime.WithCurrent(version, () => { _activeTasks.TryRemove(task.Id, out _); task.Runtime.ReleaseCancellationSources(); });
                 }
+                if (!_activeTasks.IsEmpty) StartPolling();
+            }, "Unable to pause download task."));
+        }
+        public void ResumeDownload(DownloadTask task) => QueueStart(Resolve(task), tryReuse: true, resume: true);
+        public void RetryDownload(DownloadTask task) => QueueStart(Resolve(task), tryReuse: true, resume: false);
 
-                downloadedBytes = fileLength;
+        public void AutoRestartIncompleteDownloadsAsync() => RunFireAndForget(() => Task.Run(AutoRestartIncompleteDownloads), "Unable to restore downloads.");
+        public void AutoRestartIncompleteDownloads()
+        {
+            if (IsStopping) return;
+            foreach (var entry in _store.GetIncompleteEntries())
+            {
+                var task = _knownTasks.GetOrAdd(entry.Id, _ => CreateTask(entry));
+                if (task.Runtime.IsRunning(task.Runtime.Version)) continue;
+                PostUI(() => { if (!Tasks.Any(existing => existing.Id == task.Id)) Tasks.Insert(0, task); });
+                QueueStart(task, tryReuse: false, resume: false);
             }
-
-            if (downloadedBytes <= 0 && rpcCompletedLength > 0)
-                downloadedBytes = rpcCompletedLength;
-
-            if (totalBytes <= 0)
-                totalBytes = downloadedBytes;
-
-            if (downloadedBytes > totalBytes)
-                totalBytes = downloadedBytes;
-
-            if (totalBytes > 0 && downloadedBytes < totalBytes)
-            {
-                errorMessage = $"Downloaded file is incomplete: {downloadedBytes}/{totalBytes} bytes.";
-                return false;
-            }
-
-            return true;
         }
 
-        private void CompleteTask(DownloadTask task, long totalBytes, long downloadedBytes)
+        internal async Task PollAsync(bool waitForUpdates = true)
         {
-            ApplyTaskUpdate(() =>
-            {
-                task.TotalBytes = totalBytes;
-                task.DownloadedBytes = downloadedBytes;
-                task.ProgressValue = totalBytes > 0 ? 100 : 0;
-                task.Status = DownloadStatus.Completed;
-                task.SpeedText = string.Empty;
-                task.ErrorMessage = null;
-            });
-
-            UpdateEntryCompleted(task);
-            task.OnCompletedCallback?.Invoke(task);
-            DownloadCompleted?.Invoke(this, task);
-        }
-
-        private void FailTask(DownloadTask task, string? errorMessage)
-        {
-            ApplyTaskUpdate(() =>
-            {
-                task.Status = DownloadStatus.Failed;
-                task.ErrorMessage = errorMessage ?? "Unknown error";
-                task.SpeedText = string.Empty;
-            });
-
-            UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMessage);
-            task.OnCompletedCallback?.Invoke(task);
-            DownloadCompleted?.Invoke(this, task);
-        }
-
-        private static void ApplyTaskUpdate(Action update)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher != null && !dispatcher.CheckAccess())
-            {
-                dispatcher.InvokeAsync(update).Task.GetAwaiter().GetResult();
-                return;
-            }
-
-            update();
-        }
-
-        private void QueueRemoteDownload(DownloadTask task, string? authorization)
-        {
-            _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
-            _ = StartDownloadAsync(task, authorization);
-        }
-
-        private void ResetTaskToWaiting(DownloadTask task)
-        {
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                task.Status = DownloadStatus.Waiting;
-                task.ProgressValue = 0;
-                task.ErrorMessage = null;
-                task.SpeedText = string.Empty;
-                task.TotalBytes = 0;
-                task.DownloadedBytes = 0;
-            });
-            UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
-        }
-
-        private static void TryDeleteFile(string path)
-        {
+            if (Interlocked.Exchange(ref _isPollCallback, 1) != 0) return;
             try
             {
-                if (File.Exists(path))
-                    File.Delete(path);
-            }
-            catch
-            {
-            }
-        }
-
-        private async Task StartDownloadAsync(DownloadTask task, string? authorization = null, bool isRetryAfterCacheClean = false)
-        {
-            try
-            {
-                if (IsDisposingOrDisposed)
+                if (IsStopping) return;
+                if (_activeTasks.IsEmpty)
+                {
+                    lock (_pollLock) { if (_activeTasks.IsEmpty) StopPolling(); }
+                    UpdateServiceStatus();
                     return;
-
-                await EnsureAria2cRunningAsync();
-
-                if (IsDisposingOrDisposed)
-                    return;
-
-                StartPolling(); // Wake up polling timer in case it was stopped due to idle
-
-                Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
-                UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
-
-                bool isMagnet = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase);
-
-                // Build options for this download
-                string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-
-                var options = new System.Collections.Generic.Dictionary<string, string>
-                {
-                    ["dir"] = dir,
-                };
-
-                // For magnet/BT, don't set "out" as aria2 determines the filename from metadata
-                if (!isMagnet)
-                {
-                    string fileName = Path.GetFileName(task.SavePath);
-                    options["out"] = fileName;
                 }
-
-                string auth = authorization ?? task.Authorization;
-                if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
+                await EnsureAria2cRunningAsync().ConfigureAwait(false);
+                var snapshots = _activeTasks.Values.Where(task => task.Runtime.Idle.IsCompleted && task.Runtime.IsRunning(task.Runtime.Version))
+                    .SelectMany(task => task.Runtime.GetGids().Select(gid => (Task: task, Version: task.Runtime.Version, Gid: gid))).ToArray();
+                long globalSpeed = 0;
+                foreach (var chunk in snapshots.Chunk(64))
                 {
-                    string[] parts = auth.Split(':', 2);
-                    options["http-user"] = parts[0];
-                    options["http-passwd"] = parts[1];
-                }
-
-                // Call aria2.addUri via JSON-RPC
-                var response = await _rpcClient.CallAsync("aria2.addUri", new[] { task.Url }, options);
-
-                if (response != null)
-                {
-                    // Check for RPC-level error (e.g., stale .aria2 cache conflict)
-                    var errorObj = response["error"];
-                    if (errorObj != null)
+                    var results = await _rpcClient.GetStatusesAsync(chunk.Select(snapshot => snapshot.Gid).ToArray(), TellStatusKeys, _lifetime.Token).ConfigureAwait(false);
+                    var updates = new List<Task>();
+                    for (int index = 0; index < results.Length; index++)
                     {
-                        string? errorMsg = errorObj["message"]?.ToString();
-                        if (!isRetryAfterCacheClean && TryClearStaleCacheFiles(task.SavePath))
-                        {
-                            log.Info($"Cleared stale .aria2 cache for {task.FileName}, retrying download");
-                            await StartDownloadAsync(task, authorization, isRetryAfterCacheClean: true);
-                            return;
-                        }
-                        throw new Exception(errorMsg ?? "aria2c RPC error");
+                        var snapshot = chunk[index]; var result = results[index];
+                        globalSpeed += ParseLong(result.Status?["downloadSpeed"]);
+                        updates.Add(snapshot.Task.Runtime.Enqueue(() => RunSafeAsync(() => ApplyStatusAsync(snapshot.Task, snapshot.Version, result), "Unable to apply download status.")));
                     }
-
-                    task.Status = DownloadStatus.Downloading;
-                    string? gid = response["result"]?.ToString();
-                    task.Gid = gid;
-                    _activeTasks[task.Id] = task;
-                    log.Info($"Download started via RPC, GID: {gid}, File: {task.FileName}");
+                    // Completion may hash a large file. Its task worker must not hold up other downloads' polling.
+                    if (waitForUpdates) await Task.WhenAll(updates).ConfigureAwait(false);
                 }
-                else
-                {
-                    throw new Exception("No response from aria2c RPC");
-                }
+                StatusMessage = string.Format(Properties.Resources.ActiveDownloads, _activeTasks.Count) +
+                    (globalSpeed > 0 ? " | " + string.Format(Properties.Resources.GlobalSpeed, DownloadTask.FormatSpeed(globalSpeed)) : string.Empty);
             }
+            catch (OperationCanceledException) when (IsStopping) { }
             catch (Exception ex)
             {
-                if (IsDisposingOrDisposed)
+                _rpcReady = false;
+                UpdateServiceStatus();
+                log.Warn("Download service status failed.", ex);
+                if (!_daemon.IsRunning)
                 {
-                    log.Debug($"Download aborted during shutdown: {ex.Message}");
-                    return;
+                    foreach (var task in _activeTasks.Values)
+                    {
+                        long version = task.Runtime.Version;
+                        _ = task.Runtime.Enqueue(() => FailTaskAsync(task, version, ex.Message));
+                    }
                 }
+            }
+            finally { Volatile.Write(ref _isPollCallback, 0); }
+        }
 
-                log.Error($"Download failed: {ex.Message}", ex);
-                _activeTasks.TryRemove(task.Id, out _);
-                FailTask(task, ex.Message);
+        private async Task ApplyStatusAsync(DownloadTask task, long version, Aria2StatusResult result)
+        {
+            if (IsStopping || !task.Runtime.IsRunning(version) || !task.Runtime.GetGids().Contains(result.Gid)) return;
+            if (result.Status == null)
+            {
+                await FailTaskAsync(task, version, result.Error ?? "Download status is unavailable.").ConfigureAwait(false);
+                return;
+            }
+            var status = result.Status;
+            if (status["followedBy"] is JArray followed && followed.Count > 0)
+            {
+                task.Runtime.Follow(result.Gid, followed.Select(value => value.ToString()));
+                task.Gid = task.Runtime.GetGids().FirstOrDefault();
+                return;
+            }
+            var statuses = task.Runtime.ApplyStatus(result.Gid, status);
+            if (status["status"]?.ToString() == "error")
+            {
+                await RemoveGidsAsync(task.Runtime.GetGids()).ConfigureAwait(false);
+                await FailTaskAsync(task, version, status["errorMessage"]?.ToString() ?? "Download failed.").ConfigureAwait(false);
+                return;
+            }
+            if (status["status"]?.ToString() is "paused" or "removed") { StopTask(task, remove: false); return; }
+            long total = statuses.Sum(value => ParseLong(value["totalLength"]));
+            long completed = statuses.Sum(value => ParseLong(value["completedLength"]));
+            long speed = statuses.Sum(value => ParseLong(value["downloadSpeed"]));
+            if (statuses.Length == task.Runtime.GetGids().Length && statuses.All(value => value["status"]?.ToString() == "complete"))
+            {
+                try { await ValidateAndCompleteAsync(task, version, statuses, total, completed).ConfigureAwait(false); }
+                catch (Exception ex) { await FailTaskAsync(task, version, ex.Message).ConfigureAwait(false); }
+                return;
+            }
+            string? name = statuses.Select(value => value["bittorrent"]?["info"]?["name"]?.ToString()).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+            DownloadStatus state = statuses.Any(value => value["status"]?.ToString() == "active") ? DownloadStatus.Downloading : DownloadStatus.Waiting;
+            await UpdateTaskAsync(task, version, state, total, completed, DownloadTask.FormatSpeed(speed), null).ConfigureAwait(false);
+            if (name != null && task.FileName != name)
+            {
+                string safeName = DownloadPathResolver.NormalizeFileName(name);
+                await OnUIAsync(() => { if (task.Runtime.IsCurrent(version)) task.FileName = safeName; }).ConfigureAwait(false);
+                _store.UpdateFileName(task.Id, safeName);
             }
         }
 
-        public void CancelDownload(DownloadTask task)
+        private async Task ValidateAndCompleteAsync(DownloadTask task, long version, JObject[] statuses, long total, long completed)
         {
-            if (task.CancellationTokenSource != null)
+            bool torrent = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase) || statuses.Any(status => status["bittorrent"] != null);
+            string[] files = statuses.SelectMany(status => status["files"] as JArray ?? new JArray())
+                .Where(file => file["selected"]?.ToString() != "false").Select(file => file["path"]?.ToString())
+                .Where(path => !string.IsNullOrWhiteSpace(path)).Select(path => Path.GetFullPath(path!)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (files.Length == 0) files = new[] { task.WorkingPath ?? task.SavePath };
+            string root = Path.GetFullPath(task.DownloadDirectory!) + Path.DirectorySeparatorChar;
+            foreach (string path in files)
+                if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(path) || File.Exists(path + ".aria2"))
+                    throw new InvalidDataException("Downloaded file is missing, incomplete, or outside the download directory.");
+            long actual = files.Sum(path => new FileInfo(path).Length);
+            if (actual <= 0 || (total > 0 && actual != total) || (total > 0 && completed != total))
+                throw new InvalidDataException($"Downloaded file size mismatch: {actual}/{total} bytes.");
+            if (!torrent)
             {
-                task.CancellationTokenSource.Cancel();
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(task.Gid))
-            {
-                TryRemoveGidAsync(task.Gid);
-            }
-            _activeTasks.TryRemove(task.Id, out _);
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                task.Status = DownloadStatus.Paused;
-                task.SpeedText = string.Empty;
-            });
-            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-            _activeTasks.TryRemove(task.Id, out _);
-        }
-
-        public void PauseDownload(DownloadTask task)
-        {
-            if (task.CancellationTokenSource != null)
-            {
-                task.CancellationTokenSource.Cancel();
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(task.Gid))
-            {
-                RunFireAndForget(async () =>
-                {
-                    try { await _rpcClient.CallAsync("aria2.pause", task.Gid); }
-                    catch (Exception ex) { log.Debug($"RPC pause failed for GID {task.Gid}: {ex.Message}"); }
-                }, $"RPC pause task failed for GID {task.Gid}.");
-            }
-            _activeTasks.TryRemove(task.Id, out _);
-            Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                task.Status = DownloadStatus.Paused;
-                task.SpeedText = string.Empty;
-            });
-            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-        }
-
-        public void ResumeDownload(DownloadTask task)
-        {
-            if (DownloadReuseService.CanRetryLocalReuse(task))
-            {
-                _ = StartLocalReuseCopyAsync(task, task.LocalReuseSourcePath!, task.TotalBytes, task.Authorization, fallbackToRemoteOnFailure: true);
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(task.Gid))
-            {
-                _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.Status = DownloadStatus.Downloading;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
-                RunFireAndForget(async () =>
-                {
-                    try
-                    {
-                        await EnsureAria2cRunningAsync();
-                        StartPolling();
-                        await _rpcClient.CallAsync("aria2.unpause", task.Gid);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"RPC unpause failed for GID {task.Gid}: {ex.Message}");
-                        // Fall back to retry
-                        Application.Current?.Dispatcher.BeginInvoke(() => RetryDownload(task));
-                    }
-                }, $"RPC unpause task failed for GID {task.Gid}.");
+                string workingPath = task.WorkingPath ?? task.SavePath;
+                if (files.Length != 1 || !files[0].Equals(Path.GetFullPath(workingPath), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("aria2 returned an unexpected output path.");
+                CancellationToken token = task.Runtime.GetCancellationToken(version);
+                using var slot = await _copyGate.EnterAsync(() => Config.MaxConcurrentTasks, token).ConfigureAwait(false);
+                string hash = await DownloadReuseService.ComputeSha256Async(workingPath, token).ConfigureAwait(false);
+                if (task.ExpectedSha256 != null && !hash.Equals(task.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Downloaded file SHA-256 verification failed.");
+                if (!task.Runtime.IsRunning(version)) return;
+                task.ContentSha256 = hash;
+                _store.UpdateContentHash(task.Id, hash);
+                if (task.WorkingPath != null) File.Move(workingPath, task.SavePath, overwrite: false);
             }
             else
             {
-                RetryDownload(task);
+                string path = files.Length == 1 ? files[0] : Path.Combine(task.DownloadDirectory!, Path.GetRelativePath(task.DownloadDirectory!, files[0]).Split(Path.DirectorySeparatorChar)[0]);
+                _store.UpdatePath(task.Id, path, Path.GetFileName(path));
+                await OnUIAsync(() => { if (task.Runtime.IsCurrent(version)) { task.SavePath = path; task.FileName = Path.GetFileName(path); } }).ConfigureAwait(false);
             }
+            await CompleteTaskAsync(task, version, actual, actual).ConfigureAwait(false);
         }
 
-        public void RetryDownload(DownloadTask task)
+        private static long ParseLong(JToken? value) => long.TryParse(value?.ToString(), out long result) ? result : 0;
+        private static void ApplyProgress(DownloadTask task, long total, long completed, long speed)
         {
-            task.Status = DownloadStatus.Waiting;
-            task.ProgressValue = 0;
-            task.ErrorMessage = null;
-            task.SpeedText = string.Empty;
-            task.Gid = null;
-
-            string directory = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-            string fullPath = Path.Combine(directory, task.FileName);
-            string rf = fullPath + ".aria2";
-            if (File.Exists(rf))
-            {
-                File.Delete(rf);
-                if (File.Exists(fullPath))
-                    File.Delete(fullPath);
-
-            }
-
-
-            UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
-
-            if (DownloadReuseService.CanRetryLocalReuse(task))
-            {
-                _ = StartLocalReuseCopyAsync(task, task.LocalReuseSourcePath!, task.TotalBytes, task.Authorization, fallbackToRemoteOnFailure: true);
-                return;
-            }
-
-            QueueRemoteDownload(task, task.Authorization);
+            task.TotalBytes = total; task.DownloadedBytes = completed;
+            task.ProgressValue = total > 0 ? (int)Math.Clamp(completed * 100 / total, 0, 100) : 0;
+            task.SpeedText = DownloadTask.FormatSpeed(speed);
         }
-
-        public void DeleteRecord(int id)
+        private static Task UpdateTaskAsync(DownloadTask task, long version, DownloadStatus status, long total, long completed, string speed, string? error) => OnUIAsync(() =>
         {
-            _store.Delete(id);
-            var task = Tasks.FirstOrDefault(t => t.Id == id);
-            if (task != null)
+            if (!task.Runtime.IsCurrent(version)) return;
+            task.Status = status; task.TotalBytes = total; task.DownloadedBytes = completed;
+            task.ProgressValue = total > 0 ? (int)Math.Clamp(completed * 100 / total, 0, 100) : 0;
+            task.SpeedText = speed; task.ErrorMessage = error;
+        });
+        private async Task CompleteTaskAsync(DownloadTask task, long version, long total, long completed)
+        {
+            if (IsStopping || !task.Runtime.Finish(version, DownloadStatus.Completed)) return;
+            try { _store.MarkCompleted(task.Id, total, completed, DateTime.Now); }
+            catch (Exception ex) { log.Error($"Unable to persist completed download {task.Id}; the completed file was preserved.", ex); }
+            await UpdateTaskAsync(task, version, DownloadStatus.Completed, total, completed, string.Empty, null).ConfigureAwait(false);
+            if (task.Runtime.WithCurrent(version, () =>
             {
-                if (task.CancellationTokenSource != null)
-                    task.CancellationTokenSource.Cancel();
-                if (!string.IsNullOrEmpty(task.Gid))
-                    TryRemoveGidAsync(task.Gid);
                 _activeTasks.TryRemove(task.Id, out _);
-                _localCopyTasks.TryRemove(task.Id, out _);
-                RunOnDispatcher(() => Tasks.Remove(task));
-            }
+                _knownTasks.TryRemove(task.Id, out _);
+                lock (_pathLock) _reservedPaths.Remove(Path.GetFullPath(task.SavePath));
+                task.Runtime.ReleaseCancellationSources();
+            })) NotifyCompleted(task);
+        }
+        private async Task FailTaskAsync(DownloadTask task, long version, string error)
+        {
+            if (IsStopping || !task.Runtime.Finish(version, DownloadStatus.Failed)) return;
+            try { _store.UpdateStatus(task.Id, DownloadStatus.Failed, error); }
+            catch (Exception ex) { log.Error($"Unable to persist failed download {task.Id}.", ex); }
+            await UpdateTaskAsync(task, version, DownloadStatus.Failed, task.TotalBytes, task.DownloadedBytes, string.Empty, error).ConfigureAwait(false);
+            if (task.Runtime.WithCurrent(version, () => { _activeTasks.TryRemove(task.Id, out _); task.Runtime.ReleaseCancellationSources(); })) NotifyCompleted(task);
+        }
+        private void NotifyCompleted(DownloadTask task)
+        {
+            if (IsStopping || task.Runtime.IsDeleted) return;
+            try { task.OnCompletedCallback?.Invoke(task); }
+            catch (Exception ex) { log.Error("Download completion callback failed.", ex); }
+            foreach (EventHandler<DownloadTask> handler in DownloadCompleted?.GetInvocationList() ?? Array.Empty<Delegate>())
+                try { handler(this, task); } catch (Exception ex) { log.Error("Download completion subscriber failed.", ex); }
         }
 
-        public void DeleteRecords(int[] ids, bool deleteFiles = false)
+        public void DeleteRecord(int id) => RunFireAndForget(() => DeleteRecordsAsync(new[] { id }), "Unable to delete download record.");
+        public void DeleteRecords(int[] ids, bool deleteFiles = false) => RunFireAndForget(() => DeleteRecordsAsync(ids, deleteFiles), "Unable to delete download records.");
+        public async Task DeleteRecordsAsync(int[] ids, bool deleteFiles = false)
         {
-            // Collect file paths before removing from DB
-            List<string> filePaths = new();
-            if (deleteFiles)
+            ids = ids.Distinct().ToArray();
+            if (ids.Length == 0) return;
+            foreach (int id in ids)
+                if (_knownTasks.TryGetValue(id, out var active)) active.Runtime.Stop(delete: true);
+            var entries = await Task.Run(() => _store.GetEntries(ids)).ConfigureAwait(false);
+            foreach (var entry in entries)
             {
-                RunOnDispatcher(() =>
+                var task = _knownTasks.GetOrAdd(entry.Id, _ => CreateTask(entry));
+                task.Runtime.Stop(delete: true);
+                await task.Runtime.Enqueue(() => RunSafeAsync(async () =>
                 {
-                    foreach (var task in Tasks.Where(t => ids.Contains(t.Id)))
-                    {
-                        if (!string.IsNullOrEmpty(task.SavePath))
-                            filePaths.Add(task.SavePath);
-                    }
-                });
-            }
-
-            _store.DeleteMany(ids);
-
-            RunOnDispatcher(() =>
-            {
-                var toRemove = Tasks.Where(t => ids.Contains(t.Id)).ToList();
-                foreach (var task in toRemove)
-                {
-                    if (task.CancellationTokenSource != null)
-                        task.CancellationTokenSource.Cancel();
-                    if (!string.IsNullOrEmpty(task.Gid))
-                        TryRemoveGidAsync(task.Gid);
+                    if (task.Runtime.DaemonGeneration == _daemonGeneration)
+                        await RemoveGidsAsync(task.Runtime.GetGids()).ConfigureAwait(false);
                     _activeTasks.TryRemove(task.Id, out _);
                     _localCopyTasks.TryRemove(task.Id, out _);
-                    Tasks.Remove(task);
-                }
-            });
-
-            // Delete files after DB/UI cleanup
-            if (deleteFiles)
+                    task.Runtime.ReleaseCancellationSources();
+                    if (deleteFiles)
+                        foreach (string path in new[] { task.SavePath, task.SavePath + ".aria2", task.WorkingPath, task.WorkingPath == null ? null : task.WorkingPath + ".aria2" }.OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase))
+                            try { if (File.Exists(path)) File.Delete(path); }
+                            catch (Exception ex) { log.Warn($"Unable to delete requested download file: {path}", ex); }
+                }, "Unable to stop deleted download task.")).ConfigureAwait(false);
+            }
+            await Task.Run(() => _store.DeleteMany(ids)).ConfigureAwait(false);
+            await OnUIAsync(() =>
             {
-                foreach (var path in filePaths)
-                {
-                    try
-                    {
-                        if (File.Exists(path))
-                            File.Delete(path);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Failed to delete file {path}: {ex.Message}");
-                    }
-                }
+                foreach (var task in Tasks.Where(task => ids.Contains(task.Id)).ToArray()) Tasks.Remove(task);
+            }).ConfigureAwait(false);
+            foreach (var entry in entries)
+            {
+                _knownTasks.TryRemove(entry.Id, out _);
+                lock (_pathLock) _reservedPaths.Remove(Path.GetFullPath(entry.SavePath));
             }
         }
-
-        public void ClearAllRecords()
+        public void ClearAllRecords() => RunFireAndForget(ClearAllRecordsAsync, "Unable to clear download records.");
+        public async Task ClearAllRecordsAsync()
         {
-            _store.Clear();
-
-            foreach (var task in _localCopyTasks.Values)
-            {
-                task.CancellationTokenSource?.Cancel();
-            }
-
-            foreach (var task in _activeTasks.Values)
-            {
-                if (!string.IsNullOrEmpty(task.Gid))
-                    TryRemoveGidAsync(task.Gid);
-            }
-            _activeTasks.Clear();
-            _localCopyTasks.Clear();
-            RunOnDispatcher(() => Tasks.Clear());
+            var entries = await Task.Run(_store.GetAllEntries).ConfigureAwait(false);
+            // Delete the snapshot, so a download added while clearing is not accidentally removed.
+            await DeleteRecordsAsync(entries.Select(entry => entry.Id).ToArray()).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Best-effort removal of a download from aria2c via RPC
-        /// </summary>
-        private void TryRemoveGidAsync(string gid)
-        {
-            RunFireAndForget(async () =>
-            {
-                try { await _rpcClient.CallAsync("aria2.remove", gid); }
-                catch (Exception ex) { log.Debug($"RPC remove failed for GID {gid}: {ex.Message}"); }
-            }, $"RPC remove task failed for GID {gid}.");
-        }
-
+        public int GetTotalCount(string? searchKeyword = null) => _store.GetTotalCount(searchKeyword);
         public void LoadRecords(string? searchKeyword = null, int pageSize = 20, int page = 1)
         {
-            var entries = _store.LoadRecords(searchKeyword, pageSize, page);
-
-            RunOnDispatcher(() =>
+            var records = ReadPage(searchKeyword, pageSize, page);
+            OnUIAsync(() => ApplyPage(records)).GetAwaiter().GetResult();
+        }
+        public async Task<(int TotalCount, int Page)> LoadRecordsAsync(string? searchKeyword = null, int pageSize = 20, int page = 1, CancellationToken cancellationToken = default)
+        {
+            var records = await Task.Run(() => ReadPage(searchKeyword, pageSize, page), cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            await OnUIAsync(() => { cancellationToken.ThrowIfCancellationRequested(); ApplyPage(records); }).ConfigureAwait(false);
+            return (records.TotalCount, records.Page);
+        }
+        private DownloadRecordPage ReadPage(string? keyword, int size, int page)
+        {
+            var records = _store.LoadPage(keyword, Math.Clamp(size, 1, 1000), Math.Max(1, page));
+            foreach (var entry in records.Entries)
             {
-                Tasks.Clear();
-                foreach (var entry in entries)
+                if (_knownTasks.ContainsKey(entry.Id) || entry.Status != (int)DownloadStatus.Completed) continue;
+                if (Directory.Exists(entry.SavePath)) continue;
+                if (!File.Exists(entry.SavePath))
                 {
-                    var status = (DownloadStatus)entry.Status;
-                    long totalBytes = entry.TotalBytes;
-                    long downloadedBytes = entry.DownloadedBytes;
-                    string? errorMessage = entry.ErrorMessage;
-
-                    if (status == DownloadStatus.Completed && TryGetUsableCompletedFileLength(entry.SavePath, out long fileLength))
-                    {
-                        if (totalBytes <= 0 || downloadedBytes <= 0)
-                        {
-                            totalBytes = fileLength;
-                            downloadedBytes = fileLength;
-                            UpdateEntryBytes(entry.Id, totalBytes, downloadedBytes);
-                        }
-                    }
-                    else if (status == DownloadStatus.Completed && !File.Exists(entry.SavePath))
-                    {
-                        status = DownloadStatus.FileDeleted;
-                        UpdateEntryStatus(entry.Id, DownloadStatus.FileDeleted);
-                    }
-                    else if (status == DownloadStatus.Completed)
-                    {
-                        status = DownloadStatus.Failed;
-                        errorMessage = "Downloaded file is empty or incomplete.";
-                        UpdateEntryStatus(entry.Id, DownloadStatus.Failed, errorMessage);
-                    }
-
-                    // Reuse live task instances so UI bindings stay connected while paging or refreshing.
-                    if (_activeTasks.TryGetValue(entry.Id, out var activeTask))
-                    {
-                        Tasks.Add(activeTask);
-                    }
-                    else if (_localCopyTasks.TryGetValue(entry.Id, out var localCopyTask))
-                    {
-                        Tasks.Add(localCopyTask);
-                    }
-                    else
-                    {
-                        Tasks.Add(new DownloadTask
-                        {
-                            Id = entry.Id,
-                            Url = entry.Url,
-                            FileName = entry.FileName,
-                            SavePath = entry.SavePath,
-                            Status = status,
-                            TotalBytes = totalBytes,
-                            DownloadedBytes = downloadedBytes,
-                            ProgressValue = totalBytes > 0 ? (int)(downloadedBytes * 100 / totalBytes) : 0,
-                            CreateTime = entry.CreateTime,
-                            ErrorMessage = errorMessage,
-                            Authorization = DecodeAuth(entry.Authorization)
-                        });
-                    }
+                    entry.Status = (int)DownloadStatus.FileDeleted;
+                    _store.UpdateStatus(entry.Id, DownloadStatus.FileDeleted);
+                    continue;
                 }
-            });
-        }
-
-        public int GetTotalCount(string? searchKeyword = null)
-        {
-            return _store.GetTotalCount(searchKeyword);
-        }
-
-        private void UpdateEntryStatus(int id, DownloadStatus status, string? errorMessage = null)
-        {
-            _store.UpdateStatus(id, status, errorMessage);
-        }
-
-        private void UpdateEntryBytes(int id, long totalBytes, long downloadedBytes)
-        {
-            _store.UpdateBytes(id, totalBytes, downloadedBytes);
-        }
-
-        private void UpdateEntryFileName(int id, string fileName)
-        {
-            _store.UpdateFileName(id, fileName);
-        }
-
-        private void UpdateEntryCompleted(DownloadTask task)
-        {
-            _store.MarkCompleted(task.Id, task.TotalBytes, task.DownloadedBytes, DateTime.Now);
-        }
-
-        private static bool TryGetUsableCompletedFileLength(string? filePath, out long fileLength)
-        {
-            fileLength = 0;
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath) || File.Exists(filePath + ".aria2"))
-                    return false;
-
-                fileLength = new FileInfo(filePath).Length;
-                return fileLength > 0;
-            }
-            catch
-            {
-                fileLength = 0;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Try to clear stale .aria2 cache files for a given save path.
-        /// Returns true if cache files were found and deleted (warranting a retry).
-        /// </summary>
-        private bool TryClearStaleCacheFiles(string savePath)
-        {
-            try
-            {
-                string aria2CacheFile = savePath + ".aria2";
-                bool cleared = false;
-
-                if (File.Exists(aria2CacheFile))
+                long length = new FileInfo(entry.SavePath).Length;
+                if (length <= 0 || File.Exists(entry.SavePath + ".aria2") || (entry.TotalBytes > 0 && length != entry.TotalBytes))
                 {
-                    File.Delete(aria2CacheFile);
-                    log.Info($"Deleted stale .aria2 cache: {aria2CacheFile}");
-                    cleared = true;
+                    entry.Status = (int)DownloadStatus.Failed;
+                    entry.ErrorMessage = "Downloaded file is empty or its size has changed.";
+                    _store.UpdateStatus(entry.Id, DownloadStatus.Failed, entry.ErrorMessage);
                 }
-
-                // Also remove the partial download file if it exists (it's from a stale session)
-                if (cleared && File.Exists(savePath))
+                else if (entry.TotalBytes <= 0 || entry.DownloadedBytes <= 0)
                 {
-                    File.Delete(savePath);
-                    log.Info($"Deleted stale partial file: {savePath}");
+                    entry.TotalBytes = entry.DownloadedBytes = length;
+                    _store.UpdateBytes(entry.Id, length, length);
                 }
-
-                return cleared;
             }
-            catch (Exception ex)
+            return records;
+        }
+        private void ApplyPage(DownloadRecordPage records)
+        {
+            Tasks.Clear();
+            foreach (var entry in records.Entries)
             {
-                log.Debug($"Failed to clear stale cache for {savePath}: {ex.Message}");
-                return false;
+                DownloadTask task = _knownTasks.TryGetValue(entry.Id, out var known) ? known : CreateTask(entry);
+                if (task.Runtime.IsDeleted) continue;
+                if (task.Status is DownloadStatus.Waiting or DownloadStatus.Downloading or DownloadStatus.Paused or DownloadStatus.Failed)
+                    task = _knownTasks.GetOrAdd(task.Id, task);
+                Tasks.Add(task);
             }
-        }
-
-        /// <summary>
-        /// Encode authorization for storage (Base64 to avoid plain text in DB)
-        /// </summary>
-        private static string? EncodeAuth(string? auth)
-        {
-            if (string.IsNullOrEmpty(auth)) return null;
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(auth));
-        }
-
-        /// <summary>
-        /// Decode authorization from storage
-        /// </summary>
-        private static string? DecodeAuth(string? encoded)
-        {
-            if (string.IsNullOrEmpty(encoded)) return null;
-            try { return Encoding.UTF8.GetString(Convert.FromBase64String(encoded)); }
-            catch { return encoded; }
         }
     }
 }

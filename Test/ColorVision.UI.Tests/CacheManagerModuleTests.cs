@@ -32,7 +32,8 @@ public sealed class CacheManagerModuleTests
         CacheModuleSnapshot before = module.GetSnapshot();
         Assert.Equal(192UL, before.MemoryBytes);
         Assert.Equal(new[] { "camera-1", "camera-2" }, before.Entries.Select(entry => entry.Name));
-        Assert.False(before.CanToggle);
+        Assert.True(before.CanToggle);
+        Assert.True(before.IsEnabled);
 
         CacheModuleReleaseResult result = releaseAll
             ? Assert.Single(await CacheManagerService.ReleaseAllAsync([module]))
@@ -199,6 +200,7 @@ public sealed class CacheManagerModuleTests
     {
         private readonly string root = Path.Combine(Path.GetTempPath(), $"cv-cache-modules-{Guid.NewGuid():N}");
         private readonly bool previousEnabled = CVFileReadCache.IsEnabled;
+        private readonly bool previousRawBufferEnabled = LocalCameraRawBufferPool.IsCacheEnabled;
         private readonly byte[] imageFile;
         private readonly byte[] calibrationFile;
         private IntPtr calibrationContext;
@@ -215,6 +217,7 @@ public sealed class CacheManagerModuleTests
             CalibrationPath = Path.Combine(root, "dark.dat");
             CVFileReadCache.Release();
             CVFileReadCache.IsEnabled = true;
+            LocalCameraRawBufferPool.IsCacheEnabled = true;
             LocalCalibrationCacheManager.ClearShared();
             try
             {
@@ -255,6 +258,7 @@ public sealed class CacheManagerModuleTests
             LocalCalibrationCacheManager.ClearShared();
             CVFileReadCache.Release();
             CVFileReadCache.IsEnabled = previousEnabled;
+            LocalCameraRawBufferPool.IsCacheEnabled = previousRawBufferEnabled;
             foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
             Directory.Delete(root);
         }

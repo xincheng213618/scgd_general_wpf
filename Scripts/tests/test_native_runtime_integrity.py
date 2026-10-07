@@ -45,9 +45,50 @@ class NativeRuntimeIntegrityTests(unittest.TestCase):
         local.write_bytes(b"valid-ffmpeg")
 
     def test_resolves_actual_nuget_version_and_cpp_property_sheet(self):
-        sources = resolve_native_sources(self.root)
-        self.assertEqual(sources[self.relative], self.package / self.relative)
-        self.assertIn(NATIVE_PREFIX + "opencv_videoio_ffmpeg4990_64.dll", sources)
+        for family, version in (("OpenCvSharp4", "4.99.0"), ("OpenCvSharp5", "5.99.0")):
+            with self.subTest(family=family):
+                package_key = f"{family}.runtime.win/{version}"
+                package_path = package_key.lower()
+                package = self.root / "cache" / package_path
+                source = package / self.relative
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(b"valid-native")
+                assets = json.loads(self.assets.read_text(encoding="utf-8"))
+                contents = next(iter(assets["targets"]["net10.0-windows"].values()))
+                assets["libraries"] = {package_key: {"path": package_path}}
+                assets["targets"]["net10.0-windows"] = {package_key: contents}
+                self.assets.write_text(json.dumps(assets), encoding="utf-8")
+                sources = resolve_native_sources(self.root)
+                self.assertEqual(sources[self.relative], source)
+                self.assertIn(NATIVE_PREFIX + "opencv_videoio_ffmpeg4990_64.dll", sources)
+
+    def test_mixed_opencvsharp_runtime_families_are_rejected(self):
+        assets = json.loads(self.assets.read_text(encoding="utf-8"))
+        package_key = "OpenCvSharp5.runtime.win/5.99.0"
+        package_path = package_key.lower()
+        source = self.root / "cache" / package_path / self.relative
+        source.parent.mkdir(parents=True)
+        source.write_bytes(b"different-native")
+        assets["libraries"][package_key] = {"path": package_path}
+        assets["targets"]["net10.0-windows"][package_key] = {
+            "runtimeTargets": {self.relative: {"assetType": "native", "rid": "win-x64"}},
+        }
+        self.assets.write_text(json.dumps(assets), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Conflicting resolved native dependencies"):
+            resolve_native_sources(self.root)
+
+    def test_shared_ffmpeg_requires_identical_contents(self):
+        relative = NATIVE_PREFIX + "opencv_videoio_ffmpeg4990_64.dll"
+        source = self.package / relative
+        assets = json.loads(self.assets.read_text(encoding="utf-8"))
+        contents = next(iter(assets["targets"]["net10.0-windows"].values()))
+        contents["runtimeTargets"][relative] = {"assetType": "native", "rid": "win-x64"}
+        self.assets.write_text(json.dumps(assets), encoding="utf-8")
+        source.write_bytes(b"valid-ffmpeg")
+        self.assertEqual(resolve_native_sources(self.root)[relative], source)
+        source.write_bytes(b"other-ffmpeg")
+        with self.assertRaisesRegex(ValueError, "Conflicting native runtime source"):
+            resolve_native_sources(self.root)
 
     def test_same_size_and_timestamp_corruption_is_repaired_by_content(self):
         sources = resolve_native_sources(self.root)

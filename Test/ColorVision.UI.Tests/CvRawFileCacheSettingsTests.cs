@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -19,6 +20,7 @@ public sealed class CvRawFileCacheSettingsTests
         Directory.CreateDirectory(root);
         string path = Path.Combine(root, "config.json");
         IConfigService previous = ConfigService.Instance;
+        bool previousEnabled = CVFileReadCache.IsEnabled;
         int previousMaximumEntries = CVFileReadCache.MaximumEntries;
         ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = path });
         CVFileReadCache.IsEnabled = true;
@@ -29,6 +31,9 @@ public sealed class CvRawFileCacheSettingsTests
         try
         {
             Assert.Equal(1, CvRawFileCacheConfig.Current.MaximumEntries);
+            Assert.False(CvRawFileCacheConfig.Current.IsEnabled);
+            new CvRawFileCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
+            Assert.False(CVFileReadCache.IsEnabled);
             window = WpfTestHost.Invoke(() =>
             {
                 EnsurePropertyEditorResources();
@@ -38,7 +43,7 @@ public sealed class CvRawFileCacheSettingsTests
             WpfTestHost.Invoke(() =>
             {
                 var modules = (DataGrid)window.FindName("CacheModulesGrid");
-                Assert.Equal(2, modules.Items.Count);
+                Assert.Equal(3, modules.Items.Count);
                 modules.SelectedItem = modules.Items.Cast<object>().Single(item =>
                     (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "ImageFile");
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
@@ -51,6 +56,9 @@ public sealed class CvRawFileCacheSettingsTests
                 // Global options use the shared property-editor path and the persisted singleton.
                 DockPanel editor = PropertyEditorHelper.GenProperties(property, CvRawFileCacheConfig.Current);
                 option = Assert.Single(editor.Children.OfType<ToggleButton>());
+                Assert.False(checkbox.IsChecked);
+                Assert.False(option.IsChecked);
+                option.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
                 var countProperty = typeof(CvRawFileCacheConfig).GetProperty(nameof(CvRawFileCacheConfig.MaximumEntries))!;
                 var countRegistration = countProperty.GetCustomAttribute<ConfigSettingAttribute>();
                 Assert.NotNull(countRegistration);
@@ -122,13 +130,105 @@ public sealed class CvRawFileCacheSettingsTests
         {
             if (window != null) { WaitUntilIdle(window); WpfTestHost.Invoke(() => window.Close()); }
             ConfigService.SetInstance(previous);
-            CVFileReadCache.IsEnabled = true;
+            CVFileReadCache.IsEnabled = previousEnabled;
             CVFileReadCache.Release();
             CVFileReadCache.MaximumEntries = previousMaximumEntries;
             foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
             Directory.Delete(root);
         }
     }
+
+    [Fact]
+    public void CameraCacheIsOptInAndDisablingRetiresIdleAndReturnedBuffersAcrossExistingAndNewPools()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"camera-cache-settings-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        string path = Path.Combine(root, "config.json");
+        IConfigService previous = ConfigService.Instance;
+        bool previousEnabled = LocalCameraRawBufferPool.IsCacheEnabled;
+        ConfigService.SetInstance(new ConfigHandler { ConfigFilePath = path });
+        LocalCalibrationCacheManagerWindow? window = null;
+        try
+        {
+            Assert.False(CameraRawBufferCacheConfig.Current.IsEnabled);
+            LocalCameraRawBufferPool.IsCacheEnabled = true;
+            new CameraRawBufferCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
+            Assert.False(LocalCameraRawBufferPool.IsCacheEnabled);
+            using var existingPool = new LocalCameraRawBufferPool();
+            using (var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, existingPool)) { }
+            Assert.Equal(0, existingPool.IdleBytes);
+
+            window = WpfTestHost.Invoke(() => new LocalCalibrationCacheManagerWindow());
+            WaitUntilIdle(window);
+            WpfTestHost.Invoke(() =>
+            {
+                var modules = (DataGrid)window.FindName("CacheModulesGrid");
+                modules.SelectedItem = modules.Items.Cast<object>().Single(item =>
+                    (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "CameraRawBuffer");
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
+                var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
+                Assert.False(checkbox.IsChecked);
+                checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
+                checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            });
+            WaitUntilIdle(window);
+            Assert.True(LocalCameraRawBufferPool.IsCacheEnabled);
+            Assert.True(ReadSavedCameraSetting(path));
+            using var newPool = new LocalCameraRawBufferPool();
+            using var borrowed = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, existingPool);
+            using var lease = borrowed.Acquire();
+            Marshal.WriteByte(lease.RawPointer, 63, 37);
+            borrowed.Dispose();
+            using (var idle = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 64, 0, existingPool)) { }
+            using (var idle = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 128, 0, newPool)) { }
+            Assert.Equal(64, existingPool.IdleBytes);
+            Assert.Equal(128, newPool.IdleBytes);
+
+            WpfTestHost.Invoke(() =>
+            {
+                var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
+                checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
+                checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            });
+            WaitUntilIdle(window);
+            Assert.False(ReadSavedCameraSetting(path));
+            Assert.False(LocalCameraRawBufferPool.IsCacheEnabled);
+            Assert.Equal(0, existingPool.IdleBytes);
+            Assert.Equal(0, newPool.IdleBytes);
+            Assert.Equal(37, Marshal.ReadByte(lease.RawPointer, 63));
+            lease.Dispose();
+            Assert.Equal(0, existingPool.IdleBytes);
+            using (var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata(), 128, 0, newPool)) { }
+            Assert.Equal(0, newPool.IdleBytes);
+            WpfTestHost.Invoke(() => window.Close());
+            window = null;
+
+            foreach (bool enabled in new[] { false, true })
+            {
+                CameraRawBufferCacheConfig.Current.IsEnabled = enabled;
+                CameraRawBufferCacheConfig.SaveCurrent();
+                LocalCameraRawBufferPool.IsCacheEnabled = !enabled;
+                ConfigHandler restarted = new() { ConfigFilePath = path };
+                restarted.LoadConfigs();
+                ConfigService.SetInstance(restarted);
+                new CameraRawBufferCacheInitializer().InitializeAsync().GetAwaiter().GetResult();
+                Assert.Equal(enabled, CameraRawBufferCacheConfig.Current.IsEnabled);
+                Assert.Equal(enabled, LocalCameraRawBufferPool.IsCacheEnabled);
+            }
+        }
+        finally
+        {
+            if (window != null) { WaitUntilIdle(window); WpfTestHost.Invoke(() => window.Close()); }
+            ConfigService.SetInstance(previous);
+            LocalCameraRawBufferPool.IsCacheEnabled = previousEnabled;
+            foreach (string file in Directory.EnumerateFiles(root)) File.Delete(file);
+            Directory.Delete(root);
+        }
+    }
+
+    private static bool ReadSavedCameraSetting(string path)
+        => Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path))[typeof(CameraRawBufferCacheConfig).FullName!]![nameof(CameraRawBufferCacheConfig.IsEnabled)]!.ToObject<bool>();
 
     private static bool ReadSavedSetting(string path)
         => Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(path))[typeof(CvRawFileCacheConfig).FullName!]![nameof(CvRawFileCacheConfig.IsEnabled)]!.ToObject<bool>();

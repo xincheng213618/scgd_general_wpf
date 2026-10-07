@@ -67,5 +67,11 @@ namespace ProjectARVRPro.Process.Distortion
         /// </summary>
         public ObjectiveTestItem KeystoneVert { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public ObjectiveTestItem? MaximumTiltDegrees { get; set; }
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public ObjectiveTestItem? MaximumEdgeLengthDifferencePercent { get; set; }
+
     }
 }

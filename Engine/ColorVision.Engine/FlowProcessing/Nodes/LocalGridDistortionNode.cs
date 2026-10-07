@@ -420,7 +420,8 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionAnalysis"] = analysis;
             var selectedTv = selectedTvFormula == GridTvFormula.Standard ? analysis.StandardTv : analysis.HalfTv;
             var selectedPoint9 = selectedPoint9Formula == GridPoint9Formula.OppositeEdgeMean ? analysis.ReferencePoint9 : analysis.LegacyPoint9;
-            action.Data["LocalGridDistortionMetrics"] = new { TV = selectedTv, Point9 = selectedPoint9 };
+            action.Data["LocalGridDistortionMetrics"] = new { TV = selectedTv, Point9 = selectedPoint9, Geometry = analysis.Geometry };
+            action.Data["LocalGridDistortionGeometry"] = analysis.Geometry;
             action.Data["LocalGridDistortionQuality"] = detection.Quality;
             action.Data["LocalGridDistortionPoints"] = detection.Points;
             action.Data["LocalGridDistortionReferencePointIds"] = detection.ReferencePointIds;
@@ -429,6 +430,8 @@ public sealed class LocalGridDistortionNode : LocalFlowNodeBase
             action.Data["LocalGridDistortionVerticalTvPercent"] = selectedTv.VerticalPercent;
             action.Data["LocalGridDistortionKeystoneHorizontalPercent"] = selectedPoint9.KeystoneHorizontalPercent;
             action.Data["LocalGridDistortionKeystoneVerticalPercent"] = selectedPoint9.KeystoneVerticalPercent;
+            action.Data["LocalGridDistortionMaximumTiltDegrees"] = analysis.Geometry.MaximumTiltDegrees;
+            action.Data["LocalGridDistortionMaximumEdgeLengthDifferencePercent"] = analysis.Geometry.MaximumEdgeLengthDifferencePercent;
             action.MasterValue(null, persisted.MasterId, (int)ViewResultAlgType.Distortion);
             FlowNodeTiming.Run("PublishResult", () => services.Publish(new() { SerialNumber = action.SerialNumber, NodeId = nodeId, ZIndex = zIndex, MasterId = persisted.MasterId }));
             return new()

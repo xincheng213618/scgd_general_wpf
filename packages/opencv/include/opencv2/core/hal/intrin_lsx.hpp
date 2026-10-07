@@ -783,7 +783,11 @@ OPENCV_HAL_IMPL_LSX_CMP_OP_INT(v_uint32x4,  v_int32x4,  w, wu)
     inline _Tpvec v_eq(const _Tpvec& a, const _Tpvec& b)          \
     { return _Tpvec(__lsx_vseq_##suffix(a.val, b.val)); }         \
     inline _Tpvec v_ne(const _Tpvec& a, const _Tpvec& b)          \
-    { return v_not(v_eq(a, b)); }
+    { return v_not(v_eq(a, b)); }                                 \
+    inline _Tpvec v_gt(const _Tpvec& a, const _Tpvec& b)          \
+    { return _Tpvec(__lsx_vslt_##suffix(b.val, a.val)); }         \
+    inline _Tpvec v_lt(const _Tpvec& a, const _Tpvec& b)          \
+    { return _Tpvec(__lsx_vslt_##suffix(a.val, b.val)); }
 
 OPENCV_HAL_IMPL_LSX_CMP_OP_64BIT(v_uint64x2, d)
 OPENCV_HAL_IMPL_LSX_CMP_OP_64BIT(v_int64x2, d)
@@ -1442,16 +1446,6 @@ inline v_uint8x16 v_lut_pairs(const uchar* tab, const int* idx)
 { return v_reinterpret_as_u8(v_lut_pairs((const schar*)tab, idx)); }
 inline v_uint8x16 v_lut_quads(const uchar* tab, const int* idx)
 { return v_reinterpret_as_u8(v_lut_quads((const schar*)tab, idx)); }
-
-inline v_uint8x16 v_lut(const uchar* tab, const v_uint8x16& idx)
-{
-    uchar CV_DECL_ALIGNED(16) indices[16], result[16];
-    __lsx_vst(idx.val, indices, 0);
-    for (int i = 0; i < 16; i++) result[i] = tab[indices[i]];
-    return v_uint8x16(__lsx_vld(result, 0));
-}
-inline v_int8x16 v_lut(const schar* tab, const v_uint8x16& idx)
-{ return v_reinterpret_as_s8(v_lut((const uchar*)tab, idx)); }
 
 inline v_int16x8 v_lut(const short* tab, const int* idx)
 {

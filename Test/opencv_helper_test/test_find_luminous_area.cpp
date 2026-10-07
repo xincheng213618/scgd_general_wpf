@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/geometry.hpp>
 #include <nlohmann/json.hpp>
 #include "../../Native/include/opencv_media_export.h"
 #include "../../Native/include/video_export.h"

@@ -1,4 +1,5 @@
 #include "luminous_area_v2.h"
+#include <opencv2/geometry.hpp>
 
 #include <algorithm>
 #include <array>

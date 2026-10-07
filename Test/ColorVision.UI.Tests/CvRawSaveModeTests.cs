@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using System.IO;
 
@@ -13,6 +14,23 @@ public sealed class CvRawSaveModeTests
         Assert.Equal(CVFileSaveMode.Synchronous, node.SaveMode);
         node.SaveFiles = false;
         Assert.Equal(CVFileSaveMode.MemoryOnly, node.SaveMode);
+    }
+
+    [Fact]
+    public void DisabledFileCacheKeepsSavedPixelsOnDiskWithoutRetainingAFileSlot()
+    {
+        using CacheScope scope = new();
+        CVFileReadCache.IsEnabled = false;
+        using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+        {
+            Width = 3, Height = 2, SourceBpp = 8, Channels = 1, Exposure = [10]
+        }, 6, 0);
+        byte[] pixels = [1, 2, 3, 4, 5, 6];
+        using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(pixels, 0, lease.RawPointer, pixels.Length);
+        LocalFrameFileService.SaveCapture(frame, scope.Path);
+        AssertPixels(scope.Path, pixels);
+        Assert.Equal(0, CVFileReadCache.GetSnapshot().CapacityBytes);
+        Assert.Equal(scope.Path, frame.CvRawFilePath);
     }
 
     [Fact]

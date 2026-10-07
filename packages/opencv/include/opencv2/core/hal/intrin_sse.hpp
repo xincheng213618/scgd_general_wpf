@@ -14,7 +14,6 @@
 // Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
 // Copyright (C) 2015, Itseez Inc., all rights reserved.
-// Copyright (C) 2026, Advanced Micro Devices, Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -1275,6 +1274,16 @@ inline _Tpvec v_eq(const _Tpvec& a, const _Tpvec& b) \
 inline _Tpvec v_ne(const _Tpvec& a, const _Tpvec& b) \
 { return v_not(v_eq(a, b)); }
 #endif
+
+inline v_int64x2 v_gt(const v_int64x2& a, const v_int64x2& b)
+{
+    __m128i s = _mm_srli_epi64(_mm_sub_epi64(b.val, a.val), 63);
+    return v_int64x2(_mm_sub_epi64(_mm_setzero_si128(), s));
+}
+inline v_int64x2 v_lt(const v_int64x2& a, const v_int64x2& b)
+{
+    return v_gt(b, a);
+}
 
 OPENCV_HAL_IMPL_SSE_64BIT_CMP_OP(v_uint64x2)
 OPENCV_HAL_IMPL_SSE_64BIT_CMP_OP(v_int64x2)
@@ -3061,55 +3070,71 @@ inline v_float64x2 v_cvt_f64(const v_int64x2& v)
 
 inline v_int8x16 v_lut(const schar* tab, const int* idx)
 {
-    return v_int8x16(tab[idx[0]], tab[idx[1]], tab[idx[2]], tab[idx[3]],
-                     tab[idx[4]], tab[idx[5]], tab[idx[6]], tab[idx[7]],
-                     tab[idx[8]], tab[idx[9]], tab[idx[10]], tab[idx[11]],
-                     tab[idx[12]], tab[idx[13]], tab[idx[14]], tab[idx[15]]);
+#if defined(_MSC_VER)
+    return v_int8x16(_mm_setr_epi8(tab[idx[0]], tab[idx[1]], tab[idx[ 2]], tab[idx[ 3]], tab[idx[ 4]], tab[idx[ 5]], tab[idx[ 6]], tab[idx[ 7]],
+                                   tab[idx[8]], tab[idx[9]], tab[idx[10]], tab[idx[11]], tab[idx[12]], tab[idx[13]], tab[idx[14]], tab[idx[15]]));
+#else
+    return v_int8x16(_mm_setr_epi64(
+                        _mm_setr_pi8(tab[idx[0]], tab[idx[1]], tab[idx[ 2]], tab[idx[ 3]], tab[idx[ 4]], tab[idx[ 5]], tab[idx[ 6]], tab[idx[ 7]]),
+                        _mm_setr_pi8(tab[idx[8]], tab[idx[9]], tab[idx[10]], tab[idx[11]], tab[idx[12]], tab[idx[13]], tab[idx[14]], tab[idx[15]])
+                    ));
+#endif
 }
 inline v_int8x16 v_lut_pairs(const schar* tab, const int* idx)
 {
-    return v_int8x16(tab[idx[0]], tab[idx[0] + 1], tab[idx[1]], tab[idx[1] + 1],
-                     tab[idx[2]], tab[idx[2] + 1], tab[idx[3]], tab[idx[3] + 1],
-                     tab[idx[4]], tab[idx[4] + 1], tab[idx[5]], tab[idx[5] + 1],
-                     tab[idx[6]], tab[idx[6] + 1], tab[idx[7]], tab[idx[7] + 1]);
+#if defined(_MSC_VER)
+    return v_int8x16(_mm_setr_epi16(*(const short*)(tab + idx[0]), *(const short*)(tab + idx[1]), *(const short*)(tab + idx[2]), *(const short*)(tab + idx[3]),
+                                    *(const short*)(tab + idx[4]), *(const short*)(tab + idx[5]), *(const short*)(tab + idx[6]), *(const short*)(tab + idx[7])));
+#else
+    return v_int8x16(_mm_setr_epi64(
+                        _mm_setr_pi16(*(const short*)(tab + idx[0]), *(const short*)(tab + idx[1]), *(const short*)(tab + idx[2]), *(const short*)(tab + idx[3])),
+                        _mm_setr_pi16(*(const short*)(tab + idx[4]), *(const short*)(tab + idx[5]), *(const short*)(tab + idx[6]), *(const short*)(tab + idx[7]))
+                    ));
+#endif
 }
 inline v_int8x16 v_lut_quads(const schar* tab, const int* idx)
 {
-    return v_int8x16(
-        tab[idx[0]], tab[idx[0] + 1], tab[idx[0] + 2], tab[idx[0] + 3],
-        tab[idx[1]], tab[idx[1] + 1], tab[idx[1] + 2], tab[idx[1] + 3],
-        tab[idx[2]], tab[idx[2] + 1], tab[idx[2] + 2], tab[idx[2] + 3],
-        tab[idx[3]], tab[idx[3] + 1], tab[idx[3] + 2], tab[idx[3] + 3]);
+#if defined(_MSC_VER)
+    return v_int8x16(_mm_setr_epi32(*(const int*)(tab + idx[0]), *(const int*)(tab + idx[1]),
+                                    *(const int*)(tab + idx[2]), *(const int*)(tab + idx[3])));
+#else
+    return v_int8x16(_mm_setr_epi64(
+                        _mm_setr_pi32(*(const int*)(tab + idx[0]), *(const int*)(tab + idx[1])),
+                        _mm_setr_pi32(*(const int*)(tab + idx[2]), *(const int*)(tab + idx[3]))
+                    ));
+#endif
 }
 inline v_uint8x16 v_lut(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut((const schar *)tab, idx)); }
 inline v_uint8x16 v_lut_pairs(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_pairs((const schar *)tab, idx)); }
 inline v_uint8x16 v_lut_quads(const uchar* tab, const int* idx) { return v_reinterpret_as_u8(v_lut_quads((const schar *)tab, idx)); }
 
-inline v_uint8x16 v_lut(const uchar* tab, const v_uint8x16& idx)
-{
-    uchar CV_DECL_ALIGNED(16) indices[16], result[16];
-    _mm_store_si128((__m128i*)indices, idx.val);
-    for (int i = 0; i < 16; i++) result[i] = tab[indices[i]];
-    return v_uint8x16(_mm_load_si128((const __m128i*)result));
-}
-inline v_int8x16 v_lut(const schar* tab, const v_uint8x16& idx)
-{ return v_reinterpret_as_s8(v_lut((const uchar*)tab, idx)); }
-
 inline v_int16x8 v_lut(const short* tab, const int* idx)
 {
-    return v_int16x8(tab[idx[0]], tab[idx[1]], tab[idx[2]], tab[idx[3]],
-                     tab[idx[4]], tab[idx[5]], tab[idx[6]], tab[idx[7]]);
+#if defined(_MSC_VER)
+    return v_int16x8(_mm_setr_epi16(tab[idx[0]], tab[idx[1]], tab[idx[2]], tab[idx[3]],
+                                    tab[idx[4]], tab[idx[5]], tab[idx[6]], tab[idx[7]]));
+#else
+    return v_int16x8(_mm_setr_epi64(
+                        _mm_setr_pi16(tab[idx[0]], tab[idx[1]], tab[idx[2]], tab[idx[3]]),
+                        _mm_setr_pi16(tab[idx[4]], tab[idx[5]], tab[idx[6]], tab[idx[7]])
+                    ));
+#endif
 }
 inline v_int16x8 v_lut_pairs(const short* tab, const int* idx)
 {
-    return v_int16x8(tab[idx[0]], tab[idx[0] + 1], tab[idx[1]], tab[idx[1] + 1],
-                     tab[idx[2]], tab[idx[2] + 1], tab[idx[3]], tab[idx[3] + 1]);
+#if defined(_MSC_VER)
+    return v_int16x8(_mm_setr_epi32(*(const int*)(tab + idx[0]), *(const int*)(tab + idx[1]),
+                                    *(const int*)(tab + idx[2]), *(const int*)(tab + idx[3])));
+#else
+    return v_int16x8(_mm_setr_epi64(
+                        _mm_setr_pi32(*(const int*)(tab + idx[0]), *(const int*)(tab + idx[1])),
+                        _mm_setr_pi32(*(const int*)(tab + idx[2]), *(const int*)(tab + idx[3]))
+                    ));
+#endif
 }
 inline v_int16x8 v_lut_quads(const short* tab, const int* idx)
 {
-    return v_int16x8(tab[idx[0]], tab[idx[0] + 1], tab[idx[0] + 2],
-                     tab[idx[0] + 3], tab[idx[1]], tab[idx[1] + 1],
-                     tab[idx[1] + 2], tab[idx[1] + 3]);
+    return v_int16x8(_mm_set_epi64x(*(const int64_t*)(tab + idx[1]), *(const int64_t*)(tab + idx[0])));
 }
 inline v_uint16x8 v_lut(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut((const short *)tab, idx)); }
 inline v_uint16x8 v_lut_pairs(const ushort* tab, const int* idx) { return v_reinterpret_as_u16(v_lut_pairs((const short *)tab, idx)); }
@@ -3117,7 +3142,15 @@ inline v_uint16x8 v_lut_quads(const ushort* tab, const int* idx) { return v_rein
 
 inline v_int32x4 v_lut(const int* tab, const int* idx)
 {
-    return v_int32x4(tab[idx[0]], tab[idx[1]], tab[idx[2]], tab[idx[3]]);
+#if defined(_MSC_VER)
+    return v_int32x4(_mm_setr_epi32(tab[idx[0]], tab[idx[1]],
+                                    tab[idx[2]], tab[idx[3]]));
+#else
+    return v_int32x4(_mm_setr_epi64(
+                        _mm_setr_pi32(tab[idx[0]], tab[idx[1]]),
+                        _mm_setr_pi32(tab[idx[2]], tab[idx[3]])
+                    ));
+#endif
 }
 inline v_int32x4 v_lut_pairs(const int* tab, const int* idx)
 {

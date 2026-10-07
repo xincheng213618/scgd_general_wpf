@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public ulong HitCount => Snapshot.HitCount;
         public ulong ActiveReferences => Snapshot.ActiveReferences;
         public string UsageText => EngineLocalization.Get(Snapshot.Error != null ? "读取失败"
-            : ActiveReferences > 0 ? "正在使用" : !Snapshot.IsEnabled ? "已关闭（直接读写文件）"
+            : ActiveReferences > 0 ? "正在使用" : !Snapshot.IsEnabled ? Snapshot.Id == "ImageFile" ? "已关闭（直接读写文件）" : "已关闭"
             : MemoryBytes > 0 ? "已缓存（可释放）" : "等待加载");
     }
 

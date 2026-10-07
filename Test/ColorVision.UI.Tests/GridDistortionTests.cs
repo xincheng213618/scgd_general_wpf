@@ -217,6 +217,12 @@ public sealed class GridDistortionTests
         Assert.True(derived.TryGetProperty("halfTv", out _));
         Assert.True(derived.TryGetProperty("referencePoint9", out _));
         Assert.True(derived.TryGetProperty("legacyPoint9", out _));
+        JsonElement geometry = derived.GetProperty("geometry");
+        Assert.Equal(analysis.Geometry.MaximumTiltDegrees, geometry.GetProperty("maximumTiltDegrees").GetDouble());
+        Assert.Equal(analysis.Geometry.MaximumEdgeLengthDifferencePercent, geometry.GetProperty("maximumEdgeLengthDifferencePercent").GetDouble());
+        IReadOnlyList<GridDistortionMetricRow> rows = GridDistortionResultWindow.BuildMetricRows(result, analysis);
+        Assert.Equal("°", Assert.Single(rows, row => row.Name == "最大倾斜角").Unit);
+        Assert.Equal("%", Assert.Single(rows, row => row.Name == "最大边长差比例").Unit);
         Assert.False(derived.GetProperty("optical").GetProperty("isCalibrated").GetBoolean());
         Assert.Equal(48, derived.GetProperty("optical").GetProperty("samples").GetArrayLength());
         using JsonDocument nativeDocument = JsonDocument.Parse(result.RawJson);
@@ -229,6 +235,7 @@ public sealed class GridDistortionTests
         GridDistortionResult failure = GridDistortionResult.CreateFailure("ResultParseFailed", "bad JSON", rawJson: "malformed");
         using JsonDocument document = JsonDocument.Parse(GridDistortionResultWindow.CreateAnalysisJson(failure, null));
         Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("analysis").ValueKind);
+        Assert.Equal("无有效指标", Assert.Single(GridDistortionResultWindow.BuildMetricRows(failure, null)).Value);
         Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("nativeResult").ValueKind);
         Assert.Equal("malformed", document.RootElement.GetProperty("rawNativeJson").GetString());
         Assert.False(document.RootElement.GetProperty("invocation").GetProperty("success").GetBoolean());

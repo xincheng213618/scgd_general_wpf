@@ -7538,10 +7538,12 @@
       "knowledge_id": "operations.smu",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。",
+      "summary": "SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。",
       "aliases": [
         "SMU",
         "源表",
+        "本地源表",
+        "UseLocalSmu",
         "点测",
         "扫描电压",
         "通道串了",
@@ -7551,18 +7553,15 @@
         "SMUSweepModelNode"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Services/Devices/SMU/DeviceSMU.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/Configs/ConfigSMU.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/MQTTSMU.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/DisplaySMU.xaml.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/SMUParam.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SMUResultModel.cs",
-        "Engine/ColorVision.Engine/Services/Devices/SMU/Dao/SmuScanModel.cs",
-        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU/SMUNode.cs",
+        "Engine/ColorVision.Engine/Services/Devices/SMU",
+        "Engine/cvColorVision/Devices/PassSx/PassSx.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
-        "Engine/FlowEngineLib/Node/SMU/SMUSweepModelNode.cs"
+        "Engine/FlowEngineLib/Node/SMU"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalSmuSessionTests.cs",
+        "Test/ColorVision.UI.Tests/LocalSmuFlowTests.cs",
         "Test/ColorVision.UI.Tests/InitTableEntityMappingTests.cs"
       ],
       "related": [
@@ -7572,7 +7571,8 @@
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "Engine/cvColorVision"
       ],
       "domain": "operations",
       "title": "SMU 参数、结果与输出关闭",
@@ -10174,7 +10174,10 @@
         "设置窗口和插件市场在哪里",
         "ColorVision.UI.Desktop",
         "SettingWindow",
-        "MarketplacePackageDownloadService"
+        "MarketplacePackageDownloadService",
+        "下载管理器",
+        "断点续传",
+        "Aria2cDownloadManager"
       ],
       "code_paths": [
         "UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj",
@@ -10193,6 +10196,9 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/MarketplacePackageDownloadServiceTests.cs",
+        "Test/ColorVision.UI.Tests/DownloadManagerLifecycleTests.cs",
+        "Test/ColorVision.UI.Tests/DownloadInfrastructureTests.cs",
+        "Test/ColorVision.UI.Tests/DownloadAria2IntegrationTests.cs",
         "Test/ColorVision.UI.Tests/FeedbackLogCollectorTests.cs",
         "Test/ColorVision.UI.Tests/NetworkAdapterPriorityServiceTests.cs"
       ],

@@ -125,7 +125,7 @@ public sealed class StandaloneCameraSession : IAsyncDisposable
                     if (live)
                     {
                         code = cvCameraCSLib.CM_SetCallBack(handle, _callback, IntPtr.Zero);
-                        if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("注册相机连续帧回调", code);
+                        if (code != cvErrorDefine.CV_ERR_SUCCESS) throw NativeError("启动相机连续采集", code);
                     }
                     _options = copy;
                     IsLive = live;

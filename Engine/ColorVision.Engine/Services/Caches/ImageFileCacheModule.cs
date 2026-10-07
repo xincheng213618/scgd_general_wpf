@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Caches
     {
         public string Id => "ImageFile";
         public string Name => EngineLocalization.Get("图像文件缓存");
-        public string Description => EngineLocalization.Get("默认保留 1 个完整 CVRAW 图像文件，可调整；减少数量后释放多余缓存，磁盘文件保留。");
+        public string Description => EngineLocalization.Get("默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。");
 
         public CacheModuleSnapshot GetSnapshot()
         {
