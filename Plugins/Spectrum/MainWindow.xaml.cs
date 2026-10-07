@@ -641,9 +641,9 @@ namespace Spectrum
                 .Any(assembly => assembly.GetName().Name == "ColorVision") ? "ColorVision" : "ColorVision.Solution";
             bool isDark = theme == Theme.Dark;
             var resources = new ResourceDictionary();
-            AvalonDock.Themes.Theme baseTheme = isDark
+            AvalonDock.Themes.DictionaryTheme baseTheme = isDark
                 ? new AvalonDock.Themes.Vs2013DarkTheme() : new AvalonDock.Themes.Vs2013LightTheme();
-            resources.MergedDictionaries.Add(new ResourceDictionary { Source = baseTheme.GetResourceUri() });
+            resources.MergedDictionaries.Add(baseTheme.ThemeResourceDictionary);
             resources.MergedDictionaries.Add(new ResourceDictionary
             {
                 Source = new Uri($"/{resourceAssembly};component/Themes/AvalonDockModern{(isDark ? "Dark" : "Light")}.xaml", UriKind.Relative)

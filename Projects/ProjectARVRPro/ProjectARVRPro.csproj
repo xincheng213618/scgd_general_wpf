@@ -18,7 +18,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-		<PackageReference Include="NPOI" Version="2.8.0" />
+		<PackageReference Include="NPOI" Version="2.8.1" />
 		<!-- NPOI 2.8.0 exposes a vulnerable build-only SourceLink dependency; remove this pin after upgrading to NPOI 2.8.1+. -->
 		<PackageReference Include="Microsoft.Build.Tasks.Git" Version="10.0.401" PrivateAssets="all" ExcludeAssets="all" />
 		<!-- Compatibility freeze: keep ScottPlot.WPF 5.0.56; see docs/04-api-reference/ui-components/component-handbook.md. -->

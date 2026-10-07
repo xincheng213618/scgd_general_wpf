@@ -1,8 +1,9 @@
 using LocalizedText = global::Spectrum.DisplayText;
 #pragma warning disable CA1852
 using AvalonDock;
+using AvalonDock.Core;
 using AvalonDock.Layout;
-using AvalonDock.Layout.Serialization;
+using AvalonDock.Serializer.Xml;
 using ColorVision.UI;
 using log4net;
 using System.Diagnostics;
@@ -80,7 +81,7 @@ namespace Spectrum.Layout
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
-                var serializer = new XmlLayoutSerializer(_dockingManager);
+                var serializer = new XmlLayoutSerializer(_dockingManager) { UnresolvedContentHandling = UnresolvedContentHandling.Hide };
                 serializer.LayoutSerializationCallback += (s, args) =>
                 {
                     if (args.Model.ContentId != null && _contentRegistry.TryGetValue(args.Model.ContentId, out var content))

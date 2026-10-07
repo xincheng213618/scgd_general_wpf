@@ -175,7 +175,7 @@ public sealed class ResultHistoryTests
     [Fact]
     public void ResultMenusAndCommandsAreCreatedOnlyOnDemandAndSaveEntryIsNotDuplicated()
     {
-        StaTest.Run(() =>
+        WpfTestHost.Invoke(() =>
         {
             ViewResultAlg algorithm = new();
             ViewResultImage camera = new();

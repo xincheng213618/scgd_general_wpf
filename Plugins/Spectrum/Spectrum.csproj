@@ -33,8 +33,8 @@
 
 	
 	<ItemGroup>
-		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.74.1" />
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.158" />
+		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="5.0.1" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.161" />
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260627" />

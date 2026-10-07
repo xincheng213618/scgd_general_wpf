@@ -133,12 +133,13 @@ public sealed class FlowNodeComparisonTests : IDisposable
             page.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
             try
             {
-                PumpUntil(() => baseline.Text.Contains("40") && list.Items.Count == 2);
+                PumpUntil(() => baseline.Text.Contains("40") && selected.Text.Contains("40") && list.Items.Count == 2);
                 list.SelectedItem = list.Items.Cast<FlowNodeComparisonRow>().Single(row => row.BatchId == 11);
                 PumpUntil(() => selected.Text.Contains("42"));
                 Assert.Contains("40", baseline.Text);
                 search.Text = "previous";
                 Assert.Single(list.Items.Cast<FlowNodeComparisonRow>());
+                PumpUntil(() => selected.Text.Contains("42"));
                 Assert.Contains("40", baseline.Text);
                 ((Button)page.FindName("BaselineButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 PumpUntil(() => baseline.Text.Contains("42"));

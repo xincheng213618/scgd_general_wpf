@@ -32,8 +32,10 @@ public sealed class ExportCieTests
         string sourcePath = Path.Combine(root, "sample.cvraw");
         string outputPath = Path.Combine(root, "output");
         Directory.CreateDirectory(root);
+        bool previousCacheEnabled = CVFileReadCache.IsEnabled;
         try
         {
+            if (memoryOnly) CVFileReadCache.IsEnabled = true;
             byte[] raw = WritePatternedRawFixture(sourcePath, rows: 2, cols: 3, channels, memoryOnly ? CVFileSaveMode.MemoryOnly : CVFileSaveMode.Synchronous);
             new ColorCalibrationSnapshot
             {
@@ -89,6 +91,7 @@ public sealed class ExportCieTests
         }
         finally
         {
+            CVFileReadCache.IsEnabled = previousCacheEnabled;
             Assert.StartsWith(Path.GetTempPath(), Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase);
             Directory.Delete(root, recursive: true);
         }
