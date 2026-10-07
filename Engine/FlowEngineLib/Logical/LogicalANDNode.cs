@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Logical;
 
-[STNode("/01 运算")]
+[STNode("运算", CategoryOrder = 100)]
 public class LogicalANDNode : STNodeInHub
 {
 	public static readonly ILog logger = LogManager.GetLogger(typeof(LogicalANDNode));
@@ -51,9 +51,6 @@ public class LogicalANDNode : STNodeInHub
 		if (visibleInput != null)
 		{
 			base.OnDrawOptionDot(dt, visibleInput);
-			m_sf.Alignment = StringAlignment.Near;
-			dt.SolidBrush.Color = visibleInput.TextColor;
-			dt.Graphics.DrawString("IN", Font, dt.SolidBrush, visibleInput.TextRectangle, m_sf);
 		}
 
 		foreach (STNodeOption outputOption in OutputOptions)

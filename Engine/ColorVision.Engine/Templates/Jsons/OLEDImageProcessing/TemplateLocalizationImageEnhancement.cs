@@ -1,4 +1,4 @@
-using ColorVision.Database;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public TemplateLocalizationImageEnhancement()
         {
-            Title = "局部图像增强模板管理";
+            Title = LocalizedText.Get("局部图像增强模板管理");
             Code = "OLED.LocalizationImageEnhan";
             Name = "OLED_LocalizationImageEnhan";
             TemplateDicId = 201;
@@ -46,6 +46,5 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
 
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlLocalizationImageEnhancement();
     }
 }

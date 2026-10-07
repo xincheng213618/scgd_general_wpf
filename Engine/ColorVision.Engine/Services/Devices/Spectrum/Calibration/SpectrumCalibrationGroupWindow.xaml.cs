@@ -1,6 +1,5 @@
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,6 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             _device = device;
             _initialBindDeviceCode = _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             DataContext = _device;
             RefreshCfwServiceOptions();
             RefreshNDHoleOptions();

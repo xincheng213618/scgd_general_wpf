@@ -1787,5 +1787,644 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlManagerTitle 字符串。
+        /// </summary>
+        public static string DisplayControlManagerTitle {
+            get {
+                return ResourceManager.GetString("DisplayControlManagerTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlsTitle 字符串。
+        /// </summary>
+        public static string DisplayControlsTitle {
+            get {
+                return ResourceManager.GetString("DisplayControlsTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlsDescription 字符串。
+        /// </summary>
+        public static string DisplayControlsDescription {
+            get {
+                return ResourceManager.GetString("DisplayControlsDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroups 字符串。
+        /// </summary>
+        public static string DisplayControlGroups {
+            get {
+                return ResourceManager.GetString("DisplayControlGroups", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlAllItems 字符串。
+        /// </summary>
+        public static string DisplayControlAllItems {
+            get {
+                return ResourceManager.GetString("DisplayControlAllItems", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlName 字符串。
+        /// </summary>
+        public static string DisplayControlName {
+            get {
+                return ResourceManager.GetString("DisplayControlName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroup 字符串。
+        /// </summary>
+        public static string DisplayControlGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlVisible 字符串。
+        /// </summary>
+        public static string DisplayControlVisible {
+            get {
+                return ResourceManager.GetString("DisplayControlVisible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlPinned 字符串。
+        /// </summary>
+        public static string DisplayControlPinned {
+            get {
+                return ResourceManager.GetString("DisplayControlPinned", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlExpanded 字符串。
+        /// </summary>
+        public static string DisplayControlExpanded {
+            get {
+                return ResourceManager.GetString("DisplayControlExpanded", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlOrder 字符串。
+        /// </summary>
+        public static string DisplayControlOrder {
+            get {
+                return ResourceManager.GetString("DisplayControlOrder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlEmpty 字符串。
+        /// </summary>
+        public static string DisplayControlEmpty {
+            get {
+                return ResourceManager.GetString("DisplayControlEmpty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlVisibilityHint 字符串。
+        /// </summary>
+        public static string DisplayControlVisibilityHint {
+            get {
+                return ResourceManager.GetString("DisplayControlVisibilityHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlCreateGroup 字符串。
+        /// </summary>
+        public static string DisplayControlCreateGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlCreateGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlRenameGroup 字符串。
+        /// </summary>
+        public static string DisplayControlRenameGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlRenameGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlDeleteGroup 字符串。
+        /// </summary>
+        public static string DisplayControlDeleteGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlDeleteGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroupName 字符串。
+        /// </summary>
+        public static string DisplayControlGroupName {
+            get {
+                return ResourceManager.GetString("DisplayControlGroupName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlDefaultGroup 字符串。
+        /// </summary>
+        public static string DisplayControlDefaultGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlDefaultGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlUnnamedGroup 字符串。
+        /// </summary>
+        public static string DisplayControlUnnamedGroup {
+            get {
+                return ResourceManager.GetString("DisplayControlUnnamedGroup", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlNewGroupName 字符串。
+        /// </summary>
+        public static string DisplayControlNewGroupName {
+            get {
+                return ResourceManager.GetString("DisplayControlNewGroupName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlDeleteGroupPrompt 字符串。
+        /// </summary>
+        public static string DisplayControlDeleteGroupPrompt {
+            get {
+                return ResourceManager.GetString("DisplayControlDeleteGroupPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroupActions 字符串。
+        /// </summary>
+        public static string DisplayControlGroupActions {
+            get {
+                return ResourceManager.GetString("DisplayControlGroupActions", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlExpandGroupHint 字符串。
+        /// </summary>
+        public static string DisplayControlExpandGroupHint {
+            get {
+                return ResourceManager.GetString("DisplayControlExpandGroupHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlMoveToGroupHint 字符串。
+        /// </summary>
+        public static string DisplayControlMoveToGroupHint {
+            get {
+                return ResourceManager.GetString("DisplayControlMoveToGroupHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlVisibilityTooltip 字符串。
+        /// </summary>
+        public static string DisplayControlVisibilityTooltip {
+            get {
+                return ResourceManager.GetString("DisplayControlVisibilityTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlPinTooltip 字符串。
+        /// </summary>
+        public static string DisplayControlPinTooltip {
+            get {
+                return ResourceManager.GetString("DisplayControlPinTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlExpandTooltip 字符串。
+        /// </summary>
+        public static string DisplayControlExpandTooltip {
+            get {
+                return ResourceManager.GetString("DisplayControlExpandTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlMoveUp 字符串。
+        /// </summary>
+        public static string DisplayControlMoveUp {
+            get {
+                return ResourceManager.GetString("DisplayControlMoveUp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlMoveDown 字符串。
+        /// </summary>
+        public static string DisplayControlMoveDown {
+            get {
+                return ResourceManager.GetString("DisplayControlMoveDown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlExpandGroupAccessible 字符串。
+        /// </summary>
+        public static string DisplayControlExpandGroupAccessible {
+            get {
+                return ResourceManager.GetString("DisplayControlExpandGroupAccessible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroupAccessible 字符串。
+        /// </summary>
+        public static string DisplayControlGroupAccessible {
+            get {
+                return ResourceManager.GetString("DisplayControlGroupAccessible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlShowAccessible 字符串。
+        /// </summary>
+        public static string DisplayControlShowAccessible {
+            get {
+                return ResourceManager.GetString("DisplayControlShowAccessible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlPinAccessible 字符串。
+        /// </summary>
+        public static string DisplayControlPinAccessible {
+            get {
+                return ResourceManager.GetString("DisplayControlPinAccessible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlExpandAccessible 字符串。
+        /// </summary>
+        public static string DisplayControlExpandAccessible {
+            get {
+                return ResourceManager.GetString("DisplayControlExpandAccessible", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlItemCount 字符串。
+        /// </summary>
+        public static string DisplayControlItemCount {
+            get {
+                return ResourceManager.GetString("DisplayControlItemCount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusIdle 字符串。
+        /// </summary>
+        public static string FlowStatusIdle {
+            get {
+                return ResourceManager.GetString("FlowStatusIdle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusWaiting 字符串。
+        /// </summary>
+        public static string FlowStatusWaiting {
+            get {
+                return ResourceManager.GetString("FlowStatusWaiting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusNotStarted 字符串。
+        /// </summary>
+        public static string FlowStatusNotStarted {
+            get {
+                return ResourceManager.GetString("FlowStatusNotStarted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusFailed 字符串。
+        /// </summary>
+        public static string FlowStatusFailed {
+            get {
+                return ResourceManager.GetString("FlowStatusFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusNotice 字符串。
+        /// </summary>
+        public static string FlowStatusNotice {
+            get {
+                return ResourceManager.GetString("FlowStatusNotice", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusPreparing 字符串。
+        /// </summary>
+        public static string FlowStatusPreparing {
+            get {
+                return ResourceManager.GetString("FlowStatusPreparing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusPreparingMessage 字符串。
+        /// </summary>
+        public static string FlowStatusPreparingMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusPreparingMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusPreparingDetails 字符串。
+        /// </summary>
+        public static string FlowStatusPreparingDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusPreparingDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusRunning 字符串。
+        /// </summary>
+        public static string FlowStatusRunning {
+            get {
+                return ResourceManager.GetString("FlowStatusRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusRunningMessage 字符串。
+        /// </summary>
+        public static string FlowStatusRunningMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusRunningMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusExecutingNode 字符串。
+        /// </summary>
+        public static string FlowStatusExecutingNode {
+            get {
+                return ResourceManager.GetString("FlowStatusExecutingNode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusRunningDetails 字符串。
+        /// </summary>
+        public static string FlowStatusRunningDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusRunningDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusLastExecution 字符串。
+        /// </summary>
+        public static string FlowStatusLastExecution {
+            get {
+                return ResourceManager.GetString("FlowStatusLastExecution", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusRemaining 字符串。
+        /// </summary>
+        public static string FlowStatusRemaining {
+            get {
+                return ResourceManager.GetString("FlowStatusRemaining", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCompleted 字符串。
+        /// </summary>
+        public static string FlowStatusCompleted {
+            get {
+                return ResourceManager.GetString("FlowStatusCompleted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCompletedMessage 字符串。
+        /// </summary>
+        public static string FlowStatusCompletedMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusCompletedMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusTimedOut 字符串。
+        /// </summary>
+        public static string FlowStatusTimedOut {
+            get {
+                return ResourceManager.GetString("FlowStatusTimedOut", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusTimedOutMessage 字符串。
+        /// </summary>
+        public static string FlowStatusTimedOutMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusTimedOutMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCanceled 字符串。
+        /// </summary>
+        public static string FlowStatusCanceled {
+            get {
+                return ResourceManager.GetString("FlowStatusCanceled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCanceledMessage 字符串。
+        /// </summary>
+        public static string FlowStatusCanceledMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusCanceledMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusFailedMessage 字符串。
+        /// </summary>
+        public static string FlowStatusFailedMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusFailedMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusPictureSwitchFailed 字符串。
+        /// </summary>
+        public static string FlowStatusPictureSwitchFailed {
+            get {
+                return ResourceManager.GetString("FlowStatusPictureSwitchFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusPreprocessFailed 字符串。
+        /// </summary>
+        public static string FlowStatusPreprocessFailed {
+            get {
+                return ResourceManager.GetString("FlowStatusPreprocessFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusStartRejected 字符串。
+        /// </summary>
+        public static string FlowStatusStartRejected {
+            get {
+                return ResourceManager.GetString("FlowStatusStartRejected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusFinishedDetails 字符串。
+        /// </summary>
+        public static string FlowStatusFinishedDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusFinishedDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusOriginalMessage 字符串。
+        /// </summary>
+        public static string FlowStatusOriginalMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusOriginalMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusElapsed 字符串。
+        /// </summary>
+        public static string FlowStatusElapsed {
+            get {
+                return ResourceManager.GetString("FlowStatusElapsed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusAdditionalMessage 字符串。
+        /// </summary>
+        public static string FlowStatusAdditionalMessage {
+            get {
+                return ResourceManager.GetString("FlowStatusAdditionalMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusAdditionalDetails 字符串。
+        /// </summary>
+        public static string FlowStatusAdditionalDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusAdditionalDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusViewDetails 字符串。
+        /// </summary>
+        public static string FlowStatusViewDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusViewDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusDetails 字符串。
+        /// </summary>
+        public static string FlowStatusDetails {
+            get {
+                return ResourceManager.GetString("FlowStatusDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCopy 字符串。
+        /// </summary>
+        public static string FlowStatusCopy {
+            get {
+                return ResourceManager.GetString("FlowStatusCopy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusCopied 字符串。
+        /// </summary>
+        public static string FlowStatusCopied {
+            get {
+                return ResourceManager.GetString("FlowStatusCopied", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 FlowStatusRetryCopy 字符串。
+        /// </summary>
+        public static string FlowStatusRetryCopy {
+            get {
+                return ResourceManager.GetString("FlowStatusRetryCopy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroupMoveUp 字符串。
+        /// </summary>
+        public static string DisplayControlGroupMoveUp {
+            get {
+                return ResourceManager.GetString("DisplayControlGroupMoveUp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找本地化的 DisplayControlGroupMoveDown 字符串。
+        /// </summary>
+        public static string DisplayControlGroupMoveDown {
+            get {
+                return ResourceManager.GetString("DisplayControlGroupMoveDown", resourceCulture);
+            }
+        }
     }
 }

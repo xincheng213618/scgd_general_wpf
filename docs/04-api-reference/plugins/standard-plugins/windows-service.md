@@ -5,7 +5,7 @@ status: "current"
 summary: "WindowsServicePlugin的在线选包与缓存、本机完整安装、数据库版本切换和恢复边界；下载、日志完成、备份与实际服务状态不能互相替代。"
 aliases: ["Windows 服务管理器", "CVWindowsService 本机安装", "服务包在线下载", "WindowsServicePlugin", "ServiceInstallViewModel", "ServiceManagerAppProvider", "ServiceManagerConfig", "ServicePackageVersionResolver", "ServiceDatabaseVersionMap", "ServiceHostWindowsServiceController", "InstallServiceManager", "InstallTool", "检查旧服务管理工具更新", "CheckInstallToolUpdates", "CVWinSMS", "AutoUpdateDatabase", "BackupBeforeInstall", "BackupServiceBeforeInstall", "UpdateServerUrl", "DownloadLocation", "IsFullServicePackageZip", "FindCachedCvWindowsServicePackage", "GetLatestCvWindowsServicePackageAsync", "ServiceManagerWindow", "ServiceOperationLog"]
 code_paths: ["Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj", "Plugins/WindowsServicePlugin/manifest.json", "Plugins/WindowsServicePlugin/App.xaml.cs", "Plugins/Directory.Build.props", "Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/InstallServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWizardInitializer.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Install.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallViewModel.Backup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceInstallWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerConfig.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Config.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.Logs.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerViewModel.MySql.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceHostWindowsServiceController.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceLogCleanup.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceDatabaseVersionMap.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mysql/MySqlServiceManager.cs", "Plugins/WindowsServicePlugin/ServiceManager/MySqlServiceHelper.cs", "Plugins/WindowsServicePlugin/ServiceManager/Mqtt/MqttServiceManager.cs", "Plugins/WindowsServicePlugin/CVWinSMS/InstallTool.cs", "Plugins/WindowsServicePlugin/CVWinSMS/CheckInstallToolUpdates.cs", "Plugins/WindowsServicePlugin/CVWinSMS/CVWinSMSConfig.cs", "Plugins/WindowsServicePlugin/Menus", "UI/ColorVision.UI/Menus/MenuManager.cs", "UI/ColorVision.UI/Marketplace/MarketplaceConfig.cs", "ColorVision/MainWindow.xaml.cs", "Engine/ColorVision.Engine/Mysql/MySqlDatabaseMaintenanceService.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerWindow.xaml.cs", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerSetupChoiceWindow.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceManagerStyles.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml", "Plugins/WindowsServicePlugin/ServiceManager/ServiceOperationLog.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs", "Test/ColorVision.UI.Tests/WindowsServiceConfigPolicyTests.cs", "Test/ColorVision.UI.Tests/WindowsServiceLogCleanupTests.cs", "Test/ColorVision.UI.Tests/InstallToolAsyncCommandTests.cs", "Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs", "Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs", "Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ServiceDatabaseVersionMapTests.cs","Test/ColorVision.UI.Tests/InstallToolAsyncCommandTests.cs","Test/ColorVision.UI.Tests/MySqlBackupRestoreSafetyTests.cs","Test/ColorVision.UI.Tests/ThirdPartyAppInfoTests.cs","Test/ColorVision.UI.Tests/ServiceHostServicePolicyTests.cs"]
 related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice", "platform.service-host", "engine.mysql-recovery", "ui.menus", "ui.wizards"]
 ---
 
@@ -66,7 +66,11 @@ related: ["plugins.index", "plugins.getting-started", "delivery.cvwindowsservice
 
 ## 安装、数据库与配置顺序
 
-`ExecuteInstallAsync` 先解析现有/目标服务版本和数据库，再依选择备份、安装组件、替换文件、注册服务、执行数据库步骤、同步配置、启动服务；不是跨文件、服务注册和数据库的原子事务。
+`ExecuteInstallAsync` 先检查所选MySQL版本与运行库、解析现有/目标服务版本和数据库，再安装所需运行库，依选择备份、安装组件、替换文件、注册服务、执行数据库步骤、同步配置、启动服务；不是跨文件、服务注册和数据库的原子事务。
+
+MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运行库；完整安装窗口也使用同一版本规则。版本读取实际 `mysqld.exe` 文件信息，ZIP只临时提取其中的程序读取版本，不执行它、不依赖ZIP文件名判断。无法读取版本时提示并停止。MySQL 5.7.37及之前的5.7版本需要VC++ 2013 x64，5.7.38/39仍需要2013；5.7.40及之后和MySQL 8不会被这项检查拦截。这只是2013运行库检查，不代表已验证这些版本的全部依赖。
+
+运行库检测沿用x64系统目录中的 `msvcr120.dll` 与 `msvcp120.dll`，两者都存在才通过；仅安装x86运行库不足以通过。MySQL页缺少运行库时会弹窗提示到“服务安装管理”下载或选择VC++ 2013 x64并安装，本次操作停止。完整安装窗口已选择有效运行库安装程序时先安装并复查；未提供安装程序时在备份、停服务或替换目录之前提示并停止。显式勾选VC++ 2013仍按用户选择安装，不因MySQL 8跳过该选择。
 
 | 阶段 | 当前约束与失败边界 |
 | --- | --- |
@@ -86,7 +90,7 @@ MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHe
 
 窗口只有在所选安装阶段及必需服务安装/启动汇总均通过后才将进度设为“安装完成”并显示完成弹窗；任一必需服务失败会显示安装失败及失败服务列表。该结果仍只覆盖编排收到的返回值，还须分别核对服务状态、版本、配置及数据库结果；日志、progress=100、完成弹窗或某次ServiceHost成功均不替代整条安装验收。
 
-插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine重置，之后只记录结果并刷新状态，不同步服务配置；专用 `ResetDatabaseAsync` 要求root密码、找到安装SQL并确认，成功后才同步受管理配置和旧App.config。两者均没有主程序 `RestoreAndRestartAsync` 的注册中心重启阶段。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
+插件MySQL页另有独立入口，由 `ServiceManagerViewModel.MySql.cs` 编排：`RunSqlScriptAsync` 调用 `ExecuteSqlFile`，遇到 `color_vision_all.sql` 会进入同源/目标库的Engine资源保留更新，之后只记录结果并刷新状态，不同步服务配置；专用“重置数据库”要求root密码、找到非空安装SQL并确认主机与目标库，再清除目标库、导入安装SQL，确认目标库已创建关键资源表后才报告重建成功。它不备份或回写旧流程、模板和资源；若导入或验证失败，数据库可能已清除或部分写入，日志会说明阶段。成功后同步受管理配置和旧App.config；该同步失败会单独提示，不把数据库重建当作整条操作完成。同步成功后先询问是否通过ServiceHost重启注册中心服务，等待结果后再独立询问是否重启ColorVision；服务重启失败会提示实际状态待核对，软件重启仅在用户选择后启动新进程 `-r`，创建成功才关闭当前应用。`RunSqlScriptAsync` 不会触发这两个提示。插件 `RestoreDatabase` 使用业务账号导入SQL，再调用Engine的流程节点标识更新；后一步失败时日志明确SQL已导入。节点更新规则及保留资源回写后的处理见[MySQL恢复](../../engine-components/mysql-recovery.md#流程节点标识更新)。
 
 ## 备份和恢复不等于自动回滚
 
@@ -121,6 +125,7 @@ dotnet build .\Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj -c Relea
 ```
 
 - `ServiceDatabaseVersionMapTests` 覆盖主版本数据库映射、包名解析、嵌入exe版本优先及配置回退，不执行真库升级或证明远端包可信。
+- 不卸载本机运行库，也不替代干净Windows机器上的安装验收。
 - `InstallToolAsyncCommandTests` 验证旧菜单异步失败可观察、Download返回Task、退出启动初始化发现，以及手动检查的缺失/版本/失败分支；使用替身，不验证旧站点、下载内容或工具运行。
 - `MySqlBackupRestoreSafetyTests` 中插件相关用例检查恢复/重置委托Engine的源码边界，另有恢复阶段失败摘要和临时配置文件测试；不是安装、真库迁移或故障回滚验收。
 - `ThirdPartyAppInfoTests` 包含服务管理器提供器元数据检查，不证明应用角色、Windows权限及后台代理全链可用。

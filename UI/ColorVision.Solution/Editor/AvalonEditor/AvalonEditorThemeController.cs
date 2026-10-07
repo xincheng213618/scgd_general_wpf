@@ -1,5 +1,4 @@
 using ColorVision.Themes;
-using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Rendering;
 using System.Windows;

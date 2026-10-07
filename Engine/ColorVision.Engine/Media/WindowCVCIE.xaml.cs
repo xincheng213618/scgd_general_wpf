@@ -1,6 +1,6 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Cie;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,7 +30,7 @@ namespace ColorVision.Engine.Media
 
         public CVCIEShowConfig()
         {
-            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Title = "CVCIE 结果设置", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Title = LocalizedText.Get("CVCIE 结果设置"), Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
         [Category("图形回显"), DisplayName("显示测量结果")]
         [Description("在图形中央显示计算结果；修改后重新计算 POI 生效。")]
@@ -134,7 +133,7 @@ namespace ColorVision.Engine.Media
             listViewSide.ItemsSource = poiResultCIEYDatas;
             ConfigureResultView();
             ButtonShowOnCieDiagram.IsEnabled = false;
-            ButtonShowOnCieDiagram.ToolTip = "仅包含 xy 色坐标的结果可显示到 CIE 色度图";
+            ButtonShowOnCieDiagram.ToolTip = LocalizedText.Get("仅包含 xy 色坐标的结果可显示到 CIE 色度图");
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -159,7 +158,7 @@ namespace ColorVision.Engine.Media
                 config.PropertyChanged -= DisplayConfigChanged;
                 cieWindow?.SetSelectedMarker(null);
             };
-            ResultCount.Text = $"{listViewSide.Items.Count} 个区域";
+            ResultCount.Text = LocalizedText.Format($"{listViewSide.Items.Count} 个区域");
         }
 
         private void DisplayConfigChanged(object? sender, PropertyChangedEventArgs e)
@@ -262,7 +261,7 @@ namespace ColorVision.Engine.Media
             }
             statisticsExpander = new Expander
             {
-                Header = "统计详情 · 均匀性 / 色度", IsExpanded = expanded,
+                Header = LocalizedText.Get("统计详情 · 均匀性 / 色度"), IsExpanded = expanded,
                 Content = new ScrollViewer { Content = statisticsDetails, MaxHeight = 220, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
                 Margin = new Thickness(8, 0, 8, 2)
             };
@@ -276,19 +275,19 @@ namespace ColorVision.Engine.Media
             foreach (var item in values)
             {
                 var content = new StackPanel { Margin = new Thickness(8, 3, 12, 3), MinWidth = collapsible ? 130 : 0 };
-                content.Children.Add(new TextBlock { Text = item.Label + (collapsible ? "" : "亮度"), Opacity = 0.65, FontSize = 12 });
+                content.Children.Add(new TextBlock { Text = item.Label + (collapsible ? "" : LocalizedText.Get("亮度")), Opacity = 0.65, FontSize = 12 });
                 var value = new TextBox
                 {
                     Style = (Style)FindResource("SelectableResultText"), Text = Number(item.Value),
                     FontSize = collapsible ? 13 : 17, FontWeight = FontWeights.SemiBold,
-                    ToolTip = "选中文字后 Ctrl+C；右键复制数值或全部统计"
+                    ToolTip = LocalizedText.Get("选中文字后 Ctrl+C；右键复制数值或全部统计")
                 };
                 statisticsClipboard.Add(title + " · " + item.Label + "\t" + Number(item.Value) + "\t" + item.Unit);
                 var menu = new ContextMenu();
-                menu.Items.Add(new MenuItem { Header = "复制选中文字", Command = ApplicationCommands.Copy, CommandTarget = value });
-                var copyValue = new MenuItem { Header = "复制数值" };
+                menu.Items.Add(new MenuItem { Header = LocalizedText.Get("复制选中文字"), Command = ApplicationCommands.Copy, CommandTarget = value });
+                var copyValue = new MenuItem { Header = LocalizedText.Get("复制数值") };
                 copyValue.Click += (_, _) => ColorVision.Common.Clipboard.SetText(Number(item.Value));
-                var copyStats = new MenuItem { Header = "复制全部统计" };
+                var copyStats = new MenuItem { Header = LocalizedText.Get("复制全部统计") };
                 copyStats.Click += (_, _) => ColorVision.Common.Clipboard.SetText(string.Join(Environment.NewLine, statisticsClipboard));
                 menu.Items.Add(copyValue);
                 menu.Items.Add(copyStats);

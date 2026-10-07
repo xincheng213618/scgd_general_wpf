@@ -1,0 +1,132 @@
+<Window x:Class="ProjectARVRPro.ProjectSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ProjectARVRPro"
+        Title="{display:DisplayText Key='模组检测设置'}" Width="840" Height="560" MinWidth="760" MinHeight="440"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
+        FontFamily="Microsoft YaHei UI, Segoe UI" FontSize="13" UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display" WindowStartupLocation="CenterOwner">
+    <Window.InputBindings>
+        <KeyBinding Key="F" Modifiers="Control" Command="ApplicationCommands.Find"/>
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Find" Executed="Find_Executed"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+        <Style x:Key="SettingsButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Padding" Value="14,4"/>
+        </Style>
+        <Style x:Key="SettingsNavigationItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Surface" CornerRadius="6" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+                            <Grid>
+                                <Border x:Name="Indicator" Background="{DynamicResource PrimaryBrush}" Width="3" CornerRadius="1.5"
+                                        HorizontalAlignment="Left" Margin="2,9" Visibility="Collapsed"/>
+                                <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
+                                <Setter TargetName="Indicator" Property="Visibility" Value="Visible"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="132"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,12,0">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Grid>
+                <TextBox x:Name="SearchBox" Height="32" Padding="8,4,28,4" VerticalContentAlignment="Center" ToolTip="{display:DisplayText Key='搜索全部设置（Ctrl+F）'}"
+                         AutomationProperties.Name="{display:DisplayText Key='搜索全部设置'}" TextChanged="Search_Changed" PreviewKeyDown="Search_PreviewKeyDown">
+                    <TextBox.Template>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="SearchBorder" CornerRadius="6" Background="{DynamicResource GlobalBorderBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <ScrollViewer x:Name="PART_ContentHost"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                    <Setter TargetName="SearchBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </TextBox.Template>
+                </TextBox>
+                <TextBlock Text="{display:DisplayText Key='搜索设置…'}" Margin="10,0,28,0" IsHitTestVisible="False" VerticalAlignment="Center"
+                           Foreground="{DynamicResource SecondaryTextBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" Width="28" Height="28" Padding="0"
+                        HorizontalAlignment="Right" Margin="0,0,3,0" Click="ClearSearch_Click" ToolTip="{display:DisplayText Key='清空搜索'}" AutomationProperties.Name="{display:DisplayText Key='清空搜索'}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+            <ListBox x:Name="SettingsList" Grid.Row="1" Margin="0,12,0,0" BorderThickness="0" Background="Transparent"
+                     AutomationProperties.Name="{display:DisplayText Key='设置定位目录'}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ItemContainerStyle="{StaticResource SettingsNavigationItem}" DisplayMemberPath="Title"
+                     SelectionChanged="SettingsList_SelectionChanged" PreviewMouseLeftButtonUp="SettingsList_MouseLeftButtonUp"/>
+        </Grid>
+        <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="8">
+            <Grid>
+                <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              Margin="12" Focusable="True" IsTabStop="False" ScrollChanged="PageScroll_ScrollChanged">
+                    <StackPanel x:Name="SettingsContent"/>
+                </ScrollViewer>
+                <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock Text="{display:DisplayText Key='没有找到匹配的设置'}" FontSize="16" HorizontalAlignment="Center"/>
+                    <Button Content="{display:DisplayText Key='清空搜索'}" Margin="0,14,0,0" Style="{StaticResource SettingsButton}" Click="ClearSearch_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <Button x:Name="DefaultsButton" Content="{display:DisplayText Key='恢复默认设置…'}" Style="{StaticResource SettingsButton}" Click="Defaults_Click"/>
+            <DockPanel Grid.Column="1" Margin="16,0">
+                <Button x:Name="RetryButton" Content="{display:DisplayText Key='重试'}" DockPanel.Dock="Right" Margin="8,0" Visibility="Collapsed"
+                        Style="{StaticResource SettingsButton}" Click="Retry_Click"/>
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextWrapping="Wrap" Visibility="Collapsed"
+                           Foreground="{DynamicResource SecondaryTextBrush}" AutomationProperties.LiveSetting="Polite"/>
+            </DockPanel>
+            <Button x:Name="CloseButton" Grid.Column="2" Content="{display:DisplayText Key='关闭'}" IsCancel="True" Click="Close_Click" Style="{StaticResource SettingsButton}"/>
+        </Grid>
+    </Grid>
+</Window>

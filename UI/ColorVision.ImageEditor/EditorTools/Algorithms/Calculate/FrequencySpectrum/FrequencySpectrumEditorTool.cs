@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.UI;
@@ -28,7 +29,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             PropertyEditorWindow editor = new(parameters, PropertyEditorEditMode.Transactional)
             {
                 Owner = Application.Current.GetActiveWindow(),
-                Title = "FFT / 频域分析参数",
+                Title = LocalizedText.Get("FFT / 频域分析参数"),
             };
             editor.Submitted += (_, _) => submitted = true;
             editor.ShowDialog();
@@ -48,13 +49,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             }
             catch (Exception exception)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "FFT / 频域分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("FFT / 频域分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!long.TryParse(input.SourceRevision, NumberStyles.Integer, CultureInfo.InvariantCulture, out long sourceRevision))
             {
                 input.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "无法确定当前图像 revision。", "FFT / 频域分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("无法确定当前图像 revision。"), LocalizedText.Get("FFT / 频域分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -73,7 +74,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             {
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "FFT / 频域分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("FFT / 频域分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -94,7 +95,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
                 input.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "FFT / 频域分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(progressWindow.Owner, exception.Message, LocalizedText.Get("FFT / 频域分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -120,7 +121,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
                 string message = string.Join(Environment.NewLine, result.Failures.Select(value => $"[{value.Code}] {value.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(progressWindow.Owner, message, "FFT / 频域分析失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(progressWindow.Owner, message, LocalizedText.Get("FFT / 频域分析失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(_image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -143,7 +144,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             {
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "FFT / 频域分析结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("FFT / 频域分析结果"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.Present(_image, invocation.InvocationId, resultWindow))

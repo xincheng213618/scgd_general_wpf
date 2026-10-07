@@ -1,10 +1,7 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,7 +63,7 @@ namespace ColorVision.Copilot.Mcp
         public string ReversibilityLabel => RequestContext.ReversibilityLabel;
 
         public string RiskDisplayLabel => string.Equals(RiskLevel, "confirmation-required", StringComparison.OrdinalIgnoreCase)
-            ? "受保护操作"
+            ? LocalizedText.Get("受保护操作")
             : RiskLevel;
 
         public bool? ExecutionSucceeded { get; internal set; }
@@ -128,19 +125,19 @@ namespace ColorVision.Copilot.Mcp
             {
                 var remaining = ExpiresAt - DateTimeOffset.UtcNow;
                 if (remaining <= TimeSpan.Zero)
-                    return "已过期";
+                    return LocalizedText.Get("已过期");
 
                 if (remaining.TotalSeconds < 60)
-                    return $"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalSeconds))} 秒";
+                    return LocalizedText.Format($"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalSeconds))} 秒");
 
                 if (remaining.TotalMinutes < 60)
-                    return $"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes))} 分钟";
+                    return LocalizedText.Format($"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes))} 分钟");
 
-                return $"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalHours))} 小时";
+                return LocalizedText.Format($"剩余 {Math.Max(1, (int)Math.Ceiling(remaining.TotalHours))} 小时");
             }
         }
 
-        public string ReviewDeadlineLabel => $"{RemainingLifetimeLabel} · {ExpiresAtLabel} 到期";
+        public string ReviewDeadlineLabel => LocalizedText.Format($"{RemainingLifetimeLabel} · {ExpiresAtLabel} 到期");
 
         public string ConfirmActionPayloadJson => JsonSerializer.Serialize(new
         {

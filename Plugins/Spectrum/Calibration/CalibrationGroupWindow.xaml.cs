@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using log4net;
 using Spectrum.Configs;
 using System.Windows;
@@ -26,6 +27,7 @@ namespace Spectrum.Calibration
             WorkingConfig = Manager.CalibrationGroupConfig.Clone();
 
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             RefreshGroupList();
             UpdateConfigPathDisplay();
             _hasUnsavedChanges = false;
@@ -34,13 +36,13 @@ namespace Spectrum.Calibration
         private void MarkUnsaved()
         {
             _hasUnsavedChanges = true;
-            Title = "标定文件分组管理 *";
+            Title = LocalizedText.Get("标定文件分组管理 *");
         }
 
         private void MarkSaved()
         {
             _hasUnsavedChanges = false;
-            Title = "标定文件分组管理";
+            Title = LocalizedText.Get("标定文件分组管理");
         }
 
         private void RefreshGroupList()
@@ -97,7 +99,7 @@ namespace Spectrum.Calibration
             if (!string.IsNullOrEmpty(Manager.SerialNumber))
                 TextConfigPath.Text = CalibrationGroupConfig.GetConfigDirectory(Manager.SerialNumber);
             else
-                TextConfigPath.Text = "设备未连接，SN未知";
+                TextConfigPath.Text = LocalizedText.Get("设备未连接，SN未知");
         }
 
         private void ComboBoxGroups_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -141,7 +143,7 @@ namespace Spectrum.Calibration
         {
             if (WorkingConfig.Groups.Count <= 1)
             {
-                MessageBox.Show("至少保留一个分组", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizedText.Get("至少保留一个分组"), LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             // Remove group directly from config without auto-saving
@@ -226,7 +228,7 @@ namespace Spectrum.Calibration
                 ? System.Windows.Media.Brushes.Green
                 : System.Windows.Media.Brushes.OrangeRed;
             TextWavelengthStatus.Text = result.IsValid
-                ? $"✓ {result.DataCount} 个数据点"
+                ? LocalizedText.Format($"✓ {result.DataCount} 个数据点")
                 : $"✗ {result.Message}";
             TextWavelengthStatus.Foreground = result.IsValid
                 ? System.Windows.Media.Brushes.Green
@@ -241,7 +243,7 @@ namespace Spectrum.Calibration
                 ? System.Windows.Media.Brushes.Green
                 : System.Windows.Media.Brushes.OrangeRed;
             TextMaguideStatus.Text = result.IsValid
-                ? $"✓ {result.DataCount} 点, 积分={result.MagExpTime}ms"
+                ? LocalizedText.Format($"✓ {result.DataCount} 点, 积分={result.MagExpTime}ms")
                 : $"✗ {result.Message}";
             TextMaguideStatus.Foreground = result.IsValid
                 ? System.Windows.Media.Brushes.Green
@@ -273,13 +275,13 @@ namespace Spectrum.Calibration
                 SpectrumCalibrationApplyResult result = await ApplyAndSaveAsync();
                 if (!result.IsSuccess)
                 {
-                    MessageBox.Show(result.ErrorMessage, "标定配置未完成", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(result.ErrorMessage, LocalizedText.Get("标定配置未完成"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
                 MarkSaved();
                 string message = Manager.IsConnected ? "标定配置已保存并加载" : "标定配置已保存，将在连接光谱仪时加载";
-                MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(message, LocalizedText.Get("提示"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
             finally
             {
@@ -331,7 +333,7 @@ namespace Spectrum.Calibration
 
             if (_hasUnsavedChanges)
             {
-                var result = MessageBox.Show("有未保存的更改，是否保存？", "提示", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                var result = MessageBox.Show(LocalizedText.Get("有未保存的更改，是否保存？"), LocalizedText.Get("提示"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
                 {
                     try
@@ -339,7 +341,7 @@ namespace Spectrum.Calibration
                         SpectrumCalibrationApplyResult applyResult = ApplyAndSaveAsync().GetAwaiter().GetResult();
                         if (!applyResult.IsSuccess)
                         {
-                            MessageBox.Show(applyResult.ErrorMessage, "标定文件加载失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(applyResult.ErrorMessage, LocalizedText.Get("标定文件加载失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
                             e.Cancel = true;
                             return;
                         }
@@ -348,7 +350,7 @@ namespace Spectrum.Calibration
                     catch (Exception ex)
                     {
                         log.Error("Failed to save and apply calibration files", ex);
-                        MessageBox.Show(ex.GetBaseException().Message, "标定文件加载失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show(ex.GetBaseException().Message, LocalizedText.Get("标定文件加载失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                         e.Cancel = true;
                         return;
                     }

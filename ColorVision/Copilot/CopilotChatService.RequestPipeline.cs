@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -44,36 +43,46 @@ namespace ColorVision.Copilot
             var contentBuilder = new StringBuilder();
             var reasoningTruncated = false;
             var contentTruncated = false;
-
-            var streamResult = await StreamReplyCoreAsync(
-                config,
-                messages,
-                delta =>
-                {
-                    if (delta.HasReasoning)
+            var reportedUsage = CopilotTokenUsage.Empty;
+            CopilotChatStreamResult streamResult;
+            try
+            {
+                streamResult = await StreamReplyCoreAsync(
+                    config,
+                    messages,
+                    delta =>
                     {
-                        AppendBoundedReplyText(
-                            reasoningBuilder,
-                            delta.ReasoningContent,
-                            CopilotChatMessage.ReasoningTruncationMarker,
-                            ref reasoningTruncated);
-                    }
+                        if (delta.HasReasoning)
+                        {
+                            AppendBoundedReplyText(
+                                reasoningBuilder,
+                                delta.ReasoningContent,
+                                CopilotChatMessage.ReasoningTruncationMarker,
+                                ref reasoningTruncated);
+                        }
 
-                    if (delta.HasContent)
-                    {
-                        AppendBoundedReplyText(
-                            contentBuilder,
-                            delta.Content,
-                            CopilotChatMessage.ResponseTruncationMarker,
-                            ref contentTruncated);
-                    }
-                },
-                onRetry: null,
-                onConnectionRecovery: null,
-                onUsageChanged: null,
-                requestSystemContext: null,
-                imageAttachments: imageAttachments,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+                        if (delta.HasContent)
+                        {
+                            AppendBoundedReplyText(
+                                contentBuilder,
+                                delta.Content,
+                                CopilotChatMessage.ResponseTruncationMarker,
+                                ref contentTruncated);
+                        }
+                    },
+                    onRetry: null,
+                    onConnectionRecovery: null,
+                    onUsageChanged: usage => reportedUsage = reportedUsage.MergeProgress(usage),
+                    requestSystemContext: null,
+                    imageAttachments: imageAttachments,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception,
+                    reportedUsage.MergeProgress(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                throw;
+            }
 
             var reply = new CopilotChatReply(
                 new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
@@ -220,18 +229,46 @@ namespace ColorVision.Copilot
             if (requestMessages.Length == 0)
                 throw new InvalidOperationException("At least one non-empty user or assistant message is required.");
             var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
+            if (config.IsLocalCodex)
+                return await StreamCodexReplyAsync(config, requestMessages, imagePayloads, requestSystemContext, onDelta, onUsageChanged, cancellationToken).ConfigureAwait(false);
             var inactivityTimeouts = CopilotProviderInactivityPolicy.Resolve(
                 config,
                 _firstResponseTimeoutOverride,
                 _streamingUpdateTimeoutOverride);
 
             var attempt = 1;
+            var discardedUsage = CopilotTokenUsage.Empty;
+            var publishedUsage = CopilotTokenUsage.Empty;
+
+            void PublishUsage(CopilotTokenUsage usage)
+            {
+                if (!usage.HasAny || usage == publishedUsage)
+                    return;
+                publishedUsage = usage;
+                CopilotProviderNotificationObserver.Notify(onUsageChanged, usage, "usage update");
+            }
+
+            async Task WaitForRetryDelayAsync(TimeSpan delay)
+            {
+                try
+                {
+                    await _delayAsync(delay, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception, discardedUsage);
+                    PublishUsage(discardedUsage);
+                    throw;
+                }
+            }
+
             var connectionRecoveryState = new CopilotProviderConnectionRecoveryState(
                 CopilotProviderConnectionRecoveryChatClient.DefaultInitialDelay,
                 CopilotProviderConnectionRecoveryChatClient.DefaultMaximumDelay);
             while (true)
             {
                 var responseStarted = false;
+                var attemptUsage = CopilotTokenUsage.Empty;
                 try
                 {
                     var result = await StreamReplyAttemptAsync(
@@ -247,15 +284,16 @@ namespace ColorVision.Copilot
                         usage =>
                         {
                             responseStarted = true;
-                            CopilotProviderNotificationObserver.Notify(
-                                onUsageChanged,
-                                usage,
-                                "usage update");
+                            attemptUsage = attemptUsage.MergeProgress(usage);
+                            PublishUsage(discardedUsage.Add(attemptUsage));
                         },
                         inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
+                    var totalUsage = discardedUsage.Add(attemptUsage.MergeProgress(result.Usage));
+                    PublishUsage(totalUsage);
                     return result with
                     {
+                        Usage = totalUsage,
                         ImagePreparationNotice = BuildImagePreparationNotice(imagePayloads),
                     };
                 }
@@ -267,17 +305,31 @@ namespace ColorVision.Copilot
                         cancellationToken,
                         out var recovery))
                 {
+                    discardedUsage = discardedUsage.Add(
+                        attemptUsage.MergeProgress(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                    PublishUsage(discardedUsage);
                     CopilotProviderNotificationObserver.Notify(
                         onConnectionRecovery,
                         recovery,
                         "connection recovery");
-                    await _delayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
+                    await WaitForRetryDelayAsync(recovery.Delay).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
                 {
+                    discardedUsage = discardedUsage.Add(
+                        attemptUsage.MergeProgress(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                    PublishUsage(discardedUsage);
                     CopilotProviderNotificationObserver.Notify(onRetry, retry, "retry");
-                    await _delayAsync(retry.Delay, cancellationToken).ConfigureAwait(false);
+                    await WaitForRetryDelayAsync(retry.Delay).ConfigureAwait(false);
                     attempt++;
+                }
+                catch (Exception exception)
+                {
+                    var totalUsage = discardedUsage.Add(
+                        attemptUsage.MergeProgress(CopilotTokenBudgetChatClient.ExtractPayloadFailureUsage(exception)));
+                    CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception, totalUsage);
+                    PublishUsage(totalUsage);
+                    throw;
                 }
             }
         }
@@ -421,6 +473,7 @@ namespace ColorVision.Copilot
                 throw;
             }
             if (TryCreateProviderPayloadException(
+                config.ProviderType,
                 body,
                 "Provider response",
                 config.ApiKey,
@@ -433,10 +486,12 @@ namespace ColorVision.Copilot
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
             {
-                throw new InvalidOperationException(
+                var emptyResponseException = new InvalidOperationException(
                     CopilotProviderRequestId.AppendToMessage(
                         "The API returned successfully, but no displayable text was found.",
                         providerRequestId));
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(emptyResponseException, reply.Usage);
+                throw emptyResponseException;
             }
 
             onDelta(reply.Delta);

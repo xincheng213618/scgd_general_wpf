@@ -5,7 +5,7 @@ status: "current"
 summary: "ImageView 的文档、会话、显示、算法协调和扩展所有权；说明源提交、连续帧有界处理、工具生命周期及临时 ROI 有效期。"
 aliases: ["图像编辑器上下文", "ImageView重构", "状态归属", "工具栏刷新", "配置作用域", "临时ROI", "临时选区", "四边形", "选区坐标", "白色画布选区", "矢量画布布点", "EditorContext", "ImageProcessingContext", "ImageDocument", "ImageEditorSession", "ImagePresentation", "ImageStreamPresentation", "ImageDisplayEffects", "ImageShaderPresentation", "ImageOperationCoordinator", "CommitSourcePixels", "ImageViewConfig", "ImageViewPropertyScope", "IEditorToolFactory", "BeginSelectAsync", "SelectShapeType", "SelectResult", "TransientRoiSelectionSession", "ImageSelectionScope", "EnableEditorImageServices"]
 code_paths: ["UI/ColorVision.ImageEditor/ARCHITECTURE.md", "UI/ColorVision.ImageEditor/Documents", "UI/ColorVision.ImageEditor/ImageEditorSession.cs", "UI/ColorVision.ImageEditor/Presentation", "UI/ColorVision.ImageEditor/Operations", "UI/ColorVision.ImageEditor/Output", "UI/ColorVision.ImageEditor/Tooling", "UI/ColorVision.ImageEditor/Navigation", "UI/ColorVision.ImageEditor/Abstractions/PseudoColorFrameRequest.cs", "UI/ColorVision.ImageEditor/EditorContext.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/ImageViewPropertyMetadata.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.UI/AssemblyHandler.cs", "UI/ColorVision.ImageEditor/Draw/ImageDrawingPresentation.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/ImageDocumentPresentationTests.cs", "Test/ColorVision.UI.Tests/ImageStreamPresentationTests.cs", "Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs", "Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs", "Test/ColorVision.UI.Tests/EditorToolFactoryLifecycleTests.cs", "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/ImageAlgorithmPreviewSessionTests.cs","Test/ColorVision.UI.Tests/ImageGroupNavigationTests.cs","Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs"]
 related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.platform", "algorithms.roi-routes", "algorithms.local-native-analysis"]
 ---
 
@@ -104,6 +104,12 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 工厂 `Dispose` 停用当前打开器 lifecycle，并对全局及当前打开器工具中的 `IDisposable` 去重释放，不承诺释放每个 opener/component。`ImageEditorSession.Dispose` 依次释放连续帧、显示能力、算法 overlay 和文档。`ImageView.Unloaded` 仅解绑窗口快捷键，不是 `Dispose`；宿主仍需负责真正释放。工具栏重建、控件卸载和文档资源释放不能混用。
 
+相机、算法和校正设备通过 `DockViewRegistration` 注册轻量视图工厂。注册及后台采集不创建图像视图；主窗口显式显示全部视图或用户打开页签时才创建当前实例。`DockViewManagerHost` 在实际 `Closed` 后移除文档映射、清除注册表和设备对当前视图的引用，并 `Dispose` 源图、图层、快照缓冲及事件订阅；列偏好保存为不含 UI 对象和菜单回调的数据。再次打开会创建新实例，原页签中的临时图像与结果列表不保留，持久化结果仍可查询。取消关闭、普通页签切换及 WPF `Unloaded` 不释放视图。没有当前相机视图时不创建本地 RAW/CIE 预览快照；关闭实时相机页签仅断开预览显示，设备视频状态保持，重新打开后接入新视图。
+
+`Abstractions/IImageEditor.cs` 中的 `IImageOpenContentLifetime` 将当前文件资源与工具栏生命周期分开。文件替换、清空及销毁视图经 `ImageView.ReleaseImageContent` 调用 `ReleaseContentAsync`，先失效旧请求，再异步等待正在读的内容退役；UI 不阻塞等待可能回调 Dispatcher 的读取。相机实时开始、本地预览及内存 CIE 接入同样先结束原文件内容。只有同一打开器紧接着加载下一文件时传入 `reuseBuffers=true`，允许保留可复用分配，但旧测量消费者仍须退出。RAW 切换到 PNG/JPG 等其他打开器会释放旧输入数组，后续重开不会被迟到的清理任务清除；工具栏刷新、普通页签切换及单纯显示图层变化不调用此入口。图像格式插件不实现此可选接口时仍保持原有行为。
+
+清空图像也释放保存快照的复用缓冲。对于单份像素缓冲至少 64 MiB 的清理或页签关闭，`Documents/ImageMemoryReclaimer` 在解除引用、UI 清空与渲染调度之后合并后台回收请求，完成终结器并归还空闲托管堆页；RAW 打开器在串行读取结束后才释放数组，取消尚未显示的加载及离开 RAW 打开器同样请求回收。小图及逐帧更新使用正常 GC，不在 UI 线程等待终结器。原因是 WPF 对超大 `WriteableBitmap` 的内存压力估算可能发生整数溢出，同时只解除引用或普通 GC 不能保证空闲 POH 页立即归还。后台回收仍可能带来短暂 GC 停顿；渲染器及程序其他模块的常驻内存不属于当前图像，进程不保证回到冷启动占用。验证需观察实际显示窗口反复打开、清理/关闭后的进程私有内存，并分别记录托管堆和空闲时变化；测试中主动强制 GC 后弱引用消失不能单独证明清理按钮的效果。
+
 ## 临时 ROI：形状、坐标与有效期
 
 `ImageView.BeginSelectAsync` 每次创建一个 `TransientRoiSelectionSession`，支持 Rectangle、Circle、Polygon、Quadrilateral。临时 visual 直接加入/移出画布，不登记撤销命令，也不是持久注释。
@@ -129,8 +135,8 @@ related: ["ui.image-editor", "ui.discovery", "ui.configuration", "algorithms.pla
 
 ## 验证范围
 
-`ImageDocumentPresentationTests` 覆盖文档/显示版本隔离、源替换后旧租约存活以及矢量文档不生成像素帧。`ImageStreamPresentationTests` 用注入处理器检查冻结源独立性、最新等待帧替换、换图/释放拒绝、提交通知中的重入选择以及失败原图回退，不运行真实 native 伪彩。算法 claim 和预览回滚还需结合算法平台及 `ImageAlgorithmPreviewSessionTests` 的契约验证。
+算法 claim 和预览回滚还需结合算法平台及 `ImageAlgorithmPreviewSessionTests` 的契约验证。
 
-`EditorToolFactoryLifecycleTests` 覆盖重复工具栏刷新时图标元素复用，不覆盖任意插件、重复后缀或所有构造失败。`ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageGroupNavigationTests` 覆盖去重、手动暂停跟随及导航事件顺序，不证明真实按钮/打开器交互。
+`ImageDisplayEffectsTests` 覆盖参数捕获的基准源、启用与存活门禁，以及不可变参数和无发布副作用。`ImageGroupNavigationTests` 覆盖去重、手动暂停跟随及导航事件顺序，不证明真实按钮/打开器交互。
 
-`TransientRoiSelectionSessionTests` 覆盖退化/自交形状、白色矢量画布上四类形状完成、分数画布尺寸、位图像素尺寸与 DPI、版本变化/释放取消、临时 visual 清理和交互状态恢复；同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。
+同时验证算法拒绝无像素选区或过期范围，正常位图仍可获取输入。部分通过反射驱动内部状态，不等于真实鼠标和任意 DPI 的整链验收。配置同名键、实际工具发现、四边形键盘完成和真实窗口行为仍需按改动补验证。

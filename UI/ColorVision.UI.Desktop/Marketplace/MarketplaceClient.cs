@@ -10,7 +10,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
-using System.Threading;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 

@@ -115,6 +115,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAgentTaskEvent> Events { get; init; } = Array.Empty<CopilotAgentTaskEvent>();
 
+        public CopilotAgentSessionResumeRestriction TrimmedSessionResumeRestriction { get; init; }
+
         [Newtonsoft.Json.JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]
         internal bool IsDetachedSnapshot { get; init; }
@@ -122,7 +124,10 @@ namespace ColorVision.Copilot
         public bool IsStructurallyValid()
         {
             if (SchemaVersion != CurrentSchemaVersion
+                || !Enum.IsDefined(TrimmedSessionResumeRestriction)
                 || Events == null
+                || (TrimmedSessionResumeRestriction != CopilotAgentSessionResumeRestriction.None
+                    && !Events.Any(item => item?.Type == CopilotAgentTaskEventType.RunStarted))
                 || Events.Count > CopilotAgentTaskEventJournal.MaxEvents
                 || Events.Any(item => item?.IsStructurallyValid() != true)
                 || Events.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != Events.Count
@@ -221,7 +226,8 @@ namespace ColorVision.Copilot
             {
                 if (approval.State is
                     "approved:ExecutionPolicy"
-                    or "approved:TemporaryGrant")
+                    or "approved:TemporaryGrant"
+                    or "approved:ConversationFullAccess")
                 {
                     continue;
                 }
@@ -466,6 +472,7 @@ namespace ColorVision.Copilot
                 var candidate = new CopilotAgentTaskEventJournalSnapshot
                 {
                     SchemaVersion = source.SchemaVersion,
+                    TrimmedSessionResumeRestriction = source.TrimmedSessionResumeRestriction,
                     Events = Array.AsReadOnly(events),
                     IsDetachedSnapshot = true,
                 };
@@ -512,7 +519,9 @@ namespace ColorVision.Copilot
                 return true;
             if (left?.IsStructurallyValid() != true || right?.IsStructurallyValid() != true)
                 return false;
-            if (left.SchemaVersion != right.SchemaVersion || left.Events.Count != right.Events.Count)
+            if (left.SchemaVersion != right.SchemaVersion
+                || left.TrimmedSessionResumeRestriction != right.TrimmedSessionResumeRestriction
+                || left.Events.Count != right.Events.Count)
                 return false;
 
             return left.Events.Zip(right.Events, AreEventsEquivalent)
@@ -545,7 +554,8 @@ namespace ColorVision.Copilot
         {
             if (candidate?.IsStructurallyValid() != true
                 || baseline?.IsStructurallyValid() != true
-                || candidate.SchemaVersion != baseline.SchemaVersion)
+                || candidate.SchemaVersion != baseline.SchemaVersion
+                || !PreservesTrimmedSessionRestriction(candidate, baseline))
             {
                 return false;
             }
@@ -597,6 +607,8 @@ namespace ColorVision.Copilot
             if (baseline?.IsStructurallyValid() != true
                 || baseline.Events.Count == 0)
                 return true;
+            if (!PreservesTrimmedSessionRestriction(candidate, baseline))
+                return false;
             if (AreEquivalent(candidate, baseline))
                 return false;
 
@@ -611,7 +623,12 @@ namespace ColorVision.Copilot
             }
 
             if (commonPrefixLength == baseline.Events.Count)
-                return candidate.Events.Count > baseline.Events.Count;
+                return candidate.Events.Count > baseline.Events.Count
+                    || (candidate.Events.Count == baseline.Events.Count
+                        && candidate.TrimmedSessionResumeRestriction != baseline.TrimmedSessionResumeRestriction
+                        && MergeSessionResumeRestrictions(
+                            baseline.TrimmedSessionResumeRestriction,
+                            candidate.TrimmedSessionResumeRestriction) == candidate.TrimmedSessionResumeRestriction);
             if (commonPrefixLength == candidate.Events.Count)
                 return false;
 
@@ -629,6 +646,60 @@ namespace ColorVision.Copilot
             var candidateLatestOccurrence = candidate.Events.Max(item => item.OccurredAtUtc);
             var baselineLatestOccurrence = baseline.Events.Max(item => item.OccurredAtUtc);
             return candidateLatestOccurrence > baselineLatestOccurrence;
+        }
+
+        internal static CopilotAgentSessionResumeRestriction MergeSessionResumeRestrictions(
+            CopilotAgentSessionResumeRestriction left,
+            CopilotAgentSessionResumeRestriction right)
+        {
+            if (left == CopilotAgentSessionResumeRestriction.UncertainToolOutcome
+                || right == CopilotAgentSessionResumeRestriction.UncertainToolOutcome)
+                return CopilotAgentSessionResumeRestriction.UncertainToolOutcome;
+            return left == CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall
+                || right == CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall
+                ? CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall
+                : CopilotAgentSessionResumeRestriction.None;
+        }
+
+        internal static CopilotAgentSessionResumeRestriction GetToolResumeRestriction(
+            IReadOnlyList<CopilotAgentTaskEvent> events,
+            CopilotAgentTaskEvent item)
+        {
+            if (item.Type == CopilotAgentTaskEventType.ToolCompleted
+                && item.FailureCode == CopilotToolFailureCode.OutcomeUnknown)
+                return CopilotAgentSessionResumeRestriction.UncertainToolOutcome;
+            if (item.Type == CopilotAgentTaskEventType.ToolStarted
+                && !events.Any(candidate => candidate.Sequence > item.Sequence
+                    && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                    && ((candidate.Type == CopilotAgentTaskEventType.ToolCompleted
+                            && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal))
+                        || ((candidate.Type is CopilotAgentTaskEventType.ApprovalRequested
+                                or CopilotAgentTaskEventType.ApprovalDenied)
+                            && (string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal)
+                                || candidate.RelatedIds.Contains(item.SubjectId, StringComparer.Ordinal))))))
+                return CopilotAgentSessionResumeRestriction.UncertainToolOutcome;
+            if (item.Type == CopilotAgentTaskEventType.ProviderToolCallPersisted
+                && !events.Any(candidate => candidate.Type == CopilotAgentTaskEventType.ProviderToolResultPersisted
+                    && candidate.Sequence > item.Sequence
+                    && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                    && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal)))
+                return CopilotAgentSessionResumeRestriction.UnresolvedProviderToolCall;
+            return CopilotAgentSessionResumeRestriction.None;
+        }
+
+        private static bool PreservesTrimmedSessionRestriction(
+            CopilotAgentTaskEventJournalSnapshot candidate,
+            CopilotAgentTaskEventJournalSnapshot baseline)
+        {
+            var baselineRun = baseline.Events.LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStarted);
+            var candidateRun = candidate.Events.LastOrDefault(item => item.Type == CopilotAgentTaskEventType.RunStarted);
+            var startedNewRun = candidateRun != null
+                && !string.Equals(baselineRun?.RunId, candidateRun.RunId, StringComparison.Ordinal)
+                && (baseline.Events.Count == 0 || candidateRun.Sequence > baseline.Events[^1].Sequence);
+            return startedNewRun
+                || MergeSessionResumeRestrictions(
+                    baseline.TrimmedSessionResumeRestriction,
+                    candidate.TrimmedSessionResumeRestriction) == candidate.TrimmedSessionResumeRestriction;
         }
 
         internal static CopilotAgentTaskEventJournalSnapshot? CloseLatestOpenRun(
@@ -712,11 +783,16 @@ namespace ColorVision.Copilot
                 .Where(item => item.ToolName.Length > 0)
                 .OrderBy(item => item.Sequence)
                 .ToArray();
-            if (calls.Length == 0)
-                return string.Empty;
-
             var newline = Environment.NewLine;
             var prefix = AttemptedToolRecoveryHeading + newline + AttemptedToolRecoveryGuidance;
+            if (snapshot.TrimmedSessionResumeRestriction != CopilotAgentSessionResumeRestriction.None)
+            {
+                prefix += newline + "Earlier unsettled tool details were trimmed from the bounded task journal. "
+                    + "The provider session must be replanned; verify current external state before retrying writes or non-idempotent operations.";
+            }
+            if (calls.Length == 0)
+                return snapshot.TrimmedSessionResumeRestriction == CopilotAgentSessionResumeRestriction.None
+                    ? string.Empty : prefix;
             var lines = calls.Select(SerializeAttemptedToolCall).ToArray();
             var complete = prefix + newline + string.Join(newline, lines);
             if (Encoding.UTF8.GetByteCount(complete) <= MaxAttemptedToolRecoveryPromptBytes)

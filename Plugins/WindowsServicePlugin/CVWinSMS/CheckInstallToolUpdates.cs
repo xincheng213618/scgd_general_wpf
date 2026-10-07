@@ -7,7 +7,7 @@ namespace WindowsServicePlugin.CVWinSMS
         public override string OwnerGuid => "ServiceLog";
         public override string GuidId => "CheckInstallToolUpdates";
         public override int Order => 2;
-        public override string Header => "检查旧服务管理工具更新";
+        public override string Header => InstallTool.GetText("检查旧服务管理工具更新");
 
         public override async void Execute()
         {

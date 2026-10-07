@@ -5,7 +5,9 @@ namespace ColorVision.UI.ServiceHost;
 internal sealed class ProcessTerminationBroker
 {
     private const string Command = "process-terminate";
+    private const string TerminateEarlierApplicationCommand = "process-terminate-earlier-application";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan EarlierApplicationRequestTimeout = TimeSpan.FromSeconds(30);
     private readonly Func<string, object?, TimeSpan, CancellationToken, Task<ServiceHostResponse>> _sendAsync;
 
     internal ProcessTerminationBroker(Func<string, object?, TimeSpan, CancellationToken, Task<ServiceHostResponse>> sendAsync) => _sendAsync = sendAsync;
@@ -23,7 +25,7 @@ internal sealed class ProcessTerminationBroker
                 ServiceHostResponse update = await _sendAsync("self-update", new { packageDirectory = ServiceHostProtocol.PackageDirectory }, RequestTimeout, CancellationToken.None).ConfigureAwait(false);
                 if (!update.Success)
                     throw new InvalidOperationException($"权限服务版本过旧，自动更新未完成：{update.Message}");
-                await WaitForUpdatedServiceAsync(cancellationToken).ConfigureAwait(false);
+                await WaitForUpdatedServiceAsync(cancellationToken, "supportsProcessTermination").ConfigureAwait(false);
                 response = await SendTerminationAsync().ConfigureAwait(false);
             }
             if (!response.Success)
@@ -52,7 +54,40 @@ internal sealed class ProcessTerminationBroker
         }
     }
 
-    private async Task WaitForUpdatedServiceAsync(CancellationToken cancellationToken)
+    public async Task<int> TerminateEarlierApplicationProcessesAsync(IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        try
+        {
+            ServiceHostResponse response = await SendTerminationAsync().ConfigureAwait(false);
+            if (!response.Success && response.Message.StartsWith("Unsupported command:", StringComparison.OrdinalIgnoreCase))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress.Report("正在更新权限服务，随后强制结束旧程序");
+                ServiceHostResponse update = await _sendAsync("self-update", new { packageDirectory = ServiceHostProtocol.PackageDirectory }, RequestTimeout, CancellationToken.None).ConfigureAwait(false);
+                if (!update.Success)
+                    throw new InvalidOperationException($"权限服务版本过旧，自动更新未完成：{update.Message}");
+                await WaitForUpdatedServiceAsync(cancellationToken, "supportsEarlierApplicationTermination").ConfigureAwait(false);
+                response = await SendTerminationAsync().ConfigureAwait(false);
+            }
+            if (!response.Success)
+                throw new InvalidOperationException($"权限服务未能结束旧程序：{response.Message}");
+            return response.Data?["terminatedCount"]?.ToObject<int>() ?? 0;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException($"无法通过权限服务强制结束旧程序：{exception.Message}", exception);
+        }
+
+        Task<ServiceHostResponse> SendTerminationAsync()
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            progress.Report("正在通过权限服务核验并强制结束旧程序");
+            return _sendAsync(TerminateEarlierApplicationCommand, null, EarlierApplicationRequestTimeout, CancellationToken.None);
+        }
+    }
+
+    private async Task WaitForUpdatedServiceAsync(CancellationToken cancellationToken, string capabilityName)
     {
         Stopwatch elapsed = Stopwatch.StartNew();
         while (elapsed.Elapsed < TimeSpan.FromSeconds(30))
@@ -61,7 +96,7 @@ internal sealed class ProcessTerminationBroker
             try
             {
                 ServiceHostResponse status = await _sendAsync("status", null, TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
-                if (status.Success && status.Data?["supportsProcessTermination"]?.ToObject<bool>() == true)
+                if (status.Success && status.Data?[capabilityName]?.ToObject<bool>() == true)
                     return;
             }
             catch (Exception) when (!cancellationToken.IsCancellationRequested) { }

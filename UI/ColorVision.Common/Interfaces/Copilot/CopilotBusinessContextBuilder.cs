@@ -277,6 +277,14 @@ namespace ColorVision.UI
 
         public bool IsFilterActive { get; init; }
 
+        public bool LastQuerySucceeded { get; init; } = true;
+
+        public bool IsLoadedDataStale { get; init; }
+
+        public bool RequestedFilterMatchesLoadedData { get; init; } = true;
+
+        public string LoadedDataAsOf { get; init; } = string.Empty;
+
         public int? BatchId { get; init; }
 
         public int? TemplateId { get; init; }
@@ -677,6 +685,11 @@ namespace ColorVision.UI
             AppendKeyValue(builder, "Current view", MaskSensitiveText(snapshot.Surface));
             AppendKeyValue(builder, "Loaded history rows", snapshot.LoadedBatchCount.ToString(CultureInfo.InvariantCulture));
             AppendKeyValue(builder, "History filter active", snapshot.IsFilterActive ? "Yes (term withheld)" : "No");
+            AppendKeyValue(builder, "Last query", snapshot.LastQuerySucceeded ? "Succeeded" : "Failed");
+            AppendKeyValue(builder, "Loaded data freshness", snapshot.IsLoadedDataStale ? "Stale (last query failed; loaded rows may predate it)" : "Current");
+            AppendKeyValue(builder, "Requested filter matches loaded data", snapshot.RequestedFilterMatchesLoadedData ? "Yes" : "No (filter terms withheld)");
+            if (!string.IsNullOrWhiteSpace(snapshot.LoadedDataAsOf))
+                AppendKeyValue(builder, "Loaded data as of", MaskSensitiveText(snapshot.LoadedDataAsOf));
 
             if (snapshot.BatchId.HasValue)
             {
@@ -727,6 +740,7 @@ namespace ColorVision.UI
                 EmptyToNull(MaskSensitiveText(snapshot.BatchStatus)),
                 snapshot.HasLoadedDetails ? $"images {snapshot.ImageResultCount}" : null,
                 snapshot.HasLoadedDetails ? $"algorithms {snapshot.AlgorithmResultCount}" : null,
+                snapshot.IsLoadedDataStale ? "stale retained data" : null,
             }.Where(value => !string.IsNullOrWhiteSpace(value));
 
             return new CopilotContextItem

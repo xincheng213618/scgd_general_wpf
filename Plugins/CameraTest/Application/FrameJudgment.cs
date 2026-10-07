@@ -1,3 +1,4 @@
+using LocalizedText = global::CameraTest.DisplayText;
 using CameraTest.Models;
 using ColorVision.Core;
 
@@ -14,7 +15,7 @@ public sealed record FrameJudgment(JudgmentState State, IReadOnlyList<JudgmentIt
     public string Status => Label(State);
     public static string Label(JudgmentState state) => state switch
     {
-        JudgmentState.Pass => "合格", JudgmentState.Fail => "不合格", JudgmentState.Indeterminate => "无法判定", _ => "未设置标准"
+        JudgmentState.Pass => LocalizedText.Get("合格"), JudgmentState.Fail => LocalizedText.Get("不合格"), JudgmentState.Indeterminate => LocalizedText.Get("无法判定"), _ => LocalizedText.Get("未设置标准")
     };
 
     public static FrameJudgment Evaluate(FrameAnalysis frame, JudgmentRules rules)

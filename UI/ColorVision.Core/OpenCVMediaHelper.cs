@@ -68,6 +68,9 @@ namespace ColorVision.Core
         public static extern int M_LocateBmwTargetV1(HImage img, RoiRect roi, out IntPtr result);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_LocateSfrTargetV1(HImage img, RoiRect roi, int chartType, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalDistortionP9(HImage img, RoiRect roi, string config, out IntPtr result);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]

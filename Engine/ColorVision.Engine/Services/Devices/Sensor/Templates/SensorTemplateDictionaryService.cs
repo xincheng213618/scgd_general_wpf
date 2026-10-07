@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -15,6 +16,40 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         internal const string DefaultCommandSymbol = "defaultcommand";
         internal const string DefaultCommandValue = "\n,,Ascii,1000/0,0";
+
+        internal static void DeleteType(SqlSugarClient db, int dictionaryId, string code)
+        {
+            db.Ado.BeginTran();
+            try
+            {
+                if (!db.Queryable<SysDictionaryModModel>().Any(item => item.Id == dictionaryId && item.Code == code && item.ModType == 5))
+                    throw new InvalidOperationException(Properties.Resources.Sensor_TypeNotFound);
+                var devices = db.Queryable<SysResourceModel>().Where(item => item.Type == 5 && !item.IsDelete)
+                    .Select(item => new { item.Id, item.Name, item.Code, item.Value }).ToList();
+                var references = devices.Where(item => JsonConvert.DeserializeObject<ConfigSensor>(item.Value ?? "{}")?.Category == code)
+                    .Select(item => item.Name ?? item.Code ?? item.Id.ToString())
+                    .Concat(ServiceManager.Current?.DeviceServices.OfType<DeviceSensor>().Where(item => item.Config.Category == code).Select(item => item.Code) ?? Enumerable.Empty<string>())
+                    .Distinct().ToArray();
+                if (references.Length > 0)
+                    throw new InvalidOperationException(string.Format(Properties.Resources.Sensor_TypeInUse, string.Join(", ", references)));
+
+                int[] templates = db.Queryable<ModMasterModel>().Where(item => item.Pid == dictionaryId).Select(item => item.Id).ToArray();
+                int[] definitions = db.Queryable<SysDictionaryModDetaiModel>().Where(item => item.PId == dictionaryId).Select(item => item.Id).ToArray();
+                if (definitions.Length > 0 && db.Queryable<ModDetailModel>().Any(item => definitions.Contains(item.SysPid) && !templates.Contains(item.Pid)))
+                    throw new InvalidOperationException(Properties.Resources.Sensor_TypeSharedCommands);
+                if (templates.Length > 0)
+                    db.Deleteable<ModDetailModel>().Where(item => templates.Contains(item.Pid)).ExecuteCommand();
+                db.Deleteable<ModMasterModel>().Where(item => item.Pid == dictionaryId).ExecuteCommand();
+                db.Deleteable<SysDictionaryModDetaiModel>().Where(item => item.PId == dictionaryId).ExecuteCommand();
+                db.Deleteable<SysDictionaryModModel>().Where(item => item.Id == dictionaryId && item.ModType == 5).ExecuteCommand();
+                db.Ado.CommitTran();
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
+        }
 
         internal static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(int templateDictionaryId)
         {

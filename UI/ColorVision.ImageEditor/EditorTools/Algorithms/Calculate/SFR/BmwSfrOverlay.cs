@@ -1,10 +1,7 @@
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
-using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;

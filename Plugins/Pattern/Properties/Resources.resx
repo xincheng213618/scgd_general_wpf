@@ -353,4 +353,7 @@
   <data name="PatternWindowConfig" xml:space="preserve"><value>图卡输出尺寸</value></data>
   <data name="Width" xml:space="preserve"><value>宽度</value></data>
   <data name="Height" xml:space="preserve"><value>高度</value></data>
+  <data name="操作" xml:space="preserve">
+    <value>操作</value>
+  </data>
 </root>

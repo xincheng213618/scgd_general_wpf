@@ -1,5 +1,4 @@
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using log4net;
 using System;

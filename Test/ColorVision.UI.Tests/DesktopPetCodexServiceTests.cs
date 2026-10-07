@@ -1,7 +1,5 @@
 using ColorVision.FloatingBall;
-using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace ColorVision.UI.Tests
 {
@@ -106,7 +104,7 @@ namespace ColorVision.UI.Tests
                     sourceDirectory,
                     destinationDirectory));
 
-            Assert.Contains("缺少 SKILL.md", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(DesktopPetText.SkillMissingManifest, exception.Message);
             Assert.Equal("user data", File.ReadAllText(markerPath));
         }
 

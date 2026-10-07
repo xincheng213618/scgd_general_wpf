@@ -1,5 +1,4 @@
 #pragma warning disable CA1310,CA1822,CA1863
-using ColorVision.UI.Properties;
 using System.Collections;
 using System.ComponentModel;
 using System.Reflection;
@@ -41,6 +40,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         public ListItemEditorWindow(Type elementType, object? initialValue, Type? preferredEditorType = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _preferredEditorType = preferredEditorType;
             _valueWrapper = new ValueWrapper { Value = initialValue ?? CreateEditableClassInstance(elementType) };

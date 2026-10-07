@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1863
 using System;
 using System.Collections.Generic;
@@ -65,7 +66,7 @@ namespace ColorVision.ServiceHost
 
         private async void ServiceHostManagerWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            AppendLog("Service Host 管理页面已打开。");
+            AppendLog(LocalizedText.Get("Service Host 管理页面已打开。"));
             await RefreshStatusAsync().ConfigureAwait(true);
             _logRefreshTimer.Start();
         }
@@ -85,8 +86,8 @@ namespace ColorVision.ServiceHost
         private void InitializeStaticText()
         {
             ServiceNameText.Text = ServiceHostProtocol.ServiceName;
-            SummaryText.Text = "正在检查服务状态…";
-            ActionHintText.Text = "建议操作：刷新";
+            SummaryText.Text = LocalizedText.Get("正在检查服务状态…");
+            ActionHintText.Text = LocalizedText.Get("建议操作：刷新");
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -121,7 +122,7 @@ namespace ColorVision.ServiceHost
 
         private async void UninstallButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBoxResult result = MessageBox.Show(this, "Uninstall ColorVisionServiceHost?", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show(this, LocalizedText.Get("是否卸载 ColorVisionServiceHost？"), "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes)
                 return;
 
@@ -157,7 +158,7 @@ namespace ColorVision.ServiceHost
                 || Com0ComPortBComboBox.SelectedItem is not int portB
                 || portA == portB)
             {
-                MessageBox.Show(this, "Select two different available port numbers.", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请选择两个不同的可用端口号。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -178,7 +179,7 @@ namespace ColorVision.ServiceHost
 
             MessageBoxResult result = MessageBox.Show(
                 this,
-                $"Delete com0com pair {pair.DisplayName}?",
+                LocalizedText.Format($"是否删除 com0com 端口对 {pair.DisplayName}？"),
                 "ColorVision",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
@@ -239,23 +240,23 @@ namespace ColorVision.ServiceHost
 
         private void OpenPackageButton_Click(object sender, RoutedEventArgs e)
         {
-            OpenPath(ServiceHostProtocol.PackageExecutablePath, "Service host package executable was not found.");
+            OpenPath(ServiceHostProtocol.PackageExecutablePath, LocalizedText.Get("未找到服务主机安装包程序。"));
         }
 
         private void OpenInstalledButton_Click(object sender, RoutedEventArgs e)
         {
-            OpenPath(ServiceHostProtocol.InstalledExecutablePath, "Installed service host executable was not found.");
+            OpenPath(ServiceHostProtocol.InstalledExecutablePath, LocalizedText.Get("未找到已安装的服务主机程序。"));
         }
 
         private void OpenLogButton_Click(object sender, RoutedEventArgs e)
         {
             string path = ReferenceEquals(LogTabs.SelectedItem, InstallLogTab) ? InstallLogPath : ServiceHostLogPath;
-            OpenPath(path, "日志文件不存在。");
+            OpenPath(path, LocalizedText.Get("日志文件不存在。"));
         }
 
         private void OpenLogFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            OpenPath(Path.GetDirectoryName(ServiceHostLogPath) ?? ServiceHostProtocol.InstallDirectory, "日志目录不存在。");
+            OpenPath(Path.GetDirectoryName(ServiceHostLogPath) ?? ServiceHostProtocol.InstallDirectory, LocalizedText.Get("日志目录不存在。"));
         }
 
         private void SendFeedbackButton_Click(object sender, RoutedEventArgs e)
@@ -264,7 +265,7 @@ namespace ColorVision.ServiceHost
                 .Where(File.Exists)
                 .ToArray();
             FeedbackWindow window = new(
-                "ColorVision 服务主机问题\n\n现象：\n\n复现步骤：\n",
+                LocalizedText.Get("ColorVision 服务主机问题\n\n现象：\n\n复现步骤：\n"),
                 attachments)
             {
                 Owner = this,
@@ -298,7 +299,7 @@ namespace ColorVision.ServiceHost
                 if (!result.Success)
                 {
                     failureMessage = string.IsNullOrWhiteSpace(result.Error)
-                        ? $"操作未成功，退出码 {result.ExitCode}。"
+                        ? LocalizedText.Format($"操作未成功，退出码 {result.ExitCode}。")
                         : result.Error.Trim();
                 }
             }
@@ -319,8 +320,8 @@ namespace ColorVision.ServiceHost
                     LogTabs.SelectedItem = InstallLogTab;
                 MessageBox.Show(
                     this,
-                    $"{name} 失败。{Environment.NewLine}{failureMessage}{Environment.NewLine}{Environment.NewLine}已保留安装记录和服务日志供诊断。",
-                    "ColorVision 服务主机",
+                    LocalizedText.Format($"{name} 失败。{Environment.NewLine}{failureMessage}{Environment.NewLine}{Environment.NewLine}已保留安装记录和服务日志供诊断。"),
+                    LocalizedText.Get("ColorVision 服务主机"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
@@ -451,11 +452,11 @@ namespace ColorVision.ServiceHost
             }
             catch (Exception ex)
             {
-                SummaryText.Text = "无法读取服务状态";
+                SummaryText.Text = LocalizedText.Get("无法读取服务状态");
                 SummaryText.Visibility = Visibility.Visible;
-                VersionBadgeText.Text = "当前版本 未知";
-                StateText.Text = "未知";
-                ActionHintText.Text = "建议操作：检查日志后重试";
+                VersionBadgeText.Text = LocalizedText.Get("当前版本 未知");
+                StateText.Text = LocalizedText.Get("未知");
+                ActionHintText.Text = LocalizedText.Get("建议操作：检查日志后重试");
                 AppendLog(ex.Message);
                 HideCom0ComTab();
             }
@@ -485,7 +486,7 @@ namespace ColorVision.ServiceHost
                     ServiceLogViewer,
                     ServiceLogMetaText,
                     serviceLog,
-                    "服务运行日志",
+                    LocalizedText.Get("服务运行日志"),
                     ref _serviceLogLength,
                     ref _serviceLogWriteTimeUtc,
                     force);
@@ -493,7 +494,7 @@ namespace ColorVision.ServiceHost
                     InstallLogViewer,
                     InstallLogMetaText,
                     installLog,
-                    "安装记录",
+                    LocalizedText.Get("安装记录"),
                     ref _installLogLength,
                     ref _installLogWriteTimeUtc,
                     force);
@@ -519,9 +520,9 @@ namespace ColorVision.ServiceHost
         {
             if (!snapshot.Exists)
             {
-                metadataText.Text = $"{label}尚未创建";
+                metadataText.Text = LocalizedText.Format($"{label}尚未创建");
                 if (force || previousLength != 0)
-                    viewer.SetText("当前还没有日志。服务首次运行或执行安装后，记录会自动显示在这里。", latestAtTop: false);
+                    viewer.SetText(LocalizedText.Get("当前还没有日志。服务首次运行或执行安装后，记录会自动显示在这里。"), latestAtTop: false);
                 previousLength = 0;
                 previousWriteTimeUtc = DateTime.MinValue;
                 return;
@@ -529,18 +530,18 @@ namespace ColorVision.ServiceHost
 
             if (!string.IsNullOrWhiteSpace(snapshot.Error))
             {
-                metadataText.Text = $"{label}读取失败";
-                viewer.SetText($"无法读取日志：{snapshot.Error}", latestAtTop: false);
+                metadataText.Text = LocalizedText.Format($"{label}读取失败");
+                viewer.SetText(LocalizedText.Format($"无法读取日志：{snapshot.Error}"), latestAtTop: false);
                 previousLength = -1;
                 previousWriteTimeUtc = DateTime.MinValue;
                 return;
             }
 
             metadataText.Text = snapshot.Length == 0
-                ? $"{label}为空"
-                : $"{label} · {FormatFileSize(snapshot.Length)} · {snapshot.LastWriteTimeUtc.ToLocalTime():HH:mm:ss} 更新 · 显示最新内容";
+                ? LocalizedText.Format($"{label}为空")
+                : LocalizedText.Format($"{label} · {FormatFileSize(snapshot.Length)} · {snapshot.LastWriteTimeUtc.ToLocalTime():HH:mm:ss} 更新 · 显示最新内容");
             if (force || snapshot.Length != previousLength || snapshot.LastWriteTimeUtc != previousWriteTimeUtc)
-                viewer.SetText(string.IsNullOrWhiteSpace(snapshot.Text) ? "日志文件为空。" : snapshot.Text, latestAtTop: false);
+                viewer.SetText(string.IsNullOrWhiteSpace(snapshot.Text) ? LocalizedText.Get("日志文件为空。") : snapshot.Text, latestAtTop: false);
 
             previousLength = snapshot.Length;
             previousWriteTimeUtc = snapshot.LastWriteTimeUtc;
@@ -591,10 +592,10 @@ namespace ColorVision.ServiceHost
                 else
                 {
                     _com0ComStatus = null;
-                    Com0ComSummaryText.Text = $"Installed, but pair listing failed: {listResponse.Message}";
+                    Com0ComSummaryText.Text = LocalizedText.Format($"已安装，但读取端口对失败：{listResponse.Message}");
                     Com0ComPairsGrid.ItemsSource = null;
                     ClearCom0ComPortChoices();
-                    Com0ComPairCountText.Text = "Pair list unavailable";
+                    Com0ComPairCountText.Text = LocalizedText.Get("端口对列表不可用");
                 }
             }
             catch (Exception ex)
@@ -610,11 +611,11 @@ namespace ColorVision.ServiceHost
 
         private void UpdateCom0ComView(Com0ComStatusInfo status)
         {
-            string version = string.IsNullOrWhiteSpace(status.Version) ? "unknown" : status.Version;
-            Com0ComSummaryText.Text = $"Version {version} · Driver {status.DriverState}";
+            string version = string.IsNullOrWhiteSpace(status.Version) ? LocalizedText.Get("未知") : status.Version;
+            Com0ComSummaryText.Text = LocalizedText.Format($"版本 {version} · 驱动 {status.DriverState}");
             Com0ComPathText.Text = status.SetupExecutablePath;
             Com0ComPairsGrid.ItemsSource = status.Pairs;
-            Com0ComPairCountText.Text = status.Pairs.Count == 1 ? "1 pair" : $"{status.Pairs.Count} pairs";
+            Com0ComPairCountText.Text = LocalizedText.Format($"{status.Pairs.Count} 对端口");
             UpdateCom0ComPortChoices(status);
         }
 
@@ -647,7 +648,7 @@ namespace ColorVision.ServiceHost
             _com0ComStatus = null;
             Com0ComPairsGrid.ItemsSource = null;
             ClearCom0ComPortChoices();
-            Com0ComSummaryText.Text = "Not available";
+            Com0ComSummaryText.Text = LocalizedText.Get("不可用");
             Com0ComPathText.Text = string.Empty;
             Com0ComPairCountText.Text = string.Empty;
         }
@@ -658,8 +659,8 @@ namespace ColorVision.ServiceHost
             StateText.Text = FormatState(status.State);
             ActionHintText.Text = GetActionHint(status);
             ConnectionText.Text = status.State == ServiceHostInstallState.Running && status.RunningVersion != null
-                ? "连接正常"
-                : status.State == ServiceHostInstallState.Running ? "服务无响应" : "未连接";
+                ? LocalizedText.Get("连接正常")
+                : status.State == ServiceHostInstallState.Running ? LocalizedText.Get("服务无响应") : LocalizedText.Get("未连接");
             UpdateIntegrityView(status.RuntimeIntegrity);
             UpdateHealthView(status);
             UpdateStateBadge(status.State);
@@ -669,8 +670,8 @@ namespace ColorVision.ServiceHost
         {
             Version? displayVersion = status.RunningVersion ?? status.InstalledVersion ?? status.PackageVersion;
             string versionText = FormatVersion(displayVersion);
-            VersionBadgeText.Text = $"当前版本 {versionText}";
-            Title = displayVersion == null ? "ColorVision 服务主机" : $"ColorVision 服务主机 {versionText}";
+            VersionBadgeText.Text = LocalizedText.Format($"当前版本 {versionText}");
+            Title = displayVersion == null ? LocalizedText.Get("ColorVision 服务主机") : LocalizedText.Format($"ColorVision 服务主机 {versionText}");
 
             string detail = BuildSummaryText(status);
             SummaryText.Text = detail;
@@ -680,19 +681,19 @@ namespace ColorVision.ServiceHost
         private static string GetActionHint(ServiceHostStatus status)
         {
             if (status.HasIncompletePackage)
-                return "建议操作：使用完整安装包修复 ColorVision";
+                return LocalizedText.Get("建议操作：使用完整安装包修复 ColorVision");
             if (status.HasIncompleteInstalledRuntime)
-                return "建议操作：重新安装并修复服务";
+                return LocalizedText.Get("建议操作：重新安装并修复服务");
             if (status.NeedsInstall)
-                return status.IsPackageAvailable ? "建议操作：安装服务" : "建议操作：使用完整安装包修复";
+                return status.IsPackageAvailable ? LocalizedText.Get("建议操作：安装服务") : LocalizedText.Get("建议操作：使用完整安装包修复");
             if (status.NeedsUpdate)
-                return status.CanSelfUpdate ? "建议操作：后台更新服务" : "建议操作：安装或更新服务";
+                return status.CanSelfUpdate ? LocalizedText.Get("建议操作：后台更新服务") : LocalizedText.Get("建议操作：安装或更新服务");
             if (status.State == ServiceHostInstallState.Stopped)
-                return "建议操作：启动服务";
+                return LocalizedText.Get("建议操作：启动服务");
             if (status.State == ServiceHostInstallState.Running)
-                return "当前无需处理";
+                return LocalizedText.Get("当前无需处理");
 
-            return "建议操作：刷新并检查日志";
+            return LocalizedText.Get("建议操作：刷新并检查日志");
         }
 
         private void UpdateHealthView(ServiceHostStatus status)
@@ -707,66 +708,66 @@ namespace ColorVision.ServiceHost
 
             if (status.HasIncompletePackage)
             {
-                title = "服务程序包不完整";
-                description = $"当前 ColorVision 程序包缺少 {status.RuntimeIntegrity.MissingPackageFiles.Count} 个服务文件：{BuildFileIssuePreview(status.RuntimeIntegrity.MissingPackageFiles)}。请使用完整安装包修复。";
+                title = LocalizedText.Get("服务程序包不完整");
+                description = LocalizedText.Format($"当前 ColorVision 程序包缺少 {status.RuntimeIntegrity.MissingPackageFiles.Count} 个服务文件：{BuildFileIssuePreview(status.RuntimeIntegrity.MissingPackageFiles)}。请使用完整安装包修复。");
                 icon = "\uE783";
                 foregroundKey = "ServiceHost.Error";
                 backgroundKey = "ServiceHost.ErrorBackground";
-                installButtonText = "需要完整安装包";
+                installButtonText = LocalizedText.Get("需要完整安装包");
                 installButtonStyle = "PrimaryActionButtonStyle";
             }
             else if (status.HasIncompleteInstalledRuntime)
             {
-                title = "服务安装不完整";
-                description = $"检测到 {status.RuntimeIntegrity.InstalledIssueCount} 个缺失或不一致的文件：{BuildInstalledIssuePreview(status.RuntimeIntegrity)}。重新安装会从当前完整程序包恢复这些文件。";
+                title = LocalizedText.Get("服务安装不完整");
+                description = LocalizedText.Format($"检测到 {status.RuntimeIntegrity.InstalledIssueCount} 个缺失或不一致的文件：{BuildInstalledIssuePreview(status.RuntimeIntegrity)}。重新安装会从当前完整程序包恢复这些文件。");
                 icon = "\uE783";
                 foregroundKey = "ServiceHost.Error";
                 backgroundKey = "ServiceHost.ErrorBackground";
-                installButtonText = "重新安装并修复";
+                installButtonText = LocalizedText.Get("重新安装并修复");
                 installButtonStyle = "PrimaryActionButtonStyle";
             }
             else if (!string.IsNullOrWhiteSpace(_lastInstallationFailure))
             {
-                title = "上次安装未完成";
-                description = $"安装记录显示失败：{TrimLogPrefix(_lastInstallationFailure)}。当前服务状态为“{FormatState(status.State)}”，建议重新安装并验证。";
+                title = LocalizedText.Get("上次安装未完成");
+                description = LocalizedText.Format($"安装记录显示失败：{TrimLogPrefix(_lastInstallationFailure)}。当前服务状态为“{FormatState(status.State)}”，建议重新安装并验证。");
                 icon = "\uE7BA";
                 foregroundKey = "ServiceHost.Warning";
                 backgroundKey = "ServiceHost.WarningBackground";
-                installButtonText = "重新安装并验证";
+                installButtonText = LocalizedText.Get("重新安装并验证");
                 installButtonStyle = "PrimaryActionButtonStyle";
             }
             else if (status.NeedsInstall)
             {
-                title = "服务尚未安装";
-                description = "系统维护服务不可用，更新和需要管理员权限的操作可能无法完成。";
+                title = LocalizedText.Get("服务尚未安装");
+                description = LocalizedText.Get("系统维护服务不可用，更新和需要管理员权限的操作可能无法完成。");
                 icon = "\uE783";
                 foregroundKey = "ServiceHost.Error";
                 backgroundKey = "ServiceHost.ErrorBackground";
-                installButtonText = "安装服务";
+                installButtonText = LocalizedText.Get("安装服务");
                 installButtonStyle = "PrimaryActionButtonStyle";
             }
             else if (status.NeedsUpdate || status.NeedsRepair || status.State != ServiceHostInstallState.Running)
             {
-                title = status.State == ServiceHostInstallState.Stopped ? "服务已停止" : "服务需要处理";
+                title = status.State == ServiceHostInstallState.Stopped ? LocalizedText.Get("服务已停止") : LocalizedText.Get("服务需要处理");
                 description = status.NeedsUpdate
-                    ? "程序包与当前服务版本或内容不一致，建议更新后重新检查。"
-                    : "服务没有处于可用状态，请按建议操作恢复。";
+                    ? LocalizedText.Get("程序包与当前服务版本或内容不一致，建议更新后重新检查。")
+                    : LocalizedText.Get("服务没有处于可用状态，请按建议操作恢复。");
                 icon = "\uE7BA";
                 foregroundKey = "ServiceHost.Warning";
                 backgroundKey = "ServiceHost.WarningBackground";
-                installButtonText = status.State == ServiceHostInstallState.Stopped ? "安装或修复服务" : "更新或修复服务";
+                installButtonText = status.State == ServiceHostInstallState.Stopped ? LocalizedText.Get("安装或修复服务") : LocalizedText.Get("更新或修复服务");
                 installButtonStyle = "PrimaryActionButtonStyle";
             }
             else
             {
-                title = "服务运行正常";
+                title = LocalizedText.Get("服务运行正常");
                 description = status.RuntimeIntegrity.CanEvaluate
-                    ? $"服务连接正常，版本一致，已核对 {status.RuntimeIntegrity.ExpectedFiles.Count} 个运行时文件。"
-                    : "服务连接正常，当前版本可以使用。";
+                    ? LocalizedText.Format($"服务连接正常，版本一致，已核对 {status.RuntimeIntegrity.ExpectedFiles.Count} 个运行时文件。")
+                    : LocalizedText.Get("服务连接正常，当前版本可以使用。");
                 icon = "\uE930";
                 foregroundKey = "ServiceHost.Success";
                 backgroundKey = "ServiceHost.SuccessBackground";
-                installButtonText = "重新安装服务";
+                installButtonText = LocalizedText.Get("重新安装服务");
                 installButtonStyle = "CompactActionButtonStyle";
             }
 
@@ -784,27 +785,27 @@ namespace ColorVision.ServiceHost
         {
             if (!integrity.CanEvaluate)
             {
-                IntegrityText.Text = "无法核对";
-                IntegrityDetailText.Text = "服务程序包目录不可用";
+                IntegrityText.Text = LocalizedText.Get("无法核对");
+                IntegrityDetailText.Text = LocalizedText.Get("服务程序包目录不可用");
                 return;
             }
 
             if (!integrity.IsPackageComplete)
             {
-                IntegrityText.Text = $"程序包缺少 {integrity.MissingPackageFiles.Count} 个文件";
+                IntegrityText.Text = LocalizedText.Format($"程序包缺少 {integrity.MissingPackageFiles.Count} 个文件");
                 IntegrityDetailText.Text = BuildFileIssuePreview(integrity.MissingPackageFiles);
                 return;
             }
 
             if (!integrity.IsInstalledComplete)
             {
-                IntegrityText.Text = $"发现 {integrity.InstalledIssueCount} 个文件问题";
+                IntegrityText.Text = LocalizedText.Format($"发现 {integrity.InstalledIssueCount} 个文件问题");
                 IntegrityDetailText.Text = BuildInstalledIssuePreview(integrity);
                 return;
             }
 
-            IntegrityText.Text = $"{integrity.ExpectedFiles.Count} 个文件完整";
-            IntegrityDetailText.Text = "程序包与安装目录一致";
+            IntegrityText.Text = LocalizedText.Format($"{integrity.ExpectedFiles.Count} 个文件完整");
+            IntegrityDetailText.Text = LocalizedText.Get("程序包与安装目录一致");
         }
 
         private void UpdateStateBadge(ServiceHostInstallState state)
@@ -830,25 +831,25 @@ namespace ColorVision.ServiceHost
                 return string.Empty;
             }
 
-            return $"运行 {FormatVersion(status.RunningVersion)} · 安装 {FormatVersion(status.InstalledVersion)} · 程序包 {FormatVersion(status.PackageVersion)}";
+            return LocalizedText.Format($"运行 {FormatVersion(status.RunningVersion)} · 安装 {FormatVersion(status.InstalledVersion)} · 程序包 {FormatVersion(status.PackageVersion)}");
         }
 
         private static string FormatState(ServiceHostInstallState state)
         {
             return state switch
             {
-                ServiceHostInstallState.Running => "运行中",
-                ServiceHostInstallState.Stopped => "已停止",
-                ServiceHostInstallState.NotInstalled => "未安装",
-                _ => "未知",
+                ServiceHostInstallState.Running => LocalizedText.Get("运行中"),
+                ServiceHostInstallState.Stopped => LocalizedText.Get("已停止"),
+                ServiceHostInstallState.NotInstalled => LocalizedText.Get("未安装"),
+                _ => LocalizedText.Get("未知"),
             };
         }
 
         private static string BuildInstalledIssuePreview(ServiceHostRuntimeIntegrity integrity)
         {
             IEnumerable<string> issues = integrity.MissingInstalledFiles
-                .Select(path => $"缺少 {path}")
-                .Concat(integrity.MismatchedInstalledFiles.Select(path => $"不一致 {path}"));
+                .Select(path => LocalizedText.Format($"缺少 {path}"))
+                .Concat(integrity.MismatchedInstalledFiles.Select(path => LocalizedText.Format($"不一致 {path}")));
             return BuildFileIssuePreview(issues);
         }
 
@@ -856,8 +857,8 @@ namespace ColorVision.ServiceHost
         {
             string[] items = paths.Take(3).ToArray();
             int totalCount = paths.Count();
-            string preview = items.Length == 0 ? "未提供文件详情" : string.Join("、", items);
-            return totalCount > items.Length ? $"{preview}，另有 {totalCount - items.Length} 个" : preview;
+            string preview = items.Length == 0 ? LocalizedText.Get("未提供文件详情") : string.Join("、", items);
+            return totalCount > items.Length ? LocalizedText.Format($"{preview}，另有 {totalCount - items.Length} 个") : preview;
         }
 
         private static string TrimLogPrefix(string line)

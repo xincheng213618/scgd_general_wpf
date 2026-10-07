@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using System;
 using System.Linq;
@@ -496,8 +497,8 @@ namespace ColorVision.Copilot
                 : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}"
                     + (stateStore.LastLoadStatus.IsFutureVersion
                         && !string.IsNullOrWhiteSpace(stateStore.LastLoadStatus.StateFilePath)
-                            ? $"受保护状态文件：{stateStore.LastLoadStatus.StateFilePath}"
-                            : $"状态目录：{stateStore.StateDirectoryPath}");
+                            ? LocalizedText.Format($"受保护状态文件：{stateStore.LastLoadStatus.StateFilePath}")
+                            : LocalizedText.Format($"状态目录：{stateStore.StateDirectoryPath}"));
         }
 
         private void ReportStatePersistenceError(Exception exception)

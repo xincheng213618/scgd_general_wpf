@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
@@ -29,9 +30,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             _result = result;
             _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
             EdgesGrid.ItemsSource = ToTable(edges).DefaultView;
-            SummaryText.Text = $"卡尺：{Measurement("subpixel_edge.caliper_count"):N0}；接受：{Measurement("subpixel_edge.accepted_count"):N0}；"
-                + $"拒绝：{Measurement("subpixel_edge.rejected_count"):N0}。"
-                + " Confidence 是响应质量分数；LocalizationUncertainty 是启发式像素不确定度，并非标定后的计量置信区间。";
+            SummaryText.Text = LocalizedText.Format($"卡尺：{Measurement("subpixel_edge.caliper_count"):N0}；接受：{Measurement("subpixel_edge.accepted_count"):N0}；")
+                + LocalizedText.Format($"拒绝：{Measurement("subpixel_edge.rejected_count"):N0}。")
+                + LocalizedText.Get(" Confidence 是响应质量分数；LocalizationUncertainty 是启发式像素不确定度，并非标定后的计量置信区间。");
             Closed += (_, _) => DisposeOwnedState();
         }
 
@@ -69,11 +70,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -84,11 +85,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SubpixelEdge
             try
             {
                 AlgorithmResultExporter.ExportJson(_result, dialog.FileName);
-                MessageBox.Show(this, "导出完成。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Get("导出完成。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {
-                MessageBox.Show(this, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

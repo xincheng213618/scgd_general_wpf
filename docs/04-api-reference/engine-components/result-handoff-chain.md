@@ -2,8 +2,8 @@
 knowledge_id: "engine.results"
 knowledge_type: "topic"
 status: "current"
-summary: "算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。"
-aliases: ["结果交接","算法结果管理","算法视图配置","历史结果查询","保存数据列","自动保存数据列","结果白色底图","原图缺失","结果尺寸恢复","persistent overlay","overlay 注册句柄","结果CSV","结果列表清空","ResultMessageBus","AlgorithmResultDataSaver","ViewAlgorithmConfig","AutoRefreshView","AutoSaveSideData","AlgorithmResultImageDimensions","算法有结果为什么没有叠加层","ViewResultAlg","ResultHandleRegistry","IViewResult","IResultHandleBase","CanHandle1","AlgorithmOverlayManager"]
+summary: "图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。"
+aliases: ["结果交接","算法结果管理","算法视图配置","历史结果查询","保存数据列","自动保存数据列","结果白色底图","原图缺失","结果尺寸恢复","persistent overlay","overlay 注册句柄","结果CSV","结果列表清空","ResultMessageBus","AlgorithmResultDataSaver","ViewAlgorithmConfig","AutoRefreshView","AutoSaveSideData","AlgorithmResultImageDimensions","算法有结果为什么没有叠加层","ViewResultAlg","ResultHandleRegistry","IViewResult","IResultHandleBase","CanHandle1","AlgorithmOverlayManager","本地算法结果叠加","AlgorithmOverlayRenderer","AlgorithmGeometryArtifact","AlgorithmOverlayArtifact"]
 code_paths: ["Engine/ColorVision.Engine/Services/Core/ViewResultAlg.cs", "Engine/ColorVision.Engine/Services/ResultHandleRegistry.cs", "Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/AlgorithmView.xaml", "Engine/ColorVision.Engine/Services/Devices/Algorithm/Views/ViewAlgorithmConfig.cs", "Engine/ColorVision.Engine/Abstractions/ViewConfigBase.cs", "Engine/ColorVision.Engine/Services/Results/ResultMessageBus.cs", "Engine/ColorVision.Engine/Services/Results/AlgorithmResultDataSaver.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/AlgorithmResultImageDimensions.cs", "Engine/ColorVision.Engine/Services/Core/ResultImagePresentation.cs", "Engine/ColorVision.Engine/Services/Devices/Algorithm/DisplayAlgorithmManager.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindCrossNode.cs", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs", "UI/ColorVision.Algorithms/AlgorithmResults.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayRenderer.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmOverlayManager.cs", "UI/ColorVision.ImageEditor/Contexts/ImageProcessingContext.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/Operations/ImageOperationCoordinator.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FindCrossResultOverlayTests.cs","Test/ColorVision.UI.Tests/LocalFindCrossNodeTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/AlgorithmResultImageDimensionsTests.cs","Test/ColorVision.UI.Tests/ResultMessageBusTests.cs","Test/ColorVision.UI.Tests/AlgorithmOverlayManagerTests.cs"]
 related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algorithms.platform","algorithms.find-cross","algorithms.find-light-area","algorithms.arvr"]
@@ -19,6 +19,7 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | --- | --- |
 | 历史结果有记录但没图 | `ViewResultAlg.FilePath`、`AlgorithmResultImageDimensions`、文件服务 |
 | 历史结果有图但没叠图 | `ResultHandleRegistry`、`CanHandle1`、DAO 和 `Load/Handle` |
+| 新增本地算法并在图上显示结果 | [算法注册与执行](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md#新增本地算法与结果展示) → Geometry/Overlay → `AlgorithmOverlayRenderer` → `AlgorithmOverlayManager` |
 | 新统一算法叠图清不掉或误删新叠图 | `AlgorithmOverlayManager`、注册 token、文档 ID 与 source revision |
 | 明细表为空 | `ViewResults`、handler 的 `Load` 与列绑定 |
 | CSV/MES/Socket 客户字段不对 | 项目 `Process`、Recipe/Fix、exporter，不在通用 overlay 管理器修 |
@@ -32,10 +33,10 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | --- | --- |
 | 远端回包 | 设备 Code 精确匹配且 `Data.MasterId` 可转换为正数，随后回查 `AlgResultMasterDao`；这段接收逻辑不以回包 Code 或 EventName 作成功门禁 |
 | 本地结果消息 | Route、ResultKind 都为 `algorithm`，设备 Code 精确匹配，再按 MasterId 回查主表；不从消息直接取得像素或明细 |
-| 工具栏 **查询** | 先清当前列表，直接按主表 ID 排序加载；默认倒序、最多 50 条，`Count<=0` 不限条数；不自动限定当前设备或批次 |
-| **高级查询** | 打开主结果表的通用查询窗口；按用户条件查询，与实时消息筛选分开 |
+| 工具栏 **查询** | 先清当前列表，直接按主表 ID 排序加载；默认倒序、最多 50 条，按 `Count` 完整加载，`Count<=0` 不限条数；不自动限定当前设备或批次 |
+| **高级查询** | 打开主结果表的通用查询窗口；按用户条件和查询数量完整加载，与实时消息筛选分开，不受实时结果保留上限限制 |
 
-回查找不到主记录时跳过并记日志，没有自动重试；加载成功后通过 Dispatcher 排队插入列表，执行前仍检查视图/设备是否已释放。相同 MasterId 的重复通知没有去重。通知到达、数据库可读、列表插入和选中展示不是一个事务；本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
+回查找不到主记录时跳过并记日志，没有自动重试；加载成功后通过 Dispatcher 排队插入列表，执行前仍检查视图/设备是否已释放。视图按主记录 ID 去重，重复通知不重复创建驻留结果或自动保存数据列。通知到达、数据库可读、列表插入和选中展示不是一个事务；本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
 
 纯本地算法和文件节点不绑定设备：结果主表的设备代码为空，通知使用 `ResultRoutes.LocalFlow`（`local-flow`），保留 `SerialNumber`、`NodeId`、`ZIndex` 和主结果引用。设备视图不接收这类通知；从流程批次结果或普通历史查询加载时仍使用同一套 DAO 和 handler。相机、校正及服务节点继续采用各自的设备路由，不能把纯算法结果自动归给第一个配置设备。
 
@@ -47,8 +48,11 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | `AutoSaveSideData` | false；开启后，实时新增结果在刷新步骤后调用数据列保存；刷新或 handler 抛错可能阻断后续保存 |
 | `SaveSideDataDirPath` | 桌面；只给自动数据列保存提供目标目录，不代表每个 handler 都会写出有效数据 |
 | `Count` / `OrderByType` | 50 / Desc；控制普通历史查询，不是实时结果列表的容量上限 |
+| `MaxHistoryCount`（实时结果保留上限） | 500，至少 1 条；实时新增结果时按此上限裁剪当前列表，修改后也立即裁剪当前列表；搜索加载时不裁剪 |
 
 手动查询直接填充列表，不走实时新增的自动选中/自动保存流程。清空按钮和删除键只修改内存列表，不删除数据库记录或原文件，之后查询仍可能看到这些结果。
+
+搜索时按查询设置完整加载，可以超过默认 500 条实时保留上限；之后有新实时记录加入，就将同一个列表收回到上限，旧搜索记录也会被淘汰。裁剪按最小主记录 ID 淘汰，表头排序与插入方向不改变规则，晚到的旧通知不会挤掉上限内已保留的较新结果。裁剪选中行会解除选择并清理侧栏和图像，自动刷新开启时再选择新结果。右键菜单与命令按需创建，释放视图时清空驻留结果与去重索引。`ResultHistoryTests` 覆盖实时容量、排序后的淘汰、重复通知、配置兼容、完整搜索后恢复实时上限和释放边界。
 
 ## Engine 历史结果契约
 

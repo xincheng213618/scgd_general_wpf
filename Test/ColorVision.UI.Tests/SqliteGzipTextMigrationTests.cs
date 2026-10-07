@@ -1,7 +1,6 @@
 using ColorVision.Database;
 using Microsoft.Data.Sqlite;
 using SqlSugar;
-using System.Data;
 using System.IO;
 
 namespace ColorVision.UI.Tests;

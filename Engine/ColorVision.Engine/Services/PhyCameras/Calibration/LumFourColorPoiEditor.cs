@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Services.POI;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
@@ -88,13 +89,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
                     if (!Equals(item.Header, "Top")) menu.Items.Add(item);
                 menu.Items.Add(new Separator());
             }
-            MenuItem circleItem = new() { Header = "绘制圆形", IsEnabled = frame != null };
+            MenuItem circleItem = new() { Header = LocalizedText.Get("绘制圆形"), IsEnabled = frame != null };
             circleItem.Click += (_, _) => DrawRequested?.Invoke(false);
             menu.Items.Add(circleItem);
-            MenuItem rectangleItem = new() { Header = "绘制矩形", IsEnabled = frame != null };
+            MenuItem rectangleItem = new() { Header = LocalizedText.Get("绘制矩形"), IsEnabled = frame != null };
             rectangleItem.Click += (_, _) => DrawRequested?.Invoke(true);
             menu.Items.Add(rectangleItem);
-            MenuItem templateItem = new() { Header = "选择 POI 模板…" };
+            MenuItem templateItem = new() { Header = LocalizedText.Get("选择 POI 模板…") };
             templateItem.Click += (_, _) => TemplateRequested?.Invoke();
             menu.Items.Add(templateItem);
         }

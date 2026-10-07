@@ -22,8 +22,8 @@ related: ["delivery.testing", "delivery.prerequisites", "engine.native-integrati
 | 输入 | 当前项目定义 |
 | --- | --- |
 | 测试项目 | `opencv_helper_test.vcxproj` 使用 `PlatformToolset=v145`、Windows SDK `10.0`、C++17 |
-| helper 项目 | `Native/opencv_helper/opencv_helper.vcxproj` 使用 `PlatformToolset=v143` |
-| OpenCV | x64 属性表使用 `packages/opencv/x64/vc18/bin`、`lib` 和版本后缀 `4140`；Debug 库/DLL 另带 `d` 后缀 |
+| helper 项目 | `Native/opencv_helper/opencv_helper.vcxproj` 使用 `PlatformToolset=v145` |
+| OpenCV | x64 属性表使用 `packages/opencv/x64/vc18/bin`、`lib` 和版本后缀 `500`；Debug 库/DLL 另带 `d` 后缀 |
 | JSON 头文件 | 测试项目导入 `packages/nlohmann.props` |
 | 编译入口 | x64 下的 `main` 位于 `test_find_luminous_area.cpp`；`opencv_helper_test.cpp` 被排除，已有专项文件分别参与编译 |
 
@@ -72,6 +72,7 @@ if ($nativeTestExit -ne 0) { throw "亮区专项测试失败，退出码 $native
 | --- | --- |
 | `--luminous-v2-only` | 本地亮区 V2 合成回归 |
 | `--find-cross-only` | [FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) 合成图形、质量门禁和失败契约 |
+| `--distortion-p9-only` | 九点畸变合成点阵、亮度不均补充定位、缺点与多余候选诊断；桌面夹具存在时一并检查 |
 | `--p2-only` | P2 本地算法回归 |
 | `--sfr-only` | SFR V2 纯色/高斯斜边/编码/高位深/噪声/RGB 栅格/错误契约，以及旧 SFR、sfrmat5 和 BMW 接口回归；须从仓库根运行以定位夹具 |
 | `--native-log` | 原生日志桥接测试 |

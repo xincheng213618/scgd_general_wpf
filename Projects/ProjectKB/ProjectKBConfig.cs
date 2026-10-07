@@ -9,8 +9,6 @@ using ProjectKB.Modbus;
 using ProjectKB.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Reflection;
 using System.Windows;
 
 namespace ProjectKB
@@ -142,13 +140,13 @@ namespace ProjectKB
         public void OpenTemplate()
         {
             if (!RequireAdmin()) return;
-            new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowTemplateManagerWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public void OpenFlowEngineTool()
         {
             if (!RequireAdmin()) return;
-            new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.GetParamOrDefault(TemplateSelectedIndex)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private static bool RequireAdmin()

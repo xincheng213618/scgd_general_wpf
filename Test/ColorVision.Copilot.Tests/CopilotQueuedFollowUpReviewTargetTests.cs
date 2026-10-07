@@ -1,17 +1,20 @@
-using ColorVision.Copilot;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotQueuedFollowUpReviewTargetTests
 {
-    [Fact]
-    public void QueuedReviewTargetSurvivesExecutionEditingAndRecoverySnapshots()
+    [Theory]
+    [InlineData("single")]
+    [InlineData("different_revision")]
+    [InlineData("different_target")]
+    public void QueuedReviewTargetSurvivesExecutionEditingAndRecoverySnapshots(string recoveryCase)
     {
+        var capturedRevision = recoveryCase == "different_target" ? "abcdef1" : "origin/develop";
         var target = new CopilotWorkspaceReviewTargetContext
         {
             Target = CopilotWorkspaceReviewTarget.BaseBranch,
-            Revision = "origin/develop",
+            Revision = capturedRevision,
         };
+        Assert.True(target.IsStructurallyValid());
         var queued = new CopilotQueuedFollowUp(
             "queued-review",
             "conversation-1",
@@ -28,14 +31,14 @@ public sealed class CopilotQueuedFollowUpReviewTargetTests
         var composerState = queued.CreateComposerState();
 
         Assert.Equal(CopilotWorkspaceReviewTarget.BaseBranch, executionTarget.Target);
-        Assert.Equal("origin/develop", executionTarget.Revision);
+        Assert.Equal(capturedRevision, executionTarget.Revision);
         Assert.Equal(CopilotAgentMode.Review, composerState.RequestMode);
         Assert.Equal(CopilotWorkspaceReviewTarget.BaseBranch, composerState.WorkspaceReviewTarget?.Target);
-        Assert.Equal("origin/develop", composerState.WorkspaceReviewTarget?.Revision);
+        Assert.Equal(capturedRevision, composerState.WorkspaceReviewTarget?.Revision);
 
         executionTarget.Revision = "mutated-snapshot";
         Assert.Equal(
-            "origin/develop",
+            capturedRevision,
             queued.CreateWorkspaceReviewTargetSnapshot()?.Revision);
 
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
@@ -52,11 +55,36 @@ public sealed class CopilotQueuedFollowUpReviewTargetTests
                 },
             ],
         };
+        if (recoveryCase != "single")
+        {
+            var conflictingTarget = new CopilotWorkspaceReviewTargetContext
+            {
+                Target = recoveryCase == "different_target"
+                    ? CopilotWorkspaceReviewTarget.Commit
+                    : CopilotWorkspaceReviewTarget.BaseBranch,
+                Revision = recoveryCase == "different_revision" ? "origin/Develop" : capturedRevision,
+            };
+            Assert.True(conflictingTarget.IsStructurallyValid());
+            state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
+            {
+                RunId = "queued-review-second",
+                ConversationId = conversation.Id,
+                ComposerState = CopilotComposerStash.Capture("review the second request", 0,
+                    CopilotAgentMode.Review, [], conflictingTarget),
+            });
+        }
 
         Assert.True(CopilotQueuedFollowUpRecovery.RestoreToDrafts(state));
         Assert.Equal(CopilotAgentMode.Review, conversation.DraftRequestMode);
-        Assert.Equal(CopilotWorkspaceReviewTarget.BaseBranch, conversation.DraftWorkspaceReviewTarget?.Target);
-        Assert.Equal("origin/develop", conversation.DraftWorkspaceReviewTarget?.Revision);
+        if (recoveryCase == "single")
+        {
+            Assert.Equal(CopilotWorkspaceReviewTarget.BaseBranch, conversation.DraftWorkspaceReviewTarget?.Target);
+            Assert.Equal(capturedRevision, conversation.DraftWorkspaceReviewTarget?.Revision);
+        }
+        else
+        {
+            Assert.Null(conversation.DraftWorkspaceReviewTarget);
+        }
     }
 
     [Fact]

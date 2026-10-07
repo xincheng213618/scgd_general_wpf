@@ -1,7 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Algorithms;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Operations;
 using ColorVision.ImageEditor.Presentation;
 using System;

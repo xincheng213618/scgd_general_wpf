@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -18,9 +19,10 @@ FEEDBACK_ID = "20260916_143000_BJT_ARVR-PC_a1b2c3d4e5f6"
 
 class _FeedbackHandler(BaseHTTPRequestHandler):
     truncate_download = False
+    expected_authorization = "Basic " + base64.b64encode(b"fixture-user:fixture-pass").decode("ascii")
 
     def do_GET(self):
-        if self.headers.get("Authorization") != "Bearer isolated-test-key":
+        if self.headers.get("Authorization") != self.expected_authorization:
             self.send_response(401)
             self.end_headers()
             return
@@ -77,11 +79,20 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.base_url = f"http://127.0.0.1:{self.server.server_port}"
-        self.script = Path(__file__).resolve().parents[2] / "Scripts" / "download_feedback.ps1"
-        self.environment = {**os.environ, "COLORVISION_FEEDBACK_API_KEY": "isolated-test-key", "COLORVISION_FEEDBACK_ALLOW_HTTP": "0"}
+        self.script = self.root / "Scripts" / "download_feedback.ps1"
+        self.script.parent.mkdir()
+        shutil.copy2(Path(__file__).resolve().parents[2] / "Scripts" / "download_feedback.ps1", self.script)
+        self.config_path = self.root / "Web" / "Backend" / "config.json"
+        self.config_path.parent.mkdir(parents=True)
+        self.config_path.write_text(json.dumps({
+            "upload_auth": {"username": "fixture-user", "password": "fixture-pass"},
+        }), encoding="utf-8")
+        self.environment = {**os.environ, "COLORVISION_FEEDBACK_ALLOW_HTTP": "0"}
+        self.environment.pop("COLORVISION_FEEDBACK_API_KEY", None)
 
     def tearDown(self):
         _FeedbackHandler.truncate_download = False
+        _FeedbackHandler.expected_authorization = "Basic " + base64.b64encode(b"fixture-user:fixture-pass").decode("ascii")
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=5)
@@ -155,7 +166,7 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         self.assertIn("2026-09-16 14:30:00", result.stdout)
         self.assertEqual((self.root / "latest" / FEEDBACK_ID / "diagnostics.zip").read_bytes(), PAYLOAD)
 
-    def test_latest_local_uses_metadata_not_mtime_and_needs_no_api_key(self):
+    def test_latest_local_uses_metadata_not_mtime_and_needs_no_account(self):
         share = self.root / "share"
         for identifier, instant, machine in (
             ("20260919_010000_older", "2026-09-19T16:00:00+08:00", "PC-OLD"),
@@ -166,7 +177,6 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
             (directory / "feedback.json").write_text(json.dumps({"createdAt": instant, "machineInfo": f"{machine} / Windows"}), encoding="utf-8")
         os.utime(share / "20260919_010000_older", (2000000000, 2000000000))
         (share / "20260920_090000_incomplete").mkdir()
-        self.environment.pop("COLORVISION_FEEDBACK_API_KEY")
         result = self._run("-Latest", "-Source", "Local", "-LocalRoot", str(share))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("20260919_090000_newer", result.stdout)
@@ -187,6 +197,22 @@ class FeedbackDownloadScriptTests(unittest.TestCase):
         selected = json.loads(grouped.stdout)
         self.assertEqual(selected["FeedbackId"], "20260919_090000_newer")
         self.assertEqual(Path(selected["Directory"]), renamed)
+
+    def test_explicit_api_key_remains_available(self):
+        self.environment["COLORVISION_FEEDBACK_API_KEY"] = "isolated-test-key"
+        _FeedbackHandler.expected_authorization = "Bearer isolated-test-key"
+        result = self._run(
+            "-List", "-BaseUrl", self.base_url, "-AllowInsecureLocalhost",
+            "-ApiKeyEnvironmentVariable", "COLORVISION_FEEDBACK_API_KEY",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(FEEDBACK_ID, result.stdout)
+
+    def test_missing_account_config_fails_clearly(self):
+        self.config_path.unlink()
+        result = self._run("-List", "-BaseUrl", self.base_url, "-AllowInsecureLocalhost")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Feedback account configuration is missing", result.stderr)
 
     def test_explicit_http_opt_in_works_and_unapproved_http_is_rejected(self):
         allowed = self._run("-List", "-BaseUrl", self.base_url, "-AllowInsecureHttp")

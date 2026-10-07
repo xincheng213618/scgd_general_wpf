@@ -3,7 +3,6 @@ using System.Collections;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.UI.Properties;
 
 namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
 {
@@ -54,6 +53,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
         public DictionaryEditorWindow(IDictionary items, Type keyType, Type valueType, Type? keyEditorType = null, Type? valueEditorType = null)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _keyType = keyType;
             _valueType = valueType;
             _keyEditorType = keyEditorType;

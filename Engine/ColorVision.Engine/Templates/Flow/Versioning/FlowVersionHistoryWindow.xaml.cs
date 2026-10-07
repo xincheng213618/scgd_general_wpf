@@ -1,4 +1,3 @@
-using ColorVision.Engine.Templates.Flow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +25,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 expectedContentHash;
             this.isFlowRunning = isFlowRunning;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             HeaderText.Text = EngineLocalization.Format($"{flowParam.Name} · 本机版本历史");
             Reload();
         }

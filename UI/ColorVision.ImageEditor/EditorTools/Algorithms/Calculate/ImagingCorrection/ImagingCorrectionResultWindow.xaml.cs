@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -33,7 +34,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImagingCorrec
             MaskPreview.Source = ImageAlgorithmInputFactory.ToWriteableBitmap(mask.Image);
             StageGrid.ItemsSource = ToTable(stages).DefaultView;
             ProvenanceGrid.ItemsSource = ToTable(provenance).DefaultView;
-            SummaryText.Text = $"有效像素={Value(measurements, "imaging-correction.valid_fraction"):P2}；坏点 {Value(measurements, "imaging-correction.bad_pixels_corrected"):G0}/{Value(measurements, "imaging-correction.bad_pixels_marked"):G0} 已校正；低/高端裁剪样本={Value(measurements, "imaging-correction.clipped_low_samples"):G0}/{Value(measurements, "imaging-correction.clipped_high_samples"):G0}。结果已通过 ImageView session 提交。";
+            SummaryText.Text = LocalizedText.Format($"有效像素={Value(measurements, "imaging-correction.valid_fraction"):P2}；坏点 {Value(measurements, "imaging-correction.bad_pixels_corrected"):G0}/{Value(measurements, "imaging-correction.bad_pixels_marked"):G0} 已校正；低/高端裁剪样本={Value(measurements, "imaging-correction.clipped_low_samples"):G0}/{Value(measurements, "imaging-correction.clipped_high_samples"):G0}。结果已通过 ImageView session 提交。");
             Closed += (_, _) => DisposeOwnedState();
         }
 

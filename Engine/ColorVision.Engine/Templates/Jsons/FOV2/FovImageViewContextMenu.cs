@@ -1,3 +1,5 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Engine.PropertyEditor;
@@ -6,7 +8,6 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Draw.Rectangle;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,7 +17,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             FovImageViewOptions options = Options.GetValue(imageContext, static _ => new FovImageViewOptions());
             PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
             {
-                Title = "FOV 计算 (V2)",
+                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView,
                 Owner = editorContext.OwnerWindow,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -112,14 +112,14 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
-                MessageBox.Show(editorContext.OwnerWindow, ex.Message, "FOV 参数无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(editorContext.OwnerWindow, ex.Message, LocalizedText.Get("FOV 参数无效"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             ImageFrameLease? lease = imageContext.AcquireImageFrame();
             if (lease == null)
             {
-                MessageBox.Show(editorContext.OwnerWindow, "请先打开待计算图像。", "FOV 计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(editorContext.OwnerWindow, LocalizedText.Get("请先打开待计算图像。"), LocalizedText.Get("FOV 计算"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -167,14 +167,14 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                         || !AlgorithmResultOverlay.IsCurrentRequest(drawContext, AlgorithmResultOverlay.FovTag, requestId)) return;
                     if (runResult.Calculation == null)
                     {
-                        MessageBox.Show(editorContext.OwnerWindow, runResult.Error ?? "FOV 计算失败。", "FOV 计算", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(editorContext.OwnerWindow, runResult.Error ?? LocalizedText.Get("FOV 计算失败。"), LocalizedText.Get("FOV 计算"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     Render(imageContext, drawContext, runResult.Calculation.Measurement);
                     MessageBox.Show(
                         editorContext.OwnerWindow,
                         BuildResultMessage(runResult),
-                        "FOV 计算结果",
+                        LocalizedText.Get("FOV 计算结果"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 });
@@ -217,10 +217,10 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         [
             new MenuItemMetadata
             {
-                OwnerGuid = "AlgorithmsCall",
+                OwnerGuid = AlgorithmMenuGroups.FieldGeometry.Id,
                 GuidId = "FOV2.Local",
-                Order = 2,
-                Header = "FOV 计算 (V2)...",
+                Order = 1,
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView + "...",
                 Command = new RelayCommand(_ => FovImageViewRunner.ShowOptions(editorContext, new RoiRect()))
             }
         ];
@@ -243,7 +243,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                 || left < 0 || top < 0 || right > int.MaxValue || bottom > int.MaxValue || right <= left || bottom <= top)
                 return Array.Empty<MenuItem>();
             RoiRect roi = new((int)left, (int)top, (int)(right - left), (int)(bottom - top));
-            MenuItem item = new() { Header = "FOV 计算 (V2)..." };
+            MenuItem item = new() { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView + "..." };
             item.Click += (_, _) => FovImageViewRunner.ShowOptions(editorContext, roi);
             return new[] { item };
         }

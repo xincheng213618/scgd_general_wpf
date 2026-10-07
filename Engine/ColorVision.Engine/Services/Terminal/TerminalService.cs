@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
@@ -8,7 +7,8 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
-using SqlSugar;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -63,12 +63,21 @@ namespace ColorVision.Engine.Services.Terminal
             RefreshCommand = new RelayCommand(a => Save());
             EditCommand = new RelayCommand(a =>
             {
-                PropertyEditorWindow window = new PropertyEditorWindow(Config);
+                var nameConfig = new BaseConfig { Name = Name };
+                PropertyEditorWindow window = new PropertyEditorWindow(nameConfig);
+                window.Title = $"{Properties.Resources.MenuEdit} {Properties.Resources.ServiceName}";
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.Submitted += (_, _) =>
+                {
+                    if (!ServicesHelper.IsInvalidPath(nameConfig.Name, Properties.Resources.ResourceName)) return;
+                    try { Rename(nameConfig.Name); }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show(window, exception.Message, Properties.Resources.MenuEdit, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                };
                 window.ShowDialog();
-
-
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
@@ -109,6 +118,31 @@ namespace ColorVision.Engine.Services.Terminal
 
 
         public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
+
+        internal void Rename(string name)
+        {
+            if (Name == name) return;
+            var storedConfig = string.IsNullOrWhiteSpace(SysResourceModel.Value) ? new JObject()
+                : JsonConvert.DeserializeObject<JObject>(SysResourceModel.Value, new JsonSerializerSettings { DateParseHandling = DateParseHandling.None }) ?? new JObject();
+            storedConfig[nameof(BaseConfig.Name)] = name;
+            string? originalName = SysResourceModel.Name;
+            string? originalValue = SysResourceModel.Value;
+            SysResourceModel.Name = name;
+            SysResourceModel.Value = storedConfig.ToString(Formatting.None);
+            try
+            {
+                if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                    throw new InvalidOperationException(Properties.Resources.TemplateBrowserSaveFailed);
+            }
+            catch
+            {
+                SysResourceModel.Name = originalName;
+                SysResourceModel.Value = originalValue;
+                throw;
+            }
+            Config.Name = name;
+            OnPropertyChanged(nameof(Name));
+        }
 
         public override void Save()
         {

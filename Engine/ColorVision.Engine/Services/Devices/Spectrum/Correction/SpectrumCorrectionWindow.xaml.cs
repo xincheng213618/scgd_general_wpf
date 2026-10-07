@@ -36,6 +36,7 @@ public partial class SpectrumCorrectionWindow : Window
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _lifetimeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = this;
         StandardRows.CollectionChanged += StandardRows_CollectionChanged;
         InitializePlot();

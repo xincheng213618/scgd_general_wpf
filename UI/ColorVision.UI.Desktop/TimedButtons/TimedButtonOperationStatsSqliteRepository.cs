@@ -1,7 +1,6 @@
 #pragma warning disable CA1822
 using SqlSugar;
 using System.IO;
-using ColorVision.UI;
 
 namespace ColorVision.UI.Desktop.TimedButtons
 {

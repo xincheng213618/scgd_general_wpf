@@ -7,7 +7,8 @@ public class CVCommonNodeHub : STNodeHub
 {
 	private string m_nodeId;
 
-	[STNodeProperty("节点ID", "节点ID", false, false, true)]
+	[System.ComponentModel.Browsable(false)]
+	[STNodeProperty("节点ID", "节点ID", false, true, true)]
 	public string NodeID
 	{
 		get

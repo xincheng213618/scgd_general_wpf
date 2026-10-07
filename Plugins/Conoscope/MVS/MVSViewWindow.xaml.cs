@@ -14,7 +14,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using static MvCamCtrl.NET.MyCamera;
 
@@ -77,6 +76,7 @@ namespace Conoscope.MVS
                 CloseDeviceAndFinalizeSdk,
                 ex => log.Error("Observation camera deferred cleanup failed", ex));
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             this.Closing += Window_Closing;
             this.Loaded += new RoutedEventHandler(BasicDemoWindow_Load);
         }

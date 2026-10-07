@@ -92,6 +92,7 @@ internal sealed class ServiceHostCommandHandler
                 "service-restart" => RestartWindowsService(request),
                 "service-terminate" => ProcessCommandService.TerminateService(request),
                 "process-terminate" => ProcessCommandService.Terminate(request),
+                "process-terminate-earlier-application" => ProcessCommandService.TerminateEarlierApplicationInstances(request, context),
                 "com0com-status" => Com0ComCommandService.GetStatus(request, includePairs: false),
                 "com0com-list" => Com0ComCommandService.GetStatus(request, includePairs: true),
                 "com0com-create-pair" => Com0ComCommandService.CreatePair(request),
@@ -128,6 +129,7 @@ internal sealed class ServiceHostCommandHandler
             isElevated = IsElevated(),
             is64BitProcess = Environment.Is64BitProcess,
             supportsProcessTermination = true,
+            supportsEarlierApplicationTermination = true,
             baseDirectory = AppContext.BaseDirectory,
             logFile = ServiceHostLog.LogFilePath,
         };

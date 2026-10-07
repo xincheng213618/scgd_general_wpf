@@ -10,12 +10,15 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace CameraTest.Tests;
 
 public sealed class LocalPoiIntegrationTests
 {
+    private static string TestSettingsPath() => System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CameraTest-tests", Guid.NewGuid().ToString("N"), "settings.json");
+
     [Fact]
     public async Task CameraTestPoiManagerEditsAndPersistsWithoutDatabaseService()
     {
@@ -25,7 +28,7 @@ public sealed class LocalPoiIntegrationTests
         value.PoiPoints.Add(new() { Name = "中心", PointType = PoiShape.Rect, PixX = 320, PixY = 240, PixWidth = 200, PixHeight = 160 });
         storage.Save(value);
         CameraTestWindow? window = null;
-        TemplateEditorWindow? manager = null;
+        PoiTemplateManagerWindow? manager = null;
         EditPoiParam? editor = null;
         ImageView? view = null;
         var previousConfig = ConfigService.Instance;
@@ -37,7 +40,7 @@ public sealed class LocalPoiIntegrationTests
                 ConfigService.SetInstance(new ConfigHandler { IsAutoSave = false });
                 System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
                 previous = TemplatePoi.Params.ToArray();
-                window = new CameraTestWindow { ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
+                window = new CameraTestWindow(TestSettingsPath()) { ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
                 view = (ImageView)window.FindName("ImageView");
                 PoiImageViewComponent.SetIsTemplateSelectorEnabled(view, false);
                 window.Show();
@@ -57,10 +60,12 @@ public sealed class LocalPoiIntegrationTests
                 Assert.Equal(value.Id, selected.Id);
                 var button = view.ToolBarAl.Items.OfType<Button>().Single(x => x.Name == "PoiTemplateManager");
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                manager = System.Windows.Application.Current.Windows.OfType<TemplateEditorWindow>().Single();
+                manager = System.Windows.Application.Current.Windows.OfType<PoiTemplateManagerWindow>().Single();
                 Assert.Contains("本地", manager.Title);
-                manager.ITemplate.PreviewMouseDoubleClick(0);
-                editor = ((TemplatePoi)manager.ITemplate).EditWindow;
+                var templateList = (ListView)manager.FindName("TemplateList");
+                Assert.Equal(value.Id, Assert.IsType<TemplateModel<PoiParam>>(templateList.SelectedItem).Value.Id);
+                templateList.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(templateList)!, 0, Key.Enter) { RoutedEvent = Keyboard.KeyDownEvent });
+                editor = System.Windows.Application.Current.Windows.OfType<EditPoiParam>().Single();
             });
             await WpfTestHost.Invoke(() => (Task)typeof(EditPoiParam).GetProperty("PoiLoadTask", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(editor)!);
             await WpfTestHost.Invoke(() =>

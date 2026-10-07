@@ -1,9 +1,7 @@
-using ColorVision.Themes;
-using System;
+﻿using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 
@@ -13,33 +11,25 @@ namespace ColorVision.Copilot
     {
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
+            ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - 328;
         }
 
         private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
         {
             ProfileSelectorButton.IsChecked = false;
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
-        }
-
-        private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false);
-        }
-
-        private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true);
         }
 
         private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source
-                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem)
+                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem { DataContext: CopilotProfileConfig profile }
+                || DataContext is not CopilotChatViewModel viewModel)
             {
                 return;
             }
 
+            viewModel.SelectedProfile = profile;
+            e.Handled = true;
             Dispatcher.BeginInvoke(new Action(CloseProfileSelectorPopup), System.Windows.Threading.DispatcherPriority.Input);
         }
 
@@ -54,21 +44,6 @@ namespace ColorVision.Copilot
             CloseProfileSelectorPopup();
         }
 
-        private void CloseSelectorPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            CloseProfileSelectorPopup();
-        }
-
-        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible)
-        {
-            ModelSelectorRowButton.IsChecked = modelVisible;
-            ReasoningSelectorRowButton.IsChecked = reasoningVisible;
-            ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
-            ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
-            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible ? ProfileSelectorPopupSubmenuWidth : 0);
-            ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
-        }
-
         private bool OpenProfileSelector()
         {
             if (DataContext is not CopilotChatViewModel viewModel || !viewModel.CanSelectProfile)
@@ -80,7 +55,6 @@ namespace ColorVision.Copilot
                 if (!ProfileSelectorPopup.IsOpen)
                     return;
 
-                SetProfileSelectorSubmenu(modelVisible: true, reasoningVisible: false);
                 ProfileListBox.Focus();
                 Keyboard.Focus(ProfileListBox);
                 if (viewModel.SelectedProfile != null)
@@ -104,7 +78,6 @@ namespace ColorVision.Copilot
                 if (!ProfileSelectorPopup.IsOpen)
                     return;
 
-                SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: true);
                 ReasoningOptionsControl.UpdateLayout();
                 var selectedIndex = ReasoningOptionsControl.Items
                     .Cast<CopilotReasoningOption>()
@@ -120,8 +93,8 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
-                    ReasoningSelectorRowButton.Focus();
-                    Keyboard.Focus(ReasoningSelectorRowButton);
+                    ProfileListBox.Focus();
+                    Keyboard.Focus(ProfileListBox);
                 }
             });
             return true;

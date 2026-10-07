@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows.Media;

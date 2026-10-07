@@ -3,12 +3,34 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace ColorVision.UI.Desktop.Download
 {
     internal sealed class DownloadReuseService : IDisposable
     {
-        private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
+        private readonly HttpClient _httpClient;
+
+        public DownloadReuseService(HttpMessageHandler? handler = null)
+        {
+            _httpClient = handler == null ? new HttpClient() : new HttpClient(handler);
+            _httpClient.Timeout = TimeSpan.FromSeconds(3);
+        }
+
+        public static string? NormalizeSha256(string? hash)
+        {
+            if (string.IsNullOrWhiteSpace(hash)) return null;
+            hash = hash.Trim();
+            if (hash.Length != 64 || !hash.All(Uri.IsHexDigit))
+                throw new ArgumentException("Expected SHA-256 must contain 64 hexadecimal characters.", nameof(hash));
+            return hash.ToUpperInvariant();
+        }
+
+        public static async Task<string> ComputeSha256Async(string path, CancellationToken cancellationToken)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            return Convert.ToHexString(await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false));
+        }
 
         public static long GetReusableSourceLength(DownloadEntry entry)
         {
@@ -63,7 +85,7 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        public async Task<RemoteFileValidationInfo?> TryValidateLocalFileAgainstRemoteAsync(string url, string sourcePath, string? authorization, CancellationToken cancellationToken)
+        public async Task<RemoteFileValidationInfo?> TryValidateLocalFileAgainstRemoteAsync(string url, string sourcePath, string? authorization, CancellationToken cancellationToken, string? expectedSha256 = null)
         {
             if (!CanAttemptRemoteValidation(url))
                 return null;
@@ -72,11 +94,15 @@ namespace ColorVision.UI.Desktop.Download
                 return null;
 
             long localFileLength = new FileInfo(sourcePath).Length;
-            var validationInfo = await TryGetRemoteFileValidationInfoAsync(url, authorization, cancellationToken).ConfigureAwait(false);
-            if (validationInfo?.ContentLength is not long remoteLength || remoteLength <= 0)
+            var validationInfo = expectedSha256 != null
+                ? new RemoteFileValidationInfo { ContentLength = localFileLength, ContentSha256 = NormalizeSha256(expectedSha256) }
+                : await TryGetRemoteFileValidationInfoAsync(url, authorization, cancellationToken).ConfigureAwait(false);
+            if (validationInfo?.ContentLength is not long remoteLength || remoteLength <= 0 || validationInfo.ContentSha256 == null)
                 return null;
 
-            return remoteLength == localFileLength ? validationInfo : null;
+            if (remoteLength != localFileLength) return null;
+            string actualHash = await ComputeSha256Async(sourcePath, cancellationToken).ConfigureAwait(false);
+            return actualHash.Equals(validationInfo.ContentSha256, StringComparison.OrdinalIgnoreCase) ? validationInfo : null;
         }
 
         public void Dispose()
@@ -138,8 +164,29 @@ namespace ColorVision.UI.Desktop.Download
             {
                 ContentLength = response.Content.Headers.ContentRange?.Length ?? response.Content.Headers.ContentLength,
                 ETag = response.Headers.ETag?.Tag,
-                LastModified = response.Content.Headers.LastModified
+                LastModified = response.Content.Headers.LastModified,
+                ContentSha256 = GetDigestSha256(response)
             };
+        }
+
+        private static string? GetDigestSha256(HttpResponseMessage response)
+        {
+            foreach (string header in new[] { "Content-Digest", "Digest" })
+            {
+                if (!response.Headers.TryGetValues(header, out var values)) continue;
+                foreach (string digest in values.SelectMany(value => value.Split(',')))
+                {
+                    string[] parts = digest.Trim().Split('=', 2);
+                    if (parts.Length != 2 || !parts[0].Equals("sha-256", StringComparison.OrdinalIgnoreCase)) continue;
+                    try
+                    {
+                        byte[] bytes = Convert.FromBase64String(parts[1].Trim().Trim(':', '"'));
+                        if (bytes.Length == 32) return Convert.ToHexString(bytes);
+                    }
+                    catch (FormatException) { }
+                }
+            }
+            return null;
         }
 
         private static HttpRequestMessage CreateRemoteValidationRequest(HttpMethod method, string url, string? authorization)
@@ -165,5 +212,6 @@ namespace ColorVision.UI.Desktop.Download
         public long? ContentLength { get; init; }
         public string? ETag { get; init; }
         public DateTimeOffset? LastModified { get; init; }
+        public string? ContentSha256 { get; init; }
     }
 }

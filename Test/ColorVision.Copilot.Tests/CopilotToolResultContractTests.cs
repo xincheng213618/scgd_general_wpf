@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotToolResultContractTests
@@ -32,6 +30,7 @@ public sealed class CopilotToolResultContractTests
     public void CaptureFreezesMutableCollectionsAndCanonicalizesIdentity()
     {
         var paths = new List<string> { @"C:\workspace\first.cs" };
+        var sourceUrls = new List<string> { "https://example.test/First" };
         var result = new CopilotToolResult
         {
             ToolName = "snapshottool",
@@ -40,11 +39,14 @@ public sealed class CopilotToolResultContractTests
             SuggestedReadableLocalFilePaths = paths,
             LocalObservationScopePaths = paths,
             WorkspaceRecheckPaths = paths,
+            WebEvidenceSourceUrls = sourceUrls,
         };
 
         var captured = CopilotToolResultContract.Capture("SnapshotTool", result);
         paths[0] = @"C:\workspace\changed.cs";
         paths.Add(@"C:\workspace\later.cs");
+        sourceUrls[0] = "https://example.test/Changed";
+        sourceUrls.Add("https://example.test/Later");
 
         Assert.NotSame(result, captured);
         Assert.Equal("SnapshotTool", captured.ToolName);
@@ -52,6 +54,9 @@ public sealed class CopilotToolResultContractTests
         Assert.Equal([@"C:\workspace\first.cs"], captured.SuggestedReadableLocalFilePaths);
         Assert.Equal([@"C:\workspace\first.cs"], captured.LocalObservationScopePaths);
         Assert.Equal([@"C:\workspace\first.cs"], captured.WorkspaceRecheckPaths);
+        Assert.Equal(["https://example.test/First"], captured.WebEvidenceSourceUrls);
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(captured.WebEvidenceSourceUrls)[0] = sourceUrls[0]);
     }
 
     [Fact]
@@ -60,6 +65,7 @@ public sealed class CopilotToolResultContractTests
         var paths = new AlternatingPathCollection(
             @"C:\workspace\captured.cs",
             null!);
+        var sourceUrls = new AlternatingPathCollection("https://example.test/Captured", null!);
         var captured = CopilotToolResultContract.Capture(
             "SnapshotTool",
             new CopilotToolResult
@@ -68,31 +74,101 @@ public sealed class CopilotToolResultContractTests
                 Success = true,
                 Summary = "Captured output.",
                 SuggestedReadableLocalFilePaths = paths,
+                WebEvidenceSourceUrls = sourceUrls,
             });
 
         Assert.True(captured.Success);
         Assert.Equal(@"C:\workspace\captured.cs", Assert.Single(captured.SuggestedReadableLocalFilePaths));
         Assert.Equal(1, paths.EnumerationCount);
+        Assert.Equal("https://example.test/Captured", Assert.Single(captured.WebEvidenceSourceUrls!));
+        Assert.Equal(1, sourceUrls.EnumerationCount);
     }
 
     [Fact]
     public void ObservationOwnsCapturedResultCollections()
     {
         var paths = new List<string> { @"C:\workspace\first.cs" };
+        var sourceUrls = new List<string> { "https://example.test/First" };
         var observation = CopilotToolObservation.FromResult(new CopilotToolResult
         {
             ToolName = "SnapshotTool",
             Success = true,
             SuggestedReadableLocalFilePaths = paths,
+            WebEvidenceSourceUrls = sourceUrls,
         });
 
         paths[0] = @"C:\workspace\rewritten.cs";
+        sourceUrls[0] = "https://example.test/Rewritten";
 
         Assert.Equal(@"C:\workspace\first.cs", Assert.Single(observation.SuggestedReadableLocalFilePaths));
         var observedPaths = Assert.IsAssignableFrom<IList<string>>(
             observation.SuggestedReadableLocalFilePaths);
         Assert.Throws<NotSupportedException>(() =>
             observedPaths[0] = @"C:\workspace\rewritten.cs");
+        Assert.Equal("https://example.test/First", Assert.Single(observation.WebEvidenceSourceUrls!));
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(observation.WebEvidenceSourceUrls)[0] = sourceUrls[0]);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void WebEvidenceSourceMetadataPreservesAbsentAndAuthoritativeEmptyAcrossResultBoundaries(int? sourceCount)
+    {
+        IReadOnlyList<string>? sourceUrls = sourceCount switch
+        {
+            null => null,
+            0 => Array.Empty<string>(),
+            _ => new[] { "https://example.test/Source" },
+        };
+        var adapted = new CopilotCapabilityResult
+        {
+            Success = true,
+            WebEvidenceSourceUrls = sourceUrls,
+        }.ToToolResult("WebSearch");
+        var captured = CopilotToolResultContract.Capture("WebSearch", adapted);
+        var observation = CopilotToolObservation.FromResult(captured);
+        var runResult = new CopilotAgentRunResult
+        {
+            StepRecords = new[]
+            {
+                new CopilotAgentStepRecord { Observation = observation, ModelObservation = observation },
+            },
+        };
+        var step = Assert.Single(runResult.StepRecords);
+
+        Assert.True(captured.Success);
+        foreach (var actual in new[]
+        {
+            adapted.WebEvidenceSourceUrls,
+            captured.WebEvidenceSourceUrls,
+            observation.WebEvidenceSourceUrls,
+            step.Observation.WebEvidenceSourceUrls,
+            step.EffectiveModelObservation.WebEvidenceSourceUrls,
+        })
+        {
+            if (sourceUrls == null)
+                Assert.Null(actual);
+            else
+                Assert.Equal(sourceUrls, Assert.IsAssignableFrom<IReadOnlyList<string>>(actual));
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void CaptureRejectsMissingWebEvidenceSourceElements(string? sourceUrl)
+    {
+        var captured = CopilotToolResultContract.Capture("WebSearch", new CopilotToolResult
+        {
+            ToolName = "WebSearch",
+            Success = true,
+            WebEvidenceSourceUrls = new[] { sourceUrl! },
+        });
+
+        AssertInvalid(captured, "WebSearch");
     }
 
     [Fact]
@@ -103,6 +179,8 @@ public sealed class CopilotToolResultContractTests
             ["query"] = "original",
         };
         var sourcePaths = new List<string> { @"C:\workspace\original.cs" };
+        var sourceUrls = new List<string> { "https://example.test/Original" };
+        var modelSourceUrls = new List<string> { "https://example.test/ModelOriginal" };
         var originalStep = new CopilotAgentStepRecord
         {
             Round = 1,
@@ -115,6 +193,12 @@ public sealed class CopilotToolResultContractTests
             {
                 Success = true,
                 SuggestedReadableLocalFilePaths = sourcePaths,
+                WebEvidenceSourceUrls = sourceUrls,
+            },
+            ModelObservation = new CopilotToolObservation
+            {
+                Success = true,
+                WebEvidenceSourceUrls = modelSourceUrls,
             },
         };
         var originalBlocker = new CopilotAgentBlockerSnapshot
@@ -134,6 +218,8 @@ public sealed class CopilotToolResultContractTests
         steps[0] = new CopilotAgentStepRecord { Round = 2 };
         sourceArguments["query"] = "rewritten";
         sourcePaths[0] = @"C:\workspace\rewritten.cs";
+        sourceUrls[0] = "https://example.test/Rewritten";
+        modelSourceUrls[0] = "https://example.test/ModelRewritten";
         blockers[0] = new CopilotAgentBlockerSnapshot
         {
             Kind = CopilotAgentBlockerKind.Policy,
@@ -147,6 +233,12 @@ public sealed class CopilotToolResultContractTests
         Assert.Equal(
             @"C:\workspace\original.cs",
             Assert.Single(capturedStep.Observation.SuggestedReadableLocalFilePaths));
+        Assert.Equal("https://example.test/Original", Assert.Single(capturedStep.Observation.WebEvidenceSourceUrls!));
+        Assert.Equal("https://example.test/ModelOriginal", Assert.Single(capturedStep.EffectiveModelObservation.WebEvidenceSourceUrls!));
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(capturedStep.Observation.WebEvidenceSourceUrls)[0] = sourceUrls[0]);
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(capturedStep.EffectiveModelObservation.WebEvidenceSourceUrls)[0] = modelSourceUrls[0]);
         Assert.Same(originalBlocker, Assert.Single(result.Blockers));
         var capturedSteps = Assert.IsAssignableFrom<IList<CopilotAgentStepRecord>>(result.StepRecords);
         var capturedBlockers = Assert.IsAssignableFrom<IList<CopilotAgentBlockerSnapshot>>(result.Blockers);
@@ -198,11 +290,13 @@ public sealed class CopilotToolResultContractTests
     public void ToolResultEventOwnsItsHookRunCollection()
     {
         var paths = new List<string> { @"C:\workspace\first.cs" };
+        var sourceUrls = new List<string> { "https://example.test/First" };
         var result = new CopilotToolResult
         {
             ToolName = "SnapshotTool",
             Success = true,
             SuggestedReadableLocalFilePaths = paths,
+            WebEvidenceSourceUrls = sourceUrls,
         };
         var originalRun = CopilotToolExecutionHookRun.Create(
             "test:hook",
@@ -215,6 +309,7 @@ public sealed class CopilotToolResultContractTests
             result,
             hookRuns: hookRuns);
         paths[0] = @"C:\workspace\rewritten.cs";
+        sourceUrls[0] = "https://example.test/Rewritten";
         hookRuns[0] = CopilotToolExecutionHookRun.Create(
             "test:rewritten",
             CopilotToolExecutionHookPhase.AfterExecute,
@@ -228,6 +323,9 @@ public sealed class CopilotToolResultContractTests
             capturedResult.SuggestedReadableLocalFilePaths);
         Assert.Throws<NotSupportedException>(() =>
             capturedPaths[0] = @"C:\workspace\rewritten.cs");
+        Assert.Equal("https://example.test/First", Assert.Single(capturedResult.WebEvidenceSourceUrls!));
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(capturedResult.WebEvidenceSourceUrls)[0] = sourceUrls[0]);
         Assert.Same(originalRun, Assert.Single(agentEvent.ToolExecutionHookRuns));
         var capturedRuns = Assert.IsAssignableFrom<IList<CopilotToolExecutionHookRun>>(
             agentEvent.ToolExecutionHookRuns);

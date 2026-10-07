@@ -56,6 +56,19 @@ namespace ColorVision.Copilot
             return bound;
         }
 
+        internal void PrepareUnrestrictedFullAccessGrant(string workspacePath, string? taskId)
+        {
+            _accessContext.PrepareUnrestrictedFullAccess(Id, workspacePath, taskId);
+            NotifyAccessGrantChanged();
+        }
+
+        internal bool EndFullAccessTask(string? taskId = null)
+        {
+            if (!_accessContext.EndTask(taskId)) return false;
+            NotifyAccessGrantChanged();
+            return true;
+        }
+
         internal bool RevokeFullAccessGrant(string? taskId = null)
         {
             if (!_accessContext.Revoke(taskId))

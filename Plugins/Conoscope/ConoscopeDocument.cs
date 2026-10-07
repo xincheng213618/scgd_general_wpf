@@ -76,7 +76,7 @@ namespace Conoscope
 
         internal static bool CanOpenFile(string? fileName)
         {
-            if (string.IsNullOrWhiteSpace(fileName) || !File.Exists(fileName)) return false;
+            if (string.IsNullOrWhiteSpace(fileName) || !(CVFileReadCache.GetCachedLength(fileName).HasValue || File.Exists(fileName))) return false;
             try
             {
                 using CalibratedRawFileReader? raw = OpenRawSource(fileName);

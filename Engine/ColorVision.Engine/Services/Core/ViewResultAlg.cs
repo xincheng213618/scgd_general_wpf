@@ -6,7 +6,6 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
-using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -25,12 +24,23 @@ namespace ColorVision.Engine.Services
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
-        public ContextMenu ContextMenu { get; set; }
-        public RelayCommand ExportCVCIECommand { get; set; }
-        public RelayCommand CopyToCommand { get; set; }
-        public RelayCommand OpenContainingFolderCommand { get; set; }
+        private ContextMenu? _contextMenu;
+        private RelayCommand? _exportCVCIECommand, _copyToCommand, _openContainingFolderCommand, _exportToPoiCommand;
+        public ContextMenu ContextMenu { get => _contextMenu ??= CreateContextMenu(); set => _contextMenu = value; }
+        public RelayCommand ExportCVCIECommand { get => _exportCVCIECommand ??= new RelayCommand(a => Export(), a => File.Exists(FilePath)); set => _exportCVCIECommand = value; }
+        public RelayCommand CopyToCommand { get => _copyToCommand ??= new RelayCommand(a => CopyTo(), a => File.Exists(FilePath)); set => _copyToCommand = value; }
+        public RelayCommand OpenContainingFolderCommand { get => _openContainingFolderCommand ??= new RelayCommand(a => OpenContainingFolder()); set => _openContainingFolderCommand = value; }
+        public RelayCommand ExportToPoiCommand { get => _exportToPoiCommand ??= new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0); set => _exportToPoiCommand = value; }
 
-        public RelayCommand ExportToPoiCommand { get; set; }
+        private ContextMenu CreateContextMenu()
+        {
+            ContextMenu menu = new();
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.Selected, Command = OpenContainingFolderCommand });
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.Export, Command = ExportCVCIECommand });
+            menu.Items.Add(new MenuItem { Header = Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
+            menu.Closed += static (sender, _) => ((ContextMenu)sender).ClearValue(ContextMenu.PlacementTargetProperty);
+            return menu;
+        }
 
         public ViewResultAlg()
         {
@@ -52,15 +62,6 @@ namespace ColorVision.Engine.Services
             ResultImagFile = item.ResultImagFile;
             Version = item.version;
 
-            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
-            CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
-            OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Selected, Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Export, Command = ExportCVCIECommand });
-            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.CreateToPOI, Command = ExportToPoiCommand });
             Task.Run(() =>
             {
                 bool exists = !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);

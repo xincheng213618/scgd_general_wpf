@@ -51,6 +51,8 @@ related: ["ui.index","ui.publishing","algorithms.platform","delivery.index"]
 | 资源与依赖 | 核对 NuGet 资产和宿主输出中需要的 XAML、图标、shader、CIE 数据及 native runtime；项目引用存在不证明依赖和资源已交付。插件共享文件去重由插件打包规则负责 |
 | 运行时装配 | 对应程序集加载后，菜单、设置、状态栏、图像工具或 Socket handler 仍要经过各自发现与过滤；包生成成功不代表入口可见 |
 
+`ColorVision.Solution` 使用 AvalonDock 5.x 时，XML 布局序列化由独立的 `Dirkster.AvalonDock.Serializer.Xml` 包提供，不能只交付主题包和 `AvalonDock.dll`；主程序与 Spectrum 还需要对应的 `AvalonDock.Core.dll`、`AvalonDock.Serializer.Xml.dll` 及主题程序集。VS2013 基础主题在运行时生成资源字典，由 `DictionaryTheme.ThemeResourceDictionary` 合并到共享现代主题。布局文件兼容与内容恢复规则见[编辑器与文档生命周期](./editor-document-lifecycle.md)。
+
 ### ScottPlot 与 SkiaSharp 兼容性冻结
 
 所有消费方暂时保持 `ScottPlot.WPF 5.0.56`，主程序同时保持直接引用的 `SkiaSharp 2.88.9`。当前组合为 `net10.0-windows` 消费方选择 `ScottPlot.WPF` 的 `lib/net6.0-windows7.0` 资产，并从 `SkiaSharp.Views.WPF 2.88.9` 选择 `lib/netcoreapp3.1`，不会回退到 .NET Framework DLL。

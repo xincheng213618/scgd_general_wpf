@@ -1,6 +1,3 @@
-using ColorVision.Copilot;
-using ColorVision.UI;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotPermissionRequestHookTests

@@ -7,7 +7,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 41;
+        public const int CurrentSchemaVersion = 42;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -16,6 +16,11 @@ namespace ColorVision.Copilot
         public string ActiveConversationId { get; set; } = string.Empty;
 
         public string ActiveProfileId { get; set; } = string.Empty;
+
+        public CopilotAgentAccessMode DefaultAccessMode { get; set; } = CopilotAgentAccessMode.ConfirmProtectedActions;
+
+        public bool ShouldSerializeDefaultAccessMode() =>
+            DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess;
 
         public bool IsAgentTaskPanelExpanded { get; set; } = true;
 
@@ -104,23 +109,44 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool SetDefaultAccessMode(CopilotAgentAccessMode mode)
+        {
+            var normalized = mode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                ? mode
+                : CopilotAgentAccessMode.ConfirmProtectedActions;
+            if (DefaultAccessMode == normalized)
+                return false;
+
+            DefaultAccessMode = normalized;
+            return true;
+        }
+
         public bool EnsureInitialized(CopilotConfig config)
         {
             return EnsureInitialized(config, normalizeRestoredConversations: false);
         }
 
-        internal bool EnsureInitializedAfterRestore(CopilotConfig config)
+        internal bool EnsureInitializedAfterRestore(CopilotConfig config, bool deferQueuedDraftRecovery = false)
         {
-            return EnsureInitialized(config, normalizeRestoredConversations: true);
+            return EnsureInitialized(config, normalizeRestoredConversations: true, deferQueuedDraftRecovery);
         }
 
         private bool EnsureInitialized(
             CopilotConfig config,
-            bool normalizeRestoredConversations)
+            bool normalizeRestoredConversations,
+            bool deferQueuedDraftRecovery = false)
         {
             ArgumentNullException.ThrowIfNull(config);
 
             var changed = false;
+            var normalizedDefaultAccessMode = DefaultAccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess
+                ? DefaultAccessMode
+                : CopilotAgentAccessMode.ConfirmProtectedActions;
+            if (DefaultAccessMode != normalizedDefaultAccessMode)
+            {
+                DefaultAccessMode = normalizedDefaultAccessMode;
+                changed = true;
+            }
             var normalizedFollowUpBehavior = CopilotFollowUpPreference.Normalize(DefaultFollowUpBehavior);
             if (DefaultFollowUpBehavior != normalizedFollowUpBehavior)
             {
@@ -207,7 +233,7 @@ namespace ColorVision.Copilot
             changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
             if (normalizeRestoredConversations)
-                changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
+                changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this, deferQueuedDraftRecovery);
 
             var activeConversations = Conversations
                 .Where(conversation => !conversation.IsArchived)

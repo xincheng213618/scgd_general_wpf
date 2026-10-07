@@ -164,7 +164,7 @@ public class STNodeControl
 	{
 		get
 		{
-			return _ForeColor;
+			return _Owner?.Owner?.VisualTheme?.ResolveText(_ForeColor) ?? _ForeColor;
 		}
 		set
 		{
@@ -290,7 +290,7 @@ public class STNodeControl
 		graphics.FillRectangle(solidBrush, 0, 0, Width, Height);
 		if (!string.IsNullOrEmpty(_Text))
 		{
-			solidBrush.Color = _ForeColor;
+			solidBrush.Color = ForeColor;
 			graphics.DrawString(_Text, _Font, solidBrush, ClientRectangle, m_sf);
 		}
 		if (this.Paint != null)

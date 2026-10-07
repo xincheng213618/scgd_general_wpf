@@ -1,4 +1,3 @@
-using ColorVision.UI;
 using log4net;
 using System.Windows;
 using System.Windows.Input;

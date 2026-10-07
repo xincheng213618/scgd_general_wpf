@@ -1,5 +1,4 @@
 using ColorVision.SocketProtocol;
-using cvColorVision;
 using log4net;
 using System.Net.Sockets;
 

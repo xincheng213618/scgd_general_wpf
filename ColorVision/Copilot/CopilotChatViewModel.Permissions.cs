@@ -1,26 +1,13 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -72,6 +59,7 @@ namespace ColorVision.Copilot
         private void RefreshTimedAccessAndPendingActions()
         {
             var conversation = SelectedConversation;
+            EnsurePersistentFullAccess(conversation);
             if (conversation?.ExpireFullAccessGrantIfNeeded() == true)
             {
                 OnComposerAccessModeChanged();
@@ -84,7 +72,7 @@ namespace ColorVision.Copilot
                     && conversation.RevokeFullAccessGrant())
                 {
                     OnComposerAccessModeChanged();
-                    SetPendingActionFeedback("工作区已变化，临时自动复核授权已撤销。");
+                    SetPendingActionFeedback("工作区已变化，访问授权已撤销，恢复按需确认。");
                 }
             }
             RefreshProviderRateLimitStatus();
@@ -184,7 +172,10 @@ namespace ColorVision.Copilot
 
             if (mode == CopilotAgentAccessMode.ConfirmProtectedActions)
             {
-                if (!conversation.RevokeFullAccessGrant())
+                var changed = _state.SetDefaultAccessMode(mode);
+                foreach (var item in Conversations)
+                    changed |= item.RevokeFullAccessGrant();
+                if (!changed)
                     return;
 
                 OnComposerAccessModeChanged();
@@ -193,11 +184,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (conversation.AccessMode == CopilotAgentAccessMode.FullAccess)
-                return;
-
             var turnSnapshot = CaptureHostedTurnSnapshot(conversation.Attachments);
-            if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath))
+            if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath) && mode != CopilotAgentAccessMode.UnrestrictedFullAccess)
             {
                 SetPendingActionFeedback("请先打开一个项目工作区，再启用临时自动复核。");
                 return;
@@ -208,6 +196,29 @@ namespace ColorVision.Copilot
                 && string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
                 ? activeRun?.Id ?? string.Empty
                 : string.Empty;
+            if (mode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                if (_state.DefaultAccessMode == mode
+                    && conversation.AccessMode == mode
+                    && string.IsNullOrWhiteSpace(conversation.FullAccessWorkspacePath))
+                {
+                    return;
+                }
+
+                _state.SetDefaultAccessMode(mode);
+                foreach (var item in Conversations.Where(item => !ReferenceEquals(item, conversation)))
+                    item.RevokeFullAccessGrant();
+                conversation.PrepareUnrestrictedFullAccessGrant(string.Empty, taskId);
+                OnComposerAccessModeChanged();
+                SetPendingActionFeedback("已启用完全访问：受保护工具直接执行。该选择会持久保存，直到手动切换回按需确认；已有待审批操作仍需单独决定。");
+                PersistState(immediate: true);
+                return;
+            }
+
+            _state.SetDefaultAccessMode(CopilotAgentAccessMode.ConfirmProtectedActions);
+            foreach (var item in Conversations.Where(item => !ReferenceEquals(item, conversation)))
+                item.RevokeFullAccessGrant();
+            conversation.RevokeFullAccessGrant();
             conversation.PrepareFullAccessGrant(
                 turnSnapshot.SolutionDirectoryPath,
                 taskId,
@@ -217,6 +228,23 @@ namespace ColorVision.Copilot
                 ? "已为下一任务启用临时自动复核（最长 15 分钟）。工作区补丁及回滚仍按确定性范围规则批准；其他受保护调用由独立模型复核，风险较高、无法判断或复核失败时仍等待用户。已有待审批操作不受影响。"
                 : "已为本任务启用临时自动复核（最长 15 分钟）。工作区补丁及回滚仍按确定性范围规则批准；其他受保护调用由独立模型复核，风险较高、无法判断或复核失败时仍等待用户。已有待审批操作不受影响。");
             PersistState(immediate: true);
+        }
+
+        private void EnsurePersistentFullAccess(CopilotConversationRecord? conversation)
+        {
+            if (conversation == null
+                || _state.DefaultAccessMode != CopilotAgentAccessMode.UnrestrictedFullAccess
+                || conversation.AccessMode == CopilotAgentAccessMode.UnrestrictedFullAccess)
+            {
+                return;
+            }
+
+            var activeRun = ActiveHostedRun;
+            var taskId = activeRun?.IsAgent == true
+                && string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
+                ? activeRun.Id
+                : string.Empty;
+            conversation.PrepareUnrestrictedFullAccessGrant(string.Empty, taskId);
         }
 
         private async Task RetryAutomaticallyDeniedActionAsync(
@@ -338,12 +366,12 @@ namespace ColorVision.Copilot
         private string BuildFullAccessToolTip()
         {
             var conversation = SelectedConversation;
-            var scope = conversation?.IsFullAccessPreparedForNextTask == true ? "下一任务" : "本任务";
+            var scope = conversation?.IsFullAccessPreparedForNextTask == true ? LocalizedText.Get("下一任务") : LocalizedText.Get("本任务");
             var workspace = string.IsNullOrWhiteSpace(conversation?.FullAccessWorkspacePath)
-                ? "当前 ColorVision 应用"
+                ? LocalizedText.Get("当前 ColorVision 应用")
                 : conversation.FullAccessWorkspacePath;
-            var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "15 分钟内";
-            return $"临时自动复核仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。";
+            var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? LocalizedText.Get("15 分钟内");
+            return LocalizedText.Format($"临时自动复核仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。已预览的工作区补丁及回滚仍按逐文件路径和 SHA-256 的确定性规则批准；其他受保护调用仅在提供完整原生审批详情时，才由独立、无工具的权限模型复核，每次复核会增加一次模型调用。仅 LOW/MEDIUM 风险可自动批准，HIGH/CRITICAL、详情缺失或过长、格式错误、超时或模型失败仍等待用户。任务结束、工作区变化或应用重启后恢复按需确认。");
         }
 
         private static bool WorkspacePathsMatch(string expectedPath, string currentPath)
@@ -381,6 +409,8 @@ namespace ColorVision.Copilot
         {
             OnPropertyChanged(nameof(ComposerAccessMode));
             OnPropertyChanged(nameof(IsComposerFullAccess));
+            OnPropertyChanged(nameof(IsComposerTemporaryAutoReview));
+            OnPropertyChanged(nameof(IsComposerElevatedAccess));
             OnPropertyChanged(nameof(IsComposerConfirmAccess));
             OnPropertyChanged(nameof(ComposerAccessModeLabel));
             OnPropertyChanged(nameof(ComposerAccessModeToolTip));

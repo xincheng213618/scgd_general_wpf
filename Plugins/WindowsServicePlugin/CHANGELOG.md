@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## [1.4.3.39] 2026.10.07
+
+- 随 ColorVision 1.4.16.1 更新，适配新版图像处理组件；需要先升级主程序。
+
+## [1.4.3.38] 2026.10.03
+
+- 随 ColorVision 1.4.15.54 同步更新插件包。
+
+## [1.4.3.37] 2026.10.02
+
+- 随 ColorVision 1.4.15.51 同步更新插件包。
+
+## 1.4.3.36 - 2026-09-30
+
+### Changed
+
+- Localized the legacy service manager update menu, status messages, and download prompts.
+
+## 1.4.3.35 - 2026-09-28
+
+### Fixed
+
+- Fixed MySQL reset stopping before the installation SQL runs because the import configuration lacked a database name.
+
+## 1.4.3.34 - 2026-09-28
+
+### Changed
+
+- After resetting the MySQL database, offers to restart the registration center service and then ColorVision.
+
+## 1.4.3.33 - 2026-09-28
+
+### Fixed
+
+- The MySQL Reset Database action now rebuilds the selected database from the installation SQL without restoring previous flows, templates, or resource data.
+- Reset results clearly distinguish completion from a failed or partial import.
+
 ## 1.4.3.31 - 2026-09-11
 
 ### Fixed

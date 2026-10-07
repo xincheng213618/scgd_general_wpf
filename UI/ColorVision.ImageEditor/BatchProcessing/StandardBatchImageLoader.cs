@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             if (image.Empty())
             {
                 image.Dispose();
-                throw new InvalidOperationException($"无法读取图像：{filePath}");
+                throw new InvalidOperationException(string.Format(Properties.Resources.BatchImageReadFailed, filePath));
             }
 
             return image;

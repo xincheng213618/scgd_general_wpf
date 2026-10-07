@@ -5,7 +5,7 @@ status: "current"
 summary: "native ABI与HImage所有权、函数族返回值、视频异步/关闭边界，以及helper构建和CUDA发布输入；路由校准Context与POI原生参考。"
 aliases: ["新克隆构建为什么需要C++","OpenCVMediaHelper","opencv_helper.dll","opencv_cuda.dll","HImage","isDispose","HImage.Dispose","M_FindLuminousAreaV2","M_CalArtculation","M_CalibrationExecuteToV1","M_CalibrationGetLastError","M_CalibrationCacheReleaseV1","M_CalculatePoiBatchV2","M_VideoSeek","M_VideoPlay","M_VideoClose","opencv_helper API"]
 code_paths: [".github/workflows/dotnet.yml","build.sln","Native/README.md","Native/opencv_helper/API_Documentation.md","UI/ColorVision.Core/ColorVision.Core.csproj","UI/ColorVision.Core/OpenCVMediaHelper.cs","UI/ColorVision.Core/OpenCVCuda.cs","UI/ColorVision.Core/HImage.cs","Native/opencv_helper/opencv_helper.vcxproj","Native/include/opencv_media_export.h","Native/include/custom_structs.h","Native/include/video_export.h","Native/include/cuda_export.h","Native/opencv_helper/opencv_media_export.cpp","Native/opencv_helper/video_export.cpp","Native/opencv_helper/exports/calibration_export.cpp","Native/opencv_helper/exports/poi_export.cpp","Native/opencv_helper/exports/sfr_export.cpp","Native/opencv_cuda/opencv_cuda.vcxproj","Scripts/verify_native_contracts.py","Engine/ColorVision.Engine/Media/CVRawOpen.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs","Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
+test_paths: ["Scripts/tests/test_algorithm_package_contract.py","Scripts/tests/test_verify_native_contracts.py","Test/opencv_helper_test"]
 related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","engine.file-io","algorithms.local-native-analysis","engine.opencv-helper-api","delivery.native-testing"]
 ---
 
@@ -32,6 +32,18 @@ related: ["engine.index","ui.core","ui.image-frames","engine.native-bindings","e
 这两个 helper 候选不是随 Git 跟踪的预编译输入；干净拉仓不能假设只需 .NET SDK。需要可用的 Visual Studio C++ 工具链及项目声明的 OpenCV/SDK 依赖，在 Visual Studio Developer PowerShell 中完成相应 native 构建，再构建托管项目；以 `Native/AGENTS.md` 和 vcxproj 为准，不通过关闭引用或遗漏 DLL 来让构建表面通过。
 
 CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Release/opencv_cuda.dll`。不执行 CUDA 路径不等于允许缺少这个构建/发布输入。
+
+### 托管与原生 OpenCV 版本边界
+
+托管图像处理使用同一版本的 `OpenCvSharp5`、`OpenCvSharp5.runtime.win` 和 `OpenCvSharp5.WpfExtensions`，最低要求 .NET 8。主程序、官方插件和客户项目须一起重新构建，不能混用 4.x 与 5.x 的托管程序集或 `OpenCvSharpExtern.dll`。本地 helper 和 CUDA DLL 使用 OpenCV / opencv_contrib 5.0.0；Release / Debug 的头文件、导入库和运行库以 `packages/OpenCV.*.x64.props` 为准，Core 也从 Release 属性表取得打包清单。
+
+原生工程最低使用 C++17，CUDA 编译显式传入 `--std=c++17`。当前依赖使用 MSVC v145 构建，目录为 `packages/opencv/x64/vc18/`。OpenCV 5 将 `calib3d` 拆为 `calib`、`geometry`、`stereo` 等模块，将 `features2d` 政名为 `features`，圆点/棋盘格检测归入 `objdetect`；几何函数须显式包含 `opencv2/geometry.hpp`，不能依赖 `opencv.hpp` 间接引入。
+
+第三方构建保留共享库、非自由算法、SSE3 基线及 SSE4.1 / SSE4.2 / AVX / FP16 / AVX2 / AVX512 分派、IPP、OpenCL、FFmpeg、DirectShow、Media Foundation 和原有图像格式支持。OpenCV 自身不启用 CUDA；第一方 `opencv_cuda.dll` 使用 CUDA 13.2。已取消 Pascal / Volta 编译目标，支持 Turing（GTX 16 / RTX 20）及更新 GPU；Release / Debug 均使用 v145 和受支持的 CUDA 13.2 host 编译器，保留公开 ABI 和静态 cudart。CUDA 13.x 的驱动兼容基线为 R580，PTX/JIT 还须匹配实际工具链；本地已验证驱动 610.88 / RTX 5080，现场设备仍需验证。驱动要求以 [NVIDIA CUDA 兼容说明](https://docs.nvidia.com/cuda/archive/13.2.0/cuda-toolkit-release-notes/index.html#cuda-driver) 为准。OpenCV 5 不再随源码提供 OpenEXR，构建时需通过 `CMAKE_PREFIX_PATH` 提供独立 OpenEXR；当前使用静态 OpenEXR 3.4.16 / Imath 3.2.2，并保持 Release / Debug CRT 匹配。
+
+两侧共享 `opencv_videoio_ffmpeg500_64.dll`。运行时内容校验从实际 NuGet 解析结果及 C++ 属性表分别定位依赖，仅在同名文件的 SHA-256 完全一致时复用一份文件；内容不同或源文件缺失仍阻止交付。供应商 SDK 所需的 `opencv_world401.dll` 属于另一条依赖链，须继续保留。
+
+两侧通过 `HImage` 的尺寸、位深、通道、步长和像素指针交换图像，不传递 `cv::Mat` 对象、OpenCvSharp 原生对象句柄或 C++ 容器。更换 C++ 版本须单独验证 ABI、校准结果、视频及部署依赖。OpenCV 5 调整了最近邻缩放及仿射、透视、重映射插值，升级后这些算法的结果不保证与 4.x 逐像素一致，数值验收应使用实际输入及所属算法契约。
 
 ## 修改落点
 
@@ -85,7 +97,7 @@ CUDA 是另一条边界：当前 Core 无条件打包仓库跟踪的 `x64/Releas
 
 ## 为什么仓库单独跟踪 `opencv_cuda.dll`
 
-`x64/Release/opencv_cuda.dll` 是有意保留的第一方发布输入，不是误提交的普通构建产物。标准 GitHub Windows runner 不保证具备 `opencv_cuda.vcxproj` 所需的 CUDA 12.9 与受支持的 Visual Studio 集成，当前 `build.sln` 也不编译该 CUDA 项目。托管构建、NuGet 打包和本地发布因此从这个固定路径取得已审核的 DLL，避免普通构建环境必须安装 CUDA 工具链。
+`x64/Release/opencv_cuda.dll` 是有意保留的第一方发布输入，不是误提交的普通构建产物。标准 GitHub Windows runner 不保证具备 `opencv_cuda.vcxproj` 所需的 CUDA 13.2 与受支持的 Visual Studio 集成，当前 `build.sln` 也不编译该 CUDA 项目。托管构建、NuGet 打包和本地发布因此从这个固定路径取得已审核的 DLL，避免普通构建环境必须安装 CUDA 工具链。
 
 不要因为 `x64/` 已在忽略规则中就直接删除该文件。只有同时满足以下条件后，才能移除 Git 中的 DLL：
 
@@ -149,6 +161,5 @@ dotnet build Engine/cvColorVision/cvColorVision.csproj -c Release -p:Platform=x6
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/LuminousAreaNativeInteropTests.cs`、`Scripts/tests/test_algorithm_package_contract.py`、`Test/opencv_helper_test`。
 
 真正的 native 与 clean package 检查需要 Visual Studio C++ 工具链和真实 DLL；静态文档检查不能证明 ABI、CUDA/GPU 或设备 SDK 运行成功。

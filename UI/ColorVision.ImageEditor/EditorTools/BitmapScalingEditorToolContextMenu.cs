@@ -26,7 +26,15 @@ namespace ColorVision.ImageEditor.EditorTools
                     RenderOptions.SetBitmapScalingMode(context.DrawCanvas, item);
                 });
 
-                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "BitmapScalingMode", GuidId = item.ToString(), Order = (int)item, Header = item.ToString(),Command = relayCommand, IsChecked = currentMode == item });
+                string header = item switch
+                {
+                    BitmapScalingMode.Unspecified => Properties.Resources.BitmapScaling_Default,
+                    BitmapScalingMode.LowQuality => Properties.Resources.BitmapScaling_Bilinear,
+                    BitmapScalingMode.HighQuality => Properties.Resources.BitmapScaling_Fant,
+                    BitmapScalingMode.NearestNeighbor => Properties.Resources.BitmapScaling_NearestNeighbor,
+                    _ => item.ToString(),
+                };
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "BitmapScalingMode", GuidId = item.ToString(), Order = (int)item, Header = header, Command = relayCommand, IsChecked = currentMode == item });
             }
 
             return MenuItemMetadatas;

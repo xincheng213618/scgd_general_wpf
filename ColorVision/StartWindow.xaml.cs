@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -33,6 +34,19 @@ namespace ColorVision
         private const double MaximumProfiledStepWeightMs = 12000d;
         private const double StartupProfileSmoothing = 0.35d;
         private ThemeManager? _subscribedThemeManager;
+        private readonly CancellationTokenSource _startupCancellation = new();
+
+        internal Func<Task>? PrepareStartupAsync { get; set; }
+        internal bool ShowSetupWizardAfterPreparation { get; set; }
+        internal CancellationToken StartupCancellationToken => _startupCancellation.Token;
+
+        internal async Task ShowPreparationStageAsync(string stage)
+        {
+            _startupCancellation.Token.ThrowIfCancellationRequested();
+            startupStatusText.Text = stage;
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            _startupCancellation.Token.ThrowIfCancellationRequested();
+        }
 
         public StartWindow()
         {
@@ -67,6 +81,7 @@ namespace ColorVision
 
         protected override void OnClosed(EventArgs e)
         {
+            _startupCancellation.Cancel();
             ReleasePresentation();
             _startupProgressTimer.Stop();
             if (_subscribedThemeManager != null)
@@ -81,17 +96,32 @@ namespace ColorVision
         private async void StartWindow_ContentRendered(object? sender, EventArgs e)
         {
             ContentRendered -= StartWindow_ContentRendered;
-            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
             try
             {
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                if (PrepareStartupAsync != null)
+                    await PrepareStartupAsync();
+                if (Dispatcher.HasShutdownStarted || _presentationClosed)
+                    return;
+                if (ShowSetupWizardAfterPreparation)
+                {
+                    var wizard = new ColorVision.UI.Desktop.Wizards.WizardWindow { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+                    Application.Current.MainWindow = wizard;
+                    wizard.Show();
+                    Close();
+                    return;
+                }
                 await Task.Run(RunStartupAsync);
+                _startupCancellation.Token.ThrowIfCancellationRequested();
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    ShowMainWindowAndClose();
+                    if (!_presentationClosed) ShowMainWindowAndClose();
                 }, DispatcherPriority.ContextIdle);
             }
+            catch (OperationCanceledException) when (_startupCancellation.IsCancellationRequested) { }
             catch (Exception ex)
             {
+                if (_presentationClosed) return;
                 log.Error("Startup failed.", ex);
                 await Dispatcher.InvokeAsync(() =>
                 {
@@ -159,7 +189,7 @@ namespace ColorVision
             _startupTotalWeight = Math.Max(_startupStepWeights.Values.Sum(), DefaultStartupStepWeight);
         }
 
-        private void SaveStartupProgressProfile()
+        private void UpdateStartupProgressProfile()
         {
             if (_startupObservedDurationsMs.Count == 0)
             {
@@ -181,7 +211,6 @@ namespace ColorVision
                 }
 
                 profile.UpdatedAt = DateTime.Now;
-                ConfigHandler.GetInstance().Save<StartupProgressProfileConfig>();
             }
             catch (Exception ex)
             {
@@ -240,7 +269,9 @@ namespace ColorVision
                 return;
             }
 
-            double target = _startupProgressTarget;
+            // An estimate may have advanced past a concurrent short step's completed
+            // weight. Keep the visible fill anchored and never rewind at stage boundaries.
+            double target = Math.Max(_startupProgressTarget, startupProgressBar.Value);
             if (_startupProgressCreepEnabled && startupProgressBar.Value < _startupProgressSoftCap)
             {
                 double remainingToSoftCap = _startupProgressSoftCap - startupProgressBar.Value;
@@ -264,138 +295,43 @@ namespace ColorVision
 
         private static string GetStartupStage(IInitializer initializer) => StartupText.GetStage(initializer.GetType().Name);
 
-        private sealed record StartupInitializerResult(IInitializer Initializer, long ElapsedMilliseconds);
-
-        private static bool IsDatabaseInitializer(IInitializer initializer) =>
-            initializer is global::ColorVision.Engine.MySqlInitializer;
-
-        private static bool IsWorkspaceInitializer(IInitializer initializer) =>
-            initializer is global::ColorVision.Solution.SolutionManagerInitializer;
-
-        private static bool IsMqttInitializer(IInitializer initializer) =>
-            initializer is global::ColorVision.Engine.MQTT.MqttInitializer;
-
-        private static bool IsRcInitializer(IInitializer initializer) =>
-            initializer is global::ColorVision.Engine.Services.RC.RCInitializer;
-
-        private static bool IsTemplateInitializer(IInitializer initializer) =>
-            initializer is global::ColorVision.Engine.Templates.TemplateInitializer;
-
-        private async Task<StartupInitializerResult> RunInitializerAsync(IInitializer initializer)
-        {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            try
-            {
-                await initializer.InitializeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-
-            stopwatch.Stop();
-            if (stopwatch.ElapsedMilliseconds >= SlowInitializerLogThresholdMs)
-                log.Info($"Slow startup initializer {initializer.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
-            return new StartupInitializerResult(initializer, stopwatch.ElapsedMilliseconds);
-        }
-
-        private async Task<IReadOnlyList<StartupInitializerResult>> RunConnectivityInitializersAsync(
-            IReadOnlyList<IInitializer> initializers)
-        {
-            List<StartupInitializerResult> results = new(initializers.Count);
-            foreach (IInitializer initializer in initializers)
-                results.Add(await RunInitializerAsync(initializer).ConfigureAwait(false));
-
-            return results;
-        }
-
-        private async Task<StartupInitializerResult> RunWorkspaceInitializerAsync(IInitializer initializer)
-        {
-            StartupInitializerResult result = await RunInitializerAsync(initializer).ConfigureAwait(false);
-            if (Dispatcher.HasShutdownStarted)
-                return result;
-
-            await Dispatcher.InvokeAsync(static () => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
-            return result;
-        }
+        private IReadOnlyList<StartupInitializerResult> _initializerResults = [];
+        private readonly object _startupStateLock = new();
 
         private async Task InitializedOver()
         {
-            Stopwatch executionStopwatch = Stopwatch.StartNew();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             double completedWeight = 0;
-            long summedInitializerMilliseconds = 0;
-
-            int databaseIndex = _IComponentInitializers.FindIndex(IsDatabaseInitializer);
-            bool canRunPrerequisiteLanes = databaseIndex >= 0
-                && databaseIndex + 4 < _IComponentInitializers.Count
-                && IsWorkspaceInitializer(_IComponentInitializers[databaseIndex + 1])
-                && IsMqttInitializer(_IComponentInitializers[databaseIndex + 2])
-                && IsRcInitializer(_IComponentInitializers[databaseIndex + 3])
-                && IsTemplateInitializer(_IComponentInitializers[databaseIndex + 4]);
-            int mqttIndex = databaseIndex + 2;
-            List<IInitializer> connectivityInitializers = canRunPrerequisiteLanes
-                ? [_IComponentInitializers[mqttIndex], _IComponentInitializers[mqttIndex + 1]]
-                : [];
-
-            async Task RecordCompletionAsync(StartupInitializerResult result)
-            {
-                IInitializer initializer = result.Initializer;
-                _startupObservedDurationsMs[GetInitializerProfileKey(initializer)] =
-                    Math.Max(result.ElapsedMilliseconds, MinimumProfiledStepWeightMs);
-                summedInitializerMilliseconds += result.ElapsedMilliseconds;
-                completedWeight += GetStartupStepWeight(initializer);
-                UpdateStartupProgress(completedWeight);
-                await YieldToUiIfDueAsync();
-            }
-
-            for (int index = 0; index < _IComponentInitializers.Count; index++)
-            {
-                IInitializer initializer = _IComponentInitializers[index];
-
-                if (canRunPrerequisiteLanes && index == databaseIndex)
+            _initializerResults = await StartupInitializerRunner.RunAsync(_IComponentInitializers,
+                starting: initializer =>
                 {
-                    IInitializer workspaceInitializer = _IComponentInitializers[index + 1];
-                    string connectivityComponent = string.Join(" -> ", connectivityInitializers.Select(item => item.Name));
-                    string component = $"{initializer.Name} || {workspaceInitializer.Name} || ({connectivityComponent})";
-                    StartupRegistryChecker.MarkStage("StartupInitializerLane", component);
-                    UpdateStartupProgress(
-                        completedWeight,
-                        initializerRunning: true,
-                        runningWeight: GetStartupStepWeight(initializer)
-                            + GetStartupStepWeight(workspaceInitializer)
-                            + connectivityInitializers.Sum(GetStartupStepWeight),
-                        stage: GetStartupStage(initializer));
-
-                    Task<StartupInitializerResult> databaseTask = Task.Run(() => RunInitializerAsync(initializer));
-                    Task<StartupInitializerResult> workspaceTask = Task.Run(() => RunWorkspaceInitializerAsync(workspaceInitializer));
-                    Task<IReadOnlyList<StartupInitializerResult>> connectivityTask =
-                        Task.Run(() => RunConnectivityInitializersAsync(connectivityInitializers));
-
-                    StartupInitializerResult[] independentResults =
-                        await Task.WhenAll(databaseTask, workspaceTask).ConfigureAwait(false);
-                    IReadOnlyList<StartupInitializerResult> connectivityResults =
-                        await connectivityTask.ConfigureAwait(false);
-                    foreach (StartupInitializerResult result in independentResults)
-                        await RecordCompletionAsync(result);
-                    foreach (StartupInitializerResult result in connectivityResults)
-                        await RecordCompletionAsync(result);
-
-                    index += 3;
-                    continue;
-                }
-
-                StartupRegistryChecker.MarkStage("StartupInitializer", initializer.Name);
-                double stepWeight = GetStartupStepWeight(initializer);
-                UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight, stage: GetStartupStage(initializer));
-                await RecordCompletionAsync(await RunInitializerAsync(initializer).ConfigureAwait(false));
-            }
-
-            executionStopwatch.Stop();
-            long overlapMilliseconds = Math.Max(0, summedInitializerMilliseconds - executionStopwatch.ElapsedMilliseconds);
-            log.Info($"Startup initializers completed in {executionStopwatch.ElapsedMilliseconds} ms. " +
-                $"Summed={summedInitializerMilliseconds} ms, ParallelOverlap={overlapMilliseconds} ms.");
+                    lock (_startupStateLock)
+                    {
+                        StartupRegistryChecker.MarkStage("StartupInitializer", initializer.Name);
+                        UpdateStartupProgress(completedWeight, initializerRunning: true,
+                            runningWeight: GetStartupStepWeight(initializer), stage: GetStartupStage(initializer));
+                    }
+                },
+                completed: async (initializer, result) =>
+                {
+                    if (result.Error != null)
+                        log.Error($"Startup initializer {result.Name} failed.", result.Error);
+                    if (result.Duration.TotalMilliseconds >= SlowInitializerLogThresholdMs)
+                        log.Info($"Slow startup initializer {result.Name} completed in {result.Duration.TotalMilliseconds:0} ms. Success={result.Succeeded}.");
+                    _startupObservedDurationsMs[GetInitializerProfileKey(initializer)] =
+                        Math.Max(result.Duration.TotalMilliseconds, MinimumProfiledStepWeightMs);
+                    lock (_startupStateLock)
+                    {
+                        completedWeight += GetStartupStepWeight(initializer);
+                        UpdateStartupProgress(completedWeight);
+                    }
+                    await YieldToUiIfDueAsync();
+                }, cancellationToken: _startupCancellation.Token).ConfigureAwait(false);
+            log.Info($"Startup initializers completed in {stopwatch.ElapsedMilliseconds} ms. " +
+                $"Summed={_initializerResults.Sum(result => result.Duration.TotalMilliseconds):0} ms, " +
+                $"Failures={_initializerResults.Count(result => !result.Succeeded)}.");
             StartupRegistryChecker.MarkStage("StartupInitializersCompleted");
-            SaveStartupProgressProfile();
+            UpdateStartupProgressProfile();
             await CompleteStartupProgressAsync();
         }
 
@@ -452,6 +388,8 @@ namespace ColorVision
         {
             try
             {
+                if (Application.Current is App app)
+                    app.StartupSession.AddResults(_initializerResults);
                 var parser = ArgumentParser.GetInstance();
                 parser.AddArgument("feature", false, "e");
                 parser.Parse();
@@ -482,15 +420,7 @@ namespace ColorVision
                 {
                     CreateAndShowMainWindow();
                 }
-                if (OperationsApplicationFailureWatchdog.TryStart())
-                {
-                    _ = WindowsApplicationRestartRegistration.TryUnregisterForWatchdog();
-                    log.Info("Fixed-target local ColorVision failure watchdog is active.");
-                }
-                else
-                {
-                    log.Warn("Local ColorVision failure watchdog is unavailable; Windows application restart registration remains as fallback.");
-                }
+                _ = StartFailureWatchdogAsync();
                 ScheduleServiceHostStartupUpdate();
                 Close();
             }
@@ -502,7 +432,7 @@ namespace ColorVision
             }
         }
 
-        private static void CreateAndShowMainWindow()
+        private void CreateAndShowMainWindow()
         {
             StartupUiTrace? trace = StartupUiTrace.Start(Application.Current.Dispatcher);
             try
@@ -510,6 +440,7 @@ namespace ColorVision
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 Window mainWindow = MainWindowFactory.Create(MainWindowConfig.Instance.UseCompactMainWindow);
                 trace?.Observe(mainWindow);
+                mainWindow.ContentRendered += SaveProfileAfterFirstRender;
                 mainWindow.Show();
                 trace?.MarkShowReturned();
                 log.Info($"Main window creation and Show completed in {stopwatch.ElapsedMilliseconds} ms (before ContentRendered).");
@@ -519,6 +450,35 @@ namespace ColorVision
                 trace?.Abort();
                 throw;
             }
+        }
+
+        private void SaveProfileAfterFirstRender(object? sender, EventArgs e)
+        {
+            if (sender is Window window)
+                window.ContentRendered -= SaveProfileAfterFirstRender;
+            _ = Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _ = Task.Run(() =>
+                {
+                    try { ConfigHandler.GetInstance().Save<StartupProgressProfileConfig>(); }
+                    catch (Exception ex) { log.Warn("Failed to persist startup progress profile.", ex); }
+                });
+            }), DispatcherPriority.ApplicationIdle);
+        }
+
+        private static async Task StartFailureWatchdogAsync()
+        {
+            try
+            {
+                if (await OperationsApplicationFailureWatchdog.TryStartAsync().ConfigureAwait(false))
+                {
+                    _ = WindowsApplicationRestartRegistration.TryUnregisterForWatchdog();
+                    log.Info("Fixed-target local ColorVision failure watchdog is active.");
+                }
+                else
+                    log.Warn("Local ColorVision failure watchdog is unavailable; Windows application restart registration remains as fallback.");
+            }
+            catch (Exception ex) { log.Warn("Unable to start the local failure watchdog.", ex); }
         }
 
         private static void ScheduleServiceHostStartupUpdate()

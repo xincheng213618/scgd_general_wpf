@@ -57,9 +57,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal MsgRecord OpenLocalCamera(string cameraId, TakeImageMode mode, int bpp) => RunLocalCommand("Open", () =>
         {
-            if (mode == TakeImageMode.Live) throw new InvalidOperationException("主面板本地取图使用测量模式；Live 预览请使用本地相机管理窗口。");
+            if (mode == TakeImageMode.Live) mode = TakeImageMode.Measure_Normal;
             int result = LocalCameraSession.Open(cameraId, mode, bpp);
             if (result != cvErrorDefine.CV_ERR_SUCCESS) throw LocalCameraCaptureService.CreateNativeException("本地相机打开失败", result);
+            Config.TakeImageMode = mode;
             return null;
         });
 
@@ -69,26 +70,39 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return null;
         });
 
-        internal MsgRecord AutoExposeLocally() => RunLocalCommand("GetAutoExpTime", () =>
+        internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)
         {
-            EnsureLocalMeasurementConnected(autoConnect: false);
-            CameraRunParam parameters = BuildLocalCameraParameters();
-            LocalCameraSession.UseOpened(handle =>
+            CameraRunParam parameters = BuildLocalCameraParameters(calibration: calibration);
+            string configuration;
+            try { configuration = LocalAutoExposureTemplate.BuildConfiguration(template, DisplayConfig.LocalAutoExposureConfig); }
+            catch (Exception ex) { return RunLocalCommand("GetAutoExpTime", () => throw ex); }
+            return RunLocalCommand("GetAutoExpTime", () =>
             {
-                LocalCameraAutoExposure.Measure(this, handle, parameters);
-                return true;
+                EnsureLocalMeasurementConnected(autoConnect: false);
+                return LocalCameraSession.UseOpened(handle =>
+                {
+                    using LocalFlowFrame frame = LocalCameraAutoExposure.MeasureFrame(this, handle, parameters, configuration);
+                    PublishLocalPreview(frame, null, forceDisplay: true);
+                    return new
+                    {
+                        ExpTime = new[] { parameters.ExpTimeR, parameters.ExpTimeG, parameters.ExpTimeB },
+                        frame.FrameId, frame.Metadata.Width, frame.Metadata.Height, frame.Metadata.SourceBpp, frame.Metadata.Channels
+                    };
+                });
             });
-            return new { ExpTime = new[] { parameters.ExpTimeR, parameters.ExpTimeG, parameters.ExpTimeB } };
-        });
+        }
 
         internal MsgRecord CaptureLocally(double[] exposure, CalibrationParam calibration, ParamBase autoExposure, ParamBase hdr)
         {
             CameraRunParam parameters = BuildLocalCameraParameters(exposure, calibration);
+            string? configuration;
+            try { configuration = autoExposure.Id == -1 ? null : LocalAutoExposureTemplate.BuildConfiguration(autoExposure, DisplayConfig.LocalAutoExposureConfig); }
+            catch (Exception ex) { return RunLocalCommand("GetData", () => throw ex); }
             LocalCameraCaptureRequest request = new()
             {
                 Device = this, CameraParameters = parameters, Calibration = calibration,
-                IsAutoExposure = autoExposure.Id != -1, SaveFiles = DisplayConfig.SaveLocalCaptureFiles,
-                SaveCieFile = Config.IsCVCIEFileSave, FlipMode = DisplayConfig.FlipMode
+                IsAutoExposure = autoExposure.Id != -1, AutoExposureConfiguration = configuration, SaveFiles = DisplayConfig.SaveLocalCaptureFiles,
+                FlipMode = DisplayConfig.FlipMode
             };
             return RunLocalCommand("GetData", () =>
             {

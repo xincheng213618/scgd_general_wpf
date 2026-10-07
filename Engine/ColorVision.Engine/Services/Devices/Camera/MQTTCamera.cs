@@ -6,10 +6,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
-using FlowEngineLib.Algorithm;
 using MQTTMessageLib;
-using MQTTMessageLib.Camera;
-using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -349,7 +346,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public MsgRecord GetAutoExpTime(ParamBase autoExpTimeParam)
         {
-            if (Device.RoutesLocally) return Device.AutoExposeLocally();
+            if (Device.RoutesLocally) return Device.AutoExposeLocally(autoExpTimeParam, null);
             var Params = new Dictionary<string, object>() { };
             Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
             Params.Add("IsAutoExpWithND",  Config.IsAutoExpWithND);

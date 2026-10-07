@@ -82,6 +82,8 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = true,
                 Summary = $"{result.Summary} Deep-read selected result {selectedHit.Url}: {fetchResult.Summary}",
+                PartialResultMessage = string.Join(" ", new[] { searchOnlyResult.PartialResultMessage, fetchResult.PartialResultMessage }
+                    .Where(message => !string.IsNullOrWhiteSpace(message))),
                 Content = string.Join(Environment.NewLine + Environment.NewLine, new[]
                 {
                     searchOnlyResult.Content,
@@ -89,6 +91,8 @@ namespace ColorVision.Copilot
                     fetchResult.Content,
                 }),
                 FailureKind = CopilotToolFailureKind.None,
+                WebEvidenceSourceUrls = (fetchResult.WebEvidenceSourceUrls ?? Array.Empty<string>())
+                    .Concat(searchOnlyResult.WebEvidenceSourceUrls ?? Array.Empty<string>()).ToArray(),
             };
         }
 
@@ -110,11 +114,17 @@ namespace ColorVision.Copilot
                 ToolName = "WebSearch",
                 Success = true,
                 Summary = searchResult.Summary + " The selected result could not be deep-read; the search leads remain available.",
+                PartialResultMessage = string.Join(" ", new[]
+                {
+                    searchResult.PartialResultMessage,
+                    "The selected result could not be deep-read; only search leads remain available.",
+                }.Where(message => !string.IsNullOrWhiteSpace(message))),
                 Content = searchResult.Content + Environment.NewLine + Environment.NewLine
                     + $"[Selected Search Result Deep Read Unavailable] {selectedUrl}"
                     + Environment.NewLine
                     + "Use another returned result with FetchUrl only when full page evidence is still required.",
                 FailureKind = CopilotToolFailureKind.None,
+                WebEvidenceSourceUrls = searchResult.WebEvidenceSourceUrls,
             };
         }
 

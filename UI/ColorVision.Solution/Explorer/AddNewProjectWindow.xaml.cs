@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,7 @@ namespace ColorVision.Solution.Explorer
         public AddNewProjectWindow(string targetDirectory)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _targetDirectory = targetDirectory;
             RefreshTemplates();
             ProjectTemplateRegistry.TemplatesChanged += ProjectTemplateRegistry_TemplatesChanged;
@@ -158,28 +160,28 @@ namespace ColorVision.Solution.Explorer
         {
             if (TemplateListView.SelectedItem is not IProjectTemplate template)
             {
-                MessageBox.Show(this, "请选择一个项目模板", "添加新项目", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请选择一个项目模板"), LocalizedText.Get("添加新项目"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string projectName = ProjectNameTextBox.Text?.Trim() ?? "";
             if (string.IsNullOrEmpty(projectName))
             {
-                MessageBox.Show(this, "请输入项目名称", "添加新项目", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("请输入项目名称"), LocalizedText.Get("添加新项目"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             char[] invalidChars = Path.GetInvalidFileNameChars();
             if (projectName.IndexOfAny(invalidChars) >= 0)
             {
-                MessageBox.Show(this, "项目名称包含无效字符", "添加新项目", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, LocalizedText.Get("项目名称包含无效字符"), LocalizedText.Get("添加新项目"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             string projectDir = Path.Combine(_targetDirectory, projectName);
             if (Directory.Exists(projectDir))
             {
-                MessageBox.Show(this, $"项目 \"{projectName}\" 已存在", "添加新项目",
+                MessageBox.Show(this, LocalizedText.Format($"项目 \"{projectName}\" 已存在"), LocalizedText.Get("添加新项目"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }

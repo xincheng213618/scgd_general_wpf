@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
@@ -307,7 +306,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return new AlgResultMasterModel
             {
                 TId = null,
-                TName = "LocalFindCross",
+                TName = request.ResultCode == 0 ? "optCenter" : "LocalFindCross",
                 ImgFile = NullIfWhiteSpace(request.ImageFilePath),
                 ImgFileType = ViewResultAlgType.FindCross,
                 version = ResultVersion,
@@ -433,7 +432,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         }
     }
 
-    [STNode("Flow_CustomNodes", "十字定位")]
+    [STNode("Flow_CustomNodes", "十字定位", CategoryOrder = 9900)]
     public sealed class LocalFindCrossNode : LocalFlowNodeBase
     {
         internal const int DetectionFailureResultCode = -1;
@@ -753,7 +752,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
             {
                 FlowNodeTiming.Skip("OpenImage");
-                imageFile = ResolveFrameFile(currentFrame);
+                imageFile = currentFrame.ResolveResultImageFilePath();
                 return currentFrame;
             }
 
@@ -832,25 +831,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 return -1;
             }
-        }
-
-        private static string? ResolveFrameFile(LocalFlowFrame frame)
-        {
-            string file = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
-                ? frame.CvCieFilePath
-                : frame.CvRawFilePath;
-            string? exactFrameFile = NullIfWhiteSpace(file);
-            if (exactFrameFile != null) return exactFrameFile;
-
-            // SourceFilePath is safe for historical overlays only while the in-memory
-            // primary buffer still uses the source bitmap's geometry and pixels. A
-            // calibrated or mirrored frame must not silently point the result viewer at
-            // the pre-transform source image; upstream SaveFiles should provide CvRaw/
-            // CvCie in those cases.
-            bool sourceStillMatchesPrimary = frame.Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvRaw
-                && frame.Metadata.FlipMode == CVImageFlipMode.None
-                && string.IsNullOrWhiteSpace(frame.Metadata.CalibrationTemplate);
-            return sourceStillMatchesPrimary ? NullIfWhiteSpace(frame.Metadata.SourceFilePath) : null;
         }
 
         private static string? NullIfWhiteSpace(string? value) =>

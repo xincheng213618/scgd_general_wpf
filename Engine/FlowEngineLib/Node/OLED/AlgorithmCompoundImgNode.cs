@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-[STNode("/03_3 Image")]
+[STNode("Image", CategoryOrder = 330)]
 [System.Obsolete("Deprecated image-composition flow node retained for loading existing flows.")]
 public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 {

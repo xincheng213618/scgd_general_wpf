@@ -1,4 +1,4 @@
-#pragma warning disable CA1822
+﻿#pragma warning disable CA1822
 namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel
@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
             get => _settingsStatusText;
             private set => SetProperty(ref _settingsStatusText, value ?? string.Empty);
         }
-        private string _settingsStatusText = "Ready. Add a model or edit a profile, then Apply or Save.";
+        private string _settingsStatusText = "添加或编辑模型后，点击应用或保存生效。";
 
         public string McpDiagnosticsSummaryText
         {

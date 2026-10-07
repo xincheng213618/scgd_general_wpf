@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
@@ -5,7 +6,6 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             string quality = qualityAvailable
                 ? $"标定 RMS={Value(measurements, "lens-distortion.calibration_rms_error"):G8}px；标定置信度={Value(measurements, "lens-distortion.calibration_confidence"):P2}"
                 : "未提供标定质量（结果不虚构置信度）";
-            SummaryText.Text = $"有效像素={Value(measurements, "lens-distortion.valid_fraction"):P2}；平均位移={Value(measurements, "lens-distortion.mean_displacement"):G8}px；最大位移={Value(measurements, "lens-distortion.maximum_displacement"):G8}px；{quality}。标定来源={calibration.GetProperty("source").GetString()}；版本={calibration.GetProperty("version").GetString()}。结果已通过 ImageView session 提交。";
+            SummaryText.Text = LocalizedText.Format($"有效像素={Value(measurements, "lens-distortion.valid_fraction"):P2}；平均位移={Value(measurements, "lens-distortion.mean_displacement"):G8}px；最大位移={Value(measurements, "lens-distortion.maximum_displacement"):G8}px；{quality}。标定来源={calibration.GetProperty("source").GetString()}；版本={calibration.GetProperty("version").GetString()}。结果已通过 ImageView session 提交。");
             Closed += (_, _) => DisposeOwnedState();
         }
 
@@ -80,7 +80,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.LensDistortio
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {

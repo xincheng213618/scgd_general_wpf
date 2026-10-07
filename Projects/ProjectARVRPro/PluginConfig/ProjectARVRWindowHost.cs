@@ -1,6 +1,5 @@
 using ColorVision.Engine;
 using log4net;
-using System;
 using System.Windows;
 
 namespace ProjectARVRPro.PluginConfig

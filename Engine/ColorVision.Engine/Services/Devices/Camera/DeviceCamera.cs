@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 #pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
@@ -18,7 +19,6 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -53,11 +53,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public PhyCamera? PhyCamera { get => _PhyCamera; set => AttachPhyCamera(value); }
         private PhyCamera? _PhyCamera;
         private PhyCamera? _subscribedPhyCamera;
-        private readonly Lazy<ViewCamera> _view;
+        private readonly DockViewRegistration _view;
         private int _disposeState;
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
-        internal ViewCamera ViewShell => Application.Current.Dispatcher.CheckAccess()
-            ? _view.Value : Application.Current.Dispatcher.Invoke(() => _view.Value);
+        internal DockViewRegistration ViewRegistration => _view;
+        internal ViewCamera? ExistingView => _view.Current as ViewCamera;
+        internal ViewCamera ViewShell => (ViewCamera)_view.GetOrCreate();
         public ViewCamera View
         {
             get
@@ -84,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(this);
             CameraBackend.Changed += CameraBackend_Changed;
             DisplayConfig.PropertyChanged += DisplayConfig_BackendPreferenceChanged;
-            _view = new Lazy<ViewCamera>(() => new ViewCamera(this, true));
+            _view = new DockViewRegistration(() => new ViewCamera(this, true), Config.Name);
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));
@@ -92,6 +93,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             FetchLatestTemperatureCommand = new RelayCommand(a => FetchLatestTemperature(a));
 
             DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
+            _view.ViewReleasing += view =>
+            {
+                Interlocked.Increment(ref previewVersion);
+                lock (previewSync) pendingPreview = null;
+                if (DisplayCameraControlLazy.IsValueCreated) DisplayCameraControlLazy.Value.ReleaseImageView((ViewCamera)view);
+            };
+            _view.ViewCreated += view =>
+            {
+                if (DisplayCameraControlLazy.IsValueCreated) DisplayCameraControlLazy.Value.AttachImageView((ViewCamera)view);
+            };
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
@@ -123,7 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             menuItem.Click += (s, e) => OpenLocalCameraWindow();
 
             ContextMenu.Items.Add(menuItem);
-            ContextMenu.Items.Add(new MenuItem() { Header = "本地校正缓存管理", Command = ReleaseLocalCalibrationCacheCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = LocalizedText.Get("本地缓存管理"), Command = ReleaseLocalCalibrationCacheCommand });
 
         }
 
@@ -164,7 +175,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [Description("CommandCameraLogHint")]
         public RelayCommand OpenCameraLogCommand { get; set; }
 
-        [CommandDisplay("本地校正缓存管理", Order = 1, CategoryOrder = 1)]
+        [CommandDisplay("本地缓存管理", Order = 1, CategoryOrder = 1)]
         [Category("CalibrationCorrection")]
         [Description("CommandCalibrationCacheHint")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; set; }
@@ -375,12 +386,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 else
                 {
-                    MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TemperatureDataNotFound);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData + " : " + ex.Message);
+                MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData + " : " + ex.Message);
             }
         }
 
@@ -490,20 +501,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 DisplayCameraControlLazy.Value.Dispose();
             }
 
-            if (_view.IsValueCreated)
-            {
-                ViewCamera view = _view.Value;
-                void DisposeView()
-                {
-                    DockViewManager.GetInstance().RemoveView(view);
-                    view.Dispose();
-                }
-
-                if (view.Dispatcher.CheckAccess())
-                    DisposeView();
-                else
-                    view.Dispatcher.Invoke(DisposeView);
-            }
+            _view.Dispose();
 
             AttachPhyCamera(null);
 

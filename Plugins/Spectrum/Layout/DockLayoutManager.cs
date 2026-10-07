@@ -1,7 +1,9 @@
+using LocalizedText = global::Spectrum.DisplayText;
 #pragma warning disable CA1852
 using AvalonDock;
+using AvalonDock.Core;
 using AvalonDock.Layout;
-using AvalonDock.Layout.Serialization;
+using AvalonDock.Serializer.Xml;
 using ColorVision.UI;
 using log4net;
 using System.Diagnostics;
@@ -79,7 +81,7 @@ namespace Spectrum.Layout
             Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
-                var serializer = new XmlLayoutSerializer(_dockingManager);
+                var serializer = new XmlLayoutSerializer(_dockingManager) { UnresolvedContentHandling = UnresolvedContentHandling.Hide };
                 serializer.LayoutSerializationCallback += (s, args) =>
                 {
                     if (args.Model.ContentId != null && _contentRegistry.TryGetValue(args.Model.ContentId, out var content))
@@ -116,7 +118,7 @@ namespace Spectrum.Layout
                 var leftPane = new LayoutAnchorablePane();
                 var controlPanel = new LayoutAnchorable
                 {
-                    Title = "控制面板",
+                    Title = LocalizedText.Get("控制面板"),
                     ContentId = "ControlPanel",
                     CanClose = false,
                     CanAutoHide = true,
@@ -136,7 +138,7 @@ namespace Spectrum.Layout
                 var docPane = new LayoutDocumentPane();
                 var chartDoc = new LayoutDocument
                 {
-                    Title = "光谱图表",
+                    Title = LocalizedText.Get("光谱图表"),
                     ContentId = "SpectrumChart",
                     CanClose = false
                 };
@@ -152,7 +154,7 @@ namespace Spectrum.Layout
 
                 var logAnchorable = new LayoutAnchorable
                 {
-                    Title = "日志",
+                    Title = LocalizedText.Get("日志"),
                     ContentId = "LogPanel",
                     CanClose = true,
                     CanAutoHide = true,
@@ -164,7 +166,7 @@ namespace Spectrum.Layout
 
                 var nativeLogAnchorable = new LayoutAnchorable
                 {
-                    Title = "光谱仪原生日志",
+                    Title = LocalizedText.Get("光谱仪原生日志"),
                     ContentId = "NativeLogPanel",
                     CanClose = true,
                     CanAutoHide = true,
@@ -220,8 +222,8 @@ namespace Spectrum.Layout
                 // Set title based on known ContentIds
                 newAnchorable.Title = contentId switch
                 {
-                    "LogPanel" => "日志",
-                    "NativeLogPanel" => "光谱仪原生日志",
+                    "LogPanel" => LocalizedText.Get("日志"),
+                    "NativeLogPanel" => LocalizedText.Get("光谱仪原生日志"),
                     _ => contentId
                 };
 

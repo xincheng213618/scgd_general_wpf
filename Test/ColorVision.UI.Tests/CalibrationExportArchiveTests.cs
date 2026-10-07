@@ -1,9 +1,6 @@
 using ColorVision.Engine.Services.PhyCameras.Group;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 
 namespace ColorVision.UI.Tests;
 

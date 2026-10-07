@@ -1,13 +1,18 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Themes;
+using log4net;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -19,6 +24,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     public partial class FlowExecutionAnalysisWindow : Window
     {
         private const long SlowNodeThresholdMs = 30000;
+        private static readonly ILog log = LogManager.GetLogger(typeof(FlowExecutionAnalysisWindow));
         private readonly FlowAnalysisDataSource _dataSource;
         private readonly MeasureBatchModel? _initialBatch;
         private readonly int? _initialBatchId;
@@ -36,6 +42,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private int _loadVersion;
         private bool _isClearingAnalysisRecords;
         private bool _isLoading;
+        private bool _isNavigationLoading;
+        private CancellationTokenSource? _loadCancellation;
 
         public FlowExecutionAnalysisWindow()
             : this(null, null, null, null, null, null, null)
@@ -117,14 +125,20 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            int loadVersion = ++_loadVersion;
+            var (loadVersion, cancellationToken) = BeginLoad();
             SetLoading(true);
             try
             {
-                InitialRunSelection selection = await Task.Run(ResolveInitialRun);
+                var initial = await Task.Run(() =>
+                {
+                    WriteFlushResult flush = FlushWrites();
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return (Selection: ResolveInitialRun(), Flush: flush);
+                }, cancellationToken);
                 if (loadVersion != _loadVersion)
                     return;
 
+                InitialRunSelection selection = initial.Selection;
                 if (!selection.BatchId.HasValue)
                 {
                     ShowEmptyPage(
@@ -137,7 +151,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     selection.BatchId.Value,
                     selection.SerialNumber,
                     selection.InitialRecordId,
-                    useInitialNodeFallback: true);
+                    useInitialNodeFallback: true,
+                    initialFlush: initial.Flush);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion == _loadVersion)
+                    ShowLoadError(ex);
             }
             finally
             {
@@ -148,8 +171,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private InitialRunSelection ResolveInitialRun()
         {
-            _dataSource.FlushPendingWrites(TimeSpan.FromSeconds(5));
-
             FlowNodeRecord? requestedNodeRecord = null;
             if (!string.IsNullOrWhiteSpace(_initialNodeId))
                 requestedNodeRecord = _dataSource.GetLastByNodeId(_initialNodeId);
@@ -214,23 +235,29 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int batchId,
             string? serialNumber,
             int? preferredRecordId,
-            bool useInitialNodeFallback = false)
+            bool useInitialNodeFallback = false,
+            WriteFlushResult? initialFlush = null)
         {
-            int loadVersion = ++_loadVersion;
+            var (loadVersion, cancellationToken) = BeginLoad();
+            var loadTimer = Stopwatch.StartNew();
+            _isNavigationLoading = true;
+            _allRuns = Array.Empty<FlowRunNavigationItem>();
+            _sameFlowRuns = Array.Empty<FlowRunNavigationItem>();
+            _currentAllRunIndex = -1;
+            _currentSameFlowRunIndex = -1;
+            AnalysisFrame.Content = null; // Unload deferred work belonging to the previous page.
             SetLoading(true);
             try
             {
                 var result = await Task.Run(() =>
                 {
-                    bool flushed = _dataSource.FlushPendingWrites(TimeSpan.FromSeconds(5));
+                    WriteFlushResult flush = initialFlush ?? FlushWrites();
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var queryTimer = Stopwatch.StartNew();
                     List<FlowNodeRecord> records =
                         _dataSource.GetByRun(batchId, serialNumber);
                     List<FlowNodeMessage> messages =
                         _dataSource.GetMessagesByRun(batchId, serialNumber);
-                    List<int> recentBatchIds =
-                        _dataSource.GetDistinctBatchIds(500);
-                    List<FlowNodeRecord> recentRecords =
-                        _dataSource.GetByBatchIds(recentBatchIds);
                     FlowRunRecord? run =
                         _dataSource.GetFlowRun(batchId, serialNumber);
                     List<FlowExecutionEvent> events = run == null
@@ -249,25 +276,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         !string.IsNullOrWhiteSpace(serialNumber)
                             ? serialNumber
                             : records.FirstOrDefault()?.SerialNumber);
-                    IReadOnlyList<FlowRunNavigationItem> sameFlowRuns =
-                        LoadFlowRunOrder(
-                            _dataSource.GetSameFlowRuns(
-                                effectiveSerialNumber));
-                    IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
-                        recentRecords
-                            .Concat(records)
-                            .GroupBy(record => record.Id)
-                            .Select(group => group.First()));
                     return (
-                        Flushed: flushed,
+                        Flush: flush,
+                        QueryMs: queryTimer.Elapsed.TotalMilliseconds,
                         Records: records,
                         Messages: messages,
-                        AllRuns: allRuns,
-                        SameFlowRuns: sameFlowRuns,
                         EffectiveSerialNumber: effectiveSerialNumber,
                         Run: run,
                         Events: events);
-                });
+                }, cancellationToken);
 
                 if (loadVersion != _loadVersion)
                     return;
@@ -280,6 +297,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     ? _initialBatch
                     : null;
 
+                var pageTimer = Stopwatch.StartNew();
                 _session = new FlowExecutionAnalysisSession(
                     batchId,
                     effectiveSerial,
@@ -292,16 +310,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     SlowNodeThresholdMs,
                     _dataSource);
 
-                _allRuns = result.AllRuns;
-                _currentAllRunIndex = FindCurrentRunIndex(
-                    _allRuns,
-                    batchId,
-                    effectiveSerial);
-                _sameFlowRuns = result.SameFlowRuns;
-                _currentSameFlowRunIndex = FindCurrentRunIndex(
-                    _sameFlowRuns,
-                    batchId,
-                    effectiveSerial);
                 _currentState = null;
                 UpdateNavigationButtons();
 
@@ -309,7 +317,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 {
                     ShowEmptyPage(
                         EngineLocalization.Format($"Batch {batchId} 没有节点记录"),
-                        result.Flushed
+                        result.Flush.Completed
                             ? EngineLocalization.Get("该批次可能来自旧版本，或没有执行到可记录节点。")
                             : EngineLocalization.Get("节点记录仍在写入，请稍后点击刷新。"));
                     return;
@@ -319,14 +327,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     FlowAnalysisPageKind.Overview,
                     _session.BatchId,
                     _session.SerialNumber);
-                NavigateTo(overviewState);
-
                 FlowNodeRecord? preferredRecord = _session.FindRecord(preferredRecordId)
                     ?? (useInitialNodeFallback ? FindInitialNodeRecord() : null);
-                if (preferredRecord != null)
-                {
-                    NavigateTo(CreateNodeState(preferredRecord));
-                }
+                NavigateTo(preferredRecord != null ? CreateNodeState(preferredRecord) : overviewState);
+                double pageMs = pageTimer.Elapsed.TotalMilliseconds;
+                double currentMs = loadTimer.Elapsed.TotalMilliseconds;
+                SetLoading(false);
+                // The current page is usable before any history query starts.
+                _ = LoadNavigationAsync(loadVersion, cancellationToken, _session,
+                    result.Flush, result.QueryMs, pageMs, currentMs);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (loadVersion == _loadVersion)
+                    ShowLoadError(ex);
             }
             finally
             {
@@ -334,6 +351,78 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     SetLoading(false);
             }
         }
+
+        private async Task LoadNavigationAsync(int loadVersion, CancellationToken cancellationToken,
+            FlowExecutionAnalysisSession session, WriteFlushResult flush, double queryMs, double pageMs, double currentMs)
+        {
+            try
+            {
+                await Dispatcher.Yield(DispatcherPriority.Background);
+                cancellationToken.ThrowIfCancellationRequested();
+                var result = await Task.Run(() =>
+                {
+                    // One summary per opened/refreshed run; logging cannot delay the current page.
+                    log.Info($"[FlowAnalysisLoad] batch={session.BatchId} source={(_dataSource.IsReadOnly ? "offline" : "live")} nodes={session.Records.Count} messages={session.Messages.Count} flushCompleted={flush.Completed} flushMs={flush.ElapsedMs:F1} queryMs={queryMs:F1} pageMs={pageMs:F1} currentLoadMs={currentMs:F1}");
+                    var historyTimer = Stopwatch.StartNew();
+                    List<int> batchIds = _dataSource.GetDistinctBatchIds(500);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    List<FlowNodeRecord> recentRecords = _dataSource.GetByBatchIds(batchIds);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
+                        recentRecords.Concat(session.Records).GroupBy(record => record.Id).Select(group => group.First()));
+                    IReadOnlyList<FlowRunNavigationItem> sameFlowRuns = LoadFlowRunOrder(
+                        _dataSource.GetSameFlowRuns(session.SerialNumber));
+                    log.Debug($"[FlowAnalysisNavigation] batch={session.BatchId} historyMs={historyTimer.Elapsed.TotalMilliseconds:F1} allRuns={allRuns.Count} sameFlowRuns={sameFlowRuns.Count}");
+                    return (AllRuns: allRuns, SameFlowRuns: sameFlowRuns);
+                }, cancellationToken);
+                if (loadVersion != _loadVersion)
+                    return;
+
+                _allRuns = result.AllRuns;
+                _sameFlowRuns = result.SameFlowRuns;
+                _currentAllRunIndex = FindCurrentRunIndex(_allRuns, session.BatchId, session.SerialNumber);
+                _currentSameFlowRunIndex = FindCurrentRunIndex(_sameFlowRuns, session.BatchId, session.SerialNumber);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"加载流程分析历史导航失败，Batch {session.BatchId} 的当前页面仍可查看。", ex);
+            }
+            finally
+            {
+                if (loadVersion == _loadVersion)
+                {
+                    _isNavigationLoading = false;
+                    UpdateNavigationButtons();
+                }
+            }
+        }
+
+        private (int Version, CancellationToken Token) BeginLoad()
+        {
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
+            _loadCancellation = new CancellationTokenSource();
+            _isNavigationLoading = false;
+            return (++_loadVersion, _loadCancellation.Token);
+        }
+
+        private WriteFlushResult FlushWrites()
+        {
+            var timer = Stopwatch.StartNew();
+            bool completed = _dataSource.FlushPendingWrites(TimeSpan.FromSeconds(5));
+            return new WriteFlushResult(completed, timer.Elapsed.TotalMilliseconds);
+        }
+
+        private void ShowLoadError(Exception exception)
+        {
+            log.Warn("加载流程执行分析失败。", exception);
+            ShowEmptyPage(EngineLocalization.Get("流程执行分析"), exception.Message);
+        }
+
+        private readonly record struct WriteFlushResult(bool Completed, double ElapsedMs);
 
         private FlowNodeRecord? FindInitialNodeRecord()
         {
@@ -369,6 +458,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             _currentState = target;
+            ExportButton.IsEnabled = target.PageKind != FlowAnalysisPageKind.Comparison;
             RenderCurrentPage();
             UpdateNavigationButtons();
         }
@@ -385,6 +475,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     AnalysisFrame.Content = new FlowExecutionOverviewPage(
                         _session,
                         record => NavigateTo(CreateNodeState(record)),
+                        OpenNodeComparison,
                         LocateFlowNode,
                         () => NavigateTo(CreateMessageState(null, null)),
                         ClearCurrentFlowRecords,
@@ -410,6 +501,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _focusFlowNode != null,
                         adjacent => NavigateTo(CreateNodeState(adjacent)),
                         NavigateToHistoryRecord,
+                        OpenNodeComparison,
                         LocateFlowNode,
                         (scope, messageId) => NavigateTo(CreateMessageState(scope, messageId)),
                         () => NavigateTo(
@@ -422,6 +514,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         "流程执行分析",
                         "流程概览 / 节点分析",
                         BuildRunSubtitle(_session));
+                    break;
+
+                case FlowAnalysisPageKind.Comparison:
+                    FlowNodeRecord? comparisonRecord = _session.FindRecord(state.RecordId);
+                    if (comparisonRecord == null) return;
+                    AnalysisFrame.Content = new FlowNodeComparisonPage(_session, comparisonRecord,
+                        () => NavigateTo(CreateNodeState(comparisonRecord)));
+                    UpdateHeader("跨批次比对", "流程概览 / 节点分析 / 跨批次比对",
+                        $"{comparisonRecord.NodeName} · {BuildRunSubtitle(_session)}");
                     break;
 
                 case FlowAnalysisPageKind.Messages:
@@ -492,6 +593,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 _session.BatchId,
                 _session.SerialNumber,
                 record.Id);
+        }
+
+        private void OpenNodeComparison(FlowNodeRecord record)
+        {
+            if (_session == null) return;
+            NavigateTo(new FlowAnalysisNavigationState(FlowAnalysisPageKind.Comparison,
+                _session.BatchId, _session.SerialNumber, record.Id));
         }
 
         private FlowAnalysisNavigationState CreateMessageState(
@@ -605,6 +713,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isLoading || _isClearingAnalysisRecords)
+                return;
             if (_session == null)
             {
                 Window_Initialized(sender, EventArgs.Empty);
@@ -615,9 +725,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int? preferredRecordId = previousState?.PageKind == FlowAnalysisPageKind.Node
                 ? previousState.Value.RecordId
                 : null;
+            int refreshVersion = _loadVersion + 1;
             await LoadRunAsync(_session.BatchId, _session.SerialNumber, preferredRecordId);
 
-            if (_session == null || !previousState.HasValue)
+            if (refreshVersion != _loadVersion || _session == null || !previousState.HasValue)
                 return;
 
             if (previousState.Value.PageKind == FlowAnalysisPageKind.Messages)
@@ -625,6 +736,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 FlowNodeRecord? scope = _session.FindRecord(previousState.Value.RecordId);
                 NavigateTo(
                     CreateMessageState(scope, previousState.Value.MessageId));
+            }
+            else if (previousState.Value.PageKind == FlowAnalysisPageKind.Comparison
+                && _session.FindRecord(previousState.Value.RecordId) is FlowNodeRecord record)
+            {
+                OpenNodeComparison(record);
             }
         }
 
@@ -739,6 +855,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string scopeName,
             Func<Task> refreshAction)
         {
+            BeginLoad(); // Invalidate history reads started before the deletion.
             _isClearingAnalysisRecords = true;
             ClearAllRecordsButton.IsEnabled = false;
             SetLoading(true);
@@ -843,12 +960,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         protected override void OnClosed(EventArgs e)
         {
             ++_loadVersion;
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
+            _loadCancellation = null;
             AnalysisFrame.Content = null;
             base.OnClosed(e);
         }
 
         private void ShowEmptyPage(string title, string description)
         {
+            _isNavigationLoading = false;
             _session = null;
             _currentState = null;
             _allRuns = Array.Empty<FlowRunNavigationItem>();
@@ -887,13 +1008,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             _isLoading = isLoading;
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            Mouse.OverrideCursor = isLoading ? Cursors.Wait : null;
+            Cursor = isLoading ? Cursors.Wait : null;
             UpdateNavigationButtons();
         }
 
         private void UpdateNavigationButtons()
         {
-            bool canNavigateAllRuns = !_isLoading && _session != null && _currentAllRunIndex >= 0;
+            bool canNavigateAllRuns = !_isLoading && !_isNavigationLoading && _session != null && _currentAllRunIndex >= 0;
             PreviousRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex > 0;
             NextRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex + 1 < _allRuns.Count;
             PreviousRunButton.ToolTip = PreviousRunButton.IsEnabled
@@ -904,7 +1025,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : EngineLocalization.Get("没有下一次流程执行");
 
             bool canNavigateSameFlow =
-                !_isLoading && _session != null && _currentSameFlowRunIndex >= 0;
+                !_isLoading && !_isNavigationLoading && _session != null && _currentSameFlowRunIndex >= 0;
             PreviousSameFlowRunButton.IsEnabled =
                 canNavigateSameFlow && _currentSameFlowRunIndex > 0;
             NextSameFlowRunButton.IsEnabled =
@@ -915,6 +1036,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             NextSameFlowRunButton.ToolTip = NextSameFlowRunButton.IsEnabled
                 ? EngineLocalization.Format($"下次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex + 1])}")
                 : EngineLocalization.Get("没有下次相同流程执行");
+            if (_isNavigationLoading)
+            {
+                string loadingText = EngineLocalization.Get("正在加载流程执行记录…");
+                PreviousRunButton.ToolTip = NextRunButton.ToolTip = loadingText;
+                PreviousSameFlowRunButton.ToolTip = NextSameFlowRunButton.ToolTip = loadingText;
+            }
         }
 
         private IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
@@ -1045,7 +1172,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             HeaderTitleText.Text = EngineLocalization.Get(title);
             BreadcrumbText.Text = EngineLocalization.Get(breadcrumb);
-            HeaderSubtitleText.Text = _dataSource.IsReadOnly ? $"{_dataSource.Label} · 只读 · {subtitle}" : subtitle;
+            HeaderSubtitleText.Text = _dataSource.IsReadOnly ? LocalizedText.Format($"{_dataSource.Label} · 只读 · {subtitle}") : subtitle;
         }
 
         private static string BuildRunSubtitle(FlowExecutionAnalysisSession session)

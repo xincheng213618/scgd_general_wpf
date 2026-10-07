@@ -1,5 +1,4 @@
 using Anthropic.Exceptions;
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using System.Globalization;
 using System.IO;
@@ -146,6 +145,8 @@ public sealed class CopilotAnthropicHttpFailureTests
     [InlineData(503, 3, true)]
     public async Task HttpFailureDuringNoToolsFinalizationPreservesCauseAndCompletedTool(int statusCode, int failedAttempts, bool partialAnswer)
     {
+        var streamingAttempts = partialAnswer ? 1 : CopilotProviderRetryChatClient.DefaultMaximumAttempts;
+        var callsBeforeFinalization = 1 + streamingAttempts;
         var incomplete = CompletedResponse(toolCall: false);
         incomplete = incomplete with
         {
@@ -155,7 +156,7 @@ public sealed class CopilotAnthropicHttpFailureTests
         await using var server = new LoopbackProvider(call => call switch
         {
             1 => CompletedResponse(toolCall: true),
-            2 => incomplete,
+            _ when call <= callsBeforeFinalization => incomplete,
             _ => ErrorResponse(statusCode),
         });
         using var fixture = new RunFixture(server, requestTool: true);
@@ -163,12 +164,13 @@ public sealed class CopilotAnthropicHttpFailureTests
         var result = await fixture.RunAsync();
 
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
-        Assert.Equal(2 + failedAttempts, server.CallCount);
+        Assert.Equal(callsBeforeFinalization + failedAttempts, server.CallCount);
         Assert.Equal(server.CallCount, result.Budget.ProviderCalls);
-        Assert.Equal(failedAttempts - 1, result.Budget.ProviderRetryCount);
+        Assert.Equal(streamingAttempts - 1 + failedAttempts - 1, result.Budget.ProviderRetryCount);
         // This finalization prompt has no older conversation groups to compact; 413 must not resend the same input.
         Assert.Equal(0, result.Budget.ContextRecoveryCount);
-        Assert.Equal(220, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(callsBeforeFinalization * 110, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(result.Usage.EffectiveTotalTokens, result.Budget.ReportedTotalTokens);
         Assert.Equal(1, fixture.Tool.CallCount);
         Assert.Equal(CopilotToolExecutionState.Completed, Assert.Single(result.StepRecords).Execution.State);
         var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
@@ -180,7 +182,7 @@ public sealed class CopilotAnthropicHttpFailureTests
         else
             Assert.Contains(blocker.Summary, answer);
         Assert.DoesNotContain(fixture.Events, item => item.Type == CopilotAgentEventType.AnswerReset);
-        foreach (var payload in server.Payloads.Skip(2))
+        foreach (var payload in server.Payloads.Skip(callsBeforeFinalization))
         {
             using var document = JsonDocument.Parse(payload);
             Assert.False(document.RootElement.TryGetProperty("tools", out var tools) && tools.GetArrayLength() > 0);

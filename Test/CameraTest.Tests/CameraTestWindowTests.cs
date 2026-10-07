@@ -22,12 +22,87 @@ namespace CameraTest.Tests;
 public sealed class CameraTestWindowTests
 {
     [Fact]
+    public async Task CheckerboardRegionsUseSharedFourEdgeResultsAndDisplayDetectedType()
+    {
+        CameraTestWindow? window = null;
+        Task? pending = null;
+        int regionCount = 0;
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
+                window = new CameraTestWindow(TestSettingsPath()) { Width=1500,Height=920,Left=-20000,Top=-20000,ShowInTaskbar=false,ShowActivated=false,WindowStartupLocation=WindowStartupLocation.Manual };
+                window.Show();
+                TestFrame frame;
+                Rect[] regions;
+                if (Environment.GetEnvironmentVariable("CAMERATEST_CHECKERBOARD_IMAGE") is { Length: > 0 } path)
+                {
+                    frame = TestFrame.Open(path);
+                    regions = [new(5136,3113,500,500),new(3729,3140,500,500),new(4425,2773,500,500),new(5117,2234,500,500),new(3714,2261,500,500)];
+                }
+                else
+                {
+                    const int size=720;
+                    byte[] pixels=new byte[size*size]; double angle=5*Math.PI/180;
+                    for(int y=0;y<size;y++) for(int x=0;x<size;x++)
+                    {
+                        double dx=x-360,dy=y-360;
+                        int u=(int)Math.Floor((dx*Math.Cos(angle)+dy*Math.Sin(angle))/180),v=(int)Math.Floor((-dx*Math.Sin(angle)+dy*Math.Cos(angle))/180);
+                        pixels[y*size+x]=(byte)((u+v)%2==0?40:200);
+                    }
+                    frame=new(new(pixels,size,size,8,1,size,DateTimeOffset.Now),"Synthetic checkerboard");
+                    regions=[new(60,60,600,600),new(150,150,420,420),new(293,250,160,230)];
+                }
+                var profile=Field<TestProfile>(window,"_profile");
+                regionCount=regions.Length;
+                ((ComboBox)window.FindName("ChartTypeSelector")).SelectedIndex = 2;
+                Assert.Equal(SfrChartType.Auto, profile.MeasurementRoi.ChartType);
+                Invoke(window,"ShowFrame",frame);
+                var draw=((ImageView)window.FindName("ImageView")).EditorContext.DrawEditorContext;
+                foreach(var r in regions) draw.DrawCanvas.AddVisualCommand(new DVRectangleText(new() { Rect=r }));
+                pending=window.AnalyzeCurrentFrameAsync();
+            });
+            await pending!;
+            await window!.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            WpfTestHost.Invoke(() =>
+            {
+                var result=Field<FrameAnalysis>(window!,"_result");
+                Assert.Equal(regionCount,result.Targets.Count);
+                Assert.All(result.Targets,t => { Assert.True(t.Located); Assert.Equal(SfrChartType.Checkerboard,t.DetectedChartType); Assert.Equal(4,t.Edges.Count); });
+                var rows=((DataGrid)window!.FindName("Metrics")).Items.OfType<MetricRow>().ToArray();
+                Assert.Equal(regionCount*4,rows.Length);
+                Assert.All(rows,r => Assert.Equal(r.Analysis == null ? "—" : "Y (L)",r.Channel));
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CAMERATEST_CHECKERBOARD_IMAGE")))
+                {
+                    var partial = result.Targets.Last();
+                    Assert.Contains(partial.Edges, edge => edge.Analysis != null);
+                    Assert.Contains(partial.Edges, edge => edge.Analysis == null && edge.Reason == "checkerboard_insufficient_edge_support");
+                    var unavailable = Assert.Single(rows.Where(row => row.Target == partial.Id && row.Status == "checkerboard_insufficient_edge_support"));
+                    Assert.Null(unavailable.Mtf50);
+                    Assert.Contains("增大外部选框", MeasurementOverview.Explain(unavailable.Status));
+                }
+                Assert.Contains("棋盘格",((TextBlock)window.FindName("SelectedMetricCaption")).Text);
+                if(Environment.GetEnvironmentVariable("CAMERATEST_CHECKERBOARD_CAPTURE") is { Length: >0 } capture)
+                {
+                    window.UpdateLayout();
+                    var bitmap=new RenderTargetBitmap(1500,920,96,96,PixelFormats.Pbgra32);bitmap.Render(window);
+                    var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var stream=File.Create(capture);encoder.Save(stream);
+                }
+            });
+        }
+        finally { if(window!=null) WpfTestHost.Invoke(window.Close); }
+    }
+
+    private static string TestSettingsPath() => System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CameraTest-tests", Guid.NewGuid().ToString("N"), "settings.json");
+
+    [Fact]
     public void UpdatingRegionGeometryPreservesTheCanvasMultiSelection()
     {
         WpfTestHost.Invoke(() =>
         {
             System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
-            var window = new CameraTestWindow();
+            var window = new CameraTestWindow(TestSettingsPath());
             try
             {
                 var frame = new ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraFrame(new byte[400 * 300], 400, 300, 8, 1, 400, DateTimeOffset.Now);
@@ -66,7 +141,7 @@ public sealed class CameraTestWindowTests
         WpfTestHost.Invoke(() =>
         {
             System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
-            var window = new CameraTestWindow { WindowStartupLocation = WindowStartupLocation.Manual, Left = -20000, Top = -20000, ShowInTaskbar = false, ShowActivated = false };
+            var window = new CameraTestWindow(TestSettingsPath()) { WindowStartupLocation = WindowStartupLocation.Manual, Left = -20000, Top = -20000, ShowInTaskbar = false, ShowActivated = false };
             try
             {
                 window.Show();
@@ -84,9 +159,11 @@ public sealed class CameraTestWindowTests
                             var edited = Assert.IsType<BmwSfrViewSettings>(dialog.EditConfig);
                             Assert.Equal(originalRoi, edited.MeasurementRoi);
                             edited.MeasurementRoi.AlongEdgePixels = 100;
+                            edited.MeasurementRoi.ChartType = SfrChartType.Checkerboard;
                             edited.Display.ShowTargetCenter = false;
                             if (confirm && Environment.GetEnvironmentVariable("CAMERATEST_SETTINGS_CAPTURE") is { Length: > 0 } path)
                             {
+                                dialog.TreeNodes.Single(n => n.Header == "图卡与测量框").IsSelected = true;
                                 dialog.UpdateLayout();
                                 var bitmap = new RenderTargetBitmap((int)dialog.ActualWidth, (int)dialog.ActualHeight, 96, 96, PixelFormats.Pbgra32);
                                 bitmap.Render(dialog);
@@ -101,6 +178,8 @@ public sealed class CameraTestWindowTests
                     ((MenuItem)window.FindName("DisplaySettingsMenuItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                     Assert.Null(failure);
                     Assert.Equal(confirm ? 100 : 80, profile.MeasurementRoi.AlongEdgePixels);
+                    Assert.Equal(confirm ? SfrChartType.Checkerboard : SfrChartType.Bmw, profile.MeasurementRoi.ChartType);
+                    Assert.Equal(confirm ? 1 : 0, ((ComboBox)window.FindName("ChartTypeSelector")).SelectedIndex);
                     Assert.Equal(60, profile.MeasurementRoi.AcrossEdgePixels);
                     Assert.Equal(95, profile.MeasurementRoi.CenterDistancePixels);
                     Assert.Equal(!confirm, profile.Display.ShowTargetCenter);
@@ -116,7 +195,7 @@ public sealed class CameraTestWindowTests
         WpfTestHost.Invoke(() =>
         {
             System.Windows.Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/ColorVision.Themes;component/Themes/Theme.xaml", UriKind.Relative) });
-            var window = new CameraTestWindow();
+            var window = new CameraTestWindow(TestSettingsPath());
             try
             {
                 var profile = Field<TestProfile>(window, "_profile");
@@ -127,7 +206,7 @@ public sealed class CameraTestWindowTests
                 typeof(ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraSession).GetField("_latest", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(camera,
                     new ColorVision.Engine.Services.Devices.Camera.Local.StandaloneCameraFrame(new byte[160 * 120], 160, 120, 8, 1, 160, DateTimeOffset.Now));
                 typeof(CameraTestWindow).GetField("_live", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window, true);
-                Invoke(window, "Live_Tick", window, EventArgs.Empty);
+                Invoke(window, "ProcessLatestFrameAsync");
                 Invoke(window, "StopLive");
                 Invoke(window, "Refresh");
                 Assert.Equal(160, Field<TestFrame>(window, "_frame").Data.Width);
@@ -162,7 +241,7 @@ public sealed class CameraTestWindowTests
                     using var stream = File.Create(sample);
                     encoder.Save(stream);
                 }
-                window = new CameraTestWindow { Width = 1500, Height = 920, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual, ShowInTaskbar = false, ShowActivated = false };
+                window = new CameraTestWindow(TestSettingsPath()) { Width = 1500, Height = 920, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual, ShowInTaskbar = false, ShowActivated = false };
                 window.Show();
                 pending = window.OpenImageAsync(sample);
             });
@@ -356,7 +435,7 @@ public sealed class CameraTestWindowTests
                 using var stream = File.Create(sample);
                 encoder.Save(stream);
             }
-            window = new CameraTestWindow();
+            window = new CameraTestWindow(TestSettingsPath());
             window.Width = 1500;
             window.Height = 920;
             window.WindowStartupLocation = WindowStartupLocation.Manual;

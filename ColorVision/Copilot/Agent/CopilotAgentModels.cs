@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
-using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
@@ -138,6 +135,7 @@ namespace ColorVision.Copilot
                 Summary = source.Summary ?? string.Empty,
                 PartialResultMessage = source.PartialResultMessage ?? string.Empty,
                 Content = source.Content ?? string.Empty,
+                WebEvidenceSourceUrls = source.WebEvidenceSourceUrls == null ? null : Freeze(source.WebEvidenceSourceUrls),
                 ErrorMessage = source.ErrorMessage ?? string.Empty,
                 FailureKind = source.FailureKind,
                 FailureCode = source.FailureCode ?? string.Empty,

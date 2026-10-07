@@ -107,6 +107,14 @@ def _latest_version_payload() -> tuple[str, str]:
     return version, latest_version_etag(_storage(), version)
 
 
+def _site_download_response(payload):
+    from services.setup_download import get_download_assistant
+
+    # Attach live availability after either indexed or filesystem read models;
+    # publishing the assistant must not change the application's latest release.
+    return jsonify({**payload, "download_assistant": get_download_assistant(_storage())})
+
+
 @pages.route("/api/site/home")
 def api_site_home():
     from page_contexts import build_compact_index_page_context, build_index_page_context
@@ -123,7 +131,7 @@ def api_site_home():
                 get_tool_preview=lambda: _services().get_request_home_tool_preview(request_context),
                 cache_manager=_cache(),
             )
-            return jsonify(build_compact_index_page_context(payload))
+            return _site_download_response(build_compact_index_page_context(payload))
 
     payload = build_index_page_context(
         _storage(),
@@ -134,7 +142,7 @@ def api_site_home():
     )
     if is_compact:
         payload = build_compact_index_page_context(payload)
-    return jsonify(payload)
+    return _site_download_response(payload)
 
 
 @pages.route("/api/site/releases")
@@ -158,11 +166,11 @@ def api_site_releases():
         }
         compact_payload = _services().get_request_compact_release_page(**compact_kwargs)
         if compact_payload is not None:
-            return jsonify(compact_payload)
+            return _site_download_response(compact_payload)
         app_info = _services().get_request_release_app_info(request_context)
-        return jsonify(build_compact_releases_page_context(app_info, **compact_kwargs))
+        return _site_download_response(build_compact_releases_page_context(app_info, **compact_kwargs))
     app_info = _services().get_request_release_app_info(request_context)
-    return jsonify(build_releases_page_context(app_info, **kwargs))
+    return _site_download_response(build_releases_page_context(app_info, **kwargs))
 
 
 @pages.route("/api/android/update")

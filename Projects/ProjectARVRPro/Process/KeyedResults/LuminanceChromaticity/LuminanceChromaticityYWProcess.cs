@@ -2,11 +2,8 @@
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Recipe;

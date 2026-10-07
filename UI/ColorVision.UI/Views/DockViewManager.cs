@@ -24,6 +24,28 @@ namespace ColorVision.UI.Views
         /// </summary>
         public Dictionary<Control, string> ViewTitles { get; } = new();
 
+        private readonly List<DockViewRegistration> _registrations = new();
+
+        public void RegisterView(DockViewRegistration registration)
+        {
+            if (!_registrations.Contains(registration)) _registrations.Add(registration);
+        }
+
+        internal void UnregisterView(DockViewRegistration registration) => _registrations.Remove(registration);
+
+        public void OpenView(DockViewRegistration registration)
+        {
+            RegisterView(registration);
+            Control control = registration.GetOrCreate();
+            SetViewTitle(control, registration.Title);
+            ActiveView(control);
+        }
+
+        public void CloseView(Control control)
+        {
+            _registrations.FirstOrDefault(item => ReferenceEquals(item.Current, control))?.Release();
+        }
+
         /// <summary>
         /// 上一次激活的视图控件
         /// </summary>
@@ -130,6 +152,12 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void ShowAllViews()
         {
+            foreach (var registration in _registrations.ToArray())
+            {
+                Control control = registration.GetOrCreate();
+                SetViewTitle(control, registration.Title);
+                AddView(control);
+            }
             ShowAllViewsHandler?.Invoke();
         }
 

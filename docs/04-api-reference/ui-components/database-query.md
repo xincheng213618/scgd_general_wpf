@@ -5,13 +5,13 @@ status: "current"
 summary: "实体驱动的通用查询窗口：条件参数化、执行时SQL预览、结果替换与进程内会话；关闭不取消查询，清空表/截断表作用于整表而非筛选结果。"
 aliases: ["通用查询", "高级查询", "查询窗口", "查询条件保存", "筛选结果", "SQL预览", "清空条件", "清空表", "截断表", "查询取消", "GenericQueryWindow", "GenericQuery", "QueryCondition", "QueryOperator", "GenericQueryConditionSupport", "GenericQuerySessionStore", "GenericQueryBaseConfig"]
 code_paths: ["UI/ColorVision.Database/GenericQueryWindow.xaml", "UI/ColorVision.Database/GenericQueryWindow.xaml.cs", "UI/ColorVision.Database/GenericQueryConditionSupport.cs", "UI/ColorVision.Database/GenericQuerySessionStore.cs", "UI/ColorVision.Database/IEntity.cs", "Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs", "Engine/ColorVision.Engine/Messages/MessagesListManager.cs", "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs"]
+test_paths: []
 related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-protocol"]
 ---
 
 # 通用查询、条件会话与整表操作
 
-“高级查询”（`GenericQueryWindow`）用于按实体字段筛选业务列表。选择字段并添加条件，设置数量和排序，再点击“查询”，结果会替换原业务列表；窗口不另建结果表。
+“高级查询”（`GenericQueryWindow`）用于按实体字段筛选业务列表。直接在条件行中选择字段、比较方式并填写值，设置数量和排序，再点击“查询”，结果会替换原业务列表；窗口不另建结果表，也不内置业务专属查询方案。
 
 字段来自 C# 实体，不扫描真实表结构；当前没有分页、后台加载或取消旧结果机制。默认窗口初始化只装配条件、恢复会话和绑定事件，查询时才访问调用方数据库；打开入口是否提前初始化数据库取决于具体调用方。底层连接见[数据库基础](./ColorVision.Database.md)。
 
@@ -21,9 +21,11 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 
 显示名依次取 `Display`、`DisplayName`、内置字段名映射、属性名；排序先按预设字段优先级，再按当前文化的显示名。SQL 列名取 `SugarColumn.ColumnName`，否则使用属性名。条件值参数化，但列名直接来自实体元数据，本层没有额外的标识符校验；实体元数据应由受信代码维护。
 
+没有恢复条件时，窗口直接提供一条待填写的条件行。字段选择器同时展示友好名称和属性名，输入可按显示名、属性名或数据库列名进行包含搜索；每一行独立筛选候选。Enter 确认唯一候选或当前选项后转到值，不同时触发查询。换字段会清除旧值和错误、恢复该类型的默认比较方式，并换成对应的文本、日期、布尔或枚举控件。输入了字段文字但尚未选中候选时，查询会报错，不沿用旧字段或静默忽略该行；完全空白的待填写行不参与过滤。
+
 | 输入 | 当前行为 |
 | --- | --- |
-| 多条条件 | 顺次追加 AND；可以重复添加同一字段形成范围。“添加全部”仅补尚未出现的字段，没有 OR 或分组编辑 |
+| 多条条件 | “添加条件”追加待填写行，顺次追加 AND；可以重复选择同一字段形成范围。更多菜单中的“全部添加”仅补尚未出现的字段，没有 OR 或分组编辑 |
 | 字符串 | 默认 LIKE，另有等于/不等于；输入会 Trim；LIKE 包成 `%value%`，用户输入的 `%`、`_` 不转义为字面量 |
 | 布尔、枚举 | 下拉选择，提供等于/不等于；枚举传参转换成 Int32，不承诺任意宽整数枚举都可查询 |
 | 日期、数值、Guid | 提供比较操作；日期来自 DatePicker，不自动扩展为整天范围；文本转换使用类型转换器和当前文化 |
@@ -41,9 +43,11 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 
 默认条件转换或数据库查询在清空集合之前失败，通常留下原集合；但 `PreQuery` 订阅者可以先修改状态。转换器、集合事件或完成事件异常可能发生在结果已经清空/部分替换之后。窗口只显示异常，不回滚结果或订阅者副作用，不能概括成“查询失败一定保留旧结果”。
 
+检测结果历史页的批次搜索是调用方自己的异步路径。查询失败时它保留上一次成功加载的行，同时在 Copilot `measurement-results` 上下文中明确标记 `Last query: Failed`、`Stale (last query failed; loaded rows may predate it)`、本次请求筛选是否仍与已加载筛选一致，以及上次成功加载的 UTC 时间。这样保留的旧行不会被当成本次筛选结果；这些新鲜度字段也用于高级查询失败后的不可信列表，不改变通用 `GenericQueryWindow` 的部分替换边界。
+
 `Query_Click` 虽为 async，但只先 `Dispatcher.Yield` 一次，随后在 UI 线程同步执行查询。没有取消令牌、该层查询超时设置或关窗状态复查：同步阶段可能阻塞窗口；在 yield 间关闭也没有阻止后续查询的判断。关闭按钮的 `IsCancel` 只是窗口关闭语义，不取消 SQL、不回滚结果。
 
-数据库连接由调用方拥有，窗口不负责 `Dispose`；窗口对 query 的事件订阅也没有在关闭时统一解除。复用 query 或延长其生命周期前需核对这些引用，不把关窗当成全部资源已经释放。
+数据库连接由调用方拥有，窗口不负责 `Dispose`；窗口在 `Closed` 解除自己对 query 的条件变更和完成事件订阅。这不代表调用方订阅者或数据库资源也已经释放。
 
 ## 条件会话保存到哪里
 
@@ -51,9 +55,9 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 
 - 同一 `T` 的不同连接、不同业务调用方以及两个泛型形态共享最后保存状态，不按 `T1` 或连接隔离；不能作为租户或用户隔离边界。
 - 第一次 `GetControl()` 恢复一次，只按当前可查询属性名匹配，已经移除的字段跳过，不在每次显示时重新合并状态。
-- 窗口查询正常返回后保存，`Closing` 也保存。因此未执行、甚至无效的条件可能留到下次；进程退出后不保留。
+- 窗口查询正常返回后保存，`Closing` 也保存。只保存已选定字段的条件，空行或未确认的字段搜索文字不保存；已选字段的未执行、甚至无效值仍可能留到下次。进程退出后不保留。
 - 数量和排序控件只在点击查询时写入 `QueryConfig`。仅修改这两个控件后关窗，保存的是此前配置值，不是所有屏幕上未应用的编辑。
-- `ResetConditions` 清空条件行和该 `T` 的会话记录，但不重置数量、排序、SQL 或调用方结果；之后关闭又会保存一份空条件状态。
+- `ResetConditions` 清空条件行和该 `T` 的会话记录，但不重置数量、排序、SQL 或调用方结果。窗口的“清除条件”随后补一条待填写行，关闭时仍保存为空条件状态。
 
 ## 清空条件不等于清空表
 
@@ -63,7 +67,7 @@ related: ["ui.database", "ui.sqlite-storage", "operations.data", "ui.socket-prot
 | 默认 `DeleteAll` | 无条件的 `Db.Deleteable<T>().ExecuteCommand()`；不使用当前条件或数量限制 |
 | 默认 `TruncateTable` | 直接发出 `TRUNCATE TABLE {tableName}`；不带当前过滤；本层不做统一方言适配或表名转义 |
 
-整表操作前应明确目标表、影响范围、业务停写与恢复方案。窗口的两个整表入口各有 Yes/No 确认；公开方法与 `RelayCommand` 不内置该确认或统一权限检查。操作正常返回后窗口只显示成功，不核对影响行数、不自动重新查询或清空旧结果集合，也不提供备份、统一事务和恢复。不要将所有数据库的截断/自增重置/回滚行为视为相同。
+整表操作前应明确目标表、影响范围、业务停写与恢复方案。窗口的两个整表入口位于“更多 → 表维护”，各有 Yes/No 确认；公开方法与 `RelayCommand` 不内置该确认或统一权限检查。操作正常返回后窗口只显示成功，不核对影响行数、不自动重新查询或清空旧结果集合，也不提供备份、统一事务和恢复。不要将所有数据库的截断/自增重置/回滚行为视为相同。
 
 Socket 的实际查询子类用自己的维护锁，并将 SQLite 截断改为事务内 `DELETE` 加 `sqlite_sequence` 清理；这是调用方定制，不是默认 `GenericQuery` 的跨库能力。锁、备份和压缩正文迁移的边界见 [SQLite 存储与维护](./sqlite-storage.md)。
 
@@ -73,6 +77,6 @@ Socket 的实际查询子类用自己的维护锁，并将 SQLite 截断改为�
 - `Engine/ColorVision.Engine/Messages/MessagesListManager.cs`：查询 `MsgRecord` 并替换 `MsgRecords`，在 finally 释放连接；这与 Socket 的库和集合不同。
 - `UI/ColorVision.SocketProtocol/SocketMessageManager.cs`：定制查询、SQLite 整表操作及维护锁接入；列表与压缩正文按 ID 读取的责任分开。
 
-`Test/ColorVision.UI.Tests/GenericQueryConditionSupportTests.cs` 覆盖友好字段名与排除项、值解析、布尔与重复范围、空白跳过、直接保存/恢复会话，以及无查询前副作用时非法条件不清旧结果。测试使用临时 SQLite 与 STA 控件构造，引用不表示本次已经运行。
+窗口测试覆盖字段搜索隔离、Enter 不查询、未确认字段阻止查询、清除后关闭不保存空行，以及深浅主题下默认/最小宽度的输入布局；使用临时 SQLite 与 STA/WPF 控件，不访问业务数据库。引用不表示本次已经运行。
 
-现有专项测试不覆盖真实 Closing、未应用的数量/排序、SQL 数量限制显示、跨连接共享状态、转换器部分失败、关闭/取消时序、整表操作和实际 MySQL。上述执行边界来自源码核对，不是对用户数据库的运行验收。
+现有专项测试不覆盖未应用的数量/排序、SQL 数量限制显示、跨连接共享状态、转换器部分失败、关闭/取消时序、整表操作和实际 MySQL。上述执行边界来自源码核对，不是对用户数据库的运行验收。

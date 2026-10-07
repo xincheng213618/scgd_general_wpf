@@ -507,7 +507,7 @@ a:hover {
 .home-platform-downloads {
   width: min(1120px, calc(100% - 32px));
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 14px;
   margin: -62px auto 0;
   position: relative;
@@ -2140,6 +2140,43 @@ body.cv-home-light .workflow-icon {
 
 .auth-form {
   margin-top: 18px;
+}
+
+.platform-windows-download.ant-btn {
+  width: max-content;
+  max-width: 100%;
+  color: #0b1020;
+  background: #fff;
+  border-color: #fff;
+}
+
+.windows-download-menu {
+  max-width: calc(100vw - 24px);
+}
+
+.windows-download-menu .ant-dropdown-menu-item {
+  padding: 12px;
+}
+
+.windows-download-option {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  white-space: normal;
+}
+
+.windows-download-option strong {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.windows-download-option small,
+.windows-download-option > span {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.75;
 }
 
 .login-home-link {

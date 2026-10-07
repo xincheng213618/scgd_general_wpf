@@ -10,6 +10,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         public ViewDllVersionsWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         }
 
         private void Window_Initialized(object sender, EventArgs e)

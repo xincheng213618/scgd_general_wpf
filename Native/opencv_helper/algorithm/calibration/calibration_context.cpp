@@ -4,6 +4,7 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
+#include <opencv2/core.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -357,6 +358,16 @@ public:
         std::string& error) override
     {
         return implementation_->applyOutOfPlace(source, destination, options, error);
+    }
+
+    bool tryApplyWithNext(
+        const CalibrationItem& next,
+        const ImageView& raw,
+        const ExecutionOptions& options) const override
+    {
+        const auto* leasedNext = dynamic_cast<const LeasedCalibrationItem*>(&next);
+        return implementation_->tryApplyWithNext(
+            leasedNext != nullptr ? *leasedNext->implementation_ : next, raw, options);
     }
 
 private:
@@ -970,25 +981,37 @@ bool CalibrationContext::execute(
 
     // Preserve LocalCalibrationCacheManager semantics: every basic item runs
     // in template order; the sole RAW-to-CIE transform always runs last.
+    const bool fusedVerticalFlip = options.rawOutputFlip == 0 && !items_.empty()
+        && items_.back()->type() == CalibrationType::ColorDiff;
+    ExecutionOptions calibrationOptions = options;
+    calibrationOptions.rawOutputFlip = -99;
     ImageView current = raw;
     ImageView scratch = raw;
     scratch.data = rawScratch_.get();
     scratch.dataLength = rawScratchCapacity_;
-    for (const auto& item : items_) {
+    for (std::size_t index = 0; index < items_.size(); ++index) {
+        const auto& item = items_[index];
         if (item->isColorTransform()) {
+            continue;
+        }
+        if (index + 1 < items_.size()
+            && item->tryApplyWithNext(*items_[index + 1], current, calibrationOptions)) {
+            ++index;
             continue;
         }
         std::string error;
         bool applied = false;
         if (item->requiresDistinctOutput()) {
             const ImageView& destination = current.data == raw.data ? scratch : raw;
-            applied = item->applyOutOfPlace(current, destination, options, error);
+            const auto& stageOptions = fusedVerticalFlip && index + 1 == items_.size()
+                ? options : calibrationOptions;
+            applied = item->applyOutOfPlace(current, destination, stageOptions, error);
             if (applied) {
                 current = destination;
             }
         }
         else {
-            applied = item->apply(current, nullptr, options, error);
+            applied = item->apply(current, nullptr, calibrationOptions, error);
         }
         if (!applied) {
             lastError_ = error.empty() ? "Basic calibration failed" : std::move(error);
@@ -1003,7 +1026,19 @@ bool CalibrationContext::execute(
             return false;
         }
     }
-    if (current.data != raw.data) {
+    if (options.rawOutputFlip != -99 && !fusedVerticalFlip) {
+        // With odd geometric stage counts this also replaces the final scratch
+        // copy. Planar RAW must mirror each plane, not interleaved samples.
+        const bool planar = !options.interleavedBgr && raw.channels == 3;
+        const std::size_t planeBytes = planar ? requiredRawBytes / 3 : requiredRawBytes;
+        const int type = CV_MAKETYPE(raw.bitsPerChannel == 8 ? CV_8U : CV_16U, planar ? 1 : raw.channels);
+        for (int plane = 0; plane < (planar ? 3 : 1); ++plane) {
+            cv::Mat source(raw.height, raw.width, type, current.data + plane * planeBytes);
+            cv::Mat destination(raw.height, raw.width, type, raw.data + plane * planeBytes);
+            cv::flip(source, destination, options.rawOutputFlip);
+        }
+    }
+    else if (current.data != raw.data) {
         std::memcpy(raw.data, current.data, requiredRawBytes);
     }
     return true;

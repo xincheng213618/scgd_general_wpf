@@ -26,7 +26,7 @@ def resolve_native_sources(solution_root: str | Path) -> dict[str, Path]:
     sources: dict[str, Path] = {}
     for target in assets["targets"].values():
         for package, contents in target.items():
-            if not package.lower().startswith("opencvsharp4.runtime.win/"):
+            if not package.lower().startswith(("opencvsharp4.runtime.win/", "opencvsharp5.runtime.win/")):
                 continue
             package_path = assets["libraries"][package]["path"]
             entries = dict(contents.get("native", {}))
@@ -72,7 +72,11 @@ def resolve_native_sources(solution_root: str | Path) -> dict[str, Path]:
         source = Path(expand(item.attrib["Include"]).replace("\\", os.sep))
         relative = NATIVE_PREFIX + source.name
         if relative in sources and sources[relative] != source:
-            raise ValueError(f"Conflicting native runtime source: {relative}")
+            # NuGet and the C++ distribution can ship the same upstream FFmpeg plugin.
+            # Keep one canonical source only after proving their contents are identical.
+            if file_hash(sources[relative]) != file_hash(source):
+                raise ValueError(f"Conflicting native runtime source: {relative}")
+            continue
         sources[relative] = source
     return sources
 

@@ -27,14 +27,14 @@ Harness 创建后会显式启用 `FunctionInvokingChatClient.AllowConcurrentInvo
 
 ## 上下文压缩与请求预算
 
-Harness 不再关闭压缩。ColorVision 使用独立于模型 Profile 的 Agent 上下文窗口，默认 1,048,576 Token；当最大输出为默认 8,192 Token 时，单次输入预算为 1,040,384 Token。`ContextWindowCompactionStrategy` 在每次模型调用前执行框架原生两阶段策略：
+ColorVision 使用独立于模型 Profile 的 Agent 上下文窗口，默认 1,048,576 Token；当最大输出为默认 8,192 Token 时，单次输入预算为 1,040,384 Token。`ContextWindowCompactionStrategy` 在每次模型调用前执行框架原生两阶段策略：
 
 1. 达到输入预算的 50% 后，先把旧工具调用组折叠成简短结果，保留工具名称和结论。
 2. 达到输入预算的 80% 后，再删除最旧的非系统消息组，同时保留最近对话。
 
 1M 是 ColorVision 新 Agent 配置的统一默认值，不从模型 Profile 推导；用户可以在独立 Agent 设置页收紧它，单次请求也可以覆盖。框架会从 `MaxContextWindowTokens - MaxOutputTokens` 计算输入预算；具体策略见 [ContextWindowCompactionStrategy](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.compaction.contextwindowcompactionstrategy?view=agent-framework-dotnet-latest)。
 
-`CopilotAgentRunBudget` 统一管理一次 Agent 运行的上下文窗口、累计请求 Token、业务工具调用、Agent pass 和总时长。这些参数保存在独立的 `CopilotConfig.AgentDefaults`，不再属于任何模型 Profile；Profile 只保留厂商、协议、端点、模型和生成参数。有效值按“单次请求覆盖 > 全局 Agent 默认值 > 框架安全默认值”解析。新默认值是 1,048,576 Token 上下文窗口、1,048,576 累计请求 Token、128 次业务工具调用、32 个 pass 和 7,200 秒；可配置硬上限分别是 1,048,576、1,048,576、512、128 和 86,400 秒，避免误循环变成真正无界运行。业务工具硬上限由 Bridge 独立执行，Harness 的 todo、mode、approval 等框架函数和最后一次自然语言总结使用单独的有界迭代余量，因此用完最后一次业务工具后仍可返回结论；只有继续越界调用工具时才记录 `ToolBudgetExhausted`。设置窗口把这些值放在独立 `Agent` 页，集成调用方仍可通过 `CopilotAgentRunBudgetOverride` 只收紧或覆盖当前请求。
+`CopilotAgentRunBudget` 统一管理一次 Agent 运行的上下文窗口、累计请求 Token、业务工具调用、Agent pass 和总时长。这些参数保存在独立的 `CopilotConfig.AgentDefaults`；Profile 只保留厂商、协议、端点、模型和生成参数。有效值按“单次请求覆盖 > 全局 Agent 默认值 > 框架安全默认值”解析。默认值是 1,048,576 Token 上下文窗口、1,048,576 累计请求 Token、128 次业务工具调用、32 个 pass 和 7,200 秒；可配置硬上限分别是 1,048,576、1,048,576、512、128 和 86,400 秒，避免误循环变成真正无界运行。业务工具硬上限由 Bridge 独立执行，Harness 的 todo、mode、approval 等框架函数和最后一次自然语言总结使用单独的有界迭代余量，因此用完最后一次业务工具后仍可返回结论；只有继续越界调用工具时才记录 `ToolBudgetExhausted`。设置窗口把这些值放在独立 `Agent` 页，集成调用方仍可通过 `CopilotAgentRunBudgetOverride` 只收紧或覆盖当前请求。
 
 Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把空 Todo 账本直接判为完成。它会通过同一 Token 与传输重试中间件发起一次非流式最终总结，`ChatOptions.Tools` 固定为空，并把有界工具观察与当前任务账本作为数据交给模型；因此这个阶段不能重放业务或 Framework 工具。总结仍为空或失败时会发出固定用户提示、记录 `IncompleteOutput` 与 `provider_empty_output` blocker，保存 checkpoint，并且绝不标记 `Completed`。
 
@@ -60,7 +60,7 @@ Harness 正常结束但没有产生任何 `TextContent` 时，Runtime 不再把�
 
 ## 原生任务账本与 plan/execute
 
-Harness 的 `TodoProvider` 和 `AgentModeProvider` 现在作为标准运行时能力直接启用，不再由 ColorVision 维护第二套计划状态：
+Harness 的 `TodoProvider` 和 `AgentModeProvider` 作为标准运行时能力启用：
 
 - 模型通过框架原生 `todos_add`、`todos_complete`、`todos_remove` 和查询工具维护任务；任务保存在 `AgentSessionStateBag`，随会话检查点一起持久化。
 - 新会话默认进入 `execute`；模型在确实需要用户做关键选择时可切换到 `plan`。模式同样属于 Session 状态。

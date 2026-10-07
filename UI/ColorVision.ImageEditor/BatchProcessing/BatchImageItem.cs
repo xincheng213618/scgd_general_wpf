@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 OnPropertyChanged();
             }
         }
-        private string _status = "等待处理";
+        private string _status = Properties.Resources.BatchWaiting;
 
         public string? OutputPath
         {

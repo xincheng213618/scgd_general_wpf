@@ -1,6 +1,3 @@
-using ColorVision.UI;
-using System;
-
 namespace ColorVision.UI.Desktop
 {
     public static class DesktopModule

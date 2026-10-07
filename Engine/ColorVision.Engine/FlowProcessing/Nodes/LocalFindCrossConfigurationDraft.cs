@@ -15,7 +15,7 @@ internal sealed class LocalFindCrossConfigurationDraft : ViewModelBase
     private bool hadDistortion;
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
-    [Category("定位"), DisplayName("结果名称"), Description("结果项的名称。"), PropertyEditorType]
+    [Category("定位"), DisplayName("结果名称"), Description("标识本次十字结果；修改名称不会改变测量类型或增加其他测量结果。"), PropertyEditorType]
     public string Name { get; set; } = "Point_1";
 
     [Category("定位"), DisplayName("预期角度 (°)"), Description("产品名义方向，范围 -180° 到 180°。"), PropertyEditorType]

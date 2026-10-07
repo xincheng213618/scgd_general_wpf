@@ -1,9 +1,5 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
-using Anthropic;
-using Anthropic.Core;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Solution;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
@@ -12,11 +8,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
@@ -566,9 +559,10 @@ namespace ColorVision.Copilot
                         providerInterrupted = providerFailure != null;
                         contextWindowExceeded = providerFailure?.Code == "provider_context_window";
                     }
-                    catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
+                    catch (OperationCanceledException ex) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
                         || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
                     {
+                        usage = usage.Add(CopilotProviderRetryChatClient.ExtractFailureUsage(ex));
                         (controlIntent, timeBudgetExhausted) = HandleRunCancellation(
                             request, timeBudgetCancellation, callerCancellationToken, stopwatch, taskEventJournalBuilder, emit);
                         hasModelFinalAnswer = false;
@@ -617,6 +611,7 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent Skill history could not be updated ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
                 }
             }
+            var cacheUsage = request.Profile.IsLocalCodex ? CopilotTurnRuntime.GetReportedTokenUsage(budgetSnapshot) : usage;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
@@ -638,8 +633,8 @@ namespace ColorVision.Copilot
                     || budgetSnapshot.ProviderStreamInactivityTimeoutCount > 0
                     ? $" · inactivity timeouts first-content {budgetSnapshot.ProviderFirstContentTimeoutCount:N0}, stream {budgetSnapshot.ProviderStreamInactivityTimeoutCount:N0}"
                     : string.Empty)
-                + (usage.CachedInputTokens.HasValue
-                    ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"
+                + (cacheUsage.CachedInputTokens.HasValue
+                    ? $" · cache reads {cacheUsage.EffectiveCachedInputTokens:N0}/{cacheUsage.InputTokens:N0} input tokens ({cacheUsage.CachedInputPercentage:0.#}%)"
                     : " · cache reads unavailable")
                 + (budgetSnapshot.UsedEstimatedUsage ? " · includes estimates" : string.Empty)
                 + (budgetSnapshot.ToolBudgetExhausted ? " · tool limit reached" : string.Empty)
@@ -864,7 +859,10 @@ namespace ColorVision.Copilot
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
                 StepRecords = bridge.StepRecords,
-                Usage = usage.Add(bridge.DelegatedUsage),
+                // Codex emits cumulative snapshots; the budget already counts each request and delegated usage once.
+                Usage = request.Profile.IsLocalCodex
+                    ? CopilotTurnRuntime.GetReportedTokenUsage(budgetSnapshot)
+                    : usage.Add(bridge.DelegatedUsage),
                 Budget = budgetSnapshot,
                 TaskLedger = taskLedger,
                 StopReason = stopReason,

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -90,11 +91,11 @@ public partial class BmwSfrResultWindow : Window
         SummaryMetricColumn.Header = $"{DisplayChannel} MTF50";
         ResultsGrid.ItemsSource = rows;
         ResultsGrid.SelectedItem = rows.FirstOrDefault(r=>r.TargetId==selectedId && r.Edge.Id==selectedEdge) ?? rows.FirstOrDefault();
-        SourceText.Text = $"{_lease.Image.cols} × {_lease.Image.rows} 原始像素 · {_lease.Image.depth} bit · 快照 {_capturedAt:HH:mm:ss}";
+        SourceText.Text = LocalizedText.Format($"{_lease.Image.cols} × {_lease.Image.rows} 原始像素 · {_lease.Image.depth} bit · 快照 {_capturedAt:HH:mm:ss}");
         int available = rows.Sum(r => r.Edge.Analysis?.Channels.Count(c=>c.Valid) ?? 0);
         int measured = rows.Sum(r => r.Edge.Analysis?.Channels.Count ?? 0);
-        SummaryText.Text = $"{_results.Count} 个搜索框 · {_results.Count(r=>r.Located)} 个已定位 · {rows.Length} 条边 · 可计算通道 {available}/{measured} · 输入编码 {_options.InputEncoding}";
-        FooterText.Text = $"测量质量检查：SNR ≥ {_options.MinimumSnr:G4}，对比度 ≥ {_options.MinimumContrast:G4}，拟合残差 ≤ {_options.MaximumFitRms:G4} px。不是产品合格判据；未知编码仅供诊断。";
+        SummaryText.Text = LocalizedText.Format($"{_results.Count} 个搜索框 · {_results.Count(r=>r.Located)} 个已定位 · {rows.Length} 条边 · 可计算通道 {available}/{measured} · 输入编码 {_options.InputEncoding}");
+        FooterText.Text = LocalizedText.Format($"测量质量检查：SNR ≥ {_options.MinimumSnr:G4}，对比度 ≥ {_options.MinimumContrast:G4}，拟合残差 ≤ {_options.MaximumFitRms:G4} px。不是产品合格判据；未知编码仅供诊断。");
         ShowSelected();
     }
     private void Edge_Changed(object sender, SelectionChangedEventArgs e) { if (IsInitialized) ShowSelected(); }
@@ -105,7 +106,7 @@ public partial class BmwSfrResultWindow : Window
     private void ShowSelected()
     {
         if (Selected is not { } row || Plot == null) return;
-        SelectionText.Text = $"{row.TargetId} · {row.EdgeName}边";
+        SelectionText.Text = LocalizedText.Format($"{row.TargetId} · {row.Target.ChartTypeText} · {row.EdgeName}边");
         Mtf50Text.Text = $"{DisplayChannel} MTF50  {row.Mtf50} cy/px";
         EditRoiButton.IsEnabled = !_busy && row.Target.Located && row.Edge.Roi.Width > 0;
         RenderPreview(row);
@@ -120,8 +121,8 @@ public partial class BmwSfrResultWindow : Window
         SamplesGrid.ItemsSource = row.Edge.Analysis?.Channels.Where(c=>c.Valid).SelectMany(c =>
             Samples(c.Channel,"MTF",c.Frequencies,c.Mtf).Concat(Samples(c.Channel,"ESF",c.EdgePositions,c.Esf)).Concat(Samples(c.Channel,"LSF",c.LsfPositions,c.Lsf))).ToArray();
         var missing = BmwSfrPresentation.ChannelNames.Where(name => BmwSfrPresentation.Channel(row.Edge,name) is not { Valid:true });
-        MissingCurvesText.Text = string.Join("\n",missing.Select(name=>$"{name} 未绘制：{BmwSfrPresentation.ChannelState(row.Edge,name)}"));
-        if (MissingCurvesText.Text.Length==0) MissingCurvesText.Text="四通道均可计算；MTF50/10 未在 Nyquist 内交叉时保留空值。";
+        MissingCurvesText.Text = string.Join("\n",missing.Select(name=>LocalizedText.Format($"{name} 未绘制：{BmwSfrPresentation.ChannelState(row.Edge,name)}")));
+        if (MissingCurvesText.Text.Length==0) MissingCurvesText.Text=LocalizedText.Get("四通道均可计算；MTF50/10 未在 Nyquist 内交叉时保留空值。");
         RenderPlot();
     }
     private static IEnumerable<SampleRow> Samples(string channel,string series,double[] x,double[] values) => x.Select((value,i)=>new SampleRow(channel,series,value,values[i]));
@@ -166,7 +167,7 @@ public partial class BmwSfrResultWindow : Window
         }
         var search=row.Target.SearchRoi;
         var r=row.Edge.Roi;
-        RoiText.Text=$"搜索框 ({search.X}, {search.Y}, {search.Width}, {search.Height})\n{row.EdgeName}边 ({r.X}, {r.Y}, {r.Width}, {r.Height}) 原图像素\n{(row.Target.Located?edgeOnly?$"橙色为 {DisplayChannel} 边缘拟合；测量不缩放原图。":"粗红框为当前边；测量不缩放原图。":BmwSfrPresentation.Reason(row.Target.Reason))}";
+        RoiText.Text=LocalizedText.Format($"搜索框 ({search.X}, {search.Y}, {search.Width}, {search.Height})\n{row.EdgeName}边 ({r.X}, {r.Y}, {r.Width}, {r.Height}) 原图像素\n{(row.Target.Located?edgeOnly?$"橙色为 {DisplayChannel} 边缘拟合；测量不缩放原图。":LocalizedText.Get("粗红框为当前边；测量不缩放原图。"):BmwSfrPresentation.Reason(row.Target.Reason))}");
     }
     private void Preview_Changed(object sender,RoutedEventArgs e) { if(Selected is { } row) RenderPreview(row); }
     private void View_Changed(object sender,RoutedEventArgs e) { if(IsInitialized) RenderPlot(); }
@@ -187,7 +188,7 @@ public partial class BmwSfrResultWindow : Window
     }
     private void Query_Click(object sender,RoutedEventArgs e)
     {
-        if(!double.TryParse(FrequencyInput.Text,out double value)||!double.IsFinite(value)||value<0||value>.5) { QueryError.Text="频率范围为 0..0.5"; return; }
+        if(!double.TryParse(FrequencyInput.Text,out double value)||!double.IsFinite(value)||value<0||value>.5) { QueryError.Text=LocalizedText.Get("频率范围为 0..0.5"); return; }
         _frequency=value; QueryError.Text=""; if(Selected is { } row) RenderMetrics(row.Edge);
     }
     private async void DisplaySettings_Click(object sender,RoutedEventArgs e)
@@ -195,16 +196,16 @@ public partial class BmwSfrResultWindow : Window
         if(_busy || _closed)return;
         var next=new BmwSfrViewSettings { Display=DisplaySettings.Copy(),MeasurementRoi=MeasurementRoi with { } };
         bool submitted=false;
-        var dialog=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="BMW 测量与显示",Width=820,Height=680,WindowStartupLocation=WindowStartupLocation.CenterOwner };
+        var dialog=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title=LocalizedText.Get("SFR 测量与显示"),Width=820,Height=680,WindowStartupLocation=WindowStartupLocation.CenterOwner };
         dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
-        try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,"设置无效"); return; }
+        try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,LocalizedText.Get("设置无效")); return; }
         DisplaySettings=next.Display;
         DisplayUpdated?.Invoke(_results,_options,DisplayChannel);
         if(next.MeasurementRoi==MeasurementRoi)return;
         _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
         int version=_resultVersion;
         var regions=_results.Select(t=>new BmwSearchRegion(t.Id,t.SearchRoi)).ToArray();
-        SummaryText.Text="正在按四边测量框设置重新定位与计算…";
+        SummaryText.Text=LocalizedText.Get("正在按四边测量框设置重新定位与计算…");
         try
         {
             var results=await Task.Run(()=>BmwSfrAnalyzer.Analyze(_lease.Image,regions,_options,next.MeasurementRoi));
@@ -219,11 +220,11 @@ public partial class BmwSfrResultWindow : Window
     {
         if(_busy)return;
         var next=_options with { }; bool submitted=false;
-        var editor=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title="BMW SFR 测量质量参数" };
+        var editor=new PropertyEditorWindow(next,PropertyEditorEditMode.Transactional) { Owner=this,Title=LocalizedText.Get("BMW SFR 测量质量参数") };
         editor.Submitted+=(_,_)=>submitted=true; editor.ShowDialog(); if(!submitted)return;
-        try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,"参数无效"); return; }
+        try { next.Validate(); } catch(ArgumentException ex) { MessageBox.Show(this,ex.Message,LocalizedText.Get("参数无效")); return; }
         _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
-        SummaryText.Text="正在重新分析固定图像快照…";
+        SummaryText.Text=LocalizedText.Get("正在重新分析固定图像快照…");
         int version=_resultVersion;
         var currentResults=_results;
         try
@@ -247,6 +248,8 @@ public partial class BmwSfrResultWindow : Window
         && roi.Width<=parent.Width&&roi.Height<=parent.Height&&(long)roi.X+roi.Width<=(long)parent.X+parent.Width&&(long)roi.Y+roi.Height<=(long)parent.Y+parent.Height;
     internal static BmwEdgeAnalysis AnalyzeEdge(HImage image,BmwEdgeAnalysis edge,SfrAnalysisOptions options)
     {
+        if (edge.SupportRoi.Width > 0 && !IsInside(edge.Roi, edge.SupportRoi))
+            return edge with { Analysis = null, Valid = false, Reason = "checkerboard_roi_crosses_junction" };
         try
         {
             var analysis=SfrAnalyzer.Analyze(image,edge.Roi,options);
@@ -262,9 +265,10 @@ public partial class BmwSfrResultWindow : Window
         if(_busy||Selected is not { } row||!row.Target.Located)return;
         var roi=row.Edge.Roi;
         var edit=new EdgeRoiSettings { X=roi.X,Y=roi.Y,Width=roi.Width,Height=roi.Height };
-        var dialog=new PropertyEditorWindow(edit,PropertyEditorEditMode.Transactional) { Owner=this,Title=$"{row.TargetId} · {row.EdgeName}边 SFR 矩形" };
+        var dialog=new PropertyEditorWindow(edit,PropertyEditorEditMode.Transactional) { Owner=this,Title=LocalizedText.Format($"{row.TargetId} · {row.EdgeName}边 SFR 矩形") };
         bool submitted=false; dialog.Submitted+=(_,_)=>submitted=true; dialog.ShowDialog(); if(!submitted)return;
-        if(!IsInside(edit.ToRoi(),row.Target.SearchRoi)) { MessageBox.Show(this,"测量框必须完整位于当前搜索外框内，宽高须大于零。","矩形范围无效"); return; }
+        if(!IsInside(edit.ToRoi(),row.Target.SearchRoi)) { MessageBox.Show(this,LocalizedText.Get("测量框必须完整位于当前搜索外框内，宽高须大于零。"),LocalizedText.Get("矩形范围无效")); return; }
+        if(row.Edge.SupportRoi.Width>0 && !IsInside(edit.ToRoi(),row.Edge.SupportRoi)) { MessageBox.Show(this,BmwSfrPresentation.Reason("checkerboard_roi_crosses_junction"),LocalizedText.Get("矩形范围无效")); return; }
         _busy=true; SettingsButton.IsEnabled=DisplaySettingsButton.IsEnabled=EditRoiButton.IsEnabled=CsvButton.IsEnabled=JsonButton.IsEnabled=false;
         int version=_resultVersion;
         try
@@ -283,7 +287,7 @@ public partial class BmwSfrResultWindow : Window
         var dialog=new SaveFileDialog { Filter="完整 BMW 测量 (*.json)|*.json",FileName=$"BMW_SFR_{_capturedAt:yyyyMMdd_HHmmss}.json" };
         if(dialog.ShowDialog(this)!=true)return;
         try { File.WriteAllText(dialog.FileName,JsonSerializer.Serialize(new { capturedAt=_capturedAt,sourceWidth=_lease.Image.cols,sourceHeight=_lease.Image.rows,sourceRevision=_lease.Revision,options=_options,measurementRoi=MeasurementRoi,displayChannel=DisplayChannel,targetFrequency=_frequency,results=_results },new JsonSerializerOptions { WriteIndented=true,IncludeFields=true })); }
-        catch(Exception ex) { MessageBox.Show(this,ex.Message,"导出失败"); }
+        catch(Exception ex) { MessageBox.Show(this,ex.Message,LocalizedText.Get("导出失败")); }
     }
     private void ExportCsv_Click(object sender,RoutedEventArgs e)
     {
@@ -303,7 +307,7 @@ public partial class BmwSfrResultWindow : Window
                 foreach(var sample in Samples(c.Channel,"MTF",c.Frequencies,c.Mtf).Concat(Samples(c.Channel,"ESF",c.EdgePositions,c.Esf)).Concat(Samples(c.Channel,"LSF",c.LsfPositions,c.Lsf)))
                     writer.WriteLine(string.Join(",",Q(target.Id),edge.Id,c.Channel,sample.Series,V(sample.X),V(sample.Value)));
         }
-        catch(Exception ex) { MessageBox.Show(this,ex.Message,"导出失败"); }
+        catch(Exception ex) { MessageBox.Show(this,ex.Message,LocalizedText.Get("导出失败")); }
     }
     private static string Q(string text)=>"\""+text.Replace("\"","\"\"")+"\"";
     private static string V(double? value)=>value?.ToString("G17",CultureInfo.InvariantCulture)??"";

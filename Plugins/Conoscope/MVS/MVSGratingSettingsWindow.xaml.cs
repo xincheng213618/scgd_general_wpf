@@ -10,6 +10,7 @@ namespace Conoscope.MVS
         public MVSGratingSettingsWindow(MVSViewManager viewManager)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             this.viewManager = viewManager;
             DataContext = viewManager;
         }

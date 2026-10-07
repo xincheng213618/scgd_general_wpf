@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>桌面寵物</value></data>
+  <data name="ChooseCompanion" xml:space="preserve"><value>選擇你的桌面夥伴</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>陪伴檢測工作，跟隨 Copilot 工作狀態，及時帶來提醒。</value></data>
+  <data name="Create" xml:space="preserve"><value>建立寵物</value></data>
+  <data name="Refresh" xml:space="preserve"><value>重新整理</value></data>
+  <data name="Wake" xml:space="preserve"><value>喚醒寵物</value></data>
+  <data name="Hide" xml:space="preserve"><value>收起寵物</value></data>
+  <data name="AvailablePets" xml:space="preserve"><value>可用寵物</value></data>
+  <data name="Select" xml:space="preserve"><value>選擇</value></data>
+  <data name="Selected" xml:space="preserve"><value>已選擇</value></data>
+  <data name="Searching" xml:space="preserve"><value>正在尋找可用素材…</value></data>
+  <data name="SearchingAll" xml:space="preserve"><value>正在尋找 ColorVision、Codex 和自訂寵物素材…</value></data>
+  <data name="Loaded" xml:space="preserve"><value>已載入 {0} 個寵物 · Codex 本機素材 {1} 個 · 自訂 {2} 個</value></data>
+  <data name="LoadedWithoutCodex" xml:space="preserve"><value>已載入 {0} 個寵物。未找到本機 Codex 素材，你仍可建立或匯入寵物。</value></data>
+  <data name="RefreshFailed" xml:space="preserve"><value>素材重新整理失敗：{0}</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>素材無法使用：{0}</value></data>
+  <data name="CodexOpened" xml:space="preserve"><value>Codex 已開啟並預填建立工作。送出後，本頁會自動發現並選取新寵物。</value></data>
+  <data name="ImportNotFound" xml:space="preserve"><value>素材已複製，但重新整理後未能讀取。請開啟素材資料夾檢查 pet.json。</value></data>
+  <data name="CreatedSelected" xml:space="preserve"><value>已建立並選取「{0}」。</value></data>
+  <data name="WatchExpired" xml:space="preserve"><value>尚未發現新的 Codex 寵物。完成建立後可按「重新整理」載入。</value></data>
+  <data name="CodexCreatedSelected" xml:space="preserve"><value>Codex 已建立並自動選取「{0}」。</value></data>
+  <data name="Preferences" xml:space="preserve"><value>外觀與提醒</value></data>
+  <data name="Appearance" xml:space="preserve"><value>寵物大小</value></data>
+  <data name="FollowCopilot" xml:space="preserve"><value>跟隨 Copilot 工作狀態</value></data>
+  <data name="CopilotNotifications" xml:space="preserve"><value>顯示等待確認、完成和失敗提醒</value></data>
+  <data name="Advanced" xml:space="preserve"><value>進階設定</value></data>
+  <data name="CustomPets" xml:space="preserve"><value>自訂寵物</value></data>
+  <data name="CustomSubtitle" xml:space="preserve"><value>管理本機寵物素材，或透過「建立寵物」匯入新的動畫夥伴。</value></data>
+  <data name="OpenFolder" xml:space="preserve"><value>開啟資料夾</value></data>
+  <data name="SourceColorVisionBuiltIn" xml:space="preserve"><value>ColorVision 內建</value></data>
+  <data name="SourceColorVisionCustom" xml:space="preserve"><value>ColorVision 自訂</value></data>
+  <data name="SourceCodexBuiltIn" xml:space="preserve"><value>Codex 本機素材</value></data>
+  <data name="SourceCodexCustom" xml:space="preserve"><value>Codex 自訂</value></data>
+  <data name="XiaocaiName" xml:space="preserve"><value>小彩</value></data>
+  <data name="XiaocaiDescription" xml:space="preserve"><value>ColorVision 預設桌面夥伴，陪你完成檢測工作。</value></data>
+  <data name="CodexDescription" xml:space="preserve"><value>最初的 Codex 桌面夥伴。</value></data>
+  <data name="DeweyDescription" xml:space="preserve"><value>安靜陪伴，讓你專注每一天的工作。</value></data>
+  <data name="FireballDescription" xml:space="preserve"><value>充滿活力，陪你快速迭代。</value></data>
+  <data name="HootsDescription" xml:space="preserve"><value>目光敏銳的小貓頭鷹，陪你打磨每個細節。</value></data>
+  <data name="RockyDescription" xml:space="preserve"><value>變更再多，也有穩穩的陪伴。</value></data>
+  <data name="SeedyDescription" xml:space="preserve"><value>小小綠芽，陪伴新想法萌發。</value></data>
+  <data name="StackyDescription" xml:space="preserve"><value>穩穩疊起，陪你沉浸工作。</value></data>
+  <data name="BsodDescription" xml:space="preserve"><value>調皮的藍畫面小精靈。</value></data>
+  <data name="NullSignalDescription" xml:space="preserve"><value>來自虛空的安靜訊號。</value></data>
+  <data name="DefaultPackageDescription" xml:space="preserve"><value>相容 Codex 的桌面寵物素材包。</value></data>
+  <data name="CreateTitle" xml:space="preserve"><value>建立桌面寵物</value></data>
+  <data name="CreateSubtitle" xml:space="preserve"><value>讓 Codex 產生動畫夥伴，或匯入現有的精靈圖集。</value></data>
+  <data name="CreateWithCodex" xml:space="preserve"><value>使用 Codex 建立</value></data>
+  <data name="ImportSpriteSheet" xml:space="preserve"><value>匯入精靈圖集</value></data>
+  <data name="GenerateWithCodex" xml:space="preserve"><value>交給 Codex 產生</value></data>
+  <data name="CodexGenerationDescription" xml:space="preserve"><value>使用 Codex 的 Hatch Pet 流程產生 8 × 11 動畫精靈圖集，完成後會出現在寵物清單。</value></data>
+  <data name="CodexStatus" xml:space="preserve"><value>Codex 狀態</value></data>
+  <data name="DetectingCodex" xml:space="preserve"><value>正在檢查本機 Codex 與 Hatch Pet…</value></data>
+  <data name="Concept" xml:space="preserve"><value>寵物想法（選填）</value></data>
+  <data name="ConceptHint" xml:space="preserve"><value>描述動物、配色、個性或工作場景；留空時由 Codex 根據現有內容設計。</value></data>
+  <data name="NextSteps" xml:space="preserve"><value>接下來會發生什麼</value></data>
+  <data name="NextStepsDescription" xml:space="preserve"><value>ColorVision 會在需要時安裝本機隨附的 Hatch Pet 技能，並在 Codex 中開啟預填工作。請在 Codex 中檢閱並送出；保持此設定頁開啟，即可自動發現並選取新寵物。</value></data>
+  <data name="PetName" xml:space="preserve"><value>寵物名稱</value></data>
+  <data name="OptionalDescription" xml:space="preserve"><value>描述（選填）</value></data>
+  <data name="SpriteSheetFile" xml:space="preserve"><value>精靈圖集檔案</value></data>
+  <data name="Browse" xml:space="preserve"><value>瀏覽…</value></data>
+  <data name="SpriteSheetFormat" xml:space="preserve"><value>精靈圖集格式</value></data>
+  <data name="FormatV2" xml:space="preserve"><value>Codex v2 · 8 欄 × 11 列（建議）</value></data>
+  <data name="FormatV1" xml:space="preserve"><value>Codex v1 · 8 欄 × 9 列</value></data>
+  <data name="ImportHint" xml:space="preserve"><value>支援 PNG 或 WebP。寬度須能被 8 整除，高度須能被所選列數整除；最大 4096 × 4096、20 MiB。</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Detecting" xml:space="preserve"><value>正在檢查…</value></data>
+  <data name="CreateInCodex" xml:space="preserve"><value>在 Codex 中建立</value></data>
+  <data name="ImportAndSelect" xml:space="preserve"><value>匯入並選取</value></data>
+  <data name="SelectSpriteSheet" xml:space="preserve"><value>選擇桌面寵物精靈圖集</value></data>
+  <data name="SpriteSheetFilter" xml:space="preserve"><value>寵物精靈圖集 (*.webp;*.png)|*.webp;*.png|WebP 圖片 (*.webp)|*.webp|PNG 圖片 (*.png)|*.png</value></data>
+  <data name="CodexCheckFailed" xml:space="preserve"><value>Codex 檢查失敗：{0}</value></data>
+  <data name="PreparingCodex" xml:space="preserve"><value>正在準備 Hatch Pet 並開啟 Codex…</value></data>
+  <data name="CodexOpenFailed" xml:space="preserve"><value>無法開啟 Codex：{0}</value></data>
+  <data name="Importing" xml:space="preserve"><value>正在驗證並匯入素材…</value></data>
+  <data name="CodexReady" xml:space="preserve"><value>已就緒：Codex 與 Hatch Pet 技能可用。</value></data>
+  <data name="CodexSkillIncomplete" xml:space="preserve"><value>Codex 的 hatch-pet 技能資料夾不完整。請先在 Codex 技能頁修復或移除該資料夾。</value></data>
+  <data name="CodexNotFound" xml:space="preserve"><value>未偵測到包含 Hatch Pet 的 Codex Desktop。仍可切換至「匯入精靈圖集」手動建立。</value></data>
+  <data name="CodexDetected" xml:space="preserve"><value>已偵測到 Codex Desktop；首次啟動會安裝其隨附的 Hatch Pet 技能。</value></data>
+  <data name="SkillMissingManifest" xml:space="preserve"><value>Codex 的 hatch-pet 技能資料夾已存在，但缺少 SKILL.md。</value></data>
+  <data name="BundledSkillNotFound" xml:space="preserve"><value>未找到 Codex Desktop 隨附的 Hatch Pet 技能。</value></data>
+  <data name="BundledSkillIncomplete" xml:space="preserve"><value>Codex Desktop 隨附的 Hatch Pet 技能不完整。</value></data>
+  <data name="InvalidSkillDirectory" xml:space="preserve"><value>Codex 技能安裝資料夾無效。</value></data>
+  <data name="SkillCopyIncomplete" xml:space="preserve"><value>Hatch Pet 技能複製後未通過完整性檢查。</value></data>
+  <data name="ConceptTooLong" xml:space="preserve"><value>寵物想法不能超過 {0} 個字元。</value></data>
+  <data name="CodexHomeNotFound" xml:space="preserve"><value>無法確定目前使用者的 Codex 資料資料夾。</value></data>
+  <data name="SkillLinkedFile" xml:space="preserve"><value>Hatch Pet 技能包含不支援的連結檔案。</value></data>
+  <data name="SkillOutsideDirectory" xml:space="preserve"><value>Hatch Pet 技能檔案超出預期資料夾。</value></data>
+  <data name="SkillLinkedDirectory" xml:space="preserve"><value>Hatch Pet 技能包含不支援的連結資料夾。</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>請填寫寵物名稱，且不能超過 80 個字元。</value></data>
+  <data name="DescriptionTooLong" xml:space="preserve"><value>寵物描述不能超過 240 個字元。</value></data>
+  <data name="InvalidSpriteVersion" xml:space="preserve"><value>精靈圖集版本只能是 1 或 2。</value></data>
+  <data name="ChooseSpriteFile" xml:space="preserve"><value>請選擇精靈圖集檔案。</value></data>
+  <data name="SpriteFileNotFound" xml:space="preserve"><value>請選擇存在的精靈圖集檔案。</value></data>
+  <data name="UnsupportedSpriteFormat" xml:space="preserve"><value>桌面寵物精靈圖集僅支援 WebP 或 PNG。</value></data>
+  <data name="SpriteTooLarge" xml:space="preserve"><value>精靈圖集為空或超過 20 MiB。</value></data>
+  <data name="SpriteDecodeFailed" xml:space="preserve"><value>無法解碼桌面寵物精靈圖集。</value></data>
+  <data name="SpriteGridInvalid" xml:space="preserve"><value>精靈圖集必須使用 {0} × {1} 的影格網格，且尺寸不超過 4096 × 4096。</value></data>
+</root>
+

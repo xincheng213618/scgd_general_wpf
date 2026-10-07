@@ -8,12 +8,12 @@ using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -54,9 +54,9 @@ namespace ColorVision.Engine.PropertyEditor
             combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
 
 
-            Type targetType = ResolveDeviceType(property, obj);
+            Type? targetType = ResolveDeviceType(property, obj);
 
-            var ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(d => targetType.IsInstanceOfType(d)).ToList();
+            var ItemsSource = targetType == null ? new List<DeviceService>() : ServiceManager.GetInstance().DeviceServices.Where(d => targetType.IsInstanceOfType(d)).ToList();
 
             combo.ItemsSource = ItemsSource;
 
@@ -96,7 +96,7 @@ namespace ColorVision.Engine.PropertyEditor
             return dockPanel;
         }
 
-        private static Type ResolveDeviceType(PropertyInfo property, object obj)
+        private static Type? ResolveDeviceType(PropertyInfo property, object obj)
         {
             var sourceTypeAttr = property.GetCustomAttribute<DeviceSourceTypeAttribute>();
             if (sourceTypeAttr?.DeviceType != null)
@@ -117,7 +117,8 @@ namespace ColorVision.Engine.PropertyEditor
                 "SENSOR" => typeof(DeviceSensor),
                 "SMU" => typeof(DeviceSMU),
                 "SPECTRUM" => typeof(DeviceSpectrum),
-                "TPALGORITHMS" => typeof(DeviceThirdPartyAlgorithms),
+                // Legacy nodes retain editable device codes without offering unrelated devices.
+                "TPALGORITHMS" => null,
                 _ => typeof(DeviceService)
             };
         }

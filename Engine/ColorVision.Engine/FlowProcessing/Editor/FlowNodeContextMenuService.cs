@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
@@ -9,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Windows;
+using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -17,20 +18,81 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 {
     internal sealed class FlowNodeContextMenuService : IDisposable
     {
-        private static readonly string[] CoreNodeMenuAssemblyPrefixes =
+        private sealed class NodeMenuCatalogEntry
         {
-            "FlowEngineLib/",
-            "ColorVision.Engine/",
+            public Type NodeType { get; }
+            public string[] PathSegments { get; }
+            public int OrderedSegmentIndex { get; }
+            public int CategoryOrder { get; }
+
+            public NodeMenuCatalogEntry(Type nodeType, string[] pathSegments, int orderedSegmentIndex, int categoryOrder)
+            {
+                NodeType = nodeType;
+                PathSegments = pathSegments;
+                OrderedSegmentIndex = orderedSegmentIndex;
+                CategoryOrder = categoryOrder;
+            }
+        }
+
+        private sealed class NodeMenuItemEntry
+        {
+            public Type NodeType { get; }
+            public string Header { get; }
+
+            public NodeMenuItemEntry(Type nodeType, string header)
+            {
+                NodeType = nodeType;
+                Header = header;
+            }
+        }
+
+        private sealed class NodeMenuCategory
+        {
+            private readonly Dictionary<string, NodeMenuCategory> categories = new(StringComparer.Ordinal);
+
+            public int Order { get; private set; }
+            public string SortText { get; }
+            public string Header { get; }
+            public IEnumerable<NodeMenuCategory> Categories => categories.Values;
+            public List<NodeMenuItemEntry> Nodes { get; } = new();
+
+            public NodeMenuCategory(int order = int.MaxValue, string sortText = "", string header = "")
+            {
+                Order = order;
+                SortText = sortText;
+                Header = header;
+            }
+
+            public NodeMenuCategory GetOrAddCategory(string rawSegment, int order)
+            {
+                if (categories.TryGetValue(rawSegment, out NodeMenuCategory? category))
+                {
+                    category.Order = Math.Min(category.Order, order);
+                    return category;
+                }
+
+                string localized = LocalizeNodeMenuText(rawSegment);
+                category = new NodeMenuCategory(order, localized, localized);
+                categories.Add(rawSegment, category);
+                return category;
+            }
+        }
+
+        private static readonly HashSet<string> CoreNodeMenuAssemblies = new(StringComparer.Ordinal)
+        {
+            "FlowEngineLib",
+            "ColorVision.Engine",
         };
 
-        private static STNodeTreeView? _nodeTreeView;
+        private static readonly object NodeMenuCacheLock = new();
+        private static readonly Dictionary<Type, NodeMenuCatalogEntry?> NodeMenuCatalogCache = new();
+        private static readonly Dictionary<(Type Type, string Culture), string?> NodeTitleCache = new();
+
         private readonly STNodeEditor _nodeEditor;
         private readonly FlowExecutionNavigator _executionNavigator;
         private readonly Action _importModule;
         private readonly ContextMenu _contextMenu;
         private System.Drawing.Point _contextCanvasPoint;
-
-        private static STNodeTreeView NodeTreeView => _nodeTreeView ??= new STNodeTreeView();
 
         public FlowNodeContextMenuService(
             STNodeEditor nodeEditor,
@@ -50,17 +112,33 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (string.IsNullOrWhiteSpace(path))
                 return path;
 
-            string displayPath = path;
-            foreach (string prefix in CoreNodeMenuAssemblyPrefixes)
+            string[] segments = path.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            int startIndex = segments.Length > 0 && CoreNodeMenuAssemblies.Contains(segments[0]) ? 1 : 0;
+            int orderedSegmentIndex = startIndex == 1 || segments.Length == 1 ? startIndex : 1;
+            var displaySegments = new List<string>(Math.Max(segments.Length - startIndex, 0));
+            for (int index = startIndex; index < segments.Length; index++)
             {
-                if (!displayPath.StartsWith(prefix, StringComparison.Ordinal))
-                    continue;
-
-                displayPath = displayPath.Substring(prefix.Length);
-                break;
+                string semanticSegment = index == orderedSegmentIndex ? RemoveSortPrefix(segments[index]) : segments[index];
+                displaySegments.Add(LocalizeNodeMenuText(semanticSegment));
             }
+            return string.Join("/", displaySegments);
+        }
 
-            return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
+        internal static IReadOnlyDictionary<Type, string> GetNodeCreationMenuPaths()
+        {
+            return GetNodeMenuCatalogEntries().ToDictionary(
+                entry => entry.NodeType,
+                entry => LocalizeNodeMenuPath(string.Join("/", entry.PathSegments)));
+        }
+
+        internal static IReadOnlyList<string> GetNodeCreationMenuRootHeaders()
+        {
+            NodeMenuCategory root = BuildNodeMenuCatalog();
+            return root.Categories
+                .OrderBy(item => item.Order)
+                .ThenBy(item => item.SortText, LogicalStringComparer.Instance)
+                .Select(item => item.Header)
+                .ToArray();
         }
 
         internal static MenuItem CreateImportModuleMenuItem(Action importModule)
@@ -88,6 +166,50 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private static bool IsValidLocalizedMenuText(string key, string? value)
         {
             return !string.IsNullOrWhiteSpace(value) && !string.Equals(value, $"[{key}]", StringComparison.Ordinal);
+        }
+
+        private static string RemoveSortPrefix(string text)
+        {
+            int index = 0;
+            while (index < text.Length && (char.IsDigit(text[index]) || text[index] == '_'))
+                index++;
+            if (index == 0 || index >= text.Length || !char.IsWhiteSpace(text[index]))
+                return text;
+            while (index < text.Length && char.IsWhiteSpace(text[index]))
+                index++;
+            return text[index..];
+        }
+
+        private static int ResolveCategoryOrder(string segment, int configuredOrder)
+        {
+            if (configuredOrder != int.MaxValue)
+                return configuredOrder;
+
+            string text = segment.Trim();
+            int index = 0;
+            while (index < text.Length && char.IsDigit(text[index]))
+                index++;
+            if (index == 0 || index >= text.Length)
+                return int.MaxValue;
+
+            if (!int.TryParse(text[..index], out int major))
+                return int.MaxValue;
+
+            int minor = 0;
+            if (text[index] == '_')
+            {
+                int minorStart = ++index;
+                while (index < text.Length && char.IsDigit(text[index]))
+                    index++;
+                if (minorStart == index || !int.TryParse(text[minorStart..index], out minor))
+                    return int.MaxValue;
+            }
+
+            if (index >= text.Length || !char.IsWhiteSpace(text[index]))
+                return int.MaxValue;
+
+            long order = (long)major * 100 + (long)minor * 10;
+            return order <= int.MaxValue ? (int)order : int.MaxValue;
         }
 
         private void NodeEditor_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -139,7 +261,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             if (node is LocalCalibrationNodeBase)
             {
-                var cacheManagerItem = new MenuItem { Header = LocalizeNodeMenuText("本地校正缓存管理") };
+                var cacheManagerItem = new MenuItem { Header = LocalizeNodeMenuText(LocalizedText.Get("本地校正缓存管理")) };
                 cacheManagerItem.Click += (_, _) => LocalCalibrationCacheManagerWindow.OpenWindow();
                 items.Add(cacheManagerItem);
             }
@@ -177,39 +299,141 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void AddNodeCreationMenuItems(ItemCollection items)
         {
-            NodeTreeView.LoadAssembly();
-            var groups = NodeTreeView.NodeTypes
-                .Where(item => item.Key.IsSubclassOf(typeof(STNode))
-                    && !item.Key.IsAbstract
-                    && !item.Key.IsDefined(typeof(ObsoleteAttribute), inherit: false))
-                .GroupBy(item => LocalizeNodeMenuPath(item.Value), StringComparer.Ordinal)
-                .OrderBy(group => group.Key, Comparer<string>.Create(
-                    (x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y)));
+            NodeMenuCategory root = BuildNodeMenuCatalog();
+            AddNodeMenuCategories(items, root);
+        }
 
-            foreach (var group in groups)
+        private static IReadOnlyList<NodeMenuCatalogEntry> GetNodeMenuCatalogEntries()
+        {
+            Type[] registeredTypes = STNodeTypeRegistry.GetTypes();
+            lock (NodeMenuCacheLock)
             {
-                var categoryItem = new MenuItem { Header = group.Key };
-                foreach (var entry in group.OrderBy(item => item.Key.Name, StringComparer.CurrentCulture))
+                foreach (Type type in registeredTypes)
                 {
-                    STNode? previewNode;
-                    try
-                    {
-                        previewNode = Activator.CreateInstance(entry.Key) as STNode;
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                    if (previewNode == null)
+                    if (NodeMenuCatalogCache.ContainsKey(type))
                         continue;
 
-                    Type nodeType = entry.Key;
-                    var nodeItem = new MenuItem { Header = LocalizeNodeMenuText(previewNode.Title) };
-                    nodeItem.Click += (_, _) => CreateNode(nodeType);
-                    categoryItem.Items.Add(nodeItem);
+                    NodeMenuCatalogCache[type] = CreateNodeMenuCatalogEntry(type);
                 }
+
+                return registeredTypes
+                    .Select(type => NodeMenuCatalogCache[type])
+                    .Where(entry => entry != null)
+                    .Cast<NodeMenuCatalogEntry>()
+                    .ToArray();
+            }
+        }
+
+        private static NodeMenuCatalogEntry? CreateNodeMenuCatalogEntry(Type type)
+        {
+            if (!type.IsSubclassOf(typeof(STNode))
+                || type.IsAbstract
+                || type.IsDefined(typeof(ObsoleteAttribute), inherit: false))
+                return null;
+
+            STNodeAttribute? attribute = type.GetCustomAttribute<STNodeAttribute>(inherit: true);
+            if (attribute == null)
+                return null;
+
+            string assemblyName = type.Assembly.GetName().Name ?? "Unknown";
+            string[] declaredSegments = attribute.Path?
+                .Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                ?? Array.Empty<string>();
+            int categoryOrder = attribute.CategoryOrder;
+            if (declaredSegments.Length > 0)
+            {
+                categoryOrder = ResolveCategoryOrder(declaredSegments[0], categoryOrder);
+                declaredSegments[0] = RemoveSortPrefix(declaredSegments[0]);
+            }
+            bool isCoreAssembly = CoreNodeMenuAssemblies.Contains(assemblyName);
+            string[] pathSegments = isCoreAssembly
+                ? declaredSegments.Length > 0 ? declaredSegments : new[] { assemblyName }
+                : new[] { assemblyName }.Concat(declaredSegments).ToArray();
+            int orderedSegmentIndex = declaredSegments.Length == 0 ? -1 : isCoreAssembly ? 0 : 1;
+            return new NodeMenuCatalogEntry(type, pathSegments, orderedSegmentIndex, categoryOrder);
+        }
+
+        private static NodeMenuCategory BuildNodeMenuCatalog()
+        {
+            var root = new NodeMenuCategory();
+            foreach (NodeMenuCatalogEntry entry in GetNodeMenuCatalogEntries())
+            {
+                if (entry.PathSegments.Length == 0 || !TryGetNodeTitle(entry.NodeType, out string title))
+                    continue;
+
+                NodeMenuCategory category = root;
+                for (int index = 0; index < entry.PathSegments.Length; index++)
+                {
+                    int categoryOrder = index == entry.OrderedSegmentIndex ? entry.CategoryOrder : int.MaxValue;
+                    category = category.GetOrAddCategory(entry.PathSegments[index], categoryOrder);
+                }
+                category.Nodes.Add(new NodeMenuItemEntry(entry.NodeType, title));
+            }
+            return root;
+        }
+
+        private static bool TryGetNodeTitle(Type type, out string title)
+        {
+            var cacheKey = (type, CultureInfo.CurrentUICulture.Name);
+            lock (NodeMenuCacheLock)
+            {
+                if (NodeTitleCache.TryGetValue(cacheKey, out string? cachedTitle))
+                {
+                    title = cachedTitle ?? string.Empty;
+                    return cachedTitle != null;
+                }
+            }
+
+            string? resolvedTitle = null;
+            try
+            {
+                if (Activator.CreateInstance(type) is STNode previewNode)
+                    resolvedTitle = LocalizeNodeMenuText(previewNode.Title);
+            }
+            catch
+            {
+            }
+
+            lock (NodeMenuCacheLock)
+                NodeTitleCache[cacheKey] = resolvedTitle;
+            title = resolvedTitle ?? string.Empty;
+            return resolvedTitle != null;
+        }
+
+        private void AddNodeMenuCategories(ItemCollection items, NodeMenuCategory parent)
+        {
+            foreach (NodeMenuCategory category in parent.Categories
+                .OrderBy(item => item.Order)
+                .ThenBy(item => item.SortText, LogicalStringComparer.Instance))
+            {
+                var categoryItem = new MenuItem { Header = category.Header };
+                AddNodeMenuCategories(categoryItem.Items, category);
                 if (categoryItem.Items.Count > 0)
                     items.Add(categoryItem);
+            }
+
+            foreach (NodeMenuItemEntry node in parent.Nodes
+                .OrderBy(item => item.Header, LogicalStringComparer.Instance)
+                .ThenBy(item => item.NodeType.FullName, StringComparer.Ordinal))
+            {
+                Type nodeType = node.NodeType;
+                var nodeItem = new MenuItem { Header = node.Header };
+                nodeItem.Click += (_, _) => CreateNode(nodeType);
+                items.Add(nodeItem);
+            }
+        }
+
+        private sealed class LogicalStringComparer : IComparer<string>
+        {
+            public static LogicalStringComparer Instance { get; } = new();
+
+            public int Compare(string? x, string? y)
+            {
+                if (ReferenceEquals(x, y)) return 0;
+                if (x == null) return -1;
+                if (y == null) return 1;
+                int logicalResult = Common.NativeMethods.Shlwapi.CompareLogical(x, y);
+                return logicalResult != 0 ? logicalResult : StringComparer.CurrentCultureIgnoreCase.Compare(x, y);
             }
         }
 
@@ -221,6 +445,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             node.Create();
             node.Left = _contextCanvasPoint.X;
             node.Top = _contextCanvasPoint.Y;
+            CameraNodeCreationDefaults.InitializeFromCurrentCamera(node);
 
             if (node is CVBaseServerNode serverNode)
             {

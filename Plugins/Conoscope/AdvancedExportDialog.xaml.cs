@@ -29,6 +29,7 @@ namespace Conoscope
         public AdvancedExportDialog(AdvancedExportSettings? initialSettings = null, int defaultDecimalPlaces = 4)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             InitializeLocalizedText();
             Settings = NormalizeSettings(initialSettings, defaultDecimalPlaces);
             ApplySettings(Settings);

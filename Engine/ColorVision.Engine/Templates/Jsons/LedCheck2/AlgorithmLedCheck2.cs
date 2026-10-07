@@ -4,9 +4,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
-using System;
 using System.Collections.Generic;
-using System.Windows;
 
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2

@@ -44,7 +44,7 @@
 #define OPENCV_STITCHING_MATCHERS_HPP
 
 #include "opencv2/core.hpp"
-#include "opencv2/features2d.hpp"
+#include "opencv2/features.hpp"
 
 #include "opencv2/opencv_modules.hpp"
 
@@ -190,22 +190,22 @@ public:
     estimation used in the inliers classification step
     @param num_matches_thresh2 Minimum number of matches required for the 2D projective transform
     re-estimation on inliers
-    @param matches_confindece_thresh Matching confidence threshold to take the match into account.
+    @param matches_confidence_thresh Matching confidence threshold to take the match into account.
     The threshold was determined experimentally and set to 3 by default.
      */
     CV_WRAP BestOf2NearestMatcher(bool try_use_gpu = false, float match_conf = 0.3f, int num_matches_thresh1 = 6,
-                          int num_matches_thresh2 = 6, double matches_confindece_thresh = 3.);
+                          int num_matches_thresh2 = 6, double matches_confidence_thresh = 3.);
 
     CV_WRAP void collectGarbage() CV_OVERRIDE;
     CV_WRAP static Ptr<BestOf2NearestMatcher> create(bool try_use_gpu = false, float match_conf = 0.3f, int num_matches_thresh1 = 6,
-        int num_matches_thresh2 = 6, double matches_confindece_thresh = 3.);
+        int num_matches_thresh2 = 6, double matches_confidence_thresh = 3.);
 
 protected:
 
     void match(const ImageFeatures &features1, const ImageFeatures &features2, MatchesInfo &matches_info) CV_OVERRIDE;
     int num_matches_thresh1_;
     int num_matches_thresh2_;
-    double matches_confindece_thresh_;
+    double matches_confidence_thresh_;
     Ptr<FeaturesMatcher> impl_;
 };
 
@@ -257,6 +257,46 @@ protected:
     void match(const ImageFeatures &features1, const ImageFeatures &features2, MatchesInfo &matches_info) CV_OVERRIDE;
 
     bool full_affine_;
+};
+
+/** @brief Features matcher that adapts LightGlueMatcher (DescriptorMatcher) to the
+stitching pipeline's FeaturesMatcher interface.
+
+This matcher uses DNN-based LightGlue for feature matching, requiring ALIKED-style
+keypoints with spatial context for positional encoding.
+
+@sa cv::detail::FeaturesMatcher cv::LightGlueMatcher
+ */
+class CV_EXPORTS_W LightGlueFeaturesMatcher : public FeaturesMatcher
+{
+public:
+    /** @brief Constructs a LightGlue features matcher.
+
+    @param lgMatcher LightGlueMatcher instance for DNN-based matching
+    @param num_matches_thresh1 Minimum number of matches required for the 2D projective transform
+    estimation used in the inliers classification step
+    @param num_matches_thresh2 Minimum number of matches required for the 2D projective transform
+    re-estimation on inliers
+    @param matches_confidence_thresh Matching confidence threshold to take the match into account.
+     */
+    CV_WRAP LightGlueFeaturesMatcher(Ptr<LightGlueMatcher> lgMatcher,
+                              int num_matches_thresh1 = 6,
+                              int num_matches_thresh2 = 6,
+                              double matches_confidence_thresh = 3.0);
+
+    /** @brief Sets the LightGlue confidence threshold for filtering matches.
+     */
+    CV_WRAP void setScoreThreshold(float thresh);
+
+protected:
+    void match(const ImageFeatures &features1, const ImageFeatures &features2,
+               MatchesInfo &matches_info) CV_OVERRIDE;
+
+    Ptr<LightGlueMatcher> lgMatcher_;
+    int num_matches_thresh1_;
+    int num_matches_thresh2_;
+    double matches_confidence_thresh_;
+    float lg_score_thresh_;
 };
 
 //! @} stitching_match

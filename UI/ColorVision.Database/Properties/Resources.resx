@@ -455,4 +455,8 @@
   <data name="DB_OperationFailed" xml:space="preserve">
     <value>操作失败：{0}</value>
   </data>
+  <data name="DB_AddCondition" xml:space="preserve"><value>+ 添加条件</value></data>
+  <data name="DB_MatchAllConditions" xml:space="preserve"><value>满足以下所有条件</value></data>
+  <data name="DB_SearchFilterField" xml:space="preserve"><value>输入字段名称或代码查找，再从列表选择</value></data>
+  <data name="DB_MoreQueryActions" xml:space="preserve"><value>更多查询操作</value></data>
 </root>

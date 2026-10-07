@@ -15,6 +15,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
 {
     public const int MaximumFramePixels = 8_388_608;
     public const int MaximumRgbCrossPixels = 67_108_864;
+    public const int MaximumDustPixels = 134_217_728;
     public const long MaximumTotalPixels = 33_554_432;
     private const int MaximumComponents = 2048;
     public AlgorithmProviderMetadata Metadata { get; } = new("colorvision.display-metrology.cpu", "ColorVision Display Metrology",
@@ -42,8 +43,10 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             var p = (DisplayMetrologyParameters)context.Parameters;
             if (!p.Validate().IsValid) throw new MeasurementException("invalid_parameters", "参数未通过校验。");
             var first = context.Inputs[0].Image;
-            int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
-            long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
+            int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
+                : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
+            long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
+                : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
             if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32
                 || (long)i.Image.Width * i.Image.Height > frameBudget)
                 || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > totalBudget
@@ -60,6 +63,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             else if (context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration) MeasureRgbCross(context, (RgbCrossRegistrationParameters)p, artifacts, cancellationToken);
             else if (context.Descriptor.Id == DisplayMetrologyIds.Binocular) MeasureBinocular(context, (BinocularQualityParameters)p, artifacts, cancellationToken);
             else if (context.Descriptor.Id == DisplayMetrologyIds.Eyebox) MeasureEyebox(context, (EyeboxScanParameters)p, artifacts, cancellationToken);
+            else if (context.Descriptor.Id == DisplayMetrologyIds.Dust) MeasureDust(context, (DustDetectionParameters)p, artifacts, cancellationToken);
             else
             {
                 float[] signal = ReadSignal(first, p.Channel, p.DecodeExponent, cancellationToken);

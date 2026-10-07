@@ -5,7 +5,7 @@ status: "current"
 summary: "流程编辑器的打开与保存步骤、导出/删除范围、切换提示和工作区隔离；区分当前画布与已保存模板。"
 aliases: ["流程设计","拖节点","节点参数","保存流程","ViewFlow","FlowEditorCanvas","ActiveFlowParam","FlowTemplateWorkspaceController","流程编辑器","流程引擎模板管理","导入模板为模块","自动对齐","适应全部节点"]
 code_paths: ["Engine/ColorVision.Engine/FlowProcessing/Runtime/ViewFlow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowEngineManager.cs","Engine/ColorVision.Engine/FlowProcessing/Runtime/FlowTemplateWorkspaceController.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorCanvas.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEngineToolWindow.xaml.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowEditorOperations.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml","Engine/ColorVision.Engine/FlowProcessing/Editor/TemplateSelectionDialog.xaml.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs","Test/ColorVision.UI.Tests/STNodeEditorCanvasTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/FlowTemplateWorkspaceControllerTests.cs","Test/ColorVision.UI.Tests/ViewFlowDocumentBehaviorTests.cs","Test/ColorVision.UI.Tests/FlowLocalShortcutTests.cs","Test/ColorVision.UI.Tests/STNodeCopyPasteTests.cs"]
 related: ["flow.architecture","flow.editor","flow.templates","flow.session","flow.headless","ui.property-grid"]
 ---
 
@@ -25,6 +25,8 @@ related: ["flow.architecture","flow.editor","flow.templates","flow.session","flo
 4. 核对窗口标题及下表中的保存目标，点击“保存”。需要保留修改时，先保存成功，再切换模板、刷新或导出；这些操作没有统一的自动保存行为。
 
 编辑完成后要运行当前画布，使用同一编辑器工具栏中工具提示为“执行流程”的按钮。“工作流程”面板也提供同名按钮。启动前提、停止行为和最终状态见[流程执行](./execution.md)；保存流程与执行流程是两个命令，执行不会替代保存。
+
+ARVRPro、LUX、KB 的流程编辑按钮在未选择模板时仍可打开空白独立文档；列表为空或原选择索引已失效时也采用此方式，不自动选取其它流程。窗口没有关联模板时，模板删除和版本历史等需要选中模板的操作不可用；之后仍可新建、打开文件或编辑画布，保存按独立文档规则选择文件目标。
 
 ## 保存目标与命令范围
 

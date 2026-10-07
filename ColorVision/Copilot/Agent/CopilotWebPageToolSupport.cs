@@ -25,14 +25,16 @@ namespace ColorVision.Copilot
         string Content,
         IReadOnlyList<string>? RelatedResourceUrls = null,
         bool IsSparseExtraction = false,
-        IReadOnlyList<CopilotWebPageLink>? RelatedPageLinks = null)
+        IReadOnlyList<CopilotWebPageLink>? RelatedPageLinks = null,
+        bool BrowserRendered = false,
+        string? RenderingNotice = null)
     {
         public IReadOnlyList<string> DiscoveredResourceUrls => RelatedResourceUrls ?? Array.Empty<string>();
 
         public IReadOnlyList<CopilotWebPageLink> DiscoveredPageLinks => RelatedPageLinks ?? Array.Empty<CopilotWebPageLink>();
     }
 
-    public static class CopilotWebPageToolSupport
+    public static partial class CopilotWebPageToolSupport
     {
         public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
@@ -58,11 +60,12 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(text))
                 return results;
 
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             foreach (Match match in HttpUrlRegex.Matches(text))
             {
                 var candidate = match.Value.Trim().TrimEnd(UrlTrimCharacters);
                 if (!string.IsNullOrWhiteSpace(candidate)
-                    && !results.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+                    && visitedUrls.Add(NormalizeUrlComparisonKey(candidate)))
                 {
                     results.Add(candidate);
                 }
@@ -70,6 +73,9 @@ namespace ColorVision.Copilot
 
             return results;
         }
+
+        internal static string NormalizeUrlComparisonKey(string value) =>
+            Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri.AbsoluteUri : value;
 
         public static string NormalizeWebPageUrl(string value)
         {
@@ -94,7 +100,8 @@ namespace ColorVision.Copilot
                 static (host, token) => Dns.GetHostAddressesAsync(host, token),
                 static () => CreateHttpHandler(),
                 static () => CopilotConfig.Instance.WebPagePref64Prefixes,
-                cancellationToken);
+                cancellationToken,
+                CopilotWebPageBrowserRenderer.RenderAsync);
         }
 
         internal static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(
@@ -102,13 +109,14 @@ namespace ColorVision.Copilot
             Func<string, CancellationToken, Task<IPAddress[]>> resolveAddressesAsync,
             Func<HttpMessageHandler> createHttpHandler,
             Func<string?> getConfiguredPref64Prefixes,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Func<Uri, CancellationToken, Task<CopilotFetchedWebPageContent>>? renderPage = null)
         {
             ArgumentNullException.ThrowIfNull(resolveAddressesAsync);
             ArgumentNullException.ThrowIfNull(createHttpHandler);
             ArgumentNullException.ThrowIfNull(getConfiguredPref64Prefixes);
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            deadline.CancelAfter(TimeSpan.FromSeconds(20));
+            deadline.CancelAfter(TimeSpan.FromSeconds(renderPage == null ? 20 : 40));
             cancellationToken = deadline.Token;
             var currentUri = NormalizeAndValidateWebPageUri(url);
             for (var redirectCount = 0; ; redirectCount++)
@@ -136,7 +144,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
 
                 var content = await ReadWebPageContentAsync(response, cancellationToken);
-                return ExtractDownloadedContent(currentUri, mediaType, content);
+                return await ExtractWithBrowserFallbackAsync(currentUri, mediaType, content, renderPage, cancellationToken);
             }
         }
 
@@ -161,6 +169,9 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             builder.AppendLine($"[Web Page Fetched] {page.Url}");
             builder.AppendLine($"Title: {page.Title}");
+            builder.AppendLine(page.BrowserRendered ? "Extraction method: browser-rendered DOM (JavaScript executed; no user interactions)." : "Extraction method: static HTTP content.");
+            if (!string.IsNullOrWhiteSpace(page.RenderingNotice))
+                builder.AppendLine($"Rendering note: {page.RenderingNotice}");
 
             if (!string.IsNullOrWhiteSpace(page.Description))
                 builder.AppendLine($"Description: {page.Description}");
@@ -259,7 +270,7 @@ namespace ColorVision.Copilot
 
             var content = string.Join(Environment.NewLine, lines).Trim();
             if (string.IsNullOrWhiteSpace(content))
-                throw new InvalidOperationException("Could not extract readable web page body text. The page may require script rendering.");
+                throw new CopilotWebPageRenderingRequiredException();
 
             if (content.Length > MaxWebPageContentChars)
                 content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
@@ -320,6 +331,7 @@ namespace ColorVision.Copilot
         private static List<string> ExtractRelatedResourceUrls(Uri pageUri, HtmlDocument document)
         {
             var results = new List<string>();
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var nodes = document.DocumentNode.SelectNodes("//a[@href]|//link[@href]") ?? Enumerable.Empty<HtmlNode>();
             foreach (var node in nodes)
             {
@@ -329,8 +341,8 @@ namespace ColorVision.Copilot
                 if (!IsSameOrigin(pageUri, candidate) || !IsStructuredResourceLink(node, candidate))
                     continue;
 
-                var normalized = candidate.GetLeftPart(UriPartial.Path);
-                if (!results.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                var normalized = RemoveFragment(candidate).AbsoluteUri;
+                if (visitedUrls.Add(normalized))
                     results.Add(normalized);
                 if (results.Count >= 8)
                     break;
@@ -341,7 +353,7 @@ namespace ColorVision.Copilot
         private static List<CopilotWebPageLink> ExtractRelatedPageLinks(Uri pageUri, HtmlDocument document)
         {
             var results = new List<CopilotWebPageLink>();
-            var visitedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var visitedUrls = new HashSet<string>(StringComparer.Ordinal);
             var currentPageUrl = RemoveFragment(pageUri).AbsoluteUri;
             var nodes = document.DocumentNode.SelectNodes("//a[@href]") ?? Enumerable.Empty<HtmlNode>();
             foreach (var node in nodes)
@@ -360,7 +372,7 @@ namespace ColorVision.Copilot
 
                 var normalizedUri = RemoveFragment(candidate);
                 var normalizedUrl = normalizedUri.AbsoluteUri;
-                if (string.Equals(normalizedUrl, currentPageUrl, StringComparison.OrdinalIgnoreCase)
+                if (string.Equals(normalizedUrl, currentPageUrl, StringComparison.Ordinal)
                     || !visitedUrls.Add(normalizedUrl))
                 {
                     continue;

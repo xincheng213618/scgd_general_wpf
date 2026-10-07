@@ -56,21 +56,21 @@ namespace ColorVision.FloatingBall
         public double PetOpacity { get => _petOpacity; set { _petOpacity = value; OnPropertyChanged(); } }
         private double _petOpacity = 1.0;
 
-        [DisplayName("宠物素材")]
-        [Description("使用 ColorVision 默认素材、Codex 内置素材或兼容 Codex pet.json 的自定义素材。")]
-        [Category("宠物素材")]
+        [DisplayName("ConfigDesktopPetAsset")]
+        [Description("ConfigDesktopPetAssetDescription")]
+        [Category("ConfigDesktopPetCategory")]
         [Browsable(false)]
         public string SelectedPetId { get => _selectedPetId; set { _selectedPetId = value; OnPropertyChanged(); } }
         private string _selectedPetId = DesktopPetAssetCatalog.DefaultAssetId;
 
-        [DisplayName("关联 Copilot")]
-        [Description("让宠物跟随 Copilot 的运行、等待确认、完成和失败状态。")]
+        [DisplayName("ConfigDesktopPetCopilotIntegration")]
+        [Description("ConfigDesktopPetCopilotIntegrationDescription")]
         [Category("Copilot")]
         public bool EnableCopilotIntegration { get => _enableCopilotIntegration; set { _enableCopilotIntegration = value; OnPropertyChanged(); } }
         private bool _enableCopilotIntegration = true;
 
-        [DisplayName("显示 Copilot 提醒")]
-        [Description("在 Copilot 需要确认、完成或失败时显示宠物气泡。")]
+        [DisplayName("ConfigDesktopPetCopilotNotifications")]
+        [Description("ConfigDesktopPetCopilotNotificationsDescription")]
         [Category("Copilot")]
         [PropertyVisibility(nameof(EnableCopilotIntegration))]
         public bool ShowCopilotNotifications { get => _showCopilotNotifications; set { _showCopilotNotifications = value; OnPropertyChanged(); } }

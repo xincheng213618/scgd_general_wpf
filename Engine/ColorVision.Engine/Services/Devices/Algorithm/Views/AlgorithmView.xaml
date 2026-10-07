@@ -103,7 +103,9 @@
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style BasedOn="{StaticResource ListViewItemBaseStyle.Small}" TargetType="{x:Type ListViewItem}">
-                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
+                            <Setter Property="ContextMenu">
+                                <Setter.Value><ContextMenu /></Setter.Value>
+                            </Setter>
                             <Setter Property="Opacity" Value="1" />
                             <EventSetter Event="ContextMenuOpening" Handler="AlgorithmResult_ContextMenuOpening" />
                             <Style.Triggers>
@@ -218,7 +220,7 @@
             </ListView.View>
         </ListView>
 
-        <TextBox x:Name="TextBoxside" Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Panel.ZIndex="9" BorderThickness="0" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow" Visibility="Collapsed" />
+        <TextBox x:Name="TextBoxside" Grid.Row="1" Grid.Column="1" Width="250" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Panel.ZIndex="9" BorderThickness="0" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow" Visibility="Collapsed" />
 
         <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Left" Panel.ZIndex="999" Background="#1FFFFFFF" DragCompleted="GridSplitter_DragCompleted1" />
 

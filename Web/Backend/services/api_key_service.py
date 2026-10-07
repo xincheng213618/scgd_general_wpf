@@ -41,7 +41,6 @@ API_KEY_SCOPE_DEFINITIONS: tuple[dict[str, str], ...] = (
     {"value": "file:transfer", "label": "文件中转", "description": "上传、下载、列出和删除中转文件。", "category": "文件", "access": "write"},
     {"value": "ops:relay", "label": "桌面 Relay", "description": "桌面端心跳、任务拉取、回执和受限支持事件。", "category": "桌面运维", "access": "service"},
     {"value": "ops:operator", "label": "运维调度", "description": "查看主机并创建目录约束的桌面运维任务。", "category": "桌面运维", "access": "write"},
-    {"value": "copilot:config:read", "label": "Copilot 配置同步", "description": "读取启用的 Copilot 配置。", "category": "Copilot", "access": "read"},
 )
 ALLOWED_SCOPES = frozenset(item["value"] for item in API_KEY_SCOPE_DEFINITIONS)
 DEFAULT_API_KEY_SCOPES = ("stats:read",)

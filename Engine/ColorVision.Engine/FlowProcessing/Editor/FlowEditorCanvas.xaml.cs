@@ -636,20 +636,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void ThemeChanged(Theme theme)
         {
-            if (theme == Theme.Dark)
-            {
-                STNodeEditorMain.BackColor = Color.FromArgb(255, 34, 34, 34);
-                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.ForeColor = Color.FromArgb(255, 255, 255, 255);
-                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 50, 50, 50);
-            }
-            else
-            {
-                STNodeEditorMain.BackColor = Color.FromArgb(255, 150, 150, 150);
-                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.ForeColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 200, 200, 200);
-            }
+            STNodeEditorMain.VisualTheme = theme == Theme.Dark ? STNodeVisualTheme.Dark : STNodeVisualTheme.Light;
         }
 
         public void Dispose()

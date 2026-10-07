@@ -1,7 +1,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

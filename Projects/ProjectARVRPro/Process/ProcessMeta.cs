@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8622
+﻿using LocalizedText = global::ProjectARVRPro.DisplayText;
+#pragma warning disable CS8622
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
@@ -157,7 +158,7 @@ namespace ProjectARVRPro.Process
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。",
+                    LocalizedText.Format($"Recipe 已修改，但保存 {ProcessManager.GroupPersistFileName} 失败。请检查磁盘空间和文件权限后重试。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

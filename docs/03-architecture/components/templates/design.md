@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "TemplateControl注册与普通ITemplate<T>参数加载、保存、复制和删除契约；注册、内存变更和数据库成功是不同状态，JSON与Flow另有实现。"
 aliases: ["模板架构","Templates目录","模板注册","如何新增算法模板","新增模板要继承什么","ITemplate","IITemplateLoad","TemplateControl","TemplateDicId","TemplateModel","ParamModBase","ModelBase","SaveIndex","TryCreateTemplate","SwapTemplateOrder"]
-code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/ARVR/SFR/TemplateSFR.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/TemplateOrderSwap.cs","Engine/ColorVision.Engine/Templates/TemplateControl.cs","Engine/ColorVision.Engine/Templates/ModelBase.cs","Engine/ColorVision.Engine/Templates/ParamModBase.cs","Engine/ColorVision.Engine/Templates/TemplateModel.cs","Engine/ColorVision.Engine/Templates/Jsons/ITemplateJson.cs","Engine/ColorVision.Engine/Dao/ModMasterModel.cs","Engine/ColorVision.Engine/Dao/ModDetailModel.cs","Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs","Engine/ColorVision.Engine/Templates/LEDStripDetection/TemplateLEDStripDetection.cs","UI/ColorVision.UI/AssemblyHandler.cs","UI/ColorVision.Common/MVVM/ViewModelBaseExtensions.cs","Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs","Test/ColorVision.UI.Tests/FlowTemplateBrowserOrderTests.cs"]
 related: ["engine.index","algorithms.template-management","algorithms.json-templates","flow.templates","ui.property-grid","engine.results"]
 ---
 
@@ -32,11 +32,11 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 ## 发现和加载是两个阶段
 
-`TemplateInitializer.Order = 4`，初始化时经 UI Dispatcher 获取 `TemplateControl`。控制器首次构造调用 `Init`，并订阅 MySQL 连接变化，在 Dispatcher 上再次调用 `Init`；未连接时只加载支持 SQLite 的本地流程，不构造其它依赖 MySQL 的模板加载器。POI 的本地加载仍由其管理器和 ImageView 入口负责。
+`TemplateInitializer.Order = 4`，声明等待 MySQL、工作区与 RC 后，经 UI Dispatcher 调用 `TemplateControl.InitializeForStartupAsync`。启动按约 32 ms 时间片在加载器之间让出 UI，实现 `IAsyncTemplateLoad` 的加载器可使用异步路径；Flow 将存储读取移到后台，集合更新仍在 UI 线程。直接构造和运行期间的 MySQL 重连保持同步加载；启动进行中的重载请求合并后补做，避免重入发布。未连接时只加载支持 SQLite 的本地流程，不构造其它依赖 MySQL 的模板加载器。POI 的本地加载仍由其管理器和 ImageView 入口负责。
 
 本地流程和 POI 不代表所有模板已经支持 SQLite。普通 `ITemplate<T>` 仍依赖 MySQL 的主表、明细和 `SymbolCache` 字典；`ITemplateJson<T>` 的载荷及默认 JSON 仍从 MySQL 获取；校正模板的资源组合、第三方算法的定义和参数也各有数据库访问。节点参数齿轮和 `DisplayAlgorithmTemplateSelection.EditCommand` 本身不检查 MySQL，离线新建失败应继续追到这些存储 owner，不能只删除 `TemplateControl` 或基类 DAO 的连接检查。接入本地配置时还需处理默认值、嵌套资源引用、存储身份和保存失败语义，服务数据库结构保持兼容。
 
-连接可用后，`AssemblyHandler.LoadImplementations<IITemplateLoad>()` 从程序集/类型缓存发现可实例化类型，要求具体类和公开无参构造；每次调用创建实例，构造失败记日志并跳过。控制器逐个调用 `Load()`，单个加载异常记日志后继续其它加载器。因此“初始化完成”日志不代表每个模板都成功，实例构造已注册也不代表参数已加载。
+连接可用后，`AssemblyHandler.LoadImplementations<IITemplateLoad>()` 从程序集/类型缓存发现可实例化类型，要求具体类和公开无参构造；每次调用创建实例，构造失败记日志并跳过。控制器逐个调用加载器；启动优先调用可选的 `LoadAsync()`，其余路径使用 `Load()`。单个加载异常记日志后继续其它加载器，不向外传播，因而也不会自动计入宿主的 Degraded 结果。因此“初始化完成”日志不代表每个模板都成功，实例构造已注册也不代表参数已加载。
 
 晚加载程序集还涉及 `AssemblyHandler` 缓存刷新；模板控制器不提供独立的插件热卸载/全量重建协议。列表为空时按程序集发现、构造、注册键、数据库连接和具体 `Load` 分支定位，不先添加菜单。扩展发现的共同边界见[UI 发现链](../../../04-api-reference/ui-components/ui-runtime-handoff.md)。
 
@@ -73,7 +73,7 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 普通 `Create(name)` 先插主记录，再写明细并添加内存项；与普通 `Save` 一样没有包住全链的事务。它依赖准备好的 `CreateTemp`：该分支会把明细 `Pid` 改为新主 ID；未准备预览的默认分支当前创建明细时使用 `Pid = -1`，不能将直接调用 `Create(name)` 等同于完整 UI 创建链。公开 `AddParamMode(name, resourceId)` 是另一个方法，会为默认明细设置新主 ID，并可绑定资源；不要混同两条创建路径。
 
-`TryCreateTemplate` 捕获 `Create` 异常并返回消息，以集合数量增长、当前名称出现或全局名称存在判断成功。它不是数据库核验，更不是失败补偿；返回 `false` 也不能据此假定前面的数据库写入已撤销。无有效参数的分支还可能询问是否通过 `GetMysqlCommand().GetRecover()` 重置数据库项，不能将这个恢复动作当作普通验证步骤。
+`TryCreateTemplate` 捕获 `Create` 异常并返回消息，以集合数量增长、当前名称出现或全局名称存在判断成功。它不是数据库核验，更不是失败补偿；返回 `false` 也不能据此假定前面的数据库写入已撤销。
 
 普通 `Delete(index)` 先检查集合中 `IsSelected` 勾选项：一个勾选项覆盖传入索引，多个勾选项逐个删除，否则用传入索引。它直接删除主表与明细，再移除内存项，不是软删除，没有跨条目事务或通用引用完整性检查。Flow 节点、项目和结果中残留的名称/ID引用须由各自调用链核对。
 
@@ -82,13 +82,13 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 - `CopyTo(index)` 将当前参数 JSON 序列化再反序列化到 `ImportTemp`，只显式把参数 `Id` 置为 `-1`；不会在此刻创建数据库记录，也不保证全部嵌套 ID、资源引用已重映射。
 - 普通 `ImportFile` 读取文件、先构造默认参数，再按来源明细的 `SysPid` 将 `ValueA` 拷入目标明细。它不是任意 JSON 字段合并；来源字典项不匹配可能在 `First(...)` 处失败。只捕获 JSON 异常，文件 I/O、字典/构造和其它异常可传播，失败前的临时状态也不保证全恢复。
 - 普通单项导出是 `.cfg` 参数 JSON，多选是多个 `.cfg` 的 zip；基类导入对话框只选择 `.cfg`，不能据多选导出推断它支持整包回导。导出不自动包含设备、图像、相关模板或历史结果，失败也没有目标文件原子替换保证。
-- `SwapTemplateOrder` 默认实现试图用临时 ID 交换主记录身份、明细 `Pid` 和内存集合，不只是修改界面排序。它没有显式事务和影响行数核验，异常返回 `false`；不能据返回值证明数据库与外部引用完整一致。需要授权数据库验证，不把拖动顺序当作只读整理。
+- `SwapTemplateOrder` / `SwapTemplateOrderAsync` 通过 `TemplateOrderSwap` 保存数据库顺序。MySQL 沿用按主键排列的现有约定：在事务内按 ID 顺序锁住两条主记录、核对名称，以明确的旧 ID 条件交换主键，再用一条 CASE 更新全部明细 `Pid`；不回写名称、JSON、创建时间或流程资源内容。每次主记录更新必须影响一行，明细更新数须与交换前数量相同，失败回滚。不能用修改 ID 后的 `Updateable(entity)` 代替主键更新，否则其 WHERE 使用新 ID，会覆盖目标记录。Flow、POI、普通模板和 JSON 模板共用此实现；本地 Flow/POI 使用 SQLite 的 `sort_order`，保持本地 ID 不变。提交成功才发布内存顺序并重映射待保存项索引，异步入口把数据库工作移到后台。这个操作会改变服务器模板 ID，不是只读整理；既有数据库损坏和客户侧历史 ID 引用不由排序自动修复。
 
 JSON、POI、Flow 可覆写上述方法。尤其 JSON 的“设为默认”与 Flow 保存具有各自事务规则，不能总结成“所有模板保存都一样”或“所有模板都没有事务”。
 
 ## 新模板与消费者的接入边界
 
-新增普通模板可参考 `Templates/ImageCropping/TemplateImageCropping.cs` 的参数集合、字典 ID 和加载接口；自定义编辑控件可参考 `Templates/ARVR/SFR/TemplateSFR.cs`，但还需区分编辑控件和创建预览钩子。除无参构造外，默认加载/创建需要对应的参数构造签名。
+新增普通模板可参考 `Templates/ImageCropping/TemplateImageCropping.cs` 的参数集合、字典 ID 和加载接口；自定义编辑控件可参考 `Templates/LEDStripDetection/TemplateLEDStripDetection.cs`，但还需区分编辑控件和创建预览钩子。除无参构造外，默认加载/创建需要对应的参数构造签名。
 
 参数属于设备时保持设备的资源关联；属于客户判定、报表或 MES 格式时放回项目包，不因为有模板窗口就移入通用层。算法适配器如何把模板名称/ID、POI 等写入 `CVTemplateParam`，应追实际 `Algorithm*` 请求实现，而不是由模板基类推定已经接入。
 
@@ -98,4 +98,4 @@ Flow 常规属性通过 属性上的 `PropertyEditorTypeAttribute` 选择编辑�
 
 `AlgorithmNodeTemplateMappingTests` 当前仅验证 ARVR 的 `POITempName` 映射到指定编辑器，不证明普通模板 CRUD。Flow 身份/流程包测试由 Flow 主题维护，不能拿它们代表全部 `ITemplate<T>`、字典迁移或编辑器行为。
 
-尚未登记覆盖上述普通模板注册冲突、离线/增量重载、跨表部分写入、默认创建、过滤后目标选择与排序身份变化的完整自动化测试。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。
+`FlowTemplateBrowserOrderTests` 在隔离数据库验证排序后的完整主记录字段、全部明细归属、缺失/过期目标和事务失败回滚；浏览器测试验证共享列表顺序与当前选择。其余普通模板注册冲突、离线/增量重载、默认创建及过滤后的所有写入入口仍缺少完整覆盖。修改这些代码时，需用隔离数据库和已授权样例核对持久化结果、旧模板字段与引用，并明确未覆盖的 UI/设备路径。

@@ -1,4 +1,5 @@
 using log4net;
+using ColorVision.UI.Desktop.LanRemote;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -58,7 +59,7 @@ namespace ColorVision.UI.Desktop.Operations
 
         public int RunningPort { get; private set; }
 
-        public string LastStatusMessage { get; private set; } = "安全运维通道已关闭。";
+        public string LastStatusMessage { get; private set; } = LanRemoteText.Get("SecureDisabledStatus");
 
         public string HostId => _identity.HostId;
 
@@ -200,7 +201,7 @@ namespace ColorVision.UI.Desktop.Operations
                     _listener.Start();
                     RunningPort = port;
                     IsRunning = true;
-                    LastStatusMessage = $"安全运维通道运行中，HTTPS 端口 {port}。";
+                    LastStatusMessage = LanRemoteText.Format("SecureRunningStatus", port);
                     _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
                     _relay.Start(snapshotProvider, CaptureRelayMonitor);
                     Log.Info(LastStatusMessage);
@@ -208,7 +209,7 @@ namespace ColorVision.UI.Desktop.Operations
                 catch (Exception ex)
                 {
                     StopNoLock();
-                    LastStatusMessage = $"安全运维通道启动失败：{ex.Message}";
+                    LastStatusMessage = LanRemoteText.Format("SecureFailedStatus", ex.Message);
                     Log.Error(LastStatusMessage, ex);
                 }
             }
@@ -220,7 +221,7 @@ namespace ColorVision.UI.Desktop.Operations
             lock (_syncRoot)
             {
                 StopNoLock();
-                LastStatusMessage = "安全运维通道已关闭。";
+                LastStatusMessage = LanRemoteText.Get("SecureDisabledStatus");
             }
             StateChanged?.Invoke(this, EventArgs.Empty);
         }

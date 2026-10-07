@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Abstractions;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Annotations;
-using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.ImageEditor.EditorTools.FullScreen;
 using ColorVision.ImageEditor.Layers;
@@ -17,11 +16,9 @@ using ColorVision.ImageEditor.Settings;
 using ColorVision.ImageEditor.Documents;
 using ColorVision.ImageEditor.Presentation;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using log4net;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -83,6 +80,7 @@ namespace ColorVision.ImageEditor
         private WpfWindow? _shortcutWindow;
 
         public event EventHandler ClearImageEventHandler;
+        internal Task PendingContentRelease { get; private set; } = Task.CompletedTask;
         public event EventHandler StatusBarItemsChanged;
         public event EventHandler<ImageViewImageChangedEventArgs>? SelectedImageChanged;
 
@@ -447,12 +445,7 @@ namespace ColorVision.ImageEditor
 
         private void MoveView(double x, double y)
         {
-            TranslateTransform translateTransform = new();
-            Vector vector = new(x, y);
-            translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-            translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-            EditorContext.DrawEditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
-                Matrix.Multiply(EditorContext.DrawEditorContext.Zoombox.ContentMatrix, translateTransform.Value));
+            Zoombox1.Pan(new Vector(x, y));
         }
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e) => SchedulePixelValueOverlayRefresh();
@@ -661,6 +654,7 @@ namespace ColorVision.ImageEditor
 
         public void OpenImages(IEnumerable<string>? filePaths, int selectedIndex = 0)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 var paths = filePaths?.ToList();
@@ -678,6 +672,7 @@ namespace ColorVision.ImageEditor
 
         public void OpenImageGroup(IEnumerable<ImageViewImageItem>? images, int selectedIndex = 0)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 var imageList = images?.ToList();
@@ -690,6 +685,7 @@ namespace ColorVision.ImageEditor
 
         public void AppendImage(string? filePath, bool open = true)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => AppendImage(filePath, open));
@@ -712,6 +708,7 @@ namespace ColorVision.ImageEditor
 
         public void SelectImage(int index)
         {
+            if (Volatile.Read(ref _disposed) != 0) return;
             if (!Dispatcher.CheckAccess())
             {
                 Dispatcher.BeginInvoke(() => SelectImage(index));
@@ -759,11 +756,14 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            long releasedBytes = Math.Max(ImageMemoryReclaimer.GetPixelBytes(_document.Source),
+                ImageMemoryReclaimer.GetPixelBytes(Presentation.DisplaySource));
+            _drawing.CancelPendingZoom();
             _channels.CancelPending();
             ApplyImageDocumentMutation(ImageDocumentMutationKind.ImageCleared);
             ClearImageGroup();
+            ReleaseImageContent();
             ClearImageEventHandler?.Invoke(this, new EventArgs());
-            EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
             _session.ClearConfiguration();
@@ -771,6 +771,8 @@ namespace ColorVision.ImageEditor
             ImageShow.Clear();
             Presentation.Publish(null, null);
             ImageShow.UpdateLayout();
+            ReleaseSnapshotBuffer();
+            _ = ImageMemoryReclaimer.RequestCollection(releasedBytes);
         }
 
         public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
@@ -861,20 +863,23 @@ namespace ColorVision.ImageEditor
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
             }
+            string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+            IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen);
+            long? cachedLength = imageOpen?.GetCachedFileLength(filePath);
+            bool fileExists = cachedLength.HasValue || File.Exists(filePath);
+            ReleaseImageContent(fileExists ? imageOpen : null);
             Config.ClearProperties();
-            EditorContext.IImageOpen = null;
             IEditorToolFactory.ApplyImageOpenTools(null);
             SetLayerController(null);
             Config.SetImageMetadata(ImageViewPropertyKeys.FilePath, filePath, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FilePath);
             try
             {
-                if (filePath != null && File.Exists(filePath))
+                if (fileExists)
                 {
-                    long fileSize = new FileInfo(filePath).Length;
+                    long fileSize = cachedLength ?? new FileInfo(filePath).Length;
                     Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileSize, nameof(ImageView), Properties.Resources.ImageView_MetadataDesc_FileSize);
 
-                    string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                    if (IEditorToolFactory.IImageOpens.TryGetValue(ext, out var imageOpen))
+                    if (imageOpen != null)
                     {
                         EditorContext.IImageOpen = imageOpen;
                         EditorContext.IImageOpen.OpenImage(EditorContext, filePath);
@@ -889,11 +894,27 @@ namespace ColorVision.ImageEditor
             }
             catch(Exception ex)
             {
-                EditorContext.IImageOpen = null;
+                ReleaseImageContent();
                 IEditorToolFactory.ApplyImageOpenTools(null);
                 log.Error(ex);
                 WpfMessageBox.Show(ex.Message);
             }
+        }
+
+        /// <summary>Ends the file opener's content before replacing it with another file or a camera source.</summary>
+        public void ReleaseImageContent(IImageOpen? nextOpener = null)
+        {
+            Dispatcher.VerifyAccess();
+            var opener = EditorContext.IImageOpen;
+            EditorContext.IImageOpen = null;
+            if (opener is IImageOpenContentLifetime lifetime)
+                PendingContentRelease = Task.WhenAll(PendingContentRelease, ObserveContentReleaseAsync(lifetime, ReferenceEquals(opener, nextOpener)));
+        }
+
+        private static async Task ObserveContentReleaseAsync(IImageOpenContentLifetime lifetime, bool reuseBuffers)
+        {
+            try { await lifetime.ReleaseContentAsync(reuseBuffers); }
+            catch (Exception ex) { log.Error("Failed to release image content.", ex); }
         }
 
         public bool CanRestoreOriginalImage
@@ -901,7 +922,8 @@ namespace ColorVision.ImageEditor
             get
             {
                 string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                return EditorContext.IImageOpen != null && !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+                return EditorContext.IImageOpen != null && !string.IsNullOrWhiteSpace(filePath)
+                    && (EditorContext.IImageOpen.GetCachedFileLength(filePath).HasValue || File.Exists(filePath));
             }
         }
 
@@ -913,7 +935,7 @@ namespace ColorVision.ImageEditor
             }
 
             string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (EditorContext.IImageOpen == null || string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (!CanRestoreOriginalImage)
             {
                 return false;
             }
@@ -970,6 +992,7 @@ namespace ColorVision.ImageEditor
 
         public void SetImageSource(ImageSource imageSource, bool enableEditorImageServices, bool configureDefaultLayerController)
         {
+            _drawing.CancelPendingZoom();
             _channels.CancelPending();
             if (!_session.TryReplaceSource(imageSource, enableEditorImageServices, () => _isLayerSelectorEnabled = enableEditorImageServices))
             {
@@ -1109,6 +1132,8 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
+            _fullScreenMode?.Dispose();
+            _fullScreenMode = null;
             ReleaseSnapshotBuffer();
             DebounceTimer.Cancel(_pixelValueOverlayRefreshDebounceKey);
             _realtime?.Dispose();

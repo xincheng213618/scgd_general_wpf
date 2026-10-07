@@ -141,6 +141,9 @@
     <ClCompile Include="algorithm\sfr\sfr_bmw4.cpp">
       <Filter>算法\SFR</Filter>
     </ClCompile>
+    <ClCompile Include="algorithm\sfr\sfr_checkerboard.cpp">
+      <Filter>算法\SFR</Filter>
+    </ClCompile>
     <ClCompile Include="algorithm\distortion\distortion_p9.cpp">
       <Filter>算法\Distortion</Filter>
     </ClCompile>

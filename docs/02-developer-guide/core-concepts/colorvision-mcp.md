@@ -5,7 +5,7 @@ status: "current"
 summary: "ColorVision 入站本地 MCP 的连接与会话、工具和资源、工作区读取、两阶段确认及菜单写入边界。"
 aliases: ["ColorVision 本地 MCP", "Local MCP", "Codex 如何连接 ColorVision", "MCP 工具能否执行流程", "CopilotMcpServer", "CopilotMcpRequestHandler", "CopilotMcpClientSessionStore", "CopilotMcpToolDispatcher", "Mcp-Session-Id", "MCP-Protocol-Version", "MCP SSE", "MCP 会话容量", "-32013", "Safety boundary", "confirm_action", "arguments_digest", "get_enabled_tools", "get_agent_task_events", "agent_task_events_scope_required", "workspace_scope_changed", "no_allowed_roots", "execute_menu", "create_flow", "Copy Codex Config", "Copy Token Command"]
 code_paths: ["ColorVision/Copilot/Mcp/", "ColorVision/Copilot/Capabilities/", "ColorVision/Copilot/CopilotExecutionScope.cs", "ColorVision/Copilot/Config/CopilotConfig.cs", "ColorVision/Copilot/CopilotMcpSettingsControl.xaml", "ColorVision/Copilot/CopilotSettingsViewModel.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpProperties.cs", "ColorVision/Copilot/CopilotSettingsViewModel.McpOperations.cs"]
-test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpRequestIdentityTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpPathSecurityTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpWorkspaceSnapshotCaptureTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs", "Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs", "Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs"]
+test_paths: ["Test/ColorVision.Copilot.Tests/CopilotMcpServerLifecycleTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpRequestIdentityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpPathSecurityTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConfirmationDecisionTests.cs","Test/ColorVision.Copilot.Tests/CopilotMcpConnectionDiagnosticTests.cs","Test/ColorVision.Copilot.Tests/CopilotSharedCapabilityInputContractTests.cs"]
 related: ["copilot.runtime", "copilot.extensions", "copilot.configuration", "copilot.tool-contracts"]
 ---
 
@@ -35,7 +35,7 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
    ```
 
    用户环境变量的修改不会更新已运行进程的环境；重新启动客户端，并确认启动它的进程取得了新值。服务本身不读取 `COLORVISION_MCP_TOKEN`，它核对的是请求头 `Authorization: Bearer <token>` 与 `CopilotConfig` 中的值。
-4. 使用 **Test Connection** 检查握手和只读 `get_server_status`，再由外部客户端建立自己的会话。该按钮使用当前草稿端口和 token，不自动保存或启用服务；具体诊断预算与保存边界见[配置与连接诊断](./copilot-configuration.md#诊断、发现与同步的副作用)。
+4. 使用 **Test Connection** 检查握手和只读 `get_server_status`，再由外部客户端建立自己的会话。该按钮使用当前草稿端口和 token，不自动保存或启用服务；具体诊断预算与保存边界见[配置与连接诊断](./copilot-configuration.md#诊断与发现的副作用)。
 
 更换端口会重启监听器；同端口更换 token 会清除现有会话。关闭服务、重启应用或会话过期后，客户端需要重新初始化。`Regenerate` 先修改设置草稿，保存后才影响正在运行的服务。
 
@@ -183,7 +183,7 @@ HTTP 工具回复只投影 `text` 与 `isError`，不单独序列化内部 `Erro
 
 共享工具的定义、策略、路由、Schema 一致性和 Agent trace 由[共享能力契约](./copilot-agent-tool-contracts.md#agent-与-mcp-的共享能力定义)统一维护；新增本地工具仍需在 `CopilotMcpToolDefinition` 集合绑定 descriptor 与 handler。新增业务快照按[业务上下文扩展](./copilot-agent-extensions.md#业务模块-agent-扩展)接入，不另建 MCP 专属事实副本。
 
-相关测试包含：`CopilotMcpRequestIdentityTests` 的认证、会话隔离和事件拒绝；`CopilotMcpPathSecurityTests` / `CopilotMcpWorkspaceSnapshotCaptureTests` 的根边界与繁忙 UI；`CopilotMcpConfirmationDecisionTests` 的作用域、完整参数绑定和审计载荷；`CopilotMcpServerLifecycleTests` 的退出取消；`CopilotMcpConnectionDiagnosticTests` 的握手及状态响应校验。共享输入测试见 `CopilotSharedCapabilityInputContractTests`。
+相关测试包含：`CopilotMcpRequestIdentityTests` 的认证、会话隔离和事件拒绝；`CopilotMcpConfirmationDecisionTests` 的作用域、完整参数绑定和审计载荷；`CopilotMcpServerLifecycleTests` 的退出取消；`CopilotMcpConnectionDiagnosticTests` 的握手及状态响应校验。共享输入测试见 `CopilotSharedCapabilityInputContractTests`。
 
 下面是实现变更后的可选验证命令，会构建测试依赖，部分用例会启动临时 loopback 监听器、WPF Dispatcher 并创建临时文件；文档修改不要求为验证文字而启动服务：
 

@@ -438,7 +438,7 @@ json DistortionP9PointToJson(const cvcore::distortion::DistortionP9Point& point,
 		{ "x", point.center.x + origin.x },
 		{ "y", point.center.y + origin.y },
 		{ "area", point.area },
-		{ "boundingRect", RectToJson(point.boundingRect, origin) }
+		{ "boundingRect", point.boundingRect.empty() ? json(nullptr) : RectToJson(point.boundingRect, origin) }
 	};
 }
 

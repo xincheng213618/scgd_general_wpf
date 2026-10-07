@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.SfrSimplePlotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR"
-        Title="斜边清晰度 · SFR / MTF" Width="1180" Height="820" MinWidth="880" MinHeight="640"
+        Title="{display:DisplayText Key='斜边清晰度 · SFR / MTF'}" Width="1180" Height="820" MinWidth="880" MinHeight="640"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <Style TargetType="Button"><Setter Property="Padding" Value="12,6"/><Setter Property="Margin" Value="4,0"/></Style>
@@ -14,21 +15,21 @@
         </Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,10">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button x:Name="SettingsButton" Content="测量参数..." Click="Settings_Click"/>
-                <Button x:Name="AnalyzeButton" Content="重新分析" Click="Analyze_Click"/>
+                <Button x:Name="SettingsButton" Content="{display:DisplayText Key='测量参数...'}" Click="Settings_Click"/>
+                <Button x:Name="AnalyzeButton" Content="{display:DisplayText Key='重新分析'}" Click="Analyze_Click"/>
             </StackPanel>
-            <StackPanel><TextBlock Text="斜边清晰度" FontSize="22" FontWeight="SemiBold"/>
+            <StackPanel><TextBlock Text="{display:DisplayText Key='斜边清晰度'}" FontSize="22" FontWeight="SemiBold"/>
                 <TextBlock x:Name="SourceText" Margin="0,4,8,0" TextWrapping="Wrap"/>
             </StackPanel>
         </DockPanel>
         <Border Grid.Row="1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
-            <TextBlock x:Name="StatusText" Text="正在分析固定图像快照..." TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <TextBlock x:Name="StatusText" Text="{display:DisplayText Key='正在分析固定图像快照...'}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
         </Border>
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions><ColumnDefinition Width="240"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <TextBlock Text="测量区域 · 原始像素预览" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <TextBlock Text="{display:DisplayText Key='测量区域 · 原始像素预览'}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                 <Viewbox Grid.Row="1" Stretch="Uniform">
                     <Canvas x:Name="RoiCanvas" ClipToBounds="True">
                         <Image x:Name="RoiImage" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
@@ -42,13 +43,13 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                 <WrapPanel Margin="0,0,0,6">
                     <ComboBox x:Name="ViewSelector" SelectedIndex="0" Width="195" SelectionChanged="View_Changed">
-                        <ComboBoxItem Content="MTF · 对比度响应"/><ComboBoxItem Content="ESF · 边缘过渡"/><ComboBoxItem Content="LSF · 加窗后的边缘导数"/>
+                        <ComboBoxItem Content="{display:DisplayText Key='MTF · 对比度响应'}"/><ComboBoxItem Content="{display:DisplayText Key='ESF · 边缘过渡'}"/><ComboBoxItem Content="{display:DisplayText Key='LSF · 加窗后的边缘导数'}"/>
                     </ComboBox>
                     <CheckBox x:Name="ShowL" Content="L" IsChecked="True" Margin="12,0,4,0" VerticalAlignment="Center" Click="View_Changed"/>
                     <CheckBox x:Name="ShowR" Content="R" IsChecked="True" Margin="4,0" VerticalAlignment="Center" Click="View_Changed"/>
                     <CheckBox x:Name="ShowG" Content="G" IsChecked="True" Margin="4,0" VerticalAlignment="Center" Click="View_Changed"/>
                     <CheckBox x:Name="ShowB" Content="B" IsChecked="True" Margin="4,0" VerticalAlignment="Center" Click="View_Changed"/>
-                    <CheckBox x:Name="ShowExtended" Content="展开超 Nyquist 区域" Margin="12,0,0,0" VerticalAlignment="Center" Click="View_Changed"/>
+                    <CheckBox x:Name="ShowExtended" Content="{display:DisplayText Key='展开超 Nyquist 区域'}" Margin="12,0,0,0" VerticalAlignment="Center" Click="View_Changed"/>
                 </WrapPanel>
                 <local:SfrSimplePlotControl Grid.Row="1" x:Name="Plot"/>
                 <TextBlock Grid.Row="2" x:Name="PlotHelp" TextWrapping="Wrap" Margin="0,6,0,0"/>
@@ -56,61 +57,61 @@
         </Grid>
         <GridSplitter Grid.Row="3" Height="6" HorizontalAlignment="Stretch" Background="Transparent"/>
         <TabControl Grid.Row="4">
-            <TabItem Header="全部通道">
+            <TabItem Header="{display:DisplayText Key='全部通道'}">
                 <Grid Margin="6"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <WrapPanel Margin="0,0,0,6">
-                        <TextBlock Text="目标频率 (cy/pixel)" VerticalAlignment="Center"/>
+                        <TextBlock Text="{display:DisplayText Key='目标频率 (cy/pixel)'}" VerticalAlignment="Center"/>
                         <TextBox x:Name="FrequencyInput" Text="0.25" Width="70" Margin="6,0,12,0" VerticalContentAlignment="Center"/>
-                        <TextBlock Text="目标响应 (0..1)" VerticalAlignment="Center"/>
+                        <TextBlock Text="{display:DisplayText Key='目标响应 (0..1)'}" VerticalAlignment="Center"/>
                         <TextBox x:Name="ThresholdInput" Text="0.5" Width="65" Margin="6,0" VerticalContentAlignment="Center"/>
-                        <Button Content="查询全部通道" Click="Query_Click"/>
+                        <Button Content="{display:DisplayText Key='查询全部通道'}" Click="Query_Click"/>
                         <TextBlock x:Name="QueryError" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </WrapPanel>
                     <DataGrid Grid.Row="1" x:Name="MetricsGrid">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="通道" Binding="{Binding Channel}" Width="65"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='通道'}" Binding="{Binding Channel}" Width="65"/>
                             <DataGridTextColumn Header="MTF50 (cy/px)" Binding="{Binding Mtf50}" Width="115"/>
                             <DataGridTextColumn Header="MTF10 (cy/px)" Binding="{Binding Mtf10}" Width="115"/>
                             <DataGridTextColumn x:Name="AtFrequencyColumn" Header="MTF @ 0.25" Binding="{Binding AtFrequency}" Width="110"/>
                             <DataGridTextColumn Header="MTF @ Nyquist" Binding="{Binding AtNyquist}" Width="120"/>
-                            <DataGridTextColumn x:Name="AtThresholdColumn" Header="频率 @ 50%" Binding="{Binding AtThreshold}" Width="115"/>
-                            <DataGridTextColumn Header="状态 / 未达阈值原因（悬停查看）" Binding="{Binding State}" Width="*" MinWidth="190">
+                            <DataGridTextColumn x:Name="AtThresholdColumn" Header="{display:DisplayText Key='频率 @ 50%'}" Binding="{Binding AtThreshold}" Width="115"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='状态 / 未达阈值原因（悬停查看）'}" Binding="{Binding State}" Width="*" MinWidth="190">
                                 <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="ToolTip" Value="{Binding State}"/></Style></DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </TabItem>
-            <TabItem Header="测量质量">
+            <TabItem Header="{display:DisplayText Key='测量质量'}">
                 <Grid Margin="6"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <DataGrid x:Name="QualityGrid">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="通道" Binding="{Binding Channel}" Width="60"/>
-                            <DataGridTextColumn Header="跨度" Binding="{Binding Contrast}" Width="75"/>
-                            <DataGridTextColumn Header="平台波动" Binding="{Binding Noise}" Width="85"/>
-                            <DataGridTextColumn Header="信噪比" Binding="{Binding Snr}" Width="85"/>
-                            <DataGridTextColumn Header="倾角 (°)" Binding="{Binding AngleDegrees}" Width="85"/>
-                            <DataGridTextColumn Header="拟合 RMS (px)" Binding="{Binding FitRms}" Width="110"/>
-                            <DataGridTextColumn Header="分箱覆盖" Binding="{Binding BinCoverage}" Width="85"/>
-                            <DataGridTextColumn Header="端点像素" Binding="{Binding ClippedFraction}" Width="85"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='通道'}" Binding="{Binding Channel}" Width="60"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='跨度'}" Binding="{Binding Contrast}" Width="75"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='平台波动'}" Binding="{Binding Noise}" Width="85"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='信噪比'}" Binding="{Binding Snr}" Width="85"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='倾角 (°)'}" Binding="{Binding AngleDegrees}" Width="85"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='拟合 RMS (px)'}" Binding="{Binding FitRms}" Width="110"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='分箱覆盖'}" Binding="{Binding BinCoverage}" Width="85"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='端点像素'}" Binding="{Binding ClippedFraction}" Width="85"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="质量门限用于判断单斜边是否适用，不能代替产品合格规格。平台波动同时包含噪声、纹理和不均匀性；端点像素比例提示削顶风险。"/>
+                    <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="{display:DisplayText Key='质量门限用于判断单斜边是否适用，不能代替产品合格规格。平台波动同时包含噪声、纹理和不均匀性；端点像素比例提示削顶风险。'}"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="完整数据"><DataGrid x:Name="SamplesGrid" AutoGenerateColumns="True"/></TabItem>
-            <TabItem Header="怎么看结果">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock Margin="12" TextWrapping="Wrap" Text="MTF 表示不同粗细细节保留的相对对比度。空间频率越高，细节越细。&#10;&#10;MTF50 / MTF10 是响应降到 50% / 10% 时的频率，不是清晰度分数。— 表示无效或在 0..0.5 cy/pixel 范围内未达到阈值，请看状态列。MTF@频率则是指定频率的响应比例。&#10;&#10;Nyquist = 0.5 cy/pixel。超出部分用于诊断，不能解释为无混叠分辨能力。曲线超过 1 可能与锐化有关，不会自动裁掉。&#10;&#10;ESF 显示亮暗边缘过渡；LSF 是其导数，本窗口显示用于计算的加窗 LSF。平台不平、多峰或振铃有助于解释异常。&#10;&#10;显示屏 RGB 子像素被解析出来时，平台纹理与两套像素栅格可能影响结果。请检查原始 ROI、方向、曝光和拍摄尺度；自动模糊或周期平均会改变测量响应，不能当作无代价的修复。&#10;&#10;当前结果是单张图像的系统响应。没有连续原始帧时不能判断采集重复性；也不能直接当作镜头自身的 MTF。"/>
+            <TabItem Header="{display:DisplayText Key='完整数据'}"><DataGrid x:Name="SamplesGrid" AutoGenerateColumns="True"/></TabItem>
+            <TabItem Header="{display:DisplayText Key='怎么看结果'}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock Margin="12" TextWrapping="Wrap" Text="{display:DisplayText Key='MTF 表示不同粗细细节保留的相对对比度。空间频率越高，细节越细。&#10;&#10;MTF50 / MTF10 是响应降到 50% / 10% 时的频率，不是清晰度分数。— 表示无效或在 0..0.5 cy/pixel 范围内未达到阈值，请看状态列。MTF@频率则是指定频率的响应比例。&#10;&#10;Nyquist = 0.5 cy/pixel。超出部分用于诊断，不能解释为无混叠分辨能力。曲线超过 1 可能与锐化有关，不会自动裁掉。&#10;&#10;ESF 显示亮暗边缘过渡；LSF 是其导数，本窗口显示用于计算的加窗 LSF。平台不平、多峰或振铃有助于解释异常。&#10;&#10;显示屏 RGB 子像素被解析出来时，平台纹理与两套像素栅格可能影响结果。请检查原始 ROI、方向、曝光和拍摄尺度；自动模糊或周期平均会改变测量响应，不能当作无代价的修复。&#10;&#10;当前结果是单张图像的系统响应。没有连续原始帧时不能判断采集重复性；也不能直接当作镜头自身的 MTF。'}"/>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
         <DockPanel Grid.Row="5" Margin="0,10,0,0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button x:Name="ExportCsvButton" Content="导出 CSV..." Click="ExportCsv_Click" IsEnabled="False"/>
-                <Button x:Name="ExportJsonButton" Content="保存完整测量..." Click="ExportJson_Click" IsEnabled="False"/>
-                <Button Content="关闭" Click="Close_Click"/>
+                <Button x:Name="ExportCsvButton" Content="{display:DisplayText Key='导出 CSV...'}" Click="ExportCsv_Click" IsEnabled="False"/>
+                <Button x:Name="ExportJsonButton" Content="{display:DisplayText Key='保存完整测量...'}" Click="ExportJson_Click" IsEnabled="False"/>
+                <Button Content="{display:DisplayText Key='关闭'}" Click="Close_Click"/>
             </StackPanel>
-            <TextBlock Text="固定图像快照 · 频率基于输入像素 · 未设置产品判定规格" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock Text="{display:DisplayText Key='固定图像快照 · 频率基于输入像素 · 未设置产品判定规格'}" VerticalAlignment="Center" TextWrapping="Wrap"/>
         </DockPanel>
     </Grid>
 </Window>

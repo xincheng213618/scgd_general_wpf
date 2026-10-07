@@ -3,6 +3,7 @@ using ColorVision.UI.Plugins;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ColorVision.UI.Tests
@@ -71,6 +72,116 @@ namespace ColorVision.UI.Tests
 
             Assert.NotEqual(0, result.ExitCode);
             Assert.Equal("not a directory", File.ReadAllText(invalidTarget));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task ApplicationBatchReplacesDllHeldByThumbnailHostWithoutChangingItsOpenStream()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Locked DLL Update %CACHE%! & ^");
+            string stage = Path.Combine(tempRoot, "ColorVision");
+            string target = Path.Combine(_rootDirectory, "Locked DLL Target %PATH%! & ^");
+            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(target);
+            string destination = Path.Combine(target, "ColorVision.FileIO.dll");
+            File.WriteAllText(destination, "old-library");
+            File.WriteAllText(Path.Combine(stage, "ColorVision.FileIO.dll"), "new-library-with-cache");
+            using FileStream thumbnailReader = new(destination, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(batchPath, BuildApplicationBatch(stage, tempRoot, target, "unused.exe", restartApplication: false), new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.Equal("new-library-with-cache", File.ReadAllText(destination));
+            using StreamReader reader = new(thumbnailReader);
+            Assert.Equal("old-library", reader.ReadToEnd());
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task ApplicationBatchReplacesDllMappedAsAnImageAndKeepsExistingModuleUsable()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Mapped DLL Update");
+            string stage = Path.Combine(tempRoot, "ColorVision");
+            string target = Path.Combine(_rootDirectory, "Mapped DLL Target");
+            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(target);
+            string destination = Path.Combine(target, "ColorVision.FileIO.dll");
+            byte[] original = File.ReadAllBytes(Path.Combine(Environment.SystemDirectory, "version.dll"));
+            byte[] replacement = [.. original, 1, 2, 3, 4]; // A valid PE with a different overlay.
+            File.WriteAllBytes(destination, original);
+            File.WriteAllBytes(Path.Combine(stage, "ColorVision.FileIO.dll"), replacement);
+            IntPtr module = NativeLibrary.Load(destination);
+            try
+            {
+                string batchPath = Path.Combine(tempRoot, "update.bat");
+                File.WriteAllText(batchPath, BuildApplicationBatch(stage, tempRoot, target, "unused.exe", restartApplication: false), new UTF8Encoding(false));
+                BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+                Assert.True(result.ExitCode == 0, result.ToString());
+                Assert.Equal(replacement, File.ReadAllBytes(destination));
+                Assert.NotEqual(IntPtr.Zero, NativeLibrary.GetExport(module, "GetFileVersionInfoW"));
+                Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+            }
+            finally { NativeLibrary.Free(module); }
+        }
+
+        [Fact]
+        public async Task ApplicationBatchKeepsIdenticalLockedDllAndUpdatesOtherFiles()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Identical DLL Update");
+            string stage = Path.Combine(tempRoot, "ColorVision");
+            string target = Path.Combine(_rootDirectory, "Identical DLL Target");
+            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(target);
+            string destination = Path.Combine(target, "ColorVision.FileIO.dll");
+            File.WriteAllText(destination, "unchanged-library");
+            File.WriteAllText(Path.Combine(stage, "ColorVision.FileIO.dll"), "unchanged-library");
+            File.WriteAllText(Path.Combine(target, "payload.txt"), "old");
+            File.WriteAllText(Path.Combine(stage, "payload.txt"), "new");
+            using FileStream locked = new(destination, FileMode.Open, FileAccess.Read, FileShare.Read);
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(batchPath, BuildApplicationBatch(stage, tempRoot, target, "unused.exe", restartApplication: false), new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.Equal("unchanged-library", File.ReadAllText(destination));
+            Assert.Equal("new", File.ReadAllText(Path.Combine(target, "payload.txt")));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task ApplicationBatchPreservesAutomaticRestartWhenUnrelatedLockCannotBeReleased()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Unmovable DLL Update");
+            string stage = Path.Combine(tempRoot, "ColorVision");
+            string target = Path.Combine(_rootDirectory, "Unmovable DLL Target");
+            string handoff = Path.Combine(tempRoot, "handoff");
+            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(target);
+            Directory.CreateDirectory(handoff);
+            File.WriteAllText(Path.Combine(target, "payload.txt"), "old");
+            File.WriteAllText(Path.Combine(stage, "payload.txt"), "new");
+            string destination = Path.Combine(target, "ColorVision.FileIO.dll");
+            File.WriteAllText(destination, "old-library");
+            File.WriteAllText(Path.Combine(stage, "ColorVision.FileIO.dll"), "new-library-with-cache");
+            using FileStream locked = new(destination, FileMode.Open, FileAccess.Read, FileShare.Read);
+            string opened = Path.Combine(target, "opened.txt");
+            File.WriteAllText(Path.Combine(target, "reopen.cmd"), $"@echo off{Environment.NewLine}>\"{opened}\" echo opened{Environment.NewLine}exit");
+            File.WriteAllText(Path.Combine(handoff, "update.pending"), "pending");
+            File.WriteAllText(Path.Combine(handoff, "reopen.requested"), "requested");
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(batchPath, BuildApplicationBatch(stage, tempRoot, target, "reopen.cmd", restartApplication: true), new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Equal("old-library", File.ReadAllText(destination));
+            Assert.Equal("old", File.ReadAllText(Path.Combine(target, "payload.txt")));
+            Assert.True(await WaitForFileAsync(opened), result.ToString());
+            Assert.False(File.Exists(Path.Combine(handoff, "update.pending")));
+            Assert.False(File.Exists(Path.Combine(handoff, "reopen.requested")));
             Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
         }
 
@@ -398,6 +509,8 @@ namespace ColorVision.UI.Tests
                 Path.Combine(cleanupDirectory, "handoff", "reopen.requested"),
                 "0123456789abcdef0123456789abcdef",
                 cleanupDirectory);
+            // Production ExitUpdateHandoff.Prepare creates this directory before launching the batch.
+            if (Directory.Exists(cleanupDirectory)) Directory.CreateDirectory(Path.GetDirectoryName(handoffState.MarkerPath)!);
             return ShortenBatchWaits((string)method.Invoke(null, [
                 stageDirectory,
                 cleanupDirectory,
@@ -412,7 +525,8 @@ namespace ColorVision.UI.Tests
 
         // Keep the production cleanup delay: its detached process must outlive the parent batch.
         private static string ShortenBatchWaits(string batch) => batch
-            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal);
+            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal)
+            .Replace("call :schedule_cleanup", "if exist \"%UPDATE_LOG%\" type \"%UPDATE_LOG%\"" + Environment.NewLine + "call :schedule_cleanup", StringComparison.Ordinal);
 
         private static void ShortenBatchWaits(string batchPath, Encoding encoding)
         {
@@ -438,7 +552,7 @@ namespace ColorVision.UI.Tests
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                Arguments = "/d /c call \"%COLORVISION_TEST_BATCH%\"",
+                Arguments = "/d /s /c \"\"%COLORVISION_TEST_BATCH%\"\"",
             };
             if (!string.IsNullOrWhiteSpace(workingDirectory))
                 startInfo.WorkingDirectory = workingDirectory;

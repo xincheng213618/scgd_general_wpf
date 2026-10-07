@@ -1,5 +1,3 @@
-using System;
-
 namespace ColorVision.Copilot
 {
     public enum CopilotSteeringAdmissionReason

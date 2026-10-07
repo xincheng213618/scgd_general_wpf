@@ -29,7 +29,7 @@ public class FlowNodeTimingTests
             var timing = new FlowNodeTiming();
             using (timing.Activate())
             {
-                LocalFrameFileService.SaveCapture(frame, directory, "test");
+                LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(directory, "test"));
                 using var loaded = FlowNodeTiming.Run("OpenImage", () => LocalFrameFileService.Load(frame.CvRawFilePath));
                 using var lease = loaded.Acquire();
                 Assert.Equal(length, lease.RawLength);
@@ -82,6 +82,13 @@ public class FlowNodeTimingTests
         Assert.InRange(snapshot.Stages[0].ElapsedMs, 0, snapshot.TotalMs);
         Assert.Equal("Skipped", snapshot.Stages[2].Status);
         Assert.Equal(0, snapshot.Stages[2].ElapsedMs);
+        Assert.All(snapshot.Stages, stage =>
+        {
+            Assert.True(stage.ThreadCpuMs >= 0);
+            Assert.True(stage.ProcessGcPauseMs >= 0);
+        });
+        Assert.Equal(0, snapshot.Stages[2].ThreadCpuMs);
+        Assert.Equal(0, snapshot.Stages[2].ProcessGcPauseMs);
         using (timing.Activate()) FlowNodeTiming.Run("Late", () => 1);
         Assert.Same(snapshot, timing.Finish());
         Assert.Equal(3, snapshot.Stages.Count);
@@ -155,6 +162,23 @@ public class FlowNodeTimingTests
             Assert.Null(FlowNodeTiming.Measure("outside"));
         }
         finally { action.RuntimeResources.Dispose(); }
+    }
+
+    [Fact]
+    public void AStageCompletedOnAnotherThreadDoesNotInventThreadCpuTime()
+    {
+        var timing = new FlowNodeTiming();
+        using (timing.Activate())
+        using (var stage = FlowNodeTiming.Measure("cross-thread"))
+        {
+            var worker = new Thread(() => stage!.Complete());
+            worker.Start();
+            Assert.True(worker.Join(TimeSpan.FromSeconds(5)));
+        }
+        var recorded = Assert.Single(timing.Finish().Stages);
+        Assert.Null(recorded.ThreadCpuMs);
+        Assert.True(recorded.ProcessGcPauseMs >= 0);
+        Assert.Equal("Completed", recorded.Status);
     }
 
     private sealed class TimingNode(bool fail) : LocalFlowNodeBase("Timing", "Test", "Test")

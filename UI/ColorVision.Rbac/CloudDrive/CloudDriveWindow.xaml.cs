@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Rbac.DisplayText;
 using ColorVision.Themes;
 using Microsoft.Win32;
 using QRCoder;
@@ -19,8 +20,8 @@ public partial class CloudDriveWindow : Window
     public static void ShowCloudDrive()
     {
         _window ??= new CloudDriveWindow();
-        if (Application.Current?.MainWindow is { IsVisible: true } mainWindow && mainWindow != _window && mainWindow is not RbacManagerWindow)
-            _window.Owner = mainWindow;
+        if (Application.Current?.GetActiveWindow() is { IsVisible: true } owner && owner != _window && owner is not RbacManagerWindow)
+            _window.Owner = owner;
         _window.Show();
         if (_window.WindowState == WindowState.Minimized) _window.WindowState = WindowState.Normal;
         _window.Activate();
@@ -43,13 +44,13 @@ public partial class CloudDriveWindow : Window
 
     private void AddFiles_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Multiselect = true, Title = "选择要分享的文件", Filter = "所有文件|*.*" };
+        var dialog = new OpenFileDialog { Multiselect = true, Title = LocalizedText.Get("选择要分享的文件"), Filter = "所有文件|*.*" };
         if (dialog.ShowDialog(this) == true) AddPaths(dialog.FileNames);
     }
 
     private void AddFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Multiselect = true, Title = "选择要打包分享的文件夹" };
+        var dialog = new OpenFolderDialog { Multiselect = true, Title = LocalizedText.Get("选择要打包分享的文件夹") };
         if (dialog.ShowDialog(this) == true) AddPaths(dialog.FolderNames);
     }
 
@@ -108,15 +109,15 @@ public partial class CloudDriveWindow : Window
                 QrImage.Source = image;
             }
         }
-        ShareHint.Text = _selected == null ? "选择已完成的文件，即可生成分享二维码。"
+        ShareHint.Text = _selected == null ? LocalizedText.Get("选择已完成的文件，即可生成分享二维码。")
             : canShare ? $"{_selected.DisplayName}\n{_selected.Detail}"
-            : _selected.IsComplete ? "分享已过期，请重新添加文件并上传。" : "上传完成后会显示下载链接和二维码。";
+            : _selected.IsComplete ? LocalizedText.Get("分享已过期，请重新添加文件并上传。") : LocalizedText.Get("上传完成后会显示下载链接和二维码。");
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e)
     {
         if (_selected?.CanShare != true) return;
-        try { Clipboard.SetText(_selected.ShareUrl); ShareHint.Text = "分享链接已复制，可发送给其他人。"; }
+        try { Clipboard.SetText(_selected.ShareUrl); ShareHint.Text = LocalizedText.Get("分享链接已复制，可发送给其他人。"); }
         catch (Exception ex) { ShowError(ex); }
     }
 
@@ -130,10 +131,10 @@ public partial class CloudDriveWindow : Window
     private void Remove_Click(object sender, RoutedEventArgs e)
     {
         if (_selected == null) return;
-        if (MessageBox.Show(this, "移除后将不再保留这条本机续传记录和分享链接。已发送的分享在到期前仍然有效。", "移除本机记录", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(this, LocalizedText.Get("移除后将不再保留这条本机续传记录和分享链接。已发送的分享在到期前仍然有效。"), LocalizedText.Get("移除本机记录"), MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         try { _manager.Remove(_selected); }
         catch (Exception ex) { ShowError(ex); }
     }
 
-    private void ShowError(Exception ex) => MessageBox.Show(this, ex.Message, "云盘", MessageBoxButton.OK, MessageBoxImage.Warning);
+    private void ShowError(Exception ex) => MessageBox.Show(this, ex.Message, LocalizedText.Get("云盘"), MessageBoxButton.OK, MessageBoxImage.Warning);
 }

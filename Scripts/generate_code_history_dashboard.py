@@ -2,7 +2,7 @@
 """Generate an offline HTML dashboard for the repository's code history.
 
 The history follows HEAD's first-parent chain so merge commits are counted once.
-Weekly endpoint commits are classified exactly into code/content, comment, and
+Daily and weekly endpoint commits are classified exactly into code/content, comment, and
 blank lines with the same rules as count_code_lines.py. Immutable blob and
 snapshot counts are cached for fast subsequent runs.
 """
@@ -830,6 +830,28 @@ def populate_snapshot_counts(
             totals["blanks"] += int(record["blanks"])
         snapshot_counts[commit] = totals
     return len(missing_commits), len(missing_blobs)
+
+
+def daily_snapshot_rows(
+    periods: Sequence[dict[str, object]],
+    snapshot_counts: dict[str, dict[str, int]],
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for period in periods:
+        if period["grain"] != "日" or not period.get("end_commit"):
+            continue
+        counts = snapshot_counts[str(period["end_commit"])]
+        rows.append({
+            "date": period["period_start"],
+            "end_commit": period["end_commit"],
+            "commits": period["commits"],
+            "code_lines": counts["code"],
+            "comment_lines": counts["comments"],
+            "blank_lines": counts["blanks"],
+            "physical_lines": counts["code"] + counts["comments"] + counts["blanks"],
+            "tracked_files": counts["files"],
+        })
+    return rows
 
 
 def weekly_snapshot_rows(
@@ -1841,15 +1863,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         head_total = sum(count.lines for count in language_counts.values())
         baseline_total = assign_node_totals(nodes, head_total)
         periods = aggregate_periods(nodes, baseline_total)
-        weekly_commits = [
+        snapshot_commits = [
             str(row["end_commit"])
             for row in periods
-            if row["grain"] == "周" and row.get("end_commit")
+            if row["grain"] in ("日", "周") and row.get("end_commit")
         ]
-        print("Loading exact weekly code snapshots...")
+        print("Loading exact daily and weekly code snapshots...")
         new_snapshots, new_blobs = populate_snapshot_counts(
             repo,
-            weekly_commits,
+            snapshot_commits,
             args.exclude_generated,
             blob_counts,
             snapshot_counts,
@@ -1869,7 +1891,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"Snapshot cache: {len(snapshot_counts):,} commits, {len(blob_counts):,} immutable blobs "
             f"({new_snapshots:,} snapshots and {new_blobs:,} blobs added)."
         )
+        daily_rows = daily_snapshot_rows(periods, snapshot_counts)
         weekly_rows = weekly_snapshot_rows(nodes, periods, snapshot_counts)
+        print(f"Daily snapshots: {len(daily_rows):,} days, through {daily_rows[-1]['date']}.")
         releases = load_changelog_releases(repo, args.ref)
         change_points = natural_change_points(weekly_rows, releases)
         scale_jumps = scale_jump_rows(weekly_rows, releases)
@@ -1896,7 +1920,7 @@ def main(argv: Sequence[str] | None = None) -> int:
               f"{worktree['total']['code']:,} code/content lines.")
         artifact["analysis"] = {
             "worktree": worktree,
-            "history": history_analysis(nodes, weekly_rows, args.ref, generated_at,
+            "history": history_analysis(nodes, daily_rows, weekly_rows, args.ref, generated_at,
                                          str(run_git(repo, ("rev-parse", "--abbrev-ref", args.ref))).strip()),
             "summary": artifact["snapshot"]["datasets"]["summary"][0],
             "periods": periods,

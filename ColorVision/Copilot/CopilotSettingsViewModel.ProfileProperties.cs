@@ -1,3 +1,4 @@
+﻿using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1822
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _newProfileVendorType, value))
                 {
+                    ResetNewProfileDraft();
                     OnPropertyChanged(nameof(SelectedConnectProvider));
                     OnPropertyChanged(nameof(ConnectProviderTitle));
                     OnPropertyChanged(nameof(ConnectProviderDescription));
@@ -73,7 +75,7 @@ namespace ColorVision.Copilot
         public string ConnectProviderDescription =>
             $"输入你的 {SelectedConnectProvider.Label} API 密钥以连接账户，并在 ColorVision Copilot 中使用 {SelectedConnectProvider.Label} 模型。";
 
-        public string ConnectProviderApiKeyLabel => $"{SelectedConnectProvider.Label} API 密钥";
+        public string ConnectProviderApiKeyLabel => LocalizedText.Format($"{SelectedConnectProvider.Label} API 密钥");
 
         public string ConnectProviderIconText => SelectedConnectProvider.IconText;
 
@@ -84,6 +86,8 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _newProfileApiKey, value ?? string.Empty))
                 {
+                    if (_newProfileDraft != null)
+                        _newProfileDraft.ApiKey = _newProfileApiKey;
                     OnPropertyChanged(nameof(CanAddProfile));
                     OnPropertyChanged(nameof(CanAddAndUseProfile));
                     OnPropertyChanged(nameof(NewProfileCredentialStatusText));
@@ -113,9 +117,10 @@ namespace ColorVision.Copilot
 
         public bool IsNewProfileApiKeyHidden => !IsNewProfileApiKeyVisible;
 
-        public string NewProfileApiKeyVisibilityText => IsNewProfileApiKeyVisible ? "Hide" : "Show";
+        public string NewProfileApiKeyVisibilityText => IsNewProfileApiKeyVisible ? "隐藏" : "显示";
 
-        public bool CanAddProfile => !string.IsNullOrWhiteSpace(NewProfileApiKey);
+        public bool CanAddProfile => !string.IsNullOrWhiteSpace(NewProfileApiKey)
+            && (_newProfileDraft?.IsConfigured ?? false);
 
         public bool CanAddAndUseProfile => CanAddProfile && CanSaveSettings;
 
@@ -213,12 +218,12 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(CanTestSelectedProfile));
                     OnSelectedProfileUsageChanged();
                     SelectedProfileConnectionTestText = _selectedProfile?.IsConfigured == true
-                        ? "Test sends one short request using the selected profile."
+                        ? "测试会发送一条简短请求，使用此模型的额度。"
                         : "Complete API key, endpoint, and model before testing.";
                     CommandManager.InvalidateRequerySuggested();
 
                     if (_isReadyForUserChanges && _selectedProfile != null)
-                        MarkSettingsPending("Selected profile will become active after Apply or Save.");
+                        MarkSettingsPending("点击应用或保存，将所选模型用于聊天。");
                 }
             }
         }
@@ -242,11 +247,11 @@ namespace ColorVision.Copilot
 
         public bool IsSelectedProfileApiKeyHidden => !IsSelectedProfileApiKeyVisible;
 
-        public string SelectedProfileApiKeyVisibilityText => IsSelectedProfileApiKeyVisible ? "Hide" : "Show";
+        public string SelectedProfileApiKeyVisibilityText => IsSelectedProfileApiKeyVisible ? "隐藏" : "显示";
 
         public IReadOnlyList<string> AvailableModelPresets => SelectedProfile == null
             ? Array.Empty<string>()
-            : CopilotVendorCatalog.GetModelPresets(SelectedProfile.VendorType);
+            : SelectedProfile.IsLocalCodex ? LocalCodexModels : CopilotVendorCatalog.GetModelPresets(SelectedProfile.VendorType);
 
     }
 }

@@ -60,28 +60,28 @@ namespace ColorVision.FloatingBall
 
             var displayName = request.DisplayName?.Trim() ?? string.Empty;
             if (displayName.Length is < 1 or > 80)
-                throw new ArgumentException("宠物名称需要填写，且不能超过 80 个字符。", nameof(request));
+                throw new ArgumentException(DesktopPetText.NameRequired, nameof(request));
 
             var description = request.Description?.Trim() ?? string.Empty;
             if (description.Length > 240)
-                throw new ArgumentException("宠物描述不能超过 240 个字符。", nameof(request));
+                throw new ArgumentException(DesktopPetText.DescriptionTooLong, nameof(request));
             if (request.SpriteVersionNumber is not 1 and not 2)
-                throw new ArgumentOutOfRangeException(nameof(request), "精灵表版本只能是 1 或 2。");
+                throw new ArgumentOutOfRangeException(nameof(request), DesktopPetText.InvalidSpriteVersion);
 
             if (string.IsNullOrWhiteSpace(request.SpriteSheetPath))
-                throw new ArgumentException("请选择精灵表文件。", nameof(request));
+                throw new ArgumentException(DesktopPetText.ChooseSpriteFile, nameof(request));
 
             var sourcePath = Path.GetFullPath(request.SpriteSheetPath);
             if (!File.Exists(sourcePath))
-                throw new FileNotFoundException("请选择存在的精灵表文件。", sourcePath);
+                throw new FileNotFoundException(DesktopPetText.SpriteFileNotFound, sourcePath);
 
             var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
             if (extension is not ".webp" and not ".png")
-                throw new InvalidDataException("桌面宠物精灵表仅支持 WebP 或 PNG。");
+                throw new InvalidDataException(DesktopPetText.UnsupportedSpriteFormat);
 
             var sourceInfo = new FileInfo(sourcePath);
             if (sourceInfo.Length <= 0 || sourceInfo.Length > DesktopPetAssetCatalog.MaximumSpriteSheetBytes)
-                throw new InvalidDataException("精灵表为空或超过 20 MB。");
+                throw new InvalidDataException(DesktopPetText.SpriteTooLarge);
 
             var encodedImage = await File.ReadAllBytesAsync(sourcePath, cancellationToken).ConfigureAwait(false);
             using (DesktopPetSpriteSheet.Load(encodedImage, request.SpriteVersionNumber))

@@ -1,5 +1,3 @@
-using ColorVision.Copilot;
-using System;
 using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;

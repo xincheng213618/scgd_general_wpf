@@ -4,6 +4,7 @@ using cvColorVision;
 using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -11,13 +12,17 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraOwnershipTests
 {
-    [Fact]
-    public async Task ExistingCameraCommandApiRoutesLocalOpenAndCloseWithoutMqtt()
+    [Theory]
+    [InlineData(TakeImageMode.Measure_Normal)]
+    [InlineData(TakeImageMode.Live)]
+    public async Task ExistingCameraCommandApiRoutesLocalOpenAndCloseWithoutMqtt(TakeImageMode initialMode)
     {
         var native = new FakeNative();
         var backend = new CameraBackendState(true);
-        using var session = new LocalCameraSession(native, backend);
+        var config = new ConfigCamera { Code = "local-test", TakeImageMode = initialMode };
+        using var session = new LocalCameraSession(native, backend, config);
         var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = config;
         device.SysResourceModel = new SysResourceModel { Code = "local-test" };
         typeof(DeviceCamera).GetField("<CameraBackend>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, backend);
         typeof(DeviceCamera).GetField("<LocalCameraSession>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(device, session);
@@ -34,7 +39,8 @@ public class LocalCameraOwnershipTests
             });
             return await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
-        Assert.Equal(MsgRecordState.Success, await Execute(() => mqtt.Open("camera", TakeImageMode.Measure_Normal, 16)));
+        Assert.Equal(MsgRecordState.Success, await Execute(() => mqtt.Open("camera", initialMode, 16)));
+        Assert.Equal(TakeImageMode.Measure_Normal, config.TakeImageMode);
         backend.SetPreference(false);
         Assert.Equal(MsgRecordState.Success, await Execute(() => mqtt.Open("camera", TakeImageMode.Measure_Normal, 16)));
         Assert.Equal(1, native.Opens);
@@ -141,9 +147,11 @@ public class LocalCameraOwnershipTests
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public bool FailClose;
         private bool opened;
+        public IReadOnlyList<string> GetCameraIds() => [];
         public IntPtr Initialize() { Initializations++; return new IntPtr(42); }
         public bool IsOpen(IntPtr handle) => opened;
-        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp) { Opens++; opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS; return OpenResult; }
+        public int SwitchMode(IntPtr handle, TakeImageMode mode, int bpp) => cvErrorDefine.CV_ERR_CAM_TYPE_NOT;
+        public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr) { Opens++; opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS; return OpenResult; }
         public void Close(IntPtr handle) { if (!FailClose) opened = false; }
         public void DetachCallback(IntPtr handle) { }
         public bool UpdateCalibration(IntPtr handle, string json) { CalibrationUpdates++; return true; }

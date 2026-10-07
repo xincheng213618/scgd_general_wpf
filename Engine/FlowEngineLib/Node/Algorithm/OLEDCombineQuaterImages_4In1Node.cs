@@ -5,7 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_5 OLED")]
+[STNode("OLED", CategoryOrder = 350)]
 public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDCombineQuaterImages_4In1Node));

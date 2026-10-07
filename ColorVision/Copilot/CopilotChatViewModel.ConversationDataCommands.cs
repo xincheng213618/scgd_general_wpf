@@ -1,17 +1,8 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using ColorVision.UI.Desktop.Feedback;
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,13 +10,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private CopilotConversationRecord? _conversationPendingDeletion;
+
         private async Task ExportConversationFromCommandAsync(CopilotLocalCommand command, string requestedFileName)
         {
             var conversation = SelectedConversation;
@@ -147,7 +138,7 @@ namespace ColorVision.Copilot
                 FileName = suggestedFileName ?? CopilotConversationMarkdownExporter.BuildFileName(conversation!),
                 Filter = "Markdown 文档|*.md|文本文件|*.txt|所有文件|*.*",
                 OverwritePrompt = true,
-                Title = "导出 Copilot 会话",
+                Title = LocalizedText.Get("导出 Copilot 会话"),
             };
 
             if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
@@ -250,8 +241,8 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"无法永久删除“{target.Title}”：当前会话还有 {activeBackgroundCommands:N0} 条后台命令在运行。"
-                    + $"{Environment.NewLine}{Environment.NewLine}请先切换到该会话，使用 /ps 查看并停止后台命令；进程树未改变。",
+                    LocalizedText.Format($"无法永久删除“{target.Title}”：当前会话还有 {activeBackgroundCommands:N0} 条后台命令在运行。")
+                    + LocalizedText.Format($"{Environment.NewLine}{Environment.NewLine}请先切换到该会话，使用 /ps 查看并停止后台命令；进程树未改变。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -262,8 +253,8 @@ namespace ColorVision.Copilot
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"无法永久删除“{target.Title}”：{CopilotConversationRetentionPolicy.Describe(retentionBlocker)}。"
-                    + $"{Environment.NewLine}{Environment.NewLine}请先处理或明确放弃该状态；若只想隐藏安全会话，请使用 /archive。",
+                    LocalizedText.Format($"无法永久删除“{target.Title}”：{CopilotConversationRetentionPolicy.Describe(retentionBlocker)}。")
+                    + LocalizedText.Format($"{Environment.NewLine}{Environment.NewLine}请先处理或明确放弃该状态；若只想隐藏安全会话，请使用 /archive。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -272,9 +263,9 @@ namespace ColorVision.Copilot
 
             if (MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                $"永久删除“{target.Title}”？"
-                + $"{Environment.NewLine}{Environment.NewLine}本地消息、草稿和托管附件会被移除，且不能通过 /unarchive 恢复。"
-                + $"{Environment.NewLine}若只想隐藏，请选择“否”并使用 /archive。",
+                LocalizedText.Format($"永久删除“{target.Title}”？")
+                + LocalizedText.Format($"{Environment.NewLine}{Environment.NewLine}本地消息、草稿和托管附件会被移除，且不能通过 /unarchive 恢复。")
+                + LocalizedText.Format($"{Environment.NewLine}若只想隐藏，请选择“否”并使用 /archive。"),
                 "ColorVision",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -303,6 +294,8 @@ namespace ColorVision.Copilot
             CommandManager.InvalidateRequerySuggested();
             try
             {
+                // Auxiliary results still belong to this object until deletion is durable.
+                _conversationPendingDeletion = target;
                 var deletedTitle = target.Title;
                 var wasSelected = ReferenceEquals(target, SelectedConversation);
                 var previousProfileId = SelectedProfile?.Id;
@@ -372,6 +365,8 @@ namespace ColorVision.Copilot
             }
             finally
             {
+                if (ReferenceEquals(_conversationPendingDeletion, target))
+                    _conversationPendingDeletion = null;
                 _isEndingConversation = false;
                 CommandManager.InvalidateRequerySuggested();
             }

@@ -1,7 +1,5 @@
 using ColorVision.UI.Extension;
-using System;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection;
 using System.Resources;
 using System.Windows;

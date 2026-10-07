@@ -43,6 +43,8 @@ extern "C" COLORVISIONCORE_API int M_AnalyzeSfrV2(HImage img, RoiRect roi, const
 
 // Explicit search rectangle only; JSON buffer is released with FreeResult.
 extern "C" COLORVISIONCORE_API int M_LocateBmwTargetV1(HImage img, RoiRect roi, char** result);
+// chartType: 0 BMW, 1 checkerboard junction, 2 automatic (BMW shape first).
+extern "C" COLORVISIONCORE_API int M_LocateSfrTargetV1(HImage img, RoiRect roi, int chartType, char** result);
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
 extern "C" COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax);
 extern "C" COLORVISIONCORE_API int M_PseudoColorInto(HImage img, HImage outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET, int channel = -1);
@@ -319,6 +321,21 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecute(
     float* cieData,
     std::uint64_t cieFloatCount,
     const MCalibrationExecutionOptionsV1* options);
+// Basic-only calibration followed by RAW mirroring. flipMode is 0 (vertical),
+// 1 (horizontal), or -1 (both), as in cv::flip. Color/CIE templates are rejected.
+// Final output is equivalent to M_CalibrationExecute then mirroring; eligible
+// final stages write mirrored output directly. V1 options and old exports keep
+// their original layout and behavior. Output is undefined after a failure.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteRawWithFlipV1(
+    void* context,
+    std::uint32_t width,
+    std::uint32_t height,
+    std::uint32_t bitsPerChannel,
+    std::uint32_t channels,
+    std::uint8_t* rawData,
+    std::uint64_t rawByteLength,
+    const MCalibrationExecutionOptionsV1* options,
+    std::int32_t flipMode);
 // Read-only-source variant. correctedRawData may be null when the selected
 // template contains a luminance/color transform. Source RAW, corrected RAW and
 // CIE ranges must not overlap. Output buffers are undefined after a failure,

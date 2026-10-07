@@ -1,7 +1,7 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CA1805,CS4014,CS8602,CS8603,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
@@ -332,7 +332,7 @@ namespace ColorVision.Solution.Explorer
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "添加现有项",
+                Title = LocalizedText.Get("添加现有项"),
                 Filter = "所有文件 (*.*)|*.*",
                 Multiselect = true
             };
@@ -346,8 +346,8 @@ namespace ColorVision.Solution.Explorer
                 {
                     MessageBoxResult choice = MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        $"目标文件夹中已有 {conflicts.Count} 个同名文件。是否覆盖这些文件？",
-                        "添加现有项",
+                        LocalizedText.Format($"目标文件夹中已有 {conflicts.Count} 个同名文件。是否覆盖这些文件？"),
+                        LocalizedText.Get("添加现有项"),
                         MessageBoxButton.YesNoCancel,
                         MessageBoxImage.Question);
                     if (choice == MessageBoxResult.Cancel)
@@ -388,8 +388,8 @@ namespace ColorVision.Solution.Explorer
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"文件已经写入磁盘，但未能包括到项目中：{membershipError}",
-                    "更新项目失败",
+                    LocalizedText.Format($"文件已经写入磁盘，但未能包括到项目中：{membershipError}"),
+                    LocalizedText.Get("更新项目失败"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }

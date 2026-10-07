@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using ColorVision.UI.Menus;
 using Spectrum.Menus;
 using System.Diagnostics;
@@ -10,7 +11,7 @@ public class MenuDirectSpectrometerWindow : SpectrumMenuIBase
 {
     public override string OwnerGuid => MenuItemConstants.Help;
     public override int Order => 10005;
-    public override string Header => "光谱仪直连测试";
+    public override string Header => LocalizedText.Get("光谱仪直连测试");
 
     public override void Execute()
     {
@@ -52,6 +53,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
     public DirectSpectrometerWindow()
     {
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         Instance = this;
         var logPath = Path.Combine(AppContext.BaseDirectory, "logs", $"spectrometer_direct_{DateTime.Now:yyyyMMdd_HHmmss}.log");
         DirectSpectrometerLogger.Initialize(logPath);
@@ -88,7 +90,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
             if (!sessionAcquired)
             {
                 AppendLog("光谱仪驱动当前不可用；请先断开主光谱仪。若刚才释放失败，请重启程序");
-                StatusTextBlock.Text = "驱动不可用";
+                StatusTextBlock.Text = LocalizedText.Get("驱动不可用");
                 return;
             }
 
@@ -101,7 +103,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
                 SpectrometerNativeSession.Release(SpectrometerNativeSessionOwner.Direct);
                 sessionAcquired = false;
                 AppendLog($"打开设备失败，返回值: {_spectrometerCount}");
-                StatusTextBlock.Text = "打开设备失败";
+                StatusTextBlock.Text = LocalizedText.Get("打开设备失败");
                 return;
             }
 
@@ -109,7 +111,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
             _isOpen = true;
             var serial = DirectSpectrometerLogger.Measure($"SA_GetSerialNumber({_selectedIndex})", () => SpectrometerApi.GetSerialNumber(_selectedIndex));
             AppendLog($"打开成功，设备数量返回值: {_spectrometerCount}，当前使用索引: {_selectedIndex}，序列号: {serial}");
-            StatusTextBlock.Text = $"已连接 | Index={_selectedIndex} | SN={serial}";
+            StatusTextBlock.Text = LocalizedText.Format($"已连接 | Index={_selectedIndex} | SN={serial}");
             LoadWavelength();
         }
         catch (Exception ex)
@@ -118,7 +120,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
                 SpectrometerNativeSession.Release(SpectrometerNativeSessionOwner.Direct);
             AppendLog($"打开设备异常: {ex.Message}");
             DirectSpectrometerLogger.Error("OpenButton_Click failed", ex);
-            StatusTextBlock.Text = "打开设备异常";
+            StatusTextBlock.Text = LocalizedText.Get("打开设备异常");
         }
     }
 
@@ -140,7 +142,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
 
             AppendLog($"设置积分时间返回: {setIntResult}，积分时间: {integrationTimeMs:F3} ms ({integrationTimeUs} us)");
             AppendLog($"设置平均次数返回: {setAvgResult}，平均次数: {averageTimes}");
-            StatusTextBlock.Text = $"参数已设置 | Int={integrationTimeMs:F3}ms | Avg={averageTimes}";
+            StatusTextBlock.Text = LocalizedText.Format($"参数已设置 | Int={integrationTimeMs:F3}ms | Avg={averageTimes}");
         }
         catch (Exception ex)
         {
@@ -220,7 +222,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
         {
             _isContinuousRunning = true;
             _continuousCts = new CancellationTokenSource();
-            RunContinuousButton.Content = "停止连续";
+            RunContinuousButton.Content = LocalizedText.Get("停止连续");
             SetContinuousMode(true);
             ApplyCurrentSettings();
             var integrationTimeMs = ParsePositiveDouble(IntegrationTimeTextBox.Text, "积分时间");
@@ -247,7 +249,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
             _continuousCts = null;
             _continuousTask = null;
             _isContinuousRunning = false;
-            RunContinuousButton.Content = "连续测试";
+            RunContinuousButton.Content = LocalizedText.Get("连续测试");
             SetContinuousMode(false);
         }
     }
@@ -404,7 +406,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
 
         var peakX = _plotWavelengths[maxIndex];
         AppendLog($"光谱统计 | Min={minY:F3} | Max={maxY:F3} | PeakWavelength={peakX:F3}nm");
-        StatusTextBlock.Text = $"采集完成 | Points={pointCount} | Time={elapsedMilliseconds}ms";
+        StatusTextBlock.Text = LocalizedText.Format($"采集完成 | Points={pointCount} | Time={elapsedMilliseconds}ms");
     }
 
     private void PlotSpectrum(int spectrumCount, long elapsedMilliseconds)
@@ -500,7 +502,7 @@ public partial class DirectSpectrometerWindow : Window, IDisposable
             _spectrometerCount = -1;
             _selectedIndex = 0;
             AppendLog("设备已关闭");
-            StatusTextBlock.Text = "设备已关闭";
+            StatusTextBlock.Text = LocalizedText.Get("设备已关闭");
             DirectSpectrometerLogger.Flush();
             return true;
         }

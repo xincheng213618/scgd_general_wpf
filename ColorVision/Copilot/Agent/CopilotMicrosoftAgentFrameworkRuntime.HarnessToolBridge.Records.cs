@@ -2,7 +2,6 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ColorVision.Copilot
 {

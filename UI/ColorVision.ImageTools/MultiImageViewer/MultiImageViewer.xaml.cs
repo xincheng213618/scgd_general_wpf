@@ -1,7 +1,5 @@
 #pragma warning disable CA1863,CS4014
-using AvalonDock.Layout;
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
@@ -27,9 +25,11 @@ namespace ColorVision.Solution.MultiImageViewer
                     RelayCommand OpenMultiImageViewerEditorCommand = new RelayCommand((o) =>
                     {
                         Window window = new Window();
+                        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                         MultiImageViewer multiImageViewer = new MultiImageViewer();
                         multiImageViewer.FilePath = filepath;
                         window.Content = multiImageViewer;
+                        window.Closed += (_, _) => multiImageViewer.Dispose();
                         window.Show();
                         multiImageViewer.LoadFromFolderAsync(DirectoryPath);
                     });
@@ -161,6 +161,8 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private async Task LoadFilesAsync(List<string> files)
         {
+            if (_disposed) return;
+
             ImageFiles.Clear();
             ImageView.Clear();
             NoImageHint.Visibility = Visibility.Visible;
@@ -186,7 +188,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 await LoadThumbnailsAsync();
             }
 
-            if (ImageFiles.Count > 0)
+            if (!_disposed && ImageFiles.Count > 0)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -218,7 +220,7 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private void FileListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (FileListBox.SelectedItem is ImageFileInfo selectedFile)
+            if (!_disposed && FileListBox.SelectedItem is ImageFileInfo selectedFile)
             {
                 OpenImage(selectedFile);
             }
@@ -349,6 +351,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 return;
 
             _disposed = true;
+            Clear();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }

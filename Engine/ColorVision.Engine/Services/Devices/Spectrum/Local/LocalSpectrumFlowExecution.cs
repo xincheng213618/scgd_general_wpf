@@ -1,6 +1,5 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Results;
-using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.Spectrum;
 using Newtonsoft.Json.Linq;
@@ -23,8 +22,7 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
 
     internal static void Register()
     {
-        CanExecuteLocally = node => (node is SpectrumNode or SpectrumEQENode) && Find(node.DeviceCode)?.SpectrumBackend.OpensLocally == true;
-        CreateForNode = (node, request) =>
+        RegisterBackend(nameof(LocalSpectrumFlowExecution), node => (node is SpectrumNode or SpectrumEQENode) && Find(node.DeviceCode)?.SpectrumBackend.OpensLocally == true, (node, request) =>
         {
             if (node is not (SpectrumNode or SpectrumEQENode)) return null!;
             DeviceSpectrum? device = Find(request.DeviceCode);
@@ -44,7 +42,7 @@ internal sealed class LocalSpectrumFlowExecution : FlowLocalExecution
             parameters.Voltage = data["SMUData"]?["V"]?.Value<float>() ?? 0;
             parameters.Current = data["SMUData"]?["I"]?.Value<float>() ?? 0;
             return new LocalSpectrumFlowExecution(device, parameters, request.EventName, true, request.ZIndex, request.DeviceNodeCode);
-        };
+        });
     }
 
     private readonly int zIndex;

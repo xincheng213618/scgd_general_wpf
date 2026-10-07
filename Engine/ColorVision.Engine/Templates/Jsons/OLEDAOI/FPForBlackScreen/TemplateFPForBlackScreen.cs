@@ -1,4 +1,4 @@
-using ColorVision.Database;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen
 
         public TemplateFPForBlackScreen()
         {
-            Title = "黑画面检测模板管理";
+            Title = LocalizedText.Get("黑画面检测模板管理");
             Code = "OLED.AOI.FPForBlackScreen";
             Name = "FPForBlackScreen";
             TemplateDicId = 57;
@@ -43,6 +43,5 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen
         public string Description { get; set; } = "{\r\n  \"TimeStamp\": \"_20251231_145129\",\r\n  \"GradeLevel\": \"NG\"\r\n}";
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlFPForBlackScreen();
     }
 }

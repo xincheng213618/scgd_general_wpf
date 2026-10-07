@@ -1,0 +1,29 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.Mtf.StripeMtfResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.ImageEditor"
+        Title="{display:DisplayText Key='条纹 MTF 结果'}" Width="900" Height="620" MinWidth="680" MinHeight="420" WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="Summary" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" Text="{display:DisplayText Key='按原图像素测量条纹对比度；不是 SFR 的 MTF50。单独 H/V 输出各框数值，四部图案另列方向均值。'}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <TabControl Grid.Row="2">
+            <TabItem Header="{display:DisplayText Key='各框数值'}"><DataGrid x:Name="Measurements" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" ClipboardCopyMode="IncludeHeader">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{display:DisplayText Key='名称'}" Binding="{Binding Name}" Width="*"/><DataGridTextColumn Header="{display:DisplayText Key='编号'}" Binding="{Binding Id}" Width="60"/>
+                    <DataGridTextColumn Header="MTF" Binding="{Binding Value, StringFormat=F6}" Width="120"/>
+                    <DataGridTextColumn Header="X" Binding="{Binding X}" Width="85"/><DataGridTextColumn Header="Y" Binding="{Binding Y}" Width="85"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='宽'}" Binding="{Binding Width}" Width="85"/><DataGridTextColumn Header="{display:DisplayText Key='高'}" Binding="{Binding Height}" Width="85"/>
+                </DataGrid.Columns>
+            </DataGrid></TabItem>
+            <TabItem x:Name="GroupsTab" Header="{display:DisplayText Key='H / V 汇总'}"><DataGrid x:Name="Groups" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" ClipboardCopyMode="IncludeHeader">
+                <DataGrid.Columns><DataGridTextColumn Header="{display:DisplayText Key='名称'}" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="H" Binding="{Binding Horizontal, StringFormat=F6}" Width="*"/>
+                    <DataGridTextColumn Header="V" Binding="{Binding Vertical, StringFormat=F6}" Width="*"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='整体均值'}" Binding="{Binding Average, StringFormat=F6}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid></TabItem>
+            <TabItem Header="{display:DisplayText Key='结果 JSON'}"><TextBox x:Name="JsonText" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/></TabItem>
+        </TabControl>
+        <Button Grid.Row="3" Content="{display:DisplayText Key='复制结果 JSON'}" Click="CopyJson" HorizontalAlignment="Left" Padding="14,6" Margin="0,12,0,0"/>
+    </Grid>
+</Window>

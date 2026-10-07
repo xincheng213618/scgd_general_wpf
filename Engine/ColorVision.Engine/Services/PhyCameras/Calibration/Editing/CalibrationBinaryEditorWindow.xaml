@@ -1,0 +1,42 @@
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.Calibration.Editing.CalibrationBinaryEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="二进制校正" Width="940" Height="700" MinWidth="680" MinHeight="500" WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="Summary" FontSize="18" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="Previous" Content="上一页" Click="Previous_Click" Padding="10,5"/>
+            <TextBox x:Name="PageNumber" Text="1" Width="65" Margin="8,0" VerticalContentAlignment="Center"/>
+            <Button x:Name="GoPage" Content="跳转" Click="GoPage_Click" Padding="10,5"/>
+            <Button x:Name="Next" Content="下一页" Click="Next_Click" Padding="10,5" Margin="8,0"/>
+            <TextBlock x:Name="PageInfo" VerticalAlignment="Center"/>
+            <Button x:Name="AddPoint" Content="添加坐标" Click="AddPoint_Click" Padding="10,5" Margin="12,0,0,0"/>
+            <Button x:Name="RemovePoint" Content="删除选中坐标" Click="RemovePoint_Click" Padding="10,5" Margin="8,0,0,0"/>
+            <ComboBox x:Name="ChannelSelector" IsEditable="True" ToolTip="输入通道编号（从 1 开始）" LostKeyboardFocus="ChannelSelector_LostKeyboardFocus" SelectionChanged="ChannelSelector_SelectionChanged" Width="140" Margin="8,0,0,0"/>
+        </StackPanel>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <DataGrid x:Name="Values" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" EnableRowVirtualization="True" EnableColumnVirtualization="True" Margin="0,0,12,0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="索引" Binding="{Binding Index}" IsReadOnly="True" Width="70"/>
+                    <DataGridTextColumn x:Name="ValueColumn" Header="系数" Binding="{Binding Value}" Width="*"/>
+                    <DataGridTextColumn x:Name="RowColumn" Header="Y / 行" Binding="{Binding Row}" Width="*"/>
+                    <DataGridTextColumn x:Name="ColumnColumn" Header="X / 列" Binding="{Binding Column}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+            <Grid Grid.Column="1">
+                <Image x:Name="MapPreview" Stretch="Uniform"/>
+                <Canvas x:Name="Curve" ClipToBounds="True" SizeChanged="Curve_SizeChanged" Background="#10008080"/>
+            </Grid>
+        </Grid>
+        <DockPanel Grid.Row="3" Margin="0,12,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button x:Name="Save" Content="保存" Click="Save_Click" Padding="16,7" Margin="8,0"/>
+                <Button Content="另存为" Click="SaveAs_Click" Padding="16,7"/>
+                <Button Content="关闭" Click="Close_Click" Padding="16,7" Margin="8,0,0,0"/>
+            </StackPanel>
+            <TextBlock x:Name="Status" TextWrapping="Wrap" VerticalAlignment="Center"/>
+        </DockPanel>
+    </Grid>
+</Window>

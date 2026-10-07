@@ -1,0 +1,36 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:displayUi="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:engine="clr-namespace:ColorVision.Engine"
+             xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             x:Class="ColorVision.Engine.Services.Devices.Camera.Controls.CameraActionsControl" MinWidth="240" mc:Ignorable="d">
+    <StackPanel>
+        <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3">
+            <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"/>
+            <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}"/>
+        </DockPanel>
+        <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3">
+            <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"/>
+            <Button Command="{Binding PhyCamera.UploadLicenseCommand}" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}"/>
+        </DockPanel>
+        <DockPanel x:Name="ButtonInit" Margin="0,0,0,3">
+            <Button Margin="0,0,3,0" Command="{Binding RefreshDeviceIdCommand}" Content="{x:Static properties:Resources.RefreshDeviceList}"/>
+            <Button Command="{Binding EditCommand}" Content="{x:Static properties:Resources.PleaseConfigureCameraIDFirst}"/>
+        </DockPanel>
+        <Button x:Name="ButtonOffline" Margin="0,0,0,3" Background="Red" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Visibility="Collapsed"/>
+        <Grid Margin="0,0,0,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="VideoColumn" Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Content="{engine:EngineLang CameraPanel_Connect}" x:Name="OpenButton"/>
+            <Button Margin="0,0,2,0" HorizontalAlignment="Stretch" Background="Red" Foreground="White" Content="{engine:EngineLang CameraPanel_Disconnect}" x:Name="CloseButton"/>
+            <Button Grid.Column="1" x:Name="LocalVideoButton" Content="{engine:EngineLang CameraPanel_StartPreview}" HorizontalAlignment="Stretch" Margin="0,0,2,0"/>
+        </Grid>
+    </StackPanel>
+</UserControl>

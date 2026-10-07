@@ -1,26 +1,13 @@
+using LocalizedText = global::ColorVision.DisplayText;
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -66,11 +53,11 @@ namespace ColorVision.Copilot
             ? "活动"
             : ColorVision.Properties.Resources.CopilotConversations;
 
-        public string ConversationSearchPlaceholder => IsActivityViewOpen ? "搜索活动" : "搜索会话";
+        public string ConversationSearchPlaceholder => IsActivityViewOpen ? LocalizedText.Get("搜索活动") : LocalizedText.Get("搜索会话");
 
         public string ActivityViewToggleToolTip => IsActivityViewOpen
-            ? "返回全部会话 (Ctrl+Alt+U)"
-            : "打开活动视图 (Ctrl+Alt+U)";
+            ? LocalizedText.Get("返回全部会话 (Ctrl+Alt+U)")
+            : LocalizedText.Get("打开活动视图 (Ctrl+Alt+U)");
 
         public int ActivityConversationCount => Conversations.Count(conversation =>
             !conversation.IsArchived && conversation.HasAgentRunStatus);
@@ -94,7 +81,7 @@ namespace ColorVision.Copilot
         public bool HasConversationBranchFamily => ConversationBranchFamily.Count > 1;
 
         public string ConversationBranchFamilyLabel =>
-            $"会话树 · {ConversationBranchFamily.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)}";
+            LocalizedText.Format($"会话树 · {ConversationBranchFamily.Count.ToString(System.Globalization.CultureInfo.CurrentCulture)}");
 
         public ObservableCollection<CopilotAgentTaskSummary> AgentTasks { get; } = new();
 
@@ -111,7 +98,7 @@ namespace ColorVision.Copilot
         public string AgentTaskPanelToggleGlyph => IsAgentTaskPanelExpanded ? "▾" : "▸";
 
         public string AgentTaskPanelToolTip =>
-            $"{(IsAgentTaskPanelExpanded ? "收起" : "展开")} Agent 任务（Ctrl+Alt+T）";
+            LocalizedText.Format($"{(IsAgentTaskPanelExpanded ? LocalizedText.Get("收起") : LocalizedText.Get("展开"))} Agent 任务（Ctrl+Alt+T）");
 
         public bool ShowMessageTimestamps => _state.ShowMessageTimestamps;
 
@@ -125,19 +112,19 @@ namespace ColorVision.Copilot
             CopilotFollowUpPreference.Normalize(_state.DefaultFollowUpBehavior);
 
         public string SteerActionToolTip => HasAttachments
-            ? $"输入含附件，将与附件一起排到下一轮（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）"
-            : $"把输入作为新指令加入当前 Agent 运行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）";
+            ? LocalizedText.Format($"输入含附件，将与附件一起排到下一轮（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）")
+            : LocalizedText.Format($"把输入作为新指令加入当前 Agent 运行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Steer)}）");
 
         public string QueueFollowUpToolTip =>
-            $"排到当前 Agent 任务结束后再执行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Queue)}）";
+            LocalizedText.Format($"排到当前 Agent 任务结束后再执行（{ResolveFollowUpShortcut(CopilotFollowUpBehavior.Queue)}）");
 
         public string FollowUpQueueHintText => HasAttachments
             ? $"{ComposerSubmitShortcutLabel}/Tab 连同附件排队 · Ctrl+Enter 立即接管"
             : $"{ComposerSubmitShortcutLabel} {DefaultFollowUpActionLabel} · Tab {AlternateFollowUpActionLabel} · Ctrl+Enter 立即接管";
 
         public string ComposerInputToolTip => UseMultilineComposer
-            ? "多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑"
-            : "标准模式：Enter 发送，Shift+Enter 换行；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑";
+            ? LocalizedText.Get("多行模式：Enter 换行，Shift+Enter 发送；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑")
+            : LocalizedText.Get("标准模式：Enter 发送，Shift+Enter 换行；Agent 运行中 Ctrl+Enter 取消当前轮并立即执行输入；↑/↓ 浏览请求历史；补全列表中可用 → 接受；Ctrl+R 搜索历史；保存快捷键暂存或恢复草稿；Ctrl+E 展开编辑");
 
         public Thickness MessageListPadding =>
             CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).MessageListPadding;
@@ -234,11 +221,11 @@ namespace ColorVision.Copilot
             {
                 var stash = SelectedConversation?.ComposerStash;
                 if (stash?.HasContent != true)
-                    return "按保存快捷键暂存当前输入、附件和请求模式（默认 Ctrl+S，可在选项中修改）";
+                    return LocalizedText.Get("按保存快捷键暂存当前输入、附件和请求模式（默认 Ctrl+S，可在选项中修改）");
 
-                return $"恢复暂存草稿（保存快捷键）"
+                return LocalizedText.Format($"恢复暂存草稿（保存快捷键）")
                     + Environment.NewLine
-                    + $"{stash.Text.Length:N0} 个字符 · {stash.Attachments.Count:N0} 个附件 · {FormatComposerRequestMode(stash.RequestMode)}模式";
+                    + LocalizedText.Format($"{stash.Text.Length:N0} 个字符 · {stash.Attachments.Count:N0} 个附件 · {FormatComposerRequestMode(stash.RequestMode)}模式");
             }
         }
 
@@ -296,7 +283,7 @@ namespace ColorVision.Copilot
                     return PendingActionPanelSummary;
 
                 return string.Join(Environment.NewLine, PendingActions.Select(action =>
-                    $"{action.Title}｜来源：{action.RequesterLabel}｜任务：{action.TaskScopeLabel}｜风险：{action.RiskDisplayLabel}｜{action.ReviewDeadlineLabel}"));
+                    LocalizedText.Format($"{action.Title}｜来源：{action.RequesterLabel}｜任务：{action.TaskScopeLabel}｜风险：{action.RiskDisplayLabel}｜{action.ReviewDeadlineLabel}")));
             }
         }
 
@@ -369,8 +356,8 @@ namespace ColorVision.Copilot
         public ICommand AttachCurrentLiveContextCommand { get; }
 
         public string AttachmentMenuToolTip => IsBusy
-            ? "响应期间无法更改附件"
-            : "添加附件";
+            ? LocalizedText.Get("响应期间无法更改附件")
+            : LocalizedText.Get("添加附件");
 
         public ICommand CopyMessageCommand { get; }
 

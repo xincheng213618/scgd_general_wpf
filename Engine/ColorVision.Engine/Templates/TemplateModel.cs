@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Windows.Controls;
@@ -11,6 +12,8 @@ namespace ColorVision.Engine.Templates
         public ContextMenu ContextMenu { get; set; }
         [JsonIgnore]
         public virtual int Id { get; set; }
+
+        internal void NotifyIdChanged() => OnPropertyChanged(nameof(Id));
 
         [JsonIgnore]
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
@@ -44,7 +47,7 @@ namespace ColorVision.Engine.Templates
             CopyNameCommand = new RelayCommand(a => Common.Clipboard.SetText(Key));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "复制名称", Command = CopyNameCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = LocalizedText.Get("复制名称"), Command = CopyNameCommand });
 
         }
 

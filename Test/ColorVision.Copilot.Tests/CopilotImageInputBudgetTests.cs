@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using SkiaSharp;
 using System.IO;
 using System.Net;

@@ -598,4 +598,327 @@
   <data name="StartupThemeFollowApplication" xml:space="preserve"><value>Follow application theme</value></data>
   <data name="DisplayPin" xml:space="preserve"><value>Pin to top</value></data>
   <data name="DisplayUnpin" xml:space="preserve"><value>Unpin</value></data>
+  <data name="SettingsNoMatchingSettings" xml:space="preserve"><value>No matching settings</value></data>
+  <data name="SettingsEditorUnavailable" xml:space="preserve"><value>This setting cannot be edited yet</value></data>
+  <data name="SettingsEditorLoadFailed" xml:space="preserve"><value>Failed to load the settings editor</value></data>
+  <data name="SettingsPageTypeInvalid" xml:space="preserve"><value>Invalid settings page type</value></data>
+  <data name="SettingsPageUnavailable" xml:space="preserve"><value>Settings page unavailable</value></data>
+  <data name="SettingsPageLoadFailed" xml:space="preserve"><value>Failed to load the settings page</value></data>
+  <data name="SettingsStartupCheckUpdates" xml:space="preserve"><value>Check for updates on startup</value></data>
+  <data name="SettingsStartupCheckUpdatesDescription" xml:space="preserve"><value>Check for application and plugin updates when ColorVision starts</value></data>
+  <data name="SettingsStartupCheckUpdatesSearchAliases" xml:space="preserve"><value>startup check updates automatic updates plugin updates</value></data>
+  <data name="SettingsSectionBasic" xml:space="preserve"><value>Basic</value></data>
+  <data name="SettingsSectionSearch" xml:space="preserve"><value>Search</value></data>
+  <data name="SettingsSectionFileArchive" xml:space="preserve"><value>File storage</value></data>
+  <data name="SettingsSectionServices" xml:space="preserve"><value>Advanced services</value></data>
+  <data name="SettingsSectionPaths" xml:space="preserve"><value>System paths</value></data>
+  <data name="SettingsSectionExtensions" xml:space="preserve"><value>Extensions</value></data>
+  <data name="SettingsSectionOther" xml:space="preserve"><value>Other</value></data>
+  <data name="DisplayControlManagerTitle" xml:space="preserve">
+    <value>Device Control Manager</value>
+  </data>
+  <data name="DisplayControlsTitle" xml:space="preserve">
+    <value>Device Controls</value>
+  </data>
+  <data name="DisplayControlsDescription" xml:space="preserve">
+    <value>Manage groups and control visibility</value>
+  </data>
+  <data name="DisplayControlGroups" xml:space="preserve">
+    <value>Groups</value>
+  </data>
+  <data name="DisplayControlAllItems" xml:space="preserve">
+    <value>All Controls</value>
+  </data>
+  <data name="DisplayControlName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="DisplayControlGroup" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="DisplayControlVisible" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="DisplayControlPinned" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="DisplayControlExpanded" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="DisplayControlOrder" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="DisplayControlEmpty" xml:space="preserve">
+    <value>No controls available</value>
+  </data>
+  <data name="DisplayControlVisibilityHint" xml:space="preserve">
+    <value>Hiding a control only affects the device control panel. Devices and flows continue to run.</value>
+  </data>
+  <data name="DisplayControlCreateGroup" xml:space="preserve">
+    <value>New Group</value>
+  </data>
+  <data name="DisplayControlRenameGroup" xml:space="preserve">
+    <value>Rename Group</value>
+  </data>
+  <data name="DisplayControlDeleteGroup" xml:space="preserve">
+    <value>Delete Group</value>
+  </data>
+  <data name="DisplayControlGroupName" xml:space="preserve">
+    <value>Group Name</value>
+  </data>
+  <data name="DisplayControlDefaultGroup" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="DisplayControlUnnamedGroup" xml:space="preserve">
+    <value>Unnamed Group</value>
+  </data>
+  <data name="DisplayControlNewGroupName" xml:space="preserve">
+    <value>Group {0}</value>
+  </data>
+  <data name="DisplayControlDeleteGroupPrompt" xml:space="preserve">
+    <value>Delete group "{0}"? Its controls will move to the default group.</value>
+  </data>
+  <data name="DisplayControlGroupActions" xml:space="preserve">
+    <value>Group Actions</value>
+  </data>
+  <data name="DisplayControlExpandGroupHint" xml:space="preserve">
+    <value>Expand or collapse the group in the device control panel</value>
+  </data>
+  <data name="DisplayControlMoveToGroupHint" xml:space="preserve">
+    <value>Move to a group</value>
+  </data>
+  <data name="DisplayControlVisibilityTooltip" xml:space="preserve">
+    <value>Show or hide in the device control panel</value>
+  </data>
+  <data name="DisplayControlPinTooltip" xml:space="preserve">
+    <value>Pin or unpin within the group</value>
+  </data>
+  <data name="DisplayControlExpandTooltip" xml:space="preserve">
+    <value>Expand or collapse the control</value>
+  </data>
+  <data name="DisplayControlMoveUp" xml:space="preserve">
+    <value>Move up within the group</value>
+  </data>
+  <data name="DisplayControlMoveDown" xml:space="preserve">
+    <value>Move down within the group</value>
+  </data>
+  <data name="DisplayControlExpandGroupAccessible" xml:space="preserve">
+    <value>Expand or collapse group {0}</value>
+  </data>
+  <data name="DisplayControlGroupAccessible" xml:space="preserve">
+    <value>Group for {0}</value>
+  </data>
+  <data name="DisplayControlShowAccessible" xml:space="preserve">
+    <value>Show {0}</value>
+  </data>
+  <data name="DisplayControlPinAccessible" xml:space="preserve">
+    <value>Pin {0}</value>
+  </data>
+  <data name="DisplayControlExpandAccessible" xml:space="preserve">
+    <value>Expand or collapse {0}</value>
+  </data>
+  <data name="DisplayControlItemCount" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="FlowStatusIdle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="FlowStatusWaiting" xml:space="preserve">
+    <value>Waiting to start the test</value>
+  </data>
+  <data name="FlowStatusNotStarted" xml:space="preserve">
+    <value>The test has not started.</value>
+  </data>
+  <data name="FlowStatusFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="FlowStatusNotice" xml:space="preserve">
+    <value>Notice</value>
+  </data>
+  <data name="FlowStatusPreparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="FlowStatusPreparingMessage" xml:space="preserve">
+    <value>Preparing the flow</value>
+  </data>
+  <data name="FlowStatusPreparingDetails" xml:space="preserve">
+    <value>Flow: {0}
+Preparing the flow and preprocessing.</value>
+  </data>
+  <data name="FlowStatusRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="FlowStatusRunningMessage" xml:space="preserve">
+    <value>Executing the flow</value>
+  </data>
+  <data name="FlowStatusExecutingNode" xml:space="preserve">
+    <value>Executing: {0}</value>
+  </data>
+  <data name="FlowStatusRunningDetails" xml:space="preserve">
+    <value>Flow: {0}
+Current node: {1}
+Elapsed: {2:N0} ms</value>
+  </data>
+  <data name="FlowStatusLastExecution" xml:space="preserve">
+    <value>
+Last run: {0:N0} ms</value>
+  </data>
+  <data name="FlowStatusRemaining" xml:space="preserve">
+    <value>
+Estimated remaining: {0:N0} ms (based on the last run)</value>
+  </data>
+  <data name="FlowStatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="FlowStatusCompletedMessage" xml:space="preserve">
+    <value>Flow completed</value>
+  </data>
+  <data name="FlowStatusTimedOut" xml:space="preserve">
+    <value>Timed Out</value>
+  </data>
+  <data name="FlowStatusTimedOutMessage" xml:space="preserve">
+    <value>Flow execution timed out</value>
+  </data>
+  <data name="FlowStatusCanceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="FlowStatusCanceledMessage" xml:space="preserve">
+    <value>Test canceled</value>
+  </data>
+  <data name="FlowStatusFailedMessage" xml:space="preserve">
+    <value>Flow execution failed</value>
+  </data>
+  <data name="FlowStatusPictureSwitchFailed" xml:space="preserve">
+    <value>Image switch failed</value>
+  </data>
+  <data name="FlowStatusPreprocessFailed" xml:space="preserve">
+    <value>Preprocessing failed</value>
+  </data>
+  <data name="FlowStatusStartRejected" xml:space="preserve">
+    <value>The flow could not start</value>
+  </data>
+  <data name="FlowStatusFinishedDetails" xml:space="preserve">
+    <value>Flow: {0}
+Status: {1} ({2})
+Message: {3}</value>
+  </data>
+  <data name="FlowStatusOriginalMessage" xml:space="preserve">
+    <value>
+Original message: {0}</value>
+  </data>
+  <data name="FlowStatusElapsed" xml:space="preserve">
+    <value>
+Duration: {0:N0} ms</value>
+  </data>
+  <data name="FlowStatusAdditionalMessage" xml:space="preserve">
+    <value>{0} · {1}: {2}</value>
+  </data>
+  <data name="FlowStatusAdditionalDetails" xml:space="preserve">
+    <value>{0}
+{1}: {2}</value>
+  </data>
+  <data name="FlowStatusViewDetails" xml:space="preserve">
+    <value>View full execution details</value>
+  </data>
+  <data name="FlowStatusDetails" xml:space="preserve">
+    <value>Execution Details</value>
+  </data>
+  <data name="FlowStatusCopy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FlowStatusCopied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="FlowStatusRetryCopy" xml:space="preserve">
+    <value>Retry Copy</value>
+  </data>
+  <data name="DisplayControlGroupMoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="DisplayControlGroupMoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="参数分组" xml:space="preserve">
+    <value>Parameter Groups</value>
+  </data>
+  <data name="定位错误输入" xml:space="preserve">
+    <value>Locate Invalid Input</value>
+  </data>
+  <data name="展开全部分组" xml:space="preserve">
+    <value>Expand All Groups</value>
+  </data>
+  <data name="展开当前参数的完整说明、范围与示例" xml:space="preserve">
+    <value>Expand the current parameter's complete description, range, and examples</value>
+  </data>
+  <data name="展开或收起全部分组" xml:space="preserve">
+    <value>Expand or Collapse All Groups</value>
+  </data>
+  <data name="折叠选项" xml:space="preserve">
+    <value>Collapse Options</value>
+  </data>
+  <data name="按 Tab 切换参数，修改后使用窗口的“保存”。" xml:space="preserve">
+    <value>Use Tab to move between parameters, then click Save in the window after editing.</value>
+  </data>
+  <data name="搜索全部参数：名称、说明或值…" xml:space="preserve">
+    <value>Search All Parameters: Name, Description, or Value…</value>
+  </data>
+  <data name="搜索参数" xml:space="preserve">
+    <value>Search Parameters</value>
+  </data>
+  <data name="收起全部分组" xml:space="preserve">
+    <value>Collapse All Groups</value>
+  </data>
+  <data name="清除搜索" xml:space="preserve">
+    <value>Clear Search</value>
+  </data>
+  <data name="说明" xml:space="preserve">
+    <value>Documentation</value>
+  </data>
+  <data name="选择参数查看完整说明" xml:space="preserve">
+    <value>Select a Parameter to View Its Complete Description</value>
+  </data>
+  <data name="JSON 路径：{0}" xml:space="preserve">
+    <value>JSON path: {0}</value>
+  </data>
+  <data name="{0} / {1} 项" xml:space="preserve">
+    <value>{0} / {1} Items</value>
+  </data>
+  <data name="{0} 项" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="{0}（当前值）" xml:space="preserve">
+    <value>{0} (Current Value)</value>
+  </data>
+  <data name="使用 JSON 数组格式，例如 [60, 40]。字符串需要双引号。" xml:space="preserve">
+    <value>Use a JSON array, such as [60, 40]. Strings require double quotes.</value>
+  </data>
+  <data name="全部分组" xml:space="preserve">
+    <value>All Groups</value>
+  </data>
+  <data name="参数说明" xml:space="preserve">
+    <value>Property descriptions</value>
+  </data>
+  <data name="对象中还没有参数，请在 JSON 视图添加。" xml:space="preserve">
+    <value>The object has no parameters yet; add them in the JSON view.</value>
+  </data>
+  <data name="已关闭" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="已启用" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="没有找到匹配参数，试试字段名、说明或值。" xml:space="preserve">
+    <value>No matching parameters; try a field name, description, or value.</value>
+  </data>
+  <data name="输入 JSON 对象，例如: {&quot;key1&quot;: &quot;value1&quot;, &quot;key2&quot;: &quot;value2&quot;}" xml:space="preserve">
+    <value>Enter a JSON object, for example: {"key1": "value1", "key2": "value2"}</value>
+  </data>
+  <data name="输入 JSON 数组，例如: [1, 2, 3]" xml:space="preserve">
+    <value>Enter a JSON array, for example: [1, 2, 3]</value>
+  </data>
+  <data name="选择参数查看完整说明、范围和示例。" xml:space="preserve">
+    <value>Select a parameter to view its description, range, and examples.</value>
+  </data>
+  <data name="选择参数查看路径。未提供字段说明时，仍可编辑现有参数。" xml:space="preserve">
+    <value>Select a parameter to view its path. Existing parameters remain editable when field descriptions are unavailable.</value>
+  </data>
 </root>

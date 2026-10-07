@@ -16,6 +16,7 @@ public sealed class ImageExportAlignmentTests
         ViewResultManagerConfig config = new();
 
         Assert.False(config.IsSaveImageReuslt);
+        Assert.True(config.UseFlowNameForImageFiles);
         Assert.Equal(ResultImageFormat.PNG, config.ResultSnapshotFormat);
         Assert.Equal(ImageExportSize.完整尺寸, config.ResultSnapshotSize);
         Assert.True(config.ResultSnapshotIncludeOverlays);
@@ -88,18 +89,25 @@ public sealed class ImageExportAlignmentTests
         Assert.Equal(0, config.ResultOverlayFontSize);
     }
 
-    [Fact]
-    public void FileNamesKeepRenderedAndSourceArtifactsDistinctAndSanitized()
+    [Theory]
+    [InlineData(false, "AB_White51result", "AB_White51source")]
+    [InlineData(true, "White51", "White51_source")]
+    public void FileNamesKeepRenderedAndSourceArtifactsDistinctAndSanitized(
+        bool useFlowName,
+        string expectedRendered,
+        string expectedSource)
     {
         string rendered = ProjectImageExportService.BuildResultFileStem(
             @"C:\capture\A:B.cvraw",
-            "White/51");
+            "White/51",
+            useFlowName);
         string source = ProjectImageExportService.BuildSourceFileStem(
             @"C:\capture\A:B.cvraw",
-            "White/51");
+            "White/51",
+            useFlowName);
 
-        Assert.Equal("AB_White51result", rendered);
-        Assert.Equal("AB_White51source", source);
+        Assert.Equal(expectedRendered, rendered);
+        Assert.Equal(expectedSource, source);
         Assert.NotEqual(rendered, source);
     }
 

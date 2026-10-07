@@ -168,6 +168,7 @@ public sealed class CvcieProfileSource : IImageProfileMeasurementSource
                     using var source = new CvRawProfileSource(candidate, false);
                     if (source.Width == header.Cols && source.Height == header.Rows) return candidate;
                 }
+                catch (InvalidDataException) { }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
                 catch (ArgumentException) { }

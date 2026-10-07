@@ -2,7 +2,6 @@ using ColorVision.Scheduler;
 using log4net;
 using Quartz;
 using System.ComponentModel;
-using System.Threading;
 
 namespace Spectrum.Job
 {

@@ -50,23 +50,16 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 throw new NotSupportedException("本地校正需要 RAW、TIFF 或常规位图源；CVCIE 请切换到 MQTT 服务处理。");
             }
 
-            bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
             LocalFrameCalibrationService.CalibrateInPlace(
                 frame,
                 cameraDevice.LocalCalibrationCacheManager,
                 calibrationFiles,
                 calibration.Name,
                 LocalCalibrationRoi.Resolve(cameraDevice.PhyCamera?.Config?.CameraCfg, frame.Metadata.Width, frame.Metadata.Height));
-            LocalFrameFileService.SaveCapture(
-                frame,
-                device.Config.FileServerCfg.DataBasePath,
-                device.Code,
-                includeRaw: hasBasicCalibration);
+            LocalFrameFileService.SaveCapture(frame, LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code));
             stopwatch.Stop();
 
-            string outputPath = !string.IsNullOrWhiteSpace(frame.CvCieFilePath)
-                ? frame.CvCieFilePath
-                : frame.CvRawFilePath;
+            string outputPath = frame.CvRawFilePath;
             if (string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
             {
                 throw new IOException("本地校正已完成，但没有生成可用的输出文件。");
@@ -117,7 +110,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             string backendName,
             int totalTime)
         {
-            bool hasCie = output.HasCie;
             return new MeasureResultImgModel
             {
                 BatchId = -1,
@@ -132,10 +124,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 }),
                 RawFile = Path.GetFileName(outputPath),
                 FileUrl = outputPath,
-                FileType = (sbyte)(hasCie ? CameraFileType.CIEFile : CameraFileType.RawFile),
+                FileType = (sbyte)CameraFileType.RawFile,
                 ImgFrameInfo = JsonConvert.SerializeObject(new
                 {
-                    bpp = hasCie ? output.Metadata.CieBpp : output.Metadata.SourceBpp,
+                    bpp = output.Metadata.SourceBpp,
                     width = output.Metadata.Width,
                     height = output.Metadata.Height,
                     channels = output.Metadata.Channels,

@@ -475,4 +475,8 @@
   <data name="DB_OperationFailed" xml:space="preserve">
     <value>操作失敗：{0}</value>
   </data>
+  <data name="DB_AddCondition" xml:space="preserve"><value>+ 新增條件</value></data>
+  <data name="DB_MatchAllConditions" xml:space="preserve"><value>符合以下所有條件</value></data>
+  <data name="DB_SearchFilterField" xml:space="preserve"><value>輸入欄位名稱或代碼查找，再從清單選擇</value></data>
+  <data name="DB_MoreQueryActions" xml:space="preserve"><value>更多查詢操作</value></data>
 </root>

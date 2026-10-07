@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -19,8 +18,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
             TemplateParams = Params;
             IsUserControl = true;
         }
-        public override IMysqlCommand? GetMysqlCommand() => new MysqlCameraRunParam();
-
         public override UserControl GetUserControl() => _editor ??= new CameraRunParamEditor();
 
         public override UserControl CreateUserControl() => new CameraRunParamEditor();

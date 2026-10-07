@@ -1,3 +1,4 @@
+using LocalizedText = global::Spectrum.DisplayText;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -34,9 +35,10 @@ public partial class AutoRampWindow : Window, IDisposable
     public AutoRampWindow(int spectrometerIndex)
     {
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         _spectrometerIndex = spectrometerIndex;
         ResultsDataGrid.ItemsSource = _results;
-        StatusTextBlock.Text = "就绪";
+        StatusTextBlock.Text = LocalizedText.Get("就绪");
     }
 
     private async void StartButton_Click(object sender, RoutedEventArgs e)
@@ -73,17 +75,17 @@ public partial class AutoRampWindow : Window, IDisposable
             await _runTask;
 
             AppendLog("测试完成");
-            StatusTextBlock.Text = $"测试完成 | 共 {_results.Count} 组数据";
+            StatusTextBlock.Text = LocalizedText.Format($"测试完成 | 共 {_results.Count} 组数据");
         }
         catch (OperationCanceledException)
         {
             AppendLog("测试已取消");
-            StatusTextBlock.Text = $"测试已取消 | 已完成 {_results.Count} 组数据";
+            StatusTextBlock.Text = LocalizedText.Format($"测试已取消 | 已完成 {_results.Count} 组数据");
         }
         catch (Exception ex)
         {
             AppendLog($"测试失败: {ex.Message}");
-            StatusTextBlock.Text = "测试失败";
+            StatusTextBlock.Text = LocalizedText.Get("测试失败");
         }
         finally
         {
@@ -194,7 +196,7 @@ public partial class AutoRampWindow : Window, IDisposable
                     _results.Add(result);
                     ResultsDataGrid.ScrollIntoView(result);
                     AppendLog($"#{result.Index} | Int={result.IntegrationTimeMs:F3}ms | Avg={avgTimes} | Measured={result.ElapsedMs}ms | Expected={result.ExpectedMs:F2}ms | Error={result.ErrorMs:F2}ms ({result.ErrorPercent:F2}%) | Result={result.ResultCode}");
-                    StatusTextBlock.Text = $"测试中... #{result.Index} | Int={result.IntegrationTimeMs:F3}ms";
+                    StatusTextBlock.Text = LocalizedText.Format($"测试中... #{result.Index} | Int={result.IntegrationTimeMs:F3}ms");
                 });
 
                 currentMs += stepMs;

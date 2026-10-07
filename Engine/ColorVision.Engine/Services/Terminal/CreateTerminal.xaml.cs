@@ -1,10 +1,10 @@
 #pragma warning disable CA1863,CS8604
-using ColorVision.Database;
 using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
-using SqlSugar;
 using System;
 using System.Linq;
 using System.Windows;
@@ -71,6 +71,11 @@ namespace ColorVision.Engine.Services.Terminal
                 TerminalService.Config.SendTopic,
                 TerminalService.Config.SubscribeTopic);
             DeviceServiceConfig deviceConfig = deviceServiceFactory.CreateConfig(createContext);
+            if (TerminalService.ServiceType is not (ServiceTypes.Camera or ServiceTypes.Calibration or ServiceTypes.Spectrum))
+            {
+                var licenses = SysResourceDao.IsLocalId(sysResource.Pid ?? 0) ? PhyLicenseDao.Instance.GetLocal() : PhyLicenseDao.Instance.GetAll();
+                DeviceServiceFactoryRegistry.ApplyDefaultLicense(TerminalService.ServiceType, deviceConfig, licenses, DateTimeOffset.Now);
+            }
             SysResourceModel sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
             DeviceService deviceService = deviceServiceFactory.CreateService(sysDevModel);
 

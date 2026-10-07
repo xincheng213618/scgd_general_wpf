@@ -1,5 +1,4 @@
 #pragma warning disable OPENAI001, SCME0001
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using OpenAI.Responses;
 using System.Net;

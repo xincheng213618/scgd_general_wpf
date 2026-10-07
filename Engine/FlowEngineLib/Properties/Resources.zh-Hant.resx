@@ -55,54 +55,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="00 全局" xml:space="preserve">
-    <value>00 全局</value>
-  </data>
-  <data name="01 运算" xml:space="preserve">
-    <value>01 运算</value>
-  </data>
-  <data name="02 相机" xml:space="preserve">
-    <value>02 相机</value>
-  </data>
-  <data name="03_1 关注点" xml:space="preserve">
-    <value>03_1 关注点</value>
-  </data>
-  <data name="03_2 Algorithm" xml:space="preserve">
-    <value>03_2 算法</value>
-  </data>
-  <data name="03_3 Image" xml:space="preserve">
-    <value>03_3 影像</value>
-  </data>
-  <data name="03_3 校正" xml:space="preserve">
-    <value>03_3 校正</value>
-  </data>
-  <data name="03_4 KB" xml:space="preserve">
-    <value>03_4 KB</value>
-  </data>
-  <data name="03_5 OLED" xml:space="preserve">
-    <value>03_5 OLED</value>
-  </data>
-  <data name="04 源表" xml:space="preserve">
-    <value>04 源表</value>
-  </data>
-  <data name="05 光谱仪" xml:space="preserve">
-    <value>05 光谱仪</value>
-  </data>
-  <data name="07 传感器" xml:space="preserve">
-    <value>07 传感器</value>
-  </data>
-  <data name="09 合规验证" xml:space="preserve">
-    <value>09 合规验证</value>
-  </data>
-  <data name="10 MQTT" xml:space="preserve">
-    <value>10 MQTT</value>
-  </data>
-  <data name="11 ROI" xml:space="preserve">
-    <value>11 ROI</value>
-  </data>
-  <data name="12 第三方算法" xml:space="preserve">
-    <value>12 第三方演算法</value>
-  </data>
+  <data name="全局" xml:space="preserve"><value>全局</value></data>
+  <data name="运算" xml:space="preserve"><value>運算</value></data>
+  <data name="关注点" xml:space="preserve"><value>關注點</value></data>
+  <data name="Algorithm" xml:space="preserve"><value>演算法</value></data>
+  <data name="Image" xml:space="preserve"><value>影像</value></data>
+  <data name="KB" xml:space="preserve"><value>KB</value></data>
+  <data name="OLED" xml:space="preserve"><value>OLED</value></data>
+  <data name="传感器" xml:space="preserve"><value>感測器</value></data>
+  <data name="合规验证" xml:space="preserve"><value>合規驗證</value></data>
+  <data name="MQTT" xml:space="preserve"><value>MQTT</value></data>
+  <data name="ROI" xml:space="preserve"><value>ROI</value></data>
   <data name="FlowEngineLib" xml:space="preserve">
     <value>FlowEngineLib</value>
   </data>
@@ -140,58 +103,58 @@
     <value>Common</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>服务器</value>
+    <value>服務器</value>
   </data>
   <data name="SelfCheck" xml:space="preserve">
     <value>灰階255</value>
   </data>
   <data name="物理设备控制" xml:space="preserve">
-    <value>物理设备控制</value>
+    <value>物理設備控制</value>
   </data>
   <data name="Camera" xml:space="preserve">
-    <value>相机</value>
+    <value>相機</value>
   </data>
   <data name="相机" xml:space="preserve">
-    <value>相机</value>
+    <value>相機</value>
   </data>
   <data name="L/BV相机" xml:space="preserve">
-    <value>L/BV相机</value>
+    <value>L/BV相機</value>
   </data>
   <data name="通用相机" xml:space="preserve">
-    <value>通用相机</value>
+    <value>通用相機</value>
   </data>
   <data name="CV相机" xml:space="preserve">
-    <value>CV相机</value>
+    <value>CV相機</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>通用AOI相机</value>
+    <value>通用AOI相機</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>通用AOI相机2</value>
+    <value>通用AOI相機2</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
-    <value>相机+ND</value>
+    <value>相機+ND</value>
   </data>
   <data name="相机ROI" xml:space="preserve">
-    <value>相机ROI</value>
+    <value>相機ROI</value>
   </data>
   <data name="相机参数模板" xml:space="preserve">
-    <value>相机参数模板</value>
+    <value>相機參數模板</value>
   </data>
   <data name="相机模板" xml:space="preserve">
-    <value>相机模板</value>
+    <value>相機模板</value>
   </data>
   <data name="图像转换" xml:space="preserve">
     <value>影像轉換</value>
   </data>
   <data name="图像裁剪" xml:space="preserve">
-    <value>图像裁剪</value>
+    <value>圖像裁剪</value>
   </data>
   <data name="图像格式" xml:space="preserve">
     <value>影像格式</value>
   </data>
   <data name="图像文件" xml:space="preserve">
-    <value>图像文件</value>
+    <value>圖像文件</value>
   </data>
   <data name="图像文件1" xml:space="preserve">
     <value>影像檔1</value>
@@ -209,7 +172,7 @@
     <value>圖像拼接</value>
   </data>
   <data name="图像翻转" xml:space="preserve">
-    <value>图像翻转</value>
+    <value>圖像翻轉</value>
   </data>
   <data name="图像名称" xml:space="preserve">
     <value>影像名稱</value>
@@ -221,28 +184,28 @@
     <value>黑畫面</value>
   </data>
   <data name="指定画面" xml:space="preserve">
-    <value>指定画面</value>
+    <value>指定畫面</value>
   </data>
   <data name="保存原图" xml:space="preserve">
-    <value>保存原图</value>
+    <value>保存原圖</value>
   </data>
   <data name="保存/翻转" xml:space="preserve">
-    <value>保存/翻转</value>
+    <value>保存/翻轉</value>
   </data>
   <data name="自动对焦" xml:space="preserve">
-    <value>自动对焦</value>
+    <value>自動對焦</value>
   </data>
   <data name="自动对焦模板" xml:space="preserve">
-    <value>自动对焦模板</value>
+    <value>自動對焦模板</value>
   </data>
   <data name="自动曝光" xml:space="preserve">
-    <value>自动曝光</value>
+    <value>自動曝光</value>
   </data>
   <data name="自动曝光/ND" xml:space="preserve">
-    <value>自动曝光/ND</value>
+    <value>自動曝光/ND</value>
   </data>
   <data name="自动积分" xml:space="preserve">
-    <value>自动积分</value>
+    <value>自動積分</value>
   </data>
   <data name="POI" xml:space="preserve">
     <value>POI</value>
@@ -251,7 +214,7 @@
     <value>F/P</value>
   </data>
   <data name="POI点名称" xml:space="preserve">
-    <value>POI点名称</value>
+    <value>POI點名稱</value>
   </data>
   <data name="POI保存模板" xml:space="preserve">
     <value>POI保存模板</value>
@@ -263,16 +226,16 @@
     <value>POI算法模板</value>
   </data>
   <data name="POI过滤模板" xml:space="preserve">
-    <value>POI过滤模板</value>
+    <value>POI過濾模板</value>
   </data>
   <data name="POI宽度" xml:space="preserve">
-    <value>POI宽度</value>
+    <value>POI寬度</value>
   </data>
   <data name="POI修正" xml:space="preserve">
     <value>POI修正</value>
   </data>
   <data name="POI类型" xml:space="preserve">
-    <value>POI类型</value>
+    <value>POI類型</value>
   </data>
   <data name="POI模板" xml:space="preserve">
     <value>POI模板</value>
@@ -284,52 +247,52 @@
     <value>POI高度</value>
   </data>
   <data name="POI过滤" xml:space="preserve">
-    <value>POI过滤</value>
+    <value>POI過濾</value>
   </data>
   <data name="POI模板(Re)" xml:space="preserve">
     <value>POI模板-Re</value>
   </data>
   <data name="输出POI模板" xml:space="preserve">
-    <value>输出POI模板</value>
+    <value>輸出POI模板</value>
   </data>
   <data name="关注点算法" xml:space="preserve">
-    <value>关注点算法</value>
+    <value>關注點算法</value>
   </data>
   <data name="关注点分析" xml:space="preserve">
-    <value>关注点分析</value>
+    <value>關注點分析</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
-    <value>关注点布点</value>
+    <value>關注點布點</value>
   </data>
   <data name="关注点布点2" xml:space="preserve">
-    <value>关注点布点2</value>
+    <value>關注點布點2</value>
   </data>
   <data name="关注点修正标定" xml:space="preserve">
-    <value>关注点修正标定</value>
+    <value>關注點修正標定</value>
   </data>
   <data name="关注点分析_SMU" xml:space="preserve">
     <value>關注點分析-IVL</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
-    <value>实时关注点算法</value>
+    <value>實時關注點算法</value>
   </data>
   <data name="AA布点" xml:space="preserve">
-    <value>AA布点</value>
+    <value>AA布點</value>
   </data>
   <data name="MQTT订阅HUB" xml:space="preserve">
-    <value>订阅HUB</value>
+    <value>訂閱HUB</value>
   </data>
   <data name="MQTT发布HUB" xml:space="preserve">
-    <value>发布HUB</value>
+    <value>發佈HUB</value>
   </data>
   <data name="MQTT自定义订阅" xml:space="preserve">
-    <value>自定义订阅</value>
+    <value>自定義訂閱</value>
   </data>
   <data name="MQTT自定义发布" xml:space="preserve">
-    <value>自定义发布</value>
+    <value>自定義發佈</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>主题</value>
+    <value>主題</value>
   </data>
   <data name="MessageText" xml:space="preserve">
     <value>訊息內容</value>
@@ -362,19 +325,19 @@
     <value>電流</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
-    <value>电压(V)/电流(mA)</value>
+    <value>電壓(V)/電流(mA)</value>
   </data>
   <data name="Voltage_V" xml:space="preserve">
-    <value>电压(V)</value>
+    <value>電壓(V)</value>
   </data>
   <data name="Current_I" xml:space="preserve">
-    <value>电流(I)(mA)</value>
+    <value>電流(I)(mA)</value>
   </data>
   <data name="限值" xml:space="preserve">
-    <value>限值(电流/电压)</value>
+    <value>限值(電流/電壓)</value>
   </data>
   <data name="关闭输出" xml:space="preserve">
-    <value>关闭输出</value>
+    <value>關閉輸出</value>
   </data>
   <data name="自定义电压/流" xml:space="preserve">
     <value>自訂電壓/電流</value>
@@ -419,7 +382,7 @@
     <value>KB算法</value>
   </data>
   <data name="KB输出" xml:space="preserve">
-    <value>KB输出</value>
+    <value>KB輸出</value>
   </data>
   <data name="ARVR算法" xml:space="preserve">
     <value>ARVR算法</value>
@@ -437,10 +400,10 @@
     <value>第三方算法2</value>
   </data>
   <data name="合规算法" xml:space="preserve">
-    <value>合规算法</value>
+    <value>合規算法</value>
   </data>
   <data name="十字计算" xml:space="preserve">
-    <value>十字计算</value>
+    <value>十字計算</value>
   </data>
   <data name="ReMapping" xml:space="preserve">
     <value>ReMapping</value>
@@ -449,7 +412,7 @@
     <value>EQE計算</value>
   </data>
   <data name="OLED数据提取" xml:space="preserve">
-    <value>OLED数据提取</value>
+    <value>OLED數據提取</value>
   </data>
   <data name="OLED数据提取2" xml:space="preserve">
     <value>OLED資料擷取2</value>
@@ -458,31 +421,31 @@
     <value>OLED影像4In1合併</value>
   </data>
   <data name="发光区定位" xml:space="preserve">
-    <value>发光区定位</value>
+    <value>發光區定位</value>
   </data>
   <data name="发光区检测" xml:space="preserve">
-    <value>发光区检测</value>
+    <value>發光區檢測</value>
   </data>
   <data name="发光区检测OLED" xml:space="preserve">
-    <value>发光区检测-OLED</value>
+    <value>發光區檢測-OLED</value>
   </data>
   <data name="灰尘检测及修补" xml:space="preserve">
     <value>OLED灰塵檢測及修補</value>
   </data>
   <data name="灯珠检测" xml:space="preserve">
-    <value>灯珠检测</value>
+    <value>燈珠檢測</value>
   </data>
   <data name="灯带检测" xml:space="preserve">
-    <value>灯带检测</value>
+    <value>燈帶檢測</value>
   </data>
   <data name="Spectrometer" xml:space="preserve">
-    <value>光谱仪</value>
+    <value>光譜儀</value>
   </data>
   <data name="光谱仪" xml:space="preserve">
-    <value>光谱仪</value>
+    <value>光譜儀</value>
   </data>
   <data name="Spectrum_FilterWheel" xml:space="preserve">
-    <value>光谱仪+ND</value>
+    <value>光譜儀+ND</value>
   </data>
   <data name="EQE" xml:space="preserve">
     <value>光譜&amp;EQE</value>
@@ -497,13 +460,13 @@
     <value>保存CIE檔案</value>
   </data>
   <data name="色温/波长" xml:space="preserve">
-    <value>色温/波长</value>
+    <value>色溫/波長</value>
   </data>
   <data name="积分时间" xml:space="preserve">
-    <value>积分时间</value>
+    <value>積分時間</value>
   </data>
   <data name="启用ND" xml:space="preserve">
-    <value>启用ND</value>
+    <value>啟用ND</value>
   </data>
   <data name="滤色轮" xml:space="preserve">
     <value>濾色輪</value>
@@ -512,10 +475,10 @@
     <value>濾色輪</value>
   </data>
   <data name="自动校零" xml:space="preserve">
-    <value>自动校零</value>
+    <value>自動校零</value>
   </data>
   <data name="自适应校零" xml:space="preserve">
-    <value>自适应校零</value>
+    <value>自適應校零</value>
   </data>
   <data name="校零" xml:space="preserve">
     <value>校零</value>
@@ -533,13 +496,13 @@
     <value>通用感測器-模板</value>
   </data>
   <data name="点缺陷" xml:space="preserve">
-    <value>点缺陷</value>
+    <value>點缺陷</value>
   </data>
   <data name="点缺陷_Grade" xml:space="preserve">
     <value>點缺陷Grade</value>
   </data>
   <data name="线缺陷" xml:space="preserve">
-    <value>线缺陷</value>
+    <value>線缺陷</value>
   </data>
   <data name="鬼影" xml:space="preserve">
     <value>鬼影</value>
@@ -551,7 +514,7 @@
     <value>JND</value>
   </data>
   <data name="畸变" xml:space="preserve">
-    <value>畸变</value>
+    <value>畸變</value>
   </data>
   <data name="校正" xml:space="preserve">
     <value>校正</value>
@@ -572,7 +535,7 @@
     <value>修正係數</value>
   </data>
   <data name="修正输出" xml:space="preserve">
-    <value>修正输出</value>
+    <value>修正輸出</value>
   </data>
   <data name="色差校正" xml:space="preserve">
     <value>色差校正</value>
@@ -581,16 +544,16 @@
     <value>二次修正文件</value>
   </data>
   <data name="布点ROI" xml:space="preserve">
-    <value>布点ROI</value>
+    <value>布點ROI</value>
   </data>
   <data name="布点类型" xml:space="preserve">
-    <value>布点类型</value>
+    <value>布點類型</value>
   </data>
   <data name="定位模板" xml:space="preserve">
     <value>定位模板</value>
   </data>
   <data name="定位输出" xml:space="preserve">
-    <value>定位输出</value>
+    <value>定位輸出</value>
   </data>
   <data name="Locate" xml:space="preserve">
     <value>定位</value>
@@ -602,7 +565,7 @@
     <value>曝光(ms)</value>
   </data>
   <data name="曝光时间" xml:space="preserve">
-    <value>曝光时间(ms)</value>
+    <value>曝光時間(ms)</value>
   </data>
   <data name="曝光模板" xml:space="preserve">
     <value>曝光模板</value>
@@ -617,13 +580,13 @@
     <value>G 曝光(ms)</value>
   </data>
   <data name="RExpDesc" xml:space="preserve">
-    <value>R 通道曝光时间(ms)</value>
+    <value>R 通道曝光時間(ms)</value>
   </data>
   <data name="BExpDesc" xml:space="preserve">
-    <value>B 通道曝光时间(ms)</value>
+    <value>B 通道曝光時間(ms)</value>
   </data>
   <data name="GExpDesc" xml:space="preserve">
-    <value>G 通道曝光时间(ms)</value>
+    <value>G 通道曝光時間(ms)</value>
   </data>
   <data name="Bit8" xml:space="preserve">
     <value>Bit8</value>
@@ -638,16 +601,16 @@
     <value>TIF</value>
   </data>
   <data name="颜色" xml:space="preserve">
-    <value>颜色</value>
+    <value>顏色</value>
   </data>
   <data name="RED" xml:space="preserve">
-    <value>红</value>
+    <value>紅</value>
   </data>
   <data name="GREEN" xml:space="preserve">
-    <value>绿</value>
+    <value>綠</value>
   </data>
   <data name="BLUE" xml:space="preserve">
-    <value>蓝</value>
+    <value>藍</value>
   </data>
   <data name="通道" xml:space="preserve">
     <value>頻道</value>
@@ -671,31 +634,31 @@
     <value>B</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>圆</value>
+    <value>圓</value>
   </data>
   <data name="Rect" xml:space="preserve">
     <value>矩形</value>
   </data>
   <data name="SolidPoint" xml:space="preserve">
-    <value>实点</value>
+    <value>實點</value>
   </data>
   <data name="SolidPoint_KB" xml:space="preserve">
-    <value>实点-KB</value>
+    <value>實點-KB</value>
   </data>
   <data name="点类型" xml:space="preserve">
-    <value>点类型</value>
+    <value>點類型</value>
   </data>
   <data name="点数" xml:space="preserve">
-    <value>点数</value>
+    <value>點數</value>
   </data>
   <data name="固定点" xml:space="preserve">
-    <value>固定点</value>
+    <value>固定點</value>
   </data>
   <data name="亚像素" xml:space="preserve">
-    <value>亚像素</value>
+    <value>亞像素</value>
   </data>
   <data name="角点顺序" xml:space="preserve">
-    <value>角点顺序</value>
+    <value>角點順序</value>
   </data>
   <data name="FOV" xml:space="preserve">
     <value>FOV</value>
@@ -707,7 +670,7 @@
     <value>下</value>
   </data>
   <data name="绝对位置" xml:space="preserve">
-    <value>绝对位置</value>
+    <value>絕對位置</value>
   </data>
   <data name="位置" xml:space="preserve">
     <value>位置</value>
@@ -734,25 +697,25 @@
     <value>擷取模板</value>
   </data>
   <data name="参数模板" xml:space="preserve">
-    <value>参数模板</value>
+    <value>參數模板</value>
   </data>
   <data name="过滤模板" xml:space="preserve">
-    <value>过滤模板</value>
+    <value>過濾模板</value>
   </data>
   <data name="输出模板" xml:space="preserve">
-    <value>输出模板</value>
+    <value>輸出模板</value>
   </data>
   <data name="文件输出模板" xml:space="preserve">
-    <value>文件输出模板</value>
+    <value>文件輸出模板</value>
   </data>
   <data name="输出" xml:space="preserve">
-    <value>输出</value>
+    <value>輸出</value>
   </data>
   <data name="输出类别" xml:space="preserve">
-    <value>输出类别</value>
+    <value>輸出類別</value>
   </data>
   <data name="输出文件" xml:space="preserve">
-    <value>输出文件</value>
+    <value>輸出文件</value>
   </data>
   <data name="OutFile" xml:space="preserve">
     <value>OutFile</value>
@@ -767,7 +730,7 @@
     <value>文件</value>
   </data>
   <data name="Data" xml:space="preserve">
-    <value>数据</value>
+    <value>數據</value>
   </data>
   <data name="CAD文件" xml:space="preserve">
     <value>CAD文件</value>
@@ -776,13 +739,13 @@
     <value>CADMapping</value>
   </data>
   <data name="电机[相机]" xml:space="preserve">
-    <value>电机[相机]</value>
+    <value>電機[相機]</value>
   </data>
   <data name="Extract" xml:space="preserve">
     <value>提取</value>
   </data>
   <data name="Scan" xml:space="preserve">
-    <value>扫描</value>
+    <value>掃描</value>
   </data>
   <data name="增益" xml:space="preserve">
     <value>增益</value>
@@ -794,10 +757,10 @@
     <value>焦距</value>
   </data>
   <data name="平均次数" xml:space="preserve">
-    <value>平均次数</value>
+    <value>平均次數</value>
   </data>
   <data name="名称前缀" xml:space="preserve">
-    <value>名称前缀</value>
+    <value>名稱前綴</value>
   </data>
   <data name="z-index" xml:space="preserve">
     <value>z-索引</value>
@@ -815,7 +778,7 @@
     <value>Ascii</value>
   </data>
   <data name="Db" xml:space="preserve">
-    <value>数据库</value>
+    <value>數據庫</value>
   </data>
   <data name="PG" xml:space="preserve">
     <value>PG</value>
@@ -833,31 +796,31 @@
     <value>Mem</value>
   </data>
   <data name="双目融合" xml:space="preserve">
-    <value>双目融合</value>
+    <value>雙目融合</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
-    <value>逻辑与</value>
+    <value>邏輯與</value>
   </data>
   <data name="类型" xml:space="preserve">
     <value>類型</value>
   </data>
   <data name="类别" xml:space="preserve">
-    <value>类别</value>
+    <value>類別</value>
   </data>
   <data name="节点类型" xml:space="preserve">
-    <value>设备类型</value>
+    <value>設備類型</value>
   </data>
   <data name="设备类型" xml:space="preserve">
-    <value>设备类型</value>
+    <value>設備類型</value>
   </data>
   <data name="设备代码" xml:space="preserve">
-    <value>设备代码</value>
+    <value>設備代碼</value>
   </data>
   <data name="节点ID" xml:space="preserve">
-    <value>节点ID</value>
+    <value>節點ID</value>
   </data>
   <data name="指令类型" xml:space="preserve">
-    <value>指令类型</value>
+    <value>指令類型</value>
   </data>
   <data name="指令延时" xml:space="preserve">
     <value>指令延遲</value>
@@ -869,7 +832,7 @@
     <value>指令重試</value>
   </data>
   <data name="发送指令" xml:space="preserve">
-    <value>发送指令</value>
+    <value>發送指令</value>
   </data>
   <data name="接收指令" xml:space="preserve">
     <value>接收指令</value>
@@ -887,34 +850,73 @@
     <value>是否新增</value>
   </data>
   <data name="手动确认" xml:space="preserve">
-    <value>手动确认</value>
+    <value>手動確認</value>
   </data>
   <data name="最大超时" xml:space="preserve">
-    <value>最大超时</value>
+    <value>最大超時</value>
   </data>
   <data name="服务名称" xml:space="preserve">
-    <value>服务名称</value>
+    <value>服務名稱</value>
   </data>
   <data name="缓存大小" xml:space="preserve">
-    <value>缓存大小</value>
+    <value>緩存大小</value>
   </data>
   <data name="起始值" xml:space="preserve">
     <value>起始值</value>
   </data>
   <data name="结束值" xml:space="preserve">
-    <value>结束值</value>
+    <value>結束值</value>
   </data>
   <data name="单步值" xml:space="preserve">
-    <value>单步值</value>
+    <value>單步值</value>
+  </data>
+  <data name="循环名称" xml:space="preserve">
+    <value>迴圈名稱</value>
+  </data>
+  <data name="循环名称说明" xml:space="preserve">
+    <value>必須與對應的「迴圈下一節點」完全一致，用於配對同一個迴圈。</value>
+  </data>
+  <data name="循环起始值说明" xml:space="preserve">
+    <value>第一輪迴圈使用的數值。</value>
+  </data>
+  <data name="循环结束值说明" xml:space="preserve">
+    <value>遞增迴圈的結束判斷值；下一步將超過該值時結束迴圈。</value>
+  </data>
+  <data name="循环步长说明" xml:space="preserve">
+    <value>每輪增加的數值，必須大於 0；目前不支援倒序迴圈。</value>
+  </data>
+  <data name="循环节点说明" xml:space="preserve">
+    <value>依起始值、結束值和單步值重複執行一段流程。</value>
+  </data>
+  <data name="循环节点用法" xml:space="preserve">
+    <value>1. 為「迴圈節點」和對應的「迴圈下一節點」填寫完全相同的迴圈名稱。&#xA;2. 設定起始值、結束值和單步值。&#xA;3. 將迴圈節點的 OUT 連接到迴圈主體入口；迴圈主體末端連接到迴圈下一節點；再將 OUT_LP_NEXT 接回迴圈節點的 IN_LP_NEXT。&#xA;4. 迴圈下一節點的 OUT 連接迴圈結束後繼續執行的節點。</value>
+  </data>
+  <data name="循环节点处理顺序" xml:space="preserve">
+    <value>迴圈節點建立目前輪次狀態並從 OUT 執行迴圈主體；迴圈下一節點讀取同名狀態，有下一輪時從 OUT_LP_NEXT 返回迴圈節點，否則從 OUT 繼續後續流程。</value>
+  </data>
+  <data name="循环节点注意事项" xml:space="preserve">
+    <value>同一執行路徑中的不同迴圈應使用不同名稱。單步值必須大於 0，否則迴圈可能無法結束。</value>
+  </data>
+  <data name="循环下一节点说明" xml:space="preserve">
+    <value>標記迴圈主體的末端，並決定返回下一輪或離開迴圈。</value>
+  </data>
+  <data name="循环下一节点用法" xml:space="preserve">
+    <value>迴圈名稱必須與對應的迴圈節點完全一致。將迴圈主體末端接入 IN，將 OUT_LP_NEXT 接回迴圈節點的 IN_LP_NEXT，並將 OUT 接到迴圈結束後的流程。</value>
+  </data>
+  <data name="循环下一节点处理顺序" xml:space="preserve">
+    <value>讀取同名迴圈狀態；仍有下一輪時從 OUT_LP_NEXT 返回，沒有下一輪時從 OUT 繼續。</value>
+  </data>
+  <data name="循环下一节点注意事项" xml:space="preserve">
+    <value>迴圈名稱不一致時無法找到對應狀態，流程不會形成正確的迴圈路徑。</value>
   </data>
   <data name="当前值" xml:space="preserve">
-    <value>当前值</value>
+    <value>當前值</value>
   </data>
   <data name="源值" xml:space="preserve">
     <value>源值</value>
   </data>
   <data name="自动/自适应" xml:space="preserve">
-    <value>自动/自适应</value>
+    <value>自動/自適應</value>
   </data>
   <data name="Port" xml:space="preserve">
     <value>端口</value>

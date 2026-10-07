@@ -13,6 +13,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public TemplateSelectionDialog(ObservableCollection<TemplateModel<FlowParam>> templates)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             TemplateList.ItemsSource = templates;
             if (templates.Count > 0)
                 TemplateList.SelectedIndex = 0;

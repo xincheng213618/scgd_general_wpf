@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using ST.Library.UI;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -35,6 +34,12 @@ public class STNodeAttribute : Attribute
 	public string Description => _Description;
 
 	public string DisplayDescription => Lang.GetOrDefault(_Description);
+
+	/// <summary>
+	/// Sort order of the first category declared by <see cref="Path"/>.
+	/// Categories without an explicit order are sorted by their localized names.
+	/// </summary>
+	public int CategoryOrder { get; set; } = int.MaxValue;
 
 	public STNodeAttribute(string strPath)
 		: this(strPath, null, null, null, null)

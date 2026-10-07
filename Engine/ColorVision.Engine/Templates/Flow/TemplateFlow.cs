@@ -1,4 +1,6 @@
-﻿#pragma warning disable CA1822,CA1863
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Engine.Templates.Browser;
+#pragma warning disable CA1822,CA1863
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.FlowProcessing.Compilation;
@@ -18,6 +20,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -28,16 +31,17 @@ namespace ColorVision.Engine.Templates.Flow
         public override string Header => Properties.Resources.MenuFlow;
         public override void Execute()
         {
-            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new FlowTemplateManagerWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 
-    public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
+    public class TemplateFlow : ITemplate<FlowParam>, IAsyncTemplateLoad
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
 
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
+        public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
         private readonly LocalFlowTemplateStorage localStorage;
         private readonly Func<bool> isMySqlConnected;
@@ -46,6 +50,8 @@ namespace ColorVision.Engine.Templates.Flow
         private bool UseLocalStorage => localReadMode || !isMySqlConnected();
 
         public TemplateFlow() : this(LocalFlowTemplateStorage.Default) { }
+
+        public override Window CreateManagerWindow(int selectedIndex = 0) => new FlowTemplateManagerWindow(this, selectedIndex);
 
         public TemplateFlow(LocalFlowTemplateStorage localStorage, Func<bool>? isMySqlConnected = null, Func<SqlSugarClient>? openMySql = null)
         {
@@ -60,6 +66,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void PreviewMouseDoubleClick(int index)
         {
+            if (index < 0 || index >= TemplateParams.Count) return;
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
         public override bool ExitsTemplateName(string templateName)
@@ -67,7 +74,17 @@ namespace ColorVision.Engine.Templates.Flow
             return Params.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public override void Load()
+        public override void Load() => ApplyValues(ReadValues());
+
+        public async Task LoadAsync()
+        {
+            // Only detached parameters and storage reads run on the worker. Collection
+            // publication, bindings and template registration stay on the UI thread.
+            IReadOnlyList<FlowParam> values = await Task.Run(ReadValues).ConfigureAwait(false);
+            await Application.Current.Dispatcher.InvokeAsync(() => ApplyValues(values));
+        }
+
+        private IReadOnlyList<FlowParam> ReadValues()
         {
             IReadOnlyList<FlowParam> values;
             localReadMode = !isMySqlConnected();
@@ -83,22 +100,30 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else values = localStorage.Load();
 
+            foreach (FlowParam value in values)
+                TryAttachCatalogRevision(value);
+            return values;
+        }
+
+        private void ApplyValues(IReadOnlyList<FlowParam> values)
+        {
             var ids = values.Select(value => value.Id).ToHashSet();
             foreach (var removed in TemplateParams.Where(item => !ids.Contains(item.Id)).ToList()) TemplateParams.Remove(removed);
             for (int index = 0; index < values.Count; index++)
             {
                 FlowParam value = values[index];
-                TryAttachCatalogRevision(value);
                 var existing = TemplateParams.FirstOrDefault(item => item.Id == value.Id);
                 if (existing == null) TemplateParams.Insert(index, new TemplateModel<FlowParam>(value.Name, value));
                 else
                 {
                     existing.Value = value;
                     existing.Key = value.Name;
-                    TemplateParams.Move(TemplateParams.IndexOf(existing), index);
+                    int oldIndex = TemplateParams.IndexOf(existing);
+                    // WPF clears ComboBox selection when the selected item is moved to its own index.
+                    if (oldIndex != index) TemplateParams.Move(oldIndex, index);
                 }
             }
-            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? " · 本地" : " · MySQL");
+            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 
@@ -663,21 +688,6 @@ namespace ColorVision.Engine.Templates.Flow
         public override object CreateDefault() => UseLocalStorage
             ? CreateTemp = new FlowParam { Id = -1 }
             : base.CreateDefault();
-
-        public override bool SwapTemplateOrder(int index1, int index2)
-        {
-            if (index1 < 0 || index1 >= Count || index2 < 0 || index2 >= Count) return false;
-            var first = TemplateParams[index1];
-            var second = TemplateParams[index2];
-            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) && !LocalFlowTemplateStorage.IsLocalId(second.Id))
-                return base.SwapTemplateOrder(index1, index2);
-            if (!LocalFlowTemplateStorage.IsLocalId(first.Id) || !LocalFlowTemplateStorage.IsLocalId(second.Id)) return false;
-            if (index1 == index2) return true;
-            (first.Value.LocalStorage ?? localStorage).SwapOrder(first.Id, second.Id);
-            TemplateParams[index1] = second;
-            TemplateParams[index2] = first;
-            return true;
-        }
 
         private static void TryRecordCatalogRevision(FlowParam flowParam)
         {

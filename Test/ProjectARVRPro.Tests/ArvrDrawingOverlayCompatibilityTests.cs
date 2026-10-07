@@ -1,6 +1,7 @@
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process;
@@ -13,7 +14,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 
@@ -229,6 +229,65 @@ public sealed class ArvrDrawingOverlayCompatibilityTests
             Assert.Equal(200, geometry.RadiusY);
             AssertShapeStyle(shape, Colors.Red, 0.8);
             Assert.True(drawings.OfType<GlyphRunDrawing>().Count() >= 2);
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DistortionGridIsAppendedAfterSavedPointMarkersAndCanBeDisabled(bool dynamic)
+    {
+        RunOnStaThread(() =>
+        {
+            List<Point> points =
+            [
+                new(100, 100), new(600, 90), new(1100, 100),
+                new(90, 600), new(600, 600), new(1110, 600),
+                new(100, 1100), new(600, 1110), new(1100, 1100)
+            ];
+            var saved = new DistortionViewTestResult { Points = points };
+            using ImageView imageView = new();
+            imageView.Config.IsLayoutUpdated = false;
+            var context = new IProcessExecutionContext
+            {
+                ImageView = imageView,
+                Result = new ProjectARVRReuslt
+                {
+                    ViewResultJson = JsonConvert.SerializeObject(dynamic
+                        ? (object)new DistortionDynamicViewTestResult { DistortionViewTestResult = saved }
+                        : saved)
+                }
+            };
+
+            if (dynamic) new DistortionDynamicProcess().Render(context);
+            else new DistortionProcess().Render(context);
+
+            var visuals = imageView.ImageShow.Visuals.OfType<DrawingVisualBase>().ToList();
+            Assert.Equal(points, visuals.Take(9).Cast<DVCircleText>().Select(circle => circle.Center));
+            Assert.All(visuals.Take(9).Cast<DVCircleText>(), circle => Assert.Equal(200, circle.Radius));
+            Assert.All(visuals.Skip(9), visual => Assert.IsType<DVLine>(visual));
+            var lines = visuals.OfType<DVLine>().ToList();
+            Assert.Equal(12, lines.Count(line => line.Pen.Brush == Brushes.DeepSkyBlue));
+            Assert.Equal(4, lines.Count(line => line.Pen.Brush == Brushes.OrangeRed));
+            Assert.All(lines, line => Assert.Equal(AlgorithmResultOverlay.GridDistortionTag, line.BaseAttribute.Tag));
+            Assert.Equal(new[] { points[0], points[2] }, lines[^4].Points);
+            var originalMarkers = visuals.Take(9).ToArray();
+
+            if (dynamic)
+            {
+                var process = new DistortionDynamicProcess();
+                process.Config.DrawGridOverlay = false;
+                process.Render(context);
+            }
+            else
+            {
+                var process = new DistortionProcess();
+                process.Config.DrawGridOverlay = false;
+                process.Render(context);
+            }
+
+            Assert.Empty(imageView.ImageShow.Visuals.OfType<DVLine>());
+            Assert.All(originalMarkers, marker => Assert.Contains(marker, imageView.ImageShow.Visuals));
         });
     }
 

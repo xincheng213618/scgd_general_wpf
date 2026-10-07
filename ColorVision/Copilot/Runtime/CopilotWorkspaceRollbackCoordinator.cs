@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
@@ -171,7 +172,7 @@ namespace ColorVision.Copilot
                     RequestSource = CallerIdentity,
                     ConversationId = agentRequest.ConversationId,
                     TaskId = agentRequest.TaskId,
-                    TaskLabel = "撤销 Copilot 工作区修改",
+                    TaskLabel = LocalizedText.Get("撤销 Copilot 工作区修改"),
                     WorkspacePath = workspacePath,
                     ImpactSummary = presentation.ImpactSummary,
                     Reversibility = presentation.Reversibility,

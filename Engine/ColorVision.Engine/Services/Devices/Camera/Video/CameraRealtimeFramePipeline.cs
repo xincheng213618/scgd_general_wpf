@@ -5,7 +5,6 @@ using ColorVision.ImageEditor.Settings;
 using System;
 using System.ComponentModel;
 using System.Threading;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
@@ -67,7 +66,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return;
             }
 
-            if (_isRunning) Stop();
+            if (_isRunning) Stop(resetRealtime: true);
+            // A camera stream owns new pixels, not the previous file's path, layers or measurements.
+            // Clearing the file identity also rejects a CVRAW load that is still finishing in the background.
+            imageView.ReleaseImageContent();
+            imageView.IEditorToolFactory.ApplyImageOpenTools(null);
+            imageView.SetLayerController(null);
+            imageView.Config.ClearProperties();
+            imageView.Realtime.Reset();
             Interlocked.Increment(ref _generation);
             _imageView = imageView;
             Transform = transform;

@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。"
 aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径"]
-code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"]
 related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
 ---
 
@@ -18,10 +18,10 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 | 对象 / 源码入口 | 负责的状态 |
 | --- | --- |
 | `ConfigPhyCamera` | 物理型号、模式、通道/位深、CFW、电机、曝光/增益默认值与范围；`CameraCfg` 另含传感器 ROI、温控等物理参数 |
-| `ConfigCamera` | 逻辑服务的 `CameraCode` / `CameraID`、采集模式、通道/位深、自动曝光开关与范围、ND/CFW、电机/对焦、文件缓存和保存选项 |
-| `DisplayCameraConfig`（`DisplayCamera.xaml.cs`） | 按逻辑设备 `Config.Code` 获取；手动采集的曝光、增益、平均次数、翻转和模板选择，以及本地视频 ROI/显示偏好；饱和度字段也在这里，不在 `ConfigCamera` |
+| `ConfigCamera` | 逻辑服务的 `CameraCode` / `CameraID`、采集模式、通道/位深、自动曝光开关与范围、ND/CFW 和电机/对焦 |
+| `DisplayCameraConfig`（`DisplayCamera.xaml.cs`） | 按逻辑设备 `Config.Code` 获取；手动采集的曝光、增益、平均次数、翻转、模板选择和“本地取图保存文件”，以及本地视频 ROI/显示偏好；饱和度字段也在这里，不在 `ConfigCamera` |
 | `CameraRunParam` | 参数模板里的曝光、增益、平均次数、焦点/光圈等；不是显示参数的别名 |
-| `LocalCameraNode` | 用节点自身的 `ExpTime`、`Gain`、`AvgCount` 构造 `CameraRunParam`；不自动沿用手动面板曝光 |
+| `LocalCameraNode` | 用节点自身的 `ExpTime`、`Gain`、`AvgCount` 构造 `CameraRunParam`；右键新建时从相机显示参数取一次初值，此后仍使用节点自身保存的值 |
 | `DeviceCamera.RealtimeCameraConfig` | 返回共享的 `DefaultRealtimeCameraConfig.Current`；不是每台相机独立克隆的配置 |
 
 ## 编辑入口与物理配置同步
@@ -55,13 +55,15 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 `CameraRunParam.SetAllExposure(value)` 同时写四个曝光字段；`LocalCameraNode.BuildCameraParameters()` 用它构造节点参数，并拒绝非有限/非正曝光、非有限/负增益以及小于 1 的平均次数。这是该节点的检查，不能扩展成所有配置入口都有同样数值校验。改参数模板、显示面板和节点字段是三件不同的事。
 
+流程编辑器右键新建 L/BV、CV、本地“相机取图”和三个直接填写参数的 AOI 相机节点时，会从节点对应逻辑相机的当前显示配置读取一次曝光、翻转、平均次数、增益和所选校正模板。CV 节点保留 R/G/B 三路曝光；其余节点使用单路 `ExpTime`。若校正模板绑定的校正组指定增益，以组增益作为初值。节点设备代码还是默认占位值且找不到同名相机时，使用首个可用的逻辑相机并写入其设备代码；没有可用相机或源参数无效时保留节点原有默认值。已保存流程的加载、复制、导入、拖拽及 Copilot 加节点不执行这次同步；创建后更改手动面板也不会回写已有节点。通用/模板型相机和循环取图节点继续按自身的模板或循环参数运行。
+
 ## 两种 ROI 与物理保存约束
 
 物理 ROI 是 `ConfigPhyCamera.CameraCfg` 的 `PointX / PointY / Width / Height`（经 `PhyCameraCfg.ROI` 编辑）；`DisplayCameraConfig.LocalVideoRoi` 则用于实时分析/画面 ROI，由 `ApplyLocalVideoRoiToRealtimeConfig` 传给实时配置，不等于修改传感器采集 ROI。
 
-`EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐，失败则停留在配置窗口。此检查不包含所有型号/坐标合法性，也不应宣称每个保存入口都执行了它。
+`EditConfigPhyCamera` 使用配置克隆和独立的 CFW 编辑副本。确认时，对 `HK_USB / HK_CARD / HK_FG_CARD` 检查物理 ROI 宽高是否按 `PhyCameraCfg.HkRoiAlignment`（32）对齐。未对齐时显示当前值和未对齐项，询问是否继续保存，默认选择“否”；选择“是”按原值继续保存，选择“否”或关闭提示则停留在配置窗口。此提示不强制调整 ROI，也不包含所有型号/坐标合法性检查，不应宣称每个保存入口都执行了它。
 
-物理窗口按相机模式约束可选通道；切换模式可能同时改 `CFW.IsUseCFW`。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。
+创建与编辑物理配置的 `PhyCameraConfigEditor` 按相同规则约束可选通道：BV 可选单通道或三通道，CV 固定三通道，LV 固定单通道并隐藏通道选择。切换到 CV 模式启用 `CFW.IsUseCFW` 并选中 CFW 分类，切换到其他模式关闭该开关并返回可用分类；初次载入保留原有 CFW 开关。`PhyCamera.SaveConfig()` 保存前还会规范化 CFW：不启用时清空 `ChannelCfgs` 并关闭 `IsCOM`；绑定独立 ND 设备时清空串口名，否则清空 ND 绑定代码。这些不是只影响显示的开关。
 
 ## 改数据路径与保存的副作用
 
@@ -75,4 +77,4 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 参数不一致时，按“当前入口 → 逻辑设备与物理绑定 → 本次读取的配置对象 → `ApplyTo`/回调覆盖 → 实际请求参数”核对；物理导入可能重置配置的独立风险见[物理相机管理](./camera-management.md)。
 
-`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认保留本地 `CameraID`、同步型号/位深及显式复制 ID；`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段。它们不覆盖保存事件整链、数据库/服务重启、路径移动或硬件参数生效；这些路径需专门测试与授权环境验收，测试文件存在不代表已运行。
+`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认保留本地 `CameraID`、同步型号/位深及显式复制 ID；`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段；`CameraNodeCreationDefaultsTests` 覆盖右键新建初始化所用的参数映射与校正组增益。这些测试不覆盖右键界面操作、保存事件整链、数据库/服务重启、路径移动或硬件参数生效；后者需专门测试与授权环境验收，测试文件存在不代表已运行。

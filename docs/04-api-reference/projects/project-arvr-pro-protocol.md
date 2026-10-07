@@ -2,10 +2,10 @@
 knowledge_id: "projects.arvr-pro-protocol"
 knowledge_type: "reference"
 status: "current"
-summary: "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。"
-aliases: ["ARVR TCP 协议","ARVRPRO TCP 通讯协议手册","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","GetProcessEnable","SetProcessEnable","ARVRTestType","Partial applied","No enabled ARVR flow","ARVR test is busy","ProjectARVRResult","AoiSwitchPG","AOITestSwitchImageComplete","SocketRelay","UseLegacyARVROutput","SNlocked"]
-code_paths: ["Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs","Projects/ProjectARVRPro/SocketRelay/","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","Projects/ProjectARVRPro/ObjectiveTestResult.cs","Projects/ProjectARVRPro/LegacyARVR/","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
-test_paths: []
+summary: "ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。"
+aliases: ["ARVR TCP 协议","ARVRPRO TCP 通讯协议手册","ProjectARVRInit","SwitchPG","SwitchPGCompleted","SwitchGroup","RunAll","GetProcessEnable","SetProcessEnable","ARVRTestType","Partial applied","No enabled ARVR flow","ARVR test is busy","ProjectARVRResult","AoiSwitchPG","AOITestSwitchImageComplete","外部切图","ExternalImageSwitchNode","UseLegacyARVROutput","SNlocked"]
+code_paths: ["Projects/ProjectARVRPro/Services/SocketControl.cs","Projects/ProjectARVRPro/Services/RunAllSocket.cs","Projects/ProjectARVRPro/Services/SwitchGroupSocket.cs","Projects/ProjectARVRPro/Services/ProcessEnableSocket.cs","Projects/ProjectARVRPro/Flow/ExternalImageSwitchNode.cs","Projects/ProjectARVRPro/Services/ExternalImageSwitchService.cs","Projects/ProjectARVRPro/Services/AOITestSwitchImageCompleteHandler.cs","Projects/ProjectARVRPro/ARVRWindow.xaml.cs","Projects/ProjectARVRPro/ProjectARVRProConfig.cs","Projects/ProjectARVRPro/ObjectiveTestResult.cs","Projects/ProjectARVRPro/LegacyARVR/","UI/ColorVision.SocketProtocol/SocketManager.cs","UI/ColorVision.SocketProtocol/SocketJsonDispatcher.cs","UI/ColorVision.SocketProtocol/SocketConfig.cs"]
+test_paths: ["Test/ProjectARVRPro.Tests/ExternalImageSwitchTests.cs"]
 related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-demo","ui.socket-protocol"]
 ---
 
@@ -43,7 +43,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 | 字段 | 请求与响应约定 |
 | --- | --- |
 | `EventName` | 请求必填，按大小写精确匹配 handler；响应可能换成下一动作，例如初始化返回 `SwitchPG` |
-| `MsgID` | 客户端可提供请求标识；直接响应通常回显，异步推送使用空字符串。它不是服务端去重键 |
+| `MsgID` | 客户端可提供请求标识；直接响应通常回显，普通切图和最终结果推送使用空字符串，外部切图节点生成唯一请求 ID。它不是所有服务端事件的统一去重键 |
 | `Version` | 客户端建议填 `1.0`；当前未做版本协商/校验，部分直接响应未赋值而返回 `null`，主动推送一般为 `1.0` |
 | `SerialNumber` | 初始化或 RunAll 建立产品 SN；后续确认不负责切换 SN。最终报文携带当前 SN，客户端需核对归属 |
 | `Params` | 字符串或 `null`。需要对象参数时，将 JSON 序列化后放入这个字符串，不能直接传嵌套对象 |
@@ -59,7 +59,7 @@ related: ["projects.arvr-pro","projects.arvr-pro-processes","projects.arvr-pro-d
 | 外部逐步切图 | `ProjectARVRInit` → `SwitchPG` → 外部切图 → `SwitchPGCompleted`；重复到 `ProjectARVRResult` | 外部控制程序掌握每一步普通 PG 画面切换 |
 | 一键运行 | `RunAll` → 开始确认 → 等待 `ProjectARVRResult` | 活动组及每步内部切图、设备和预处理已配置好 |
 
-RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行过程中也不等待普通 `SwitchPGCompleted`。AOI Flow 内部的切图中转可以出现在任一种方式中，见[AOI 切图](#aoi-切图)。
+RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行过程中也不等待普通 `SwitchPGCompleted`。AOI Flow 内部的外部切图节点可以出现在任一种方式中，见[AOI 切图](#aoi-切图)。
 
 ### 初始化：ProjectARVRInit
 
@@ -77,7 +77,7 @@ RunAll 自行初始化本轮会话，不需要先发 `ProjectARVRInit`，执行�
 
 `ARVRTestType` 是活动组中步骤的**外部索引**，不保证从 0 开始，也不是固定测试类型枚举。首条启用步骤可能位于组中间；Legacy 输出还会使索引加 1，具体见[查询与设置启用状态](#查询与设置启用状态)。
 
-没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。初始化接口没有 RunAll 的忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
+没有启用步骤时，返回 `EventName=ProjectARVRInit`、`Code=-2`、`Msg="No enabled ARVR flow"`，不执行本轮初始化。结果输出等待后台空间清理或保存报表期间，初始化返回 `Code=-4`、`Msg="ARVR test is busy"`，保留原会话。其它执行阶段的初始化接口仍没有 RunAll 的完整忙检查；客户端必须在上一轮结束后才调用，不能用重复初始化探测设备是否忙。
 
 ### 普通切图：SwitchPG 与 SwitchPGCompleted
 
@@ -196,24 +196,40 @@ RunAll 启动时取当前启用步骤列表，依次运行。`AllowTestFailures`
 
 ## AOI 切图
 
-AOI 使用独立的 Relay 服务，默认 `127.0.0.1:9200`，`AutoStart=false`。启用并确认 Flow 已连接后，交互为：
+AOI 使用本地 Flow 的「外部切图」节点（右键添加节点 → ProjectARVRPro → 外部切图），复用已经由 `ProjectARVRInit` / `RunAll` 等建立的项目控制连接。无需另建 TCP 监听或传感器连接；外部程序仍须连接主 Socket。
 
 ```text
-Flow -- "1" --> Relay -- AoiSwitchPG --> 外部控制程序
-Flow <-- "1" -- Relay <-- AOITestSwitchImageComplete -- 外部控制程序
+外部切图节点 -- AoiSwitchPG --> 外部控制程序
+外部切图节点 <-- AOITestSwitchImageComplete -- 外部控制程序
 ```
 
-Flow 发来的文本**恰好为 `"1"`** 时，Relay 转为 `EventName=AoiSwitchPG`、`Code=0`、`Msg="AoiSwitchPG"` 的 JSON 推送，`MsgID` 为空，SN 和 Data 未赋值。其他 Flow 文本按原内容转发，并非全部规范化成 `AoiSwitchPG`；因此也不能假设 Relay 发到外部的内容总是 JSON。
-
-客户端完成对应画面切换后发送：
+节点发送以下报文，其中每次请求的 `MsgID` 都不同，`SerialNumber` 是当前产品 SN，而不是 Flow 内部的测量批次编号：
 
 ```json
-{ "Version": "1.0", "MsgID": "req-aoi", "EventName": "AOITestSwitchImageComplete", "SerialNumber": "SN12345678" }
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AoiSwitchPG", "SerialNumber": "SN12345678", "Code": 0, "Msg": "AoiSwitchPG" }
 ```
 
-handler 不向外部返回单独 ACK，实际向 Flow 转发的是文本 `"1"`。一轮 Flow 可以有多次 AOI 切图，客户端每收到一次请求完成一次切换，再回复一次确认。只连通主 Socket 不能证明 Relay 已连接或 Flow 已收到确认。
+外部程序实际切图完成后，使用同一连接回复：
 
-Relay 同样按单次读取转发，没有消息缓存重组。配置中的 `TimeoutMs` 默认 5000，但当前读取/确认链未使用它建立等待超时，不能把该值当成 AOI 卡住后自动失败的保证；业务超时需由客户端和具体 Flow 明确控制。
+```json
+{ "Version": "1.0", "MsgID": "aoi-request-001", "EventName": "AOITestSwitchImageComplete", "SerialNumber": "SN12345678" }
+```
+
+完成事件不返回单独 ACK。节点收到有效确认并等待配置的稳定延时后才继续下游；写入 Socket 成功不等于切图完成。节点不改变上游图像或测量结果。
+
+| 节点属性 | 行为 |
+| --- | --- |
+| 等待超时 `TimeoutMs` | 默认 5000 ms，必须大于零；覆盖发送请求和等待确认。到期失败，不自动重发 |
+| 完成后延时 `DelayMs` | 默认 0 ms，不得为负；从收到确认后开始，等待画面稳定，不计入确认超时 |
+| 严格匹配 `RequireMatchingMsgId` | 默认关闭以兼容旧客户端自建确认 ID；开启后必须回显请求的 MsgID |
+
+全项目一次只允许一个切图节点执行，包含完成后延时；并行请求直接失败，不排队或覆盖前一个等待。确认必须来自本次发送使用的、仍处于活动状态的连接；报文携带非空 SN 且节点产品 SN 非空时还必须一致。没有等待、已经确认、错误连接或严格模式下 ID 不匹配的确认被忽略，确认事件本身不会切换项目的控制连接。
+
+**旧客户端兼容模式不能区分同一连接上迟到的上一次确认与当前请求。** 客户端必须每次切图只确认一次；需要排除这种误确认时，开启严格匹配并让客户端回显 MsgID。现有 IntegrationDemo / SemiAuto 自动确认自行生成 MsgID，使用它们时保持兼容模式，或先适配客户端的回显行为。
+
+流程停止会取消确认等待及完成后延时。主 Socket 检测断线并关闭流后，节点结束等待；其他客户端覆盖活动控制连接也会失败。主 Socket 的半包/粘包限制仍见本页「TCP 消息边界」，新增节点不改变其接收分帧实现。
+
+迁移旧模板时，将专用于中转的通用传感器切图节点替换为「外部切图」，保留上下游连线并核对原来的超时和成功后延时。旧服务端 Flow 必须改用宿主进程中的 Flow 执行，不能在旧服务里直接运行这个项目节点。确认没有其它指令引用后，才清理该专用传感器连接配置。项目不再提供中转监听，也不再在启动时关闭并重开通用传感器；旧模板不会被自动改写。
 
 ## 最终结果：ProjectARVRResult
 
@@ -257,12 +273,12 @@ Relay 同样按单次读取转发，没有消息缓存重组。配置中的 `Tim
 | 设置 `1 / Partial applied` | 对照 Applied/NotFound，重新查询活动组和索引；不能当成全量成功 |
 | 确认后没有独立回包 | 两个切图完成事件成功路径本来不发 ACK，等待后续切图/结果并查执行日志 |
 | 结果到了另一个连接 | 是否有其他客户端发送了 ARVR 请求，覆盖共享控制流 |
-| AOI 卡住 | Relay 是否启动、Flow 是否连接、请求是否为精确文本 `1`、确认是否真正到达 Flow |
+| AOI 卡住 | 模板是否使用外部切图节点、主 Socket 活动连接、完成事件及 SN/MsgID 是否匹配、节点超时和稳定延时 |
 
 客户端需要业务超时和断线处理。超时后先确认当前项目执行状态与结果记录，再决定是否重试；服务端没有用 MsgID 保证幂等，重复命令可能再次初始化、改配置或推进流程。
 
 ## 实现与验证边界
 
-初始化/确认看 `Services/SocketControl.cs`，RunAll 看 `Services/RunAllSocket.cs`，组切换和启用状态看 `SwitchGroupSocket.cs` / `ProcessEnableSocket.cs`，主动推送看 `ARVRWindow.xaml.cs`，AOI 转发看 `SocketRelay/`。共享 Socket 的分派、读取与错误包装由 `UI/ColorVision.SocketProtocol` 负责。
+初始化/确认看 `Services/SocketControl.cs`，RunAll 看 `Services/RunAllSocket.cs`，组切换和启用状态看 `SwitchGroupSocket.cs` / `ProcessEnableSocket.cs`，主动推送看 `ARVRWindow.xaml.cs`，AOI 节点看 `Flow/ExternalImageSwitchNode.cs`，发送等待看 `Services/ExternalImageSwitchService.cs`，完成确认看 `Services/AOITestSwitchImageCompleteHandler.cs`。共享 Socket 的分派、读取与错误包装由 `UI/ColorVision.SocketProtocol` 负责。
 
-当前未登记这些服务端协议与真实 Relay 的专门自动化测试。联调应覆盖标准/Legacy 索引、空组、忙状态、部分应用、普通切图和 AOI 确认、Code 为 0 但判定失败、最终 SN、半包/粘包、多连接及断线。会推进真实测试或修改配置的命令，应在获得对应现场操作授权后运行；文档和检索校验不替代这些验收。
+`ExternalImageSwitchTests` 验证切图请求/确认、旧协议兼容、严格关联、并发拒绝、超时不重发、停止取消、断开/切换连接、节点接线与保存恢复；不替代现场控制程序与设备验收。联调应覆盖标准/Legacy 索引、空组、忙状态、部分应用、普通切图和 AOI 确认、Code 为 0 但判定失败、最终 SN、半包/粘包、多连接及断线。会推进真实测试或修改配置的命令，应在获得对应现场操作授权后运行；文档和检索校验不替代这些验收。

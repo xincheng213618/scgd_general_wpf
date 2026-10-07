@@ -1,8 +1,8 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Themes;
 using Microsoft.Win32;
-using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -47,8 +47,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             double inverse = Value(measurements, "frequency.inverse_rmse");
             AlgorithmMeasurement? dominant = measurements.Measurements.FirstOrDefault(value => value.Name == "frequency.dominant.cycles_per_pixel");
             SummaryText.Text = dominant == null
-                ? $"未检测到超过阈值的非直流峰值；逆变换 RMSE={inverse:G8}。频谱图是显示归一化结果，数值结果请使用表格/导出。"
-                : $"主频={dominant.Value:G8} cycles/pixel；周期={Value(measurements, "frequency.dominant.period_pixels"):G8}px；频率方向={Value(measurements, "frequency.dominant.frequency_direction_degrees"):G6}°；空间纹理方向={Value(measurements, "frequency.dominant.spatial_direction_degrees"):G6}°；逆变换 RMSE={inverse:G8}。";
+                ? LocalizedText.Format($"未检测到超过阈值的非直流峰值；逆变换 RMSE={inverse:G8}。频谱图是显示归一化结果，数值结果请使用表格/导出。")
+                : LocalizedText.Format($"主频={dominant.Value:G8} cycles/pixel；周期={Value(measurements, "frequency.dominant.period_pixels"):G8}px；频率方向={Value(measurements, "frequency.dominant.frequency_direction_degrees"):G6}°；空间纹理方向={Value(measurements, "frequency.dominant.spatial_direction_degrees"):G6}°；逆变换 RMSE={inverse:G8}。");
             Closed += (_, _) => DisposeOwnedState();
         }
 
@@ -111,7 +111,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FrequencySpec
             try
             {
                 IReadOnlyList<string> paths = AlgorithmResultExporter.ExportCsvBundle(_result, dialog.FileName);
-                MessageBox.Show(this, $"已导出 {paths.Count} 个文件。", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, LocalizedText.Format($"已导出 {paths.Count} 个文件。"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception exception)
             {

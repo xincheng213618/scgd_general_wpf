@@ -15,9 +15,9 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="Quartz" Version="4.0.1" />
+		<PackageReference Include="Quartz" Version="4.3.0" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.220" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
 	</ItemGroup>
 
 	<ItemGroup>

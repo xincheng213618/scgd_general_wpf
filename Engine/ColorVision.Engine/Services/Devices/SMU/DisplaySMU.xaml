@@ -10,7 +10,7 @@
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
              d:DesignWidth="300"
              ContextMenu="{Binding ContextMenu}"
-             Initialized="UserControl_Initialized">
+             Initialized="UserControl_Initialized" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -30,6 +30,8 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
+                <CheckBox x:Name="UseLocalSmuCheckBox" Margin="0,0,0,3" Content="使用本地源表" IsChecked="{Binding DisplayConfig.UseLocalSmu}" Checked="LocalSmuPreference_Changed" Unchecked="LocalSmuPreference_Changed" ToolTip="关闭当前连接后切换生效" />
+                <TextBlock Margin="0,0,0,3" Text="{Binding LocalDeviceIdentity}" />
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="{x:Static properties:Resources.offline}" />
@@ -64,7 +66,7 @@
                         <UniformGrid Margin="0,0,0,3" Columns="3">
                             <Button x:Name="MeasureDataButton" Click="MeasureData_Click" Content="{x:Static properties:Resources.Ignite}" />
                             <Button x:Name="StepMeasureDataButton" Click="StepMeasureData_Click" Content="{x:Static properties:Resources.Settings}" />
-                            <Button Click="MeasureDataClose_Click" Content="{x:Static properties:Resources.Extinguish}" />
+                            <Button x:Name="CloseOutputButton" Click="MeasureDataClose_Click" Content="{x:Static properties:Resources.Extinguish}" />
                         </UniformGrid>
                         <UniformGrid Margin="0,0,0,3" Columns="2">
                             <DockPanel Margin="0,0,5,0">

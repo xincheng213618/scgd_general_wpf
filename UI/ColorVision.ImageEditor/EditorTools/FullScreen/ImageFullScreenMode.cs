@@ -5,12 +5,14 @@ using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor.EditorTools.FullScreen
 {
-    public class ImageFullScreenMode
+    public class ImageFullScreenMode : IDisposable
     {
         private readonly FrameworkElement _parent;
         private PlacementStatus? _oldWindowStatus;
         private WindowFullScreenSession? _windowSession;
+        private Window? _window;
         private int _childIndex;
+        private bool _disposed;
 
         public bool IsMax { get; private set; }
         public event EventHandler? FullScreenChanged;
@@ -22,6 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.FullScreen
 
         public void ToggleFullScreen()
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             var window = Window.GetWindow(_parent);
             if (window == null) return;
             if (!IsMax) EnterFullScreen(window);
@@ -44,6 +47,8 @@ namespace ColorVision.ImageEditor.EditorTools.FullScreen
             else return;
 
             IsMax = true;
+            _window = window;
+            window.Closed += OnWindowClosed;
             try
             {
                 _windowSession = new WindowFullScreenSession(window, () => ExitFullScreen(window));
@@ -72,8 +77,29 @@ namespace ColorVision.ImageEditor.EditorTools.FullScreen
             _windowSession = null;
 
             _oldWindowStatus = null;
+            window.Closed -= OnWindowClosed;
+            _window = null;
             window.UpdateLayout();
             FullScreenChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnWindowClosed(object? sender, EventArgs e)
+        {
+            // The underlying session handles native cleanup on Closed. Do not restore a closed window.
+            if (_window != null) _window.Closed -= OnWindowClosed;
+            _window = null;
+            _windowSession = null;
+            _oldWindowStatus = null;
+            IsMax = false;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            if (_window != null) ExitFullScreen(_window);
+            _disposed = true;
+            FullScreenChanged = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

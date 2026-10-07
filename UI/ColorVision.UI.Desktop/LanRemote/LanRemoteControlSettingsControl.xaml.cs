@@ -1,24 +1,32 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Desktop.Operations;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.LanRemote
 {
     public partial class LanRemoteControlSettingsControl : UserControl
     {
         private bool _isRefreshing;
-        private string _pairingPayload = string.Empty;
+        private OperationsPairingChallenge? _pairingChallenge;
+        private bool _pairingClaimed;
+        private DateTime? _pairingHostStartedAt;
+        private readonly DispatcherTimer _pairingTimer;
 
         public LanRemoteControlSettingsControl()
         {
             InitializeComponent();
+            ServiceStateTextBlock.Text = LanRemoteText.Get("Disabled");
+            PairingStateTextBlock.Text = LanRemoteText.Get("EnableToPair");
+            ResetTokenButton.IsEnabled = false;
+            CopyUrlButton.IsEnabled = false;
+            _pairingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _pairingTimer.Tick += (_, _) => RefreshPairingState();
             Loaded += LanRemoteControlSettingsControl_Loaded;
             Unloaded += LanRemoteControlSettingsControl_Unloaded;
         }
@@ -37,11 +45,13 @@ namespace ColorVision.UI.Desktop.LanRemote
             Service.StateChanged += Service_StateChanged;
             Service.ApplyConfig();
             RefreshUi();
+            _pairingTimer.Start();
         }
 
         private void LanRemoteControlSettingsControl_Unloaded(object sender, RoutedEventArgs e)
         {
             Service.StateChanged -= Service_StateChanged;
+            _pairingTimer.Stop();
         }
 
         private void Service_StateChanged(object? sender, EventArgs e)
@@ -94,80 +104,80 @@ namespace ColorVision.UI.Desktop.LanRemote
         private void CopyAppDownloadUrlButton_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetText(AppDownloadUrlTextBox.Text);
-            StatusTextBlock.Text = "App 下载地址已复制。";
+            StatusTextBlock.Text = LanRemoteText.Get("DownloadCopied");
         }
 
         private void CopyUrlButton_Click(object sender, RoutedEventArgs e)
         {
             Clipboard.SetText(ConnectionUrlTextBox.Text);
-            StatusTextBlock.Text = "连接地址已复制。";
+            StatusTextBlock.Text = LanRemoteText.Get("AddressCopied");
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             Service.ApplyConfig();
             RefreshUi();
+            StatusTextBlock.Text = LanRemoteText.Get("StatusUpdated");
         }
 
         private void ResetTokenButton_Click(object sender, RoutedEventArgs e)
         {
             RefreshPairingPayload();
             RefreshUi();
+            StatusTextBlock.Text = LanRemoteText.Get("PairingUpdated");
         }
 
         private void ApproveDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             if (PendingDevicesListBox.SelectedItem is not OperationsPairingClaim claim)
             {
-                StatusTextBlock.Text = "请先选择要批准的设备。";
+                StatusTextBlock.Text = LanRemoteText.Get("SelectApproveDevice");
                 return;
             }
 
-            if (Service.OperationsHost.Pairing.Approve(claim.PairingId))
-                StatusTextBlock.Text = $"已批准 {claim.DeviceName} 的受控运维权限。";
+            bool approved = Service.OperationsHost.Pairing.Approve(claim.PairingId);
             RefreshUi();
+            StatusTextBlock.Text = approved ? LanRemoteText.Format("DeviceApproved", claim.DeviceName) : LanRemoteText.Get("RequestUnavailable");
         }
 
         private void RejectDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             if (PendingDevicesListBox.SelectedItem is not OperationsPairingClaim claim)
             {
-                StatusTextBlock.Text = "请先选择要拒绝的设备。";
+                StatusTextBlock.Text = LanRemoteText.Get("SelectRejectDevice");
                 return;
             }
 
-            if (Service.OperationsHost.Pairing.Reject(claim.PairingId))
-                StatusTextBlock.Text = $"已拒绝 {claim.DeviceName}。";
+            bool rejected = Service.OperationsHost.Pairing.Reject(claim.PairingId);
             RefreshUi();
+            StatusTextBlock.Text = rejected ? LanRemoteText.Format("DeviceRejected", claim.DeviceName) : LanRemoteText.Get("RequestUnavailable");
         }
 
         private void RevokeDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             if (PairedDevicesListBox.SelectedItem is not OperationsPairedDevice device)
             {
-                StatusTextBlock.Text = "请先选择要撤销的设备。";
+                StatusTextBlock.Text = LanRemoteText.Get("SelectRevokeDevice");
                 return;
             }
 
-            if (Service.OperationsHost.Registry.Revoke(device.DeviceId))
-                StatusTextBlock.Text = $"已撤销 {device.DisplayName}。";
+            bool revoked = Service.OperationsHost.Registry.Revoke(device.DeviceId);
             RefreshUi();
+            StatusTextBlock.Text = revoked ? LanRemoteText.Format("DeviceRevoked", device.DisplayName) : LanRemoteText.Get("RequestUnavailable");
         }
 
         private void LocalCoSignJobButton_Click(object sender, RoutedEventArgs e)
         {
             if (LocalCoSignJobsListBox.SelectedItem is not OperationsJob job)
             {
-                StatusTextBlock.Text = "请先选择要本机确认的作业。";
+                StatusTextBlock.Text = LanRemoteText.Get("SelectJob");
                 return;
             }
 
             if (job.CapabilityId == "ops.window.snapshot.capture"
                 && MessageBox.Show(Window.GetWindow(this),
-                    "将立即采集一张 ColorVision 主窗口 JPEG。\n\n"
-                    + "不会捕获整个桌面，但画面可能包含当前可见的检测或客户数据。快照只保留 5 分钟，"
-                    + "仅申请设备可读取一次，读取后电脑端立即删除。\n\n确认继续吗？",
-                    "确认主窗口安全快照", MessageBoxButton.OKCancel, MessageBoxImage.Warning)
+                    LanRemoteText.Get("SnapshotConfirmation"),
+                    LanRemoteText.Get("SnapshotConfirmationTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning)
                     != MessageBoxResult.OK)
                 return;
 
@@ -187,8 +197,8 @@ namespace ColorVision.UI.Desktop.LanRemote
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = $"证据采集失败：{ex.Message}";
                 RefreshUi();
+                StatusTextBlock.Text = LanRemoteText.Format("EvidenceFailed", ex.Message);
                 return;
             }
             OperationsJob? approvedJob = Service.OperationsHost.WorkStore.LocalCoSign(job.JobId, true, evidenceId);
@@ -246,36 +256,57 @@ namespace ColorVision.UI.Desktop.LanRemote
             try
             {
                 EnableCheckBox.IsChecked = Config.IsEnabled;
-                PortTextBox.Text = Config.Port.ToString(CultureInfo.InvariantCulture);
+                if (!PortTextBox.IsKeyboardFocusWithin)
+                    PortTextBox.Text = Config.Port.ToString(CultureInfo.InvariantCulture);
                 SecurePortTextBlock.Text = Config.SecurePort.ToString(CultureInfo.InvariantCulture);
 
                 var addresses = LanRemoteControlService.GetLocalIpAddresses();
                 RefreshIpAddressOptions(addresses);
 
                 string appDownloadUrl = GetAppDownloadUrl();
-                AppDownloadUrlTextBox.Text = appDownloadUrl;
-                AppDownloadQrImage.Source = LanRemoteQrCode.Create(appDownloadUrl);
+                if (AppDownloadUrlTextBox.Text != appDownloadUrl)
+                {
+                    AppDownloadUrlTextBox.Text = appDownloadUrl;
+                    AppDownloadQrImage.Source = LanRemoteQrCode.Create(appDownloadUrl);
+                }
 
                 string connectionUrl = Service.GetSecureBaseUrl();
                 ConnectionUrlTextBox.Text = connectionUrl;
-                if (Service.OperationsHost.IsRunning && string.IsNullOrWhiteSpace(_pairingPayload))
+                bool running = Service.OperationsHost.IsRunning;
+                if (!running)
+                {
+                    _pairingChallenge = null;
+                    QrImage.Source = null;
+                }
+                else if (_pairingChallenge == null || _pairingChallenge.Endpoint != connectionUrl
+                    || _pairingHostStartedAt != Service.StartedAt)
                     RefreshPairingPayload();
-                QrImage.Source = string.IsNullOrWhiteSpace(_pairingPayload) ? null : LanRemoteQrCode.Create(_pairingPayload);
-                QrCard.Opacity = Service.OperationsHost.IsRunning ? 1 : 0.38;
 
-                StatusTextBlock.Text = Service.LastStatusMessage;
-                ServiceStateTextBlock.Text = Service.OperationsHost.IsRunning ? "安全通道运行中" : Config.IsEnabled ? "安全通道启动失败" : "未启用";
-                PendingDevicesListBox.ItemsSource = Service.OperationsHost.GetPendingClaims();
-                PairedDevicesListBox.ItemsSource = Service.OperationsHost.Registry.GetAll().Where(item => item.IsActive).ToList();
-                LocalCoSignJobsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetJobs()
+                NetworkStatusTextBlock.Text = Service.OperationsHost.LastStatusMessage + Environment.NewLine + Service.LastStatusMessage;
+                ServiceStateTextBlock.Text = LanRemoteText.Get(running ? "Running" : Config.IsEnabled ? "StartFailed" : "Disabled");
+                ServiceStateIndicator.Fill = running ? Brushes.SeaGreen : Config.IsEnabled ? Brushes.DarkOrange : (Brush)FindResource("GlobalTextBrush");
+                ServiceStateIndicator.Opacity = running || Config.IsEnabled ? 1 : .4;
+                var claims = Service.OperationsHost.GetPendingClaims();
+                _pairingClaimed |= claims.Any(item => item.PairingId == _pairingChallenge?.PairingId);
+                SetItems(PendingDevicesListBox, claims, item => item.PairingId);
+                SetItems(PairedDevicesListBox, Service.OperationsHost.Registry.GetAll().Where(item => item.IsActive).ToList(), item => item.DeviceId);
+                SetItems(LocalCoSignJobsListBox, Service.OperationsHost.WorkStore.GetJobs()
                     .Where(item => item.Status == "awaiting_local_cosign"
-                        && OperationsWorkStore.RequiresLocalCoSign(item)).ToList();
-                SupportRequestsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetSupportSessions()
-                    .Where(item => item.Status == "awaiting_local_consent" && item.ExpiresAt > DateTimeOffset.UtcNow).ToList();
+                        && OperationsWorkStore.RequiresLocalCoSign(item)).ToList(), item => item.JobId);
+                SetItems(SupportRequestsListBox, Service.OperationsHost.WorkStore.GetSupportSessions()
+                    .Where(item => item.Status == "awaiting_local_consent" && item.ExpiresAt > DateTimeOffset.UtcNow).ToList(), item => item.SessionId);
+                RefreshSelectionState();
+                RefreshPairingState();
+                DevicesTabHeader.Text = CountedTab("DevicesTab", claims.Count);
+                ConfirmationsTabHeader.Text = CountedTab("ConfirmationsTab", LocalCoSignJobsListBox.Items.Count + SupportRequestsListBox.Items.Count);
+                PendingEmptyText.Visibility = EmptyVisibility(PendingDevicesListBox);
+                PairedEmptyText.Visibility = EmptyVisibility(PairedDevicesListBox);
+                JobsEmptyText.Visibility = EmptyVisibility(LocalCoSignJobsListBox);
+                SupportEmptyText.Visibility = EmptyVisibility(SupportRequestsListBox);
 
                 IpListTextBlock.Text = addresses.Count == 0
-                    ? "未检测到可用的局域网 IPv4 地址，请确认电脑和手机在同一个 Wi-Fi 或网段。"
-                    : $"可用地址：{string.Join(", ", addresses)}";
+                    ? LanRemoteText.Get("NoAddresses")
+                    : LanRemoteText.Format("AvailableAddresses", string.Join(", ", addresses));
             }
             finally
             {
@@ -285,7 +316,65 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         private void RefreshPairingPayload()
         {
-            _pairingPayload = Service.OperationsHost.IsRunning ? Service.CreateSecurePairingPayload() : string.Empty;
+            _pairingChallenge = Service.OperationsHost.IsRunning ? Service.OperationsHost.CreatePairingChallenge(Service.GetSecureBaseUrl()) : null;
+            _pairingHostStartedAt = Service.StartedAt;
+            _pairingClaimed = false;
+            QrImage.Source = _pairingChallenge == null ? null : LanRemoteQrCode.Create(Service.OperationsHost.Pairing.BuildQrPayload(_pairingChallenge));
+        }
+
+        private void RefreshPairingState()
+        {
+            bool running = Service.OperationsHost.IsRunning;
+            bool expired = _pairingChallenge == null || _pairingChallenge.ExpiresAt <= DateTimeOffset.UtcNow;
+            PairingUnavailableOverlay.Visibility = running && !expired && !_pairingClaimed ? Visibility.Collapsed : Visibility.Visible;
+            PairingStateTextBlock.Text = LanRemoteText.Get(!running ? "EnableToPair" : _pairingClaimed ? "PairingSubmitted" : "PairingExpired");
+            PairingExpiryTextBlock.Text = running && !expired && !_pairingClaimed
+                ? LanRemoteText.Format("PairingExpires", _pairingChallenge!.ExpiresAt.ToLocalTime().ToString("T", CultureInfo.CurrentCulture))
+                : LanRemoteText.Get("PairingLifetime");
+            ResetTokenButton.IsEnabled = running;
+            CopyUrlButton.IsEnabled = running;
+        }
+
+        private static Visibility EmptyVisibility(ListBox list) => list.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        private static string CountedTab(string key, int count) => count == 0 ? LanRemoteText.Get(key) : LanRemoteText.Format("TabCount", LanRemoteText.Get(key), count);
+
+        private static void SetItems<T>(ListBox list, IReadOnlyList<T> items, Func<T, string> key)
+        {
+            string? selectedKey = list.SelectedItem is T selected ? key(selected) : null;
+            list.ItemsSource = items;
+            if (selectedKey != null)
+                list.SelectedItem = items.FirstOrDefault(item => key(item) == selectedKey);
+        }
+
+        private void ReviewDevicesButton_Click(object sender, RoutedEventArgs e) => SectionsTabControl.SelectedIndex = 1;
+        private void Selection_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isRefreshing && IsInitialized) RefreshSelectionState();
+        }
+
+        private void RefreshSelectionState()
+        {
+            ApproveDeviceButton.IsEnabled = RejectDeviceButton.IsEnabled = PendingDevicesListBox.SelectedItem != null;
+            RevokeDeviceButton.IsEnabled = PairedDevicesListBox.SelectedItem != null;
+            LocalCoSignJobButton.IsEnabled = LocalRejectJobButton.IsEnabled = LocalCoSignJobsListBox.SelectedItem != null;
+            ConsentSupportButton.IsEnabled = RejectSupportButton.IsEnabled = SupportRequestsListBox.SelectedItem != null;
+        }
+
+        private void Control_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            bool compact = e.NewSize.Width < 720;
+            ArrangeCards(ConnectionGrid, PairingCard, compact);
+            ArrangeCards(DevicesGrid, PairedDevicesCard, compact);
+            ArrangeCards(ConfirmationsGrid, SupportCard, compact);
+        }
+
+        private static void ArrangeCards(Grid grid, Border secondCard, bool compact)
+        {
+            grid.ColumnDefinitions[1].Width = new GridLength(compact ? 0 : 16);
+            grid.ColumnDefinitions[2].Width = compact ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+            Grid.SetColumn(secondCard, compact ? 0 : 2);
+            Grid.SetRow(secondCard, compact ? 1 : 0);
+            secondCard.Margin = compact ? new Thickness(0, 12, 0, 0) : new Thickness(0);
         }
 
         private void RefreshIpAddressOptions(IReadOnlyList<string> addresses)
@@ -296,8 +385,8 @@ namespace ColorVision.UI.Desktop.LanRemote
 
             IpAddressComboBox.Items.Clear();
             string autoText = addresses.Count > 0
-                ? $"自动选择（{addresses[0]}）"
-                : "自动选择";
+                ? LanRemoteText.Format("AutomaticAddress", addresses[0])
+                : LanRemoteText.Get("Automatic");
             IpAddressComboBox.Items.Add(new IpAddressOption(autoText, AutoAddressValue));
 
             foreach (string address in addresses)

@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+		Microsoft ResX Schema
+
+		Version 1.3
+
+		The primary goals of this format is to allow a simple XML format
+		that is mostly human readable. The generation and parsing of the
+		various data types are done through the TypeConverter classes
+		associated with the data types.
+
+		Example:
+
+		... ado.net/XML headers & schema ...
+		<resheader name="resmimetype">text/microsoft-resx</resheader>
+		<resheader name="version">1.3</resheader>
+		<resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+		<resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+		<data name="Name1">this is my long string</data>
+		<data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+		<data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+			[base64 mime encoded serialized .NET Framework object]
+		</data>
+		<data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+			[base64 mime encoded string representing a byte array form of the .NET Framework object]
+		</data>
+
+		There are any number of "resheader" rows that contain simple
+		name/value pairs.
+
+		Each data row contains a name, and value. The row also contains a
+		type or mimetype. Type corresponds to a .NET class that support
+		text/value conversion through the TypeConverter architecture.
+		Classes that don't support this are serialized and stored with the
+		mimetype set.
+
+		The mimetype is used for serialized objects, and tells the
+		ResXResourceReader how to depersist the object. This is currently not
+		extensible. For a given mimetype the value must be set accordingly:
+
+		Note - application/x-microsoft.net.object.binary.base64 is the format
+		that the ResXResourceWriter will generate, however the reader can
+		read any of the formats listed below.
+
+		mimetype: application/x-microsoft.net.object.binary.base64
+		value   : The object must be serialized with
+			: System.Serialization.Formatters.Binary.BinaryFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.soap.base64
+		value   : The object must be serialized with
+			: System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+			: and then encoded with base64 encoding.
+
+		mimetype: application/x-microsoft.net.object.bytearray.base64
+		value   : The object must be serialized into a byte array
+			: using a System.ComponentModel.TypeConverter
+			: and then encoded with base64 encoding.
+	-->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="上传图像与文件，分享给任何一台电脑" xml:space="preserve">
+    <value>上傳圖像與文件，分享給任何一臺電腦</value>
+  </data>
+  <data name="云盘" xml:space="preserve">
+    <value>雲盤</value>
+  </data>
+  <data name="云盘 · ColorVision" xml:space="preserve">
+    <value>雲盤 · ColorVision</value>
+  </data>
+  <data name="分享文件" xml:space="preserve">
+    <value>分享文件</value>
+  </data>
+  <data name="后台上传" xml:space="preserve">
+    <value>後臺上傳</value>
+  </data>
+  <data name="复制链接" xml:space="preserve">
+    <value>複製鏈接</value>
+  </data>
+  <data name="开始 / 继续上传" xml:space="preserve">
+    <value>開始 / 繼續上傳</value>
+  </data>
+  <data name="打开网页" xml:space="preserve">
+    <value>打開網頁</value>
+  </data>
+  <data name="持有链接或二维码的人均可下载。到期后需重新上传。" xml:space="preserve">
+    <value>持有鏈接或二維碼的人均可下載。到期後需重新上傳。</value>
+  </data>
+  <data name="无需账号，上传文件并通过链接或二维码分享" xml:space="preserve">
+    <value>無需賬號，上傳文件並通過鏈接或二維碼分享</value>
+  </data>
+  <data name="暂停上传" xml:space="preserve">
+    <value>暫停上傳</value>
+  </data>
+  <data name="本机上传记录 · 可拖入文件或文件夹" xml:space="preserve">
+    <value>本機上傳記錄 · 可拖入文件或文件夾</value>
+  </data>
+  <data name="移除本机记录" xml:space="preserve">
+    <value>移除本機記錄</value>
+  </data>
+  <data name="继续 / 重试选中项" xml:space="preserve">
+    <value>繼續 / 重試選中項</value>
+  </data>
+  <data name="选择已完成的文件，即可生成分享二维码。" xml:space="preserve">
+    <value>選擇已完成的文件，即可生成分享二維碼。</value>
+  </data>
+  <data name="选择文件" xml:space="preserve">
+    <value>選擇文件</value>
+  </data>
+  <data name="选择文件夹" xml:space="preserve">
+    <value>選擇文件夾</value>
+  </data>
+  <data name="隐藏窗口并继续上传，可从用户中心重新打开" xml:space="preserve">
+    <value>隱藏窗口並繼續上傳，可從用戶中心重新打開</value>
+  </data>
+  <data name="RBAC 数据库初始化失败: {0}&#10;&#10;数据库路径: {1}" xml:space="preserve">
+    <value>RBAC 數據庫初始化失敗: {0}
+
+數據庫路徑: {1}</value>
+  </data>
+  <data name="{0:yyyy-MM-dd} · {1:N0} 次流程" xml:space="preserve">
+    <value>{0:yyyy-MM-dd} · {1:N0} 次流程</value>
+  </data>
+  <data name="上传完成后会显示下载链接和二维码。" xml:space="preserve">
+    <value>上傳完成後會顯示下載鏈接和二維碼。</value>
+  </data>
+  <data name="不能删除当前登录的用户。" xml:space="preserve">
+    <value>不能刪除當前登錄的用戶。</value>
+  </data>
+  <data name="不能禁用当前登录的用户。" xml:space="preserve">
+    <value>不能禁用當前登錄的用戶。</value>
+  </data>
+  <data name="两次输入的密码不一致" xml:space="preserve">
+    <value>兩次輸入的密碼不一致</value>
+  </data>
+  <data name="保存" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="保存中..." xml:space="preserve">
+    <value>保存中...</value>
+  </data>
+  <data name="保存失败" xml:space="preserve">
+    <value>保存失敗</value>
+  </data>
+  <data name="保存失败: {0}" xml:space="preserve">
+    <value>保存失敗: {0}</value>
+  </data>
+  <data name="保存成功" xml:space="preserve">
+    <value>保存成功</value>
+  </data>
+  <data name="保存权限失败，请重试。" xml:space="preserve">
+    <value>保存權限失敗，請重試。</value>
+  </data>
+  <data name="保存用户详情时出现异常：" xml:space="preserve">
+    <value>保存用戶詳情時出現異常：</value>
+  </data>
+  <data name="分享已过期，请重新添加文件并上传。" xml:space="preserve">
+    <value>分享已過期，請重新添加文件並上傳。</value>
+  </data>
+  <data name="分享链接已复制，可发送给其他人。" xml:space="preserve">
+    <value>分享鏈接已複製，可發送給其他人。</value>
+  </data>
+  <data name="创建中..." xml:space="preserve">
+    <value>創建中...</value>
+  </data>
+  <data name="创建用户" xml:space="preserve">
+    <value>創建用戶</value>
+  </data>
+  <data name="创建角色失败: {0}" xml:space="preserve">
+    <value>創建角色失敗: {0}</value>
+  </data>
+  <data name="删除用户失败: {0}" xml:space="preserve">
+    <value>刪除用戶失敗: {0}</value>
+  </data>
+  <data name="加载失败" xml:space="preserve">
+    <value>加載失敗</value>
+  </data>
+  <data name="加载数据失败: {0}" xml:space="preserve">
+    <value>加載數據失敗: {0}</value>
+  </data>
+  <data name="加载角色权限失败: {0}" xml:space="preserve">
+    <value>加載角色權限失敗: {0}</value>
+  </data>
+  <data name="发生错误: {0}" xml:space="preserve">
+    <value>發生錯誤: {0}</value>
+  </data>
+  <data name="只有管理员才能访问权限管理功能。" xml:space="preserve">
+    <value>只有管理員才能訪問權限管理功能。</value>
+  </data>
+  <data name="只有管理员才能访问用户管理功能。" xml:space="preserve">
+    <value>只有管理員才能訪問用戶管理功能。</value>
+  </data>
+  <data name="启用" xml:space="preserve">
+    <value>啓用</value>
+  </data>
+  <data name="启用用户失败: {0}" xml:space="preserve">
+    <value>啓用用戶失敗: {0}</value>
+  </data>
+  <data name="密码修改成功！" xml:space="preserve">
+    <value>密碼修改成功！</value>
+  </data>
+  <data name="密码已重置" xml:space="preserve">
+    <value>密碼已重置</value>
+  </data>
+  <data name="密码重置成功！&#10;&#10;用户: {0}&#10;新密码: {1}&#10;&#10;请妥善保管此密码。" xml:space="preserve">
+    <value>密碼重置成功！
+
+用戶: {0}
+新密碼: {1}
+
+請妥善保管此密碼。</value>
+  </data>
+  <data name="密码长度至少 6 位" xml:space="preserve">
+    <value>密碼長度至少 6 位</value>
+  </data>
+  <data name="就绪 - 共{0}个角色，{1}个权限" xml:space="preserve">
+    <value>就緒 - 共{0}個角色，{1}個權限</value>
+  </data>
+  <data name="已加载角色 [{0}] 的权限配置（已分配 {1} 个权限）" xml:space="preserve">
+    <value>已加載角色 [{0}] 的權限配置（已分配 {1} 個權限）</value>
+  </data>
+  <data name="已选择 {0} 个角色" xml:space="preserve">
+    <value>已選擇 {0} 個角色</value>
+  </data>
+  <data name="当前权限: {0}" xml:space="preserve">
+    <value>當前權限: {0}</value>
+  </data>
+  <data name="当前用户无权修改用户角色。" xml:space="preserve">
+    <value>當前用戶無權修改用戶角色。</value>
+  </data>
+  <data name="当前用户无权创建新用户。" xml:space="preserve">
+    <value>當前用戶無權創建新用戶。</value>
+  </data>
+  <data name="当前用户无权创建角色。" xml:space="preserve">
+    <value>當前用戶無權創建角色。</value>
+  </data>
+  <data name="当前用户无权删除用户。" xml:space="preserve">
+    <value>當前用戶無權刪除用戶。</value>
+  </data>
+  <data name="当前用户无权启用/禁用用户。" xml:space="preserve">
+    <value>當前用戶無權啓用/禁用用戶。</value>
+  </data>
+  <data name="当前用户无权重置密码。" xml:space="preserve">
+    <value>當前用戶無權重置密碼。</value>
+  </data>
+  <data name="您正在使用默认密码登录，为了账户安全，请立即修改密码。" xml:space="preserve">
+    <value>您正在使用默認密碼登錄，爲了賬戶安全，請立即修改密碼。</value>
+  </data>
+  <data name="成功" xml:space="preserve">
+    <value>成功</value>
+  </data>
+  <data name="成功为角色 [{0}] 分配了 {1} 个权限。" xml:space="preserve">
+    <value>成功爲角色 [{0}] 分配了 {1} 個權限。</value>
+  </data>
+  <data name="提示" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="操作拒绝" xml:space="preserve">
+    <value>操作拒絕</value>
+  </data>
+  <data name="数据库错误" xml:space="preserve">
+    <value>數據庫錯誤</value>
+  </data>
+  <data name="无" xml:space="preserve">
+    <value>無</value>
+  </data>
+  <data name="更新用户角色失败: {0}" xml:space="preserve">
+    <value>更新用戶角色失敗: {0}</value>
+  </data>
+  <data name="有效" xml:space="preserve">
+    <value>有效</value>
+  </data>
+  <data name="未登录" xml:space="preserve">
+    <value>未登錄</value>
+  </data>
+  <data name="未选择" xml:space="preserve">
+    <value>未選擇</value>
+  </data>
+  <data name="权限不足" xml:space="preserve">
+    <value>權限不足</value>
+  </data>
+  <data name="权限不足：只有管理员可以修改角色" xml:space="preserve">
+    <value>權限不足：只有管理員可以修改角色</value>
+  </data>
+  <data name="权限不足：只有管理员可以创建角色" xml:space="preserve">
+    <value>權限不足：只有管理員可以創建角色</value>
+  </data>
+  <data name="权限保存成功 - 已分配 {0} 个权限" xml:space="preserve">
+    <value>權限保存成功 - 已分配 {0} 個權限</value>
+  </data>
+  <data name="权限缓存统计: {0}" xml:space="preserve">
+    <value>權限緩存統計: {0}</value>
+  </data>
+  <data name="权限缓存统计: 不可用" xml:space="preserve">
+    <value>權限緩存統計: 不可用</value>
+  </data>
+  <data name="正在保存权限分配..." xml:space="preserve">
+    <value>正在保存權限分配...</value>
+  </data>
+  <data name="正在创建..." xml:space="preserve">
+    <value>正在創建...</value>
+  </data>
+  <data name="正在创建新用户，请稍候..." xml:space="preserve">
+    <value>正在創建新用戶，請稍候...</value>
+  </data>
+  <data name="正在加载数据..." xml:space="preserve">
+    <value>正在加載數據...</value>
+  </data>
+  <data name="正在加载角色 [{0}] 的权限..." xml:space="preserve">
+    <value>正在加載角色 [{0}] 的權限...</value>
+  </data>
+  <data name="注册" xml:space="preserve">
+    <value>註冊</value>
+  </data>
+  <data name="注册成功" xml:space="preserve">
+    <value>註冊成功</value>
+  </data>
+  <data name="注册成功，请使用新账户登录" xml:space="preserve">
+    <value>註冊成功，請使用新賬戶登錄</value>
+  </data>
+  <data name="用户 '{0}' 创建成功！" xml:space="preserve">
+    <value>用戶 '{0}' 創建成功！</value>
+  </data>
+  <data name="用户 '{0}' 已启用" xml:space="preserve">
+    <value>用戶 '{0}' 已啓用</value>
+  </data>
+  <data name="用户 '{0}' 已禁用" xml:space="preserve">
+    <value>用戶 '{0}' 已禁用</value>
+  </data>
+  <data name="用户ID: {0} | 当前角色: {1}" xml:space="preserve">
+    <value>用戶ID: {0} | 當前角色: {1}</value>
+  </data>
+  <data name="用户删除成功！" xml:space="preserve">
+    <value>用戶刪除成功！</value>
+  </data>
+  <data name="用户名和密码不能为空" xml:space="preserve">
+    <value>用戶名和密碼不能爲空</value>
+  </data>
+  <data name="用户名已存在或创建失败" xml:space="preserve">
+    <value>用戶名已存在或創建失敗</value>
+  </data>
+  <data name="用户名或者密码不正确" xml:space="preserve">
+    <value>用戶名或者密碼不正確</value>
+  </data>
+  <data name="登  录" xml:space="preserve">
+    <value>登  錄</value>
+  </data>
+  <data name="登录中..." xml:space="preserve">
+    <value>登錄中...</value>
+  </data>
+  <data name="登录失败" xml:space="preserve">
+    <value>登錄失敗</value>
+  </data>
+  <data name="登录失败: {0}" xml:space="preserve">
+    <value>登錄失敗: {0}</value>
+  </data>
+  <data name="登录用户: {0} | 会话: {1}" xml:space="preserve">
+    <value>登錄用戶: {0} | 會話: {1}</value>
+  </data>
+  <data name="确定要删除用户 '{0}' 吗？&#10;&#10;此操作将进行逻辑删除，用户数据将被保留但标记为已删除状态。" xml:space="preserve">
+    <value>確定要刪除用戶 '{0}' 嗎？
+
+此操作將進行邏輯刪除，用戶數據將被保留但標記爲已刪除狀態。</value>
+  </data>
+  <data name="确定要退出登录吗？" xml:space="preserve">
+    <value>確定要退出登錄嗎？</value>
+  </data>
+  <data name="确定要重置用户 '{0}' 的密码吗？&#10;&#10;将生成一个新的随机密码。" xml:space="preserve">
+    <value>確定要重置用戶 '{0}' 的密碼嗎？
+
+將生成一個新的隨機密碼。</value>
+  </data>
+  <data name="确认删除" xml:space="preserve">
+    <value>確認刪除</value>
+  </data>
+  <data name="确认重置" xml:space="preserve">
+    <value>確認重置</value>
+  </data>
+  <data name="禁用用户失败: {0}" xml:space="preserve">
+    <value>禁用用戶失敗: {0}</value>
+  </data>
+  <data name="移除后将不再保留这条本机续传记录和分享链接。已发送的分享在到期前仍然有效。" xml:space="preserve">
+    <value>移除後將不再保留這條本機續傳記錄和分享鏈接。已發送的分享在到期前仍然有效。</value>
+  </data>
+  <data name="编辑用户角色 - {0}" xml:space="preserve">
+    <value>編輯用戶角色 - {0}</value>
+  </data>
+  <data name="自动登录中..." xml:space="preserve">
+    <value>自動登錄中...</value>
+  </data>
+  <data name="角色代码已存在或创建失败！" xml:space="preserve">
+    <value>角色代碼已存在或創建失敗！</value>
+  </data>
+  <data name="角色创建成功！" xml:space="preserve">
+    <value>角色創建成功！</value>
+  </data>
+  <data name="角色名称和代码不能为空。" xml:space="preserve">
+    <value>角色名稱和代碼不能爲空。</value>
+  </data>
+  <data name="角色更新失败！" xml:space="preserve">
+    <value>角色更新失敗！</value>
+  </data>
+  <data name="角色更新成功！" xml:space="preserve">
+    <value>角色更新成功！</value>
+  </data>
+  <data name="请先登录后再编辑用户信息。" xml:space="preserve">
+    <value>請先登錄後再編輯用戶信息。</value>
+  </data>
+  <data name="请输入用户名和密码" xml:space="preserve">
+    <value>請輸入用戶名和密碼</value>
+  </data>
+  <data name="退出登录" xml:space="preserve">
+    <value>退出登錄</value>
+  </data>
+  <data name="选择要分享的文件" xml:space="preserve">
+    <value>選擇要分享的文件</value>
+  </data>
+  <data name="选择要打包分享的文件夹" xml:space="preserve">
+    <value>選擇要打包分享的文件夾</value>
+  </data>
+  <data name="重置密码失败: {0}" xml:space="preserve">
+    <value>重置密碼失敗: {0}</value>
+  </data>
+  <data name="错误" xml:space="preserve">
+    <value>錯誤</value>
+  </data>
+  <data name="首次登录 - 请修改默认密码" xml:space="preserve">
+    <value>首次登錄 - 請修改默認密碼</value>
+  </data>
+  <data name="首次登录必须修改默认密码。" xml:space="preserve">
+    <value>首次登錄必須修改默認密碼。</value>
+  </data>
+</root>

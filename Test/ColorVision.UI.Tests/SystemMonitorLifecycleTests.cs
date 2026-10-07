@@ -1,4 +1,3 @@
-using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System.Reflection;
 using SystemMonitor;

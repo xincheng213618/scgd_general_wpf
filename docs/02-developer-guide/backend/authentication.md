@@ -46,7 +46,7 @@ related: ["delivery.backend", "delivery.backend-accounts", "delivery.file-transf
 
 角色中具备相应permission的普通Session可以访问，不要求把角色改成admin。当前可申请的API key scope目录并不包含上述 `users:manage`、`permissions:manage`、`api_keys:manage`、`settings:manage` 等细粒度管理permission，所以不能据Session目录造出可创建的key scope；这些管理入口对现有Bearer key通常需要 `admin:*`。
 
-API key权威目录由 `GET /api/admin/api-keys/scopes` 返回：包括 `admin:*`、cache/jobs/stats、只读 `feedback:read`、plugin/release发布、`file:transfer`、`ops:relay`、`ops:operator` 和 `copilot:config:read` 等，附名称、分类、用途和 `default_scopes`。反馈下载电脑应只发 `feedback:read`，不需要 `admin:*`。该接口自身也要求 `api_keys:manage`。这不是公开访客的授权目录，更不是任一key能使用所有列出的能力。
+API key权威目录由 `GET /api/admin/api-keys/scopes` 返回：包括 `admin:*`、cache/jobs/stats、只读 `feedback:read`、plugin/release发布、`file:transfer`、`ops:relay` 和 `ops:operator` 等，附名称、分类、用途和 `default_scopes`。反馈下载电脑应只发 `feedback:read`，不需要 `admin:*`。该接口自身也要求 `api_keys:manage`。这不是公开访客的授权目录，更不是任一key能使用所有列出的能力。
 
 共用上传装饰器要求 `plugin:publish` 并启用user Session；其它上传/发布路径还应核对各自要求。Transfer、Operations Relay与Copilot设备协议的独立凭据边界各由对应主题负责，不从一个装饰器推导全站权限。
 

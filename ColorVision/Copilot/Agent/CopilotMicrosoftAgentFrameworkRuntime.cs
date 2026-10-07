@@ -1,22 +1,15 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
-using Anthropic;
-using Anthropic.Core;
-using ColorVision.Copilot.Mcp;
 using ColorVision.Solution;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
@@ -182,6 +175,9 @@ namespace ColorVision.Copilot
         {
             if (profile == null || !profile.IsConfigured)
                 throw new NotSupportedException("Agent Framework is unavailable for this profile: profile configuration is incomplete.");
+
+            if (profile.IsLocalCodex)
+                return;
 
             if (profile.ProviderType is not (CopilotProviderType.OpenAICompatible or CopilotProviderType.AnthropicCompatible))
                 throw new NotSupportedException("Agent Framework is unavailable for this profile: provider protocol is unsupported.");

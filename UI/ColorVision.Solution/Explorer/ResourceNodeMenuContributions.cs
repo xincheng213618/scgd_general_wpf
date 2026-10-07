@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.UI.Menus;
 using System.IO;
 
@@ -23,7 +24,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionResourceCommands.RunScriptId,
                     Order = 0,
-                    Header = "运行脚本",
+                    Header = LocalizedText.Get("运行脚本"),
                     Command = SolutionResourceCommands.RunScript,
                     Icon = MenuItemIcon.TryFindResource("DIRun"),
                 },
@@ -51,14 +52,14 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = "AskCopilotExplainFile",
                     Order = 20,
-                    Header = "问 AI 解释此文件",
+                    Header = LocalizedText.Get("问 AI 解释此文件"),
                     Command = fileNode.AskCopilotExplainFileCommand,
                 },
                 new MenuItemMetadata
                 {
                     GuidId = "AskCopilotDiagnoseFile",
                     Order = 21,
-                    Header = "问 AI 诊断此文件/日志",
+                    Header = LocalizedText.Get("问 AI 诊断此文件/日志"),
                     Command = fileNode.AskCopilotDiagnoseFileCommand,
                 },
             ];
@@ -85,7 +86,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = "AskCopilotSummarizeFolder",
                     Order = 20,
-                    Header = "问 AI 总结此文件夹",
+                    Header = LocalizedText.Get("问 AI 总结此文件夹"),
                     Command = folderNode.AskCopilotSummarizeFolderCommand,
                 },
             ];
@@ -126,7 +127,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionResourceCommands.OpenInTerminalId,
                     Order = 201,
-                    Header = "在终端中打开",
+                    Header = LocalizedText.Get("在终端中打开"),
                     Command = SolutionResourceCommands.OpenInTerminal,
                 });
             }

@@ -1,6 +1,7 @@
 <UserControl x:Class="ColorVision.ImageEditor.Cie.ManualColorGamutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ColorVision.ImageEditor"
              xmlns:cie="clr-namespace:ColorVision.ImageEditor.Cie"
              xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
              Background="White" Initialized="View_Initialized">
@@ -59,7 +60,7 @@
             </cie:CieDiagramView>
             <Border Style="{StaticResource CieFloatingCard}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12">
                 <StackPanel Orientation="Horizontal">
-                    <ComboBox x:Name="GamutPlane" Width="120" SelectedIndex="0" SelectionChanged="GamutPlane_Changed" ToolTip="面积计算平面">
+                    <ComboBox x:Name="GamutPlane" Width="120" SelectedIndex="0" SelectionChanged="GamutPlane_Changed" ToolTip="{display:DisplayText Key='面积计算平面'}">
                         <ComboBoxItem Content="1931 xy" /><ComboBoxItem Content="1976 u′v′" />
                     </ComboBox>
                     <Button Style="{StaticResource CieZoomOutButton}" Click="ButtonZoomOut_Click" />
@@ -73,7 +74,7 @@
                 <Border x:Name="ParameterPanel" Style="{StaticResource CieFloatingCard}" Padding="14">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <GroupBox Header="RGB CIE 1931 xy 坐标" Style="{StaticResource PanelGroupBox}">
+                            <GroupBox Header="{display:DisplayText Key='RGB CIE 1931 xy 坐标'}" Style="{StaticResource PanelGroupBox}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="54" />
@@ -104,12 +105,12 @@
                                 </Grid>
                             </GroupBox>
                             <WrapPanel Margin="0,0,0,10">
-                                <Button Content="套用标准值" Click="ButtonApplyStandard_Click" />
-                                <Button Content="计算" Click="ButtonCalculate_Click" />
-                                <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click" IsEnabled="False" />
+                                <Button Content="{display:DisplayText Key='套用标准值'}" Click="ButtonApplyStandard_Click" />
+                                <Button Content="{display:DisplayText Key='计算'}" Click="ButtonCalculate_Click" />
+                                <Button x:Name="ButtonExport" Content="{display:DisplayText Key='导出'}" Click="ButtonExport_Click" IsEnabled="False" />
                             </WrapPanel>
                             <TextBlock x:Name="TextBlockStatus" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12" Foreground="Gray" />
-                            <GroupBox Header="标准色域" Style="{StaticResource PanelGroupBox}">
+                            <GroupBox Header="{display:DisplayText Key='标准色域'}" Style="{StaticResource PanelGroupBox}">
                                 <StackPanel>
                                     <ListBox x:Name="ListBoxStandards"
                                              MinHeight="0"
@@ -129,8 +130,8 @@
                                         </ListBox.ItemTemplate>
                                     </ListBox>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                        <Button Content="全选" Click="ButtonSelectAll_Click" />
-                                        <Button Content="清空" Click="ButtonClearSelection_Click" />
+                                        <Button Content="{display:DisplayText Key='全选'}" Click="ButtonSelectAll_Click" />
+                                        <Button Content="{display:DisplayText Key='清空'}" Click="ButtonClearSelection_Click" />
                                     </StackPanel>
                                 </StackPanel>
                             </GroupBox>
@@ -144,11 +145,11 @@
                 <Expander.Header>
                     <WrapPanel>
                         <TextBlock Text="{x:Static properties:Resources.Cie_Results}" FontWeight="SemiBold" Margin="0,0,12,0" />
-                        <TextBlock Text="数量" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{display:DisplayText Key='数量'}" Style="{StaticResource LabelText}" />
                         <TextBlock x:Name="TextBlockResultCount" Style="{StaticResource ValueText}" />
-                        <TextBlock Text="样品面积" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{display:DisplayText Key='样品面积'}" Style="{StaticResource LabelText}" />
                         <TextBlock x:Name="TextBlockSampleArea" Style="{StaticResource ValueText}" />
-                        <TextBlock Text="面积比" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{display:DisplayText Key='面积比'}" Style="{StaticResource LabelText}" />
                         <TextBlock x:Name="TextBlockCoverageRange" Style="{StaticResource ValueText}" FontWeight="SemiBold" />
                     </WrapPanel>
                 </Expander.Header>
@@ -157,12 +158,12 @@
                           HeadersVisibility="Column" RowHeaderWidth="0" RowHeight="28"
                           SelectionMode="Single" SelectionChanged="ResultGrid_SelectionChanged" BorderThickness="0" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="标准色域" Binding="{Binding StandardName}" Width="*" MinWidth="100" />
-                        <DataGridTextColumn Header="面积比(%)" Binding="{Binding CoverageDisplay}" Width="130" />
-                        <DataGridTextColumn Header="覆盖率(%)" Binding="{Binding ActualCoverageDisplay}" Width="110" />
-                        <DataGridTextColumn Header="交集面积" Binding="{Binding IntersectionDisplay}" Width="110" />
-                        <DataGridTextColumn Header="样品面积" Binding="{Binding SampleAreaDisplay}" Width="130" />
-                        <DataGridTextColumn Header="标准面积" Binding="{Binding StandardAreaDisplay}" Width="130" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='标准色域'}" Binding="{Binding StandardName}" Width="*" MinWidth="100" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='面积比(%)'}" Binding="{Binding CoverageDisplay}" Width="130" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='覆盖率(%)'}" Binding="{Binding ActualCoverageDisplay}" Width="110" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='交集面积'}" Binding="{Binding IntersectionDisplay}" Width="110" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='样品面积'}" Binding="{Binding SampleAreaDisplay}" Width="130" />
+                        <DataGridTextColumn Header="{display:DisplayText Key='标准面积'}" Binding="{Binding StandardAreaDisplay}" Width="130" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Expander>

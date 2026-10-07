@@ -5,7 +5,7 @@ status: "current"
 summary: "MoireAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。"
 aliases: ["摩尔纹分析与 RemoveMoire 有什么区别","MoireAnalysis","MoireAnalysisAlgorithmProvider"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/MoireAnalysisAlgorithmProvider.cs","UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs","UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MoireAnalysisV1Tests.cs","Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
 related: ["algorithms.platform","algorithms.index"]
 ---
 
@@ -82,7 +82,6 @@ Runner 继续拥有解析、参数验证、provider 选择、调度、取消、�
 
 ## 测试和性能门禁
 
-`MoireAnalysisV1Tests` 覆盖稳定 ID/alias/schema/default/JSON、参数校验、平坦图零分、固定正弦 period/direction/高证据 golden、共轭建议、宽带噪声误报边界、对称 notch 的主谐波衰减与均值恢复、九种格式只读、float/像素上限/ROI 结构化失败、成功/失败/取消所有权、Batch/Flow、WPF 结果窗口释放和禁止覆盖导出。
 
 可选 `MoireAnalysisPipelineProbe` 对 4K Gray16、4K Bgra32 与 8K Gray16 启用 notch，记录延迟、managed allocation、private-memory delta 和结果 retained bytes。结果上限按两张 Gray8 加一张 Gray32Float，即 6 bytes/pixel；管理分配预算是 retained bytes 加 64 MiB，native/private 工作集预算是 48 bytes/pixel 加 256 MiB，单次上限 180 秒。执行期仍需要频域分析的 spatial/complex DFT Mat，并在启用滤波时创建第二组 DFT/reconstruction 工作区；这些不进入 Result，也没有额外整幅 managed magnitude/power 副本。
 

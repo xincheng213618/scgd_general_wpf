@@ -4,7 +4,6 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Recipe;
 using System.IO;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

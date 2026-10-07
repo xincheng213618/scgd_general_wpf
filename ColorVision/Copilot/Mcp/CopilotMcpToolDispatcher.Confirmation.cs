@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -84,7 +85,7 @@ namespace ColorVision.Copilot.Mcp
                     : CopilotApprovalSourceKind.ExternalMcp,
                 RequestSource = executionScope.CallerIdentity,
                 Scope = executionScope,
-                TaskLabel = inAppAgent ? "当前 Copilot 任务" : title,
+                TaskLabel = inAppAgent ? LocalizedText.Get("当前 Copilot 任务") : title,
                 WorkspacePath = executionScope.WorkspacePath,
                 ImpactSummary = impactSummary,
                 Reversibility = reversibility,

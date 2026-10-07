@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.DistortionP9.DistortionP9ResultWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="9点畸变分析" Height="720" Width="980"
+             xmlns:display="clr-namespace:ColorVision.ImageEditor"
+        Title="{display:DisplayText Key='9点畸变分析'}" Height="720" Width="980"
         Background="#F6F7F9" WindowStartupLocation="CenterOwner">
     <Window.Resources>
         <SolidColorBrush x:Key="PrimaryBrush" Color="#0B6B5E"/>
@@ -29,9 +30,9 @@
 
         <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                <Button Content="导出 JSON" Click="ExportJson_Click"/>
-                <Button Content="导出 CSV" Click="ExportCsv_Click"/>
-                <Button Content="复制 JSON" Click="CopyJson_Click"/>
+                <Button Content="{display:DisplayText Key='导出 JSON'}" Click="ExportJson_Click"/>
+                <Button Content="{display:DisplayText Key='导出 CSV'}" Click="ExportCsv_Click"/>
+                <Button Content="{display:DisplayText Key='复制 JSON'}" Click="CopyJson_Click"/>
             </StackPanel>
             <TextBlock x:Name="SummaryText"
                        DockPanel.Dock="Right"
@@ -55,16 +56,16 @@
                       MinHeight="132"
                       GridLinesVisibility="Horizontal">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="指标" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="值" Binding="{Binding Value}" Width="150"/>
-                    <DataGridTextColumn Header="单位" Binding="{Binding Unit}" Width="80"/>
-                    <DataGridTextColumn Header="说明" Binding="{Binding Description}" Width="2*"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='指标'}" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='值'}" Binding="{Binding Value}" Width="150"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='单位'}" Binding="{Binding Unit}" Width="80"/>
+                    <DataGridTextColumn Header="{display:DisplayText Key='说明'}" Binding="{Binding Description}" Width="2*"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
 
         <TabControl Grid.Row="2">
-            <TabItem Header="9点坐标">
+            <TabItem Header="{display:DisplayText Key='9点坐标'}">
                 <Border Background="{StaticResource PanelBackground}" Padding="8">
                     <DataGrid x:Name="PointsGrid"
                               AutoGenerateColumns="False"
@@ -74,13 +75,13 @@
                               GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="54"/>
-                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="70"/>
-                            <DataGridTextColumn Header="行" Binding="{Binding Row}" Width="54"/>
-                            <DataGridTextColumn Header="列" Binding="{Binding Col}" Width="54"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='名称'}" Binding="{Binding Name}" Width="70"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='行'}" Binding="{Binding Row}" Width="54"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='列'}" Binding="{Binding Col}" Width="54"/>
                             <DataGridTextColumn Header="X" Binding="{Binding X, StringFormat=F3}" Width="120"/>
                             <DataGridTextColumn Header="Y" Binding="{Binding Y, StringFormat=F3}" Width="120"/>
-                            <DataGridTextColumn Header="面积" Binding="{Binding Area}" Width="90"/>
-                            <DataGridTextColumn Header="外接框" Binding="{Binding BoundingRectDisplay}" Width="*"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='面积'}" Binding="{Binding Area}" Width="90"/>
+                            <DataGridTextColumn Header="{display:DisplayText Key='外接框'}" Binding="{Binding BoundingRectDisplay}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Border>

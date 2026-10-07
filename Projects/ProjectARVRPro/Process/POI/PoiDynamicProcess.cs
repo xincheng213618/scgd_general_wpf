@@ -3,13 +3,9 @@ using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.POI
 {

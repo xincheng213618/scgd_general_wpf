@@ -38,13 +38,14 @@ namespace ProjectARVRPro.Process.Distortion
                                 continue;
 
                             ApplySelectedPoints(testResult, distortionResult, Config.PointSource);
+                            DistortionGeometryResultBuilder.Apply(distortionResult, recipeConfig, testResult, "F5");
 
                             if (distortionResult.OpticDistortion != null)
                             {
                                 distortionResult.OpticDistortion.OpticRatio = recipeConfig.OpticDistortion.Apply(distortionResult.OpticDistortion.OpticRatio);
 
                                 testResult.OpticDistortion = Build(
-                                    "Optic_Distortion",
+                                    nameof(DistortionTestResult.OpticDistortion),
                                     distortionResult.OpticDistortion.OpticRatio,
                                     recipeConfig.OpticDistortion.Min,
                                     recipeConfig.OpticDistortion.Max);
@@ -118,7 +119,9 @@ namespace ProjectARVRPro.Process.Distortion
                                 testResult.DistortionLeft,
                                 testResult.DistortionRight,
                                 testResult.KeystoneHoriz,
-                                testResult.KeystoneVert);
+                                testResult.KeystoneVert,
+                                testResult.MaximumTiltDegrees,
+                                testResult.MaximumEdgeLengthDifferencePercent);
                         }
                     }
                 }
@@ -160,7 +163,7 @@ namespace ProjectARVRPro.Process.Distortion
                 Circle.TextAttribute.FontSize = 20;
                 ctx.ImageView.AddVisual(Circle);
             }
-
+            DistortionResultOverlay.AppendGrid(ctx.ImageView, testResult.Points, Config.DrawGridOverlay);
         }
 
         public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
@@ -182,6 +185,8 @@ namespace ProjectARVRPro.Process.Distortion
             AppendItemText(ref outtext, testResult.DistortionRight);
             AppendItemText(ref outtext, testResult.KeystoneHoriz);
             AppendItemText(ref outtext, testResult.KeystoneVert);
+            AppendItemText(ref outtext, testResult.MaximumTiltDegrees);
+            AppendItemText(ref outtext, testResult.MaximumEdgeLengthDifferencePercent);
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
@@ -208,7 +213,7 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        private static void UpdateResult(IProcessExecutionContext ctx, params ObjectiveTestItem[] items)
+        private static void UpdateResult(IProcessExecutionContext ctx, params ObjectiveTestItem?[] items)
         {
             foreach (var item in items)
             {
@@ -217,7 +222,7 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        private static void AppendItemText(ref string outtext, ObjectiveTestItem item)
+        private static void AppendItemText(ref string outtext, ObjectiveTestItem? item)
         {
             if (item == null)
                 return;

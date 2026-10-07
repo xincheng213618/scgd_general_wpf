@@ -1,7 +1,3 @@
-using ColorVision.Database;
-using ColorVision.Engine;
-using System.Threading.Tasks;
-
 namespace ProjectARVRPro.Process.Blank
 {
     public class BlankProcess : IProcess

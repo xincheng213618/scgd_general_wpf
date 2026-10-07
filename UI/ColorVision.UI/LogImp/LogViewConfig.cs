@@ -12,7 +12,7 @@ namespace ColorVision.UI
     /// </summary>
     public class LogViewConfig : ViewModelBase
     {
-        [JsonIgnore]
+        [JsonIgnore, Browsable(false)]
         public RelayCommand EditCommand { get; set; }
 
         public LogViewConfig()

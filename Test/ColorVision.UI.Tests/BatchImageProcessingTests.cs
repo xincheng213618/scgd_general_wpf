@@ -3,10 +3,7 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using OpenCvSharp;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.Tests;
@@ -96,7 +93,7 @@ public class BatchImageProcessingTests
 
         using Mat result = algorithm.Apply(source);
 
-        Assert.Equal("仅转换格式", algorithm.Name);
+        Assert.Equal(ColorVision.ImageEditor.Properties.Resources.BatchFormatOnly, algorithm.Name);
         Assert.Equal(string.Empty, algorithm.Suffix);
         Assert.NotSame(source, result);
         Assert.Equal(source.Type(), result.Type());

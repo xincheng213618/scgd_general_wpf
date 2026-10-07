@@ -17,6 +17,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private readonly FlowNodeRecord _record;
         private readonly Action<FlowNodeRecord> _navigateNode;
         private readonly Action<FlowNodeRecord> _navigateHistoryRecord;
+        private readonly Action<FlowNodeRecord> _compareNode;
         private readonly Action<FlowNodeRecord> _locateNode;
         private readonly Action<FlowNodeRecord?, int?> _openMessages;
         private readonly Action _showOverview;
@@ -32,6 +33,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             bool canLocate,
             Action<FlowNodeRecord> navigateNode,
             Action<FlowNodeRecord> navigateHistoryRecord,
+            Action<FlowNodeRecord> compareNode,
             Action<FlowNodeRecord> locateNode,
             Action<FlowNodeRecord?, int?> openMessages,
             Action showOverview,
@@ -42,6 +44,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _navigateNode = navigateNode ?? throw new ArgumentNullException(nameof(navigateNode));
             _navigateHistoryRecord = navigateHistoryRecord
                 ?? throw new ArgumentNullException(nameof(navigateHistoryRecord));
+            _compareNode = compareNode ?? throw new ArgumentNullException(nameof(compareNode));
             _locateNode = locateNode ?? throw new ArgumentNullException(nameof(locateNode));
             _openMessages = openMessages ?? throw new ArgumentNullException(nameof(openMessages));
             _showOverview = showOverview ?? throw new ArgumentNullException(nameof(showOverview));
@@ -378,6 +381,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return json;
             }
         }
+
+        private void CompareNodeButton_Click(object sender, RoutedEventArgs e) => _compareNode(_record);
 
         private void ShowOverviewButton_Click(object sender, RoutedEventArgs e)
         {

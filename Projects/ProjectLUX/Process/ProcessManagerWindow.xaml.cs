@@ -42,6 +42,7 @@ namespace ProjectLUX.Process
         public ProcessManagerWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             Closing += Window_Closing;
         }
 

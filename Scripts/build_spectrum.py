@@ -94,6 +94,7 @@ _FILE_EXCLUDE = {
     "opencv_videoio_ffmpeg4110_64.dll",
     "opencv_videoio_ffmpeg4130_64.dll",
     "opencv_videoio_ffmpeg4140_64.dll",
+    "opencv_videoio_ffmpeg500_64.dll",
 }
 
 _POWERSHELL_SIGN_SCRIPT = r"""

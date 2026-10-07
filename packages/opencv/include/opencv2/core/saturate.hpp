@@ -146,9 +146,8 @@ template<> inline unsigned saturate_cast<unsigned>(short v)  { return (unsigned)
 template<> inline unsigned saturate_cast<unsigned>(int v)    { return (unsigned)std::max(v, (int)0); }
 template<> inline unsigned saturate_cast<unsigned>(int64 v)  { return (unsigned)((uint64)v <= (uint64)UINT_MAX ? v : v > 0 ? UINT_MAX : 0); }
 template<> inline unsigned saturate_cast<unsigned>(uint64 v) { return (unsigned)std::min(v, (uint64)UINT_MAX); }
-// we intentionally do not clip negative numbers, to make -1 become 0xffffffff etc.
-template<> inline unsigned saturate_cast<unsigned>(float v)  { return static_cast<unsigned>(cvRound(v)); }
-template<> inline unsigned saturate_cast<unsigned>(double v) { return static_cast<unsigned>(cvRound(v)); }
+template<> inline unsigned saturate_cast<unsigned>(float v)  { return (unsigned)round(std::max(v, 0.f)); }
+template<> inline unsigned saturate_cast<unsigned>(double v) { return (unsigned)round(std::max(v, 0.)); }
 
 template<> inline uint64 saturate_cast<uint64>(schar v)      { return (uint64)std::max(v, (schar)0); }
 template<> inline uint64 saturate_cast<uint64>(short v)      { return (uint64)std::max(v, (short)0); }
@@ -156,9 +155,16 @@ template<> inline uint64 saturate_cast<uint64>(int v)        { return (uint64)st
 template<> inline uint64 saturate_cast<uint64>(int64 v)      { return (uint64)std::max(v, (int64)0); }
 
 template<> inline int64 saturate_cast<int64>(uint64 v)       { return (int64)std::min(v, (uint64)LLONG_MAX); }
+template<> inline int64 saturate_cast<int64>(float v)        { return (int64)round((double)v); }
+template<> inline int64 saturate_cast<int64>(double v)       { return (int64)round(v); }
+template<> inline uint64 saturate_cast<uint64>(float v)      { return (int64)round((double)std::max(v, 0.f)); }
+template<> inline uint64 saturate_cast<uint64>(double v)     { return (int64)round(std::max(v, 0.)); }
+
 
 /** @overload */
 template<typename _Tp> static inline _Tp saturate_cast(hfloat v) { return saturate_cast<_Tp>((float)v); }
+template<typename _Tp> static inline _Tp saturate_cast(bfloat v) { return saturate_cast<_Tp>((float)v); }
+template<typename _Tp> static inline _Tp saturate_cast(bool v) { return saturate_cast<_Tp>(v ? 1 : 0); }
 
 // in theory, we could use a LUT for 8u/8s->16f conversion,
 // but with hardware support for FP32->FP16 conversion the current approach is preferable
@@ -172,6 +178,34 @@ template<> inline hfloat saturate_cast<hfloat>(uint64 v)  { return hfloat((float
 template<> inline hfloat saturate_cast<hfloat>(int64 v)   { return hfloat((float)v); }
 template<> inline hfloat saturate_cast<hfloat>(float v)   { return hfloat(v); }
 template<> inline hfloat saturate_cast<hfloat>(double v)  { return hfloat((float)v); }
+template<> inline hfloat saturate_cast<hfloat>(hfloat v)  { return v; }
+template<> inline hfloat saturate_cast<hfloat>(bfloat v)  { return hfloat((float)v); }
+
+template<> inline bfloat saturate_cast<bfloat>(uchar v)   { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(schar v)   { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(ushort v)  { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(short v)   { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(unsigned v){ return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(int v)     { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(uint64 v)  { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(int64 v)   { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(float v)   { return bfloat(v); }
+template<> inline bfloat saturate_cast<bfloat>(double v)  { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(hfloat v) { return bfloat((float)v); }
+template<> inline bfloat saturate_cast<bfloat>(bfloat v) { return v; }
+
+template<> inline bool saturate_cast<bool>(uchar v) { return v != 0; }
+template<> inline bool saturate_cast<bool>(schar v) { return v != 0; }
+template<> inline bool saturate_cast<bool>(ushort v) { return v != 0; }
+template<> inline bool saturate_cast<bool>(short v) { return v != 0; }
+template<> inline bool saturate_cast<bool>(unsigned v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(int v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(float v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(double v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(uint64_t v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(int64_t v){ return v != 0; }
+template<> inline bool saturate_cast<bool>(hfloat v){ return (float)v != 0; }
+template<> inline bool saturate_cast<bool>(bfloat v){ return (float)v != 0; }
 
 //! @}
 

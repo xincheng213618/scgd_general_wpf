@@ -13,9 +13,11 @@
 
 #ifdef __cplusplus
 #include <cstddef>
+#include <cstdint>
 #else
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #endif
 
 //! @name Data types
@@ -29,45 +31,24 @@
 //! - int64  - signed 8 byte integer
 //! - uint64 - unsigned 8 byte integer
 //! @{
-#if !defined _MSC_VER && !defined __BORLANDC__
-#  if defined __cplusplus && __cplusplus >= 201103L && !defined __APPLE__
-#    include <cstdint>
-#    ifdef __NEWLIB__
-        typedef unsigned int uint;
-#    else
-        typedef std::uint32_t uint;
-#    endif
-#  else
-#    include <stdint.h>
-     typedef uint32_t uint;
-#  endif
-#else
-   typedef unsigned uint;
-#endif
+typedef int8_t schar;
+typedef uint8_t uchar;
+typedef uint16_t ushort;
+typedef uint32_t uint;
+typedef int64_t int64;
+typedef uint64_t uint64;
 
-typedef signed char schar;
+#define CV_BIG_INT(n)   n##LL
+#define CV_BIG_UINT(n)  n##ULL
 
-#ifndef __IPL_H__
-   typedef unsigned char uchar;
-   typedef unsigned short ushort;
-#endif
-
-#if defined _MSC_VER || defined __BORLANDC__
-   typedef __int64 int64;
-   typedef unsigned __int64 uint64;
-#  define CV_BIG_INT(n)   n##I64
-#  define CV_BIG_UINT(n)  n##UI64
-#else
-   typedef int64_t int64;
-   typedef uint64_t uint64;
-#  define CV_BIG_INT(n)   n##LL
-#  define CV_BIG_UINT(n)  n##ULL
-#endif
+typedef int16_t cv_hal_f16;
+typedef int16_t cv_hal_bf16;
+//! @}
 
 #define CV_USRTYPE1 (void)"CV_USRTYPE1 support has been dropped in OpenCV 4.0"
 
-#define CV_CN_MAX     512
-#define CV_CN_SHIFT   3
+#define CV_CN_MAX     128
+#define CV_CN_SHIFT   5
 #define CV_DEPTH_MAX  (1 << CV_CN_SHIFT)
 
 #define CV_8U   0
@@ -78,9 +59,17 @@ typedef signed char schar;
 #define CV_32F  5
 #define CV_64F  6
 #define CV_16F  7
+#define CV_16BF 8
+#define CV_Bool 9
+#define CV_64U  10
+#define CV_64S  11
+#define CV_32U  12
+#define CV_DEPTH_CURR_MAX 13
 
 #define CV_MAT_DEPTH_MASK       (CV_DEPTH_MAX - 1)
 #define CV_MAT_DEPTH(flags)     ((flags) & CV_MAT_DEPTH_MASK)
+#define CV_IS_INT_TYPE(flags)   (((1 << CV_MAT_DEPTH(flags)) & 0x1e1f) != 0)
+#define CV_IS_FLOAT_TYPE(flags) (((1 << CV_MAT_DEPTH(flags)) & 0x1e0) != 0)
 
 #define CV_MAKETYPE(depth,cn) (CV_MAT_DEPTH(depth) + (((cn)-1) << CV_CN_SHIFT))
 #define CV_MAKE_TYPE CV_MAKETYPE
@@ -132,7 +121,36 @@ typedef signed char schar;
 #define CV_16FC3 CV_MAKETYPE(CV_16F,3)
 #define CV_16FC4 CV_MAKETYPE(CV_16F,4)
 #define CV_16FC(n) CV_MAKETYPE(CV_16F,(n))
-//! @}
+
+#define CV_64SC1 CV_MAKETYPE(CV_64S,1)
+#define CV_64SC2 CV_MAKETYPE(CV_64S,2)
+#define CV_64SC3 CV_MAKETYPE(CV_64S,3)
+#define CV_64SC4 CV_MAKETYPE(CV_64S,4)
+#define CV_64SC(n) CV_MAKETYPE(CV_64S,(n))
+
+#define CV_64UC1 CV_MAKETYPE(CV_64U,1)
+#define CV_64UC2 CV_MAKETYPE(CV_64U,2)
+#define CV_64UC3 CV_MAKETYPE(CV_64U,3)
+#define CV_64UC4 CV_MAKETYPE(CV_64U,4)
+#define CV_64UC(n) CV_MAKETYPE(CV_64U,(n))
+
+#define CV_BoolC1 CV_MAKETYPE(CV_Bool,1)
+#define CV_BoolC2 CV_MAKETYPE(CV_Bool,2)
+#define CV_BoolC3 CV_MAKETYPE(CV_Bool,3)
+#define CV_BoolC4 CV_MAKETYPE(CV_Bool,4)
+#define CV_BoolC(n) CV_MAKETYPE(CV_Bool,(n))
+
+#define CV_32UC1 CV_MAKETYPE(CV_32U,1)
+#define CV_32UC2 CV_MAKETYPE(CV_32U,2)
+#define CV_32UC3 CV_MAKETYPE(CV_32U,3)
+#define CV_32UC4 CV_MAKETYPE(CV_32U,4)
+#define CV_32UC(n) CV_MAKETYPE(CV_32U,(n))
+
+#define CV_16BFC1 CV_MAKETYPE(CV_16BF,1)
+#define CV_16BFC2 CV_MAKETYPE(CV_16BF,2)
+#define CV_16BFC3 CV_MAKETYPE(CV_16BF,3)
+#define CV_16BFC4 CV_MAKETYPE(CV_16BF,4)
+#define CV_16BFC(n) CV_MAKETYPE(CV_16BF,(n))
 
 //! @name Comparison operation
 //! @sa cv::CmpTypes

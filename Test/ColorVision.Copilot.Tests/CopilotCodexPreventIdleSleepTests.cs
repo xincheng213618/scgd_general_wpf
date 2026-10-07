@@ -1,7 +1,3 @@
-using ColorVision.Copilot;
-using System;
-using System.Threading;
-
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexPreventIdleSleepTests

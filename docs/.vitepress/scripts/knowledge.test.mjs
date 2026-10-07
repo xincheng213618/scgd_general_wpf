@@ -129,22 +129,22 @@ test('source maps derive real module directories, preserve cross-module links, a
 
   const artifacts = generatedArtifacts(catalog)
   const sourceMap = artifacts.get('docs/knowledge/code/source-UI.md')
-  assert.match(sourceMap, /关联，不是完整调用图/u)
+  assert.match(sourceMap, /不是完整调用图或主题所有权/u)
   assert.match(sourceMap, /\(\.\.\/\.\.\/ui\.exact\.md\)/u)
   assert.equal([...sourceMap.matchAll(/`ui\.exact`/gu)].length, 1, 'multiple code paths in one module must not duplicate its topic')
   assert.doesNotMatch(renderKnowledgeIndex(catalog), /ui\.exact|PropertyEditor\.cs/u, 'main index stays compact')
   const navigation = createNavigationData(catalog)
-  assert.equal(navigation.navItems[2].text.root, '源码模块')
+  const sourceSidebar = navigation.sidebarItems.find((item) => item.text.root === '源码模块')
+  assert.deepEqual(sourceSidebar.items.map((item) => item.link), groups.map((group) => `/knowledge/code/${group.key}`))
+  assert.ok(sourceSidebar.items.every((item) => !item.items), 'sidebar links to maps instead of duplicating their full cross-module topic graph')
+  assert.equal(navigation.sidebarItems.length, 3, 'navigation has only entry, source-map and capability-map groups')
   for (const group of groups) {
-    const sidebar = navigation.sidebarItems.find((item) => item.link === `/knowledge/code/${group.key}`)
-    assert.equal(sidebar.items.length, group.modules.length)
-    for (const [index, module] of group.modules.entries()) {
-      assert.equal(sidebar.items[index].link, `/knowledge/code/${group.key}#${module.anchor}`)
-      assert.deepEqual(sidebar.items[index].items.map((item) => item.link), module.entries.map((entry) => entry.url))
+    for (const module of group.modules) {
       assert.ok(artifacts.get(`docs/knowledge/code/${group.key}.md`).includes(`{#${module.anchor}}`))
+      for (const entry of module.entries) assert.ok(artifacts.get(`docs/knowledge/code/${group.key}.md`).includes(`\`${entry.knowledge_id}\``), 'complete associations remain available in the map')
     }
   }
-  assert.ok(navigation.navItems.find((item) => item.text.root === '能力领域'))
+  assert.ok(navigation.sidebarItems.find((item) => item.text.root === '能力领域（补充检索）'))
   assert.equal(impactCatalog(catalog, 'Test/ProjectionTests.cs').length, topics.length, 'test references remain in impact')
   assert.throws(() => codeCatalogGroups({ entries: [{ knowledge_id: 'ui.legacy' }] }), /regenerate/u)
 })
@@ -175,15 +175,16 @@ test('rejects missing fields, duplicate IDs, unknown relations and isolated topi
   await assert.rejects(buildCatalog(root), /duplicate knowledge_id/u)
 })
 
-test('current search preserves code symbols; planned/historical are opt-in and labeled in navigation', async (t) => {
+test('current search preserves code symbols; planned/historical are opt-in and labeled in maps', async (t) => {
   const root = await fixture(t)
   await fs.writeFile(path.join(root, 'docs/planned.md'), markdown({ knowledge_id: 'ui.planned', status: 'planned' }))
   await fs.writeFile(path.join(root, 'docs/history.md'), markdown({ knowledge_id: 'ui.history', status: 'historical' }))
   const catalog = await buildCatalog(root)
   for (const query of ['IViewResult', 'cv::Mat', 'poi_batch.cpp', '新增结果叠加']) assert.equal(searchCatalog(catalog, query).length, 1)
   assert.equal(searchCatalog(catalog, 'IViewResult', { all: true }).length, 3)
-  assert.match(JSON.stringify(createNavigationData(catalog)), /\[规划\]/u)
-  assert.match(JSON.stringify(createNavigationData(catalog)), /\[历史\]/u)
+  const domainMap = generatedArtifacts(catalog).get('docs/knowledge/domains/ui.md')
+  assert.ok(domainMap.includes('\\[规划\\]'))
+  assert.ok(domainMap.includes('\\[历史\\]'))
 })
 
 test('Chinese subject evidence locates the named subject without overriding exact identities or symbols', () => {

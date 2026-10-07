@@ -25,7 +25,7 @@ public partial class NewUserGuideOverlay : UserControl
         ApplyLocalizedText();
     }
 
-    internal void ShowWelcome(IEnumerable<NewUserGuideStep> steps)
+    internal void ShowGuide(IEnumerable<NewUserGuideStep> steps, bool showWelcome)
     {
         _steps = steps.ToArray();
         if (_steps.Length == 0)
@@ -37,8 +37,11 @@ public partial class NewUserGuideOverlay : UserControl
         FullShade.Visibility = Visibility.Visible;
         TourCanvas.Visibility = Visibility.Collapsed;
         CompletionCard.Visibility = Visibility.Collapsed;
-        WelcomeCard.Visibility = Visibility.Visible;
-        FocusElement(StartTourButton);
+        WelcomeCard.Visibility = showWelcome ? Visibility.Visible : Visibility.Collapsed;
+        if (showWelcome)
+            FocusElement(StartTourButton);
+        else
+            StartTour();
     }
 
     internal void StartTour()

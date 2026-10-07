@@ -1,4 +1,5 @@
-﻿#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.Editor;
@@ -408,7 +409,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     if (_executionSession.RequestedFlowParam != null || IsExecutionActive)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "请等待当前流程加载或执行完成后再保存。", "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("请等待当前流程加载或执行完成后再保存。"), "ColorVision");
                         return false;
                     }
                     return SaveNewFlow(FlowEngineManager.CreateFlowTemplate());

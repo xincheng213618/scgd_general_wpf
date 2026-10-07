@@ -2,7 +2,6 @@ using ColorVision.Themes;
 using Spectrum.Menus;
 using ColorVision.UI.Menus;
 using Spectrum.Help.Art;
-using System;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;

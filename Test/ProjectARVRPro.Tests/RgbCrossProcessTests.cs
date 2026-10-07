@@ -27,6 +27,24 @@ public sealed class RgbCrossProcessTests
     private static JObject Box(double x, double y, double w, double h) => new() { ["x"] = x, ["y"] = y, ["width"] = w, ["height"] = h };
 
     [Theory]
+    [InlineData("1.5.0")]
+    [InlineData("1.6.0")]
+    public void StructuredExportKeepsMultiPeakMeasurementAndWarning(string version)
+    {
+        var json = Measurement();
+        json["algorithm"]!["version"] = version;
+        json["points"]![0]!["warnings"] = new JArray("B:multiple_arm_bands");
+        var wrapped = new JObject { ["algorithmId"] = RgbCrossResultParser.AlgorithmId, ["algorithmVersion"] = version,
+            ["invocationId"] = json["measurementId"], ["status"] = "Succeeded",
+            ["artifacts"] = new JArray(new JObject { ["kind"] = "structuredData", ["name"] = "rgb-cross-measurement", ["data"] = json }) };
+        var parsed = RgbCrossResultParser.Parse(wrapped.ToString());
+        Assert.Equal(version, parsed.AlgorithmVersion);
+        Assert.Equal("B:multiple_arm_bands", parsed.Points[0].Warning);
+        Assert.Equal(0.5, parsed.Points[0].Comparisons["B-G"].Value);
+        Assert.Equal("MEASURED", parsed.Points[0].Comparisons["B-G"].Judgment);
+    }
+
+    [Theory]
     [InlineData(1, 1)]
     [InlineData(2, 3)]
     public void ExtendedLayoutParsesEvaluatesAndRendersEveryPoint(int rowCount, int columnCount)

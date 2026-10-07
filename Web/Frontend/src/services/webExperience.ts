@@ -39,7 +39,6 @@ const exactRoutes = new Set([
   '/admin/feedback',
   '/admin/users',
   '/admin/api-keys',
-  '/admin/copilot',
   '/admin/audit',
   '/admin/traffic',
   '/admin/operations/hosts',

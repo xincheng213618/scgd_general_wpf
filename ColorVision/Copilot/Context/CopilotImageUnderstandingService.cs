@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -205,7 +206,7 @@ namespace ColorVision.Copilot
         {
             var normalized = string.Join(" ", (value ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
             if (normalized.Length == 0)
-                return "未命名图片";
+                return LocalizedText.Get("未命名图片");
             return normalized.Length <= 120 ? normalized : normalized[..117] + "...";
         }
     }
@@ -265,7 +266,11 @@ namespace ColorVision.Copilot
                 cancellationToken).ConfigureAwait(false);
             var analysis = NormalizeAnalysis(reply.Content);
             if (analysis.Length == 0)
-                throw new InvalidOperationException("模型没有返回可用的图片解析结果。");
+            {
+                var exception = new InvalidOperationException("模型没有返回可用的图片解析结果。");
+                CopilotTokenBudgetChatClient.PreserveSettledFailureUsage(exception, reply.Usage);
+                throw exception;
+            }
 
             var context = string.Join(Environment.NewLine,
             [

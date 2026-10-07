@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Algorithms;
@@ -6,7 +7,6 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -99,7 +99,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             catch (Exception exception)
             {
                 input?.Image.Dispose();
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("剖面分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -123,7 +123,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => progressWindow?.Complete(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => input?.Image.Dispose(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("剖面分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -154,7 +154,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => input?.Image.Dispose(), ref ignored);
                 AlgorithmAnalysisResultWindowTransaction.CaptureCleanupFailure(() => ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId), ref ignored);
                 if (!progressWindow.WasCancelled && !cancellation.IsCancellationRequested)
-                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, "剖面分析", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AlgorithmAnalysisMessageBox.Show(windowOwner, exception.Message, LocalizedText.Get("剖面分析"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(image, invocation.InvocationId);
-                AlgorithmAnalysisMessageBox.Show(windowOwner, message, "剖面分析失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, message, LocalizedText.Get("剖面分析失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -202,7 +202,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 previous,
                 out Exception? presentationFailure);
             if (!shown && presentationFailure != null)
-                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, "剖面分析结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                AlgorithmAnalysisMessageBox.Show(windowOwner, presentationFailure.Message, LocalizedText.Get("剖面分析结果"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private static ImageProfileParameters? EditParameters(bool closePath, Window? owner)
@@ -210,7 +210,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             ImageProfileParameters parameters = new() { ClosePath = closePath };
             PropertyEditorWindow window = new(parameters)
             {
-                Title = "剖面采样参数",
+                Title = LocalizedText.Get("剖面采样参数"),
                 Owner = owner,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
@@ -237,7 +237,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             ImageProfileEditorTool tool = new(image, draw);
             return
             [
-                new MenuItemMetadata { OwnerGuid = "AlgorithmsCall", GuidId = "ImageProfile", Order = 1, Header = "灰度与颜色剖面" },
+                new MenuItemMetadata { OwnerGuid = AlgorithmMenuGroups.Statistics.Id, GuidId = "ImageProfile", Order = 2, Header = LocalizedText.Get("灰度与颜色剖面") },
                 Item("ImageProfileHorizontal", "水平剖面...", 0, tool.ExecuteHorizontal),
                 Item("ImageProfileVertical", "垂直剖面...", 1, tool.ExecuteVertical),
                 Item("ImageProfilePolyline", "任意折线剖面...", 2, tool.ExecutePolyline),

@@ -37,6 +37,18 @@ namespace ColorVision.UI.Desktop.Download
 
         [SugarColumn(IsNullable = true, ColumnDataType = "text")]
         public string? Authorization { get; set; }
+
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
+        public string? ExpectedSha256 { get; set; }
+
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
+        public string? DownloadDirectory { get; set; }
+
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
+        public string? WorkingPath { get; set; }
+
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
+        public string? ContentSha256 { get; set; }
     }
 
     public enum DownloadStatus

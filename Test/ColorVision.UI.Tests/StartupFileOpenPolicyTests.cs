@@ -1,6 +1,5 @@
 using ColorVision.Engine.Impl.SolutionImpl;
 using ColorVision.Solution.Editor;
-using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;
 

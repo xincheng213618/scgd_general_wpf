@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
 using Newtonsoft.Json.Linq;
-using System.Globalization;
 using System.IO;
 
 namespace ProjectARVRPro.Process.OpticCenter;
@@ -90,11 +89,11 @@ internal static class RgbCrossResultParser
         {
             Require(Text(root, "algorithmId") == AlgorithmId, "不是十字 RGB 导出结果。");
             result.AlgorithmVersion = Text(root, "algorithmVersion");
-            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0" or "1.3.0" or "1.4.0" or "1.5.0", "不支持的十字算法版本。");
+            Require(result.AlgorithmVersion is "1.1.0" or "1.2.0" or "1.3.0" or "1.4.0" or "1.5.0" or "1.6.0", "不支持的十字算法版本。");
             Require(Text(root, "status") == "Succeeded", "算法未成功完成。");
             result.MeasurementId = Text(root, "invocationId");
             JArray artifacts = Array(root, "artifacts");
-            if (result.AlgorithmVersion is "1.4.0" or "1.5.0")
+            if (result.AlgorithmVersion is "1.4.0" or "1.5.0" or "1.6.0")
             {
                 var payload = artifacts.SingleOrDefault(a => a["kind"]?.Value<string>() == "structuredData" && a["name"]?.Value<string>() == "rgb-cross-measurement")?["data"] as JObject
                     ?? throw new InvalidDataException("缺少十字结构化测量结果。");

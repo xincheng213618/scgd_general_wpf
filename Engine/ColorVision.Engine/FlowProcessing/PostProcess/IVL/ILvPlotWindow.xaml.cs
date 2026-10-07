@@ -56,6 +56,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess.IVL
         public ILvPlotWindow(List<SMUResultModel> smuResults, List<PoiResultCIExyuvData> poixyuvDatas, ObservableCollection<ViewResultSpectrum> spectrumResults)
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _groupedData = new Dictionary<string, List<ILvDataPoint>>();
             _scatterPlots = new Dictionary<string, Scatter>();
             _seriesNames = new List<string>();

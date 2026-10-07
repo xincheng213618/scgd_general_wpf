@@ -6,7 +6,6 @@ using ProjectARVRPro.Process.MTF.MTF07;
 using ProjectARVRPro.Process.MTF.MTF07.MTFH;
 using ProjectARVRPro.Process.MTF.MTF07.MTFV;
 using ProjectARVRPro.Recipe;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

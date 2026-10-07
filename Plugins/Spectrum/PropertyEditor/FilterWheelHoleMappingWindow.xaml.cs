@@ -13,6 +13,7 @@ public partial class FilterWheelHoleMappingWindow : Window
     {
         session = new FilterWheelHoleMappingEditSession(mapping);
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = session;
     }
 

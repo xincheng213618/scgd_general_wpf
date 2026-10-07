@@ -1,3 +1,5 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
+using ColorVision.ImageEditor.Algorithms;
 #pragma warning disable CS8602,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
@@ -87,8 +89,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                         if (!ImageContext.IsCurrentImageRevision(revision)) return;
 
                         MessageBox.Show(
-                            $"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。",
-                            "错误",
+                            LocalizedText.Format($"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。"),
+                            LocalizedText.Get("错误"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     });
@@ -178,11 +180,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 return menuItems;
             }
 
-            var menuItem = new MenuItem { Header = "FindLightBeads" };
+            var menuItem = new MenuItem { Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads + "..." };
             menuItem.Click += (s, e) =>
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
-                var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var PropertyEditorWindow = new PropertyEditorWindow(config) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLightBeads(_imageContext, _drawContext).Execute(config, new RoiRect(roiX, roiY, roiW, roiH));
@@ -203,7 +205,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             RelayCommand FindLightBeadsCommand = new(o =>
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
-                var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var PropertyEditorWindow = new PropertyEditorWindow(config) { Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLightBeads(ImageContext, DrawContext).Execute(config, new RoiRect());
@@ -212,10 +214,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             });
             MenuItemMetadatas.Add(new MenuItemMetadata()
             {
-                OwnerGuid = "AlgorithmsCall",
+                OwnerGuid = AlgorithmMenuGroups.Localization.Id,
                 GuidId = "FindLightBeads",
-                Order = 2,
-                Header = "FindLightBeads",
+                Order = 3,
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FindLightBeads + "...",
                 Command = FindLightBeadsCommand
             });
             return MenuItemMetadatas;

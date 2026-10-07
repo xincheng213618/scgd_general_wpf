@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
-using ColorVision.FileIO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -30,7 +29,6 @@ using Conoscope.ApplicationServices.Capture;
 using System.Collections.Generic;
 using System.ComponentModel;
 using ColorVision.Core;
-using ColorVision.ImageEditor;
 using Conoscope.Presentation.Formatters;
 using System.Windows.Input;
 using Conoscope.Presentation.Helpers;
@@ -815,7 +813,7 @@ namespace Conoscope
         private void btnEditFlowTemplates_Click(object sender, RoutedEventArgs e)
         {
             int selectedIndex = Math.Max(0, cbFlowTemplate.SelectedIndex);
-            new TemplateEditorWindow(new TemplateFlow(), selectedIndex)
+            new FlowTemplateManagerWindow(new TemplateFlow(), selectedIndex)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

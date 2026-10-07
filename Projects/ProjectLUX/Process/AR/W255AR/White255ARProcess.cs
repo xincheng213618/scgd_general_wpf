@@ -5,13 +5,9 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
 using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectLUX.Fix;
 using System.ComponentModel;
-using System.Windows;
-using System.Windows.Media;
 
 namespace ProjectLUX.Process.W255AR
 {

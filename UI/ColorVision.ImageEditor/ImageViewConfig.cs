@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Properties;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using ColorVision.ImageEditor.Settings;

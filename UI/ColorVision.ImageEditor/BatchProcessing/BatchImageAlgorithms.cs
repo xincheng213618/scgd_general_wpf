@@ -54,6 +54,25 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
         public string Name { get; }
 
+        public string DisplayName
+        {
+            get
+            {
+                if (Descriptor == null) return Name;
+                if (Descriptor.Id == StandardAlgorithmIds.Morphology) return Properties.Resources.BatchAlgorithmMorphology;
+                if (Descriptor.Id == StandardAlgorithmIds.Denoise) return Properties.Resources.BatchAlgorithmDenoise;
+                if (Descriptor.Id == StandardAlgorithmIds.PseudoColor) return Properties.Resources.ColormapTypes;
+                var entries = Descriptor.Presentation?.InteractiveEntries;
+                var entry = entries?.Count == 1 ? entries[0] : entries?.FirstOrDefault(item => item.DisplayName == Name);
+                if (!string.IsNullOrWhiteSpace(entry?.ResourceKey))
+                {
+                    string? localized = Properties.Resources.ResourceManager.GetString(entry.ResourceKey, Properties.Resources.Culture ?? System.Globalization.CultureInfo.CurrentUICulture);
+                    if (!string.IsNullOrWhiteSpace(localized)) return localized;
+                }
+                return Name;
+            }
+        }
+
         public string Suffix { get; }
 
         public object Options { get; }
@@ -262,7 +281,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
     public static class BatchImageAlgorithms
     {
         public static BatchImageAlgorithmDefinition CreateFormatOnly()
-            => new("仅转换格式", string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
+            => new(Properties.Resources.BatchFormatOnly, string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone());
 
         public static IReadOnlyList<BatchImageAlgorithmDefinition> CreateAll()
             => CreateAll(ImageAlgorithmPlatform.Runtime);

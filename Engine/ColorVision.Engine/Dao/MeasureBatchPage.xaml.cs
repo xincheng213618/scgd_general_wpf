@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1001,CA1863
+﻿#pragma warning disable CA1863
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Algorithm;
@@ -23,12 +23,14 @@ namespace ColorVision.Engine
     /// <summary>
     /// MeasureBatchPage.xaml 的交互逻辑
     /// </summary>
-    public partial class MeasureBatchPage : Page
+    public partial class MeasureBatchPage : Page, IDisposable
     {
         public Frame Frame { get; set; }
         public MeasureBatchModel MeasureBatchModel { get; set; }
         private CopilotDynamicContextSession? _copilotContextSession;
         private Window? _copilotHostWindow;
+        private Window? _hostWindow;
+        private bool _isDisposed;
         private string _lastSelectedResultKind = string.Empty;
         private readonly ObservableCollection<GridViewColumnVisibility> _algorithmDetailColumnVisibilitys = new();
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
@@ -47,6 +49,7 @@ namespace ColorVision.Engine
                 SideTextBox = algorithmDetailTextBox
             };
             CommandBindings.Add(new CommandBinding(AlgorithmResultDataSaver.SaveCommand, SaveSideDataCommand_Executed, SaveSideDataCommand_CanExecute));
+            Loaded += Page_Loaded;
         }
 
         public ObservableCollection<ViewResultImage> ViewResultImages { get; set; } = new ObservableCollection<ViewResultImage>();
@@ -62,8 +65,29 @@ namespace ColorVision.Engine
             listView2.ItemsSource = ViewResultAlgs;
 
         }
+        private void Page_LifetimeLoaded(object sender, RoutedEventArgs e)
+        {
+            if (_isDisposed)
+                return;
+
+            var window = Window.GetWindow(this);
+            if (ReferenceEquals(_hostWindow, window))
+                return;
+
+            if (_hostWindow != null)
+                _hostWindow.Closed -= HostWindow_Closed;
+            _hostWindow = window;
+            if (_hostWindow != null)
+                _hostWindow.Closed += HostWindow_Closed;
+        }
+
+        private void HostWindow_Closed(object? sender, EventArgs e) => Dispose();
+
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             ViewResultImages.Clear();
             foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(MeasureBatchModel.Id))
             {
@@ -91,9 +115,47 @@ namespace ColorVision.Engine
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
         {
+            if (_isDisposed)
+                return;
+
             imagePreview.Clear();
             ClearAlgorithmResultSurface();
+            ViewResultImages.Clear();
+            ViewResultAlgs.Clear();
             ReleaseCopilotContext();
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            Loaded -= Page_LifetimeLoaded;
+            Loaded -= Page_Loaded;
+            Unloaded -= Page_Unloaded;
+            // Navigation unloads pages that the Frame may still retain for back/forward.
+            // Keep the host-close subscription until then so every visited page is disposed.
+            if (_hostWindow != null)
+            {
+                _hostWindow.Closed -= HostWindow_Closed;
+                _hostWindow = null;
+            }
+            ReleaseCopilotContext();
+            listView1.SelectionChanged -= listView1_SelectionChanged;
+            listView2.SelectionChanged -= listView1_SelectionChanged;
+            ResultTabs.SelectionChanged -= ResultTabs_SelectionChanged;
+            listView1.ItemsSource = null;
+            listView2.ItemsSource = null;
+            ViewResultImages.Clear();
+            ViewResultAlgs.Clear();
+            ClearAlgorithmResultSurface();
+            imagePreview.Dispose();
+            algorithmImagePreview.Dispose();
+            AlgorithmView?.Dispose();
+            AlgorithmView = null;
+            CommandBindings.Clear();
+            GC.SuppressFinalize(this);
         }
 
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -232,6 +294,7 @@ namespace ColorVision.Engine
                 {
                     AlgorithmView = new AlgorithmView();
                     Window window = new Window() { Content = AlgorithmView ,Owner =Application.Current.GetActiveWindow() };
+                    ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                     window.Closed += (s, args) =>
                     {
                         AlgorithmView?.Dispose();

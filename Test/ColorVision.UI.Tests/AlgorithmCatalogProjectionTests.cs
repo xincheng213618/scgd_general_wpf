@@ -5,7 +5,6 @@ using ColorVision.ImageEditor.BatchProcessing;
 using ColorVision.ImageEditor.EditorTools.Algorithms;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using System.Collections;
 using System.Text.Json;
@@ -86,7 +85,7 @@ public sealed class AlgorithmCatalogProjectionTests
             .Where(item => item.Presentation.Group?.Id == "AlgorithmFilters")
             .ToArray();
         Assert.NotEmpty(filters);
-        Assert.All(filters, item => Assert.Equal("滤波", item.Presentation.Group!.DisplayName));
+        Assert.All(filters, item => Assert.Equal("滤波与增强", item.Presentation.Group!.DisplayName));
         Assert.Equal(batchEntries.Length, batchEntries.Select(item => item.Presentation!.BatchImageProcessingOrder).Distinct().Count());
 
         AlgorithmDescriptor canny = catalog.Descriptors.Single(item => item.Id == StandardAlgorithmIds.Canny);
@@ -504,7 +503,7 @@ public sealed class AlgorithmCatalogProjectionTests
                 Assert.Null(category.Command);
                 ColorVision.UI.Menus.MenuItemMetadata projected = Assert.Single(items, item => item.GuidId == "TestContextMenuProjection");
                 Assert.Equal(group.Id, projected.OwnerGuid);
-                Assert.Equal(1, projected.Order);
+                Assert.Equal(42, projected.Order);
                 Assert.Equal("Projected algorithm", projected.Header);
                 Assert.NotNull(projected.Command);
 

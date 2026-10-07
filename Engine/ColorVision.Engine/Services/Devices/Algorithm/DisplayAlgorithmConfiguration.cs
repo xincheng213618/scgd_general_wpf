@@ -2,10 +2,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 
@@ -83,13 +83,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private readonly int _editorIndexOffset;
 
         [Browsable(false)]
-        public string DisplayName { get; }
+        public string DisplayName => Properties.Resources.ResourceManager.GetString(_displayName, CultureInfo.CurrentUICulture) ?? _displayName;
+        private readonly string _displayName;
 
         [Browsable(false)]
         public ITemplate Template { get; }
 
         [Browsable(false)]
-        public string ValidationMessage { get; }
+        public string ValidationMessage => Properties.Resources.ResourceManager.GetString(_validationMessage, CultureInfo.CurrentUICulture) ?? _validationMessage;
+        private readonly string _validationMessage;
 
         [Browsable(false)]
         public IEnumerable ItemsSource => _itemsSource;
@@ -127,9 +129,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Action<int>? selectedIndexSetter = null,
             int editorIndexOffset = 0)
         {
-            DisplayName = displayName;
+            _displayName = displayName;
             Template = template;
-            ValidationMessage = validationMessage;
+            _validationMessage = validationMessage;
             _itemsSource = itemsSource?.Invoke() ?? template.ItemsSource;
             _selectedIndex = selectedIndex;
             _selectedIndexGetter = selectedIndexGetter;
@@ -181,11 +183,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void OpenTemplateEditor()
         {
-            new TemplateEditorWindow(Template, SelectedIndex + _editorIndexOffset)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.Show();
+            var window = Template.CreateManagerWindow(SelectedIndex + _editorIndexOffset);
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
         }
     }
 }

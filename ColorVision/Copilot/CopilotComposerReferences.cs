@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using ColorVision.Engine.Templates;
 using System;
 using System.Collections.Generic;
@@ -34,10 +35,10 @@ namespace ColorVision.Copilot
 
         public string KindLabel => Kind switch
         {
-            CopilotComposerReferenceKind.Template => "模板",
-            CopilotComposerReferenceKind.Menu => "菜单",
+            CopilotComposerReferenceKind.Template => LocalizedText.Get("模板"),
+            CopilotComposerReferenceKind.Menu => LocalizedText.Get("菜单"),
             CopilotComposerReferenceKind.Skill => "Skill",
-            _ => "文件",
+            _ => LocalizedText.Get("文件"),
         };
 
         public string IconGlyph => Kind switch

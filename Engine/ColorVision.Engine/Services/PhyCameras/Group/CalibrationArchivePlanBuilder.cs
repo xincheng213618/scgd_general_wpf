@@ -1,4 +1,3 @@
-using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.Types;
 using Newtonsoft.Json;
 using System.Collections.Generic;

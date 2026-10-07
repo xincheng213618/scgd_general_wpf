@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -6,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes;
@@ -89,7 +89,7 @@ public partial class LocalFindCrossConfigurationWindow : Window
             foreach (TextBox box in Descendants(FormScroll).OfType<TextBox>()) box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             if (draft == null || !draft.TryGetJson(out json, out error))
             {
-                ErrorText.Text = draft == null ? "请先修正 JSON 配置。" : error;
+                ErrorText.Text = draft == null ? LocalizedText.Get("请先修正 JSON 配置。") : error;
                 if (draft != null) FocusInvalidField(draft.ErrorProperty);
                 return false;
             }
@@ -109,7 +109,7 @@ public partial class LocalFindCrossConfigurationWindow : Window
 
     private void Validate_Click(object sender, RoutedEventArgs e)
     {
-        if (TryGetConfiguration(out _)) ErrorText.Text = "配置有效。";
+        if (TryGetConfiguration(out _)) ErrorText.Text = LocalizedText.Get("配置有效。");
     }
 
     private void Apply_Click(object sender, RoutedEventArgs e)

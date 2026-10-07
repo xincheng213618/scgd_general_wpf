@@ -1,10 +1,7 @@
-using ColorVision.Common.MVVM;
-using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.Reflection;
-using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
 {

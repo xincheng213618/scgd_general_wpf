@@ -3,13 +3,13 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../package_camera_test.ps1')
 
 foreach ($path in @('CameraTest.exe', 'runtimes/win-x64/native/cvCamera.dll', 'toupcam.dll', 'nncam.dll',
-    'IKapC.dll', 'cfg/sys.cfg', 'zh-Hans/ColorVision.UI.resources.dll', 'LICENSE.txt')) {
+    'IKapC.dll', 'zh-Hans/ColorVision.UI.resources.dll', 'LICENSE.txt')) {
     if (!(Test-CameraTestPackageFile $path)) { throw "Required distribution asset was excluded: $path" }
 }
 foreach ($path in @('ColorVision.Engine.exe', 'ColorVision.UI.Desktop.runtimeconfig.json', 'Config/CameraTest.json',
     'Archive/SN/image.png', 'Logs/log.txt', 'camera.lic', 'ColorVision.Database.pdb', 'test.db', 'profile.json',
     'runtimes/win-arm64/native/cvCamera.dll', 'runtimes/linux-x64/native/lib.so', 'Tools/Spectrum/zadig.exe',
-    'Assets/Tool/aria2c.exe', '../unrelated.dll', 'C:/private.dll')) {
+    'Assets/Tool/aria2c.exe', 'cfg/sys.cfg', 'sys.cfg', '../unrelated.dll', 'C:/private.dll')) {
     if (Test-CameraTestPackageFile $path) { throw "Unexpected file accepted: $path" }
 }
 
@@ -17,7 +17,7 @@ $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('CameraTest-package-contract-'
 [IO.Directory]::CreateDirectory($testRoot) | Out-Null
 try {
     foreach ($name in @('CameraTest.exe', 'CameraTest.dll', 'ColorVision.Engine.dll', 'ColorVision.Core.dll',
-        'ColorVision.ImageEditor.dll', 'cvColorVision.dll', 'cvCamera.dll', 'OpenCvSharpExtern.dll', 'opencv_helper.dll', 'sys.cfg')) {
+        'ColorVision.ImageEditor.dll', 'cvColorVision.dll', 'cvCamera.dll', 'OpenCvSharpExtern.dll', 'opencv_helper.dll')) {
         [IO.File]::WriteAllBytes((Join-Path $testRoot $name), [byte[]]@(0))
     }
     '{"runtimeOptions":{"frameworks":[{"name":"Microsoft.WindowsDesktop.App","version":"10.0.0"}]}}' |

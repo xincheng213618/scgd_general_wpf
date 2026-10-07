@@ -1,5 +1,7 @@
-﻿using ColorVision.Database;
+using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Browser;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -20,6 +22,7 @@ namespace ColorVision.Engine.Templates.POI
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
         private readonly PoiTemplateStorage storage;
+
         public TemplatePoi() : this(PoiTemplateStorage.Default) { }
         public TemplatePoi(PoiTemplateStorage storage)
         {
@@ -31,6 +34,7 @@ namespace ColorVision.Engine.Templates.POI
             TemplateParams = Params;
         }
         public EditPoiParam EditWindow { get; set; }
+        public override Window CreateManagerWindow(int selectedIndex = 0) => new PoiTemplateManagerWindow(this, selectedIndex);
         public override void PreviewMouseDoubleClick(int index)
         {
             EditWindow = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
@@ -51,10 +55,11 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     existing.Value = value;
                     existing.Key = value.Name;
-                    Params.Move(Params.IndexOf(existing), i);
+                    int previous = Params.IndexOf(existing);
+                    if (previous != i) Params.Move(previous, i);
                 }
             }
-            Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? " · 本地" : " · MySQL");
+            Title = ColorVision.Engine.Properties.Resources.POISetting + (storage.IsLocal ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 
@@ -68,6 +73,8 @@ namespace ColorVision.Engine.Templates.POI
                 }
             SaveIndex.Clear();
         }
+
+        public override void Save(TemplateModel<PoiParam> item) => (item.Value.Storage ?? storage).SaveMetadata(item.Value);
 
         public override void Delete(int index)
         {
@@ -208,104 +215,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             catch (JsonException ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
-                return false;
-            }
-        }
-
-        public override bool SwapTemplateOrder(int index1, int index2)
-        {
-            if (index1 < 0 || index1 >= TemplateParams.Count || index2 < 0 || index2 >= TemplateParams.Count)
-                return false;
-
-            if (index1 == index2)
-                return true;
-
-            try
-            {
-                var template1 = TemplateParams[index1];
-                var template2 = TemplateParams[index2];
-
-                // Get the IDs from database
-                int id1 = template1.Value.Id;
-                int id2 = template2.Value.Id;
-
-                if (PoiTemplateStorage.IsLocalId(id1) || PoiTemplateStorage.IsLocalId(id2))
-                {
-                    if (!PoiTemplateStorage.IsLocalId(id1) || !PoiTemplateStorage.IsLocalId(id2)) return false;
-                    (template1.Value.Storage ?? storage).SwapLocalOrder(id1, id2);
-                    (TemplateParams[index1], TemplateParams[index2]) = (TemplateParams[index2], TemplateParams[index1]);
-                    return true;
-                }
-                if (!MySqlSetting.IsConnect) return false;
-
-                // Swap the IDs in the database using a three-step process to avoid constraint violations
-                // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
-                int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                // Step 1: Move template1 to temporary ID
-                var poiMaster1 = Db.Queryable<PoiMasterModel>().InSingle(id1);
-                if (poiMaster1 != null)
-                {
-                    poiMaster1.Id = tempId;
-                    Db.Updateable(poiMaster1).ExecuteCommand();
-                }
-
-                var poiDetails1 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == id1).ToList();
-                foreach (var detail in poiDetails1)
-                {
-                    detail.Pid = tempId;
-                }
-                if (poiDetails1.Count > 0)
-                    Db.Updateable(poiDetails1).ExecuteCommand();
-
-                // Step 2: Move template2 to id1
-                var poiMaster2 = Db.Queryable<PoiMasterModel>().InSingle(id2);
-                if (poiMaster2 != null)
-                {
-                    poiMaster2.Id = id1;
-                    Db.Updateable(poiMaster2).ExecuteCommand();
-                }
-
-                var poiDetails2 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == id2).ToList();
-                foreach (var detail in poiDetails2)
-                {
-                    detail.Pid = id1;
-                }
-                if (poiDetails2.Count > 0)
-                    Db.Updateable(poiDetails2).ExecuteCommand();
-
-                // Step 3: Move template1 from temporary to id2
-                poiMaster1 = Db.Queryable<PoiMasterModel>().InSingle(tempId);
-                if (poiMaster1 != null)
-                {
-                    poiMaster1.Id = id2;
-                    Db.Updateable(poiMaster1).ExecuteCommand();
-                }
-
-                poiDetails1 = Db.Queryable<PoiDetailModel>().Where(x => x.Pid == tempId).ToList();
-                foreach (var detail in poiDetails1)
-                {
-                    detail.Pid = id2;
-                }
-                if (poiDetails1.Count > 0)
-                    Db.Updateable(poiDetails1).ExecuteCommand();
-
-                // Update the in-memory values
-                template1.Value.Id = id2;
-                template2.Value.Id = id1;
-
-                // Swap the items in the ObservableCollection using proper swap
-                var temp = TemplateParams[index1];
-                TemplateParams[index1] = TemplateParams[index2];
-                TemplateParams[index2] = temp;
-
-                return true;
-            }
-            catch (System.Exception)
-            {
-                // Let the caller handle the error display
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Format($"解析模板文件时出错: {ex.Message}"), "ColorVision");
                 return false;
             }
         }

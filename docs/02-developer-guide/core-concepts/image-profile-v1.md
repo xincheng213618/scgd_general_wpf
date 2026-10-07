@@ -5,7 +5,7 @@ status: "current"
 summary: "灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。"
 aliases: ["CIE Y", "CIE Yxy", "CIE x/y", "原始亮度剖面", "灰度与颜色剖面", "水平剖面", "垂直剖面", "任意折线剖面", "切面图", "截面图", "剖面采样参数", "剖面导出", "剖面采样数据", "剖面曲线", "ImageProfile", "LineProfile", "SectionalDrawing", "ImageProfileAlgorithmProvider", "ImageProfileParameters", "ImageProfileEditorTool", "ImageProfileResultWindow", "ProfileDataExtractor", "ProfileData", "ProfileChartWindow", "ImageProfileInterpolation", "ImageProfileBoundaryMode", "SampleSpacingPixels", "IncludeLuminance", "IncludeAlpha", "ImageProfileParameters.MaximumSamples", "ImageProfileParameters.ClosePath", "ImageProfileParameters.BoundaryMode", "ImageProfileParameters.Interpolation", "profile_path_required", "profile_path_degenerate", "profile_path_point_limit_exceeded", "profile_sample_limit_exceeded", "profile_execution_sample_budget_exceeded", "profile_result_budget_exceeded", "profile_sample_out_of_bounds", "profile_no_samples"]
 code_paths: ["UI/ColorVision.ImageEditor/Algorithms/IImageProfileMeasurementSource.cs", "Engine/ColorVision.Engine/Media/CvcieProfileSource.cs", "Engine/ColorVision.Engine/Media/CvRawProfileSource.cs", "Engine/ColorVision.Engine/Media/CombinedProfileSource.cs", "Engine/ColorVision.Engine/Media/CVRawOpen.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileAlgorithmProvider.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageProfileParameters.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmPlatform.cs", "UI/ColorVision.ImageEditor/Algorithms/ImageAlgorithmInputFactory.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmImageInterop.cs", "UI/ColorVision.ImageEditor/Algorithms/AlgorithmResultExporter.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/ImageProfile", "UI/ColorVision.ImageEditor/TransientRoiSelectionSession.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileDataExtractor.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileData.cs", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml", "UI/ColorVision.ImageEditor/Draw/Line/ProfileChartWindow.xaml.cs", "UI/ColorVision.ImageEditor/Draw/Line/DVLineDVContextMenu.cs", "UI/ColorVision.ImageEditor/Draw/Polygon/DVPolygonDVContextMenu.cs", "UI/ColorVision.ImageEditor/BatchProcessing/BatchAlgorithmAnalysisProcessor.cs", "Engine/ColorVision.Engine/FlowProcessing/Algorithms/LocalFlowImageAlgorithmAdapter.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CvcieProfileTests.cs", "Test/ColorVision.UI.Tests/CvRawProfileTests.cs", "Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs", "Test/ColorVision.UI.Tests/ImageProfileV1Tests.cs", "Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs", "Test/ColorVision.UI.Tests/TransientRoiSelectionSessionTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/CvRawProfileTests.cs","Test/ColorVision.UI.Tests/CalibratedRawDisplayTests.cs","Test/ColorVision.UI.Tests/ProfileDataExtractorTests.cs"]
 related: ["algorithms.platform", "algorithms.index", "algorithms.roi-statistics", "algorithms.image-comparison"]
 ---
 
@@ -60,9 +60,9 @@ CVCIE 结果窗口的数据源提供：
 
 文件头没有可靠的单位声明，因此 Y/XYZ 的单位留空，不写为 `cd/m²` 或 `DN`；不能单凭 CVCIE 扩展名声称其 Y 已经是经标定的物理亮度 Lv。x/y 单位为 `1`（无量纲）。窗口标题、图例、统计、采样表及完整 CSV/JSON 均用 `CIE Y`、`CIE x`、`CIE y` 等明确区分。32-bit float 提升到 double 参与计算，64-bit double 不降为 float；不归一化、不夹紧负数。
 
-`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。
+`CVRawOpen` 只向 UI 注入 `ImageProfileSourceOption` 工厂；UI 的 `IImageProfileMeasurementSource` 不依赖 Engine/FileIO。`CvcieProfileSource` 和未命中缓存的 `CvRawProfileSource` 在工作线程持有只读文件映射，按采样位置读取像素，不复制整幅 Y/XYZ 数组或显示帧。CVRAW 每个相邻像素调用原生色度变换，保留原生 float 输出后再插值 XYZ、计算 x/y，与已保存 CIE 的采样顺序一致；四邻域缓存仅服务当前采样，不创建整幅 XYZ。分析不写回文件；结束/错误/取消均释放映射及句柄。文件版本 1/2/3 的负载长度、尺寸、通道、位深与完整性必须校验。从磁盘打开时记录的测量文件或关联 RAW 长度/修改时间变化、原图尺寸不匹配或 document/revision 过期都拒绝结果，不回退到显示数据冒充测量值。CVRAW 命中文件缓存时，显示阶段只注册剖面工厂，不读取磁盘指纹；实际执行优先从缓存复制 RAW 像素并取得校正参数，随即归还缓存流；文件尚未落盘或仅缓存时也可计算，测量结束释放独立副本。未命中才使用磁盘映射。
 
-测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。`CvcieProfileTests` 覆盖版本、32/64 位、Yxy 插值顺序、统计/导出、无效值、取消/释放及上下文失效。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
+测量入口使用同一 CPU scheduler、analysis session 和结果预算，调用 Provider 的 `ExecuteMeasurement` 核心；此扩展只用于交互剖面，不改变通用 `AlgorithmImageBuffer` 格式、Batch/Flow 的现有输入规则。大文件实际磁盘延迟、真实标定单位和客户仪器对标仍需现场验收。
 
 ## 读懂曲线与样本表
 
@@ -182,6 +182,6 @@ ImageView、Batch 与本地 Flow adapter 复用同一 Provider，但参数、格
 
 ## 验证范围
 
-`ImageProfileV1Tests` 检查采样/插值、分段与端点、DPI/物理坐标、颜色和非有限值、均值与总体标准差、三种边界模式、预算、取消/释放、图表/overlay、3001 行有界预览及 2501 行完整 CSV，并用合成输入比较 Batch/Flow 结果。`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
+`ProfileDataExtractorTests` 覆盖旧接口的 Gray8、Bgr24、Rgb48、闭合和 Skip；未覆盖 Indexed8 返回模型和默认 500 步的极短路径。
 
-`TransientRoiSelectionSessionTests` 明确测试两点、共线和自交多边形被拒绝；这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。
+这验证共享选择器，不证明“任意折线”入口已支持这些路径。现有用例也不能替代完整鼠标流程、预览遗漏尖峰、导出关闭/提交竞态和极短路径容差的验证。交付门禁见[统一平台](./image-algorithm-platform-v1.md#m0-验收门禁)。

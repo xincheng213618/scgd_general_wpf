@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectKB.DisplayText;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,6 +14,7 @@ namespace ProjectKB.Auth
         public KBLoginWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             UserNameTextBox.Text = KBAuthManager.GetInstance().AdminUserName;
             Loaded += (s, e) => PasswordBox.Focus();
         }
@@ -91,7 +93,7 @@ namespace ProjectKB.Auth
                 else
                 {
                     ShowError("账号或密码错误");
-                    AttemptText.Text = $"剩余尝试次数：{remaining}";
+                    AttemptText.Text = LocalizedText.Format($"剩余尝试次数：{remaining}");
                     AttemptText.Visibility = Visibility.Visible;
                     PasswordBox.Clear();
                     PasswordBox.Focus();

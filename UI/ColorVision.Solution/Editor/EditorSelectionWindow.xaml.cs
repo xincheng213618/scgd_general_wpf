@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.NativeMethods;
+﻿using LocalizedText = global::ColorVision.Solution.DisplayText;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Themes;
 using System.IO;
 using System.Windows;
@@ -48,8 +49,8 @@ namespace ColorVision.Solution.Editor
                 ? ColorVision.Solution.Properties.Resources.Sol_OpenFolderHint
                 : ColorVision.Solution.Properties.Resources.Sol_OpenFileHint;
             AlwaysUseCheckBox.Content = isFolder
-                ? "始终使用此编辑器打开文件夹"
-                : "始终使用此编辑器打开此类文件";
+                ? LocalizedText.Get("始终使用此编辑器打开文件夹")
+                : LocalizedText.Get("始终使用此编辑器打开此类文件");
             EditorTypes = descriptors.Select(descriptor =>
                 new EditorDescriptorViewModel(descriptor, resourcePath)).ToList();
             ListEditorSelection.ItemsSource = EditorTypes;

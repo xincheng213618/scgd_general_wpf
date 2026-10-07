@@ -202,7 +202,7 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
                 viewModel.Dispose();
                 break;
             case "new-notice":
-                viewModel.BackendSyncUrl = "https://changed.example.test/configuration";
+                viewModel.AgentTimeoutSeconds++;
                 break;
             default:
                 throw new InvalidOperationException("Unknown refresh transition.");
@@ -268,7 +268,7 @@ public sealed class CopilotExternalMcpRefreshTests : IDisposable
         var configHandler = new ConfigHandler { ConfigFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json") };
         configHandler.Configs[typeof(CopilotConfig)] = config;
         var provider = new CopilotMcpToolProvider(new CopilotMcpToolDiscoveryCache(), new CopilotCapabilityCatalog(), handler.CreateClient);
-        return new CopilotSettingsViewModel(configHandler, new CopilotBackendSyncClient(),
+        return new CopilotSettingsViewModel(configHandler,
             new CopilotChatState { ActiveProfileId = config.Profiles[0].Id }, externalMcpToolProvider: provider);
     }
 

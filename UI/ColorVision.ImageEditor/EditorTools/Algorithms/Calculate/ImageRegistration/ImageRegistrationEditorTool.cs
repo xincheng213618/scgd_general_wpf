@@ -1,5 +1,5 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
-using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Algorithms;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageComparison;
@@ -34,7 +34,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             if (parametersWindow.ShowDialog() != true) return;
             OpenFileDialog dialog = new()
             {
-                Title = "选择 moving 图像",
+                Title = LocalizedText.Get("选择 moving 图像"),
                 Filter = "图像文件|*.bmp;*.gif;*.ico;*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.webp|所有文件|*.*",
                 CheckFileExists = true,
                 Multiselect = false,
@@ -67,7 +67,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             {
                 referenceInput?.Image.Dispose();
                 movingInput?.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像配准", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("图像配准"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -76,7 +76,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             {
                 referenceInput.Image.Dispose();
                 movingInput.Image.Dispose();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "当前图像在创建配准快照时已改变，请重试。", "图像配准", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("当前图像在创建配准快照时已改变，请重试。"), LocalizedText.Get("图像配准"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -106,7 +106,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
                 referenceInput.Image.Dispose();
                 movingInput.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像配准", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("图像配准"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -128,7 +128,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
                 movingInput.Image.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
                 if (!progressWindow.WasCancelled)
-                    MessageBox.Show(progressWindow.Owner, exception.Message, "图像配准", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(progressWindow.Owner, exception.Message, LocalizedText.Get("图像配准"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -154,7 +154,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
                 string message = string.Join(Environment.NewLine, result.Failures.Select(failure => $"[{failure.Code}] {failure.Message}"));
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(progressWindow.Owner, message, "图像配准失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(progressWindow.Owner, message, LocalizedText.Get("图像配准失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.CanPresent(_image, documentId, sourceRevision, invocation.InvocationId, out Window? previous))
@@ -174,7 +174,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageRegistra
             {
                 result.Dispose();
                 ImageAlgorithmAnalysisSession.Release(_image, invocation.InvocationId);
-                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, "图像配准结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Application.Current.GetActiveWindow(), exception.Message, LocalizedText.Get("图像配准结果"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             if (!ImageAlgorithmAnalysisSession.Present(_image, invocation.InvocationId, resultWindow))

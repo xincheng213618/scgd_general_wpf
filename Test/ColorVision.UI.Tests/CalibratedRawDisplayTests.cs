@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Layers;
-using ColorVision.UI;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

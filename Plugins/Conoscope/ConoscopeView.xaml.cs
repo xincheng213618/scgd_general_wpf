@@ -26,11 +26,9 @@ using System.Runtime.CompilerServices;
 using Conoscope.ApplicationServices.Preprocess;
 using Conoscope.Processing.Preprocess;
 using Conoscope.Presentation.Formatters;
-using Conoscope.Presentation.Helpers;
 using System.Windows.Threading;
 using Conoscope.ApplicationServices.Analysis;
 using Conoscope.ApplicationServices.FocusPoints;
-using Conoscope.Properties;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates;
@@ -38,7 +36,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using Conoscope.Analysis;
-using CVCommCore.CVAlgorithm;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 #pragma warning disable CA1863
@@ -2670,7 +2667,7 @@ namespace Conoscope
         private void btnManageFocusPoiTemplate_Click(object sender, RoutedEventArgs e)
         {
             int selectedIndex = cbFocusPoiTemplate.SelectedIndex > 0 ? cbFocusPoiTemplate.SelectedIndex - 1 : 0;
-            TemplateEditorWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
+            PoiTemplateManagerWindow templateEditorWindow = new(new TemplatePoi(), selectedIndex)
             {
                 Owner = Window.GetWindow(this),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner

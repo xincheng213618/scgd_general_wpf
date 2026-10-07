@@ -108,11 +108,11 @@ namespace ColorVision.FloatingBall
         {
             ArgumentNullException.ThrowIfNull(encodedImage);
             if (encodedImage.Length == 0 || encodedImage.Length > DesktopPetAssetCatalog.MaximumSpriteSheetBytes)
-                throw new InvalidDataException("The desktop pet sprite sheet is empty or too large.");
+                throw new InvalidDataException(DesktopPetText.SpriteTooLarge);
 
             var rowCount = spriteVersionNumber == 1 ? Version1RowCount : Version2RowCount;
             var bitmap = SKBitmap.Decode(encodedImage)
-                ?? throw new InvalidDataException("The desktop pet sprite sheet could not be decoded.");
+                ?? throw new InvalidDataException(DesktopPetText.SpriteDecodeFailed);
 
             if (bitmap.Width <= 0
                 || bitmap.Height <= 0
@@ -122,7 +122,7 @@ namespace ColorVision.FloatingBall
                 || bitmap.Height % rowCount != 0)
             {
                 bitmap.Dispose();
-                throw new InvalidDataException($"Desktop pet sprite sheets must use an {ColumnCount} x {rowCount} frame grid.");
+                throw new InvalidDataException(DesktopPetText.Format("SpriteGridInvalid", ColumnCount, rowCount));
             }
 
             return new DesktopPetSpriteSheet(bitmap, rowCount);

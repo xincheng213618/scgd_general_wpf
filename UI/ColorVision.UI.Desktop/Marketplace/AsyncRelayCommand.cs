@@ -1,6 +1,4 @@
 using log4net;
-using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 

@@ -1,9 +1,6 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.Common.MVVM;
-using ColorVision.Solution.Editor;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
-using System.Diagnostics;
-using System.Reflection;
 using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
@@ -28,7 +25,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionProjectCommands.EditProjectFileId,
                     Order = 3,
-                    Header = "编辑项目文件(_E)",
+                    Header = LocalizedText.Get("编辑项目文件(_E)"),
                     Command = projectNode.EditProjectFileCommand,
                     Icon = MenuItemIcon.TryFindResource("DICode"),
                 },
@@ -40,7 +37,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionProjectCommands.ShowAllFilesId,
                     Order = 4,
-                    Header = "显示所有文件(_S)",
+                    Header = LocalizedText.Get("显示所有文件(_S)"),
                     Command = projectNode.ToggleShowAllFilesCommand,
                     IsChecked = projectNode.ShowAllFiles,
                 });
@@ -53,7 +50,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionProjectCommands.SetStartupProjectId,
                     Order = 5,
-                    Header = "设为启动项目(_A)",
+                    Header = LocalizedText.Get("设为启动项目(_A)"),
                     Command = SolutionProjectCommands.SetStartupProject,
                     IsChecked = projectNode.IsStartupProject,
                 });
@@ -107,7 +104,7 @@ namespace ColorVision.Solution.Explorer
                     {
                         GuidId = SolutionProjectCommands.BuildSolutionId,
                         Order = 5,
-                        Header = "生成解决方案(_B)",
+                        Header = LocalizedText.Get("生成解决方案(_B)"),
                         Command = SolutionProjectCommands.BuildSolution,
                         Icon = MenuItemIcon.TryFindResource("DIBuild"),
                     },
@@ -115,7 +112,7 @@ namespace ColorVision.Solution.Explorer
                     {
                         GuidId = SolutionProjectCommands.RunStartupProjectId,
                         Order = 6,
-                        Header = "运行启动项目(_R)",
+                        Header = LocalizedText.Get("运行启动项目(_R)"),
                         Command = SolutionProjectCommands.Run,
                         Icon = MenuItemIcon.TryFindResource("DIRun"),
                         InputGestureText = "Ctrl+F5",
@@ -124,7 +121,7 @@ namespace ColorVision.Solution.Explorer
                     {
                         GuidId = SolutionProjectCommands.DebugStartupProjectId,
                         Order = 7,
-                        Header = "调试启动项目(_D)",
+                        Header = LocalizedText.Get("调试启动项目(_D)"),
                         Command = SolutionProjectCommands.Debug,
                         Icon = MenuItemIcon.TryFindResource("DIDebug"),
                         InputGestureText = "F5",
@@ -133,7 +130,7 @@ namespace ColorVision.Solution.Explorer
                     {
                         GuidId = SolutionProjectCommands.ActiveConfigurationId,
                         Order = 8,
-                        Header = $"活动配置: {explorer.ActiveConfiguration}",
+                        Header = LocalizedText.Format($"活动配置: {explorer.ActiveConfiguration}"),
                     },
                 ]);
 
@@ -159,7 +156,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionProjectCommands.ActivePlatformId,
                     Order = 9,
-                    Header = $"活动平台: {explorer.ActivePlatform}",
+                    Header = LocalizedText.Format($"活动平台: {explorer.ActivePlatform}"),
                 });
                 int platformOrder = 0;
                 foreach (string platform in explorer.GetAvailableSolutionPlatforms())
@@ -183,7 +180,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = SolutionProjectCommands.ConfigurationManagerId,
                     Order = 10,
-                    Header = "配置管理器(_C)...",
+                    Header = LocalizedText.Get("配置管理器(_C)..."),
                     Command = SolutionProjectCommands.ConfigurationManager,
                     Icon = MenuItemIcon.TryFindResource("DISetting"),
                 });
@@ -276,7 +273,7 @@ namespace ColorVision.Solution.Explorer
                 {
                     GuidId = menuId,
                     Order = menuOrder,
-                    Header = "移动到解决方案文件夹(_M)",
+                    Header = LocalizedText.Get("移动到解决方案文件夹(_M)"),
                 },
             };
             int order = 0;
@@ -328,7 +325,7 @@ namespace ColorVision.Solution.Explorer
                         ? SolutionProjectCommands.ExcludeFromProjectId
                         : SolutionProjectCommands.IncludeInProjectId,
                     Order = 90,
-                    Header = isIncluded ? "从项目中排除(_J)" : "包括在项目中(_J)",
+                    Header = isIncluded ? LocalizedText.Get("从项目中排除(_J)") : LocalizedText.Get("包括在项目中(_J)"),
                     Command = isIncluded
                         ? SolutionProjectCommands.ExcludeFromProject
                         : SolutionProjectCommands.IncludeInProject,

@@ -1,12 +1,10 @@
-﻿using ColorVision.Core;
-using ColorVision.ImageEditor.Abstractions;
+﻿using ColorVision.ImageEditor.Abstractions;
 using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif

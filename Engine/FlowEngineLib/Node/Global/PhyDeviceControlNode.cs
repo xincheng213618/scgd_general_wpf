@@ -3,7 +3,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Global;
 
-[STNode("/00 全局")]
+[STNode("全局", CategoryOrder = 0)]
 public class PhyDeviceControlNode : CVBaseServerNode
 {
 	private CVDeviceType _DeviceType;

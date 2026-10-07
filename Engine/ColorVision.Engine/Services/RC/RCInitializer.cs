@@ -97,13 +97,14 @@ namespace ColorVision.Engine.Services.RC
 
 
 
-    public class RCInitializer : InitializerBase
+    public class RCInitializer : InitializerBase, IInitializerDependencies
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
 
 
         public override string Name => nameof(RCInitializer);
         public override int Order => 4;
+        public System.Collections.Generic.IReadOnlyCollection<string> Dependencies => [nameof(MQTT.MqttInitializer)];
 
 
         public async Task SetServiceConfig()

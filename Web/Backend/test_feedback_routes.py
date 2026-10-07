@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import importlib
 import io
@@ -7,6 +8,8 @@ import tempfile
 import unittest
 from unittest import mock
 from pathlib import Path
+
+from flask import request
 
 from app_setup import RuntimeOverrides, create_app_and_context
 from config_loader import DEFAULT_CONFIG
@@ -117,6 +120,18 @@ class FeedbackRouteTests(unittest.TestCase):
             content_type="multipart/form-data",
         )
 
+    def test_feedback_is_not_restricted_by_package_upload_cap(self):
+        self.app.config["MAX_CONTENT_LENGTH"] = 64
+
+        response = self._submit(
+            self.app.test_client(), machine="LARGE-FEEDBACK-PC", message="feedback upload cap",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.app.config["MAX_CONTENT_LENGTH"], 64)
+        with self.app.test_request_context("/api/packages", method="POST"):
+            self.assertEqual(request.max_content_length, 64)
+
     def test_two_accounts_are_isolated_and_direct_attachment_urls_do_not_bypass_scope(self):
         alice_client = self.app.test_client()
         bob_client = self.app.test_client()
@@ -193,6 +208,31 @@ class FeedbackRouteTests(unittest.TestCase):
             "/api/feedback?limit=20&offset=0",
             headers={"Authorization": f"Bearer {expired['key']}"},
         ).status_code, 401)
+
+    def test_fixed_basic_account_downloads_attachment_and_writes_database_audit(self):
+        client = self.app.test_client()
+        feedback_id = self._submit(client, machine="FIXED-ACCOUNT-PC", message="fixed account check").get_json()["feedbackId"]
+        token = base64.b64encode(b"config-admin:test-secret").decode("ascii")
+        headers = {"Authorization": f"Basic {token}"}
+
+        listing = client.get("/api/feedback?limit=20&offset=0", headers=headers)
+        self.assertEqual(listing.status_code, 200)
+        self.assertIn(feedback_id, {item["feedback_id"] for item in listing.get_json()["items"]})
+        self.assertEqual(client.get(f"/api/feedback/{feedback_id}", headers=headers).status_code, 200)
+        attachment = client.get(f"/api/feedback/{feedback_id}/attachments/diagnostics.zip", headers=headers)
+        self.assertEqual(attachment.status_code, 200)
+        self.assertEqual(attachment.data, b"diagnostics")
+        attachment.close()
+
+        db = self.cache.get_db()
+        try:
+            audit = db.execute(
+                "SELECT actor_id, target_id, detail FROM audit_log WHERE action = ? AND target_id = ?",
+                ("feedback_attachment_download", feedback_id),
+            ).fetchone()
+            self.assertEqual(tuple(audit), ("config-admin", feedback_id, "attachment=diagnostics.zip"))
+        finally:
+            db.close()
 
     def test_browser_login_submission_binds_verified_account_not_forged_form_owner(self):
         client = self.app.test_client()

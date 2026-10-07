@@ -1,5 +1,5 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
@@ -9,19 +9,22 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotContextWindowRecoveryCancellationTests
 {
     [Theory]
-    [InlineData(false, 1)]
-    [InlineData(true, 1)]
-    [InlineData(false, 2)]
-    [InlineData(true, 2)]
-    public async Task CancellationWithASettledContextRejectionDoesNotBecomeContextExhaustion(bool streaming, int cancelOnAttempt)
+    [InlineData(false, 1, false)]
+    [InlineData(true, 1, false)]
+    [InlineData(false, 2, false)]
+    [InlineData(true, 2, false)]
+    [InlineData(false, 1, true)]
+    [InlineData(false, 2, true)]
+    public async Task CancellationWithASettledContextRejectionDoesNotBecomeContextExhaustion(bool streaming, int cancelOnAttempt, bool hasReportedUsage)
     {
         using var cancellation = new CancellationTokenSource();
-        var provider = new ContextRejectingProvider(cancellation, cancelOnAttempt);
+        var provider = new ContextRejectingProvider(cancellation, cancelOnAttempt, hasReportedUsage);
         var recoveries = new List<CopilotContextWindowRecoveryInfo>();
         using var client = CreateClient(provider, recoveries, out var budgetClient);
         var messages = CreateHistory();
+        var updates = new List<ChatResponseUpdate>();
 
-        var failure = await Record.ExceptionAsync(() => InvokeAsync(client, messages, streaming, cancellation.Token));
+        var failure = await Record.ExceptionAsync(() => InvokeAsync(client, messages, streaming, updates, cancellation.Token));
 
         var cancelled = Assert.IsAssignableFrom<OperationCanceledException>(failure);
         Assert.Equal(cancellation.Token, cancelled.CancellationToken);
@@ -33,19 +36,30 @@ public sealed class CopilotContextWindowRecoveryCancellationTests
             Assert.True(provider.Requests[1].Length < provider.Requests[0].Length);
         Assert.Equal(11, messages.Length);
         Assert.Equal("original-0 " + new string('a', 2_000), messages[0].Text);
+        Assert.Empty(updates);
+        var expectedTokens = hasReportedUsage ? cancelOnAttempt * 20 : 0;
+        Assert.Equal(expectedTokens, CopilotProviderRetryChatClient.ExtractFailureUsage(cancelled).EffectiveTotalTokens);
+        Assert.Equal(expectedTokens, budgetClient.Snapshot.ReportedTotalTokens);
+        Assert.Equal(expectedTokens, budgetClient.Snapshot.ConsumedTokens);
+        Assert.False(budgetClient.Snapshot.UsedEstimatedUsage);
+        if (hasReportedUsage)
+            Assert.Equal(cancelOnAttempt * 3, CopilotProviderRetryChatClient.ExtractFailureUsage(cancelled).CachedInputTokens);
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AnUncancelledSecondRejectionStillReportsOneBoundedContextRecovery(bool streaming)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task AnUncancelledSecondRejectionStillReportsOneBoundedContextRecovery(bool streaming, bool hasReportedUsage)
     {
         using var cancellation = new CancellationTokenSource();
-        var provider = new ContextRejectingProvider(cancellation, cancelOnAttempt: 0);
+        var provider = new ContextRejectingProvider(cancellation, cancelOnAttempt: 0, hasReportedUsage);
         var recoveries = new List<CopilotContextWindowRecoveryInfo>();
         using var client = CreateClient(provider, recoveries, out var budgetClient);
+        var updates = new List<ChatResponseUpdate>();
 
-        var failure = await Record.ExceptionAsync(() => InvokeAsync(client, CreateHistory(), streaming, cancellation.Token));
+        var failure = await Record.ExceptionAsync(() => InvokeAsync(client, CreateHistory(), streaming, updates, cancellation.Token));
 
         var exhausted = Assert.IsType<CopilotAgentContextWindowRecoveryExhaustedException>(failure);
         Assert.Same(provider.Rejections[1], exhausted.InnerException);
@@ -53,6 +67,64 @@ public sealed class CopilotContextWindowRecoveryCancellationTests
         Assert.Equal(2, budgetClient.Snapshot.ProviderCalls);
         Assert.Single(recoveries);
         Assert.True(provider.Requests[1].Length < provider.Requests[0].Length);
+        var expectedTokens = hasReportedUsage ? 40 : 0;
+        var usage = streaming
+            ? updates.Aggregate(CopilotTokenUsage.Empty, (current, update) => current.Add(CopilotTokenBudgetChatClient.ExtractUsage(update.Contents)))
+            : CopilotProviderRetryChatClient.ExtractFailureUsage(exhausted);
+        Assert.Equal(expectedTokens, usage.EffectiveTotalTokens);
+        Assert.Equal(expectedTokens, budgetClient.Snapshot.ReportedTotalTokens);
+        Assert.Equal(expectedTokens, budgetClient.Snapshot.ConsumedTokens);
+        Assert.False(budgetClient.Snapshot.UsedEstimatedUsage);
+        if (hasReportedUsage)
+            Assert.Equal(6, usage.CachedInputTokens);
+        else
+            Assert.Empty(updates);
+    }
+
+    [Theory]
+    [InlineData(false, "stop", false)]
+    [InlineData(false, "length", false)]
+    [InlineData(true, "stop", false)]
+    [InlineData(true, "length", false)]
+    [InlineData(true, "stop", true)]
+    [InlineData(true, "length", true)]
+    public async Task CancellationWithSettledRecoveryTerminalUsageRetainsBothAttemptBills(bool streaming, string finishReason, bool failCleanup)
+    {
+        using var cancellation = new CancellationTokenSource();
+        var provider = new SettledRecoveryTerminalProvider(cancellation, new ChatFinishReason(finishReason), failCleanup);
+        var recoveries = new List<CopilotContextWindowRecoveryInfo>();
+        using var client = CreateClient(provider, recoveries, out var budgetClient);
+        var messages = CreateHistory();
+        var updates = new List<ChatResponseUpdate>();
+
+        var failure = await Record.ExceptionAsync(() => InvokeAsync(client, messages, streaming, updates, cancellation.Token));
+
+        var cancelled = Assert.IsAssignableFrom<OperationCanceledException>(failure);
+        Assert.Equal(cancellation.Token, cancelled.CancellationToken);
+        Assert.Equal(2, provider.Requests.Count);
+        Assert.Equal(2, budgetClient.Snapshot.ProviderCalls);
+        Assert.Equal(failCleanup ? 1 : 0, provider.CleanupFailureCount);
+        Assert.Single(recoveries);
+        Assert.True(provider.Requests[1].Length < provider.Requests[0].Length);
+        Assert.Equal(11, messages.Length);
+        Assert.Equal("original-0 " + new string('a', 2_000), messages[0].Text);
+        var usage = streaming
+            ? updates.Aggregate(CopilotTokenUsage.Empty,
+                (current, update) => current.Add(CopilotTokenBudgetChatClient.ExtractUsage(update.Contents)))
+            : CopilotProviderRetryChatClient.ExtractFailureUsage(cancelled);
+        Assert.Equal(new CopilotTokenUsage(22, 13, 35, 5), usage);
+        Assert.Equal(35, budgetClient.Snapshot.ReportedTotalTokens);
+        Assert.Equal(35, budgetClient.Snapshot.ConsumedTokens);
+        Assert.False(budgetClient.Snapshot.UsedEstimatedUsage);
+        if (!streaming)
+            Assert.Empty(updates);
+        Assert.All(updates, update =>
+        {
+            Assert.Null(update.Role);
+            Assert.Null(update.FinishReason);
+            Assert.Null(update.RawRepresentation);
+            Assert.All(update.Contents, content => Assert.IsType<UsageContent>(content));
+        });
     }
 
     private static CopilotContextWindowRecoveryChatClient CreateClient(
@@ -80,12 +152,12 @@ public sealed class CopilotContextWindowRecoveryCancellationTests
             $"original-{index} " + new string((char)('a' + index), 2_000)))
         .ToArray();
 
-    private static async Task InvokeAsync(IChatClient client, ChatMessage[] messages, bool streaming, CancellationToken cancellationToken)
+    private static async Task InvokeAsync(IChatClient client, ChatMessage[] messages, bool streaming, List<ChatResponseUpdate> updates, CancellationToken cancellationToken)
     {
         if (streaming)
         {
             await foreach (var update in client.GetStreamingResponseAsync(messages, cancellationToken: cancellationToken))
-                Assert.Fail("A rejected provider request must not yield a response update.");
+                updates.Add(update);
         }
         else
         {
@@ -93,16 +165,85 @@ public sealed class CopilotContextWindowRecoveryCancellationTests
         }
     }
 
-    private sealed class ContextRejectingProvider(CancellationTokenSource callerCancellation, int cancelOnAttempt) : IChatClient
+    private sealed class SettledRecoveryTerminalProvider(CancellationTokenSource callerCancellation, ChatFinishReason finishReason, bool failCleanup) : IChatClient
     {
         public List<ChatMessage[]> Requests { get; } = [];
-        public List<HttpRequestException> Rejections { get; } = [];
+        public int CleanupFailureCount { get; private set; }
 
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             Requests.Add(messages.ToArray());
-            var rejection = new HttpRequestException("maximum context length exceeded", null, HttpStatusCode.BadRequest);
+            if (Requests.Count == 1)
+            {
+                return Task.FromException<ChatResponse>(new CopilotProviderPayloadException(
+                    "maximum context length exceeded", "context_length_exceeded", false, string.Empty,
+                    new CopilotTokenUsage(12, 8, 20, 3)));
+            }
+            if (Requests.Count != 2)
+                throw new InvalidOperationException("Cancellation must not start another provider request.");
+
+            var response = new ChatResponse(new ChatMessage(ChatRole.Assistant, "Settled provider response."))
+            {
+                FinishReason = finishReason,
+                Usage = new UsageDetails
+                {
+                    InputTokenCount = 10,
+                    OutputTokenCount = 5,
+                    TotalTokenCount = 15,
+                    CachedInputTokenCount = 2,
+                },
+            };
+            // Both response tasks and MoveNext complete synchronously with a settled bill.
+            // Cancellation stops response effects, but cannot erase that provider usage.
+            callerCancellation.Cancel();
+            return Task.FromResult(response);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var response = await GetResponseAsync(messages, options, cancellationToken);
+                yield return new ChatResponseUpdate
+                {
+                    Role = ChatRole.Assistant,
+                    FinishReason = response.FinishReason,
+                    Contents = [new TextContent(response.Text), new UsageContent(response.Usage!)],
+                };
+            }
+            finally
+            {
+                ThrowCleanupFailure();
+            }
+        }
+
+        private void ThrowCleanupFailure()
+        {
+            if (!failCleanup || Requests.Count != 2)
+                return;
+            CleanupFailureCount++;
+            throw new IOException("Controlled cleanup failure after settled terminal cancellation.");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ContextRejectingProvider(CancellationTokenSource callerCancellation, int cancelOnAttempt, bool hasReportedUsage) : IChatClient
+    {
+        public List<ChatMessage[]> Requests { get; } = [];
+        public List<Exception> Rejections { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Requests.Add(messages.ToArray());
+            Exception rejection = hasReportedUsage
+                ? new CopilotProviderPayloadException("maximum context length exceeded", "context_length_exceeded", false, string.Empty,
+                    new CopilotTokenUsage(12, 8, 20, 3))
+                : new HttpRequestException("maximum context length exceeded", null, HttpStatusCode.BadRequest);
             Rejections.Add(rejection);
             if (Requests.Count == cancelOnAttempt)
                 callerCancellation.Cancel();

@@ -96,20 +96,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                     OwnerGuid = "Algorithms",
                     GuidId = "BatchImageProcessing",
                     Order = 0,
-                    Header = "批量执行算法...",
+                    Header = ColorVision.ImageEditor.Properties.Resources.ImageView_BatchProcessing,
                     Command = new RelayCommand(_ => ShowBatchWindow()),
                 },
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
-                    GuidId = "BmwSfr",
-                    Order = 2,
-                    Header = "BMW 四边 SFR",
-                    Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
-                },
-                new()
-                {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.ImageQuality.Id,
                     GuidId = "SFR",
                     Order = 1,
                     Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_SfrMtfAnalysis,
@@ -117,13 +109,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 },
                 new()
                 {
-                    OwnerGuid = "AlgorithmsCall",
+                    OwnerGuid = AlgorithmMenuGroups.ImageQuality.Id,
                     GuidId = "Artculation",
-                    Order = 1,
+                    Order = 4,
                     Header = ColorVision.ImageEditor.Properties.Resources.Artculation_MenuHeader,
                     Command = new RelayCommand(_ => new ArtculationEditorTool(imageContext).Execute()),
                 },
             ];
+
+            items.Add(new MenuItemMetadata
+            {
+                OwnerGuid = AlgorithmMenuGroups.ImageQuality.Id,
+                GuidId = "BmwSfr",
+                Order = 2,
+                Header = ColorVision.ImageEditor.Properties.Resources.Algorithm_FourEdgeSfr,
+                Command = new RelayCommand(_ => BmwDrawingAnalysisRunner.Run(imageContext, _drawContext, BmwDrawingAnalysisRunner.SelectRectangles(_drawContext))),
+            });
 
             AlgorithmInteractiveCatalogEntry[] interactiveEntries = AlgorithmCatalogProjection.ForInteractiveMenu(Runtime.Catalog)
                 .Where(entry => CanExecuteDescriptor(entry.Descriptor))
@@ -131,6 +132,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             foreach (AlgorithmInteractiveGroupPresentation group in interactiveEntries
                 .Select(entry => entry.Presentation.Group)
                 .OfType<AlgorithmInteractiveGroupPresentation>()
+                .Concat(AlgorithmMenuGroups.Analysis.Where(group => group != AlgorithmMenuGroups.ColorRegistration))
                 .DistinctBy(group => group.Id, StringComparer.OrdinalIgnoreCase)
                 .OrderBy(group => group.Order)
                 .ThenBy(group => group.Id, StringComparer.Ordinal))
@@ -138,29 +140,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 if (items.Any(item => string.Equals(item.GuidId, group.Id, StringComparison.OrdinalIgnoreCase))) continue;
                 items.Add(new MenuItemMetadata
                 {
-                    OwnerGuid = "Algorithms",
+                    OwnerGuid = AlgorithmMenuGroups.GetOwnerGuid(group),
                     GuidId = group.Id,
                     Order = group.Order,
                     Header = ResolveHeader(group.DisplayName, group.ResourceKey, group.Id),
                 });
             }
 
-            Dictionary<string, int> groupItemOrders = new(StringComparer.OrdinalIgnoreCase);
             foreach (AlgorithmInteractiveCatalogEntry entry in interactiveEntries)
             {
                 string ownerGuid = entry.Presentation.Group?.Id ?? "Algorithms";
-                int order = entry.Presentation.Order;
-                if (entry.Presentation.Group != null)
-                {
-                    groupItemOrders.TryGetValue(ownerGuid, out int previousOrder);
-                    order = previousOrder + 1;
-                    groupItemOrders[ownerGuid] = order;
-                }
                 items.Add(new MenuItemMetadata
                 {
                     OwnerGuid = ownerGuid,
                     GuidId = entry.Presentation.CompatibilityId,
-                    Order = order,
+                    Order = entry.Presentation.Order,
                     Header = ResolveHeader(entry),
                     Command = CreateCommand(entry),
                 });

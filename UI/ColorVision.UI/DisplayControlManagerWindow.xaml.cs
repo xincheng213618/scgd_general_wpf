@@ -18,6 +18,7 @@ public partial class DisplayControlManagerWindow : Window
     {
         _manager = manager;
         InitializeComponent();
+        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
         DataContext = this;
         RefreshControls();
         GroupsListBox.SelectedIndex = 0;

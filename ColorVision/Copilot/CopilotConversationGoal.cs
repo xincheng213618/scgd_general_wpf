@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.DisplayText;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -40,12 +41,12 @@ namespace ColorVision.Copilot
 
         public static string FormatDisplayLabel(CopilotConversationGoalState state) => state switch
         {
-            CopilotConversationGoalState.Active => "持续目标",
-            CopilotConversationGoalState.Achieved => "目标已达成",
-            CopilotConversationGoalState.Blocked => "目标受阻",
-            CopilotConversationGoalState.UsageLimited => "目标用量受限",
-            CopilotConversationGoalState.BudgetLimited => "目标预算受限",
-            _ => "目标已暂停",
+            CopilotConversationGoalState.Active => LocalizedText.Get("持续目标"),
+            CopilotConversationGoalState.Achieved => LocalizedText.Get("目标已达成"),
+            CopilotConversationGoalState.Blocked => LocalizedText.Get("目标受阻"),
+            CopilotConversationGoalState.UsageLimited => LocalizedText.Get("目标用量受限"),
+            CopilotConversationGoalState.BudgetLimited => LocalizedText.Get("目标预算受限"),
+            _ => LocalizedText.Get("目标已暂停"),
         };
 
         public static string FormatDescription(CopilotConversationGoalState state) => state switch

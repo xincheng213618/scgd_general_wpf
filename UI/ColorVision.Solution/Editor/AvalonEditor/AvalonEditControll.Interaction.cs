@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -127,11 +128,11 @@ public partial class AvalonEditControll
         {
             if (ConfigService.Instance is ConfigHandler handler)
             {
-                if (!handler.TrySave(_preferences, out string error)) MessageBox.Show(Window.GetWindow(this), error, "编辑器设置保存失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (!handler.TrySave(_preferences, out string error)) MessageBox.Show(Window.GetWindow(this), error, LocalizedText.Get("编辑器设置保存失败"), MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             else ConfigService.Instance?.Save<EditorPreferences>();
         }
-        catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, "编辑器设置保存失败", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, LocalizedText.Get("编辑器设置保存失败"), MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
     private void Find_Click(object sender, RoutedEventArgs e) => SearchBar.Open(false);
@@ -143,7 +144,7 @@ public partial class AvalonEditControll
         Minimap.HidePreview();
         GoToPanel.Visibility = Visibility.Visible;
         GoToBox.Text = textEditor.TextArea.Caret.Line.ToString();
-        GoToHint.Text = $"1–{textEditor.Document.LineCount:N0} 行 · 可输入 行:列";
+        GoToHint.Text = LocalizedText.Format($"1–{textEditor.Document.LineCount:N0} 行 · 可输入 行:列");
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
         {
             if (GoToPanel.Visibility != Visibility.Visible) return;
@@ -168,7 +169,7 @@ public partial class AvalonEditControll
             if (parts.Length is < 1 or > 2 || !int.TryParse(parts[0], out int line) || line < 1 || line > textEditor.Document.LineCount
                 || parts.Length == 2 && (!int.TryParse(parts[1], out column) || column < 1))
             {
-                GoToHint.Text = $"请输入 1–{textEditor.Document.LineCount:N0} 范围内的行号";
+                GoToHint.Text = LocalizedText.Format($"请输入 1–{textEditor.Document.LineCount:N0} 范围内的行号");
                 return;
             }
             GoToPanel.Visibility = Visibility.Collapsed;
@@ -203,7 +204,7 @@ public partial class AvalonEditControll
         var format = AddAction("格式化 JSON", "", () =>
         {
             try { textEditor.Document.Replace(0, textEditor.Document.TextLength, JToken.Parse(textEditor.Text).ToString(Formatting.Indented)); }
-            catch (JsonReaderException ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, "JSON 格式错误", MessageBoxButton.OK, MessageBoxImage.Information); }
+            catch (JsonReaderException ex) { MessageBox.Show(Window.GetWindow(this), ex.Message, LocalizedText.Get("JSON 格式错误"), MessageBoxButton.OK, MessageBoxImage.Information); }
         });
         menu.Items.Add(new Separator());
         var collapse = AddAction("折叠全部", "", () => SetFoldings(true));

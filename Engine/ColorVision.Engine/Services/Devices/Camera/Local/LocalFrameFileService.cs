@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("图像文件路径为空。", nameof(filePath));
             string fullPath = Path.GetFullPath(filePath);
-            if (!File.Exists(fullPath)) throw new FileNotFoundException("图像文件不存在。", fullPath);
+            if (!CVFileReadCache.GetCachedLength(fullPath).HasValue && !File.Exists(fullPath)) throw new FileNotFoundException("图像文件不存在。", fullPath);
 
             int dataOffset;
             CVCIEFile fileInfo;
@@ -36,26 +36,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return FlowNodeTiming.Run("DecodeImage", () => LoadBitmap(fullPath, exposureOverride, gainOverride));
         }
 
-        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode, bool includeRaw = true, bool includeCie = true)
+        public static string CreateCapturePath(string basePath, string deviceCode)
         {
-            using var saveStage = FlowNodeTiming.Measure("SaveImage");
-            using LocalFlowFrameLease lease = frame.Acquire();
-            if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
-            {
-                throw new InvalidOperationException("The primary frame cannot be saved before its mirror operation completes.");
-            }
             string root = string.IsNullOrWhiteSpace(basePath)
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision")
                 : basePath;
             string safeDeviceCode = string.IsNullOrWhiteSpace(deviceCode) ? "CameraLocal" : deviceCode;
             string directory = Path.Combine(root, safeDeviceCode, "Data", DateTime.Now.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(directory);
-            string stem = $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}";
-            string generatedRawPath = string.Empty;
+            return Path.Combine(directory, $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.cvraw");
+        }
 
-            if (includeRaw && lease.HasRaw)
+        public static void SaveCapture(LocalFlowFrame frame, string rawPath, CVFileSaveMode saveMode = CVFileSaveMode.Synchronous)
+        {
+            using var saveStage = FlowNodeTiming.Measure("SaveImage");
+            using LocalFlowFrameLease lease = frame.Acquire();
+            if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
+                throw new InvalidOperationException("The primary frame cannot be saved before its mirror operation completes.");
+            if (saveMode != CVFileSaveMode.MemoryOnly) Directory.CreateDirectory(Path.GetDirectoryName(rawPath)!);
+            if (lease.HasRaw)
             {
-                string rawPath = Path.Combine(directory, stem + ".cvraw");
                 if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvRaw))
                 {
                     throw new InvalidOperationException("The RAW mirror operation failed; the frame cannot be saved safely.");
@@ -63,78 +62,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 // Copy the runtime orientation exactly. Deferred/non-primary RAW stays
                 // canonical; materializing its pending mirror only in the file would
                 // lose orientation metadata and break spatial calibration after reload.
-                CVCIEFile rawFile = BuildFileInfo(
-                    lease,
-                    CVType.Raw,
-                    Array.Empty<byte>(),
-                    string.Empty,
-                    lease.Metadata.SourceBpp);
+                using CVCIEFile rawFile = new()
+                {
+                    Version = 1,
+                    FileExtType = CVType.Raw,
+                    Rows = lease.Metadata.Height,
+                    Cols = lease.Metadata.Width,
+                    Bpp = lease.Metadata.SourceBpp,
+                    Channels = lease.Metadata.Channels,
+                    Gain = lease.Metadata.Gain,
+                    Exp = lease.Metadata.Exposure,
+                    SrcFileName = string.Empty,
+                    Data = Array.Empty<byte>()
+                };
                 FlowNodeTiming.Run("WriteRawFile", () =>
                 {
                     if (!CVFileUtil.WriteCVRaw(
                         rawPath,
                         rawFile,
                         lease.RawLength,
-                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength)))
+                        stream => WriteUnmanagedBuffer(stream, lease.RawPointer, lease.RawLength), saveMode))
                     {
                         throw new IOException($"保存 CVRAW 失败：{rawPath}");
                     }
                 });
                 frame.CvRawFilePath = rawPath;
                 frame.ColorCalibration?.Save(rawPath, canReplay: true);
-                generatedRawPath = rawPath;
-            }
-
-            if (includeCie && lease.HasCie)
-            {
-                string ciePath = Path.Combine(directory, stem + ".cvcie");
-                if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvCie))
-                {
-                    throw new InvalidOperationException("The CIE mirror operation failed; the frame cannot be saved safely.");
-                }
-                if (!lease.IsCieFlipApplied)
-                {
-                    throw new InvalidOperationException("The CIE buffer cannot be saved before its mirror operation completes.");
-                }
-                byte[] cieData = FlowNodeTiming.Run("CopyCieBuffer", () => lease.CopyCieToArray());
-                string sourceFileName = ResolveCieSourceFile(lease, directory, generatedRawPath);
-                CVCIEFile cieFile = BuildFileInfo(lease, CVType.CIE, cieData, sourceFileName, lease.Metadata.CieBpp);
-                FlowNodeTiming.Run("WriteCieFile", () =>
-                {
-                    if (!CVFileUtil.WriteCVCIE(ciePath, cieFile)) throw new IOException($"保存 CVCIE 失败：{ciePath}");
-                });
-                frame.CvCieFilePath = ciePath;
-                frame.ColorCalibration?.Save(ciePath, canReplay: true);
             }
             saveStage?.Complete();
-        }
-
-        private static string ResolveCieSourceFile(LocalFlowFrameLease lease, string outputDirectory, string generatedRawPath)
-        {
-            if (!string.IsNullOrWhiteSpace(generatedRawPath))
-            {
-                return Path.GetFileName(generatedRawPath);
-            }
-
-            string sourcePath = lease.Metadata.SourceFilePath;
-            if (string.IsNullOrWhiteSpace(sourcePath))
-            {
-                return string.Empty;
-            }
-
-            string sourceFileName = Path.GetFileName(sourcePath);
-            if (!File.Exists(sourcePath))
-            {
-                return sourceFileName;
-            }
-
-            string localSourcePath = Path.Combine(outputDirectory, sourceFileName);
-            if (!string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(localSourcePath), StringComparison.OrdinalIgnoreCase)
-                && !File.Exists(localSourcePath))
-            {
-                File.Copy(sourcePath, localSourcePath);
-            }
-            return sourceFileName;
         }
 
         private static LocalFlowFrame LoadColorVisionFile(
@@ -144,7 +99,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             float[]? exposureOverride,
             float? gainOverride)
         {
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            DateTime captureTime = CVFileReadCache.GetCachedLength(filePath).HasValue ? DateTime.Now : File.GetLastWriteTime(filePath);
+            using Stream stream = CVFileReadCache.OpenRead(filePath);
             using BinaryReader reader = new(stream);
             stream.Position = dataOffset;
             long dataLength = fileInfo.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
@@ -154,6 +110,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             bool isCie = string.Equals(Path.GetExtension(filePath), ".cvcie", StringComparison.OrdinalIgnoreCase);
+            fileInfo.FileExtType = isCie ? CVType.CIE : CVType.Raw;
+            ColorCalibrationSnapshot? snapshot = isCie ? null : ColorCalibrationSnapshot.Read(filePath, fileInfo);
             LocalFrameMetadata metadata = new()
             {
                 Width = fileInfo.Cols,
@@ -164,7 +122,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Gain = gainOverride ?? fileInfo.Gain,
                 Exposure = CloneExposure(exposureOverride ?? fileInfo.Exp),
                 SourceFilePath = filePath,
-                CaptureTime = File.GetLastWriteTime(filePath),
+                CalibrationTemplate = snapshot?.Template ?? string.Empty,
+                CaptureTime = captureTime,
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
             };
             LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, isCie ? 0 : (int)dataLength, isCie ? (int)dataLength : 0);
@@ -173,7 +132,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 using LocalFlowFrameLease lease = frame.Acquire();
                 FlowNodeTiming.Run("ReadImageBuffer", () => CopyStreamToPointer(stream, isCie ? lease.CiePointer : lease.RawPointer, (int)dataLength));
                 if (isCie) frame.CvCieFilePath = filePath;
-                else frame.CvRawFilePath = filePath;
+                else
+                {
+                    frame.CvRawFilePath = filePath;
+                    frame.ColorCalibration = snapshot;
+                }
                 return frame;
             }
             catch
@@ -263,23 +226,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static CVCIEFile BuildFileInfo(LocalFlowFrameLease lease, CVType type, byte[] data, string sourceFileName, int bpp)
-        {
-            return new CVCIEFile
-            {
-                Version = 1,
-                FileExtType = type,
-                Rows = lease.Metadata.Height,
-                Cols = lease.Metadata.Width,
-                Bpp = bpp,
-                Channels = lease.Metadata.Channels,
-                Gain = lease.Metadata.Gain,
-                Exp = lease.Metadata.Exposure,
-                SrcFileName = sourceFileName,
-                Data = data
-            };
-        }
-
         private static float[] CloneExposure(float[]? exposure)
             => exposure == null || exposure.Length == 0 ? Array.Empty<float>() : (float[])exposure.Clone();
 
@@ -302,9 +248,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (source == IntPtr.Zero || length <= 0)
                 throw new ArgumentException("The source image buffer is empty.", nameof(source));
 
-            // FileStream consumes this span synchronously. SaveCapture keeps the frame
-            // lease alive for the entire call, so the backing pointer cannot be freed
-            // before the payload is completely written.
+            // The writer consumes this span before returning, including cache-only saves.
+            // The frame lease covers the entire save call.
             stream.Write(new ReadOnlySpan<byte>(source.ToPointer(), length));
         }
     }

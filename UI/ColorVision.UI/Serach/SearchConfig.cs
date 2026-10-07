@@ -31,6 +31,7 @@ namespace ColorVision.UI.Serach
         private SearchEngine _SearchEngine = SearchEngine.Google;
 
         [DisplayName("EverythingPath")]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string EverythingPath { get => _EverythingPath; set { _EverythingPath = value; OnPropertyChanged(); } }
         private string _EverythingPath = @"C:\Program Files\Everything\Everything.exe";
 

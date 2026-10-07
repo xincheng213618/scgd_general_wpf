@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Core;
 using ColorVision.Themes;
 using System;
@@ -24,8 +25,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             InitializeComponent();
             this.ApplyCaption();
             SummaryText.Text = result.Success
-                ? $"测量完成 · {result.ExpectedRows} × {result.ExpectedCols} · {result.SelectedCount} 个点 · 检测 {result.Timings.TotalMs:F2} ms"
-                : $"测量失败 · {result.StatusCode}\n{result.Message}";
+                ? LocalizedText.Format($"测量完成 · {result.ExpectedRows} × {result.ExpectedCols} · {result.SelectedCount} 个点 · 检测 {result.Timings.TotalMs:F2} ms")
+                : LocalizedText.Format($"测量失败 · {result.StatusCode}\n{result.Message}");
             _rows = BuildMetricRows(result, _analysis);
             MetricsGrid.ItemsSource = _rows;
             PointsGrid.ItemsSource = result.Points.OrderBy(p => p.Row).ThenBy(p => p.Col).Select(p => new
@@ -38,7 +39,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             OpticalGrid.ItemsSource = _analysis?.Optical.Samples;
             GridDistortionQuality quality = result.Quality;
             GridDistortionTimings times = result.Timings;
-            DiagnosticsText.Text = FormattableString.Invariant($"""
+            DiagnosticsText.Text = LocalizedText.Format($"""
                 状态：{result.StatusCode}
                 {result.Message}
 
@@ -59,24 +60,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 互操作诊断：{result.InteropDiagnostic}
 
                 对边均值 9 点的 Keystone：水平 = (左高 − 右高) / 对边均值 × 100%；垂直 = (上宽 − 下宽) / 对边均值 × 100%。
-                旧 P9 方案保留旧口径：三跨度均值作为分母，Keystone 水平/垂直命名与对边均值方案相反。
+                四角几何：倾斜角包含整体旋转；最大边长差比例始终采用对边均值，与 TV/旧 P9 口径选择无关。
                 单张图没有左右眼配对信息，本次不生成 DIFF_H / DIFF_V。
-                """);
+                """, CultureInfo.InvariantCulture);
             if (_analysis != null)
             {
                 GridDistortionOpticalEstimate optical = _analysis.Optical;
-                DiagnosticsText.Text += FormattableString.Invariant($"""
+                DiagnosticsText.Text += LocalizedText.Format($"""
 
 
-                    光学相对估计：{(optical.IsAvailable ? "可用" : "不可用")}
+                    光学相对估计：{(optical.IsAvailable ? LocalizedText.Get("可用") : LocalizedText.Get("不可用"))}
                     方法：{optical.Method}
-                    中央节距相对估计，非已标定镜头畸变。
+                    居中径向模型估计，非已标定镜头畸变。
                     {optical.ReferenceDescription}
                     参考中心：({optical.Origin.X:F4}, {optical.Origin.Y:F4}) px
                     列节距：({optical.ColumnPitch.X:F4}, {optical.ColumnPitch.Y:F4}) px
                     行节距：({optical.RowPitch.X:F4}, {optical.RowPitch.Y:F4}) px
+                    拟合 RMS：{optical.FitRmsPixels:F4} px；最大残差：{optical.MaxResidualPixels:F4} px
+                    RMS / 最小点距：{optical.FitResidualFraction:F6}；拟合迭代：{optical.FitIterations}
                     {string.Join(Environment.NewLine, optical.Warnings)}
-                    """);
+                    """, CultureInfo.InvariantCulture);
             }
         }
 
@@ -91,16 +94,25 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
                 Row("半值 TV", "Horizontal TV", analysis.HalfTv.HorizontalPercent, "%", "标准 Horizontal TV / 2"),
                 Row("半值 TV", "Vertical TV", analysis.HalfTv.VerticalPercent, "%", "标准 Vertical TV / 2")
             };
-            AddPoint9Rows(rows, "对边均值 9 点", analysis.ReferencePoint9, false);
-            AddPoint9Rows(rows, "旧 P9 三跨度", analysis.LegacyPoint9, true);
+            AddPoint9Rows(rows, analysis.ReferencePoint9);
+            GridDistortionGeometryMetrics geometry = analysis.Geometry;
+            rows.AddRange(new[]
+            {
+                Row("四角几何", "最大倾斜角", geometry.MaximumTiltDegrees, "°", "四边相对图像水平/垂直方向的夹角最大值；包含整体旋转"),
+                Row("四角几何", "最大边长差比例", geometry.MaximumEdgeLengthDifferencePercent, "%", "max(|左高 − 右高| / 左右高均值, |上宽 − 下宽| / 上下宽均值) × 100"),
+                Row("四角几何", "上边倾斜角", geometry.TopTiltDegrees, "°", "左上到右上连线相对图像水平线的夹角（0～90°）"),
+                Row("四角几何", "下边倾斜角", geometry.BottomTiltDegrees, "°", "左下到右下连线相对图像水平线的夹角（0～90°）"),
+                Row("四角几何", "左边倾斜角", geometry.LeftTiltDegrees, "°", "左上到左下连线相对图像垂直线的夹角（0～90°）"),
+                Row("四角几何", "右边倾斜角", geometry.RightTiltDegrees, "°", "右上到右下连线相对图像垂直线的夹角（0～90°）")
+            });
             GridDistortionOpticalEstimate optical = analysis.Optical;
             if (optical.IsAvailable && optical.OpticRatioPercent.HasValue && optical.MaxAbsoluteRatioPercent.HasValue)
             {
-                rows.Add(Row("中央节距估计", "最大径向偏差（带符号）", optical.OpticRatioPercent.Value, "%", "中央节距相对估计，非已标定镜头畸变"));
-                rows.Add(Row("中央节距估计", "最大绝对径向偏差", optical.MaxAbsoluteRatioPercent.Value, "%", "max(|实际半径 − 参考半径| / 参考半径) × 100"));
-                rows.Add(new("中央节距估计", "最大偏差点 ID", optical.MaxErrorPointId?.ToString(CultureInfo.InvariantCulture) ?? "无", string.Empty, optical.Method));
+                rows.Add(Row("径向模型估计", "最大径向偏差（带符号）", optical.OpticRatioPercent.Value, "%", "居中径向模型估计，非已标定镜头畸变"));
+                rows.Add(Row("径向模型估计", "最大绝对径向偏差", optical.MaxAbsoluteRatioPercent.Value, "%", "max(|实际半径 − 参考半径| / 参考半径) × 100"));
+                rows.Add(new("径向模型估计", "最大偏差点 ID", optical.MaxErrorPointId?.ToString(CultureInfo.InvariantCulture) ?? "无", string.Empty, optical.Method));
             }
-            else rows.Add(new("中央节距估计", "估计状态", "不可用", string.Empty, string.Join("；", optical.Warnings)));
+            else rows.Add(new("径向模型估计", "估计状态", LocalizedText.Get("不可用"), string.Empty, string.Join("；", optical.Warnings)));
             rows.AddRange(new[]
             {
                 Row("参考跨度", "上边宽度", m.TopWidth, "px", "左上到右上"), Row("参考跨度", "中间宽度", m.MiddleWidth, "px", "左中到右中"),
@@ -110,20 +122,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
             return rows;
         }
 
-        private static void AddPoint9Rows(List<GridDistortionMetricRow> rows, string method, GridDistortionPoint9Metrics metrics, bool legacy)
+        private static void AddPoint9Rows(List<GridDistortionMetricRow> rows, GridDistortionPoint9Metrics metrics)
         {
-            string heightMean = legacy ? "左中右高均值" : "左右高均值";
-            string widthMean = legacy ? "上中下宽均值" : "上下宽均值";
+            const string method = "对边均值 9 点";
             rows.AddRange(new[]
             {
-                Row(method, "上边畸变", metrics.TopPercent, "%", $"上中点到上边弦有符号距离 / {heightMean} × 100；向内为正"),
-                Row(method, "下边畸变", metrics.BottomPercent, "%", $"下中点到下边弦有符号距离 / {heightMean} × 100；向内为正"),
-                Row(method, "左边畸变", metrics.LeftPercent, "%", $"左中点到左边弦有符号距离 / {widthMean} × 100；向内为正"),
-                Row(method, "右边畸变", metrics.RightPercent, "%", $"右中点到右边弦有符号距离 / {widthMean} × 100；向内为正"),
-                Row(method, "Keystone Horizontal", metrics.KeystoneHorizontalPercent, "%", legacy
-                    ? "(上宽 − 下宽) / 上中下宽均值 × 100；保留旧名称" : "(左高 − 右高) / 左右高均值 × 100"),
-                Row(method, "Keystone Vertical", metrics.KeystoneVerticalPercent, "%", legacy
-                    ? "(左高 − 右高) / 左中右高均值 × 100；保留旧名称" : "(上宽 − 下宽) / 上下宽均值 × 100")
+                Row(method, "上边畸变", metrics.TopPercent, "%", "上中点到上边弦有符号距离 / 左右高均值 × 100；向内为正"),
+                Row(method, "下边畸变", metrics.BottomPercent, "%", "下中点到下边弦有符号距离 / 左右高均值 × 100；向内为正"),
+                Row(method, "左边畸变", metrics.LeftPercent, "%", "左中点到左边弦有符号距离 / 上下宽均值 × 100；向内为正"),
+                Row(method, "右边畸变", metrics.RightPercent, "%", "右中点到右边弦有符号距离 / 上下宽均值 × 100；向内为正"),
+                Row(method, "Keystone Horizontal", metrics.KeystoneHorizontalPercent, "%", "(左高 − 右高) / 左右高均值 × 100"),
+                Row(method, "Keystone Vertical", metrics.KeystoneVerticalPercent, "%", "(上宽 − 下宽) / 上下宽均值 × 100")
             });
         }
 
@@ -154,7 +163,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.GridDistortio
         private static void CopyText(string text)
         {
             try { Clipboard.SetText(text); }
-            catch (Exception ex) { MessageBox.Show($"复制失败：{ex.Message}", "点阵畸变", MessageBoxButton.OK, MessageBoxImage.Warning); }
+            catch (Exception ex) { MessageBox.Show(LocalizedText.Format($"复制失败：{ex.Message}"), LocalizedText.Get("点阵畸变"), MessageBoxButton.OK, MessageBoxImage.Warning); }
         }
     }
 

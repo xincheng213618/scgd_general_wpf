@@ -1,9 +1,6 @@
 #pragma warning disable CA1868
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -306,16 +303,6 @@ namespace ColorVision.Solution
         private void TreeViewItem_ExpansionChanged(object sender, RoutedEventArgs e)
         {
             ScheduleWorkspaceStateSave();
-        }
-
-        private void ExplorerMoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button { ContextMenu: { } menu } button)
-            {
-                menu.PlacementTarget = button;
-                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                menu.IsOpen = true;
-            }
         }
 
         private void ClearSelection()

@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.Solution.DisplayText;
 #pragma warning disable CA1859
 using ColorVision.UI;
 using ColorVision.Solution.Explorer;
@@ -67,7 +68,7 @@ namespace ColorVision.Solution
             {
                 Text = manager.IsOpeningWorkspace
                     ? manager.OpeningWorkspacePath
-                    : "当前没有正在打开的工作区",
+                    : LocalizedText.Get("当前没有正在打开的工作区"),
                 Margin = new Thickness(8, 6, 8, 6),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 360,
@@ -79,7 +80,7 @@ namespace ColorVision.Solution
 
             var cancelButton = new Button
             {
-                Content = "取消打开",
+                Content = LocalizedText.Get("取消打开"),
                 Margin = new Thickness(8, 2, 8, 8),
                 Padding = new Thickness(10, 4, 10, 4),
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -155,7 +156,7 @@ namespace ColorVision.Solution
             var stack = new StackPanel { MinWidth = 220 };
             var title = new TextBlock
             {
-                Text = "活动解决方案配置",
+                Text = LocalizedText.Get("活动解决方案配置"),
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(8, 6, 8, 4),
             };
@@ -167,7 +168,7 @@ namespace ColorVision.Solution
             {
                 var empty = new TextBlock
                 {
-                    Text = "未打开解决方案",
+                    Text = LocalizedText.Get("未打开解决方案"),
                     Margin = new Thickness(8, 6, 8, 6),
                 };
                 empty.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
@@ -190,7 +191,7 @@ namespace ColorVision.Solution
             stack.Children.Add(new Separator { Margin = new Thickness(0, 4, 0, 4) });
             var platformTitle = new TextBlock
             {
-                Text = "活动解决方案平台",
+                Text = LocalizedText.Get("活动解决方案平台"),
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(8, 4, 8, 4),
             };

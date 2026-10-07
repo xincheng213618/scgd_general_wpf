@@ -106,6 +106,17 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 + 添加条件 的本地化字符串。
+        /// </summary>
+        public static string DB_AddCondition => ResourceManager.GetString("DB_AddCondition", resourceCulture);
+
+        public static string DB_MatchAllConditions => ResourceManager.GetString("DB_MatchAllConditions", resourceCulture);
+
+        public static string DB_SearchFilterField => ResourceManager.GetString("DB_SearchFilterField", resourceCulture);
+
+        public static string DB_MoreQueryActions => ResourceManager.GetString("DB_MoreQueryActions", resourceCulture);
+
+        /// <summary>
         ///   查找类似 + 添加 的本地化字符串。
         /// </summary>
         public static string DB_Add {

@@ -25,12 +25,14 @@ namespace ColorVision.Engine.Services.POI
         internal int Channels => transform.Channels;
         internal long CachedXyzBytes { get { lock (sync) return xyz?.LongLength ?? 0; } }
 
-        internal CVCIEFile GetRawFile()
+        internal T BorrowRaw<T>(Func<CVCIEFile, T> action)
         {
             lock (sync)
             {
                 ThrowIfDisposed();
-                return new CVCIEFile { Cols = Width, Rows = Height, Bpp = Bpp, Channels = Channels, FileExtType = CVType.Raw, Data = raw! };
+                using CVCIEFile file = new() { Cols = Width, Rows = Height, Bpp = Bpp, Channels = Channels, FileExtType = CVType.Raw, Data = raw! };
+                // Keep disposal waiting until the layer has finished reading the reusable RAW pixels.
+                return action(file);
             }
         }
 

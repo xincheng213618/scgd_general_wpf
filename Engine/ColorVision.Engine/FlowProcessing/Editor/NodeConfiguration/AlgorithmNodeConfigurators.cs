@@ -1,6 +1,3 @@
-using ColorVision.Engine.Properties;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.FocusPoints;
 using ColorVision.Engine.Templates.Ghost;
@@ -15,11 +12,11 @@ using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.SFR2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
 {
@@ -74,14 +71,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
-                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new TemplateSFR2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortion2());
-                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
@@ -122,7 +118,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR:
-                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR2", new TemplateSFR2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.FOV:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
@@ -133,7 +129,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.畸变:
                         context.AddTemplateJsonPanel(nameof(node.TempName), "Distortion2", new TemplateDistortion2());
-                        context.AddTemplatePanel(nameof(node.TempName), "Distortion", new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LedCheck, new TemplateLedCheck());

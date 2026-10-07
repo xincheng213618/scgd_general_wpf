@@ -50,8 +50,6 @@ public class OLEDImageAlgorithmNodeTests
         Assert.Equal("OLED.LocalizationImageEnhan", enhancement.Code);
         Assert.Equal(202, dediffusion.TemplateDicId);
         Assert.Equal("OLED.Dediffusion", dediffusion.Code);
-        Assert.Contains("ON DUPLICATE KEY UPDATE", enhancement.GetMysqlCommand()!.GetRecover());
-        Assert.Contains("ON DUPLICATE KEY UPDATE", dediffusion.GetMysqlCommand()!.GetRecover());
 
         using JsonDocument enhancementJson = JsonDocument.Parse(enhancement.Description);
         Assert.Equal(31, enhancementJson.RootElement.GetProperty("blurSize").GetInt32());

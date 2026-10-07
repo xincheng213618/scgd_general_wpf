@@ -18,14 +18,11 @@ public sealed class AnalysisSettings
 {
     [Category("指标"), DisplayName("目标频率 (cycles/pixel)"), Description("范围 0～0.5；0.5 为 Nyquist 频率。")]
     public double TargetFrequency { get; set; } = 0.25;
-    [Category("实时"), DisplayName("分析间隔 (ms)"), Description("只处理最新帧，上一轮未完成时不排队。实际刷新率取决于相机和算法耗时。")]
-    public int LiveIntervalMilliseconds { get; set; } = 300;
 
     public void Validate()
     {
-        if (!double.IsFinite(TargetFrequency) || TargetFrequency < 0 || TargetFrequency > 0.5
-            || LiveIntervalMilliseconds < 100 || LiveIntervalMilliseconds > 10000)
-            throw new ArgumentException("目标频率应为 0～0.5，实时分析间隔应为 100～10000 ms。");
+        if (!double.IsFinite(TargetFrequency) || TargetFrequency < 0 || TargetFrequency > 0.5)
+            throw new ArgumentException("目标频率应为 0～0.5。");
     }
 }
 
@@ -75,7 +72,9 @@ public static class ProfileStore
     public static TestProfile Load(string path)
     {
         if (new FileInfo(path).Length > 1024 * 1024) throw new InvalidDataException("配置文件超过 1 MiB。");
-        var profile = JsonSerializer.Deserialize<TestProfile>(File.ReadAllText(path), JsonOptions) ?? throw new InvalidDataException("配置为空。");
+        string json = File.ReadAllText(path);
+        ChartTypeSupport.ValidateProfile(json);
+        var profile = JsonSerializer.Deserialize<TestProfile>(json, JsonOptions) ?? throw new InvalidDataException("配置为空。");
         profile.Validate();
         return profile;
     }

@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/geometry.hpp>
 #include <nlohmann/json.hpp>
 #include "../../Native/include/opencv_media_export.h"
 #include "../../Native/include/video_export.h"
@@ -20,6 +21,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <future>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -744,6 +746,39 @@ bool RunLuminousAreaV2SyntheticTests()
         }
         if (!severe) {
             cleanConfidence = output.value("Confidence", -1.0);
+        }
+        // Candidate fits keep their original seeds and merge order. Changing
+        // worker scheduling must preserve the complete public result.
+        struct RestoreThreadCount {
+            int previous = cv::getNumThreads();
+            ~RestoreThreadCount() { cv::setNumThreads(previous); }
+        } restoreThreads;
+        for (int threadCount : { 1, restoreThreads.previous }) {
+            cv::setNumThreads(threadCount);
+            for (int repeat = 0; repeat < 2; ++repeat) {
+                json repeated;
+                int repeatedCode = 0;
+                if (!callLuminousV2(image, RoiRect{ 0, 0, 0, 0 }, json::object(), repeated, repeatedCode)
+                    || repeatedCode != returnCode || repeated != output) {
+                    std::cerr << "V2 complete result changed with worker scheduling" << std::endl;
+                    return false;
+                }
+            }
+        }
+        std::array<std::future<bool>, 4> concurrentChecks;
+        for (auto& check : concurrentChecks) {
+            check = std::async(std::launch::async, [&] {
+                json concurrent;
+                int concurrentCode = 0;
+                return callLuminousV2(image, RoiRect{ 0, 0, 0, 0 }, json::object(), concurrent, concurrentCode)
+                    && concurrentCode == returnCode && concurrent == output;
+            });
+        }
+        for (auto& check : concurrentChecks) {
+            if (!check.get()) {
+                std::cerr << "V2 complete result changed with concurrent callers" << std::endl;
+                return false;
+            }
         }
     }
 
@@ -1666,6 +1701,63 @@ bool smokeDistortionP9SyntheticTarget()
         }
     }
 
+    FreeResult(result);
+    return ok;
+}
+
+bool smokeDistortionP9RecoversUnevenBrightGrid()
+{
+    cv::Mat image(900, 1200, CV_16UC1, cv::Scalar(4));
+    const std::array<int, 9> levels = { 2200, 6500, 52000, 2800, 9000, 61000, 3300, 13000, 56000 };
+    for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 3; ++col) {
+            cv::circle(image, cv::Point(220 + col * 380, 190 + row * 260), 26,
+                cv::Scalar(levels[static_cast<size_t>(row * 3 + col)]), cv::FILLED);
+        }
+    }
+
+    HImage hImage = createHImageFromMat(image);
+    char* result = nullptr;
+    const int ret = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, "{}", &result);
+    bool ok = ret > 0 && result != nullptr;
+    if (ok) {
+        const json output = json::parse(result, nullptr, false);
+        ok = validateDistortionP9Json(output)
+            && output.value("statusCode", "") == "ok_with_warnings"
+            && output.value("candidateCount", 0) >= 9
+            && output["candidatePoints"].empty();
+        if (ok) {
+            for (int id = 0; id < 9; ++id) {
+                const auto& point = output["points"][static_cast<size_t>(id)];
+                ok = std::hypot(point.value("x", 0.0) - (220 + id % 3 * 380),
+                    point.value("y", 0.0) - (190 + id / 3 * 260)) < 2.0
+                    && point["boundingRect"].is_null();
+                if (!ok) break;
+            }
+        }
+    }
+    FreeResult(result);
+    if (!ok) return false;
+
+    result = nullptr;
+    const int explicitRet = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, "{\"threshold\":20000}", &result);
+    ok = explicitRet > 0 && result != nullptr;
+    if (ok) {
+        const json output = json::parse(result, nullptr, false);
+        ok = !output.is_discarded() && !output.value("success", true)
+            && output.value("statusCode", "") == "too_few_candidates";
+    }
+    FreeResult(result);
+    if (!ok) return false;
+
+    result = nullptr;
+    const int sizeRet = M_CalDistortionP9(hImage, { 0, 0, 0, 0 }, "{\"minRectSize\":1000}", &result);
+    ok = sizeRet > 0 && result != nullptr;
+    if (ok) {
+        const json output = json::parse(result, nullptr, false);
+        ok = !output.is_discarded() && !output.value("success", true)
+            && output.value("statusCode", "") == "no_candidates";
+    }
     FreeResult(result);
     return ok;
 }
@@ -3631,6 +3723,15 @@ int main(int argc, char* argv[])
     if (argc == 3 && std::string(argv[1]) == "--luminous-v2-cvraw-reject") {
         return RunLuminousAreaV2CvRaw(std::filesystem::u8path(argv[2]), false) ? 0 : 1;
     }
+    if (argc == 2 && std::string(argv[1]) == "--distortion-p9-only") {
+        const bool passed = smokeDistortionP9SyntheticTarget()
+            && smokeDistortionP9RecoversUnevenBrightGrid()
+            && smokeDistortionP9ReportsMissingPoint()
+            && smokeDistortionP9ReportsExtraCandidateWarning()
+            && smokeDistortionP9DesktopFixtureIfPresent();
+        std::cout << "DistortionP9 focused tests: " << (passed ? "PASS" : "FAIL") << std::endl;
+        return passed ? 0 : 1;
+    }
 
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
@@ -3723,6 +3824,11 @@ int main(int argc, char* argv[])
 
     if (!smokeDistortionP9SyntheticTarget()) {
         std::cerr << "M_CalDistortionP9 synthetic point9 test failed" << std::endl;
+        return 1;
+    }
+
+    if (!smokeDistortionP9RecoversUnevenBrightGrid()) {
+        std::cerr << "M_CalDistortionP9 uneven-brightness recovery test failed" << std::endl;
         return 1;
     }
 

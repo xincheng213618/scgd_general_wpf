@@ -143,18 +143,19 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         public async Task<bool> CompleteRunAsync(
-            string serialNumber,
+            string? serialNumber = null,
             TimeSpan? flushTimeout = null)
         {
-            if (string.IsNullOrWhiteSpace(serialNumber))
-                return false;
-
             long completedGeneration;
             lock (_lifecycleSync)
             {
-                if (!string.Equals(_activeSerialNumber, serialNumber, StringComparison.Ordinal))
+                if (string.IsNullOrWhiteSpace(_activeSerialNumber)
+                    || (serialNumber != null && !string.Equals(_activeSerialNumber, serialNumber, StringComparison.Ordinal)))
                     return false;
 
+                // The host can still close its recording after an exception clears
+                // its current result or switches the product serial number.
+                serialNumber = _activeSerialNumber;
                 completedGeneration = Volatile.Read(ref _generation);
                 _activeSerialNumber = null;
                 _activeBatchId = 0;

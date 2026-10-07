@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -29,6 +28,7 @@ namespace Conoscope.Presentation
             this.source = source;
             this.jobs = jobs;
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             StatusText.Text = Properties.Resources.ExportRunning;
             Loaded += Run;
         }

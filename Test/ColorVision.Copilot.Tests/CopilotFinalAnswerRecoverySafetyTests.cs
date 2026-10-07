@@ -1,15 +1,100 @@
-using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotFinalAnswerRecoverySafetyTests
 {
+    [Fact]
+    public async Task BilledContextRecoveryExhaustionRetainsAllFinalAnswerUsage()
+    {
+        using var fixture = new RecoveryFixture("", "stop", unresolvedProviderCall: false);
+        fixture.History = Enumerable.Range(0, 6).SelectMany(index => new[]
+        {
+            new CopilotRequestMessage("user", $"Earlier request {index}: " + new string('a', 2_000)),
+            new CopilotRequestMessage("assistant", $"Earlier answer {index}: " + new string('b', 2_000)),
+        }).ToArray();
+        fixture.Client.Failures.Enqueue(new CopilotProviderPayloadException(
+            "Synthetic context_length_exceeded rejection.", "context_length_exceeded", false, "",
+            new CopilotTokenUsage(12, 8, 20, 3)));
+        fixture.Client.Failures.Enqueue(new CopilotProviderPayloadException(
+            "Synthetic context_length_exceeded rejection after compaction.", "context_length_exceeded", false, "",
+            new CopilotTokenUsage(10, 5, 15, 2)));
+
+        var result = await fixture.RunAsync();
+
+        Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        fixture.AssertNoToolsWereUsed(result, expectedProviderCalls: 2);
+        Assert.Equal(2, fixture.Client.Requests.Count);
+        Assert.True(fixture.Client.Requests[1].Length < fixture.Client.Requests[0].Length);
+        Assert.Empty(fixture.Client.Failures);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, result.Budget.ProviderRetryCount);
+        Assert.Equal(1, result.Budget.ContextRecoveryCount);
+        Assert.Equal(22, result.Budget.ReportedInputTokens);
+        Assert.Equal(13, result.Budget.ReportedOutputTokens);
+        Assert.Equal(35, result.Budget.ReportedTotalTokens);
+        Assert.Equal(35, result.Budget.ConsumedTokens);
+        Assert.Equal(5, result.Budget.ReportedCachedInputTokens);
+        Assert.False(result.Budget.UsedEstimatedUsage);
+        var retained = Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint);
+        fixture.AssertOriginalUnsafeEvidenceRemains(retained.TaskEventJournal);
+        Assert.False(retained.EvaluateFor(fixture.Profile, fixture.Capabilities).CanResume);
+        Assert.Equal(new CopilotTokenUsage(22, 13, 35, 5), result.Usage);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BilledFinalAnswerFailureIsRetainedWhenItsRetryExhaustsTheRequestBudget(bool finalAnswerOnly)
+    {
+        using var fixture = new RecoveryFixture("", "stop", unresolvedProviderCall: false, allowStreamingRecovery: !finalAnswerOnly);
+        var billedTokens = CopilotAgentRunBudget.MinimumRequestTokenBudget;
+        fixture.Client.Failure = new CopilotProviderPayloadException("Synthetic failed final answer.", "server_error", true, "",
+            new CopilotTokenUsage(12, billedTokens - 12, billedTokens, 3));
+
+        var result = await fixture.RunBilledFailureAsync(finalAnswerOnly, cancelDuringRetry: false);
+
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.StopReason);
+        Assert.True(result.Budget.RequestTokenBudgetExhausted);
+        Assert.False(result.Budget.TimeBudgetExhausted);
+        Assert.Equal(billedTokens + (finalAnswerOnly ? 0 : 15), result.Budget.ReportedTotalTokens);
+        Assert.Equal(result.Budget.ReportedTotalTokens, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(finalAnswerOnly ? 3 : 5, result.Usage.CachedInputTokens);
+        Assert.Equal(finalAnswerOnly ? 1 : 2, result.Budget.ProviderCalls);
+        Assert.Equal(1, result.Budget.ProviderRetryCount);
+        fixture.AssertNoToolsWereUsed(result, duringNormalRun: !finalAnswerOnly);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BilledFinalAnswerFailureIsRetainedWhenRetryBackoffIsCancelled(bool finalAnswerOnly)
+    {
+        using var fixture = new RecoveryFixture("", "stop", unresolvedProviderCall: false, allowStreamingRecovery: !finalAnswerOnly);
+        fixture.Client.Failure = new CopilotProviderPayloadException("Synthetic failed final answer.", "server_error", true, "",
+            new CopilotTokenUsage(12, 8, 20, 3));
+
+        var result = await fixture.RunBilledFailureAsync(finalAnswerOnly, cancelDuringRetry: true);
+
+        Assert.Equal(finalAnswerOnly ? CopilotAgentStopReason.BudgetExhausted : CopilotAgentStopReason.Paused, result.StopReason);
+        Assert.Equal(finalAnswerOnly, result.Budget.TimeBudgetExhausted);
+        Assert.False(result.Budget.RequestTokenBudgetExhausted);
+        Assert.Equal(finalAnswerOnly ? 20 : 35, result.Budget.ReportedTotalTokens);
+        Assert.Equal(result.Budget.ReportedTotalTokens, result.Usage.EffectiveTotalTokens);
+        Assert.Equal(finalAnswerOnly ? 3 : 5, result.Usage.CachedInputTokens);
+        Assert.Equal(finalAnswerOnly ? 1 : 2, result.Budget.ProviderCalls);
+        Assert.Equal(1, result.Budget.ProviderRetryCount);
+        fixture.AssertNoToolsWereUsed(result, duringNormalRun: !finalAnswerOnly);
+    }
+
     [Theory]
     [InlineData(false, 401, 1)]
     [InlineData(true, 401, 1)]
@@ -236,10 +321,11 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
         private readonly bool _unresolvedProviderCall;
         private readonly List<CopilotAgentEvent> _events = [];
 
-        public RecoveryFixture(string text, string finishReason, bool unresolvedProviderCall)
+        public RecoveryFixture(string text, string finishReason, bool unresolvedProviderCall, bool allowStreamingRecovery = false)
         {
             _unresolvedProviderCall = unresolvedProviderCall;
-            _client = new FinalAnswerClient(text, finishReason);
+            _client = new FinalAnswerClient(text, finishReason) { AllowStreamingRecovery = allowStreamingRecovery };
+            _externalProvider.AllowDiscovery = allowStreamingRecovery;
             var catalog = new CopilotCapabilityCatalog();
             catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "finalize-safety", "Finalize safety", [_tool]);
             Capabilities = catalog.GetSnapshot();
@@ -309,41 +395,83 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
         public CopilotAgentSessionCheckpoint Checkpoint { get; }
         public FinalAnswerClient Client => _client;
         public IReadOnlyList<CopilotAgentEvent> Events => _events;
+        public IReadOnlyList<CopilotRequestMessage> History { get; set; } = [];
 
         public async Task<CopilotAgentRunResult> RunAsync(CopilotAgentSessionCheckpoint? checkpoint = null, CopilotAgentStopReason previousStopReason = CopilotAgentStopReason.Interrupted)
         {
             using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            return await _runtime.RunAsync(new CopilotAgentRequest
+            return await _runtime.RunAsync(CreateRequest(checkpoint, previousStopReason), _events.Add, cancellation.Token);
+        }
+
+        public async Task<CopilotAgentRunResult> RunBilledFailureAsync(bool finalAnswerOnly, bool cancelDuringRetry)
+        {
+            using var callerCancellation = new CancellationTokenSource();
+            using var timeBudgetCancellation = new CancellationTokenSource();
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(callerCancellation.Token, timeBudgetCancellation.Token);
+            var request = CreateRequest(finalAnswerOnly: finalAnswerOnly,
+                requestTokenBudget: cancelDuringRetry ? 32_768 : CopilotAgentRunBudget.MinimumRequestTokenBudget);
+            void Observe(CopilotAgentEvent item)
+            {
+                _events.Add(item);
+                if (!cancelDuringRetry || item.ProviderRetry == null)
+                    return;
+                if (finalAnswerOnly)
+                    timeBudgetCancellation.Cancel();
+                else
+                {
+                    Assert.True(request.RunControl!.RequestPause());
+                    callerCancellation.Cancel();
+                }
+            }
+            // Use the runtime's existing controllable-cancellation boundary, without a timer.
+            var runCore = typeof(CopilotMicrosoftAgentFrameworkRuntime).GetMethod("RunCoreAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            return await (Task<CopilotAgentRunResult>)runCore.Invoke(_runtime,
+            [
+                request,
+                (Action<CopilotAgentEvent>)Observe,
+                CopilotAgentRunBudget.Resolve(request),
+                Stopwatch.StartNew(),
+                timeBudgetCancellation,
+                callerCancellation.Token,
+                linkedCancellation.Token,
+            ])!;
+        }
+
+        private CopilotAgentRequest CreateRequest(CopilotAgentSessionCheckpoint? checkpoint = null,
+            CopilotAgentStopReason previousStopReason = CopilotAgentStopReason.Interrupted,
+            bool finalAnswerOnly = true, int requestTokenBudget = 32_768) => new()
             {
                 Profile = Profile,
                 ConversationId = "finalize-safety-conversation",
                 TaskId = "finalize-safety-task",
                 WorkspacePath = _directory.FullName,
-                UserText = CopilotAgentRecoveryPolicy.FinalizeUserMessage,
+                UserText = finalAnswerOnly ? CopilotAgentRecoveryPolicy.FinalizeUserMessage : "Summarize the supplied context.",
+                History = History,
                 Mode = CopilotAgentMode.Auto,
-                SessionCheckpoint = checkpoint ?? Checkpoint,
-                Recovery = checkpoint == null ? _recovery : new CopilotAgentRecoveryRequest
+                HarnessFeatures = CopilotAgentHarnessFeatures.None,
+                RunControl = new CopilotAgentRunControl(),
+                SessionCheckpoint = finalAnswerOnly ? checkpoint ?? Checkpoint : null,
+                Recovery = !finalAnswerOnly ? null : checkpoint == null ? _recovery : new CopilotAgentRecoveryRequest
                 {
                     Mode = CopilotAgentRecoveryMode.Finalize,
                     PreviousStopReason = previousStopReason,
                 },
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
-                    RequestTokenBudget = 32_768,
+                    RequestTokenBudget = requestTokenBudget,
                     MaxToolCalls = 1,
                     MaxAgentPasses = 1,
                     TotalDuration = TimeSpan.FromSeconds(10),
                 },
-            }, _events.Add, cancellation.Token);
-        }
+            };
 
-        public void AssertNoToolsWereUsed(CopilotAgentRunResult result, int expectedProviderCalls = 1)
+        public void AssertNoToolsWereUsed(CopilotAgentRunResult result, int expectedProviderCalls = 1, bool duringNormalRun = false)
         {
             Assert.Equal(expectedProviderCalls, _client.Calls);
-            Assert.Equal(0, _client.StreamingCalls);
+            Assert.Equal(duringNormalRun ? 1 : 0, _client.StreamingCalls);
             Assert.NotNull(_client.Options);
             Assert.Empty(_client.Options.Tools!);
-            Assert.Equal(0, _externalProvider.Calls);
+            Assert.Equal(duringNormalRun ? 1 : 0, _externalProvider.Calls);
             Assert.Equal(0, _tool.Calls);
             Assert.Empty(result.StepRecords);
             Assert.Equal(0, result.Budget.ToolCalls);
@@ -386,12 +514,18 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
         public int StreamingCalls { get; private set; }
         public ChatOptions? Options { get; private set; }
         public Exception? Failure { get; set; }
+        public Queue<Exception> Failures { get; } = [];
+        public List<ChatMessage[]> Requests { get; } = [];
+        public bool AllowStreamingRecovery { get; init; }
 
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Calls++;
             Options = options;
+            Requests.Add(messages.ToArray());
+            if (Failures.TryDequeue(out var failure))
+                return Task.FromException<ChatResponse>(failure);
             if (Failure != null)
                 return Task.FromException<ChatResponse>(Failure);
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, text))
@@ -400,10 +534,22 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
             });
         }
 
-        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             StreamingCalls++;
-            throw new InvalidOperationException("Finalization must bypass the streaming Harness.");
+            if (!AllowStreamingRecovery)
+                throw new InvalidOperationException("Finalization must bypass the streaming Harness.");
+            await Task.CompletedTask;
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new TextContent("Partial answer."), new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = 10,
+                    OutputTokenCount = 5,
+                    TotalTokenCount = 15,
+                    CachedInputTokenCount = 2,
+                })]) { FinishReason = ChatFinishReason.Length };
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
@@ -413,10 +559,13 @@ public sealed class CopilotFinalAnswerRecoverySafetyTests
     private sealed class DiscoveryProbe : ICopilotExternalToolProvider
     {
         public int Calls { get; private set; }
+        public bool AllowDiscovery { get; set; }
 
         public Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
         {
             Calls++;
+            if (AllowDiscovery)
+                return Task.FromResult(new CopilotExternalToolLease());
             throw new InvalidOperationException("Finalization must not discover external tools.");
         }
     }

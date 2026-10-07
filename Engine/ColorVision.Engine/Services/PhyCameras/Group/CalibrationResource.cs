@@ -2,13 +2,14 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Solution.Editor.AvalonEditor;
+using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.Generic;
+using System;
 using System.IO;
 using System.Windows;
 
@@ -63,6 +64,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
 
         public bool CanEditText => SupportsTextEditing((ServiceTypes)SysResourceModel.Type) && IsValid;
+        public bool CanEdit => (SupportsTextEditing((ServiceTypes)SysResourceModel.Type) || SupportsBinaryEditing((ServiceTypes)SysResourceModel.Type)) && IsValid;
+
+        internal static bool SupportsBinaryEditing(ServiceTypes type) => type is
+            ServiceTypes.DefectPoint or ServiceTypes.DSNU or ServiceTypes.Uniformity or ServiceTypes.LineArity;
 
         internal static bool SupportsTextEditing(ServiceTypes type) => type is
             ServiceTypes.DarkNoise or ServiceTypes.ColorShift or ServiceTypes.Distortion or
@@ -87,20 +92,35 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             CalibrationResources.Add(this);
             OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
-            EditCommand = new RelayCommand(a => Edit(), a => CanEditText && AccessControl.Check(PermissionMode.Administrator));
+            EditCommand = new RelayCommand(a => Edit(), a => CanEdit && AccessControl.Check(PermissionMode.Administrator));
             Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark ?? string.Empty) ?? new CalibrationFileConfig();
         }
 
         public void Edit()
         {
-            if (!SupportsTextEditing((ServiceTypes)SysResourceModel.Type))
+            ServiceTypes type = (ServiceTypes)SysResourceModel.Type;
+            if (!CanEdit || !AccessControl.Check(PermissionMode.Administrator))
                 return;
 
             if (TryGetFilePath(out string filepath))
             {
                 log.Info(filepath);
-                AvalonEditWindow avalonEditWindow = new AvalonEditWindow(filepath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                avalonEditWindow.ShowDialog();
+                try
+                {
+                    Window editor = SupportsTextEditing(type)
+                        ? new CalibrationJsonEditorWindow(type, filepath)
+                        : new CalibrationBinaryEditorWindow(type, filepath);
+                    editor.Owner = Application.Current.GetActiveWindow();
+                    editor.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    editor.ShowDialog();
+                    OnPropertyChanged(nameof(IsValid));
+                    OnPropertyChanged(nameof(CanEdit));
+                }
+                catch (Exception ex)
+                {
+                    log.Error("打开校正编辑器失败", ex);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement, MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             else
             {

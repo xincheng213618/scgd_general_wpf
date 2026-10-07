@@ -1,7 +1,6 @@
 using ColorVision.Themes;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.UI.Serach;
 

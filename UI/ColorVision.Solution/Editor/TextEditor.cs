@@ -1,10 +1,7 @@
-﻿using AvalonDock.Layout;
-using ColorVision.Common.Utilities;
-using ColorVision.Solution.Editor;
+﻿using ColorVision.Solution.Editor;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.Solution.Workspace;
 using System.IO;
-using System.Windows;
 
 namespace ColorVision.Solution
 {

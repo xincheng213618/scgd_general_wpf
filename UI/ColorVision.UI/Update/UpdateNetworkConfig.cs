@@ -2,10 +2,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
 
 namespace ColorVision.Update
 {

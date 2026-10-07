@@ -1,16 +1,18 @@
 ﻿<Window x:Class="ProjectARVRPro.ARVRWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:display="clr-namespace:ProjectARVRPro"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectARVRPro"
+        xmlns:controls="clr-namespace:ColorVision.UI.Controls;assembly=ColorVision.UI"
         xmlns:properties ="clr-namespace:ProjectARVRPro.Properties" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRProConfig}"
-        Title="模组检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="{display:DisplayText Key='模组检测'}" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
@@ -36,26 +38,31 @@
                 </Grid>
                 <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding ViewResultManager.Config.Height}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Grid Visibility="Visible" >
-                        <StackPanel Grid.Row="0" Margin="3,2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="查询" Command="{Binding ViewResultManager.QueryCommand}">
+                    <Grid Visibility="Visible" MinHeight="32">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <WrapPanel Grid.Column="0" Margin="3,2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{display:DisplayText Key='查询'}" Command="{Binding ViewResultManager.QueryCommand}">
                                 <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M7.2,3.2 A4,4 0 1 1 7.2,11.2 A4,4 0 1 1 7.2,3.2 M10.2,10.2 L14.2,14.2"/>
                             </Button>
-                            <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}">
+                            <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="{display:DisplayText Key='通用查询'}" Command="{Binding ViewResultManager.GenericQueryCommand}">
                                 <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
                             </Button>
-                            <Button Content="数据清理" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
-                            <Button Content="释放截图缓存" Click="ReleaseSnapshotBuffer_Click" Margin="2,0,0,0"/>
-                            <Button Content="结果统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
-                            <Button x:Name="ViewRefreshManagerButton" Content="视图刷新管理"
+                            <Button Content="{display:DisplayText Key='数据清理'}" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
+                            <Button Content="{display:DisplayText Key='释放截图缓存'}" Click="ReleaseSnapshotBuffer_Click" Margin="2,0,0,0"/>
+                            <Button Content="{display:DisplayText Key='缓存管理'}" Click="OpenLocalCacheManager_Click" ToolTip="{display:DisplayText Key='管理当前进程的校正缓存和图像文件缓存槽位'}" Margin="2,0,0,0"/>
+                            <Button Content="{display:DisplayText Key='结果统计'}" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
+                            <Button x:Name="ViewRefreshManagerButton" Content="{display:DisplayText Key='视图刷新管理'}"
                                     Click="OpenResultViewRefreshManager_Click"
-                                    ToolTip="查看并管理所有读图与结果视图的自动刷新"
+                                    ToolTip="{display:DisplayText Key='查看并管理所有读图与结果视图的自动刷新'}"
                                     Margin="2,0,0,0"/>
-                        </StackPanel>
-                        <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                        </WrapPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
                             <Button Click="Button_Click_Clear" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
@@ -73,7 +80,8 @@
                                     </Image.RenderTransform>
                                 </Image>
                             </Button>
-                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Click="Button_Click_EditResultConfig" Padding="2" Height="25" Width="25" >
+                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Click="Button_Click_EditResultConfig" Padding="2" Height="25" Width="25"
+                                    ToolTip="{display:DisplayText Key='结果与导出设置'}" AutomationProperties.Name="{display:DisplayText Key='结果与导出设置'}">
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
@@ -186,7 +194,7 @@
                 <Grid Grid.Row="0" Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="75"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <DockPanel  Margin="0,0,0,5">
                         <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
@@ -201,12 +209,10 @@
                         <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                             <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="230" Style="{StaticResource TextBox.Small}" FontFamily="Courier New"  AcceptsReturn="True"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
-                        <Button Content="测试" DockPanel.Dock="Right" Click="TestClick" Margin="5,0,0,0" />
+                        <Button Content="{display:DisplayText Key='测试'}" DockPanel.Dock="Right" Click="TestClick" Margin="5,0,0,0" />
                     </DockPanel>
 
-                    <Border Grid.Row="1"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="0,0,0,0">
-                        <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-                    </Border>
+                    <controls:FlowExecutionStatus x:Name="ExecutionStatus" Grid.Row="1" />
 
                 </Grid>
                 <Grid Grid.Row="1" Margin="0,0,0,0">
@@ -251,7 +257,7 @@
                     <Border Grid.Row="0" Visibility="{Binding ProgressControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
                         <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2"/>
                     </Border>
-                    <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsDocumentEnabled="True">
+                    <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsUndoEnabled="False" IsDocumentEnabled="True">
                         <FlowDocument>
                             <Paragraph>
 
@@ -276,19 +282,17 @@
             </StatusBar.ItemsPanel>
             <StatusBarItem HorizontalAlignment="Left" HorizontalContentAlignment="Left" Padding="0">
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="设置" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
+                    <Button Content="{display:DisplayText Key='设置'}" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
                     <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
-                    <Button Content="切图" Command="{Binding ThunderbirdSerialManager.EditCommand}" Padding="10,2" Margin="2,0"/>
-                    <Button Content="中转" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2" Margin="2,0"/>
                     <StackPanel Orientation="Horizontal" Margin="2,0">
-                        <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <TextBlock Text="{display:DisplayText Key='当前组:'}" VerticalAlignment="Center" Margin="5,0,5,0"/>
                         <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}"
                                   DisplayMemberPath="Name"
                                   SelectedIndex="{Binding ProcessManager.ActiveGroupIndex}"
                                   Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
                     </StackPanel>
                     <Button x:Name="RunAllButton"
-                            Content="▶ 一键执行"
+                            Content="{display:DisplayText Key='▶ 一键执行'}"
                             Click="RunAllClick"
                             Background="#FF4CAF50"
                             Foreground="White"

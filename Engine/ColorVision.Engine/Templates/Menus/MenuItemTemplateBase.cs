@@ -1,5 +1,4 @@
-﻿using ColorVision.Database;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Menus
@@ -16,7 +15,10 @@ namespace ColorVision.Engine.Templates.Menus
 
         public virtual void ShowTemplateWindow()
         {
-            new TemplateEditorWindow(Template) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); 
+            var window = Template.CreateManagerWindow();
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
         }
     }
 }

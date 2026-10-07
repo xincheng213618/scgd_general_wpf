@@ -2,7 +2,6 @@ using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.Data;
 using System.IO;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

@@ -1,25 +1,10 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
-using ColorVision.Solution;
-using ColorVision.Solution.Workspace;
-using ColorVision.Copilot.Mcp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Feedback;
-using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.Copilot
@@ -226,7 +211,7 @@ namespace ColorVision.Copilot
                 assistantMessage,
                 turnSnapshot,
                 runtimeConfigSnapshot,
-                refreshExternalContext: true,
+                refreshExternalContext: requestMode != CopilotAgentMode.Chat,
                 isAutomaticGoalContinuation: false);
 
             CopilotHostedAgentRun? hostedRun;
@@ -309,7 +294,7 @@ namespace ColorVision.Copilot
 
         private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
         {
-            if (conversation.RevokeFullAccessGrant())
+            if (conversation.EndFullAccessTask())
                 OnComposerAccessModeChanged();
             CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
@@ -443,11 +428,12 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
-                    if (conversation.RevokeFullAccessGrant(hostedRun.Id)
+                    if (conversation.EndFullAccessTask(hostedRun.Id)
                         && ReferenceEquals(SelectedConversation, conversation))
                     {
                         OnComposerAccessModeChanged();
-                        SetPendingActionFeedback("本任务的临时自动复核授权已结束，后续受保护操作恢复按需确认。");
+                        if (conversation.AccessMode == CopilotAgentAccessMode.ConfirmProtectedActions)
+                            SetPendingActionFeedback("本任务的临时自动复核授权已结束，后续受保护操作恢复按需确认。");
                     }
                 });
                 RefreshAgentTasks();
@@ -502,6 +488,7 @@ namespace ColorVision.Copilot
             {
                 CopilotUiDispatcher.Invoke(() =>
                 {
+                    EnsurePersistentFullAccess(conversation);
                     var previousMode = conversation.AccessMode;
                     var previousTaskId = conversation.FullAccessTaskId;
                     conversation.BindFullAccessGrantToTask(hostedRun.Id, turnSnapshot.SolutionDirectoryPath);
@@ -523,6 +510,7 @@ namespace ColorVision.Copilot
             var streamContext = dispatcher == null
                 ? SynchronizationContext.Current
                 : new DispatcherSynchronizationContext(dispatcher);
+            var streamThreadId = Environment.CurrentManagedThreadId;
             CopilotStreamDeltaBuffer? deltaBuffer = null;
             CopilotAgentEventBuffer? eventBuffer = null;
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
@@ -574,6 +562,17 @@ namespace ColorVision.Copilot
                 taskEventJournalBaseline);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
             var hideAgentReasoning = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHideAgentReasoning;
+            Action flushTurnUiUpdates = () =>
+            {
+                if (streamContext != null
+                    && !(dispatcher?.CheckAccess() ?? Environment.CurrentManagedThreadId == streamThreadId))
+                {
+                    throw new InvalidOperationException("Copilot shutdown updates must be flushed on their UI thread.");
+                }
+                deltaBuffer?.FlushAsync().GetAwaiter().GetResult();
+                eventBuffer?.FlushAsync().GetAwaiter().GetResult();
+            };
+            Interlocked.Exchange(ref _flushActiveTurnUiUpdates, flushTurnUiUpdates);
             try
             {
                 try
@@ -594,13 +593,16 @@ namespace ColorVision.Copilot
                             case CopilotTurnStatePersistenceBarrierEvent barrier:
                                 try
                                 {
-                                    if (eventBuffer == null)
+                                    if (deltaBuffer == null && eventBuffer == null)
                                     {
                                         throw new InvalidOperationException(
-                                            "Agent state persistence requires an active event buffer.");
+                                            "Copilot state persistence requires an active UI update buffer.");
                                     }
 
-                                    await eventBuffer.FlushAsync();
+                                    if (deltaBuffer != null)
+                                        await deltaBuffer.FlushAsync();
+                                    if (eventBuffer != null)
+                                        await eventBuffer.FlushAsync();
                                     await FlushStatePersistenceBarrierAsync();
                                     barrier.TryCommit();
                                 }
@@ -678,10 +680,17 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
-                    if (deltaBuffer != null)
-                        await deltaBuffer.CompleteAsync();
-                    if (eventBuffer != null)
-                        await eventBuffer.CompleteAsync();
+                    try
+                    {
+                        if (deltaBuffer != null)
+                            await deltaBuffer.CompleteAsync();
+                        if (eventBuffer != null)
+                            await eventBuffer.CompleteAsync();
+                    }
+                    finally
+                    {
+                        Interlocked.CompareExchange(ref _flushActiveTurnUiUpdates, null, flushTurnUiUpdates);
+                    }
                 }
             }
             catch (OperationCanceledException) when (

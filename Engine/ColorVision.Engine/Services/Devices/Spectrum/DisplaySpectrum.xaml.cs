@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
@@ -150,7 +151,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         ComboBoxCalibrationGroups.SelectedValue = Device.Config.ActiveCalibrationGroupName;
                         MessageBox.Show(
                             Application.Current.GetActiveWindow(),
-                            $"切换标定分组对应的 ND 失败：{failure}",
+                            LocalizedText.Format($"切换标定分组对应的 ND 失败：{failure}"),
                             "ColorVision",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
@@ -296,7 +297,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 MessageBoxResult result = MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    $"光谱取图失败：{detail}\n\n是否打开光谱日志？",
+                    LocalizedText.Format($"光谱取图失败：{detail}\n\n是否打开光谱日志？"),
                     "ColorVision",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Error,

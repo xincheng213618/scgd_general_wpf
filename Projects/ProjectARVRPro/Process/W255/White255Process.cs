@@ -9,7 +9,6 @@ using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
 using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.Uniformity;
 using System.IO;

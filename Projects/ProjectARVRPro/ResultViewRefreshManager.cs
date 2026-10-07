@@ -1,3 +1,4 @@
+using LocalizedText = global::ProjectARVRPro.DisplayText;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine;
 using ColorVision.UI;
@@ -52,8 +53,8 @@ public sealed class ResultViewRefreshSettingItem : ViewModelBase
     public bool IsWarning => AffectedCount > 0 && IsAutoRefreshEnabled;
 
     public string StatusText => AffectedCount == 0
-        ? "未加载"
-        : IsAutoRefreshEnabled ? "正在刷新" : "已关闭";
+        ? LocalizedText.Get("未加载")
+        : IsAutoRefreshEnabled ? LocalizedText.Get("正在刷新") : LocalizedText.Get("已关闭");
 
     internal void Apply() => Config.AutoRefreshView = IsAutoRefreshEnabled;
 
@@ -72,7 +73,6 @@ internal static class ResultViewRefreshDiscovery
             ["ViewCalibrationConfig"] = "校正结果视图",
             ["ViewSpectrumConfig"] = "光谱结果视图",
             ["ViewSMUConfig"] = "SMU 结果视图",
-            ["ViewThirdPartyAlgorithmsConfig"] = "第三方算法结果视图",
         };
 
     internal static ObservableCollection<ResultViewRefreshSettingItem> Discover()

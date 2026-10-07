@@ -104,7 +104,13 @@ export interface ReleaseGroup {
   visible_items?: ReleaseArtifact[]
 }
 
+export interface DownloadAssistant {
+  relative_path: string
+  size: number
+}
+
 export interface HomePayload {
+  download_assistant?: DownloadAssistant | null
   app_info: AppInfo
   recent_change_dashboard: Array<{
     title: string
@@ -140,6 +146,7 @@ export interface DocsHomeSummary {
 }
 
 export interface ReleasesPayload {
+  download_assistant?: DownloadAssistant | null
   app_info: AppInfo
   archive_visible_groups: ReleaseGroup[]
   archive_visible_group_count: number

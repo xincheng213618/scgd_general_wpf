@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
-using Xunit;
 
 namespace ProjectARVRPro.Tests;
 

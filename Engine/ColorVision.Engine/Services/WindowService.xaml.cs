@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -17,7 +15,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services
 {
@@ -38,13 +35,19 @@ namespace ColorVision.Engine.Services
         /// <summary>
         /// 获取用于编辑属性的命令
         /// </summary>
+        [Browsable(false)]
         public RelayCommand EditCommand { get; set; }
         public WindowServiceConfig()
         {
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
-        public int ShowType2 { get; set; } = 2;
+        // Preserve the persisted service/device values; the former type view now opens services.
+        public int ShowType2 { get; set; } = 1;
+
+        internal void NormalizeListMode() => ShowType2 = ShowType2 == 2 ? 2 : 1;
+
+        internal void ToggleListMode() => ShowType2 = ShowType2 == 2 ? 1 : 2;
 
     }
 
@@ -55,11 +58,9 @@ namespace ColorVision.Engine.Services
     {
         private string? _copilotContextSourceId;
         private List<(ServiceObjectBase Service, string Configuration)>? _initialConfiguration;
-        public RelayCommand CreateDeviceCommand { get; }
 
         public WindowService()
         {
-            CreateDeviceCommand = new RelayCommand(_ => ShowCreateDeviceMenu(), _ => AccessControl.Check(PermissionMode.Administrator));
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -76,8 +77,9 @@ namespace ColorVision.Engine.Services
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             StackPanelShow.Children.Clear();
-            DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService ? Visibility.Visible : Visibility.Collapsed;
-            DetailTitle.Text = (TreeView1.SelectedItem as ServiceObjectBase)?.Name ?? Properties.Resources.WindowServiceTitle;
+            DetailHeader.DataContext = TreeView1.SelectedItem;
+            DetailHeader.Visibility = TreeView1.SelectedItem is DeviceService or TerminalService ? Visibility.Visible : Visibility.Collapsed;
+            RenameServiceButton.Visibility = TreeView1.SelectedItem is TerminalService ? Visibility.Visible : Visibility.Collapsed;
             DetailSubtitle.Text = TreeView1.SelectedItem switch
             {
                 DeviceService device => device.Code,
@@ -97,6 +99,15 @@ namespace ColorVision.Engine.Services
 
             if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (TreeView1.SelectedItem is DeviceService device)
+                PublishCopilotDeviceContext(device);
+            else
+                ClearCopilotDeviceContext();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -165,29 +176,20 @@ namespace ColorVision.Engine.Services
 
         private void ButtonToggleList_Click(object sender, RoutedEventArgs e)
         {
-            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 + 1) % 3;
+            WindowServiceConfig.Instance.ToggleListMode();
             ApplyServiceListMode();
         }
 
         private void ApplyServiceListMode()
         {
-            int showType = ((WindowServiceConfig.Instance.ShowType2 % 3) + 3) % 3;
-            WindowServiceConfig.Instance.ShowType2 = showType;
+            WindowServiceConfig.Instance.NormalizeListMode();
             StackPanelShow.Children.Clear();
 
-            switch (showType)
+            switch (WindowServiceConfig.Instance.ShowType2)
             {
-                case 0:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    ListModeText.Text = Properties.Resources.Type;
-                    break;
                 case 1:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    ListModeText.Text = Properties.Resources.Terminal;
-                    break;
-                case 2:
-                    TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    ListModeText.Text = Properties.Resources.Device;
+                    ListModeText.Text = Properties.Resources.ServiceConfigurations;
                     break;
                 default:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
@@ -203,32 +205,55 @@ namespace ColorVision.Engine.Services
             new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        private void ShowCreateDeviceMenu()
+        private void CreateDeviceMenu_Opened(object sender, RoutedEventArgs e)
         {
-            var menu = new ContextMenu { PlacementTarget = CreateDeviceButton, Placement = PlacementMode.Bottom };
-            foreach (var type in ServiceManager.GetInstance().TypeServices)
+            var menu = (ContextMenu)sender;
+            if (!AccessControl.Check(PermissionMode.Administrator))
+            {
+                menu.IsOpen = false;
+                return;
+            }
+            menu.Items.Clear();
+            PopulateCreateDeviceMenu(menu, ServiceManager.GetInstance().TypeServices, CreateServiceAndDevice);
+        }
+
+        private void CreateServiceAndDevice(Types.TypeService type)
+        {
+            if (!AccessControl.Check(PermissionMode.Administrator)) return;
+            var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            dialog.ShowDialog();
+            if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
+                terminal.OpenCreateWindowCommand.Execute(null);
+        }
+
+        internal static ContextMenu BuildCreateDeviceMenu(IEnumerable<Types.TypeService> types, Action<Types.TypeService> createService)
+        {
+            var menu = new ContextMenu();
+            PopulateCreateDeviceMenu(menu, types, createService);
+            return menu;
+        }
+
+        private static void PopulateCreateDeviceMenu(ContextMenu menu, IEnumerable<Types.TypeService> types, Action<Types.TypeService> createService)
+        {
+            foreach (var type in types)
             {
                 if (!DeviceServiceFactoryRegistry.TryGetFactory(type.ServiceTypes, out _))
                     continue;
-                var typeItem = new MenuItem { Header = type.Name };
+                var typeItem = new MenuItem
+                {
+                    Header = Properties.Resources.ResourceManager.GetString($"ServiceType_{type.ServiceTypes}", Properties.Resources.Culture) ?? type.Name
+                };
                 foreach (var terminal in type.VisualChildren.OfType<TerminalService>())
                 {
                     var item = new MenuItem { Header = terminal.Name, Command = terminal.OpenCreateWindowCommand };
                     typeItem.Items.Add(item);
                 }
                 if (typeItem.Items.Count > 0) typeItem.Items.Add(new Separator());
-                var createTerminal = new MenuItem { Header = "新建服务配置并添加设备" };
-                createTerminal.Click += (_, _) =>
-                {
-                    var dialog = new Types.CreateType(type) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                    dialog.ShowDialog();
-                    if (dialog.CreatedTerminal is TerminalService terminal && terminal.OpenCreateWindowCommand.CanExecute(null))
-                        terminal.OpenCreateWindowCommand.Execute(null);
-                };
+                var createTerminal = new MenuItem { Header = Properties.Resources.CreateServiceAndDevice };
+                createTerminal.Click += (_, _) => createService(type);
                 typeItem.Items.Add(createTerminal);
                 menu.Items.Add(typeItem);
             }
-            menu.IsOpen = true;
         }
 
         private void ButtonPhySpectrumManager_Click(object sender, RoutedEventArgs e)
@@ -249,6 +274,7 @@ namespace ColorVision.Engine.Services
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Background = (System.Windows.Media.Brush)FindResource("GlobalBackground")
             };
+            window.ApplyCaption();
             var frame = new System.Windows.Controls.Frame();
             window.Content = frame;
             frame.Navigate(new Archive.Dao.ArchivePage(frame));

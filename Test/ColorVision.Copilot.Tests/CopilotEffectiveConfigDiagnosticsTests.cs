@@ -1,4 +1,3 @@
-using ColorVision.Copilot;
 using System.Globalization;
 using System.IO;
 
@@ -84,7 +83,6 @@ public sealed class CopilotEffectiveConfigDiagnosticsTests : IDisposable
             Config = new CopilotConfig
             {
                 McpBearerToken = secret,
-                BackendSyncUrl = $"https://backend.test/{secret}",
                 ExternalMcpServers = [new CopilotMcpClientServerConfig { Endpoint = $"https://mcp.test/{secret}" }],
             },
             State = new CopilotChatState(),

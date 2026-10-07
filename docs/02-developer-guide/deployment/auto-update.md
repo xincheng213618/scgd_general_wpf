@@ -5,7 +5,7 @@ status: "current"
 summary: "检查更新、重新安装与程序备份入口，以及主程序和插件的检查复用、下载安装、失败回退与启动恢复。"
 aliases: ["检查更新","变更日志","程序备份","更新前创建程序快照","正常启动后自动存档","自动更新","更新失败","重新安装","最新完整安装包","插件回滚","重复检查更新","更新检查缓存","十分钟缓存","空结果不缓存","启动检查结果","PluginUpdater","CombinedUpdateCoordinator","UpdateCheckReuseState","LatestVersionCheckRequestCache","CanReuseUpdateCheckOptions","GetPluginUpdateMetadataAsync","ServerUnavailable","NoInternetConnection","forceRefresh","ApplicationSnapshotService","ApplicationSnapshotConfig","ApplicationSnapshotsWindow","自动存档位置","autosave.zip","还原所选",".cvx","离线升级","增量包版本链","IncrementalUpdatePackageFileProcessor"]
 code_paths: ["ColorVision/Update","ColorVision/Recovery","UI/ColorVision.UI/Update/","UI/ColorVision.UI/ServiceHost/ApplicationUpdatePrivilegeBroker.cs","UI/ColorVision.UI/Plugins/PluginUpdater.cs","UI/ColorVision.UI/Plugins/PluginRecoveryBackupService.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceClient.cs","UI/ColorVision.UI.Desktop/Marketplace/MarketplaceManager.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/ApplicationSnapshotServiceTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/HelpKeyboardNavigationTests.cs","Test/ColorVision.UI.Tests/PluginRecoveryBackupServiceTests.cs","Test/ColorVision.UI.Tests/ServiceHostUpdateCompatibilityTests.cs","Test/ColorVision.UI.Tests/AutoUpdatePlanTests.cs","Test/ColorVision.UI.Tests/StartupRecoverySnapshotRuntimeTests.cs"]
 related: ["delivery.deployment","delivery.scripts","platform.service-host","delivery.update-scan-protection","platform.startup-integrity"]
 ---
 
@@ -119,6 +119,10 @@ flowchart LR
 
 主程序、插件和快照的外部批处理会向当前安装目录对应的 `%LocalAppData%\ColorVision\UpdateState\<安装标识>\update.log` 追加开始、成功或失败记录，便于定位静默更新没有生效的问题。主程序覆盖复制遇到杀毒扫描或文件句柄短暂占用时，每秒重试一次、最多重试 10 次；最终失败会把 `robocopy` 的文件明细和退出码写入同一日志。“发送反馈”的诊断项默认包含最近 7 天内各安装目录的更新日志，因此外部更新进程已经退出后仍能随反馈包回传。
 
+主程序增量更新在原进程退出后、批量复制前处理仍被占用的 DLL。内容相同的文件按 SHA-256 确认后跳过覆盖；内容变化且允许更名时，先保留旧文件再放入新文件，使已有读取者继续使用旧内容。若更名也被共享锁阻止，仅在确认系统 `dllhost.exe` 同时加载了当前安装目录的 ShellExtension 和目标 DLL 后，关闭该缩略图宿主并重试，不按进程名关闭所有 COM Surrogate 或资源管理器。旧 DLL 若暂时无法删除，会在原目录保留带唯一后缀的副本并记入日志。
+
+文件共享冲突（错误 32）与目录权限不足是不同问题；取得管理员或 ServiceHost 权限不能代替释放占用。此处理保留既有更新交接规则：主动更新后自动重启，退出时更新按原有重新打开请求处理。隔离验证入口为 `UpdaterBatchExecutionTests`，覆盖文件读取占用、真实 DLL 映射、相同文件跳过及重启交接；这些测试不代表当前安装目录已完成更新。
+
 ## 启动恢复
 
 如果上次启动没有完成，主程序会先显示独立启动恢复窗口。该窗口自动检查主程序新版，也可重新安装当前完整版本；插件侧支持本次跳过、持久禁用和按已验证备份回退。更新或回退只有在外部进程真实接管后才清理启动失败记录，下载失败、恢复准备失败或仅打开快照窗口都不会丢失现场。更新前的旧进程清理是尽力而为：无法识别、权限不足或终止超时时记录警告，不能阻止外部更新程序继续启动。
@@ -174,4 +178,4 @@ flowchart LR
 
 当前没有据此声明 ETag/304、超时后旧元数据、服务地址切换、取消窗口与共享请求并发、真实主程序/插件组合更新的端到端覆盖。验证这些行为需要隔离网络和安装环境；文档检查不授权发起更新、安装或发布。
 
-快照相关验证见 `ApplicationSnapshotServiceTests`（开关、版本判定、替换、裁剪及还原脚本）与 `StartupRecoverySnapshotRuntimeTests`（运行期还原入口）。它们不证明用户当前快照完整、所有进程已退出或目标安装已恢复。
+它们不证明用户当前快照完整、所有进程已退出或目标安装已恢复。

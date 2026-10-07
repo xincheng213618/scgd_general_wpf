@@ -1,3 +1,4 @@
+using LocalizedText = global::ColorVision.ImageEditor.DisplayText;
 using ColorVision.Algorithms;
 using ColorVision.ImageEditor.Algorithms;
 using Microsoft.Win32;
@@ -411,7 +412,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         public AlgorithmAnalysisResultPresentation(AlgorithmResult result, string title)
         {
             Result = result ?? throw new ArgumentNullException(nameof(result));
-            Title = string.IsNullOrWhiteSpace(title) ? "算法结果" : title;
+            Title = string.IsNullOrWhiteSpace(title) ? LocalizedText.Get("算法结果") : title;
             AlgorithmImageArtifact[] imageArtifacts = result.Artifacts.OfType<AlgorithmImageArtifact>().ToArray();
             List<AlgorithmAnalysisImagePresentation> images = new();
             long retainedBytes = 0;
@@ -557,12 +558,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Margin = new Thickness(8),
                 DataContext = presentation,
             };
-            Button exportCsv = new() { Content = "导出 CSV", MinWidth = 96, Margin = new Thickness(0, 0, 8, 0), DataContext = presentation };
-            Button exportJson = new() { Content = "导出 JSON", MinWidth = 96, Margin = new Thickness(0, 0, 8, 0), DataContext = presentation };
+            Button exportCsv = new() { Content = LocalizedText.Get("导出 CSV"), MinWidth = 96, Margin = new Thickness(0, 0, 8, 0), DataContext = presentation };
+            Button exportJson = new() { Content = LocalizedText.Get("导出 JSON"), MinWidth = 96, Margin = new Thickness(0, 0, 8, 0), DataContext = presentation };
             ProgressBar exportProgress = new() { Width = 120, Height = 16, Minimum = 0, Maximum = 1, Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
             TextBlock exportStatus = new() { MinWidth = 120, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0), Visibility = Visibility.Collapsed };
-            Button cancelExport = new() { Content = "取消导出", MinWidth = 88, Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
-            Button close = new() { Content = "关闭", MinWidth = 88, IsCancel = true };
+            Button cancelExport = new() { Content = LocalizedText.Get("取消导出"), MinWidth = 88, Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
+            Button close = new() { Content = LocalizedText.Get("关闭"), MinWidth = 88, IsCancel = true };
             buttons.Children.Add(exportStatus);
             buttons.Children.Add(exportProgress);
             buttons.Children.Add(cancelExport);
@@ -595,7 +596,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 };
                 Button exportImage = new()
                 {
-                    Content = imagePresentation.PreferredExtension == ".png" ? "导出 PNG" : "导出 TIFF",
+                    Content = imagePresentation.PreferredExtension == ".png" ? LocalizedText.Get("导出 PNG") : LocalizedText.Get("导出 TIFF"),
                     MinWidth = 96,
                     Margin = new Thickness(4),
                     HorizontalAlignment = HorizontalAlignment.Right,
@@ -629,7 +630,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 FontFamily = new FontFamily("Consolas"),
                 DataContext = presentation,
             };
-            tabs.Items.Add(new TabItem { Header = "JSON / 结构化结果", Content = text, DataContext = presentation });
+            tabs.Items.Add(new TabItem { Header = LocalizedText.Get("JSON / 结构化结果"), Content = text, DataContext = presentation });
             root.Children.Add(tabs);
             if (tabs.Items.Count > 0 && tabs.SelectedIndex < 0) tabs.SelectedIndex = 0;
             _ = MaterializeSelectedImageAsync(tabs, presentation.LifetimeToken);
@@ -668,7 +669,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 cancelExport.IsEnabled = true;
                 exportProgress.Value = 0;
                 exportProgress.Visibility = Visibility.Visible;
-                exportStatus.Text = "准备导出…";
+                exportStatus.Text = LocalizedText.Get("准备导出…");
                 exportStatus.Visibility = Visibility.Visible;
                 Progress<AlgorithmProgress> progress = new(value =>
                 {
@@ -678,17 +679,17 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 try
                 {
                     await export(activeExport.Token, progress);
-                    if (owner == null) MessageBox.Show("导出完成。", "算法结果", MessageBoxButton.OK, MessageBoxImage.Information);
-                    else MessageBox.Show(owner, "导出完成。", owner.Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (owner == null) MessageBox.Show(LocalizedText.Get("导出完成。"), LocalizedText.Get("算法结果"), MessageBoxButton.OK, MessageBoxImage.Information);
+                    else MessageBox.Show(owner, LocalizedText.Get("导出完成。"), owner.Title, MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (OperationCanceledException)
                 {
-                    exportStatus.Text = "导出已取消。";
+                    exportStatus.Text = LocalizedText.Get("导出已取消。");
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
                 {
-                    if (owner == null) MessageBox.Show(exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
-                    else MessageBox.Show(owner, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (owner == null) MessageBox.Show(exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
+                    else MessageBox.Show(owner, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {
@@ -714,7 +715,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             }
             if (diagnostic != null)
             {
-                diagnostic.Text = "正在后台生成有界预览…";
+                diagnostic.Text = LocalizedText.Get("正在后台生成有界预览…");
                 diagnostic.Visibility = Visibility.Visible;
             }
             try
@@ -730,7 +731,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 if (diagnostic != null)
                 {
-                    diagnostic.Text = $"预览生成失败：{exception.Message}";
+                    diagnostic.Text = LocalizedText.Format($"预览生成失败：{exception.Message}");
                     diagnostic.Visibility = Visibility.Visible;
                 }
             }
@@ -742,12 +743,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             Window window = new()
             {
                 Owner = Application.Current.GetActiveWindow(),
-                Title = $"{presentation.Title} - 结果",
+                Title = LocalizedText.Format($"{presentation.Title} - 结果"),
                 Width = 720,
                 Height = 520,
                 Content = CreateContent(presentation),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
             window.Closed += (_, _) => presentation.Dispose();
             try { window.ShowDialog(); }
             finally { presentation.Dispose(); }
@@ -788,14 +790,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             try
             {
                 await export();
-                if (owner == null) MessageBox.Show("导出完成。", "算法结果", MessageBoxButton.OK, MessageBoxImage.Information);
-                else MessageBox.Show(owner, "导出完成。", owner.Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                if (owner == null) MessageBox.Show(LocalizedText.Get("导出完成。"), LocalizedText.Get("算法结果"), MessageBoxButton.OK, MessageBoxImage.Information);
+                else MessageBox.Show(owner, LocalizedText.Get("导出完成。"), owner.Title, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (OperationCanceledException) { }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
-                if (owner == null) MessageBox.Show(exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
-                else MessageBox.Show(owner, exception.Message, "导出失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (owner == null) MessageBox.Show(exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
+                else MessageBox.Show(owner, exception.Message, LocalizedText.Get("导出失败"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

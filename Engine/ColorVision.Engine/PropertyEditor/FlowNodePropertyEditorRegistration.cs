@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
@@ -187,7 +186,10 @@ namespace ColorVision.Engine.PropertyEditor
                     return;
 
                 int defaultIndex = GetTemplateIndex(currentTemplate, property.GetValue(obj)?.ToString(), combo.SelectedIndex);
-                new TemplateEditorWindow(currentTemplate, defaultIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                var window = currentTemplate.CreateManagerWindow(defaultIndex);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
                 RefreshItems();
             };
 
@@ -355,7 +357,10 @@ namespace ColorVision.Engine.PropertyEditor
                     }
                 }
 
-                new TemplateEditorWindow(selectedTemplate, selectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                var window = selectedTemplate.CreateManagerWindow(selectedIndex);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
                 RefreshItems();
             };
 
@@ -476,11 +481,14 @@ namespace ColorVision.Engine.PropertyEditor
         internal static TemplateSensor CreateSensorTemplate(object obj)
         {
             string deviceCode = GetStringProperty(obj, nameof(IFlowDeviceNode.DeviceCode));
-            string? category = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode)?.Config?.Category;
+            var device = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().FirstOrDefault(device => device.Code == deviceCode);
+            string? category = device?.Config?.Category;
             if (string.IsNullOrWhiteSpace(category))
-                category = TemplateSensor.Params.Keys.FirstOrDefault() ?? "Sensor.Default";
+                category = "Sensor.Default";
 
-            return new TemplateSensor(category);
+            var template = new TemplateSensor(category);
+            template.Load();
+            return template;
         }
 
         private static string GetStringProperty(object obj, string propertyName)

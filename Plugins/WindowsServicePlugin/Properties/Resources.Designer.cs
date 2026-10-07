@@ -502,6 +502,15 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 MySQL 运行环境检查 的本地化字符串。
+        /// </summary>
+        public static string MySqlPrerequisiteTitle {
+            get {
+                return ResourceManager.GetString("MySqlPrerequisiteTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 MySQL 服务信息 的本地化字符串。
         /// </summary>
         public static string MySqlServiceInfo {
@@ -510,6 +519,25 @@ namespace WindowsServicePlugin.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 MySQL {0} 需要 Microsoft Visual C++ 2013 x64 运行库，但本机未检测到。
+        ///请在“服务安装管理”窗口下载或选择 VC++ 2013 x64 安装程序并安装，然后重试。仅安装 x86 版本不能满足要求。 的本地化字符串。
+        /// </summary>
+        public static string MySqlVc2013Required {
+            get {
+                return ResourceManager.GetString("MySqlVc2013Required", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 无法读取所选 MySQL 的版本，已停止操作。请选择原安装目录中的 bin\mysqld.exe，或包含该程序的有效 MySQL ZIP 安装包。 的本地化字符串。
+        /// </summary>
+        public static string MySqlVersionUnreadable {
+            get {
+                return ResourceManager.GetString("MySqlVersionUnreadable", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 MySQL ZIP (*.zip)|*.zip 的本地化字符串。
         /// </summary>

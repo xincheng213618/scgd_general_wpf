@@ -4,7 +4,6 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.Solution.Workspace;
 using Microsoft.Win32;
-using System.Threading;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -41,6 +40,7 @@ namespace ColorVision.Solution.Fusion
         public FusionWindow()
         {
             InitializeComponent();
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             FileListBox.ItemsSource = FilePaths;
             TimingListView.ItemsSource = TimingRecords;
             FilePaths.CollectionChanged += (s, e) => UpdateExecuteButton();
@@ -223,9 +223,10 @@ namespace ColorVision.Solution.Fusion
                     Content = imageView,
                     Width = 800,
                     Height = 600,
-                    Owner = Application.Current.MainWindow,
+                    Owner = Application.Current.GetActiveWindow(),
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
+                ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
                 window.Closed += (s, e) =>
                 {
                     imageView.Clear();

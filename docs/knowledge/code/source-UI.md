@@ -12,7 +12,7 @@ next: false
 
 返回[知识总入口](../index.md)。只读与当前模块有关的主题，再核对其中的源码、测试和状态；`规划`、`历史`不代表当前能力。
 
-以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。
+以下关联用于按源码定位和变更复核，不是完整调用图或主题所有权。跨模块链接保留在地图中，网页侧栏只列地图入口。
 
 ## UI/ 根目录与跨模块关联 {#module-5549}
 
@@ -34,10 +34,10 @@ next: false
   按用途定位发光区、传统与 JSON 裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
+  图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
+  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
 
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。
@@ -57,6 +57,9 @@ next: false
 - [ONNX / AI 推理接入设计（Deferred） \[规划\]](../../02-developer-guide/core-concepts/onnx-inference-future-design.md) — `algorithms.onnx`
   尚未实现的 ONNX 接入设计：保持基础产品无 ONNX 运行时，新增 adapter 前须明确模型与验收门禁。
 
+- [配套服务纳入 ColorVision 的演进规划 \[规划\]](../../03-architecture/service-integration-roadmap.md) — `platform.service-integration-roadmap`
+  在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。
+
 ## UI/ColorVision.Common {#module-55492f436f6c6f72566973696f6e2e436f6d6d6f6e}
 
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
@@ -73,6 +76,9 @@ next: false
 
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
+
+- [启动、初始化与故障恢复](../../03-architecture/overview/runtime.md) — `platform.runtime`
+  启动顺序与故障恢复：软件渲染兼容参数在 WPF 窗口前生效；初始化进度和ready不代表全部成功，一次性插件跳过不绕过真实故障。
 
 - [权限边界与鉴权入口](../../03-architecture/security/overview.md) — `platform.security`
   区分应用管理员、RBAC会话与权限码、Windows服务身份及远程/工具授权；登录缓存和界面状态不能替代执行入口的权限检查。
@@ -102,7 +108,7 @@ next: false
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。
 
 - [设置窗口：发现、编辑与关闭契约](../../04-api-reference/ui-components/settings.md) — `ui.settings`
-  设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。
+  设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
@@ -128,7 +134,7 @@ next: false
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
-  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
+  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。
 
 - [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
   本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
@@ -204,13 +210,13 @@ next: false
   按问题路由到 UI 模块、属性编辑契约、运行时发现与 DLL 发布证据。
 
 - [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
-  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
 
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
-  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
+  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。
 
 - [本地 FOV V2](../../04-api-reference/algorithms/detectors/fov-v2-local.md) — `algorithms.fov-local`
   本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。
@@ -222,7 +228,7 @@ next: false
   ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合的操作、参数与结果；灯珠暗区候选不完整，P2 运行失败后复制结果可能仍取上次 JSON。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
+  图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
 
 - [Copilot 扩展、MCP 与 Hook](../../02-developer-guide/core-concepts/copilot-agent-extensions.md) — `copilot.extensions`
   业务模块动态上下文、外部 MCP client 和 Hook 如何进入统一宿主权限与生命周期。
@@ -237,7 +243,7 @@ next: false
   CVRAW/CVCIE 读取、动态校正参数覆盖、RAW 按需色度测量、内嵌 XYZ 显示，以及版本写回和失败边界。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
+  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
   本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
@@ -268,6 +274,9 @@ next: false
 
 - [UI NuGet 包构建与发布](../../04-api-reference/ui-components/publishing.md) — `ui.publishing`
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
+
+- [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
+  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [Blob / 连通域 V1](../../02-developer-guide/core-concepts/blob-analysis-v1.md) — `algorithms.blob-analysis`
   BlobAnalysis 保留实现的参数、结果与验证契约；默认运行时由 Experimental 门禁拒绝执行。
@@ -401,7 +410,7 @@ next: false
   Socket 与 Flow 的 SQLite 正文 gzip 编解码、按ID读写、旧TEXT逐批迁移、WAL备份与VACUUM；通用工具不自动停写/备份/恢复，失败可能已有批次提交。
 
 - [ARVRPro TCP 通讯协议](../../04-api-reference/projects/project-arvr-pro-protocol.md) — `projects.arvr-pro-protocol`
-  ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 中转、状态码和最终结果关联；说明分帧与并发会话限制。
+  ARVRPro TCP/JSON 对接：初始化与 RunAll、流程启用设置、切图确认、AOI 切图节点、状态码和最终结果关联；说明分帧与并发会话限制。
 
 - [LUX TCP 通讯协议](../../04-api-reference/projects/project-lux-protocol.md) — `projects.lux-protocol`
   LUX TCP 文本协议的 T0000 握手、VID、光学中心、光通量与 SocketCode 流程，说明响应字段、状态码、分帧及共享会话限制。
@@ -584,7 +593,7 @@ next: false
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。
 
 - [设置窗口：发现、编辑与关闭契约](../../04-api-reference/ui-components/settings.md) — `ui.settings`
-  设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。
+  设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [工作区创建、资源打开与文件树管理](../../04-api-reference/ui-components/ColorVision.Solution.md) — `ui.solution`
   工作区创建、打开与最近列表，文件树搜索和引用移除，切换取消及cvsln恢复；同名创建可能覆盖配置，取消切换不回滚全部文件变化。
@@ -658,7 +667,7 @@ next: false
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。
 
 - [设置窗口：发现、编辑与关闭契约](../../04-api-reference/ui-components/settings.md) — `ui.settings`
-  设置窗口的元数据发现、全局搜索定位、侧栏筛选与活对象编辑；普通选项关窗不撤销，启动检查更新仍是聚合开关。
+  设置窗口的元数据发现、搜索定位与活对象编辑；选项/搜索入口在关闭窗口后调用保存，关窗不撤销修改，保存失败不回滚；启动检查更新是聚合开关。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
   设置中的日志、缓存、安装包扫描与清理，以及配置恢复点和选择性启动重置；先确认白名单清单，保护活跃任务和业务数据，删除不回滚，重置先独立备份。

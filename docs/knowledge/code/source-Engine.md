@@ -12,7 +12,7 @@ next: false
 
 返回[知识总入口](../index.md)。只读与当前模块有关的主题，再核对其中的源码、测试和状态；`规划`、`历史`不代表当前能力。
 
-以下是已声明源码路径的关联，不是完整调用图或完整模块清单。跨模块主题可出现在多处；根目录概览只列在根目录项，不自动覆盖所有子模块。
+以下关联用于按源码定位和变更复核，不是完整调用图或主题所有权。跨模块链接保留在地图中，网页侧栏只列地图入口。
 
 ## Engine/ColorVision.Engine {#module-456e67696e652f436f6c6f72566973696f6e2e456e67696e65}
 
@@ -47,7 +47,7 @@ next: false
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
 - [发光区定位：远端模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
-  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布，并说明模板字典恢复不一致。
+  发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。
 
 - [FocusPoints 关注点模板](../../04-api-reference/algorithms/templates/focus-points-template.md) — `algorithms.focus-points`
   发光区1（FocusPoints）的模板选择、参数初值和图像输入；区分手动 MQTT 模板引用、Flow 算子与计算结果。
@@ -68,7 +68,7 @@ next: false
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
-  统一图像算法Catalog、Invocation和Runner；普通像素预览、应用/取消、所有权与发布门禁；ONNX仅设计。
+  图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
 
 - [POI](../../04-api-reference/algorithms/primitives/poi.md) — `algorithms.poi-routes`
   说明 POI 点位、伴生模板、文件模式与 Flow 和 JSON 算法的消费关系。
@@ -119,7 +119,10 @@ next: false
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
 
 - [算法结果交接、展示与导出](../../04-api-reference/engine-components/result-handoff-chain.md) — `engine.results`
-  算法结果接收、历史查询、handler 匹配、缺图回放与数据导出，以及统一 overlay 的文档/revision 生命周期；入库、通知、显示和保存分别判断。
+  图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
+
+- [本地通用传感器与模板](../../04-api-reference/engine-components/generic-sensor.md) — `engine.sensor-device`
+  本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。
 
 - [主程序光谱仪搜索与配置](../../04-api-reference/engine-components/spectrum-device.md) — `engine.spectrum-device`
   主程序物理光谱仪配置、本地 SDK 连接与采集窗口、本地节点及原光谱节点转发；区分本地执行、服务执行和历史结果存储。
@@ -137,7 +140,7 @@ next: false
   隔离STN流程的加载、起始节点就绪、执行超时与诊断收尾；停止请求不证明设备停稳，默认执行不限时，批次与前后处理由调用方负责。
 
 - [流程执行：启动、停止与最终化](../../01-user-guide/workflow/execution.md) — `flow.session`
-  从工作流程面板或流程编辑器开始执行；说明流程卡住时的分阶段停止、取消与前后处理收尾，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。
+  从工作流程面板或流程编辑器开始执行；流程停止请求与结果返回按启动准备、引擎和前后处理收尾分阶段判断，区分当前画布、诊断快照、执行耗时和结果落库；停止请求不保证设备停稳。
 
 - [Flow 模板、持久化与流程包](../../04-api-reference/engine-components/template-flow-chain.md) — `flow.templates`
   Flow 本地 SQLite 与 MySQL 配置存储、保存基线、导出/删除勾选范围、cvflow v3 包兼容，以及版本/搜索侧车的失败边界。
@@ -157,11 +160,11 @@ next: false
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
   终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。
 
-- [FileServer 设备配置与实现边界](../../01-user-guide/devices/file-server.md) — `operations.file-server`
-  FileServer 工厂存在但默认类型树过滤；当前仅有配置与通用 MQTT 包装，未实现远端文件列表、上传或下载操作。
+- [旧 FileServer 资源与文件保存配置](../../01-user-guide/devices/file-server.md) — `operations.file-server`
+  旧 FileServer 资源的类型值、装配过滤和 RC 协议兼容，以及相机、算法等设备当前文件保存配置的职责。
 
-- [FlowDevice 远端服务包装与本地图边界](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
-  Flow 远端设备包装有工厂但默认类型树过滤；它不执行 FlowEngineLib 本地图，也未提供专用运行/停止和完成回执。
+- [旧 Flow 与第三方算法资源兼容](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
+  旧 Flow 与第三方算法资源的协议值、装配过滤和流程节点读取兼容；资源记录与远端服务状态分别核对。
 
 - [跨模块运行问题定位](../../01-user-guide/README.md) — `operations.index`
   从启动、配置、日志、设备、流程和结果现象定位代码责任，区分已完成阶段与待验证阶段，避免用重启或改数据代替诊断。
@@ -170,10 +173,10 @@ next: false
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。
 
 - [物理相机发现、许可证与资源管理](../../01-user-guide/devices/camera-management.md) — `operations.physical-camera`
-  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
+  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。
 
 - [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
-  SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。
+  SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。
 
 - [开发工具管理：检测与安装 Python、Node.js](../../02-developer-guide/core-concepts/developer-tools-manager.md) — `platform.developer-tools`
   开发工具管理的Python/Node检测、当前应用与新终端命令路径、官方版本选择和安装校验；下载等待30分钟，关窗停止后续安装但不取消下载或终止安装器。
@@ -251,7 +254,7 @@ next: false
   UI NuGet整批与Algorithms单包发布、Release标签和版本预检；预检不预留版本，逐包上传没有整批回滚或逐条失败检查。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
+  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [灰度与颜色剖面：采样、曲线与数据导出](../../02-developer-guide/core-concepts/image-profile-v1.md) — `algorithms.image-profile`
   灰度/RGB、CVCIE 及带校正参数 CVRAW 的多通道叠加剖面、主题适配、统计和完整 JSON/CSV 导出；包含精度、单位、失效规则及预算。
@@ -286,6 +289,9 @@ next: false
 - [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
   设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
 
+- [配套服务纳入 ColorVision 的演进规划 \[规划\]](../../03-architecture/service-integration-roadmap.md) — `platform.service-integration-roadmap`
+  在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。
+
 - [图像设置：作用范围、保存和扩展](../../02-developer-guide/core-concepts/image-editor-settings-plan.md) — `ui.image-editor-settings-plan`
   图像设置的作用范围、显式默认值与标定档案保存、当前视图隔离和扩展协议；主设置独立入口与旧接口清理仍待实施。
 
@@ -311,7 +317,10 @@ next: false
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
 
 - [物理相机发现、许可证与资源管理](../../01-user-guide/devices/camera-management.md) — `operations.physical-camera`
-  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，创建/导入在唯一物理相机时可批量绑定服务。
+  物理相机的扫描、创建、许可证、校正资源和还原点入口；区分扫描结果与缓存列表，首次创建唯一物理相机时补齐空设备绑定并静默重启本机注册中心。
+
+- [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
+  SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。
 
 - [Conoscope 图像、采集与分析](../../04-api-reference/plugins/standard-plugins/conoscope.md) — `plugins.conoscope`
   Conoscope 的采集、CVCIE/校正 CVRAW 首屏与 XYZ 就绪、Polar 与三种 H/V 显示、Mat 与分析快照契约；按钮成功不代表文档加载完成。
@@ -320,13 +329,13 @@ next: false
   Windows x64 运行与源码构建前提：Desktop Runtime、SDK、C++ 工具集及已有 native DLL 的选择。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
+  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [cvColorVision](../../04-api-reference/engine-components/cvColorVision.md) — `engine.native-bindings`
-  定位供应商 native DLL 的相机、光谱、XYZ、OLED、PG 与源表绑定契约。
+  定位供应商 native DLL 的相机、光谱、PG 与源表绑定契约，以及内部版的交付边界。
 
-- [设备视图内存预览设计（待实施） \[规划\]](../../02-developer-guide/engine-development/local-camera-memory-preview.md) — `engine.camera-preview-plan`
-  设备视图已接入 RAW/CIE 独立快照；记录有界调度、预览模式和更低复制成本等后续优化及验收缺口。
+- [配套服务纳入 ColorVision 的演进规划 \[规划\]](../../03-architecture/service-integration-roadmap.md) — `platform.service-integration-roadmap`
+  在不修改 CVWindowsService 源码的前提下，由 ColorVision 接管配置、执行选择、结果与交付的渐进路线；区分已有本地能力、残余数据库与原生依赖，以及阶段验收和回退条件。
 
 ## Engine/FlowEngineLib {#module-456e67696e652f466c6f77456e67696e654c6962}
 
@@ -357,11 +366,14 @@ next: false
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
   本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
 
+- [旧 Flow 与第三方算法资源兼容](../../01-user-guide/devices/flow-device.md) — `operations.flow-device`
+  旧 Flow 与第三方算法资源的协议值、装配过滤和流程节点读取兼容；资源记录与远端服务状态分别核对。
+
 - [电机命令与位置读回](../../01-user-guide/devices/motor.md) — `operations.motor`
   电机设备配置、MQTT运动命令与位置读回契约；移动回包不会刷新位置，客户端参数不能代替现场限位与急停。
 
 - [SMU 参数、结果与输出关闭](../../01-user-guide/devices/smu.md) — `operations.smu`
-  SMU手动与Flow参数、A/B通道、扫描结果及关闭输出边界；成功回包、空读数或超时都不能单独证明输出安全关闭。
+  SMU本地与服务模式的参数、A/B通道、结果单位、Flow及输出释放边界；SDK成功或空读数不能单独证明实机输出关闭。
 
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
@@ -376,7 +388,7 @@ next: false
   说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [ARVR 算法与模板](../../04-api-reference/algorithms/templates/arvr-template.md) — `algorithms.arvr`
-  ARVR 手动算法与流程节点的模板、POI 和请求对应关系；说明结果版本匹配及 SFR 曲线、查询和两种 CSV 导出的数据范围。
+  ARVR 远端模板与请求对应关系；ImageView 与 Flow 共用的自研条纹 MTF、直接配参及兼容结果契约，以及 SFR 曲线与 CSV 范围。
 
 - [Flow 转换与校准节点](../../04-api-reference/engine-components/flow-conversion-calibration-nodes.md) — `flow.conversion-calibration`
   定位 Flow 数据转换、图像转换、单双输入校准及属性选择器。
@@ -391,6 +403,9 @@ next: false
 
 - [界面语言：资源发现、配置与重启](../../04-api-reference/ui-components/localization.md) — `ui.localization`
   界面语言的资源发现、系统语言回退、设置绑定和重启切换；语言下拉框不证明插件翻译完整，修改配置值不等于刷新窗口。
+
+- [FlowEngineLib 节点扩展](../../04-api-reference/extensions/flow-node.md) — `flow.node-extension`
+  说明服务与本地节点基类、请求与响应扩展点、分支输入隔离、属性编辑和流程完成的边界。
 
 - [配置 ARVRPro 流程、解析映射与 Recipe](../../04-api-reference/projects/project-arvr-pro-processes.md) — `projects.arvr-pro-processes`
   配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。

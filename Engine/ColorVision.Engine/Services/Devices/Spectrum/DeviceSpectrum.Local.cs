@@ -1,10 +1,8 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;

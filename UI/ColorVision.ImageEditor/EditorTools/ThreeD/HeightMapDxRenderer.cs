@@ -16,8 +16,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using DxMesh = HelixToolkit.SharpDX.MeshGeometry3D;
 using DxCamera = HelixToolkit.Wpf.SharpDX.PerspectiveCamera;
-using WpfMesh = System.Windows.Media.Media3D.MeshGeometry3D;
-using GeometryModel3D = System.Windows.Media.Media3D.GeometryModel3D;
 using Color = System.Windows.Media.Color;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD

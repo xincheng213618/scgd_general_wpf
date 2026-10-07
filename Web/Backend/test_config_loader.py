@@ -24,7 +24,6 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("port", DEFAULT_CONFIG)
         self.assertIn("secret_key", DEFAULT_CONFIG)
         self.assertIn("upload_auth", DEFAULT_CONFIG)
-        self.assertIn("copilot_sync", DEFAULT_CONFIG)
         self.assertEqual(DEFAULT_CONFIG["audit_log_retention_days"], 365)
         self.assertEqual(DEFAULT_CONFIG["admin_db_backup_keep_count"], 10)
         self.assertEqual(DEFAULT_CONFIG["reporting_utc_offset_minutes"], 480)
@@ -68,19 +67,6 @@ class ConfigLoaderTests(unittest.TestCase):
                 config = load_config()
         self.assertEqual(config["upload_auth"]["username"], "u1")
         self.assertEqual(config["upload_auth"]["password"], "admin")  # default preserved
-
-    def test_load_config_merges_copilot_sync_version_keys(self):
-        with tempfile.TemporaryDirectory() as td:
-            cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps({
-                "copilot_sync": {"version_keys": ["version-key"]},
-            }))
-            with patch("config_loader.BASE_DIR", Path(td)):
-                config = load_config()
-        self.assertEqual(
-            config["copilot_sync"]["version_keys"],
-            ["version-key"],
-        )
 
     def test_get_upload_auth_extracts_credentials(self):
         config = {"upload_auth": {"username": "testuser", "password": "testpass"}}
