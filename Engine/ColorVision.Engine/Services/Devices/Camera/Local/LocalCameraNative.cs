@@ -41,7 +41,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool IsOpen(IntPtr handle) => cvCameraCSLib.CM_IsOpen(handle);
         public int Open(IntPtr handle, string cameraId, TakeImageMode mode, int bpp, bool useHikMvs, int hikBayerQuality, bool hikOutputBgr)
         {
-            int result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
+            // The manager survives Close; reapply configuration changed since its creation.
+            int result = cvCameraCSLib.CM_SetCameraModel(handle, device.Config.CameraModel, device.Config.CameraMode);
+            if (result != cvErrorDefine.CV_ERR_SUCCESS) return result;
+            result = cvCameraCSLib.CM_SetCameraID(handle, cameraId);
             if (result != cvErrorDefine.CV_ERR_SUCCESS) return result;
             result = cvCameraCSLib.CM_SetTakeImageMode(handle, mode);
             if (result != cvErrorDefine.CV_ERR_SUCCESS) return result;
