@@ -21,6 +21,8 @@
         "SFR2.0",
         "MTF2.0",
         "FOV2.0",
+        "Ghost2.0",
+        "Ghost1.0",
         "畸变2.0",
         "StereoFusion",
         "SFR寻边",
@@ -41,7 +43,7 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalMtfNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/LocalMtf",
         "Engine/ColorVision.Engine/Templates/Jsons/SFR2",
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost",
+        "Engine/ColorVision.Engine/Templates/Jsons/Ghost2",
         "Engine/ColorVision.Engine/Templates/Jsons/MTF2",
         "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
         "Engine/ColorVision.Engine/Templates/Jsons/Distortion2",
@@ -66,7 +68,6 @@
       ],
       "related": [
         "algorithms.index",
-        "algorithms.ghost",
         "algorithms.json-templates",
         "algorithms.template-menus",
         "algorithms.find-cross",
@@ -553,53 +554,6 @@
       "title": "几何变换 V1",
       "source": "docs/02-developer-guide/core-concepts/geometric-transform-v1.md",
       "url": "/02-developer-guide/core-concepts/geometric-transform-v1",
-      "searchable": true
-    },
-    {
-      "knowledge_id": "algorithms.ghost",
-      "knowledge_type": "topic",
-      "status": "current",
-      "summary": "Ghost1.0 鬼影检测的模板、颜色和请求入口；说明数据库明细、首条结果叠图、全部明细 CSV 追加导出及读取失败边界。",
-      "aliases": [
-        "Ghost检测入口和结果在哪里",
-        "TemplateGhost",
-        "AlgorithmGhost",
-        "ViewHandleGhost",
-        "Ghost1.0",
-        "鬼影模板管理",
-        "Ghost模板",
-        "请先选择Ghost模板",
-        "鬼影灰度"
-      ],
-      "code_paths": [
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost/TemplateGhost.cs",
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost/GhostParam.cs",
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgorithmGhost.cs",
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost/ViewHandleGhost.cs",
-        "Engine/ColorVision.Engine/Templates/ARVR/Ghost/AlgResultGhostDao.cs",
-        "Engine/ColorVision.Engine/Abstractions/IDisplayAlgorithm.cs",
-        "Engine/ColorVision.Engine/Abstractions/IResultHandlers.cs",
-        "Engine/ColorVision.Engine/Abstractions/IViewResult.cs",
-        "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
-        "UI/ColorVision.Database/BaseTableDao.cs"
-      ],
-      "test_paths": [],
-      "related": [
-        "algorithms.arvr",
-        "algorithms.json-templates",
-        "engine.results",
-        "algorithms.local-native-analysis",
-        "algorithms.template-menus",
-        "engine.template-design"
-      ],
-      "code_scopes": [
-        "Engine/ColorVision.Engine",
-        "UI/ColorVision.Database"
-      ],
-      "domain": "algorithms",
-      "title": "Ghost1.0 鬼影检测",
-      "source": "docs/04-api-reference/algorithms/detectors/ghost-detection.md",
-      "url": "/04-api-reference/algorithms/detectors/ghost-detection",
       "searchable": true
     },
     {
@@ -1229,7 +1183,6 @@
         "algorithms.platform",
         "ui.image-editor",
         "engine.native-integration",
-        "algorithms.ghost",
         "algorithms.led"
       ],
       "code_scopes": [
@@ -1479,11 +1432,13 @@
         "FlowPackagePoiCodec",
         "ViewHandleRealPOI",
         "POI图标平铺",
-        "PoiTemplateManagerWindow"
+        "PoiTemplateManagerWindow",
+        "键盘亮度校正"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs",
+        "Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs",
         "Engine/ColorVision.Engine/Templates/Browser",
         "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiParam.cs",
@@ -1493,7 +1448,8 @@
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",
         "Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs",
-        "Test/ColorVision.UI.Tests/PoiPointModelTests.cs"
+        "Test/ColorVision.UI.Tests/PoiPointModelTests.cs",
+        "Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs"
       ],
       "related": [
         "algorithms.index",

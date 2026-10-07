@@ -3,9 +3,9 @@ knowledge_id: "algorithms.poi-template"
 knowledge_type: "reference"
 status: "current"
 summary: "说明 POI 主从表、伴生模板、复制导入、运行事件与结果类型映射。"
-aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow"]
-code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs"]
+aliases: ["POI复制会覆盖旧点位吗","TemplatePoi","PoiParam","FlowPackagePoiCodec","ViewHandleRealPOI","POI图标平铺","PoiTemplateManagerWindow","键盘亮度校正"]
+code_paths: ["Engine/ColorVision.Engine/Templates/POI/TemplatePoi.cs","Engine/ColorVision.Engine/Templates/POI/PoiTemplateManagerWindow.cs","Engine/ColorVision.Engine/Templates/POI/EditPoiParam1.xaml.cs","Engine/ColorVision.Engine/Templates/Browser","Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs","Engine/ColorVision.Engine/Templates/POI/PoiParam.cs","Engine/ColorVision.Engine/Templates/POI/AlgorithmImp/AlgorithmPOI.cs","Engine/ColorVision.Engine/Templates/POI/BuildPoi/AlgorithmBuildPoi.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs","Test/ColorVision.UI.Tests/FlowPackagePoiCodecTests.cs","Test/ColorVision.UI.Tests/PoiPointModelTests.cs","Test/ColorVision.UI.Tests/KeyboardLuminanceCalibrationTests.cs"]
 related: ["algorithms.index","algorithms.poi-routes","flow.templates","engine.results"]
 ---
 
@@ -55,6 +55,8 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 保存时会写主记录、删除旧点明细，再批量重写点明细。导入或复制模板时必须把主模板和点明细的 `Id` 都重置，否则容易覆盖旧模板。
 
 `EditPoiParam` 和键盘模板编辑器 `EditPoiParam1` 使用动态主题底色、分隔条和无外框点位列表；图像画布独立于窗口主题。界面验收检查浅色、深色及运行时主题切换。
+
+`EditPoiParam1` 的键盘快速亮度校正使用 `opencv_helper.dll`，通过 Unicode 文件接口加载所选模板的单通道 Luminance 资源。有效按键的归一化灰阶均值仍先四舍五入并限制到 16 位范围，再按当前图像的 `Exp` / `exp` 曝光执行校正；缺少曝光元数据时使用有效模板曝光，否则取 1。结果映射回原按键顺序，无效按键保留缺失值。未配置资源、文件加载失败或执行失败时返回未校正灰阶；四色模板仍不支持这条单通道快速路径。`KeyboardLuminanceCalibrationTests` 验证灰阶量化、曝光缩放、按键顺序与失败边界，不替代真机键盘验收。
 
 ## 运行事件
 

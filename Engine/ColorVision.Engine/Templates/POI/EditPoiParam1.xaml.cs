@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -1808,12 +1809,12 @@ namespace ColorVision.Engine.Templates.POI
             }
 
             ReleaseKeyboardCalibration();
-            IntPtr handle = cvCameraCSLib.CreatCalibrationManage();
-            if (handle == IntPtr.Zero ||
-                cvCameraCSLib.CM_SetCalibParam(handle, CalibrationType.Luminance, true, luminFile) != 1)
+            int createResult = OpenCVCalibration.M_CalibrationCreate(out IntPtr handle);
+            if (createResult != OpenCVCalibration.CalibrationOk || handle == IntPtr.Zero ||
+                OpenCVCalibration.M_CalibrationLoadFileW(handle, (int)CalibrationType.Luminance, luminFile) != OpenCVCalibration.CalibrationOk)
             {
                 if (handle != IntPtr.Zero)
-                    _ = cvCameraCSLib.ReleaseCalibrationManage(handle);
+                    _ = OpenCVCalibration.M_CalibrationDestroy(handle);
                 log.Warn($"KB 亮度校正加载失败，将返回未校正灰阶：{luminFile}");
                 return IntPtr.Zero;
             }
@@ -1829,7 +1830,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (_keyboardCalibrationHandle != IntPtr.Zero)
             {
-                _ = cvCameraCSLib.ReleaseCalibrationManage(_keyboardCalibrationHandle);
+                _ = OpenCVCalibration.M_CalibrationDestroy(_keyboardCalibrationHandle);
                 _keyboardCalibrationHandle = IntPtr.Zero;
             }
             _keyboardCalibrationResourceId = -1;
@@ -1884,16 +1885,23 @@ namespace ColorVision.Engine.Templates.POI
             byte[] source = new byte[rawValueArray.Length * sizeof(ushort)];
             Buffer.BlockCopy(rawValueArray, 0, source, 0, source.Length);
             byte[] luminance = new byte[rawValueArray.Length * sizeof(float)];
-            int result = cvCameraCSLib.CM_SCGD_SDP_Luminance(
-                calibrationHandle,
-                (uint)rawValueArray.Length,
-                1,
-                16,
-                1,
-                source,
-                luminance,
-                exposure);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS)
+            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
+            GCHandle sourceHandle = default, luminanceHandle = default;
+            int result;
+            try
+            {
+                sourceHandle = GCHandle.Alloc(source, GCHandleType.Pinned);
+                luminanceHandle = GCHandle.Alloc(luminance, GCHandleType.Pinned);
+                result = OpenCVCalibration.M_CalibrationExecute(calibrationHandle, (uint)rawValueArray.Length, 1, 16, 1,
+                    sourceHandle.AddrOfPinnedObject(), (ulong)source.Length,
+                    luminanceHandle.AddrOfPinnedObject(), (ulong)rawValueArray.Length, in options);
+            }
+            finally
+            {
+                if (luminanceHandle.IsAllocated) luminanceHandle.Free();
+                if (sourceHandle.IsAllocated) sourceHandle.Free();
+            }
+            if (result != OpenCVCalibration.CalibrationOk)
                 return false;
 
             for (int index = 0; index < measurementIndexes.Count; index++)

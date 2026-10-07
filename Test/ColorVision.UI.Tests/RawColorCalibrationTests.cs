@@ -75,13 +75,9 @@ public sealed class RawColorCalibrationTests
         finally { OpenCVCalibration.M_CalibrationDestroy(context); File.Delete(calibration); }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SuccessfulColorCalibrationUpdatesOnlyLastSnapshotAndSavingCopiesItToRaw(bool legacy)
+    [Fact]
+    public void SuccessfulColorCalibrationUpdatesOnlyLastSnapshotAndSavingCopiesItToRaw()
     {
-        AppContext.TryGetSwitch("ColorVision.UseLegacyLocalCalibration", out bool previousLegacy);
-        AppContext.SetSwitch("ColorVision.UseLegacyLocalCalibration", legacy);
         string root = Path.Combine(Path.GetTempPath(), $"cv-color-pipeline-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         string path = Path.Combine(root, "input.cvraw");
@@ -123,7 +119,6 @@ public sealed class RawColorCalibrationTests
         }
         finally
         {
-            AppContext.SetSwitch("ColorVision.UseLegacyLocalCalibration", previousLegacy);
             File.Delete(calibration);
             // This unique test-owned directory contains only the generated fixtures.
             foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)) File.Delete(file);

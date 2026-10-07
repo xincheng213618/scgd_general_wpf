@@ -35,7 +35,7 @@ AR 波导、Micro OLED/Micro LED 与双目整机的 RGB 套色、鬼影候选、
 | --- | --- |
 | POI、关注点数据 | [POI 模板](./templates/poi-template.md)、[POI 构件](./primitives/poi.md) |
 | ROI、发光区、FocusPoints | [ROI 路由](./primitives/roi.md)、[FindLightArea](./templates/find-light-area.md)、[FocusPoints](./templates/focus-points-template.md) |
-| AR/VR、Ghost、LED、灯条 | [ARVR](./templates/arvr-template.md)、[Ghost](./detectors/ghost-detection.md)、[LED](./templates/led-detection.md) |
+| AR/VR、Ghost、LED、灯条 | [ARVR](./templates/arvr-template.md)、[LED](./templates/led-detection.md) |
 | 数据加载、Matching、四点裁剪 | [DataLoad](./templates/data-load-template.md)、[Matching](./templates/matching-template.md)、[ImageCropping](./templates/image-cropping-template.md) |
 | 系统字典 | [SysDictionary](./templates/sys-dictionary-template.md) |
 

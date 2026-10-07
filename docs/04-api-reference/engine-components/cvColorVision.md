@@ -19,7 +19,7 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 ## 绑定与交付前提
 
-当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，校正运行库为 `opencv_helper.dll` 和兼容后端 `cvCamera.dll`。
+当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
 
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
@@ -55,7 +55,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 `cvCameraCSLib` 的原生操作返回值统一保留 `int`，包括曝光/增益、配置更新、回调、取源图、滤轮、自动对焦、图像处理及校正操作；原先只有 `0/1` 的操作也预留整数错误码，不再按非零 `bool` 判断成功。当前这些操作成功值为 `CV_ERR_SUCCESS=1`，失败保留原始 `0`、平台错误码或 SDK 错误码。`CM_GetErrorMessage` 和 `GetAllCameraIDV1` 的字符串便捷入口同样返回原始整数结果；取源图便捷入口先检查尺寸查询的失败码，失败时不分配图像缓冲。由旧 `bool` 或 `void` 声明编译的调用方需要重新编译，原生导出名称与 32 位返回 ABI 保持不变。
 
-当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。保留的 `CM_Reset` 必须传入原生的 `delayTimeMs`，`CM_SCGD_SDP_DarkNoise` 必须传入曝光数组，`LedCheckYaQi` 返回 `int`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
+当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。保留的 `CM_Reset` 必须传入原生的 `delayTimeMs`，`LedCheckYaQi` 返回 `int`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
 
 跨 DLL 的 `CVImage`（对应原生 `HImage`）、`CRECT`/`IRECT`、`AutoFocusCfg`、`ChromaInfo` 使用按声明顺序的字段及 `Pack=8`；Release/x64 大小分别为 24、16、48、44 字节，对焦配置最后一个 `double` 位于偏移 40。修改字段类型、顺序或对齐时须同步原生定义。连续帧和对焦回调的返回值为 32 位 `int`，调用约定为 `StdCall`。配置、SN 和设备模式字符串便捷入口检查原生返回码后才返回字符串；原生文本复制在容量不足时返回平台错误，避免 CRT 的无效参数处理及错误成功。
 
@@ -144,7 +144,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 | 任务 | 先看 |
 | --- | --- |
-| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`Calibration.cs`、`ImageProcessing.cs` |
+| 相机绑定面 | `Camera/cvCameraCSLib.Core.cs`、`Capture.cs`、`Configuration.cs`、`Discovery.cs`、`ImageProcessing.cs` |
 | 图卡 | `Devices/PatternGenerator/PG.cs` |
 | 源表/电源 | `Devices/PassSx/PassSx.cs` |
 | 光谱仪 | `Devices/Spectrometer/` |

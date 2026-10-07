@@ -6,7 +6,7 @@ summary: "ImageEditor 本地灯珠、Ghost、旋转模板和双目标定融合�
 aliases: ["FindLightBeads", "M_FindLightBeads", "FindLightBeadsConfig", "BlackCenters", "MissingCount", "本地灯珠检测", "直接native分析", "P2", "GhostLocalAnalysis", "M_DetectGhosts", "RotatedTemplateLocalAnalysis", "M_MatchRotatedTemplate", "StereoFusionDebugWindow", "M_CalStereoBinocularFusion", "P2JsonAnalysisWindow", "本地Ghost检测", "旋转模板本地匹配", "双目标定融合", "Ghost 本地分析", "设为旋转匹配模板", "运行融合", "P2 复制结果", "灯珠数量统计", "缺失数量"]
 code_paths: ["UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/FindLightBeadsCM.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLightBeads/README.md", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2", "UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs", "UI/ColorVision.ImageEditor/EditorToolFactory.cs", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/AlgorithmsContextMenu.cs", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ColorVision.ImageEditor.csproj", "UI/ColorVision.Core/OpenCVMediaHelper.cs", "UI/ColorVision.Core/HImageExtension.cs", "Native/include/algorithm.h", "Native/include/opencv_media_export.h", "Native/include/custom_structs.h", "Native/opencv_helper/algorithm.cpp", "Native/opencv_helper/opencv_media_export.cpp", "Native/opencv_helper/exports/p2_export.cpp"]
 test_paths: ["Test/opencv_helper_test/test_p2_algorithms.cpp"]
-related: ["algorithms.platform", "ui.image-editor", "engine.native-integration", "algorithms.ghost", "algorithms.led"]
+related: ["algorithms.platform", "ui.image-editor", "engine.native-integration", "algorithms.led"]
 ---
 
 # 本地灯珠与 P2 分析
@@ -92,7 +92,7 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 
 | 工具与源码 | 当前输入及执行链 | 结果边界 |
 | --- | --- | --- |
-| `GhostLocalAnalysis`，`GhostAnalysis.cs` | 当前图像或矩形 ROI → `P2JsonAnalysisWindow` → `M_DetectGhosts` | 原始 JSON、亮源/候选计数、严重度/置信度摘要与 overlay；不调用 `TemplateGhost` 或 MQTT，也不读 Ghost DAO |
+| `GhostLocalAnalysis`，`GhostAnalysis.cs` | 当前图像或矩形 ROI → `P2JsonAnalysisWindow` → `M_DetectGhosts` | 原始 JSON、亮源/候选计数、严重度/置信度摘要与 overlay；不经过 MQTT |
 | `RotatedTemplateLocalAnalysis`，`RotatedTemplateAnalysis.cs` | 先在矩形右键“设为旋转匹配模板”，再对当前图像/ROI 调用 `M_MatchRotatedTemplate` | 匹配 JSON 与角度/位置等叠加；模板是当前 `DrawEditorContext` 会话持有的位图，不是 Engine 模板数据库记录 |
 | `CMStereoBinocularLocalAnalysis`，`StereoFusionAnalysis.cs` / `StereoFusionDebugWindow.xaml.cs` | 当前编辑器图像作左图，选择文件作右图，带标定 JSON 调用 `M_CalStereoBinocularFusion` | 左右五点、三维毫米坐标、视差、重投影误差、置信度及有效状态；不是单图 `M_CalBinocularFusion` |
 

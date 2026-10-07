@@ -1,13 +1,9 @@
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Core;
-using cvColorVision;
 using FlowEngineLib.Algorithm;
 using log4net;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,30 +16,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     internal sealed class LocalCalibrationCacheManager : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalCalibrationCacheManager));
-        private static readonly SemaphoreSlim LegacyNativeGate = new(1, 1);
         private static readonly ReaderWriterLockSlim SharedCacheLifecycleGate = new(LockRecursionPolicy.NoRecursion);
         private readonly string deviceCode;
-        private readonly bool useLegacyCalibration;
         private readonly SemaphoreSlim openCvGate = new(1, 1);
         private readonly OpenCvLocalCalibrationCache openCvCache = new();
-        private readonly Dictionary<string, CachedCalibrationFile> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, IntPtr> colorSnapshotContexts = new(StringComparer.OrdinalIgnoreCase);
-        private IntPtr contextToken;
-        private IntPtr lineArityHandle;
-        private CachedCalibrationFile? loadedLineArity;
-        private LocalCalibrationLayout? loadedLayout;
         private bool disposed;
 
         public LocalCalibrationCacheManager(string deviceCode)
         {
             this.deviceCode = deviceCode;
-            useLegacyCalibration = AppContext.TryGetSwitch("ColorVision.UseLegacyLocalCalibration", out bool enabled) && enabled;
         }
 
-        private SemaphoreSlim NativeGate => useLegacyCalibration ? LegacyNativeGate : openCvGate;
-
-        public string BackendName => useLegacyCalibration ? "cvCamera" : "opencv_helper";
-        public bool SupportsRawOutputFlip => !useLegacyCalibration;
+        public string BackendName => "opencv_helper";
 
         /// <summary>
         /// Returns a coherent snapshot of the process-wide immutable native
@@ -64,15 +48,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             get
             {
-                NativeGate.Wait();
+                openCvGate.Wait();
                 try
                 {
-                    if (!useLegacyCalibration) return openCvCache.CachedItemCount;
-                    return loadedFiles.Count + (loadedLineArity.HasValue ? 1 : 0);
+                    return openCvCache.CachedItemCount;
                 }
                 finally
                 {
-                    NativeGate.Release();
+                    openCvGate.Release();
                 }
             }
         }
@@ -95,77 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                if (!useLegacyCalibration)
-                {
-                    return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
-                }
-                if (rawOutputFlip != CVImageFlipMode.None) throw new NotSupportedException("旧版校正后端不支持合并 RAW 翻转。");
-                CachedCalibrationFile[] files = calibrationFiles.Select(CreateCachedFile).ToArray();
-                DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
-                if (colorFiles.Length > 1)
-                {
-                    throw new InvalidOperationException("本地校正一次只能选择一个亮度/颜色校正文件。");
-                }
-                if (colorFiles.Length == 1 && ciePointer == IntPtr.Zero && !allowAcceleration)
-                {
-                    throw new ArgumentException("选择亮度/颜色校正后，CIE 输出指针不能为空。", nameof(ciePointer));
-                }
-
-                if (loadedLayout.HasValue && loadedLayout.Value != layout)
-                {
-                    ReleaseNativeContextsCore();
-                }
-                loadedLayout = layout;
-
-                if (HasChangedCachedFile(files))
-                {
-                    ReleaseNativeContextsCore();
-                    loadedLayout = layout;
-                }
-
-                foreach (CachedCalibrationFile file in files)
-                {
-                    FlowNodeTiming.Run("LoadCalibrationResource", () => EnsureLoaded(file));
-                }
-
-                CachedCalibrationFile[] normalFiles = files.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
-                int lineArityIndex = Array.FindIndex(normalFiles, file => file.CalibrationType == CalibrationType.LineArity);
-                if (lineArityIndex < 0)
-                {
-                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles, rawPointer));
-                }
-                else
-                {
-                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Take(lineArityIndex).ToArray(), rawPointer));
-                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteLineArity(layout, rawPointer));
-                    FlowNodeTiming.Run("CalibrationAlgorithm", () => ExecuteRoutine(layout, normalFiles.Skip(lineArityIndex + 1).ToArray(), rawPointer));
-                }
-
-                if (colorFiles.Length == 1)
-                {
-                    CachedCalibrationFile colorFile = files.First(file => IsColorCalibration(file.CalibrationType));
-                    EnsureV1Context();
-                    ClearSelection();
-                    Select(colorFile);
-                    if (!allowAcceleration && cvCameraCSLib.CM_TransformV1(
-                        contextToken,
-                        checked((uint)layout.Width),
-                        checked((uint)layout.Height),
-                        checked((uint)layout.Bpp),
-                        checked((uint)layout.Channels),
-                        rawPointer,
-                        ciePointer,
-                        exposure) == 0)
-                    {
-                        throw new InvalidOperationException($"生成本地 CIE 内存失败：{colorFile.DisplayName}。");
-                    }
-                    CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
-                    RawColorTransformV1 snapshot = RawColorTransformV1.Create();
-                    int result = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(colorSnapshotContexts[colorFile.CacheKey], in options, ref snapshot);
-                    if (result != OpenCVCalibration.CalibrationOk) throw new InvalidOperationException("读取已加载的旧版色度参数失败。");
-                    return snapshot;
-                }
-                return null;
+                return openCvCache.Execute(layout, calibrationFiles, rawPointer, ciePointer, exposure, calibrationRoi, allowAcceleration, rawOutputFlip);
             }
             finally
             {
@@ -175,16 +88,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public int ReleaseCache()
         {
-            NativeGate.Wait();
+            openCvGate.Wait();
             try
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
-                if (!useLegacyCalibration) return openCvCache.Release();
-                return ReleaseNativeContextsCore();
+                return openCvCache.Release();
             }
             finally
             {
-                NativeGate.Release();
+                openCvGate.Release();
             }
         }
 
@@ -211,21 +123,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public void Dispose()
         {
-            NativeGate.Wait();
+            openCvGate.Wait();
             try
             {
                 if (disposed) return;
                 disposed = true;
                 try
                 {
-                    if (useLegacyCalibration)
-                    {
-                        ReleaseNativeContextsCore();
-                    }
-                    else
-                    {
-                        openCvCache.Dispose();
-                    }
+                    openCvCache.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -234,33 +139,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             finally
             {
-                NativeGate.Release();
+                openCvGate.Release();
             }
         }
 
         private SemaphoreSlim EnterExecution()
         {
-            bool sharedCacheReadLockHeld = false;
-            if (!useLegacyCalibration)
-            {
-                SharedCacheLifecycleGate.EnterReadLock();
-                sharedCacheReadLockHeld = true;
-            }
-
+            SharedCacheLifecycleGate.EnterReadLock();
             try
             {
-                SemaphoreSlim gate = NativeGate;
-                gate.Wait();
-                return gate;
+                openCvGate.Wait();
+                return openCvGate;
             }
             catch
             {
-                if (sharedCacheReadLockHeld) SharedCacheLifecycleGate.ExitReadLock();
+                SharedCacheLifecycleGate.ExitReadLock();
                 throw;
             }
         }
 
-        private void ExitExecution(SemaphoreSlim executionGate)
+        private static void ExitExecution(SemaphoreSlim executionGate)
         {
             try
             {
@@ -268,256 +166,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
             finally
             {
-                if (!useLegacyCalibration) SharedCacheLifecycleGate.ExitReadLock();
+                SharedCacheLifecycleGate.ExitReadLock();
             }
         }
-
-        private void EnsureLoaded(CachedCalibrationFile file)
-        {
-            if (file.CalibrationType == CalibrationType.LineArity)
-            {
-                if (loadedLineArity.HasValue) return;
-                lineArityHandle = cvCameraCSLib.CreatCalibrationManage();
-                if (lineArityHandle == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException("创建线性校正缓存失败。");
-                }
-                if (cvCameraCSLib.CM_SetCalibParam(lineArityHandle, file.CalibrationType, true, file.FullPath) != 1)
-                {
-                    _ = cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle);
-                    lineArityHandle = IntPtr.Zero;
-                    throw new InvalidOperationException($"加载校正文件失败：{file.DisplayName}（{file.FullPath}）。");
-                }
-                loadedLineArity = file;
-                return;
-            }
-
-            if (loadedFiles.ContainsKey(file.CacheKey)) return;
-            EnsureV1Context();
-            // Keep both loaders on the same immutable file contents; retain the snapshot
-            // context with the legacy item rather than reopening the .dat after execution.
-            using FileStream? colorFileLock = IsColorCalibration(file.CalibrationType)
-                ? new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
-            if (cvCameraCSLib.CM_LoadItemV1(contextToken, file.CalibrationType, file.Title, file.FullPath) == 0)
-            {
-                throw new InvalidOperationException($"加载校正文件失败：{file.DisplayName}（{file.FullPath}）。");
-            }
-            if (colorFileLock != null)
-            {
-                IntPtr snapshotContext = IntPtr.Zero;
-                try
-                {
-                    if (OpenCVCalibration.M_CalibrationCreate(out snapshotContext) != OpenCVCalibration.CalibrationOk
-                        || OpenCVCalibration.M_CalibrationLoadFileW(snapshotContext, (int)file.CalibrationType, file.FullPath) != OpenCVCalibration.CalibrationOk)
-                        throw new InvalidOperationException($"保存旧版校正参数快照失败：{file.DisplayName}。");
-                    colorSnapshotContexts.Add(file.CacheKey, snapshotContext);
-                    snapshotContext = IntPtr.Zero;
-                }
-                finally { if (snapshotContext != IntPtr.Zero) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext); }
-            }
-            loadedFiles.Add(file.CacheKey, file);
-        }
-
-        private void ExecuteRoutine(LocalCalibrationLayout layout, IReadOnlyList<CachedCalibrationFile> files, IntPtr rawPointer)
-        {
-            if (files.Count == 0) return;
-            EnsureV1Context();
-            ClearSelection();
-            foreach (CachedCalibrationFile file in files)
-            {
-                Select(file);
-            }
-            if (cvCameraCSLib.CM_RoutineCalibrationV1(
-                contextToken,
-                checked((uint)layout.Width),
-                checked((uint)layout.Height),
-                checked((uint)layout.Bpp),
-                checked((uint)layout.Channels),
-                rawPointer) == 0)
-            {
-                throw new InvalidOperationException("执行本地基础校正失败。");
-            }
-        }
-
-        private void ExecuteLineArity(LocalCalibrationLayout layout, IntPtr rawPointer)
-        {
-            if (!loadedLineArity.HasValue || lineArityHandle == IntPtr.Zero)
-            {
-                throw new InvalidOperationException("线性校正缓存尚未加载。");
-            }
-            int result = cvCameraCSLib.CM_SCGD_SDP_LineArity(
-                lineArityHandle,
-                layout.Width,
-                layout.Height,
-                layout.Bpp,
-                checked((uint)layout.Channels),
-                rawPointer);
-            if (result != cvErrorDefine.CV_ERR_SUCCESS)
-            {
-                throw LocalCameraCaptureService.CreateNativeException($"执行本地校正失败：{loadedLineArity.Value.DisplayName}", result);
-            }
-        }
-
-        private void Select(CachedCalibrationFile file)
-        {
-            if (cvCameraCSLib.CM_SelectItemV1(contextToken, file.CalibrationType, file.Title) == 0)
-            {
-                throw new InvalidOperationException($"选择校正缓存失败：{file.DisplayName}。");
-            }
-        }
-
-        private void ClearSelection()
-        {
-            if (cvCameraCSLib.CM_ClearSelectItemV1(contextToken) == 0)
-            {
-                throw new InvalidOperationException("清空本地校正选择失败。");
-            }
-        }
-
-        private void EnsureV1Context()
-        {
-            if (contextToken != IntPtr.Zero) return;
-            IntPtr token = Marshal.AllocHGlobal(1);
-            if (token == IntPtr.Zero) throw new OutOfMemoryException("创建本地校正缓存标识失败。");
-            if (cvCameraCSLib.CM_InitCalibration(token) == 0)
-            {
-                Marshal.FreeHGlobal(token);
-                throw new InvalidOperationException("初始化本地校正缓存失败。");
-            }
-            contextToken = token;
-        }
-
-        private bool HasChangedCachedFile(IReadOnlyList<CachedCalibrationFile> files)
-        {
-            int requestedNormalCount = 0;
-            CachedCalibrationFile? requestedLineArity = null;
-            foreach (CachedCalibrationFile file in files)
-            {
-                if (file.CalibrationType == CalibrationType.LineArity)
-                {
-                    requestedLineArity = file;
-                    continue;
-                }
-
-                requestedNormalCount++;
-                if (!loadedFiles.TryGetValue(file.CacheKey, out CachedCalibrationFile cached)
-                    || cached.Fingerprint != file.Fingerprint)
-                {
-                    return true;
-                }
-            }
-
-            if (requestedNormalCount != loadedFiles.Count) return true;
-            if (requestedLineArity.HasValue != loadedLineArity.HasValue) return true;
-            return requestedLineArity.HasValue
-                && (!string.Equals(requestedLineArity.Value.CacheKey, loadedLineArity!.Value.CacheKey, StringComparison.OrdinalIgnoreCase)
-                    || requestedLineArity.Value.Fingerprint != loadedLineArity.Value.Fingerprint);
-        }
-
-        private int ReleaseNativeContextsCore()
-        {
-            int releasedItems = 0;
-            Exception? releaseError = null;
-
-            if (lineArityHandle != IntPtr.Zero)
-            {
-                if (cvCameraCSLib.ReleaseCalibrationManage(lineArityHandle) == cvErrorDefine.CV_ERR_SUCCESS)
-                {
-                    lineArityHandle = IntPtr.Zero;
-                    if (loadedLineArity.HasValue) releasedItems++;
-                    loadedLineArity = null;
-                }
-                else
-                {
-                    releaseError = new InvalidOperationException("释放线性校正缓存失败。");
-                }
-            }
-            else
-            {
-                loadedLineArity = null;
-            }
-
-            if (contextToken != IntPtr.Zero)
-            {
-                if (cvCameraCSLib.CM_UnInitCalibration(contextToken) != 0)
-                {
-                    Marshal.FreeHGlobal(contextToken);
-                    contextToken = IntPtr.Zero;
-                    releasedItems += loadedFiles.Count;
-                    loadedFiles.Clear();
-                }
-                else
-                {
-                    releaseError ??= new InvalidOperationException("释放本地 V1 校正缓存失败。");
-                }
-            }
-            else
-            {
-                loadedFiles.Clear();
-            }
-
-            if (contextToken == IntPtr.Zero && lineArityHandle == IntPtr.Zero)
-            {
-                loadedLayout = null;
-            }
-            if (contextToken == IntPtr.Zero)
-            {
-                foreach (IntPtr snapshotContext in colorSnapshotContexts.Values) _ = OpenCVCalibration.M_CalibrationDestroy(snapshotContext);
-                colorSnapshotContexts.Clear();
-            }
-            if (releaseError != null) throw releaseError;
-            return releasedItems;
-        }
-
-        private static CachedCalibrationFile CreateCachedFile(DeviceCameraCalibrationFile file)
-        {
-            if (!IsSupported(file.CalibrationType))
-            {
-                throw new NotSupportedException($"本地指针校正暂不支持校正项：{file.DisplayName}（{file.CalibrationType}）。");
-            }
-
-            FileInfo fileInfo = new(Path.GetFullPath(file.FullPath));
-            fileInfo.Refresh();
-            if (!fileInfo.Exists) throw new FileNotFoundException($"校正文件不存在：{file.DisplayName}。", fileInfo.FullName);
-            string cacheKey = $"{(int)file.CalibrationType}|{fileInfo.FullName}";
-            return new CachedCalibrationFile(
-                file.CalibrationType,
-                file.DisplayName,
-                fileInfo.FullName,
-                cacheKey,
-                cacheKey,
-                new CalibrationFileFingerprint(fileInfo.Length, fileInfo.LastWriteTimeUtc.Ticks));
-        }
-
-        private static bool IsColorCalibration(CalibrationType type)
-            => type is CalibrationType.Luminance or CalibrationType.LumOneColor or CalibrationType.LumFourColor or CalibrationType.LumMultiColor;
-
-        private static bool IsSupported(CalibrationType type)
-            => type is CalibrationType.DarkNoise
-                or CalibrationType.DefectWPoint
-                or CalibrationType.DefectBPoint
-                or CalibrationType.DefectPoint
-                or CalibrationType.DSNU
-                or CalibrationType.Uniformity
-                or CalibrationType.Distortion
-                or CalibrationType.ColorShift
-                or CalibrationType.LineArity
-                or CalibrationType.ColorDiff
-                or CalibrationType.AngleShift
-                or CalibrationType.Luminance
-                or CalibrationType.LumOneColor
-                or CalibrationType.LumFourColor
-                or CalibrationType.LumMultiColor;
-
-        private readonly record struct CachedCalibrationFile(
-            CalibrationType CalibrationType,
-            string DisplayName,
-            string FullPath,
-            string CacheKey,
-            string Title,
-            CalibrationFileFingerprint Fingerprint);
-
-        private readonly record struct CalibrationFileFingerprint(long Length, long LastWriteTimeUtcTicks);
     }
 
     internal readonly record struct LocalCalibrationLayout(int Width, int Height, int Bpp, int Channels);

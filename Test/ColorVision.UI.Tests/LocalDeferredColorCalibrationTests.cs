@@ -29,28 +29,17 @@ public sealed class LocalDeferredColorCalibrationTests
     [Theory]
     [MemberData(nameof(ColorCases))]
     public void DeferredPoiMatchesFullCieAndRawFileReplay(CalibrationType type, int bpp, CVImageFlipMode flip)
-        => ComparePaths(type, bpp, flip, false, false);
+        => ComparePaths(type, bpp, flip, false);
 
     [Theory]
-    [InlineData(false, CVImageFlipMode.X)]
-    [InlineData(false, CVImageFlipMode.Y)]
-    [InlineData(false, CVImageFlipMode.XY)]
-    [InlineData(true, CVImageFlipMode.Y)]
-    public void BasicStagesStillRunBeforeDeferredColor(bool legacy, CVImageFlipMode flip)
-        => ComparePaths(CalibrationType.LumFourColor, 16, flip, true, legacy);
+    [InlineData(CVImageFlipMode.X)]
+    [InlineData(CVImageFlipMode.Y)]
+    [InlineData(CVImageFlipMode.XY)]
+    public void BasicStagesStillRunBeforeDeferredColor(CVImageFlipMode flip)
+        => ComparePaths(CalibrationType.LumFourColor, 16, flip, true);
 
-    [Theory]
-    [InlineData(CalibrationType.Luminance)]
-    [InlineData(CalibrationType.LumOneColor)]
-    [InlineData(CalibrationType.LumFourColor)]
-    [InlineData(CalibrationType.LumMultiColor)]
-    public void LegacyColorBackendSupportsDeferredPoi(CalibrationType type)
-        => ComparePaths(type, 16, CVImageFlipMode.None, false, true);
-
-    private static void ComparePaths(CalibrationType type, int bpp, CVImageFlipMode flip, bool basic, bool legacy)
+    private static void ComparePaths(CalibrationType type, int bpp, CVImageFlipMode flip, bool basic)
     {
-        AppContext.TryGetSwitch("ColorVision.UseLegacyLocalCalibration", out bool previous);
-        AppContext.SetSwitch("ColorVision.UseLegacyLocalCalibration", legacy);
         string root = Path.Combine(Path.GetTempPath(), $"cv-deferred-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         try
@@ -62,7 +51,7 @@ public sealed class LocalDeferredColorCalibrationTests
             DeviceCameraCalibrationFile dark = new("dark", CalibrationType.DarkNoise, "dark", "dark.dat", darkPath);
             // Native semantics move color last even when the template lists it first.
             DeviceCameraCalibrationFile[] files = basic ? [color, dark] : [color];
-            if (basic && !legacy)
+            if (basic)
             {
                 string spatialPath = Path.Combine(root, "color_diff.dat");
                 File.WriteAllText(spatialPath, """{"CalibDis":1,"MeasDis":1,"CenterCol":48,"CenterRow":36,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":73,"w":97}""");
@@ -123,7 +112,6 @@ public sealed class LocalDeferredColorCalibrationTests
         }
         finally
         {
-            AppContext.SetSwitch("ColorVision.UseLegacyLocalCalibration", previous);
             foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)) File.Delete(file);
         }
     }
