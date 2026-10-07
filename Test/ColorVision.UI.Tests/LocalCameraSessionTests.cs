@@ -7,11 +7,86 @@ using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using System.Runtime.InteropServices;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
+using Newtonsoft.Json;
 
 namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Theory]
+    [InlineData(null, "{}", false)]
+    [InlineData(-1, "{}", false)]
+    [InlineData(0, "{\"IsEnabled\":false}", false)]
+    [InlineData(1, "{}", true)]
+    [InlineData(null, "{\"IsEnabled\":true}", true)]
+    [InlineData(-1, "{\"IsEnabled\":true}", true)]
+    public void LocalOpenChecksOnlyStoredExpiryAndRespectsPersistedExperimentalSetting(int? expirySeconds, string settingsJson, bool allowed)
+    {
+        DateTime now = new(2026, 10, 7, 12, 0, 0);
+        LicenseModel license = new() { ExpiryDate = expirySeconds.HasValue ? now.AddSeconds(expirySeconds.Value) : null, LicenseValue = "not a license payload" };
+        ExperimentalFeaturesConfig settings = JsonConvert.DeserializeObject<ExperimentalFeaturesConfig>(settingsJson)!;
+        var native = new FakeNative();
+        var backend = new CameraBackendState(true);
+        ConfigCamera config = new();
+        int saves = 0;
+        using var session = new LocalCameraSession(native, backend, config, () => saves++,
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(license.ExpiryDate, settings.IsEnabled, now));
+
+        if (allowed)
+        {
+            Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+            Assert.True(session.IsOpen);
+            Assert.True(backend.LocalOwned);
+            Assert.Equal(0, native.Closes);
+            Assert.Equal(1, saves);
+        }
+        else
+        {
+            Assert.Throws<LocalCameraLicenseException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+            Assert.False(session.IsOpen);
+            Assert.False(backend.LocalOwned);
+            Assert.Equal(1, native.Closes);
+            Assert.Null(config.CameraID);
+            Assert.Equal(0, saves);
+        }
+        Assert.Equal(1, native.Opens);
+    }
+
+    [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(-10030, 2, 1)]
+    public void ExpiryIsCheckedOnlyOnOpenAndDoesNotInterruptReuseOrModeSwitch(int switchResult, int opens, int closes)
+    {
+        DateTime now = new(2026, 10, 7, 12, 0, 0);
+        DateTime expiry = now.AddSeconds(1);
+        var native = new FakeNative { SwitchResult = switchResult };
+        var backend = new CameraBackendState(true);
+        using var session = new LocalCameraSession(native, backend,
+            ensureLicenseAvailable: () => LocalCameraLicense.EnsureAvailable(expiry, false, now));
+        session.Open("camera-1", TakeImageMode.Live, 8);
+        session.RegisterPreview(_ => cvErrorDefine.CV_ERR_SUCCESS, () => native.Events.Add("stop"));
+        native.Events.Clear();
+        now = now.AddSeconds(2);
+
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("camera-1", TakeImageMode.Live, 8));
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.SwitchMode(TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(new[] { "stop", "detach", "switch" }, native.Events);
+        Assert.True(session.UseOpened(_ => true));
+        Assert.True(session.IsOpen);
+        Assert.True(backend.LocalOwned);
+        Assert.Equal(opens, native.Opens);
+        Assert.Equal(closes, native.Closes);
+
+        session.Close(unregisterCallback: true);
+        Assert.Throws<LocalCameraLicenseException>(() => session.Open("camera-1", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(opens + 1, native.Opens);
+        Assert.Equal(closes + 2, native.Closes);
+        Assert.False(session.IsOpen);
+        Assert.False(backend.LocalOwned);
+    }
+
     [Theory]
     [InlineData(1, 1, 0)]
     [InlineData(-10030, 2, 1)]

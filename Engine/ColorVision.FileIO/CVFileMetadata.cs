@@ -79,7 +79,9 @@ namespace ColorVision.FileIO
             stream.Position = pixelEnd;
             stream.Write(tail, 0, tail.Length);
             stream.SetLength(checked(pixelEnd + tail.Length));
-            stream.Flush(true);
+            // Match synchronous RAW saves: complete writes through the OS file cache.
+            // A forced disk flush here also waits for the preceding full-image writes.
+            stream.Flush();
         }
 
         private static Dictionary<string, CVFileProperty> ReadProperties(Stream stream, long pixelEnd, bool forUpdate)

@@ -154,7 +154,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = capture.Frame;
             try
             {
-                frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code);
+                frame.CvRawFilePath = LocalFrameFileService.CreateCapturePath(device.Config.FileServerCfg.DataBasePath, device.Code, frame.Metadata);
                 MeasureResultImgModel persistedResult = FlowNodeTiming.Run("PersistResult", () => LocalCameraResultService.SaveFlowModel(action, ZIndex, frame, capture, cameraParameters, calibration, IsAutoExp));
                 Stopwatch saveTimer = Stopwatch.StartNew();
                 LocalFrameFileService.SaveCapture(frame, frame.CvRawFilePath, SaveMode);

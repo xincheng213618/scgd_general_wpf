@@ -109,8 +109,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void EnsureLocalMeasurementConnected(bool autoConnect)
         {
             EnsureLocalCameraAvailable();
-            LocalCameraSession.EnsureMeasurement(autoConnect);
+            try { LocalCameraSession.EnsureMeasurement(autoConnect); }
+            catch (LocalCameraLicenseException ex) when (autoConnect)
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() => MessageBox.Show(WindowHelpers.GetActiveWindow(), ex.Message, "ColorVision"));
+                throw;
+            }
         }
+
+        internal void EnsureLocalCameraLicense() => LocalCameraLicense.EnsureAvailable(
+            PhyCamera?.CameraLicenseModel?.ExpiryDate, ExperimentalFeaturesConfig.Instance.IsEnabled, DateTime.Now);
 
         internal CameraRunParam BuildLocalCameraParameters(double[]? exposure = null, CalibrationParam? calibration = null)
         {

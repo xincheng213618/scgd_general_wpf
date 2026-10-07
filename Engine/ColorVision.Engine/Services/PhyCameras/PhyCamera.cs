@@ -667,9 +667,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return LicenseState switch
                 {
                     LicenseState.Unlicensed => Properties.Resources.LicenseStatusUnlicensed,
-                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Expired when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => string.Format(Properties.Resources.LicenseBadgeExpired, $"{expiryDate:yyyy-MM-dd HH:mm:ss}"),
                     LicenseState.Invalid => Properties.Resources.LicenseBadgeInvalid,
-                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiryDate:yyyy-MM-dd}"),
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate && (expiryDate - DateTime.Now).Days <= 30 => string.Format(Properties.Resources.LicenseBadgeExpiringSoon, $"{expiryDate:yyyy-MM-dd HH:mm:ss}"),
+                    LicenseState.Licensed when CameraLicenseModel?.ExpiryDate is DateTime expiryDate => $"{Properties.Resources.LicenseBadgeValid} {expiryDate:yyyy-MM-dd HH:mm:ss}",
                     LicenseState.Licensed => Properties.Resources.LicenseBadgeValid,
                     _ => Properties.Resources.LicenseBadgeInvalid,
                 };
