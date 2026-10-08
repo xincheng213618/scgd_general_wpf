@@ -205,6 +205,13 @@ namespace ColorVision.Engine.Services
             new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+        private void ButtonCreateDevice_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.IsOpen = true;
+        }
+
         private void CreateDeviceMenu_Opened(object sender, RoutedEventArgs e)
         {
             var menu = (ContextMenu)sender;
