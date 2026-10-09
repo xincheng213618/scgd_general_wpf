@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public double EqePercent => (Eqe ?? 0) * 100;
 
         /// <summary>
-        /// Luminous Flux (lm) - Often mapped from fPh
+        /// Measured luminous flux (lm), including the acquisition AFactor.
         /// </summary>
         [DisplayName("Luminous Flux (lm)")]
         public float? LuminousFlux { get; set; }
@@ -89,7 +89,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
                 float safeLuminance = GetSafeLuminanceValue(fPh);
                 Lv = safeLuminance.ToString();
-                LuminousFlux = safeLuminance;
 
                 if (fPL == null || fPL.Length == 0) return;
                 if (!float.IsFinite(fSpect1) || !float.IsFinite(fSpect2) || !float.IsFinite(fInterval)
@@ -285,7 +284,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             // EQE-specific fields
             Eqe = item.Eqe ?? 0;
-            LuminousFlux = item.LuminousFlux ?? 0;
+            LuminousFlux = item.LuminousFlux;
             RadiantFlux = item.RadiantFlux ?? 0;
             LuminousEfficacy = item.LuminousEfficacy ?? 0;
 

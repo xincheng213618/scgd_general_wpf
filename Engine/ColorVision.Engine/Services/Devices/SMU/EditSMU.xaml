@@ -1,0 +1,77 @@
+<Window x:Class="ColorVision.Engine.Services.Devices.SMU.EditSMU"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        Title="源表配置" Width="650" Height="690" MinWidth="580" MinHeight="520"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource GlobalBackground}"
+        SnapsToDevicePixels="True" UseLayoutRounding="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Engine;component/Services/PhyCameras/PhyCameraConsoleStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="VisibleWhen"/>
+            <Style x:Key="CardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="Margin" Value="0,0,4,10"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="16,14,16,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="设备与连接" Style="{StaticResource SectionTitleStyle}"/>
+                        <StackPanel x:Name="DeviceFields"/>
+                        <StackPanel x:Name="LocalFields"/>
+                        <DockPanel Margin="0,6,0,10">
+                            <TextBlock Text="连接方式（IsNet）" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                            <WrapPanel>
+                                <RadioButton x:Name="SerialMode" Content="串口" GroupName="ConnectionMode" IsChecked="{Binding Draft.IsSerialConnection, Mode=TwoWay}" Margin="0,0,24,0"/>
+                                <RadioButton x:Name="NetworkMode" Content="网口" GroupName="ConnectionMode" IsChecked="{Binding Draft.IsNet, Mode=TwoWay}"/>
+                            </WrapPanel>
+                        </DockPanel>
+                        <StackPanel x:Name="SerialSection" Visibility="{Binding Draft.IsSerialConnection, Converter={StaticResource VisibleWhen}}">
+                            <StackPanel x:Name="SerialFields" ToolTip="USB 转串口也选择串口；本地波特率须与仪器设置一致。"/>
+                            <StackPanel x:Name="BaudRateFields"/>
+                        </StackPanel>
+                        <DockPanel x:Name="NetworkSection" Margin="0,3,0,5" Visibility="{Binding Draft.IsNet, Converter={StaticResource VisibleWhen}}">
+                            <Button x:Name="IpEditButton" DockPanel.Dock="Right" Margin="8,0,0,0" Content="{x:Static properties:Resources.Edit}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="58" Height="30" Click="IpEdit_Click"/>
+                            <TextBlock Text="IP 地址" Width="125" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                            <controls:IPAddressBox x:Name="IpAddressBox" Text="{Binding Draft.IpAddress, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" MinHeight="30" PreviewKeyDown="IpAddress_PreviewKeyDown" ToolTip="只填写仪器 IP；Keithley 使用固定端口 5025。" AutomationProperties.Name="源表 IP 地址"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="测量设置" Style="{StaticResource SectionTitleStyle}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <StackPanel x:Name="MeasurementFields" Margin="0,0,16,0"/>
+                            <StackPanel x:Name="DisplayFields" Grid.Column="1"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <TextBlock Grid.Row="1" x:Name="StatusText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,4,8"/>
+        <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,12">
+            <DockPanel>
+                <TextBlock Text="修改连接参数后请重新连接。" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.65" FontSize="12" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="90" Height="34" IsDefault="True" Click="Ok_Click"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="90" Height="34" IsCancel="True" Margin="6,0,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

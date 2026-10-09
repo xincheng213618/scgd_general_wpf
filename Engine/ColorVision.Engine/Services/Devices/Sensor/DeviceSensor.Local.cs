@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor;
 
 public sealed class DisplaySensorConfig : IDisplayConfigBase
 {
-    [Category("AcquisitionDisplay"), DisplayName("使用本地通用传感器")]
+    [Category("AcquisitionDisplay"), DisplayName("使用本地传感器")]
     [Description("下次打开时直接连接 TCP 或串口。已打开的连接在关闭前保持当前模式。")]
     public bool UseLocalSensor { get => useLocal; set { if (useLocal == value) return; useLocal = value; OnPropertyChanged(); } }
     private bool useLocal;
@@ -43,9 +43,6 @@ public partial class DeviceSensor
     private bool localDisposed;
     public string LastLocalResponse { get => lastLocalResponse; private set { lastLocalResponse = value; OnPropertyChanged(); } }
     private string lastLocalResponse = string.Empty;
-    [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-    [Category("AcquisitionDisplay"), Description("CommandDisplayConfigHint")]
-    public RelayCommand EditDisplayConfigCommand { get; private set; } = null!;
 
     private void InitializeLocalSensor()
     {
@@ -54,12 +51,6 @@ public partial class DeviceSensor
         SensorBackend.Changed += RefreshLocalSensorStatus;
         LocalSession.StatusChanged += LocalSensorStatusChanged;
         DisplayConfig.PropertyChanged += LocalSensorPreferenceChanged;
-        EditDisplayConfigCommand = new RelayCommand(_ =>
-        {
-            new PropertyEditorWindow(DisplayConfig)
-            { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-        });
         LocalSensorFlowExecution.Register();
     }
 

@@ -65,7 +65,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             // Default state
             HideAllButtons();
             bool ready = e is DeviceStatusType.Opened or DeviceStatusType.LiveOpened or DeviceStatusType.Free;
-            UseLocalSmuCheckBox.IsEnabled = Device.SmuBackend.CanSwitch;
             StackPanelOpen.IsEnabled = ready;
             ButtonSourceMeter1.IsEnabled = e is not (DeviceStatusType.Opening or DeviceStatusType.Closing)
                 && (e != DeviceStatusType.Busy || Device.SmuBackend.LocalOwned);
@@ -123,12 +122,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService_DeviceStatusChanged(sender, DService.DeviceStatus);
         }
         private void UserControl_Unloaded(object sender, RoutedEventArgs e) => DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
-        private void LocalSmuPreference_Changed(object sender, RoutedEventArgs e)
-        {
-            if (!IsInitialized) return;
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-            DService_DeviceStatusChanged(sender, DService.DeviceStatus);
-        }
 
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;

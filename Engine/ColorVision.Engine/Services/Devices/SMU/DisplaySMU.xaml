@@ -30,13 +30,14 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=DisplayHeaderToggle, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <CheckBox x:Name="UseLocalSmuCheckBox" Margin="0,0,0,3" Content="使用本地源表" IsChecked="{Binding DisplayConfig.UseLocalSmu}" Checked="LocalSmuPreference_Changed" Unchecked="LocalSmuPreference_Changed" ToolTip="关闭当前连接后切换生效" />
-                <TextBlock Margin="0,0,0,3" Text="{Binding LocalDeviceIdentity}" />
                 <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
                 <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
                 <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="{x:Static properties:Resources.offline}" />
-                <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3">
-                    <Button x:Name="ButtonSourceMeter1" Click="ButtonSourceMeter1_Click" Content="{x:Static properties:Resources.Open}" />
+                <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3" LastChildFill="False">
+                    <Button x:Name="ButtonSourceMeter1" DockPanel.Dock="Left" HorizontalAlignment="Left" MinWidth="70" Click="ButtonSourceMeter1_Click" Content="{x:Static properties:Resources.Open}" />
+                    <Button x:Name="ConfigureButton" DockPanel.Dock="Left" Margin="5,0,0,0" Width="28" Padding="3" Command="{Binding EditCommand}" ToolTip="修改源表配置" AutomationProperties.Name="修改源表配置">
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16" HorizontalAlignment="Center"/>
+                    </Button>
                 </DockPanel>
                 <StackPanel x:Name="StackPanelOpen">
 

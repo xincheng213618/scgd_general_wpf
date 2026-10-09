@@ -5,13 +5,15 @@ status: "current"
 summary: "本地 TCP/串口通用指令设备、回包分帧、模板持久化和旧传感器结点转发；明确打开、模板命令超时、关闭取消和服务占用边界。"
 aliases: ["本地通用传感器", "通用传感器模板", "PG串口指令", "控制器TCP指令", "LocalSensorNode"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Sensor", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalSensorNode.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalSensorSessionTests.cs", "Test/ColorVision.UI.Tests/LocalSensorFlowTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/LocalSensorSessionTests.cs", "Test/ColorVision.UI.Tests/LocalSensorFlowTests.cs", "Test/ColorVision.UI.Tests/SensorConfigurationDraftTests.cs"]
 related: ["engine.devices", "engine.mqtt", "flow.runtime", "ui.database", "ui.property-grid"]
 ---
 
 # 本地通用传感器与模板
 
-通用传感器与本地相机共用“显示设置”入口；“使用本地通用传感器”、连接超时及串口参数统一放在 `DisplaySensorConfig`，通过 `DisplayConfigManager` 保存到本机配置文件，不写入设备数据库。本地资源默认启用，服务器资源默认沿用服务通信。`DeviceSensor.Local.cs` 负责入口和状态，`LocalSensorSession` 持有单一连接并串行执行整组模板。切换开关只影响下一次打开，当前连接要先关闭。打开和重新打开是明确的操作；执行模板、关闭、通信中断后的下一条指令都不会尝试自动打开。连接超时取本机显示设置的 `ConnectTimeout`（默认 3000 ms），属于建立连接阶段；发送及回包共用模板 `Timeout`，结点不再另设本地操作超时。模板 `Delay` 是每条指令成功后的等待，排队与延时仍可被关闭或流程停止取消。地址、端口或波特率仍取原设备配置，本地打开时将它们与本机的数据位、校验位、停止位、DTR/RTS 设置合成连接快照。
+传感器面板左侧并排提供紧凑的“打开/关闭”按钮和齿轮配置图标，齿轮与属性页“修改配置”打开同一个单页窗口，无需管理员权限。窗口同时管理 `ConfigSensor` 的名称、SN、传感器类型、自动连接、`IsNet`、`Addr`、`Port` 和 `DisplaySensorConfig` 的“使用本地传感器”、连接超时及本地串口参数。网口显示 IP/主机名及端口，串口显示串口选择及波特率；本地连接参数仅在本地模式显示，数据位、校验位、停止位、DTR/RTS 仅在串口模式显示。IP 输入复用共享四段编辑器，同时保留主机名/IPv6 文本模式。
+
+窗口编辑两个对象的副本，取消不修改当前配置；本地参数校验通过后，确定才写回，保留原对象及订阅者。显示偏好先通过 `DisplayConfigManager` 保存到本机配置文件，设备配置再沿原设备保存链路写入资源数据库；两个存储不具备跨库原子事务。本地开关及本机串口参数不进入设备数据库字段。本地资源默认启用，服务器资源默认沿用服务通信。`DeviceSensor.Local.cs` 负责入口和状态，`LocalSensorSession` 持有单一连接并串行执行整组模板。切换开关只影响下一次打开，当前连接要先关闭。打开和重新打开是明确的操作；执行模板、关闭、通信中断后的下一条指令都不会尝试自动打开。连接超时取本机显示设置的 `ConnectTimeout`（默认 3000 ms），属于建立连接阶段；发送及回包共用模板 `Timeout`，结点不再另设本地操作超时。模板 `Delay` 是每条指令成功后的等待，排队与延时仍可被关闭或流程停止取消。地址、端口或波特率仍取原设备配置，本地打开时将它们与本机的数据位、校验位、停止位、DTR/RTS 设置合成连接快照。
 
 `LocalSensorNode` 在本地结点中提供执行模板、打开、关闭、重新打开四种操作。旧 `CommonSensorNode`、`TempCommonSensorNode`、`RealCommonSensorNode` 和选择 `GeneralSensor` 的 `PhyDeviceControlNode` 在设备启用本地模式时转到同一会话；模板结点沿用模板，旧指令结点沿用其指令参数。旧结点转发时跳过原结点的等待超时，远程模式保留原 MQTT 路径。`FlowLocalExecution` 按后端注册，传感器与光谱仪可以同时使用；流程结束时共享的 `FlowRuntimeResources.StopToken` 取消正在进行的传感器操作。
 
@@ -23,4 +25,4 @@ related: ["engine.devices", "engine.mqtt", "flow.runtime", "ui.database", "ui.pr
 
 `SensorTemplateRepository` 按设备类别和模板 ID 或名称读取原指令，`LocalSensorCommand` 解析既有的发送、返回、编码、超时/延时、重试次数字段；旧的一至四字段格式使用原服务默认值。执行模板需要连接 MySQL，旧指令结点的直接指令参数不依赖模板库。会话阻止重复本地地址占用，设备入口也检查已知服务占用；服务离线不代表服务已释放连接，已知占用须先由服务关闭。此约束基于本进程会话及服务上报，不能检测其他程序占用的 TCP 连接。
 
-`LocalSensorSessionTests` 和 `LocalSensorFlowTests` 覆盖分包、字节编码、关闭取消、超时隔离、旧模板解析、本机配置存储与旧结点转发边界；TCP 回环验证不代表真实设备和串口驱动验收。
+`SensorConfigurationDraftTests` 覆盖合并编辑的取消、失败隔离和两类配置的存储边界。`LocalSensorSessionTests` 和 `LocalSensorFlowTests` 覆盖分包、字节编码、关闭取消、超时隔离、旧模板解析、本机配置存储与旧结点转发边界；TCP 回环验证不代表真实设备和串口驱动验收。

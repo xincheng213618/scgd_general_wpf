@@ -12,6 +12,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public static MqttServiceConfig Instance => ConfigService.Instance.GetRequiredService<MqttServiceConfig>();
 
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
         public string Host { get => _host; set { _host = string.IsNullOrWhiteSpace(value) ? "127.0.0.1" : value.Trim(); OnPropertyChanged(); } }
         private string _host = "127.0.0.1";
 

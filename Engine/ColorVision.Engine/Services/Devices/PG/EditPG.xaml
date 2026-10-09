@@ -36,7 +36,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock  x:Name="TextBlockPGIP"  Text="{x:Static properties:Resources.IPAddress}" Width="140"/>
-                                <TextBox Text="{Binding Addr}"/>
+                                <themes:IPAddressBox Text="{Binding Addr, UpdateSourceTrigger=PropertyChanged}" AllowTextMode="True"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock  x:Name="TextBlockPGPort"   Text="{x:Static properties:Resources.Port}" Width="140"/>

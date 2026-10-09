@@ -1,4 +1,5 @@
 using cvColorVision;
+using System;
 using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Local;
@@ -20,7 +21,15 @@ internal interface ILocalSmuNative
 
 internal sealed class LocalSmuNative : ILocalSmuNative
 {
-    public int Open(LocalSmuConnection c) => PassSx.OpenNetDevice(c.IsNet, c.DeviceName, c.DeviceType);
+    public int Open(LocalSmuConnection c)
+    {
+        if (c.IsNet || c.BaudRate == 9600) return PassSx.OpenNetDevice(c.IsNet, c.DeviceName, c.DeviceType);
+        try { return PassSx.OpenNetDeviceEx(false, c.DeviceName, c.DeviceType, c.BaudRate); }
+        catch (EntryPointNotFoundException ex)
+        {
+            throw new InvalidOperationException("当前源表 DLL 不支持设置串口波特率，请更新 cvCamera.dll 后重新启动程序。", ex);
+        }
+    }
     public int GetIdn(int h, StringBuilder text, ref int length) => PassSx.GetIDN(h, text, ref length);
     public int SetWiring(int h, bool fourWire, bool front) => PassSx.Set4WireFront(h, fourWire, front);
     public int SetDelay(int h, double milliseconds) => PassSx.SetDelayTime(h, milliseconds);

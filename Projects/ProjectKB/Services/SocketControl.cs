@@ -23,6 +23,7 @@ namespace ProjectKB.Services
         /// IP地址
         /// </summary>
         [DisplayName("IP地址")]
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
         public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
         private string _Host = "127.0.0.1";
 

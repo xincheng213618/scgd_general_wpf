@@ -26,6 +26,7 @@ namespace ColorVision.SocketProtocol
         /// </summary>
         [DisplayName("IPAddress")]
         [Description("IPAddressDescription")]
+        [PropertyEditorType(typeof(NetworkAddressPropertiesEditor))]
         public string IPAddress { get => _IPAddress; set { _IPAddress = value; OnPropertyChanged(); } }
         private string _IPAddress = "0.0.0.0";
 

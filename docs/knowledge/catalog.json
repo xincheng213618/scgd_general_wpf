@@ -5487,7 +5487,8 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LocalSensorSessionTests.cs",
-        "Test/ColorVision.UI.Tests/LocalSensorFlowTests.cs"
+        "Test/ColorVision.UI.Tests/LocalSensorFlowTests.cs",
+        "Test/ColorVision.UI.Tests/SensorConfigurationDraftTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -11191,7 +11192,11 @@
         "命令自动生成",
         "GenCommand",
         "CommandDisplay",
-        "按钮分类"
+        "按钮分类",
+        "IP地址编辑器",
+        "四段IP输入",
+        "IPAddressBox",
+        "NetworkAddressPropertiesEditor"
       ],
       "code_paths": [
         "UI/ColorVision.UI/PropertyEditor/PropertyEditors.cs",
@@ -11208,7 +11213,10 @@
         "Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs",
         "Engine/ColorVision.Engine/PropertyEditor/CameraCalibrationGainPropertiesEditor.cs",
         "UI/ColorVision.UI/PropertyEditor/PropertyEditorCommands.cs",
-        "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml"
+        "UI/ColorVision.UI/PropertyEditor/CommandPanelStyles.xaml",
+        "UI/ColorVision.Themes/Controls/IPAddressBox.xaml",
+        "UI/ColorVision.Themes/Controls/IPAddressBox.xaml.cs",
+        "UI/ColorVision.UI/PropertyEditor/Editor/IPAddressPropertiesEditor.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs",
@@ -11217,7 +11225,8 @@
         "Test/ColorVision.UI.Tests/CameraCalibrationGainTests.cs",
         "Test/ColorVision.UI.Tests/PropertyEditSessionTests.cs",
         "Test/ColorVision.UI.Tests/AlgorithmNodeTemplateMappingTests.cs",
-        "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs"
+        "Test/ColorVision.UI.Tests/DeviceCommandMetadataTests.cs",
+        "Test/ColorVision.UI.Tests/IPAddressBoxTests.cs"
       ],
       "related": [
         "ui.index",
@@ -11230,6 +11239,7 @@
         "Engine/ColorVision.Engine",
         "Engine/FlowEngineLib",
         "UI/ColorVision.Common",
+        "UI/ColorVision.Themes",
         "UI/ColorVision.UI"
       ],
       "domain": "ui",

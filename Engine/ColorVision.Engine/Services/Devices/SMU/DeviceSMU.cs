@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.SMU.Local;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -46,16 +45,24 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
     public class DisplaySMUConfig : IDisplayConfigBase
     {
-        [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("直接连接本机 SDK；关闭当前连接后切换生效。")]
+        [Category("AcquisitionDisplay"), DisplayName("使用本地源表"), Description("由当前电脑通过串口或网口直接连接；在源表配置窗口编辑。关闭当前连接后切换生效。")]
         public bool UseLocalSmu { get => _useLocalSmu; set => SetProperty(ref _useLocalSmu, value); }
         private bool _useLocalSmu;
 
+        [Category("AcquisitionDisplay"), DisplayName("本地串口波特率"), PropertyVisibility(nameof(UseLocalSmu))]
+        [Description("仅本地串口连接生效，须与仪器设置一致；修改后关闭连接再重新打开。Keithley 2600/2604 支持到 115200，2400 支持到 57600。")]
+        public SMUSerialBaudRate LocalBaudRate { get => _localBaudRate; set => SetProperty(ref _localBaudRate, value); }
+        private SMUSerialBaudRate _localBaudRate = SMUSerialBaudRate.Baud9600;
+
+        [DisplayName("启用限值检查")]
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
 
+        [DisplayName("电压源模式")]
         public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); NotifySelectedSourceChanged(); } }
         private bool _IsSourceV = true;
 
+        [DisplayName("手动测量通道")]
         public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); NotifySelectedChannelChanged(); } }
         private SMUChannelType _Channel = SMUChannelType.A;
 
@@ -117,24 +124,16 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submitted += (s, e) => Save();
-                propertyEditorWindow.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+                var window = new EditSMU(Config, DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                if (window.ShowDialog() == true)
+                {
+                    // Local preferences remain usable even if saving the service configuration fails.
+                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    Save();
+                }
+            });
 
             EditSMUTemplateCommand = new RelayCommand(a => EditSMUTemplate());
-
-            EditDisplayConfigCommand =new RelayCommand(a => EditDisplayConfig());   
-        }
-
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 2)]
-        [Category("AcquisitionDisplay")]
-        [Description("CommandDisplayConfigHint")]
-        public RelayCommand EditDisplayConfigCommand { get; set; }
-        public void EditDisplayConfig()
-        {
-            new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
 

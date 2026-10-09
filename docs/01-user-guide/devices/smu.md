@@ -26,9 +26,17 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 ## 本地源表的连接与执行
 
-在源表设备面板勾选“使用本地源表”，设置 `ConfigSMU` 的设备类型、`DevName`、`IsNet`、四线制/前后端和延时，再打开连接。本地资源默认启用此模式；既有服务设备保持原设置。模式选择保存在显示配置中，连接占用期间保持当前后端，关闭后才能切换。编辑连接配置不会修改已打开的 SDK 连接，测量时发现配置变化会要求先关闭再重开。
+设备的齿轮设置按钮打开单页源表配置窗口，同页编辑 `ConfigSMU` 的设备连接/测量设置，以及 `DisplaySMUConfig` 的本地源表、波特率、限值检查、源类型和手动通道。在这里启用“使用本地源表”，由当前 ColorVision 电脑直接连接。串口模式（`IsNet=false`）显示串口选择，本地模式下还显示波特率；网口模式（`IsNet=true`）显示 IP。已有网口地址保持原值，未配置时 IP 输入框初始值为 `192.168.100.100`；IP 使用共享的四段 IPv4 编辑器，每段范围为 0～255，可粘贴完整地址；点击 IP 旁的“编辑”进入输入状态，点击行内“确定”或按 Enter 结束地址编辑，窗口“确定”才保存配置。窗口内切换模式会保留两边的输入，只有确认时才把所选模式的地址写入原有 `ConfigSMU.DevName`；取消不修改两个实际配置对象。持久化与服务解析继续使用 `IsNet + DevName`，不增加另一份地址字段，手动连接和原有本地 Flow 节点读取同一套配置。网口地址须为 IPv4，不含协议或端口；Keithley/Precise 串口须为 COM1～COM256。
 
-`LocalSmuNative` 使用随应用交付的 x64 `cvCamera.dll` 源表导出和既有 `PassSx` 绑定。打开后读取仪器标识；“点亮”调用普通测量，“设置”调用步进测量。每次操作先选择提交时的 A/B 通道和源类型，手动扫描在同一次串行操作内关闭该通道输出，成功确认关闭后才完成命令。所有 SDK 调用在后台执行，同一连接按顺序执行；不会用延迟后台任务关闭后续测量的输出。
+源表设备面板左侧并排显示紧凑“打开/关闭”按钮与齿轮设置图标，点击齿轮可直接进入配置窗口，该入口与属性窗口中的“修改配置”均不要求管理员权限；按钮上方不显示仪器标识行或预留空行。“测量设置”显示四线制、前面板端子与毫秒单位的 `DelayTime`。`IsSrcA` 作为兼容字段保留，手动测量与流程仍分别使用显示配置和节点的通道参数。
+
+`Keithley_2400` / `Keithley_2600` 网口连接使用 TCP Raw Socket，端口固定为 5025。IP 地址只填写如 `192.168.1.100` 的仪器地址，不含协议、端口或 VISA 资源串；当前执行连接的电脑须能访问该地址。2450 使用 `Keithley_2400` 驱动时，仪器端须在 `MENU → System → Settings → Command Set` 选择 `SCPI 2400` 并确认重启；LAN 地址在 `MENU → System → Communication → LAN` 查看或配置。2604 使用 `Keithley_2600`。以上为代码路径及[2450 官方手册](https://download.tek.com/manual/2450-900-01E_Aug_2019_User.pdf)说明，真机连接和命令兼容性仍需现场验证。
+
+源表配置窗口设置的“本地串口波特率”仍归 `DisplaySMUConfig.LocalBaudRate`，默认 9600；Keithley 2600/2604 支持标准波特率到 115200，2400 到 57600，其它驱动目前只支持默认值。仅本地串口连接使用此参数，必须与仪器端波特率一致；网络连接忽略它，服务模式不发送此设置。旧显示配置缺少该字段时保留 9600。本地资源默认启用此模式；既有服务设备保持原设置。模式选择保存在显示配置中，连接占用期间保持当前后端，关闭后才能切换。编辑连接配置或串口波特率不会修改已打开的 SDK 连接，测量时发现配置变化会要求先关闭再重开。
+
+两个配置类及存储职责保持不变：确认时先将显示偏好写入本机 `DisplayConfigManager` 配置，再通过现有设备保存链路写入设备资源（服务器资源使用 MySQL，本地资源使用本地配置库）。服务仍读取原设备配置；本地源表与波特率不迁入设备数据库字段。显示偏好先保存，使设备数据库保存失败时仍保留本机设置；两个存储之间没有跨库原子事务。提交只更新显示配置中的可编辑偏好，保留当前读数和 A/B 通道的测量值/限值对象。
+
+`LocalSmuNative` 使用随应用交付的 x64 `cvCamera.dll` 源表导出和既有 `PassSx` 绑定。非默认串口波特率通过 `cvPss_Sx_OpenNetDeviceEx` 传到驱动；旧 DLL 缺少该导出时明确提示更新，不静默退回 9600。默认 9600 和网络连接仍使用既有打开接口。打开后读取仪器标识；“点亮”调用普通测量，“设置”调用步进测量。每次操作先选择提交时的 A/B 通道和源类型，手动扫描在同一次串行操作内关闭该通道输出，成功确认关闭后才完成命令。所有 SDK 调用在后台执行，同一连接按顺序执行；不会用延迟后台任务关闭后续测量的输出。
 
 参数中的电流源值和限流值使用 mA，进入 SDK 时转换为 A；电压使用 V。会话内部点测/读取/扫描电流统一为 mA。为兼容既有结果表、视图和消息，点测结果 `I` / `SMUResultModel.IResult` 保持 mA，扫描 `IList` / `SmuScanModel.IResult` 保持 A，电流源扫描的 `ScanList` 也使用 A。手动量程参数按既有 SDK/服务约定直接传递，不做源值单位转换。旧服务 `GetMeasureResult` 的电流换算与点测不一致，本地读取按 SDK 的 A 转 mA；真机读取单位仍需单独核对。
 
@@ -79,7 +87,7 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 `SMUSweepModelNode` 的 `Scan` 使用 `SMUSweepParam(模板名, IsCloseOutput)`，不同于手动扫描内联的 `DeviceParam`。不要把手动界面的限值检查、延迟关闭或最近模板字段套到该服务模板节点；流程整体终态见[Flow 执行会话](../workflow/execution.md)。
 
-选择本地后端时，现有点测/CSV/模板循环、扫描/模板扫描、结果读取及物理设备打开/关闭/重开节点在进程内执行，不发布 MQTT 请求；可自动打开已配置的本地源表。模板取自已加载的 `TemplateSMUParam.Params`，要求 ID 或名称唯一，参数在提交时快照。内联 `DeviceParam` 优先于模板。`SMU.MeasureResult` 读取最近使用通道及源类型，并按节点等待时间延迟结果转交。流程沿用批次、节点 ZIndex 和 `PersistResults`，保存正数结果 ID 后发布现有结果消息。
+选择本地后端时，原有流程图无需替换源表节点：现有点测/CSV/模板循环、扫描/模板扫描、结果读取及物理设备打开/关闭/重开节点在进程内执行，不发布 MQTT 请求；可自动打开已配置的本地源表，并使用提交时快照的本地串口波特率。模板取自已加载的 `TemplateSMUParam.Params`，要求 ID 或名称唯一，参数在提交时快照。内联 `DeviceParam` 优先于模板。`SMU.MeasureResult` 读取最近使用通道及源类型，并按节点等待时间延迟结果转交。流程沿用批次、节点 ZIndex 和 `PersistResults`，保存正数结果 ID 后发布现有结果消息。
 
 流程停止或超时后拒绝迟到结果；清理被丢弃结果时检查该次测量的输出归属，不关闭同通道后来开始的测量。SDK 没有可中断接口，超时后的原生调用仍要等返回再完成清理，不能把流程终态当作硬件释放已完成。
 
@@ -87,6 +95,6 @@ related: ["engine.devices","operations.device-configuration","flow.session"]
 
 `NodeConfiguratorBindingTests.PropertyEditors_BindAndFilterAdvancedProperties` 包含 SMU 量程编辑器的元数据、选项和属性绑定断言；`InitTableEntityMappingTests` 校验 `SmuScanModel.channel` 的枚举/数据库列映射。这些测试不覆盖实际点测、扫描、关闭输出、超时保护或数据库结果往返。
 
-`LocalSmuSessionTests` 使用模拟 SDK 验证单位、扫描结果契约、通道关闭顺序、句柄 0、端点互斥、取消与释放失败；`LocalSmuFlowTests` 验证既有节点本地完成和循环结束清理不发布 MQTT。这些回归保护共享单位和生命周期边界，不替代仪器、供应商 SDK 或 MySQL 往返验收。
+`SmuConfigurationDraftTests` 验证两个配置类的取消/确认隔离、原有存储职责、实时通道状态保留、模式切换及 `IsNet + DevName` 的服务兼容保存。`LocalSmuSessionTests` 使用模拟 SDK 验证单位、扫描结果契约、通道关闭顺序、句柄 0、端点互斥、取消与释放失败；`LocalSmuFlowTests` 验证既有节点本地完成和循环结束清理不发布 MQTT。这些回归保护共享单位和生命周期边界，不替代仪器、供应商 SDK 或 MySQL 往返验收。
 
 当前没有在本主题声明真机点测、扫描、读取单位或输出保护验证。后续验证须分别检查 SDK 返回码、精确载荷、通道关联、失败/超时后的实际输出状态和结果持久化，且硬件及数据库操作需要单独授权。

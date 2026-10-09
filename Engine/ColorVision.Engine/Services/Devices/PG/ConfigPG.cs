@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet;
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
         public string Addr { get => _Addr; set { _Addr = value; OnPropertyChanged(); } }
         private string _Addr;
 

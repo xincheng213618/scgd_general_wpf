@@ -51,7 +51,7 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
         if (operation is not ("Open" or "Reopen" or "Close" or "CloseOutput" or "GetData" or "ModelGetData" or "Scan" or "SMU.MeasureResult"))
             throw new NotSupportedException($"本地源表流程暂不支持 {operation}。");
         var json = data == null ? new JObject() : JObject.FromObject(data);
-        config = LocalSmuConnection.From(device.Config);
+        config = LocalSmuConnection.From(device.Config, (int)device.DisplayConfig.LocalBaudRate);
         parameters = device.ResolveLocalSmuParameters(operation, json);
         checkLimits = device.DisplayConfig.IsUseLimitSigned;
         waitTime = operation == "SMU.MeasureResult" ? json.Value<int?>("WaitTime") ?? 0 : 0;

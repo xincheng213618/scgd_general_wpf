@@ -14,6 +14,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         public static MySqlServiceConfig Instance => ConfigService.Instance.GetRequiredService<MySqlServiceConfig>();
 
+        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
         public string Host { get => _host; set { _host = NormalizeHost(value); OnPropertyChanged(); } }
         private string _host = "127.0.0.1";
 

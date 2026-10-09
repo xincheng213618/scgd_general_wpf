@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,8 +21,12 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 EditSensor window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
-            }, a => AccessControl.Check(PermissionMode.Administrator));
+                if (window.ShowDialog() == true)
+                {
+                    ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+                    Save();
+                }
+            });
 
         }
 
