@@ -1256,6 +1256,4 @@
   <data name="图表统计方式" xml:space="preserve"><value>图表统计方式</value></data>
   <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。</value></data>
   <data name="查看截图、图像文件、校正和相机取图缓存" xml:space="preserve"><value>查看截图、图像文件、校正和相机取图缓存</value></data>
-  <data name="缓存快捷操作" xml:space="preserve"><value>缓存快捷操作</value></data>
-  <data name="释放当前窗口截图缓存" xml:space="preserve"><value>释放当前窗口截图缓存</value></data>
 </root>

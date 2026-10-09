@@ -1276,6 +1276,4 @@ Automatically saved settings will remain.</value>
   <data name="图表统计方式" xml:space="preserve"><value>Chart statistics mode</value></data>
   <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>Count by batch completion time. Hourly production includes PASS and FAIL; empty hours count as 0.</value></data>
   <data name="查看截图、图像文件、校正和相机取图缓存" xml:space="preserve"><value>View snapshot, image file, calibration and camera capture caches</value></data>
-  <data name="缓存快捷操作" xml:space="preserve"><value>Cache quick actions</value></data>
-  <data name="释放当前窗口截图缓存" xml:space="preserve"><value>Release current snapshot cache</value></data>
 </root>

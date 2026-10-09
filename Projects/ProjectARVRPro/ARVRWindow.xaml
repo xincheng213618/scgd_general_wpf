@@ -54,20 +54,8 @@
                                 <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,4.5 H15 L10.5,9 V13 L7.5,14 V9 Z"/>
                             </Button>
                             <Button Content="{display:DisplayText Key='数据清理'}" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
-                            <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="4" Margin="2,0,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="{display:DisplayText Key='缓存管理'}" Click="OpenLocalCacheManager_Click" BorderThickness="0" Margin="0"
-                                            ToolTip="{display:DisplayText Key='查看截图、图像文件、校正和相机取图缓存'}"/>
-                                    <Button Content="▾" Click="OpenCacheActions_Click" Padding="5,0" BorderThickness="0" Margin="0"
-                                            AutomationProperties.Name="{display:DisplayText Key='缓存快捷操作'}" ToolTip="{display:DisplayText Key='缓存快捷操作'}">
-                                        <Button.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="{display:DisplayText Key='释放当前窗口截图缓存'}" Click="ReleaseSnapshotBuffer_Click"/>
-                                            </ContextMenu>
-                                        </Button.ContextMenu>
-                                    </Button>
-                                </StackPanel>
-                            </Border>
+                            <Button Content="{display:DisplayText Key='缓存管理'}" Click="OpenLocalCacheManager_Click" Margin="2,0,0,0"
+                                    ToolTip="{display:DisplayText Key='查看截图、图像文件、校正和相机取图缓存'}"/>
                             <Button Content="{display:DisplayText Key='结果统计'}" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
                             <Button x:Name="ViewRefreshManagerButton" Content="{display:DisplayText Key='视图刷新管理'}"
                                     Click="OpenResultViewRefreshManager_Click"

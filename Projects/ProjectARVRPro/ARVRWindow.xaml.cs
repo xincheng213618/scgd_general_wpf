@@ -2477,25 +2477,9 @@ namespace ProjectARVRPro
             }
         }
 
-        private void ReleaseSnapshotBuffer_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.ReleaseSnapshotBuffer();
-            log.Info("结果截图缓存已释放；若正在后台使用，将在归还时释放。");
-        }
-
         private void OpenLocalCacheManager_Click(object sender, RoutedEventArgs e)
         {
             ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow(ImageView.SnapshotCacheId);
-        }
-
-        private void OpenCacheActions_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.ContextMenu is ContextMenu menu)
-            {
-                menu.PlacementTarget = button;
-                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                menu.IsOpen = true;
-            }
         }
 
         private int _outstandingImageExports;
