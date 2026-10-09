@@ -7980,4 +7980,56 @@
   <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。開啟後每台相機最多保留一塊空閒 RAW 緩衝；關閉時釋放空閒緩衝，在用影像歸還後釋放。</value></data>
   <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>預設關閉，流程加速時可手動開啟。關閉後讀寫照常執行，不保留空閒緩衝；在用緩衝歸還後釋放。</value></data>
   <data name="实验功能" xml:space="preserve"><value>實驗功能</value></data>
+  <data name="截图缓存" xml:space="preserve"><value>截圖快取</value></data>
+  <data name="按图像视图统计截图导出缓冲。空闲缓冲可立即释放，在用缓冲归还后释放；已保存的截图文件保留。" xml:space="preserve"><value>依影像檢視統計截圖匯出緩衝。閒置緩衝可立即釋放，使用中的緩衝歸還後釋放；已儲存的截圖檔案保留。</value></data>
+  <data name="等待归还后释放" xml:space="preserve"><value>等待歸還後釋放</value></data>
+  <data name="暂无缓存" xml:space="preserve"><value>暫無快取</value></data>
+  <data name="图像视图" xml:space="preserve"><value>影像檢視</value></data>
+  <data name="{0} · #{1}（已关闭，等待导出完成）" xml:space="preserve"><value>{0} · #{1}（已關閉，等待匯出完成）</value></data>
+  <data name="截图缓存已释放 {0}，待归还后释放 {1}。已保存的截图文件保留。" xml:space="preserve"><value>截圖快取已釋放 {0}，待歸還後釋放 {1}。已儲存的截圖檔案保留。</value></data>
+  <data name="已停用" xml:space="preserve"><value>已停用</value></data>
+  <data name="当前进程的缓存与缓冲区" xml:space="preserve"><value>目前處理程序的快取與緩衝區</value></data>
+  <data name="缓存分类" xml:space="preserve"><value>快取分類</value></data>
+  <data name="搜索当前页" xml:space="preserve"><value>搜尋目前頁面</value></data>
+  <data name="搜索当前页…" xml:space="preserve"><value>搜尋目前頁面…</value></data>
+  <data name="总览" xml:space="preserve"><value>總覽</value></data>
+  <data name="已统计缓存内存" xml:space="preserve"><value>已統計快取記憶體</value></data>
+  <data name="仅统计已接入模块，不代表进程全部内存。校正内存为估算值；相机仅统计空闲缓冲。" xml:space="preserve"><value>僅統計已接入模組，不代表處理程序全部記憶體。校正記憶體為估算值；相機僅統計閒置緩衝。</value></data>
+  <data name="条目或来源" xml:space="preserve"><value>項目或來源</value></data>
+  <data name="缓存明细" xml:space="preserve"><value>快取明細</value></data>
+  <data name="释放当前窗口截图缓存" xml:space="preserve"><value>釋放目前視窗截圖快取</value></data>
+  <data name="释放本模块缓存" xml:space="preserve"><value>釋放本模組快取</value></data>
+  <data name="释放全部缓存" xml:space="preserve"><value>釋放全部快取</value></data>
+  <data name="将释放当前窗口的截图缓存。正在导出的缓冲归还后释放，已保存的截图文件保留。是否继续？" xml:space="preserve"><value>將釋放目前視窗的截圖快取。正在匯出的緩衝歸還後釋放，已儲存的截圖檔案保留。是否繼續？</value></data>
+  <data name="已读取 {0:N0} / {1:N0} 个模块" xml:space="preserve"><value>已讀取 {0:N0} / {1:N0} 個模組</value></data>
+  <data name="部分模块读取失败，当前总量不完整；失败模块的内存占用未统计。" xml:space="preserve"><value>部分模組讀取失敗，目前總量不完整；失敗模組的記憶體占用未統計。</value></data>
+  <data name="释放全部截图缓存" xml:space="preserve"><value>釋放全部截圖快取</value></data>
+  <data name="内存占用：{0} · {1}" xml:space="preserve"><value>記憶體占用：{0} · {1}</value></data>
+  <data name="读取失败，请刷新重试。" xml:space="preserve"><value>讀取失敗，請重新整理後再試。</value></data>
+  <data name="没有匹配的缓存条目。" xml:space="preserve"><value>沒有符合的快取項目。</value></data>
+  <data name="暂无截图缓冲来源。" xml:space="preserve"><value>暫無截圖緩衝來源。</value></data>
+  <data name="已停用，当前没有保留的缓存。" xml:space="preserve"><value>已停用，目前沒有保留的快取。</value></data>
+  <data name="当前模块暂无缓存。" xml:space="preserve"><value>目前模組暫無快取。</value></data>
+  <data name="来源窗口 / 视图" xml:space="preserve"><value>來源視窗 / 檢視</value></data>
+  <data name="空闲缓冲规格" xml:space="preserve"><value>閒置緩衝規格</value></data>
+  <data name="空闲可释放" xml:space="preserve"><value>閒置可釋放</value></data>
+  <data name="待归还释放" xml:space="preserve"><value>待歸還釋放</value></data>
+  <data name="查看或释放截图、图像文件、校正和相机取图缓存。" xml:space="preserve"><value>檢視或釋放截圖、影像檔案、校正及相機取像快取。</value></data>
+  <data name="待归还释放是正在使用内存的一部分，不重复计入总量。" xml:space="preserve"><value>待歸還釋放是使用中記憶體的一部分，不重複計入總量。</value></data>
+  <data name="来源视图：{0:N0} 个 · 空闲可释放：{1} · 在用缓冲：{2:N0} 个 · 待归还释放：{3}" xml:space="preserve"><value>來源檢視：{0:N0} 個 · 閒置可釋放：{1} · 使用中緩衝：{2:N0} 個 · 待歸還釋放：{3}</value></data>
+  <data name="当前窗口 · {0}" xml:space="preserve"><value>目前視窗 · {0}</value></data>
+  <data name="缓存设置" xml:space="preserve"><value>快取設定</value></data>
+  <data name="缓存清理" xml:space="preserve"><value>快取清理</value></data>
+  <data name="全选当前列表" xml:space="preserve"><value>全選目前清單</value></data>
+  <data name="取消勾选" xml:space="preserve"><value>取消勾選</value></data>
+  <data name="勾选后批量释放" xml:space="preserve"><value>勾選後批次釋放</value></data>
+  <data name="释放" xml:space="preserve"><value>釋放</value></data>
+  <data name="释放勾选" xml:space="preserve"><value>釋放勾選</value></data>
+  <data name="释放勾选（{0:N0}）" xml:space="preserve"><value>釋放勾選（{0:N0}）</value></data>
+  <data name="已勾选 {0:N0} 个模块" xml:space="preserve"><value>已勾選 {0:N0} 個模組</value></data>
+  <data name="已勾选 {0:N0} 个模块，其中 {1:N0} 个被搜索隐藏" xml:space="preserve"><value>已勾選 {0:N0} 個模組，其中 {1:N0} 個被搜尋隱藏</value></data>
+  <data name="将释放以下 {0:N0} 个缓存模块：&#10;{1}&#10;&#10;保留磁盘文件，在用缓冲按各模块规则等待操作完成或归还后释放。是否继续？" xml:space="preserve"><value>將釋放以下 {0:N0} 個快取模組：
+{1}
+
+保留磁碟檔案，使用中的緩衝依各模組規則等待操作完成或歸還後釋放。是否繼續？</value></data>
 </root>

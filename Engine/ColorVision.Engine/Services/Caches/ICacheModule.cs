@@ -20,7 +20,12 @@ namespace ColorVision.Engine.Services.Caches
         ulong MemoryBytes,
         ulong HitCount,
         ulong ActiveReferences,
-        string State);
+        string State,
+        long? SourceId = null,
+        string BufferInfo = "",
+        ulong? IdleBytes = null,
+        ulong? ActiveBytes = null,
+        ulong? PendingReleaseBytes = null);
 
     internal sealed record CacheModuleSnapshot(
         string Id,

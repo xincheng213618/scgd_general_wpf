@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     Id = "LocalCacheManagement",
                     Name = EngineLocalization.Get("本地缓存管理"),
-                    Description = EngineLocalization.Get("打开本地缓存管理，查看或释放校正与图像文件缓存。"),
+                    Description = EngineLocalization.Get("查看或释放截图、图像文件、校正和相机取图缓存。"),
                     Type = StatusBarType.Icon,
                     Alignment = StatusBarAlignment.Right,
                     Order = 996,

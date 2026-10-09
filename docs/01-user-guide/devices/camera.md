@@ -156,7 +156,7 @@ CV 测量显示 R/G/B 三路独立曝光，视频预览显示单路曝光。本�
 
 帧发布以 `CommitSourcePixels` 登记与显示结果对应的同一帧原图，再经 `ImagePresentation` 发布处理显示。关闭伪彩或处理失败时恢复该帧原图；第一次没有基准源时也先发布原图，随后建立尺寸、像素格式和缩放状态。冻结快照、队列和重入保护的完整契约见[连续帧显示](../../04-api-reference/ui-components/image-editor-context.md#连续帧显示)。这会更新预览文档的源与 revision，不改写相机采集缓冲、流程测量数据或结果文件。
 
-对焦清晰度指标独立由 `CameraFocusFrameProcessor` 计算，输入是原始帧的拥有型副本及 ROI/算法请求；该处理器不生成伪彩图。其双缓冲保留一帧工作和一帧等待，单次处理异常记录日志后继续接收，关闭时等待 worker 退出再释放缓冲。`CameraRealtimeFramePipeline` 以自身 generation 拒绝停流后指标，指标叠加与图像显示分别更新。十字参考线使用独立 `VideoCrossGuideProcessor`，不能把相机指标生命周期等同于视频文件播放的 `VideoPlaybackSession`。
+对焦清晰度指标独立由 `CameraFocusFrameProcessor` 计算，输入是原始帧的拥有型副本及 ROI/算法请求；该处理器不生成伪彩图。其双缓冲保留一帧工作和一帧等待，单次处理异常记录日志后继续接收，关闭时等待 worker 退出再释放缓冲。`CameraRealtimeFramePipeline` 以自身 generation 拒绝停流后指标，指标叠加与图像显示分别更新。十字参考线使用独立 `VideoCrossGuideProcessor`：停止预览、关闭图像页签或关闭十字检测时停止接收帧并释放空闲缓冲，在途检测完成后释放其缓冲并丢弃过期结果；再次预览或启用检测时重新申请，播放期间继续双缓冲复用。视频工作缓冲随会话释放，不接入全局缓存管理；保留最后一帧显示时仍持有该显示位图，托管数组清空引用后由 GC 回收，不能以进程内存立即下降作为释放完成的判据。不能把相机指标生命周期等同于视频文件播放的 `VideoPlaybackSession`。
 
 ## 查询和显示相机结果
 

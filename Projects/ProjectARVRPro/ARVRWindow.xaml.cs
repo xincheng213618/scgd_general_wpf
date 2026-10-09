@@ -2485,7 +2485,17 @@ namespace ProjectARVRPro
 
         private void OpenLocalCacheManager_Click(object sender, RoutedEventArgs e)
         {
-            ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow();
+            ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow(ImageView.SnapshotCacheId);
+        }
+
+        private void OpenCacheActions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.ContextMenu is ContextMenu menu)
+            {
+                menu.PlacementTarget = button;
+                menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                menu.IsOpen = true;
+            }
         }
 
         private int _outstandingImageExports;

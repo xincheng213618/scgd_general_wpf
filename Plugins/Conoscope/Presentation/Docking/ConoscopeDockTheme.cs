@@ -11,13 +11,13 @@ internal sealed class ConoscopeDockTheme(ResourceDictionary resources) : Diction
     public static AvalonDock.Themes.Theme Create(ColorVision.Themes.Theme theme)
     {
         bool isDark = theme == ColorVision.Themes.Theme.Dark;
-        AvalonDock.Themes.Theme baseTheme = isDark ? new Vs2013DarkTheme() : new Vs2013LightTheme();
+        DictionaryTheme baseTheme = isDark ? new Vs2013DarkTheme() : new Vs2013LightTheme();
         foreach (string assemblyName in new[] { "ColorVision.Solution", "ColorVision" })
         {
             try
             {
                 var resources = new ResourceDictionary();
-                resources.MergedDictionaries.Add(new ResourceDictionary { Source = baseTheme.GetResourceUri() });
+                resources.MergedDictionaries.Add(baseTheme.ThemeResourceDictionary);
                 resources.MergedDictionaries.Add(new ResourceDictionary
                 {
                     Source = new Uri($"/{assemblyName};component/Themes/AvalonDockModern{(isDark ? "Dark" : "Light")}.xaml", UriKind.Relative)

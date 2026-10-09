@@ -69,7 +69,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private int _workingFrameWidth;
         private int _workingFrameHeight;
         private bool _hasPendingFrame;
+        private bool _processingFrame;
+        private bool _acceptFrames = true;
         private bool _disposed;
+        private long _generation;
         private long _lastSubmittedTick;
 
         public VideoCrossGuideProcessor(Action<VideoCrossGuideResult> resultHandler)
@@ -116,6 +119,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             lock (_gate)
             {
+                if (_disposed || !_acceptFrames) return;
                 EnsureBuffer(ref _pendingFrame, ref _pendingCapacity, sourceRoi.Width, sourceRoi.Height, channels, depth, rowBytes, requiredLength);
                 byte* sourceBase = (byte*)sourcePointer;
                 byte* targetBase = (byte*)_pendingFrame!.Value.pData;
@@ -131,9 +135,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 _pendingFrameWidth = width;
                 _pendingFrameHeight = height;
                 _hasPendingFrame = true;
+                _frameReady.Set();
             }
-
-            _frameReady.Set();
         }
 
         private void WorkerLoop()
@@ -148,6 +151,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 RoiRect sourceRoi;
                 int frameWidth;
                 int frameHeight;
+                long generation;
 
                 lock (_gate)
                 {
@@ -165,26 +169,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     sourceRoi = _workingSourceRoi;
                     frameWidth = _workingFrameWidth;
                     frameHeight = _workingFrameHeight;
-                }
-
-                VideoCrossGuideResult result;
-                try
-                {
-                    result = _frameProcessor(workingFrame, request, frameWidth, frameHeight, sourceRoi);
-                }
-                catch (Exception ex)
-                {
-                    log.Error("Video cross-guide processing failed.", ex);
-                    continue;
+                    generation = _generation;
+                    _processingFrame = true;
                 }
 
                 try
                 {
-                    if (!_cts.IsCancellationRequested)
-                        _resultHandler(result);
+                    VideoCrossGuideResult result;
+                    try
+                    {
+                        result = _frameProcessor(workingFrame, request, frameWidth, frameHeight, sourceRoi);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("Video cross-guide processing failed.", ex);
+                        continue;
+                    }
+
+                    lock (_gate)
+                    {
+                        if (_disposed || generation != _generation) continue;
+                    }
+                    try { _resultHandler(result); }
+                    catch { }
                 }
-                catch
+                finally
                 {
+                    lock (_gate)
+                    {
+                        _processingFrame = false;
+                        // Stop/reset may retire this frame while native detection still reads it.
+                        if (_disposed || generation != _generation) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
+                    }
                 }
             }
         }
@@ -215,24 +231,57 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
 
-        public void Reset()
+        public void Start()
         {
             lock (_gate)
             {
-                _hasPendingFrame = false;
-                _pendingRequest = default;
+                if (_disposed || _acceptFrames) return;
+                _acceptFrames = true;
+                Interlocked.Exchange(ref _lastSubmittedTick, 0);
             }
+        }
 
+        public void Reset()
+        {
+            lock (_gate) ResetCore();
+        }
+
+        public void Stop()
+        {
+            lock (_gate)
+            {
+                _acceptFrames = false;
+                ResetCore();
+            }
+        }
+
+        private void ResetCore()
+        {
+            ++_generation;
+            _hasPendingFrame = false;
+            _pendingRequest = default;
+            ReleaseBuffer(ref _pendingFrame, ref _pendingCapacity);
+            if (!_processingFrame) ReleaseBuffer(ref _workingFrame, ref _workingCapacity);
             Interlocked.Exchange(ref _lastSubmittedTick, 0);
+        }
+
+        private static void ReleaseBuffer(ref HImage? buffer, ref int capacity)
+        {
+            buffer?.Dispose();
+            buffer = null;
+            capacity = 0;
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-
-            _disposed = true;
-            _cts.Cancel();
-            _frameReady.Set();
+            lock (_gate)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                _acceptFrames = false;
+                _cts.Cancel();
+                _frameReady.Set();
+            }
 
             try
             {
@@ -242,8 +291,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
             }
 
-            _pendingFrame?.Dispose();
-            _workingFrame?.Dispose();
+            lock (_gate) ResetCore();
             _frameReady.Dispose();
             _cts.Dispose();
         }

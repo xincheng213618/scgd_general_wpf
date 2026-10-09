@@ -6977,4 +6977,56 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="默认关闭，流程加速时可手动开启。开启后每台相机最多保留一块空闲 RAW 缓冲；关闭时释放空闲缓冲，在用图像归还后释放。" xml:space="preserve"><value>Disabled by default; enable for faster flows. Each camera retains at most one idle RAW buffer. Disabling releases idle buffers and frees active images when returned.</value></data>
   <data name="默认关闭，流程加速时可手动开启。关闭后读写照常执行，不保留空闲缓冲；在用缓冲归还后释放。" xml:space="preserve"><value>Disabled by default; enable for faster flows. File I/O continues normally. No idle buffers are retained; active buffers are freed when returned.</value></data>
   <data name="实验功能" xml:space="preserve"><value>Experimental features</value></data>
+  <data name="截图缓存" xml:space="preserve"><value>Snapshot cache</value></data>
+  <data name="按图像视图统计截图导出缓冲。空闲缓冲可立即释放，在用缓冲归还后释放；已保存的截图文件保留。" xml:space="preserve"><value>Snapshot export buffers by image view. Idle buffers are released immediately; active buffers are released when returned. Saved images are kept.</value></data>
+  <data name="等待归还后释放" xml:space="preserve"><value>Release on return</value></data>
+  <data name="暂无缓存" xml:space="preserve"><value>No cached buffers</value></data>
+  <data name="图像视图" xml:space="preserve"><value>Image view</value></data>
+  <data name="{0} · #{1}（已关闭，等待导出完成）" xml:space="preserve"><value>{0} · #{1} (closed, awaiting export)</value></data>
+  <data name="截图缓存已释放 {0}，待归还后释放 {1}。已保存的截图文件保留。" xml:space="preserve"><value>Released {0} of snapshot buffers; {1} pending return. Saved images are kept.</value></data>
+  <data name="已停用" xml:space="preserve"><value>Disabled</value></data>
+  <data name="当前进程的缓存与缓冲区" xml:space="preserve"><value>Caches and buffers in this process</value></data>
+  <data name="缓存分类" xml:space="preserve"><value>Cache categories</value></data>
+  <data name="搜索当前页" xml:space="preserve"><value>Search this page</value></data>
+  <data name="搜索当前页…" xml:space="preserve"><value>Search this page…</value></data>
+  <data name="总览" xml:space="preserve"><value>Overview</value></data>
+  <data name="已统计缓存内存" xml:space="preserve"><value>Reported cache memory</value></data>
+  <data name="仅统计已接入模块，不代表进程全部内存。校正内存为估算值；相机仅统计空闲缓冲。" xml:space="preserve"><value>Connected modules only, not total process memory. Calibration memory is estimated; camera totals include idle buffers only.</value></data>
+  <data name="条目或来源" xml:space="preserve"><value>Entries / sources</value></data>
+  <data name="缓存明细" xml:space="preserve"><value>Cache details</value></data>
+  <data name="释放当前窗口截图缓存" xml:space="preserve"><value>Release current snapshot cache</value></data>
+  <data name="释放本模块缓存" xml:space="preserve"><value>Release module cache</value></data>
+  <data name="释放全部缓存" xml:space="preserve"><value>Release all caches</value></data>
+  <data name="将释放当前窗口的截图缓存。正在导出的缓冲归还后释放，已保存的截图文件保留。是否继续？" xml:space="preserve"><value>Release snapshot buffers for the current window? Active export buffers will be released when returned. Saved images will be kept.</value></data>
+  <data name="已读取 {0:N0} / {1:N0} 个模块" xml:space="preserve"><value>{0:N0} / {1:N0} modules read</value></data>
+  <data name="部分模块读取失败，当前总量不完整；失败模块的内存占用未统计。" xml:space="preserve"><value>Some modules could not be read. Their memory is unknown and excluded from the incomplete total.</value></data>
+  <data name="释放全部截图缓存" xml:space="preserve"><value>Release all snapshot caches</value></data>
+  <data name="内存占用：{0} · {1}" xml:space="preserve"><value>Memory: {0} · {1}</value></data>
+  <data name="读取失败，请刷新重试。" xml:space="preserve"><value>Unable to read. Refresh to retry.</value></data>
+  <data name="没有匹配的缓存条目。" xml:space="preserve"><value>No matching cache entries.</value></data>
+  <data name="暂无截图缓冲来源。" xml:space="preserve"><value>No snapshot buffer sources.</value></data>
+  <data name="已停用，当前没有保留的缓存。" xml:space="preserve"><value>Disabled. No buffers retained.</value></data>
+  <data name="当前模块暂无缓存。" xml:space="preserve"><value>No cache in this module.</value></data>
+  <data name="来源窗口 / 视图" xml:space="preserve"><value>Source window / view</value></data>
+  <data name="空闲缓冲规格" xml:space="preserve"><value>Idle buffer format</value></data>
+  <data name="空闲可释放" xml:space="preserve"><value>Idle / releasable</value></data>
+  <data name="待归还释放" xml:space="preserve"><value>Pending release</value></data>
+  <data name="查看或释放截图、图像文件、校正和相机取图缓存。" xml:space="preserve"><value>View or release snapshot, image file, calibration and camera capture caches.</value></data>
+  <data name="待归还释放是正在使用内存的一部分，不重复计入总量。" xml:space="preserve"><value>Pending release is part of active memory, not additional memory.</value></data>
+  <data name="来源视图：{0:N0} 个 · 空闲可释放：{1} · 在用缓冲：{2:N0} 个 · 待归还释放：{3}" xml:space="preserve"><value>Source views: {0:N0} · Idle: {1} · Active buffers: {2:N0} · Pending release: {3}</value></data>
+  <data name="当前窗口 · {0}" xml:space="preserve"><value>Current window · {0}</value></data>
+  <data name="缓存设置" xml:space="preserve"><value>Cache settings</value></data>
+  <data name="缓存清理" xml:space="preserve"><value>Cache cleanup</value></data>
+  <data name="全选当前列表" xml:space="preserve"><value>Select visible</value></data>
+  <data name="取消勾选" xml:space="preserve"><value>Clear selection</value></data>
+  <data name="勾选后批量释放" xml:space="preserve"><value>Select for batch release</value></data>
+  <data name="释放" xml:space="preserve"><value>Release</value></data>
+  <data name="释放勾选" xml:space="preserve"><value>Release selected</value></data>
+  <data name="释放勾选（{0:N0}）" xml:space="preserve"><value>Release selected ({0:N0})</value></data>
+  <data name="已勾选 {0:N0} 个模块" xml:space="preserve"><value>{0:N0} modules selected</value></data>
+  <data name="已勾选 {0:N0} 个模块，其中 {1:N0} 个被搜索隐藏" xml:space="preserve"><value>{0:N0} selected; {1:N0} hidden by search</value></data>
+  <data name="将释放以下 {0:N0} 个缓存模块：&#10;{1}&#10;&#10;保留磁盘文件，在用缓冲按各模块规则等待操作完成或归还后释放。是否继续？" xml:space="preserve"><value>Release these {0:N0} cache modules?
+{1}
+
+Files on disk are kept. Active buffers follow each module’s completion or return rules.</value></data>
 </root>

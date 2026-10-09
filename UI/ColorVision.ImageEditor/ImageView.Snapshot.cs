@@ -12,6 +12,14 @@ namespace ColorVision.ImageEditor
 
         public void ReleaseSnapshotBuffer() => snapshotCapture.ReleaseBuffer();
 
+        public long SnapshotCacheId => snapshotCapture.CacheId;
+
+        private void UpdateSnapshotCacheSource()
+        {
+            string title = System.Windows.Window.GetWindow(this)?.Title ?? string.Empty;
+            snapshotCapture.SetSourceName(string.IsNullOrEmpty(Name) ? title : $"{title} / {Name}".Trim(' ', '/'));
+        }
+
         public void Save(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName))
@@ -42,6 +50,7 @@ namespace ColorVision.ImageEditor
         public ImageViewSnapshot? CaptureSnapshotForBackgroundSave(bool includeOverlays)
         {
             Dispatcher.VerifyAccess();
+            UpdateSnapshotCacheSource();
             return snapshotCapture.CaptureForBackgroundSave(
                 ImageShow,
                 ViewBitmapSource,

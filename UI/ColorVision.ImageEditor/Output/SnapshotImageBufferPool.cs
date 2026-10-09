@@ -1,6 +1,7 @@
 using ColorVision.Core;
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -14,6 +15,7 @@ namespace ColorVision.ImageEditor.Output
         private readonly Color[]? paletteColors;
         private readonly int generation;
         private HImage? image;
+        private int disposed;
 
         internal SnapshotImageBufferLease(
             SnapshotImageBufferPool owner,
@@ -62,6 +64,7 @@ namespace ColorVision.ImageEditor.Output
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
             HImage? buffer = image;
             image = null;
             if (buffer.HasValue)
@@ -72,12 +75,40 @@ namespace ColorVision.ImageEditor.Output
         ~SnapshotImageBufferLease() => Dispose();
     }
 
-    internal sealed class SnapshotImageBufferPool
+    internal sealed class SnapshotImageBufferPool : IDisposable
     {
+        private static long nextId;
         private readonly object sync = new();
         private HImage? cachedImage;
         private PixelFormat cachedFormat;
         private int generation;
+        private long activeBytes;
+        private long pendingReleaseBytes;
+        private int activeCount;
+        private long hitCount;
+        private bool isClosed;
+        private string sourceName = string.Empty;
+
+        internal long Id { get; }
+
+        internal SnapshotImageBufferPool()
+        {
+            Id = Interlocked.Increment(ref nextId);
+            SnapshotBufferCache.Register(this);
+        }
+
+        internal void SetSourceName(string value)
+        {
+            lock (sync) sourceName = value;
+        }
+
+        internal SnapshotBufferCacheEntry GetSnapshot()
+        {
+            lock (sync)
+                return new(Id, sourceName, cachedImage.HasValue ? GetBytes(cachedImage.Value) : 0, activeBytes,
+                    pendingReleaseBytes, activeCount, hitCount, cachedImage?.cols ?? 0, cachedImage?.rows ?? 0,
+                    cachedImage.HasValue ? cachedFormat.ToString() : string.Empty, isClosed);
+        }
 
         internal SnapshotImageBufferLease Capture(WriteableBitmap source)
         {
@@ -86,10 +117,12 @@ namespace ColorVision.ImageEditor.Output
             int leaseGeneration;
             lock (sync)
             {
+                ObjectDisposedException.ThrowIf(isClosed, this);
                 if (cachedImage.HasValue && IsCompatible(cachedImage.Value, cachedFormat, source))
                 {
                     buffer = cachedImage;
                     cachedImage = null;
+                    hitCount++;
                 }
                 else if (cachedImage.HasValue)
                 {
@@ -97,27 +130,10 @@ namespace ColorVision.ImageEditor.Output
                     cachedImage = null;
                     staleImage.Dispose();
                 }
+                buffer ??= AllocateBuffer(source);
+                activeBytes += GetBytes(buffer.Value);
+                activeCount++;
                 leaseGeneration = generation;
-            }
-
-            if (!buffer.HasValue)
-            {
-                HImage allocatedImage = AllocateBuffer(source);
-                try
-                {
-                    CopyToBuffer(source, allocatedImage);
-                    return new SnapshotImageBufferLease(
-                        this,
-                        allocatedImage,
-                        source.Format,
-                        paletteColors,
-                        leaseGeneration);
-                }
-                catch
-                {
-                    allocatedImage.Dispose();
-                    throw;
-                }
             }
 
             HImage image = buffer.Value;
@@ -133,16 +149,19 @@ namespace ColorVision.ImageEditor.Output
             }
             catch
             {
-                image.Dispose();
+                Return(image, source.Format, leaseGeneration, reusable: false);
                 throw;
             }
         }
 
-        internal void Return(HImage image, PixelFormat format, int leaseGeneration)
+        internal void Return(HImage image, PixelFormat format, int leaseGeneration, bool reusable = true)
         {
             lock (sync)
             {
-                if (leaseGeneration == generation && !cachedImage.HasValue)
+                activeBytes -= GetBytes(image);
+                activeCount--;
+                if (leaseGeneration != generation) pendingReleaseBytes -= GetBytes(image);
+                if (reusable && !isClosed && leaseGeneration == generation && !cachedImage.HasValue)
                 {
                     cachedImage = image;
                     cachedFormat = format;
@@ -152,21 +171,42 @@ namespace ColorVision.ImageEditor.Output
             image.Dispose();
         }
 
-        internal void Release()
+        internal SnapshotBufferReleaseResult Release()
         {
-            HImage? image;
             lock (sync)
             {
-                generation++;
-                image = cachedImage;
-                cachedImage = null;
-            }
-            if (image.HasValue)
-            {
-                HImage value = image.Value;
-                value.Dispose();
+                return ReleaseCore();
             }
         }
+
+        private SnapshotBufferReleaseResult ReleaseCore()
+        {
+            generation++;
+            pendingReleaseBytes = activeBytes;
+            long released = cachedImage.HasValue ? GetBytes(cachedImage.Value) : 0;
+            if (cachedImage.HasValue)
+            {
+                HImage value = cachedImage.Value;
+                cachedImage = null;
+                value.Dispose();
+            }
+            return new(released, pendingReleaseBytes);
+        }
+
+        public void Dispose()
+        {
+            lock (sync)
+            {
+                if (isClosed) return;
+                isClosed = true;
+                ReleaseCore();
+            }
+            GC.SuppressFinalize(this);
+        }
+
+        ~SnapshotImageBufferPool() => Dispose();
+
+        private static long GetBytes(HImage image) => (long)image.stride * image.rows;
 
         private static bool IsCompatible(HImage image, PixelFormat format, WriteableBitmap source)
         {

@@ -12,6 +12,9 @@ namespace ColorVision.ImageEditor.Output
         private readonly SnapshotImageBufferPool snapshotBufferPool = new();
 
         internal void ReleaseBuffer() => snapshotBufferPool.Release();
+        internal long CacheId => snapshotBufferPool.Id;
+        internal void SetSourceName(string name) => snapshotBufferPool.SetSourceName(name);
+        internal void Dispose() => snapshotBufferPool.Dispose();
 
         internal BitmapSource? CaptureRendered(
             DrawCanvas surface,

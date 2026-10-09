@@ -877,6 +877,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
+            if (Device.ExistingView is not { IsContentInitialized: true }) return;
+            _crossGuideProcessor.Start();
             EnsureCrossGuideOverlay();
         }
 
@@ -900,6 +902,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RemoveCrossGuideOverlay()
         {
+            _crossGuideProcessor.Stop();
             if (Device.ExistingView is not { IsContentInitialized: true }) return;
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
@@ -915,8 +918,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 imageView.ImageShow.RemoveOverlayVisual(_crossGuideOverlayVisual);
                 _crossGuideOverlayAdded = false;
             }
-
-            _crossGuideProcessor.Reset();
         }
 
         private bool TryCreateCrossGuideRequest(int width, int height, out VideoCrossGuideRequest request)
@@ -1707,7 +1708,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed) return;
             _localRealtimePipeline.Stop(resetRealtime: true);
-            _crossGuideProcessor.Reset();
+            _crossGuideProcessor.Stop();
             _crossGuideOverlayVisual.Detach();
             _crossGuideOverlayVisual.Clear();
             _crossGuideOverlayAdded = false;
@@ -1820,7 +1821,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             _sharedVideoActive = false;
             _localRealtimePipeline.Stop(resetRealtime: true);
-            _crossGuideProcessor.Reset();
+            _crossGuideProcessor.Stop();
             Dispatcher.BeginInvoke(() =>
             {
                 if (IsDisposed || _sharedVideoActive) return;

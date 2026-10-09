@@ -1,4 +1,5 @@
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Caches;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using System.IO;
@@ -13,6 +14,46 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CvRawFileCacheSettingsTests
 {
+    [Fact]
+    public void BulkReleaseKeepsExplicitModuleScopeAcrossSearchAndRefresh()
+    {
+        LocalCalibrationCacheManagerWindow window = WpfTestHost.Invoke(() => new LocalCalibrationCacheManagerWindow());
+        WaitUntilIdle(window);
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                MethodInfo apply = typeof(LocalCalibrationCacheManagerWindow).GetMethod("ApplySnapshots", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                MethodInfo readTargets = typeof(LocalCalibrationCacheManagerWindow).GetMethod("GetMarkedModules", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                CacheModuleSnapshot[] snapshots = CacheManagerService.Modules.Select(module => new CacheModuleSnapshot(
+                    module.Id, module.Name, module.Description, 64, 1, 0, 0, 0, true, false, "", [])).ToArray();
+                apply.Invoke(window, [snapshots]);
+                DataGrid grid = (DataGrid)window.FindName("CacheModulesGrid");
+                TextBox search = (TextBox)window.FindName("CacheSearchBox");
+                Button release = (Button)window.FindName("ReleaseMarkedButton");
+                Assert.False(release.IsEnabled);
+                grid.Items.Cast<CacheModuleViewItem>().Single(item => item.Id == "Snapshot").IsMarkedForRelease = true;
+                Assert.True(release.IsEnabled);
+
+                // Filtering must never replace the user's chosen target with the visible row.
+                search.Text = snapshots.Single(item => item.Id == "ImageFile").Name;
+                Assert.Single(grid.Items.Cast<CacheModuleViewItem>());
+                Assert.Equal("Snapshot", Assert.Single((ICacheModule[])readTargets.Invoke(window, null)!).Id);
+                apply.Invoke(window, [snapshots]);
+                Assert.Equal("Snapshot", Assert.Single((ICacheModule[])readTargets.Invoke(window, null)!).Id);
+                Assert.NotEmpty(((TextBlock)window.FindName("ReleaseSelectionText")).Text);
+
+                grid.Items.Cast<CacheModuleViewItem>().Single().IsMarkedForRelease = true;
+                Assert.Equal(new[] { "Snapshot", "ImageFile" }, ((ICacheModule[])readTargets.Invoke(window, null)!).Select(module => module.Id));
+                search.Clear();
+                Assert.False(grid.Items.Cast<CacheModuleViewItem>().Single(item => item.Id == "Calibration").IsMarkedForRelease);
+                foreach (CacheModuleViewItem item in grid.Items) item.IsMarkedForRelease = false;
+                Assert.False(release.IsEnabled);
+            });
+        }
+        finally { WpfTestHost.Invoke(() => window.Close()); }
+    }
+
     [Fact]
     public void GlobalOptionsAndCacheManagerSharePersistedSettingsAndStartupRestoresThem()
     {
@@ -42,11 +83,11 @@ public sealed class CvRawFileCacheSettingsTests
             WaitUntilIdle(window);
             WpfTestHost.Invoke(() =>
             {
-                var modules = (DataGrid)window.FindName("CacheModulesGrid");
-                Assert.Equal(3, modules.Items.Count);
-                modules.SelectedItem = modules.Items.Cast<object>().Single(item =>
-                    (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "ImageFile");
+                var modules = (ListBox)window.FindName("CacheNavigation");
+                Assert.Equal(5, modules.Items.Count); // Overview and the four cache modules.
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("OverviewPanel")).Visibility);
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
                 var checkbox = (CheckBox)window.FindName("ImageCacheEnabledCheckBox");
                 var property = typeof(CvRawFileCacheConfig).GetProperty(nameof(CvRawFileCacheConfig.IsEnabled))!;
                 var registration = property.GetCustomAttribute<ConfigSettingAttribute>();
@@ -107,6 +148,12 @@ public sealed class CvRawFileCacheSettingsTests
                 ((Button)window.FindName("ApplyImageCacheCountButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                 Assert.Equal(3, CVFileReadCache.MaximumEntries);
                 Assert.Equal(3, CvRawFileCacheConfig.Current.MaximumEntries);
+                var navigation = (ListBox)window.FindName("CacheNavigation");
+                navigation.SelectedItem = navigation.Items.Cast<object>().Single(item =>
+                    (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "ImageFile");
+                Assert.True(((CheckBox)window.FindName("ImageCacheEnabledCheckBox")).IsChecked);
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
             });
             Assert.Equal(3, ReadSavedCount(path));
             WpfTestHost.Invoke(() => { option!.SetCurrentValue(ToggleButton.IsCheckedProperty, false); ConfigService.Instance.SaveConfigs(); });
@@ -162,11 +209,8 @@ public sealed class CvRawFileCacheSettingsTests
             WaitUntilIdle(window);
             WpfTestHost.Invoke(() =>
             {
-                var modules = (DataGrid)window.FindName("CacheModulesGrid");
-                modules.SelectedItem = modules.Items.Cast<object>().Single(item =>
-                    (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "CameraRawBuffer");
                 Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("CameraCacheOptionsPanel")).Visibility);
-                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
+                Assert.Equal(Visibility.Visible, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
                 var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
                 Assert.False(checkbox.IsChecked);
                 checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, true);
@@ -187,6 +231,10 @@ public sealed class CvRawFileCacheSettingsTests
 
             WpfTestHost.Invoke(() =>
             {
+                var navigation = (ListBox)window.FindName("CacheNavigation");
+                navigation.SelectedItem = navigation.Items.Cast<object>().Single(item =>
+                    (string)item.GetType().GetProperty("Id")!.GetValue(item)! == "CameraRawBuffer");
+                Assert.Equal(Visibility.Collapsed, ((FrameworkElement)window.FindName("ImageCacheOptionsPanel")).Visibility);
                 var checkbox = (CheckBox)window.FindName("CameraCacheEnabledCheckBox");
                 checkbox.SetCurrentValue(ToggleButton.IsCheckedProperty, false);
                 checkbox.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));

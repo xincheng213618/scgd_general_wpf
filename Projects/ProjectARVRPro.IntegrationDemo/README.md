@@ -2,7 +2,7 @@
 
 这个目录是给外部系统、客户 MES、PLC 上位机或自动化中控使用的最小对接示例。它是 .NET Framework 4.8 + WPF 窗口项目，不依赖 ColorVision、ARVRPro 内部项目、算法 DLL、数据库、流程配置或 NuGet 包，只保留可以公开给客户的通信和结果契约。
 
-Demo 产品版本为 `1.0.2`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
+Demo 产品版本为 `1.0.3`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
 
 它演示五件事：
 
