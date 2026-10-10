@@ -127,13 +127,6 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
-                                        <TextBlock Text="{Binding BatchID}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
                             <GridViewColumn  Header="IntTime">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">

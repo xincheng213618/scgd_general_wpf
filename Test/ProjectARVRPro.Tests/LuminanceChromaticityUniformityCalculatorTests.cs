@@ -1,5 +1,6 @@
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Process.W255;
@@ -72,7 +73,7 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
     }
 
     [Fact]
-    public void ExistingW255ResultJsonInitializesColorCenterMetric()
+    public void ExistingResultJsonInitializesColorCenterMetric()
     {
         var result = JsonConvert.DeserializeObject<W255TestResult>("{\"ColorUniformity\":{\"Value\":0.012}}");
 
@@ -84,6 +85,15 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
         Assert.NotNull(config);
         Assert.NotNull(config.RecipeConfig.ColorCenterRmsToD65);
         Assert.Equal(0, config.RecipeConfig.ColorCenterRmsToD65.Max);
+
+        var keyedResult = JsonConvert.DeserializeObject<LuminanceChromaticityTestResult>("{\"ColorUniformity\":{\"Value\":0.012}}");
+        var keyedConfig = JsonConvert.DeserializeObject<LuminanceChromaticityProcessConfig>("{\"RecipeConfig\":{\"ColorUniformity\":{\"Min\":0,\"Max\":0.03}}}");
+        Assert.NotNull(keyedResult);
+        Assert.NotNull(keyedConfig);
+        Assert.Equal("Color_Center_RMS_To_D65(Δu'v')", keyedResult.ColorCenterRmsToD65.Name);
+        Assert.Equal(0, keyedConfig.RecipeConfig.ColorCenterRmsToD65.Min);
+        Assert.Equal(0, keyedConfig.RecipeConfig.ColorCenterRmsToD65.Max);
+        Assert.Equal(1, keyedConfig.RecipeConfig.ColorCenterRmsToD65.Fix);
     }
 
     [Fact]
@@ -106,6 +116,56 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
         Assert.Equal(0, testResult.ColorCenterRmsToD65.LowLimit);
         Assert.Equal(0.02, testResult.ColorCenterRmsToD65.UpLimit);
         Assert.False(testResult.ColorCenterRmsToD65.TestResult);
+    }
+
+    [Theory]
+    [InlineData("White", 1, 0, 0, 0.03, "0.03000", true)]
+    [InlineData("White255", 2, 0.001, 0.06, 0.061, "0.06100", false)]
+    public void KeyedColorCenterMetricPreservesRmsCorrectionLimitsAndOutput(string key, double fix, double offset, double upperLimit, double expected, string expectedText, bool pass)
+    {
+        var testResult = new LuminanceChromaticityTestResult();
+        var recipeConfig = new LuminanceChromaticityRecipeConfig
+        {
+            ColorCenterRmsToD65 = new RecipeBase(0, upperLimit, fix, offset)
+        };
+        var points = new List<PoiResultCIExyuvData>
+        {
+            new() { u = ChromaticityCenterCalculator.D65UPrime - 0.018, v = ChromaticityCenterCalculator.D65VPrime - 0.024 },
+            new() { u = ChromaticityCenterCalculator.D65UPrime + 0.018, v = ChromaticityCenterCalculator.D65VPrime + 0.024 },
+            new() { u = double.NaN, v = ChromaticityCenterCalculator.D65VPrime }
+        };
+
+        Assert.True(LuminanceChromaticityProcess.TryPopulateColorCenterRmsToD65(testResult, recipeConfig, points));
+        Assert.Equal(expected, testResult.ColorCenterRmsToD65.Value, 12);
+        Assert.Equal(expectedText, testResult.ColorCenterRmsToD65.TestValue);
+        Assert.Equal(upperLimit, testResult.ColorCenterRmsToD65.UpLimit);
+        Assert.Equal(pass, testResult.ColorCenterRmsToD65.TestResult);
+
+        var destination = new ObjectiveTestResult();
+        KeyedTestResultWriter.Write(destination, key, testResult);
+        var roundTrip = JsonConvert.DeserializeObject<ObjectiveTestResult>(JsonConvert.SerializeObject(destination));
+        Assert.NotNull(roundTrip);
+        Assert.Equal(expected, roundTrip.LuminanceChromaticityTestResults[key].ColorCenterRmsToD65.Value, 12);
+        if (key == "White")
+            Assert.Equal(expected, roundTrip.W255TestResult.ColorCenterRmsToD65.Value, 12);
+
+        var rows = ObjectiveTestCsvRowCollector.FromJson<LuminanceChromaticityTestResult>(JsonConvert.SerializeObject(testResult), key);
+        var row = Assert.Single(rows, item => item.TestItem == "Color_Center_RMS_To_D65(Δu'v')");
+        Assert.Equal(key, row.TestScreen);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KeyedColorCenterMetricRequiresAtLeastOneFinitePoi(bool includeInvalidPoint)
+    {
+        var points = new List<PoiResultCIExyuvData>();
+        if (includeInvalidPoint)
+            points.Add(new() { u = double.NaN, v = double.PositiveInfinity });
+        var testResult = new LuminanceChromaticityTestResult();
+
+        Assert.False(LuminanceChromaticityProcess.TryPopulateColorCenterRmsToD65(testResult, new(), points));
+        Assert.Null(testResult.ColorCenterRmsToD65.TestValue);
     }
 
     [Fact]

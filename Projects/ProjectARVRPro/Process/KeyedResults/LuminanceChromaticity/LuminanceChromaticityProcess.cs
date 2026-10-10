@@ -43,6 +43,11 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                         ReadUniformityResult(ctx, master, testResult, luminanceUniformityResultName, colorUniformityResultName);
                 }
 
+                if (!TryPopulateColorCenterRmsToD65(testResult, Config.RecipeConfig, testResult.ViewPoixyuvDatas))
+                    ctx.Log?.Warn($"亮色度色彩中心指标计算失败: key={Config.GetOutputKey()}, 没有有效的u'v' POI数据。");
+                else
+                    ctx.Result.Result &= testResult.ColorCenterRmsToD65.TestResult;
+
                 if (calculateUniformityFromCorrectedPoi)
                 {
                     var calculation = LuminanceChromaticityUniformityCalculator.Calculate(testResult.ViewPoixyuvDatas);
@@ -168,6 +173,17 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             ctx.Result.Result &= testResult.ColorUniformity.TestResult;
         }
 
+        internal static bool TryPopulateColorCenterRmsToD65(LuminanceChromaticityTestResult testResult, LuminanceChromaticityRecipeConfig recipeConfig, IEnumerable<PoiResultCIExyuvData> points)
+        {
+            ChromaticityCenterMetrics calculation = ChromaticityCenterCalculator.Calculate(points.Select(point => (point.u, point.v)));
+            if (!calculation.IsValid)
+                return false;
+
+            var recipe = recipeConfig.ColorCenterRmsToD65;
+            testResult.ColorCenterRmsToD65 = CreateItem("Color_Center_RMS_To_D65(Δu'v')", recipe.Apply(calculation.RmsToReference), recipe, "F5");
+            return true;
+        }
+
         private static ObjectiveTestItem CreateItem(string name, double value, RecipeBase recipe, string format, string unit = "", double displayScale = 1)
         {
             return new ObjectiveTestItem
@@ -220,6 +236,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 
             AppendResult(output, testResult.LuminanceUniformity);
             AppendResult(output, testResult.ColorUniformity);
+            AppendResult(output, testResult.ColorCenterRmsToD65);
             AppendPlainText(paragraph, output.ToString(), foreground, fontSize);
         }
 

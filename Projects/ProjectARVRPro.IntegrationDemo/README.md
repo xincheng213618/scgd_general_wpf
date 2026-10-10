@@ -2,7 +2,7 @@
 
 这个目录是给外部系统、客户 MES、PLC 上位机或自动化中控使用的最小对接示例。它是 .NET Framework 4.8 + WPF 窗口项目，不依赖 ColorVision、ARVRPro 内部项目、算法 DLL、数据库、流程配置或 NuGet 包，只保留可以公开给客户的通信和结果契约。
 
-Demo 产品版本为 `1.0.3`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
+Demo 产品版本为 `1.0.4`，独立于 ColorVision 主程序和 ProjectARVRPro 插件版本；报文里的 `Version: "1.0"` 是 Socket 协议版本，也不是程序集版本。客户交付记录应从当次联调源码的 `Projects/ProjectARVRPro/ProjectARVRPro.csproj` 读取 `VersionPrefix`，单独注明已验证的插件版本，不要从 Demo 或协议版本推断兼容性。
 
 它演示五件事：
 
@@ -45,7 +45,7 @@ public class W51TestResult : ViewModelBase
 | 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`、`DynamicRgbCrossResults` | 分别承载动态 `ObjectiveTestItem`、POI 光色数据、屏幕缺陷汇总/缺陷框，以及十字 RGB 边缘和 G 基准通道对比结果。 |
 | 固定与兼容结果 | `W51TestResult`、`W255TestResult`、`BlackTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult` | `FieldOfViewTestResults["White"]` 和 `LuminanceChromaticityTestResults["White"]` 会同时保留 W51/W255 兼容字段。 |
 
-`W255TestResult` 包含 `ColorCenterRmsToD65`，表示有效 POI 相对 D65 的均方根色度距离，它与 `ColorUniformity` 是两个独立测试项。当前服务端为兼容历史数据，`ColorUniformity.Name` 可能返回历史拼写 `Conlor_Uniformity(Δu'v'max)`；对接程序应按 JSON 属性 `ColorUniformity` 取值，不要把内部 `Name` 字符串当成固定键。`ChessboardTestResult` 当前包含 `ChessboardContrast` 和 `AverageBlackLuminance`。`DistortionTestResult.OpticDistortion` 在 JSON 中实际字段名是 `Optic_Distortion`，契约里保留了 `Optic_Distortion` 字段，并提供 `OpticDistortion` 便捷属性。
+`LuminanceChromaticityTestResults[实际配置 Key].ColorCenterRmsToD65` 和 `W255TestResult.ColorCenterRmsToD65` 表示有效 POI 相对 D65 的均方根色度距离，与 `ColorUniformity` 是两个独立测试项。亮色度 Key 为 `White` 时，该指标也同步到 W255 兼容结果。当前服务端为兼容历史数据，`ColorUniformity.Name` 可能返回历史拼写 `Conlor_Uniformity(Δu'v'max)`；对接程序应按 JSON 属性 `ColorUniformity` 取值，不要把内部 `Name` 字符串当成固定键。`ChessboardTestResult` 当前包含 `ChessboardContrast` 和 `AverageBlackLuminance`。`DistortionTestResult.OpticDistortion` 在 JSON 中实际字段名是 `Optic_Distortion`，契约里保留了 `Optic_Distortion` 字段，并提供 `OpticDistortion` 便捷属性。
 
 ### 标准结果与 Legacy 结果
 

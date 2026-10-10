@@ -374,10 +374,10 @@
     <value>允許</value>
   </data>
   <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
-    <value>為目前程式建立私人網路的輸入允許規則。</value>
+    <value>允許目前程式在私人網路接收入站連線，並解除該程式在私人網路上的衝突封鎖規則；其他網路類型的限制保留。</value>
   </data>
   <data name="AllowPublicFirewallTooltip" xml:space="preserve">
-    <value>為目前程式建立公用網路的輸入允許規則。</value>
+    <value>允許目前程式在公用網路接收入站連線，並解除該程式在公用網路上的衝突封鎖規則；其他網路類型的限制保留。</value>
   </data>
   <data name="DatabaseCleanup" xml:space="preserve">
     <value>資料庫清理</value>

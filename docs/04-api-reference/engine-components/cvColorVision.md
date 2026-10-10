@@ -69,6 +69,10 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 直接 MVS 后端的 SDK 调用失败保留 SDK 原始 32 位错误码，通过 `int` 返回，例如 `MV_E_NETER=0x80000206` 的有符号值为 `-2147483130`；MVS 的成功值 `0` 在相机公共入口仍转换为平台成功值 `1`。参数校验、输出校验和非 MVS 后端保留原有平台错误码。`CM_GetErrorMessage` 识别 MVS 错误范围，按构建时从 SDK `MvErrorDefine.h` 自动生成的名称/英文说明返回解释；未知码仍输出原始十六进制值，不手工维护第二套数值定义。同线程立即查询时还可附带 SDK 操作名和相机 SN，按线程隔离且每次 MVS 操作重新清理上下文；跨线程查询仍能解释返回码本身，不承诺取到原调用的操作上下文。原生与托管日志仍沿用现有机制。
 
+`HK_USB` 搜索使用直接 MVS 枚举，不受搜索入口占位 `CV_MODE` 影响；CV 滤轮的实际采集后端保持原规则。`CM_GetCameraID` / `CM_GetCameraIDV1` 仅将 `1` 视为成功，SDK 负数错误原样返回；无设备返回 `CV_ERR_CAM_SCAN=-10005`，不再将失败包装为空列表成功。
+
+`HikMvsSDK` 同时记录实际加载的 SDK 文件路径与宿主程序路径；默认 DLL 搜索失败后，依次尝试 `CommonProgramFiles(x86)` 和 `CommonProgramFiles` 下的 MVS x64 runtime。`GetImageBuffer` 超时保留 `MV_E_NODATA` 和操作名；`HikMvsTimeout` 记录触发参数读回，GigE 另记录本次取流的累计接收字节/帧数、丢帧、重发统计及流目标地址/端口节点。诊断接口或节点不可用时记录各自返回码，不覆盖原始采集错误。独立取图测试运行于 `ColorVision.Engine.exe`，主程序运行于 `ColorVision.exe`；测试成功只证明该次测试链路有效，不能据此认定主程序加载的 SDK、会话或程序防火墙规则一致。
+
 `Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证所有相机导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
 
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。

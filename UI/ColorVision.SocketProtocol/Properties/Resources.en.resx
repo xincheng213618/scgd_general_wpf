@@ -374,10 +374,10 @@
     <value>Allow</value>
   </data>
   <data name="AllowPrivateFirewallTooltip" xml:space="preserve">
-    <value>Create a private-network inbound allow rule for this application.</value>
+    <value>Allow inbound connections for this application on private networks and resolve its conflicting block rules on that profile. Restrictions on other network profiles are retained.</value>
   </data>
   <data name="AllowPublicFirewallTooltip" xml:space="preserve">
-    <value>Create a public-network inbound allow rule for this application.</value>
+    <value>Allow inbound connections for this application on public networks and resolve its conflicting block rules on that profile. Restrictions on other network profiles are retained.</value>
   </data>
   <data name="DatabaseCleanup" xml:space="preserve">
     <value>Database cleanup</value>

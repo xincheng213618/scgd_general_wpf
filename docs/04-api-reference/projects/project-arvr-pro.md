@@ -121,7 +121,7 @@ ARVRPro 通过 `ColorVision.SocketProtocol` 的 JSON 模式接入外部系统。
 
 新版嵌套畸变结果按项目结果属性名输出，光学畸变字段为 `DistortionTestResult.OpticDistortion`，新生成的测试项 `Name` 也为 `OpticDistortion`。算法原始结果中的 `Optic_Distortion` 由 Engine 在解析入口映射，项目输出不沿用该原始字段名。读取历史项目结果时仍兼容 `Optic_Distortion`，重新序列化只输出 `OpticDistortion`；两个字段同时存在且标准字段非空时以标准字段为准。
 
-W255 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。新指标对 W255 已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认 Min/Max 均为 `0`，表示不约束；设置非零限值后按对应上下限参与 W255 PASS/FAIL 判定。旧配置没有该字段时使用此默认值，已保存的限值保持原值。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
+W255 和键化亮色度 `LuminanceChromaticityTestResults[配置 Key]` 保留原有 `ColorUniformity`（所有 POI 两两之间的最大 Δu′v′），并在其后输出独立的 `ColorCenterRmsToD65`。该指标对各流程已应用色度修正的有效 POI 直接计算相对 D65 的等权 RMS Δu′v′，不匹配或读取 `PoiAnalysis` 中的均匀性结果，在模板均匀性和本地均匀性两种模式下都会计算。计算值再应用自身 Recipe 的 K/B 修正与 Min/Max 限值，默认 Min/Max 均为 `0`，表示不约束；设置非零限值后按对应上下限参与该流程 PASS/FAIL 判定。亮色度 Key 为 `White` 时，该指标同步到 W255 兼容结果。旧配置没有该字段时使用此默认值，已保存的限值保持原值；没有有效 u′v′ POI 时记录警告并保留默认测试项，不增加限值判定。公式、D65 常量和 POI 样本边界见 [CVCIE POI 结果数值](../engine-components/cvcie-results.md#色彩中心与-d65-rms)。
 
 ## 历史结果图回退与持久化
 

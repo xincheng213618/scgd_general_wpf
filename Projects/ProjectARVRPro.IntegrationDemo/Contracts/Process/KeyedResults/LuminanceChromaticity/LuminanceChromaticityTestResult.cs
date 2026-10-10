@@ -11,6 +11,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
         public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
         public ObjectiveTestItem LuminanceUniformity { get; set; } = new ObjectiveTestItem();
         public ObjectiveTestItem ColorUniformity { get; set; } = new ObjectiveTestItem();
+        public ObjectiveTestItem ColorCenterRmsToD65 { get; set; } = new ObjectiveTestItem { Name = "Color_Center_RMS_To_D65(Δu'v')" };
         public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new ObjectiveTestItem();
         public ObjectiveTestItem CenterLuminance { get; set; } = new ObjectiveTestItem();
         public ObjectiveTestItem CenterCIE1931ChromaticCoordinatesx { get; set; } = new ObjectiveTestItem();

@@ -11,6 +11,7 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 PoixyuvDatas = source.PoixyuvDatas,
                 LuminanceUniformity = source.LuminanceUniformity,
                 ColorUniformity = source.ColorUniformity,
+                ColorCenterRmsToD65 = source.ColorCenterRmsToD65,
                 CenterCorrelatedColorTemperature = source.CenterCorrelatedColorTemperature,
                 CenterLunimance = source.CenterLuminance,
                 CenterCIE1931ChromaticCoordinatesx = source.CenterCIE1931ChromaticCoordinatesx,
