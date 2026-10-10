@@ -1,5 +1,5 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ProjectARVRPro.Process.W255

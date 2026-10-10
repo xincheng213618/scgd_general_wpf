@@ -6,7 +6,7 @@ using ColorVision.Core;
 using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using FlowEngineLib.Base;

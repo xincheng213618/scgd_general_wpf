@@ -11,7 +11,7 @@ public enum CVResultType
 	Algorithm_MTF = 5,
 	Algorithm_Ghost = 6,
 	Algorithm_LedCheck = 7,
-	Algorithm_LightArea = 8,
+	// Result ID 8 retired on 2026-10-11; keep the remaining persisted IDs unchanged.
 	Algorithm_Distortion = 9,
 	Algorithm_Calibration = 10,
 	Algorithm_BuildPOI = 11,

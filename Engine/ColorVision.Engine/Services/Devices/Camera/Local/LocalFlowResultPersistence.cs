@@ -49,10 +49,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int totalTime,
             object parameters,
             int resultCode = 0,
-            string result = "ok")
+            string result = "ok",
+            string? resultVersion = null)
         {
             AlgResultMasterModel model = CreateAlgorithmResultModel(
-                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultCode, result);
+                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultCode, result, resultVersion);
             int masterId = AlgResultMasterDao.Instance.SaveAndReturnId(model);
             if (masterId <= 0) throw new InvalidOperationException($"保存本地算法结果失败：{resultType}。");
             return masterId;
@@ -68,12 +69,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int zIndex,
             int totalTime,
             object parameters,
-            Func<int, IReadOnlyCollection<TDetail>> createDetails)
+            Func<int, IReadOnlyCollection<TDetail>> createDetails,
+            string? resultVersion = null)
             where TDetail : class, IEntity, new()
         {
             ArgumentNullException.ThrowIfNull(createDetails);
             AlgResultMasterModel model = CreateAlgorithmResultModel(
-                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters);
+                action, resultType, templateId, templateName, imageFile, deviceCode, zIndex, totalTime, parameters, resultVersion: resultVersion);
             return SaveAlgorithmResultWithDetailsCore(
                 model,
                 resultType,
@@ -141,7 +143,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int totalTime,
             object parameters,
             int resultCode = 0,
-            string result = "ok")
+            string result = "ok",
+            string? resultVersion = null)
         {
             ArgumentNullException.ThrowIfNull(action);
             ArgumentException.ThrowIfNullOrWhiteSpace(result);
@@ -153,6 +156,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 TName = templateName ?? string.Empty,
                 ImgFile = NullIfEmpty(imageFile),
                 ImgFileType = resultType,
+                version = resultVersion,
                 BatchId = batch.Id,
                 Zindex = zIndex,
                 Params = JsonConvert.SerializeObject(parameters),

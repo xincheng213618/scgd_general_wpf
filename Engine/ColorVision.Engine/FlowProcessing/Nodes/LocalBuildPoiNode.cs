@@ -2,7 +2,7 @@ using ColorVision.Engine.PropertyEditor;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using FlowEngineLib.Base;
@@ -192,8 +192,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private static bool IsSupportedSourceResult(int resultType)
         {
-            return resultType is (int)ViewResultAlgType.LightArea
-                or (int)ViewResultAlgType.FindLightArea
+            return resultType is (int)ViewResultAlgType.FindLightArea
                 or (int)ViewResultAlgType.BlackMura_Calc;
         }
     }

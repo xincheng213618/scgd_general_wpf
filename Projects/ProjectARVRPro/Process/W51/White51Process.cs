@@ -3,7 +3,7 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.ImageEditor.Draw;

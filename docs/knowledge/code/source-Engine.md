@@ -304,6 +304,9 @@ next: false
 
 ## Engine/cvColorVision {#module-456e67696e652f6376436f6c6f72566973696f6e}
 
+- [发光区定位：AA 模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
+  AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。
+
 - [RC 注册、服务快照与连接测试](../../04-api-reference/engine-components/rc-registration.md) — `engine.rc-registration`
   RC注册、服务目录同步、状态快照与连接测试；远端删除不清本地令牌和收发主题，更新可能部分生效，连接或测试成功不等于设备就绪。
 
@@ -338,6 +341,9 @@ next: false
 
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
+
+- [发光区定位：AA 模板与本地 V2](../../04-api-reference/algorithms/templates/find-light-area.md) — `algorithms.find-light-area`
+  AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
   说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。

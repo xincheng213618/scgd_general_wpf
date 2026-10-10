@@ -7,7 +7,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.Results;
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.Jsons;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -540,8 +540,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 };
             }
 
-            if (masterResultType == (int)ViewResultAlgType.FindLightArea
-                || masterResultType == (int)ViewResultAlgType.LightArea)
+            if (masterResultType == (int)ViewResultAlgType.FindLightArea)
             {
                 AlgResultMasterModel areaResult = FlowNodeTiming.Run("ResolveAlgorithmResult", () => services.GetAlgorithmResult(masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 发光区结果：MasterId={masterId}。");

@@ -4,7 +4,7 @@ using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Results;
-using ColorVision.Engine.Templates.FindLightArea;
+using ColorVision.Engine.Services.Results.LightArea;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using Newtonsoft.Json;
@@ -143,7 +143,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     request.TotalTime,
                     request.Parameters,
                     request.ResultCode,
-                    request.Result);
+                    request.Result,
+                    resultVersion: LocalLuminousAreaResultPersistence.ResultVersion);
             }
             return LocalFlowResultPersistence.SaveAlgorithmResultWithDetails(
                 request.Action,
@@ -155,7 +156,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 request.ZIndex,
                 request.TotalTime,
                 request.Parameters,
-                request.CreateDetails);
+                request.CreateDetails,
+                resultVersion: LocalLuminousAreaResultPersistence.ResultVersion);
         }
 
         public void Publish(LocalFindLuminousAreaPublishRequest request)
@@ -176,6 +178,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     internal static class LocalLuminousAreaResultPersistence
     {
+        internal const string ResultVersion = "RobustV2";
+
         private static readonly string[] CornerNames = ["LT", "RT", "RB", "LB"];
 
         public static List<AlgResultLightAreaModel> CreateDetails(int masterId, IReadOnlyList<LocalLuminousAreaCorner> corners)
