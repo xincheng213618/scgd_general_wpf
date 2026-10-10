@@ -20,19 +20,6 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public EditTemplateJson EditTemplateJson { get; set; }
 
-        public string Description { get; } = """
-{
-  "bs": 16,
-  "sp": 100,
-  "mapping": 5.5,
-  "tgsigma": 0.9166666666666666,
-  "blurSize": 31,
-  "th_ratio": 0.1,
-  "threshold": 5,
-  "img_format_convert_factor": 256
-}
-""";
-
         public override void SetUserControlDataContext(int index)
         {
             EditTemplateJson.SetParam(TemplateParams[index].Value);
@@ -40,11 +27,11 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDImageProcessing
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
 
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 }

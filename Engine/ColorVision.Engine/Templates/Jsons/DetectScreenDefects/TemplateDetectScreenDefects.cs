@@ -26,33 +26,11 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
 
-        public string Description { get; set; } = """
-{
-  "screenDefectCfg": {
-    "blur_sigma": 1.35,
-    "line_params": {
-      "angle": 0,
-      "length": 15,
-      "threshold": 0.95
-    },
-    "defect_sizes": [25, 15, 5],
-    "aa_min_ratio_h": 0.2,
-    "aa_min_ratio_w": 0.2,
-    "merge_distance": 10,
-    "clarity_threshold": 0.6,
-    "defect_thresholds": [0.25, 0.25, 0.5],
-    "clarity_safe_margin": 55,
-    "light_shrink_margin": 60,
-    "brightness_threshold": 0.3
-  }
-}
-""";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 }

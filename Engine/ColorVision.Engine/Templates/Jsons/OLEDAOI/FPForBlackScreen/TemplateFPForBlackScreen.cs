@@ -37,11 +37,9 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "{\r\n  \"TimeStamp\": \"_20251231_145129\",\r\n  \"GradeLevel\": \"NG\"\r\n}";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
     }
 }

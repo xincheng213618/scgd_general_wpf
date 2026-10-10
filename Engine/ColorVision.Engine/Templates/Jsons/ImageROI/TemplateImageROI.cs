@@ -24,12 +24,10 @@ namespace ColorVision.Engine.Templates.Jsons.ImageROI
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson = new EditTemplateJson(Description);
+            EditTemplateJson = new EditTemplateJson();
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "//图像裁剪配置\r\nstruct ImageROIParam\r\n{\r\n    int RHO;                 //RHO参数      \r\n    struct center {          //中心点\r\n        int x;               //x坐标\r\n        int y;               //y坐标\r\n    };\r\n    float pixelToAngle;      //像素到角度转换系数\r\n};";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 }

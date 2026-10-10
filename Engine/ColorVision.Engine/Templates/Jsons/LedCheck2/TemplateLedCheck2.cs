@@ -24,12 +24,10 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public override UserControl GetUserControl()
         {
-            EditTemplateJson =  new EditTemplateJson(Description);
+            EditTemplateJson =  new EditTemplateJson();
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "";
-
-        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
 
     }
