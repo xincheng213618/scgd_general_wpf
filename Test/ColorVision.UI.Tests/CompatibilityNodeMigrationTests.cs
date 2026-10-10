@@ -18,14 +18,15 @@ public sealed class CompatibilityNodeMigrationTests
     [Theory]
     [InlineData(7)]
     [InlineData(8)]
-    public void RetiredLightAreaIdsLoadWithoutBecomingOtherAlgorithms(int value) => StaTest.Run(() =>
+    [InlineData(9)]
+    public void RetiredAlgorithmIdsLoadWithoutBecomingOtherAlgorithms(int value) => StaTest.Run(() =>
     {
         var node = new FlowEngineLib.Algorithm.AlgorithmNode();
         node.Create();
         node.OnLoadNode(new Dictionary<string, byte[]> { ["Algorithm"] = Encoding.UTF8.GetBytes(value.ToString()) });
         Assert.Equal(value, (int)node.Algorithm);
         Assert.False(Enum.IsDefined(node.Algorithm));
-        Assert.Equal(9, (int)FlowEngineLib.Algorithm.AlgorithmType.JND);
+        Assert.Equal(10, (int)FlowEngineLib.Algorithm.AlgorithmType.图像裁剪);
         Assert.Equal(13, (int)FlowEngineLib.Algorithm.AlgorithmType.AA布点);
         var error = Assert.Throws<TargetInvocationException>(() => node.GetType()
             .GetMethod("getBaseEventData", BindingFlags.Instance | BindingFlags.NonPublic)!

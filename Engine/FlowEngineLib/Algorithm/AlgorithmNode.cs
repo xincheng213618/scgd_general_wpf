@@ -164,9 +164,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.灯带检测:
 			operatorCode = "LEDStripDetection";
 			break;
-		case AlgorithmType.JND:
-			operatorCode = "OLED.JND.CalVas";
-			break;
 		case AlgorithmType.图像裁剪:
 			operatorCode = "OLED.GetRIAand";
 			break;
@@ -192,7 +189,7 @@ public class AlgorithmNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		if (!System.Enum.IsDefined(_Algorithm))
-			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请选择发光区定位节点的 AA 模板。");
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
 		AlgorithmParam algorithmParam = null;
 		switch (_Algorithm)
 		{
@@ -200,7 +197,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.SFR:
 		case AlgorithmType.灯珠检测:
 		case AlgorithmType.灯带检测:
-		case AlgorithmType.JND:
 		case AlgorithmType.图像裁剪:
 		case AlgorithmType.SFR_FindROI:
 		case AlgorithmType.十字计算:

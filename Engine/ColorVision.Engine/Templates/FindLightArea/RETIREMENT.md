@@ -2,7 +2,7 @@
 
 已移除主程序的 JND 发光区定位模板（字典 31，Threshold / Times / SmoothSize）和 FocusPoints 模板（字典 15），包括模板加载、手动计算适配器及流程面板关联。`AlgorithmFindLightAreaNode` 仍保留，原序列化类型、连线和参数字段保持不变；唯一的 AA JSON 模板（字典 42）直接由“参数模板”的属性编辑器选择和编辑。
 
-通用 `AlgorithmType` 的历史编号 7 / 8 不再可选，后续编号维持原值；加载旧数值仍可识别为不受支持的值，执行时拒绝，不能自动改作其它算子。服务端仓库未修改，也没有清理数据库中的旧字典、模板或历史结果。
+通用 `AlgorithmType` 的历史编号 7 / 8 不再可选；已退役项目的 JND 计算入口（编号 9，OLED.JND.CalVas）也从枚举和通用 AI 节点分派中移除。编号 7 / 8 / 9 保留空位，后续编号维持原值；加载旧数值仍可识别为不受支持的值，执行时拒绝，不能自动改作其它算子。服务端仓库未修改，也没有清理数据库中的旧字典、模板或历史结果。
 
 共用的发光区结果 DAO、历史显示、POI 保存和本地 RobustV2 检测继续保留。C++ 对应移除 SetBrightAreaParam / FindBrightArea / GetBrightArea / GetRIAandPT，详细导出和恢复边界见原生仓库的 `RETIREMENT-LightArea.md`。
 
