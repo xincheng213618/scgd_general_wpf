@@ -1,5 +1,6 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
@@ -15,6 +16,33 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CompatibilityCameraPropertyEditorTests
 {
+    [Fact]
+    public void LightAreaAaEditorUpdatesThePersistedTemplateField() => WpfTestHost.Invoke(() =>
+    {
+        using var resources = new EditorResources();
+        var template = new TemplateModel<TAAFindPointsParam>("editor-test-aa", new TAAFindPointsParam());
+        TemplateAAFindPoints.Params.Add(template);
+        try
+        {
+            var node = new FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode { TempName = "unavailable-template" };
+            PropertyInfo property = node.GetType().GetProperty(nameof(node.TempName))!;
+            var editor = (IPropertyEditor)Activator.CreateInstance(property.GetCustomAttribute<PropertyEditorTypeAttribute>()!.EditorType!)!;
+            DockPanel panel = editor.GenProperties(property, node);
+            try
+            {
+                Assert.Equal("unavailable-template", node.TempName);
+                var grid = Assert.IsType<Grid>(Assert.Single(panel.Children));
+                var combo = Assert.Single(grid.Children.OfType<HandyControl.Controls.ComboBox>());
+                combo.SelectedItem = template;
+                Assert.Equal(template.Key, node.TempName);
+                combo.SelectedItem = null;
+                Assert.Equal(string.Empty, node.TempName);
+            }
+            finally { panel.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent)); }
+        }
+        finally { TemplateAAFindPoints.Params.Remove(template); }
+    });
+
     [Theory]
     [InlineData(nameof(LVCameraNode.POITempName))]
     [InlineData(nameof(LVCameraNode.POIFilterTempName))]

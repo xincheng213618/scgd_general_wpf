@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Templates.ImageCropping;
+using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.ImageROI;
@@ -117,4 +118,9 @@ public sealed class LedCheck2TemplatePropertiesEditor : IPropertyEditor
 public sealed class KbTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateKB());
+}
+
+public sealed class AaFindPointsTemplatePropertiesEditor : IPropertyEditor
+{
+    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateAAFindPoints());
 }

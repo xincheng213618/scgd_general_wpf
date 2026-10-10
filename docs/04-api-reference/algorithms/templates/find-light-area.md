@@ -2,37 +2,20 @@
 knowledge_id: "algorithms.find-light-area"
 knowledge_type: "topic"
 status: "current"
-summary: "发光区定位1与本地发光区定位(V2)的使用、图像来源、POI保存模板和结果边界；区分算法拒绝、数据库提交与消息发布。"
-aliases: ["发光区定位1","发光区检测模板","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","TemplateRoi","RobustV2"]
-code_paths: ["Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
-test_paths: ["Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
-related: ["algorithms.index","algorithms.roi-routes","algorithms.focus-points","algorithms.template-management","engine.native-integration","engine.results"]
+summary: "AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。"
+aliases: ["寻找AA区","AA发光区定位","TemplateAAFindPoints","AaFindPointsTemplatePropertiesEditor","本地发光区定位(V2)","本地发光区定位V2为什么拒绝","原生亮区四角点置信度","发光区检测失败原因","POI保存模板","SavePOITempName","最小置信度","搜索区域","cvnative::luminous","FindLuminousAreaV2Result","hasCorners","LocalFindLuminousAreaNode","M_FindLuminousAreaV2","RobustV2"]
+code_paths: ["Engine/ColorVision.Engine/Templates/Jsons/AAFindPoints","Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Algorithm/AlgorithmFindLightAreaNode.cs","Engine/ColorVision.Engine/PropertyEditor/FlowTemplatePropertiesEditors.cs","Engine/ColorVision.Engine/Templates/FindLightArea","Engine/ColorVision.Engine/Templates/ITemplate.cs","Engine/ColorVision.Engine/Templates/POI/LocalLuminousAreaPoiTemplateUpdater.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFindLuminousAreaNode.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFlowResultPersistence.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameFileService.cs","UI/ColorVision.Core/LuminousAreaDetection.cs","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/FindLuminousArea","UI/ColorVision.ImageEditor/EditorTools/GraphicEditing/GraphicEditingWindow.xaml.cs","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.h","Native/opencv_helper/algorithm/luminous_area/luminous_area_v2.cpp","Native/include/opencv_media_export.h","Native/opencv_helper/opencv_media_export.cpp"]
+test_paths: ["Test/ColorVision.UI.Tests/CompatibilityNodeMigrationTests.cs","Test/ColorVision.UI.Tests/CompatibilityCameraPropertyEditorTests.cs","Test/ColorVision.UI.Tests/LocalFindLuminousAreaNodeTests.cs","Test/ColorVision.UI.Tests/FindLuminousAreaManualResultTests.cs","Test/opencv_helper_test/test_find_luminous_area.cpp"]
+related: ["algorithms.index","algorithms.roi-routes","algorithms.template-management","engine.native-integration","engine.results"]
 ---
 
-# 发光区定位：远端模板与本地 V2
+# 发光区定位：AA 模板与本地 V2
 
-发光区定位用于从图像中取得发光面的点位或四角。**发光区定位1** 使用数据库模板并向算法服务发送请求；**本地发光区定位(V2)** 使用本机 `RobustV2` 算法，不需要检测参数模板。两条 Engine 链路共用点位明细表和历史结果处理器，但参数、执行端和成功判据不同。
+发光区定位节点使用 AA JSON 模板；**参数模板**字段内直接选择模板，旁边的按钮提供参数编辑和模板管理。节点类型、已有连线、模板名称、图像文件、POI 保存模板及角点顺序的持久化契约不变。`TemplateAAFindPoints` 的字典号为 `42`、编码为 `FindLightArea`。
 
-本地算法计算不依赖远端算法服务；本地 Flow 节点的结果保存仍依赖 MySQL 和已有流程批次。名称相近的 **发光区1** 属于另一套 [FocusPoints 模板](./focus-points-template.md)。
+旧定位字典 `31` 与 FocusPoints 字典 `15` 的数据不会自动转换成 AA JSON，也不会由界面清理。保留旧模板的流程需要人工选择 AA 模板；服务端权限独立于主程序，本次主程序移除入口不代表服务端实现已移除。通用旧算法枚举编号 `7/8` 保留空位，旧流程不能将它们误解释为后续算子，执行时明确拒绝。
 
-## 使用远端发光区定位1
-
-1. 在算法设备的通用手动面板中选择 **基础算法 → 发光区定位1**。
-2. 选择 **发光区检测模板**。需要编辑时使用选择器旁的编辑命令并保存，具体步骤见[模板编辑与创建](./template-management.md)。
-3. 设置算法服务可读取的图像路径，点击 **计算**。输入助手检查模板及非空路径，不检查服务端文件可见性。
-4. 核对服务返回及相应历史结果。创建 `MsgRecord` 只表示建立请求记录并发起发送，不是算法计算或落库成功。
-
-`TemplateRoi : ITemplate<RoiParam>` 的编码为 `FindLightArea`、字典号为 `31`。下表是无明细的新空参数对象初值，现有模板以保存的明细为准。
-
-| 参数 | 类型 / 新空对象初值 | 含义 |
-| --- | --- | --- |
-| `Threshold` | `int` / `1` | 发光区阈值；比较结果时应保持图像类型、曝光条件一致 |
-| `Times` | `int` / `1` | 算法服务参数，具体次数含义由服务解释 |
-| `SmoothSize` | `int` / `1` | 平滑尺寸参数，实际效果由服务实现决定 |
-
-`AlgorithmRoi.Execute()` 将图像路径、文件类型和选中参数交给 `SendCommand()`。请求含 `ImgFileName`、`FileType`、`DeviceCode`、`DeviceType` 与 `TemplateParam = { ID: param.Id, Name: param.Name }`；手动入口传入的两个设备字段为空字符串，不在 `TemplateParam` 中展开三项参数。事件常量 `Event_LightArea2_GetData` 的值为 `OLED.GetRIAandPT`。
-
-模板加载按 `ModMasterModel.Pid == 31`、租户 `0`、未删除条件读取数据。程序集发现模板不代表数据库已有字典和模板。
+**本地发光区定位(V2)** 使用本机 `RobustV2` 算法，不需要检测参数模板。本地计算不依赖远端算法服务；本地 Flow 节点的结果保存仍依赖 MySQL 和已有流程批次。两条 Engine 链路共用点位明细表和历史结果处理器。
 
 ## 配置本地发光区定位(V2)
 
@@ -110,8 +93,8 @@ ImageEditor、POI 还可显式选择 `FovLuminanceBoundary`（界面名 **实验
 
 | 现象 | 检查顺序 |
 | --- | --- |
-| 远端模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `31` 下的模板及选择项 |
-| 远端服务收不到图像 | 核对事件 `OLED.GetRIAandPT`、`ImgFileName`、`FileType` 与服务端文件可见性 |
+| AA 模板下拉为空或提示未选择 | 检查 MySQL 连接、字典 `42` 下的 JSON 模板及选择项 |
+| 远端服务收不到图像 | 核对事件 `FindLightArea`、`ImgFileName`、`FileType` 与服务端文件可见性 |
 | 结果页无点位或凸包异常 | 核对结果类型、主结果 ID、明细 `pid` 和浮点点位；区分检测失败、数据库未加载及整数凸包显示 |
 | V2 逐边证据不足 | 查看 `SideQuality` 的覆盖率、内点比例、边缘对比度、残差、最大缺口；检查暗角、漏光、遮挡后再调整门限 |
 | V2 多个相近候选 | 相近候选可产生 `AmbiguousCandidates` / `MultipleComparableCandidates` 警告并降低置信度；降分后低于门限仍返回 `LowConfidence`。需要唯一目标时缩小搜索 ROI 或消除第二个相似发光面 |

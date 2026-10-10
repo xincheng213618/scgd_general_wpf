@@ -138,6 +138,7 @@ public class AlgorithmNode : CVBaseServerNode
 
 	private void setAlgorithmType()
 	{
+		operatorCode = string.Empty;
 		m_ctrl_editText.Value = _Algorithm;
 		AlgorithmObjType.instance.algorithmType = _Algorithm;
 		switch (_Algorithm)
@@ -159,12 +160,6 @@ public class AlgorithmNode : CVBaseServerNode
 			break;
 		case AlgorithmType.灯珠检测:
 			operatorCode = "LedCheck";
-			break;
-		case AlgorithmType.发光区检测:
-			operatorCode = "FocusPoints";
-			break;
-		case AlgorithmType.发光区检测OLED:
-			operatorCode = "OLED.GetRIAandPT";
 			break;
 		case AlgorithmType.灯带检测:
 			operatorCode = "LEDStripDetection";
@@ -196,6 +191,8 @@ public class AlgorithmNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请选择发光区定位节点的 AA 模板。");
 		AlgorithmParam algorithmParam = null;
 		switch (_Algorithm)
 		{
@@ -203,7 +200,6 @@ public class AlgorithmNode : CVBaseServerNode
 		case AlgorithmType.SFR:
 		case AlgorithmType.灯珠检测:
 		case AlgorithmType.灯带检测:
-		case AlgorithmType.发光区检测:
 		case AlgorithmType.JND:
 		case AlgorithmType.图像裁剪:
 		case AlgorithmType.SFR_FindROI:
