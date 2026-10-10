@@ -49,6 +49,17 @@ namespace ProjectARVRPro.Process
             PreProcessManager.GetInstance().Edit();
         }
 
+        internal void SelectProcessMeta(ProcessMeta meta)
+        {
+            if (DataContext is not ProcessManager manager || !manager.ProcessMetas.Contains(meta)) return;
+            MainTabControl.SelectedIndex = 0;
+            manager.SelectedResultParserMeta = null;
+            manager.SelectedProcessMeta = meta;
+            lvMetas.SelectedItem = meta;
+            lvMetas.ScrollIntoView(meta);
+            RefreshConfigPanels();
+        }
+
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // Cleanup event handlers on window close

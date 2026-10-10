@@ -9220,8 +9220,7 @@
         "MTFH07",
         "MTFV07",
         "MTFHV048",
-        "W25",
-        "导入旧版Recipe"
+        "W25"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/Process",

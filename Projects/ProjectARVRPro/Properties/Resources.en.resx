@@ -215,6 +215,9 @@
   <data name="测试" xml:space="preserve">
     <value>Test</value>
   </data>
+  <data name="停止" xml:space="preserve">
+    <value>Stop</value>
+  </data>
   <data name="测试次数" xml:space="preserve">
     <value>Measurement Count</value>
   </data>
@@ -1276,4 +1279,24 @@ Automatically saved settings will remain.</value>
   <data name="图表统计方式" xml:space="preserve"><value>Chart statistics mode</value></data>
   <data name="按批次结束时间统计；每小时产量包含 PASS 和 FAIL，空小时计为 0。" xml:space="preserve"><value>Count by batch completion time. Hourly production includes PASS and FAIL; empty hours count as 0.</value></data>
   <data name="查看截图、图像文件、校正和相机取图缓存" xml:space="preserve"><value>View snapshot, image file, calibration and camera capture caches</value></data>
+  <data name="添加流程组" xml:space="preserve"><value>Add process group</value></data>
+  <data name="重命名流程组" xml:space="preserve"><value>Rename process group</value></data>
+  <data name="流程组名称" xml:space="preserve"><value>Group name</value></data>
+  <data name="创建" xml:space="preserve"><value>Create</value></data>
+  <data name="为新的产品或检测方案创建流程组。" xml:space="preserve"><value>Create a group for a new product or inspection plan.</value></data>
+  <data name="修改组名，保留组内流程及其配置。" xml:space="preserve"><value>Rename this group while keeping its steps and settings.</value></data>
+  <data name="名称不能为空，且不能与其他流程组重复。" xml:space="preserve"><value>Enter a name that is not used by another group.</value></data>
+  <data name="组名不能包含换行或控制字符。" xml:space="preserve"><value>Group names cannot contain line breaks or control characters.</value></data>
+  <data name="保存失败，请检查磁盘空间和写入权限后重试。" xml:space="preserve"><value>Could not save. Check disk space and write permissions, then try again.</value></data>
+  <data name="流程组已不存在，请关闭后重新选择。" xml:space="preserve"><value>This group no longer exists. Close this dialog and select another group.</value></data>
+  <data name="等待" xml:space="preserve"><value>Waiting</value></data>
+  <data name="执行中" xml:space="preserve"><value>Running</value></data>
+  <data name="已完成" xml:space="preserve"><value>Completed</value></data>
+  <data name="失败" xml:space="preserve"><value>Failed</value></data>
+  <data name="打开流程模板" xml:space="preserve"><value>Open flow template</value></data>
+  <data name="编辑配置" xml:space="preserve"><value>Edit settings</value></data>
+  <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>Progress is estimated from previous runs; actual completion determines the result.</value></data>
+  <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>Double-click to open the flow template; right-click to edit settings.</value></data>
+  <data name="查看前面的流程" xml:space="preserve"><value>Show earlier steps</value></data>
+  <data name="查看后面的流程" xml:space="preserve"><value>Show later steps</value></data>
 </root>

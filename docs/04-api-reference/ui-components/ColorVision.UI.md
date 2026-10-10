@@ -40,6 +40,8 @@ related: ["ui.index", "ui.configuration", "plugins.model", "ui.property-grid", "
 
 通用接口、命令和基础 ViewModel 主要在 `ColorVision.Common`；主题资源在 `ColorVision.Themes`；细粒度本地 RBAC 在 `ColorVision.Rbac`。Engine 的设备控制、客户包的判定/MES/报表以及 ImageEditor 的图像/overlay 责任不应因有 WPF 窗口就移入此项目。
 
+`Controls/CircularProgressIndicator` 自绘步骤圆环，由调用方传入 `State`、百分比 `Value` 和 `StepNumber`。等待与结束显示序号，只有 Running 临时显示 0–99 的进度整数；Completed 为绿色完整圆环，Failed 为红色完整圆环。数字始终使用 `Foreground`（默认主题正文色），与外圈状态色分离，以保持小字号下的可读性。未知进度传入 `double.NaN`，运行时以旋转弧表示，在不可见、卸载或退出 Running 后停止动画，并遵循系统动画开关。控件不计算历史估算、不访问 Engine，也不解释检测 PASS/FAIL；当前 ARVRPro 的实例映射、模板/配置入口和估算来源见项目主题。
+
 `ColorVision.UI.csproj` 当前启用 WPF，目标为 `net8.0-windows7.0;net10.0-windows7.0`，依赖 Common、Themes、log4net 和 Newtonsoft.Json，并配置生成 NuGet 与符号包。具体目标和版本仍以项目文件及上级构建属性为准；构建产物不等于已发布。
 
 DLL 交付规则见[UI DLL 发布](./publishing.md)。本入口不登记代表整个壳层成功的泛化测试；配置、加载、菜单、属性编辑与日志各主题仅声明其真实测试范围。运行主程序、改配置、连接设备、调用系统工具或上传包需分别符合任务授权，不能作为阅读本页的前提。

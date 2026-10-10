@@ -127,6 +127,7 @@ namespace ProjectARVRPro
         private double _currentRefreshTotalMs;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
+        private bool _isFlowCompletionPending;
         private bool _runAllSessionPrepared;
         internal bool IsResultExportPending { get; private set; }
 
@@ -425,6 +426,12 @@ namespace ProjectARVRPro
         private EventHandler? _activeProcessMetasChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
+            stepBar.CanEditConfiguration = () => !IsTestExecutionBusy;
+            stepBar.TemplateRequested += meta => ProcessManager.OpenFlowTemplateEditorCommand.Execute(meta);
+            stepBar.ConfigurationRequested += meta =>
+            {
+                if (!IsTestExecutionBusy) ProcessManager.EditConfiguration(meta);
+            };
             RefreshStepBar();
             _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
             ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
@@ -439,6 +446,7 @@ namespace ProjectARVRPro
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
             flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
+            flowControl.PropertyChanged += FlowControl_PropertyChanged;
 
             timer = new Timer(TimeRun, null, Timeout.Infinite, Timeout.Infinite);
 
@@ -733,6 +741,8 @@ namespace ProjectARVRPro
                         if (_isDisposed || !stopwatch.IsRunning || ExecutionStatus.Status.Kind != FlowExecutionStatusKind.Running)
                             return;
                         ExecutionStatus.Status = FlowExecutionStatusInfo.Running(FlowName, _runningFlowNodes.GetRunningNodeNames(), stopwatch.ElapsedMilliseconds, LastFlowTime);
+                        int stepIndex = ProcessManager.GetEnabledStepIndex(ProcessMetas, CurrentFlowResult?.TestType ?? -1);
+                        stepBar.UpdateElapsed(stepIndex, stopwatch.ElapsedMilliseconds, LastFlowTime);
                     }
                     catch
                     {
@@ -767,6 +777,21 @@ namespace ProjectARVRPro
 
         private async void TestClick(object sender, RoutedEventArgs e)
         {
+            if (!_isRunAllRunning && flowControl.IsFlowRun && CurrentFlowResult != null)
+            {
+                flowControl.Stop();
+                await CompleteSingleFlowAsync(new FlowControlData
+                {
+                    EventName = "Failed",
+                    Status = StatusTypeEnum.Failed,
+                    SerialNumber = CurrentFlowResult.Code,
+                    Message = "用户停止测试",
+                    Params = "用户停止测试",
+                    TotalTime = stopwatch.ElapsedMilliseconds,
+                });
+                return;
+            }
+
             await RunTemplate();
         }
 
@@ -800,6 +825,7 @@ namespace ProjectARVRPro
             }
 
             _isFlowStartPending = true;
+            UpdateTestButtonState();
             CurrentFlowResult = null!;
             bool flowStarted = false;
             Stopwatch startupTiming = Stopwatch.StartNew();
@@ -911,7 +937,7 @@ namespace ProjectARVRPro
                 }
 
                 flowStarted = true;
-                SetStepProgress(CurrentFlowResult.TestType, completed: false);
+                SetStepProgress(CurrentFlowResult.TestType);
                 timer.Change(0, ExecutionStatusRefreshIntervalMs); // 启动定时器
                 return true;
             }
@@ -985,6 +1011,7 @@ namespace ProjectARVRPro
                     _isFlowLifecycleActive = false;
                 }
                 _isFlowStartPending = false;
+                UpdateTestButtonState();
             }
         }
 
@@ -1104,54 +1131,20 @@ namespace ProjectARVRPro
         private void ResetStepProgress()
         {
             ProjectConfig.StepIndex = 0;
-            if (stepBar == null)
-                return;
-
-            foreach (object item in stepBar.Items)
-            {
-                if (item is HandyControl.Controls.StepBarItem stepBarItem)
-                    stepBarItem.SetValue(HandyControl.Controls.StepBarItem.StatusProperty, StepStatus.Waiting);
-            }
-
+            stepBar?.Reset();
         }
 
         private void RefreshStepBar()
         {
-            ProcessManager.GenStepBar(stepBar);
-
-            foreach (object item in stepBar.Items)
-            {
-                if (item is HandyControl.Controls.StepBarItem stepBarItem)
-                    stepBarItem.ToolTip = stepBarItem.Content;
-            }
+            stepBar.Rebuild(ProcessMetas);
         }
 
-        private void SetStepProgress(int stepIndex, bool completed)
+        private void SetStepProgress(int stepIndex)
         {
-            if (stepBar == null || stepBar.Items.Count == 0 || stepIndex < 0)
-                return;
-
             int normalizedStepIndex = ProcessManager.GetEnabledStepIndex(ProcessMetas, stepIndex);
-            if (normalizedStepIndex < 0 || normalizedStepIndex >= stepBar.Items.Count)
-                return;
-
+            if (normalizedStepIndex < 0) return;
             ProjectConfig.StepIndex = normalizedStepIndex;
-
-            for (int i = 0; i < stepBar.Items.Count; i++)
-            {
-                if (stepBar.Items[i] is not HandyControl.Controls.StepBarItem stepBarItem)
-                    continue;
-
-                StepStatus status = i < normalizedStepIndex || completed && i == normalizedStepIndex
-                    ? StepStatus.Complete
-                    : i == normalizedStepIndex
-                        ? StepStatus.UnderWay
-                        : StepStatus.Waiting;
-                stepBarItem.SetValue(HandyControl.Controls.StepBarItem.StatusProperty, status);
-            }
-
-            if (stepBar.Items[normalizedStepIndex] is HandyControl.Controls.StepBarItem currentStep)
-                currentStep.BringIntoView();
+            stepBar.Start(normalizedStepIndex);
         }
 
         private async Task HandleFlowStartFailureAsync(string message, IProcess? process, bool persistResult)
@@ -1327,6 +1320,31 @@ namespace ProjectARVRPro
         }
 
         private async void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        {
+            await CompleteSingleFlowAsync(FlowControlData);
+        }
+
+        private async Task CompleteSingleFlowAsync(FlowControlData FlowControlData)
+        {
+            if (_isDisposed || _isFlowCompletionPending || !_isFlowLifecycleActive
+                || CurrentFlowResult == null
+                || !string.Equals(CurrentFlowResult.Code, FlowControlData.SerialNumber, StringComparison.Ordinal))
+                return;
+
+            _isFlowCompletionPending = true;
+            UpdateTestButtonState();
+            try
+            {
+                await ProcessSingleFlowCompletionAsync(FlowControlData);
+            }
+            finally
+            {
+                _isFlowCompletionPending = false;
+                UpdateTestButtonState();
+            }
+        }
+
+        private async Task ProcessSingleFlowCompletionAsync(FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
@@ -1758,7 +1776,6 @@ namespace ProjectARVRPro
         private async Task ExportCompletedTestAsync()
         {
             FinalizeObjectiveTestResultRecord();
-            SetStepProgress(CurrentTestType, completed: true);
 
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
@@ -2903,7 +2920,7 @@ namespace ProjectARVRPro
                         }
                         else
                         {
-                            SetStepProgress(CurrentTestType, completed: false);
+                            SetStepProgress(CurrentTestType);
                             timer.Change(0, ExecutionStatusRefreshIntervalMs);
 
                             // 等待流程完成，默认超时 10 分钟。
@@ -3082,6 +3099,7 @@ namespace ProjectARVRPro
             listView1.CommandBindings.Clear();
 
             ImageView.Dispose();
+            flowControl.PropertyChanged -= FlowControl_PropertyChanged;
             flowControl.Stop();
             stopwatch.Stop();
             if (_currentFlowBatch?.Id > 0 && CurrentFlowResult != null)

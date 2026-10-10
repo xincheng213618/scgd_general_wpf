@@ -166,12 +166,6 @@ namespace ProjectARVRPro.Process
         public RelayCommand ImportLegacyRecipeCommand { get; set; }
         public RelayCommand ExportConfigCommand { get; set; }
 
-        /// <summary>
-        /// 新组名称（UI绑定）
-        /// </summary>
-        public string NewGroupName { get => _NewGroupName; set { _NewGroupName = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private string _NewGroupName;
-
         public bool IsEditingMetaName
         {
             get => _IsEditingMetaName;
@@ -233,9 +227,9 @@ namespace ProjectARVRPro.Process
             RemoveResultParserCommand = new RelayCommand(a => RemoveResultParser(), a => SelectedResultParserMeta != null);
             UpdateResultParserCommand = new RelayCommand(a => UpdateResultParser(), a => SelectedResultParserMeta != null);
 
-            AddGroupCommand = new RelayCommand(a => AddGroup(), a => !string.IsNullOrWhiteSpace(NewGroupName));
+            AddGroupCommand = new RelayCommand(a => AddGroup());
             RemoveGroupCommand = new RelayCommand(a => RemoveGroup(), a => ProcessGroups.Count > 1);
-            RenameGroupCommand = new RelayCommand(a => RenameGroup(), a => ActiveGroup != null && !string.IsNullOrWhiteSpace(NewGroupName));
+            RenameGroupCommand = new RelayCommand(a => RenameGroup(), a => ActiveGroup != null);
             DuplicateGroupCommand = new RelayCommand(a => DuplicateGroup(), a => ActiveGroup != null);
             ImportConfigCommand = new RelayCommand(a => ImportConfig());
             ImportLegacyRecipeCommand = new RelayCommand(a => ImportLegacyRecipe());
@@ -248,17 +242,53 @@ namespace ProjectARVRPro.Process
 
         private void AddGroup()
         {
-            if (string.IsNullOrWhiteSpace(NewGroupName)) return;
-            if (ProcessGroups.Any(g => g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
+            new ProcessGroupNameWindow(this, null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
-                return;
+                Owner = Application.Current.GetActiveWindow()
+            }.ShowDialog();
+        }
+
+        internal string? GetGroupNameError(string? name, ProcessGroup? renamedGroup)
+        {
+            string normalizedName = name?.Trim() ?? string.Empty;
+            if (normalizedName.Length == 0)
+                return LocalizedText.Get("名称不能为空");
+            if (normalizedName.Any(char.IsControl))
+                return LocalizedText.Get("组名不能包含换行或控制字符。");
+            if (ProcessGroups.Any(group => !ReferenceEquals(group, renamedGroup)
+                && string.Equals(group.Name?.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase)))
+                return LocalizedText.Get("组名重复");
+            return null;
+        }
+
+        internal bool TryAddGroup(string name, out string errorMessage)
+        {
+            errorMessage = GetGroupNameError(name, null) ?? string.Empty;
+            if (errorMessage.Length > 0)
+                return false;
+
+            string normalizedName = name.Trim();
+            ProcessGroupsRoot candidate = CreateProcessGroupsRoot();
+            candidate.Groups.Add(new ProcessGroupPersist { Name = normalizedName });
+            candidate.ActiveGroupIndex = candidate.Groups.Count - 1;
+            if (!SavePersistedGroups(candidate))
+            {
+                errorMessage = LocalizedText.Get("保存失败，请检查磁盘空间和写入权限后重试。");
+                return false;
             }
-            var group = new ProcessGroup { Name = NewGroupName };
-            ProcessGroups.Add(group);
-            ActiveGroupIndex = ProcessGroups.Count - 1;
-            NewGroupName = string.Empty;
-            SavePersistedGroups();
+
+            bool wasSuppressed = _suppressPersistence;
+            _suppressPersistence = true;
+            try
+            {
+                ProcessGroups.Add(new ProcessGroup { Name = normalizedName });
+                ActiveGroupIndex = ProcessGroups.Count - 1;
+            }
+            finally
+            {
+                _suppressPersistence = wasSuppressed;
+            }
+            return true;
         }
 
         private void RemoveGroup()
@@ -286,15 +316,38 @@ namespace ProjectARVRPro.Process
 
         private void RenameGroup()
         {
-            if (ActiveGroup == null || string.IsNullOrWhiteSpace(NewGroupName)) return;
-            if (ProcessGroups.Any(g => g != ActiveGroup && g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
+            if (ActiveGroup == null) return;
+            new ProcessGroupNameWindow(this, ActiveGroup)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("组名重复"), "ColorVision");
-                return;
+                Owner = Application.Current.GetActiveWindow()
+            }.ShowDialog();
+        }
+
+        internal bool TryRenameGroup(ProcessGroup group, string name, out string errorMessage)
+        {
+            int groupIndex = ProcessGroups.IndexOf(group);
+            if (groupIndex < 0)
+            {
+                errorMessage = LocalizedText.Get("流程组已不存在，请关闭后重新选择。");
+                return false;
             }
-            ActiveGroup.Name = NewGroupName;
-            NewGroupName = string.Empty;
-            SavePersistedGroups();
+            errorMessage = GetGroupNameError(name, group) ?? string.Empty;
+            if (errorMessage.Length > 0)
+                return false;
+
+            string normalizedName = name.Trim();
+            if (string.Equals(group.Name, normalizedName, StringComparison.Ordinal))
+                return true;
+
+            ProcessGroupsRoot candidate = CreateProcessGroupsRoot();
+            candidate.Groups[groupIndex].Name = normalizedName;
+            if (!SavePersistedGroups(candidate))
+            {
+                errorMessage = LocalizedText.Get("保存失败，请检查磁盘空间和写入权限后重试。");
+                return false;
+            }
+            group.Name = normalizedName;
+            return true;
         }
 
         private void DuplicateGroup()
@@ -711,10 +764,16 @@ namespace ProjectARVRPro.Process
             }
         }
 
-        public void Edit()
+        public void Edit() => ShowEditor(null);
+
+        internal void EditConfiguration(ProcessMeta meta) => ShowEditor(meta);
+
+        private void ShowEditor(ProcessMeta? selectedMeta)
         {
             ProcessManagerWindow processManagerWindow = new ProcessManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             processManagerWindow.DataContext = this;
+            if (selectedMeta != null)
+                processManagerWindow.Loaded += (_, _) => processManagerWindow.SelectProcessMeta(selectedMeta);
             processManagerWindow.ShowDialog();
         }
 
@@ -1714,16 +1773,6 @@ namespace ProjectARVRPro.Process
         }
 
         #endregion
-
-        public void GenStepBar(HandyControl.Controls.StepBar stepBar)
-        {
-            stepBar.Items.Clear();
-            foreach (var item in ProcessMetas.Where(meta => meta.IsEnabled))
-            {
-                HandyControl.Controls.StepBarItem stepBarItem = new HandyControl.Controls.StepBarItem() { Content = item.Name };
-                stepBar.Items.Add(stepBarItem);
-            }
-        }
 
         internal static int GetEnabledStepIndex(IReadOnlyList<ProcessMeta> processMetas, int processIndex)
         {

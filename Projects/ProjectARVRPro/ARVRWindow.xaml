@@ -7,6 +7,7 @@
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectARVRPro"
         xmlns:controls="clr-namespace:ColorVision.UI.Controls;assembly=ColorVision.UI"
+        xmlns:projectControls="clr-namespace:ProjectARVRPro.Controls"
         xmlns:properties ="clr-namespace:ProjectARVRPro.Properties" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
@@ -209,7 +210,7 @@
                         <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                             <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="230" Style="{StaticResource TextBox.Small}" FontFamily="Courier New"  AcceptsReturn="True"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
-                        <Button Content="{display:DisplayText Key='测试'}" DockPanel.Dock="Right" Click="TestClick" Margin="5,0,0,0" />
+                        <Button x:Name="TestButton" Content="{display:DisplayText Key='测试'}" DockPanel.Dock="Right" Click="TestClick" Margin="5,0,0,0" />
                     </DockPanel>
 
                     <controls:FlowExecutionStatus x:Name="ExecutionStatus" Grid.Row="1" />
@@ -255,7 +256,7 @@
                         </RowDefinition>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Visibility="{Binding ProgressControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
-                        <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2"/>
+                        <projectControls:ProcessStepProgress x:Name="stepBar" Margin="4,3"/>
                     </Border>
                     <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsUndoEnabled="False" IsDocumentEnabled="True">
                         <FlowDocument>

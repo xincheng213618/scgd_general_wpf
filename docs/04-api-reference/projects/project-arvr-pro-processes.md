@@ -3,7 +3,7 @@ knowledge_id: "projects.arvr-pro-processes"
 knowledge_type: "guide"
 status: "current"
 summary: "配置 ARVRPro 流程组、流程解析映射、实例 Recipe、外部相机参数与雷鸟切图，说明运行时覆盖、结果快照、配置保存和有效迁移规则。"
-aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25", "导入旧版Recipe"]
+aliases: ["ARVR 流程组", "流程解析映射", "ARVR Recipe", "实例 Recipe", "外部相机参数", "相机参数覆盖", "FlowCameraParameterOverrideConfig", "ReadCanvasSnapshot", "雷鸟切图", "PictureSwitchConfig", "ProcessWithRecipeBase", "ResultParserMetas", "ResultProcessResolver", "ProjectARVRProProcessGroups.json", "ProcessGroups.json", "MTFH07", "MTFV07", "MTFHV048", "W25"]
 code_paths: ["Projects/ProjectARVRPro/Process/", "Projects/ProjectARVRPro/Recipe/", "Projects/ProjectARVRPro/Services/PictureSwitchService.cs", "Projects/ProjectARVRPro/ARVRWindow.xaml.cs", "Engine/ST.Library.UI/NodeEditor/STNodeCanvasSnapshot.cs"]
 test_paths: ["Test/ProjectARVRPro.Tests/FlowCameraParameterOverrideServiceTests.cs", "Test/ProjectARVRPro.Tests/ProcessManagerPersistenceTests.cs", "Test/ProjectARVRPro.Tests/EmbeddedRecipeConfigTests.cs", "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs", "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs", "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs", "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"]
 related: ["projects.arvr-pro", "projects.arvr-pro-demura", "flow.templates", "ui.property-grid"]
@@ -160,6 +160,8 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 ## 保存、导入与恢复
 
+流程组工具栏的“添加组”和“重命名”分别打开 `ProcessGroupNameWindow`。重命名预填当前组名并全选；名称在确认时去除首尾空白，拒绝空名称、控制字符以及与其他组不区分大小写的重名。确认成功后新组成为当前组，重命名只修改目标组名并保留流程实例及参数；取消或关闭弹窗不写入任何修改。保存失败在弹窗内提示并保留输入以便重试，原内存状态、活动组和配置文件保持不变。
+
 默认文件为 `%APPDATA%\ColorVision\Config\ProjectARVRProProcessGroups.json`，路径由 `ViewResultManager.DirectoryPath` 提供。版本 3 格式一起保存活动组序号、流程组、独立解析映射及兼容 Recipe 容器；每项 `ConfigJson` 保存自身配置和 Recipe，相机覆盖作为流程项的可选同级字段保存。旧文件缺少该字段时恢复为默认关闭。
 
 写入先生成同目录临时文件，刷新后替换正式文件；目标已存在时保存前一版为 `.bak`。普通保存失败会记录 `保存ProjectARVRProProcessGroups.json失败`；Recipe 编辑还会提示对应文件保存失败。这时内存值可能已改变，磁盘仍是旧内容，应处理路径、权限或空间问题后重试，不能仅看界面值判断保存成功。
@@ -168,7 +170,6 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 | --- | --- |
 | 导出配置 | 生成 `.arvrprocess.json`，包含流程组和解析配置，供对应项目导入 |
 | 导入配置 | 读取并校验配置后应用；持久化失败时保留原内存和磁盘配置，见 `ProcessManagerPersistenceTests` |
-| 导入旧版Recipe | 将匹配类型的限值复制到各流程组和解析映射实例，不能理解为建立共享引用 |
 | 启动加载 | 优先读取 `ProjectARVRProProcessGroups.json`；文件不存在时，只从能明确识别为 ARVRPro 的旧共享 `ProcessGroups.json` 或 `ProcessMetas.json` 复制迁移 |
 | 低于版本 3 的组配置 | 从各组按模板名补建解析映射，跳过空处理及已有映射，并保存迁移结果 |
 
@@ -178,9 +179,9 @@ JSON 文件限制为 32 MiB；解析检查点位数量与配置布局、编号�
 
 ## 验证入口
 
-- `ProcessManagerPersistenceTests`：独立复制、顺序、保存重载、解析映射、ARVRPro/LUX 文件隔离及导入失败保护。
+- `ProcessManagerPersistenceTests`：独立复制、组名校验与保存失败保护、顺序、保存重载、解析映射、ARVRPro/LUX 文件隔离及导入失败保护。
 - `FlowCameraParameterOverrideServiceTests`：两种相机的直接修改、关闭开关、缺失/多相机/无效参数跳过，以及重新加载恢复模板原值。
 - `EmbeddedRecipeConfigTests`：实例 Recipe、空值兼容、配置快照、原子替换及备份。
-- `LegacyRecipeImporterTests`：旧 Recipe 导入；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
+- `LegacyRecipeImporterTests`：历史 Recipe 数据兼容解析；`ProcessStepProjectionTests`：启用步骤投影；`MTF07DynamicResultBuilderTests`：07 结果构建。
 
 这些测试位于 `Test/ProjectARVRPro.Tests/`。串口切图、Flow 实际输出和客户阈值仍需在授权环境验证；测试入口的存在不代表该方案已通过现场验收。
