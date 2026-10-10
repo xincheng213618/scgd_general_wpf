@@ -50,10 +50,11 @@ internal interface ILocalSpectrumNative
     int LoadWavelength(IntPtr handle, string path);
     int LoadMagnitude(IntPtr handle, string path);
     int Configure(IntPtr handle, SetEmissionSP100Config config);
+    int ConfigureSmoothing(IntPtr handle, SpectrumSmoothingMethod method, int filterWidth);
     int AutoTime(IntPtr handle, ref float time, ConfigSpectrum config);
     int Dark(IntPtr handle, float time, int average, int filter, float[] data, bool adaptive);
     int InitAutoDark(IntPtr handle, SelfAdaptionInitDark config);
-    LocalSpectrumCapture Capture(IntPtr handle, LocalSpectrumParameters parameters, ConfigSpectrum config, float[] dark);
+    LocalSpectrumCapture Capture(IntPtr handle, LocalSpectrumParameters parameters, GetDataConfig settings, float[] dark);
 }
 
 internal sealed class LocalSpectrumNative : ILocalSpectrumNative
@@ -66,15 +67,15 @@ internal sealed class LocalSpectrumNative : ILocalSpectrumNative
     public int LoadWavelength(IntPtr h, string path) => Spectrometer.CM_Emission_LoadWavaLengthFile(h, path);
     public int LoadMagnitude(IntPtr h, string path) => Spectrometer.CM_Emission_LoadMagiudeFile(h, path);
     public int Configure(IntPtr h, SetEmissionSP100Config c) => Spectrometer.CM_SetEmissionSP100(h, c.IsEnabled, c.nStartPos, c.nEndPos, c.dMeanThreshold);
+    public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth) => SpectrumSmoothing.Configure(h, method, filterWidth);
     public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c) => Spectrometer.CM_Emission_GetAutoTime(h, ref time, c.MaxIntegralTime, c.BeginIntegralTime, c.Saturation);
     public int Dark(IntPtr h, float time, int average, int filter, float[] data, bool adaptive) => adaptive
         ? Spectrometer.CM_Emission_AutoDarkStorage(h, time, average, filter, data)
         : Spectrometer.CM_Emission_DarkStorage(h, time, average, filter, data);
     public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) => Spectrometer.CM_Emission_Init_Auto_Dark(h, c.BeginIntegralTime, c.StepTime, c.StepCount, c.NumberOfAverage);
 
-    public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, ConfigSpectrum c, float[] dark)
+    public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, GetDataConfig settings, float[] dark)
     {
-        var settings = c.GetDataConfig;
         float time = p.IntegralTime;
         if (p.Eqe)
         {
@@ -145,11 +146,25 @@ internal sealed class LocalSpectrumSession : IDisposable
         {
             EnsureOpen(config);
             parameters.Validate();
+            // Freeze the selection and width together while native calls run; the UI can edit the live config.
+            var configured = config.GetDataConfig;
+            var settings = new GetDataConfig
+            {
+                SmoothingMethod = configured.SmoothingMethod,
+                FilterBW = configured.FilterBW,
+                IsSyncFrequencyEnabled = configured.IsSyncFrequencyEnabled,
+                Syncfreq = configured.Syncfreq,
+                SyncfreqFactor = configured.SyncfreqFactor,
+                SetWL1 = configured.SetWL1,
+                SetWL2 = configured.SetWL2
+            };
+            SpectrumSmoothing.Validate(settings.SmoothingMethod, settings.FilterBW);
             if (parameters.AutoInitDark && config.IsShutterEnable)
                 throw new NotSupportedException("本地采集尚未接入外部快门。请关闭自动校零，手动遮光并校零后再测量。");
             string wave = ResolvePath(config.WavelengthFile), magnitude = ResolvePath(config.MaguideFile);
             string? error = DeviceSpectrum.ValidateMeasurementCalibrationFiles(wave, magnitude);
             if (error != null) throw new InvalidOperationException(error);
+            Check(native.ConfigureSmoothing(handle, settings.SmoothingMethod, settings.FilterBW), "设置光谱平滑算法");
             if (config.SetEmissionSP100Config.IsEnabled || openedConfig!.SetEmissionSP100Config.IsEnabled)
             {
                 Check(native.Configure(handle, config.SetEmissionSP100Config), "设置 SP100");
@@ -166,7 +181,7 @@ internal sealed class LocalSpectrumSession : IDisposable
             }
             if (parameters.AutoInitDark || parameters.SelfAdaptionInitDark)
                 Dark(parameters, config, parameters.SelfAdaptionInitDark);
-            return native.Capture(handle, parameters, config, dark);
+            return native.Capture(handle, parameters, settings, dark);
         }
     }
 

@@ -55,6 +55,9 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_SetEmissionSP100(IntPtr handle, bool bEnable, int nStartPos, int nEndPos, double m_dMeanThreshold);
 
+        [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_Emission_SetSmoothingMethod(IntPtr handle, int method);
+
         //连接光谱仪
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_Init", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_Init(IntPtr handle, int nComPort, int dwBaudRate);

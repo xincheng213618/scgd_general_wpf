@@ -2,6 +2,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using cvColorVision;
+using EngineSettings = ColorVision.Engine.Services.Devices.Spectrum.Configs.GetDataConfig;
 using System.IO;
 using System.Text;
 
@@ -116,7 +117,7 @@ public sealed class LocalSpectrumTests
         var result = session.Capture(new() { AutoIntegration = true, AutoInitDark = true }, config);
         Assert.Equal(240, result.IntegralTime);
         Assert.Equal(1, native.DarkCalls);
-        Assert.Equal(new[] { "wave", "magnitude", "auto", "dark", "capture" }, native.Calls);
+        Assert.Equal(new[] { "smoothing", "wave", "magnitude", "auto", "dark", "capture" }, native.Calls);
         Assert.Equal(401, result.Data.fPL.Length);
         Assert.True(session.IsOpen);
     }
@@ -194,12 +195,71 @@ public sealed class LocalSpectrumTests
     }
 
     private static ConfigSpectrum Config() => new() { SN = "TEST-SPECTRUM", WavelengthFile = "missing-wave.dat", MaguideFile = "missing-mag.dat" };
+
+    [Fact]
+    public void SmoothingSelectionIsAppliedEachCaptureAndCanReturnToMeanForEqe()
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        files.Config.GetDataConfig.SmoothingMethod = SpectrumSmoothingMethod.SavitzkyGolay;
+        files.Config.GetDataConfig.FilterBW = 7;
+        session.Capture(new(), files.Config);
+        Assert.Equal((SpectrumSmoothingMethod.SavitzkyGolay, 7), native.Smoothing);
+        files.Config.GetDataConfig.SmoothingMethod = SpectrumSmoothingMethod.Mean;
+        files.Config.GetDataConfig.FilterBW = 4;
+        session.Capture(new() { Eqe = true, Current = 1 }, files.Config);
+        Assert.Equal((SpectrumSmoothingMethod.Mean, 4), native.Smoothing);
+        Assert.Equal(1, native.CreateCalls);
+        Assert.Equal(2, native.CaptureCalls);
+    }
+
+    [Theory]
+    [InlineData(4, 1)]
+    [InlineData(5, -3)]
+    public void InvalidSgOrFailedSelectionPreventsCaptureAndDark(int width, int selectionCode)
+    {
+        using var files = new CalibrationFiles();
+        var native = new FakeNative { SmoothingCode = selectionCode };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        files.Config.GetDataConfig.SmoothingMethod = SpectrumSmoothingMethod.SavitzkyGolay;
+        files.Config.GetDataConfig.FilterBW = width;
+        Assert.Throws<InvalidOperationException>(() => session.Capture(new() { AutoInitDark = true }, files.Config));
+        Assert.Equal(0, native.CaptureCalls);
+        Assert.Equal(0, native.DarkCalls);
+        Assert.DoesNotContain("wave", native.Calls);
+    }
+
+    [Fact]
+    public void AcquisitionSelectionAndWidthStayTogetherDuringLiveConfigEdits()
+    {
+        using var files = new CalibrationFiles();
+        files.Config.GetDataConfig.SmoothingMethod = SpectrumSmoothingMethod.SavitzkyGolay;
+        files.Config.GetDataConfig.FilterBW = 7;
+        var native = new FakeNative { OnLoadMagnitude = () => {
+            files.Config.GetDataConfig.SmoothingMethod = SpectrumSmoothingMethod.Mean;
+            files.Config.GetDataConfig.FilterBW = 4;
+        } };
+        using var session = new LocalSpectrumSession(native);
+        session.Open(files.Config);
+        session.Capture(new(), files.Config);
+        Assert.Equal((SpectrumSmoothingMethod.SavitzkyGolay, 7), native.Smoothing);
+        Assert.Equal((SpectrumSmoothingMethod.SavitzkyGolay, 7), native.CaptureSmoothing);
+        session.Capture(new(), files.Config);
+        Assert.Equal((SpectrumSmoothingMethod.Mean, 4), native.CaptureSmoothing);
+    }
     private static COLOR_PARA NativeData() => new() { fSpect1 = 380, fSpect2 = 780, fInterval = 1, fPL = Enumerable.Repeat(1f, 401).ToArray(), fRi = new float[15], fPh = 12, fCIEx = 1, fCIEy = 2, fCIEz = 3 };
 
     private sealed class FakeNative : ILocalSpectrumNative
     {
         public int InitCode = 1, CreateCalls, CloseCalls, ReleaseCalls, CaptureCalls, DarkCalls;
         public bool CaptureFails;
+        public int SmoothingCode = 1;
+        public (SpectrumSmoothingMethod Method, int Width) Smoothing;
+        public (SpectrumSmoothingMethod Method, int Width) CaptureSmoothing;
+        public Action? OnLoadMagnitude;
         public string Serial = "TEST-SPECTRUM";
         public List<string> Calls = [];
         public IntPtr Create(int type, Spectrometer.Emission_CallBack callback) { CreateCalls++; return (IntPtr)123; }
@@ -208,13 +268,16 @@ public sealed class LocalSpectrumTests
         public int Close(IntPtr h) { CloseCalls++; return 1; }
         public int Release(IntPtr h) { ReleaseCalls++; return 1; }
         public int LoadWavelength(IntPtr h, string path) { Calls.Add("wave"); return 1; }
-        public int LoadMagnitude(IntPtr h, string path) { Calls.Add("magnitude"); return 1; }
+        public int LoadMagnitude(IntPtr h, string path) { Calls.Add("magnitude"); OnLoadMagnitude?.Invoke(); return 1; }
         public int Configure(IntPtr h, ColorVision.Engine.Services.Devices.Spectrum.Configs.SetEmissionSP100Config c) => 1;
+        public int ConfigureSmoothing(IntPtr h, SpectrumSmoothingMethod method, int filterWidth)
+        { Calls.Add("smoothing"); Smoothing = (method, filterWidth); return SmoothingCode; }
         public int AutoTime(IntPtr h, ref float time, ConfigSpectrum c) { Calls.Add("auto"); time = 240; return 1; }
         public int Dark(IntPtr h, float time, int avg, int filter, float[] data, bool adaptive) { Calls.Add("dark"); DarkCalls++; return 1; }
         public int InitAutoDark(IntPtr h, SelfAdaptionInitDark c) => 1;
-        public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, ConfigSpectrum c, float[] dark)
+        public LocalSpectrumCapture Capture(IntPtr h, LocalSpectrumParameters p, EngineSettings settings, float[] dark)
         {
+            CaptureSmoothing = (settings.SmoothingMethod, settings.FilterBW);
             Calls.Add("capture"); CaptureCalls++;
             if (CaptureFails) throw new InvalidOperationException("Native failure");
             return new() { IntegralTime = p.IntegralTime, Data = NativeData() };

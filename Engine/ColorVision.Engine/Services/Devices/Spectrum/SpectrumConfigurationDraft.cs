@@ -56,6 +56,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return false;
             }
             Config.ComPort = port.ToString(CultureInfo.InvariantCulture);
+            try { cvColorVision.SpectrumSmoothing.Validate(Config.GetDataConfig.SmoothingMethod, Config.GetDataConfig.FilterBW); }
+            catch (InvalidOperationException ex) { error = ex.Message; return false; }
             error = string.Empty;
             return true;
         }
