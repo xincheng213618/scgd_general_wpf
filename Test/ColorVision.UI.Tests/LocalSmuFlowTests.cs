@@ -7,7 +7,6 @@ using cvColorVision;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
-using FlowEngineLib.Node.Global;
 using FlowEngineLib.Node.SMU;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
@@ -28,11 +27,8 @@ public sealed class LocalSmuFlowTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    [InlineData(4)]
     [InlineData(5)]
     [InlineData(6)]
-    [InlineData(7)]
-    [InlineData(8)]
     public void LegacySmuNodesCompleteAndCloseWithoutPublishing(int kind)
     {
         StaTest.Run(() =>
@@ -47,7 +43,6 @@ public sealed class LocalSmuFlowTests
                 CVStartCFC? completedAction = null;
                 FlowLocalExecution.CreateForNode = (_, request) =>
                 {
-                    if (kind is 4 or 7 or 8) Assert.Equal(kind switch { 7 => "Close", 8 => "Reopen", _ => "Open" }, request.EventName);
                     return new FakeExecution(request.EventName == "CloseOutput" ? () =>
                     {
                         if (kind == 5) Assert.Equal(1, Newtonsoft.Json.Linq.JObject.FromObject(request.Data).Value<int>("Channel"));
@@ -57,14 +52,9 @@ public sealed class LocalSmuFlowTests
                 using var container = new CVNodeContainer();
                 var start = new RuntimeTestStartNode();
                 CVBaseServerNode node = kind switch { 0 => new SMUNode(), 1 => new SMUSweepNode(), 2 => new SMUSweepModelNode(),
-                    3 => new SMUReaderNode(), 4 or 7 or 8 => new PhyDeviceControlNode(), 5 => new SMUModelNode(), _ => new SMUFromCSVNode() };
+                    3 => new SMUReaderNode(), 5 => new SMUModelNode(), _ => new SMUFromCSVNode() };
                 var end = new CVEndNode();
                 foreach (var item in new STNode[] { start, node, end }) { item.Create(); container.Nodes.Add(item); }
-                if (node is PhyDeviceControlNode physical)
-                {
-                    physical.DeviceType = CVDeviceType.SMU;
-                    physical.CmdType = kind switch { 7 => CVDeviceControlCmd.Close, 8 => CVDeviceControlCmd.Reopen, _ => CVDeviceControlCmd.Open };
-                }
                 if (node is SMUFromCSVNode csv)
                 {
                     csvFile = System.IO.Path.GetTempFileName();

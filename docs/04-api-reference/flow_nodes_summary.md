@@ -37,6 +37,8 @@ rg -n "class .*Node|NodeType|FlowNodePropertyEditor|PropertyEditorType|NodeConfi
 
 标注 `Obsolete` 的类型可能仍被旧流程序列化名称引用。新增节点时优先查当前替代类型和兼容要求，不因它不再出现在 UI 菜单中就删除旧类型。
 
+含 `PhyDeviceControlNode` 的旧流程无法在当前版本加载；需在仍支持该类型的旧版本中删除或替换该节点并保存，再使用当前版本加载。加载器不会自动删除未知节点或重接流程连线。
+
 ## 修改时保持的边界
 
 公共节点不直接依赖 Engine 高层 UI；依赖模板/量程属性编辑器、设备或内存图像宿主的节点留在 Engine，兼容节点集中在 `FlowProcessing/Nodes/Compatibility/`。普通参数用元数据驱动属性编辑器，复杂专用面板才进入 `NodeConfiguration/`。节点可发现、参数可编辑和执行正确是不同验证点。

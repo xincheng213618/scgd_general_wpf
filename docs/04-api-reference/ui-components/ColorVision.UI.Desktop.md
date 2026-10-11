@@ -72,6 +72,10 @@ RPC 只连接回环地址，后台进程使用随机的实例密钥；启动等�
 
 反馈主窗口固定显示诊断项摘要、日志范围、打开来源目录、清理历史文件和打包入口，附件区滚动不会带走这些操作。“选择项目”打开独立的紧凑列表，支持按名称或说明搜索、全部选中／取消和恢复默认选择；这些批量操作作用于全部项目，不受搜索过滤影响，关闭或按 Esc 保留选择。范围统一应用于实现 `IFeedbackLogTimeRangeCollector` 的日志和数据库来源，目录菜单也仅列出该接口提供的目录，不支持的来源保持自己的收集规则。清理与打包勾选独立，仅交给实现 `IFeedbackDiagnosticCleanupSource` 的来源；无对应能力时禁用入口。打包期间禁止修改诊断选项或启动清理，避免修改正在使用的收集器。
 
+Engine 提供默认勾选的“MVS 日志”来源，沿用统一天数范围，把本机已有的海康 SDK 与客户端 `.log`（含数字轮转后缀）复制到 ZIP 的 `MVS/` 下。SDK 来源优先读取日志服务安装目录的 `Path.ini`，只访问其中指定根目录下的 `MvSDKLog`；同时检查 Windows／当前用户临时目录和应用目录下的 `MvSDKLog`，以及用户目录、ProgramData 下的 `MVS/Log`，不扫描整个临时目录或相机图像目录。服务的 `Path.ini`、`LogServer.ini` 不按日志天数过滤。单文件最多 50 MiB、总日志最多 200 MiB；活动日志允许共享读取，只复制打开时的长度，属于尽力采集，不保证跨文件一致快照。`MVS/collection.json` 记录采集时间、来源路径、日志查看器位置、缺失目录、访问／复制失败和大小限制跳过原因。收集不提权、不连接相机、不修改日志设置，也不参与“清理历史文件”；SDK 系统日志无读取权限时仍附状态说明，其他诊断项继续打包。实现与回归入口为 `Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics/MvsLogCollector.cs`、`Test/ColorVision.UI.Tests/MvsDiagnosticsTests.cs`。
+
+物理相机管理的“操作 → MVS 日志”通过 SDK 环境变量、MVS 安装注册表信息和系统 Program Files 目录定位 LogViewer，优先 Win64、其次 Win32。启动时以查看器所在目录作为工作目录，并保留厂商程序要求的管理员权限；取消 UAC 不报告启动错误。只安装 SDK 运行库可能没有 LogViewer，找不到程序时显示提示。该入口与反馈收集共用 `MvsDiagnosticsPaths` 的安装位置发现，但收集文件不依赖成功打开查看器。
+
 反馈窗口从帮助菜单、启动恢复或 Copilot `/feedback` 打开时均使用非模态 `Show()`，保留 Owner 与居中定位。打包和上传期间可最小化反馈窗口、切回其他窗口继续操作；打包仍在后台任务中执行，HTTP 上传仍异步等待。Copilot 附带的临时会话文件保留到反馈窗口关闭，不能在 `Show()` 返回时提前清理。
 
 点击“发送反馈”后匿名提交。本地 RBAC、Windows 用户名和机器名仅用于诊断信息，不构成 Web 账号归属。客户端同时提交结构化 `machineName`、`clientSubmittedAt`，日志包实际完成时才提交 `diagnosticsCollectedAt`；后续查看和下载见[反馈归属、查询与诊断附件下载](../../02-developer-guide/backend/feedback.md)。

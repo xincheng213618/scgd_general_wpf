@@ -92,7 +92,7 @@ public partial class DeviceSensor
         return SensorTemplateRepository.ReadCommands(config.Category, id, template.Value<string>("Name"));
     }
 
-    internal async Task<object?> ExecuteLocalSensorAsync(string operation, IReadOnlyList<LocalSensorCommand>? commands, LocalSensorConnectionConfig config, CancellationToken token)
+    internal async Task<object?> ExecuteLocalSensorAsync(string operation, IReadOnlyList<LocalSensorCommand>? commands, LocalSensorConnectionConfig config, CancellationToken token, bool autoConnect = false)
     {
         ObjectDisposedException.ThrowIf(localDisposed, this);
         lock (SensorBackend.Sync)
@@ -108,7 +108,10 @@ public partial class DeviceSensor
                 case "Open": await LocalSession.OpenAsync(config, token).ConfigureAwait(false); return null;
                 case "Close": await LocalSession.CloseAsync().ConfigureAwait(false); return null;
                 case "Reopen": await LocalSession.ReopenAsync(config, token).ConfigureAwait(false); return null;
-                case "ExecCmd": return await LocalSession.ExecuteAsync(commands ?? throw new ArgumentException("缺少传感器指令。"), token).ConfigureAwait(false);
+                case "ExecCmd":
+                    if (commands == null) throw new ArgumentException("缺少传感器指令。");
+                    if (autoConnect && !LocalSession.IsOpen) await LocalSession.OpenAsync(config, token).ConfigureAwait(false);
+                    return await LocalSession.ExecuteAsync(commands, token).ConfigureAwait(false);
                 default: throw new NotSupportedException($"本地传感器不支持 {operation}。");
             }
         }

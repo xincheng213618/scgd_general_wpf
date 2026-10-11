@@ -111,9 +111,6 @@
   <data name="SelfCheck" xml:space="preserve">
     <value>灰度255</value>
   </data>
-  <data name="物理设备控制" xml:space="preserve">
-    <value>物理设备控制</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>相机</value>
   </data>

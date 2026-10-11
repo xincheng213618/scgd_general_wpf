@@ -27,6 +27,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -45,6 +46,7 @@ namespace ColorVision.Engine.Templates.POI
     public class EditPoiParam1Config : Common.MVVM.ViewModelBase, IConfig
     {
         public static EditPoiParam1Config Instance => ConfigService.Instance.GetRequiredService<EditPoiParam1Config>();
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 

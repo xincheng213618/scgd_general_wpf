@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 

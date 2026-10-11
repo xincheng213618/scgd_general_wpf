@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
 
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
@@ -23,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("Control")]
+        [LocalizedDisplayName(nameof(Resources.ShowSidebar)), Category("View")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
 

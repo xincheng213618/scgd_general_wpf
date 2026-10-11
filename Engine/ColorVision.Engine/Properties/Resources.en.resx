@@ -3448,6 +3448,9 @@ Please close camera or other programs using this serial port, or check device co
     <value>Enter the camera device name to use</value>
   </data>
 
+  <data name="Engine_PG_DeviceIndex" xml:space="preserve">
+    <value>Device index</value>
+  </data>
   <data name="Engine_PG_RegisterAddress" xml:space="preserve">
     <value>Register Address</value>
   </data>
@@ -6273,6 +6276,9 @@ Open the spectrum log?</value>
   </data>
   <data name="正在生成预览…" xml:space="preserve">
     <value>Generating Preview…</value>
+  </data>
+  <data name="正在加载预览…" xml:space="preserve">
+    <value>Loading Preview…</value>
   </data>
   <data name="没有可变换的POI点" xml:space="preserve">
     <value>No POI points to transform</value>

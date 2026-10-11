@@ -22,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     public class EditTemplateSensorConfig : ViewModelBase, IConfig
     {
         public static EditTemplateSensorConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateSensorConfig>();
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         public bool IsCommandPreviewVisible { get => _IsCommandPreviewVisible; set => SetProperty(ref _IsCommandPreviewVisible, value); }

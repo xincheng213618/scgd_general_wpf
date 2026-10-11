@@ -108,9 +108,6 @@
   <data name="SelfCheck" xml:space="preserve">
     <value>灰階255</value>
   </data>
-  <data name="物理设备控制" xml:space="preserve">
-    <value>物理設備控制</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>相機</value>
   </data>

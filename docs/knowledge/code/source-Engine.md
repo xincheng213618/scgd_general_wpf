@@ -56,7 +56,7 @@ next: false
   区分强类型 ImageCropping 的持久参数、运行时四点 ROI、Flow 双输入和图像结果。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
-  说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
+  说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
@@ -346,7 +346,7 @@ next: false
   AA 模板与本地发光区定位(V2)的入口、图像来源、POI保存模板和结果边界。
 
 - [Matching 模板匹配](../../04-api-reference/algorithms/templates/matching-template.md) — `algorithms.matching`
-  说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。
+  说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。
 
 - [Flow 架构与责任边界](../../03-architecture/components/engine/flow-engine.md) — `flow.architecture`
   区分 Flow 底层画布、节点内核、模板存储、编辑工作区、共享会话与隔离执行的所有权。

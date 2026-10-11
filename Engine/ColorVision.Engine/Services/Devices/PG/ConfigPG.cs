@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Services.Devices.PG
 
     public class ConfigPG : DeviceServiceConfig
     {
+        [Display(Name = "AutoConnect", ResourceType = typeof(Properties.Resources))]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;
 
@@ -26,10 +27,11 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
         private bool _IsNet;
-        [System.ComponentModel.PropertyEditorType(typeof(System.ComponentModel.NetworkAddressPropertiesEditor))]
+        [System.ComponentModel.PropertyEditorType(typeof(PGConnectionPropertiesEditor))]
         public string Addr { get => _Addr; set { _Addr = value; OnPropertyChanged(); } }
         private string _Addr;
 
+        [System.ComponentModel.PropertyEditorType(typeof(PGConnectionPropertiesEditor))]
         public int Port { get => _Port; set { _Port = value; OnPropertyChanged(); } }
         private int _Port;
 

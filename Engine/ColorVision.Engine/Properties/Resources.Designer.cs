@@ -5199,6 +5199,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备索引 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DeviceIndex {
+            get {
+                return ResourceManager.GetString("Engine_PG_DeviceIndex", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 寄存器地址 的本地化字符串。
         /// </summary>
         public static string Engine_PG_RegisterAddress {

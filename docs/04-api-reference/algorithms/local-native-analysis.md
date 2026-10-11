@@ -93,7 +93,7 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 | 工具与源码 | 当前输入及执行链 | 结果边界 |
 | --- | --- | --- |
 | `GhostLocalAnalysis`，`GhostAnalysis.cs` | 当前图像或矩形 ROI → `P2JsonAnalysisWindow` → `M_DetectGhosts` | 原始 JSON、亮源/候选计数、严重度/置信度摘要与 overlay；不经过 MQTT |
-| `RotatedTemplateLocalAnalysis`，`RotatedTemplateAnalysis.cs` | 先在矩形右键“设为旋转匹配模板”，再对当前图像/ROI 调用 `M_MatchRotatedTemplate` | 匹配 JSON 与角度/位置等叠加；模板是当前 `DrawEditorContext` 会话持有的位图，不是 Engine 模板数据库记录 |
+| `RotatedTemplateLocalAnalysis`，`RotatedTemplateAnalysis.cs` | 矩形右键“设为旋转匹配模板”或导入参考图/`.cvtm` → `TemplateMatchingWindow` → `TemplateMatching.Run` → `M_MatchRotatedTemplate` | 类型化参数编辑、导入/导出、结果表格与四角叠加；流程节点内置参考图与参数，复用相同内核 |
 | `CMStereoBinocularLocalAnalysis`，`StereoFusionAnalysis.cs` / `StereoFusionDebugWindow.xaml.cs` | 当前编辑器图像作左图，选择文件作右图，带标定 JSON 调用 `M_CalStereoBinocularFusion` | 左右五点、三维毫米坐标、视差、重投影误差、置信度及有效状态；不是单图 `M_CalBinocularFusion` |
 
 ### 执行 Ghost 或旋转模板匹配
@@ -103,11 +103,13 @@ UI 从 native JSON 的 `Centers` 画红色 `DVCircle`，从 `BlackCenters` 画�
 - Ghost 分析：在图像右键菜单选择“分析测量 → 缺陷与鬼影 → 鬼影检测（Ghost）...”；局部分析则右键矩形，选择“鬼影检测（Ghost）...”。
 - 旋转模板匹配：先绘制模板区域矩形，右键选择“设为旋转匹配模板”；再选择“分析测量 → 定位与几何 → 旋转模板匹配...”，或右键搜索区域矩形选择“在此 ROI 执行旋转模板匹配”。
 
-打开参数窗口后：
+Ghost 打开参数窗口后：
 
 1. 核对窗口的图像/ROI 信息，在“配置 JSON”中编辑对象参数，点击“运行”。
 2. 在“摘要”和“结果 JSON”查看本次状态与结果；`success=false` 或 `statusCode` 报错时，不能把存在 JSON 当作检测通过。
 3. 需要保留文本时点击“复制配置”或“复制结果”，内容只写入剪贴板，不自动保存文件。默认勾选“绘制 Overlay”和“自动清除上次结果”；临时叠加与清理范围见下文。
+
+旋转模板窗口使用属性编辑器，支持新建、导入参考图、导入/导出 `.cvtm`；从流程节点打开时，点击“应用到节点”提交配置，再随流程保存，取消或关闭不修改节点。点击“运行匹配”对编辑器打开窗口时的当前图像/ROI 试运行，查看中心、角度、尺度、分数与结果 JSON；新运行、导入和清理会清空旧表格与叠加。源图变化后需重新打开。节点配置契约、默认参数及本地执行边界见 [Matching 模板匹配](./templates/matching-template.md)。
 
 ### 执行双目标定融合
 
@@ -122,9 +124,9 @@ P2 矩形入口使用 `P2RoiHelper.TryFromRectangle` 转换 DPI 并与当时图�
 
 ### 参数、模板和标定的真实来源
 
-Ghost 和旋转模板窗口允许编辑 JSON 对象，默认参数分别由各适配器的 `CreateDefaultConfig` 生成。Ghost 默认不启用曝光归一化、背景核和方向置信度增强，多尺度层数为 1；native 存在增强实现不等于 UI 默认开启全部增强。完整字段继续核对适配器、`p2_export.cpp` 的解析及对应 native 内核，不在源码 README 复制第二份参数表。
+Ghost 窗口允许编辑 JSON 对象，默认参数由适配器的 `CreateDefaultConfig` 生成。Ghost 默认不启用曝光归一化、背景核和方向置信度增强，多尺度层数为 1；native 存在增强实现不等于 UI 默认开启全部增强。旋转匹配改由 `TemplateMatchingOptions` 生成类型化属性编辑器，保存前和调用前验证范围。完整字段继续核对适配器、`p2_export.cpp` 的解析及对应 native 内核，不在源码 README 复制第二份参数表。
 
-旋转模板从 `ImageShow.Source` 裁剪，并以冻结位图保存在按 `DrawEditorContext` 区分的 `ConditionalWeakTable` 会话中。因此模板可能来自当前显示预览，不保证是磁盘原始样本，也不会自动保存为文件。没有模板时打开匹配窗口会提示；运行委托在每次调用时取会话的 `Template`，并非保证窗口打开时那张模板一直冻结不变。每次 native 调用另建并释放模板 `HImage` 快照。
+旋转模板从当前 `ImageFrameLease.Image` 的 ROI 按行复制像素，避免截取伪彩显示图；会话缓存只作为新窗口的初始参考图。也可导入文件或加载自包含 `.cvtm`，没有参考图时允许打开窗口进行管理，保存和运行则拒绝空模板。运行固定本次参考图和参数，托管层固定像素地址、借用模板 `HImage`，native 返回后释放固定句柄和结果指针；`.cvtm` 保存源样本位深，不保存显示归一化像素。
 
 双目窗口创建的焦距 `1000`、零畸变、单位旋转及平移 `[-60,0,0]` 仅为调试示例，**不能用于真实测量**；源码界面也明确提示加载真实标定。真实 `leftCameraMatrix`、`rightCameraMatrix`、畸变、`rotation` 与 `translation` 必须匹配所用相机、图像尺寸和单位。加载含 `calibration` 对象的文件会替换整份配置；加载单独标定对象则只替换当前配置的 `calibration`。未加载外部标定时，重新选择右图会重新生成默认配置，不能假定手工修改始终保留。
 
@@ -134,13 +136,13 @@ Ghost 和旋转模板窗口允许编辑 JSON 对象，默认参数分别由各�
 
 P2 参数窗口只在点击运行时计算，不是滑动预览。适配器重新获取当前帧租约，在 `Task.Run` 中同步调用 native 并等待结果；调用后检查图像 revision。窗口另检查是否已关闭；双目窗口还核对右图是否仍是启动该次运行时的同一对象。它们不使用 `ImageAlgorithmPreviewSession`，不能据此推断 host-wide invocation 的 latest-wins、像素提交或统一 artifact 所有权。
 
-这里的 revision 校验从每次运行开始，不是把窗口绑定到打开时的图像。Ghost/旋转模板的搜索 ROI 在打开窗口时确定，而运行时重新取当前帧；双目左预览和尺寸文案只在构造时赋值，运行却使用新的左图租约。因此运行前换图后，窗口可能仍显示旧预览/ROI/标定而计算新图。应重新打开窗口并核对输入与标定，不能拿旧左预览证明本次计算输入，也不能把“计算期间换图会丢弃”扩大为全窗口生命周期绑定。双目对右图对象身份的检查位于成功结果发布路径，异常提示分支只检查左图 revision 和关窗状态，不能保证换右图后旧运行的错误提示也被丢弃。
+Ghost 和双目的 revision 校验从每次运行开始。Ghost 的搜索 ROI 在打开窗口时确定，而运行时重新取当前帧；双目左预览和尺寸文案只在构造时赋值，运行却使用新的左图租约。因此运行前换图后，这两个窗口可能仍显示旧预览/ROI/标定而计算新图，应重新打开核对。旋转模板窗口则记录打开时 revision，运行前拒绝换图后的输入，运行后再次核对 revision。双目对右图对象身份的检查位于成功结果发布路径，异常提示分支只检查左图 revision 和关窗状态，不能保证换右图后旧运行的错误提示也被丢弃。
 
 `P2NativeJson.Invoke` 要求返回长度为正且指针非空，按 UTF-8 读取对象 JSON，并经 `FreeResult` 释放。这只证明拿到了 JSON，仍须读取 `success`、`statusCode`、`message`、`warnings` 及具体点的 `valid`/质量指标；例如无效常量模板可以返回成功分配但 `success=false` 的 JSON。
 
 关闭窗口只设关闭标志、清理当前记录的叠加并拒绝之后的显示，没有给正在运行的 native 调用传取消令牌，也不等待其停止。不要把关窗当作释放全部 native 资源的即时完成信号；输入租约与快照在后台调用退出后才释放。一个窗口禁用自己的运行按钮也不代表其他窗口或同图调用受到统一排他控制。
 
-P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，不提交 source 像素、不自动保存 JSON/图片，也不是 FindLightBeads 的可撤销 `DVCircle` 命令。Ghost/旋转模板窗口勾选“自动清除上次结果”且绘制新叠加时，先移除上一次叠加；关闭该选项反复运行时，`_overlay` 字段只保留最新一项，清理/关闭只移除这项，先前叠加可能残留。此为当前实现限制，不承诺关窗会清空全部历史叠加。双目窗口另清理左右点预览和自己记录的画布叠加，不代表清空整个画布。
+P2 overlay 通过 `DrawCanvas.AddOverlayVisual` 添加临时 `DrawingVisual`，不提交 source 像素、不自动保存 JSON/图片，也不是 FindLightBeads 的可撤销 `DVCircle` 命令。Ghost 窗口勾选“自动清除上次结果”且绘制新叠加时，先移除上一次叠加；关闭该选项反复运行时，`_overlay` 字段只保留最新一项，清理/关闭只移除这项，先前叠加可能残留。旋转模板窗口始终在新运行前清除自己上一轮叠加，关窗也清除此窗口的叠加。双目窗口另清理左右点预览和自己记录的画布叠加，不代表清空整个画布。
 
 双目点预览还有当前代码限制：`ApplyResult` 为 `LeftPointOverlay` / `RightPointOverlay` 设置结果后，紧接着的 `ClearOverlay()` 又清空二者，随后只重建主画布的左图叠加。因此不能承诺成功计算后窗口内的左右点标记保留可见；JSON、点表与主画布叠加是不同显示路径。
 

@@ -2167,6 +2167,9 @@
     <value>Enter the camera device name to use</value>
   </data>
 
+  <data name="Engine_PG_DeviceIndex" xml:space="preserve">
+    <value>裝置索引</value>
+  </data>
   <data name="Engine_PG_RegisterAddress" xml:space="preserve">
     <value>Register Address</value>
   </data>
@@ -7276,6 +7279,9 @@
   </data>
   <data name="正在生成预览…" xml:space="preserve">
     <value>正在生成預覽…</value>
+  </data>
+  <data name="正在加载预览…" xml:space="preserve">
+    <value>正在載入預覽…</value>
   </data>
   <data name="没有可变换的POI点" xml:space="preserve">
     <value>沒有可變換的POI點</value>

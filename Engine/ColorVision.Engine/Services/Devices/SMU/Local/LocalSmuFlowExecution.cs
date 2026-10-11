@@ -1,7 +1,6 @@
 using ColorVision.Engine.Services.Results;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using FlowEngineLib.Node.Global;
 using FlowEngineLib.Node.SMU;
 using Newtonsoft.Json.Linq;
 using System;
@@ -24,7 +23,7 @@ internal sealed class LocalSmuFlowExecution : FlowLocalExecution
     private bool completed;
 
     internal static bool Supports(CVBaseServerNode node) => node.NodeType == "SMU"
-        && node is SMUBaseNode or SMUSweepNode or SMUSweepModelNode or SMUReaderNode or PhyDeviceControlNode;
+        && node is SMUBaseNode or SMUSweepNode or SMUSweepModelNode or SMUReaderNode;
     private static DeviceSMU? Find(string code) => ServiceManager.Current?.DeviceServices.OfType<DeviceSMU>().FirstOrDefault(device => device.Code == code);
     internal static void Register() => RegisterBackend(nameof(LocalSmuFlowExecution),
         node => Supports(node) && Find(node.DeviceCode)?.SmuBackend.OpensLocally == true,

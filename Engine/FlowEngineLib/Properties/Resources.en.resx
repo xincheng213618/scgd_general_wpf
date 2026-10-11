@@ -108,9 +108,6 @@
   <data name="SelfCheck" xml:space="preserve">
     <value>Gray255</value>
   </data>
-  <data name="物理设备控制" xml:space="preserve">
-    <value>PhysicalDeviceControl</value>
-  </data>
   <data name="Camera" xml:space="preserve">
     <value>Camera</value>
   </data>

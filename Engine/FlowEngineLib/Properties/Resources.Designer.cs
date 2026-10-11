@@ -2158,15 +2158,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 物理设备控制 的本地化字符串。
-        /// </summary>
-        internal static string 物理设备控制 {
-            get {
-                return ResourceManager.GetString("物理设备控制", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 电压(V)/电流(mA) 的本地化字符串。
         /// </summary>
         internal static string 电_压_流_源 {

@@ -1,6 +1,7 @@
 #pragma warning disable CA1822,CA1826,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
@@ -61,15 +62,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyCameras[0].IsSelected = true;
             }
 
-            OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer(), a => File.Exists("C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe"));
+            OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer());
 
         }
 
         public RelayCommand OpenMVSLogViewerCommand { get; set; }
         public void OpenMVSLogViewer()
         {
-            string MVSLogViewer = "C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe";
-            if (!File.Exists(MVSLogViewer))
+            string? MVSLogViewer = MvsDiagnosticsPaths.FindLogViewer(MvsDiagnosticsPaths.GetInstallationDirectories());
+            if (MVSLogViewer == null)
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
@@ -82,13 +83,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             try
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = MVSLogViewer,
-                    UseShellExecute = true,
-                    Verb = "runas" // 请求管理员权限
-                };
-                Process.Start(startInfo);
+                Process.Start(MvsDiagnosticsPaths.CreateLogViewerStartInfo(MVSLogViewer));
             }
             catch (System.ComponentModel.Win32Exception ex)
             {

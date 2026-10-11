@@ -1121,22 +1121,35 @@
       "knowledge_id": "algorithms.matching",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "说明 Matching 通用配置宿主、运行时模板文件、Flow 请求和 AOI 结果绘制。",
+      "summary": "说明本地模板匹配的节点内置配置、cvtm 导入导出与无数据库执行，以及旧服务 Matching 的请求与 AOI 结果。",
       "aliases": [
         "模板匹配用错模板怎么查",
         "MatchingDisplayAlgorithmConfig",
         "AlgorithmMatching",
         "AlgorithmTMNode",
-        "ViewHandleMatching"
+        "ViewHandleMatching",
+        "本地模板匹配",
+        "LocalTemplateMatchingNode",
+        "cvtm",
+        "TemplateMatchingWindow"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Templates/Matching/AlgorithmMatching.cs",
         "Engine/ColorVision.Engine/Templates/Matching/TemplateMatch.cs",
         "Engine/ColorVision.Engine/Templates/Matching/ViewHandleMatching.cs",
         "Engine/ColorVision.Engine/Templates/Matching/AlgResultAoiDao.cs",
-        "Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs"
+        "Engine/FlowEngineLib/Node/Algorithm/AlgorithmTMNode.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalTemplateMatchingNode.cs",
+        "Engine/ColorVision.Engine/Services/Algorithms/LocalTemplateMatchingService.cs",
+        "Engine/ColorVision.Engine/PropertyEditor/LocalMatchingTemplatePropertiesEditor.cs",
+        "UI/ColorVision.Core/TemplateMatching.cs",
+        "UI/ColorVision.Core/TemplateMatchingFile.cs",
+        "UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/P2/TemplateMatchingWindow.xaml.cs"
       ],
-      "test_paths": [],
+      "test_paths": [
+        "Test/ColorVision.UI.Tests/LocalTemplateMatchingTests.cs",
+        "Test/opencv_helper_test/test_p2_algorithms.cpp"
+      ],
       "related": [
         "algorithms.index",
         "algorithms.template-primitives",
@@ -1144,7 +1157,9 @@
       ],
       "code_scopes": [
         "Engine/ColorVision.Engine",
-        "Engine/FlowEngineLib"
+        "Engine/FlowEngineLib",
+        "UI/ColorVision.Core",
+        "UI/ColorVision.ImageEditor"
       ],
       "domain": "algorithms",
       "title": "Matching 模板匹配",

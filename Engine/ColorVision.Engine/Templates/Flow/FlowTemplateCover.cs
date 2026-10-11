@@ -17,7 +17,7 @@ public sealed class FlowTemplateCover : Grid
         new PropertyMetadata(null, (owner, _) => ((FlowTemplateCover)owner).Reset()));
     public FlowParam? Flow { get => (FlowParam?)GetValue(FlowProperty); set => SetValue(FlowProperty, value); }
     private readonly Image image = new() { Stretch = Stretch.Uniform };
-    private readonly TextBlock placeholder = new() { Text = LocalizedText.Get("正在生成预览…"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.LightGray, FontSize = 12 };
+    private readonly TextBlock placeholder = new() { Text = LocalizedText.Get("正在加载预览…"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brushes.LightGray, FontSize = 12 };
     private CancellationTokenSource? pending;
     private string? completedData, requestedData;
     private TemplateBrowserWindow? owner;
@@ -27,7 +27,12 @@ public sealed class FlowTemplateCover : Grid
         Background = new SolidColorBrush(Color.FromRgb(29, 32, 37));
         Children.Add(placeholder);
         Children.Add(image);
-        Loaded += (_, _) => { owner = Window.GetWindow(this) as TemplateBrowserWindow; owner?.RegisterCover(this); };
+        Loaded += (_, _) =>
+        {
+            owner = Window.GetWindow(this) as TemplateBrowserWindow;
+            if (owner != null) RestoreCachedCover(owner.CoverService);
+            owner?.RegisterCover(this);
+        };
         Unloaded += (_, _) => { owner?.UnregisterCover(this); owner = null; };
     }
 
@@ -40,9 +45,23 @@ public sealed class FlowTemplateCover : Grid
         Cancel();
         completedData = null;
         image.Source = null;
-        placeholder.Text = LocalizedText.Get("正在生成预览…");
+        ToolTip = null;
+        placeholder.Text = LocalizedText.Get("正在加载预览…");
         placeholder.Visibility = Visibility.Visible;
+        if (owner != null) RestoreCachedCover(owner.CoverService);
         owner?.RegisterCover(this);
+    }
+
+    private bool RestoreCachedCover(FlowTemplateCoverService service)
+    {
+        if (Flow == null || !service.TryGetCached(Flow.DataBase64, out var result)) return false;
+        Cancel();
+        completedData = Flow.DataBase64;
+        image.Source = result;
+        placeholder.Text = LocalizedText.Get("空流程");
+        placeholder.Visibility = result == null ? Visibility.Visible : Visibility.Collapsed;
+        ToolTip = null;
+        return true;
     }
 
     internal void Cancel()
@@ -60,12 +79,13 @@ public sealed class FlowTemplateCover : Grid
         if (!bounds.IntersectsWith(new Rect(viewport.RenderSize))) { Cancel(); return; }
         string data = Flow.DataBase64;
         if (data == completedData || data == requestedData) return;
+        if (RestoreCachedCover(service)) return;
         Cancel();
         var request = new CancellationTokenSource();
         pending = request;
         requestedData = data;
         image.Source = null;
-        placeholder.Text = LocalizedText.Get("正在生成预览…");
+        placeholder.Text = LocalizedText.Get("正在加载预览…");
         placeholder.Visibility = Visibility.Visible;
         ToolTip = null;
         try

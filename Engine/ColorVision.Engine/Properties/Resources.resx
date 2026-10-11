@@ -260,6 +260,9 @@
     <value>输入要使用的相机设备名称</value>
   </data>
 
+  <data name="Engine_PG_DeviceIndex" xml:space="preserve">
+    <value>设备索引</value>
+  </data>
   <data name="Engine_PG_RegisterAddress" xml:space="preserve">
     <value>寄存器地址</value>
   </data>
@@ -2361,6 +2364,9 @@
   </data>
   <data name="正在生成预览…" xml:space="preserve">
     <value>正在生成预览…</value>
+  </data>
+  <data name="正在加载预览…" xml:space="preserve">
+    <value>正在加载预览…</value>
   </data>
   <data name="没有可变换的POI点" xml:space="preserve">
     <value>没有可变换的POI点</value>

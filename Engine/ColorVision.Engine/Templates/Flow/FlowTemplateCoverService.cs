@@ -3,6 +3,7 @@ using ColorVision.Engine.FlowProcessing.Compilation;
 using log4net;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -21,23 +22,60 @@ internal sealed class FlowTemplateCoverService
     private static readonly ILog log = LogManager.GetLogger(typeof(FlowTemplateCoverService));
     private static readonly SemaphoreSlim RenderGate = new(1, 1);
     private const int RendererVersion = 1;
+    private const int MemoryCoverLimit = 64;
     internal const int PixelWidth = 640;
     internal const int PixelHeight = 360;
     internal static FlowTemplateCoverService Shared { get; } = new(LocalTemplateStore.DefaultDatabasePath);
     private readonly string databasePath;
+    private readonly object memoryLock = new();
+    private readonly Dictionary<string, LinkedListNode<(string Data, BitmapSource Image)>> memoryCovers = new(StringComparer.Ordinal);
+    private readonly LinkedList<(string Data, BitmapSource Image)> memoryOrder = new();
     internal string DatabasePath => databasePath;
 
     internal FlowTemplateCoverService(string databasePath) => this.databasePath = Path.GetFullPath(databasePath);
 
+    internal bool TryGetCached(string dataBase64, out BitmapSource? image)
+    {
+        image = null;
+        if (string.IsNullOrEmpty(dataBase64)) return true;
+        lock (memoryLock)
+        {
+            if (!memoryCovers.TryGetValue(dataBase64, out var entry)) return false;
+            memoryOrder.Remove(entry);
+            memoryOrder.AddFirst(entry);
+            image = entry.Value.Image;
+            return true;
+        }
+    }
+
+    private BitmapSource Remember(string dataBase64, BitmapSource image)
+    {
+        lock (memoryLock)
+        {
+            if (memoryCovers.Remove(dataBase64, out var previous)) memoryOrder.Remove(previous);
+            memoryCovers.Add(dataBase64, memoryOrder.AddFirst((dataBase64, image)));
+            if (memoryCovers.Count > MemoryCoverLimit)
+            {
+                memoryCovers.Remove(memoryOrder.Last!.Value.Data);
+                memoryOrder.RemoveLast();
+            }
+        }
+        return image;
+    }
+
     internal async Task<BitmapSource?> LoadAsync(string dataBase64, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(dataBase64)) return null;
+        if (TryGetCached(dataBase64, out var image)) return image;
         await RenderGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             return await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                // Another visible tile may have finished the same content while this request waited.
+                if (TryGetCached(dataBase64, out var ready)) return ready;
                 byte[] data = Convert.FromBase64String(dataBase64);
                 if (data.Length == 0) return null;
                 string hash = Convert.ToHexString(SHA256.HashData(data));
@@ -48,7 +86,7 @@ internal sealed class FlowTemplateCoverService
                     command.CommandText = "SELECT png FROM flow_template_covers WHERE content_hash=$hash AND renderer_version=$version";
                     command.Parameters.AddWithValue("$hash", hash);
                     command.Parameters.AddWithValue("$version", RendererVersion);
-                    if (command.ExecuteScalar() is byte[] cached) return Decode(cached);
+                    if (command.ExecuteScalar() is byte[] cached) return Remember(dataBase64, Decode(cached));
                 }
                 catch (Exception ex) { log.Warn("Reading flow cover cache failed; regenerating the preview.", ex); }
 
@@ -73,7 +111,7 @@ internal sealed class FlowTemplateCoverService
                     command.ExecuteNonQuery();
                 }
                 catch (Exception ex) { log.Warn("Writing flow cover cache failed; showing the in-memory preview.", ex); }
-                return Decode(png);
+                return Remember(dataBase64, Decode(png));
             }, cancellationToken).ConfigureAwait(false);
         }
         finally { RenderGate.Release(); }

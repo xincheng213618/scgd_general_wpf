@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     {
         public static ViewSMUConfig Instance => ConfigService.Instance.GetRequiredService<ViewSMUConfig>();
 
+        [Browsable(false)]
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
