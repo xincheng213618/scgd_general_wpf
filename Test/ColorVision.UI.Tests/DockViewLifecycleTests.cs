@@ -210,12 +210,12 @@ public sealed class DockViewLifecycleTests
                 frame.ColorCalibration = ColorCalibrationSnapshot.Create(transform, 3, 2, 8, [10, 10, 10], "capture");
                 LocalFrameFileService.SaveCapture(frame, path, saveMode);
                 Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
-                Task opened = WpfTestHost.Invoke(() =>
+                Task<bool> opened = WpfTestHost.Invoke(() =>
                 {
                     ImageView image = Image(camera!);
-                    TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
                     EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
-                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(); };
+                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(image.Config.GetProperties<bool>("HasCieMeasurements")); };
                     image.ImageSourceLoaded += handler;
                     var model = new MeasureResultImgModel { Id = firstId == 0 ? 0 : firstId + (int)gain - 1, FileUrl = path };
                     ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, camera!.Code,
@@ -223,7 +223,7 @@ public sealed class DockViewLifecycleTests
                     frame.Dispose();
                     return completion.Task;
                 });
-                await opened.WaitAsync(TimeSpan.FromSeconds(15));
+                Assert.True(await opened.WaitAsync(TimeSpan.FromSeconds(15)));
                 WpfTestHost.Invoke(() =>
                 {
                     ImageView image = Image(camera!);
@@ -243,6 +243,23 @@ public sealed class DockViewLifecycleTests
             WpfTestHost.Invoke(() => { camera?.Dispose(); scope?.Dispose(); });
             CVFileReadCache.IsEnabled = cacheEnabled;
         }
+    }
+
+    [Fact]
+    public void CameraResultWithoutFileKeepsTheSameRowOnDuplicateNotification()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var camera = new DeviceCamera(Resource("duplicate-result"));
+            DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+            ColorVision.Engine.Services.Devices.Camera.Views.ViewCamera.Config.AutoRefreshView = false;
+            var model = new MeasureResultImgModel { Id = 100 };
+            camera.View.ShowResult(model);
+            ViewResultImage first = Assert.Single(camera.View.ViewResults);
+            camera.View.ShowResult(model);
+            Assert.Same(first, Assert.Single(camera.View.ViewResults));
+        });
     }
 
     [Fact]

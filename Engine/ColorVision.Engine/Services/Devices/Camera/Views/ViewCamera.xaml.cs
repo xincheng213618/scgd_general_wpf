@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822
+#pragma warning disable CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
@@ -249,12 +249,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 return;
 
             if (message.Attachment is MeasureResultImgModel model)
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    localPreview = null;
-                    localPreviewResultId = model.Id;
-                    ShowResult(model);
-                });
+                Application.Current?.Dispatcher.BeginInvoke(() => ShowResult(model));
             else ShowPersistedResult(message.Data.MasterId);
         }
 
@@ -263,7 +258,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || masterId <= 0) return;
             MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
             if (model == null) return;
-            Application.Current?.Dispatcher.BeginInvoke(() => ShowResult(model));
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (!IsDisposed)
+                    ShowResult(model);
+            });
         }
 
         private void OpenImage(string? filePath)
@@ -315,8 +314,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             EnsureInitialized();
 
             ViewResultImage? previous = ViewResults.FirstOrDefault(item => item.Id == model.Id);
-            if (previous != null && previous.FileUrl == model.FileUrl) return;
-            if (previous != null) ViewResults.Remove(previous);
+            if (previous != null)
+            {
+                if (previous.FileUrl == model.FileUrl) return;
+                ViewResults.Remove(previous);
+            }
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);
