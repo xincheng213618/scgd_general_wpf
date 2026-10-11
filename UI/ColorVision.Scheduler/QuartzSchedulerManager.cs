@@ -24,6 +24,7 @@ namespace ColorVision.Scheduler
         Task StopJob(string jobName, string groupName);
         Task RemoveJob(string jobName, string groupName);
         Task ResumeJob(string jobName, string groupName);
+        Task ExecuteJob(string jobName, string groupName);
         Task<SchedulerOperationResult> CreateJob(SchedulerInfo schedulerInfo);
         Task<SchedulerOperationResult> UpdateJob(SchedulerInfo schedulerInfo);
         Task<SchedulerOperationResult> UpdateJob(SchedulerInfo schedulerInfo, string originalJobName, string originalGroupName);
@@ -551,6 +552,38 @@ namespace ColorVision.Scheduler
         public async Task ResumeJob(string jobName, string groupName)
         {
             using IDisposable mutation = await EnterMutationAsync();
+            await ResumeJobCore(jobName, groupName);
+        }
+
+        public async Task ExecuteJob(string jobName, string groupName)
+        {
+            using IDisposable mutation = await EnterMutationAsync();
+            SchedulerInfo info = TaskInfos.FirstOrDefault(task => task.JobName == jobName && task.GroupName == groupName)
+                ?? throw new InvalidOperationException(Properties.Resources.Sched_TaskNotFound);
+            if (info.Status is SchedulerStatus.Ready or SchedulerStatus.Running)
+                throw new InvalidOperationException(Properties.Resources.Sched_AlreadyActive);
+
+            PagedResult<FireInstance> runningJobs = await Scheduler.QueryFireInstances(
+                new FireInstanceQuery { Job = new JobKey(jobName, groupName) });
+            if (runningJobs.Items.Count > 0)
+                throw new InvalidOperationException(Properties.Resources.Sched_AlreadyActive);
+
+            if (!info.ScheduleCompleted)
+            {
+                await ResumeJobCore(jobName, groupName);
+                return;
+            }
+
+            // Starting another round uses the same validated replacement and
+            // rollback path as editing, without modifying the saved settings.
+            SchedulerInfo nextRound = SchedulerTaskSerializer.Deserialize(SchedulerTaskSerializer.Serialize([info])).Single();
+            SchedulerOperationResult result = await UpdateJobCore(nextRound, jobName, groupName);
+            if (!result.Success)
+                throw new InvalidOperationException(result.Message);
+        }
+
+        private async Task ResumeJobCore(string jobName, string groupName)
+        {
             try
             {
                 _logger.Info($"Resuming job: {jobName}({groupName})");
@@ -708,6 +741,12 @@ namespace ColorVision.Scheduler
         {
             ArgumentNullException.ThrowIfNull(schedulerInfo);
             using IDisposable mutation = await EnterMutationAsync();
+            return await UpdateJobCore(schedulerInfo, originalJobName, originalGroupName);
+        }
+
+        private async Task<SchedulerOperationResult> UpdateJobCore(
+            SchedulerInfo schedulerInfo, string originalJobName, string originalGroupName)
+        {
             if (string.IsNullOrWhiteSpace(originalJobName) || string.IsNullOrWhiteSpace(originalGroupName))
                 return SchedulerOperationResult.Failed(SchedulerOperationError.Validation, Properties.Resources.Sched_NameEmpty);
 

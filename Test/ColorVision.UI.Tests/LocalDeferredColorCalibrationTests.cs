@@ -158,7 +158,6 @@ public sealed class LocalDeferredColorCalibrationTests
     [Theory]
     [InlineData(typeof(LocalCalibrationNode), false)]
     [InlineData(typeof(LocalCalibrationRealPoiNode), true)]
-    [InlineData(typeof(LocalCameraNode), false)]
     public void AccelerationUsesNodeDefaultAndPreservesExplicitSavedValues(Type type, bool expectedDefault)
     {
         var node = (LocalFlowNodeBase)Activator.CreateInstance(type)!;
@@ -169,11 +168,30 @@ public sealed class LocalDeferredColorCalibrationTests
         Assert.Equal(expectedDefault, (bool)property.GetValue(node)!);
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("True"), ["SaveFiles"] = System.Text.Encoding.UTF8.GetBytes("True") });
         Assert.True((bool)property.GetValue(node)!);
-        if (node is LocalCameraNode camera) Assert.True(camera.SaveFiles);
-        else Assert.Null(type.GetProperty("SaveFiles"));
+        Assert.Null(type.GetProperty("SaveFiles"));
         Assert.Contains("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
         node.OnLoadNode(new Dictionary<string, byte[]> { ["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes("False") });
         Assert.False((bool)property.GetValue(node)!);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("True")]
+    [InlineData("False")]
+    public void LocalCameraIgnoresLegacyAccelerationOption(string? savedAcceleration)
+    {
+        var node = new LocalCameraNode();
+        node.Create();
+        var saved = new Dictionary<string, byte[]> { ["SaveFiles"] = System.Text.Encoding.UTF8.GetBytes("False") };
+        if (savedAcceleration != null) saved["AllowAcceleration"] = System.Text.Encoding.UTF8.GetBytes(savedAcceleration);
+        node.OnLoadNode(saved);
+        Assert.Null(typeof(LocalCameraNode).GetProperty("AllowAcceleration"));
+        Assert.False(node.SaveFiles);
+        Assert.DoesNotContain("AllowAcceleration", System.Text.Encoding.UTF8.GetString(node.GetSaveData()));
+        var payload = typeof(LocalCameraNode).GetMethod("BuildRunPayload", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        var action = new FlowEngineLib.Base.CVStartCFC("camera-deferred");
+        using var resources = action.RuntimeResources;
+        Assert.True((bool)Newtonsoft.Json.Linq.JObject.Parse((string)payload.Invoke(node, [action])!)["AllowAcceleration"]!);
     }
 
     [Fact]

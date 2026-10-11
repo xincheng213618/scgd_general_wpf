@@ -108,7 +108,7 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(1, info.ScheduledFireCount);
         Assert.Equal(savedNext, info.NextScheduledFireTimeUtc);
 
-        await _manager.ResumeJob(info.JobName, info.GroupName);
+        await _manager.ExecuteJob(info.JobName, info.GroupName);
         ISimpleTrigger resumed = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(
             await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName))));
         Assert.Equal(3, resumed.RepeatCount); // Four executions remain.
@@ -181,6 +181,76 @@ public sealed class SchedulerLifecycleTests : IAsyncLifetime
         Assert.Equal(0, edited.ScheduledFireCount);
         Assert.Equal(24657, edited.RunCount);
         Assert.Single(await _scheduler.GetTriggersOfJob(new JobKey(edited.JobName, edited.GroupName)));
+    }
+
+    [Fact]
+    public async Task ExecuteCompletedLoop_RunsAllConfiguredRepetitionsAndRejectsDuplicateStart()
+    {
+        SchedulerInfo original = CreateInfo();
+        original.RepeatMode = JobRepeatMode.Multiple;
+        original.RepeatCount = 4;
+        original.Interval = TimeSpan.FromMilliseconds(10);
+        original.HasScheduleCheckpoint = original.ScheduleCompleted = true;
+        original.ScheduledFireCount = 5;
+        original.RunCount = 24657;
+        _manager.TaskInfos.Add(original);
+        await _manager.RestoreJob(original);
+
+        await _manager.ExecuteJob(original.JobName, original.GroupName);
+        SchedulerInfo restarted = Assert.Single(_manager.TaskInfos);
+        Assert.False(restarted.ScheduleCompleted);
+        Assert.Equal(0, restarted.ScheduledFireCount);
+        Assert.Equal(24657, restarted.RunCount);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.ExecuteJob(original.JobName, original.GroupName));
+        ISimpleTrigger trigger = Assert.IsAssignableFrom<ISimpleTrigger>(Assert.Single(
+            await _scheduler.GetTriggersOfJob(new JobKey(original.JobName, original.GroupName))));
+        Assert.Equal(4, trigger.RepeatCount);
+
+        await _scheduler.Start();
+        for (int execution = 0; execution <= original.RepeatCount; execution++)
+            await NextExecution();
+
+        Assert.Equal(5, restarted.ScheduledFireCount);
+        Assert.Equal(24662, restarted.RunCount);
+        Assert.True(restarted.ScheduleCompleted);
+        Assert.Equal(SchedulerStatus.Completed, restarted.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteCron_ArmsTheConfiguredTimeInsteadOfAddingAnImmediateRun()
+    {
+        SchedulerInfo info = CreateInfo();
+        info.Mode = JobExecutionMode.Cron;
+        info.CronExpression = "0 0 0 1 1 ? 2099";
+        _manager.TaskInfos.Add(info);
+        await _manager.RestoreJob(info);
+
+        await _manager.ExecuteJob(info.JobName, info.GroupName);
+
+        ICronTrigger trigger = Assert.IsAssignableFrom<ICronTrigger>(Assert.Single(
+            await _scheduler.GetTriggersOfJob(new JobKey(info.JobName, info.GroupName))));
+        Assert.Equal(info.CronExpression, trigger.CronExpressionString);
+        Assert.Equal(2099, trigger.NextFireTimeUtc!.Value.ToLocalTime().Year);
+        Assert.Equal(SchedulerStatus.Ready, info.Status);
+        Assert.Equal(0, info.ScheduledFireCount);
+    }
+
+    [Fact]
+    public async Task FailedReexecutionSave_KeepsCompletedProgressAndDoesNotArmAnotherRound()
+    {
+        var manager = new QuartzSchedulerManager(_scheduler, _directory);
+        SchedulerInfo original = CreateInfo();
+        original.HasScheduleCheckpoint = original.ScheduleCompleted = true;
+        original.ScheduledFireCount = 1;
+        manager.TaskInfos.Add(original);
+        await manager.RestoreJob(original);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => manager.ExecuteJob(original.JobName, original.GroupName));
+
+        Assert.Same(original, Assert.Single(manager.TaskInfos));
+        Assert.True(original.ScheduleCompleted);
+        Assert.Equal(1, original.ScheduledFireCount);
+        Assert.Empty(await _scheduler.GetTriggersOfJob(new JobKey(original.JobName, original.GroupName)));
     }
 
     private static SchedulerInfo CreateInfo() => new()

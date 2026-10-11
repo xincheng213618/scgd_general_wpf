@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.POI;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
@@ -172,6 +173,76 @@ public sealed class DockViewLifecycleTests
             Assert.Null(previous.ImageView.ViewBitmapSource);
             Assert.Equal(4, Assert.IsAssignableFrom<BitmapSource>(current.ImageView.ViewBitmapSource).PixelWidth);
         });
+    }
+
+    [Theory]
+    [InlineData(CVFileSaveMode.Synchronous, 0)]
+    [InlineData(CVFileSaveMode.MemoryOnly, 0)]
+    [InlineData(CVFileSaveMode.Synchronous, 100)]
+    [InlineData(CVFileSaveMode.MemoryOnly, 100)]
+    public async Task SavedCapturesDisplayCurrentColorParametersWithoutReselection(CVFileSaveMode saveMode, int firstId)
+    {
+        using var first = new RawFile(3, 2);
+        using var second = new RawFile(3, 2);
+        Scope? scope = null;
+        DeviceCamera? camera = null;
+        bool cacheEnabled = CVFileReadCache.IsEnabled;
+        try
+        {
+            CVFileReadCache.IsEnabled = true;
+            WpfTestHost.Invoke(() =>
+            {
+                scope = new Scope();
+                camera = new DeviceCamera(Resource("calibrated-capture"));
+                DockViewManager.GetInstance().OpenView(camera.ViewRegistration);
+                Image(camera).IEditorToolFactory.IEditorTools.Clear();
+                Image(camera).IEditorToolFactory.IImageOpens[".cvraw"] = new CVRawOpen(Image(camera).EditorContext);
+            });
+            double gain = 1;
+            foreach (string path in new[] { first.Path, second.Path })
+            {
+                File.Delete(path);
+                using var frame = LocalFlowFrame.Allocate(new LocalFrameMetadata
+                    { Width = 3, Height = 2, SourceBpp = 8, Channels = 3, Exposure = [10, 10, 10] }, 18, 0);
+                using (var lease = frame.Acquire()) System.Runtime.InteropServices.Marshal.Copy(Enumerable.Repeat((byte)20, 18).ToArray(), 0, lease.RawPointer, 18);
+                var transform = RawColorTransformV1.Create();
+                transform.Coefficients = [1, 0, 0, 0, gain, 0, 0, 0, 1];
+                frame.ColorCalibration = ColorCalibrationSnapshot.Create(transform, 3, 2, 8, [10, 10, 10], "capture");
+                LocalFrameFileService.SaveCapture(frame, path, saveMode);
+                Assert.Equal(saveMode == CVFileSaveMode.Synchronous, File.Exists(path));
+                Task opened = WpfTestHost.Invoke(() =>
+                {
+                    ImageView image = Image(camera!);
+                    TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    EventHandler<ImageViewImageSourceLoadedEventArgs>? handler = null;
+                    handler = (_, _) => { image.ImageSourceLoaded -= handler; completion.TrySetResult(); };
+                    image.ImageSourceLoaded += handler;
+                    var model = new MeasureResultImgModel { Id = firstId == 0 ? 0 : firstId + (int)gain - 1, FileUrl = path };
+                    ResultMessageBus.Default.Publish(new ResultMessage(ResultRoutes.Camera, ResultKinds.Image, camera!.Code,
+                        "GetData", "capture", "camera-node", 0, new ResultReference(model.Id, 100), model));
+                    frame.Dispose();
+                    return completion.Task;
+                });
+                await opened.WaitAsync(TimeSpan.FromSeconds(15));
+                WpfTestHost.Invoke(() =>
+                {
+                    ImageView image = Image(camera!);
+                    Assert.Equal(path, image.Config.FilePath);
+                    Assert.Equal(path, camera!.View.ViewResults[0].FileUrl);
+                    Assert.Equal(firstId == 0 ? 1 : (int)gain, camera.View.ViewResults.Count);
+                    Assert.True(image.Config.GetProperties<bool>("HasCieMeasurements"));
+                    var buffer = GetOpenerField<PoiMeasurementBuffer>(Assert.IsType<CVRawOpen>(image.EditorContext.IImageOpen), "_measurementBuffer")!;
+                    Assert.Equal((float)(20 * gain), PoiMeasurementService.Calculate(buffer, [new(0, 0, 1, 1, PoiMeasurementShape.Point)])[0].Y);
+                    Assert.Equal(0, buffer.RawSource!.CachedXyzBytes);
+                });
+                gain = 2;
+            }
+        }
+        finally
+        {
+            WpfTestHost.Invoke(() => { camera?.Dispose(); scope?.Dispose(); });
+            CVFileReadCache.IsEnabled = cacheEnabled;
+        }
     }
 
     [Fact]

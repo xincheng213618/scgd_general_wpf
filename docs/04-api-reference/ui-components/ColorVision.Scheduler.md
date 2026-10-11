@@ -2,7 +2,7 @@
 knowledge_id: "ui.scheduler"
 knowledge_type: "topic"
 status: "current"
-summary: "任务计划程序的创建、调度进度和执行历史；重启只恢复暂停任务，有限计划完成后不重跑，立即执行独立于计划次数。"
+summary: "任务计划程序按类型执行循环或启用定时计划；重启先暂停，完成后可重新执行整轮，仅执行一次独立于计划次数。"
 aliases: ["任务计划程序","创建任务","间隔/重复","执行历史","定时任务为什么不执行","任务暂停后仍然执行","重启后一次性任务又执行","ColorVision.Scheduler","QuartzSchedulerManager","InitializationTask","scheduler_tasks.json","SchedulerHistory.db","SchedulerInfo","TaskExecutionListener","TimeoutSeconds","DisallowConcurrentExecution"]
 code_paths: ["UI/ColorVision.Scheduler/README.md","UI/ColorVision.Scheduler/ColorVision.Scheduler.csproj","UI/ColorVision.Scheduler/QuartzSchedulerManager.cs","UI/ColorVision.Scheduler/MenuTaskViewer.cs","UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs","UI/ColorVision.Scheduler/SchedulerInfo.cs","UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs","UI/ColorVision.Scheduler/SchedulerScheduleState.cs","UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs","UI/ColorVision.Scheduler/TaskExecutionListener.cs","UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs","UI/ColorVision.Scheduler/TaskViewerWindow.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml.cs","UI/ColorVision.Scheduler/CreateTask.xaml","UI/ColorVision.Scheduler/TaskViewerWindow.xaml","UI/ColorVision.Scheduler/Properties/Resources.resx","UI/ColorVision.Scheduler/Presentation/SchedulerPresentation.cs","UI/ColorVision.Scheduler/Presentation/SchedulerStyles.xaml","UI/ColorVision.Scheduler/Presentation/SchedulerTaskExporter.cs","UI/ColorVision.Scheduler/ExecutionHistoryWindow.xaml.cs","UI/ColorVision.UI/Environments.cs","Engine/ColorVision.Engine/Services/Devices/ScheduledDeviceJobHelper.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Job/CameraCaptureJob.cs","Engine/ColorVision.Engine/FlowProcessing/Scheduling/HeadlessFlowJob.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs","Test/ColorVision.UI.Tests/SchedulerLifecycleTests.cs","Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs","Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs","Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"]
@@ -19,9 +19,9 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 2. 点击 **创建任务**，选择任务类型，核对任务名称、分组及该类型的参数。只有一个可用类型时自动选中；切换类型会更新建议名称，但保留用户手填的名称和分组。
 3. 设置执行计划、重复方式和间隔，核对实时**计划预览**；“多次”的**追加次数**不包含首次执行。需要稍后开始时选中 **延迟启动**，未设置过延迟时预填 `00:05:00`，可继续修改。
 4. 优先级与超时在**高级设置**中，默认折叠；编辑含非默认高级参数的任务时自动展开。点击 **创建任务**或**保存修改**，成功后窗口关闭；输入格式、参数生成、校验或保存失败会在窗口内显示错误并保留表单。
-5. 每张卡片直接提供**立即执行、编辑任务、暂停/继续任务**。**更多（•••）**和右键菜单保留任务历史、属性与删除入口；顶部历史查看全部记录，**导出**菜单提供 CSV、JSON 和报告。
+5. 卡片主操作按任务类型与状态显示：间隔/重复任务为**执行任务、继续执行、重新执行**；Cron、日历和每日间隔任务为**启用计划、重新启用**。计划已经启动时禁用主操作，显示等待执行、执行中或计划已启用，并提供**暂停任务**。**编辑任务**保留在卡片上；**更多（•••）**和右键菜单提供**仅执行一次**、任务历史、属性与删除入口。顶部历史查看全部记录，**导出**菜单提供 CSV、JSON 和报告。
 
-默认“间隔/重复 + 一次”计划可在创建后立即执行。重启只加载已保存的任务，不自动运行：未完成任务显示“已暂停”，完成的有限计划显示“计划已完成”。**继续任务**只安排剩余计划，**立即执行**额外运行一次，不消耗计划次数，也不解除暂停。需要重新运行完整计划时使用**编辑任务**重新安排；涉及设备或流程的操作仍应先核对配置和运行条件。暂停、立即执行和关闭窗口的具体效果见[暂停与关闭](#暂停、取消、超时和关闭)。
+默认“间隔/重复 + 一次”计划可在创建后立即执行。重启只加载已保存的任务，不自动运行：未完成任务显示“已暂停”，完成的有限计划显示“计划已完成”。暂停后主操作保留进度，继续剩余计划；完成后点击**重新执行**会按原次数、间隔及延迟开始完整新一轮，无需打开编辑窗口。定时类型点击**启用计划**后按设定时间触发。**仅执行一次**额外运行一次，不消耗计划次数，也不解除暂停。涉及设备或流程的操作仍应先核对配置和运行条件。暂停、单次执行和关闭窗口的具体效果见[暂停与关闭](#暂停、取消、超时和关闭)。
 
 | 设置 | 默认值与含义 |
 | --- | --- |
@@ -38,7 +38,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 
 任务窗口以少量任务为主要使用场景：卡片聚合名称、分组/类型、计划、状态、前后触发时间、运行计数及最后结果/耗时，窗口高度随内容调整；达到工作区高度上限后滚动。创建窗口也按内容调整高度，参数较多或窗口缩小时滚动表单，底部操作始终留在滚动区域之外。两种窗口使用主题动态资源，保留浅色/深色切换。
 
-`TaskViewerWindow` 负责选择、窗口操作及 Copilot 上下文；`CreateTask` 负责编辑草稿、属性编辑器和提交。`Presentation/SchedulerPresentation.cs` 投影计划/状态文案，`SchedulerStyles.xaml` 共享样式，`SchedulerTaskExporter.cs` 生成导出快照；展示字段不写入 `SchedulerInfo`。`ISchedulerService`、公开窗口构造与 `SchedulerInfo` 属性、任务定义和序列化格式保持兼容，内部构造允许注入服务以隔离界面验证。
+`TaskViewerWindow` 负责选择、窗口操作及 Copilot 上下文；`CreateTask` 负责编辑草稿、属性编辑器和提交。`Presentation/SchedulerPresentation.cs` 投影计划、状态及主操作文案，`SchedulerStyles.xaml` 共享样式，`SchedulerTaskExporter.cs` 生成导出快照；展示字段不写入 `SchedulerInfo`。`ISchedulerService.ExecuteJob` 是主操作入口，统一处理继续剩余计划与完成后重新安排；公开窗口构造、既有 `SchedulerInfo` 属性和序列化格式保留，内部构造允许注入服务以隔离界面验证。
 
 正常窗口等待管理器的 `InitializationTask` 后启用操作。创建表单提交前检查当前可见输入的绑定转换错误及调度参数，避免非法时间或整数仍以旧解析值提交；保存期间禁用重复提交与关闭。窗口不再设置全局集合视图的无条件过滤器，也不在暂停/删除后重复修改由管理器维护的状态或集合。关闭窗口解除订阅，初始化晚到或执行回调不会再更新已关闭窗口。
 
@@ -47,7 +47,7 @@ related: ["ui.index","ui.status-bar","ui.configuration","flow.templates","flow.h
 `QuartzSchedulerManager.GetInstance()` 创建进程内单例，构造函数依次执行 `Load()`、`RestoreStatsFromDb()`、注册 Copilot 上下文，然后把 `Start()` 保存为 `InitializationTask`。取得对象不等于异步初始化已完成。
 
 - `Load()` 读取 JSON；统计恢复会取得 `SchedulerDbManager`，其首次构造创建目录并执行 `CodeFirst.InitTables<JobExecutionRecord>()`，即使当前没有任务也可能创建历史数据库。
-- `Start()` 通过 `QuartzSchedulerBuilder` 创建本进程持有的 scheduler，显式保留 `DefaultQuartzScheduler` 名称、10 个最大并发 worker、内存 JobStore 和 60 秒 misfire 阈值；随后注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `RestoreJob` 登记没有自动触发器的 durable Job。最后启动 scheduler，等待用户明确继续计划或立即执行；不会把加载定义当作创建新计划。
+- `Start()` 通过 `QuartzSchedulerBuilder` 创建本进程持有的 scheduler，显式保留 `DefaultQuartzScheduler` 名称、10 个最大并发 worker、内存 JobStore 和 60 秒 misfire 阈值；随后注册 `TaskExecutionListener`、发现 Job 类型，再逐项调用 `RestoreJob` 登记没有自动触发器的 durable Job。最后启动 scheduler，等待用户明确执行/启用计划或选择仅执行一次；不会把加载定义当作创建新计划。
 - `TaskViewerInitializer.Order=1000` 的正常宿主入口等待 `InitializationTask`，让低 Order 的服务初始化先执行。但 `SchedulerStatusBarProvider`、`TaskViewerWindow` 和历史窗口的上下文注册也会取得单例，不能据初始化器顺序断言所有首次访问都已等待设备就绪。
 - 单个任务类型丢失、定义校验失败或注册失败会汇总警告，其他可恢复任务仍会登记；启动阶段整体异常则记录日志、提示并使初始化任务失败。JSON/SQLite 加载异常有各自的捕获分支，不等于启动被统一阻断。
 
@@ -64,7 +64,7 @@ Job 类型来自当次 `AssemblyService.Instance.GetAssemblies()` 扫描，不�
 
 JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载依赖对应程序集/类型可解析；没有在此序列化器配置类型白名单，因此只应把它当作可信本机状态，不接受未经核验的外来 JSON。保存先写同目录临时文件，再用 `File.Replace` 保留 `.bak`，首次保存则移动文件；这是单文件替换，不是 JSON 与 Quartz、SQLite 的跨系统事务。`LoadFromFile` 只读取主文件，没有自动加载 `.bak` 的回退，加载失败后不要用空任务列表覆盖证据。
 
-`SchedulerScheduleState` 区分累计 `RunCount` 与本轮 `ScheduledFireCount`，用 `HasScheduleCheckpoint`、`NextScheduledFireTimeUtc` 和 `ScheduleCompleted` 保存有限计划进度。监听器在计划触发进入业务前保存已消耗次数和下一时间，业务返回后保存结果统计，不依赖任务窗口是否打开；手动触发只更新累计统计及上次实际执行时间。有限计划最后一次触发后保留 durable Job，因此仍可多次点击“立即执行”。
+`SchedulerScheduleState` 区分累计 `RunCount` 与本轮 `ScheduledFireCount`，用 `HasScheduleCheckpoint`、`NextScheduledFireTimeUtc` 和 `ScheduleCompleted` 保存有限计划进度。监听器在计划触发进入业务前保存已消耗次数和下一时间，业务返回后保存结果统计，不依赖任务窗口是否打开；仅执行一次只更新累计统计及上次实际执行时间。有限计划最后一次触发后保留 durable Job，可重新执行整轮，也可通过更多菜单额外执行一次。
 
 重启不注册自动触发器。继续时只安排未完成次数，保留仍在未来的下一时间；已过期的简单重复计划从当前时间加一个间隔开始，不补跑积压触发，也不重置已经开始的延迟。编辑保存会明确建立新一轮计划，重置计划进度并保留同身份的累计历史统计。
 
@@ -79,7 +79,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 - `Simple` 的 Once 只设置首次触发；Multiple 的 `RepeatCount` 是首次之后的追加次数；Forever 按 `Interval` 重复。
 - `Interval` 使用 `DailyTimeIntervalScheduleBuilder`，要求整数秒间隔。Multiple 同样传递追加次数，Forever 不设置零重复次数；不要把它当成 Simple 触发器或“每天只执行一次”。
 - `Calendar` 当前固定为一个日历日间隔，不能把界面“24 h”理解为跨夏令时始终固定秒数；Cron 直接交给 Quartz。scheduler 的全局 misfire 阈值为 60 秒，但各触发器没有额外指定时区或逐类 misfire 指令，具体时区/错过触发行为不能由任务标题推断。
-- `Priority` 传给触发器，不是抢占正在执行的 Job。立即运行直接调用 `Scheduler.TriggerJob(JobKey)`，没有在这个 UI 入口检查 `Running`/`Paused` 或去重；返回只表示触发请求完成，不是业务完成，也不是暂停状态下绝对不可运行的保证。
+- `Priority` 传给触发器，不是抢占正在执行的 Job。主操作 `ExecuteJob` 在变更门内拒绝已经启用或仍在执行的任务，完成后复用编辑的校验、替换及保存失败回退路径，避免重复点击建立多轮计划。更多菜单的仅执行一次调用 `Scheduler.TriggerJob(JobKey)`，保留独立单次触发语义；返回只表示触发请求完成，不是业务完成，也不是暂停状态下绝对不可运行的保证。
 
 `_mutationGate` 串行化创建、更新、删除、暂停等管理操作，并不串行化 Job 执行。是否禁止同一任务并发由 Job 自身的 `[DisallowConcurrentExecution]` 等机制决定；该属性以 `JobKey` 为界，不能防止两个不同任务名同时操作同一设备。`CameraCaptureJob`、`SpectrumGetDataJob` 和 `HeadlessFlowJob` 声明了此属性，不能据此扩展成所有 Job 都受保护。
 
@@ -126,7 +126,7 @@ JSON 使用 `TypeNameHandling.All` 保留多态类型和 `IJobConfig`，加载�
 ## 验证范围与缺口
 
 - 验证不加载用户保存任务或操作真实设备。
-- `SchedulerLifecycleTests` 使用独立 Quartz RAM scheduler、空 Job、临时 JSON 和隔离历史写入，覆盖有限计划完成后多次手动运行、重启只登记无触发器任务、暂停时手动运行、继续剩余次数、保存失败回退、全部暂停/继续及编辑重新安排。
+- `SchedulerLifecycleTests` 使用独立 Quartz RAM scheduler、空 Job、临时 JSON 和隔离历史写入，覆盖有限计划完成后多次手动运行、重新执行完整循环并拒绝重复启动、Cron 主操作按时间登记、重启只登记无触发器任务、暂停时手动运行、继续剩余次数、保存失败回退、全部暂停/继续及编辑重新安排。
 - `SchedulerTriggerFactoryTests` 检查触发器类型、追加次数、日历间隔、Cron、延迟及非法值；其中 Quartz RAM scheduler 用例只验证替换行为，不启动真实 Job，也不覆盖 `QuartzSchedulerManager` 的 JSON 失败补偿链。
 - `SchedulerTaskSerializationTests` 验证旧多态 JSON、定义版本与替换备份；不验证管理器启动时的旧 Interval/Forever 暂停迁移或坏主文件恢复。
 - `SchedulerHistoryQueryTests` 使用隔离临时 SQLite，验证筛选/分页统计、稳定排序与显式失败；不覆盖真实历史库初始化失败、执行监听写入或清理。

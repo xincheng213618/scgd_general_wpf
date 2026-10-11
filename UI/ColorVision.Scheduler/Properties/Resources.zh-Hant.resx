@@ -528,6 +528,45 @@
     <value>計畫已完成</value>
   </data>
   <data name="Sched_ScheduleFinished" xml:space="preserve">
-    <value>本輪計畫已完成。可立即執行一次，或編輯任務重新安排計畫。</value>
+    <value>本輪計畫已完成，可重新執行任務或重新啟用計畫。</value>
+  </data>
+  <data name="Sched_ExecuteTask" xml:space="preserve">
+    <value>執行任務</value>
+  </data>
+  <data name="Sched_RerunTask" xml:space="preserve">
+    <value>重新執行</value>
+  </data>
+  <data name="Sched_ContinueExecution" xml:space="preserve">
+    <value>繼續執行</value>
+  </data>
+  <data name="Sched_EnablePlan" xml:space="preserve">
+    <value>啟用計畫</value>
+  </data>
+  <data name="Sched_ReenablePlan" xml:space="preserve">
+    <value>重新啟用</value>
+  </data>
+  <data name="Sched_PlanEnabled" xml:space="preserve">
+    <value>計畫已啟用</value>
+  </data>
+  <data name="Sched_WaitingExecution" xml:space="preserve">
+    <value>等待執行</value>
+  </data>
+  <data name="Sched_OnlyRunOnce" xml:space="preserve">
+    <value>僅執行一次</value>
+  </data>
+  <data name="Sched_ExecuteTaskHint" xml:space="preserve">
+    <value>按設定的次數、間隔和延遲執行；暫停後繼續剩餘次數。</value>
+  </data>
+  <data name="Sched_EnablePlanHint" xml:space="preserve">
+    <value>按設定的日期、時間和週期運行。</value>
+  </data>
+  <data name="Sched_OnlyRunOnceHint" xml:space="preserve">
+    <value>額外運行一次，保留計畫進度及暫停狀態。</value>
+  </data>
+  <data name="Sched_AlreadyActive" xml:space="preserve">
+    <value>任務已啟動，請先暫停或等待本輪完成。</value>
+  </data>
+  <data name="Sched_TaskNotFound" xml:space="preserve">
+    <value>找不到該任務，請重新整理任務列表。</value>
   </data>
 </root>
