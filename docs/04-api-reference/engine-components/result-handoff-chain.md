@@ -32,13 +32,13 @@ related: ["engine.index","engine.mqtt","engine.devices","ui.image-editor","algor
 | 入口 | 接受与加载条件 |
 | --- | --- |
 | 远端回包 | 设备 Code 精确匹配且 `Data.MasterId` 可转换为正数，随后回查 `AlgResultMasterDao`；这段接收逻辑不以回包 Code 或 EventName 作成功门禁 |
-| 本地结果消息 | Route、ResultKind 都为 `algorithm`，设备 Code 精确匹配，再按 MasterId 回查主表；不从消息直接取得像素或明细 |
+| 本地结果消息 | ResultKind 为 `algorithm`；Route 为 `local-flow` 时不按设备 Code 过滤，其他通知仍要求 Route 为 `algorithm` 且设备 Code 精确匹配。随后按 MasterId 回查主表，不从消息直接取得像素或明细 |
 | 工具栏 **查询** | 先清当前列表，直接按主表 ID 排序加载；默认倒序、最多 50 条，按 `Count` 完整加载，`Count<=0` 不限条数；不自动限定当前设备或批次 |
 | **高级查询** | 打开主结果表的通用查询窗口；按用户条件和查询数量完整加载，与实时消息筛选分开，不受实时结果保留上限限制 |
 
 回查找不到主记录时跳过并记日志，没有自动重试；加载成功后通过 Dispatcher 排队插入列表，执行前仍检查视图/设备是否已释放。视图按主记录 ID 去重，重复通知不重复创建驻留结果或自动保存数据列。通知到达、数据库可读、列表插入和选中展示不是一个事务；本地消息的 `Code=0` 是固定信封值，算法成败看主记录 `ResultCode`。
 
-纯本地算法和文件节点不绑定设备：结果主表的设备代码为空，通知使用 `ResultRoutes.LocalFlow`（`local-flow`），保留 `SerialNumber`、`NodeId`、`ZIndex` 和主结果引用。设备视图不接收这类通知；从流程批次结果或普通历史查询加载时仍使用同一套 DAO 和 handler。相机、校正及服务节点继续采用各自的设备路由，不能把纯算法结果自动归给第一个配置设备。
+纯本地算法和文件节点不绑定设备：结果主表的设备代码为空，通知使用 `ResultRoutes.LocalFlow`（`local-flow`），保留 `SerialNumber`、`NodeId`、`ZIndex` 和主结果引用。`LocalPoiNode` 等纯本地算法完成并发布持久化结果后，已订阅的算法详情（包括默认算法）自动新增记录，沿用自动选中、去重和历史容量设置；即使详情尚未显示也能接收。本地算法通知不按设备 Code 过滤，也不修改主表设备归属；文件节点的图像通知不进入算法列表。从流程批次结果或普通历史查询加载时仍使用同一套 DAO 和 handler。相机、校正及服务节点继续采用各自的设备路由。
 
 通过齿轮打开 **算法视图配置**，区分以下选项：
 

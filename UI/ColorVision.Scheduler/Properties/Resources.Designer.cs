@@ -23,6 +23,8 @@ namespace ColorVision.Scheduler.Properties {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
+        public static string Sched_Completed => ResourceManager.GetString("Sched_Completed", resourceCulture);
+        public static string Sched_ScheduleFinished => ResourceManager.GetString("Sched_ScheduleFinished", resourceCulture);
         
         private static global::System.Resources.ResourceManager resourceMan;
         

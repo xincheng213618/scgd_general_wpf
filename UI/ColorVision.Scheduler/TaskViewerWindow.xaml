@@ -128,6 +128,9 @@
                                         <Style TargetType="Button" BasedOn="{StaticResource SchedulerAction}">
                                             <Setter Property="Content" Value="{x:Static properties:Resources.Sched_PauseTask}"/>
                                             <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static local:SchedulerStatus.Completed}">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                </DataTrigger>
                                                 <DataTrigger Binding="{Binding Status}" Value="{x:Static local:SchedulerStatus.Paused}">
                                                     <Setter Property="Content" Value="{x:Static properties:Resources.Sched_ResumeTask}"/>
                                                 </DataTrigger>

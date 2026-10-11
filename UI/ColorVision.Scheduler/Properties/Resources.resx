@@ -504,4 +504,10 @@
   <data name="Sched_PauseHint" xml:space="preserve">
     <value>暂停只影响后续触发，正在执行的任务会继续运行</value>
   </data>
+  <data name="Sched_Completed" xml:space="preserve">
+    <value>计划已完成</value>
+  </data>
+  <data name="Sched_ScheduleFinished" xml:space="preserve">
+    <value>本轮计划已完成。可立即执行一次，或编辑任务重新安排计划。</value>
+  </data>
 </root>

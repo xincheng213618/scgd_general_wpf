@@ -524,4 +524,10 @@
   <data name="Sched_PauseHint" xml:space="preserve">
     <value>Pausing prevents future triggers; running tasks continue</value>
   </data>
+  <data name="Sched_Completed" xml:space="preserve">
+    <value>Schedule completed</value>
+  </data>
+  <data name="Sched_ScheduleFinished" xml:space="preserve">
+    <value>This schedule has completed. Run it once manually or edit the task to schedule it again.</value>
+  </data>
 </root>

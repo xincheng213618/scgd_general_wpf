@@ -11288,7 +11288,7 @@
       "knowledge_id": "ui.scheduler",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。",
+      "summary": "任务计划程序的创建、调度进度和执行历史；重启只恢复暂停任务，有限计划完成后不重跑，立即执行独立于计划次数。",
       "aliases": [
         "任务计划程序",
         "创建任务",
@@ -11315,6 +11315,7 @@
         "UI/ColorVision.Scheduler/SchedulerStatusBarProvider.cs",
         "UI/ColorVision.Scheduler/SchedulerInfo.cs",
         "UI/ColorVision.Scheduler/SchedulerTriggerFactory.cs",
+        "UI/ColorVision.Scheduler/SchedulerScheduleState.cs",
         "UI/ColorVision.Scheduler/SchedulerTaskSerializer.cs",
         "UI/ColorVision.Scheduler/TaskExecutionListener.cs",
         "UI/ColorVision.Scheduler/Data/SchedulerDbManager.cs",
@@ -11334,6 +11335,7 @@
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/SchedulerTriggerFactoryTests.cs",
+        "Test/ColorVision.UI.Tests/SchedulerLifecycleTests.cs",
         "Test/ColorVision.UI.Tests/SchedulerTaskSerializationTests.cs",
         "Test/ColorVision.UI.Tests/SchedulerHistoryQueryTests.cs",
         "Test/ColorVision.UI.Tests/ScheduledDeviceJobHelperTests.cs"

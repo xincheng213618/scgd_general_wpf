@@ -32,6 +32,7 @@ internal static class SchedulerPresentation
     {
         SchedulerStatus.Running => Resources.Sched_Running,
         SchedulerStatus.Paused => Resources.Sched_Paused,
+        SchedulerStatus.Completed => Resources.Sched_Completed,
         _ => Resources.Sched_Ready
     };
 

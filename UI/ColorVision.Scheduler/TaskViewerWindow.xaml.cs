@@ -96,13 +96,6 @@ namespace ColorVision.Scheduler
                 {
                     if (_isClosed)
                         return;
-                    var task = TaskInfos.FirstOrDefault(task => task.JobName == context.JobDetail.Key.Name && task.GroupName == context.JobDetail.Key.Group);
-                    if (task != null)
-                    {
-                        // A one-shot trigger may already be gone; the execution context is authoritative.
-                        task.NextFireTime = context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                        task.PreviousFireTime = context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
-                    }
                     QueueCopilotContextPublish();
                 });
             }
@@ -135,7 +128,8 @@ namespace ColorVision.Scheduler
                         TaskInfos.Add(task);
                     }
                     task.NextFireTime = trigger.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                    task.PreviousFireTime = trigger.PreviousFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    if (trigger.PreviousFireTimeUtc is { } previousFire)
+                        task.PreviousFireTime = previousFire.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
                 }
             }
         }

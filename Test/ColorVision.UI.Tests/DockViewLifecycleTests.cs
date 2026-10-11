@@ -11,6 +11,7 @@ using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Documents;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -24,6 +25,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -300,6 +302,42 @@ public sealed class DockViewLifecycleTests
             image.SetImageSource(new WriteableBitmap(64, 32, 96, 96, PixelFormats.Gray8, null));
             image.Clear();
             Assert.Same(Task.CompletedTask, ImageMemoryReclaimer.PendingCollection);
+        });
+    }
+
+    [Fact]
+    public void CieProbeReplacementStopsHiddenPixelReadoutAndRestoresNormalTool()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            using var scope = new Scope();
+            using var image = new ImageView();
+            image.SetImageSource(new WriteableBitmap(200, 200, 96, 96, PixelFormats.Gray8, null));
+            var factory = image.IEditorToolFactory;
+            var normal = Assert.Single(factory.IEditorTools.OfType<MouseMagnifierManager>());
+            int childCount = VisualTreeHelper.GetChildrenCount(image.ImageShow);
+            normal.IsChecked = true;
+            factory.RefreshToolBars();
+            Assert.True(normal.IsChecked);
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+
+            var opener = new CVRawOpen(image.EditorContext);
+            opener.AttachLiveCvcie(image, 200, 200, 32, 1, new byte[200 * 200 * sizeof(float)], [1]);
+            Assert.False(normal.IsChecked);
+            Assert.Equal(childCount, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            var probe = Assert.IsAssignableFrom<IEditorToggleTool>(factory.GetIEditorTool(nameof(MouseMagnifierManager)));
+            Assert.NotSame(normal, probe);
+            probe.IsChecked = true;
+            image.ImageShow.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount) { RoutedEvent = Mouse.MouseEnterEvent });
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+
+            factory.ApplyImageOpenTools(null);
+            Assert.False(probe.IsChecked);
+            Assert.Same(normal, factory.GetIEditorTool(nameof(MouseMagnifierManager)));
+            Assert.Equal(childCount, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            normal.IsChecked = true;
+            Assert.Equal(childCount + 1, VisualTreeHelper.GetChildrenCount(image.ImageShow));
+            normal.IsChecked = false;
         });
     }
 

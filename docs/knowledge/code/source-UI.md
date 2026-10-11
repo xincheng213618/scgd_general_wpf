@@ -378,7 +378,7 @@ next: false
   UI 扩展发现与入口缺失排查：AssemblyHandler 的程序集过滤、类型缓存和 provider 构造；刷新程序集不重建所有消费者，入口可见不证明初始化或业务完成。
 
 - [任务计划程序：创建、调度与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
-  任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。
+  任务计划程序的创建、调度进度和执行历史；重启只恢复暂停任务，有限计划完成后不重跑，立即执行独立于计划次数。
 
 - [状态栏：发现、刷新与宿主生命周期](../../04-api-reference/ui-components/status-bar.md) — `ui.status-bar`
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
@@ -593,7 +593,7 @@ next: false
   属性面板的字段生成、编辑器选择和 Flow 适配；区分直接修改、工作副本、关闭、重置与宿主持久化。
 
 - [任务计划程序：创建、调度与执行历史](../../04-api-reference/ui-components/ColorVision.Scheduler.md) — `ui.scheduler`
-  任务计划程序的状态栏入口、创建步骤、调度参数、启动恢复和执行历史；暂停只限制后续触发，重启按保存的定义重新调度。
+  任务计划程序的创建、调度进度和执行历史；重启只恢复暂停任务，有限计划完成后不重跑，立即执行独立于计划次数。
 
 - [应用搜索：入口、候选与执行](../../04-api-reference/ui-components/search.md) — `ui.search`
   应用搜索窗口的入口、关键词匹配、候选来源、缓存刷新与命令执行；Ctrl+F 按焦点执行局部查找，Ctrl+Shift+P 打开应用搜索。
