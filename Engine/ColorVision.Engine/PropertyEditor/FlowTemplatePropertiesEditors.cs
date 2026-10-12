@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.ImageROI;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
@@ -93,11 +92,6 @@ public sealed class SensorTemplatePropertiesEditor : IPropertyEditor
 public sealed class BlackMuraTemplatePropertiesEditor : IPropertyEditor
 {
     public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateBlackMura());
-}
-
-public sealed class ImageRoiTemplatePropertiesEditor : IPropertyEditor
-{
-    public DockPanel GenProperties(PropertyInfo property, object obj) => FlowNodePropertyEditorRegistration.CreateTemplateEditor(property, obj, new TemplateImageROI());
 }
 
 public sealed class PoiAnalysisTemplatePropertiesEditor : IPropertyEditor

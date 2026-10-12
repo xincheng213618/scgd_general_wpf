@@ -74,7 +74,7 @@ Engine 本地节点由 `LocalFlowNodeBase` 在输入到达时捕获 `CVStartCFC`
 ## 验证
 
 - `ConventionalFlowNodeTests.cs`：常规节点契约。
-- `CompatibilityNodeMigrationTests.cs`：迁移前的 30 节点合成画布，检查持久化字段、连线、请求、菜单可见性及直接属性编辑器。
+- `CompatibilityNodeMigrationTests.cs`：迁移前保存、排除退役节点后的 28 节点合成画布，检查持久化字段、27 条连线、请求、菜单可见性及直接属性编辑器。
 - `FlowRuntimeCompletionTests.cs`：流程终态。
 - `LvCameraLocalForwardingTests.cs`：服务节点由宿主本地执行时的路由、结果交接、命令终态和资源释放。
 

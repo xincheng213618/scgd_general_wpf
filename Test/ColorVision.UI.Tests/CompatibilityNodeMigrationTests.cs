@@ -36,7 +36,7 @@ public sealed class CompatibilityNodeMigrationTests
     });
 
     // These fixtures were saved by the compiled FlowEngineLib nodes before migration.
-    // Retired DataLoad was excluded; the remaining 29 node records retain their original bytes.
+    // Retired DataLoad and ImageROI were excluded; the remaining 28 node records retain their original bytes.
     // They contain synthetic template names/ranges, never user data.
     private static byte[] ReadCanvas() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.stn"));
     private static JArray ReadContracts() => JArray.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "Flow", "EditorNodes.before.json")));
@@ -81,7 +81,7 @@ public sealed class CompatibilityNodeMigrationTests
         JArray contracts = ReadContracts();
         using var container = new CVNodeContainer();
         container.LoadCanvas(before);
-        Assert.Equal(29, container.Nodes.Count);
+        Assert.Equal(28, container.Nodes.Count);
         var nodes = container.Nodes.Cast<STNode>().ToArray();
         for (int i = 0; i < nodes.Length; i++)
         {
@@ -102,8 +102,8 @@ public sealed class CompatibilityNodeMigrationTests
         editor.LoadCanvas(saved);
         AssertPropertiesAndConnections(saved, editor.GetCanvasData(), editorLayout: true);
         NeutralCanvas neutral = StnV1NeutralCodec.Decode(saved, new());
-        Assert.Equal(29, neutral.Nodes.Count);
-        Assert.Equal(28, neutral.Connections.Count);
+        Assert.Equal(28, neutral.Nodes.Count);
+        Assert.Equal(27, neutral.Connections.Count);
         Assert.All(neutral.Nodes, node => Assert.Equal("FlowEngineLib.dll|" + node.Schema.NodeType.FullName, node.ModelKey));
         container.LoadCanvas(StnV1NeutralCodec.Encode(neutral, new()));
         AssertPropertiesAndConnections(saved, container.GetCanvasData());
