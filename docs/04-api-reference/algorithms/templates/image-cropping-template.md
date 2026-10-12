@@ -11,7 +11,7 @@ related: ["algorithms.index","algorithms.roi-routes","engine.results"]
 
 # ImageCropping 图像裁剪模板
 
-本页描述 `Engine/ColorVision.Engine/Templates/ImageCropping/` 的强类型裁剪适配链，不是 `Jsons/ImageROI` 或统一算法平台的全部 ROI 能力。
+本页描述 `Engine/ColorVision.Engine/Templates/ImageCropping/` 的强类型裁剪适配链。
 
 ## 契约与位置
 

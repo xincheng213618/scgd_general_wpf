@@ -1405,15 +1405,13 @@
       "knowledge_id": "algorithms.roi-routes",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "按用途定位发光区、传统与 JSON 裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。",
+      "summary": "按用途定位发光区、传统裁剪、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。",
       "aliases": [
         "ROI到底对应哪个模块",
-        "TemplateImageROI",
         "TemplateSFRFindROI",
         "AlgorithmInvocation.Roi"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Templates/Jsons/ImageROI/TemplateImageROI.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs",
         "Engine/ColorVision.Engine/Templates/ImageCropping/TemplateImageCropping.cs",
         "UI/ColorVision.Algorithms/AlgorithmInvocation.cs"

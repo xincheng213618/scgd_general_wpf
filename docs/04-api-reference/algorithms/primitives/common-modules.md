@@ -17,7 +17,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","al
 
 | 任务 | 模板与源码入口 | 边界 |
 | --- | --- | --- |
-| 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi`、`TemplateImageROI`、`TemplateSFRFindROI` | 传统参数、JSON 与本地算法路径分开核对 |
+| 发光区、区域定位与裁剪 | [ROI](./roi.md)、`TemplateRoi`、`TemplateSFRFindROI` | 传统参数、JSON 与本地算法路径分开核对 |
 | 点集构建、过滤、修正和复用 | [POI](./poi.md)、[POI 模板](../templates/poi-template.md) | `TemplatePoi`、`PoiParam`、`PoiPoint` 被多个算法族使用 |
 | 模板图匹配和 AOI 四角结果 | [Matching](../templates/matching-template.md) | `MatchingDisplayAlgorithmConfig` 分别持有参数选择与 `TemplateFile`，当前不附带 POI 模板选择 |
 | 编排进流程 | [Flow 接入](../templates/flow-engine.md)、[PropertyGrid](../../ui-components/property-grid.md) | 节点执行、参数编辑与模板持久化是不同契约 |
@@ -34,7 +34,7 @@ related: ["algorithms.index","algorithms.roi-routes","algorithms.poi-routes","al
 
 ## 不可互换的模型
 
-`TemplateRoi` 是传统参数模板，`TemplateImageROI` 和 `TemplateSFRFindROI` 是 JSON 模板；它们不能合并成一张“ROI 参数”表。ARVR 的 SFR 找 ROI 依赖 POI，并不意味着 Matching 也依赖 POI。公共术语相同只能作为检索线索，不能用来推导配置或运行时兼容性。
+`TemplateRoi` 是传统参数模板，`TemplateSFRFindROI` 是 JSON 模板；它们不能合并成一张“ROI 参数”表。ARVR 的 SFR 找 ROI 依赖 POI，并不意味着 Matching 也依赖 POI。公共术语相同只能作为检索线索，不能用来推导配置或运行时兼容性。
 
 ## 验证入口与缺口
 

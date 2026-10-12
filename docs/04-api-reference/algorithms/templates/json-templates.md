@@ -136,7 +136,6 @@ JSON 模板将一条参数保存为数据库 `ModMasterModel.JsonVal`，由 `ITe
 | 相机 HDR | `43` / `Camera.RunParams`，位置与 Schema 缺口见上文 |
 | POI 分析 / 十字计算 | `44` / `PoiAnalysis`，`45` / `FindCross` |
 | MTF / SFR | `48` / `MTF`，`49` / `SFR` |
-| 图像 ROI | `52` / `Image.ROI`，与强类型裁剪模板不同 |
 | KB | `150` / `KB`，使用专用编辑器 |
 
 同名算法可同时存在 JSON 与强类型模板。结果显示失败时，沿实际模板、MQTT 事件名、结果 `Version`、`ViewHandle*.CanHandle1` 逐项检查；Schema 索引中的版本不是结果 handler 的匹配条件。结果发现与分发统一见[结果处理链](../../engine-components/result-handoff-chain.md)。
