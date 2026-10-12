@@ -59,7 +59,10 @@ public sealed class CopilotDeepSeekAnthropicChatClientTests
     [InlineData("https://api.deepseek.com/anthropic", CopilotProviderType.OpenAICompatible)]
     public async Task OtherEndpointsRetainOpaqueThinking(string endpoint, CopilotProviderType provider)
     {
-        using var transport = new CaptureHandler(false);
+        using var transport = new CaptureHandler(false)
+        {
+            ResponseContent = """[{"type":"redacted_thinking","data":"opaque-fixture"},{"type":"text","text":"Prior answer"}]""",
+        };
         using var http = new HttpClient(transport);
         using var sdk = new AnthropicClient(new ClientOptions { ApiKey = "test-key", BaseUrl = endpoint, HttpClient = http, MaxRetries = 0 });
         using var inner = sdk.AsIChatClient("test-model", 128);
@@ -67,9 +70,13 @@ public sealed class CopilotDeepSeekAnthropicChatClientTests
         profile.ProviderType = provider;
         var client = CopilotDeepSeekAnthropicChatClient.WrapIfRequired(inner, profile);
         Assert.Same(inner, client);
-        await client.GetResponseAsync([new(ChatRole.User, "Continue"), new(ChatRole.Assistant,
-            [new TextReasoningContent("") { ProtectedData = "opaque-fixture" }, new TextContent("Prior answer")])]);
-        using var payload = JsonDocument.Parse(Assert.Single(transport.Payloads));
+        ChatMessage user = new(ChatRole.User, "Continue");
+        // Let the SDK identify genuine redacted thinking; an empty signed thinking
+        // block is a different content type in current Anthropic SDK versions.
+        var response = await client.GetResponseAsync([user]);
+        await client.GetResponseAsync([user, Assert.Single(response.Messages)]);
+        Assert.Equal(2, transport.Payloads.Count);
+        using var payload = JsonDocument.Parse(transport.Payloads[^1]);
         Assert.Contains(payload.RootElement.GetProperty("messages").EnumerateArray().SelectMany(m => m.GetProperty("content").EnumerateArray()),
             b => b.GetProperty("type").GetString() == "redacted_thinking" && b.GetProperty("data").GetString() == "opaque-fixture");
     }
@@ -79,11 +86,12 @@ public sealed class CopilotDeepSeekAnthropicChatClientTests
     private sealed class CaptureHandler(bool streaming) : HttpMessageHandler
     {
         public List<string> Payloads { get; } = [];
+        public string ResponseContent { get; init; } = """[{"type":"text","text":"ok"}]""";
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Payloads.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
-            const string message = "{\"id\":\"msg_fixture\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"test-model\",\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":4,\"output_tokens\":1}}";
+            var message = "{\"id\":\"msg_fixture\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"test-model\",\"content\":" + ResponseContent + ",\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":4,\"output_tokens\":1}}";
             var body = streaming
                 ? "event: message_start\ndata: {\"type\":\"message_start\",\"message\":" + message + "}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
                 : message;
