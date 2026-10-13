@@ -413,7 +413,7 @@ namespace ColorVision.Copilot
             assistantMessage.MarkThinkingCompleted();
         }
 
-        private static void CancelPendingUserQuestion(CopilotChatMessage assistantMessage)
+        internal static void CancelPendingUserQuestion(CopilotChatMessage assistantMessage)
         {
             if (assistantMessage.UserQuestion?.IsPending == true)
             {

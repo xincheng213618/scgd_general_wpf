@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -167,6 +168,110 @@ public sealed class CopilotWebPageRenderingTests
             (_, _) => throw new InvalidOperationException("Browser should not start"), CancellationToken.None);
         Assert.False(page.BrowserRendered);
         Assert.Null(page.RenderingNotice);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PlainTextKeepsLiteralMarkupWhitespaceAndEntitiesWithoutStartingBrowser(bool longContent)
+    {
+        var content = "    value = &lt;literal&gt;\r\n<script>ALARM=result-NG</script>\r\n<style>literal style</style>\r\n"
+            + (longContent ? new string('x', 240) : "END");
+        var renderCalls = 0;
+
+        var page = await CopilotWebPageToolSupport.ExtractWithBrowserFallbackAsync(PageUri, "text/plain", content,
+            (_, _) =>
+            {
+                renderCalls++;
+                return Task.FromResult(new CopilotFetchedWebPageContent(PageUri.AbsoluteUri, "Rendered", "", "Replacement rendered text"));
+            }, CancellationToken.None);
+
+        Assert.Equal(content, page.Content);
+        Assert.Equal(0, renderCalls);
+        Assert.False(page.BrowserRendered);
+        Assert.Null(page.RenderingNotice);
+        Assert.Equal(content, CopilotWebPageToolSupport.BuildStoredWebPageContent(page));
+        Assert.Contains(content, CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" \r\n\t")]
+    public async Task EmptyPlainTextFailsWithoutStartingBrowser(string content)
+    {
+        var renderCalls = 0;
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ExtractWithBrowserFallbackAsync(PageUri, "text/plain", content,
+                (_, _) =>
+                {
+                    renderCalls++;
+                    return Task.FromResult(new CopilotFetchedWebPageContent(PageUri.AbsoluteUri, "Rendered", "", "Replacement rendered text"));
+                }, CancellationToken.None));
+
+        Assert.Contains("empty", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, renderCalls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PlainTextCharacterLimitReportsOnlyTruncationAndKeepsSurrogatePairsIntact(bool exceedsLimit)
+    {
+        var maximum = CopilotWebPageToolSupport.MaxWebPageContentChars;
+        var content = exceedsLimit ? new string('x', maximum - 1) + "🔬 tail" : new string('x', maximum);
+
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(PageUri, "text/plain", content);
+
+        var expected = exceedsLimit
+            ? new string('x', maximum - 1) + Environment.NewLine + $"...<content truncated; kept the first {maximum - 1} characters.>"
+            : content;
+        Assert.Equal(expected, page.Content);
+        Assert.DoesNotContain(page.Content, char.IsSurrogate);
+    }
+
+    [Theory]
+    [InlineData("html-head")]
+    [InlineData("xml-head")]
+    [InlineData("xml-tail")]
+    public void DownloadedMarkupTruncationKeepsValidUnicodeAtBothRetainedBoundaries(string boundary)
+    {
+        var isXml = boundary != "html-head";
+        var mediaType = isXml ? "application/xml" : "text/html";
+        var opening = isXml ? "<root>" : "<body>";
+        var closing = isXml ? "</root>" : "</body>";
+        var markerPrefix = isXml ? "...<structured content truncated;" : "...<content truncated;";
+        var fillerLength = CopilotWebPageToolSupport.MaxWebPageContentChars * 2;
+        var baseline = CopilotWebPageToolSupport.ExtractDownloadedContent(PageUri, mediaType,
+            opening + "BEGIN_KEEP:" + new string('x', fillerLength) + ":END_KEEP" + closing).Content;
+        var markerStart = baseline.IndexOf(markerPrefix, StringComparison.Ordinal);
+        Assert.True(markerStart >= 0);
+        var markerEnd = baseline.IndexOf('>', markerStart) + 1;
+        Assert.True(markerEnd > markerStart);
+        // Locate the real retained boundary without duplicating the head/tail split policy.
+        var fillerBoundary = boundary == "xml-tail"
+            ? fillerLength - baseline[markerEnd..].Count(character => character == 'x')
+            : baseline[..markerStart].Count(character => character == 'x');
+        var content = opening + "BEGIN_KEEP:" + new string('x', fillerBoundary - 1) + "🔬"
+            + new string('x', fillerLength - fillerBoundary - 1) + ":END_KEEP" + closing;
+
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(PageUri, mediaType, content);
+
+        Assert.NotEmpty(new UTF8Encoding(false, true).GetBytes(page.Content));
+        Assert.StartsWith(isXml ? "<root>BEGIN_KEEP:" : "BEGIN_KEEP:", page.Content, StringComparison.Ordinal);
+        Assert.Contains(markerPrefix, page.Content, StringComparison.Ordinal);
+        Assert.True(page.Content.Length <= baseline.Length);
+        if (isXml)
+        {
+            Assert.EndsWith(":END_KEEP</root>", page.Content, StringComparison.Ordinal);
+            Assert.True(page.Content.Length <= CopilotWebPageToolSupport.MaxWebPageContentChars);
+        }
+        else
+        {
+            Assert.DoesNotContain(":END_KEEP", page.Content, StringComparison.Ordinal);
+            var retainedBody = page.Content[..page.Content.IndexOf(markerPrefix, StringComparison.Ordinal)].TrimEnd();
+            Assert.True(retainedBody.Length <= CopilotWebPageToolSupport.MaxWebPageContentChars);
+        }
     }
 
     [Fact]

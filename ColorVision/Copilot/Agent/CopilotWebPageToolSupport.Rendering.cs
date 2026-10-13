@@ -21,9 +21,10 @@ namespace ColorVision.Copilot
             try { extracted = ExtractDownloadedContent(uri, mediaType, content); }
             catch (CopilotWebPageRenderingRequiredException) when (renderPage != null) { }
 
-            var needsRendering = extracted == null || extracted.Value.IsSparseExtraction
-                || (!IsStructuredWebContentType(mediaType) && extracted.Value.Content.Length < 200
-                    && content.Contains("<script", StringComparison.OrdinalIgnoreCase));
+            var needsRendering = !IsPlainTextWebContentType(mediaType)
+                && (extracted == null || extracted.Value.IsSparseExtraction
+                    || (!IsStructuredWebContentType(mediaType) && extracted.Value.Content.Length < 200
+                        && content.Contains("<script", StringComparison.OrdinalIgnoreCase)));
             if (renderPage == null || !needsRendering) return extracted!.Value;
 
             cancellationToken.ThrowIfCancellationRequested();

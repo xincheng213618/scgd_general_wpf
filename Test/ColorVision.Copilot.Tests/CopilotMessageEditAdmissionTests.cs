@@ -17,6 +17,361 @@ public sealed class CopilotMessageEditAdmissionTests
     private const string SubmittedEdit = "The edited request submitted before admission.";
     private const string NewerText = "A later edit or draft that must not be consumed.";
 
+    [Fact]
+    public void EditingLatestMessageClosesHistorySearchAndSubmitsTheEditedComposer()
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            Assert.Empty(fixture.ViewModel.InputText);
+            Assert.Empty(fixture.Conversation.Attachments);
+            Assert.True(fixture.ViewModel.TryOpenPromptHistorySearch());
+            Assert.True(fixture.ViewModel.EditMessageCommand.CanExecute(fixture.OriginalUser));
+
+            fixture.ViewModel.EditMessageCommand.Execute(fixture.OriginalUser);
+
+            Assert.False(fixture.ViewModel.IsPromptHistorySearchOpen);
+            Assert.True(fixture.ViewModel.IsEditingMessage);
+            Assert.Equal(OriginalPrompt, fixture.ViewModel.InputText);
+            Assert.Equal(OriginalPrompt, fixture.Conversation.DraftText);
+            var originalAttachment = Assert.Single(fixture.OriginalUser.Attachments);
+            var restoredAttachment = Assert.Single(fixture.Conversation.Attachments);
+            Assert.NotSame(originalAttachment, restoredAttachment);
+            Assert.Equal(originalAttachment.Type, restoredAttachment.Type);
+            Assert.Equal(originalAttachment.Value, restoredAttachment.Value);
+
+            fixture.ViewModel.InputText = NewerText;
+            fixture.ViewModel.DismissPromptHistorySearch();
+            Assert.Equal(NewerText, fixture.ViewModel.InputText);
+            Assert.Equal(NewerText, fixture.Conversation.DraftText);
+            InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes)
+                .WaitAsync(TestTimeout).GetAwaiter().GetResult();
+
+            var request = Assert.Single(fixture.Runtime.Requests);
+            Assert.Equal(NewerText, request.UserText);
+            Assert.Equal(fixture.Conversation.Id, request.ConversationId);
+            Assert.Equal(originalAttachment.Type, Assert.Single(request.HostContext.Attachments).Type);
+            Assert.Equal(2, fixture.Conversation.Messages.Count);
+            Assert.Equal(NewerText, fixture.Conversation.Messages[0].Content);
+            Assert.NotSame(fixture.OriginalUser, fixture.Conversation.Messages[0]);
+            Assert.NotSame(fixture.OriginalAssistant, fixture.Conversation.Messages[1]);
+            Assert.False(fixture.ViewModel.IsEditingMessage);
+        }, TimeSpan.FromSeconds(30), "The history-search message edit test did not finish.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RepeatedOrdinarySendDuringImageAdmissionIsScheduledOnlyOnce(bool secondCompletesFirst)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var firstContext = new CopilotPausedAdmissionContext(TestTimeout, "The first ordinary send did not finish.");
+            using var secondContext = new CopilotPausedAdmissionContext(TestTimeout, "The repeated ordinary send did not finish.");
+            var contexts = new[] { firstContext, secondContext };
+            var sends = new Task?[2];
+            Task? resend = null;
+            var previousContext = SynchronizationContext.Current;
+            try
+            {
+                const string prompt = "Inspect this image once for the submitted draft.";
+                var originalImage = Assert.Single(fixture.OriginalUser.Attachments);
+                fixture.Conversation.Attachments.Add(originalImage.CreateSnapshot());
+                fixture.ViewModel.InputText = prompt;
+                for (var index = 0; index < sends.Length; index++)
+                {
+                    SynchronizationContext.SetSynchronizationContext(contexts[index]);
+                    var send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                    sends[index] = send;
+                    // A duplicate may be rejected before image admission once this is fixed.
+                    if (!send.IsCompleted)
+                        Assert.True(contexts[index].WaitForCallback(TestTimeout));
+                }
+                Assert.False(sends[0]!.IsCompleted);
+                Assert.Empty(fixture.Runtime.Requests);
+
+                var completionOrder = secondCompletesFirst ? new[] { 1, 0 } : new[] { 0, 1 };
+                foreach (var index in completionOrder)
+                {
+                    SynchronizationContext.SetSynchronizationContext(contexts[index]);
+                    contexts[index].Complete(sends[index]!);
+                    sends[index]!.GetAwaiter().GetResult();
+                }
+
+                var request = Assert.Single(fixture.Runtime.Requests);
+                Assert.Equal(prompt, request.UserText);
+                Assert.Equal(fixture.Conversation.Id, request.ConversationId);
+                Assert.Single(request.HostContext.Attachments);
+                Assert.Equal(4, fixture.Conversation.Messages.Count);
+                Assert.Same(fixture.OriginalUser, fixture.Conversation.Messages[0]);
+                Assert.Same(fixture.OriginalAssistant, fixture.Conversation.Messages[1]);
+                Assert.Equal(prompt, fixture.Conversation.Messages[2].Content);
+                Assert.Empty(fixture.ViewModel.InputText);
+                Assert.Empty(fixture.Conversation.Attachments);
+
+                // Writing the same text again is a new submission, not the old suspended send.
+                fixture.ViewModel.InputText = prompt;
+                fixture.Conversation.Attachments.Add(originalImage.CreateSnapshot());
+                SynchronizationContext.SetSynchronizationContext(firstContext);
+                resend = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                firstContext.Complete(resend);
+                resend.GetAwaiter().GetResult();
+                Assert.Equal(2, fixture.Runtime.Requests.Count);
+                Assert.All(fixture.Runtime.Requests, item => Assert.Equal(prompt, item.UserText));
+                Assert.Equal(6, fixture.Conversation.Messages.Count);
+                Assert.Equal(prompt, fixture.Conversation.Messages[4].Content);
+            }
+            finally
+            {
+                try
+                {
+                    for (var index = 0; index < sends.Length; index++)
+                    {
+                        if (sends[index] is not { IsCompleted: false } pending)
+                            continue;
+                        SynchronizationContext.SetSynchronizationContext(contexts[index]);
+                        contexts[index].Complete(pending);
+                    }
+                    if (resend is { IsCompleted: false })
+                    {
+                        SynchronizationContext.SetSynchronizationContext(firstContext);
+                        firstContext.Complete(resend);
+                    }
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The repeated-send admission test did not finish.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ChangedContextAttachmentDuringImageAdmissionAllowsAnotherSubmission(bool replaceExistingContext)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var firstContext = new CopilotPausedAdmissionContext(TestTimeout, "The original attachment submission did not finish.");
+            using var secondContext = new CopilotPausedAdmissionContext(TestTimeout, "The changed attachment submission did not finish.");
+            var contexts = new[] { firstContext, secondContext };
+            var sends = new Task?[2];
+            var previousContext = SynchronizationContext.Current;
+            try
+            {
+                const string prompt = "Inspect the image with the attached context.";
+                const string originalContext = "Context captured by the first submission.";
+                const string changedContext = "Context captured by the second submission.";
+                fixture.Conversation.Attachments.Add(Assert.Single(fixture.OriginalUser.Attachments).CreateSnapshot());
+                if (replaceExistingContext)
+                    fixture.Conversation.Attachments.Add(CopilotAttachmentItem.CreateContext(originalContext));
+                fixture.ViewModel.InputText = prompt;
+                SynchronizationContext.SetSynchronizationContext(firstContext);
+                sends[0] = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(firstContext.WaitForCallback(TestTimeout));
+                Assert.False(sends[0]!.IsCompleted);
+
+                var attachment = CopilotAttachmentItem.CreateContext(changedContext);
+                if (replaceExistingContext)
+                    fixture.Conversation.Attachments[1] = attachment;
+                else
+                    fixture.Conversation.Attachments.Add(attachment);
+                // Leave the composer text untouched: only the attachment snapshot changes.
+                Assert.Equal(prompt, fixture.ViewModel.InputText);
+                SynchronizationContext.SetSynchronizationContext(secondContext);
+                sends[1] = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                if (!sends[1]!.IsCompleted)
+                    Assert.True(secondContext.WaitForCallback(TestTimeout));
+
+                for (var index = 0; index < sends.Length; index++)
+                {
+                    SynchronizationContext.SetSynchronizationContext(contexts[index]);
+                    contexts[index].Complete(sends[index]!);
+                    sends[index]!.GetAwaiter().GetResult();
+                }
+
+                var requests = fixture.Runtime.Requests.ToArray();
+                Assert.Equal(2, requests.Length);
+                Assert.All(requests, request => Assert.Equal(prompt, request.UserText));
+                var firstAttachments = requests[0].HostContext.Attachments;
+                var secondAttachments = requests[1].HostContext.Attachments;
+                Assert.Equal(replaceExistingContext ? 2 : 1, firstAttachments.Count);
+                Assert.Single(firstAttachments, item => item.Type == CopilotAttachmentType.Image);
+                if (replaceExistingContext)
+                    Assert.Equal(originalContext, Assert.Single(firstAttachments, item => item.Type == CopilotAttachmentType.Context).Value);
+                else
+                    Assert.DoesNotContain(firstAttachments, item => item.Type == CopilotAttachmentType.Context);
+                Assert.Equal(2, secondAttachments.Count);
+                Assert.Single(secondAttachments, item => item.Type == CopilotAttachmentType.Image);
+                Assert.Equal(changedContext, Assert.Single(secondAttachments, item => item.Type == CopilotAttachmentType.Context).Value);
+                Assert.Equal(6, fixture.Conversation.Messages.Count);
+            }
+            finally
+            {
+                try
+                {
+                    for (var index = 0; index < sends.Length; index++)
+                    {
+                        if (sends[index] is not { IsCompleted: false } pending)
+                            continue;
+                        SynchronizationContext.SetSynchronizationContext(contexts[index]);
+                        contexts[index].Complete(pending);
+                    }
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The changed-attachment admission test did not finish.");
+    }
+
+    [Fact]
+    public void FailedImageAdmissionAllowsTheUnchangedDraftAndAttachmentToBeSentAgain()
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(TestTimeout, "The storage-failure admission test did not finish.");
+            var previousContext = SynchronizationContext.Current;
+            Task? send = null;
+            try
+            {
+                const string prompt = "Retry this draft after attachment storage is repaired.";
+                var image = Assert.Single(fixture.OriginalUser.Attachments).CreateSnapshot();
+                fixture.Conversation.Attachments.Add(image);
+                fixture.ViewModel.InputText = prompt;
+                File.WriteAllText(fixture.StoragePath, "This file blocks the fixture's attachment directory.");
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+
+                Assert.Empty(fixture.Runtime.Requests);
+                Assert.Equal(2, fixture.Conversation.Messages.Count);
+                Assert.Equal(prompt, fixture.ViewModel.InputText);
+                Assert.Same(image, Assert.Single(fixture.Conversation.Attachments));
+                Assert.Equal("图片保存失败", fixture.ViewModel.LocalCommandResultTitle);
+                Assert.True(File.Exists(fixture.StoragePath));
+
+                // Remove only this fixture's blocker; do not recreate the draft or attachment.
+                File.Delete(fixture.StoragePath);
+                send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+
+                var request = Assert.Single(fixture.Runtime.Requests);
+                Assert.Equal(prompt, request.UserText);
+                Assert.Single(request.HostContext.Attachments);
+                Assert.Equal(4, fixture.Conversation.Messages.Count);
+                Assert.Empty(fixture.ViewModel.InputText);
+                Assert.Empty(fixture.Conversation.Attachments);
+            }
+            finally
+            {
+                try
+                {
+                    SynchronizationContext.SetSynchronizationContext(context);
+                    if (send is { IsCompleted: false })
+                        context.Complete(send);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                }
+            }
+        }, TimeSpan.FromSeconds(40), "The failed-admission retry test did not finish.");
+    }
+
+    [Theory]
+    [InlineData("same-conversation")]
+    [InlineData("other-conversation")]
+    public void OrdinarySendDoesNotInvalidateAnEditStartedDuringImageAdmission(string transition)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture();
+            using var context = new CopilotPausedAdmissionContext(
+                TestTimeout,
+                "The ordinary send did not finish after image admission.");
+            var previousContext = SynchronizationContext.Current;
+            Task? send = null;
+            try
+            {
+                const string ordinaryPrompt = "Send this new request with the image.";
+                fixture.Conversation.Attachments.Add(Assert.Single(fixture.OriginalUser.Attachments).CreateSnapshot());
+                fixture.ViewModel.InputText = ordinaryPrompt;
+                SynchronizationContext.SetSynchronizationContext(context);
+                send = InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes);
+                Assert.True(context.WaitForCallback(TestTimeout));
+                Assert.False(send.IsCompleted);
+                Assert.False(fixture.ViewModel.IsBusy);
+                Assert.Empty(fixture.Runtime.Requests);
+
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                Assert.True(fixture.ViewModel.TryToggleComposerStash(ordinaryPrompt.Length, out _));
+                Assert.Empty(fixture.ViewModel.InputText);
+                Assert.Empty(fixture.Conversation.Attachments);
+                var editOtherConversation = transition == "other-conversation";
+                if (editOtherConversation)
+                    Assert.True(fixture.ViewModel.TrySelectConversation(fixture.OtherConversation.Id));
+                var editedConversation = editOtherConversation ? fixture.OtherConversation : fixture.Conversation;
+                var editedUser = editOtherConversation ? fixture.OtherUser : fixture.OriginalUser;
+                Assert.True(fixture.ViewModel.EditMessageCommand.CanExecute(editedUser));
+                fixture.ViewModel.EditMessageCommand.Execute(editedUser);
+                fixture.ViewModel.InputText = NewerText;
+                Assert.True(fixture.ViewModel.IsEditingMessage);
+                var editAttachments = editedConversation.Attachments.ToArray();
+                var editedMessages = editedConversation.Messages.ToArray();
+
+                SynchronizationContext.SetSynchronizationContext(context);
+                context.Complete(send);
+                send.GetAwaiter().GetResult();
+
+                if (editOtherConversation)
+                {
+                    var request = Assert.Single(fixture.Runtime.Requests);
+                    Assert.Equal(ordinaryPrompt, request.UserText);
+                    Assert.Equal(fixture.Conversation.Id, request.ConversationId);
+                }
+                else
+                {
+                    Assert.Empty(fixture.Runtime.Requests);
+                }
+                Assert.Equal(editedMessages, editedConversation.Messages.ToArray());
+                Assert.Same(editedConversation, fixture.ViewModel.SelectedConversation);
+                Assert.True(fixture.ViewModel.IsEditingMessage);
+                Assert.Equal(NewerText, fixture.ViewModel.InputText);
+                Assert.Equal(editAttachments, editedConversation.Attachments.ToArray());
+                Assert.Equal(ordinaryPrompt, fixture.Conversation.ComposerStash?.Text);
+
+                // The newer edit must remain a valid replacement, not be discarded
+                // by CancelMessageEdit because the older send appended another turn.
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+                InvokeTask(fixture.ViewModel, "SendAsync", [], Type.EmptyTypes)
+                    .WaitAsync(TestTimeout).GetAwaiter().GetResult();
+                Assert.Equal(editOtherConversation ? 2 : 1, fixture.Runtime.Requests.Count);
+                var editRequest = fixture.Runtime.Requests.Last();
+                Assert.Equal(NewerText, editRequest.UserText);
+                Assert.Equal(editedConversation.Id, editRequest.ConversationId);
+                Assert.Equal(NewerText, editedConversation.Messages[0].Content);
+                Assert.Equal(2, editedConversation.Messages.Count);
+                Assert.False(fixture.ViewModel.IsEditingMessage);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(context);
+                if (send is { IsCompleted: false })
+                    context.Complete(send);
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+        }, TimeSpan.FromSeconds(40), "The ordinary-send edit admission test did not finish.");
+    }
+
     [Theory]
     [InlineData("cancel")]
     [InlineData("reopen")]

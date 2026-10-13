@@ -484,7 +484,8 @@ namespace ColorVision.Copilot
             }
 
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
-            if (!reply.Delta.HasAny)
+            if (string.IsNullOrWhiteSpace(reply.Delta.ReasoningContent)
+                && string.IsNullOrWhiteSpace(reply.Delta.Content))
             {
                 var emptyResponseException = new InvalidOperationException(
                     CopilotProviderRequestId.AppendToMessage(

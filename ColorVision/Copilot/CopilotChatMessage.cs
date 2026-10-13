@@ -24,9 +24,9 @@ namespace ColorVision.Copilot
     {
         public static CopilotStreamDelta Empty => new(string.Empty, string.Empty);
 
-        public bool HasReasoning => !string.IsNullOrWhiteSpace(ReasoningContent);
+        public bool HasReasoning => !string.IsNullOrEmpty(ReasoningContent);
 
-        public bool HasContent => !string.IsNullOrWhiteSpace(Content);
+        public bool HasContent => !string.IsNullOrEmpty(Content);
 
         public bool HasAny => HasReasoning || HasContent;
     }

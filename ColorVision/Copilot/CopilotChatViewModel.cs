@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
         private readonly CopilotConversationSession _conversationSession;
         private readonly CopilotComposerSession _composerSession = new();
+        private readonly List<ComposerRequestPreparation> _composerRequestPreparations = new();
         private readonly CopilotApprovalCoordinator _approvalCoordinator;
         private readonly CopilotQueuedFollowUpCoordinator _followUpQueue;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
@@ -286,7 +287,7 @@ namespace ColorVision.Copilot
                 _ => CanOpenCompletionNotice());
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
             SubmitUserQuestionAnswerCommand = new RelayCommand(
-                _ => TryAnswerCurrentUserQuestion(InputText),
+                _ => TryAnswerCurrentUserQuestion(InputText, consumeComposer: true),
                 _ => CanSubmitUserQuestionAnswer);
             AnswerUserQuestionOptionCommand = new RelayCommand<CopilotUserQuestionOption>(
                 AnswerUserQuestionOption,

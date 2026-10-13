@@ -24,7 +24,7 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 - 注入队列按 Session 隔离，并在线程安全的 `EnqueueMessages` 中等待下一个模型调用机会；立即停止仍使用原有取消令牌和方形停止按钮。
 - steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和访问策略边界。临时授权的补丁直接批准与其他受保护工具的自动复核是不同路径，均不因注入消息扩大权限；见[原生审批契约](./copilot-agent-tool-contracts.md#原生审批与参数快照)。
 
-运行中补充指令先保存为绑定 run ID 的待确认记录。Runtime 在停止宽限内未能发布恢复事件时，宿主终态仍会把该 run 剩余未确认指令恢复到原会话草稿，保留后来输入和附件；不会自动重发，也不处理其他 run 的记录。已确认送达的批次继续按原 checkpoint 确认或显式取消规则消费；正常及时恢复和迟到 producer 收尾不能重复追加。恢复提示说明“尚未确认”，不以缺失事件断言指令一定没有执行。`CopilotSteeringCancellationRecoveryTests` 使用真实 ViewModel 和有界事件流覆盖取消、暂停、切换会话、及时恢复及已确认批次。
+运行中补充指令先保存为绑定 run ID 的待确认记录。Runtime 在停止宽限内未能发布恢复事件时，宿主终态仍会把该 run 剩余未确认指令恢复到原会话草稿，保留后来输入和附件；不会自动重发，也不处理其他 run 的记录。已确认送达的批次继续按原 checkpoint 确认或显式取消规则消费；恢复事件只消费仍待确认的指令 ID，退出时已恢复的输入不能因随后刷新缓冲事件而重复追加。若运行时接受指令但恢复记录已满，普通输入保持在草稿；自动审批重试指令也立即追加到原会话草稿，保留已有输入和附件。恢复提示说明“尚未确认”，不以缺失事件断言指令一定没有执行。`CopilotSteeringCancellationRecoveryTests` 使用真实 ViewModel 和有界事件流覆盖取消、暂停、切换会话、及时恢复及已确认批次；`CopilotChatViewModelProfileIsolationTests` 覆盖退出恢复与缓冲刷新顺序。
 
 `CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列。steering 调整当前轮，queue 等待下一轮取得执行权，不能把两者按键固定写死。它有以下边界：
 
@@ -54,7 +54,9 @@ related: ["copilot.runtime","copilot.tool-contracts","copilot.lifecycle","copilo
 
 ## 会话分支与恢复隔离
 
-“继续任务”“重试最终回答”和 `/approve` 形成的待发送恢复请求绑定原 conversation 与原输入文本，并在发送开始时随输入快照一起捕获。附件或预算准入失败后，同会话保留原文再次发送仍可恢复；切换到其他会话或改写成新问题后不能携带旧恢复模式。真正接受会话切换时清除待发送恢复，拒绝切换或重复选择当前会话不清除。图片保存、自动压缩等异步等待也不能让已开始准入的请求读取后来创建的恢复上下文。`CopilotPendingRecoveryConversationTests` 覆盖侧栏、命令分支、消息分支、同会话改写与原请求重试。
+“继续任务”“重试最终回答”和自动审批重试在输入框已有普通非空草稿时，独立提交 Auto 恢复请求，保留草稿正文、模式、审查目标、Skill 和附件；这些待发送内容不进入恢复请求，之后发送草稿也不携带此次恢复模式。历史搜索先关闭，再读取实际草稿，查询词不参与提交。已入队的恢复请求绑定原会话，等待期间切换会话不改变归属。
+
+空草稿或仍匹配原文的待发送恢复请求沿用输入框提交：恢复信息绑定原 conversation 与原输入文本，并在发送开始时随输入快照一起捕获。附件或预算准入失败后，同会话保留原文再次发送仍可恢复；切换到其他会话或改写成新问题后不能携带旧恢复模式。真正接受会话切换时清除待发送恢复，拒绝切换或重复选择当前会话不清除。图片保存、自动压缩等异步等待也不能让已开始准入的请求读取后来创建的恢复上下文。`CopilotPendingRecoveryConversationTests` 覆盖草稿保留、恢复元数据、排队后切换会话、历史搜索，以及侧栏、命令分支、消息分支、同会话改写与原请求重试。
 
 `/fork` / `/branch` 创建新 conversation 并切换，不是文件系统回滚；命令导航、命名和 `/rewind` 入口见[交互契约](./copilot-local-interactions.md#会话导航、回顾与出口)。实现复用消息菜单已有的 `CopilotConversationBranchService`；消息菜单仍只允许从指定的完整 Assistant 消息分叉，而 `/fork` 通过 `CreateCurrentBranch` 选择当前最后一条 Assistant 消息。所有消息 ID 和历史附件记录 ID 都重新生成，合法的 compaction boundary 会映射到克隆后的消息。新分支保留可见消息、模型内容、工具 trace 和消息当时捕获的附件快照，但不复制编辑区 `DraftText`、待发送 `Attachments`、最后 token 用量、`AgentSessionCheckpoint`、`RecoveryRequest` 或临时授权，因此旧 Session、待执行任务与授权都不会成为新分支的执行许可。Agent 运行中执行 `/fork` 时，服务会在 UI 调度线程复制当前可见状态，不停止源任务；克隆回答会完成所有运行中标志，把未闭合工具 trace 转为 `Interrupted/fork_snapshot_incomplete`，追加模型可见的“会话分支快照”标记并持久化中断说明。分叉不创建 Git branch、不复制工作目录也不回滚文件；两个会话继续观察同一个 ColorVision 工作区。`CopilotConversationBranchOrigin` 额外持久化直接父 conversation、稳定根 conversation、分叉消息和 UTC 时间，仅用于导航与分组。`BuildBranchFamily` 以当前会话声明的根 ID 选择同一会话家族：实际根优先，子节点按分叉时间、标题和 ID 做确定性父前子后排序；缺失直接父节点的分支保留为根下孤儿项，跨记录形成的循环通过已访问 ID 集合终止并去重。`CopilotChatViewModel.ConversationBranchFamily` 把该只读投影绑定到标题栏 **会话树** 菜单，菜单切换复用现有 `SelectConversationCommand` 和 `CanSwitchConversation`。侧栏继续展示独立 conversation 行，不把 transcript 合并成一行；家族投影也不读取或复制 checkpoint、审批、临时授权及宿主运行对象。
 
@@ -143,7 +145,7 @@ netstat -ano | findstr :6666
 
 业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
 
-`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，作为稳定 Schema 与其他内置能力一起提供；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
+`QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，根据当前请求或续问中的数据库主题加入可用工具；同一句中的“解释 SQL”等说明措辞不会隐藏查询工具。工具可见不要求执行查询，纯概念解释无需访问数据库；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
 
 查询返回 `rows_returned`、`truncated` 和 `data_tsv`，是有界结果，不能作为完整导出：
 

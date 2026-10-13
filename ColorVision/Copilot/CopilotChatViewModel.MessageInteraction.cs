@@ -296,6 +296,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            DismissPromptHistorySearch();
             if (string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
                 && string.Equals(_editingUserMessageId, userMessage.Id, StringComparison.Ordinal))
             {
@@ -542,60 +543,73 @@ namespace ColorVision.Copilot
             }
             if (!TryValidateComposerAttachments(turnSnapshot.Attachments, requestProfile))
                 return;
-            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
-            if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode, queuedCommandExecution)
-                || !IsLatestTurnPair(conversation, userMessage, assistantMessage)
-                || string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
-                || CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+            CopilotManagedImageAttachmentLease? imageLease = new();
+            try
+            {
+                var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments, imageLease);
+                if (admittedAttachments == null
+                    || !CanContinueConversationRequestPreparation(conversation, userMessage.RequestMode, queuedCommandExecution)
+                    || !IsLatestTurnPair(conversation, userMessage, assistantMessage)
+                    || string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
+                    || CopilotAgentTaskContinuityPolicy.HasAvailableStructuredRecovery(
+                        conversation,
+                        assistantMessage,
+                        requestProfile,
+                        CopilotCapabilityCatalog.Shared.GetSnapshot(
+                            turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled),
+                        CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                            turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                            turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled)))
+                    return;
+                turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
+
+                conversation.SetAgentSessionCheckpoint(null);
+                PersistState();
+
+                Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(
+                    run,
                     conversation,
-                    assistantMessage,
                     requestProfile,
-                    CopilotCapabilityCatalog.Shared.GetSnapshot(
-                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled),
-                    CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
-                        turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled)))
-                return;
-            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
-
-            conversation.SetAgentSessionCheckpoint(null);
-            PersistState();
-
-            Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(
-                run,
-                conversation,
-                requestProfile,
-                userMessage,
-                assistantMessage,
-                turnSnapshot,
-                runtimeConfigSnapshot,
-                refreshExternalContext);
-            CopilotHostedAgentRun? hostedRun;
-            if (queuedCommandExecution == null)
-            {
-                hostedRun = _taskHost.Start(
-                    conversation.Id,
-                    userMessage.RequestMode,
-                    ExecuteAsync);
+                    userMessage,
+                    assistantMessage,
+                    turnSnapshot,
+                    runtimeConfigSnapshot,
+                    refreshExternalContext);
+                CopilotHostedAgentRun? hostedRun;
+                if (queuedCommandExecution == null)
+                {
+                    hostedRun = _taskHost.Start(
+                        conversation.Id,
+                        userMessage.RequestMode,
+                        ExecuteAsync);
+                }
+                else if (!_taskHost.TryScheduleQueuedCommandSuccessor(
+                             queuedCommandExecution.HostedRun.Id,
+                             conversation.Id,
+                             userMessage.RequestMode,
+                             ExecuteAsync,
+                             out hostedRun,
+                             out var admission)
+                         || hostedRun == null)
+                {
+                    ReportRequestAdmissionFailure(admission);
+                    return;
+                }
+                var runImageLease = imageLease;
+                _ = hostedRun.Completion.ContinueWith(
+                    _ => runImageLease.Dispose(),
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+                imageLease = null;
+                if (queuedCommandExecution != null)
+                    return;
+                await AwaitHostedRunCompletionAsync(hostedRun);
             }
-            else if (!_taskHost.TryScheduleQueuedCommandSuccessor(
-                         queuedCommandExecution.HostedRun.Id,
-                         conversation.Id,
-                         userMessage.RequestMode,
-                         ExecuteAsync,
-                         out hostedRun,
-                         out var admission)
-                     || hostedRun == null)
+            finally
             {
-                ReportRequestAdmissionFailure(admission);
-                return;
+                imageLease?.Dispose();
             }
-            else
-            {
-                return;
-            }
-            await AwaitHostedRunCompletionAsync(hostedRun);
         }
 
         private async Task ExecuteHostedRetryAsync(

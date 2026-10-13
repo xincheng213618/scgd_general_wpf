@@ -178,13 +178,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            using var imageLease = new CopilotManagedImageAttachmentLease();
             CopilotPreparedHostedTurn? preparedTurn;
             try
             {
                 var admittedAttachments = await CopilotImageAttachmentAdmission.PersistAsync(
                     queuedFollowUp.SubmissionContext.Attachments,
                     _stateStore.AttachmentDirectoryPath,
-                    hostedRun.CancellationToken).ConfigureAwait(false);
+                    hostedRun.CancellationToken,
+                    imageLease).ConfigureAwait(false);
                 var admittedSubmissionContext = queuedFollowUp.SubmissionContext.WithAttachments(
                     admittedAttachments);
                 preparedTurn = CopilotUiDispatcher.Invoke(
@@ -654,6 +656,7 @@ namespace ColorVision.Copilot
             if (!CanEditQueuedFollowUp(queuedFollowUp) || queuedFollowUp == null)
                 return false;
 
+            DismissPromptHistorySearch();
             var previousConversation = SelectedConversation;
             var conversation = Conversations.First(candidate =>
                 string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));

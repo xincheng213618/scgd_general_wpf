@@ -645,6 +645,130 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BufferedSteeringRecoveryIsNotDuplicatedAfterShutdownDraftRecovery(bool recoverBeforeFlush)
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "buffered-steering-recovery-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", "A newer draft.");
+        var otherConversation = CreateConversation(profile, "conversation-b", "Another conversation's draft.");
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var attachment = CopilotAttachmentItem.CreateContext("newer draft attachment");
+        conversation.Attachments.Add(attachment);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = [conversation, otherConversation],
+        };
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = new CopilotChatViewModel(new CopilotChatService(), new InMemoryStateStore(state), config,
+            new GatedFailingTurnRuntime(), new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(conversation.Id, CopilotAgentMode.Auto, "run:buffered-recovery");
+        var steering = new CopilotSteeringMessageSnapshot("steering:buffered-recovery", "Keep the remaining constraint.");
+        var context = new HeldChatSynchronizationContext();
+        var buffer = new CopilotAgentEventBuffer(context,
+            events => ApplyAgentEvents(viewModel, hostedRun, conversation, assistantMessage, events.ToArray()));
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(conversation, hostedRun.Id, steering, DateTimeOffset.UtcNow));
+            buffer.Enqueue(CopilotAgentEvent.SteeringRecovery([steering]));
+            Assert.Single(conversation.PendingSteeringRecoveries);
+            Assert.Equal("A newer draft.", conversation.DraftText);
+
+            // Application_Exit restores pending input before flushing accepted UI events.
+            if (recoverBeforeFlush)
+                Assert.True(CopilotSteeringRecovery.RestorePendingToDrafts(state));
+            Assert.True(buffer.FlushAsync().IsCompletedSuccessfully);
+
+            Assert.Empty(conversation.PendingSteeringRecoveries);
+            Assert.StartsWith("A newer draft.", conversation.DraftText, StringComparison.Ordinal);
+            Assert.Contains(steering.Text, conversation.DraftText, StringComparison.Ordinal);
+            Assert.Equal(conversation.DraftText.IndexOf(steering.Text, StringComparison.Ordinal),
+                conversation.DraftText.LastIndexOf(steering.Text, StringComparison.Ordinal));
+            Assert.Same(attachment, Assert.Single(conversation.Attachments));
+            Assert.Equal("Another conversation's draft.", otherConversation.DraftText);
+        }
+        finally
+        {
+            await buffer.CompleteAsync();
+            context.Release();
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task AcceptedAutomaticApprovalRetryKeepsDraftWhenRecoveryCapacityIsFull()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "approval-retry-recovery-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", "A newer draft.");
+        conversation.DraftRequestMode = CopilotAgentMode.Chat;
+        var attachment = CopilotAttachmentItem.CreateContext("newer draft attachment");
+        conversation.Attachments.Add(attachment);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        CopilotSteeringMessageSnapshot? acceptedSteering = null;
+        var acceptedTaskId = string.Empty;
+        var runtime = new GatedFailingTurnRuntime(steeringAdmission: (taskId, message) =>
+        {
+            acceptedTaskId = taskId;
+            acceptedSteering = new CopilotSteeringMessageSnapshot("steering:approval-retry", message);
+            return new CopilotSteeringAdmissionResult(CopilotSteeringAdmissionReason.Accepted, acceptedSteering.MessageId);
+        });
+        var taskHost = new CopilotAgentTaskHost();
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var activeRun = taskHost.Start(conversation.Id, CopilotAgentMode.Auto, _ => releaseActive.Task);
+        try
+        {
+            for (var index = 0; index < CopilotSteeringRecovery.MaximumPendingRecoveryRecords; index++)
+            {
+                Assert.True(CopilotSteeringRecovery.TrackPending(conversation, activeRun.Id,
+                    new CopilotSteeringMessageSnapshot($"steering:existing:{index}", $"Existing constraint {index}."),
+                    DateTimeOffset.UtcNow));
+            }
+            var existingRecoveries = conversation.PendingSteeringRecoveries.ToArray();
+            var denial = new CopilotAutomaticApprovalDenialSnapshot("denial:retry", conversation.Id,
+                activeRun.Id, string.Empty, "WriteProjectFile", "arguments-digest", DateTimeOffset.UtcNow);
+            var retryMethod = typeof(CopilotChatViewModel).GetMethod("RetryAutomaticallyDeniedActionAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("RetryAutomaticallyDeniedActionAsync was not found.");
+
+            await Assert.IsAssignableFrom<Task>(retryMethod.Invoke(viewModel, [denial]));
+
+            Assert.NotNull(acceptedSteering);
+            Assert.Equal(activeRun.Id, acceptedTaskId);
+            Assert.Contains("WriteProjectFile", acceptedSteering.Text, StringComparison.Ordinal);
+            Assert.StartsWith("A newer draft.", conversation.DraftText, StringComparison.Ordinal);
+            Assert.Contains(acceptedSteering.Text, conversation.DraftText, StringComparison.Ordinal);
+            Assert.Equal(conversation.DraftText, viewModel.InputText);
+            Assert.Equal(CopilotAgentMode.Chat, conversation.DraftRequestMode);
+            Assert.Same(attachment, Assert.Single(conversation.Attachments));
+            Assert.Equal(existingRecoveries, conversation.PendingSteeringRecoveries.ToArray());
+            Assert.Contains("恢复记录未能保存", viewModel.PendingActionFeedbackText, StringComparison.Ordinal);
+            Assert.Contains("草稿", viewModel.PendingActionFeedbackText, StringComparison.Ordinal);
+            var recoveredDraft = conversation.DraftText;
+
+            ApplyAgentEvents(viewModel, activeRun, conversation, assistantMessage,
+                CopilotAgentEvent.SteeringRecovery([acceptedSteering]));
+
+            Assert.Equal(recoveredDraft, conversation.DraftText);
+            Assert.Equal(recoveredDraft, viewModel.InputText);
+            Assert.Equal(existingRecoveries, conversation.PendingSteeringRecoveries.ToArray());
+        }
+        finally
+        {
+            releaseActive.TrySetResult();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
     [Fact]
     public void DeliveredSteeringRecoveryRecordIsCommittedWithTheNextCheckpoint()
     {
@@ -1432,8 +1556,10 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         }
     }
 
-    [Fact]
-    public async Task UserQuestionAnswerStateChangesOnlyWhenTheRuntimeEventArrives()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UserQuestionAnswerStateChangesOnlyWhenTheRuntimeEventArrives(bool useOption)
     {
         var profile = CreateProfile("profile-a", "Profile A", "model-a");
         var config = CreateConfig(profile, "question-answer-event-test-token");
@@ -1448,6 +1574,11 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             conversation.Id,
             CopilotAgentMode.Plan,
             async _ => await releaseRun.Task);
+        const string typedAnswer = "Keep the current scope";
+        const string followUpDraft = "After this task, inspect the separate follow-up issue.";
+        viewModel.InputText = useOption ? followUpDraft : typedAnswer;
+        var attachment = CopilotAttachmentItem.CreateContext("Context for the unsent follow-up request.");
+        conversation.Attachments.Add(attachment);
         var question = new CopilotUserQuestionSnapshot
         {
             RequestId = "question:" + new string('a', 32),
@@ -1481,13 +1612,24 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         conversation.Messages.Add(assistantMessage);
         try
         {
-            viewModel.InputText = "Keep the current scope";
+            var expectedAnswer = useOption ? question.Options[0].Label : typedAnswer;
+            if (useOption)
+            {
+                var option = assistantMessage.UserQuestion!.Options[0];
+                Assert.True(viewModel.AnswerUserQuestionOptionCommand.CanExecute(option));
+                viewModel.AnswerUserQuestionOptionCommand.Execute(option);
+            }
+            else
+            {
+                Assert.True(viewModel.SubmitUserQuestionAnswerCommand.CanExecute(null));
+                viewModel.SubmitUserQuestionAnswerCommand.Execute(null);
+            }
 
-            Assert.True(viewModel.SubmitUserQuestionAnswerCommand.CanExecute(null));
-            viewModel.SubmitUserQuestionAnswerCommand.Execute(null);
-
-            Assert.Equal(string.Empty, viewModel.InputText);
-            Assert.Equal("Keep the current scope", runtime.Answer);
+            Assert.Equal(expectedAnswer, runtime.Answer);
+            Assert.Equal(useOption ? followUpDraft : string.Empty, viewModel.InputText);
+            Assert.Equal(useOption ? followUpDraft : string.Empty, conversation.DraftText);
+            Assert.Same(attachment, Assert.Single(conversation.Attachments));
+            Assert.Equal("Context for the unsent follow-up request.", attachment.Value);
             var persistedQuestion = Assert.IsType<CopilotUserQuestionSnapshot>(assistantMessage.UserQuestion);
             Assert.NotSame(question, persistedQuestion);
             Assert.Equal(question.RequestId, persistedQuestion.RequestId);
@@ -1501,12 +1643,12 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 CopilotAgentEvent.UserQuestionResolved(
                     question.Resolve(
                         CopilotUserQuestionResolution.Answered,
-                        "Keep the current scope")));
+                        expectedAnswer)));
 
             Assert.Equal(
                 CopilotUserQuestionResolution.Answered,
                 assistantMessage.UserQuestion.Resolution);
-            Assert.Equal("Keep the current scope", assistantMessage.UserQuestion.Answer);
+            Assert.Equal(expectedAnswer, assistantMessage.UserQuestion.Answer);
         }
         finally
         {
@@ -1685,6 +1827,184 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         Assert.False(runtime.Entered.IsCompleted);
         Assert.Equal("Finish the latest runtime objective", conversation.Goal.Objective);
         Assert.Empty(conversation.Messages);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NewChatClosesHistorySearchAndRoutesSubsequentInputToTheDraft(bool hasOriginalDraft)
+    {
+        const string originalDraft = "Keep the source draft";
+        const string newDraft = "Write a new request after creating a chat";
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "new-chat-search-test-token");
+        var source = CreateConversation(profile, "conversation-a", hasOriginalDraft ? originalDraft : string.Empty);
+        var history = CreateConversation(profile, "conversation-history", string.Empty);
+        var historicalRequest = new CopilotChatMessage(CopilotChatRole.User, "older request");
+        history.Messages.Add(historicalRequest);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = source.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = [source, history],
+        };
+        var runtime = new GatedFailingTurnRuntime();
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = new CopilotChatViewModel(new CopilotChatService(),
+            new InMemoryStateStore(state), config, runtime, new CopilotAgentTaskHost());
+        Assert.True(viewModel.TryOpenPromptHistorySearch());
+        viewModel.InputText = "older";
+        Assert.Single(viewModel.PromptHistorySearchResults);
+        Assert.True(viewModel.NewChatCommand.CanExecute(null));
+
+        viewModel.NewChatCommand.Execute(null);
+
+        Assert.False(viewModel.IsPromptHistorySearchOpen);
+        Assert.Empty(viewModel.InputText);
+        if (hasOriginalDraft)
+        {
+            Assert.NotSame(source, viewModel.SelectedConversation);
+            Assert.Equal(originalDraft, source.DraftText);
+        }
+        else
+        {
+            Assert.Same(source, viewModel.SelectedConversation);
+        }
+        Assert.Equal(hasOriginalDraft ? 3 : 2, viewModel.Conversations.Count);
+        viewModel.InputText = newDraft;
+        Assert.Equal(newDraft, viewModel.SelectedConversation!.DraftText);
+        viewModel.DismissPromptHistorySearch();
+        Assert.Equal(newDraft, viewModel.InputText);
+        Assert.Equal(newDraft, viewModel.SelectedConversation.DraftText);
+        Assert.Same(historicalRequest, Assert.Single(history.Messages));
+        Assert.False(runtime.Entered.IsCompleted);
+    }
+
+    [Theory]
+    [InlineData(CopilotAgentMode.Plan, true)]
+    [InlineData(CopilotAgentMode.Review, true)]
+    [InlineData(CopilotAgentMode.Review, false)]
+    public async Task NewChatPreservesTheSourceDraftModeAndResetsOnlyAReusableEmptyComposer(
+        CopilotAgentMode mode, bool hasDraft)
+    {
+        const string prompt = "Keep this request in its selected mode.";
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "new-chat-draft-mode-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", hasDraft ? prompt : string.Empty);
+        conversation.DraftRequestMode = mode;
+        var reviewTarget = mode == CopilotAgentMode.Review
+            ? CopilotWorkspaceReviewTargetContext.WorkingTree()
+            : null;
+        conversation.DraftWorkspaceReviewTarget = reviewTarget;
+        var attachment = CopilotAttachmentItem.CreateContext("Original draft context");
+        if (hasDraft)
+            conversation.Attachments.Add(attachment);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        CopilotHostedAgentRun? activeRun = null;
+        try
+        {
+            Assert.True(viewModel.NewChatCommand.CanExecute(null));
+            viewModel.NewChatCommand.Execute(null);
+
+            Assert.Empty(viewModel.InputText);
+            Assert.Equal(CopilotAgentMode.Auto, viewModel.SelectedConversation!.DraftRequestMode);
+            Assert.Null(viewModel.SelectedConversation.DraftWorkspaceReviewTarget);
+            if (!hasDraft)
+            {
+                Assert.Same(conversation, viewModel.SelectedConversation);
+                Assert.Single(viewModel.Conversations);
+                Assert.False(runtime.Entered.IsCompleted);
+                return;
+            }
+
+            Assert.NotSame(conversation, viewModel.SelectedConversation);
+            Assert.Equal(prompt, conversation.DraftText);
+            Assert.Equal(mode, conversation.DraftRequestMode);
+            Assert.Equal(reviewTarget?.Target, conversation.DraftWorkspaceReviewTarget?.Target);
+            Assert.Same(attachment, Assert.Single(conversation.Attachments));
+            Assert.True(viewModel.TrySelectConversation(conversation.Id));
+            Assert.Equal(prompt, viewModel.InputText);
+
+            viewModel.SendCommand.Execute(null);
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            activeRun = taskHost.ActiveRun;
+            Assert.NotNull(activeRun);
+            Assert.Equal(prompt, request.UserText);
+            Assert.Equal(conversation.Id, request.ConversationId);
+            Assert.Equal(mode, request.Mode);
+            Assert.Equal(reviewTarget?.Target, request.WorkspaceReviewTarget?.Target);
+            Assert.Equal(attachment.Value, Assert.Single(request.HostContext.Attachments).Value);
+        }
+        finally
+        {
+            await CompleteAndDisposeAsync(viewModel, runtime, taskHost, activeRun);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExternalPromptClosesHistorySearchBeforeStagingOrSendingThePrompt(bool sendNow)
+    {
+        const string originalDraft = "Original composer draft";
+        const string externalPrompt = "External request for the attached context";
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "external-prompt-history-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", originalDraft);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "older request"));
+        var attachment = CopilotAttachmentItem.CreateContext("Original attached context");
+        conversation.Attachments.Add(attachment);
+        var runtime = new GatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        CopilotHostedAgentRun? activeRun = null;
+        try
+        {
+            Assert.True(viewModel.TryOpenPromptHistorySearch());
+            viewModel.InputText = "older";
+            Assert.Equal(originalDraft, conversation.DraftText);
+
+            var queued = viewModel.QueueExternalPrompt(externalPrompt,
+                startNewConversation: false, sendNow: sendNow, mode: CopilotAgentMode.Chat);
+
+            Assert.True(queued.Accepted);
+            Assert.False(viewModel.IsPromptHistorySearchOpen);
+            Assert.Same(conversation, viewModel.SelectedConversation);
+            if (!sendNow)
+            {
+                Assert.False(queued.WasSent);
+                Assert.Equal(externalPrompt, viewModel.InputText);
+                Assert.Equal(externalPrompt, conversation.DraftText);
+                Assert.Equal(CopilotAgentMode.Chat, conversation.DraftRequestMode);
+                Assert.Same(attachment, Assert.Single(conversation.Attachments));
+                viewModel.DismissPromptHistorySearch();
+                Assert.Equal(externalPrompt, viewModel.InputText);
+                Assert.Equal(externalPrompt, conversation.DraftText);
+                Assert.False(runtime.Entered.IsCompleted);
+                return;
+            }
+
+            Assert.True(queued.WasSent);
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            activeRun = taskHost.ActiveRun;
+            Assert.NotNull(activeRun);
+            Assert.Equal(externalPrompt, request.UserText);
+            Assert.Equal(conversation.Id, request.ConversationId);
+            Assert.Equal(CopilotAgentMode.Chat, request.Mode);
+            var requestAttachment = Assert.Single(request.HostContext.Attachments);
+            Assert.Equal(attachment.Id, requestAttachment.Id);
+            Assert.Equal(attachment.Value, requestAttachment.Value);
+            Assert.Empty(viewModel.InputText);
+            Assert.Empty(conversation.Attachments);
+        }
+        finally
+        {
+            await CompleteAndDisposeAsync(viewModel, runtime, taskHost, activeRun);
+        }
     }
 
     [Fact]
@@ -3843,7 +4163,9 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         Model = model,
     };
 
-    private sealed class GatedFailingTurnRuntime(bool emitPendingChatDelta = false) : ICopilotTurnRuntime
+    private sealed class GatedFailingTurnRuntime(
+        bool emitPendingChatDelta = false,
+        Func<string, string, CopilotSteeringAdmissionResult>? steeringAdmission = null) : ICopilotTurnRuntime
     {
         public const string PendingChatTail = "Accepted Chat tail before the view closes.";
         private readonly TaskCompletionSource _release =
@@ -3879,7 +4201,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         public void Release() => _release.TrySetResult();
 
         public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message) =>
-            new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
+            steeringAdmission?.Invoke(taskId, message) ?? new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
 
         public bool TryEnqueueBackgroundShellCommandCompletion(CopilotBackgroundShellCommandSnapshot snapshot) => false;
 

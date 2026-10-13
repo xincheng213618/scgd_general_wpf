@@ -290,12 +290,6 @@ namespace ColorVision.Copilot
             "insert into", "update database", "update table", "delete from", "create table", "alter table", "drop table", "truncate table", "rename table",
         };
 
-        private static readonly string[] DatabaseExplanationMarkers =
-        {
-            "数据库是什么", "数据库原理", "SQL是什么", "SQL 是什么", "解释SQL", "解释 SQL",
-            "what is a database", "what is database", "what is sql", "explain sql",
-        };
-
         private static readonly string[] RecentLogMarkers =
         {
             "日志", "最近错误", "最近异常", "报错", "错误日志", "异常日志", "崩溃", "失败原因",

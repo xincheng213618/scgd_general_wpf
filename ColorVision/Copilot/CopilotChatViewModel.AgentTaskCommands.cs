@@ -56,11 +56,7 @@ namespace ColorVision.Copilot
             if (!decision.IsAvailable)
                 return false;
 
-            SetPendingRequestModeOverride(CopilotAgentMode.Auto);
-            InputText = decision.UserMessage;
-            _pendingAgentRecoveryRequest = new PendingAgentRecoveryRequest(
-                conversation.Id, decision.UserMessage, decision.Request!);
-            RunUiOperation(SendAsync, "继续 Agent 任务");
+            RunUiOperation(() => SendAgentRecoveryAsync(conversation, decision.UserMessage, decision.Request), "继续 Agent 任务");
             return true;
         }
 
@@ -506,6 +502,28 @@ namespace ColorVision.Copilot
             string ConversationId,
             string Prompt,
             CopilotAgentRecoveryRequest Request);
+
+        private Task SendAgentRecoveryAsync(
+            CopilotConversationRecord conversation,
+            string prompt,
+            CopilotAgentRecoveryRequest? recovery)
+        {
+            DismissPromptHistorySearch();
+            var composer = _composerSession.Capture();
+            var pendingRecovery = CapturePendingAgentRecoveryRequest(composer);
+            if (!string.IsNullOrWhiteSpace(composer.Text) && pendingRecovery == null)
+            {
+                return SendRequestAsync(prompt, CopilotAgentMode.Auto, null, _dispatchingQueuedLocalCommand,
+                    directRecoveryRequest: recovery);
+            }
+
+            SetPendingRequestModeOverride(CopilotAgentMode.Auto);
+            InputText = prompt;
+            _pendingAgentRecoveryRequest = recovery == null
+                ? null
+                : new PendingAgentRecoveryRequest(conversation.Id, prompt, recovery);
+            return SendAsync();
+        }
 
         private CopilotAgentRecoveryRequest? CapturePendingAgentRecoveryRequest(CopilotComposerCaptureSnapshot composer)
         {

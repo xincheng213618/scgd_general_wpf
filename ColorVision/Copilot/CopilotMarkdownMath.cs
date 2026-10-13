@@ -32,6 +32,8 @@ namespace ColorVision.Copilot
             var textStart = 0;
             var inCode = false;
             var index = 0;
+            var nextParenthesisClosing = -1;
+            var nextDollarClosing = -1;
             while (index < source.Length)
             {
                 if (source[index] == '\\' && index + 1 < source.Length && source[index + 1] is '$' or '`')
@@ -47,7 +49,8 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (!inCode && TryFindInlineMath(source, index, out var contentStart, out var contentLength, out var endIndex, out var opening, out var closing))
+                if (!inCode && TryFindInlineMath(source, index, ref nextParenthesisClosing, ref nextDollarClosing,
+                    out var contentStart, out var contentLength, out var endIndex, out var opening, out var closing))
                 {
                     AddText(segments, source, textStart, index - textStart);
                     segments.Add(new CopilotMarkdownInlineSegment(source.Substring(contentStart, contentLength), true, opening, closing));
@@ -146,6 +149,8 @@ namespace ColorVision.Copilot
         private static bool TryFindInlineMath(
             string source,
             int index,
+            ref int nextParenthesisClosing,
+            ref int nextDollarClosing,
             out int contentStart,
             out int contentLength,
             out int endIndex,
@@ -160,8 +165,17 @@ namespace ColorVision.Copilot
 
             if (source.AsSpan(index).StartsWith("\\(", StringComparison.Ordinal))
             {
-                var closingIndex = source.IndexOf("\\)", index + 2, StringComparison.Ordinal);
-                if (closingIndex < 0 || string.IsNullOrWhiteSpace(source[(index + 2)..closingIndex]))
+                // Closing positions depend only on the source. Reuse the search, including
+                // a missing closer, so successive incomplete openers cannot rescan the tail.
+                if (nextParenthesisClosing < index + 2)
+                {
+                    nextParenthesisClosing = source.IndexOf("\\)", index + 2, StringComparison.Ordinal);
+                    if (nextParenthesisClosing < 0)
+                        nextParenthesisClosing = source.Length;
+                }
+
+                var closingIndex = nextParenthesisClosing;
+                if (closingIndex == source.Length || source.AsSpan(index + 2, closingIndex - index - 2).IsWhiteSpace())
                     return false;
 
                 contentStart = index + 2;
@@ -180,25 +194,29 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            for (var closingIndex = index + 1; closingIndex < source.Length; closingIndex++)
+            if (nextDollarClosing < index + 1)
             {
-                if (source[closingIndex] != '$'
-                    || IsEscaped(source, closingIndex)
-                    || (closingIndex + 1 < source.Length && source[closingIndex + 1] == '$')
-                    || char.IsWhiteSpace(source[closingIndex - 1]))
+                for (nextDollarClosing = index + 1; nextDollarClosing < source.Length; nextDollarClosing++)
                 {
-                    continue;
+                    if (source[nextDollarClosing] == '$'
+                        && !IsEscaped(source, nextDollarClosing)
+                        && (nextDollarClosing + 1 == source.Length || source[nextDollarClosing + 1] != '$')
+                        && !char.IsWhiteSpace(source[nextDollarClosing - 1]))
+                    {
+                        break;
+                    }
                 }
-
-                contentStart = index + 1;
-                contentLength = closingIndex - contentStart;
-                endIndex = closingIndex + 1;
-                openingDelimiter = "$";
-                closingDelimiter = "$";
-                return contentLength > 0;
             }
 
-            return false;
+            if (nextDollarClosing == source.Length)
+                return false;
+
+            contentStart = index + 1;
+            contentLength = nextDollarClosing - contentStart;
+            endIndex = nextDollarClosing + 1;
+            openingDelimiter = "$";
+            closingDelimiter = "$";
+            return contentLength > 0;
         }
 
         private static bool IsEscaped(string source, int index)

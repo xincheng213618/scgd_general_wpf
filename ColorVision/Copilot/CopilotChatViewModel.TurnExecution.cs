@@ -1,5 +1,6 @@
 #pragma warning disable CA1001,CA1822,CA1859,CA1861,CA1870,CS4014
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -11,6 +12,16 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
+        private sealed record ComposerRequestPreparation(
+            CopilotComposerCaptureToken Token,
+            CopilotComposerDraftSnapshot? MessageEditSnapshot,
+            IReadOnlyList<CopilotAttachmentItem> Attachments)
+        {
+            public bool Matches(ComposerRequestPreparation other) => Token == other.Token
+                && ReferenceEquals(MessageEditSnapshot, other.MessageEditSnapshot)
+                && Attachments.SequenceEqual(other.Attachments, ReferenceEqualityComparer.Instance);
+        }
+
         private Task SendAsync() => SendRequestAsync(null, null, null, _dispatchingQueuedLocalCommand);
 
         private Task SendAsync(
@@ -25,7 +36,8 @@ namespace ColorVision.Copilot
             string? directRequestContent,
             QueuedLocalCommandExecutionContext? queuedCommandExecution,
             bool useQueuedComposerInputs = false,
-            CopilotWorkspaceReviewTargetContext? queuedReviewTarget = null)
+            CopilotWorkspaceReviewTargetContext? queuedReviewTarget = null,
+            CopilotAgentRecoveryRequest? directRecoveryRequest = null)
         {
             if (directPrompt == null && IsPromptHistorySearchOpen)
             {
@@ -35,7 +47,7 @@ namespace ColorVision.Copilot
 
             var isDirectSubmission = directPrompt != null;
             var composerCapture = isDirectSubmission ? null : _composerSession.Capture();
-            var recoveryRequest = isDirectSubmission ? null : CapturePendingAgentRecoveryRequest(composerCapture!);
+            var recoveryRequest = isDirectSubmission ? directRecoveryRequest : CapturePendingAgentRecoveryRequest(composerCapture!);
             var prompt = (directPrompt ?? composerCapture!.Text).Trim();
             var modelPrompt = (directRequestContent ?? prompt).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
@@ -93,11 +105,12 @@ namespace ColorVision.Copilot
             }
             // Cancelling and reopening the same message starts a different edit session.
             var messageEditSnapshot = isReplacingTurn ? _composerDraftBeforeMessageEdit : null;
-            bool IsCapturedMessageEditCurrent() => !isReplacingTurn
-                || (messageEditSnapshot != null
+            bool IsCapturedMessageEditCurrent() => isReplacingTurn
+                ? messageEditSnapshot != null
                     && ReferenceEquals(messageEditSnapshot, _composerDraftBeforeMessageEdit)
                     && IsLatestTurnPair(conversation, replacedUserMessage, replacedAssistantMessage)
-                    && conversation.Messages.IndexOf(replacedUserMessage) == replacedUserIndex);
+                    && conversation.Messages.IndexOf(replacedUserMessage) == replacedUserIndex
+                : !string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal);
 
             var turnSnapshot = queuedFollowUp != null
                 ? queuedFollowUp.SubmissionContext
@@ -137,142 +150,162 @@ namespace ColorVision.Copilot
             {
                 return;
             }
-            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
-            if (admittedAttachments == null
-                || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
-                || !IsCapturedMessageEditCurrent())
-                return;
-            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
-            var automaticCompaction = await TryAutoCompactConversationAsync(
-                conversation,
-                requestProfile,
-                modelPrompt,
-                turnSnapshot.ProjectInstructionDiscoveryOptions,
-                agentDefaultsSnapshot);
-            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed
-                || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
-                || !IsCapturedMessageEditCurrent())
-                return;
-            if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
+            var preparation = !isDirectSubmission && queuedCommandExecution == null
+                ? new ComposerRequestPreparation(composerCapture!.Token, messageEditSnapshot, requestAttachments)
+                : null;
+            if (preparation != null)
             {
-                turnSnapshot = turnSnapshot.WithConversationHistory(
-                    CopilotConversationRequestBuilder.CaptureHistorySnapshot(
-                        conversation,
-                        isReplacingTurn ? replacedUserMessage : null));
+                if (_composerRequestPreparations.Any(pending => pending.Matches(preparation)))
+                    return;
+                _composerRequestPreparations.Add(preparation);
             }
-
-            var workspaceReviewTarget = useQueuedComposerInputs
-                ? queuedReviewTarget?.CreateSnapshot() ?? queuedFollowUp?.CreateWorkspaceReviewTargetSnapshot()
-                : isDirectSubmission
-                ? null
-                : composerCapture?.WorkspaceReviewTarget;
-            if (workspaceReviewTarget == null
-                && isReplacingTurn
-                && requestMode == CopilotAgentMode.Review
-                && replacedUserMessage.WorkspaceReviewTarget?.IsStructurallyValid() == true)
-            {
-                workspaceReviewTarget = replacedUserMessage.WorkspaceReviewTarget.CreateSnapshot();
-            }
-
-            var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
-            {
-                RequestMode = requestMode,
-                WorkspaceReviewTarget = workspaceReviewTarget,
-                AgentSkillReference = agentSkillReference,
-                RequestContent = directRequestContent ?? string.Empty,
-                RecoveryRequest = recoveryRequest,
-                Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
-                AttachmentSnapshotCaptured = true,
-            };
-            var assistantMessage = CreatePendingAssistantMessage(requestProfile, requestMode);
-            var previousCheckpoint = conversation.CreateAgentContinuationCheckpoint();
-
-            if (isReplacingTurn)
-            {
-                if (replacedAssistantMessage != null)
-                    conversation.Messages.Remove(replacedAssistantMessage);
-                conversation.Messages.Remove(replacedUserMessage);
-                conversation.Messages.Insert(replacedUserIndex, userMessage);
-                conversation.Messages.Insert(replacedUserIndex + 1, assistantMessage);
-                conversation.SetAgentSessionCheckpoint(null);
-            }
-            else
-            {
-                conversation.Messages.Add(userMessage);
-                conversation.Messages.Add(assistantMessage);
-            }
-            UpdateConversationMetadata(conversation, touch: true);
-            PersistState();
-
-            var preparedTurn = new CopilotPreparedHostedTurn(
-                conversation,
-                requestProfile,
-                userMessage,
-                assistantMessage,
-                turnSnapshot,
-                runtimeConfigSnapshot,
-                refreshExternalContext: requestMode != CopilotAgentMode.Chat,
-                isAutomaticGoalContinuation: false);
 
             CopilotHostedAgentRun? hostedRun;
-            CopilotRequestAdmissionResult admission;
-            var scheduled = queuedCommandExecution == null
-                ? _taskHost.TrySchedule(
-                    preparedTurn.ConversationId,
-                    preparedTurn.Mode,
-                    run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
-                    out hostedRun,
-                    out admission)
-                : _taskHost.TryScheduleQueuedCommandSuccessor(
-                    queuedCommandExecution.HostedRun.Id,
-                    preparedTurn.ConversationId,
-                    preparedTurn.Mode,
-                    run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
-                    out hostedRun,
-                    out admission);
-            if (!scheduled
-                || hostedRun == null)
+            CopilotChatMessage assistantMessage;
+            try
             {
-                conversation.Messages.Remove(assistantMessage);
-                conversation.Messages.Remove(userMessage);
+                using var imageLease = new CopilotManagedImageAttachmentLease();
+                var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments, imageLease);
+                if (admittedAttachments == null
+                    || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
+                    || !IsCapturedMessageEditCurrent())
+                    return;
+                turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
+                var automaticCompaction = await TryAutoCompactConversationAsync(
+                    conversation,
+                    requestProfile,
+                    modelPrompt,
+                    turnSnapshot.ProjectInstructionDiscoveryOptions,
+                    agentDefaultsSnapshot);
+                if (automaticCompaction == CopilotAutomaticCompactionOutcome.Failed
+                    || !CanContinueConversationRequestPreparation(conversation, requestMode, queuedCommandExecution)
+                    || !IsCapturedMessageEditCurrent())
+                    return;
+                if (automaticCompaction == CopilotAutomaticCompactionOutcome.Applied)
+                {
+                    turnSnapshot = turnSnapshot.WithConversationHistory(
+                        CopilotConversationRequestBuilder.CaptureHistorySnapshot(
+                            conversation,
+                            isReplacingTurn ? replacedUserMessage : null));
+                }
+
+                var workspaceReviewTarget = useQueuedComposerInputs
+                    ? queuedReviewTarget?.CreateSnapshot() ?? queuedFollowUp?.CreateWorkspaceReviewTargetSnapshot()
+                    : isDirectSubmission
+                    ? null
+                    : composerCapture?.WorkspaceReviewTarget;
+                if (workspaceReviewTarget == null
+                    && isReplacingTurn
+                    && requestMode == CopilotAgentMode.Review
+                    && replacedUserMessage.WorkspaceReviewTarget?.IsStructurallyValid() == true)
+                {
+                    workspaceReviewTarget = replacedUserMessage.WorkspaceReviewTarget.CreateSnapshot();
+                }
+
+                var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
+                {
+                    RequestMode = requestMode,
+                    WorkspaceReviewTarget = workspaceReviewTarget,
+                    AgentSkillReference = agentSkillReference,
+                    RequestContent = directRequestContent ?? string.Empty,
+                    RecoveryRequest = recoveryRequest,
+                    Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
+                    AttachmentSnapshotCaptured = true,
+                };
+                assistantMessage = CreatePendingAssistantMessage(requestProfile, requestMode);
+                var previousCheckpoint = conversation.CreateAgentContinuationCheckpoint();
+
                 if (isReplacingTurn)
                 {
-                    conversation.Messages.Insert(replacedUserIndex, replacedUserMessage);
                     if (replacedAssistantMessage != null)
-                        conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
-                    conversation.SetAgentSessionCheckpoint(previousCheckpoint);
+                        conversation.Messages.Remove(replacedAssistantMessage);
+                    conversation.Messages.Remove(replacedUserMessage);
+                    conversation.Messages.Insert(replacedUserIndex, userMessage);
+                    conversation.Messages.Insert(replacedUserIndex + 1, assistantMessage);
+                    conversation.SetAgentSessionCheckpoint(null);
+                }
+                else
+                {
+                    conversation.Messages.Add(userMessage);
+                    conversation.Messages.Add(assistantMessage);
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
-                ReportRequestAdmissionFailure(admission);
-                return;
-            }
-            if (queuedCommandExecution != null)
-            {
-                if (!isDirectSubmission || useQueuedComposerInputs)
-                    queuedCommandExecution.QueuedAttachmentsConsumedBySuccessor = true;
-            }
 
-            if (automaticCompaction != CopilotAutomaticCompactionOutcome.Applied)
-                DismissLocalCommandResult();
-            if (!isDirectSubmission)
-                CommitPendingAgentRecoveryRequest(recoveryRequest);
-            if (!isDirectSubmission && isReplacingTurn)
-            {
-                _composerDraftBeforeMessageEdit = null;
-                SetMessageEditState(string.Empty, string.Empty);
-            }
-            if (!isDirectSubmission
-                && composerCapture != null
-                && _composerSession.CommitScheduled(composerCapture.Token))
-            {
+                var preparedTurn = new CopilotPreparedHostedTurn(
+                    conversation,
+                    requestProfile,
+                    userMessage,
+                    assistantMessage,
+                    turnSnapshot,
+                    runtimeConfigSnapshot,
+                    refreshExternalContext: requestMode != CopilotAgentMode.Chat,
+                    isAutomaticGoalContinuation: false);
+
+                CopilotRequestAdmissionResult admission;
+                var scheduled = queuedCommandExecution == null
+                    ? _taskHost.TrySchedule(
+                        preparedTurn.ConversationId,
+                        preparedTurn.Mode,
+                        run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
+                        out hostedRun,
+                        out admission)
+                    : _taskHost.TryScheduleQueuedCommandSuccessor(
+                        queuedCommandExecution.HostedRun.Id,
+                        preparedTurn.ConversationId,
+                        preparedTurn.Mode,
+                        run => ExecuteHostedPreparedTurnAsync(run, preparedTurn),
+                        out hostedRun,
+                        out admission);
+                if (!scheduled
+                    || hostedRun == null)
+                {
+                    conversation.Messages.Remove(assistantMessage);
+                    conversation.Messages.Remove(userMessage);
+                    if (isReplacingTurn)
+                    {
+                        conversation.Messages.Insert(replacedUserIndex, replacedUserMessage);
+                        if (replacedAssistantMessage != null)
+                            conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
+                        conversation.SetAgentSessionCheckpoint(previousCheckpoint);
+                    }
+                    UpdateConversationMetadata(conversation, touch: true);
+                    PersistState();
+                    ReportRequestAdmissionFailure(admission);
+                    return;
+                }
                 if (queuedCommandExecution != null)
-                    queuedCommandExecution.ComposerRestoreToken = _composerSession.Capture().Token;
-                SynchronizeSelectedConversationComposerDraft();
-                if (queuedCommandExecution == null)
-                    ConsumeCapturedComposerAttachments(conversation, requestAttachments);
-                NotifyComposerTextChanged(synchronizeDraft: false);
-                OnComposerRequestModeChanged();
+                {
+                    if (!isDirectSubmission || useQueuedComposerInputs)
+                        queuedCommandExecution.QueuedAttachmentsConsumedBySuccessor = true;
+                }
+
+                if (automaticCompaction != CopilotAutomaticCompactionOutcome.Applied)
+                    DismissLocalCommandResult();
+                if (!isDirectSubmission)
+                    CommitPendingAgentRecoveryRequest(recoveryRequest);
+                if (!isDirectSubmission && isReplacingTurn)
+                {
+                    _composerDraftBeforeMessageEdit = null;
+                    SetMessageEditState(string.Empty, string.Empty);
+                }
+                if (!isDirectSubmission
+                    && composerCapture != null
+                    && _composerSession.CommitScheduled(composerCapture.Token))
+                {
+                    if (queuedCommandExecution != null)
+                        queuedCommandExecution.ComposerRestoreToken = _composerSession.Capture().Token;
+                    SynchronizeSelectedConversationComposerDraft();
+                    if (queuedCommandExecution == null)
+                        ConsumeCapturedComposerAttachments(conversation, requestAttachments);
+                    NotifyComposerTextChanged(synchronizeDraft: false);
+                    OnComposerRequestModeChanged();
+                }
+            }
+            finally
+            {
+                if (preparation != null)
+                    _composerRequestPreparations.Remove(preparation);
             }
             if (queuedCommandExecution != null)
                 return;

@@ -120,7 +120,7 @@ Agent Framework checkpoint 保存目录 revision，以及每个能力的稳定 I
 
 checkpoint、独立 journal 与正式运行结果的所有权及提交规则统一见[检查点与任务事件的所有权](./copilot-view-model-architecture.md#检查点与任务事件的所有权)。有界窗口的比较只能验证仍保留的证据，不承诺无限历史的完整性；恢复操作还必须遵守下列提问与工具终态契约。裁剪当前运行尚未配对的 provider 调用、尚未结清的工具执行或结果未知记录时，journal 的 `TrimmedSessionResumeRestriction` 保存保守恢复限制，随独立 journal 和 checkpoint 持久化；丢失细节不能被解释为工具已完成。相同运行的后续快照和加载归一化不能弱化该限制，恢复提示明确说明早期细节已被裁剪并要求先核对外部状态。真正开始新运行后才清除旧运行的裁剪限制；新建 session 前仍先按原 checkpoint 判定是否需要重新规划。旧数据缺少该字段时按 `None` 读取，日志容量和 schema 版本保持兼容。`CopilotAgentTaskEventJournalIntegrityTests` 覆盖容量裁剪、持久化往返、后续调用结清和新运行的边界。
 
-进入结构化提问等待态前，运行时必须先发布包含 `UserQuestionRequested` 的增量 checkpoint；发布失败会立即记录 `UserQuestionResolved(Cancelled)` 并向模型返回拒绝，不留下仅存在于内存的长期等待。
+进入结构化提问等待态前，运行时必须先发布包含 `UserQuestionRequested` 的增量 checkpoint；发布失败会立即记录 `UserQuestionResolved(Cancelled)` 并向模型返回拒绝，不留下仅存在于内存的长期等待。若 checkpoint 写入尚未返回而宿主已因取消期限或异常收尾，可见消息中的待回答问题也必须关闭为 `Cancelled`，收起选项并显示取消状态；已经回答的问题及其答案保持不变。这不代表迟到的生产者或外部操作已经结束。`CopilotHostedTurnCompletionTests` 覆盖受控 checkpoint 等待及宿主终态清理。
 
 取消控制、暂停和运行时异常的兜底路径统一调用 conversation 的 `CompleteOpenAgentRun`：它先在最近的 open run 上补齐缺失的控制事件、悬空工具与结构化提问终态以及 `RunStopped`，再原子保留或退休 checkpoint；未得到回答的结构化提问统一落为 `Cancelled`，不会在重启后永久保持 `pending`。已出现 `ToolStarted` 但没有权威终态的调用标记为 `Interrupted + tool_outcome_unknown`，恢复提示明确要求写入或非幂等操作先核对外部状态或询问用户，不能盲目重试；尚未启动的排队调用使用 `tool_not_started`，等待审批被中断则使用 `approval_interrupted`，两者都明确表示受保护操作尚未执行且下次必须重新审批。重复完成回调不会追加第二个终态，普通 Chat 的结束也不会在展示层改写 Agent checkpoint。
 

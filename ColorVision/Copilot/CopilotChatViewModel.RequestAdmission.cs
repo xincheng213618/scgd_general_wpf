@@ -297,6 +297,7 @@ namespace ColorVision.Copilot
             if (sendNow && !TryValidateComposerAttachments(conversation.Attachments, SelectedProfile))
                 return new CopilotPromptQueueResult(false, false);
 
+            DismissPromptHistorySearch();
             SetPendingRequestModeOverride(mode);
             InputText = normalizedPrompt;
 

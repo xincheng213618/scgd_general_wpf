@@ -217,7 +217,12 @@ namespace ColorVision.Copilot
             Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> loadPageAsync)
         {
             var messageEditSnapshot = _composerDraftBeforeMessageEdit;
-            var existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.WebPage && string.Equals(item.Source, url, StringComparison.OrdinalIgnoreCase));
+            var urlComparisonKey = CopilotWebPageToolSupport.NormalizeUrlComparisonKey(url);
+            var existingAttachment = conversation.Attachments.FirstOrDefault(item =>
+                item.Type == CopilotAttachmentType.WebPage && string.Equals(
+                    CopilotWebPageToolSupport.NormalizeUrlComparisonKey(item.Source),
+                    urlComparisonKey,
+                    StringComparison.Ordinal));
             if (existingAttachment == null && !TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.WebPage))
                 return;
 

@@ -112,14 +112,16 @@ namespace ColorVision.Copilot
         }
 
         private async Task<IReadOnlyList<CopilotAttachmentItem>?> TryPersistImageAttachmentsAsync(
-            IReadOnlyList<CopilotAttachmentItem> attachments)
+            IReadOnlyList<CopilotAttachmentItem> attachments,
+            CopilotManagedImageAttachmentLease imageLease)
         {
             try
             {
                 return await CopilotImageAttachmentAdmission.PersistAsync(
                     attachments,
                     _stateStore.AttachmentDirectoryPath,
-                    CancellationToken.None);
+                    CancellationToken.None,
+                    imageLease);
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {

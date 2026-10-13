@@ -235,7 +235,32 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(uri);
             if (IsStructuredWebContentType(mediaType))
                 return ExtractStructuredWebContent(uri, mediaType, content);
+            if (IsPlainTextWebContentType(mediaType))
+                return ExtractPlainTextWebContent(uri, content);
             return ExtractWebPageContent(uri, content);
+        }
+
+        private static CopilotFetchedWebPageContent ExtractPlainTextWebContent(Uri uri, string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                throw new InvalidOperationException("The plain text web resource was empty.");
+
+            return new CopilotFetchedWebPageContent(uri.ToString(), uri.Host, string.Empty, TruncateWebPageContent(content));
+        }
+
+        private static string TruncateWebPageContent(string content)
+        {
+            if (content.Length <= MaxWebPageContentChars)
+                return content;
+
+            var retainedCharacters = MaxWebPageContentChars;
+            if (char.IsHighSurrogate(content[retainedCharacters - 1])
+                && char.IsLowSurrogate(content[retainedCharacters]))
+            {
+                retainedCharacters--;
+            }
+            return content[..retainedCharacters] + Environment.NewLine
+                + $"...<content truncated; kept the first {retainedCharacters} characters.>";
         }
 
         internal static CopilotFetchedWebPageContent ExtractWebPageContent(Uri uri, string html)
@@ -272,8 +297,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(content))
                 throw new CopilotWebPageRenderingRequiredException();
 
-            if (content.Length > MaxWebPageContentChars)
-                content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
+            content = TruncateWebPageContent(content);
 
             var sparseExtraction = (html?.Length ?? 0) >= 20_000 && content.Length < 500;
             return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content, relatedResourceUrls, sparseExtraction, relatedPageLinks);
@@ -325,7 +349,18 @@ namespace ColorVision.Copilot
             var retainedCharacters = MaxWebPageContentChars - marker.Length;
             var headCharacters = retainedCharacters * 2 / 3;
             var tailCharacters = retainedCharacters - headCharacters;
-            return content[..headCharacters] + marker + content[^tailCharacters..];
+            var tailStart = content.Length - tailCharacters;
+            if (char.IsHighSurrogate(content[headCharacters - 1])
+                && char.IsLowSurrogate(content[headCharacters]))
+            {
+                headCharacters--;
+            }
+            if (char.IsHighSurrogate(content[tailStart - 1])
+                && char.IsLowSurrogate(content[tailStart]))
+            {
+                tailStart++;
+            }
+            return content[..headCharacters] + marker + content[tailStart..];
         }
 
         private static List<string> ExtractRelatedResourceUrls(Uri pageUri, HtmlDocument document)
@@ -456,9 +491,12 @@ namespace ColorVision.Copilot
         {
             return string.IsNullOrWhiteSpace(mediaType)
                 || mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
+                || IsPlainTextWebContentType(mediaType)
                 || IsStructuredWebContentType(mediaType);
         }
+
+        private static bool IsPlainTextWebContentType(string mediaType) =>
+            mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase);
 
         private static bool IsStructuredWebContentType(string mediaType)
         {

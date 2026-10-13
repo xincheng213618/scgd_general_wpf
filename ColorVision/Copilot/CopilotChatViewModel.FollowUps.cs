@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
             {
                 if (IsAnsweringUserQuestion)
                 {
-                    TryAnswerCurrentUserQuestion(InputText);
+                    TryAnswerCurrentUserQuestion(InputText, consumeComposer: true);
                     return;
                 }
 
@@ -96,10 +96,10 @@ namespace ColorVision.Copilot
         private void AnswerUserQuestionOption(CopilotUserQuestionOption? option)
         {
             if (CanAnswerUserQuestionOption(option))
-                TryAnswerCurrentUserQuestion(option!.Label);
+                TryAnswerCurrentUserQuestion(option!.Label, consumeComposer: false);
         }
 
-        private bool TryAnswerCurrentUserQuestion(string? answer)
+        private bool TryAnswerCurrentUserQuestion(string? answer, bool consumeComposer)
         {
             var run = ActiveHostedRun;
             var message = ActiveUserQuestionMessage;
@@ -114,7 +114,8 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            InputText = string.Empty;
+            if (consumeComposer)
+                InputText = string.Empty;
             return true;
         }
 

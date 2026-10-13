@@ -73,6 +73,63 @@ public sealed class CopilotQueuedFollowUpCancellationTests
         Assert.Equal("other draft", fixture.OtherConversation.DraftText);
     }
 
+    [Fact]
+    public async Task EditingQueuedFollowUpClosesHistorySearchAndRestoresTheComposer()
+    {
+        await using var fixture = new QueueFixture();
+        var item = fixture.Schedule(goalBound: false, mode: CopilotAgentMode.Plan);
+        await fixture.CancelActiveAndLeaveQueueAsync();
+        var history = new CopilotChatMessage(CopilotChatRole.User, "earlier request");
+        fixture.Conversation.Messages.Add(history);
+        Assert.Empty(fixture.Conversation.DraftText);
+        Assert.True(fixture.ViewModel.TryOpenPromptHistorySearch());
+        Assert.Empty(fixture.ViewModel.InputText);
+        Assert.True(fixture.ViewModel.EditQueuedFollowUpCommand.CanExecute(item));
+
+        fixture.ViewModel.EditQueuedFollowUpCommand.Execute(item);
+
+        Assert.Equal(item.Prompt, fixture.Conversation.DraftText);
+        Assert.False(fixture.ViewModel.IsPromptHistorySearchOpen);
+        Assert.Equal(item.Prompt, fixture.ViewModel.InputText);
+        Assert.Equal(CopilotAgentMode.Plan, fixture.Conversation.DraftRequestMode);
+        Assert.Equal("queued context", Assert.Single(fixture.Conversation.Attachments).Value);
+        Assert.Empty(fixture.Host.QueuedRuns);
+        Assert.Empty(fixture.ViewModel.QueuedFollowUps);
+        Assert.Empty(fixture.State.QueuedFollowUpRecoveries);
+        Assert.False(fixture.FollowUpRun!.HasStarted);
+        Assert.False(fixture.FollowUpStarted.Task.IsCompleted);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fixture.FollowUpRun.Completion.WaitAsync(TestTimeout));
+        Assert.Same(history, Assert.Single(fixture.Conversation.Messages));
+        Assert.Equal("other draft", fixture.OtherConversation.DraftText);
+    }
+
+    [Fact]
+    public async Task EmptyHistorySearchQueryCannotAllowQueuedEditingToReplaceAnExistingDraft()
+    {
+        await using var fixture = new QueueFixture();
+        var item = fixture.Schedule(goalBound: false, mode: CopilotAgentMode.Plan);
+        var recovery = Assert.Single(fixture.State.QueuedFollowUpRecoveries);
+        await fixture.CancelActiveAndLeaveQueueAsync();
+        fixture.Conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "earlier request"));
+        fixture.ViewModel.InputText = "newer draft";
+        Assert.True(fixture.ViewModel.TryOpenPromptHistorySearch());
+        Assert.Empty(fixture.ViewModel.InputText);
+        Assert.False(fixture.ViewModel.EditQueuedFollowUpCommand.CanExecute(item));
+
+        fixture.ViewModel.EditQueuedFollowUpCommand.Execute(item);
+
+        Assert.Equal("newer draft", fixture.Conversation.DraftText);
+        Assert.Equal(CopilotAgentMode.Auto, fixture.Conversation.DraftRequestMode);
+        Assert.Empty(fixture.Conversation.Attachments);
+        Assert.Same(fixture.FollowUpRun, Assert.Single(fixture.Host.QueuedRuns));
+        Assert.Same(item, Assert.Single(fixture.ViewModel.QueuedFollowUps));
+        Assert.Same(recovery, Assert.Single(fixture.State.QueuedFollowUpRecoveries));
+        Assert.False(fixture.FollowUpRun!.HasStarted);
+        Assert.False(fixture.FollowUpStarted.Task.IsCompleted);
+        fixture.ViewModel.DismissPromptHistorySearch();
+        Assert.Equal("newer draft", fixture.ViewModel.InputText);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -214,11 +271,12 @@ public sealed class CopilotQueuedFollowUpCancellationTests
             ActiveRun = Host.Start(Conversation.Id, CopilotAgentMode.Auto, _ => ReleaseActive.Task);
         }
 
-        public CopilotQueuedFollowUp Schedule(bool goalBound)
+        public CopilotQueuedFollowUp Schedule(bool goalBound, CopilotAgentMode mode = CopilotAgentMode.Auto)
         {
             if (goalBound)
                 Conversation.Goal = CopilotConversationGoal.Create("continue the goal", DateTimeOffset.UtcNow);
-            Assert.True(_queue.TrySchedule(CreateRequest(Conversation.Id, Conversation.Goal?.Id ?? "", goalBound ? true : null), false,
+            var request = CreateRequest(Conversation.Id, Conversation.Goal?.Id ?? "", goalBound ? true : null) with { Mode = mode };
+            Assert.True(_queue.TrySchedule(request, false,
                 (_, _) =>
                 {
                     FollowUpStarted.TrySetResult();
@@ -226,6 +284,30 @@ public sealed class CopilotQueuedFollowUpCancellationTests
                 }, out var item, out _));
             FollowUpRun = Assert.Single(Host.QueuedRuns);
             return Assert.IsType<CopilotQueuedFollowUp>(item);
+        }
+
+        public async Task CancelActiveAndLeaveQueueAsync()
+        {
+            var completed = NewSignal();
+            void OnChanged(object? sender, CopilotAgentTaskHostChangedEventArgs args)
+            {
+                if (args.Kind == CopilotAgentTaskHostChangeKind.Completed && args.Run.Id == ActiveRun.Id)
+                    completed.TrySetResult();
+            }
+            Host.Changed += OnChanged;
+            try
+            {
+                Assert.True(Host.RequestCancel(ActiveRun.Id));
+                ReleaseActive.TrySetResult();
+                await completed.Task.WaitAsync(TestTimeout);
+                await ObserveCompletionAsync(ActiveRun);
+            }
+            finally
+            {
+                Host.Changed -= OnChanged;
+            }
+            Assert.False(ViewModel.IsBusy);
+            Assert.Same(FollowUpRun, Assert.Single(Host.QueuedRuns));
         }
 
         public async ValueTask DisposeAsync()

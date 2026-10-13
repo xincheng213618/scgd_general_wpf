@@ -5,6 +5,43 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotDatabaseSqlPolicyTests
 {
     [Theory]
+    [InlineData(CopilotAgentMode.Auto, "查询数据库今天记录数，并解释 SQL。", true)]
+    [InlineData(CopilotAgentMode.Auto, "Query today's database row count, then explain SQL.", true)]
+    [InlineData(CopilotAgentMode.Chat, "查询数据库今天记录数，并解释 SQL。", false)]
+    public void QueryAndExplanationKeepDatabaseReadAvailable(CopilotAgentMode mode, string prompt, bool expectedAvailable)
+    {
+        var read = new CopilotQueryDatabaseSqlTool();
+        var write = new CopilotExecuteDatabaseSqlTool();
+        var registry = new CopilotToolRegistry([read, write]);
+        var request = new CopilotAgentRequest { Mode = mode, UserText = prompt };
+
+        var registered = registry.FindTools(request);
+        var merged = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(request, registered, [], _ => { });
+
+        Assert.Equal(expectedAvailable, registered.Contains(read));
+        Assert.Equal(expectedAvailable, merged.Contains(read));
+        Assert.DoesNotContain(write, registered);
+        Assert.DoesNotContain(write, merged);
+    }
+
+    [Fact]
+    public async Task AvailableDatabaseWriteStillRequiresNativeApproval()
+    {
+        var write = new CopilotExecuteDatabaseSqlTool();
+        var request = new CopilotAgentRequest { Mode = CopilotAgentMode.Auto, UserText = "更新数据库中的测试记录。" };
+        Assert.Contains(write, new CopilotToolRegistry([write]).FindTools(request));
+        Assert.True(write.Capability.RequiresNativeApproval);
+
+        var result = await write.ExecuteAsync(request, new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?> { ["sql"] = "UPDATE measurements SET reviewed = 1 WHERE id = 42" },
+        }, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+    }
+
+    [Theory]
     [InlineData("SELECT id FROM users FOR UPDATE")]
     [InlineData("SELECT id FROM users FOR SHARE")]
     [InlineData("SELECT id FROM users LOCK IN SHARE MODE")]

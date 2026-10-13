@@ -33,7 +33,8 @@ namespace ColorVision.Copilot
         public static async Task<IReadOnlyList<CopilotAttachmentItem>> PersistAsync(
             IReadOnlyList<CopilotAttachmentItem> attachments,
             string attachmentDirectoryPath,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            CopilotManagedImageAttachmentLease? imageLease = null)
         {
             ArgumentNullException.ThrowIfNull(attachments);
             if (!attachments.Any(attachment => attachment?.Type == CopilotAttachmentType.Image))
@@ -64,6 +65,7 @@ namespace ColorVision.Copilot
                 var preparedImages = payloads
                     .Select(payload => PrepareStoredImage(payload, attachmentRoot))
                     .ToArray();
+                imageLease?.Pin(preparedImages.Select(image => image.FilePath));
 
                 foreach (var preparedImage in preparedImages)
                 {
@@ -231,5 +233,61 @@ namespace ColorVision.Copilot
             string FilePath,
             byte[] Bytes,
             byte[] Hash);
+    }
+
+    internal sealed class CopilotManagedImageAttachmentLease : IDisposable
+    {
+        private static readonly object Gate = new();
+        private static readonly Dictionary<string, int> ProtectedPaths = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _paths = new(StringComparer.OrdinalIgnoreCase);
+        private bool _disposed;
+
+        public void Pin(IEnumerable<string> paths)
+        {
+            lock (Gate)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                foreach (var path in paths)
+                {
+                    var fullPath = Path.GetFullPath(path);
+                    if (!_paths.Add(fullPath))
+                        continue;
+                    ProtectedPaths.TryGetValue(fullPath, out var count);
+                    ProtectedPaths[fullPath] = count + 1;
+                }
+            }
+        }
+
+        // The caller validates the managed root and reparse-point boundary first.
+        // Keep the protection check and deletion atomic with respect to Pin/Dispose.
+        internal static bool TryDeleteUnprotectedFile(string fullPath)
+        {
+            lock (Gate)
+            {
+                if (ProtectedPaths.ContainsKey(fullPath))
+                    return false;
+                File.Delete(fullPath);
+                return true;
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (Gate)
+            {
+                if (_disposed)
+                    return;
+                _disposed = true;
+                foreach (var path in _paths)
+                {
+                    var count = ProtectedPaths[path];
+                    if (count == 1)
+                        ProtectedPaths.Remove(path);
+                    else
+                        ProtectedPaths[path] = count - 1;
+                }
+                _paths.Clear();
+            }
+        }
     }
 }

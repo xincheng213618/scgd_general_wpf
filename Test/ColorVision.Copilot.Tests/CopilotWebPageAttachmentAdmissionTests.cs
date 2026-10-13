@@ -21,6 +21,51 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
     private const string NewerDraft = "A newer draft which must survive the earlier webpage fetch.";
 
     [Theory]
+    [InlineData("https://public.test/Report?id=Ab", "https://public.test/Report?id=Ab", true)]
+    [InlineData("HTTPS://PUBLIC.test/Report?id=Ab", "https://public.test/Report?id=Ab", true)]
+    [InlineData("https://public.test:443/Report?id=Ab", "https://public.test/Report?id=Ab", true)]
+    [InlineData("https://public.test/Report?id=Ab", "https://public.test/report?id=Ab", false)]
+    [InlineData("https://public.test/Report?id=Ab", "https://public.test/Report?id=ab", false)]
+    public void AttachingAWebPageRefreshesOnlyTheSameNormalizedUrl(string originalUrl, string requestedUrl, bool refreshesExisting)
+    {
+        StaTest.Run(() =>
+        {
+            using var fixture = new Fixture(initialPageUrl: originalUrl);
+            var originalPage = Assert.Single(fixture.Conversation.Attachments);
+            var loaderCalls = 0;
+
+            fixture.ViewModel.AttachWebPageAsync(fixture.Conversation, requestedUrl, (url, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                Assert.Equal(requestedUrl, url);
+                loaderCalls++;
+                return Task.FromResult(CreateUpdatedPage(url));
+            }).GetAwaiter().GetResult();
+
+            Assert.Equal(1, loaderCalls);
+            Assert.Equal(refreshesExisting ? 1 : 2, fixture.Conversation.Attachments.Count);
+            var fetchedPage = fixture.Conversation.Attachments[^1];
+            Assert.Equal(requestedUrl, fetchedPage.Source);
+            Assert.Contains(UpdatedBody, fetchedPage.Value, StringComparison.Ordinal);
+            Assert.DoesNotContain(OriginalBody, fetchedPage.Value, StringComparison.Ordinal);
+            if (refreshesExisting)
+            {
+                Assert.DoesNotContain(originalPage, fixture.Conversation.Attachments);
+            }
+            else
+            {
+                Assert.Same(originalPage, fixture.Conversation.Attachments[0]);
+                Assert.Equal(originalUrl, originalPage.Source);
+                Assert.Equal(OriginalBody, originalPage.Value);
+            }
+            Assert.Equal(Prompt, fixture.ViewModel.InputText);
+            Assert.Empty(fixture.Conversation.Messages);
+            Assert.Empty(fixture.Runtime.Requests);
+            Assert.False(fixture.ViewModel.IsBusy);
+        });
+    }
+
+    [Theory]
     [InlineData("same-url")]
     [InlineData("new-url")]
     [InlineData("unchanged")]
@@ -221,7 +266,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
         private readonly object _isolatedSolution = RuntimeHelpers.GetUninitializedObject(typeof(SolutionManager));
         private readonly string _root = Directory.CreateTempSubdirectory("CopilotWebPageAdmission-").FullName;
 
-        public Fixture(bool includeImage = false, bool editSource = false, bool pageInitiallyExists = true)
+        public Fixture(bool includeImage = false, bool editSource = false, bool pageInitiallyExists = true, string initialPageUrl = PageUrl)
         {
             SolutionInstance.SetValue(null, _isolatedSolution);
             StoragePath = Path.Combine(_root, "attachments");
@@ -234,7 +279,7 @@ public sealed class CopilotWebPageAttachmentAdmissionTests
             };
             Conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
             Conversation.SetCustomTitle("Webpage admission fixture");
-            var originalPage = CopilotAttachmentItem.CreateWebPage(PageUrl, "Captured webpage", OriginalBody);
+            var originalPage = CopilotAttachmentItem.CreateWebPage(initialPageUrl, "Captured webpage", OriginalBody);
             if (editSource)
             {
                 OriginalUser = new CopilotChatMessage(CopilotChatRole.User, Prompt)
