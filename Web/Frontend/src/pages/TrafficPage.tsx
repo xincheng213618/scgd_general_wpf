@@ -1,5 +1,5 @@
 import { BarChartOutlined, ClockCircleOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Row, Select, Skeleton, Space, Statistic, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Radio, Row, Select, Skeleton, Space, Statistic, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -223,6 +223,7 @@ export function TrafficPage() {
   const [performanceLoading, setPerformanceLoading] = useState(true)
   const [performanceError, setPerformanceError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [requestCategory, setRequestCategory] = useState<'application' | 'transfer'>('application')
   const days = validDays(searchParams.get('days'))
 
   useEffect(() => {
@@ -235,7 +236,8 @@ export function TrafficPage() {
       setPerformanceLoading(true)
       setPerformanceError('')
     })
-    getTrafficStats(days, 10, controller.signal)
+    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(15000)])
+    getTrafficStats(days, 10, signal)
       .then((payload) => {
         if (mounted) setData(payload)
       })
@@ -245,7 +247,7 @@ export function TrafficPage() {
       .finally(() => {
         if (mounted) setLoading(false)
       })
-    getPerformanceSummary(controller.signal)
+    getPerformanceSummary(signal)
       .then((payload) => {
         if (mounted) setPerformance(payload)
       })
@@ -473,14 +475,14 @@ export function TrafficPage() {
       </Card>
 
       <Card
-        title="实时慢事件"
+        title="近期请求与慢事件"
         loading={performanceLoading && !performance}
         extra={performance && (
           <Space wrap>
             <Tag>慢请求阈值 {milliseconds(performance.threshold_ms)}</Tag>
-            <Tag color={performance.request_buffer_count > 0 ? 'gold' : 'green'}>
+            {performance.recent ? <Tag>已观测 {performance.recent.observed_seconds}/{performance.recent.window_seconds} 秒</Tag> : <Tag color={performance.request_buffer_count > 0 ? 'gold' : 'green'}>
               进程缓冲 {performance.request_buffer_count}/{performance.request_buffer_capacity}
-            </Tag>
+            </Tag>}
             <Tag>采样于 {shortDate(performance.generated_at)}</Tag>
             <Tag>进程启动 {shortDate(performance.process_started_at)}</Tag>
           </Space>
@@ -488,8 +490,23 @@ export function TrafficPage() {
       >
         <Space direction="vertical" size={12} className="page-stack">
           <Typography.Paragraph type="secondary">
-            这里复用当前 Web 进程的有界慢请求缓冲和既有任务历史；请求样本会在服务重启后清空，不会持久化原始 IP、查询参数或请求头。
+            最近五分钟的请求计数与耗时按页面/API、文件上传下载分别统计；两类各保留最近 100 条慢请求，下面最多展示各 20 条。进程重启后清空，各工作进程独立统计。
+            耗时记录到服务端生成响应为止，包含接收上传的处理时间，但不代表下载完成时间或实际传输速度。P95 是所有近期请求的耗时分桶上界估计。
           </Typography.Paragraph>
+          {performance?.recent && <Row gutter={[16, 16]}>
+            {(['application', 'transfer'] as const).map((category) => {
+              const group = performance.recent!.groups[category]
+              return <Col xs={24} md={12} key={category}>
+                <Card size="small" title={category === 'application' ? '页面与 API · 最近五分钟' : '文件上传下载 · 最近五分钟'}>
+                  <Space wrap>
+                    <Tag>请求 {group.requests}</Tag><Tag>4xx {group.client_errors}</Tag><Tag color={group.server_errors ? 'red' : 'default'}>5xx {group.server_errors}</Tag>
+                    <Tag>平均 {group.avg_ms === null ? '无样本' : milliseconds(group.avg_ms)}</Tag>
+                    <Tag>P95 {group.p95_overflow ? '> 15000 ms' : group.p95_upper_ms === null ? '无样本' : `≤ ${group.p95_upper_ms} ms`}</Tag>
+                  </Space>
+                </Card>
+              </Col>
+            })}
+          </Row>}
           {performanceError && (
             <Alert
               type="warning"
@@ -501,14 +518,20 @@ export function TrafficPage() {
           <Row gutter={[16, 16]}>
             <Col xs={24} xxl={14}>
               <Typography.Title level={4}>慢请求</Typography.Title>
+              {performance?.recent && <Radio.Group
+                aria-label="慢请求类别" value={requestCategory}
+                onChange={(event) => setRequestCategory(event.target.value)}
+                options={[{ label: '页面与 API', value: 'application' }, { label: '文件上传下载', value: 'transfer' }]}
+                optionType="button" style={{ marginBottom: 12 }}
+              />}
               <Table
                 rowKey={(record) => `${record.recorded_at}:${record.method}:${record.path}`}
                 size="small"
                 loading={performanceLoading}
                 columns={slowRequestColumns}
-                dataSource={performance ? [...performance.slow_requests].reverse() : []}
+                dataSource={performance ? [...(performance.recent ? performance.recent.groups[requestCategory].slow_requests || [] : performance.slow_requests)].reverse() : []}
                 pagination={false}
-                locale={{ emptyText: '当前服务进程尚未记录慢请求' }}
+                locale={{ emptyText: performance?.recent ? '当前分类尚无慢请求' : '当前服务进程尚未记录慢请求' }}
                 scroll={{ x: 760 }}
               />
             </Col>

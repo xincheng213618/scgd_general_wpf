@@ -44,6 +44,7 @@ import type {
   RegistrationSecurityListParams,
   RegistrationSecurityPage,
   TrafficStatsResponse,
+  TrafficHealth,
   UserAccount,
   UserAccountDetails,
   UserAccountPage,
@@ -72,6 +73,15 @@ export function getAdminStats(signal?: AbortSignal) {
 export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {
   const search = new URLSearchParams({ days: String(days), limit: String(limit) })
   return getJson<TrafficStatsResponse>(`/api/admin/stats/traffic?${search.toString()}`, signal)
+}
+
+export function getTrafficHealth(signal?: AbortSignal) {
+  return getJson<TrafficHealth>('/api/admin/stats/traffic?view=health', signal)
+}
+
+export function getFeedbackSummary(signal?: AbortSignal) {
+  return getJson<Pick<FeedbackInboxResponse, 'summary' | 'access'>>('/api/feedback?view=summary&limit=1', signal)
+    .then((value) => value.summary)
 }
 
 export function getPerformanceSummary(signal?: AbortSignal) {

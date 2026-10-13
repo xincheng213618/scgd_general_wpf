@@ -309,6 +309,7 @@ export interface SlowRequestSample {
 }
 
 export interface PerformanceSummary {
+  recent?: RecentRequestDiagnostics | null
   generated_at: string
   process_started_at: string
   threshold_ms: number
@@ -316,6 +317,28 @@ export interface PerformanceSummary {
   request_buffer_capacity: number
   slow_requests: SlowRequestSample[]
   slow_jobs: JobRun[]
+}
+
+export interface RecentRequestGroup {
+  requests: number
+  client_errors: number
+  server_errors: number
+  avg_ms: number | null
+  p95_upper_ms: number | null
+  p95_overflow: boolean
+  slow_requests?: SlowRequestSample[]
+}
+
+export interface RecentRequestDiagnostics {
+  window_seconds: number
+  observed_seconds: number
+  groups: Record<'application' | 'transfer', RecentRequestGroup>
+}
+
+export interface TrafficHealth {
+  today: TrafficStatsResponse['today']
+  recorder: TrafficStatsResponse['recorder']
+  recent?: RecentRequestDiagnostics | null
 }
 
 export interface OperationsHostSnapshot {
