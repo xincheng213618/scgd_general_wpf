@@ -13,16 +13,13 @@ namespace ColorVision.UI.Desktop.Diagnostics
         {
             InitializeComponent();
             OperationsTitle.Text = CrashDumpText.Get("系统操作");
-            OperationsDescription.Text = CrashDumpText.Get("普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。");
+            OperationsDescription.Text = CrashDumpText.Get("通过 ColorVision Service Host 应用或清除系统设置。");
             ApplyButton.Content = CrashDumpText.Get("应用系统设置");
             ClearButton.Content = CrashDumpText.Get("清除系统设置");
             SaveDumpButton.Content = CrashDumpText.Get("保存当前进程 Dump");
             _configuration.Reload();
 
-            string privilege = Tool.IsAdministrator()
-                ? CrashDumpText.Get("当前为管理员模式，系统设置可直接写入。")
-                : CrashDumpText.Get("当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。");
-            SetStatus(CrashDumpText.Format("当前目标：{0}。{1}", _configuration.ProcessExecutableName, privilege));
+            SetStatus(CrashDumpText.Format("当前目标：{0}。", _configuration.ProcessExecutableName));
         }
 
         private async void ApplyButton_Click(object sender, RoutedEventArgs e)

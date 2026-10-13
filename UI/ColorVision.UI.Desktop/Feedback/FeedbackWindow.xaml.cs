@@ -171,6 +171,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
         private readonly ObservableCollection<AttachmentItem> _attachments = new();
         private readonly ObservableCollection<CollectorItem> _collectorItems = new();
+        private readonly HashSet<string> _generatedDiagnosticPackages = new(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource? _uploadCancellation;
         private bool _placeholderActive = true;
         private DateTimeOffset? _diagnosticsCollectedAtUtc;
@@ -457,6 +458,7 @@ namespace ColorVision.UI.Desktop.Feedback
                 }
 
                 var attachment = new AttachmentItem { FilePath = result.ZipPath };
+                _generatedDiagnosticPackages.Add(result.ZipPath);
                 _attachments.Add(attachment);
                 _diagnosticsCollectedAtUtc = result.CollectedAtUtc;
                 AttachmentsList.SelectedItem = attachment;
@@ -477,15 +479,16 @@ namespace ColorVision.UI.Desktop.Feedback
             }
         }
 
-        private static LogPackageResult CreateLogPackage(IReadOnlyList<IFeedbackLogCollector> collectors, IProgress<string> progress)
+        internal static LogPackageResult CreateLogPackage(IReadOnlyList<IFeedbackLogCollector> collectors, IProgress<string> progress)
         {
-            string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+            string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.zip");
             var collectedFiles = new List<string>();
             var usedEntryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int totalFiles = 0;
 
-            using (var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            try
             {
+                using var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
                 foreach (var collector in collectors)
                 {
                     try
@@ -499,10 +502,12 @@ namespace ColorVision.UI.Desktop.Feedback
                                 if (!File.Exists(filePath))
                                     continue;
 
+                                collectedFiles.Add(filePath);
                                 string safeEntryPath = NormalizeZipEntryPath(entryPath, Path.GetFileName(filePath));
                                 safeEntryPath = EnsureUniqueEntryPath(safeEntryPath, usedEntryPaths);
-                                zipArchive.CreateEntryFromFile(filePath, safeEntryPath);
-                                collectedFiles.Add(filePath);
+                                CompressionLevel compression = string.Equals(Path.GetExtension(filePath), ".dmp", StringComparison.OrdinalIgnoreCase)
+                                    ? CompressionLevel.SmallestSize : CompressionLevel.Optimal;
+                                zipArchive.CreateEntryFromFile(filePath, safeEntryPath, compression);
                                 totalFiles++;
                             }
                             catch (Exception ex)
@@ -517,8 +522,15 @@ namespace ColorVision.UI.Desktop.Feedback
                     }
                 }
             }
-
-            CleanupCollectedFiles(collectedFiles);
+            catch
+            {
+                TryDeleteFile(zipPath);
+                throw;
+            }
+            finally
+            {
+                CleanupCollectedFiles(collectedFiles);
+            }
             return new LogPackageResult(zipPath, totalFiles, DateTimeOffset.UtcNow);
         }
 
@@ -620,6 +632,7 @@ namespace ColorVision.UI.Desktop.Feedback
             using var uploadCancellation = new CancellationTokenSource();
             _uploadCancellation = uploadCancellation;
             bool uploadCompleted = false;
+            bool feedbackSubmitted = false;
             try
             {
                 string baseUrl = MarketplaceConfig.ServiceBaseUrl;
@@ -683,6 +696,7 @@ namespace ColorVision.UI.Desktop.Feedback
                 uploadCompleted = true;
                 if (response.IsSuccessStatusCode)
                 {
+                    feedbackSubmitted = true;
                     UploadProgressBar.Value = 100;
                     StatusText.Text = Properties.Resources.FeedbackSent;
                     MessageBox.Show(this, Properties.Resources.FeedbackSent, Properties.Resources.SendFeedback, MessageBoxButton.OK, MessageBoxImage.Information);
@@ -708,6 +722,12 @@ namespace ColorVision.UI.Desktop.Feedback
             {
                 uploadCompleted = true;
                 _uploadCancellation = null;
+                // Multipart content has disposed its file streams before this cleanup runs.
+                if (feedbackSubmitted)
+                {
+                    CleanupCollectedFiles(_generatedDiagnosticPackages);
+                    _generatedDiagnosticPackages.Clear();
+                }
                 SetInputEnabled(true);
             }
         }
@@ -769,6 +789,6 @@ namespace ColorVision.UI.Desktop.Feedback
             this.Close();
         }
 
-        private readonly record struct LogPackageResult(string ZipPath, int TotalFiles, DateTimeOffset CollectedAtUtc);
+        internal readonly record struct LogPackageResult(string ZipPath, int TotalFiles, DateTimeOffset CollectedAtUtc);
     }
 }

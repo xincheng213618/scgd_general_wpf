@@ -888,13 +888,14 @@
   <data name="自定义标志" xml:space="preserve"><value>Custom flags</value></data>
   <data name="输入十进制整数或以 0x 开头的 MINIDUMP_TYPE 十六进制标志。" xml:space="preserve"><value>Enter decimal MINIDUMP_TYPE flags or hexadecimal flags starting with 0x.</value></data>
   <data name="系统操作" xml:space="preserve"><value>System actions</value></data>
-  <data name="普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。" xml:space="preserve"><value>Apply and clear use ColorVision Service Host to write HKLM in standard user mode. Administrator mode writes directly. Manual dumps are saved only to the folder above.</value></data>
+  <data name="通过 ColorVision Service Host 应用或清除系统设置。" xml:space="preserve"><value>Apply or clear system settings through ColorVision Service Host.</value></data>
   <data name="应用系统设置" xml:space="preserve"><value>Apply system settings</value></data>
   <data name="清除系统设置" xml:space="preserve"><value>Clear system settings</value></data>
   <data name="保存当前进程 Dump" xml:space="preserve"><value>Save current process dump</value></data>
-  <data name="当前为管理员模式，系统设置可直接写入。" xml:space="preserve"><value>Administrator mode: system settings can be written directly.</value></data>
-  <data name="当前为普通用户模式，系统设置将由 ColorVision Service Host 代为写入。" xml:space="preserve"><value>Standard user mode: ColorVision Service Host writes the system settings.</value></data>
-  <data name="当前目标：{0}。{1}" xml:space="preserve"><value>Current target: {0}. {1}</value></data>
+  <data name="当前目标：{0}。" xml:space="preserve"><value>Current target: {0}.</value></data>
+  <data name="FeedbackCurrentProcessDump" xml:space="preserve"><value>Current process memory dump</value></data>
+  <data name="仅清理保存目录中属于当前程序的历史 Dump，保留其他程序的转储。" xml:space="preserve"><value>Clean only this application's historical dumps in the configured folder; keep dumps from other applications.</value></data>
+  <data name="FeedbackCurrentProcessDumpDescription" xml:space="preserve"><value>Capture and compress a full memory snapshot while packaging to investigate memory growth. Unchecked by default.</value></data>
   <data name="正在应用系统设置……" xml:space="preserve"><value>Applying system settings…</value></data>
   <data name="正在通过后台特权服务应用系统设置……" xml:space="preserve"><value>Applying system settings through ColorVision Service Host…</value></data>
   <data name="已应用 Windows Error Reporting 设置：{0}" xml:space="preserve"><value>Windows Error Reporting settings applied: {0}</value></data>

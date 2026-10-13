@@ -76,7 +76,7 @@ namespace ColorVision.UI.Desktop.Diagnostics
             }
         }
 
-        private static bool IsColorVisionDump(string fileName, string processExecutableName)
+        internal static bool IsColorVisionDump(string fileName, string processExecutableName)
         {
             string processName = Path.GetFileNameWithoutExtension(processExecutableName);
             return fileName.StartsWith($"{processExecutableName}.", StringComparison.OrdinalIgnoreCase)
