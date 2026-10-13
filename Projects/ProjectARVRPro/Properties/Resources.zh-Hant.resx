@@ -1297,4 +1297,6 @@
   <data name="编辑配置" xml:space="preserve"><value>編輯設定</value></data>
   <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>進度依歷史耗時估算，以實際完成為準。</value></data>
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>按兩下開啟流程模板，右鍵編輯設定。</value></data>
+  <data name="现场数据副本" xml:space="preserve"><value>現場資料副本</value></data>
+  <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>清理已結束應用程式工作階段的過期唯讀副本，原始回饋資料保留；本次執行匯入的副本受保護。</value></data>
 </root>

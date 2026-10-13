@@ -1297,4 +1297,6 @@ Automatically saved settings will remain.</value>
   <data name="编辑配置" xml:space="preserve"><value>Edit settings</value></data>
   <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>Progress is estimated from previous runs; actual completion determines the result.</value></data>
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>Double-click to open the flow template; right-click to edit settings.</value></data>
+  <data name="现场数据副本" xml:space="preserve"><value>Field data copies</value></data>
+  <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>Clean expired read-only copies from ended application sessions. Original feedback and copies imported during this run are protected.</value></data>
 </root>

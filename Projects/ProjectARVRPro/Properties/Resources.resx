@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
 		Microsoft ResX Schema
@@ -1277,4 +1277,6 @@
   <data name="编辑配置" xml:space="preserve"><value>编辑配置</value></data>
   <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>进度根据历史耗时估算，以实际完成为准。</value></data>
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>双击打开流程模板，右键编辑配置。</value></data>
+  <data name="现场数据副本" xml:space="preserve"><value>现场数据副本</value></data>
+  <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。</value></data>
 </root>
