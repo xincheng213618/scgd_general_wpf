@@ -1297,6 +1297,4 @@
   <data name="编辑配置" xml:space="preserve"><value>編輯設定</value></data>
   <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>進度依歷史耗時估算，以實際完成為準。</value></data>
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>按兩下開啟流程模板，右鍵編輯設定。</value></data>
-  <data name="查看前面的流程" xml:space="preserve"><value>檢視前面的流程</value></data>
-  <data name="查看后面的流程" xml:space="preserve"><value>檢視後面的流程</value></data>
 </root>

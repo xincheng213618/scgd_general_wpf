@@ -1297,6 +1297,4 @@ Automatically saved settings will remain.</value>
   <data name="编辑配置" xml:space="preserve"><value>Edit settings</value></data>
   <data name="进度根据历史耗时估算，以实际完成为准。" xml:space="preserve"><value>Progress is estimated from previous runs; actual completion determines the result.</value></data>
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>Double-click to open the flow template; right-click to edit settings.</value></data>
-  <data name="查看前面的流程" xml:space="preserve"><value>Show earlier steps</value></data>
-  <data name="查看后面的流程" xml:space="preserve"><value>Show later steps</value></data>
 </root>

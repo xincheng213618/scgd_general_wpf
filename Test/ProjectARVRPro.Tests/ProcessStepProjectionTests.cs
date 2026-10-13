@@ -2,11 +2,50 @@ using ProjectARVRPro.Process;
 using ColorVision.UI.Controls;
 using ProjectARVRPro.Controls;
 using ColorVision.Testing;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ProjectARVRPro.Tests;
 
 public sealed class ProcessStepProjectionTests
 {
+    [Fact]
+    public void StepsShareAvailableWidthAfterAddingStepsResizingAndAdvancing()
+    {
+        StaTest.Run(() =>
+        {
+            var progress = new ProcessStepProgress();
+            var metas = Enumerable.Range(1, 12).Select(index => new ProcessMeta { Name = $"Step {index} " + new string('W', 80) }).ToArray();
+            var items = (ItemsControl)progress.FindName("StepItems");
+
+            void AssertLayout(double width)
+            {
+                progress.Measure(new Size(width, progress.Height));
+                progress.Arrange(new Rect(0, 0, width, progress.Height));
+                progress.UpdateLayout();
+                Assert.Equal(width, items.ActualWidth);
+                for (int index = 0; index < progress.Steps.Count; index++)
+                {
+                    var container = Assert.IsAssignableFrom<FrameworkElement>(items.ItemContainerGenerator.ContainerFromIndex(index));
+                    double stepWidth = width / progress.Steps.Count;
+                    Assert.Equal(stepWidth, container.ActualWidth);
+                    Assert.Equal(index * stepWidth, container.TranslatePoint(new Point(), progress).X);
+                }
+            }
+
+            progress.Rebuild(metas.Take(2));
+            AssertLayout(720);
+            progress.Rebuild(metas);
+            AssertLayout(720);
+            AssertLayout(360);
+            progress.Start(metas.Length - 1);
+            AssertLayout(360);
+            progress.Reset();
+            progress.Rebuild(metas.Take(2));
+            AssertLayout(360);
+        });
+    }
+
     [Fact]
     public void GetEnabledStepIndexMapsOriginalIndexesToVisibleIndexes()
     {

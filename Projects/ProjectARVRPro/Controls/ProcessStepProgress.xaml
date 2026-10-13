@@ -33,56 +33,33 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource StepButton}">
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,1,0,0"/>
-            <Setter Property="VerticalAlignment" Value="Top"/>
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0"/></Trigger>
-            </Style.Triggers>
-        </Style>
     </UserControl.Resources>
-    <Grid SizeChanged="ProgressLayout_SizeChanged">
-        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <Button x:Name="PreviousStepsButton" Grid.Column="0" Style="{StaticResource NavigationButton}" Visibility="Collapsed" Click="PreviousSteps_Click"
-                ToolTip="{display:DisplayText Key='查看前面的流程'}" AutomationProperties.Name="{display:DisplayText Key='查看前面的流程'}">
-            <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        </Button>
-        <ScrollViewer x:Name="StepScroller" Grid.Column="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Focusable="False" ScrollChanged="StepScroller_ScrollChanged" PreviewMouseWheel="StepScroller_PreviewMouseWheel">
-            <ItemsControl x:Name="StepItems" ItemsSource="{Binding Steps, ElementName=ProgressControl}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource StepButton}" Tag="{Binding}" ToolTip="{Binding Details}"
-                                AutomationProperties.Name="{Binding Details}" MouseDoubleClick="Step_MouseDoubleClick" PreviewKeyDown="Step_PreviewKeyDown">
-                            <Button.ContextMenu>
-                                <ContextMenu Opened="StepMenu_Opened">
-                                    <MenuItem Header="{display:DisplayText Key='打开流程模板'}" Click="OpenTemplate_Click"/>
-                                    <MenuItem Header="{display:DisplayText Key='编辑配置'}" Click="EditConfiguration_Click"/>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                            <Grid>
-                                <Grid.RowDefinitions><RowDefinition Height="24"/><RowDefinition Height="16"/></Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Height="2" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}">
-                                    <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding IsFirst}" Value="True"><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers></Style></Border.Style>
-                                </Border>
-                                <ui:CircularProgressIndicator Grid.Column="1" Width="24" Height="24" State="{Binding State}" Value="{Binding Progress}" StepNumber="{Binding Number}"/>
-                                <Border Grid.Column="2" Height="2" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}">
-                                    <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding IsLast}" Value="True"><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers></Style></Border.Style>
-                                </Border>
-                                <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Meta.Name}" Foreground="{DynamicResource GlobalTextBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12" Margin="8,0"/>
-                            </Grid>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
-        <Button x:Name="NextStepsButton" Grid.Column="2" Style="{StaticResource NavigationButton}" Visibility="Collapsed" Click="NextSteps_Click"
-                ToolTip="{display:DisplayText Key='查看后面的流程'}" AutomationProperties.Name="{display:DisplayText Key='查看后面的流程'}">
-            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        </Button>
-    </Grid>
+    <ItemsControl x:Name="StepItems" ItemsSource="{Binding Steps, ElementName=ProgressControl}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Button Style="{StaticResource StepButton}" Tag="{Binding}" ToolTip="{Binding Details}"
+                        AutomationProperties.Name="{Binding Details}" MouseDoubleClick="Step_MouseDoubleClick" PreviewKeyDown="Step_PreviewKeyDown">
+                    <Button.ContextMenu>
+                        <ContextMenu Opened="StepMenu_Opened">
+                            <MenuItem Header="{display:DisplayText Key='打开流程模板'}" Click="OpenTemplate_Click"/>
+                            <MenuItem Header="{display:DisplayText Key='编辑配置'}" Click="EditConfiguration_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="24"/><RowDefinition Height="16"/></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Height="2" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}">
+                            <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding IsFirst}" Value="True"><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                        </Border>
+                        <ui:CircularProgressIndicator Grid.Column="1" Width="24" Height="24" State="{Binding State}" Value="{Binding Progress}" StepNumber="{Binding Number}"/>
+                        <Border Grid.Column="2" Height="2" VerticalAlignment="Center" Background="{DynamicResource BorderBrush}">
+                            <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding IsLast}" Value="True"><Setter Property="Visibility" Value="Hidden"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                        </Border>
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Meta.Name}" Foreground="{DynamicResource GlobalTextBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12" Margin="8,0"/>
+                    </Grid>
+                </Button>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </UserControl>
