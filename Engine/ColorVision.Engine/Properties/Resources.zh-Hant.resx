@@ -8065,4 +8065,7 @@
   <data name="流程模板正在切换，请稍后重试。" xml:space="preserve">
     <value>流程範本正在切換，請稍後重試。</value>
   </data>
+  <data name="找不到模板：{0}" xml:space="preserve">
+    <value>找不到範本：{0}</value>
+  </data>
 </root>

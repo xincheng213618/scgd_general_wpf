@@ -3162,4 +3162,7 @@
   <data name="流程模板正在切换，请稍后重试。" xml:space="preserve">
     <value>流程模板正在切换，请稍后重试。</value>
   </data>
+  <data name="找不到模板：{0}" xml:space="preserve">
+    <value>找不到模板：{0}</value>
+  </data>
 </root>
