@@ -18,6 +18,7 @@ using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace ColorVision.Engine.FlowProcessing
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable
+    public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewFlow));
 
@@ -68,6 +69,9 @@ namespace ColorVision.Engine.FlowProcessing
         public bool IsStandalone => _isStandalone;
         public bool IsExecutionActive =>
             FlowControl.IsFlowRun || _executionSession.IsRunActive;
+        public bool IsExecutionStopping => _executionSession.IsStopRequested;
+        public bool IsExecutionProgressIndeterminate => IsStandalone || !FlowControl.IsFlowRun || IsExecutionStopping;
+        private bool CanEditFlow => !IsExecutionActive && STNodeEditorMain.EnableEdit;
         public bool IsCurrentBatchActive =>
             _executionSession.IsCurrentBatchActive;
 
@@ -119,6 +123,31 @@ namespace ColorVision.Engine.FlowProcessing
         private string? _standaloneStartNodeName;
         private bool _runtimeSelectionInitialized;
         private string? _documentLoadedContentHash;
+        private bool _disposed;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        internal void NotifyExecutionStateChanged()
+        {
+            if (_disposed || Dispatcher.HasShutdownStarted) return;
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(NotifyExecutionStateChanged);
+                return;
+            }
+
+            // Read the current session when delivered; a queued engine notification may belong to an earlier phase.
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExecutionActive)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExecutionStopping)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExecutionProgressIndeterminate)));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void FlowControl_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(FlowControl.IsFlowRun))
+                NotifyExecutionStateChanged();
+        }
 
         public bool TryFocusNode(Guid nodeGuid)
         {
@@ -177,9 +206,9 @@ namespace ColorVision.Engine.FlowProcessing
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             RefreshCommand = new RelayCommand(a => Refresh());
-            RunFlowCommand = new RelayCommand(a => RunFlow());
-            StopFlowCommand = new RelayCommand(a => StopFlow());
-            ClearCommand = new RelayCommand(a => Clear());
+            RunFlowCommand = new RelayCommand(a => RunFlow(), _ => !IsExecutionActive);
+            StopFlowCommand = new RelayCommand(a => StopFlow(), _ => IsExecutionActive && !IsExecutionStopping);
+            ClearCommand = new RelayCommand(a => Clear(), _ => CanEditFlow);
             SaveCommand = new RelayCommand(a => Save());
             VersionHistoryCommand = new RelayCommand(
                 _ => ShowVersionHistory(),
@@ -187,13 +216,13 @@ namespace ColorVision.Engine.FlowProcessing
                     && !IsExecutionActive);
             IncidentManagementCommand =
                 new RelayCommand(_ => ShowIncidentManagement());
-            AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
+            AutoAlignmentCommand = new RelayCommand(a => AutoAlignment(), _ => CanEditFlow);
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
             NewFlowCommand =
-                new RelayCommand(_ => ExecuteNewFlowCommand());
+                new RelayCommand(_ => ExecuteNewFlowCommand(), _ => CanEditFlow);
             DeleteFlowCommand = new RelayCommand(
                 a => DeleteFlow(),
-                a => !_isStandalone && GetActiveFlowParam() != null);
+                a => CanEditFlow && !_isStandalone && GetActiveFlowParam() != null);
             ExportFlowCommand = new RelayCommand(
                 a =>
                 {
@@ -211,15 +240,15 @@ namespace ColorVision.Engine.FlowProcessing
                     OpenDocument();
                 else
                     ImportFlow();
-            });
-            ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
+            }, _ => CanEditFlow);
+            ImportModuleCommand = new RelayCommand(a => ImportModule(), a => CanEditFlow && TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = true; }));
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) =>
             {
                 NewFlowCommand.Execute(null);
-            }, (s, e) => { e.CanExecute = true; }));
+            }, (s, e) => { e.CanExecute = CanEditFlow; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
             {
                 if (_isStandalone)
@@ -243,6 +272,7 @@ namespace ColorVision.Engine.FlowProcessing
                     menuItem.ItemsSource = STNodeEditorMain.UndoHistory;
             }));
             DataContext = this;
+            FlowControl.PropertyChanged += FlowControl_PropertyChanged;
         }
 
         public void OpenFlowTemplate()
@@ -252,20 +282,21 @@ namespace ColorVision.Engine.FlowProcessing
 
         public async void NewFlow()
         {
+            if (!CanEditFlow) return;
             try
             {
-                if (!ConfirmDocumentReplacement())
+                if (!ConfirmDocumentReplacement() || !CanEditFlow)
                     return;
 
                 var templateFlow = FlowEngineManager.CreateFlowTemplate();
                 templateFlow.Load();
                 int oldCount = templateFlow.Count;
                 templateFlow.OpenCreate();
-                if (templateFlow.Count == oldCount)
+                if (templateFlow.Count == oldCount || !CanEditFlow)
                     return;
 
                 TemplateModel<FlowParam> createdFlow = templateFlow.TemplateParams[^1];
-                await SelectFlowTemplateAsync(createdFlow, allowEmptyFlow: true);
+                await SelectFlowTemplateAsync(createdFlow, allowEmptyFlow: true, FlowWorkspaceReplacementMode.AlreadyConfirmed);
             }
             catch (Exception ex)
             {
@@ -276,6 +307,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void ExecuteNewFlowCommand()
         {
+            if (!CanEditFlow) return;
             FlowNewCommandRouter.Execute(
                 _isStandalone,
                 NewDocument,
@@ -284,12 +316,13 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void DeleteFlow()
         {
+            if (!CanEditFlow) return;
             var flowParam = GetActiveFlowParam();
             if (flowParam == null) return;
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(),
                 string.Format(Properties.Resources.Flow_ConfirmDeleteFlow, flowParam.Name), "ColorVision",
-                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK || !CanEditFlow)
                 return;
 
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
@@ -299,7 +332,10 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 templateFlow.Delete(index);
             }
-            Refresh();
+            if (_isStandalone)
+                Refresh();
+            else
+                _ = ReconcileTemplatesAsync();
         }
 
         public void ExportFlow()
@@ -318,18 +354,20 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void ImportFlow()
         {
+            if (!CanEditFlow) return;
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
-            if (templateFlow.Import())
-            {
-                string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
-                templateFlow.Create(importName);
-            }
+            if (!templateFlow.Import() || !CanEditFlow)
+                return;
+
+            string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
+            templateFlow.Create(importName);
             Refresh();
         }
 
         public void ImportModule()
         {
+            if (!CanEditFlow) return;
             var templateFlow = FlowEngineManager.CreateFlowTemplate();
             templateFlow.Load();
             var items = templateFlow.TemplateParams;
@@ -345,7 +383,7 @@ namespace ColorVision.Engine.FlowProcessing
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
-            if (dialog.ShowDialog() == true && dialog.SelectedTemplate != null)
+            if (dialog.ShowDialog() == true && dialog.SelectedTemplate != null && CanEditFlow)
             {
                 string base64 = dialog.SelectedTemplate.Value.DataBase64;
                 if (string.IsNullOrEmpty(base64))
@@ -369,6 +407,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void AutoAlignment()
         {
+            if (!CanEditFlow) return;
             _layoutService.Apply();
             _layoutService.FitToViewport();
         }
@@ -407,7 +446,7 @@ namespace ColorVision.Engine.FlowProcessing
                 var flowParam = GetActiveFlowParam();
                 if (flowParam == null)
                 {
-                    if (_executionSession.RequestedFlowParam != null || IsExecutionActive)
+                    if (IsExecutionActive || (_executionSession.RequestedFlowParam != null && !_executionSession.IsConfirmingDocumentReplacement))
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("请等待当前流程加载或执行完成后再保存。"), "ColorVision");
                         return false;
@@ -483,7 +522,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
             }
 
-            _ = RefreshRuntimeAsync();
+            _ = RefreshRuntimeAsync(FlowWorkspaceReplacementMode.Confirm);
         }
 
         private FlowParam? GetActiveFlowParam()
@@ -559,39 +598,42 @@ namespace ColorVision.Engine.FlowProcessing
             }.Show();
         }
 
-        internal Task RefreshRuntimeAsync()
+        internal Task RefreshRuntimeAsync(FlowWorkspaceReplacementMode replacementMode = FlowWorkspaceReplacementMode.PreserveChanges)
         {
-            return _executionSession.RefreshAsync();
+            return _executionSession.RefreshAsync(replacementMode);
         }
 
-        internal Task SelectFlowTemplateAsync(
+        internal Task ReconcileTemplatesAsync()
+        {
+            return _executionSession.ReconcileTemplatesAsync();
+        }
+
+        internal Task<FlowTemplateExecutionSnapshotResult> SelectFlowTemplateAsync(
             TemplateModel<FlowParam> flowTemplate,
-            bool allowEmptyFlow = false)
+            bool allowEmptyFlow = false,
+            FlowWorkspaceReplacementMode replacementMode = FlowWorkspaceReplacementMode.PreserveChanges)
         {
-            return _executionSession.SelectFlowTemplateAsync(flowTemplate, allowEmptyFlow);
+            return _executionSession.SelectFlowTemplateAsync(flowTemplate, allowEmptyFlow, replacementMode);
         }
 
-        internal async Task<FlowControlData?> RunFlowAndWaitAsync(
+        internal Task<FlowControlData?> RunFlowAndWaitAsync(
             TemplateModel<FlowParam>? flowTemplate = null)
         {
-            if (flowTemplate != null)
-                await _executionSession.SelectFlowTemplateAsync(flowTemplate);
-            return await _executionSession.RunFlowAndWaitAsync();
+            return _executionSession.RunFlowAndWaitAsync(flowTemplate: flowTemplate);
         }
 
-        internal async Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
+        internal Task<FlowRunFinalizedData?> RunFlowAndWaitForFinalizationAsync(
             TemplateModel<FlowParam>? flowTemplate = null)
         {
-            if (flowTemplate != null)
-                await _executionSession.SelectFlowTemplateAsync(flowTemplate);
-            return await _executionSession.RunFlowAndWaitForFinalizationAsync();
+            return _executionSession.RunFlowAndWaitForFinalizationAsync(flowTemplate: flowTemplate);
         }
 
         public void Clear()
         {
+            if (!CanEditFlow) return;
             if (_isStandalone)
             {
-                if (!ConfirmDocumentReplacement())
+                if (!ConfirmDocumentReplacement() || !CanEditFlow)
                     return;
                 StopStandaloneFlow();
                 ShowExecutionSummary(string.Empty);
@@ -613,20 +655,30 @@ namespace ColorVision.Engine.FlowProcessing
 
         private bool TryOpenStandaloneFile(string filePath)
         {
+            if (!CanEditFlow) return false;
             if (!_isStandalone)
                 throw new InvalidOperationException("Only a standalone ViewFlow can open a file document.");
-            if (!ConfirmDocumentReplacement())
+            if (!ConfirmDocumentReplacement() || !CanEditFlow)
                 return false;
 
-            _standaloneFlowParam = null;
-            _documentLoadedContentHash = null;
-            _standaloneFilePath = filePath;
-            _standaloneDocumentName = Path.GetFileName(filePath);
-            _saveStandaloneFlowParam = false;
+            try
+            {
+                LoadStandaloneFile(filePath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("Open standalone flow file failed.", ex);
+                MessageBox.Show(Window.GetWindow(this) ?? Application.Current.GetActiveWindow(), ex.Message);
+                return false;
+            }
+        }
 
-            StopStandaloneFlow();
-            ShowExecutionSummary(string.Empty);
-            FlowEngineControl.FlowClear();
+        internal void LoadStandaloneFile(string filePath)
+        {
+            ThrowIfExecutionActive();
+            byte[]? canvasData = null;
+            FlowParam? packageFlowParam = null;
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
                 try
@@ -634,22 +686,12 @@ namespace ColorVision.Engine.FlowProcessing
                     var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
                     if (stnData != null && stnData.Length > 0)
                     {
-                        _standaloneFlowParam = new FlowParam
+                        packageFlowParam = new FlowParam
                         {
                             Name = Path.GetFileNameWithoutExtension(filePath),
                             DataBase64 = Convert.ToBase64String(stnData)
                         };
-                        _standaloneFilePath = null;
-                        SetDocumentBaseline(
-                            _standaloneFlowParam);
-                        FlowEngineControl.LoadFromBase64(
-                            _standaloneFlowParam.DataBase64,
-                            MqttRCService.GetInstance().ServiceTokens);
-                        FitLoadedFlowToViewport();
-                        RefreshStandaloneStartNodeSelection();
-                        STNodeEditorMain.ClearHistory();
-                        UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
-                        return true;
+                        canvasData = stnData;
                     }
                 }
                 catch (Exception ex)
@@ -658,15 +700,23 @@ namespace ColorVision.Engine.FlowProcessing
                 }
             }
 
-            _documentLoadedContentHash = null;
-            FlowEngineControl.LoadFromFile(
-                filePath,
-                MqttRCService.GetInstance().ServiceTokens);
+            canvasData ??= File.ReadAllBytes(filePath);
+            // The loader parses and connects detached nodes before replacing the live graph.
+            // Do not clear the current document or change its save target until loading succeeds.
+            CVCommonNode[] previousNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
+            FlowEngineControl.Load(canvasData, waitReady: false);
+            StopStandaloneFlow(previousNodes: previousNodes);
+            _standaloneFlowParam = packageFlowParam;
+            _standaloneFilePath = packageFlowParam == null ? filePath : null;
+            _standaloneDocumentName = Path.GetFileName(filePath);
+            _saveStandaloneFlowParam = false;
+            SetDocumentBaseline(packageFlowParam);
+            ShowExecutionSummary(string.Empty);
+            _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
             FitLoadedFlowToViewport();
             RefreshStandaloneStartNodeSelection();
             STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
-            return true;
         }
 
         public void OpenStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
@@ -676,28 +726,16 @@ namespace ColorVision.Engine.FlowProcessing
 
         private bool TryOpenStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
         {
+            if (!CanEditFlow) return false;
             if (!_isStandalone)
                 throw new InvalidOperationException("Only a standalone ViewFlow can open a template document.");
-            if (!ConfirmDocumentReplacement())
+            if (!ConfirmDocumentReplacement() || !CanEditFlow)
                 return false;
 
-            _standaloneFlowParam = flowParam;
-            _standaloneFilePath = null;
-            _standaloneDocumentName = flowParam.Name;
-            _saveStandaloneFlowParam = saveToTemplate;
-
-            StopStandaloneFlow();
-            ShowExecutionSummary(string.Empty);
-            FlowEngineControl.FlowClear();
             try
             {
-                FlowEngineControl.LoadFromBase64(
-                    flowParam.DataBase64,
-                    MqttRCService.GetInstance().ServiceTokens);
-                SetDocumentBaseline(flowParam);
-                FitLoadedFlowToViewport();
-                RefreshStandaloneStartNodeSelection();
-                STNodeEditorMain.ClearHistory();
+                LoadStandaloneFlowParam(flowParam, saveToTemplate);
+                return true;
             }
             catch (Exception ex)
             {
@@ -705,8 +743,25 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBox.Show(ex.Message);
                 return false;
             }
+        }
+
+        internal void LoadStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
+        {
+            ThrowIfExecutionActive();
+            CVCommonNode[] previousNodes = STNodeEditorMain.Nodes.OfType<CVCommonNode>().ToArray();
+            FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
+            StopStandaloneFlow(previousNodes: previousNodes);
+            _standaloneFlowParam = flowParam;
+            _standaloneFilePath = null;
+            _standaloneDocumentName = flowParam.Name;
+            _saveStandaloneFlowParam = saveToTemplate;
+            SetDocumentBaseline(flowParam);
+            ShowExecutionSummary(string.Empty);
+            _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
+            FitLoadedFlowToViewport();
+            RefreshStandaloneStartNodeSelection();
+            STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(flowParam.Name);
-            return true;
         }
 
         public bool HasStandaloneChanges()
@@ -732,6 +787,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void OpenDocument()
         {
+            if (!CanEditFlow) return;
             using System.Windows.Forms.OpenFileDialog dialog = new()
             {
                 Filter = "Flow files (*.stn;*.cvflow)|*.stn;*.cvflow|STN files (*.stn)|*.stn|CVFlow files (*.cvflow)|*.cvflow",
@@ -743,7 +799,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void NewDocument()
         {
-            if (!ConfirmDocumentReplacement())
+            if (!CanEditFlow) return;
+            if (!ConfirmDocumentReplacement() || !CanEditFlow)
                 return;
             _standaloneFlowParam = null;
             _documentLoadedContentHash = null;
@@ -770,6 +827,12 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 TryOpenStandaloneFile(_standaloneFilePath);
             }
+        }
+
+        private void ThrowIfExecutionActive()
+        {
+            if (IsExecutionActive)
+                throw new InvalidOperationException(EngineLocalization.Get("流程正在执行，请等待完成或停止后再编辑。"));
         }
 
         private bool SaveStandaloneDocument()
@@ -992,6 +1055,9 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+            FlowControl.PropertyChanged -= FlowControl_PropertyChanged;
             if (_isStandalone)
             {
                 StopStandaloneFlow();
@@ -1013,6 +1079,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async void RunFlow()
         {
+            if (IsExecutionActive) return;
             await ExecuteRunCommandAsync(
                 async () =>
                 {
@@ -1062,6 +1129,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void StopFlow()
         {
+            if (!IsExecutionActive || IsExecutionStopping) return;
             _executionSession.StopFlow();
         }
 
@@ -1074,21 +1142,19 @@ namespace ColorVision.Engine.FlowProcessing
             return _standaloneStartNodeName;
         }
 
-        private void StopStandaloneFlow(bool updateLog = false)
+        private void StopStandaloneFlow(bool updateLog = false, CVCommonNode[]? previousNodes = null)
         {
             _executionSession.StopFlow(updateLog);
-            _executionSession.DetachNodeEvents();
+            _executionSession.DetachNodeEvents(previousNodes);
         }
 
         public void ShowExecutionSummary(string message, string? executionNodeName = null, CVCommonNode? preferredNode = null)
         {
             logTextBox.Text = message;
-            _executionDetailsNode = _isStandalone
-                ? null
-                : FlowExecutionNavigator.ResolveExecutionNode(
-                    STNodeEditorMain,
-                    executionNodeName,
-                    preferredNode);
+            _executionDetailsNode = FlowExecutionNavigator.ResolveExecutionNode(
+                STNodeEditorMain,
+                executionNodeName,
+                preferredNode);
             ErrorNodeDetailsButton.Visibility = _executionDetailsNode == null
                 ? Visibility.Collapsed
                 : Visibility.Visible;

@@ -255,6 +255,7 @@ public abstract class BaseStartNode : CVDeviceNode, IDisposable
 			startActions.Add(action.SerialNumber, action);
 			Running = true;
 		}
+		Repeat.FlowRepeatRegion.ResetStates(this);
 		SetOptionText(m_op_start, action.SerialNumber);
 		m_op_start.TransferData(action);
 		return true;

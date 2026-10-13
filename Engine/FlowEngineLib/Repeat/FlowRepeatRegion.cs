@@ -31,6 +31,23 @@ public sealed class FlowRepeatRegion
     private static STNodeOption[] Ports(STNode node, bool input) =>
         (input ? node.GetAllInputOptions() : node.GetAllOutputOptions()).Where(port => port.DataType == typeof(CVStartCFC)).ToArray();
 
+    internal static void ResetStates(BaseStartNode start)
+    {
+        var pending = new Queue<STNode>();
+        var visited = new HashSet<STNode>();
+        pending.Enqueue(start);
+        while (pending.Count > 0)
+        {
+            STNode node = pending.Dequeue();
+            if (!visited.Add(node)) continue;
+            if (node is CVCommonNode member && !string.IsNullOrEmpty(member.RepeatRegionId))
+                member.ResetRepeatState();
+            foreach (STNodeOption output in Ports(node, false))
+                foreach (STNodeOption connected in output.ConnectedOption)
+                    if (connected.Owner != null) pending.Enqueue(connected.Owner);
+        }
+    }
+
     public static bool TryCreate(IEnumerable<STNode> selection, out FlowRepeatRegion region, out string error)
     {
         region = null;
@@ -112,7 +129,7 @@ public sealed class FlowRepeatRegion
         action.RuntimeResources.Set("RepeatRegion:" + region.Id, run);
         action.RepeatRun = run;
         action.RepeatRound = 1;
-        run.ShowRound();
+        run.Start();
         return true;
     }
 
@@ -120,7 +137,11 @@ public sealed class FlowRepeatRegion
     {
         if (string.IsNullOrEmpty(node.RepeatRegionId) || output.Data is not CVStartCFC action) return true;
         action.NormalizeStopStatus();
-        if (!action.IsRunning) return true; // Preserve existing error/stop propagation and cleanup nodes.
+        if (!action.IsRunning)
+        {
+            if (action.RepeatRun?.Region.Id == node.RepeatRegionId) action.RepeatRun.ObserveStop(action);
+            return true; // Preserve existing error/stop propagation and cleanup nodes.
+        }
         if (action.RuntimeResources.IsDisposed) return false;
         FlowRepeatRegionRun run = action.RepeatRun;
         if (run == null || run.Region.Id != node.RepeatRegionId) return false;
@@ -138,6 +159,7 @@ internal sealed class FlowRepeatRegionRun : IDisposable
 {
     [ThreadStatic] private static Queue<Action> pending;
     private readonly object sync = new();
+    private readonly object displayOwner = new();
     private readonly CVStartCFC input;
     private int round = 1;
     private bool finished;
@@ -155,9 +177,37 @@ internal sealed class FlowRepeatRegionRun : IDisposable
         lock (sync) return !finished && action.RepeatRound == round && !input.RuntimeResources.IsDisposed;
     }
 
+    internal void Start()
+    {
+        lock (sync)
+        {
+            if (finished) return;
+            foreach (CVCommonNode node in Region.Nodes) node.BeginRepeatState(displayOwner);
+        }
+    }
+
     internal void ShowRound()
     {
-        foreach (CVCommonNode node in Region.Nodes) node.ShowRepeatRound(round);
+        lock (sync)
+        {
+            if (!finished) ShowState(STNodeGroupState.Running);
+        }
+    }
+
+    private void ShowState(STNodeGroupState state)
+    {
+        foreach (CVCommonNode node in Region.Nodes) node.ShowRepeatState(displayOwner, round, state);
+    }
+
+    internal void ObserveStop(CVStartCFC action)
+    {
+        if (!action.TryGetStopStatus(out StatusTypeEnum status)) return;
+        lock (sync)
+        {
+            if (finished || action.RepeatRound != round) return;
+            finished = true;
+            ShowState(status == StatusTypeEnum.Canceled ? STNodeGroupState.Stopped : STNodeGroupState.Failed);
+        }
     }
 
     internal void TrackResource(string key, int resourceRound)
@@ -177,6 +227,7 @@ internal sealed class FlowRepeatRegionRun : IDisposable
             if (round == Region.Count)
             {
                 finished = true;
+                ShowState(STNodeGroupState.Completed);
                 return true;
             }
             foreach (string key in resources) input.RuntimeResources.Remove(key);
@@ -210,7 +261,14 @@ internal sealed class FlowRepeatRegionRun : IDisposable
 
     public void Dispose()
     {
-        lock (sync) finished = true;
-        foreach (CVCommonNode node in Region.Nodes) node.ShowRepeatRound(0);
+        // Completion may happen on another action copy before its output is forwarded.
+        // Read the shared terminal status before taking the run lock to avoid lock inversion.
+        StatusTypeEnum? status = input.FinishedStatus;
+        lock (sync)
+        {
+            if (finished) return;
+            finished = true;
+            ShowState(status is StatusTypeEnum.Failed or StatusTypeEnum.OverTime ? STNodeGroupState.Failed : STNodeGroupState.Stopped);
+        }
     }
 }

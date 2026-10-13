@@ -147,8 +147,9 @@ public sealed class LocalFileFusionNodeTests
         bool published = false;
         node.nodeEndEvent += (_, _) => published = true;
         var action = new CVStartCFC("late-completion");
-        typeof(LocalFlowNodeBase).GetMethod("ExecuteCore", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .Invoke(node, [new CVTransAction(action)]);
+        MethodInfo execute = typeof(LocalFlowNodeBase).GetMethod("ExecuteCore", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Array inputs = Array.CreateInstance(execute.GetParameters()[1].ParameterType.GetElementType()!, 0);
+        execute.Invoke(node, [new CVTransAction(action), inputs]);
         Assert.False(published);
         Assert.False(action.Data.ContainsKey("ErrorNodeName"));
     }

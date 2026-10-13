@@ -59,7 +59,7 @@ namespace ColorVision.Engine.FlowProcessing
                     startNodeName,
                     serialNumber,
                     StatusTypeEnum.Failed,
-                    "A flow execution is already active.");
+                    EngineLocalization.Format($"未能从“{startNodeName}”启动流程：已有流程正在运行，请等待完成或停止后重试。"));
             }
 
             var completion = new TaskCompletionSource<FlowControlData>(
@@ -105,7 +105,7 @@ namespace ColorVision.Engine.FlowProcessing
                         startNodeName,
                         serialNumber,
                         StatusTypeEnum.Failed,
-                        "Flow start was rejected.");
+                        EngineLocalization.Format($"未能从“{startNodeName}”启动流程。请检查该起点是否已连接后续节点、流程是否仍在运行，以及设备或服务连接是否就绪。"));
                 }
 
                 try

@@ -5028,6 +5028,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备索引 的本地化字符串。
+        /// </summary>
+        public static string Engine_PG_DeviceIndex {
+            get {
+                return ResourceManager.GetString("Engine_PG_DeviceIndex", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 启用 的本地化字符串。
         /// </summary>
         public static string Engine_PG_Enabled {
@@ -5198,15 +5207,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 设备索引 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_DeviceIndex {
-            get {
-                return ResourceManager.GetString("Engine_PG_DeviceIndex", resourceCulture);
-            }
-        }
-
         /// <summary>
         ///   查找类似 寄存器地址 的本地化字符串。
         /// </summary>
@@ -6306,7 +6306,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 相机采集 RAW → 空间/普通校正 → 色度校正（可保留参数按需计算）→ 图像翻转 → 写数据库 → 按节点设置保存或仅缓存 CVRAW。下游 POI 使用最终方向的图像坐标。 的本地化字符串。
+        ///   查找类似 相机采集 RAW → 空间/普通校正 → 保留色度校正参数 → RAW 图像翻转 → 按节点设置保存或仅缓存 CVRAW → 写数据库并通知相机页。相机页与下游 POI 使用校正后的 RAW 和参数按需计算色度，坐标对应最终方向。 的本地化字符串。
         /// </summary>
         public static string Flow_LocalCamera_Processing {
             get {
@@ -16410,6 +16410,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 全选当前列表 的本地化字符串。
+        /// </summary>
+        public static string 全选当前列表 {
+            get {
+                return ResourceManager.GetString("全选当前列表", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 全部数据清理 的本地化字符串。
         /// </summary>
         public static string 全部数据清理 {
@@ -16535,6 +16544,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 勾选后批量释放 的本地化字符串。
+        /// </summary>
+        public static string 勾选后批量释放 {
+            get {
+                return ResourceManager.GetString("勾选后批量释放", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 十字定位参数 的本地化字符串。
         /// </summary>
@@ -16725,6 +16743,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消勾选 的本地化字符串。
+        /// </summary>
+        public static string 取消勾选 {
+            get {
+                return ResourceManager.GetString("取消勾选", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 另存为 的本地化字符串。
         /// </summary>
         public static string 另存为 {
@@ -16841,6 +16868,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 图像视图 的本地化字符串。
+        /// </summary>
+        public static string 图像视图 {
+            get {
+                return ResourceManager.GetString("图像视图", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 图形回显内容 的本地化字符串。
         /// </summary>
@@ -17175,6 +17211,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已停用 的本地化字符串。
+        /// </summary>
+        public static string 已停用 {
+            get {
+                return ResourceManager.GetString("已停用", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 已准备来源 的本地化字符串。
         /// </summary>
         public static string 已准备来源 {
@@ -17183,6 +17228,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 已勾选 {0:N0} 个模块 的本地化字符串。
+        /// </summary>
+        public static string 已勾选__0_N0__个模块 {
+            get {
+                return ResourceManager.GetString("已勾选 {0:N0} 个模块", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 已发送 的本地化字符串。
         /// </summary>
@@ -17255,6 +17309,24 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 已统计缓存内存 的本地化字符串。
+        /// </summary>
+        public static string 已统计缓存内存 {
+            get {
+                return ResourceManager.GetString("已统计缓存内存", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已读取 {0:N0} / {1:N0} 个模块 的本地化字符串。
+        /// </summary>
+        public static string 已读取__0_N0_____1_N0__个模块 {
+            get {
+                return ResourceManager.GetString("已读取 {0:N0} / {1:N0} 个模块", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 已读取{0} 的本地化字符串。
         /// </summary>
@@ -17337,6 +17409,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前进程的缓存与缓冲区 的本地化字符串。
+        /// </summary>
+        public static string 当前进程的缓存与缓冲区 {
+            get {
+                return ResourceManager.GetString("当前进程的缓存与缓冲区", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 当前选择 的本地化字符串。
         /// </summary>
         public static string 当前选择 {
@@ -17345,6 +17426,24 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 待归还释放 的本地化字符串。
+        /// </summary>
+        public static string 待归还释放 {
+            get {
+                return ResourceManager.GetString("待归还释放", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 总览 的本地化字符串。
+        /// </summary>
+        public static string 总览 {
+            get {
+                return ResourceManager.GetString("总览", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 恢复 的本地化字符串。
         /// </summary>
@@ -17427,6 +17526,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 截图缓存 的本地化字符串。
+        /// </summary>
+        public static string 截图缓存 {
+            get {
+                return ResourceManager.GetString("截图缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 打开配置文件夹 的本地化字符串。
         /// </summary>
         public static string 打开配置文件夹 {
@@ -17444,6 +17552,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 执行次数 的本地化字符串。
+        /// </summary>
+        public static string 执行次数 {
+            get {
+                return ResourceManager.GetString("执行次数", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 批量编辑 ({0} 项) 的本地化字符串。
         /// </summary>
@@ -17489,6 +17606,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 搜索当前页 的本地化字符串。
+        /// </summary>
+        public static string 搜索当前页 {
+            get {
+                return ResourceManager.GetString("搜索当前页", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 搜索缓存模块或文件 的本地化字符串。
         /// </summary>
@@ -17607,6 +17733,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 暂无缓存 的本地化字符串。
+        /// </summary>
+        public static string 暂无缓存 {
+            get {
+                return ResourceManager.GetString("暂无缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 曝光 的本地化字符串。
         /// </summary>
         public static string 曝光 {
@@ -17706,6 +17841,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 条目或来源 的本地化字符串。
+        /// </summary>
+        public static string 条目或来源 {
+            get {
+                return ResourceManager.GetString("条目或来源", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 条纹 MTF 参数 的本地化字符串。
         /// </summary>
         public static string 条纹_MTF_参数 {
@@ -17715,6 +17859,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 来源窗口 / 视图 的本地化字符串。
+        /// </summary>
+        public static string 来源窗口___视图 {
+            get {
+                return ResourceManager.GetString("来源窗口 / 视图", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 查找 的本地化字符串。
         /// </summary>
         public static string 查找 {
@@ -17723,6 +17876,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 查看 的本地化字符串。
+        /// </summary>
+        public static string 查看 {
+            get {
+                return ResourceManager.GetString("查看", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 校正内存为估算值 的本地化字符串。
         /// </summary>
@@ -18255,6 +18417,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 空闲可释放 的本地化字符串。
+        /// </summary>
+        public static string 空闲可释放 {
+            get {
+                return ResourceManager.GetString("空闲可释放", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 空闲缓冲规格 的本地化字符串。
+        /// </summary>
+        public static string 空闲缓冲规格 {
+            get {
+                return ResourceManager.GetString("空闲缓冲规格", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 等待 的本地化字符串。
         /// </summary>
         public static string 等待 {
@@ -18263,6 +18443,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 等待归还后释放 的本地化字符串。
+        /// </summary>
+        public static string 等待归还后释放 {
+            get {
+                return ResourceManager.GetString("等待归还后释放", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 等待读取完成后释放 的本地化字符串。
         /// </summary>
@@ -18363,6 +18552,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 缓存分类 的本地化字符串。
+        /// </summary>
+        public static string 缓存分类 {
+            get {
+                return ResourceManager.GetString("缓存分类", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 缓存明细 的本地化字符串。
+        /// </summary>
+        public static string 缓存明细 {
+            get {
+                return ResourceManager.GetString("缓存明细", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 缓存条目 的本地化字符串。
         /// </summary>
         public static string 缓存条目 {
@@ -18380,6 +18587,33 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 缓存清理 的本地化字符串。
+        /// </summary>
+        public static string 缓存清理 {
+            get {
+                return ResourceManager.GetString("缓存清理", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 缓存管理 的本地化字符串。
+        /// </summary>
+        public static string 缓存管理 {
+            get {
+                return ResourceManager.GetString("缓存管理", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 缓存设置 的本地化字符串。
+        /// </summary>
+        public static string 缓存设置 {
+            get {
+                return ResourceManager.GetString("缓存设置", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 编辑文本校正文件 的本地化字符串。
         /// </summary>
@@ -19083,6 +19317,60 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 释放 的本地化字符串。
+        /// </summary>
+        public static string 释放 {
+            get {
+                return ResourceManager.GetString("释放", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 释放全部截图缓存 的本地化字符串。
+        /// </summary>
+        public static string 释放全部截图缓存 {
+            get {
+                return ResourceManager.GetString("释放全部截图缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 释放全部缓存 的本地化字符串。
+        /// </summary>
+        public static string 释放全部缓存 {
+            get {
+                return ResourceManager.GetString("释放全部缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 释放勾选 的本地化字符串。
+        /// </summary>
+        public static string 释放勾选 {
+            get {
+                return ResourceManager.GetString("释放勾选", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 释放当前窗口截图缓存 的本地化字符串。
+        /// </summary>
+        public static string 释放当前窗口截图缓存 {
+            get {
+                return ResourceManager.GetString("释放当前窗口截图缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 释放本模块缓存 的本地化字符串。
+        /// </summary>
+        public static string 释放本模块缓存 {
+            get {
+                return ResourceManager.GetString("释放本模块缓存", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 释放选中 的本地化字符串。
         /// </summary>
         public static string 释放选中 {
@@ -19100,6 +19388,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 重复执行 的本地化字符串。
+        /// </summary>
+        public static string 重复执行 {
+            get {
+                return ResourceManager.GetString("重复执行", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 错误 的本地化字符串。
         /// </summary>

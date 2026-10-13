@@ -972,4 +972,13 @@
   <data name="执行次数必须是大于或等于 1 的整数。" xml:space="preserve">
     <value>The repeat count must be an integer greater than or equal to 1.</value>
   </data>
+  <data name="已完成 {0} / {1} 次" xml:space="preserve">
+    <value>Completed {0} / {1}</value>
+  </data>
+  <data name="已停止 · 第 {0} / {1} 次" xml:space="preserve">
+    <value>Stopped · Run {0} / {1}</value>
+  </data>
+  <data name="失败 · 第 {0} / {1} 次" xml:space="preserve">
+    <value>Failed · Run {0} / {1}</value>
+  </data>
 </root>

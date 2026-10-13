@@ -5,6 +5,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
+using System.Globalization;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
@@ -136,6 +137,7 @@ public class FlowRunExecutorTests
     {
         RunInSta(() =>
         {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("zh-Hans");
             using var fixture = new FlowFixture();
             TestStartNode start = fixture.AddStart("Selected");
 
@@ -149,6 +151,8 @@ public class FlowRunExecutorTests
 
             Assert.False(rejected.Started);
             Assert.Equal(FlowRunTermination.StartRejected, rejected.Termination);
+            Assert.Equal("未能从“Selected”启动流程。请检查该起点是否已连接后续节点、流程是否仍在运行，以及设备或服务连接是否就绪。", rejected.Data.Message);
+            Assert.Equal(rejected.Data.Message, rejected.Data.Params);
 
             fixture.Connect(start);
             Task<FlowRunExecutionResult> execution = fixture.Executor.RunAsync(
@@ -171,6 +175,7 @@ public class FlowRunExecutorTests
     {
         RunInSta(() =>
         {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
             using var fixture = new FlowFixture();
             TestStartNode start = fixture.AddConnectedStart("Selected");
 
@@ -188,6 +193,7 @@ public class FlowRunExecutorTests
 
             Assert.False(rejected.Started);
             Assert.Equal(FlowRunTermination.StartRejected, rejected.Termination);
+            Assert.Equal("Could not start the flow from “Selected”: a flow is already running. Wait for it to finish or stop it before trying again.", rejected.Data.Message);
 
             start.Complete("SN-First", StatusTypeEnum.Completed);
             FlowRunExecutionResult completed = firstExecution.WaitAsync(TimeSpan.FromSeconds(2))

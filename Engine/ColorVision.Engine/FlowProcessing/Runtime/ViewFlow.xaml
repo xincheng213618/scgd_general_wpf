@@ -80,9 +80,19 @@
 
         <Grid>
             <!-- Compact execution details float above the progress bar. -->
-            <Grid Height="75" Margin="10,0,10,10"
+            <Grid Margin="10,0,10,10"
                   HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                   Panel.ZIndex="25" Opacity="0.8">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Height" Value="75"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsExecutionStopping}" Value="True">
+                                <Setter Property="Height" Value="95"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Border Background="{DynamicResource GlobalBackground}"
                         BorderBrush="{DynamicResource GlobalBorderBrush}"
                         BorderThickness="1" CornerRadius="6" Opacity="0.3"/>
@@ -91,6 +101,10 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
+                    <TextBlock x:Name="StoppingText" Margin="6,0,6,0"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Text="{engine:EngineLang Key='正在停止，等待当前环节结束…'}"
+                               Visibility="{Binding IsExecutionStopping, Converter={StaticResource bool2VisibilityConverter}}"/>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -99,20 +113,20 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Margin="0,0,6,0" VerticalAlignment="Center">
-                            <Button Width="50" Height="50"
+                            <Button x:Name="RunButton" Width="50" Height="50"
                                     Padding="3"
                                     ToolTip="{x:Static properties:Resources.ExecutionProcess}" Margin="6,0,0,0"
-                                    Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter1}}"
+                                    Visibility="{Binding IsExecutionActive, Converter={StaticResource bool2VisibilityConverter1}}"
                                     Command="{Binding RunFlowCommand}">
                                 <TextBlock Text="&#xE768;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="30"
                                            Foreground="{DynamicResource GlobalTextBrush}"/>
                             </Button>
-                            <Button Width="50" Height="50"
+                            <Button x:Name="StopButton" Width="50" Height="50"
                                     Padding="3"
                                     ToolTip="{x:Static properties:Resources.StopProcess}" Margin="6,0,0,0"
-                                    Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
+                                    Visibility="{Binding IsExecutionActive, Converter={StaticResource bool2VisibilityConverter}}"
                                     Command="{Binding StopFlowCommand}">
                                 <TextBlock Text="&#xE71A;"
                                            FontFamily="Segoe MDL2 Assets"
@@ -156,8 +170,8 @@
                          HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                          Panel.ZIndex="40"
                          Maximum="100" Style="{StaticResource ProgressBarFlat}"
-                         IsIndeterminate="{Binding IsStandalone}"
-                         Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
+                         IsIndeterminate="{Binding IsExecutionProgressIndeterminate}"
+                         Visibility="{Binding IsExecutionActive, Converter={StaticResource bool2VisibilityConverter}}"
                          Value="{Binding FlowEngineManager.BatchProgress}"/>
         </Grid>
     </Grid>

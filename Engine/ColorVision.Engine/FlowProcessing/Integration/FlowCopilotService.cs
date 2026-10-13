@@ -489,10 +489,12 @@ namespace ColorVision.Engine.FlowProcessing.Integration
 
         private void EnsureCopilotFlowMutationAllowed(string? expectedRevision)
         {
-            if (FlowControl?.IsFlowRun == true)
+            if (View?.IsExecutionActive == true)
                 throw new InvalidOperationException("The active flow is running. Stop it before editing the graph.");
             if (View?.STNodeEditorMain == null)
                 throw new InvalidOperationException("No active Flow editor is available.");
+            if (!View.STNodeEditorMain.EnableEdit)
+                throw new InvalidOperationException("The active Flow editor is read-only.");
 
             if (!string.IsNullOrWhiteSpace(expectedRevision))
             {

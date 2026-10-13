@@ -191,9 +191,6 @@ public sealed class FlowEngineManager : ViewModelBase
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         }.ShowDialog();
-        if (FlowParams.Count > 0 && (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count))
-            _ = View.SelectFlowTemplateAsync(FlowParams[0], allowEmptyFlow: true);
-        else
-            _ = RefreshFlowAsync();
+        _ = View.ReconcileTemplatesAsync();
     }
 }

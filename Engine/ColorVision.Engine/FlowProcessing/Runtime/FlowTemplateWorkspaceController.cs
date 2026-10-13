@@ -24,6 +24,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
     private readonly Action _resetNodeTitleProgress;
     private readonly Action<CVCommonNode> _unsubscribeNodeEvents;
     private readonly Action<CVCommonNode> _subscribeNodeEvents;
+    private readonly Func<bool> _confirmDocumentReplacement;
     private readonly FlowTemplateRefreshGate _refreshGate = new();
     private readonly FlowTemplateWorkspaceState _workspaceState = new();
     private readonly object _selectionSync = new();
@@ -32,6 +33,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
     private bool _suppressSelectionRefresh;
     private TemplateModel<FlowParam>? _requestedTemplate;
     private FlowParam? _loadedFlowParam;
+    private bool _loadedTemplateWasListed;
     private string? _startNodeName;
     private bool _disposed;
 
@@ -42,7 +44,8 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         Action invalidateExecutionPresentation,
         Action resetNodeTitleProgress,
         Action<CVCommonNode> unsubscribeNodeEvents,
-        Action<CVCommonNode> subscribeNodeEvents)
+        Action<CVCommonNode> subscribeNodeEvents,
+        Func<bool>? confirmDocumentReplacement = null)
     {
         _flowEngineManager = flowEngineManager;
         _view = view;
@@ -53,6 +56,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         _resetNodeTitleProgress = resetNodeTitleProgress;
         _unsubscribeNodeEvents = unsubscribeNodeEvents;
         _subscribeNodeEvents = subscribeNodeEvents;
+        _confirmDocumentReplacement = confirmDocumentReplacement ?? view.ConfirmDocumentReplacement;
     }
 
     public void InitializeSelection()
@@ -76,23 +80,23 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         {
             _suppressSelectionRefresh = false;
         }
-        _ = RefreshAsync(generation, allowEmptyFlow: false);
+        _ = RefreshAsync(generation, allowEmptyFlow: false, FlowWorkspaceReplacementMode.PreserveChanges);
     }
 
     public void OnFlowSelectionChanged(
         TemplateModel<FlowParam>? flowTemplate)
     {
-        if (flowTemplate == null)
+        if (flowTemplate == null || _suppressSelectionRefresh)
             return;
 
         long generation = SetSelectedFlowTemplate(flowTemplate);
-        if (!_suppressSelectionRefresh)
-            _ = DebouncedRefreshAsync(generation);
+        _ = DebouncedRefreshAsync(generation);
     }
 
-    public async Task SelectFlowTemplateAsync(
+    public async Task<FlowTemplateExecutionSnapshotResult> SelectFlowTemplateAsync(
         TemplateModel<FlowParam> flowTemplate,
-        bool allowEmptyFlow = false)
+        bool allowEmptyFlow = false,
+        FlowWorkspaceReplacementMode replacementMode = FlowWorkspaceReplacementMode.PreserveChanges)
     {
         CancelPendingRefresh();
 
@@ -107,10 +111,10 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             _suppressSelectionRefresh = false;
         }
 
-        await RefreshAsync(generation, allowEmptyFlow);
+        return await RefreshAsync(generation, allowEmptyFlow, replacementMode);
     }
 
-    public Task RefreshAsync()
+    public Task RefreshAsync(FlowWorkspaceReplacementMode replacementMode = FlowWorkspaceReplacementMode.PreserveChanges)
     {
         CancelPendingRefresh();
         long generation = _refreshGate.Advance();
@@ -120,37 +124,138 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                 generation,
                 _requestedTemplate?.Id);
         }
-        return RefreshAsync(generation, allowEmptyFlow: false);
+        return RefreshAsync(generation, allowEmptyFlow: false, replacementMode);
     }
+
+    public Task ReconcileTemplatesAsync()
+    {
+        if (_disposed || _view.IsStandalone)
+            return Task.CompletedTask;
+
+        FlowParam? loaded;
+        bool wasListed;
+        lock (_selectionSync)
+        {
+            loaded = _loadedFlowParam;
+            wasListed = _loadedTemplateWasListed;
+        }
+        if (loaded == null || !wasListed)
+            return Task.CompletedTask;
+
+        TemplateModel<FlowParam>? latest = TemplateFlow.Params.FirstOrDefault(item => item.Id == loaded.Id);
+        if (latest == null)
+        {
+            // Deleting the template does not delete the unsaved canvas. Detach
+            // its save target so a canceled replacement can be saved as a new flow.
+            lock (_selectionSync)
+            {
+                _loadedFlowParam = null;
+                _loadedTemplateWasListed = false;
+                if (_requestedTemplate?.Id == loaded.Id)
+                    _requestedTemplate = null;
+            }
+            _flowEngineManager.SelectedFlowParam = null;
+            _view.SetDocumentBaseline(null);
+            if (RequestedTemplateId == null)
+                UpdateSelectedTemplateIndex(null);
+            if (_workspaceState.IsPending)
+                return Task.CompletedTask;
+            TemplateModel<FlowParam>? next = TemplateFlow.Params.FirstOrDefault();
+            return next == null
+                ? RefreshAsync(FlowWorkspaceReplacementMode.Confirm)
+                : SelectFlowTemplateAsync(next, allowEmptyFlow: true, FlowWorkspaceReplacementMode.Confirm);
+        }
+
+        // A newer user selection owns its pending refresh; closing the manager
+        // must not cancel that request or interrupt a run on an unchanged graph.
+        if (!_workspaceState.IsCurrentLoaded(_refreshGate.Generation, loaded.Id)
+            || RequestedTemplateId != loaded.Id)
+        {
+            return Task.CompletedTask;
+        }
+        if (!string.Equals(loaded.DataBase64, latest.Value.DataBase64, StringComparison.Ordinal))
+            return SelectFlowTemplateAsync(latest, replacementMode: FlowWorkspaceReplacementMode.Confirm);
+
+        lock (_selectionSync)
+        {
+            _requestedTemplate = latest;
+            _loadedFlowParam = latest.Value;
+        }
+        _flowEngineManager.SelectedFlowParam = latest.Value;
+        UpdateSelectedTemplateIndex(latest);
+        return Task.CompletedTask;
+    }
+
+    private void UpdateSelectedTemplateIndex(TemplateModel<FlowParam>? selected)
+    {
+        int index = selected == null ? -1 : FlowTemplateSelectionRules.ResolveTemplateIndex(
+            TemplateFlow.Params.Select(item => item.Id), selected.Id);
+        bool wasSuppressed = _suppressSelectionRefresh;
+        _suppressSelectionRefresh = true;
+        try
+        {
+            if (_flowEngineManager.TemplateFlowParamsIndex != index)
+                _flowEngineManager.TemplateFlowParamsIndex = index;
+            FlowEngineConfig.Instance.LastSelectFlow = selected?.Id ?? 0;
+        }
+        finally
+        {
+            _suppressSelectionRefresh = wasSuppressed;
+        }
+    }
+
+    public bool IsConfirmingDocumentReplacement { get; private set; }
 
     public void AdoptSavedCanvas(TemplateModel<FlowParam> flowTemplate)
     {
+        // A first save inside the replacement prompt belongs to the visible canvas.
+        // Keep the pending selection (including any newer debounced request) alive.
+        if (IsConfirmingDocumentReplacement)
+        {
+            lock (_selectionSync)
+            {
+                _loadedFlowParam = flowTemplate.Value;
+                _loadedTemplateWasListed = TemplateFlow.Params.Any(item => item.Id == flowTemplate.Id);
+            }
+            _flowEngineManager.SelectedFlowParam = flowTemplate.Value;
+            RefreshStartNodeSelection();
+            return;
+        }
+
         // First save associates the canvas already on screen; reloading it would
         // discard its editing state and race the ComboBox selection refresh.
         CancelPendingRefresh();
         long generation = SetSelectedFlowTemplate(flowTemplate);
         lock (_selectionSync)
+        {
             _loadedFlowParam = flowTemplate.Value;
+            _loadedTemplateWasListed = TemplateFlow.Params.Any(item => item.Id == flowTemplate.Id);
+        }
         _flowEngineManager.SelectedFlowParam = flowTemplate.Value;
         RefreshStartNodeSelection();
         _workspaceState.TryCompleteLoaded(generation, flowTemplate.Id);
     }
 
-    private Task RefreshAsync(
-        long generation,
-        bool allowEmptyFlow)
-    {
-        return _refreshGate.ExecuteLatestAsync(
-            generation,
-            isCurrent => RefreshCoreAsync(
-                generation,
-                allowEmptyFlow,
-                isCurrent));
-    }
-
-    private async Task RefreshCoreAsync(
+    private async Task<FlowTemplateExecutionSnapshotResult> RefreshAsync(
         long generation,
         bool allowEmptyFlow,
+        FlowWorkspaceReplacementMode replacementMode)
+    {
+        var result = SelectionChangedResult();
+        await _refreshGate.ExecuteLatestAsync(
+            generation,
+            async isCurrent => result = await RefreshCoreAsync(
+                generation,
+                allowEmptyFlow,
+                replacementMode,
+                isCurrent));
+        return result;
+    }
+
+    private async Task<FlowTemplateExecutionSnapshotResult> RefreshCoreAsync(
+        long generation,
+        bool allowEmptyFlow,
+        FlowWorkspaceReplacementMode replacementMode,
         Func<bool> isCurrent)
     {
         byte[]? previousCanvasData = null;
@@ -158,15 +263,42 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         try
         {
             if (!_workspaceState.TryMarkLoading(generation))
-                return;
+                return SelectionChangedResult();
+
+            if (_view.STNodeEditorMain.IsModified && replacementMode != FlowWorkspaceReplacementMode.AlreadyConfirmed)
+            {
+                bool replace = false;
+                if (replacementMode == FlowWorkspaceReplacementMode.Confirm)
+                {
+                    IsConfirmingDocumentReplacement = true;
+                    try
+                    {
+                        replace = _confirmDocumentReplacement();
+                    }
+                    finally
+                    {
+                        IsConfirmingDocumentReplacement = false;
+                    }
+                }
+                // A modal save/confirmation can pump a newer selection. Only its
+                // own request may restore the selection or replace the canvas.
+                if (!isCurrent() || _disposed)
+                    return SelectionChangedResult();
+                if (!replace)
+                {
+                    RestoreSelection(generation);
+                    return FlowTemplateExecutionSnapshotResult.Failed(
+                        EngineLocalization.Get("当前流程有未保存的修改，已取消切换。"));
+                }
+            }
 
             await _closeRunningFlowBeforeRefreshAsync();
             if (!isCurrent() || _disposed)
-                return;
+                return SelectionChangedResult();
 
             MqttRCService.GetInstance().QueryServices();
             if (!isCurrent() || _disposed)
-                return;
+                return SelectionChangedResult();
 
             TemplateModel<FlowParam>? selectedTemplate =
                 GetRequestedFlowTemplate();
@@ -177,13 +309,15 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                     ClearDisplayedFlow(null);
                     _workspaceState.TryCompleteEmpty(generation);
                 }
-                return;
+                return FlowTemplateExecutionSnapshotResult.Failed(
+                    ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected);
             }
 
             FlowParam flowParam = selectedTemplate.Value;
             if (string.IsNullOrEmpty(flowParam.DataBase64))
             {
-                if (!allowEmptyFlow && !LocalFlowTemplateStorage.IsLocalId(flowParam.Id))
+                if (replacementMode != FlowWorkspaceReplacementMode.PreserveChanges
+                    && !allowEmptyFlow && !LocalFlowTemplateStorage.IsLocalId(flowParam.Id))
                 {
                     MessageBox.Show(
                         ColorVision.Engine.Properties.Resources
@@ -196,7 +330,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                         generation,
                         flowParam.Id);
                 }
-                return;
+                return LoadedSelectionResult(generation, flowParam);
             }
 
             previousCanvasData =
@@ -212,7 +346,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             foreach (CVCommonNode node in previousNodes)
                 _unsubscribeNodeEvents(node);
             if (!isCurrent() || _disposed)
-                return;
+                return SelectionChangedResult();
 
             _invalidateExecutionPresentation();
             _view.ShowExecutionSummary(string.Empty);
@@ -227,7 +361,10 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             RefreshStartNodeSelection();
 
             lock (_selectionSync)
+            {
                 _loadedFlowParam = flowParam;
+                _loadedTemplateWasListed = TemplateFlow.Params.Any(item => item.Id == flowParam.Id);
+            }
             if (!_view.IsStandalone)
                 _flowEngineManager.SelectedFlowParam = flowParam;
 
@@ -244,6 +381,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             _workspaceState.TryCompleteLoaded(
                 generation,
                 flowParam.Id);
+            return LoadedSelectionResult(generation, flowParam);
         }
         catch (Exception ex)
         {
@@ -255,16 +393,28 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                 {
                     RestorePreviousCanvas(previousCanvasData);
                 }
-                RestoreSelectionAfterFailedRefresh(generation);
-                Application.Current.Dispatcher.Invoke(
-                    () =>
-                    {
-                        MessageBox.Show(
-                            Application.Current.GetActiveWindow(),
-                            ex.Message);
-                    });
+                RestoreSelection(generation, "流程模板加载失败，已保留原画布。请刷新后重试。");
+                if (replacementMode != FlowWorkspaceReplacementMode.PreserveChanges)
+                {
+                    Application.Current.Dispatcher.Invoke(() => MessageBox.Show(
+                        Application.Current.GetActiveWindow(), ex.Message));
+                }
             }
+            return FlowTemplateExecutionSnapshotResult.Failed(ex.Message);
         }
+    }
+
+    private FlowTemplateExecutionSnapshotResult LoadedSelectionResult(long generation, FlowParam flowParam)
+    {
+        return _workspaceState.IsCurrentLoaded(generation, flowParam.Id)
+            ? FlowTemplateExecutionSnapshotResult.Loaded(FlowTemplateExecutionSnapshot.Create(generation, flowParam))
+            : SelectionChangedResult();
+    }
+
+    private static FlowTemplateExecutionSnapshotResult SelectionChangedResult()
+    {
+        return FlowTemplateExecutionSnapshotResult.Failed(
+            EngineLocalization.Get("流程模板正在切换，请稍后重试。"));
     }
 
     private TemplateModel<FlowParam>? GetRequestedFlowTemplate()
@@ -447,7 +597,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             return;
         }
         if (!_disposed)
-            await RefreshAsync(generation, allowEmptyFlow: false);
+            await RefreshAsync(generation, allowEmptyFlow: false, FlowWorkspaceReplacementMode.Confirm);
     }
 
     private void CancelPendingRefresh()
@@ -475,7 +625,10 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         if (!_view.IsStandalone)
             _flowEngineManager.CVBaseServerNodes.Clear();
         lock (_selectionSync)
+        {
             _loadedFlowParam = flowParam;
+            _loadedTemplateWasListed = flowParam != null && TemplateFlow.Params.Any(item => item.Id == flowParam.Id);
+        }
         if (!_view.IsStandalone)
         {
             _flowEngineManager.SelectedFlowParam = flowParam;
@@ -536,7 +689,7 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         }
     }
 
-    private void RestoreSelectionAfterFailedRefresh(long generation)
+    private void RestoreSelection(long generation, string? failureReason = null)
     {
         FlowParam? loadedFlowParam;
         TemplateModel<FlowParam>? loadedTemplate;
@@ -551,9 +704,12 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                         loadedFlowParam.Name,
                         loadedFlowParam);
             _requestedTemplate = loadedTemplate;
-            _workspaceState.TryCompleteFailed(
-                generation,
-                "流程模板加载失败，已保留原画布。请刷新后重试。");
+            if (failureReason != null)
+                _workspaceState.TryCompleteFailed(generation, failureReason);
+            else if (loadedFlowParam != null)
+                _workspaceState.TryCompleteLoaded(generation, loadedFlowParam.Id);
+            else
+                _workspaceState.TryCompleteEmpty(generation);
         }
 
         if (_view.IsStandalone)
@@ -567,12 +723,15 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                 loadedTemplate.Id);
         _flowEngineManager.TemplateFlowParamsIndex =
             selectedIndex;
-        if (loadedTemplate != null)
-        {
-            FlowEngineConfig.Instance.LastSelectFlow =
-                loadedTemplate.Id;
-        }
+        FlowEngineConfig.Instance.LastSelectFlow = loadedTemplate?.Id ?? 0;
     }
+}
+
+internal enum FlowWorkspaceReplacementMode
+{
+    PreserveChanges,
+    Confirm,
+    AlreadyConfirmed,
 }
 
 internal enum FlowTemplateWorkspaceStatus
@@ -602,6 +761,15 @@ internal sealed class FlowTemplateWorkspaceState : IDisposable
     private TaskCompletionSource<FlowTemplateWorkspaceSettlement>
         _settlement = CreateCompletedEmpty();
     private bool _disposed;
+
+    public bool IsPending
+    {
+        get
+        {
+            lock (_sync)
+                return !_disposed && _status is FlowTemplateWorkspaceStatus.Pending or FlowTemplateWorkspaceStatus.Loading;
+        }
+    }
 
     public void BeginRequest(long generation, int? templateId)
     {
@@ -850,6 +1018,8 @@ internal sealed class FlowTemplateRefreshGate
 
     public bool IsRefreshing => Volatile.Read(ref _isRefreshing) != 0;
 
+    public long Generation => Volatile.Read(ref _generation);
+
     public long Advance()
     {
         return Interlocked.Increment(ref _generation);
@@ -857,7 +1027,7 @@ internal sealed class FlowTemplateRefreshGate
 
     public bool IsCurrent(long generation)
     {
-        return generation == Volatile.Read(ref _generation);
+        return generation == Generation;
     }
 
     public async Task ExecuteLatestAsync(

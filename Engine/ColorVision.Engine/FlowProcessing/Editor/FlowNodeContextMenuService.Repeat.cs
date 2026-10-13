@@ -13,11 +13,18 @@ internal sealed partial class FlowNodeContextMenuService
 {
     private bool CanEditRepeat => _nodeEditor.EnableEdit && !_nodeEditor.Nodes.OfType<BaseStartNode>().Any(node => node.Running);
 
+    private void NodeEditor_NodeGroupDoubleClick(object? sender, STNodeGroupEventArgs e)
+    {
+        CVCommonNode[] members = e.Group.Nodes.OfType<CVCommonNode>().ToArray();
+        if (members.Length == 0 || string.IsNullOrEmpty(members[0].RepeatRegionId)) return;
+        EditRepeat(members, members[0].RepeatRegionId, members[0].RepeatCount);
+    }
+
     private void AddRepeatMenuItems(ItemCollection items, STNode? clicked)
     {
         CVCommonNode? member = clicked as CVCommonNode;
         if (clicked == null)
-            member = _nodeEditor.GetNodeGroups().FirstOrDefault(group => group.Bounds.Contains(_contextCanvasPoint))?.Nodes.OfType<CVCommonNode>().FirstOrDefault();
+            member = _nodeEditor.GetNodeGroups().LastOrDefault(group => group.Bounds.Contains(_contextCanvasPoint))?.Nodes.OfType<CVCommonNode>().FirstOrDefault();
         if (member != null && !string.IsNullOrEmpty(member.RepeatRegionId))
         {
             CVCommonNode[] members = _nodeEditor.Nodes.OfType<CVCommonNode>().Where(node => node.RepeatRegionId == member.RepeatRegionId).ToArray();

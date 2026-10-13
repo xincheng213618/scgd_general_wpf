@@ -17,6 +17,8 @@ public class CVStartCFC : CVBaseCFC
 
 		public bool IsFinished;
 
+		public StatusTypeEnum? Status;
+
 		public int FinishedNotificationDeferralCount;
 
 		public CVStartCFC PendingFinishedAction;
@@ -43,6 +45,12 @@ public class CVStartCFC : CVBaseCFC
 
 	[JsonIgnore]
 	private FlowFinishState finishState = new FlowFinishState();
+
+	[JsonIgnore]
+	internal StatusTypeEnum? FinishedStatus
+	{
+		get { lock (finishState.Lock) return finishState.Status; }
+	}
 
 	[JsonIgnore]
 	public FlowRuntimeResources RuntimeResources { get; private set; } = new FlowRuntimeResources();
@@ -128,6 +136,7 @@ public class CVStartCFC : CVBaseCFC
 		{
 			FlowStatus = StatusTypeEnum.Completed;
 		}
+		finishState.Status = FlowStatus;
 		try
 		{
 			StartNode?.DoFinishing(this);

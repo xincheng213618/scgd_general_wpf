@@ -61,105 +61,6 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
-        ///   查找类似 算法 的本地化字符串。
-        /// </summary>
-        internal static string Algorithm {
-            get {
-                return ResourceManager.GetString("Algorithm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 图像 的本地化字符串。
-        /// </summary>
-        internal static string Image {
-            get {
-                return ResourceManager.GetString("Image", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 KB 的本地化字符串。
-        /// </summary>
-        internal static string KB {
-            get {
-                return ResourceManager.GetString("KB", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 MQTT 的本地化字符串。
-        /// </summary>
-        internal static string MQTT {
-            get {
-                return ResourceManager.GetString("MQTT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 OLED 的本地化字符串。
-        /// </summary>
-        internal static string OLED {
-            get {
-                return ResourceManager.GetString("OLED", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 ROI 的本地化字符串。
-        /// </summary>
-        internal static string ROI {
-            get {
-                return ResourceManager.GetString("ROI", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 传感器 的本地化字符串。
-        /// </summary>
-        internal static string 传感器 {
-            get {
-                return ResourceManager.GetString("传感器", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 全局 的本地化字符串。
-        /// </summary>
-        internal static string 全局 {
-            get {
-                return ResourceManager.GetString("全局", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 关注点 的本地化字符串。
-        /// </summary>
-        internal static string 关注点 {
-            get {
-                return ResourceManager.GetString("关注点", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 合规验证 的本地化字符串。
-        /// </summary>
-        internal static string 合规验证 {
-            get {
-                return ResourceManager.GetString("合规验证", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 运算 的本地化字符串。
-        /// </summary>
-        internal static string 运算 {
-            get {
-                return ResourceManager.GetString("运算", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 A 的本地化字符串。
         /// </summary>
         internal static string A {
@@ -195,6 +96,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 算法 的本地化字符串。
+        /// </summary>
+        internal static string Algorithm {
+            get {
+                return ResourceManager.GetString("Algorithm", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 所有 的本地化字符串。
         /// </summary>
@@ -628,6 +538,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像 的本地化字符串。
+        /// </summary>
+        internal static string Image {
+            get {
+                return ResourceManager.GetString("Image", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 图像拼接 的本地化字符串。
         /// </summary>
         internal static string ImageCompound {
@@ -654,6 +573,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 KB 的本地化字符串。
+        /// </summary>
+        internal static string KB {
+            get {
+                return ResourceManager.GetString("KB", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 KB算法 的本地化字符串。
         /// </summary>
@@ -745,6 +673,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 MQTT 的本地化字符串。
+        /// </summary>
+        internal static string MQTT {
+            get {
+                return ResourceManager.GetString("MQTT", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 发布HUB 的本地化字符串。
         /// </summary>
         internal static string MQTT发布HUB {
@@ -807,6 +744,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 OLED 的本地化字符串。
+        /// </summary>
+        internal static string OLED {
+            get {
+                return ResourceManager.GetString("OLED", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 OLED-AOI算法 的本地化字符串。
         /// </summary>
@@ -1050,6 +996,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 ROI 的本地化字符串。
+        /// </summary>
+        internal static string ROI {
+            get {
+                return ResourceManager.GetString("ROI", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 R 曝光(ms) 的本地化字符串。
         /// </summary>
@@ -1312,6 +1267,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 传感器 的本地化字符串。
+        /// </summary>
+        internal static string 传感器 {
+            get {
+                return ResourceManager.GetString("传感器", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 位置 的本地化字符串。
         /// </summary>
         internal static string 位置 {
@@ -1401,6 +1365,24 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 全局 的本地化字符串。
+        /// </summary>
+        internal static string 全局 {
+            get {
+                return ResourceManager.GetString("全局", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 关注点 的本地化字符串。
+        /// </summary>
+        internal static string 关注点 {
+            get {
+                return ResourceManager.GetString("关注点", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 关注点修正标定 的本地化字符串。
         /// </summary>
@@ -1555,6 +1537,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消重复框 的本地化字符串。
+        /// </summary>
+        internal static string 取消重复框 {
+            get {
+                return ResourceManager.GetString("取消重复框", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 合规算法 的本地化字符串。
         /// </summary>
         internal static string 合规算法 {
@@ -1563,6 +1554,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 合规验证 的本地化字符串。
+        /// </summary>
+        internal static string 合规验证 {
+            get {
+                return ResourceManager.GetString("合规验证", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 名称前缀 的本地化字符串。
         /// </summary>
@@ -1744,6 +1744,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已完成 {0} / {1} 次 的本地化字符串。
+        /// </summary>
+        internal static string 已完成__0_____1__次 {
+            get {
+                return ResourceManager.GetString("已完成 {0} / {1} 次", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 布点ROI 的本地化字符串。
         /// </summary>
         internal static string 布点ROI {
@@ -1779,6 +1788,126 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 读取同名循环状态；仍有下一轮时从 OUT_LP_NEXT 返回，没有下一轮时从 OUT 继续。 的本地化字符串。
+        /// </summary>
+        internal static string 循环下一节点处理顺序 {
+            get {
+                return ResourceManager.GetString("循环下一节点处理顺序", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 循环名称不匹配时无法找到对应状态，流程不会形成正确的循环回路。 的本地化字符串。
+        /// </summary>
+        internal static string 循环下一节点注意事项 {
+            get {
+                return ResourceManager.GetString("循环下一节点注意事项", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 循环名称必须与对应的循环节点完全一致。将循环体末端接入 IN，将 OUT_LP_NEXT 接回循环节点的 IN_LP_NEXT，并将 OUT 接到循环结束后的流程。 的本地化字符串。
+        /// </summary>
+        internal static string 循环下一节点用法 {
+            get {
+                return ResourceManager.GetString("循环下一节点用法", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 标记循环体的末端，并决定返回下一轮还是退出循环。 的本地化字符串。
+        /// </summary>
+        internal static string 循环下一节点说明 {
+            get {
+                return ResourceManager.GetString("循环下一节点说明", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 循环名称 的本地化字符串。
+        /// </summary>
+        internal static string 循环名称 {
+            get {
+                return ResourceManager.GetString("循环名称", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 必须与对应的“循环下一节点”完全一致，用于匹配同一个循环。 的本地化字符串。
+        /// </summary>
+        internal static string 循环名称说明 {
+            get {
+                return ResourceManager.GetString("循环名称说明", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 每轮增加的数值，必须大于 0；当前不支持倒序循环。 的本地化字符串。
+        /// </summary>
+        internal static string 循环步长说明 {
+            get {
+                return ResourceManager.GetString("循环步长说明", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 递增循环的结束判断值；下一步将超过该值时结束循环。 的本地化字符串。
+        /// </summary>
+        internal static string 循环结束值说明 {
+            get {
+                return ResourceManager.GetString("循环结束值说明", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 循环节点创建当前轮状态并从 OUT 执行循环体；循环下一节点读取同名状态，有下一轮时从 OUT_LP_NEXT 返回循环节点，否则从 OUT 继续后续流程。 的本地化字符串。
+        /// </summary>
+        internal static string 循环节点处理顺序 {
+            get {
+                return ResourceManager.GetString("循环节点处理顺序", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 同一执行路径中的不同循环应使用不同名称。单步值必须大于 0，否则循环可能无法结束。 的本地化字符串。
+        /// </summary>
+        internal static string 循环节点注意事项 {
+            get {
+                return ResourceManager.GetString("循环节点注意事项", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 1. 为“循环节点”和对应的“循环下一节点”填写完全相同的循环名称。
+        ///2. 设置起始值、结束值和单步值。
+        ///3. 将循环节点的 OUT 连接到循环体入口；循环体末端连接到循环下一节点；再将 OUT_LP_NEXT 接回循环节点的 IN_LP_NEXT。
+        ///4. 循环下一节点的 OUT 连接循环结束后继续执行的节点。 的本地化字符串。
+        /// </summary>
+        internal static string 循环节点用法 {
+            get {
+                return ResourceManager.GetString("循环节点用法", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 按起始值、结束值和单步值重复执行一段流程。 的本地化字符串。
+        /// </summary>
+        internal static string 循环节点说明 {
+            get {
+                return ResourceManager.GetString("循环节点说明", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 第一轮循环使用的数值。 的本地化字符串。
+        /// </summary>
+        internal static string 循环起始值说明 {
+            get {
+                return ResourceManager.GetString("循环起始值说明", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 手动确认 的本地化字符串。
         /// </summary>
@@ -2257,6 +2386,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 第 {0} / {1} 次 的本地化字符串。
+        /// </summary>
+        internal static string 第__0_____1__次 {
+            get {
+                return ResourceManager.GetString("第 {0} / {1} 次", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 第三方算法 的本地化字符串。
         /// </summary>
         internal static string 第三方算法 {
@@ -2572,6 +2710,15 @@ namespace FlowEngineLib.Properties {
         }
         
         /// <summary>
+        ///   查找类似 运算 的本地化字符串。
+        /// </summary>
+        internal static string 运算 {
+            get {
+                return ResourceManager.GetString("运算", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 通用AOI相机 的本地化字符串。
         /// </summary>
         internal static string 通用AOI相机 {
@@ -2643,6 +2790,15 @@ namespace FlowEngineLib.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 重复 {0} 次 的本地化字符串。
+        /// </summary>
+        internal static string 重复__0__次 {
+            get {
+                return ResourceManager.GetString("重复 {0} 次", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 限值(电流/电压) 的本地化字符串。
         /// </summary>

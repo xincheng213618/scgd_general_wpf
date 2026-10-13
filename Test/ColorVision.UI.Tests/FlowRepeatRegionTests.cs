@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Repeat;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using Point = System.Drawing.Point;
@@ -49,6 +50,8 @@ public sealed class FlowRepeatRegionTests
         Assert.Equal(StatusTypeEnum.Completed, await finished.Task.WaitAsync(TimeSpan.FromSeconds(10)));
         Assert.Equal(4, start.PublishCount);
         Assert.Equal(1, end.RunningCount);
+        Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)sensor).GroupState);
+        Assert.Equal(string.Format(FlowRepeatRegion.Text("已完成 {0} / {1} 次"), 4, 4), ((ISTNodeGroupMember)sensor).GroupTitle);
     }
 
     [Fact]
@@ -118,6 +121,18 @@ public sealed class FlowRepeatRegionTests
                 Assert.Equal(1, nodes[0].Output.ConnectionCount);
                 editor.Undo();
                 Assert.Equal(2, editor.GetNodeGroups().Length);
+                nodes[0].Manual = true;
+                using var stopped = new RunAction();
+                nodes[0].Input.ReceiveData(stopped.Value);
+                for (int round = 1; round < 4; round++) nodes[0].Output.TransferData(nodes[0].Pending.Dequeue());
+                stopped.Value.FlowStatus = StatusTypeEnum.Canceled;
+                stopped.Value.DoFinishing();
+                using var completed = new RunAction();
+                nodes[1].Input.ReceiveData(completed.Value);
+                completed.Value.DoFinishing();
+                Assert.Equal(STNodeGroupState.Stopped, ((ISTNodeGroupMember)nodes[0]).GroupState);
+                Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)nodes[1]).GroupState);
+                SaveImage(window, "repeat-region-states.png");
             }
             finally { window.Close(); }
         });
@@ -211,6 +226,104 @@ public sealed class FlowRepeatRegionTests
         Assert.Equal(1, graph.Nodes[0].Count);
         Assert.Equal(0, graph.Nodes[1].Count);
         Assert.Equal(status, graph.Nodes[1].LastReceived!.FlowStatus);
+        Assert.Equal(status == StatusTypeEnum.Canceled ? STNodeGroupState.Stopped : STNodeGroupState.Failed, ((ISTNodeGroupMember)graph.Nodes[0]).GroupState);
+    }
+
+    [Theory]
+    [InlineData(StatusTypeEnum.Canceled)]
+    [InlineData(StatusTypeEnum.Failed)]
+    [InlineData(StatusTypeEnum.OverTime)]
+    public void FinishingActionCopyRetainsCurrentRoundAndDoesNotChangeCompletedRegions(StatusTypeEnum status)
+    {
+        using var graph = new Graph(4);
+        Repeat(graph.Nodes.Take(1), 2);
+        Repeat(graph.Nodes.Skip(1).Take(2), 3);
+        ProbeNode body = graph.Nodes[1];
+        body.Manual = true;
+        using var action = new RunAction();
+        graph.Nodes[0].Input.ReceiveData(action.Value);
+        body.Output.TransferData(body.Pending.Dequeue());
+        CVStartCFC secondRound = body.Pending.Dequeue();
+        Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)graph.Nodes[0]).GroupState);
+        Assert.Equal(STNodeGroupState.Running, ((ISTNodeGroupMember)body).GroupState);
+
+        // Server timeout and failure paths finish their action copy before forwarding any output.
+        var terminal = new CVStartCFC(secondRound) { FlowStatus = status };
+        Assert.True(terminal.TryDoFinishing());
+        string expected = string.Format(FlowRepeatRegion.Text(status == StatusTypeEnum.Canceled ? "已停止 · 第 {0} / {1} 次" : "失败 · 第 {0} / {1} 次"), 2, 3);
+        Assert.Equal(expected, ((ISTNodeGroupMember)body).GroupTitle);
+        Assert.Equal(expected, ((ISTNodeGroupMember)graph.Nodes[2]).GroupTitle);
+        Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)graph.Nodes[0]).GroupState);
+        body.Output.TransferData(secondRound);
+        Assert.Equal(expected, ((ISTNodeGroupMember)body).GroupTitle);
+        Assert.Equal(0, graph.Nodes[3].Count);
+    }
+
+    [Fact]
+    public void NewStartClearsAllReachableRegionStatesBeforeExecutingTheirNodes()
+    {
+        using var graph = new Graph(3);
+        using var start = new RepeatTestStartNode();
+        var end = new RuntimeTestEndNode();
+        start.Create(); end.Create();
+        start.m_op_start.ConnectOption(graph.Nodes[0].Input, false);
+        graph.Nodes[2].Output.ConnectOption(end.m_in_start, false);
+        Repeat(graph.Nodes.Skip(1).Take(1), 2);
+        Repeat(graph.Nodes.Skip(2), 3);
+        graph.Nodes[0].Manual = true;
+        using var first = new RunAction();
+        start.Begin(first.Value);
+        graph.Nodes[0].Output.TransferData(graph.Nodes[0].Pending.Dequeue());
+        Assert.All(graph.Nodes.Skip(1), node => Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)node).GroupState));
+
+        using var second = new RunAction();
+        start.Begin(second.Value);
+        Assert.All(graph.Nodes.Skip(1), node => Assert.Equal(STNodeGroupState.Idle, ((ISTNodeGroupMember)node).GroupState));
+        graph.Nodes[0].Output.TransferData(graph.Nodes[0].Pending.Dequeue());
+        Assert.All(graph.Nodes.Skip(1), node => Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)node).GroupState));
+        Assert.Equal(2, end.RunningCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OldRunCannotOverwriteStateAfterNewStartResetsOrEntersRegion(bool enterRegion)
+    {
+        using var graph = new Graph(3);
+        using var start = new RepeatTestStartNode();
+        start.Create();
+        start.m_op_start.ConnectOption(graph.Nodes[0].Input, false);
+        Repeat(graph.Nodes.Skip(1), 3);
+        graph.Nodes[0].Manual = true;
+        graph.Nodes[1].Manual = true;
+        using var old = new RunAction();
+        graph.Nodes[1].Input.ReceiveData(old.Value);
+        graph.Nodes[1].Output.TransferData(graph.Nodes[1].Pending.Dequeue());
+        graph.Nodes[1].Pending.Dequeue();
+        object oldRun = typeof(CVStartCFC).GetProperty("RepeatRun", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(old.Value)!;
+
+        // Keep the old resource cleanup pending while a new accepted start clears all display owners.
+        using var current = new RunAction();
+        start.Begin(current.Value);
+        if (enterRegion) graph.Nodes[0].Output.TransferData(graph.Nodes[0].Pending.Dequeue());
+        STNodeGroupState expectedState = enterRegion ? STNodeGroupState.Running : STNodeGroupState.Idle;
+        string expectedTitle = ((ISTNodeGroupMember)graph.Nodes[1]).GroupTitle;
+        Assert.All(graph.Nodes.Skip(1), node => Assert.Equal(expectedState, ((ISTNodeGroupMember)node).GroupState));
+
+        // A previously queued display update and late disposal both belong to the old run.
+        oldRun.GetType().GetMethod("ShowRound", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(oldRun, null);
+        Assert.All(graph.Nodes.Skip(1), node =>
+        {
+            Assert.Equal(expectedState, ((ISTNodeGroupMember)node).GroupState);
+            Assert.Equal(expectedTitle, ((ISTNodeGroupMember)node).GroupTitle);
+        });
+        old.Dispose();
+        Assert.All(graph.Nodes.Skip(1), node =>
+        {
+            Assert.Equal(expectedState, ((ISTNodeGroupMember)node).GroupState);
+            Assert.Equal(expectedTitle, ((ISTNodeGroupMember)node).GroupTitle);
+        });
+        start.StopAll();
     }
 
     [Fact]
@@ -225,6 +338,7 @@ public sealed class FlowRepeatRegionTests
             body.Input.ReceiveData(first.Value);
             CVStartCFC late = body.Pending.Dequeue();
             first.Dispose();
+            Assert.Equal(STNodeGroupState.Stopped, ((ISTNodeGroupMember)body).GroupState);
             body.Output.TransferData(late);
             Assert.Equal(1, body.Count);
             Assert.Equal(0, graph.Nodes[1].Count);
@@ -234,6 +348,7 @@ public sealed class FlowRepeatRegionTests
         body.Input.ReceiveData(second.Value);
         Assert.Equal(4, body.Count);
         Assert.Equal(1, graph.Nodes[1].Count);
+        Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)body).GroupState);
     }
 
     [Fact]
@@ -299,12 +414,16 @@ public sealed class FlowRepeatRegionTests
             editor.ExecuteEditTransaction("count", () => { first.SetRepeatRegion(id, 7, 2); second.SetRepeatRegion(id, 7, 2); });
             editor.Undo();
             Assert.Equal(4, first.RepeatCount);
+            using var preview = new RunAction();
+            first.Input.ReceiveData(preview.Value);
+            Assert.Equal(STNodeGroupState.Completed, ((ISTNodeGroupMember)first).GroupState);
             using var saved = new MemoryStream();
             editor.SaveCanvas(saved);
             using var container = new CVNodeContainer();
             container.LoadCanvas(saved.ToArray());
             ProbeNode[] loaded = container.Nodes.OfType<ProbeNode>().ToArray();
             Assert.All(loaded, node => { Assert.Equal(id, node.RepeatRegionId); Assert.Equal(4, node.RepeatCount); });
+            Assert.All(loaded, node => Assert.Equal(STNodeGroupState.Idle, ((ISTNodeGroupMember)node).GroupState));
             using var action = new RunAction();
             loaded.Single(node => node.Left == 40).Input.ReceiveData(action.Value);
             Assert.All(loaded, node => Assert.Equal(4, node.Count));
@@ -338,6 +457,12 @@ public sealed class FlowRepeatRegionTests
             Value.Data["value"] = input;
         }
         public void Dispose() => Value.RuntimeResources.Dispose();
+    }
+
+    private sealed class RepeatTestStartNode : BaseStartNode
+    {
+        public RepeatTestStartNode() : base("Repeat test start") { }
+        public void Begin(CVStartCFC action) => DoDispatch(action);
     }
 
     private sealed class Graph : IDisposable

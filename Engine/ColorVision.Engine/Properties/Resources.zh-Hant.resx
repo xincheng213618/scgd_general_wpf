@@ -8047,4 +8047,22 @@
   <data name="总执行次数，包含第一次。中间结果覆盖，最后一次完成后再继续框外流程。" xml:space="preserve">
     <value>總執行次數，包含第一次。中間結果覆蓋，最後一次完成後再繼續框外流程。</value>
   </data>
+  <data name="未能从“{0}”启动流程：已有流程正在运行，请等待完成或停止后重试。" xml:space="preserve">
+    <value>未能從「{0}」啟動流程：已有流程正在執行，請等待完成或停止後重試。</value>
+  </data>
+  <data name="未能从“{0}”启动流程。请检查该起点是否已连接后续节点、流程是否仍在运行，以及设备或服务连接是否就绪。" xml:space="preserve">
+    <value>未能從「{0}」啟動流程。請檢查該起點是否已連接後續節點、流程是否仍在執行，以及裝置或服務連線是否就緒。</value>
+  </data>
+  <data name="流程正在执行，请等待完成或停止后再编辑。" xml:space="preserve">
+    <value>流程正在執行，請等待完成或停止後再編輯。</value>
+  </data>
+  <data name="正在停止，等待当前环节结束…" xml:space="preserve">
+    <value>正在停止，等待目前環節結束…</value>
+  </data>
+  <data name="当前流程有未保存的修改，已取消切换。" xml:space="preserve">
+    <value>目前流程有未儲存的修改，已取消切換。</value>
+  </data>
+  <data name="流程模板正在切换，请稍后重试。" xml:space="preserve">
+    <value>流程範本正在切換，請稍後重試。</value>
+  </data>
 </root>

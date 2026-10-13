@@ -1,4 +1,6 @@
+using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Logical;
 using FlowEngineLib.Start;
 using log4net;
 using ST.Library.UI.NodeEditor;
@@ -14,56 +16,68 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public static bool Validate(STNodeEditor nodeEditor)
         {
-            if (!FlowEngineLib.Repeat.FlowRepeatRegion.TryValidate(nodeEditor.Nodes.Cast<STNode>(), out string repeatError))
+            if (TryValidate(nodeEditor, out string error, out STNode? invalidStart))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), repeatError);
-                return false;
+                log.Debug("CheckFlow: 验证成功");
+                return true;
             }
+
+            if (invalidStart != null)
+                new FlowExecutionNavigator(nodeEditor).TryFocusNode(invalidStart.Guid);
+            log.Warn($"CheckFlow: {error}");
+            MessageBox.Show(Application.Current.GetActiveWindow(), error);
+            return false;
+        }
+
+        internal static bool TryValidate(STNodeEditor nodeEditor, out string error, out STNode? invalidStart)
+        {
+            invalidStart = null;
+            if (!FlowEngineLib.Repeat.FlowRepeatRegion.TryValidate(nodeEditor.Nodes.Cast<STNode>(), out error))
+                return false;
+
             ConnectionInfo[] connections = nodeEditor.GetConnectionInfo();
             log.Debug($"CheckFlow: 节点数={nodeEditor.Nodes.Count}, 连接数={connections.Length}");
 
-            STNode? startNode = nodeEditor.Nodes.OfType<BaseStartNode>().FirstOrDefault();
-            if (startNode == null)
+            STNode[] startNodes = nodeEditor.Nodes.OfType<BaseStartNode>().ToArray();
+            if (startNodes.Length == 0)
             {
-                log.Warn("CheckFlow: 找不到流程起始结点");
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoStartNode);
+                error = Properties.Resources.Flow_NoStartNode;
                 return false;
             }
 
-            STNode? endNode = nodeEditor.Nodes.OfType<CVEndNode>().FirstOrDefault();
-            if (endNode == null)
+            var endNodes = new HashSet<STNode>(nodeEditor.Nodes.Cast<STNode>().Where(node => node is CVEndNode or FlowTerminationNode));
+            if (endNodes.Count == 0)
             {
-                log.Warn("CheckFlow: 找不到流程结束结点 (CVEndNode)");
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoEndNode);
+                error = Properties.Resources.Flow_NoEndNode;
                 return false;
             }
 
-            if (!IsPathExists(startNode, endNode, connections))
+            if (!IsPathExists(startNodes, endNodes, connections))
             {
-                log.Warn("CheckFlow: 无法找到从起始结点到结束结点的有效路径");
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoPathFromStartToEnd);
+                error = Properties.Resources.Flow_NoPathFromStartToEnd;
+                invalidStart = startNodes.Length == 1 ? startNodes[0] : null;
                 return false;
             }
 
-            log.Debug("CheckFlow: 验证成功");
+            error = string.Empty;
             return true;
         }
 
-        private static bool IsPathExists(STNode startNode, STNode endNode, ConnectionInfo[] connections)
+        private static bool IsPathExists(IEnumerable<STNode> startNodes, HashSet<STNode> endNodes, ConnectionInfo[] connections)
         {
             var children = connections
+                .Where(connection => connection.Output.DataType == typeof(CVStartCFC) && connection.Input.DataType == typeof(CVStartCFC))
                 .GroupBy(connection => connection.Output.Owner)
                 .ToDictionary(
                     group => group.Key,
                     group => group.Select(connection => connection.Input.Owner).Distinct().ToArray());
             var visited = new HashSet<STNode>();
-            var queue = new Queue<STNode>();
-            queue.Enqueue(startNode);
+            var queue = new Queue<STNode>(startNodes);
 
             while (queue.Count > 0)
             {
                 STNode current = queue.Dequeue();
-                if (ReferenceEquals(current, endNode))
+                if (endNodes.Contains(current))
                     return true;
                 if (!visited.Add(current) || !children.TryGetValue(current, out STNode[]? nextNodes))
                     continue;
