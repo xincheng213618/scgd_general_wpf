@@ -150,6 +150,8 @@ class AdminApiContext:
     get_plugin_catalog_from_index: Callable[..., Any]
     human_size: Callable[[int], str]
     get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
+    get_request_diagnostics: Callable[[], dict[str, Any]] | None = None
+    feedback_inventory: Any = None
     get_access_recorder_status: Callable[[], dict[str, Any]] | None = None
     slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
     slow_request_buffer_capacity: int = SLOW_REQUEST_BUFFER_CAPACITY
@@ -882,6 +884,7 @@ def feedback_inbox():
         offset = _query_int_arg("offset", 0, minimum=0)
         result = query_feedback(
             ctx.storage_getter(),
+            inventory_index=ctx.feedback_inventory,
             status=request.args.get("status", "").strip() or None,
             query=request.args.get("query", "").strip() or None,
             limit=limit,
@@ -941,6 +944,9 @@ def update_feedback_status(feedback_id: str):
         return jsonify({"error": "Feedback not found"}), 404
     except OSError:
         return jsonify({"error": "Unable to persist feedback status"}), 500
+    finally:
+        if ctx.feedback_inventory is not None:
+            ctx.feedback_inventory.invalidate()
 
     changed = result.pop("changed")
     before = result.pop("before")
@@ -969,6 +975,9 @@ def bulk_feedback_status():
         result = update_feedback_statuses(ctx.storage_getter(), identifiers, status)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+    finally:
+        if ctx.feedback_inventory is not None:
+            ctx.feedback_inventory.invalidate()
     for item in result["results"]:
         if item.get("changed"):
             ctx.cache.write_audit(
@@ -1008,6 +1017,9 @@ def save_feedback_handling(feedback_id: str):
         return jsonify({"error": "处理记录已被其他人修改，请重新加载后核对再保存", "code": "feedback_handling_conflict"}), 409
     except OSError:
         return jsonify({"error": "无法保存处理记录，请刷新核对后重试"}), 500
+    finally:
+        if ctx.feedback_inventory is not None:
+            ctx.feedback_inventory.invalidate()
     if result["changed"]:
         ctx.cache.write_audit(actor_type=_actor_type(), actor_id=_actor_id(), action="feedback_handling_update",
                               target_type="feedback", target_id=feedback_id,
@@ -1124,6 +1136,12 @@ def traffic_stats():
         recorder_status=ctx.get_access_recorder_status,
         utc_offset_minutes=utc_offset_minutes,
     )
+    if request.args.get("view") == "health":
+        recent = ctx.get_request_diagnostics() if ctx.get_request_diagnostics else None
+        if recent:
+            recent = {**recent, "groups": {name: {key: value for key, value in group.items() if key != "slow_requests"}
+                                          for name, group in recent["groups"].items()}}
+        return jsonify({**query.get_health(), "recent": recent})
     return jsonify(query.get_traffic(days=days, limit=limit))
 
 
@@ -2230,12 +2248,14 @@ def perf_summary():
     ctx = _get_ctx()
     try:
         slow_requests = ctx.get_slow_requests() if ctx.get_slow_requests else []
-        return jsonify(build_performance_summary(
+        payload = build_performance_summary(
             slow_requests=slow_requests,
             recent_job_runs=ctx.jobs.recent_runs(20),
             threshold_ms=ctx.slow_request_threshold_ms,
             buffer_capacity=ctx.slow_request_buffer_capacity,
             process_started_at=ctx.process_started_at,
-        ))
+        )
+        payload["recent"] = ctx.get_request_diagnostics() if ctx.get_request_diagnostics else None
+        return jsonify(payload)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

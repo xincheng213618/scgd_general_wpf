@@ -146,6 +146,8 @@ def api_feedback():
         )
     except FeedbackValidationError as exc:
         return jsonify({"error": exc.message}), 400
+    finally:
+        ctx.feedback_inventory.invalidate()
     return jsonify({"feedbackId": result.feedback_id, "message": "Feedback received"}), 201
 
 
@@ -161,6 +163,7 @@ def api_feedback_inbox():
         offset = int(request.args.get("offset", 0))
         result = query_feedback(
             _get_ctx().storage,
+            inventory_index=_get_ctx().feedback_inventory,
             status=request.args.get("status", "").strip() or None,
             query=request.args.get("query", "").strip() or None,
             limit=limit,
@@ -174,6 +177,8 @@ def api_feedback_inbox():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     result["access"] = {"scope": access["scope"], "can_manage": access["can_manage"]}
+    if request.args.get("view") == "summary":
+        return jsonify({"summary": result["summary"], "access": result["access"]})
     return jsonify(result)
 
 

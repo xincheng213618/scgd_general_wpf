@@ -15,6 +15,7 @@ from werkzeug.routing import Rule
 
 import app as marketplace_app
 from app_setup import register_slow_request_logging
+from services.performance_observability import RequestDiagnostics
 from db_cache import CacheManager
 from services.access_analytics import (
     AccessAnalyticsRecorder,
@@ -272,6 +273,7 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         context = SimpleNamespace(
             slow_request_threshold_ms=86_400_000,
             slow_requests=[],
+            request_diagnostics=RequestDiagnostics(),
         )
         register_slow_request_logging(test_app, context, Recorder())
         after_request = test_app.after_request_funcs[None][0]
@@ -298,6 +300,7 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         context = SimpleNamespace(
             slow_request_threshold_ms=86_400_000,
             slow_requests=[],
+            request_diagnostics=RequestDiagnostics(),
         )
         register_slow_request_logging(test_app, context, Recorder())
         after_request = test_app.after_request_funcs[None][0]
@@ -332,6 +335,17 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             today_getter=lambda: date(2026, 7, 18),
         )
         payload = query.get_traffic(days=1, limit=10)
+        statements = []
+        def health_db():
+            connection = self.cache.get_db()
+            connection.set_trace_callback(statements.append)
+            return connection
+        health = SqliteAccessTrafficQuery(health_db, recorder_status=recorder.status,
+                                         today_getter=lambda: date(2026, 7, 18)).get_health()
+        self.assertEqual(health["today"], payload["today"])
+        self.assertEqual(set(health), {"today", "recorder"})
+        self.assertEqual(len(statements), 1)
+        self.assertIn("FROM access_daily", statements[0])
 
         self.assertEqual(payload["summary"]["visits"], 3)
         self.assertEqual(payload["summary"]["uniqueVisitorDays"], 2)
@@ -891,6 +905,15 @@ class AccessAnalyticsApiTests(unittest.TestCase):
         self.assertEqual(unauthenticated.status_code, 401)
         self.assertEqual(allowed.status_code, 200)
         self.assertEqual(forbidden.status_code, 403)
+        self.assertEqual(self.client.get("/api/admin/stats/traffic?view=health").status_code, 401)
+        self.assertEqual(self.client.get("/api/admin/stats/traffic?view=health",
+                                        headers={"Authorization": f"Bearer {cache_key}"}).status_code, 403)
+        health = self.client.get("/api/admin/stats/traffic?view=health",
+                                 headers={"Authorization": f"Bearer {stats_key}"})
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(set(health.get_json()), {"today", "recorder", "recent"})
+        for group in health.get_json()["recent"]["groups"].values():
+            self.assertNotIn("slow_requests", group)
 
     def test_traffic_query_rejects_invalid_ranges(self):
         for query in ("days=0", "days=366", "days=bad", "limit=0", "limit=101"):

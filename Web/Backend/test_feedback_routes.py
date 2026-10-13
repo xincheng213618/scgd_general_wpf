@@ -65,6 +65,7 @@ class FeedbackRouteTests(unittest.TestCase):
             refresh_all_plugin_index=mock.Mock(), get_plugin_index_state=mock.Mock(),
             is_plugin_index_populated=mock.Mock(), get_plugin_catalog_from_index=mock.Mock(),
             human_size=str,
+            feedback_inventory=self.ctx.feedback_inventory,
         ))
         register_csrf_protection(app)
         self.app = app
@@ -143,6 +144,12 @@ class FeedbackRouteTests(unittest.TestCase):
         alice_list = alice_client.get("/api/feedback?query=bob&limit=20&offset=0").get_json()
         self.assertEqual(alice_list["total"], 0)
         self.assertEqual(alice_list["summary"]["records"], 1)
+        alice_summary = alice_client.get("/api/feedback?view=summary").get_json()
+        self.assertEqual(set(alice_summary), {"summary", "access"})
+        self.assertEqual(alice_summary["summary"], alice_list["summary"])
+        self._submit(bob_client, machine="PC-BOB", message="another bob issue")
+        self.assertEqual(bob_client.get("/api/feedback?view=summary").get_json()["summary"]["records"], 2)
+        self.assertEqual(alice_client.get("/api/feedback?view=summary").get_json()["summary"]["records"], 1)
         self.assertEqual(alice_client.get(f"/api/feedback/{bob_id}").status_code, 404)
         self.assertEqual(
             alice_client.get(f"/api/feedback/{bob_id}/attachments/diagnostics.zip").status_code,
@@ -157,6 +164,7 @@ class FeedbackRouteTests(unittest.TestCase):
     def test_anonymous_revoked_and_read_only_credentials_have_distinct_access(self):
         anonymous = self.app.test_client()
         self.assertEqual(anonymous.get("/api/feedback").status_code, 401)
+        self.assertEqual(anonymous.get("/api/feedback?view=summary").status_code, 401)
         legacy_id = self._submit(anonymous, machine="LEGACY-PC", message="anonymous issue").get_json()["feedbackId"]
 
         alice_client = self.app.test_client()

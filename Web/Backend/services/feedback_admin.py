@@ -8,6 +8,7 @@ import html
 import os
 import re
 import threading
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -22,6 +23,33 @@ _STATE_NAME = ".admin.json"
 _MAX_JSON_BYTES = 1024 * 1024
 _MAX_QUERY_LENGTH = 200
 _write_lock = threading.Lock()
+
+
+class FeedbackInventoryIndex:
+    """Rebuildable, per-application read model; files remain authoritative."""
+    def __init__(self, *, clock=time.monotonic, ttl_seconds=15):
+        self._clock = clock
+        self._ttl = ttl_seconds
+        self._lock = threading.Lock()
+        self._storage = None
+        self._expires = 0
+        self._records = []
+
+    def invalidate(self):
+        with self._lock:
+            self._expires = 0
+            self._storage = None
+            self._records = []
+
+    def records(self, storage: Path):
+        key = Path(storage).resolve()
+        with self._lock:
+            if key != self._storage or self._clock() >= self._expires:
+                records = _all_feedback(storage)
+                self._records = records
+                self._storage = key
+                self._expires = self._clock() + self._ttl
+            return [dict(record) for record in self._records]
 
 
 def _is_internal_name(filename: str) -> bool:
@@ -291,6 +319,7 @@ def query_feedback(
     app_version: str | None = None,
     created_from: str | None = None,
     created_to: str | None = None,
+    inventory_index: FeedbackInventoryIndex | None = None,
 ) -> dict[str, Any]:
     if status and status not in FEEDBACK_FILTERS:
         raise ValueError("status must be open, new, in_progress, or resolved")
@@ -317,7 +346,7 @@ def query_feedback(
     if from_timestamp and to_timestamp and from_timestamp >= to_timestamp:
         raise ValueError("created_from must be earlier than created_to")
 
-    records = _all_feedback(storage)
+    records = inventory_index.records(storage) if inventory_index is not None else _all_feedback(storage)
     if owner_user_id is not None:
         records = [item for item in records if item["owner_user_id"] == owner_user_id]
     if normalized_machine:

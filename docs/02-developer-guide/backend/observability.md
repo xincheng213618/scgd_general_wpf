@@ -87,11 +87,15 @@ schema v6移除历史HEAD声明体积，v7给后续请求增加4xx/5xx字段且�
 
 `context.py` 默认慢请求阈值500ms。`record_slow_request` 保存最近100条进程内样本，包含UTC时间、method、path、status和duration；进程重启清空，不是跨worker共享或持久化的全量性能历史。
 
+`RequestDiagnostics` 另外按普通页面/API请求和文件传输分别保存最近100条慢事件，各返回最后20条，避免大量传输挤掉应用诊断。文件下载、附件、上传内容归入传输；传输列表、会话查询和删除仍是应用请求。每秒聚合所有请求的次数、4xx/5xx、耗时总和与固定直方图，保留最近300秒。平均耗时与P95来自窗口内全部请求；`p95_upper_ms` 是分桶上界估计，最高桶超过15000ms时用 `p95_overflow` 标记。慢事件按容量保留，可能早于五分钟窗口，应查看各条时间。`observed_seconds` 表示当前进程最多已观察多久，进程重启清空，各worker不合并。耗时截至生成响应，不包含完整流式下载时间，不能当作传输速度或客户端完成时间。
+
 实际传入的是 `request.path`，**不是Flask路由模板**；缓冲仅截断path到2048字符，控制台慢日志也打印具体路径。路径中可能带文件名、ID或分享token，不能称为已去除所有业务标识；访问聚合的排除规则不用于慢请求分支，统计/探针自身过慢也可进入缓冲。
 
 `build_performance_summary` 返回缓冲最后20条，保留其时间顺序；任务则先由 `SqliteJobRepository.recent_runs(20)` 按ID倒序读取最近20条，再筛duration>=1000ms或status=error。不是从所有历史中寻找20条最慢/失败任务；较旧错误可能不在结果中，低耗时interrupted也不会只因中断而入选。任务行沿用job_runs的summary/error等字段，不是重新脱敏的HTTP聚合。
 
 性能GET没有本模块的TTL结果缓存，每次组合缓冲与任务查询，但不会等待访问队列或生成全局一致快照。`TrafficPage.tsx` 在进入页面、days变更或手动刷新时分别请求traffic和performance，没有定时轮询；失败会继续展示上次成功结果并提示错误。days只过滤traffic，不筛性能样本，两个面板的采样时刻可不同，应看 `generated_at` 与 `process_started_at`。
+
+概览请求 `GET /api/admin/stats/traffic?view=health`，只查询当前报告日的一行聚合并附带recorder状态和近期计数，不读取路由、客户端或体验排名。权限仍要求 `stats:read`。健康提示优先报告recorder当前错误，其次按本进程最近五分钟的5xx/4xx判断；没有请求样本时显示未知。今日累计错误另行展示，不用历史错误宣称故障仍在持续。概览各模块独立加载，15秒超时；刷新保留上次成功值，失败显示该值的时间并可单独重试。账户或权限改变时丢弃旧值。后台内部按钮使用SPA导航，浏览器原生的新标签打开方式仍可用。
 
 ## 配置与验证范围
 
