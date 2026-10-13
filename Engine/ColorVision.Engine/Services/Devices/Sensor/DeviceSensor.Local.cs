@@ -46,6 +46,7 @@ public partial class DeviceSensor
 
     private void InitializeLocalSensor()
     {
+        LocalSession.Diagnostics.DeviceCode = Config.Code;
         if (SysResourceDao.IsLocalId(SysResourceModel.Id)) DisplayConfig.UseLocalSensor = true;
         SensorBackend = new SensorBackendState(DisplayConfig.UseLocalSensor);
         SensorBackend.Changed += RefreshLocalSensorStatus;
@@ -64,6 +65,7 @@ public partial class DeviceSensor
     protected override void OnConfigChanged()
     {
         base.OnConfigChanged();
+        LocalSession.Diagnostics.DeviceCode = Config.Code;
         DisplayConfigManager.Instance.Configs[Config.Code] = DisplayConfig;
     }
 
@@ -167,6 +169,7 @@ public partial class DeviceSensor
 
     internal void PublishLocalSensorResult(object? result, Exception? failure = null)
     {
+        if (failure != null) LocalSession.Diagnostics.AddLog(LocalSession.EndpointIdentity ?? LocalSensorSession.EndpointKey(Config), "执行失败", failure.Message, true);
         void Update() => LastLocalResponse = failure?.Message ?? (result is IReadOnlyList<LocalSensorCommandResult> commands
             ? string.Join(Environment.NewLine, commands.Select(command => $"{command.Name}: {command.ResponseText} ({command.ElapsedMilliseconds} ms)")) : Properties.Resources.Success);
         if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(Update);
@@ -177,6 +180,11 @@ public partial class DeviceSensor
     {
         if (localDisposed) return;
         localDisposed = true;
+        if (sensorDiagnosticsWindow is { } window)
+        {
+            if (window.Dispatcher.CheckAccess()) window.Close();
+            else window.Dispatcher.BeginInvoke(window.Close);
+        }
         try { LocalSession.Dispose(); }
         finally
         {

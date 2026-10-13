@@ -1159,6 +1159,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		graphics.TranslateTransform(_CanvasOffsetX, _CanvasOffsetY);
 		graphics.ScaleTransform(_CanvasScale, _CanvasScale);
+		DrawNodeGroups(m_drawing_tools);
 		OnDrawConnectedLine(m_drawing_tools);
 		OnDrawNode(m_drawing_tools, ControlToCanvas(new Rectangle(0, 0, width, height)));
 		if (m_ca == CanvasAction.ConnectOption && m_option_down != null)

@@ -1167,6 +1167,11 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 	}
 
+	// Execution policy belongs to the node library, not the canvas.
+	protected internal virtual bool OnInputDataTransfer(STNodeOption input, STNodeOptionEventArgs e) => true;
+
+	protected internal virtual bool OnOutputDataTransfer(STNodeOption output) => true;
+
 	public virtual void OnLoadNode(Dictionary<string, byte[]> dic)
 	{
 		if (dic.ContainsKey("AutoSize"))

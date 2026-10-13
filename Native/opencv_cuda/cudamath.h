@@ -1,574 +1,118 @@
-#pragma once
-#include <math.h>
-#include "cuda_runtime.h"
+﻿#pragma once
+#include <cuda_runtime.h>
+#include <cmath>
 
-#define HOD __host__ __device__
-
-// ============================================================================
-// Math Utility Functions
-// ============================================================================
-
-inline HOD float dev_atan2f(float y, float x)
-{
-    return atan2f(y, x);
+// All spatial filters use BORDER_REPLICATE, matching the CPU implementation.
+__global__ void fusion_gray(const unsigned char* src, float* gray, int total, int channels) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= total) return;
+    // OpenCV's 8-bit BGR2GRAY fixed-point coefficients (15 fractional bits).
+    const int value = channels == 1 ? src[i]
+        : (3735 * src[3 * size_t(i)] + 19235 * src[3 * size_t(i) + 1]
+            + 9798 * src[3 * size_t(i) + 2] + 16384) >> 15;
+    gray[i] = value * (1.0f / 255.0f);
 }
 
-inline HOD float dev_sqrt(float x)
-{
-    return sqrtf(x);
+__global__ void fusion_box_horizontal(const float* src, float* dst, int width, int height, int window) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= width || y >= height) return;
+    float sum = 0.0f;
+    for (int dx = -window / 2; dx <= window / 2; ++dx)
+        sum += src[y * width + min(max(x + dx, 0), width - 1)];
+    dst[y * width + x] = sum / window;
 }
 
-inline HOD float dev_cos(float x)
-{
-    return cosf(x);
+// A vertical box pass can produce either the mean, squared residual, or phi.
+// Keeping the nonlinear transform after the second pass preserves the filter.
+template<int Transform>
+__global__ void fusion_box_vertical(const float* src, const float* gray, float* dst,
+    int width, int height, int window, float alpha = 0.2f, float threshold = 13.0f) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= width || y >= height) return;
+    const int i = y * width + x;
+    float sum = 0.0f;
+    for (int dy = -window / 2; dy <= window / 2; ++dy)
+        sum += src[min(max(y + dy, 0), height - 1) * width + x];
+    float value = sum / window;
+    if constexpr (Transform == 1) {
+        const float residual = gray[i] - value;
+        value = residual * residual;
+    }
+    if constexpr (Transform == 2) {
+        const float selectivity = -8.685889638f * logf(fmaxf(value, 1e-6f));
+        value = 0.5f * (1.0f + tanhf(alpha * (selectivity - threshold))) / alpha;
+    }
+    dst[i] = value;
 }
 
-inline HOD float dev_pow(float x, float y)
-{
-    return powf(x, y);
-}
-
-inline HOD float dev_acos(float x)
-{
-    return acosf(x);
-}
-
-inline HOD float dev_tanh(float x)
-{
-    return tanhf(x);
-}
-
-inline HOD double dev_log(double x)
-{
-    return log(x);
-}
-
-inline HOD double dev_exp(double x)
-{
-    return exp(x);
-}
-
-inline HOD double dev_abs(double x)
-{
-    return fabs(x);
-}
-
-// ============================================================================
-// Kernel 1a: Focus Measure - Box Filter Average (first pass of gfocus)
-// Computes U = box_filter(src), storing result in buffer.
-// Must complete before gfocus_fm_kernel reads buffer.
-// ============================================================================
-__global__ void gfocus_average_kernel(const double* src, double* buffer, int M, int N, int KERNEL_SIZE)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        double sum = 0.0;
-        int half_k = KERNEL_SIZE / 2;
-        int count = 0;
-
-        for (int r = -half_k; r <= half_k; ++r) {
-            for (int c = -half_k; c <= half_k; ++c) {
-                int cur_r = row + r;
-                int cur_c = col + c;
-                if (cur_r >= 0 && cur_r < M && cur_c >= 0 && cur_c < N) {
-                    sum += src[cur_r * N + cur_c];
-                    count++;
-                }
-            }
+__global__ void fusion_fit_normalize(float* focus, float* inversePsnr, int total, int count, int step) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= total) return;
+    float maximum = focus[i];
+    int peak = 1;
+    for (int p = 1; p < count; ++p) {
+        const float value = focus[size_t(p) * total + i];
+        if (value > maximum) { maximum = value; peak = p + 1; }
+    }
+    maximum = fmaxf(maximum, 1e-6f);
+    const int center = min(max(peak, step + 1), count - step);
+    const int side = peak <= step ? center + step : center - step;
+    const float centerValue = fmaxf(focus[size_t(center - 1) * total + i], 1e-6f);
+    // Centered form of the inherited symmetric-endpoint fit: no cancellation
+    // in u/A and no positive exponential for a valid Gaussian peak.
+    const float curvature = (logf(fmaxf(focus[size_t(side - 1) * total + i], 1e-6f)) - logf(centerValue)) / (step * step);
+    const bool validPeak = curvature < 0.0f;
+    float error = 0.0f;
+    for (int p = 0; p < count; ++p) {
+        float& value = focus[size_t(p) * total + i];
+        if (validPeak) {
+            const float delta = float(p + 1 - center);
+            error += fabsf(value - centerValue * expf(curvature * delta * delta));
         }
-        buffer[row * N + col] = sum / count;
+        value /= maximum;
     }
+    inversePsnr[i] = validPeak ? error / (count * maximum) : 1.0f;
 }
 
-// ============================================================================
-// Kernel 1b: Focus Measure - Variance (second pass of gfocus)
-// Reads fully-populated buffer (average), computes FM = box_filter((src - U)^2)
-// ============================================================================
-__global__ void gfocus_fm_kernel(const double* src, const double* buffer, double* dst, int M, int N, int KERNEL_SIZE)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+__global__ void fusion_median(const float* src, float* dst, int width, int height) {
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= width || y >= height) return;
+    float values[9];
+    int k = 0;
+    for (int dy = -1; dy <= 1; ++dy)
+        for (int dx = -1; dx <= 1; ++dx)
+            values[k++] = src[min(max(y + dy, 0), height - 1) * width + min(max(x + dx, 0), width - 1)];
+    // Fixed-size insertion sort; no data-dependent global accesses.
+    for (int a = 1; a < 9; ++a) {
+        const float value = values[a];
+        int b = a;
+        while (b > 0 && values[b - 1] > value) { values[b] = values[b - 1]; --b; }
+        values[b] = value;
+    }
+    dst[y * width + x] = values[4];
+}
 
-    if (row < M && col < N) {
-        double sum = 0.0;
-        int half_k = KERNEL_SIZE / 2;
-        int count = 0;
-
-        for (int r = -half_k; r <= half_k; ++r) {
-            for (int c = -half_k; c <= half_k; ++c) {
-                int cur_r = row + r;
-                int cur_c = col + c;
-                if (cur_r >= 0 && cur_r < M && cur_c >= 0 && cur_c < N) {
-                    double diff = src[cur_r * N + cur_c] - buffer[cur_r * N + cur_c];
-                    sum += diff * diff;
-                    count++;
-                }
-            }
+__global__ void fusion_output(const unsigned char* images, const float* focus, const float* phi,
+    unsigned char* output, int total, int count, int channels, bool adaptive) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= total) return;
+    float sum = 0.0f, color[3] = {}, unweighted[3] = {};
+    const float selectivity = adaptive ? phi[i] : 0.0f;
+    for (int p = 0; p < count; ++p) {
+        float weight = focus[size_t(p) * total + i];
+        if (adaptive) weight = 0.5f + 0.5f * tanhf(selectivity * (weight - 1.0f));
+        sum += weight;
+        for (int c = 0; c < channels; ++c) {
+            const float value = images[(size_t(p) * total + i) * channels + c];
+            color[c] += value * weight;
+            unweighted[c] += value;
         }
-        dst[row * N + col] = sum / count;
     }
-}
-
-// ============================================================================
-// Kernel 2: Find Max Focus and Prepare Data for Curve Fitting
-// ============================================================================
-__global__ void find_max_and_prepare_kernel(
-    double* fms, double* ymax, int* I,
-    double* y1t, double* y2t, double* y3t, int* Ic,
-    int M, int N, int P, int STEP)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        // Find max focus value across all images
-        double max_val = -1.0;
-        int max_idx = 0;
-        for (int p = 0; p < P; ++p) {
-            double current_val = fms[p * M * N + idx];
-            if (current_val > max_val) {
-                max_val = current_val;
-                max_idx = p;
-            }
-        }
-        ymax[idx] = max_val;
-        I[idx] = max_idx + 1;  // 1-based index
-
-        // Calculate Ic with boundary handling
-        int ic_val = max_idx + 1;
-        if (ic_val <= STEP) {
-            ic_val = STEP + 1;
-        }
-        else if (ic_val > P - STEP) {
-            ic_val = P - STEP;
-        }
-        Ic[idx] = ic_val;
-
-        // Store y values for curve fitting (1-based to 0-based conversion)
-        y1t[idx] = fms[(ic_val - STEP - 1) * M * N + idx];
-        y2t[idx] = fms[(ic_val - 1) * M * N + idx];
-        y3t[idx] = fms[(ic_val + STEP - 1) * M * N + idx];
-    }
-}
-
-// ============================================================================
-// Kernel 3: Curve Fitting to get Gaussian parameters (A, u, s2)
-// ============================================================================
-__global__ void curve_fitting_kernel(
-    int* I_ptr, double* y1t_ptr, double* y2t_ptr, double* y3t_ptr,
-    int* Ic_ptr, double* s2_ptr, double* u_ptr, double* A_ptr,
-    int M, int N, int STEP)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        double x1, x2, x3;
-        double y1, y2, y3;
-        double a, b, c;
-
-        // Calculate x coordinates
-        x1 = (double)Ic_ptr[idx] - STEP;
-        x2 = (double)Ic_ptr[idx];
-        x3 = (double)Ic_ptr[idx] + STEP;
-
-        // Log transform of y values
-        y2 = log(y2t_ptr[idx]);
-
-        if (I_ptr[idx] <= STEP) {
-            y1 = log(y3t_ptr[idx]);
-        }
-        else {
-            y1 = log(y1t_ptr[idx]);
-        }
-        y3 = y1;
-
-        // Quadratic curve fitting: y = a + b*x + c*x^2
-        double denom = (x1 * x1 - x2 * x2) * (x2 - x3) - (x2 * x2 - x3 * x3) * (x1 - x2);
-        c = ((y1 - y2) * (x2 - x3) - (y2 - y3) * (x1 - x2)) / denom;
-
-        if (isinf(c) || isnan(c) || c == 0) {
-            c = 0.00001;
-        }
-
-        b = ((y2 - y3) - c * (x2 - x3) * (x2 + x3)) / (x2 - x3);
-        if (isinf(b) || isnan(b) || b == 0) {
-            b = 0.00001;
-        }
-
-        // Convert to Gaussian parameters
-        s2_ptr[idx] = -1.0 / (2.0 * c);
-        u_ptr[idx] = b * s2_ptr[idx];
-        a = y1 - b * x1 - c * x1 * x1;
-        A_ptr[idx] = exp(a + (u_ptr[idx] * u_ptr[idx]) / (2.0 * s2_ptr[idx]));
-    }
-}
-
-// ============================================================================
-// Kernel 4: Calculate Error and Normalize Focus Maps
-// ============================================================================
-__global__ void calculate_err_kernel(
-    double* imgs, double* err, double* A, double* u, double* s2,
-    double* Ymax, int M, int N, int p)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        double val = imgs[idx] - A[idx] * exp((-pow((p + 1 - u[idx]), 2) / (2 * s2[idx])));
-        atomicAdd(&err[idx], fabs(val));
-        imgs[idx] = imgs[idx] / Ymax[idx];
-    }
-}
-
-// Each output pixel is owned by one thread, so the per-image error accumulation
-// does not require atomics. Iterating the image planes in the same order as the
-// former sequence of kernel launches preserves the arithmetic order while
-// removing P launches and P global read-modify-writes of err.
-__global__ void calculate_err_and_normalize_kernel(
-    double* all_imgs, double* err, const double* A, const double* u, const double* s2,
-    const double* Ymax, int total, int P)
-{
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= total) {
-        return;
-    }
-
-    double accumulated_error = 0.0;
-    for (int p = 0; p < P; ++p) {
-        double& focus = all_imgs[p * total + idx];
-        const double delta = static_cast<double>(p + 1) - u[idx];
-        const double fitted = A[idx] * exp(-(delta * delta) / (2.0 * s2[idx]));
-        accumulated_error += fabs(focus - fitted);
-        focus /= Ymax[idx];
-    }
-    err[idx] = accumulated_error;
-}
-
-// ============================================================================
-// Kernel 5: Calculate S (PSNR-based weight)
-// ============================================================================
-__global__ void calculate_S_kernel(double* S, double* inv_psnr, int M, int N)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        S[idx] = 20.0 * log10(1.0 / inv_psnr[idx]);
-    }
-}
-
-// ============================================================================
-// Kernel 6: Compute Phi (adaptive weight)
-// ============================================================================
-__global__ void compute_phi_kernel(double* phi, double* S, int M, int N)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        phi[idx] = 0.5 * (1.0 + tanh(0.2 * (S[idx] - 13.0))) / 0.2;
-    }
-}
-
-// ============================================================================
-// Kernel 7: Apply Tanh Weights to Focus Maps
-// ============================================================================
-__global__ void tanh_weight_kernel(double* imgs, double* phi, int M, int N)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = M * N;
-
-    if (idx < total) {
-        imgs[idx] = 0.5 + 0.5 * tanh(phi[idx] * (imgs[idx] - 1.0));
-    }
-}
-
-// Applies the independent per-plane weight transform and accumulates the final
-// denominator in one pass. The plane loop retains the original summation order.
-__global__ void apply_weights_and_sum_kernel(
-    double* all_imgs, const double* phi, double* weight_sum, int total, int P)
-{
-    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= total) {
-        return;
-    }
-
-    double sum = 0.0;
-    for (int p = 0; p < P; ++p) {
-        double& focus = all_imgs[p * total + idx];
-        focus = 0.5 + 0.5 * tanh(phi[idx] * (focus - 1.0));
-        sum += focus;
-    }
-    weight_sum[idx] = sum;
-}
-
-// ============================================================================
-// Kernel 8: Box Filter (for inv_psnr calculation on GPU)
-// ============================================================================
-__global__ void box_filter_kernel(
-    const double* src, double* dst, int M, int N, int kernel_size)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        double sum = 0.0;
-        int half_k = kernel_size / 2;
-        int count = 0;
-
-        for (int r = -half_k; r <= half_k; ++r) {
-            for (int c = -half_k; c <= half_k; ++c) {
-                int cur_r = row + r;
-                int cur_c = col + c;
-                if (cur_r >= 0 && cur_r < M && cur_c >= 0 && cur_c < N) {
-                    sum += src[cur_r * N + cur_c];
-                    count++;
-                }
-            }
-        }
-        dst[row * N + col] = sum / count;
-    }
-}
-
-// ============================================================================
-// Kernel 9: Element-wise Division (err / (P * ymax))
-// ============================================================================
-__global__ void element_divide_kernel(
-    const double* err, const double* ymax, double* dst,
-    int M, int N, int P)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = M * N;
-
-    if (idx < total) {
-        dst[idx] = err[idx] / (P * ymax[idx]);
-    }
-}
-
-// ============================================================================
-// Kernel 10: Reduction Sum (for fmn calculation)
-// ============================================================================
-__global__ void sum_images_kernel(
-    double** images, double* output, int M, int N, int P)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        int idx = row * N + col;
-        double sum = 0.0;
-        for (int p = 0; p < P; ++p) {
-            sum += images[p][idx];
-        }
-        output[idx] = sum;
-    }
-}
-
-// ============================================================================
-// Kernel 11: Weighted Channel Fusion (for color images)
-// ============================================================================
-__global__ void weighted_channel_fusion_kernel(
-    const double* channel, const double* weights, double* output,
-    int M, int N, int P)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        int idx = row * N + col;
-        double sum = 0.0;
-        for (int p = 0; p < P; ++p) {
-            sum += channel[p * M * N + idx] * weights[p * M * N + idx];
-        }
-        output[idx] = sum;
-    }
-}
-
-// ============================================================================
-// Kernel 12: Final Division and Conversion (divide by fmn)
-// ============================================================================
-__global__ void final_divide_kernel(
-    const double* numerator, const double* fmn,
-    unsigned char* output, int M, int N)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = M * N;
-
-    if (idx < total) {
-        double val = numerator[idx] / fmn[idx];
-        // Clamp to [0, 255]
-        val = fmax(0.0, fmin(255.0, val));
-        output[idx] = (unsigned char)val;
-    }
-}
-
-// ============================================================================
-// Kernel 13: Grayscale Fusion
-// ============================================================================
-__global__ void grayscale_fusion_kernel(
-    double** images, double** weights, double* output,
-    int M, int N, int P)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        int idx = row * N + col;
-        double weighted_sum = 0.0;
-        double weight_sum = 0.0;
-
-        for (int p = 0; p < P; ++p) {
-            weighted_sum += images[p][idx] * weights[p][idx];
-            weight_sum += weights[p][idx];
-        }
-
-        output[idx] = (weight_sum > 0) ? (weighted_sum / weight_sum) : 0;
-    }
-}
-
-// ============================================================================
-// Kernel 14: Median Filter (3x3, simplified for GPU)
-// ============================================================================
-__global__ void median_filter_3x3_kernel(
-    const double* src, double* dst, int M, int N)
-{
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (row < M && col < N) {
-        int idx = row * N + col;
-
-        // Collect 3x3 neighborhood
-        double window[9];
-        int count = 0;
-
-        for (int r = -1; r <= 1; ++r) {
-            for (int c = -1; c <= 1; ++c) {
-                int cur_r = row + r;
-                int cur_c = col + c;
-                if (cur_r >= 0 && cur_r < M && cur_c >= 0 && cur_c < N) {
-                    window[count++] = src[cur_r * N + cur_c];
-                }
-                else {
-                    window[count++] = src[idx];  // Use center for border
-                }
-            }
-        }
-
-        // Simple bubble sort for median
-        for (int i = 0; i < 8; ++i) {
-            for (int j = i + 1; j < 9; ++j) {
-                if (window[i] > window[j]) {
-                    double temp = window[i];
-                    window[i] = window[j];
-                    window[j] = temp;
-                }
-            }
-        }
-
-        dst[idx] = window[4];  // Median is at index 4
-    }
-}
-
-// ============================================================================
-// Kernel 15: Accumulate (dst += src)
-// ============================================================================
-__global__ void accumulate_kernel(const double* src, double* dst, int total)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < total) {
-        dst[idx] += src[idx];
-    }
-}
-
-// ============================================================================
-// Kernel 16: BGR u8 Weighted Accumulate
-// Reads interleaved BGR u8 input, multiplies each channel by weight,
-// accumulates into separate double accumulators.
-// ============================================================================
-__global__ void bgr_weighted_accumulate_kernel(
-    const unsigned char* bgr_input, const double* weight,
-    double* acc_b, double* acc_g, double* acc_r, int total)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < total) {
-        double w = weight[idx];
-        acc_b[idx] += (double)bgr_input[idx * 3 + 0] * w;
-        acc_g[idx] += (double)bgr_input[idx * 3 + 1] * w;
-        acc_r[idx] += (double)bgr_input[idx * 3 + 2] * w;
-    }
-}
-
-// ============================================================================
-// Kernel 17: Divide and Merge to BGR u8
-// Divides accumulated channels by fmn, clamps to [0,255], writes BGR u8.
-// ============================================================================
-__global__ void divide_merge_bgr_kernel(
-    const double* acc_b, const double* acc_g, const double* acc_r,
-    const double* fmn, unsigned char* output, int total)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < total) {
-        double f = fmn[idx];
-        double b = (f > 0.0) ? acc_b[idx] / f : 0.0;
-        double g = (f > 0.0) ? acc_g[idx] / f : 0.0;
-        double r = (f > 0.0) ? acc_r[idx] / f : 0.0;
-        output[idx * 3 + 0] = (unsigned char)fmax(0.0, fmin(255.0, b));
-        output[idx * 3 + 1] = (unsigned char)fmax(0.0, fmin(255.0, g));
-        output[idx * 3 + 2] = (unsigned char)fmax(0.0, fmin(255.0, r));
-    }
-}
-
-// ============================================================================
-// Kernel 18: Grayscale Weighted Accumulate
-// Reads single-channel u8 input, multiplies by weight, accumulates.
-// ============================================================================
-__global__ void gray_weighted_accumulate_kernel(
-    const unsigned char* gray_input, const double* weight,
-    double* acc, int total)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < total) {
-        acc[idx] += (double)gray_input[idx] * weight[idx];
-    }
-}
-
-// ============================================================================
-// Legacy Kernel Names (for backward compatibility)
-// ============================================================================
-
-__global__ void calculate_err(double* imgs, double* err, double* A, double* u, double* s2,
-    double* Ymax, int M, int N, int p)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        double val = imgs[idx] - A[idx] * exp((-pow((p + 1 - u[idx]), 2) / (2 * s2[idx])));
-        atomicAdd(&err[idx], fabs(val));
-        imgs[idx] = imgs[idx] / Ymax[idx];
-    }
-}
-
-__global__ void find_max(double* imgs, double* Ymax, double* I, int M, int N, int p)
-{
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int idx = row * N + col;
-
-    if (row < M && col < N) {
-        if (imgs[idx] > Ymax[idx]) {
-            Ymax[idx] = imgs[idx];
-            I[idx] = p + 1;
-        }
+    for (int c = 0; c < channels; ++c) {
+        const float value = sum > 1e-6f ? color[c] / sum : unweighted[c] / count;
+        output[size_t(i) * channels + c] = static_cast<unsigned char>(__float2int_rn(fminf(255.0f, fmaxf(0.0f, value))));
     }
 }

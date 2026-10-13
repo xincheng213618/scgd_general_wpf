@@ -9,6 +9,15 @@ namespace ColorVision.UI.Tests;
 public class NativeCameraErrorTests
 {
     [Fact]
+    public void CameraIdMismatchAndDeviceOpenFailureHaveDistinctMessages()
+    {
+        Assert.Contains("ID does not match", GetMessage(-10007));
+        string openFailure = GetMessage(-10009);
+        Assert.Contains("device open failed", openFailure);
+        Assert.DoesNotContain("camera id", openFailure, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void EveryCameraImportExistsInTheDeliveredDll()
     {
         string path = Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", "cvCamera.dll");

@@ -1057,18 +1057,21 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
     }
 
     [Theory]
-    [InlineData(null, "minimal", "concise", "low", "concise")]
-    [InlineData(null, "none", null, "low", null)]
-    [InlineData(null, "xhigh", "detailed", "xhigh", "detailed")]
-    [InlineData(null, "max", "concise", "max", "concise")]
-    [InlineData(null, "ultra", "auto", "max", "auto")]
-    [InlineData(null, "high", "none", "high", null)]
-    [InlineData(null, null, "auto", null, "auto")]
-    [InlineData(null, null, "none", null, null)]
-    [InlineData(false, "minimal", "concise", "low", null)]
-    [InlineData(true, "minimal", null, "low", "auto")]
-    [InlineData(true, "high", "none", "high", null)]
+    [InlineData("gpt-6-astra", null, "minimal", "concise", "low", "concise")]
+    [InlineData("gpt-6-astra", null, "none", null, "low", null)]
+    [InlineData("gpt-6-astra", null, "xhigh", "detailed", "xhigh", "detailed")]
+    [InlineData("gpt-6-astra", null, "max", "concise", "max", "concise")]
+    [InlineData("gpt-6-astra", null, "ultra", "auto", "max", "auto")]
+    [InlineData("gpt-6-astra", null, "high", "none", "high", null)]
+    [InlineData("gpt-6-astra", null, null, "auto", null, "auto")]
+    [InlineData("gpt-6-astra", null, null, "none", null, null)]
+    [InlineData("gpt-6-astra", false, "minimal", "concise", "low", null)]
+    [InlineData("gpt-6-astra", true, "minimal", null, "low", "auto")]
+    [InlineData("gpt-6-astra", true, "high", "none", "high", null)]
+    [InlineData("gpt-6.1-sol", null, "none", null, "low", null)]
+    [InlineData("gpt-6.1-sol", null, "minimal", null, "low", null)]
     public async Task OfficialOpenAiAgentHonorsCodexReasoningOptionsOnTheResponsesWire(
+        string model,
         bool? supportsReasoningSummaries,
         string? configuredEffort,
         string? configuredSummary,
@@ -1089,7 +1092,7 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         var profile = CreateProfile(
             CopilotVendorType.OpenAI,
             "https://api.openai.com/v1",
-            "gpt-6-astra");
+            model);
         using var client = CopilotOpenAiAgentChatClientFactory.Create(profile, httpClient);
         var request = new CopilotAgentRequest
         {

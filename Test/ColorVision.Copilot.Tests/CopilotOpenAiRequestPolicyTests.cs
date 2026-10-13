@@ -130,18 +130,21 @@ public sealed class CopilotOpenAiRequestPolicyTests
     }
 
     [Theory]
-    [InlineData(CopilotReasoningMode.Disabled, "low")]
-    [InlineData(CopilotReasoningMode.Low, "low")]
-    [InlineData(CopilotReasoningMode.Medium, "medium")]
-    [InlineData(CopilotReasoningMode.High, "high")]
-    [InlineData(CopilotReasoningMode.XHigh, "xhigh")]
-    [InlineData(CopilotReasoningMode.Max, "max")]
-    public async Task AstraUsesOnlySupportedReasoningEfforts(
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Disabled, "low")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Low, "low")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Medium, "medium")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.High, "high")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.XHigh, "xhigh")]
+    [InlineData("gpt-6-astra", CopilotReasoningMode.Max, "max")]
+    [InlineData("gpt-6.1-sol", CopilotReasoningMode.Disabled, "low")]
+    [InlineData("gpt-6.1-sol", CopilotReasoningMode.Max, "max")]
+    public async Task MandatoryReasoningModelsUseOnlySupportedEfforts(
+        string model,
         CopilotReasoningMode configuredMode,
         string expectedEffort)
     {
         using var handler = new CapturingHandler();
-        var profile = CreateProfile(CopilotVendorType.OpenAI, "gpt-6-astra");
+        var profile = CreateProfile(CopilotVendorType.OpenAI, model);
         profile.ReasoningMode = configuredMode;
 
         using var document = await CaptureRequestAsync(profile, handler);
@@ -152,6 +155,35 @@ public sealed class CopilotOpenAiRequestPolicyTests
         var offeredModes = CopilotReasoningCapabilities.GetOptions(profile).Select(option => option.Mode);
         Assert.DoesNotContain(CopilotReasoningMode.Disabled, offeredModes);
         Assert.DoesNotContain(CopilotReasoningMode.Enabled, offeredModes);
+    }
+
+    [Theory]
+    [InlineData(CopilotVendorType.Claude, "claude-fable-5-1", "https://api.anthropic.com", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Claude, "claude-opus-5-5", "https://api.anthropic.com", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Claude, "claude-sonnet-5-5", "https://api.anthropic.com", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Claude, "claude-haiku-5-5", "https://api.anthropic.com", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Claude, "claude-haiku-4-5-20251001", "https://api.anthropic.com", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, true)]
+    [InlineData(CopilotVendorType.Claude, "claude-opus-5-5", "https://proxy.test", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, true)]
+    [InlineData(CopilotVendorType.Xiaomi, "mimo-v2.6-pro", "https://api.xiaomimimo.com/anthropic", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Xiaomi, "mimo-v2.6-pro", "https://api.xiaomimimo.com/anthropic", CopilotProviderType.AnthropicCompatible, CopilotReasoningMode.Disabled, true)]
+    [InlineData(CopilotVendorType.Xiaomi, "mimo-v2.6-flash", "https://api.xiaomimimo.com/v1", CopilotProviderType.OpenAICompatible, CopilotReasoningMode.Default, false)]
+    [InlineData(CopilotVendorType.Xiaomi, "mimo-v2.6-flash", "https://api.xiaomimimo.com/v1", CopilotProviderType.OpenAICompatible, CopilotReasoningMode.Enabled, false)]
+    [InlineData(CopilotVendorType.Xiaomi, "mimo-v2.6-flash", "https://api.xiaomimimo.com/v1", CopilotProviderType.OpenAICompatible, CopilotReasoningMode.Disabled, true)]
+    public async Task ChatAndAgentRespectModelSamplingRestrictions(
+        CopilotVendorType vendor, string model, string endpoint, CopilotProviderType protocol, CopilotReasoningMode mode, bool includesTemperature)
+    {
+        using var handler = new CapturingHandler();
+        var profile = CreateProfile(vendor, model);
+        profile.BaseUrl = endpoint;
+        profile.ProviderType = protocol;
+        profile.ReasoningMode = mode;
+
+        using var document = await CaptureRequestAsync(profile, handler);
+
+        Assert.Equal(includesTemperature, document.RootElement.TryGetProperty("temperature", out _));
+        var request = new CopilotAgentRequest { Profile = profile };
+        Assert.Equal(includesTemperature, CopilotMicrosoftAgentFrameworkRuntime.BuildChatOptions(request, []).Temperature.HasValue);
+        Assert.Equal(includesTemperature, CopilotMicrosoftAgentFrameworkRuntime.BuildFinalAnswerOptions(request).Temperature.HasValue);
     }
 
     [Fact]
@@ -272,6 +304,14 @@ public sealed class CopilotOpenAiRequestPolicyTests
                       "content": [{"type": "output_text", "text": "OK"}]
                     }],
                     "usage": {"input_tokens": 10, "output_tokens": 2, "total_tokens": 12}
+                  }
+                  """
+                : request.RequestUri?.AbsolutePath.EndsWith("/messages", StringComparison.OrdinalIgnoreCase) == true
+                ? """
+                  {
+                    "id": "msg_test", "type": "message", "role": "assistant",
+                    "content": [{"type": "text", "text": "OK"}], "stop_reason": "end_turn",
+                    "usage": {"input_tokens": 10, "output_tokens": 2}
                   }
                   """
                 : """

@@ -1,4 +1,5 @@
-#include "pch.h"
+﻿#include "pch.h"
+#include "fusion_request.h"
 #include "Windows.h"
 #include "opencv_media_export.h"
 #include "algorithm.h"
@@ -662,7 +663,7 @@ int LoadImagesParallel(const std::vector<std::string>& files, std::vector<cv::Ma
 	futures.reserve(files.size());
 	for (const auto& file : files) {
 		futures.emplace_back(std::async(std::launch::async, [file]() {
-			return cv::imread(file, cv::IMREAD_UNCHANGED);
+			return ReadFusionImage(file);
 			}));
 	}
 
@@ -1996,18 +1997,9 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 			return ExportInvalidArgument;
 		}
 
-		json j;
-		if (!TryParseJson(fusionjson, j)) {
-			return ExportInvalidJson;
-		}
-
-		// 检查 JSON 对象是否是数组
-		if (!j.is_array()) {
-			return ExportInvalidJson;
-		}
-
-		std::vector<std::string> files = j.get<std::vector<std::string>>();
-		if (files.empty()) {
+		std::vector<std::string> files;
+		FusionOptions options;
+		if (!ParseFusionRequest(fusionjson, files, options)) {
 			return ExportInvalidArgument;
 		}
 
@@ -2017,7 +2009,7 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 			return loadCode;
 		}
 
-		cv::Mat out = fusion(imgs, 2);
+		cv::Mat out = fusion(imgs, options);
 		if (out.empty()) {
 			return ExportAlgorithmFailed;
 		}

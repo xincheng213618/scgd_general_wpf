@@ -2983,14 +2983,14 @@
   <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>取图缓冲不支持停用，请使用释放缓存。</value></data>
   <data name="HikTest_Title" xml:space="preserve"><value>海康取图测试</value></data>
   <data name="HikTest_EntryHint" xml:space="preserve"><value>关闭当前相机后，在独立测试窗口使用 MVS 取图。</value></data>
-  <data name="HikTest_HkOnly" xml:space="preserve"><value>此测试仅支持 HK_USB 对应的海康 GigE / USB3 相机。</value></data>
+  <data name="HikTest_HkOnly" xml:space="preserve"><value>此测试支持 HK_USB（GigE / USB3）和 HK_CARD（海康采集卡）相机。</value></data>
   <data name="HikTest_CloseCamera" xml:space="preserve"><value>请先关闭当前相机和本地视频，再打开海康取图测试。</value></data>
   <data name="HikTest_Description" xml:space="preserve"><value>先关闭 cvCamera / MVS 客户端中的相机并停止流程。连接后，每点一次“取一张”只取一帧；相机保持连接，测完点击“关闭相机”。</value></data>
   <data name="HikTest_Refresh" xml:space="preserve"><value>刷新相机</value></data>
   <data name="HikTest_Camera" xml:space="preserve"><value>相机序列号</value></data>
   <data name="HikTest_Exposure" xml:space="preserve"><value>曝光 (ms)</value></data>
   <data name="HikTest_Gain" xml:space="preserve"><value>增益（SDK 原值）</value></data>
-  <data name="HikTest_Quality" xml:space="preserve"><value>Bayer 插值质量</value></data>
+  <data name="HikTest_Quality" xml:space="preserve"><value>彩色 Bayer 插值质量</value></data>
   <data name="HikTest_Fast" xml:space="preserve"><value>0 · 快速</value></data>
   <data name="HikTest_Balanced" xml:space="preserve"><value>1 · 均衡</value></data>
   <data name="HikTest_Optimal" xml:space="preserve"><value>2 · 最优（默认）</value></data>
@@ -3003,17 +3003,17 @@
   <data name="HikTest_Index" xml:space="preserve"><value>帧</value></data>
   <data name="HikTest_Total" xml:space="preserve"><value>取图合计 ms</value></data>
   <data name="HikTest_Wait" xml:space="preserve"><value>触发到原始帧 ms</value></data>
-  <data name="HikTest_Convert" xml:space="preserve"><value>转换 ms</value></data>
+  <data name="HikTest_Convert" xml:space="preserve"><value>转换/复制 ms</value></data>
   <data name="HikTest_Setup" xml:space="preserve"><value>设参/清队列 ms</value></data>
   <data name="HikTest_Cpu" xml:space="preserve"><value>调用线程 CPU ms</value></data>
   <data name="HikTest_Width" xml:space="preserve"><value>宽</value></data>
   <data name="HikTest_Height" xml:space="preserve"><value>高</value></data>
-  <data name="HikTest_Footnote" xml:space="preserve"><value>固定 Bayer16 → RGB48，复用输出缓冲；不校正、不翻转、不自动存图、不落库。原始帧需单独点击保存。首次取图单列，统计不含打开/设参/导出/界面时间。比较原取图前需核对尺寸、实际曝光、ADC 位深及插值质量；耗时更低不代表测量结果等价。</value></data>
+  <data name="HikTest_Footnote" xml:space="preserve"><value>16 位取图：灰度保持 Mono16，彩色 Bayer16 转 RGB48；复用输出缓冲。不校正、不翻转、不自动存图、不落库。原始帧需单独点击保存。首次取图单列，统计不含打开/设参/导出/界面时间。比较原取图前需核对尺寸、实际曝光、ADC 位深及彩色插值质量；耗时更低不代表测量结果等价。</value></data>
   <data name="HikTest_InvalidSettings" xml:space="preserve"><value>请输入相机序列号、0–60000 ms 内的正曝光和非负增益。</value></data>
   <data name="HikTest_NotFound" xml:space="preserve"><value>未找到该序列号的相机，请刷新并选择设备。</value></data>
-  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>无法确定对应的 Bayer16 格式。请先在 MVS 中选择与传感器匹配的 Bayer 格式并关闭相机。</value></data>
+  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>相机不支持所需的 Mono16 或无法确定对应的 Bayer16 格式。请在 MVS 中确认像素格式后关闭相机。</value></data>
   <data name="HikTest_Cancelled" xml:space="preserve"><value>测试已停止，相机已关闭。</value></data>
-  <data name="HikTest_SdkRequired" xml:space="preserve"><value>请安装海康 x64 MVS 运行库和相机驱动（接口参考 MVS 4.3.2），然后重启程序。</value></data>
+  <data name="HikTest_SdkRequired" xml:space="preserve"><value>请安装海康 x64 MVS 运行库及与相机或采集卡匹配的驱动，然后重启程序。</value></data>
   <data name="HikTest_Running" xml:space="preserve"><value>正在操作相机…</value></data>
   <data name="HikTest_Stopping" xml:space="preserve"><value>正在停止；等待取图返回并关闭相机…</value></data>
   <data name="HikTest_Copied" xml:space="preserve"><value>报告已复制。</value></data>
@@ -3024,10 +3024,10 @@
   <data name="HikTest_Capture" xml:space="preserve"><value>取一张</value></data>
   <data name="HikTest_Connected" xml:space="preserve"><value>相机已连接，等待手动取图。</value></data>
   <data name="HikTest_SaveRaw" xml:space="preserve"><value>取一张并保存原始帧</value></data>
-  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>额外触发一帧，将插值前的 Bayer16 数据与参数保存为 ZIP；不保存已取过的帧。保存时间不计入取图统计。</value></data>
+  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>额外触发一帧，将原始 Mono16 或插值前的 Bayer16 数据与参数保存为 ZIP；不保存已取过的帧。保存时间不计入取图统计。</value></data>
   <data name="原始帧已保存：{0}" xml:space="preserve"><value>原始帧已保存：{0}</value></data>
   <data name="Camera_UseHikMvs" xml:space="preserve"><value>海康使用新取图</value></data>
-  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。仅 HK_USB 的 BV/LV/LVTOBV 生效。只在下次打开前设置，修改不会关闭或切换当前连接。</value></data>
+  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。适用于 HK_USB 和 HK_CARD 的 BV/LV/LVTOBV。只在下次打开前设置，修改不会关闭或切换当前连接。</value></data>
   <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS 拍照插值质量</value></data>
   <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>默认 3（最优+）。0 快速、1 均衡、2 最优、3 最优+；只影响 MVS 彩色拍照，视频固定使用 2（最优）。旧后端和灰度取图忽略此项。拍照配置在下次打开相机时生效，切回拍照时恢复本次连接的配置。</value></data>
   <data name="Camera_HikBayerQuality0" xml:space="preserve"><value>0 - 快速</value></data>
@@ -3135,4 +3135,13 @@
 {1}
 
 保留磁盘文件，在用缓冲按各模块规则等待操作完成或归还后释放。是否继续？</value></data>
+  <data name="重复执行" xml:space="preserve">
+    <value>重复执行</value>
+  </data>
+  <data name="执行次数" xml:space="preserve">
+    <value>执行次数</value>
+  </data>
+  <data name="总执行次数，包含第一次。中间结果覆盖，最后一次完成后再继续框外流程。" xml:space="preserve">
+    <value>总执行次数，包含第一次。中间结果覆盖，最后一次完成后再继续框外流程。</value>
+  </data>
 </root>

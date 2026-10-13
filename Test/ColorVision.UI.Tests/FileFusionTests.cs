@@ -13,7 +13,7 @@ public sealed class FileFusionTests
     public void CpuNativeIntegrationReturnsOwnedManagedImageForTwoFiles()
     {
         using var fixture = new FusionFixture();
-        FileFusionResult result = FileFusion.Default.Execute([fixture.Add("a.png"), fixture.Add("b.png")], FileFusionMode.CPU);
+        FileFusionResult result = FileFusion.Default.Execute([fixture.Add("图像甲.png", value: 123), fixture.Add("图像乙.png", value: 123)], FileFusionMode.CPU);
         Assert.Equal(FileFusionMode.CPU, result.ActualMode);
         Assert.Equal(4, result.Image.PixelWidth);
         Assert.Equal(4, result.Image.PixelHeight);
@@ -21,7 +21,7 @@ public sealed class FileFusionTests
         Assert.True(result.Image.IsFrozen);
         byte[] pixels = new byte[16];
         result.Image.CopyPixels(pixels, 4, 0);
-        Assert.All(pixels, pixel => Assert.Equal(0, pixel));
+        Assert.All(pixels, pixel => Assert.Equal(123, pixel));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class FileFusionTests
         string[] files = Enumerable.Range(0, count).Select(i => fixture.Add($"plane{i}.png")).Reverse().ToArray();
         var executor = new FileFusion((string json, FileFusionMode mode, out HImage image) =>
         {
-            Assert.Equal(files, JsonSerializer.Deserialize<string[]>(json));
+            Assert.Equal(files, JsonDocument.Parse(json).RootElement.GetProperty("files").Deserialize<string[]>());
             Assert.Equal(count < 5 ? FileFusionMode.CPU : FileFusionMode.GPU, mode);
             // The validated file must not be replaceable before native decoding finishes.
             Assert.Throws<IOException>(() => File.Open(files[0], FileMode.Open, FileAccess.Write, FileShare.ReadWrite));
@@ -121,10 +121,32 @@ public sealed class FileFusionTests
     {
         using var fixture = new FusionFixture();
         var files = new List<string> { fixture.Add("a.png"), fixture.Add("b.png") };
-        var executor = new FileFusion((string json, FileFusionMode mode, out HImage image) => { image = CreateOutput(); return 0; }, () => false);
-        Task<FileFusionResult> pending = executor.ExecuteAsync(files, FileFusionMode.CPU);
+        var options = new FileFusionOptions { FocusWindow = 7, Threshold = 16 };
+        var executor = new FileFusion((string json, FileFusionMode mode, out HImage image) =>
+        {
+            var settings = JsonDocument.Parse(json).RootElement.GetProperty("options");
+            Assert.Equal(7, settings.GetProperty("focusWindow").GetInt32());
+            Assert.Equal(16, settings.GetProperty("threshold").GetDouble());
+            image = CreateOutput(); return 0;
+        }, () => false);
+        Task<FileFusionResult> pending = executor.ExecuteAsync(files, FileFusionMode.CPU, options: options);
         files.Clear();
-        Assert.Equal(2, (await pending).Files.Count);
+        options.FocusWindow = 9;
+        var result = await pending;
+        Assert.Equal(2, result.Files.Count);
+        Assert.Equal(7, result.Options.FocusWindow);
+    }
+
+    [Theory]
+    [InlineData(4, 3, 2, 0.2, 13)]
+    [InlineData(5, 33, 2, 0.2, 13)]
+    [InlineData(5, 3, 0, 0.2, 13)]
+    [InlineData(5, 3, 2, double.NaN, 13)]
+    [InlineData(5, 3, 2, 0.2, double.PositiveInfinity)]
+    public void InvalidParametersNeverReachNative(int focus, int consistency, int step, double alpha, double threshold)
+    {
+        var options = new FileFusionOptions { FocusWindow = focus, ConsistencyWindow = consistency, FocusStep = step, Alpha = alpha, Threshold = threshold };
+        Assert.Throws<ArgumentOutOfRangeException>(() => NeverExecute().Execute(["a.png", "b.png"], options: options));
     }
 
     [Fact]
@@ -159,12 +181,12 @@ internal sealed class FusionFixture : IDisposable
     public string Directory { get; } = Path.Combine(Path.GetTempPath(), "ColorVisionFusionTests", Guid.NewGuid().ToString("N"));
     public FusionFixture() => System.IO.Directory.CreateDirectory(Directory);
 
-    public string Add(string name, PixelFormat? format = null, int width = 4)
+    public string Add(string name, PixelFormat? format = null, int width = 4, byte value = 0)
     {
         string path = Path.Combine(Directory, name);
         PixelFormat pixelFormat = format ?? PixelFormats.Gray8;
         int stride = width * pixelFormat.BitsPerPixel / 8;
-        BitmapSource image = BitmapSource.Create(width, 4, 96, 96, pixelFormat, null, new byte[stride * 4], stride);
+        BitmapSource image = BitmapSource.Create(width, 4, 96, 96, pixelFormat, null, Enumerable.Repeat(value, stride * 4).ToArray(), stride);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(image));
         using FileStream stream = File.Create(path);

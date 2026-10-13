@@ -36,7 +36,7 @@ internal sealed class LocalSensorFlowExecution : FlowLocalExecution
                     return null!;
                 }
             }
-            return new LocalSensorFlowExecution(device, request.EventName, request.Data);
+            return new LocalSensorFlowExecution(device, request.EventName, request.Data, autoConnect: true);
         });
 
     internal LocalSensorFlowExecution(DeviceSensor device, string operation, object? parameters, bool autoConnect = false)

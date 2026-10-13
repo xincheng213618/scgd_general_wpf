@@ -6885,14 +6885,14 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="取图缓冲不支持停用，请使用释放缓存。" xml:space="preserve"><value>Capture buffers cannot be disabled. Use Release Cache instead.</value></data>
   <data name="HikTest_Title" xml:space="preserve"><value>Hikrobot capture test</value></data>
   <data name="HikTest_EntryHint" xml:space="preserve"><value>Close the current camera, then test MVS capture in a separate window.</value></data>
-  <data name="HikTest_HkOnly" xml:space="preserve"><value>This test supports Hikrobot GigE / USB3 cameras (HK_USB) only.</value></data>
+  <data name="HikTest_HkOnly" xml:space="preserve"><value>This test supports HK_USB (GigE / USB3) and HK_CARD (Hikrobot frame-grabber) cameras.</value></data>
   <data name="HikTest_CloseCamera" xml:space="preserve"><value>Close the current camera and local video before opening this test.</value></data>
   <data name="HikTest_Description" xml:space="preserve"><value>Close the camera in cvCamera / MVS and stop the flow. Connect, then click Capture one for each frame. The connection stays open until Close camera.</value></data>
   <data name="HikTest_Refresh" xml:space="preserve"><value>Refresh cameras</value></data>
   <data name="HikTest_Camera" xml:space="preserve"><value>Camera serial</value></data>
   <data name="HikTest_Exposure" xml:space="preserve"><value>Exposure (ms)</value></data>
   <data name="HikTest_Gain" xml:space="preserve"><value>Gain (SDK units)</value></data>
-  <data name="HikTest_Quality" xml:space="preserve"><value>Bayer interpolation</value></data>
+  <data name="HikTest_Quality" xml:space="preserve"><value>Color Bayer quality</value></data>
   <data name="HikTest_Fast" xml:space="preserve"><value>0 · Fast</value></data>
   <data name="HikTest_Balanced" xml:space="preserve"><value>1 · Balanced</value></data>
   <data name="HikTest_Optimal" xml:space="preserve"><value>2 · Optimal (default)</value></data>
@@ -6905,17 +6905,17 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="HikTest_Index" xml:space="preserve"><value>Frame</value></data>
   <data name="HikTest_Total" xml:space="preserve"><value>Capture ms</value></data>
   <data name="HikTest_Wait" xml:space="preserve"><value>Trigger to RAW ms</value></data>
-  <data name="HikTest_Convert" xml:space="preserve"><value>Convert ms</value></data>
+  <data name="HikTest_Convert" xml:space="preserve"><value>Convert/copy ms</value></data>
   <data name="HikTest_Setup" xml:space="preserve"><value>Setup / clear ms</value></data>
   <data name="HikTest_Cpu" xml:space="preserve"><value>Calling thread CPU ms</value></data>
   <data name="HikTest_Width" xml:space="preserve"><value>Width</value></data>
   <data name="HikTest_Height" xml:space="preserve"><value>Height</value></data>
-  <data name="HikTest_Footnote" xml:space="preserve"><value>Bayer16 → RGB48, reusable output buffer. No calibration, flip, automatic image files or database writes. Capture raw files separately. First frame is separate; statistics exclude opening, setup, export and UI. Match dimensions, actual exposure, ADC depth and interpolation before comparing. Faster does not imply equivalent measurements.</value></data>
+  <data name="HikTest_Footnote" xml:space="preserve"><value>16-bit capture: Mono16 for monochrome, Bayer16 to RGB48 for color; reusable output buffer. No calibration, flip, automatic image files or database writes. Capture raw files separately. First frame is separate; statistics exclude opening, setup, export and UI. Match dimensions, actual exposure, ADC depth and color interpolation before comparing. Faster does not imply equivalent measurements.</value></data>
   <data name="HikTest_InvalidSettings" xml:space="preserve"><value>Enter a camera serial, positive exposure up to 60000 ms and non-negative gain.</value></data>
   <data name="HikTest_NotFound" xml:space="preserve"><value>Camera serial not found. Refresh and select a device.</value></data>
-  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>Cannot determine the matching Bayer16 format. Select the sensor-matching Bayer format in MVS, then close the camera.</value></data>
+  <data name="HikTest_Bayer16Required" xml:space="preserve"><value>The camera does not support Mono16, or the matching Bayer16 format cannot be determined. Check the pixel format in MVS, then close the camera.</value></data>
   <data name="HikTest_Cancelled" xml:space="preserve"><value>Test stopped; camera closed.</value></data>
-  <data name="HikTest_SdkRequired" xml:space="preserve"><value>Install the Hikrobot x64 MVS runtime and camera driver (APIs based on MVS 4.3.2), then restart the application.</value></data>
+  <data name="HikTest_SdkRequired" xml:space="preserve"><value>Install the Hikrobot x64 MVS runtime and the matching camera or frame-grabber driver, then restart the application.</value></data>
   <data name="HikTest_Running" xml:space="preserve"><value>Working with camera…</value></data>
   <data name="HikTest_Stopping" xml:space="preserve"><value>Stopping; waiting for capture and camera cleanup…</value></data>
   <data name="HikTest_Copied" xml:space="preserve"><value>Report copied.</value></data>
@@ -6926,10 +6926,10 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="HikTest_Capture" xml:space="preserve"><value>Capture one</value></data>
   <data name="HikTest_Connected" xml:space="preserve"><value>Camera connected; waiting for manual capture.</value></data>
   <data name="HikTest_SaveRaw" xml:space="preserve"><value>Capture and save raw</value></data>
-  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>Trigger an extra frame and save pre-interpolation Bayer16 data and parameters as ZIP; previous frames are not retained. Export time is excluded from capture statistics.</value></data>
+  <data name="HikTest_SaveRawTip" xml:space="preserve"><value>Trigger an extra frame and save raw Mono16 or pre-interpolation Bayer16 data and parameters as ZIP; previous frames are not retained. Export time is excluded from capture statistics.</value></data>
   <data name="原始帧已保存：{0}" xml:space="preserve"><value>Raw frame saved: {0}</value></data>
   <data name="Camera_UseHikMvs" xml:space="preserve"><value>Use new Hikrobot capture</value></data>
-  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>Enabled by default: MVS; disabled: legacy SCGDCamLayer. Applies to HK_USB BV/LV/LVTOBV only. Set before the next open; changing this preference does not close or switch the current connection.</value></data>
+  <data name="Camera_UseHikMvsHint" xml:space="preserve"><value>Enabled by default: MVS; disabled: legacy SCGDCamLayer. Applies to HK_USB and HK_CARD BV/LV/LVTOBV. Set before the next open; changing this preference does not close or switch the current connection.</value></data>
   <data name="Camera_HikBayerQuality" xml:space="preserve"><value>MVS capture Bayer quality</value></data>
   <data name="Camera_HikBayerQualityHint" xml:space="preserve"><value>Default: 3 (Optimal+). 0 Fast, 1 Balanced, 2 Optimal, 3 Optimal+. Applies to MVS color still capture; video always uses 2 (Optimal). Ignored by legacy and monochrome capture. The preference applies on the next camera open and is restored when switching back to capture.</value></data>
   <data name="Camera_HikBayerQuality0" xml:space="preserve"><value>0 - Fast</value></data>
@@ -7035,4 +7035,13 @@ Active cache operations will finish first. Disk files will be kept, and the cach
 {1}
 
 Files on disk are kept. Active buffers follow each module’s completion or return rules.</value></data>
+  <data name="重复执行" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="执行次数" xml:space="preserve">
+    <value>Repeat count</value>
+  </data>
+  <data name="总执行次数，包含第一次。中间结果覆盖，最后一次完成后再继续框外流程。" xml:space="preserve">
+    <value>Total runs, including the first. Intermediate results are replaced; continue outside the region after the final run.</value>
+  </data>
 </root>

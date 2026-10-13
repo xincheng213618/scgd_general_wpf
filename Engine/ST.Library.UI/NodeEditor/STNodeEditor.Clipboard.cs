@@ -292,6 +292,7 @@ public partial class STNodeEditor
 		{
 			throw new InvalidDataException("节点数据包含未识别的尾部内容");
 		}
+		RemapImportedGroups(nodes);
 		return new GraphImportPlan(nodes, connections);
 	}
 

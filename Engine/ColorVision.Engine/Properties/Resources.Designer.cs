@@ -1606,7 +1606,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。仅 HK_USB 的 BV/LV/LVTOBV 生效。只在下次打开前设置，修改不会关闭或切换当前连接。 的本地化字符串。
+        ///   查找类似 默认开启，使用 MVS；关闭使用旧 SCGDCamLayer。适用于 HK_USB 和 HK_CARD 的 BV/LV/LVTOBV。只在下次打开前设置，修改不会关闭或切换当前连接。 的本地化字符串。
         /// </summary>
         public static string Camera_UseHikMvsHint {
             get {
@@ -7533,7 +7533,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 无法确定对应的 Bayer16 格式。请先在 MVS 中选择与传感器匹配的 Bayer 格式并关闭相机。 的本地化字符串。
+        ///   查找类似 相机不支持所需的 Mono16 或无法确定对应的 Bayer16 格式。请在 MVS 中确认像素格式后关闭相机。 的本地化字符串。
         /// </summary>
         public static string HikTest_Bayer16Required {
             get {
@@ -7587,7 +7587,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 转换 ms 的本地化字符串。
+        ///   查找类似 转换/复制 ms 的本地化字符串。
         /// </summary>
         public static string HikTest_Convert {
             get {
@@ -7668,7 +7668,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 固定 Bayer16 → RGB48，复用输出缓冲；不校正、不翻转、不自动存图、不落库。原始帧需单独点击保存。首次取图单列，统计不含打开/设参/导出/界面时间。比较原取图前需核对尺寸、实际曝光、ADC 位深及插值质量；耗时更低不代表测量结果等价。 的本地化字符串。
+        ///   查找类似 16 位取图：灰度保持 Mono16，彩色 Bayer16 转 RGB48；复用输出缓冲。不校正、不翻转、不自动存图、不落库。原始帧需单独点击保存。首次取图单列，统计不含打开/设参/导出/界面时间。比较原取图前需核对尺寸、实际曝光、ADC 位深及彩色插值质量；耗时更低不代表测量结果等价。 的本地化字符串。
         /// </summary>
         public static string HikTest_Footnote {
             get {
@@ -7695,7 +7695,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 此测试仅支持 HK_USB 对应的海康 GigE / USB3 相机。 的本地化字符串。
+        ///   查找类似 此测试支持 HK_USB（GigE / USB3）和 HK_CARD（海康采集卡）相机。 的本地化字符串。
         /// </summary>
         public static string HikTest_HkOnly {
             get {
@@ -7749,7 +7749,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Bayer 插值质量 的本地化字符串。
+        ///   查找类似 彩色 Bayer 插值质量 的本地化字符串。
         /// </summary>
         public static string HikTest_Quality {
             get {
@@ -7812,7 +7812,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 额外触发一帧，将插值前的 Bayer16 数据与参数保存为 ZIP；不保存已取过的帧。保存时间不计入取图统计。 的本地化字符串。
+        ///   查找类似 额外触发一帧，将原始 Mono16 或插值前的 Bayer16 数据与参数保存为 ZIP；不保存已取过的帧。保存时间不计入取图统计。 的本地化字符串。
         /// </summary>
         public static string HikTest_SaveRawTip {
             get {
@@ -7821,7 +7821,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 请安装海康 x64 MVS 运行库和相机驱动（接口参考 MVS 4.3.2），然后重启程序。 的本地化字符串。
+        ///   查找类似 请安装海康 x64 MVS 运行库及与相机或采集卡匹配的驱动，然后重启程序。 的本地化字符串。
         /// </summary>
         public static string HikTest_SdkRequired {
             get {

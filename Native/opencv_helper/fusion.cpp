@@ -20,7 +20,6 @@ namespace
 {
 	constexpr float kFocusScale = 1.0f / 255.0f;
 	constexpr float kEpsilon = 1e-6f;
-	constexpr float kCurveFallback = 1e-5f;
 	constexpr float kPsnrScale = -8.685889638f;
 
 	inline float clampPositive(float value)
@@ -42,20 +41,20 @@ void showimages(vector<Mat> sample) {
 	temp.release();
 }
 
-Mat gfocus(const Mat& im) {
+Mat gfocus(const Mat& im, int window) {
 	CV_Assert(im.type() == CV_32FC1);
 
 	Mat average;
 	Mat focusMeasure;
-	boxFilter(im, average, CV_32FC1, Size(5, 5), Point(-1, -1), true, BORDER_REPLICATE);
+	boxFilter(im, average, CV_32FC1, Size(window, window), Point(-1, -1), true, BORDER_REPLICATE);
 	subtract(im, average, focusMeasure);
 	multiply(focusMeasure, focusMeasure, focusMeasure);
-	boxFilter(focusMeasure, focusMeasure, CV_32FC1, Size(5, 5), Point(-1, -1), true, BORDER_REPLICATE);
+	boxFilter(focusMeasure, focusMeasure, CV_32FC1, Size(window, window), Point(-1, -1), true, BORDER_REPLICATE);
 	return focusMeasure;
 }
 
-Mat fusion(const vector<Mat>& imgs, int STEP) {
-	if (imgs.empty()) {
+Mat fusion(const vector<Mat>& imgs, const FusionOptions& options) {
+	if (imgs.empty() || !options.valid()) {
 		return Mat();
 	}
 
@@ -64,6 +63,7 @@ Mat fusion(const vector<Mat>& imgs, int STEP) {
 	const int N = imgs[0].cols;
 	const int channels = imgs[0].channels();
 	const int depth = imgs[0].depth();
+	const int STEP = options.focusStep;
 
 	if (P == 1) {
 		return imgs[0].clone();
@@ -93,143 +93,47 @@ Mat fusion(const vector<Mat>& imgs, int STEP) {
 		}
 
 		gray.convertTo(gray, CV_32FC1, kFocusScale);
-		focusMaps[i] = gfocus(gray);
+		focusMaps[i] = gfocus(gray, options.focusWindow);
 	}
 
-	if (STEP > 0 && P > 2 * STEP + 1) {
+	if (P >= 2 * STEP + 1) {
 #pragma region Compute Smeasure
-		Mat Ymax = Mat::zeros(M, N, CV_32FC1);
-		Mat s2(M, N, CV_32FC1);
-		Mat u(M, N, CV_32FC1);
-		Mat A(M, N, CV_32FC1);
-
-		cv::parallel_for_(Range(0, M), [&](const Range& range) {
-			vector<const float*> focusRows(P);
-
-			for (int row = range.start; row < range.end; ++row)
-			{
-				for (int p = 0; p < P; ++p)
-				{
-					focusRows[p] = focusMaps[p].ptr<float>(row);
-				}
-
-				float* ymaxRow = Ymax.ptr<float>(row);
-				float* s2Row = s2.ptr<float>(row);
-				float* uRow = u.ptr<float>(row);
-				float* aRow = A.ptr<float>(row);
-
-				for (int col = 0; col < N; ++col)
-				{
-					float maxValue = focusRows[0][col];
-					int maxIndex = 0;
-
-					for (int p = 1; p < P; ++p)
-					{
-						const float currentValue = focusRows[p][col];
-						if (currentValue > maxValue)
-						{
-							maxValue = currentValue;
-							maxIndex = p;
-						}
-					}
-
-					ymaxRow[col] = clampPositive(maxValue);
-
-					const int sourceIndex = maxIndex + 1;
-					const int centerIndex = std::clamp(sourceIndex, STEP + 1, P - STEP);
-					const float x1 = static_cast<float>(centerIndex - STEP);
-					const float x2 = static_cast<float>(centerIndex);
-					const float x3 = static_cast<float>(centerIndex + STEP);
-
-					const float y1t = clampPositive(focusRows[centerIndex - STEP - 1][col]);
-					const float y2t = clampPositive(focusRows[centerIndex - 1][col]);
-					const float y3t = clampPositive(focusRows[centerIndex + STEP - 1][col]);
-
-					const float y2 = std::log(y2t);
-					const float y1 = std::log(sourceIndex <= STEP ? y3t : y1t);
-					const float y3 = y1;
-					const float x1Squared = x1 * x1;
-					const float x2Squared = x2 * x2;
-					const float x3Squared = x3 * x3;
-					const float denominator = (x1Squared - x2Squared) * (x2 - x3) - (x2Squared - x3Squared) * (x1 - x2);
-
-					float c = ((y1 - y2) * (x2 - x3) - (y2 - y3) * (x1 - x2)) / denominator;
-					if (!std::isfinite(c) || c == 0.0f)
-					{
-						c = kCurveFallback;
-					}
-
-					float b = ((y2 - y3) - c * (x2 - x3) * (x2 + x3)) / (x2 - x3);
-					if (!std::isfinite(b) || b == 0.0f)
-					{
-						b = kCurveFallback;
-					}
-
-					float s2Value = -1.0f / (2.0f * c);
-					if (!std::isfinite(s2Value) || std::abs(s2Value) < kEpsilon)
-					{
-						s2Value = -1.0f / (2.0f * kCurveFallback);
-					}
-
-					const float uValue = b * s2Value;
-					const float aValue = y1 - b * x1 - c * x1Squared;
-					float amplitude = std::exp(aValue + (uValue * uValue) / (2.0f * s2Value));
-					if (!std::isfinite(amplitude))
-					{
-						amplitude = 0.0f;
-					}
-
-					s2Row[col] = s2Value;
-					uRow[col] = uValue;
-					aRow[col] = amplitude;
-				}
-			}
-		});
-
-		Mat err = Mat::zeros(M, N, CV_32FC1);
+		Mat invPsnr(M, N, CV_32FC1);
 		cv::parallel_for_(Range(0, M), [&](const Range& range) {
 			vector<float*> focusRows(P);
-
-			for (int row = range.start; row < range.end; ++row)
-			{
-				for (int p = 0; p < P; ++p)
-				{
-					focusRows[p] = focusMaps[p].ptr<float>(row);
-				}
-
-				const float* ymaxRow = Ymax.ptr<float>(row);
-				const float* s2Row = s2.ptr<float>(row);
-				const float* uRow = u.ptr<float>(row);
-				const float* aRow = A.ptr<float>(row);
-				float* errRow = err.ptr<float>(row);
-
-				for (int col = 0; col < N; ++col)
-				{
-					const float ymaxValue = clampPositive(ymaxRow[col]);
-					const float s2Value = s2Row[col];
-					const float uValue = uRow[col];
-					const float amplitude = aRow[col];
-					const float denominator = 2.0f * s2Value;
-					float errorValue = 0.0f;
-
-					for (int p = 0; p < P; ++p)
-					{
-						const float sourceValue = focusRows[p][col];
-						const float delta = static_cast<float>(p + 1) - uValue;
-						const float fittedValue = amplitude * std::exp(-(delta * delta) / denominator);
-						errorValue += std::abs(sourceValue - fittedValue);
-						focusRows[p][col] = sourceValue / ymaxValue;
+			for (int row = range.start; row < range.end; ++row) {
+				for (int p = 0; p < P; ++p) focusRows[p] = focusMaps[p].ptr<float>(row);
+				float* inverseRow = invPsnr.ptr<float>(row);
+				for (int col = 0; col < N; ++col) {
+					float maximum = focusRows[0][col];
+					int peak = 1;
+					for (int p = 1; p < P; ++p) {
+						if (focusRows[p][col] > maximum) { maximum = focusRows[p][col]; peak = p + 1; }
 					}
-
-					errRow[col] = errorValue;
+					maximum = clampPositive(maximum);
+					const int center = std::clamp(peak, STEP + 1, P - STEP);
+					const int side = peak <= STEP ? center + STEP : center - STEP;
+					const float centerValue = clampPositive(focusRows[center - 1][col]);
+					// The inherited fit mirrors its endpoints (y3 == y1). In centered
+					// coordinates, u=center, A=centerValue, c=(log(side)-log(center))/step^2.
+					const float curvature = (std::log(clampPositive(focusRows[side - 1][col])) - std::log(centerValue)) / (STEP * STEP);
+					const bool validPeak = curvature < 0.0f;
+					float error = 0.0f;
+					for (int p = 0; p < P; ++p) {
+						float& focus = focusRows[p][col];
+						if (validPeak) {
+							const float delta = static_cast<float>(p + 1 - center);
+							error += std::abs(focus - centerValue * std::exp(curvature * delta * delta));
+						}
+						focus /= maximum;
+					}
+					// A non-peak cannot describe a Gaussian focus profile. Assign zero-dB
+					// confidence instead of a negative variance and an overflowing exp.
+					inverseRow[col] = validPeak ? error / (P * maximum) : 1.0f;
 				}
 			}
 		});
-
-		Mat invPsnr;
-		Mat psnrDenominator = Ymax * static_cast<float>(P);
-		divide(err, psnrDenominator, invPsnr);
-		blur(invPsnr, invPsnr, Size(3, 3), Point(-1, -1), BORDER_REPLICATE);
+		blur(invPsnr, invPsnr, Size(options.consistencyWindow, options.consistencyWindow), Point(-1, -1), BORDER_REPLICATE);
 		max(invPsnr, Scalar(kEpsilon), invPsnr);
 
 		Mat S;
@@ -244,7 +148,7 @@ Mat fusion(const vector<Mat>& imgs, int STEP) {
 				float* phiRow = phi.ptr<float>(row);
 				for (int col = 0; col < N; ++col)
 				{
-					phiRow[col] = 0.5f * (1.0f + std::tanh(0.2f * (sRow[col] - 13.0f))) / 0.2f;
+					phiRow[col] = 0.5f * (1.0f + std::tanh(options.alpha * (sRow[col] - options.threshold))) / options.alpha;
 				}
 			}
 		});
@@ -305,7 +209,16 @@ Mat fusion(const vector<Mat>& imgs, int STEP) {
 						red += pixel[2] * weight;
 					}
 
-					const float invWeight = 1.0f / clampPositive(weightSum);
+					// A textureless stack has no focus evidence: retain its mean intensity.
+					if (weightSum <= kEpsilon) {
+						blue = green = red = 0.0f;
+						for (int p = 0; p < P; ++p) {
+							const Vec3b& pixel = sourceRows[p][col];
+							blue += pixel[0]; green += pixel[1]; red += pixel[2];
+						}
+						weightSum = static_cast<float>(P);
+					}
+					const float invWeight = 1.0f / weightSum;
 					dstRow[col] = Vec3b(
 						saturate_cast<uchar>(blue * invWeight),
 						saturate_cast<uchar>(green * invWeight),
@@ -342,7 +255,12 @@ Mat fusion(const vector<Mat>& imgs, int STEP) {
 					value += sourceRows[p][col] * weight;
 				}
 
-				dstRow[col] = saturate_cast<uchar>(value / clampPositive(weightSum));
+				if (weightSum <= kEpsilon) {
+					value = 0.0f;
+					for (int p = 0; p < P; ++p) value += sourceRows[p][col];
+					weightSum = static_cast<float>(P);
+				}
+				dstRow[col] = saturate_cast<uchar>(value / weightSum);
 			}
 		}
 	});

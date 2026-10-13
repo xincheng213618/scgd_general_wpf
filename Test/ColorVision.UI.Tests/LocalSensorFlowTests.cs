@@ -1,4 +1,5 @@
 using ColorVision.Engine.FlowProcessing.Nodes;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Local;
 using FlowEngineLib;
@@ -8,17 +9,20 @@ using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class LocalSensorFlowTests
 {
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(1, false)]
-    [InlineData(2, false)]
-    [InlineData(1, true)]
-    public void LegacySensorNodesCompleteWithoutMqtt(int kind, bool fail)
+    [InlineData(0, false, false)]
+    [InlineData(0, false, true)]
+    [InlineData(1, false, false)]
+    [InlineData(2, false, false)]
+    [InlineData(1, true, false)]
+    public void LegacySensorNodesCompleteWithoutMqtt(int kind, bool fail, bool ignoreErrors)
     {
         StaTest.Run(() =>
         {
@@ -28,14 +32,16 @@ public sealed class LocalSensorFlowTests
             {
                 FlowLocalExecution.CanExecuteLocally = LocalSensorFlowExecution.Supports;
                 int completed = 0;
+                int created = 0;
                 FlowLocalExecution.CreateForNode = (_, request) =>
                 {
+                    Interlocked.Increment(ref created);
                     Assert.Equal("ExecCmd", request.EventName);
                     return new FakeExecution(fail, () => completed++);
                 };
                 using var container = new CVNodeContainer();
                 var start = new RuntimeTestStartNode();
-                CVBaseServerNode sensor = kind switch { 0 => new CommonSensorNode(), 1 => new TempCommonSensorNode(), _ => new RealCommonSensorNode() };
+                CVBaseServerNode sensor = kind switch { 0 => new CommonSensorNode { IgnoreErrors = ignoreErrors }, 1 => new TempCommonSensorNode(), _ => new RealCommonSensorNode() };
                 var end = new CVEndNode();
                 foreach (var node in new STNode[] { start, sensor, end }) { node.Create(); container.Nodes.Add(node); }
                 Assert.True(LocalSensorFlowExecution.Supports(sensor));
@@ -49,6 +55,7 @@ public sealed class LocalSensorFlowTests
                 var result = completion.Task.WaitAsync(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
                 Assert.Equal(fail ? StatusTypeEnum.Failed : StatusTypeEnum.Completed, result.Status);
                 Assert.Equal(0, start.PublishCount);
+                Assert.Equal(1, Volatile.Read(ref created));
                 Assert.Equal(fail ? 0 : 1, completed);
             }
             finally { FlowLocalExecution.CanExecuteLocally = previousPredicate; FlowLocalExecution.CreateForNode = previousFactory; }
@@ -73,13 +80,18 @@ public sealed class LocalSensorFlowTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task TemplateExecutionConnectsOnlyWhenRequestedAndReusesConnection(bool autoConnect)
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    public async Task TemplateExecutionConnectsOnlyWhenRequestedAndReusesConnection(bool autoConnect, int? legacyKind)
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         ColorVision.UI.IConfigService? previousConfig = null;
+        var managerField = typeof(ServiceManager).GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var previousManager = ServiceManager.Current;
         DeviceSensor? device = null;
         try
         {
@@ -87,6 +99,9 @@ public sealed class LocalSensorFlowTests
             {
                 previousConfig = ColorVision.UI.ConfigService.Instance;
                 ColorVision.UI.ConfigService.SetInstance(new ColorVision.UI.ConfigHandler { IsAutoSave = false });
+                var manager = (ServiceManager)RuntimeHelpers.GetUninitializedObject(typeof(ServiceManager));
+                manager.DeviceServices = [];
+                managerField.SetValue(null, manager);
                 device = new DeviceSensor(new()
                 {
                     Id = -2,
@@ -96,13 +111,28 @@ public sealed class LocalSensorFlowTests
                         IsNet = true, Addr = "127.0.0.1", Port = ((IPEndPoint)listener.LocalEndpoint).Port
                     })
                 });
+                manager.DeviceServices.Add(device);
             });
             var action = new CVStartCFC();
             using var resources = action.RuntimeResources;
-            using var execution = new LocalSensorFlowExecution(device!, "ExecCmd", new
+            var parameters = new
             {
                 Cmd = new { CmdType = MQTTMessageLib.Sensor.SensorCmdType.Ascii, Request = "Q", Response = "OK", Timeout = 5000 }
-            }, autoConnect);
+            };
+            using var execution = WpfTestHost.Invoke(() =>
+            {
+                if (legacyKind == null) return new LocalSensorFlowExecution(device!, "ExecCmd", parameters, autoConnect);
+                CVBaseServerNode node = legacyKind switch { 0 => new CommonSensorNode(), 1 => new TempCommonSensorNode(), _ => new RealCommonSensorNode() };
+                node.Create();
+                node.DeviceCode = device!.Code;
+                var request = new CVMQTTRequest("SVR.Sensor.Default", device.Code, "ExecCmd", "auto-connect", parameters, "", -1);
+                device.DisplayConfig.UseLocalSensor = false;
+                Assert.True(node.RequiresRemoteService);
+                Assert.Null(FlowLocalExecution.CreateForNode(node, request));
+                device.DisplayConfig.UseLocalSensor = true;
+                Assert.False(node.RequiresRemoteService);
+                return Assert.IsType<LocalSensorFlowExecution>(FlowLocalExecution.CreateForNode(node, request));
+            });
             execution.Bind(action);
             if (!autoConnect)
             {
@@ -114,7 +144,10 @@ public sealed class LocalSensorFlowTests
 
             // The first run connects; the second uses the same TCP connection.
             Task first = Task.Run(execution.Execute);
-            using var peer = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            var connected = listener.AcceptTcpClientAsync();
+            await Task.WhenAny(first, connected).WaitAsync(TimeSpan.FromSeconds(5));
+            if (first.IsFaulted) await first;
+            using var peer = await connected.WaitAsync(TimeSpan.FromSeconds(5));
             byte[] request = new byte[1];
             for (int run = 0; run < 2; run++)
             {
@@ -140,6 +173,8 @@ public sealed class LocalSensorFlowTests
             WpfTestHost.Invoke(() =>
             {
                 device?.Dispose();
+                managerField.SetValue(null, previousManager);
+                if (device != null) DisplayConfigManager.Instance.Configs.TryRemove(device.Code, out _);
                 if (previousConfig != null) ColorVision.UI.ConfigService.SetInstance(previousConfig);
             });
         }

@@ -23,6 +23,7 @@ public sealed class LocalFileFusionNodeTests
             InputMode = FileFusionInputMode.FileList, InputDirectory = @"C:\images",
             Files = [@"C:\图像\plane,2.png", @"C:\图像\plane1.png"],
             Mode = FileFusionMode.GPUAsync, ResultDirectory = @"C:\results",
+            FocusWindow = 7, ConsistencyWindow = 5, FocusStep = 3, Threshold = 16, Alpha = 0.3,
         };
         node.Create();
         Assert.Equal("LocalFileFusion", node.NodeType);
@@ -36,6 +37,11 @@ public sealed class LocalFileFusionNodeTests
         Assert.Equal(node.Files, restored.Files);
         Assert.Equal(node.Mode, restored.Mode);
         Assert.Equal(node.ResultDirectory, restored.ResultDirectory);
+        Assert.Equal(node.FocusWindow, restored.FocusWindow);
+        Assert.Equal(node.ConsistencyWindow, restored.ConsistencyWindow);
+        Assert.Equal(node.FocusStep, restored.FocusStep);
+        Assert.Equal(node.Threshold, restored.Threshold);
+        Assert.Equal(node.Alpha, restored.Alpha);
     }
 
     [Theory]
@@ -165,14 +171,14 @@ public sealed class LocalFileFusionNodeTests
         public int PersistedId { get; init; } = 42;
         public Action? DuringFusion { get; init; }
         public int ResolveBatchId(string serialNumber) { Events.Add("Batch"); return 17; }
-        public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken)
+        public FileFusionResult Execute(IReadOnlyList<string> files, FileFusionMode mode, CancellationToken cancellationToken, FileFusionOptions options)
         {
             Events.Add("Fusion");
             Files = files.ToArray();
             DuringFusion?.Invoke();
             BitmapSource image = BitmapSource.Create(4, 4, 96, 96, PixelFormats.Gray8, null, Enumerable.Repeat((byte)123, 16).ToArray(), 4);
             image.Freeze();
-            return new(image, Files, FileFusionMode.CPU, 1, 2, 3, 6);
+            return new(image, Files, FileFusionMode.CPU, 1, 2, 3, 6) { Options = options with { } };
         }
         public int SaveResult(MeasureResultImgModel model) { Events.Add("Save"); Model = model; return PersistedId; }
         public void Publish(CVStartCFC action, string nodeId, int zIndex, MeasureResultImgModel model)

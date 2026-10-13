@@ -279,6 +279,7 @@ public class STNodeOption
 
 	protected internal virtual void OnDataTransfer(STNodeOptionEventArgs e)
 	{
+		if (_IsInput && _Owner?.OnInputDataTransfer(this, e) == false) return;
 		if (this.DataTransfer != null)
 		{
 			this.DataTransfer(this, e);
@@ -496,6 +497,7 @@ public class STNodeOption
 		{
 			return;
 		}
+		if (!_IsInput && _Owner?.OnOutputDataTransfer(this) == false) return;
 		foreach (STNodeOption item in m_hs_connected)
 		{
 			item.OnDataTransfer(new STNodeOptionEventArgs(isSponsor: true, this, ConnectionStatus.Connected));
@@ -509,10 +511,15 @@ public class STNodeOption
 			return;
 		}
 		Data = data;
-		foreach (STNodeOption item in m_hs_connected)
-		{
-			item.OnDataTransfer(new STNodeOptionEventArgs(isSponsor: true, this, ConnectionStatus.Connected));
-		}
+		TransferData();
+	}
+
+	/// <summary>Delivers a runtime value to one input without changing graph connections.</summary>
+	public void ReceiveData(object data)
+	{
+		if (!_IsInput) throw new InvalidOperationException("Only an input can receive a runtime value.");
+		var source = new STNodeOption(string.Empty, _DataType, false) { Data = data };
+		OnDataTransfer(new STNodeOptionEventArgs(true, source, ConnectionStatus.Connected));
 	}
 
 	public void TransferData(object data, bool bDisposeOld)

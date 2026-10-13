@@ -16,7 +16,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
-    internal sealed class FlowNodeContextMenuService : IDisposable
+    internal sealed partial class FlowNodeContextMenuService : IDisposable
     {
         private sealed class NodeMenuCatalogEntry
         {
@@ -234,6 +234,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
             else
             {
+                AddRepeatMenuItems(_contextMenu.Items, null);
                 AddNodeCreationMenuItems(_contextMenu.Items);
                 AddImportModuleContextMenu(_contextMenu.Items);
             }
@@ -244,6 +245,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void AddNodeMenuItems(ItemCollection items, STNode node)
         {
+            AddRepeatMenuItems(items, node);
             var copyItem = new MenuItem { Header = Properties.Resources.Copy };
             copyItem.Click += (_, _) => CopyNode(node);
             items.Add(copyItem);

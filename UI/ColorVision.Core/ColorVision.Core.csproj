@@ -23,6 +23,9 @@
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == '' and Exists('..\..\Native\opencv_helper\x64\Release\opencv_helper.dll')">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == '' and Exists('..\..\x64\Release\opencv_helper.dll')">..\..\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
 		<OpenCvHelperBinary Condition="'$(OpenCvHelperBinary)' == ''">..\..\Native\opencv_helper\x64\Release\opencv_helper.dll</OpenCvHelperBinary>
+		<OpenCvCudaBinary Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)x64\Release\opencv_cuda.dll</OpenCvCudaBinary>
+		<OpenCvCudaBinary Condition="'$(OpenCvCudaBinary)' == '' and Exists('..\..\Native\opencv_cuda\x64\Release\opencv_cuda.dll')">..\..\Native\opencv_cuda\x64\Release\opencv_cuda.dll</OpenCvCudaBinary>
+		<OpenCvCudaBinary Condition="'$(OpenCvCudaBinary)' == ''">..\..\x64\Release\opencv_cuda.dll</OpenCvCudaBinary>
 		<UseProjectReference Condition="'$(UseProjectReference)' == '' and !Exists('$(OpenCvHelperBinary)')">true</UseProjectReference>
 	</PropertyGroup>
 
@@ -38,7 +41,7 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\x64\Release\opencv_cuda.dll" Link="runtimes\win-x64\native\opencv_cuda.dll">
+		<Content Include="$(OpenCvCudaBinary)" Link="runtimes\win-x64\native\opencv_cuda.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>

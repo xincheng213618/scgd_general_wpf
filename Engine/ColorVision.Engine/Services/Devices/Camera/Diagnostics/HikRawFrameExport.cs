@@ -13,16 +13,16 @@ internal sealed record HikCaptureRequest(string? RawExportPath = null);
 internal static class HikRawFrameExport
 {
     // Called on the capture worker while it still owns the SDK frame. Never retains the pointer.
-    internal static void Save(string path, IntPtr source, int length, object metadata, CancellationToken cancellation)
+    internal static void Save(string path, IntPtr source, int length, string rawFileName, object metadata, CancellationToken cancellation)
     {
-        if (source == IntPtr.Zero || length <= 0) throw new ArgumentException("Empty Bayer frame.");
+        if (source == IntPtr.Zero || length <= 0) throw new ArgumentException("Empty raw frame.");
         string temporary = Path.GetFullPath(path) + "." + Guid.NewGuid().ToString("N") + ".partial";
         try
         {
             using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             using (var archive = new ZipArchive(file, ZipArchiveMode.Create))
             {
-                using (var raw = archive.CreateEntry("frame.bayer16.raw", CompressionLevel.NoCompression).Open())
+                using (var raw = archive.CreateEntry(rawFileName, CompressionLevel.NoCompression).Open())
                 {
                     byte[] buffer = new byte[Math.Min(length, 1024 * 1024)];
                     for (int offset = 0; offset < length;)

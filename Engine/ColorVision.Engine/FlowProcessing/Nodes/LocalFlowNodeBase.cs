@@ -332,7 +332,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 SendPayload = BuildRunPayload(start)
             });
 
-            _ = Task.Run(() => ExecuteCore(transaction));
+            _ = Task.Run(() => ExecuteCore(transaction, inputs));
         }
 
         private void ClearPendingInputs(string? serialNumber = null)
@@ -357,7 +357,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new { ServiceName = NodeName, EventName = OperatorCode, action.SerialNumber });
         }
 
-        private void ExecuteCore(CVTransAction transaction)
+        private void ExecuteCore(CVTransAction transaction, LocalFlowInputSnapshot[] inputs)
         {
             var timing = new FlowNodeTiming();
             using var activation = timing.Activate();
@@ -379,7 +379,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             finally
             {
-                activeInputSets.TryRemove(transaction.trans_action.SerialNumber, out _);
+                activeInputSets.TryRemove(new KeyValuePair<string, LocalFlowInputSnapshot[]>(transaction.trans_action.SerialNumber, inputs));
             }
         }
 

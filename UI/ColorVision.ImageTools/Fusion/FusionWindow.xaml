@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Sol_Fusion_Title}" Height="620" Width="780"
+        Title="{x:Static properties:Resources.Sol_Fusion_Title}" Height="660" Width="900" MinHeight="600" MinWidth="800"
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
@@ -48,8 +48,9 @@
         </GroupBox>
 
         <!-- Configuration -->
-        <GroupBox Grid.Row="2" Header="{x:Static properties:Resources.Sol_Fusion_Config}" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Margin="5">
+        <GroupBox x:Name="ConfigurationGroup" Grid.Row="2" Header="{x:Static properties:Resources.Sol_Fusion_Config}" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+              <WrapPanel>
                 <TextBlock Text="{x:Static properties:Resources.Sol_Fusion_Mode}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <ComboBox x:Name="ComboBoxMode" Width="200" SelectedIndex="0">
                     <ComboBoxItem Content="{x:Static properties:Resources.Sol_Fusion_Auto}"/>
@@ -58,6 +59,10 @@
                     <ComboBoxItem Content="{x:Static properties:Resources.Sol_Fusion_Async}"/>
                 </ComboBox>
                 <TextBlock x:Name="TextBlockCudaStatus" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                <Button Content="{display:DisplayText Key='融合参数…'}" Padding="10,4" Margin="15,0,0,0" Click="EditParameters_Click"/>
+              </WrapPanel>
+              <TextBlock x:Name="ParameterSummary" Margin="0,8,0,0" TextWrapping="Wrap"/>
+              <TextBlock Text="{display:DisplayText Key='按焦点顺序输入图片。先保持默认；需要调节时，优先修改清晰度窗口和选焦可信度阈值。'}" TextWrapping="Wrap" Margin="0,4,0,0" Opacity="0.75"/>
             </StackPanel>
         </GroupBox>
 
@@ -70,14 +75,20 @@
                 </Grid.ColumnDefinitions>
                 <ListView x:Name="TimingListView" Grid.Column="0" MaxHeight="110" FontSize="12"
                           BorderThickness="0" Background="Transparent">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="ToolTip" Value="{Binding Parameters}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ModeCol}" Width="140" DisplayMemberBinding="{Binding Mode}"/>
-                            <GridViewColumn Header="{display:DisplayText Key='校验(ms)'}" Width="80" DisplayMemberBinding="{Binding LoadMs}"/>
-                            <GridViewColumn Header="{display:DisplayText Key='读图及融合(ms)'}" Width="80" DisplayMemberBinding="{Binding FusionMs}"/>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ConvertMs}" Width="80" DisplayMemberBinding="{Binding ConvertMs}"/>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_TotalMs}" Width="80" DisplayMemberBinding="{Binding TotalMs}"/>
-                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ImageCount}" Width="55" DisplayMemberBinding="{Binding ImageCount}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ModeCol}" Width="105" DisplayMemberBinding="{Binding Mode}"/>
+                            <GridViewColumn Header="{display:DisplayText Key='校验(ms)'}" Width="85" DisplayMemberBinding="{Binding LoadMs}"/>
+                            <GridViewColumn Header="{display:DisplayText Key='读图及融合(ms)'}" Width="115" DisplayMemberBinding="{Binding FusionMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ConvertMs}" Width="85" DisplayMemberBinding="{Binding ConvertMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_TotalMs}" Width="85" DisplayMemberBinding="{Binding TotalMs}"/>
+                            <GridViewColumn Header="{x:Static properties:Resources.Sol_Fusion_ImageCount}" Width="75" DisplayMemberBinding="{Binding ImageCount}"/>
+                            <GridViewColumn Header="{display:DisplayText Key='参数'}" Width="220" DisplayMemberBinding="{Binding Parameters}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>

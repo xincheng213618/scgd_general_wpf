@@ -42,15 +42,18 @@ public sealed class FlowRuntimeCompletionTests
     });
 
     [Theory]
-    [InlineData(0, StatusTypeEnum.Completed)]
-    [InlineData(500, StatusTypeEnum.Failed)]
+    [InlineData(0, false, StatusTypeEnum.Completed)]
+    [InlineData(0, true, StatusTypeEnum.Completed)]
+    [InlineData(500, false, StatusTypeEnum.Failed)]
     public void TerminalNodeEndIsPublishedBeforeFlowCompletion(
         int responseCode,
+        bool ignoreErrors,
         StatusTypeEnum expectedStatus)
     {
         RunInSta(async () =>
         {
             using var graph = CreateGraph();
+            graph.Sensor.IgnoreErrors = ignoreErrors;
             int nodeEndCountAtCompletion = -1;
             graph.Control.Finished += (_, _) =>
                 Volatile.Write(
@@ -65,6 +68,8 @@ public sealed class FlowRuntimeCompletionTests
                 $"SN-END-BEFORE-COMPLETION-{responseCode}");
 
             Assert.Equal(expectedStatus, completed.Status);
+            Assert.Equal(1, graph.Start.PublishCount);
+            Assert.Single(graph.NodeRuns);
             Assert.Single(graph.NodeEnds);
             Assert.Equal(1, Volatile.Read(ref nodeEndCountAtCompletion));
         });

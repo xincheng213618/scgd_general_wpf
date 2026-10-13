@@ -41,12 +41,14 @@ public sealed class DeviceCommandMetadataTests
         }
     }
 
-    [Fact]
-    public void SpectrumRefresh_UsesOrdinaryCommandMetadata()
+    [Theory]
+    [InlineData(nameof(DeviceSpectrum.RefreshDeviceIdCommand))]
+    [InlineData(nameof(DeviceSpectrum.UploadLincenseCommand))]
+    public void SpectrumAuxiliaryCommands_AreHiddenFromPropertyPage(string propertyName)
     {
-        var command = typeof(DeviceSpectrum).GetProperty(nameof(DeviceSpectrum.RefreshDeviceIdCommand))!;
-        Assert.Equal("RefreshDeviceList", command.GetCustomAttribute<CommandDisplayAttribute>()!.DisplayName);
-        Assert.Equal("DeviceConnection", command.GetCustomAttribute<CategoryAttribute>()!.Category);
+        var command = typeof(DeviceSpectrum).GetProperty(propertyName)!;
+        Assert.Null(command.GetCustomAttribute<CommandDisplayAttribute>());
+        Assert.False(command.GetCustomAttribute<BrowsableAttribute>()!.Browsable);
     }
 
     [Fact]

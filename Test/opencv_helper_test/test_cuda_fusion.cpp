@@ -513,6 +513,42 @@ namespace
             && CompareImages(grayCm.image, grayAsync.image, "grayscale async consistency")
             && success;
 
+        // The public request shape must keep legacy defaults and propagate custom
+        // settings identically through the synchronous and parallel-loading exports.
+        const json files = json::parse(sixJson);
+        const std::string defaults = json{{"files", files}, {"options", json::object()}}.dump();
+        const CallResult defaultResult = CallFusion(dll, dll.cmFusion, defaults);
+        success = defaultResult.code == 0
+            && CompareImages(sixCm.image, defaultResult.image, "legacy/default options") && success;
+        const json customOptions{{"focusWindow", 7}, {"consistencyWindow", 5},
+            {"focusStep", 1}, {"alpha", 0.3}, {"threshold", 16}};
+        const std::string custom = json{{"files", files}, {"options", customOptions}}.dump();
+        const CallResult customCm = CallFusion(dll, dll.cmFusion, custom);
+        const CallResult customAsync = CallFusion(dll, dll.cmFusionAsync, custom);
+        success = customCm.code == 0 && customAsync.code == 0
+            && CompareImages(customCm.image, customAsync.image, "custom options async consistency")
+            && HashPixels(customCm.image) != HashPixels(sixCm.image) && success;
+        for (const auto& invalid : {json{{"focusWindow", 4}}, json{{"focusStep", 0}},
+            json{{"alpha", 0}}, json{{"consistencyWindow", 33}}, json{{"threshold", -1}},
+            json{{"focusStep", 1.5}}, json{{"unknown", 1}}}) {
+            const std::string request = json{{"files", files}, {"options", invalid}}.dump();
+            success = ExpectFailureClears(dll, dll.cmFusion, request, "invalid fusion settings") && success;
+        }
+
+        // Degenerate focus profiles and stacks shorter than the fitting span must
+        // preserve a constant image, rather than reading out of bounds or turning black.
+        const fs::path flatRoot = fs::temp_directory_path() / "colorvision_cuda_fusion_flat";
+        fs::create_directories(flatRoot);
+        for (int channels : {1, 3}) {
+            const fs::path file = flatRoot / (std::to_string(channels) + ".png");
+            cv::imwrite(file.u8string(), cv::Mat(17, 19, CV_MAKETYPE(CV_8U, channels), cv::Scalar::all(123)));
+            for (int count : {1, 2, 4, 5, 7}) {
+                const CallResult flat = CallFusion(dll, dll.cmFusion, BuildJson(std::vector<fs::path>(count, file)));
+                success = flat.code == 0 && !flat.image.pixels.empty()
+                    && std::all_of(flat.image.pixels.begin(), flat.image.pixels.end(), [](unsigned char value) { return value == 123; }) && success;
+            }
+        }
+
         const fs::path mismatchRoot = fs::temp_directory_path() / "colorvision_cuda_fusion_mismatch";
         fs::create_directories(mismatchRoot);
         const fs::path mismatchA = mismatchRoot / "a.bmp";

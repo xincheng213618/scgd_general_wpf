@@ -15,7 +15,7 @@ related: ["operations.camera","operations.camera-configuration","operations.cali
 
 ## 离线配置与许可证
 
-未连接 MySQL 时，物理相机、设备及许可证沿用现有字段写入 `ColorVision.Local.db` 配置文档；没有服务器数据同步。许可证导入、替换、删除和过期清理使用同一来源；过期清理仍在删除时重查有效期，续期不会重建已有物理相机。原生 SDK 的许可证校验及 `.lic` 文件使用规则不变，数据库里有许可证记录不代表 SDK 已加载文件。具体创建步骤见[离线设备配置](./configuration.md)。
+未连接 MySQL 时，物理相机、设备及许可证沿用现有字段写入 `ColorVision.Local.db` 配置文档；没有服务器数据同步。许可证导入、替换、删除和过期清理使用同一来源；过期清理仍在删除时重查有效期，续期不会重建已有物理相机。本地相机连接由程序读取关联许可证的 `ExpiryDate` 判断是否到期，具体开关与检查时机见[相机服务](./camera.md)。具体创建步骤见[离线设备配置](./configuration.md)。
 
 ## 扫描相机并创建资源
 

@@ -79,7 +79,7 @@
                     <DataGridTextColumn Header="{engine:EngineLang HikTest_Cycle}" Binding="{Binding CycleMs, StringFormat=F3}" Width="110" />
                     <DataGridTextColumn Header="{engine:EngineLang HikTest_Total}" Binding="{Binding CaptureMs, StringFormat=F3}" Width="115" />
                     <DataGridTextColumn Header="{engine:EngineLang HikTest_Wait}" Binding="{Binding WaitMs, StringFormat=F3}" Width="135" />
-                    <DataGridTextColumn Header="{engine:EngineLang HikTest_Convert}" Binding="{Binding ConvertMs, StringFormat=F3}" Width="105" />
+                    <DataGridTextColumn Header="{engine:EngineLang HikTest_Convert}" Binding="{Binding ConvertMs, StringFormat=F3}" Width="120" />
                     <DataGridTextColumn Header="{engine:EngineLang HikTest_Setup}" Binding="{Binding SetupMs, StringFormat=F3}" Width="125" />
                     <DataGridTextColumn Header="{engine:EngineLang HikTest_Cpu}" Binding="{Binding ThreadCpuMs, StringFormat=F3}" Width="180" />
                     <DataGridTextColumn Header="Frame ID" Binding="{Binding FrameId}" Width="85" />

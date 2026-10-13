@@ -101,6 +101,7 @@ internal sealed class LocalSpectrumSession : IDisposable
     private static readonly List<LocalSpectrumSession> QuarantinedSessions = [];
     private readonly object gate = new();
     private readonly ILocalSpectrumNative native;
+    private readonly Action<ConfigSpectrum> ensureLicenseAvailable;
     private readonly Spectrometer.Emission_CallBack callback = (_, _) => 1;
     private IntPtr handle;
     private SpectrometerDriverLease? lease;
@@ -112,7 +113,11 @@ internal sealed class LocalSpectrumSession : IDisposable
     public bool IsOpen { get { lock (gate) return handle != IntPtr.Zero && !quarantined; } }
     public bool IsQuarantined { get { lock (gate) return quarantined; } }
 
-    internal LocalSpectrumSession(ILocalSpectrumNative? native = null) => this.native = native ?? new LocalSpectrumNative();
+    internal LocalSpectrumSession(ILocalSpectrumNative? native = null, Action<ConfigSpectrum>? ensureLicenseAvailable = null)
+    {
+        this.native = native ?? new LocalSpectrumNative();
+        this.ensureLicenseAvailable = ensureLicenseAvailable ?? (_ => { });
+    }
 
     public void Open(ConfigSpectrum config)
     {
@@ -135,6 +140,7 @@ internal sealed class LocalSpectrumSession : IDisposable
                     throw new InvalidOperationException($"实际连接的光谱仪 SN 为 {serial}，与所选 {snapshot.SN} 不一致。");
                 if (snapshot.SetEmissionSP100Config.IsEnabled) Check(native.Configure(handle, snapshot.SetEmissionSP100Config), "设置 SP100");
                 openedConfig = snapshot;
+                ensureLicenseAvailable(snapshot);
             }
             catch { Close(); throw; }
         }

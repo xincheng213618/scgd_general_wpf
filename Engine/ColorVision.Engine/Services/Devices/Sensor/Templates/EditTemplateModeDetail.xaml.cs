@@ -114,13 +114,17 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             if (index < 0) index = Math.Clamp(fallbackIndex, 0, Math.Max(0, count - 1));
             CommandSelector.ItemsSource = Enumerable.Range(1, count).Select(number => $"#{number}").ToArray();
             CommandSelector.SelectedIndex = count == 0 ? -1 : index;
+            // Switching templates can retain the same selection without raising SelectionChanged.
+            UpdateCommandForm();
             CommandSelectionPanel.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
             DeleteCommandButton.IsEnabled = count > 0;
             CommandForm.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
             EmptyState.Visibility = count > 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        private void CommandSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void CommandSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateCommandForm();
+
+        private void UpdateCommandForm()
         {
             var commands = (Param as SensorParam)?.SensorCommands;
             int index = CommandSelector.SelectedIndex;

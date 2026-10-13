@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using MQTTMessageLib.Sensor;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Local;
 
@@ -24,12 +26,14 @@ internal sealed class LocalSensorSession : IDisposable
     private CancellationTokenSource? connection;
     private Exchange? pending;
     private long generation;
+    private long commandSequence;
     private long closeRequests;
     private long failedGeneration = -1;
     private Exception? connectionFailure;
     private bool disposed;
     private DeviceStatusType status = DeviceStatusType.Closed;
     public event Action<DeviceStatusType>? StatusChanged;
+    internal LocalSensorDiagnostics Diagnostics { get; } = new();
     public DeviceStatusType Status { get { lock (sync) return status; } }
     internal string? EndpointIdentity { get { lock (sync) return endpoint; } }
     public bool IsOpen => Status is DeviceStatusType.Opened or DeviceStatusType.Busy;
@@ -79,6 +83,7 @@ internal sealed class LocalSensorSession : IDisposable
                 status = DeviceStatusType.Opening;
             }
             Notify();
+            Diagnostics.AddLog(EndpointKey(config), "连接中", $"正在打开连接，连接超时 {config.ConnectTimeout} ms。");
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token, lifetimeToken);
             deadline.CancelAfter(config.ConnectTimeout);
             try { await candidate.OpenAsync(config, deadline.Token).ConfigureAwait(false); }
@@ -90,9 +95,15 @@ internal sealed class LocalSensorSession : IDisposable
                 status = DeviceStatusType.Opened;
             }
             Notify();
+            Diagnostics.AddLog(EndpointKey(config), "连接成功", "本地连接已打开。");
             _ = ReadLoopAsync(candidate, version, lifetimeToken);
         }
-        catch { if (version != 0) Abort(version, new IOException("本地传感器连接未完成。")); throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.AddLog(EndpointKey(config), "连接失败", ex.Message, true);
+            if (version != 0) Abort(version, new IOException("本地传感器连接未完成。"));
+            throw;
+        }
         finally { operations.Release(); }
     }
 
@@ -145,6 +156,7 @@ internal sealed class LocalSensorSession : IDisposable
     private async Task<LocalSensorCommandResult> ExecuteOneAsync(LocalSensorCommand command, long version, CancellationToken token)
     {
         byte[] request = command.Encode(command.Request);
+        long commandId = Interlocked.Increment(ref commandSequence);
         var elapsed = Stopwatch.StartNew();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         if (command.Timeout > 0) deadline.CancelAfter(command.Timeout);
@@ -155,13 +167,14 @@ internal sealed class LocalSensorSession : IDisposable
             for (int attempt = 1; attempt <= attempts; attempt++)
             {
                 ILocalSensorTransport current;
-                exchange = new Exchange(command);
+                exchange = new Exchange(command) { CommandId = commandId, Attempt = attempt };
                 lock (sync)
                 {
                     if (generation != version || transport == null) throw new IOException("本地传感器已断开。");
                     current = transport;
                     pending = exchange;
                 }
+                Diagnostics.AddTraffic(LocalSensorDiagnosticKind.Sent, EndpointIdentity ?? "", command, commandId, attempt, request);
                 await current.WriteAsync(request, deadline.Token).ConfigureAwait(false);
                 byte[] response = [];
                 if (command.Timeout > 0)
@@ -173,9 +186,16 @@ internal sealed class LocalSensorSession : IDisposable
                 lock (sync) { if (ReferenceEquals(pending, exchange)) pending = null; }
                 if (!exchange.Matches(response))
                 {
-                    if (attempt < attempts) continue;
+                    if (attempt < attempts)
+                    {
+                        Diagnostics.AddLog(EndpointIdentity ?? "", "回包不匹配，重试",
+                            $"{command.Name} · #{commandId} / 第 {attempt} 次；预期 {SensorCommandTextFormatter.ToReadableText(command.Response, command.CmdType == SensorCmdType.Hex)}，实际 {SensorCommandTextFormatter.ToReadableText(command.Decode(response), command.CmdType == SensorCmdType.Hex)}。");
+                        continue;
+                    }
                     throw new InvalidDataException($"传感器指令 {command.Name} 回包不匹配：预期 {command.Response}，实际 {command.Decode(response)}。");
                 }
+                Diagnostics.AddLog(EndpointIdentity ?? "", "执行完成",
+                    $"{command.Name} · #{commandId} / 第 {attempt} 次；耗时 {elapsed.ElapsedMilliseconds} ms；完整回包：{SensorCommandTextFormatter.ToReadableText(command.Decode(response), command.CmdType == SensorCmdType.Hex)}");
                 return new LocalSensorCommandResult { Name = command.Name, RequestHex = Convert.ToHexString(request), ResponseHex = Convert.ToHexString(response), ResponseText = command.Decode(response), Attempts = attempt, ElapsedMilliseconds = elapsed.ElapsedMilliseconds };
             }
             throw new InvalidOperationException("传感器指令未执行。");
@@ -214,6 +234,7 @@ internal sealed class LocalSensorSession : IDisposable
                 lock (sync)
                 {
                     if (version != generation) return;
+                    Diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, endpoint ?? "", pending?.Command, pending?.CommandId ?? 0, pending?.Attempt ?? 0, bytes.AsSpan(0, count));
                     pending?.Receive(bytes.AsSpan(0, count));
                 }
             }
@@ -242,6 +263,7 @@ internal sealed class LocalSensorSession : IDisposable
         }
         try
         {
+            Diagnostics.AddLog(previousEndpoint ?? "", "连接关闭", failure.Message, failure is not OperationCanceledException and not ObjectDisposedException);
             Notify();
             try { cancellation?.Cancel(); }
             finally { previous?.Dispose(); }
@@ -302,6 +324,9 @@ internal sealed class LocalSensorSession : IDisposable
 
     internal sealed class Exchange(LocalSensorCommand command)
     {
+        internal LocalSensorCommand Command => command;
+        internal long CommandId { get; init; }
+        internal int Attempt { get; init; }
         private readonly object receiveSync = new();
         private readonly List<byte> received = [];
         private readonly byte[] expected = command.Encode(command.Response);

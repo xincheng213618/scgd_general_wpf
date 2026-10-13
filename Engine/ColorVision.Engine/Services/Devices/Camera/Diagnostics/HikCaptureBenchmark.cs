@@ -1,10 +1,12 @@
 extern alias HikMvsSdk;
 using MyCamera = HikMvsSdk::MvCamCtrl.NET.MyCamera;
+using cvColorVision;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -13,27 +15,44 @@ using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Diagnostics;
 
-internal sealed record HikTestDevice(string Serial, string Model, string Transport, MyCamera.MV_CC_DEVICE_INFO Native)
+internal sealed record HikTestDevice(string Serial, string Model, string Transport, MyCamera.MV_CC_DEVICE_INFO Native,
+    MyCamera.MV_GENTL_DEV_INFO? GenTL = null)
 {
     public override string ToString() => $"{Model} · {Serial} · {Transport}";
 }
 
 internal sealed record HikCaptureSample(int Run, int Index, double SetupMs, double CaptureMs,
     double WaitMs, double ConvertMs, double ThreadCpuMs, uint FrameId, uint Width, uint Height, float ActualExposureUs, float ActualGain,
-    string? RawExportPath = null)
+    uint Channels, string? RawExportPath = null)
 {
     public bool FirstFrame => Index == 1;
     public double CycleMs => SetupMs + CaptureMs;
+    public string OutputFormat => Channels == 1 ? "Mono16" : "RGB48";
+}
+
+internal sealed record HikTestFrameFormat(MyCamera.MvGvspPixelType Source, uint Channels)
+{
+    public string OutputFormat => Channels == 1 ? "Mono16" : "RGB48";
+    public string RawFileName => Channels == 1 ? "frame.mono16.raw" : "frame.bayer16.raw";
 }
 
 // Used only in the --hik-capture-test process. No DeviceCamera, database, cache or flow state is involved.
 internal static class HikCaptureBenchmark
 {
     private static bool sdkInitialized;
+    private static readonly object enumerationLock = new();
 
-    internal static IReadOnlyList<HikTestDevice> Discover()
+    internal static IReadOnlyList<HikTestDevice> Discover(CameraModel model, IProgress<string>? log = null)
+    {
+        if (!HikCaptureTestSettings.SupportsModel(model))
+            throw new InvalidOperationException(EngineLocalization.Get("HikTest_HkOnly"));
+        lock (enumerationLock) return DiscoverCore(model, log);
+    }
+
+    private static IReadOnlyList<HikTestDevice> DiscoverCore(CameraModel model, IProgress<string>? log)
     {
         EnsureSdk();
+        if (model == CameraModel.HK_CARD) return DiscoverFrameGrabbers(log);
         MyCamera.MV_CC_DEVICE_INFO_LIST list = new();
         Check(MyCamera.MV_CC_EnumDevices_NET(MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE, ref list), "EnumDevices");
         var devices = new List<HikTestDevice>();
@@ -54,17 +73,73 @@ internal static class HikCaptureBenchmark
         return devices;
     }
 
+    private static IReadOnlyList<HikTestDevice> DiscoverFrameGrabbers(IProgress<string>? log)
+    {
+        var directories = new List<string>();
+        using (var process = Process.GetCurrentProcess())
+            foreach (ProcessModule module in process.Modules)
+                if (module.ModuleName.Equals("MvCameraControl.dll", StringComparison.OrdinalIgnoreCase)
+                    && Path.GetDirectoryName(module.FileName) is string directory)
+                    directories.Add(directory);
+        foreach (string variable in new[] { "CommonProgramFiles(x86)", "CommonProgramFiles" })
+            if (Environment.GetEnvironmentVariable(variable) is string common)
+                directories.Add(Path.Combine(common, "MVS", "Runtime", "Win64_x64"));
+        string[] producers = new[] { "MvFGProducerCML.cti", "MvFGProducerCXP.cti", "MvFGProducerGEV.cti", "MvFGProducerXoF.cti" }
+            .Select(name => directories.Select(directory => Path.Combine(directory, name)).FirstOrDefault(File.Exists))
+            .OfType<string>().ToArray();
+        if (producers.Length == 0) throw new InvalidOperationException(EngineLocalization.Get("HikTest_SdkRequired"));
+        var devices = new List<HikTestDevice>();
+        Exception? firstError = null;
+        foreach (string producer in producers)
+        {
+            MyCamera.MV_GENTL_IF_INFO_LIST interfaces = new();
+            int code = MyCamera.MV_CC_EnumInterfacesByGenTL_NET(ref interfaces, producer);
+            log?.Report($"[HikTestGenTL] Producer={producer}; Interfaces={interfaces.nInterfaceNum}; Result=0x{code:X8}");
+            if (code != MyCamera.MV_OK)
+            {
+                firstError ??= new InvalidOperationException($"EnumInterfacesByGenTL: 0x{code:X8}; Producer={producer}");
+                continue;
+            }
+            // SDK-owned enumeration pointers must be copied before another enumeration.
+            var snapshots = new List<MyCamera.MV_GENTL_IF_INFO>();
+            for (int i = 0; i < interfaces.nInterfaceNum; i++)
+                snapshots.Add(Marshal.PtrToStructure<MyCamera.MV_GENTL_IF_INFO>(interfaces.pIFInfo[i]));
+            foreach (var snapshot in snapshots)
+            {
+                var info = snapshot;
+                MyCamera.MV_GENTL_DEV_INFO_LIST list = new();
+                code = MyCamera.MV_CC_EnumDevicesByGenTL_NET(ref info, ref list);
+                log?.Report($"[HikTestGenTL] Producer={producer}; Interface={info.chInterfaceID}; Type={info.chTLType}; Devices={list.nDeviceNum}; Result=0x{code:X8}");
+                if (code != MyCamera.MV_OK)
+                {
+                    firstError ??= new InvalidOperationException($"EnumDevicesByGenTL: 0x{code:X8}; Interface={info.chInterfaceID}");
+                    continue;
+                }
+                for (int i = 0; i < list.nDeviceNum; i++)
+                {
+                    var device = Marshal.PtrToStructure<MyCamera.MV_GENTL_DEV_INFO>(list.pDeviceInfo[i]);
+                    devices.Add(new(device.chSerialNumber.TrimEnd('\0'), device.chModelName.TrimEnd('\0'),
+                        $"GenTL/{device.chTLType.TrimEnd('\0')}", default, device));
+                    log?.Report($"[HikTestGenTL] SN={device.chSerialNumber}; Model={device.chModelName}; CtiIndex={device.nCtiIndex}; Device={device.chDeviceID}");
+                }
+            }
+        }
+        // CTI indices are shared by open handles; do not unload producers after scanning.
+        if (devices.Count == 0 && firstError != null) ExceptionDispatchInfo.Capture(firstError).Throw();
+        return devices;
+    }
+
     internal static void Run(HikCaptureTestSettings settings, int run, BlockingCollection<HikCaptureRequest> captureRequests,
         IProgress<bool> ready, IProgress<HikCaptureSample> samples, IProgress<string> log, CancellationToken cancellation)
     {
-        if (string.IsNullOrWhiteSpace(settings.CameraId) || !float.IsFinite(settings.ExposureMs) || settings.ExposureMs <= 0
+        if (!HikCaptureTestSettings.SupportsModel(settings.CameraModel) || string.IsNullOrWhiteSpace(settings.CameraId) || !float.IsFinite(settings.ExposureMs) || settings.ExposureMs <= 0
             || settings.ExposureMs > 60000 || !float.IsFinite(settings.Gain) || settings.Gain < 0
             || settings.BayerQuality > 3)
             throw new InvalidOperationException(EngineLocalization.Get("HikTest_InvalidSettings"));
         EnsureSdk();
         cancellation.ThrowIfCancellationRequested();
         log.Report($"Run {run} · MVS · {DateTimeOffset.Now:O}\n"
-            + $"SN={settings.CameraId}; exposure={settings.ExposureMs.ToString(CultureInfo.InvariantCulture)} ms; gain={settings.Gain.ToString(CultureInfo.InvariantCulture)}; manual single-frame; average=1; Bayer16 → RGB48\n"
+            + $"SN={settings.CameraId}; model={settings.CameraModel}; exposure={settings.ExposureMs.ToString(CultureInfo.InvariantCulture)} ms; gain={settings.Gain.ToString(CultureInfo.InvariantCulture)}; manual single-frame; average=1\n"
             + $"MVS SDK=0x{MyCamera.MV_CC_GetSDKVersion_NET():X8}; Bayer quality={settings.BayerQuality}; process={Environment.ProcessId}");
         using var process = Process.GetCurrentProcess();
         foreach (ProcessModule module in process.Modules)
@@ -73,14 +148,18 @@ internal static class HikCaptureBenchmark
         RunMvs(settings, run, captureRequests, ready, samples, log, cancellation);
     }
 
-    private static void RunMvs(HikCaptureTestSettings settings, int run, BlockingCollection<HikCaptureRequest> captureRequests,
+    private static unsafe void RunMvs(HikCaptureTestSettings settings, int run, BlockingCollection<HikCaptureRequest> captureRequests,
         IProgress<bool> ready, IProgress<HikCaptureSample> samples, IProgress<string> log, CancellationToken cancellation)
     {
-        HikTestDevice device = Discover().SingleOrDefault(d => d.Serial.Equals(settings.CameraId, StringComparison.OrdinalIgnoreCase))
+        HikTestDevice device = Discover(settings.CameraModel, log).FirstOrDefault(d => d.Serial.Equals(settings.CameraId, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException(EngineLocalization.Get("HikTest_NotFound"));
         var camera = new MyCamera();
-        var info = device.Native;
-        Check(camera.MV_CC_CreateDevice_NET(ref info), "CreateDevice");
+        if (device.GenTL is { } genTL) Check(camera.MV_CC_CreateDeviceByGenTL_NET(ref genTL), "CreateDeviceByGenTL");
+        else
+        {
+            var info = device.Native;
+            Check(camera.MV_CC_CreateDevice_NET(ref info), "CreateDevice");
+        }
         bool opened = false, grabbing = false;
         IntPtr output = IntPtr.Zero;
         var restore = new Stack<(string Name, Action Restore)>();
@@ -89,20 +168,15 @@ internal static class HikCaptureBenchmark
         try
         {
             var opening = Stopwatch.StartNew();
-            Check(camera.MV_CC_OpenDevice_NET(), "OpenDevice (exclusive)");
+            Check(camera.MV_CC_OpenDevice_NET(), "OpenDevice");
             opened = true;
             log.Report($"{device}; open={opening.Elapsed.TotalMilliseconds:F3} ms (excluded from frame timing)");
             LogCameraNodes(camera, log, "Before");
 
             MyCamera.MVCC_ENUMVALUE pixel = new();
             Check(camera.MV_CC_GetEnumValue_NET("PixelFormat", ref pixel), "Get PixelFormat");
-            var formats = pixel.nSupportValue.Take((int)pixel.nSupportedNum).Select(v => (MyCamera.MvGvspPixelType)v).ToArray();
-            var bayer16 = formats.Where(v => v.ToString().StartsWith("PixelType_Gvsp_Bayer", StringComparison.Ordinal)
-                && v.ToString().EndsWith("16", StringComparison.Ordinal)).ToArray();
-            string currentFormat = ((MyCamera.MvGvspPixelType)pixel.nCurValue).ToString();
-            var source = bayer16.FirstOrDefault(v => currentFormat.StartsWith(v.ToString()[..^2], StringComparison.Ordinal));
-            if ((uint)source == 0 && bayer16.Length == 1) source = bayer16[0];
-            if ((uint)source == 0) throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
+            var format = SelectFormat(pixel);
+            var source = format.Source;
             SetEnum("PixelFormat", (uint)source);
             ConfigureSoftwareTrigger();
             SetEnum("ExposureAuto", 0);
@@ -111,13 +185,13 @@ internal static class HikCaptureBenchmark
             int exposureUs = checked((int)(settings.ExposureMs * 1000));
             SetFloat("ExposureTime", exposureUs);
             SetFloat("Gain", settings.Gain);
-            Check(camera.MV_CC_SetBayerCvtQuality_NET(settings.BayerQuality), "SetBayerCvtQuality");
+            if (format.Channels == 3) Check(camera.MV_CC_SetBayerCvtQuality_NET(settings.BayerQuality), "SetBayerCvtQuality");
             Check(camera.MV_CC_SetImageNodeNum_NET(2), "SetImageNodeNum");
             uint width = checked((uint)GetInt(camera, "Width")), height = checked((uint)GetInt(camera, "Height"));
-            int length = OutputLength(width, height);
+            int length = OutputLength(width, height, format.Channels);
             output = Marshal.AllocHGlobal(length);
             string cameraSettings = LogCameraNodes(camera, log, "Capture");
-            log.Report($"Conversion: {source} → RGB16_Packed (RGB48), quality={settings.BayerQuality}; destination={length} bytes; reused\n"
+            log.Report($"Output: {source} → {format.OutputFormat}; Bayer quality={(format.Channels == 3 ? settings.BayerQuality.ToString() : "N/A")}; destination={length} bytes; reused\n"
                 + "ADC depth, ROI, black level, white balance and transport settings are read back below; no UserSetSave is used.");
             Check(camera.MV_CC_StartGrabbing_NET(), "StartGrabbing");
             grabbing = true;
@@ -155,18 +229,24 @@ internal static class HikCaptureBenchmark
                     if (frameInfo.nWidth != width || frameInfo.nHeight != height || frameInfo.enPixelType != source
                         || frameInfo.nFrameLen < checked(width * height * 2) || frameInfo.nLostPacket != 0 || frameInfo.nFrameNum == lastFrame)
                         throw new InvalidOperationException("Incomplete, repeated or unexpected MVS frame; sample excluded.");
-                    var conversion = new MyCamera.MV_CC_PIXEL_CONVERT_PARAM_EX
-                    {
-                        nWidth = width, nHeight = height, enSrcPixelType = source,
-                        pSrcData = frame.pBufAddr, nSrcDataLen = frameInfo.nFrameLen,
-                        enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB16_Packed,
-                        pDstBuffer = output, nDstBufferSize = (uint)length
-                    };
                     var converting = Stopwatch.StartNew();
-                    int code = camera.MV_CC_ConvertPixelTypeEx_NET(ref conversion);
+                    if (format.Channels == 1)
+                    {
+                        new ReadOnlySpan<byte>((void*)frame.pBufAddr, length).CopyTo(new Span<byte>((void*)output, length));
+                    }
+                    else
+                    {
+                        var conversion = new MyCamera.MV_CC_PIXEL_CONVERT_PARAM_EX
+                        {
+                            nWidth = width, nHeight = height, enSrcPixelType = source,
+                            pSrcData = frame.pBufAddr, nSrcDataLen = frameInfo.nFrameLen,
+                            enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB16_Packed,
+                            pDstBuffer = output, nDstBufferSize = (uint)length
+                        };
+                        Check(camera.MV_CC_ConvertPixelTypeEx_NET(ref conversion), "ConvertPixelTypeEx");
+                        if (conversion.nDstLen != length) throw new InvalidOperationException("Unexpected RGB48 output length.");
+                    }
                     convertMs = converting.Elapsed.TotalMilliseconds;
-                    Check(code, "ConvertPixelTypeEx");
-                    if (conversion.nDstLen != length) throw new InvalidOperationException("Unexpected RGB48 output length.");
                     lastFrame = frameInfo.nFrameNum;
                     if (request.RawExportPath != null)
                     {
@@ -176,9 +256,9 @@ internal static class HikCaptureBenchmark
                         double exportCpu = ThreadCpuMilliseconds();
                         var exporting = Stopwatch.StartNew();
                         long imageBytes = checked((long)width * height * 2);
-                        HikRawFrameExport.Save(request.RawExportPath, frame.pBufAddr, checked((int)frameInfo.nFrameLen), new
+                        HikRawFrameExport.Save(request.RawExportPath, frame.pBufAddr, checked((int)frameInfo.nFrameLen), format.RawFileName, new
                         {
-                            SchemaVersion = 1, RawFile = "frame.bayer16.raw", ReceivedAt = receivedAt,
+                            SchemaVersion = 1, RawFile = format.RawFileName, ReceivedAt = receivedAt,
                             CameraSerial = device.Serial, CameraModel = device.Model, device.Transport,
                             Run = run, Index = i, FrameId = lastFrame.Value, Width = width, Height = height,
                             PixelFormat = source.ToString(), PixelFormatCode = $"0x{(uint)source:X8}",
@@ -186,7 +266,7 @@ internal static class HikCaptureBenchmark
                             {
                                 "PixelType_Gvsp_BayerRG16" => "RGGB", "PixelType_Gvsp_BayerGR16" => "GRBG",
                                 "PixelType_Gvsp_BayerGB16" => "GBRG", "PixelType_Gvsp_BayerBG16" => "BGGR",
-                                _ => "Unknown"
+                                _ => "None"
                             },
                             StorageBits = 16, Channels = 1, ByteOrder = "little-endian", HeaderBytes = 0,
                             ImageBytes = imageBytes, PayloadBytes = frameInfo.nFrameLen,
@@ -194,7 +274,7 @@ internal static class HikCaptureBenchmark
                             OffsetX = frameInfo.nOffsetX, OffsetY = frameInfo.nOffsetY, UnparsedChunks = frameInfo.nUnparsedChunkNum,
                             ExposureUs = actualExposure, Gain = actualGain, settings.BayerQuality,
                             SdkVersion = $"0x{MyCamera.MV_CC_GetSDKVersion_NET():X8}", CameraSettings = cameraSettings,
-                            LayoutNote = "Exact SDK source payload, before Bayer-to-RGB interpolation; no calibration, flip or normalization. If RowStrideBytes is null, inspect payload/chunk layout before decoding."
+                            LayoutNote = "Exact SDK source payload, before output conversion/copy; no calibration, flip or normalization. If RowStrideBytes is null, inspect payload/chunk layout before decoding."
                         }, cancellation);
                         log.Report(FormattableString.Invariant($"[HikRawExport] Run={run} Index={i} FrameId={lastFrame} Path={request.RawExportPath} PayloadBytes={frameInfo.nFrameLen} ExportMs={exporting.Elapsed.TotalMilliseconds:F3} (excluded from capture timing)"));
                         cpu += ThreadCpuMilliseconds() - exportCpu;
@@ -204,7 +284,7 @@ internal static class HikCaptureBenchmark
                 finally { Check(camera.MV_CC_FreeImageBuffer_NET(ref frame), "FreeImageBuffer"); }
                 double captureMs = capture.Elapsed.TotalMilliseconds;
                 double cpuMs = ThreadCpuMilliseconds() - cpu;
-                samples.Report(new(run, i, setupMs, captureMs, waitMs, convertMs, cpuMs, lastFrame!.Value, width, height, actualExposure, actualGain, request.RawExportPath));
+                samples.Report(new(run, i, setupMs, captureMs, waitMs, convertMs, cpuMs, lastFrame!.Value, width, height, actualExposure, actualGain, format.Channels, request.RawExportPath));
             }
         }
         catch (Exception ex)
@@ -361,10 +441,31 @@ internal static class HikCaptureBenchmark
         }
     }
 
-    internal static int OutputLength(uint width, uint height)
+    internal static HikTestFrameFormat SelectFormat(MyCamera.MVCC_ENUMVALUE pixel)
+    {
+        if (pixel.nSupportValue == null || pixel.nSupportedNum > pixel.nSupportValue.Length)
+            throw new InvalidOperationException("MVS returned invalid pixel formats.");
+        var formats = pixel.nSupportValue.Take((int)pixel.nSupportedNum).Select(v => (MyCamera.MvGvspPixelType)v).ToArray();
+        string currentFormat = ((MyCamera.MvGvspPixelType)pixel.nCurValue).ToString();
+        if (currentFormat.StartsWith("PixelType_Gvsp_Mono", StringComparison.Ordinal))
+        {
+            if (!formats.Contains(MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono16))
+                throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
+            return new(MyCamera.MvGvspPixelType.PixelType_Gvsp_Mono16, 1);
+        }
+        var bayer16 = formats.Where(v => v.ToString().StartsWith("PixelType_Gvsp_Bayer", StringComparison.Ordinal)
+            && v.ToString().EndsWith("16", StringComparison.Ordinal)).ToArray();
+        var source = bayer16.FirstOrDefault(v => currentFormat.StartsWith(v.ToString()[..^2], StringComparison.Ordinal));
+        if ((uint)source == 0 && bayer16.Length == 1) source = bayer16[0];
+        if ((uint)source == 0) throw new InvalidOperationException(EngineLocalization.Get("HikTest_Bayer16Required"));
+        return new(source, 3);
+    }
+
+    internal static int OutputLength(uint width, uint height, uint channels)
     {
         if (width == 0 || height == 0) throw new InvalidOperationException("Empty image dimensions.");
-        return checked((int)(checked((long)width * height * 6)));
+        if (channels is not (1 or 3)) throw new ArgumentOutOfRangeException(nameof(channels));
+        return checked((int)(checked((long)width * height * channels * 2)));
     }
 
     private static void EnsureSdk()

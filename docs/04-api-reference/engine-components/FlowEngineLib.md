@@ -107,6 +107,8 @@ flowchart TD
 
 节点完成通知尚未发布时，流程完成通知可延后。多个 `CVStartCFC` 副本共享延后计数，但通知保留真正结束流程的副本；最后释放延后计数的上游副本不能覆盖终态和错误信息。
 
+流程结束时，`BaseStartNode.DoFinishing` 会沿开始端口再次传递终态，供沿途节点释放运行记录；这是内核状态清理，与宿主配置的后处理项目无关。`CVBaseServerNode` 收到 `Completed` 时只清理并继续传递状态，不再次发送服务请求或启动本地执行。`IgnoreErrors` 用于让指定节点在上游出错后仍执行收尾，不会把本节点自身的执行失败改成成功，也不能让正常完成通知重新执行设备指令。
+
 共享会话的 `RunFinalized`、后处理失败策略及项目兼容链见[执行会话](../../01-user-guide/workflow/execution.md)；隔离运行的状态映射见[无界面执行](../algorithms/templates/flow-engine.md)。它们不是 FlowEngineLib 内核自动附带的业务阶段。
 
 ## 宿主边界

@@ -7,6 +7,8 @@ namespace FlowEngineLib.Base;
 
 public class CVStartCFC : CVBaseCFC
 {
+    [JsonIgnore] internal Repeat.FlowRepeatRegionRun RepeatRun { get; set; }
+    [JsonIgnore] internal int RepeatRound { get; set; }
     [JsonIgnore]
     public bool PersistResults { get; set; } = true;
 	private sealed class FlowFinishState
@@ -62,6 +64,8 @@ public class CVStartCFC : CVBaseCFC
 		PersistResults = startCFC.PersistResults;
 		finishState = startCFC.finishState;
 		RuntimeResources = startCFC.RuntimeResources;
+		RepeatRun = startCFC.RepeatRun;
+		RepeatRound = startCFC.RepeatRound;
 		StartTime = startCFC.StartTime;
 		EndTime = startCFC.EndTime;
 		Id = startCFC.Id;
@@ -163,6 +167,14 @@ public class CVStartCFC : CVBaseCFC
 	public bool IsSameFlow(CVStartCFC other)
 	{
 		return other != null && string.Equals(SerialNumber, other.SerialNumber, StringComparison.Ordinal);
+	}
+
+	/// <summary>Owns a node-created resource and releases intermediate repeat resources between rounds.</summary>
+	public void SetRuntimeResource(string key, object value)
+	{
+		bool existed = RuntimeResources.TryGet<object>(key, out _);
+		RuntimeResources.Set(key, value);
+		if (!existed) RepeatRun?.TrackResource(key, RepeatRound);
 	}
 
 	public string BuildStatusMsg(string serverCode, string deviceCode, int zIdx)

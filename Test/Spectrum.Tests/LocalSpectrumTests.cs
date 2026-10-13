@@ -1,4 +1,6 @@
 using ColorVision.Engine.Services;
+using ColorVision.Engine;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using cvColorVision;
@@ -14,6 +16,72 @@ public sealed class LocalSpectrumDriverCollection;
 [Collection("LocalSpectrumDriver")]
 public sealed class LocalSpectrumTests
 {
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0, false, false)]
+    [InlineData(1, false, true)]
+    [InlineData(null, true, true)]
+    [InlineData(-1, true, true)]
+    public void LocalOpenChecksOnlyStoredExpiryAndReleasesExpiredConnection(int? expirySeconds, bool experimentalFeatures, bool allowed)
+    {
+        DateTime now = new(2026, 10, 13, 12, 0, 0);
+        LicenseModel license = new() { LiceType = 1, ExpiryDate = expirySeconds.HasValue ? now.AddSeconds(expirySeconds.Value) : null, LicenseValue = "not a license payload" };
+        ExperimentalFeaturesConfig settings = new() { IsEnabled = experimentalFeatures };
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native,
+            ensureLicenseAvailable: config =>
+            {
+                Assert.Equal(native.Serial, config.SN);
+                LocalSpectrumLicense.EnsureNotExpired(license.ExpiryDate, settings.IsEnabled, now);
+            });
+
+        if (allowed)
+        {
+            session.Open(Config());
+            Assert.True(session.IsOpen);
+            Assert.Equal(0, native.CloseCalls);
+            Assert.Equal(0, native.ReleaseCalls);
+        }
+        else
+        {
+            Assert.Throws<LocalSpectrumLicenseException>(() => session.Open(Config()));
+            Assert.False(session.IsOpen);
+            Assert.False(session.IsQuarantined);
+            Assert.Equal(1, native.CloseCalls);
+            Assert.Equal(1, native.ReleaseCalls);
+            using var lease = SpectrometerDriverLease.TryAcquire();
+            Assert.NotNull(lease);
+        }
+        Assert.Equal(1, native.CreateCalls);
+    }
+
+    [Fact]
+    public void ExpiryDoesNotInterruptAnOpenSpectrumSessionAndIsRecheckedAfterClose()
+    {
+        using var files = new CalibrationFiles();
+        DateTime now = new(2026, 10, 13, 12, 0, 0);
+        DateTime expiry = now.AddSeconds(1);
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native,
+            ensureLicenseAvailable: _ => LocalSpectrumLicense.EnsureNotExpired(expiry, false, now));
+        session.Open(files.Config);
+        now = now.AddSeconds(2);
+
+        session.Open(files.Config);
+        session.Capture(new(), files.Config);
+        Assert.True(session.IsOpen);
+        Assert.Equal(1, native.CreateCalls);
+        Assert.Equal(0, native.CloseCalls);
+
+        session.Close();
+        Assert.Throws<LocalSpectrumLicenseException>(() => session.Open(files.Config));
+        Assert.False(session.IsOpen);
+        Assert.Equal(2, native.CreateCalls);
+        Assert.Equal(2, native.CloseCalls);
+        Assert.Equal(2, native.ReleaseCalls);
+    }
+
     [Fact]
     public void OfflinePreferenceExposesClosedAndLocalStatusIgnoresRemoteHeartbeat()
     {

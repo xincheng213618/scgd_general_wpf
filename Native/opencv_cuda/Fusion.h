@@ -1,437 +1,98 @@
-#pragma once
+﻿#pragma once
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core.hpp>
+#include <cuda_runtime.h>
+#include <cstring>
+#include <limits>
+#include <stdexcept>
 #include <vector>
-#include <iostream>
-#include <chrono>
-#include <memory>
-
-#include "cuda_runtime.h"
+#include "fusion_options.h"
 #include "cudamath.h"
 
-using namespace cv;
-
-// CUDA error checking macro
-#define CUDA_CHECK(call) \
-    do { \
-        cudaError_t error = call; \
-        if (error != cudaSuccess) { \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ \
-                      << " - " << cudaGetErrorString(error) << std::endl; \
-            return Mat(); \
-        } \
-    } while(0)
-
-// Helper function for performance timing
-inline void print_time(const std::string& message, const std::chrono::steady_clock::time_point& start) {
-    auto end = std::chrono::steady_clock::now();
-    std::cout << message << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << std::endl;
+namespace fusion_cuda {
+inline void check(cudaError_t error) {
+    if (error != cudaSuccess) throw std::runtime_error(cudaGetErrorString(error));
 }
 
-// RAII wrapper for CUDA memory
-class CudaMemoryGuard {
-    void** m_ptr;
-public:
-    explicit CudaMemoryGuard(void** ptr) : m_ptr(ptr) {}
-    ~CudaMemoryGuard() {
-        if (*m_ptr) {
-            cudaFree(*m_ptr);
-            *m_ptr = nullptr;
+// Per-call ownership: no shared workspace or default-stream dependencies.
+struct Resources {
+    cudaStream_t stream = nullptr;
+    cudaEvent_t copied[2] = {};
+    unsigned char* pinned[2] = {};
+    unsigned char *images = nullptr, *output = nullptr;
+    float *focus = nullptr, *scratch = nullptr;
+    ~Resources() {
+        if (stream) cudaStreamSynchronize(stream);
+        for (int i = 0; i < 2; ++i) {
+            if (copied[i]) cudaEventDestroy(copied[i]);
+            if (pinned[i]) cudaFreeHost(pinned[i]);
         }
-    }
-    void release() { *m_ptr = nullptr; }
-};
-
-// RAII wrapper for pinned host memory
-class PinnedMemoryGuard {
-    void* m_ptr;
-public:
-    explicit PinnedMemoryGuard(void* ptr) : m_ptr(ptr) {}
-    ~PinnedMemoryGuard() {
-        if (m_ptr) cudaFreeHost(m_ptr);
-    }
-    void release() { m_ptr = nullptr; }
-};
-
-// RAII wrapper for CUDA stream
-class CudaStreamGuard {
-    cudaStream_t m_stream;
-public:
-    explicit CudaStreamGuard(cudaStream_t stream) : m_stream(stream) {}
-    ~CudaStreamGuard() {
-        if (m_stream) cudaStreamDestroy(m_stream);
+        if (images) cudaFree(images);
+        if (output) cudaFree(output);
+        if (focus) cudaFree(focus);
+        if (scratch) cudaFree(scratch);
+        if (stream) cudaStreamDestroy(stream);
     }
 };
+}
 
-/**
- * @brief GPU-accelerated image fusion using focus stacking algorithm
- *
- * This function performs depth-of-field extension by fusing multiple images
- * with different focus planes. The algorithm:
- * 1. Computes focus measure for each pixel in each image
- * 2. Fits Gaussian curve to focus measure profiles
- * 3. Calculates adaptive weights based on fitting quality
- * 4. Fuses images using weighted averaging
- *
- * @param imgs Vector of input images (grayscale or BGR)
- * @param STEP Half-window size for curve fitting
- * @return Fused image
- */
-Mat Fusion(std::vector<Mat> imgs, int STEP) {
-    if (imgs.empty()) return Mat();
-
-    auto total_start = std::chrono::steady_clock::now();
-
-    const int M = imgs[0].rows;
-    const int N = imgs[0].cols;
-    const int P = static_cast<int>(imgs.size());
-    const int channels = imgs[0].channels();
-    const size_t img_size_bytes = M * N * sizeof(double);
-    const size_t img_size_int = M * N * sizeof(int);
-
-    // Validate input images
-    for (int i = 1; i < P; ++i) {
-        if (imgs[i].rows != M || imgs[i].cols != N || imgs[i].channels() != channels) {
-            std::cerr << "Error: All images must have the same size and channels" << std::endl;
-            return Mat();
-        }
+inline cv::Mat Fusion(const std::vector<cv::Mat>& imgs, const FusionOptions& options) {
+    using fusion_cuda::check;
+    if (imgs.empty() || !options.valid()) return {};
+    const int width = imgs[0].cols, height = imgs[0].rows, channels = imgs[0].channels();
+    if (imgs[0].empty() || imgs[0].depth() != CV_8U || (channels != 1 && channels != 3)) return {};
+    for (const auto& img : imgs)
+        if (img.size() != imgs[0].size() || img.type() != imgs[0].type()) return {};
+    if (imgs.size() == 1) return imgs[0].clone();
+    const size_t pixels = imgs[0].total();
+    if (pixels > size_t(std::numeric_limits<int>::max()) || imgs.size() > size_t(std::numeric_limits<int>::max())
+        || imgs.size() > std::numeric_limits<size_t>::max() / pixels / sizeof(float)) return {};
+    const int total = static_cast<int>(pixels), count = static_cast<int>(imgs.size());
+    const size_t imageBytes = pixels * channels, rowBytes = size_t(width) * channels;
+    const bool adaptive = count >= 2 * options.focusStep + 1;
+    fusion_cuda::Resources r;
+    check(cudaStreamCreateWithFlags(&r.stream, cudaStreamNonBlocking));
+    check(cudaMalloc(&r.images, imageBytes * count));
+    check(cudaMalloc(&r.output, imageBytes));
+    check(cudaMalloc(&r.focus, pixels * count * sizeof(float)));
+    check(cudaMalloc(&r.scratch, pixels * 4 * sizeof(float)));
+    for (int b = 0; b < 2; ++b) {
+        check(cudaMallocHost(&r.pinned[b], imageBytes));
+        check(cudaEventCreateWithFlags(&r.copied[b], cudaEventDisableTiming));
     }
-
-    // --- GPU Memory Allocation ---
-    double *d_all_gray = nullptr, *d_all_fms = nullptr, *d_gfocus_buffer = nullptr;
-    double *d_ymax = nullptr, *d_y1t = nullptr, *d_y2t = nullptr, *d_y3t = nullptr;
-    double *d_s2 = nullptr, *d_u = nullptr, *d_A = nullptr;
-    double *d_err = nullptr, *d_inv_psnr = nullptr, *d_S = nullptr, *d_phi = nullptr;
-    double *d_fmn = nullptr;
-    double *d_final_r = nullptr, *d_final_g = nullptr, *d_final_b = nullptr;
-    int *d_I = nullptr, *d_Ic = nullptr;
-
-    // Use RAII guards for automatic cleanup
-    CudaMemoryGuard guard_gray((void**)&d_all_gray);
-    CudaMemoryGuard guard_fms((void**)&d_all_fms);
-    CudaMemoryGuard guard_buffer((void**)&d_gfocus_buffer);
-    CudaMemoryGuard guard_ymax((void**)&d_ymax);
-    CudaMemoryGuard guard_y1t((void**)&d_y1t);
-    CudaMemoryGuard guard_y2t((void**)&d_y2t);
-    CudaMemoryGuard guard_y3t((void**)&d_y3t);
-    CudaMemoryGuard guard_s2((void**)&d_s2);
-    CudaMemoryGuard guard_u((void**)&d_u);
-    CudaMemoryGuard guard_A((void**)&d_A);
-    CudaMemoryGuard guard_err((void**)&d_err);
-    CudaMemoryGuard guard_inv_psnr((void**)&d_inv_psnr);
-    CudaMemoryGuard guard_S((void**)&d_S);
-    CudaMemoryGuard guard_phi((void**)&d_phi);
-    CudaMemoryGuard guard_I((void**)&d_I);
-    CudaMemoryGuard guard_Ic((void**)&d_Ic);
-    CudaMemoryGuard guard_fmn((void**)&d_fmn);
-
-    CUDA_CHECK(cudaMalloc(&d_all_gray, P * img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_all_fms, P * img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_gfocus_buffer, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_ymax, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_y1t, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_y2t, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_y3t, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_s2, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_u, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_A, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_err, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_inv_psnr, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_S, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_phi, img_size_bytes));
-    CUDA_CHECK(cudaMalloc(&d_I, img_size_int));
-    CUDA_CHECK(cudaMalloc(&d_Ic, img_size_int));
-    CUDA_CHECK(cudaMalloc(&d_fmn, img_size_bytes));
-
-    CUDA_CHECK(cudaMemset(d_err, 0, img_size_bytes));
-
-    // --- Double-Buffered Pinned Host Memory for Async Transfers ---
-    double* h_pinned[2] = { nullptr, nullptr };
-    CUDA_CHECK(cudaMallocHost(&h_pinned[0], img_size_bytes));
-    CUDA_CHECK(cudaMallocHost(&h_pinned[1], img_size_bytes));
-    PinnedMemoryGuard guard_pinned0(h_pinned[0]);
-    PinnedMemoryGuard guard_pinned1(h_pinned[1]);
-
-    // --- CUDA Stream ---
-    cudaStream_t stream;
-    CUDA_CHECK(cudaStreamCreate(&stream));
-    CudaStreamGuard guard_stream(stream);
-
-    auto start_time = std::chrono::steady_clock::now();
-
-    // --- 1. Pre-processing and Focus Measure (gfocus) on GPU ---
-    // Double-buffer: CPU writes to buf[i%2] while GPU reads from buf[(i-1)%2].
-    // Event per buffer tracks when DMA finishes reading that buffer.
-    cudaEvent_t dmaEvents[2];
-    CUDA_CHECK(cudaEventCreate(&dmaEvents[0]));
-    CUDA_CHECK(cudaEventCreate(&dmaEvents[1]));
-
-    for (int i = 0; i < P; ++i) {
-        int buf = i % 2;
-
-        // Wait for this buffer's previous DMA to finish (if any)
-        if (i >= 2) {
-            CUDA_CHECK(cudaEventSynchronize(dmaEvents[buf]));
-        }
-
-        Mat gray_mat(M, N, CV_64FC1, h_pinned[buf]);
-        Mat temp_gray;
-        if (channels == 3) {
-            cvtColor(imgs[i], temp_gray, COLOR_BGR2GRAY);
-        }
-        else {
-            temp_gray = imgs[i];
-        }
-        temp_gray.convertTo(gray_mat, CV_64FC1, 1.0 / 255.0);
-
-        CUDA_CHECK(cudaMemcpyAsync(d_all_gray + i * M * N, h_pinned[buf],
-                                   img_size_bytes, cudaMemcpyHostToDevice, stream));
-        CUDA_CHECK(cudaEventRecord(dmaEvents[buf], stream));
-
-        dim3 block(16, 16);
-        dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-        gfocus_average_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
-        gfocus_fm_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
+    float* gray = r.scratch;
+    float* temp = gray + pixels;
+    float* work = temp + pixels;
+    float* phi = work + pixels;
+    const dim3 block(32, 8), grid((width + 31) / 32, (height + 7) / 8);
+    const int blocks = (total + 255LL) / 256;
+    for (int p = 0; p < count; ++p) {
+        const int b = p % 2;
+        if (p >= 2) check(cudaEventSynchronize(r.copied[b]));
+        if (imgs[p].isContinuous()) std::memcpy(r.pinned[b], imgs[p].data, imageBytes);
+        else for (int y = 0; y < height; ++y) std::memcpy(r.pinned[b] + y * rowBytes, imgs[p].ptr(y), rowBytes);
+        auto* input = r.images + size_t(p) * imageBytes;
+        check(cudaMemcpyAsync(input, r.pinned[b], imageBytes, cudaMemcpyHostToDevice, r.stream));
+        check(cudaEventRecord(r.copied[b], r.stream));
+        fusion_gray<<<blocks, 256, 0, r.stream>>>(input, gray, total, channels);
+        fusion_box_horizontal<<<grid, block, 0, r.stream>>>(gray, temp, width, height, options.focusWindow);
+        fusion_box_vertical<1><<<grid, block, 0, r.stream>>>(temp, gray, work, width, height, options.focusWindow);
+        fusion_box_horizontal<<<grid, block, 0, r.stream>>>(work, temp, width, height, options.focusWindow);
+        fusion_box_vertical<0><<<grid, block, 0, r.stream>>>(temp, nullptr, r.focus + size_t(p) * pixels, width, height, options.focusWindow);
+        check(cudaGetLastError());
     }
-    cudaEventDestroy(dmaEvents[0]);
-    cudaEventDestroy(dmaEvents[1]);
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Pre-processing & Focus Measure: ", start_time);
-    start_time = std::chrono::steady_clock::now();
-
-    // --- 2. Find Max Focus and Prepare Data for Fitting ---
-    dim3 block(16, 16);
-    dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-    find_max_and_prepare_kernel<<<grid, block, 0, stream>>>(
-        d_all_fms, d_ymax, d_I, d_y1t, d_y2t, d_y3t, d_Ic, M, N, P, STEP);
-
-    // --- 3. Curve Fitting to get Gaussian parameters (A, u, s2) ---
-    curve_fitting_kernel<<<grid, block, 0, stream>>>(
-        d_I, d_y1t, d_y2t, d_y3t, d_Ic, d_s2, d_u, d_A, M, N, STEP);
-
-    // --- 4. Calculate Error and Normalize Focus Maps ---
-    dim3 block_1d(256);
-    dim3 grid_1d((M * N + block_1d.x - 1) / block_1d.x);
-    calculate_err_and_normalize_kernel<<<grid_1d, block_1d, 0, stream>>>(
-        d_all_fms, d_err, d_A, d_u, d_s2, d_ymax, M * N, P);
-
-    // --- 5. Calculate S and Phi (Weight Maps) ---
-    element_divide_kernel<<<grid_1d, block_1d, 0, stream>>>(
-        d_err, d_ymax, d_inv_psnr, M, N, P);
-
-    double* d_filtered = d_err;  // Reuse memory
-    box_filter_kernel<<<grid, block, 0, stream>>>(
-        d_inv_psnr, d_filtered, M, N, 3);
-
-    calculate_S_kernel<<<grid, block, 0, stream>>>(d_S, d_filtered, M, N);
-    compute_phi_kernel<<<grid, block, 0, stream>>>(d_phi, d_S, M, N);
-
-    double* d_phi_filtered = d_S;  // Reuse memory
-    median_filter_3x3_kernel<<<grid, block, 0, stream>>>(
-        d_phi, d_phi_filtered, M, N);
-
-    // --- 6. Apply Weights and compute their sum ---
-    apply_weights_and_sum_kernel<<<grid_1d, block_1d, 0, stream>>>(
-        d_all_fms, d_phi_filtered, d_fmn, M * N, P);
-
-    // Single sync for all GPU compute stages 2-6
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Stages 2-6 (compute): ", start_time);
-    start_time = std::chrono::steady_clock::now();
-
-    // --- 7. Final Fusion - Fully on GPU ---
-    Mat result;
-    const int total_pixels = M * N;
-
-    if (channels == 3) {
-        // Allocate accumulators for BGR channels
-        CUDA_CHECK(cudaMalloc(&d_final_r, img_size_bytes));
-        CUDA_CHECK(cudaMalloc(&d_final_g, img_size_bytes));
-        CUDA_CHECK(cudaMalloc(&d_final_b, img_size_bytes));
-        CudaMemoryGuard guard_r((void**)&d_final_r);
-        CudaMemoryGuard guard_g((void**)&d_final_g);
-        CudaMemoryGuard guard_b((void**)&d_final_b);
-        CUDA_CHECK(cudaMemset(d_final_r, 0, img_size_bytes));
-        CUDA_CHECK(cudaMemset(d_final_g, 0, img_size_bytes));
-        CUDA_CHECK(cudaMemset(d_final_b, 0, img_size_bytes));
-
-        // Temporary GPU buffer for BGR u8 image upload
-        const size_t bgr_bytes = total_pixels * 3 * sizeof(unsigned char);
-        unsigned char* d_bgr_temp = nullptr;
-        CUDA_CHECK(cudaMalloc(&d_bgr_temp, bgr_bytes));
-        CudaMemoryGuard guard_bgr((void**)&d_bgr_temp);
-
-        // Upload each BGR u8 image, split + weighted accumulate on GPU
-        for (int p = 0; p < P; ++p) {
-            Mat cont = imgs[p].isContinuous() ? imgs[p] : imgs[p].clone();
-            CUDA_CHECK(cudaMemcpyAsync(d_bgr_temp, cont.data, bgr_bytes,
-                                       cudaMemcpyHostToDevice, stream));
-            bgr_weighted_accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
-                d_bgr_temp, d_all_fms + p * M * N,
-                d_final_b, d_final_g, d_final_r, total_pixels);
-        }
-
-        // Divide by fmn and merge to BGR u8 output
-        unsigned char* d_output = nullptr;
-        CUDA_CHECK(cudaMalloc(&d_output, bgr_bytes));
-        CudaMemoryGuard guard_output((void**)&d_output);
-
-        divide_merge_bgr_kernel<<<grid_1d, block_1d, 0, stream>>>(
-            d_final_b, d_final_g, d_final_r, d_fmn, d_output, total_pixels);
-
-        // Download result
-        result = Mat(M, N, CV_8UC3);
-        CUDA_CHECK(cudaMemcpy(result.data, d_output, bgr_bytes, cudaMemcpyDeviceToHost));
+    if (adaptive) {
+        fusion_fit_normalize<<<blocks, 256, 0, r.stream>>>(r.focus, work, total, count, options.focusStep);
+        fusion_box_horizontal<<<grid, block, 0, r.stream>>>(work, temp, width, height, options.consistencyWindow);
+        fusion_box_vertical<2><<<grid, block, 0, r.stream>>>(temp, nullptr, gray, width, height,
+            options.consistencyWindow, options.alpha, options.threshold);
+        fusion_median<<<grid, block, 0, r.stream>>>(gray, phi, width, height);
     }
-    else {
-        // Grayscale fusion on GPU
-        double* d_gray_acc = d_err;  // Reuse memory (err is no longer needed)
-        CUDA_CHECK(cudaMemset(d_gray_acc, 0, img_size_bytes));
-
-        const size_t gray_bytes = total_pixels * sizeof(unsigned char);
-        unsigned char* d_gray_temp = nullptr;
-        CUDA_CHECK(cudaMalloc(&d_gray_temp, gray_bytes));
-        CudaMemoryGuard guard_gray_temp((void**)&d_gray_temp);
-
-        for (int p = 0; p < P; ++p) {
-            Mat cont = imgs[p].isContinuous() ? imgs[p] : imgs[p].clone();
-            CUDA_CHECK(cudaMemcpyAsync(d_gray_temp, cont.data, gray_bytes,
-                                       cudaMemcpyHostToDevice, stream));
-            gray_weighted_accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
-                d_gray_temp, d_all_fms + p * M * N, d_gray_acc, total_pixels);
-        }
-
-        // Divide and convert to u8
-        unsigned char* d_output = nullptr;
-        CUDA_CHECK(cudaMalloc(&d_output, gray_bytes));
-        CudaMemoryGuard guard_output((void**)&d_output);
-
-        final_divide_kernel<<<grid_1d, block_1d, 0, stream>>>(
-            d_gray_acc, d_fmn, d_output, M, N);
-
-        result = Mat(M, N, CV_8UC1);
-        CUDA_CHECK(cudaMemcpy(result.data, d_output, gray_bytes, cudaMemcpyDeviceToHost));
-    }
-
-    print_time("Final Fusion: ", start_time);
-    print_time("Total Algorithm Time: ", total_start);
-
-    // All CUDA memory is automatically freed by RAII guards
+    // Each pixel computes weights, denominator and all output channels in one pass.
+    fusion_output<<<blocks, 256, 0, r.stream>>>(r.images, r.focus, phi, r.output, total, count, channels, adaptive);
+    check(cudaGetLastError());
+    cv::Mat result(height, width, imgs[0].type());
+    check(cudaMemcpyAsync(result.data, r.output, imageBytes, cudaMemcpyDeviceToHost, r.stream));
+    check(cudaStreamSynchronize(r.stream));
     return result;
-}
-
-/**
- * @brief Optimized fusion with multi-stream processing for large image sets
- *
- * This version uses multiple CUDA streams to overlap data transfer and computation,
- * providing better performance when processing many images.
- *
- * @param imgs Vector of input images
- * @param STEP Half-window size for curve fitting
- * @param num_streams Number of CUDA streams to use (default: 2)
- * @return Fused image
- */
-Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
-    if (imgs.empty()) return Mat();
-    if (num_streams < 1) num_streams = 1;
-    if (num_streams > 4) num_streams = 4;  // Limit max streams
-
-    const int M = imgs[0].rows;
-    const int N = imgs[0].cols;
-    const int P = static_cast<int>(imgs.size());
-    const int channels = imgs[0].channels();
-    const size_t img_size_bytes = M * N * sizeof(double);
-
-    // Create multiple streams
-    std::vector<cudaStream_t> streams(num_streams);
-    for (int i = 0; i < num_streams; ++i) {
-        cudaStreamCreate(&streams[i]);
-    }
-
-    // Allocate pinned memory for each stream
-    std::vector<double*> h_pinned(num_streams);
-    for (int i = 0; i < num_streams; ++i) {
-        cudaMallocHost(&h_pinned[i], img_size_bytes);
-    }
-
-    // Allocate GPU memory
-    double *d_all_gray = nullptr, *d_all_fms = nullptr;
-    // Each stream needs its own gfocus buffer to avoid cross-stream races
-    std::vector<double*> d_gfocus_buffers(num_streams, nullptr);
-    cudaMalloc(&d_all_gray, P * img_size_bytes);
-    cudaMalloc(&d_all_fms, P * img_size_bytes);
-    for (int i = 0; i < num_streams; ++i) {
-        cudaMalloc(&d_gfocus_buffers[i], img_size_bytes);
-    }
-
-    // Create per-stream DMA events to sync pinned buffer reuse
-    std::vector<cudaEvent_t> dmaEvents(num_streams);
-    for (int i = 0; i < num_streams; ++i) {
-        cudaEventCreate(&dmaEvents[i]);
-    }
-
-    // Process images in parallel using multiple streams
-    // Track how many images each stream has processed, so we know when to sync
-    std::vector<int> stream_image_count(num_streams, 0);
-
-    for (int i = 0; i < P; ++i) {
-        int stream_id = i % num_streams;
-        cudaStream_t stream = streams[stream_id];
-        double* pinned = h_pinned[stream_id];
-
-        // Wait for previous DMA on this stream to finish reading from pinned buffer
-        if (stream_image_count[stream_id] > 0) {
-            cudaEventSynchronize(dmaEvents[stream_id]);
-        }
-
-        Mat temp_gray;
-        if (channels == 3) {
-            cvtColor(imgs[i], temp_gray, COLOR_BGR2GRAY);
-        }
-        else {
-            temp_gray = imgs[i];
-        }
-
-        Mat gray_mat(M, N, CV_64FC1, pinned);
-        temp_gray.convertTo(gray_mat, CV_64FC1, 1.0 / 255.0);
-
-        cudaMemcpyAsync(d_all_gray + i * M * N, pinned, img_size_bytes,
-                        cudaMemcpyHostToDevice, stream);
-        cudaEventRecord(dmaEvents[stream_id], stream);
-
-        dim3 block(16, 16);
-        dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-        // Two-pass gfocus: first compute average into buffer, then compute FM
-        gfocus_average_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffers[stream_id], M, N, 5);
-        gfocus_fm_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffers[stream_id], d_all_fms + i * M * N, M, N, 5);
-
-        stream_image_count[stream_id]++;
-    }
-
-    // Synchronize all streams
-    for (int i = 0; i < num_streams; ++i) {
-        cudaStreamSynchronize(streams[i]);
-    }
-
-    // Continue with rest of fusion algorithm...
-    // (Similar to Fusion function but using streams where possible)
-
-    // Cleanup
-    for (int i = 0; i < num_streams; ++i) {
-        cudaEventDestroy(dmaEvents[i]);
-        cudaFreeHost(h_pinned[i]);
-        cudaStreamDestroy(streams[i]);
-        cudaFree(d_gfocus_buffers[i]);
-    }
-    cudaFree(d_all_gray);
-    cudaFree(d_all_fms);
-
-    // For now, fall back to single-stream version for remaining steps
-    return Fusion(imgs, STEP);
 }

@@ -94,7 +94,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     try
                     {
                         LocalPoiCalculator.SaveDetails(masterId, result);
-                        action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
+                        action.SetRuntimeResource(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
                         action.Data["LocalPoiCount"] = result.Points.Count;
                         action.MasterValue(null, masterId, (int)resultType);
                         ResultMessageBus.Default.PublishPersisted(ResultRoutes.LocalFlow, ResultKinds.Algorithm, string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);

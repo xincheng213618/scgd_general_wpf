@@ -14,6 +14,11 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public static bool Validate(STNodeEditor nodeEditor)
         {
+            if (!FlowEngineLib.Repeat.FlowRepeatRegion.TryValidate(nodeEditor.Nodes.Cast<STNode>(), out string repeatError))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), repeatError);
+                return false;
+            }
             ConnectionInfo[] connections = nodeEditor.GetConnectionInfo();
             log.Debug($"CheckFlow: 节点数={nodeEditor.Nodes.Count}, 连接数={connections.Length}");
 

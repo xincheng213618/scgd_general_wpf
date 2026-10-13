@@ -60,7 +60,7 @@ namespace ColorVision.Copilot
                 Label = "OpenAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.openai.com/v1",
-                ModelPresets = new[] { "gpt-6-astra", "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna" },
+                ModelPresets = new[] { "gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna", "gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna" },
             },
             new CopilotVendorPreset
             {
@@ -68,7 +68,7 @@ namespace ColorVision.Copilot
                 Label = "Claude",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
                 AnthropicCompatibleBaseUrl = "https://api.anthropic.com",
-                ModelPresets = new[] { "claude-fable-5", "claude-mythos-5", "claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001" },
+                ModelPresets = new[] { "claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-haiku-4-5-20251001" },
             },
             new CopilotVendorPreset
             {
@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
                 Label = "Grok / xAI",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://api.x.ai/v1",
-                ModelPresets = new[] { "grok-4.6", "grok-4.5", "grok-4.20" },
+                ModelPresets = new[] { "grok-4.7", "grok-4.6", "grok-4.5", "grok-4.3" },
             },
             new CopilotVendorPreset
             {
@@ -84,7 +84,7 @@ namespace ColorVision.Copilot
                 Label = "Gemini",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
-                ModelPresets = new[] { "gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite" },
+                ModelPresets = new[] { "gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite" },
             },
             new CopilotVendorPreset
             {
@@ -92,23 +92,25 @@ namespace ColorVision.Copilot
                 Label = "Zhipu GLM",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://open.bigmodel.cn/api/paas/v4",
-                ModelPresets = new[] { "glm-5.2", "glm-5-turbo", "glm-4.7-flash", "glm-4.5-air" },
+                ModelPresets = new[] { "glm-5.3", "glm-5.3-flash", "glm-5.3-flashx", "glm-5.2", "glm-5-turbo", "glm-4.7-flash", "glm-4.5-air" },
             },
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.MiniMax,
                 Label = "MiniMax",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
-                AnthropicCompatibleBaseUrl = "https://api.minimaxi.com/anthropic",
-                ModelPresets = new[] { "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed" },
+                OpenAICompatibleBaseUrl = "https://api.minimax.cn/v1",
+                AnthropicCompatibleBaseUrl = "https://api.minimax.cn/anthropic",
+                ModelPresets = new[] { "MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M2.5-highspeed" },
             },
             new CopilotVendorPreset
             {
                 VendorType = CopilotVendorType.Xiaomi,
-                Label = "Xiaomi Mimo",
+                Label = "Xiaomi MiMo",
                 DefaultProviderType = CopilotProviderType.AnthropicCompatible,
+                OpenAICompatibleBaseUrl = "https://api.xiaomimimo.com/v1",
                 AnthropicCompatibleBaseUrl = "https://api.xiaomimimo.com/anthropic",
-                ModelPresets = new[] { "mimo-v2.5-pro", "mimo-v2.5" },
+                ModelPresets = new[] { "mimo-v2.6-pro", "mimo-v2.6-flash" },
             },
             new CopilotVendorPreset
             {
@@ -116,7 +118,7 @@ namespace ColorVision.Copilot
                 Label = "SenseNova",
                 DefaultProviderType = CopilotProviderType.OpenAICompatible,
                 OpenAICompatibleBaseUrl = "https://token.sensenova.cn/v1",
-                ModelPresets = new[] { "sensenova-6.7-flash-lite" },
+                ModelPresets = new[] { "sensenova-6.8-flash-lite" },
             },
             new CopilotVendorPreset
             {

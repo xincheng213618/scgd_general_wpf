@@ -6580,7 +6580,9 @@
         "SaveFiles=false",
         "CIE重新分配",
         "CameraFocusFrameProcessor",
-        "CameraRealtimeFramePipeline"
+        "CameraRealtimeFramePipeline",
+        "海康取图测试",
+        "HikCaptureBenchmark"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalLvCameraExecution.cs",
@@ -6616,7 +6618,8 @@
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCalibrationNode.cs",
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
         "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs",
-        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs"
+        "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
@@ -6628,7 +6631,8 @@
         "Test/ColorVision.UI.Tests/ImageDisplayEffectsTests.cs",
         "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
-        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs"
+        "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs",
+        "Test/ColorVision.UI.Tests/HikCaptureBenchmarkTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -10776,6 +10780,9 @@
       ],
       "code_paths": [
         "UI/ColorVision.Core/FileFusion.cs",
+        "UI/ColorVision.Core/FileFusionOptions.cs",
+        "Native/include/fusion_options.h",
+        "Native/include/fusion_request.h",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFileFusionNode.cs",
         "Engine/ColorVision.Engine/Services/Images/FileFusion/FileFusionServices.cs",
         "UI/ColorVision.ImageTools/Fusion/FusionWindow.xaml",

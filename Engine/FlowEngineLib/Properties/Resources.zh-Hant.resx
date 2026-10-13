@@ -945,4 +945,31 @@
   <data name="亮点检测V2" xml:space="preserve">
     <value>亮點檢測 V2</value>
   </data>
+  <data name="重复 {0} 次" xml:space="preserve">
+    <value>重複 {0} 次</value>
+  </data>
+  <data name="第 {0} / {1} 次" xml:space="preserve">
+    <value>第 {0} / {1} 次</value>
+  </data>
+  <data name="重复执行…" xml:space="preserve">
+    <value>重複執行…</value>
+  </data>
+  <data name="修改重复次数…" xml:space="preserve">
+    <value>修改重複次數…</value>
+  </data>
+  <data name="取消重复框" xml:space="preserve">
+    <value>取消重複框</value>
+  </data>
+  <data name="请选择连续连接的一段流程，重复框内不能包含分支、开始、结束或旧循环节点。" xml:space="preserve">
+    <value>請選擇連續連接的一段流程，重複框內不能包含分支、開始、結束或舊循環節點。</value>
+  </data>
+  <data name="重复框的节点或次数已改变，请取消该框后重新框选。" xml:space="preserve">
+    <value>重複框的節點或次數已改變，請取消該框後重新框選。</value>
+  </data>
+  <data name="选中的节点已经属于重复框，请先取消原来的重复框。" xml:space="preserve">
+    <value>選中的節點已經屬於重複框，請先取消原來的重複框。</value>
+  </data>
+  <data name="执行次数必须是大于或等于 1 的整数。" xml:space="preserve">
+    <value>執行次數必須是大於或等於 1 的整數。</value>
+  </data>
 </root>

@@ -36,6 +36,7 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
     private string[] files = Array.Empty<string>();
     private FileFusionMode mode;
     private string resultDirectory = string.Empty;
+    private readonly FileFusionOptions options = new();
 
     [Category("景深融合")]
     [STNodeProperty("输入方式", "读取文件夹中的图片，或使用按焦点顺序排列的文件列表。", true)]
@@ -57,6 +58,26 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
     [Category("景深融合")]
     [STNodeProperty("计算模式", "自动模式对 2–4 张图片使用 CPU；强制 GPU 至少需要五张。", true)]
     public FileFusionMode Mode { get => mode; set { mode = value; OnPropertyChanged(); } }
+
+    [Category("融合参数")]
+    [STNodeProperty("清晰度窗口（像素）", "默认 5，3–31 的奇数。小窗口保留细节，大窗口使清晰度判断更平稳，但可能混合深度边缘。", true)]
+    public int FocusWindow { get => options.FocusWindow; set { options.FocusWindow = value; OnPropertyChanged(); } }
+
+    [Category("融合参数")]
+    [STNodeProperty("选焦可信度阈值（dB）", "默认 13，范围 0–60。调低偏向最清晰帧，调高增加多帧混合以抑制噪声，但可能变软。", true)]
+    public double Threshold { get => options.Threshold; set { options.Threshold = value; OnPropertyChanged(); } }
+
+    [Category("融合高级参数")]
+    [STNodeProperty("拟合取样间隔（帧）", "默认 2，范围 1–1024。不是电机步距，不跳过图片；少于 2×间隔+1 张时使用普通清晰度加权。", true)]
+    public int FocusStep { get => options.FocusStep; set { options.FocusStep = value; OnPropertyChanged(); } }
+
+    [Category("融合高级参数")]
+    [STNodeProperty("可信度平滑窗口（像素）", "默认 3，3–31 的奇数。调大减少零散的选焦变化，但扩大区域过渡。", true)]
+    public int ConsistencyWindow { get => options.ConsistencyWindow; set { options.ConsistencyWindow = value; OnPropertyChanged(); } }
+
+    [Category("融合高级参数")]
+    [STNodeProperty("选择性系数 α", "默认 0.2，范围 0.01–1。通常调小偏向最清晰帧，调大增加多帧混合；同时影响过渡和强度，建议保持默认。", true)]
+    public double Alpha { get => options.Alpha; set { options.Alpha = value; OnPropertyChanged(); } }
 
     [Category("景深融合")]
     [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
@@ -81,6 +102,8 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
         if (!Enum.IsDefined(InputMode)) throw new InvalidOperationException("无效的融合输入方式。");
         string[] sourceFiles = InputMode == FileFusionInputMode.Folder ? FileFusion.GetFolderFiles(InputDirectory) : Files.ToArray();
         FileFusionMode selectedMode = Mode;
+        FileFusionOptions selectedOptions = options with { };
+        selectedOptions.Validate();
         string directory = ResolveOutputDirectory(ResultDirectory, sourceFiles);
         string nodeId = NodeID;
         int zIndex = ZIndex;
@@ -92,7 +115,7 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
             action.RuntimeResources.Set(runKey, stop);
             EnsureRunning(action, stop.Token);
             int batchId = FlowNodeTiming.Run("ResolveBatch", () => services.ResolveBatchId(action.SerialNumber));
-            FileFusionResult fusion = FlowNodeTiming.Run("Fusion", () => services.Execute(sourceFiles, selectedMode, stop.Token));
+            FileFusionResult fusion = FlowNodeTiming.Run("Fusion", () => services.Execute(sourceFiles, selectedMode, stop.Token, selectedOptions));
             EnsureRunning(action, stop.Token);
             string outputPath = FlowNodeTiming.Run("SaveImage", () => SaveImage(fusion.Image, directory));
             EnsureRunning(action, stop.Token);
@@ -110,6 +133,7 @@ public sealed class LocalFileFusionNode : LocalFlowNodeBase
                     ExpTime = new int[3], AvgCount = 1, FlipMode = -99,
                     RequestedMode = selectedMode.ToString(), ActualMode = fusion.ActualMode.ToString(),
                     InputFiles = fusion.Files, fusion.ValidationMs, fusion.NativeMs, fusion.ConvertMs, fusion.TotalMs,
+                    FusionOptions = fusion.Options,
                 }),
             };
             EnsureRunning(action, stop.Token);

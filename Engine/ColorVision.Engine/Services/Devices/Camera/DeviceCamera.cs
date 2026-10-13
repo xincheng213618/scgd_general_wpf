@@ -16,7 +16,6 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor.Settings;
@@ -140,12 +139,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         internal void OpenLocalCameraWindow(LocalCameraNode? sourceNode = null)
         {
-            if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
-            {
-                LicenseManagerViewModel licenseManagerViewModel = new();
-                licenseManagerViewModel.SaveToLincense();
-            }
-
             CameraLocalWindow cameraLocalWindow = new(this, sourceNode);
             Window? owner = Application.Current.GetActiveWindow();
             if (owner != null && owner.IsVisible)

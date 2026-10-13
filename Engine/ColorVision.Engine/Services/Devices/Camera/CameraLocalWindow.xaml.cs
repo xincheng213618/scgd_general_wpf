@@ -225,7 +225,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_CM_MODE.IsEnabled = canConfigure;
             cb_CM_ID.IsEnabled = canConfigure;
             cb_get_mode.IsEnabled = !_isCapturing && !_isRefreshingCameraIds;
-            bool usesMvs = m_eCameraMdl == CameraModel.HK_USB && m_eCameraMode != CameraMode.CV_MODE
+            bool usesMvs = m_eCameraMdl is CameraModel.HK_USB or CameraModel.HK_CARD && m_eCameraMode != CameraMode.CV_MODE
                 && (isConnected ? Device.LocalCameraSession.OpenedUseHikMvs : Device.DisplayConfig.UseHikMvs);
             for (int index = (int)TakeImageMode.Measure_Fast; index <= (int)TakeImageMode.Measure_FastEx; index++)
                 ((ComboBoxItem)cb_get_mode.Items[index]).IsEnabled = !usesMvs;
