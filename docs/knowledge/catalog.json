@@ -9108,7 +9108,8 @@
         "Test/ProjectARVRPro.Tests/ResultStatisticsTests.cs",
         "Test/ProjectARVRPro.Tests/FlowPhaseTimingPersistenceTests.cs",
         "Test/ProjectARVRPro.Tests/FlowRuntimeEstimateCacheTests.cs",
-        "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs"
+        "Test/ProjectARVRPro.Tests/FlowRunningNodeTrackerTests.cs",
+        "Test/ProjectARVRPro.Tests/OfflineFileMaintenanceTests.cs"
       ],
       "related": [
         "projects.index",
@@ -11833,7 +11834,7 @@
       "knowledge_id": "ui.storage-maintenance",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "设置中的日志、缓存、安装包扫描与清理，以及配置恢复点和选择性启动重置；先确认白名单清单，保护活跃任务和业务数据，删除不回滚，重置先独立备份。",
+      "summary": "独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。",
       "aliases": [
         "存储与维护",
         "存储与重置",
@@ -11854,7 +11855,12 @@
         "ConfigMaintenanceResetService",
         "ThumbnailCacheMaintenanceSnapshot",
         "HasPackageMaintenanceProtection",
-        "HasActiveUpdateForCleanup"
+        "HasActiveUpdateForCleanup",
+        "文件缓存管理",
+        "内存缓存管理",
+        "FileManagementWindow",
+        "IFileMaintenanceProvider",
+        "增量扫描"
       ],
       "code_paths": [
         "ColorVision/Settings/Maintenance",

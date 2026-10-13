@@ -99,7 +99,7 @@ next: false
   状态栏的插件发现、活动文档通知、绑定更新、控件重建和关闭生命周期；刷新不保证发现新provider，隐藏不等于保存偏好或停止采样。
 
 - [存储清理与选择性设置重置](../../04-api-reference/ui-components/storage-maintenance.md) — `ui.storage-maintenance`
-  设置中的日志、缓存、安装包扫描与清理，以及配置恢复点和选择性启动重置；先确认白名单清单，保护活跃任务和业务数据，删除不回滚，重置先独立备份。
+  独立文件缓存窗口的模块发现、自动增量扫描和确认清理，以及设置页的内存管理、恢复点和选择性重置入口。
 
 - [文本编辑器](../../04-api-reference/ui-components/text-editor.md) — `ui.text-editor`
   AvalonEdit 编辑器的代码地图、字体、查找替换、自动配对、文档内补全与符号导航，以及后台分析和 JSON 诊断边界。
