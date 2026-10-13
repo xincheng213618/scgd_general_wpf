@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>服務日誌</value></data>
+  <data name="Description" xml:space="preserve"><value>背景服務的歷史日誌，保留各目錄最新日誌和當天日誌。</value></data>
+</root>

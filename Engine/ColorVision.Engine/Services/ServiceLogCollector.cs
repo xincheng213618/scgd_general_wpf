@@ -170,5 +170,11 @@ namespace ColorVision.Engine.Services
             ("RegistrationCenter", ServiceConfig.Instance.RegistrationCenterServiceInfo),
             ("CVArchService", ServiceConfig.Instance.CVArchServiceInfo),
         ];
+
+        internal static IReadOnlyList<string> GetLogDirectories() => GetServices()
+            .Select(service => service.Info)
+            .Where(info => info?.Exists == true && !string.IsNullOrWhiteSpace(info.ExecutablePath))
+            .Select(info => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(info!.ExecutablePath))!, "log"))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 }
