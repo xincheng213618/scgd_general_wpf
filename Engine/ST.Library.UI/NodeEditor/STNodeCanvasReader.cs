@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 
 namespace ST.Library.UI.NodeEditor;
@@ -31,31 +32,11 @@ internal static class STNodeCanvasReader
 
         public void ConnectDetachedNodes()
         {
-            foreach (Connection connection in Connections)
-            {
-                STNode outputNode = connection.Output.Owner;
-                STNode inputNode = connection.Input.Owner;
-                bool outputLocked = outputNode.LockOption;
-                bool inputLocked = inputNode.LockOption;
-                outputNode.LockOption = false;
-                inputNode.LockOption = false;
-                try
-                {
-                    ConnectionStatus status = connection.Output.ConnectOption(
-                        connection.Input,
-                        isOwnerOfOwner: false);
-                    if (status != ConnectionStatus.Connected)
-                    {
-                        throw new InvalidDataException(
-                            $"无法恢复流程连接：{status}");
-                    }
-                }
-                finally
-                {
-                    outputNode.LockOption = outputLocked;
-                    inputNode.LockOption = inputLocked;
-                }
-            }
+            ConnectionStatus status = STNodeConnectionRestorer.Restore(
+                Connections.Select(connection => (connection.Output, connection.Input)),
+                isOwnerOfOwner: false);
+            if (status != ConnectionStatus.Connected)
+                throw new InvalidDataException($"无法恢复流程连接：{status}");
         }
     }
 

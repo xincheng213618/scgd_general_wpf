@@ -47,7 +47,7 @@ public class STNodeOption
 			{
 				if (_Owner != null)
 				{
-					DisConnectionAll();
+					DisconnectAllDetached();
 				}
 				_Owner = value;
 			}
@@ -421,7 +421,7 @@ public class STNodeOption
 		{
 			return ConnectionStatus.NoOwner;
 		}
-		if (op.Owner.LockOption && _Owner.LockOption)
+		if (op.Owner.LockOption || _Owner.LockOption)
 		{
 			STNodeEidtorDisConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Locked));
 			return ConnectionStatus.Locked;
@@ -454,8 +454,11 @@ public class STNodeOption
 		}
 		foreach (STNodeOption option in m_hs_connected.ToArray())
 		{
+			STNodeEditor editor = _Owner?.Owner;
+			editor?.PrepareConnectionChange(this, option);
 			option.RemoveConnection(this, bSponsor: false);
 			RemoveConnection(option, bSponsor: true);
+			editor?.OnOptionDisConnected(new STNodeEditorOptionEventArgs(option, this, ConnectionStatus.DisConnected));
 		}
 		ControlBuildLinePath();
 	}
@@ -483,9 +486,9 @@ public class STNodeOption
 		for (int i = 0; i < connectionInfo.Length; i++)
 		{
 			ConnectionInfo connectionInfo2 = connectionInfo[i];
-			if (connectionInfo2.Output == this)
+			if (connectionInfo2.Input == this)
 			{
-				list.Add(connectionInfo2.Input);
+				list.Add(connectionInfo2.Output);
 			}
 		}
 		return list;
@@ -564,7 +567,7 @@ public class STNodeOption
 			{
 				OnDataTransfer(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.DisConnected));
 			}
-			OnDisConnected(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.Connected));
+			OnDisConnected(new STNodeOptionEventArgs(bSponsor, op, ConnectionStatus.DisConnected));
 		}
 		return result;
 	}

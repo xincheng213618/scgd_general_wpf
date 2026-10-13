@@ -464,9 +464,9 @@ public partial class STNodeEditor
 
 	public int MaximumHistoryEntries { get; set; } = DefaultMaximumHistoryEntries;
 
-	public bool CanUndo => _undoHistory.Count > 0 && _transactionDepth == 0;
+	public bool CanUndo => EnableEdit && _undoHistory.Count > 0 && _transactionDepth == 0;
 
-	public bool CanRedo => _redoHistory.Count > 0 && _transactionDepth == 0;
+	public bool CanRedo => EnableEdit && _redoHistory.Count > 0 && _transactionDepth == 0;
 
 	public bool IsModified => _currentStateId != _savedStateId;
 

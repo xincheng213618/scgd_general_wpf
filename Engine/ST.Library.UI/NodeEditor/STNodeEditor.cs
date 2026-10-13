@@ -1263,6 +1263,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
+		if (nodeFindInfo.Node == null && nodeEvent.Button == STMouseButtons.Left && TryBeginNodeGroupInteraction(nodeEvent))
+		{
+			e.Handled = true;
+			return;
+		}
 		if (nodeFindInfo.Node != null && !ShouldActivateNodeFromMouse(nodeEvent.Button))
 		{
 			return;
@@ -1442,6 +1447,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas);
+		Cursor = EnableEdit && FindNodeGroupHeader(m_pt_in_canvas) != null
+			? Cursors.SizeAll : null;
 		bool flag = false;
 		if (_HoverNode != nodeFindInfo.Node)
 		{
@@ -1499,7 +1506,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		case CanvasAction.MoveNode:
 			break;
 		case CanvasAction.ConnectOption:
-			if (!(nodeEvent.Location == m_pt_down_in_control) && nodeFindInfo.NodeOption != null)
+			if (m_enableEdit && !(nodeEvent.Location == m_pt_down_in_control) && nodeFindInfo.NodeOption != null)
 			{
 				if (m_option_down.IsInput)
 				{
@@ -1572,6 +1579,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			_HoverNode.OnMouseLeave(e);
 		}
 		_HoverNode = null;
+		Cursor = null;
 		Invalidate();
 	}
 
@@ -2174,11 +2182,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	internal void InternalRemoveSelectedNode(STNode node)
 	{
-		node.IsSelected = false;
 		lock (m_hs_node_selected)
 		{
 			m_hs_node_selected.Remove(node);
 		}
+		node.IsSelected = false;
 		UpdateCanvasDragModeFromSelection();
 	}
 
@@ -2432,6 +2440,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			{
 				num4 = node.Bottom;
 			}
+		}
+		foreach (STNodeGroup group in GetNodeGroups())
+		{
+			num = Math.Min(num, group.Bounds.Left);
+			num2 = Math.Min(num2, group.Bounds.Top);
+			num3 = Math.Max(num3, group.Bounds.Right);
+			num4 = Math.Max(num4, group.Bounds.Bottom);
 		}
 		_CanvasValidBounds.X = num - 60;
 		_CanvasValidBounds.Y = num2 - 60;
@@ -2895,6 +2910,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public void FitCanvasToNodes(float maximumScale = 1f)
 	{
+		BuildBounds();
 		if (_Nodes.Count == 0 || ClientSize.Width <= 0 || ClientSize.Height <= 0 || _CanvasValidBounds.Width <= 0 || _CanvasValidBounds.Height <= 0)
 		{
 			return;
@@ -2941,27 +2957,20 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
 	{
-		HashSet<STNode> hs = new HashSet<STNode>();
-		return CanFindNodePath(nodeStart, nodeFind, hs);
-	}
-
-	private static bool CanFindNodePath(STNode nodeStart, STNode nodeFind, HashSet<STNode> hs)
-	{
-		foreach (STNodeOption outputOption in nodeStart.OutputOptions)
+		var visited = new HashSet<STNode> { nodeStart };
+		var pending = new Stack<STNode>();
+		pending.Push(nodeStart);
+		while (pending.Count > 0)
 		{
-			if (outputOption.ConnectedOption == null)
+			foreach (STNodeOption outputOption in pending.Pop().OutputOptions)
 			{
-				continue;
-			}
-			foreach (STNodeOption item in outputOption.ConnectedOption)
-			{
-				if (item.Owner == nodeFind)
+				foreach (STNodeOption inputOption in outputOption.ConnectedOption)
 				{
-					return true;
-				}
-				if (hs.Add(item.Owner) && CanFindNodePath(item.Owner, nodeFind))
-				{
-					return true;
+					STNode next = inputOption.Owner;
+					if (next == nodeFind)
+						return true;
+					if (next != null && visited.Add(next))
+						pending.Push(next);
 				}
 			}
 		}
@@ -3241,12 +3250,12 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return false;
 		}
 		bool flag = !node.IsSelected;
-		node.IsSelected = true;
 		bool changed;
 		lock (m_hs_node_selected)
 		{
 			changed = m_hs_node_selected.Add(node) || flag;
 		}
+		node.IsSelected = true;
 		UpdateCanvasDragModeFromSelection();
 		return changed;
 	}
@@ -3258,12 +3267,12 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return false;
 		}
 		bool isSelected = node.IsSelected;
-		node.IsSelected = false;
 		bool changed;
 		lock (m_hs_node_selected)
 		{
 			changed = m_hs_node_selected.Remove(node) || isSelected;
 		}
+		node.IsSelected = false;
 		UpdateCanvasDragModeFromSelection();
 		return changed;
 	}
@@ -3298,6 +3307,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_disposed = true;
 		m_is_loaded = false;
 		DisposeEditing();
+		NodeGroupDoubleClick = null;
 		m_animation_timer.Stop();
 		m_animation_timer.Tick -= AnimationTimer_Tick;
 		ReleaseMouseCapture();

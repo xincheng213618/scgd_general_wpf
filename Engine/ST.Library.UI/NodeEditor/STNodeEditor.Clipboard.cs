@@ -100,6 +100,7 @@ public partial class STNodeEditor
 
 	public IReadOnlyList<STNode> ImportSelectionData(byte[] data, Point targetCanvasPoint)
 	{
+		if (!EnableEdit) return Array.Empty<STNode>();
 		GraphImportPlan plan = DecodeSelectionData(data);
 		MovePlanTo(plan, targetCanvasPoint);
 		return CommitImportPlan(plan, "粘贴节点");
@@ -107,6 +108,7 @@ public partial class STNodeEditor
 
 	public IReadOnlyList<STNode> ImportSelectionData(byte[] data)
 	{
+		if (!EnableEdit) return Array.Empty<STNode>();
 		GraphImportPlan plan = DecodeSelectionData(data);
 		foreach (STNode node in plan.Nodes)
 		{
@@ -117,6 +119,7 @@ public partial class STNodeEditor
 
 	public IReadOnlyList<STNode> ImportCanvasAsModule(byte[] canvasData, Point targetCanvasPoint)
 	{
+		if (!EnableEdit) return Array.Empty<STNode>();
 		GraphImportPlan plan = DecodeCanvasData(canvasData);
 		MovePlanTo(plan, targetCanvasPoint);
 		return CommitImportPlan(plan, "导入流程模块");
@@ -322,26 +325,11 @@ public partial class STNodeEditor
 					}
 				}
 			}
-			foreach (GraphConnectionReference connection in plan.Connections)
-			{
-				bool outputLocked = connection.Output.Owner.LockOption;
-				bool inputLocked = connection.Input.Owner.LockOption;
-				connection.Output.Owner.LockOption = false;
-				connection.Input.Owner.LockOption = false;
-				try
-				{
-					ConnectionStatus status = connection.Output.ConnectOption(connection.Input);
-					if (status != ConnectionStatus.Connected)
-					{
-						throw new InvalidOperationException($"无法恢复导入节点的连接：{status}");
-					}
-				}
-				finally
-				{
-					connection.Output.Owner.LockOption = outputLocked;
-					connection.Input.Owner.LockOption = inputLocked;
-				}
-			}
+			ConnectionStatus status = STNodeConnectionRestorer.Restore(
+				plan.Connections.Select(connection => (connection.Output, connection.Input)),
+				isOwnerOfOwner: true);
+			if (status != ConnectionStatus.Connected)
+				throw new InvalidOperationException($"无法恢复导入节点的连接：{status}");
 			foreach (STNode node in addedNodes)
 			{
 				node.OnEditorLoadCompleted();
