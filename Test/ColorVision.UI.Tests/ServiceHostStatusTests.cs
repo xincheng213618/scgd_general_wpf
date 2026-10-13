@@ -8,6 +8,73 @@ namespace ColorVision.UI.Tests
     {
         private const string InstalledPath = @"C:\ProgramData\ColorVision\ServiceHost\ColorVisionServiceHost.exe";
 
+        [Theory]
+        [InlineData(unchecked((int)0xC0000005), "0xC0000005")]
+        [InlineData(unchecked((int)0x80131506), "0x80131506")]
+        public async Task PowerShellCrashWithEmptyStderrRemainsVisibleUntilSuccessfulMaintenance(int exitCode, string code)
+        {
+            ServiceHostOperationResult result = await ColorVisionServiceHostManager.RunPowerShellScriptAsync($"exit {exitCode}", false, CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Equal(exitCode, result.ExitCode);
+            Assert.Empty(result.Output);
+            Assert.Contains("PowerShell", result.Error, StringComparison.Ordinal);
+            Assert.Contains(exitCode.ToString(), result.Error, StringComparison.Ordinal);
+            Assert.Contains(code, result.Error, StringComparison.Ordinal);
+            Assert.Contains(code, result.Summary, StringComparison.Ordinal);
+            Assert.Equal(result.Error, ColorVisionServiceHostManager.LastDeploymentFailure);
+
+            ServiceHostOperationResult recovered = await ColorVisionServiceHostManager.RunPowerShellScriptAsync("Write-Output 'maintenance helper check'", false, CancellationToken.None);
+            Assert.True(recovered.Success, recovered.Summary);
+            Assert.Contains("maintenance helper check", recovered.Output, StringComparison.Ordinal);
+            Assert.Empty(ColorVisionServiceHostManager.LastDeploymentFailure);
+        }
+
+        [Fact]
+        public void PowerShellScriptFailureKeepsItsOriginalError()
+        {
+            string failure = ColorVisionServiceHostManager.BuildPowerShellFailure("pwsh.exe", 1, "Copy-Item: Access denied");
+
+            Assert.Contains("PowerShell 7", failure, StringComparison.Ordinal);
+            Assert.Contains("0x00000001", failure, StringComparison.Ordinal);
+            Assert.Contains("Copy-Item: Access denied", failure, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void DeploymentFailureRemainsVisibleAlongsideRuntimeMismatch()
+        {
+            StaTest.Run(() =>
+            {
+                ServiceHostManagerWindow window = new();
+                try
+                {
+                    ServiceHostStatus status = new()
+                    {
+                        State = ServiceHostInstallState.Running,
+                        RuntimeIntegrity = new ServiceHostRuntimeIntegrity
+                        {
+                            CanEvaluate = true,
+                            MismatchedInstalledFiles = ["ColorVisionServiceHost.dll"],
+                        },
+                    };
+                    string failure = ColorVisionServiceHostManager.BuildPowerShellFailure("powershell.exe", unchecked((int)0xC0000005), string.Empty);
+                    window.UpdateHealthView(status, failure);
+                    window.UpdateHealthView(status, failure);
+
+                    var description = (System.Windows.Controls.TextBlock)window.FindName("HealthDescriptionText");
+                    Assert.Contains("0xC0000005", description.Text, StringComparison.Ordinal);
+                    Assert.Contains("Windows PowerShell", description.Text, StringComparison.Ordinal);
+
+                    window.UpdateHealthView(status, string.Empty);
+                    Assert.DoesNotContain("0xC0000005", description.Text, StringComparison.Ordinal);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            });
+        }
+
         [Fact]
         public void SupportedRunningServiceCanSelfUpdate()
         {

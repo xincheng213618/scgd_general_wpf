@@ -310,6 +310,7 @@ internal sealed class ServiceHostCommandHandler
 
         string scriptPath = Path.Combine(updateDirectory, $"self-update-{Guid.NewGuid():N}.ps1");
         string logPath = Path.Combine(updateDirectory, "self-update.log");
+        string powerShellExecutable = ResolveSelfUpdatePowerShellExecutable();
         try
         {
             string script = CreateSelfUpdateScript(stagedPackageDirectory, GetInstallDirectory(), scriptPath, logPath);
@@ -317,7 +318,7 @@ internal sealed class ServiceHostCommandHandler
 
             ProcessStartInfo startInfo = new()
             {
-                FileName = "powershell.exe",
+                FileName = powerShellExecutable,
                 Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {QuoteForCommandLine(scriptPath)}",
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -339,7 +340,7 @@ internal sealed class ServiceHostCommandHandler
             return ServiceHostResponse.FromObject(requestId, false, $"Failed to schedule service host update: {ex.Message}");
         }
 
-        ServiceHostLog.Write($"Self update scheduled. Source={packageDirectory}, Staged={stagedPackageDirectory}, Script={scriptPath}");
+        ServiceHostLog.Write($"Self update scheduled. Source={packageDirectory}, Staged={stagedPackageDirectory}, Script={scriptPath}, PowerShell={powerShellExecutable}");
         return ServiceHostResponse.FromObject(requestId, true, "self update scheduled", new
         {
             packageDirectory,
@@ -1004,6 +1005,12 @@ internal sealed class ServiceHostCommandHandler
     private static string EscapeSqlIdentifier(string value)
     {
         return value.Replace("`", "``", StringComparison.Ordinal);
+    }
+
+    internal static string ResolveSelfUpdatePowerShellExecutable()
+    {
+        string powerShell7 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PowerShell", "7", "pwsh.exe");
+        return File.Exists(powerShell7) ? powerShell7 : Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
     }
 
     internal static string CreateSelfUpdateScript(string packageDirectory, string installDirectory, string scriptPath, string logPath)

@@ -59,7 +59,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void SelfUpdateScriptIsValidWindowsPowerShell()
+        public void SelfUpdateScriptIsValidForSelectedPowerShell()
         {
             string scriptPath = Path.Combine(_rootDirectory, "self-update.ps1");
             string script = ServiceHostCommandHandler.CreateSelfUpdateScript(
@@ -73,7 +73,7 @@ namespace ColorVision.UI.Tests
                 "$tokens = $null; $errors = $null;",
                 $"[System.Management.Automation.Language.Parser]::ParseFile('{EscapePowerShellLiteral(scriptPath)}', [ref]$tokens, [ref]$errors) | Out-Null;",
                 "if ($errors.Count -gt 0) { $errors | ForEach-Object { [Console]::Error.WriteLine($_.Message) }; exit 1 }");
-            ProcessStartInfo startInfo = new("powershell.exe")
+            ProcessStartInfo startInfo = new(ServiceHostCommandHandler.ResolveSelfUpdatePowerShellExecutable())
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -85,11 +85,11 @@ namespace ColorVision.UI.Tests
             startInfo.ArgumentList.Add("-Command");
             startInfo.ArgumentList.Add(parserCommand);
 
-            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start Windows PowerShell.");
+            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start the selected PowerShell.");
             string output = process.StandardOutput.ReadToEnd();
             string error = process.StandardError.ReadToEnd();
-            Assert.True(process.WaitForExit(30000), "Windows PowerShell parser did not exit within 30 seconds.");
-            Assert.True(process.ExitCode == 0, $"Windows PowerShell parser rejected the generated script.{Environment.NewLine}{output}{Environment.NewLine}{error}");
+            Assert.True(process.WaitForExit(30000), "PowerShell parser did not exit within 30 seconds.");
+            Assert.True(process.ExitCode == 0, $"PowerShell parser rejected the generated script.{Environment.NewLine}{output}{Environment.NewLine}{error}");
         }
 
         [Fact]

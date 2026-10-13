@@ -291,7 +291,7 @@
                                     <logControls:LogViewerControl x:Name="InstallLogViewer" Grid.Row="1" />
                                 </Grid>
                             </TabItem>
-                            <TabItem Header="{display:DisplayText Key='操作记录'}">
+                            <TabItem x:Name="OperationLogTab" Header="{display:DisplayText Key='操作记录'}">
                                 <logControls:LogViewerControl x:Name="LogViewer" Margin="8" />
                             </TabItem>
                         </TabControl>
