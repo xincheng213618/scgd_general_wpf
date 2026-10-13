@@ -8068,4 +8068,5 @@
   <data name="找不到模板：{0}" xml:space="preserve">
     <value>找不到範本：{0}</value>
   </data>
+  <data name="内存缓存管理" xml:space="preserve"><value>記憶體快取管理</value></data>
 </root>

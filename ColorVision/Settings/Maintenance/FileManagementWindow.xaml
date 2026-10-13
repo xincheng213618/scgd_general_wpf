@@ -1,0 +1,13 @@
+<Window x:Class="ColorVision.Settings.Maintenance.FileManagementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Settings.Maintenance"
+        Title="{x:Static local:MaintenanceText.FileManagement}" Width="900" Height="730" MinWidth="720" MinHeight="420"
+        Background="{DynamicResource GlobalBackground}" Foreground="{DynamicResource GlobalTextBrush}"
+        Loaded="Window_Loaded" Closing="Window_Closing" Closed="Window_Closed">
+    <Grid Margin="22,18">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <TextBlock Text="{x:Static local:MaintenanceText.FileManagement}" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,16"/>
+        <ScrollViewer x:Name="FileContent" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"/>
+    </Grid>
+</Window>

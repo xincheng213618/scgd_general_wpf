@@ -43,18 +43,20 @@ public sealed class MaintenanceFileCleanupFile
 /// <summary>An immutable, concrete deletion proposal. It never expands when executed.</summary>
 public sealed class MaintenanceFileCleanupScanResult
 {
-    internal MaintenanceFileCleanupScanResult(List<MaintenanceFileCleanupFile> files, List<MaintenanceFileCleanupIssue> issues, bool isCancelled)
+    internal MaintenanceFileCleanupScanResult(List<MaintenanceFileCleanupFile> files, List<MaintenanceFileCleanupIssue> issues, bool isCancelled, int reusedFileCount = 0)
     {
         Files = Array.AsReadOnly(files.ToArray());
         Issues = Array.AsReadOnly(issues.ToArray());
         TotalBytes = files.Sum(file => file.Length);
         IsCancelled = isCancelled;
+        ReusedFileCount = reusedFileCount;
     }
 
     public IReadOnlyList<MaintenanceFileCleanupFile> Files { get; }
     public IReadOnlyList<MaintenanceFileCleanupIssue> Issues { get; }
     public long TotalBytes { get; }
     public bool IsCancelled { get; }
+    public int ReusedFileCount { get; }
 }
 
 public sealed class MaintenanceFileCleanupResult
@@ -92,12 +94,14 @@ public static class MaintenanceFileCleanup
     private const uint OpenReparsePoint = 0x00200000;
     private const uint BackupSemantics = 0x02000000;
 
-    public static MaintenanceFileCleanupScanResult Scan(IEnumerable<MaintenanceFileCleanupRule> rules, CancellationToken cancellationToken = default)
+    public static MaintenanceFileCleanupScanResult Scan(IEnumerable<MaintenanceFileCleanupRule> rules, CancellationToken cancellationToken = default, MaintenanceFileCleanupScanResult? previous = null)
     {
         ArgumentNullException.ThrowIfNull(rules);
         var files = new List<MaintenanceFileCleanupFile>();
         var issues = new List<MaintenanceFileCleanupIssue>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var priorFiles = previous?.Files.ToDictionary(file => file.FullPath, StringComparer.OrdinalIgnoreCase);
+        int reusedFileCount = 0;
         bool cancelled = false;
         try
         {
@@ -142,8 +146,22 @@ public static class MaintenanceFileCleanup
                                 if (!MatchesRule(rule, entry) || seen.Contains(entry))
                                     continue;
 
-                                using SafeFileHandle handle = OpenHandle(entry, ReadAttributes, ShareReadWriteDelete, OpenReparsePoint);
-                                FileIdentity identity = ReadIdentity(handle, isDirectory: false);
+                                FileIdentity identity;
+                                var info = new FileInfo(entry);
+                                if (priorFiles?.TryGetValue(entry, out var prior) == true &&
+                                    info.Length == prior.Length && info.LastWriteTimeUtc == prior.LastWriteTimeUtc &&
+                                    info.CreationTimeUtc.ToFileTimeUtc() == prior.Identity.CreationTime)
+                                {
+                                    // Directory metadata avoids reopening unchanged candidates. Cleanup still pins and
+                                    // verifies the original volume/file identity before deleting, including replacements.
+                                    identity = prior.Identity;
+                                    reusedFileCount++;
+                                }
+                                else
+                                {
+                                    using SafeFileHandle handle = OpenHandle(entry, ReadAttributes, ShareReadWriteDelete, OpenReparsePoint);
+                                    identity = ReadIdentity(handle, isDirectory: false);
+                                }
                                 if (identity.LastWriteTimeUtc >= cutoff || rule.IsProtected?.Invoke(entry) == true)
                                     continue;
                                 cancellationToken.ThrowIfCancellationRequested();
@@ -169,7 +187,7 @@ public static class MaintenanceFileCleanup
         {
             cancelled = true;
         }
-        return new(files, issues, cancelled);
+        return new(files, issues, cancelled, reusedFileCount);
     }
 
     public static MaintenanceFileCleanupResult Cleanup(MaintenanceFileCleanupScanResult scan, CancellationToken cancellationToken = default)

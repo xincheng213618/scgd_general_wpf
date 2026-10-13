@@ -18,6 +18,86 @@ namespace ColorVision.UI.Tests;
 public sealed class StorageMaintenanceTests
 {
     [Fact]
+    public async Task DiscoveredCategoriesUseTheirOwnScanAndCleanupAndPrepareFailureInvalidatesOldResults()
+    {
+        using Sandbox sandbox = new();
+        var provider = new FixtureFileProvider(Path.GetDirectoryName(sandbox.Files["logs"])!);
+        StorageMaintenanceViewModel model = new(new StorageMaintenanceConfig(), [provider]);
+        Assert.Equal("fixture.files", Assert.Single(model.Items).Id);
+        await model.ScanAsync();
+        StorageCleanupItem item = Assert.Single(model.Items);
+        Assert.True(item.CanClean);
+        Assert.True(item.HasRetention);
+        await model.ScanAsync();
+        Assert.Equal(1, item.Snapshot!.ReusedFileCount);
+
+        provider.FailPrepare = true;
+        await model.ScanAsync();
+        Assert.False(item.CanClean);
+        Assert.Contains("fixture-prepare-error", model.Status);
+        await model.CleanupAsync([item]);
+        Assert.True(File.Exists(sandbox.Files["logs"]));
+
+        provider.FailPrepare = false;
+        await model.ScanAsync();
+        await model.CleanupAsync([item]);
+        Assert.False(File.Exists(sandbox.Files["logs"]));
+        Assert.True(File.Exists(sandbox.Files["packages"]));
+    }
+
+    [Fact]
+    public void FileWindowAutomaticallyScansInjectedSourcesAndKeepsFileActionsOutOfSettings()
+    {
+        WithPage(980, false, "en-US", (_, page, _, model, sandbox) =>
+        {
+            var window = new FileManagementWindow(model);
+            try
+            {
+                Assert.Equal(0, sandbox.RuleFactoryCalls);
+                window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                CompleteWithDispatcher(window.ScanTask);
+                Assert.Equal(1, sandbox.RuleFactoryCalls);
+                var filePage = Assert.IsType<FileManagementControl>(Element<ScrollViewer>(window, "FileContent").Content);
+                Assert.True(Element<Button>(filePage, "CleanSelectedButton").IsEnabled);
+                Assert.DoesNotContain(Descendants(filePage), element => element.Name is "FileManagementButton" or "MemoryManagementButton" or "ResetOptions");
+                window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                CompleteWithDispatcher(window.ScanTask);
+                Assert.Equal(1, Item(model, "logs").Snapshot!.ReusedFileCount);
+
+                Grid content = Assert.IsType<Grid>(window.Content);
+                content.Measure(new Size(720, 680));
+                content.Arrange(new Rect(0, 0, 720, 680));
+                content.UpdateLayout();
+                foreach (TextBlock text in Descendants(content).OfType<TextBlock>().Where(IsEffectivelyVisible)) AssertTextFits(text);
+                Assert.True(Element<Button>(page, "FileManagementButton").IsEnabled);
+                Assert.True(Element<Button>(page, "MemoryManagementButton").IsEnabled);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    private sealed class FixtureFileProvider(string root) : IFileMaintenanceProvider
+    {
+        public bool FailPrepare { get; set; }
+        public void PrepareScan() { if (FailPrepare) throw new IOException("fixture-prepare-error"); }
+        public IEnumerable<FileMaintenanceCategory> GetCategories() => [new FixtureFileCategory(root)];
+    }
+
+    private sealed class FixtureFileCategory(string root) : FileMaintenanceCategory
+    {
+        public override string Id => "fixture.files";
+        public override string Title => "Fixture files";
+        public override string Description => "Isolated provider";
+        public override int? DefaultRetentionDays => 7;
+        public override bool DefaultSelected => true;
+        public override IReadOnlyList<string> SourceDirectories => [root];
+        public override FileMaintenanceSnapshot Scan(int retentionDays, FileMaintenanceSnapshot? previous, CancellationToken cancellationToken) =>
+            FileMaintenanceSnapshot.FromFiles(MaintenanceFileCleanup.Scan([new(Id, root, "*.dat", RetentionDays: retentionDays)], cancellationToken, previous?.Token as MaintenanceFileCleanupScanResult));
+        public override FileMaintenanceCleanupResult Cleanup(FileMaintenanceSnapshot confirmed, CancellationToken cancellationToken) =>
+            FileMaintenanceCleanupResult.FromFiles(MaintenanceFileCleanup.Cleanup((MaintenanceFileCleanupScanResult)confirmed.Token, cancellationToken));
+    }
+
+    [Fact]
     public async Task DefaultsSelectSafeCategoriesAndRequireAScanBeforeAnyCleanup()
     {
         using Sandbox sandbox = new();
@@ -90,6 +170,36 @@ public sealed class StorageMaintenanceTests
 
         logs.RetentionDays = -1;
         Assert.Equal(90, logs.RetentionDays);
+
+        logs.RetentionDays = 0;
+        Assert.Equal(0, config.LogRetentionDays);
+        Assert.False(logs.HasRetentionPeriod);
+        Assert.False(logs.CanClean);
+        await model.ScanAsync();
+        Assert.True(logs.CanClean);
+        Assert.Equal(0, sandbox.LastRetention.Item1);
+        Assert.Equal(0, new StorageCleanupItem("logs", "Logs", "", 0, false).RetentionDays);
+    }
+
+    [Fact]
+    public async Task SourceLocationRemainsAvailableWhenRetentionLeavesNoCandidates()
+    {
+        using Sandbox sandbox = new();
+        string root = Path.GetDirectoryName(sandbox.Files["logs"])!;
+        File.SetLastWriteTimeUtc(sandbox.Files["logs"], DateTime.UtcNow);
+        StorageMaintenanceViewModel model = new(new StorageMaintenanceConfig(), [new FixtureFileProvider(root)]);
+
+        await model.ScanAsync();
+
+        StorageCleanupItem item = Assert.Single(model.Items);
+        Assert.Equal(0, item.Count);
+        Assert.False(item.CanClean);
+        Assert.True(item.CanOpenLocation);
+        Assert.Equal(root, Assert.Single(item.SourceDirectories));
+        item.RetentionDays = 0;
+        await model.ScanAsync();
+        Assert.Equal(1, item.Count);
+        Assert.True(item.CanOpenLocation);
     }
 
     [Fact]
@@ -307,8 +417,9 @@ public sealed class StorageMaintenanceTests
             Assert.Same(model, page.DataContext);
             Assert.Equal(0, sandbox.RuleFactoryCalls);
             Assert.Equal(0, sandbox.ThumbnailScanCalls);
-            Assert.False(Element<Button>(page, "CleanSelectedButton").IsEnabled);
-            Assert.True(Element<Button>(page, "ScanButton").IsEnabled);
+            Assert.True(Element<Button>(page, "FileManagementButton").IsEnabled);
+            Assert.True(Element<Button>(page, "MemoryManagementButton").IsEnabled);
+            Assert.DoesNotContain(Descendants(page), element => element.Name == "ScanButton" || element.Name == "CleanSelectedButton");
             Assert.False(Element<Button>(page, "CancelResetButton").IsEnabled);
         });
     }
@@ -329,8 +440,8 @@ public sealed class StorageMaintenanceTests
             CompleteWithDispatcher(model.ScanAsync());
             RefreshLayout(host, width);
             Assert.InRange(page.ActualWidth, width - 345, width - 295);
-            Assert.True(Element<Button>(page, "CleanSelectedButton").IsEnabled);
-            Assert.True(scroll.ScrollableHeight > 0, "The test must exercise the actual vertically scrolling settings content.");
+            Assert.True(Element<Button>(page, "FileManagementButton").IsEnabled);
+            Assert.True(Element<Button>(page, "MemoryManagementButton").IsEnabled);
 
             foreach (FrameworkElement element in Descendants(page).Where(IsEffectivelyVisible).Where(element => element is TextBlock or Button or ComboBox or CheckBox))
             {
@@ -355,7 +466,6 @@ public sealed class StorageMaintenanceTests
                 Assert.True(bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1,
                     $"Action '{button.Content}' must be reachable by vertical scrolling: {bounds}, viewport {scroll.RenderSize}.");
             }
-            Assert.True(scroll.VerticalOffset > 0, "The reset actions must actually have been reached below the fold.");
         });
     }
 

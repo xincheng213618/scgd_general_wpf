@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 new StatusBarMeta
                 {
                     Id = "LocalCacheManagement",
-                    Name = EngineLocalization.Get("本地缓存管理"),
+                    Name = EngineLocalization.Get("内存缓存管理"),
                     Description = EngineLocalization.Get("查看或释放截图、图像文件、校正和相机取图缓存。"),
                     Type = StatusBarType.Icon,
                     Alignment = StatusBarAlignment.Right,

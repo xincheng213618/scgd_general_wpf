@@ -63,6 +63,8 @@ namespace ColorVision.Settings.Maintenance
             {
                 rules.Add(new("temp", temporaryRoot, "ColorVision_Diagnostics_*.zip", RetentionDays: tempRetentionDays, IsProtected: _ => feedbackIsProtected()));
                 rules.Add(new("temp", temporaryRoot, "ColorVision_Screenshot_*.png", RetentionDays: tempRetentionDays, IsProtected: _ => feedbackIsProtected()));
+                rules.Add(new("temp", temporaryRoot, "ColorVision_ProcessDump_*.dmp", RetentionDays: tempRetentionDays, IsProtected: _ => feedbackIsProtected()));
+                rules.Add(new("temp", temporaryRoot, "ColorVision_ProcessDump_*.txt", RetentionDays: tempRetentionDays, IsProtected: _ => feedbackIsProtected()));
                 foreach (string prefix in UpdateDirectoryPrefixes)
                 {
                     foreach (string directory in Directory.EnumerateDirectories(temporaryRoot, prefix + "*", SearchOption.TopDirectoryOnly))
@@ -163,15 +165,19 @@ namespace ColorVision.Settings.Maintenance
         private static bool IsCieCacheName(string name, CieDiagramKind kind)
         {
             string prefix = $"{kind}_v";
-            return name.StartsWith(prefix, StringComparison.Ordinal) && name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
-                int.TryParse(name[prefix.Length..^4], NumberStyles.None, CultureInfo.InvariantCulture, out int version) && version > 0;
+            if (!name.StartsWith(prefix, StringComparison.Ordinal) || !name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return false;
+            string versionText = name[prefix.Length..^4];
+            // CieBackgroundCache includes the appearance in current names; retain the legacy version-only shape.
+            if (versionText.EndsWith("_light", StringComparison.Ordinal)) versionText = versionText[..^6];
+            else if (versionText.EndsWith("_dark", StringComparison.Ordinal)) versionText = versionText[..^5];
+            return int.TryParse(versionText, NumberStyles.None, CultureInfo.InvariantCulture, out int version) && version > 0;
         }
 
         private static bool IsExpiredDirectory(string directory, int retentionDays)
         {
             try
             {
-                DateTime cutoff = DateTime.UtcNow.AddDays(-Math.Max(1, retentionDays));
+                DateTime cutoff = DateTime.UtcNow.AddDays(-Math.Max(0, retentionDays));
                 return Directory.Exists(directory) && !IsReparsePoint(directory) &&
                     Directory.GetCreationTimeUtc(directory) < cutoff;
             }

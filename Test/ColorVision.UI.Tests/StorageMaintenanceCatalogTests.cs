@@ -11,6 +11,26 @@ namespace ColorVision.UI.Tests
         private readonly string _root = Path.Combine(Path.GetTempPath(), "ColorVisionMaintenanceCatalogTests", Guid.NewGuid().ToString("N"));
         private readonly List<FileAppender> _appenders = new();
 
+        [Fact]
+        public void CurrentCieAppearanceCachesAndLegacyCachesAreRecognizedWithoutIncludingOtherImages()
+        {
+            string directory = Path.Combine(_root, "cache");
+            Directory.CreateDirectory(directory);
+            var kind = Enum.GetValues<ColorVision.ImageEditor.Cie.CieDiagramKind>()[0];
+            string[] names = [$"{kind}_v6_light.png", $"{kind}_v6_dark.png", $"{kind}_v2.png", $"{kind}_v6_notes.png", "user-image.png"];
+            foreach (string name in names)
+            {
+                string path = Path.Combine(directory, name);
+                File.WriteAllText(path, "isolated cached background");
+                File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(-1));
+            }
+            var scan = MaintenanceFileCleanup.Scan(CreateRules());
+            Assert.Equal(names.Take(3).OrderBy(name => name), scan.Files.Select(file => Path.GetFileName(file.FullPath)).OrderBy(name => name));
+            Assert.Equal(3, MaintenanceFileCleanup.Cleanup(scan).DeletedFileCount);
+            Assert.True(File.Exists(Path.Combine(directory, names[3])));
+            Assert.True(File.Exists(Path.Combine(directory, names[4])));
+        }
+
         [Theory]
         [InlineData("20260730.txt", "20260831.txt", "yyyyMMdd'.txt'", false, false, true)]
         [InlineData("20260230.txt", "20260831.txt", "yyyyMMdd'.txt'", false, false, false)]
@@ -47,6 +67,29 @@ namespace ColorVision.UI.Tests
             Assert.DoesNotContain(rules, rule => rule.RootPath.EndsWith("Recovery", StringComparison.Ordinal));
             Assert.False(Directory.Exists(Path.Combine(_root, "packages", "Tools")));
             Assert.False(Directory.Exists(Path.Combine(_root, "packages", "Application", "Incremental")));
+        }
+
+        [Fact]
+        public void ClearAllIncludesFreshOwnedTemporaryFilesButRechecksFeedbackAndUpdateProtection()
+        {
+            string temporary = Path.Combine(_root, "temp");
+            Directory.CreateDirectory(temporary);
+            string updateDirectory = Path.Combine(temporary, "ColorVisionUpdate-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(updateDirectory);
+            string updateFile = Path.Combine(updateDirectory, "update.bin");
+            string dump = Path.Combine(temporary, "ColorVision_ProcessDump_fixture.dmp");
+            string other = Path.Combine(temporary, "OtherApp.dmp");
+            foreach (string path in new[] { updateFile, dump, other }) File.WriteAllText(path, "isolated temporary data");
+            bool protectedNow = false;
+            var rules = StorageMaintenanceCatalog.CreateRulesForPaths(0, 0, 0, () => [], temporary,
+                Path.Combine(_root, "packages"), Path.Combine(_root, "cache"), () => protectedNow, () => protectedNow, _ => false);
+            MaintenanceFileCleanupScanResult scan = MaintenanceFileCleanup.Scan(rules);
+            Assert.Equal(2, scan.Files.Count);
+            Assert.DoesNotContain(scan.Files, file => file.FullPath == other);
+
+            protectedNow = true;
+            Assert.Equal(2, MaintenanceFileCleanup.Cleanup(scan).SkippedFileCount);
+            foreach (string path in new[] { updateFile, dump, other }) Assert.True(File.Exists(path));
         }
 
         [Fact]

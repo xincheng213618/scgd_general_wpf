@@ -7065,4 +7065,5 @@ Files on disk are kept. Active buffers follow each module’s completion or retu
   <data name="找不到模板：{0}" xml:space="preserve">
     <value>Template not found: {0}</value>
   </data>
+  <data name="内存缓存管理" xml:space="preserve"><value>Memory cache management</value></data>
 </root>

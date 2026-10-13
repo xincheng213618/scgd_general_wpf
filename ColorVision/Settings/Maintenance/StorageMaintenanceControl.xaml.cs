@@ -16,7 +16,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace ColorVision.Settings.Maintenance;
 
@@ -42,23 +41,7 @@ public partial class StorageMaintenanceControl : UserControl
     }
 
     private static StorageMaintenanceViewModel CreateProductionViewModel() => new(
-        ConfigService.Instance.GetRequiredService<StorageMaintenanceConfig>(), StorageMaintenanceCatalog.CreateRules,
-        () =>
-        {
-            var snapshot = ThumbnailCacheManager.ScanCacheForMaintenance();
-            if (!string.IsNullOrEmpty(snapshot.Error)) throw new InvalidOperationException(snapshot.Error);
-            return new(snapshot.SizeBytes, snapshot.EntryCount, snapshot);
-        },
-        snapshot =>
-        {
-            if (snapshot.Token is not ThumbnailCacheMaintenanceSnapshot token)
-                return new(0, 0, snapshot.Count, MaintenanceText.ScanFirst);
-            var result = ThumbnailCacheManager.ClearCacheForMaintenance(token);
-            return new(result.ReleasedBytes, result.DeletedEntryCount,
-                result.RequiresRescan ? snapshot.Count : 0,
-                result.Succeeded || result.RequiresRescan ? null : result.Message,
-                result.Succeeded || result.RequiresRescan ? result.Message : null);
-        }, StorageMaintenanceCatalog.GetProtectionNotice);
+        ConfigService.Instance.GetRequiredService<StorageMaintenanceConfig>(), Array.Empty<ColorVision.UI.Maintenance.IFileMaintenanceProvider>()) { Status = string.Empty };
 
     private void Control_Loaded(object sender, RoutedEventArgs e)
     {
@@ -81,44 +64,14 @@ public partial class StorageMaintenanceControl : UserControl
         ShowMessage(MaintenanceText.BusyClose);
     }
 
-    private async void Scan_Click(object sender, RoutedEventArgs e) => await ViewModel.ScanAsync();
-    private void Cancel_Click(object sender, RoutedEventArgs e) => ViewModel.Cancel();
-    private async void CleanSelected_Click(object sender, RoutedEventArgs e) => await ConfirmAndClean(ViewModel.Items.Where(item => item.IsSelected && item.CanClean).ToArray());
-    private async void CleanItem_Click(object sender, RoutedEventArgs e)
+    private void Files_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is StorageCleanupItem item && item.CanClean)
-            await ConfirmAndClean(new[] { item });
+        if (_configHandler != null) FileManagementWindow.OpenWindow();
     }
 
-    private async System.Threading.Tasks.Task ConfirmAndClean(IReadOnlyList<StorageCleanupItem> items)
+    private void Memory_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsBusy || items.Count == 0) return;
-        string message = string.Format(MaintenanceText.ConfirmClean, items.Sum(item => item.Count), StorageCleanupItem.FormatBytes(items.Sum(item => item.Bytes)));
-        if (MessageBox.Show(Window.GetWindow(this), message, MaintenanceText.Title, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-        await ViewModel.CleanupAsync(items);
-    }
-
-    private void Details_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.DataContext is not StorageCleanupItem item) return;
-        if (item.Id == "thumbnails") { ShowMessage(MaintenanceText.ThumbnailList); return; }
-        var grid = new DataGrid { AutoGenerateColumns = false, IsReadOnly = true, CanUserAddRows = false, ItemsSource = item.FileScan?.Files, Margin = new Thickness(12), EnableRowVirtualization = true };
-        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.FilePath, Binding = new Binding("FullPath"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.Size + " (B)", Binding = new Binding("Length"), Width = 100 });
-        grid.Columns.Add(new DataGridTextColumn { Header = MaintenanceText.Modified + " (UTC)", Binding = new Binding("LastWriteTimeUtc") { StringFormat = "yyyy-MM-dd HH:mm:ss" }, Width = 160 });
-        ShowDetails(item.Title, grid);
-    }
-
-    private void Warnings_Click(object sender, RoutedEventArgs e) => ShowDetails(MaintenanceText.Warnings,
-        new TextBox { Text = string.Join(Environment.NewLine, ViewModel.Issues), IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(14) });
-
-    private void ShowDetails(string title, UIElement content)
-    {
-        var window = new Window { Title = title, Width = 900, Height = 520, MinWidth = 650, MinHeight = 320, Content = content, Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        window.SetResourceReference(Window.BackgroundProperty, "GlobalBackground");
-        window.SetResourceReference(Window.ForegroundProperty, "GlobalTextBrush");
-        window.ApplyCaption();
-        window.ShowDialog();
+        if (_configHandler != null) ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow.OpenWindow();
     }
 
     private void Database_Click(object sender, RoutedEventArgs e)

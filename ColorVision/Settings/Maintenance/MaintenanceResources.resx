@@ -15,6 +15,8 @@
   <data name="ScanFirst" xml:space="preserve"><value>先扫描，再确认要清理的文件。</value></data>
   <data name="Keep" xml:space="preserve"><value>保留最近</value></data>
   <data name="Days" xml:space="preserve"><value>天</value></data>
+  <data name="ClearAll" xml:space="preserve"><value>全部清理</value></data>
+  <data name="OpenFileLocation" xml:space="preserve"><value>打开文件位置</value></data>
   <data name="Files" xml:space="preserve"><value>项</value></data>
   <data name="Logs" xml:space="preserve"><value>运行日志</value></data>
   <data name="LogsDescription" xml:space="preserve"><value>仅处理日志输出目录中的历史日志，保留当前正在写入的日志。</value></data>
@@ -64,7 +66,7 @@
   <data name="ViewWarnings" xml:space="preserve"><value>查看处理结果</value></data>
   <data name="NoFiles" xml:space="preserve"><value>没有符合当前条件的可清理文件。</value></data>
   <data name="Close" xml:space="preserve"><value>关闭</value></data>
-  <data name="BusyClose" xml:space="preserve"><value>清理仍在进行。请先取消或等待完成后再关闭设置窗口。</value></data>
+  <data name="BusyClose" xml:space="preserve"><value>仍在扫描或清理。请先取消或等待完成后再关闭窗口。</value></data>
   <data name="ScanChanged" xml:space="preserve"><value>保留时间已变化，请重新扫描。</value></data>
   <data name="Pending" xml:space="preserve"><value>待下次启动重置：{0}</value></data>
   <data name="CacheUnavailable" xml:space="preserve"><value>缓存不存在或暂无可清理项。</value></data>
@@ -79,4 +81,9 @@
   <data name="FeedbackProtected" xml:space="preserve"><value>反馈窗口仍在使用诊断包和截图，这些附件暂不清理。</value></data>
   <data name="UpdatePackagesProtected" xml:space="preserve"><value>存在进行中或待安装的更新，本次保留全部安装包缓存。</value></data>
   <data name="ResetStartupFailed" xml:space="preserve"><value>上次启动未能完成重置：{0}。可取消计划后检查配置和备份。</value></data>
+  <data name="Management" xml:space="preserve"><value>缓存管理</value></data>
+  <data name="FileManagement" xml:space="preserve"><value>文件缓存管理</value></data>
+  <data name="FileManagementDescription" xml:space="preserve"><value>查看和清理日志、临时文件、现场数据副本及可重建缓存；打开后自动增量扫描。</value></data>
+  <data name="MemoryManagement" xml:space="preserve"><value>内存缓存管理</value></data>
+  <data name="MemoryManagementDescription" xml:space="preserve"><value>查看相机、校正和图像缓冲的内存占用，释放空闲内存。</value></data>
 </root>

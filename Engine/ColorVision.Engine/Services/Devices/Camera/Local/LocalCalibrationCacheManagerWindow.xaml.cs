@@ -255,7 +255,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : allModules
                 ? EngineLocalization.Get("将释放所有缓存模块。\n\n等待正在进行的缓存操作完成，保留磁盘文件，后续使用时会重新加载。是否继续？")
                 : EngineLocalization.Format($"将释放以下 {targets.Count:N0} 个缓存模块：\n{string.Join(Environment.NewLine, targets.Select(module => module.Name))}\n\n保留磁盘文件，在用缓冲按各模块规则等待操作完成或归还后释放。是否继续？");
-            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+            if (MessageBox1.Show(this, confirmation, EngineLocalization.Get("内存缓存管理"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
             SetBusy(true, EngineLocalization.Get("正在释放缓存…"));
             try
             {
@@ -268,7 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 ApplySnapshots(await CacheManagerService.ReadSnapshotsAsync());
                 string message = string.Join(Environment.NewLine + Environment.NewLine, results.Select(result => result.Message));
                 StatusText.Text = message.Replace(Environment.NewLine, " ");
-                MessageBox1.Show(this, message, EngineLocalization.Get("本地缓存管理"), MessageBoxButton.OK,
+                MessageBox1.Show(this, message, EngineLocalization.Get("内存缓存管理"), MessageBoxButton.OK,
                     results.All(result => result.Succeeded) ? MessageBoxImage.Information : MessageBoxImage.Warning);
             }
             catch (Exception ex)
