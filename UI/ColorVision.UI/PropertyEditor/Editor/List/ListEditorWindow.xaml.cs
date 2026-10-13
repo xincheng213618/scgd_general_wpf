@@ -74,13 +74,14 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             _itemEditorType = itemEditorType;
             _originalItems = items;
             
-            // Create a working copy
+            // Isolate object items and nested collections until the list is accepted.
             var listType = typeof(List<>).MakeGenericType(elementType);
-            _items = (IList)Activator.CreateInstance(listType)!;
+            var workingItems = (IList)Activator.CreateInstance(listType)!;
             foreach (var item in items)
             {
-                _items.Add(item);
+                workingItems.Add(item);
             }
+            _items = (IList)PropertyGraphCopy.Clone(workingItems, includeNonBrowsableProperties: true);
             EditButton.Visibility = UsesInlineEditor ? Visibility.Collapsed : Visibility.Visible;
             RefreshList();
         }

@@ -43,7 +43,10 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
             _elementType = elementType;
             _preferredEditorType = preferredEditorType;
-            _valueWrapper = new ValueWrapper { Value = initialValue ?? CreateEditableClassInstance(elementType) };
+            _valueWrapper = new ValueWrapper
+            {
+                Value = initialValue == null ? CreateEditableClassInstance(elementType) : PropertyGraphCopy.Clone(initialValue, includeNonBrowsableProperties: true)
+            };
 
             InitializeEditorSelection();
             CreateEditor();

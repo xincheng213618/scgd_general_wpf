@@ -73,7 +73,7 @@ public interface IPropertyEditor
 
 属性级选择使用 `[PropertyEditorType(typeof(MyEditor))]`；`MyEditor` 在此只是占位类型名，实际实现应从现有编辑器复制必要模式。可参考 `Editor/TextSelectFilePropertiesEditor.cs`：每次调用创建新面板，使用 `CreateLabel`、`CreateTwoWayBinding(obj, property)` 和共享小控件样式。
 
-集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原字符串集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口。普通列表不显示索引列，字典仍按 Key/Value 编辑。
+集合元素的编辑方式在集合属性上用 `CollectionEditorTypeAttribute` 声明。字符串列表在“编辑列表”窗口中直接逐行编辑，普通文本默认使用文本框；目录列表标注 `[CollectionEditorType(typeof(TextSelectFolderPropertiesEditor))]`，文件列表标注 `TextSelectFilePropertiesEditor`，行内复用相应的选择和打开位置按钮，使用者无需再选择编辑器类型。缓存大小预处理的 `FolderPaths` 使用目录标记。添加后自动选中新行并聚焦文本框；修改、增删和排序只作用于工作列表，确定后才写回原集合，取消或关闭丢弃本次修改。非字符串元素继续使用项编辑窗口，对象项和嵌套列表在列表窗口与项窗口分别使用配置工作副本，并保留对象中 `Browsable(false)` 的可写配置属性；项窗口确定只更新外层工作列表，外层列表确定才提交原属性，因此内层取消或内层确定后再取消外层都不修改原配置。普通列表不显示索引列，字典仍按 Key/Value 编辑。
 
 算法、相机、校正、源表、光谱、POI、传感器模板和旧模板管理的列显示偏好，以及 Spectrum 插件的同类配置，使用 `Browsable(false)` 从属性面板隐藏。已有表格的列显示右键菜单和表头排序入口保持原样，集合继续序列化保存；隐藏不清空已有偏好。算法和光谱视图的“显示列表”与“显示侧边栏”统一放在 `View` 分类。“编辑列表”的列表与内容容器使用动态主题文字色，普通值及对象摘要在深浅色主题下保持可读。
 
