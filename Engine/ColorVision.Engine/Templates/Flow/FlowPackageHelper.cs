@@ -84,14 +84,13 @@ namespace ColorVision.Engine.Templates.Flow
         private const long MaxArchiveUncompressedBytes = 512L * 1024 * 1024;
 
         /// <summary>
-        /// 已知的模板属性名称集合 (STNodeProperty 标记的模板引用属性)
+        /// 随流程包迁移的模板引用属性。相机校正的 CalibTempName/CaliTempName
+        /// 由目标相机管理，只保留原名称，不收集载荷或参与冲突改名。
         /// </summary>
         private static readonly HashSet<string> TemplatePropertyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "TempName",
             "TemplateName",
-            "CalibTempName",
-            "CaliTempName",
             "POITempName",
             "POIFilterTempName",
             "POIReviseTempName",
