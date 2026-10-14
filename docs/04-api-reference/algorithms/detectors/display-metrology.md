@@ -3,15 +3,15 @@ knowledge_id: "algorithms.display-metrology"
 knowledge_type: "topic"
 status: "current"
 summary: "本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。"
-aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples"]
-code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "Scripts/generate_display_metrology_samples.py"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"]
+aliases: ["RGB套色", "RGB分通道", "九点十字", "RGB分离", "横向色差", "Eyebox", "眼盒", "低灰阶Mura", "灰尘检测", "脏污检测", "DustDetectionParameters", "显示计量", "全视场清晰度", "左右眼对准", "DisplayMetrologyProvider", "generate_display_metrology_samples", "圆环鬼影", "LocalRingGhostNode", "GMR1", "GMR2"]
+code_paths: ["UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology", "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs", "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs", "UI/ColorVision.ImageEditor/Algorithms/RingGhostOverlayRenderer.cs", "Scripts/generate_display_metrology_samples.py", "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRingGhostNode.cs", "Engine/ColorVision.Engine/Templates/Jsons/RingGhost"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs", "Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs", "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"]
 related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms.fov-local"]
 ---
 
 # 显示图案计量
 
-显示计量提供八个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于 ImageView 图像右键的 **分析测量**，按色彩与套色、缺陷与鬼影等已有分组展示，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
+显示计量提供九个可执行的本地分析入口，用于离线评价 AR 波导、Micro OLED/Micro LED 与双目整机的指定测试图案。入口位于 ImageView 图像右键的 **分析测量**，按色彩与套色、缺陷与鬼影等已有分组展示，通过统一 Catalog、Runner 和中立结果 artifact 执行，结果窗口提供测量汇总、逐项表格、图像、JSON/CSV 导出及临时叠图。
 
 当前输出是像素坐标和经指定指数解码的相对设备信号。它们不带亮度/色度标定、角度标定、客户 Recipe、Engine 历史结果落库或硬件扫描。十字 RGB 分离的 OK/NG 只是相对用户输入像素阈值的本次分析判定，不等于客户 Recipe 或量产结果。没有现场图像时，可以用公开原理及已知真值的合成图验证计算。**合成测试不证明真实模组的检出率、重复性、绝对测量精度或标准符合性。**
 
@@ -25,7 +25,7 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 
 支持 Gray8/16/32F 与 BGR/BGRA 8/16/32F；两种 RGB 几何功能都要求彩色输入。灰尘检测只接收 Gray/BGR，不接受 Alpha 输入。浮点样本须有限且处于 `[0,1]`，四通道须完全不透明。灰度图取唯一通道，其他相对信号测量默认取 G 通道，可切 B/R；不将相机 RGB 或 G 称为 CIE Y、xy 或 ΔE。
 
-单帧尺寸至少为 32×32。十字 RGB 分离允许单帧最多 67,108,864 像素 / 512 MiB：搜索区域最长边按整数倍率池化到不超过 1600 个采样格，之后逐目标读取原分辨率 ROI，每个 ROI 最多 8,388,608 像素。灰尘检测允许最多 134,217,728 像素 / 512 MiB，并使用有上限的分析分辨率，详见下文。其他功能单帧最多 8,388,608 像素，总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
+单帧尺寸至少为 32×32。十字 RGB 分离允许单帧最多 67,108,864 像素 / 512 MiB：搜索区域最长边按整数倍率池化到不超过 1600 个采样格，之后逐目标读取原分辨率 ROI，每个 ROI 最多 8,388,608 像素。灰尘检测允许最多 134,217,728 像素 / 512 MiB，并使用有上限的分析分辨率，详见下文。圆环鬼影允许单帧最多 33,554,432 像素。其余功能单帧最多 8,388,608 像素，总输入最多 33,554,432 像素和 512 MiB。多帧要求同尺寸、同格式及相同且非空的编码标签，不自动缩放、配准或曝光归一化。实际导入也检查像素预算。JSON 扫描清单限 64 KiB，累计缺陷最多 2048；超限拒绝，不将截断结果报告成成功。
 
 ## 功能与测量口径
 
@@ -34,6 +34,7 @@ related: ["algorithms.platform", "algorithms.local-native-analysis", "algorithms
 | RGB 图案套色 | `rgb-registration` | 单幅彩色图，每格一个亮目标；G 为参考，输出 R−G、B−G 的原图坐标差、距离和矢量叠图 |
 | 十字 RGB 分离 | `rgb-cross-registration` | 自动定位指定行列的亮十字；默认 3×3，单个使用 1×1；输出 R/G/B 定位预览、原分辨率臂边缘、通道偏移、逐点质量与可选阈值结果 |
 | 鬼影与杂散光评价 | `ghost-measurement` | 单图与显式主像矩形/背景；输出外部候选位置、面积、峰值比和积分比 |
+| 圆环鬼影亮度比 | `ring-ghost-measurement` | 完整主亮环及内侧近同心弱环；自动定位、输出区域平均信号比、局部对比和测量环边界；不自动推断光路阶次 |
 | 亮暗点 / 线缺陷 / Mura | `defects` | 均匀场；输出两种空间尺度上的缺陷候选、分析边界与区域框图 |
 | 灰尘 / 脏污检测 | `dust-detection` | 自动识别最大成像区，输出暗斑候选、原图坐标、检测范围与候选掩膜 |
 | 左右眼对准与信号一致性 | `binocular-quality` | 两图；逐格原始视差、相似变换尺度/旋转/残差及各通道相对信号比 |
@@ -77,6 +78,20 @@ Flow 使用 `LocalRgbCrossNode`，通过“算法参数 → 编辑…”配置�
 主像矩形用全图归一化坐标指定，外部区域不能为空。背景为用户提供的解码后相对信号，建议来自独立暗场或已知空白区域。逐像素扣背景并将负值截为零；主像出现满量程像素或主像无有效信号时拒绝。
 
 候选以 `RelativeThreshold × 主像区域峰值` 分割主像外信号。峰值比的分母是主像峰值，能量比的分母是主像矩形内积分；另外报告整个外部区域积分比与平均值比，两者有不同面积含义。候选形态区分连接泛光、细长光条和离散鬼影/杂散光，但不能仅凭一幅图确定光学成因；外部亮目标、相机自身杂散光和真实模组鬼影仍须通过测试图案及参考测量区分。
+
+**圆环鬼影亮度比**是独立入口，位于 **分析测量 → 缺陷与鬼影**，适用于 AR/VR 光波导圆环测试图，允许单帧最多 33,554,432 像素 / 512 MiB。使用默认参数即可检测，不配置亮区阈值、鬼影阈值、形态学核或圆环坐标；保留共用的输入解码指数、测量通道和 `RingGhostMeasurementParameters.OrderMapping` 阶次对应。既有 `ghost-measurement`、本地 native `M_DetectGhosts` 与远端 Ghost2.0 的调用和结果契约不变。
+
+实现先在最长边不超过 1600 像素的定位图上做自动阈值分割，以存在内孔、形状和中心一致的嵌套轮廓拟合主像椭圆，再在原始解码信号上按 720 个角度采样径向曲线。内侧搜索范围约为主像半径的 0.15～0.90 倍，并排除主像边缘邻域。弱环须在两种平滑尺度上保留径向峰，突出度超过径向噪声估计的六倍且至少为主像均值的 0.01%，并有至少三分之二圆周扇区支持。以上是自动检测的信号和分辨能力边界，不是客户 GMR 合格阈值；大尺度平滑为主像半径的 1%，窄弱环或背景中的肩峰可能无法分离。主像外围需保留约 30% 半径的完整图内边距。主像不完整、多个独立亮环、图案不符或主像测量区域满量程时拒绝，不能把图外补零用于测量。
+
+测量环宽由径向峰的局部半突出度确定；报告的是该环带内原始解码信号的面积加权极坐标均值，`平均信号比_% = 100 × 鬼环均值 / 主环均值`。另列以环带两侧作线性局部背景估计的扣背景对比，供观察弱环和光晕混合；这项值不替代 GMR。定位图的 8-bit 量化、平滑和圆周中位数仅用于找区域，不用于最终亮度均值。结果包含候选表、径向曲线、环带边界 overlay 与 `ring-ghost-measurement` 结构化数据，便于对照区域与重复计算。
+
+图像编辑器中的候选 A/B 默认仅按半径从外到内排序，不能据此确定一级/二级，也不能按明暗或反射次数推断客户所称的“直透”鬼影。仅当客户确认阶次映射且恰好检出两个候选时，编辑器结构化数据输出 `gmr1Percent/gmr2Percent`；其余情况保持空值。原图未确认线性、黑电平/亮度校正及客户测量区域口径时，只能解释为相对设备信号比，`productPass` 始终为空。
+
+Flow 的 **圆环鬼影**（`LocalRingGhostNode`）复用该算法，采用客户当前光波导方案“一阶必有、正常未检出输出 0”的业务约定：默认外侧候选为一阶、内侧为二阶；只有一个候选时归一阶并输出 `GMR2=0`，没有候选且主像与算法正常时输出两项 0。阶次对应可切换；该约定不适用于只存在二阶或任意未知光路的样本，尚需客户验证。算法失败、主像无效/饱和、阶次未设置或候选超过两个均报错，不补 0。节点只公开 `GMR1`、`GMR2` 数值（%），不用设置检测阈值、环中心或半径。
+
+节点输入优先上游原位深内存帧，其次配置的后备图片，再从 IN 的图像/校正记录读取原图。当前输入是线性 8/16 位 RAW、灰度 TIFF 或指定 RGB 的 G 通道相对信号；主缓冲为 CVCIE 时明确拒绝，避免把原图绑定到 CIE、数值却取自 RAW。成功后按 `Ghost` 类型、`ring-ghost/1.0` 版本保存主记录及唯一公共文件明细，结果文件含原图尺寸、测量区域与内部诊断；未配置目录时使用本机 LocalAppData 下的 `ColorVision/Results/RingGhost`。数据库事务提交后才更新流程输出和发布结果，保存失败清理本次未引用文件，不发布成功消息。历史处理器 `ViewHandleRingGhost` 只处理此版本，避免被远端 Ghost2.0 的处理器解析。项目配方、对外数据及判定见 [ARVRPro 流程与解析配置](../../projects/project-arvr-pro-processes.md)。
+
+瑞淀公开 Ghosting 示例报告 ghost/parent 亮度比与位移，但使用点阵，未公开本圆环图的物理阶次与 ROI 统计细节，因此不能将上述自动环带均值宣称为瑞淀等效实现。参考 [Radiant 官方资料第 63 页](https://www.radiantvisionsystems.com/sites/default/files/library-documents/Radiant_WBR_P2P-Automotive-Displays_%28GlobalSpec%29_FINAL.pdf#page=63)。`Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs` 覆盖弱环比值、曝光/尺寸/椭圆变化、阶次映射和残弧/缺环/主像无效边界；仍需客户标注的光路阶次和同图瑞淀输出验证现场一致性。外侧、明显偏心、相互重叠的鬼影不属于此入口的检出范围。
 
 ### 屏体缺陷
 

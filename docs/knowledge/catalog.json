@@ -203,16 +203,25 @@
         "全视场清晰度",
         "左右眼对准",
         "DisplayMetrologyProvider",
-        "generate_display_metrology_samples"
+        "generate_display_metrology_samples",
+        "圆环鬼影",
+        "LocalRingGhostNode",
+        "GMR1",
+        "GMR2"
       ],
       "code_paths": [
         "UI/ColorVision.ImageEditor/Algorithms/DisplayMetrology",
         "UI/ColorVision.ImageEditor/EditorTools/Algorithms/DisplayMetrologyEditorTool.cs",
         "UI/ColorVision.ImageEditor/Algorithms/StandardAlgorithmCatalog.cs",
-        "Scripts/generate_display_metrology_samples.py"
+        "UI/ColorVision.ImageEditor/Algorithms/RingGhostOverlayRenderer.cs",
+        "Scripts/generate_display_metrology_samples.py",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalRingGhostNode.cs",
+        "Engine/ColorVision.Engine/Templates/Jsons/RingGhost"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmReleaseGateTests.cs",
+        "Test/ColorVision.UI.Tests/RingGhostMeasurementTests.cs",
+        "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"
       ],
       "related": [
         "algorithms.platform",
@@ -220,6 +229,7 @@
         "algorithms.fov-local"
       ],
       "code_scopes": [
+        "Engine/ColorVision.Engine",
         "Scripts",
         "UI/ColorVision.ImageEditor"
       ],
@@ -9238,7 +9248,12 @@
         "MTFH07",
         "MTFV07",
         "MTFHV048",
-        "W25"
+        "W25",
+        "鬼影解析",
+        "RingGhostProcess",
+        "RingGhostTestResults",
+        "GMR1",
+        "GMR2"
       ],
       "code_paths": [
         "Projects/ProjectARVRPro/Process",
@@ -9254,7 +9269,8 @@
         "Test/ProjectARVRPro.Tests/LegacyRecipeImporterTests.cs",
         "Test/ProjectARVRPro.Tests/ProcessStepProjectionTests.cs",
         "Test/ProjectARVRPro.Tests/MTF07DynamicResultBuilderTests.cs",
-        "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs"
+        "Test/ProjectARVRPro.Tests/ProcessOverlayDisplayConfigTests.cs",
+        "Test/ProjectARVRPro.Tests/GhostFlowAndProcessTests.cs"
       ],
       "related": [
         "projects.arvr-pro",

@@ -40,6 +40,9 @@ next: false
 - [扩展性开发](../../02-developer-guide/core-concepts/extensibility.md) — `platform.extensibility`
   按插件、菜单、属性面板、设备、Flow、算法和结果扩展任务定位实现与当前契约。
 
+- [显示图案计量](../../04-api-reference/algorithms/detectors/display-metrology.md) — `algorithms.display-metrology`
+  本地显示图案计量：RGB套色、九点十字RGB分离、鬼影候选、亮暗点/线缺陷/Mura、灰尘脏污候选、双目信号与几何、Eyebox扫描和全视场斜边SFR；公开原理与可复现合成样本，不承诺现场精度。
+
 - [本地十字定位 FindCross](../../04-api-reference/algorithms/detectors/find-cross.md) — `algorithms.find-cross`
   本地十字定位的图像菜单、Flow 节点、生产参数、全图坐标、原生返回值与失败诊断。
 
