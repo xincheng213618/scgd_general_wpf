@@ -16,6 +16,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
     public const int MaximumFramePixels = 8_388_608;
     public const int MaximumRgbCrossPixels = 67_108_864;
     public const int MaximumDustPixels = 134_217_728;
+    public const int MaximumRingGhostPixels = 33_554_432;
     public const long MaximumTotalPixels = 33_554_432;
     private const int MaximumComponents = 2048;
     public AlgorithmProviderMetadata Metadata { get; } = new("colorvision.display-metrology.cpu", "ColorVision Display Metrology",
@@ -44,6 +45,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             if (!p.Validate().IsValid) throw new MeasurementException("invalid_parameters", "参数未通过校验。");
             var first = context.Inputs[0].Image;
             int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
+                : context.Descriptor.Id == DisplayMetrologyIds.RingGhost ? MaximumRingGhostPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
             long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
@@ -68,6 +70,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             {
                 float[] signal = ReadSignal(first, p.Channel, p.DecodeExponent, cancellationToken);
                 if (context.Descriptor.Id == DisplayMetrologyIds.Ghost) MeasureGhost(signal, first.Width, first.Height, (GhostMeasurementParameters)p, artifacts, cancellationToken);
+                else if (context.Descriptor.Id == DisplayMetrologyIds.RingGhost) MeasureRingGhost(signal, first.Width, first.Height, (RingGhostMeasurementParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.Defects) MeasureDefects(signal, first.Width, first.Height, (DisplayDefectParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.FieldSfr) MeasureFieldSfr(signal, first.Width, first.Height, (FieldSfrParameters)p, artifacts, cancellationToken);
                 else throw new MeasurementException("unsupported_algorithm", "不支持的显示计量算法。");
