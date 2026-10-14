@@ -131,7 +131,6 @@ namespace Conoscope.ApplicationServices.Capture
                 batch = BatchResultMasterDao.Instance.GetByCode(flowResult.SerialNumber);
             }
 
-            batch ??= FlowEngineManager.GetInstance().Batch;
             if (batch == null || batch.Id <= 0)
             {
                 return null;
@@ -172,9 +171,9 @@ namespace Conoscope.ApplicationServices.Capture
             return null;
         }
 
-        private static string? FindCvcieFile(IEnumerable<MeasureResultImgModel> results)
+        internal static string? FindCvcieFile(IEnumerable<MeasureResultImgModel> results)
         {
-            foreach (MeasureResultImgModel result in results)
+            foreach (MeasureResultImgModel result in results.Where(result => result.ResultCode == 0).OrderByDescending(result => result.Id))
             {
                 string? filePath = GetCvcieFilePath(result);
                 if (!string.IsNullOrWhiteSpace(filePath))

@@ -44,7 +44,7 @@ Conoscope 是 VAM/锥镜图像观察、关注点采样、色域/对比度计算�
 | 窗口操作成功 | 业务成功且有文件时调用 `OpenConoscope`，然后将按钮操作标为成功 | 不等待文档首屏或完整 XYZ 加载 |
 | 文档/显示 | 由下节事件、数据状态和 View 渲染另行完成 | 与 Flow/消息状态、按钮计时结果不同 |
 
-Flow 路径先用返回结果的 `SerialNumber` 查询批次，找不到则回退当前 `FlowEngineManager.Batch`；因此该回退不能被描述为严格绑定本次结果。有效批次下最多查询结果10轮，每次未找到后等待300ms，并取枚举中第一个可用测量文件。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序查找；CVRAW 先检查进程内文件缓存，命中即可使用，未命中才检查磁盘，不负责下载远端 URL。
+Flow 路径用返回结果的 `SerialNumber` 查询本次批次，找不到时不使用其它批次的结果。有效批次下最多查询结果10轮，每次未找到后等待300ms；只在本批次成功的图像记录中按 `Id` 倒序查找第一个可用测量文件。“光谱参考校正”在 CVRAW 矩阵写回成功后追加图像记录，因此放在流程末端时会优先打开修正后的 RAW，不再选到较早的相机结果。相机路径最多查询8轮，每次未找到后等待300ms：从当前 `MsgReturn.Data.MasterId` 查结果，整数读取失败返回0；两条链都按 `FileUrl`、`RawFile` 顺序查找；CVRAW 先检查进程内文件缓存，命中即可使用，未命中才检查磁盘，不负责下载远端 URL。
 
 `CaptureCameraAsync` 按相机配置选择单曝光或 R/G/B 三曝光，传入选中的标定参数，以及 ID 为 `-1` 的自动曝光/JSON 模板参数。它复用的是 [Engine 相机契约](../../../01-user-guide/devices/camera.md)，Flow 执行另见 [FlowExecutionSession](../../../01-user-guide/workflow/execution.md)。
 
