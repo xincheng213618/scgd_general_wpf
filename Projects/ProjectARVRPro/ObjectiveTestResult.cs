@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
@@ -39,6 +39,9 @@ namespace ProjectARVRPro
 
         [DisplayName("视场角测试")]
         public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; } = new();
+
+        [DisplayName("圆环鬼影")]
+        public Dictionary<string, Process.Ghost.RingGhostTestResult> RingGhostTestResults { get; set; } = new();
 
         [DisplayName("亮色度测试")]
         public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new();

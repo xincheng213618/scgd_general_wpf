@@ -71,6 +71,7 @@ namespace ProjectARVRPro
             CollectKeyedObjects(result.LuminanceChromaticityTestResults, metrics, keys);
             CollectKeyedObjects(result.LuminanceChromaticityYWTestResults, metrics, keys);
             CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
+            CollectKeyedObjects(result.RingGhostTestResults, metrics, keys);
             CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
             CollectDynamicPois(result.DynamicPoixyuvDatas, metrics, keys);
             if (result.DynamicRgbCrossResults != null)
@@ -99,6 +100,7 @@ namespace ProjectARVRPro
                    propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityYWTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.RingGhostTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.ChessboardTestResults);
         }
 

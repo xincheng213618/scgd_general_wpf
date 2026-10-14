@@ -1,6 +1,6 @@
 # ProjectARVRPro
 
-ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dll`。支持亮色度、视场角、棋盘格、MTF、畸变、光学中心、AOI 与 Demura 等流程，按产品方案配置测试顺序、解析类型和 Recipe。
+ColorVision 的 AR/VR 光学检测项目包，运行时加载 `ProjectARVRPro.dll`。支持亮色度、视场角、棋盘格、MTF、畸变、光学中心、圆环鬼影、AOI 与 Demura 等流程，按产品方案配置测试顺序、解析类型和 Recipe。
 
 ## 运行前提
 
