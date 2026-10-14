@@ -34,6 +34,8 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     internal static class LocalPoiCalculator
     {
+        internal static string ResultResourceKey(int masterId) => $"ColorVision.LocalPoi.Result.{masterId}";
+
         public static ViewResultAlgType ResolveResultType(int channels)
             => channels == 1 ? ViewResultAlgType.POI_Y : ViewResultAlgType.POI_XYZ;
 

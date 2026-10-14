@@ -242,6 +242,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalPoiCalculator.SaveDetails(poiMasterId, result);
 
                 action.SetRuntimeResource(LocalFlowFrameRuntime.GetPoiResultResourceKey(execution.Frame.FrameId), result);
+                action.SetRuntimeResource(LocalPoiCalculator.ResultResourceKey(poiMasterId), result);
                 action.Data["LocalPoiCount"] = result.Points.Count;
                 action.Data["LocalCalibrationMasterId"] = calibrationMasterId;
                 action.MasterValue(null, poiMasterId, (int)resultType);
