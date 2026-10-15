@@ -73,7 +73,7 @@ OpenCV 原生运行库遵循普通内容差分：与所选历史基准内容相�
 
 插件和项目包默认上传，并在上传尝试结束后删除本地 `.cvxp`，包括上传或 `LATEST_RELEASE` 提交失败的路径；失败后应修复原因并重新执行 wrapper，不能把本地包是否残留当成成功依据。构建和上传前会先校验 `manifest.json` 的插件 ID、DLL 路径和文件大小；需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。仓库内 `Plugins/`、`Projects/` 的默认打包路径会将该集合与当前 Release x64 宿主输出比较；发生双向漂移时自动从当前宿主输出刷新仓库与 Plugin Kit 两份清单，再继续打包。外部 `--src-dir` 和显式 `--shared-files` 仍保留离线兼容行为，不改写调用者提供的清单。
 
-带有效清单的 `.cvxp` 是完整插件目录包，不是相对旧版本的差异包。客户端安装前会为现有 `Plugins/<manifest.id>/` 创建校验备份，然后精确替换整个目录；发布脚本不得省略仍由插件运行时需要、但本次源码未变化的私有文件。宿主共享文件仍按 `shared_files.json` 排除。`Scripts/shared_files.json` 与 `SDK/ColorVision.PluginKit/scripts/shared_files.json` 是同一份派生集合的两个消费镜像，不要手工编辑。生成器和仓库内正式打包器都会在集合变化时同步两份文件；集合未变化时不会仅因 `generated_at` 重写。CI 可继续用 `--check` 做只读漂移检查。主程序的全量/增量发布不以插件静态清单漂移作为门禁；它按本次运行目录、全量 ZIP 和安装器交集现场生成并上传版本化宿主清单。
+带有效清单的 `.cvxp` 是完整插件目录包，不是相对旧版本的差异包。客户端安装前会为现有 `Plugins/<manifest.id>/` 创建校验备份，然后精确替换整个目录；发布脚本不得省略仍由插件运行时需要、但本次源码未变化的私有文件。宿主共享文件仍按 `shared_files.json` 排除。`Scripts/shared_files.json` 与 `SDK/ColorVision.PluginKit/scripts/shared_files.json` 是同一份派生集合的两个消费镜像，不要手工编辑。生成器和仓库内正式打包器都会在集合变化时同步两份文件；集合未变化时不会仅因 `generated_at` 重写。共享集合在所有层级排除本机调试产生的 `*.runtimeconfig.dev.json`，保留正式 `*.runtimeconfig.json`，避免可选开发产物造成干净 CI 构建的清单漂移。CI 可继续用 `--check` 做只读漂移检查。主程序的全量/增量发布不以插件静态清单漂移作为门禁；它按本次运行目录、全量 ZIP 和安装器交集现场生成并上传版本化宿主清单。
 
 存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。
 

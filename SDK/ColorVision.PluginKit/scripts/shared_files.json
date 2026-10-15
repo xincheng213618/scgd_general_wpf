@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-10-14T09:29:52.918468+00:00",
+  "generated_at": "2026-10-15T06:05:52.909059+00:00",
   "shared_files": [
     "Anthropic.dll",
     "Assets/InstallTool/Everything-1.4.1.1032.x64-Setup.exe",
@@ -66,7 +66,6 @@
     "ColorVisionIcons64.dll",
     "ColorVisionOperationsWatchdog.deps.json",
     "ColorVisionOperationsWatchdog.exe",
-    "ColorVisionOperationsWatchdog.runtimeconfig.dev.json",
     "ColorVisionOperationsWatchdog.runtimeconfig.json",
     "ColorVisionServiceHost.deps.json",
     "ColorVisionServiceHost.exe",
