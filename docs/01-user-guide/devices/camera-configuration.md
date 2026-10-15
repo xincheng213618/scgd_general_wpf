@@ -2,10 +2,10 @@
 knowledge_id: "operations.camera-configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "相机参数的编辑入口、同步覆盖与保存；切换物理相机同步CameraID，日常参数保存保留本地ID，路径移动失败或被拒绝不等于取消路径变更。"
+summary: "相机参数的编辑入口、同步覆盖与保存；CameraID统一以物理配置为准，搜索保存身份并同步逻辑镜像，路径移动失败或被拒绝不等于取消路径变更。"
 aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs","Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs","Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"]
 related: ["operations.camera","operations.physical-camera","operations.device-configuration"]
 ---
 
@@ -28,16 +28,18 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 编辑物理参数时，在“物理相机管理”选择目标相机，点击详情区的“修改配置”；编辑逻辑服务时使用该逻辑相机的 `EditCommand`，此入口要求管理员权限。逻辑配置窗口的“应用设置”把所选物理参数带入编辑副本，“提交”才把副本复制回服务并保存。两者都可能影响绑定服务，确认前先核对逻辑 `Code` 与物理 `CameraCode`。
 
-`ConfigPhyCamera.ApplyTo(ConfigCamera)` 复制通道、CFW、电机、模式、型号、采集模式、位深和曝光上下限。`includeCameraId` 默认 `false`，保留逻辑服务中用于当前运行环境的 `CameraID`；`includeCameraType` 默认 `true`。它不复制物理 `CameraCfg`、文件服务配置或显示端当前曝光/增益。
+`ConfigPhyCamera.ApplyTo(ConfigCamera)` 复制通道、CFW、电机、模式、型号、采集模式、位深和曝光上下限。`includeCameraId` 默认 `true`，逻辑相机的 `CameraID` 是物理配置的兼容镜像；`includeCameraType` 默认 `true`。它不复制物理 `CameraCfg`、文件服务配置或显示端当前曝光/增益。
 
 | 调用位置 | `CameraID` | `CameraType` |
 | --- | --- | --- |
 | 逻辑配置窗口选择物理相机或“应用设置” | 同步所选物理相机 ID，同时更新 `CameraCode` | 保留，显式传 `false` |
-| `DeviceCamera.Save()` | 物理绑定代码改变时同步；保存同一绑定时保留本地 ID | 从物理配置同步 |
-| 物理配置保存触发 `PhyCameraConfigChanged` | 保留，显式传 `false` | 从物理配置同步 |
+| `DeviceCamera.Save()` | 同步所绑定物理相机的 ID，同一绑定也修复旧逻辑 ID | 从物理配置同步 |
+| 物理配置保存触发 `PhyCameraConfigChanged` | 从物理配置同步 | 从物理配置同步 |
 | 其它调用显式传 `includeCameraId: true` | 从物理配置同步 | 取决于 `includeCameraType` |
 
-选择另一台物理相机或点击“应用设置”会把该相机的 `CameraID` 带入编辑副本，随后提交保存。`DeviceCamera.Save()` 也按之前已关联的物理代码判断绑定是否改变，覆盖导入等不经过选择控件的保存入口，避免新绑定仍连接旧 ID；同一绑定的日常保存与物理参数保存回调继续保留本地运行环境的 ID。仅保存物理参数不等于重新选择硬件。
+`CameraCode`/MD5 是不变的物理绑定，`CameraID` 由该物理相机持有。构造、重新关联、物理 ID 更新和设备保存均同步逻辑镜像；打开本地或服务相机时也重新读取物理 ID，避免使用旧调用参数或旧逻辑 ID。完整 `MD5(CameraID)` 必须与物理 Code 相符，不能以部分匹配或列表第一台替换绑定。已绑定设备在本地相机管理中不能独立修改 ID；未绑定的独立本地相机保留手动选择能力。
+
+显式搜索在当前配置库保存已匹配物理相机的 ID，再同步相同存储中绑定它的相机与校准设备；只更新身份字段，不调用设备 `Save()`、物理参数 `ConfigChanged` 或服务重启，也不重置曝光、增益或校正配置。逻辑配置保留 `CameraID` 字段以兼容旧协议，不能作为独立身份来源。搜索不创建尚未配置的相机、不清空未发现相机的 ID，失败诊断中的重新检测也不写配置。
 
 提交按钮先检查是否允许切换物理绑定，再把 `EditCamera` 的配置克隆复制回服务，调用一次 `DeviceCamera.Save()`，按 `CameraCode` 重新关联并以表中规则同步，随后执行[数据库保存与服务重启](./configuration.md)。保存完成才关闭窗口；失败时显示原始错误并记录日志。当前相机仍由本地会话、视频或服务占用时，切换会明确提示先关闭相机，编辑副本不写回当前配置；保存同一物理绑定不受这项限制。窗口选择列表仅包含尚未关联逻辑相机，或关联相机 `Name` 与当前设备相同的物理对象；这个界面过滤不能视为全局唯一绑定校验。
 
@@ -77,4 +79,4 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 参数不一致时，按“当前入口 → 逻辑设备与物理绑定 → 本次读取的配置对象 → `ApplyTo`/回调覆盖 → 实际请求参数”核对；物理导入可能重置配置的独立风险见[物理相机管理](./camera-management.md)。
 
-`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认保留本地 `CameraID`、同步型号/位深及显式复制 ID；`DeviceCameraAssociationTests` 覆盖切换物理绑定时同步硬件 ID，以及同一绑定重载后保留本地 ID；`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段；`CameraNodeCreationDefaultsTests` 覆盖右键新建初始化所用的参数映射与校正组增益。这些测试不覆盖右键界面操作、保存事件整链、数据库/服务重启、路径移动或硬件参数生效；后者需专门测试与授权环境验收，测试文件存在不代表已运行。
+`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认同步物理 ID 和型号/位深；`DeviceCameraAssociationTests` 覆盖绑定切换、同一绑定修复旧逻辑 ID 和物理 ID 更新通知；`PhysicalCameraIdentityTests` 覆盖身份写入本地配置库、未知配置字段保留、重复扫描、失败重试及不重启设备；`LocalCameraSessionTests` 覆盖旧配置无需打开管理窗口即可解析正确 ID，以及 ID 更新后拒绝复用旧连接。`CameraRunParamTests` 覆盖 `SetAllExposure`；`CameraNodeCreationDefaultsTests` 覆盖新建节点初始化。这些测试不代替 MySQL、服务重启、路径移动和真机采集验收，测试文件存在不代表已运行。

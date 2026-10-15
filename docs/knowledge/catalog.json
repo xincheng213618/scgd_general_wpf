@@ -6632,6 +6632,7 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/CameraIdentityOpenPersistenceTests.cs",
         "Test/ColorVision.UI.Tests/LvCameraLocalForwardingTests.cs",
         "Test/ColorVision.UI.Tests/CameraBackendRoutingTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraOwnershipTests.cs",
@@ -6667,7 +6668,7 @@
       "knowledge_id": "operations.camera-configuration",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "相机参数的编辑入口、同步覆盖与保存；切换物理相机同步CameraID，日常参数保存保留本地ID，路径移动失败或被拒绝不等于取消路径变更。",
+      "summary": "相机参数的编辑入口、同步覆盖与保存；CameraID统一以物理配置为准，搜索保存身份并同步逻辑镜像，路径移动失败或被拒绝不等于取消路径变更。",
       "aliases": [
         "曝光",
         "增益",
@@ -6704,6 +6705,8 @@
         "Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/DeviceCameraAssociationTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
         "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs",
         "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"
@@ -7393,6 +7396,7 @@
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCameraManager.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraCreationBatch.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraInitialBinding.cs",
+        "Engine/ColorVision.Engine/Services/PhyCameras/PhysicalCameraIdentity.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/Licenses/PhyLicenseDao.cs",
         "Engine/ColorVision.Engine/Services/PhyCameras/CalibrationUploadRunner.cs",
@@ -7413,6 +7417,7 @@
         "Engine/cvColorVision/Camera/cvCameraCSLib.Discovery.cs"
       ],
       "test_paths": [
+        "Test/ColorVision.UI.Tests/PhysicalCameraIdentityTests.cs",
         "Test/ColorVision.UI.Tests/PhyCameraLicenseImportPolicyTests.cs",
         "Test/ColorVision.UI.Tests/PhysicalCameraCreationBatchTests.cs",
         "Test/ColorVision.UI.Tests/CalibrationUploadRunnerTests.cs",

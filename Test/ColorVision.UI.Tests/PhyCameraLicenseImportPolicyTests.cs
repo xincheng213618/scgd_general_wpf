@@ -60,7 +60,7 @@ public sealed class PhyCameraLicenseImportPolicyTests : IDisposable
         var savedCamera = JsonConvert.DeserializeObject<ConfigCamera>(reopened.GetById(camera.SysResourceModel.Id)!.Value!)!;
         Assert.Equal("CAMERA-01", savedCamera.CameraCode);
         Assert.Equal(CameraModel.HK_USB, savedCamera.CameraModel);
-        Assert.Equal(cameraId.Length == 0 ? null : cameraId, savedCamera.CameraID);
+        Assert.Equal(cameraId, savedCamera.CameraID);
         Assert.Equal("CAMERA-01", JsonConvert.DeserializeObject<ConfigCalibration>(reopened.GetById(calibration.SysResourceModel.Id)!.Value!)!.CameraCode);
 
         PhysicalCameraInitialBinding.BindDevices(true, 1, physical, physicalConfig, devices);
@@ -99,13 +99,13 @@ public sealed class PhyCameraLicenseImportPolicyTests : IDisposable
     }
 
     [Fact]
-    public void InitialBindingPreservesExistingCameraIdAndCompletesMatchingPartialBinding()
+    public void InitialBindingReplacesOldCameraIdAndCompletesMatchingPartialBinding()
     {
         var config = new ConfigCamera { SN = "camera-01", CameraID = "user-id" };
         Assert.True(PhysicalCameraInitialBinding.Apply(config, "CAMERA-01", new ConfigPhyCamera { CameraID = "scanned-id" }));
         Assert.Equal("CAMERA-01", config.CameraCode);
         Assert.Equal("camera-01", config.SN);
-        Assert.Equal("user-id", config.CameraID);
+        Assert.Equal("scanned-id", config.CameraID);
         Assert.False(PhysicalCameraInitialBinding.Apply(config, "CAMERA-01", new ConfigPhyCamera { CameraID = "scanned-id" }));
     }
 

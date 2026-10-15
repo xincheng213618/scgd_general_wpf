@@ -281,7 +281,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 var summary = await Task.Run(() => cvCameraCSLib.SearchCameraIds(selectedCameraModels));
                 LoadPhyCamera();
-                MarkDiscoveredCamerasOnline(summary);
+                SynchronizeDiscoveredCameraIdentities(summary);
 
                 var resultWindow = new CameraSearchResultWindow(new CameraSearchResultViewModel(summary, this))
                 {
@@ -301,20 +301,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        private void MarkDiscoveredCamerasOnline(cvCameraCSLib.CameraDiscoverySummary summary)
+        internal void SynchronizeDiscoveredCameraIdentities(cvCameraCSLib.CameraDiscoverySummary summary)
         {
-            var existingCameras = PhyCameras
-                .Where(a => !string.IsNullOrWhiteSpace(a.Code))
-                .GroupBy(a => a.Code, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(a => a.Key, a => a.First(), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var camera in summary.Cameras)
-            {
-                if (existingCameras.TryGetValue(camera.MD5Id, out var phyCamera))
-                {
-                    phyCamera.SysResourceModel.Remark = "Online";
-                }
-            }
+            PhysicalCameraIdentity.SynchronizeDiscovered(summary, PhyCameras, SysResourceDao.Instance.GetAll(),
+                ServiceManager.Current?.DeviceServices.AsEnumerable() ?? Enumerable.Empty<DeviceService>(), row => SysResourceDao.Instance.Save(row));
         }
 
         public void Create()
@@ -520,7 +510,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         existingPhyCamera.Name = item.Name ?? string.Empty;
                         existingPhyCamera.SysResourceModel = item;
-                        existingPhyCamera.Config.CameraID = item.Name ?? string.Empty;
+                        existingPhyCamera.Config.CameraID = PhysicalCameraIdentity.ReadCameraId(item, existingPhyCamera.Config.CameraID);
                     }
                     else
                     {

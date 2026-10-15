@@ -7,7 +7,7 @@ namespace ColorVision.UI.Tests;
 public sealed class ConfigPhyCameraApplyTests
 {
     [Fact]
-    public void ApplyToPreservesLocalCameraIdByDefault()
+    public void ApplyToSynchronizesPhysicalCameraIdByDefault()
     {
         ConfigCamera target = new()
         {
@@ -22,7 +22,7 @@ public sealed class ConfigPhyCameraApplyTests
 
         source.ApplyTo(target);
 
-        Assert.Equal("LOCAL-CAMERA-ID", target.CameraID);
+        Assert.Equal("PHYSICAL-CAMERA-ID", target.CameraID);
         Assert.Equal(CameraModel.HK_USB, target.CameraModel);
         Assert.Equal(ImageBpp.bpp16, target.ImageBpp);
     }

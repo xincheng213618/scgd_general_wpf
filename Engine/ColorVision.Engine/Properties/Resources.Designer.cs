@@ -1715,6 +1715,24 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("CameraPanel_NotUsed", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 不使用自动曝光模板 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_NoAutoExposureTemplate {
+            get {
+                return ResourceManager.GetString("CameraPanel_NoAutoExposureTemplate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 不使用校正模板 的本地化字符串。
+        /// </summary>
+        public static string CameraPanel_NoCalibrationTemplate {
+            get {
+                return ResourceManager.GetString("CameraPanel_NoCalibrationTemplate", resourceCulture);
+            }
+        }
         
         
         /// <summary>

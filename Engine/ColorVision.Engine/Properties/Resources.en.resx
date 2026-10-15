@@ -6487,6 +6487,8 @@ Active cache operations will finish first. Disk files will be kept, and the cach
   <data name="CameraPanel_HDR" xml:space="preserve"><value>HDR</value></data>
   <data name="CameraPanel_PreviewSettings" xml:space="preserve"><value>Preview settings</value></data>
   <data name="CameraPanel_NotUsed" xml:space="preserve"><value>Not used</value></data>
+  <data name="CameraPanel_NoAutoExposureTemplate" xml:space="preserve"><value>Do not use auto exposure template</value></data>
+  <data name="CameraPanel_NoCalibrationTemplate" xml:space="preserve"><value>Do not use calibration template</value></data>
   <data name="CameraPanel_Region" xml:space="preserve"><value>ROI</value></data>
   <data name="CameraPanel_LocalExposure" xml:space="preserve"><value>Local settings</value></data>
   <data name="启用相机取图缓冲" xml:space="preserve"><value>Enable camera capture buffer</value></data>

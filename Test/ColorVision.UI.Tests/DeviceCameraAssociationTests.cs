@@ -32,15 +32,20 @@ public sealed class DeviceCameraAssociationTests
     }
 
     [Fact]
-    public void SavingTheSamePhysicalBindingPreservesItsLocalRuntimeId()
+    public void SavingTheSamePhysicalBindingRepairsItsLogicalCameraId()
     {
-        DeviceCamera device = CreateDevice(new ConfigCamera { CameraCode = "physical-1", CameraID = "local-runtime-id" });
-        device.PhyCamera = CreatePhysicalCamera("physical-1", "physical-id");
+        string code = ColorVision.Common.Utilities.Tool.GetMD5("physical-id");
+        DeviceCamera device = CreateDevice(new ConfigCamera { CameraCode = code, CameraID = "local-runtime-id" });
+        device.PhyCamera = CreatePhysicalCamera(code, "old-invalid-id");
 
         // A reloaded physical object with the same code is still the same binding.
-        device.UpdatePhyCameraBinding(CreatePhysicalCamera("physical-1", "physical-id"));
+        device.UpdatePhyCameraBinding(CreatePhysicalCamera(code, "old-invalid-id"));
 
-        Assert.Equal("local-runtime-id", device.Config.CameraID);
+        Assert.Equal("old-invalid-id", device.Config.CameraID);
+        Assert.Empty(device.ResolveCameraId("stale-explicit-id"));
+        device.PhyCamera!.Config.CameraID = "physical-id";
+        Assert.Equal("physical-id", device.Config.CameraID);
+        Assert.Equal("physical-id", device.ResolveCameraId("stale-explicit-id"));
     }
 
     [Theory]
@@ -95,9 +100,11 @@ public sealed class DeviceCameraAssociationTests
     public void AttachPhyCameraBindsWithoutPersistingLicenseAssociation()
     {
         DeviceCamera deviceCamera = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        deviceCamera.Config = new ConfigCamera();
         deviceCamera.SysResourceModel = new SysResourceModel { Id = 901 };
 
         PhyCamera phyCamera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+        phyCamera.Config = new ConfigPhyCamera();
         phyCamera.SysResourceModel = new SysResourceModel();
         LicenseModel license = new()
         {

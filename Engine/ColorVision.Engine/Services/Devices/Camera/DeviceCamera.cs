@@ -256,7 +256,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed || !ReferenceEquals(sender, _subscribedPhyCamera)) return;
 
-            e.ApplyTo(Config, includeCameraId: false);
+            e.ApplyTo(Config, includeCameraId: true);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
             DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
@@ -271,10 +271,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed && phyCamera != null) return;
             if (ReferenceEquals(_subscribedPhyCamera, phyCamera)) return;
 
-            // Construction, reload, and disposal all pass through here. Keep persistence and service restarts in Save/Delete.
+            // Construction, reload, and disposal all pass through here. Do not persist or restart services while attaching.
             if (_subscribedPhyCamera != null)
             {
                 _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged -= PhysicalCameraIdentityChanged;
                 if (ReferenceEquals(_subscribedPhyCamera.DeviceCamera, this))
                     _subscribedPhyCamera.DeviceCamera = null;
             }
@@ -285,8 +286,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (_subscribedPhyCamera != null)
             {
+                PhysicalCameraIdentity.RecoverFromLogical(_subscribedPhyCamera, Config.CameraCode, Config.CameraID);
                 _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                _subscribedPhyCamera.Config.PropertyChanged += PhysicalCameraIdentityChanged;
                 _subscribedPhyCamera.DeviceCamera = this;
+                Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
             }
         }
 
@@ -340,10 +344,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         internal void UpdatePhyCameraBinding(PhyCamera? phyCamera)
         {
             EnsurePhyCameraBindingCanChange(phyCamera?.Code);
-            bool bindingChanged = !string.Equals(_subscribedPhyCamera?.Code, phyCamera?.Code, StringComparison.OrdinalIgnoreCase);
             PhyCamera = phyCamera;
-            // A different physical camera must not inherit the previous camera's local ID.
-            phyCamera?.Config.ApplyTo(Config, includeCameraId: bindingChanged);
+            phyCamera?.Config.ApplyTo(Config, includeCameraId: true);
         }
 
         public override void Save()

@@ -79,9 +79,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         /// <summary>
         /// Applies shared physical-camera parameters to a device configuration.
-        /// CameraID identifies the camera in the current local runtime, so it is preserved by default.
+        /// The physical camera owns CameraID; logical configurations keep a compatibility mirror.
         /// </summary>
-        public void ApplyTo(ConfigCamera target, bool includeCameraId = false, bool includeCameraType = true)
+        public void ApplyTo(ConfigCamera target, bool includeCameraId = true, bool includeCameraType = true)
         {
             ArgumentNullException.ThrowIfNull(target);
 

@@ -223,7 +223,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             cb_CM_TYPE.IsEnabled = canConfigure;
             cb_CM_MODE.IsEnabled = canConfigure;
-            cb_CM_ID.IsEnabled = canConfigure;
+            cb_CM_ID.IsEnabled = canConfigure && string.IsNullOrWhiteSpace(Device.Config.CameraCode);
             cb_get_mode.IsEnabled = !_isCapturing && !_isRefreshingCameraIds;
             bool usesMvs = m_eCameraMdl is CameraModel.HK_USB or CameraModel.HK_CARD && m_eCameraMode != CameraMode.CV_MODE
                 && (isConnected ? Device.LocalCameraSession.OpenedUseHikMvs : Device.DisplayConfig.UseHikMvs);
@@ -257,7 +257,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void SaveDeviceConfig()
         {
+            Device.Config.CameraID = ResolveWindowCameraId(Device.Config.CameraID);
             Device.SaveConfig();
+        }
+
+        private string ResolveWindowCameraId(string? selectedId = null)
+        {
+            // Keep an incomplete binding editable/closable; the connection entry reports the missing physical camera.
+            if (!string.IsNullOrWhiteSpace(Device.Config.CameraCode) && Device.PhyCamera == null)
+                return Device.Config.CameraID?.Trim() ?? string.Empty;
+            return Device.ResolveCameraId(selectedId);
         }
 
         private void SaveLocalPreferences()
@@ -293,7 +302,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void InitializeCameraIdFromConfig()
         {
-            string configuredCameraId = Device.Config.CameraID?.Trim() ?? string.Empty;
+            string configuredCameraId = ResolveWindowCameraId();
             ApplyCameraIdOptions(string.IsNullOrWhiteSpace(configuredCameraId)
                 ? Array.Empty<string>()
                 : new[] { configuredCameraId });
@@ -346,10 +355,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     log.Warn($"Camera ID scan failed. Model={cameraModel}, Error={modelResult?.ErrorMessage}");
                     if (showFailureMessage)
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.GetCameraIdFailed, "ColorVision");
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.GetCameraIdFailed}\n{modelResult?.ErrorMessage}", "ColorVision");
                     }
                     return;
                 }
+
+                PhyCameras.PhyCameraManager.GetInstance().SynchronizeDiscoveredCameraIdentities(summary);
 
                 IReadOnlyList<string> cameraIds = summary.Cameras
                     .Where(camera => camera.CameraModel == cameraModel)
@@ -367,7 +378,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 string selectedCameraId = GetSelectedCameraId();
                 if (!string.IsNullOrWhiteSpace(selectedCameraId))
                 {
-                    Device.Config.CameraID = selectedCameraId;
+                    Device.Config.CameraID = ResolveWindowCameraId(selectedCameraId);
                     SaveDeviceConfig();
                 }
                 log.Info($"Camera ID scan completed. Model={cameraModel}, Count={summary.Cameras.Count}, Took={summary.Elapsed.TotalMilliseconds:F0}ms.");
@@ -377,7 +388,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 log.Error($"Camera ID scan failed. Model={cameraModel}", ex);
                 if (showFailureMessage)
                 {
-                    MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.GetCameraIdFailed, "ColorVision");
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.GetCameraIdFailed}\n{ex.Message}", "ColorVision");
                 }
             }
             finally
@@ -842,7 +853,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void UpdateCurrentConfigFromUi(string cameraId)
         {
-            Device.Config.CameraID = cameraId;
+            Device.Config.CameraID = ResolveWindowCameraId(cameraId);
             Device.Config.CameraModel = m_eCameraMdl;
             Device.Config.CameraMode = m_eCameraMode;
             Device.Config.TakeImageMode = m_etakeImageMode;

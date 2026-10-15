@@ -101,6 +101,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {            
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
+            Config.CameraID = PhysicalCameraIdentity.ReadCameraId(SysResourceModel, Config.CameraID);
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
@@ -1499,8 +1500,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Config.CFW.NDBindDeviceCode = string.Empty;
             }
 
+            SysResourceModel.Name = Config.CameraID;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            SysResourceDao.Instance.Save(SysResourceModel);
+            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                throw new InvalidOperationException($"保存物理相机 {Code} 的配置失败。");
 
             OnPropertyChanged(nameof(DeviceModeDisplayText));
             OnPropertyChanged(nameof(CameraInfoMetaText));
@@ -1510,7 +1513,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
         public override void Save()
         {
-            base.Save();
             SaveConfig();
         }
 

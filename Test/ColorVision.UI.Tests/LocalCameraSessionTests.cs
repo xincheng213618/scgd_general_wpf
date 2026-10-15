@@ -2,6 +2,9 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.Devices.Camera;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json.Linq;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
@@ -15,6 +18,69 @@ namespace ColorVision.UI.Tests;
 
 public class LocalCameraSessionTests
 {
+    [Theory]
+    [InlineData("bound-id", null, 0)]
+    [InlineData("bound-id", "", 0)]
+    [InlineData("stale-physical-id", "bound-id", 0)]
+    [InlineData("", null, 1)]
+    [InlineData("stale-physical-id", null, 1)]
+    public void OldConfigurationsOpenTheBoundPhysicalCameraWithoutOpeningTheManagementWindow(string physicalId, string? legacyName, int scans)
+    {
+        string code = ColorVision.Common.Utilities.Tool.GetMD5("bound-id");
+        var physical = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+        physical.SysResourceModel = new SysResourceModel { Code = code, Name = legacyName, Value = new JObject { ["CameraID"] = physicalId }.ToString() };
+        physical.Config = new ConfigPhyCamera { CameraID = PhysicalCameraIdentity.ReadCameraId(physical.SysResourceModel) };
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = new ConfigCamera { CameraCode = code, CameraID = "stale-logical-id" };
+        device.PhyCamera = physical;
+        var native = new FakeNative { CameraIds = ["unrelated-id", "bound-id"] };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), device.Config, resolveCameraId: id => device.ResolveCameraId(id));
+
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("stale-explicit-id", TakeImageMode.Measure_Normal, 16));
+
+        Assert.Equal("bound-id", native.OpenedId);
+        Assert.Equal("bound-id", device.Config.CameraID);
+        Assert.Equal(scans, native.Scans);
+        Assert.Equal(code, device.Config.CameraCode);
+        Assert.Equal(code, physical.Code);
+    }
+
+    [Fact]
+    public void PhysicalIdentityOverridesStaleExplicitIdAndBlocksReusingAnOldConnection()
+    {
+        string physicalId = "physical-id";
+        var config = new ConfigCamera { CameraID = "old-logical-id" };
+        var native = new FakeNative();
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config, resolveCameraId: _ => physicalId);
+
+        session.Open("old-explicit-id", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal("physical-id", native.OpenedId);
+        Assert.Equal("physical-id", config.CameraID);
+        Assert.Equal(0, native.Scans);
+
+        physicalId = "new-physical-id";
+        Assert.Throws<InvalidOperationException>(() => session.UseOpened(_ => true));
+        Assert.Throws<InvalidOperationException>(() => session.EnsureMeasurement(true));
+        Assert.Throws<InvalidOperationException>(() => session.SwitchMode(TakeImageMode.Live, 8));
+        Assert.Equal(0, native.Switches);
+        Assert.Equal(1, native.Opens);
+        session.Close(true);
+        session.Open("old-explicit-id", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal("new-physical-id", native.OpenedId);
+    }
+
+    [Fact]
+    public void EmptyPhysicalIdentityDoesNotFallBackToOldLogicalIdOrAnotherCamera()
+    {
+        var config = new ConfigCamera { CameraID = "old-logical-id", CameraCode = ColorVision.Common.Utilities.Tool.GetMD5("missing") };
+        var native = new FakeNative { CameraIds = ["unrelated"] };
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config, resolveCameraId: _ => string.Empty);
+
+        Assert.Throws<InvalidOperationException>(() => session.Open("old-explicit-id", TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(0, native.Opens);
+        Assert.Equal("old-logical-id", config.CameraID);
+    }
+
     [Theory]
     [InlineData(null, "{}", false)]
     [InlineData(-1, "{}", false)]
@@ -409,18 +475,57 @@ public class LocalCameraSessionTests
         Assert.False(backend.LocalOwned);
     }
 
-    [Fact]
-    public void SaveFailureKeepsTheRealOpenedSessionUsable()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SaveFailureKeepsTheRealOpenedSessionUsable(bool bound)
     {
         ConfigCamera config = new();
+        var device = (DeviceCamera)RuntimeHelpers.GetUninitializedObject(typeof(DeviceCamera));
+        device.Config = config;
+        if (bound)
+        {
+            var physical = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+            physical.SysResourceModel = new SysResourceModel { Code = ColorVision.Common.Utilities.Tool.GetMD5("camera-1") };
+            physical.Config = new ConfigPhyCamera();
+            config.CameraCode = physical.Code;
+            device.PhyCamera = physical;
+        }
         var native = new FakeNative { CameraIds = ["camera-1"] };
         using var session = new LocalCameraSession(native, new CameraBackendState(true), config,
-            () => throw new InvalidOperationException("save failed"));
+            () => throw new InvalidOperationException("save failed"), resolveCameraId: id => device.ResolveCameraId(id));
 
         Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("", TakeImageMode.Measure_Normal, 16));
         Assert.True(session.IsOpen);
         Assert.Equal("camera-1", config.CameraID);
         Assert.Equal(new IntPtr(42), session.UseOpened(handle => handle));
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.Open("", TakeImageMode.Measure_Normal, 16));
+        session.EnsureMeasurement(false);
+        Assert.Equal(cvErrorDefine.CV_ERR_SUCCESS, session.SwitchMode(TakeImageMode.Measure_Normal, 16));
+        Assert.Equal(1, native.Scans);
+        Assert.Equal(1, native.Opens);
+    }
+
+    [Fact]
+    public void UnboundSaveFailureRetriesAfterReconnectingAndStopsRetryingAfterSuccess()
+    {
+        var config = new ConfigCamera();
+        var native = new FakeNative { CameraIds = ["camera-1"] };
+        int attempts = 0;
+        using var session = new LocalCameraSession(native, new CameraBackendState(true), config, () =>
+        {
+            if (++attempts == 1) throw new InvalidOperationException("temporary save failure");
+        });
+
+        session.Open("", TakeImageMode.Measure_Normal, 16);
+        session.Close(true);
+        session.Open("", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal(2, attempts);
+        session.Close(true);
+        session.Open("", TakeImageMode.Measure_Normal, 16);
+        Assert.Equal(2, attempts);
+        Assert.Equal(1, native.Scans);
+        Assert.Equal("camera-1", config.CameraID);
     }
 
     [Fact]
@@ -680,7 +785,7 @@ public class LocalCameraSessionTests
         public void Dispose() => LocalCameraRawBufferPool.IsCacheEnabled = previous;
     }
 
-    private sealed class FakeNative : ILocalCameraNative
+    internal sealed class FakeNative : ILocalCameraNative
     {
         public IReadOnlyList<string> CameraIds { get; init; } = [];
         public bool FailDiscovery { get; init; }

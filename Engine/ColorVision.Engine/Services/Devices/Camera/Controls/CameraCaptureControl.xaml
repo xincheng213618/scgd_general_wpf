@@ -99,13 +99,13 @@
                     <Button Width="24" Height="24" Margin="4,0,0,0" Padding="2" ToolTip="{x:Static properties:Resources.Property}" DockPanel.Dock="Right" x:Name="EditCaptureExposureButton">
                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
-                    <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}"/>
+                    <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxAutoExpTimeParamTemplate1" DisplayMemberPath="DisplayName" SelectedIndex="{Binding ExpTimeParamTemplate1Index, FallbackValue=0}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}"/>
                 </DockPanel>
                 <DockPanel Grid.Row="1" Margin="0,0,0,2">
                     <Button Width="24" Height="24" Margin="4,0,0,0" Padding="2" ToolTip="{x:Static properties:Resources.Property}" DockPanel.Dock="Right" x:Name="EditCalibrationButton">
                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="" FontSize="14" HorizontalAlignment="Center"/>
                     </Button>
-                    <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxCalibrationTemplate" ToolTip="{Binding GainSourceHint}" SelectedIndex="{Binding CalibrationTemplateIndex}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}">
+                    <ComboBox d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" x:Name="ComboxCalibrationTemplate" ToolTip="{Binding GainSourceHint}" SelectedIndex="{Binding CalibrationTemplateIndex, FallbackValue=0}" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock>
@@ -116,7 +116,7 @@
                                             <Setter Property="Text" Value="{Binding Key}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Value.Id}" Value="-1">
-                                                    <Setter Property="Text" Value="{engine:EngineLang CameraPanel_NotUsed}"/>
+                                                    <Setter Property="Text" Value="{engine:EngineLang CameraPanel_NoCalibrationTemplate}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

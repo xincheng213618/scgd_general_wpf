@@ -89,9 +89,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public bool SaveLocalCaptureFiles { get; set; } = true;
 
         public double TakePictureDelay { get; set; }
-        public int CalibrationTemplateIndex { get; set; }
+        public int CalibrationTemplateIndex { get; set; } = 0;
         public int ExpTimeParamTemplateIndex { get; set; }
-        public int ExpTimeParamTemplate1Index { get; set; }
+        public int ExpTimeParamTemplate1Index { get; set; } = 0;
         [Browsable(false)]
         public PhyExpTimeCfg LocalAutoExposureConfig { get; set; } = new();
         public int HDRTemplateIndex { get; set; }
@@ -473,7 +473,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _autoExpTimeTemplateOptionsWithEmpty.Clear();
             _autoExpTimeTemplateOptionsWithEmpty.Add(new AutoExpTimeTemplateOption
             {
-                DisplayName = EngineLocalization.Get("CameraPanel_NotUsed"),
+                DisplayName = EngineLocalization.Get("CameraPanel_NoAutoExposureTemplate"),
                 Value = new ParamBase { Id = -1, Name = "Empty" },
                 Kind = AutoExpTimeTemplateKind.Empty
             });
@@ -2150,7 +2150,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 Device.Config.CameraID = cameraId;
                 try
                 {
-                    Device.SaveConfig();
+                    Device.SaveResolvedCameraId(cameraId);
                     logger.Info($"Persisted refreshed CameraID. old={configuredCameraId}, new={cameraId}");
                 }
                 catch (Exception ex)
@@ -2259,6 +2259,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string ResolveLocalCameraId(bool ignoreConfiguredId = false)
         {
+            if (!string.IsNullOrWhiteSpace(Device.Config.CameraCode))
+            {
+                string physicalId = Device.ResolveCameraId();
+                if (!string.IsNullOrWhiteSpace(physicalId)) return physicalId;
+                return TryGetLocalCameraIds(out IReadOnlyList<string> boundIds)
+                    ? LocalCameraSession.SelectCameraId(boundIds, null, Device.Config.CameraCode) : string.Empty;
+            }
             if (!ignoreConfiguredId && !string.IsNullOrWhiteSpace(Device.Config.CameraID))
             {
                 return Device.Config.CameraID.Trim();

@@ -14,6 +14,38 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
     public partial class DeviceCamera
     {
+        private void PhysicalCameraIdentityChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!IsDisposed && ReferenceEquals(sender, _subscribedPhyCamera?.Config) && e.PropertyName == nameof(Configs.ConfigCamera.CameraID))
+                Config.CameraID = _subscribedPhyCamera.Config.CameraID?.Trim() ?? string.Empty;
+        }
+
+        internal string ResolveCameraId(string? requestedId = null)
+        {
+            if (string.IsNullOrWhiteSpace(Config.CameraCode)) return (requestedId ?? Config.CameraID)?.Trim() ?? string.Empty;
+            if (PhyCamera == null || !string.Equals(PhyCamera.Code, Config.CameraCode, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalBindingUnavailable"));
+            string physicalId = PhyCamera.Config.CameraID?.Trim() ?? string.Empty;
+            return physicalId.Length > 0 && string.Equals(ColorVision.Common.Utilities.Tool.GetMD5(physicalId), Config.CameraCode, StringComparison.OrdinalIgnoreCase)
+                ? physicalId : string.Empty;
+        }
+
+        internal void SaveResolvedCameraId(string cameraId)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.CameraCode))
+            {
+                if (PhyCamera == null || !string.Equals(PhyCamera.Code, Config.CameraCode, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalBindingUnavailable"));
+                if (!PhyCameras.PhysicalCameraIdentity.SynchronizeResolvedIdentity(PhyCamera, cameraId, SysResourceDao.Instance.GetAll(),
+                    ServiceManager.Current?.DeviceServices.AsEnumerable() ?? Enumerable.Empty<DeviceService>(), row => SysResourceDao.Instance.Save(row)))
+                    throw new InvalidOperationException(EngineLocalization.Get("Camera_LocalBindingUnavailable"));
+                Config.CameraID = PhyCamera.Config.CameraID;
+                return;
+            }
+            Config.CameraID = cameraId;
+            SaveConfig();
+        }
+
         internal CameraBackendState CameraBackend { get; }
         private readonly object previewSync = new();
         private (ViewCamera View, MeasureResultImgModel? Model, LocalCameraPreview Preview, bool Force)? pendingPreview;

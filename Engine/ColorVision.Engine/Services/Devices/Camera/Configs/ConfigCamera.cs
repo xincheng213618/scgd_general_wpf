@@ -20,6 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged();  } }
         private string? _CameraCode;
 
+        [ReadOnly(true)]
         public string CameraID { get => _CameraID; set { _CameraID = value; OnPropertyChanged();} }
         private string _CameraID;
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; OnPropertyChanged();} }
