@@ -8,17 +8,25 @@ using System.Windows.Controls;
 namespace ColorVision.ImageEditor.Settings
 {
     /// <summary>A read-only projection; metadata is never treated as editable configuration.</summary>
-    internal sealed class ImageSettingsInformationView : StackPanel
+    public sealed class ImageSettingsInformationView : StackPanel
     {
-        private readonly ImageView _view;
-        private readonly bool _technical;
+        private readonly Func<IEnumerable<(string Name, string Value)>> _getItems;
         private readonly StackPanel _rows = new();
         private string _copyText = string.Empty;
 
-        public ImageSettingsInformationView(ImageView view, bool technical)
+        internal ImageSettingsInformationView(ImageView view, bool technical)
+            : this(() => technical
+                ? view.Config.GetPropertyEntries().OrderBy(entry => entry.Scope).ThenBy(entry => entry.Key, StringComparer.Ordinal)
+                    .Select(entry => ($"{entry.Key}\n{ImageViewConfig.GetScopeDisplayName(entry.Scope)} · {entry.Owner}", ImageViewConfig.FormatPropertyValue(entry.Value)))
+                    .Concat(view.IEditorToolFactory.IImageOpens.GroupBy(item => item.Value.GetType())
+                        .Select(group => (group.Key.Name, string.Join(", ", group.Select(item => item.Key).OrderBy(key => key)))))
+                : Summary(view))
         {
-            _view = view;
-            _technical = technical;
+        }
+
+        public ImageSettingsInformationView(Func<IEnumerable<(string Name, string Value)>> getItems)
+        {
+            _getItems = getItems ?? throw new ArgumentNullException(nameof(getItems));
             StackPanel actions = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(14, 10, 14, 6) };
             Button refresh = new() { Content = SettingsText.Refresh, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(10, 5, 10, 5) };
             Button copy = new() { Content = SettingsText.Copy, Padding = new Thickness(10, 5, 10, 5) };
@@ -37,13 +45,7 @@ namespace ColorVision.ImageEditor.Settings
         {
             _rows.Children.Clear();
             StringBuilder text = new();
-            IEnumerable<(string Name, string Value)> items = _technical
-                ? _view.Config.GetPropertyEntries().OrderBy(entry => entry.Scope).ThenBy(entry => entry.Key, StringComparer.Ordinal)
-                    .Select(entry => ($"{entry.Key}\n{ImageViewConfig.GetScopeDisplayName(entry.Scope)} · {entry.Owner}", ImageViewConfig.FormatPropertyValue(entry.Value)))
-                    .Concat(_view.IEditorToolFactory.IImageOpens.GroupBy(item => item.Value.GetType())
-                        .Select(group => (group.Key.Name, string.Join(", ", group.Select(item => item.Key).OrderBy(key => key)))))
-                : Summary();
-            foreach (var item in items)
+            foreach (var item in _getItems())
             {
                 text.AppendLine($"{item.Name}: {item.Value}");
                 Grid row = new() { Margin = new Thickness(14, 8, 14, 8) };
@@ -62,11 +64,11 @@ namespace ColorVision.ImageEditor.Settings
             if (_rows.Children.Count == 0) _rows.Children.Add(new TextBlock { Text = SettingsText.NoImage, Margin = new Thickness(14) });
         }
 
-        private IEnumerable<(string, string)> Summary()
+        private static IEnumerable<(string, string)> Summary(ImageView view)
         {
-            var config = _view.Config;
+            var config = view.Config;
             string Value(string key) => config.Properties.TryGetValue(key, out var value) ? ImageViewConfig.FormatPropertyValue(value) : "—";
-            yield return (SettingsText.ImageName, string.IsNullOrEmpty(config.FilePath) ? (_view.ViewBitmapSource == null ? SettingsText.NoImage : SettingsText.CurrentImage) : Value(ImageViewPropertyKeys.FileName));
+            yield return (SettingsText.ImageName, string.IsNullOrEmpty(config.FilePath) ? (view.ViewBitmapSource == null ? SettingsText.NoImage : SettingsText.CurrentImage) : Value(ImageViewPropertyKeys.FileName));
             yield return (SettingsText.Dimensions, $"{Value(ImageViewPropertyKeys.ImageWidth)} × {Value(ImageViewPropertyKeys.ImageHeight)} px");
             yield return (SettingsText.Format, Value(ImageViewPropertyKeys.PixelFormat));
             yield return (SettingsText.Depth, Value(ImageViewPropertyKeys.Depth));
