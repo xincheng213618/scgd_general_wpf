@@ -404,7 +404,7 @@ class PlatformPolicyTests(unittest.TestCase):
             "<_ColorVisionFileIORequestedPlatformTarget>$(PlatformTarget)</_ColorVisionFileIORequestedPlatformTarget>"
             "<_ColorVisionFileIORequestedRuntimeIdentifier>$(RuntimeIdentifier)</_ColorVisionFileIORequestedRuntimeIdentifier>"
             "<_ColorVisionFileIORequestedRuntimeIdentifiers>$(RuntimeIdentifiers)</_ColorVisionFileIORequestedRuntimeIdentifiers>"
-            "<TargetFrameworks>net10.0;net8.0;net6.0;net461</TargetFrameworks>"
+            "<TargetFrameworks>net10.0</TargetFrameworks>"
             "<VersionPrefix>1.5.1.1</VersionPrefix>"
             "<GeneratePackageOnBuild>True</GeneratePackageOnBuild>"
             "<PackageId>ColorVision.FileIO</PackageId>"
@@ -830,9 +830,6 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
         self.assertEqual(
             (
                 "lib/net10.0/ColorVision.FileIO.dll",
-                "lib/net8.0/ColorVision.FileIO.dll",
-                "lib/net6.0/ColorVision.FileIO.dll",
-                "lib/net461/ColorVision.FileIO.dll",
             ),
             members,
         )
