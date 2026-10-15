@@ -132,14 +132,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区检测模板管理 的本地化字符串。
-        /// </summary>
-        public static string AADetectTemplateManagement {
-            get {
-                return ResourceManager.GetString("AADetectTemplateManagement", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 AAFindPoints模板 的本地化字符串。
@@ -276,14 +268,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 加回车换行 的本地化字符串。
-        /// </summary>
-        public static string AddNewLine {
-            get {
-                return ResourceManager.GetString("AddNewLine", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 添加物理相机失败 的本地化字符串。
@@ -564,14 +548,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 归档查询 的本地化字符串。
-        /// </summary>
-        public static string ArchiveQuery {
-            get {
-                return ResourceManager.GetString("ArchiveQuery", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 归档服务器配置 的本地化字符串。
@@ -870,14 +846,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 绑定DLL 的本地化字符串。
-        /// </summary>
-        public static string BindDLL {
-            get {
-                return ResourceManager.GetString("BindDLL", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 双目融合 的本地化字符串。
@@ -1077,14 +1045,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 扫描在线相机 的本地化字符串。
-        /// </summary>
-        public static string ButtonScanOnlineCameras {
-            get {
-                return ResourceManager.GetString("ButtonScanOnlineCameras", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 全选 的本地化字符串。
@@ -1258,14 +1218,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 校正组管理 的本地化字符串。
-        /// </summary>
-        public static string CalibrationGroupManagement {
-            get {
-                return ResourceManager.GetString("CalibrationGroupManagement", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 使用校正模板需要先配置校正服务 的本地化字符串。
@@ -1677,23 +1629,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 拍前自曝 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_AutoBeforeCapture {
-            get {
-                return ResourceManager.GetString("CameraPanel_AutoBeforeCapture", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 拍前自曝 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_AutoBeforeCaptureFull {
-            get {
-                return ResourceManager.GetString("CameraPanel_AutoBeforeCaptureFull", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 自曝 ND 的本地化字符串。
@@ -1713,14 +1649,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 校正 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_Calibration {
-            get {
-                return ResourceManager.GetString("CameraPanel_Calibration", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 打开 的本地化字符串。
@@ -1767,32 +1695,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 测量翻转 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_MeasureFlip {
-            get {
-                return ResourceManager.GetString("CameraPanel_MeasureFlip", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 更多拍照设置 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_MoreCapture {
-            get {
-                return ResourceManager.GetString("CameraPanel_MoreCapture", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 电机与对焦 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_Motor {
-            get {
-                return ResourceManager.GetString("CameraPanel_Motor", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 仅服务模式支持 ND 自动切换；本地自动曝光前请取消勾选 的本地化字符串。
@@ -1812,14 +1716,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 预览翻转 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_PreviewFlip {
-            get {
-                return ResourceManager.GetString("CameraPanel_PreviewFlip", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 预览中 的本地化字符串。
@@ -1839,14 +1735,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 预览工具 的本地化字符串。
-        /// </summary>
-        public static string CameraPanel_PreviewTools {
-            get {
-                return ResourceManager.GetString("CameraPanel_PreviewTools", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 已连接 · 待机 的本地化字符串。
@@ -2100,14 +1988,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 类别型号 的本地化字符串。
-        /// </summary>
-        public static string CategoryModel {
-            get {
-                return ResourceManager.GetString("CategoryModel", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 相关色温(K) 的本地化字符串。
@@ -2172,14 +2052,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 质心坐标 的本地化字符串。
-        /// </summary>
-        public static string CentroidCoordinates {
-            get {
-                return ResourceManager.GetString("CentroidCoordinates", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 切换ND位置 的本地化字符串。
@@ -2496,14 +2368,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 1s 后关闭窗口 的本地化字符串。
-        /// </summary>
-        public static string CloseWindowInSeconds {
-            get {
-                return ResourceManager.GetString("CloseWindowInSeconds", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 关闭中 的本地化字符串。
@@ -2577,23 +2441,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 管理第三方算法配置 的本地化字符串。
-        /// </summary>
-        public static string CommandAlgorithmConfigHint {
-            get {
-                return ResourceManager.GetString("CommandAlgorithmConfigHint", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 上传服务端算法插件 的本地化字符串。
-        /// </summary>
-        public static string CommandAlgorithmPluginHint {
-            get {
-                return ResourceManager.GetString("CommandAlgorithmPluginHint", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 管理自动曝光参数模板 的本地化字符串。
@@ -2802,14 +2650,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 恢复设备默认配置 的本地化字符串。
-        /// </summary>
-        public static string CommandResetHint {
-            get {
-                return ResourceManager.GetString("CommandResetHint", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 保存当前配置并重启设备服务 的本地化字符串。
@@ -2820,14 +2660,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 配置数据与文件的保存位置 的本地化字符串。
-        /// </summary>
-        public static string CommandSavePathHint {
-            get {
-                return ResourceManager.GetString("CommandSavePathHint", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 指令已经发送请稍等 的本地化字符串。
@@ -2865,14 +2697,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 通讯方式 的本地化字符串。
-        /// </summary>
-        public static string CommunicationType {
-            get {
-                return ResourceManager.GetString("CommunicationType", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 压缩 的本地化字符串。
@@ -2883,14 +2707,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 配置信息 的本地化字符串。
-        /// </summary>
-        public static string ConfigerInfo {
-            get {
-                return ResourceManager.GetString("ConfigerInfo", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 配置电机 的本地化字符串。
@@ -2919,14 +2735,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先在配置中配置关联的dll 的本地化字符串。
-        /// </summary>
-        public static string ConfigureAssociatedDllFirst {
-            get {
-                return ResourceManager.GetString("ConfigureAssociatedDllFirst", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 在使用校正前，请先配置对映的物理相机 的本地化字符串。
@@ -3018,16 +2826,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 切换到属性编辑器失败：{0}
-        ///
-        ///请检查 JSON 格式是否正确。 的本地化字符串。
-        /// </summary>
-        public static string Copilot_PropertyEditorSwitchFailed {
-            get {
-                return ResourceManager.GetString("Copilot_PropertyEditorSwitchFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 发送到 Copilot... 的本地化字符串。
@@ -3038,14 +2836,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 切换到文本编辑器失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string Copilot_TextEditorSwitchFailed {
-            get {
-                return ResourceManager.GetString("Copilot_TextEditorSwitchFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 复制 的本地化字符串。
@@ -3065,14 +2855,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 复制文件失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string CopyFileFailed {
-            get {
-                return ResourceManager.GetString("CopyFileFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 复制许可证 的本地化字符串。
@@ -3542,14 +3324,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 数据库创建{0}模板失败 的本地化字符串。
-        /// </summary>
-        public static string DbCreateTemplateFailed {
-            get {
-                return ResourceManager.GetString("DbCreateTemplateFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 调试 的本地化字符串。
@@ -3758,86 +3532,14 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 角度校正 的本地化字符串。
-        /// </summary>
-        public static string DescriptionAngleShiftShort {
-            get {
-                return ResourceManager.GetString("DescriptionAngleShiftShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像 的本地化字符串。
-        /// </summary>
-        public static string DescriptionBasicPipeline {
-            get {
-                return ResourceManager.GetString("DescriptionBasicPipeline", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 选择校正组后勾选参与当前相机处理链路的校正文件。 的本地化字符串。
-        /// </summary>
-        public static string DescriptionCalibrationControl {
-            get {
-                return ResourceManager.GetString("DescriptionCalibrationControl", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 维护相机校正组、上传校正文件，并为当前组选择每类校正资源。 的本地化字符串。
-        /// </summary>
-        public static string DescriptionCalibrationEdit {
-            get {
-                return ResourceManager.GetString("DescriptionCalibrationEdit", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 启用后配置串口、轮盘数量与通道位置映射。 的本地化字符串。
-        /// </summary>
-        public static string DescriptionCFWEnableNote {
-            get {
-                return ResourceManager.GetString("DescriptionCFWEnableNote", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥 的本地化字符串。
-        /// </summary>
-        public static string DescriptionColorCalibration {
-            get {
-                return ResourceManager.GetString("DescriptionColorCalibration", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 通道色差消除 的本地化字符串。
-        /// </summary>
-        public static string DescriptionColorDiffShort {
-            get {
-                return ResourceManager.GetString("DescriptionColorDiffShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 通道空间偏移补偿 的本地化字符串。
-        /// </summary>
-        public static string DescriptionColorShiftShort {
-            get {
-                return ResourceManager.GetString("DescriptionColorShiftShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 选择待登记相机后补全基础参数与滤光轮配置。 的本地化字符串。
-        /// </summary>
-        public static string DescriptionCreateDevice {
-            get {
-                return ResourceManager.GetString("DescriptionCreateDevice", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 使用操作列创建尚未登记的相机。 的本地化字符串。
@@ -3848,86 +3550,14 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 消除暗电流噪声 的本地化字符串。
-        /// </summary>
-        public static string DescriptionDarkNoiseShort {
-            get {
-                return ResourceManager.GetString("DescriptionDarkNoiseShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 缺陷像素中值修复 的本地化字符串。
-        /// </summary>
-        public static string DescriptionDefectPointShort {
-            get {
-                return ResourceManager.GetString("DescriptionDefectPointShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 镜头畸变矫正 的本地化字符串。
-        /// </summary>
-        public static string DescriptionDistortionShort {
-            get {
-                return ResourceManager.GetString("DescriptionDistortionShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 暗信号非均匀性补偿 的本地化字符串。
-        /// </summary>
-        public static string DescriptionDSNUShort {
-            get {
-                return ResourceManager.GetString("DescriptionDSNUShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 9系数3×3→CIE XYZ 的本地化字符串。
-        /// </summary>
-        public static string DescriptionFourColorShort {
-            get {
-                return ResourceManager.GetString("DescriptionFourColorShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 传感器线性度校正 的本地化字符串。
-        /// </summary>
-        public static string DescriptionLineArityShort {
-            get {
-                return ResourceManager.GetString("DescriptionLineArityShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 灰度→亮度 Lv(cd/m²) 的本地化字符串。
-        /// </summary>
-        public static string DescriptionLuminanceShort {
-            get {
-                return ResourceManager.GetString("DescriptionLuminanceShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 N系数高阶→CIE XYZ 的本地化字符串。
-        /// </summary>
-        public static string DescriptionMultiColorShort {
-            get {
-                return ResourceManager.GetString("DescriptionMultiColorShort", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 4系数→CIE XYZ 的本地化字符串。
-        /// </summary>
-        public static string DescriptionOneColorShort {
-            get {
-                return ResourceManager.GetString("DescriptionOneColorShort", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 从左侧选择一台物理相机以查看详情与管理操作 的本地化字符串。
@@ -3947,14 +3577,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 镜头渐晕/响应补偿 的本地化字符串。
-        /// </summary>
-        public static string DescriptionUniformityShort {
-            get {
-                return ResourceManager.GetString("DescriptionUniformityShort", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 设备 的本地化字符串。
@@ -4001,14 +3623,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 设备标识 的本地化字符串。
-        /// </summary>
-        public static string DeviceIdentification {
-            get {
-                return ResourceManager.GetString("DeviceIdentification", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 设备标识已存在,不允许重复添加 的本地化字符串。
@@ -4037,14 +3651,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 检测到 {0} 台设备: 的本地化字符串。
-        /// </summary>
-        public static string DevicesDetected {
-            get {
-                return ResourceManager.GetString("DevicesDetected", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 设备序列号: {0} 的本地化字符串。
@@ -4235,32 +3841,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 畸变评价 的本地化字符串。
-        /// </summary>
-        public static string DistortionEvaluation {
-            get {
-                return ResourceManager.GetString("DistortionEvaluation", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 畸变评价模板管理 的本地化字符串。
-        /// </summary>
-        public static string DistortionEvaluationTemplateManagement {
-            get {
-                return ResourceManager.GetString("DistortionEvaluationTemplateManagement", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 Distortion模板 的本地化字符串。
-        /// </summary>
-        public static string Distortion模板 {
-            get {
-                return ResourceManager.GetString("Distortion模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 下 的本地化字符串。
@@ -4487,14 +4069,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 保存 CSV 文件 的本地化字符串。
-        /// </summary>
-        public static string Engine_Dlg_SaveCsvFile {
-            get {
-                return ResourceManager.GetString("Engine_Dlg_SaveCsvFile", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 选择标定文件 的本地化字符串。
@@ -4505,14 +4079,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择要读取的 DAT 文件 的本地化字符串。
-        /// </summary>
-        public static string Engine_Dlg_SelectDatFile {
-            get {
-                return ResourceManager.GetString("Engine_Dlg_SelectDatFile", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 为新项目选择位置 的本地化字符串。
@@ -4523,14 +4089,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择要转换的 单通道 文件 的本地化字符串。
-        /// </summary>
-        public static string Engine_Dlg_SelectSingleChannelFile {
-            get {
-                return ResourceManager.GetString("Engine_Dlg_SelectSingleChannelFile", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 数据表已经全部清空。 的本地化字符串。
@@ -4667,32 +4225,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 连接失败 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ConnectFailed {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ConnectFailed", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 连接成功 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ConnectSuccess {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ConnectSuccess", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 转换为 Mat 失败。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ConvertToMatFailed {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ConvertToMatFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 数据表清理完成 的本地化字符串。
@@ -4712,14 +4246,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发生错误: {0} 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ErrorWithDetail {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ErrorWithDetail", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 处理文件时发生错误: {0} 的本地化字符串。
@@ -4730,32 +4256,8 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 文件读取失败或损坏的 TIFF 文件。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_FileReadFailedCorruptedTiff {
-            get {
-                return ResourceManager.GetString("Engine_Msg_FileReadFailedCorruptedTiff", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 文件读取失败或不支持的格式。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_FileReadFailedUnsupported {
-            get {
-                return ResourceManager.GetString("Engine_Msg_FileReadFailedUnsupported", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 导入四色校正文件失败。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ImportFourColorCalFailed {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ImportFourColorCalFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 加载结果表统计失败: {0} 的本地化字符串。
@@ -4784,14 +4286,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 消息记录 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_MessageRecord {
-            get {
-                return ResourceManager.GetString("Engine_Msg_MessageRecord", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 MQTT历史记录清理完毕 的本地化字符串。
@@ -4829,14 +4323,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 无法提取：该文件不是单通道图像。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_NotSingleChannelImage {
-            get {
-                return ResourceManager.GetString("Engine_Msg_NotSingleChannelImage", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 仅支持三通道 CVRAW 计算 CIE。 的本地化字符串。
@@ -4910,23 +4396,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 不支持的文件类型。 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_UnsupportedFileType {
-            get {
-                return ResourceManager.GetString("Engine_Msg_UnsupportedFileType", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 面积 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_Area {
-            get {
-                return ResourceManager.GetString("Engine_PG_Area", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 自动积分 的本地化字符串。
@@ -5072,14 +4542,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 全局 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_Global {
-            get {
-                return ResourceManager.GetString("Engine_PG_Global", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 包含子文件夹 的本地化字符串。
@@ -5189,23 +4651,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 矩形高度 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_RectHeight {
-            get {
-                return ResourceManager.GetString("Engine_PG_RectHeight", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 矩形宽度 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_RectWidth {
-            get {
-                return ResourceManager.GetString("Engine_PG_RectWidth", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 寄存器地址 的本地化字符串。
@@ -5216,14 +4662,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 取样半径 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_SampleRadius {
-            get {
-                return ResourceManager.GetString("Engine_PG_SampleRadius", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 取样形状 的本地化字符串。
@@ -5261,14 +4699,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 是否显示记录数据 的本地化字符串。
-        /// </summary>
-        public static string Engine_PG_ShowRecordData {
-            get {
-                return ResourceManager.GetString("Engine_PG_ShowRecordData", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 标签 的本地化字符串。
@@ -5324,14 +4754,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 进入采集窗口 的本地化字符串。
-        /// </summary>
-        public static string EnterAcquisitionWindow {
-            get {
-                return ResourceManager.GetString("EnterAcquisitionWindow", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请输入电流 (mA): 的本地化字符串。
@@ -5999,14 +5421,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 滤色轮数量 的本地化字符串。
-        /// </summary>
-        public static string FilterWheelNum {
-            get {
-                return ResourceManager.GetString("FilterWheelNum", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 读取位置 的本地化字符串。
@@ -6026,14 +5440,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 寻找AA区 的本地化字符串。
-        /// </summary>
-        public static string FindAAArea {
-            get {
-                return ResourceManager.GetString("FindAAArea", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 AA区域检测模板管理 的本地化字符串。
@@ -6071,14 +5477,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区检测OLED 的本地化字符串。
-        /// </summary>
-        public static string FindLightAreaOLED {
-            get {
-                return ResourceManager.GetString("FindLightAreaOLED", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 寻找发光区角点 的本地化字符串。
@@ -6398,14 +5796,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 后处理执行 的本地化字符串。
-        /// </summary>
-        public static string Flow_MeasureBatch_PostProcessExecution {
-            get {
-                return ResourceManager.GetString("Flow_MeasureBatch_PostProcessExecution", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 处理出错: {0} 的本地化字符串。
@@ -6452,14 +5842,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选中批次: 的本地化字符串。
-        /// </summary>
-        public static string Flow_MeasureBatch_SelectedBatch {
-            get {
-                return ResourceManager.GetString("Flow_MeasureBatch_SelectedBatch", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 选择处理类型: 的本地化字符串。
@@ -6686,14 +6068,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 当前未选择流程参数, 无法保存 的本地化字符串。
-        /// </summary>
-        public static string Flow_NoFlowParamSelected {
-            get {
-                return ResourceManager.GetString("Flow_NoFlowParamSelected", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 没有可用的流程模板 的本地化字符串。
@@ -7091,23 +6465,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 FocusPoints算法设置 的本地化字符串。
-        /// </summary>
-        public static string FocusPointsTemplateSettings {
-            get {
-                return ResourceManager.GetString("FocusPointsTemplateSettings", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 FocusPoints模板 的本地化字符串。
-        /// </summary>
-        public static string FocusPoints模板 {
-            get {
-                return ResourceManager.GetString("FocusPoints模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 文件夹复制失败: {0} 的本地化字符串。
@@ -7226,14 +6584,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Freq@MTF 查询 的本地化字符串。
-        /// </summary>
-        public static string FreqAtMtfQuery {
-            get {
-                return ResourceManager.GetString("FreqAtMtfQuery", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 频率: 的本地化字符串。
@@ -7379,23 +6729,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 鬼影灰度 的本地化字符串。
-        /// </summary>
-        public static string GhostGrayscale {
-            get {
-                return ResourceManager.GetString("GhostGrayscale", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 鬼影模板管理 的本地化字符串。
-        /// </summary>
-        public static string GhostTemplateManagement {
-            get {
-                return ResourceManager.GetString("GhostTemplateManagement", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 Ghost模板 的本地化字符串。
@@ -7442,23 +6776,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 基础校正（按顺序依次执行） 的本地化字符串。
-        /// </summary>
-        public static string HeaderBasicCalibrationPipeline {
-            get {
-                return ResourceManager.GetString("HeaderBasicCalibrationPipeline", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 色彩校正（四选一，互斥） 的本地化字符串。
-        /// </summary>
-        public static string HeaderColorCalibrationMutual {
-            get {
-                return ResourceManager.GetString("HeaderColorCalibrationMutual", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 滤轮 1 的本地化字符串。
@@ -7496,14 +6814,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 心跳时间 的本地化字符串。
-        /// </summary>
-        public static string HeartbeatTimeLabel {
-            get {
-                return ResourceManager.GetString("HeartbeatTimeLabel", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 高度 的本地化字符串。
@@ -8054,14 +7364,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 ImageROI模板 的本地化字符串。
-        /// </summary>
-        public static string ImageROI模板 {
-            get {
-                return ResourceManager.GetString("ImageROI模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 导入 的本地化字符串。
@@ -8171,14 +7473,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 综合查询 的本地化字符串。
-        /// </summary>
-        public static string IntegratedQuery {
-            get {
-                return ResourceManager.GetString("IntegratedQuery", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 积分起始时间 的本地化字符串。
@@ -8207,14 +7501,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 内置工具 的本地化字符串。
-        /// </summary>
-        public static string InternalTools {
-            get {
-                return ResourceManager.GetString("InternalTools", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 间隔 的本地化字符串。
@@ -8875,14 +8161,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区定位 的本地化字符串。
-        /// </summary>
-        public static string LightAreaLocation {
-            get {
-                return ResourceManager.GetString("LightAreaLocation", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 灯带检测 的本地化字符串。
@@ -9244,14 +8522,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 算法(_A) 的本地化字符串。
-        /// </summary>
-        public static string MenuAlgorithm {
-            get {
-                return ResourceManager.GetString("MenuAlgorithm", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
@@ -9514,23 +8784,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 MQTT连接 的本地化字符串。
-        /// </summary>
-        public static string MqttConnection {
-            get {
-                return ResourceManager.GetString("MqttConnection", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 MQTT连接配置 的本地化字符串。
-        /// </summary>
-        public static string MqttConnectionConfiguration {
-            get {
-                return ResourceManager.GetString("MqttConnectionConfiguration", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 消息列表 的本地化字符串。
@@ -9577,14 +8831,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 MTF@Freq 查询 的本地化字符串。
-        /// </summary>
-        public static string MtfAtFreqQuery {
-            get {
-                return ResourceManager.GetString("MtfAtFreqQuery", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 MTFV2模板管理 的本地化字符串。
@@ -9595,14 +8841,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 MTF输入错误 的本地化字符串。
-        /// </summary>
-        public static string MTF输入错误 {
-            get {
-                return ResourceManager.GetString("MTF输入错误", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 多色 的本地化字符串。
@@ -9757,15 +8995,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 没有相机ID! 的本地化字符串。
-        /// </summary>
-        public static string NoCameraId {
-            get {
-                return ResourceManager.GetString("NoCameraId", resourceCulture);
-            }
-        }
-        
+
         /// <summary>
         ///   查找类似 找不到可以添加的相机 的本地化字符串。
         /// </summary>
@@ -9901,14 +9131,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 打开配置文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenConfigFolder {
-            get {
-                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 打开设备管理器 的本地化字符串。
@@ -11314,14 +10536,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 无法重置，请检查数据库相关配置 的本地化字符串。
-        /// </summary>
-        public static string ResetFailedCheckDbConfig {
-            get {
-                return ResourceManager.GetString("ResetFailedCheckDbConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 重置到类默认值 的本地化字符串。
@@ -11755,14 +10969,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 保存到本地 的本地化字符串。
-        /// </summary>
-        public static string SaveToLoacal {
-            get {
-                return ResourceManager.GetString("SaveToLoacal", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 扫描 的本地化字符串。
@@ -11863,14 +11069,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 基础校正 的本地化字符串。
-        /// </summary>
-        public static string SectionBasicCalibration {
-            get {
-                return ResourceManager.GetString("SectionBasicCalibration", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 相机清单 的本地化字符串。
@@ -11881,14 +11079,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 色彩校正 的本地化字符串。
-        /// </summary>
-        public static string SectionColorCalibration {
-            get {
-                return ResourceManager.GetString("SectionColorCalibration", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 文件服务 的本地化字符串。
@@ -11953,14 +11143,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 选择数据线 的本地化字符串。
-        /// </summary>
-        public static string SelectDataLine {
-            get {
-                return ResourceManager.GetString("SelectDataLine", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 选中 的本地化字符串。
@@ -12829,14 +12011,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 SFR 信息 的本地化字符串。
-        /// </summary>
-        public static string SFRInfo {
-            get {
-                return ResourceManager.GetString("SFRInfo", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 结果为空或格式不匹配 的本地化字符串。
@@ -12901,14 +12075,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 SFR模板管理 的本地化字符串。
-        /// </summary>
-        public static string SFRTemplateManagement {
-            get {
-                return ResourceManager.GetString("SFRTemplateManagement", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 SFRV2模板管理 的本地化字符串。
@@ -12946,14 +12112,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 SFR模板 的本地化字符串。
-        /// </summary>
-        public static string SFR模板 {
-            get {
-                return ResourceManager.GetString("SFR模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 形状 的本地化字符串。
@@ -13000,14 +12158,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 在 CIE 色度图上显示当前结果点 的本地化字符串。
-        /// </summary>
-        public static string ShowOnCieDiagramToolTip {
-            get {
-                return ResourceManager.GetString("ShowOnCieDiagramToolTip", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 显示侧边栏 的本地化字符串。
@@ -13842,14 +12992,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 导入本地许可证文件 的本地化字符串。
-        /// </summary>
-        public static string SpectrumLicenseHint {
-            get {
-                return ResourceManager.GetString("SpectrumLicenseHint", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 许可证必须包含唯一的 {0}.lic，请核对所选 SN。 的本地化字符串。
@@ -14022,14 +13164,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 刷新服务端设备序列号清单 的本地化字符串。
-        /// </summary>
-        public static string SpectrumRefreshHint {
-            get {
-                return ResourceManager.GetString("SpectrumRefreshHint", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 本次发现 {0} 台光谱仪，{1} 项查询失败。 的本地化字符串。
@@ -14040,14 +13174,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 扫描光谱仪 的本地化字符串。
-        /// </summary>
-        public static string SpectrumScanOnline {
-            get {
-                return ResourceManager.GetString("SpectrumScanOnline", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 搜索光谱仪 的本地化字符串。
@@ -14220,14 +13346,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 光斑灰度 的本地化字符串。
-        /// </summary>
-        public static string SpotGrayscale {
-            get {
-                return ResourceManager.GetString("SpotGrayscale", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 SQL 恢复详情 的本地化字符串。
@@ -14472,14 +13590,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 创建时间 的本地化字符串。
-        /// </summary>
-        public static string Tag_Column {
-            get {
-                return ResourceManager.GetString("Tag_Column", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 温度 的本地化字符串。
@@ -15068,14 +14178,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 交换失败 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_SwapFailed {
-            get {
-                return ResourceManager.GetString("TemplateEditor_SwapFailed", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 模板失败 的本地化字符串。
@@ -15158,14 +14260,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 配置第三方算法 的本地化字符串。
-        /// </summary>
-        public static string ThirdPartAlgorithmConfig {
-            get {
-                return ResourceManager.GetString("ThirdPartAlgorithmConfig", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 第三方算法 的本地化字符串。
@@ -15284,122 +14378,18 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 角度色差校正（AngleShift）：ColorDiff 的变体，用于与角度相关的色差校正 的本地化字符串。
-        /// </summary>
-        public static string ToolTipAngleShift {
-            get {
-                return ResourceManager.GetString("ToolTipAngleShift", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 通道色差校正（ColorDiff）：校正通道之间的色差 的本地化字符串。
-        /// </summary>
-        public static string ToolTipColorDiff {
-            get {
-                return ResourceManager.GetString("ToolTipColorDiff", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 色偏校正（ColorShift）：补偿通道间的空间偏移。配置：JSON 格式（fillOffset 和 offset 参数） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipColorShift {
-            get {
-                return ResourceManager.GetString("ToolTipColorShift", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 暗电流校正（DarkNoise）：消除传感器暗电流噪声。配置：JSON 格式（bpp 和 DarkNoiseRatio） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipDarkNoise {
-            get {
-                return ResourceManager.GetString("ToolTipDarkNoise", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 坏点校正（DefectPoint）：检测并修复缺陷像素。配置：二进制格式（坏点数量和坐标列表） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipDefectPoint {
-            get {
-                return ResourceManager.GetString("ToolTipDefectPoint", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 畸变校正（Distortion）：校正镜头径向和切向畸变。配置：JSON 格式（相机内参矩阵和畸变系数） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipDistortion {
-            get {
-                return ResourceManager.GetString("ToolTipDistortion", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 DSNU 校正（暗信号非均匀性）：补偿暗信号非均匀性。配置：二进制格式（V0/V1 头部和 ushort 数据） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipDSNU {
-            get {
-                return ResourceManager.GetString("ToolTipDSNU", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 四色校正（LumFourColor）：使用 3×3 矩阵进行全通道混合颜色转换。 的本地化字符串。
-        /// </summary>
-        public static string ToolTipFourColor {
-            get {
-                return ResourceManager.GetString("ToolTipFourColor", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 线性度校正（LineArity）：校正传感器的非线性响应特性 的本地化字符串。
-        /// </summary>
-        public static string ToolTipLineArity {
-            get {
-                return ResourceManager.GetString("ToolTipLineArity", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 亮度校正（Luminance）：将灰度线性转换为绝对亮度 Lv(cd/m²)。配置：JSON 格式（bpp、曝光时间和系数 a） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipLuminance {
-            get {
-                return ResourceManager.GetString("ToolTipLuminance", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 多色校正（LumMultiColor）：使用可变大小的系数矩阵，支持高阶颜色转换。 的本地化字符串。
-        /// </summary>
-        public static string ToolTipMultiColor {
-            get {
-                return ResourceManager.GetString("ToolTipMultiColor", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 单色校正（LumOneColor）：使用 4 系数模型将三通道灰度转换为 CIE XYZ 三刺激值。 的本地化字符串。
-        /// </summary>
-        public static string ToolTipOneColor {
-            get {
-                return ResourceManager.GetString("ToolTipOneColor", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 均匀性校正（Uniformity）：补偿镜头暗角和传感器响应非均匀性。配置：二进制格式（V0/V1 头部和 float 系数矩阵） 的本地化字符串。
-        /// </summary>
-        public static string ToolTipUniformity {
-            get {
-                return ResourceManager.GetString("ToolTipUniformity", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 左上 的本地化字符串。
@@ -15635,14 +14625,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 上传校正组 的本地化字符串。
-        /// </summary>
-        public static string UploadCalibrationGroup {
-            get {
-                return ResourceManager.GetString("UploadCalibrationGroup", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 上传结束 的本地化字符串。
@@ -15671,14 +14653,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 上传第三方插件 的本地化字符串。
-        /// </summary>
-        public static string UploadThridPartPlusIn {
-            get {
-                return ResourceManager.GetString("UploadThridPartPlusIn", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 传输速率 的本地化字符串。
@@ -15707,14 +14681,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 启用HDR 的本地化字符串。
-        /// </summary>
-        public static string UseHDR {
-            get {
-                return ResourceManager.GetString("UseHDR", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 使用Lab 的本地化字符串。
@@ -16319,14 +15285,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 保存图表 的本地化字符串。
-        /// </summary>
-        public static string 保存图表 {
-            get {
-                return ResourceManager.GetString("保存图表", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 保存失败: {0} 的本地化字符串。
@@ -16670,14 +15628,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区1 的本地化字符串。
-        /// </summary>
-        public static string 发光区1 {
-            get {
-                return ResourceManager.GetString("发光区1", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 发光区定位 的本地化字符串。
@@ -16688,23 +15638,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 发光区定位1 的本地化字符串。
-        /// </summary>
-        public static string 发光区定位1 {
-            get {
-                return ResourceManager.GetString("发光区定位1", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 发光区检测模板 的本地化字符串。
-        /// </summary>
-        public static string 发光区检测模板 {
-            get {
-                return ResourceManager.GetString("发光区检测模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 发光区裁剪 的本地化字符串。
@@ -16886,14 +15820,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 图表保存成功! 的本地化字符串。
-        /// </summary>
-        public static string 图表保存成功_ {
-            get {
-                return ResourceManager.GetString("图表保存成功!", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 圆形 的本地化字符串。
@@ -17615,14 +16541,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 搜索缓存模块或文件 的本地化字符串。
-        /// </summary>
-        public static string 搜索缓存模块或文件 {
-            get {
-                return ResourceManager.GetString("搜索缓存模块或文件", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 操作 的本地化字符串。
@@ -17777,23 +16695,7 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 未找到对应MTF 的本地化字符串。
-        /// </summary>
-        public static string 未找到对应MTF {
-            get {
-                return ResourceManager.GetString("未找到对应MTF", resourceCulture);
-            }
-        }
         
-        /// <summary>
-        ///   查找类似 未找到对应频率 的本地化字符串。
-        /// </summary>
-        public static string 未找到对应频率 {
-            get {
-                return ResourceManager.GetString("未找到对应频率", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 未记录正文 的本地化字符串。
@@ -18002,14 +16904,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 模块详情 的本地化字符串。
-        /// </summary>
-        public static string 模块详情 {
-            get {
-                return ResourceManager.GetString("模块详情", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 模板参数 的本地化字符串。
@@ -18614,14 +17508,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 编辑文本校正文件 的本地化字符串。
-        /// </summary>
-        public static string 编辑文本校正文件 {
-            get {
-                return ResourceManager.GetString("编辑文本校正文件", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 编辑校正文件 的本地化字符串。
@@ -18911,14 +17797,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先选择Distortion模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择Distortion模板 {
-            get {
-                return ResourceManager.GetString("请先选择Distortion模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择FindCross模板 的本地化字符串。
@@ -18929,14 +17807,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先选择FocusPoints模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择FocusPoints模板 {
-            get {
-                return ResourceManager.GetString("请先选择FocusPoints模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择FOV2.0模板 的本地化字符串。
@@ -18956,14 +17826,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先选择ImageROI模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择ImageROI模板 {
-            get {
-                return ResourceManager.GetString("请先选择ImageROI模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择LEDStripDetection模板 的本地化字符串。
@@ -19010,14 +17872,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先选择SFR模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择SFR模板 {
-            get {
-                return ResourceManager.GetString("请先选择SFR模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择亮点检测模板 的本地化字符串。
@@ -19046,14 +17900,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 请先选择发光区检测模板 的本地化字符串。
-        /// </summary>
-        public static string 请先选择发光区检测模板 {
-            get {
-                return ResourceManager.GetString("请先选择发光区检测模板", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 请先选择发光区裁剪模板 的本地化字符串。
@@ -19370,14 +18216,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
 
-        /// <summary>
-        ///   查找类似 释放选中 的本地化字符串。
-        /// </summary>
-        public static string 释放选中 {
-            get {
-                return ResourceManager.GetString("释放选中", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 重启 ColorVision 的本地化字符串。
@@ -19460,14 +18298,6 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
-        /// <summary>
-        ///   查找类似 频率输入错误 的本地化字符串。
-        /// </summary>
-        public static string 频率输入错误 {
-            get {
-                return ResourceManager.GetString("频率输入错误", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   查找类似 黑画面检测 的本地化字符串。

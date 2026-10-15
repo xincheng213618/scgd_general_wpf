@@ -13,13 +13,23 @@ namespace ColorVision.UI.Tests;
 public sealed class UiLocalizationConsistencyTests
 {
     [Fact]
-    public void CompiledEngineTraditionalResourcesCoverEnglishDynamicLookupKeys()
+    public void CompiledEngineResourceCulturesCoverTheSameKeysAndPreserveFormatArguments()
     {
         var manager = ColorVision.Engine.Properties.Resources.ResourceManager;
+        var neutral = manager.GetResourceSet(CultureInfo.InvariantCulture, true, false)!;
         var traditional = manager.GetResourceSet(CultureInfo.GetCultureInfo("zh-Hant"), true, false)!;
         var english = manager.GetResourceSet(CultureInfo.GetCultureInfo("en"), true, false)!;
+        string[] keys = neutral.Cast<System.Collections.DictionaryEntry>().Select(item => (string)item.Key).Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(keys, english.Cast<System.Collections.DictionaryEntry>().Select(item => (string)item.Key).Order(StringComparer.Ordinal));
+        Assert.Equal(keys, traditional.Cast<System.Collections.DictionaryEntry>().Select(item => (string)item.Key).Order(StringComparer.Ordinal));
         foreach (System.Collections.DictionaryEntry item in english)
-            Assert.NotNull(traditional.GetString((string)item.Key));
+        {
+            string key = (string)item.Key;
+            string value = neutral.GetString(key)!;
+            Assert.False(string.IsNullOrWhiteSpace(value), key);
+            Assert.Equal(FormatArguments(value), FormatArguments((string)item.Value!));
+            Assert.Equal(FormatArguments(value), FormatArguments(traditional.GetString(key)!));
+        }
         using var culture = new CultureScope("zh-Hant");
         Assert.Equal("開始", ST.Library.UI.Lang.Get("开始"));
         Assert.Equal("類別", ST.Library.UI.Lang.Get("类别"));
