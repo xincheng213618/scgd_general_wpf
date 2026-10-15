@@ -98,14 +98,11 @@ internal static class LocalRingGhostResultPersistence
 public sealed class LocalRingGhostNode : LocalFlowNodeBase
 {
     private readonly ILocalRingGhostNodeServices services;
-    private string imageFilePath = "", resultDirectory = "";
+    private string resultDirectory = "";
     private RingGhostOrderMapping orderMapping = RingGhostOrderMapping.OuterIsFirst;
 
     [Category("鬼影"), STNodeProperty("一阶/二阶对应", "指定内外圈与一阶、二阶的对应关系；默认外圈一阶、内圈二阶。按当前一阶必有的方案，单环归一阶，正常未检出输出 0。", true)]
     public RingGhostOrderMapping OrderMapping { get => orderMapping; set { orderMapping = value; OnPropertyChanged(); } }
-    [Category("输入"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-    [STNodeProperty("图像文件", "留空使用上游原位深内存帧或 IN 图像结果；填写仅作为无内存帧时的后备输入。", true)]
-    public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? ""; OnPropertyChanged(); } }
     [Category("保存"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
     [STNodeProperty("结果目录", "保存计算结果文件，供 ARVRPro 解析和历史回看。留空自动使用本机 LocalAppData 下的 ColorVision/Results/RingGhost，无需配置。", true)]
     public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? ""; OnPropertyChanged(); } }
@@ -129,7 +126,7 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
             : Path.GetFullPath(ResultDirectory.Trim());
         string nodeId = NodeID; int zIndex = ZIndex;
         LocalFlowFrame? ownedFrame = null;
-        LocalFlowFrame frame = ResolveFrame(action, ImageFilePath, out ownedFrame, out string? imageFile);
+        LocalFlowFrame frame = ResolveFrame(action, out ownedFrame, out string? imageFile);
         try
         {
             using var lease = frame.Acquire();
@@ -162,9 +159,9 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
     }
 
     protected override string BuildRunPayload(CVStartCFC action) => JsonConvert.SerializeObject(new
-    { ServiceName = NodeName, EventName = "Ghost", action.SerialNumber, OrderMapping, ImageFilePath, ResultDirectory });
+    { ServiceName = NodeName, EventName = "Ghost", action.SerialNumber, OrderMapping, ResultDirectory });
 
-    private LocalFlowFrame ResolveFrame(CVStartCFC action, string configuredFile, out LocalFlowFrame? ownedFrame, out string? imageFile)
+    private LocalFlowFrame ResolveFrame(CVStartCFC action, out LocalFlowFrame? ownedFrame, out string? imageFile)
     {
         ownedFrame = null; imageFile = null;
         if (action.TryGetCurrentFrame(out LocalFlowFrame? current) && current != null)
@@ -173,29 +170,23 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
             imageFile = current.ResolveResultImageFilePath();
             return current;
         }
-        int sourceId = -1; string? file;
-        if (!string.IsNullOrWhiteSpace(configuredFile)) file = Path.GetFullPath(configuredFile.Trim());
-        else
+        if (!TryGetInputMasterResult(action, 0, out int masterId, out int resultType, out _))
         {
-            if (!TryGetInputMasterResult(action, 0, out int masterId, out int resultType, out _))
-            {
-                masterId = ReadInt(action, "MasterId"); resultType = ReadInt(action, "MasterResultType");
-            }
-            if (masterId <= 0 || resultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
-                throw new InvalidOperationException("请连接相机取图、打开图片或校正节点，或填写图像文件。");
-            var input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
-                ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
-            sourceId = masterId;
-            string[] files = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(f => !string.IsNullOrWhiteSpace(f))
-                .Select(f => Path.GetFullPath(f.Trim())).ToArray();
-            file = files.FirstOrDefault(File.Exists) ?? files.FirstOrDefault();
+            masterId = ReadInt(action, "MasterId"); resultType = ReadInt(action, "MasterResultType");
         }
+        if (masterId <= 0 || resultType is not (int)CVCommCore.CVResultType.Camera_Img and not (int)CVCommCore.CVResultType.Algorithm_Calibration)
+            throw new InvalidOperationException("流程中没有可用的上游图像；请连接相机取图、校正或“加载图片”节点。");
+        var input = FlowNodeTiming.Run("ResolveImageResult", () => services.GetImageResult(masterId))
+            ?? throw new InvalidOperationException($"找不到 IN 图像结果：{masterId}。");
+        string[] files = new[] { input.FileUrl, input.RawFile }.OfType<string>().Where(f => !string.IsNullOrWhiteSpace(f))
+            .Select(f => Path.GetFullPath(f.Trim())).ToArray();
+        string? file = files.FirstOrDefault(File.Exists) ?? files.FirstOrDefault();
         ownedFrame = FlowNodeTiming.Run("OpenImage", () =>
         {
             if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) throw new FileNotFoundException("鬼影原图不存在。", file);
             return services.LoadFrame(file);
         });
-        if (sourceId > 0) ownedFrame.MasterId = sourceId;
+        ownedFrame.MasterId = masterId;
         imageFile = file;
         return ownedFrame;
     }

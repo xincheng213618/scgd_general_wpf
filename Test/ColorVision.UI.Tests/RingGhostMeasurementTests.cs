@@ -75,13 +75,97 @@ public sealed class RingGhostMeasurementTests
         Assert.Empty(result.Artifacts);
     }
 
-    private static ValueTask<AlgorithmResult> Run(AlgorithmImageBuffer image, RingGhostOrderMapping mapping = RingGhostOrderMapping.Unconfirmed)
+    // Separate radial peaks must survive candidate de-duplication even near the former 6% radius cutoff.
+    [Theory]
+    [InlineData(17)]
+    [InlineData(18)]
+    public async Task IndependentNearbyGhostRingsRemainTwoCandidates(int separation)
+    {
+        using var image = RadialPattern(300, r => 65535 * (.6 * Gaussian(r - 300, 7.5)
+            + .0048 * Gaussian(r - 195, 3) + .0036 * Gaussian(r - (195 - separation), 3)));
+        using var result = await Run(image, RingGhostOrderMapping.OuterIsFirst);
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.Equal(2, result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows.Count);
+        var data = result.GetArtifact<AlgorithmStructuredDataArtifact>("ring-ghost-measurement")!.Data;
+        Assert.True(data.GetProperty("gmr2Percent").GetDouble() > .5);
+    }
+
+    // A broad, complete annulus has a plateau rather than a single sharp maximum.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    public async Task BroadPlateauGhostRingsAreNotDiscardedAsZeroProminence(double noiseAmplitudeDn)
+    {
+        using var image = RadialPattern(280, r => Math.Abs(r - 280) <= 6 ? 40000
+            : Math.Abs(r - 196) <= 20 ? 200 : Math.Abs(r - 126) <= 20 ? 100 : 0,
+            noiseAmplitudeDn: noiseAmplitudeDn);
+        using var result = await Run(image, RingGhostOrderMapping.OuterIsFirst);
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.Equal(2, result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows.Count);
+        var data = result.GetArtifact<AlgorithmStructuredDataArtifact>("ring-ghost-measurement")!.Data;
+        Assert.True(data.GetProperty("gmr1Percent").GetDouble() > 0);
+        Assert.True(data.GetProperty("gmr2Percent").GetDouble() > 0);
+    }
+
+    [Theory]
+    [InlineData(65535, 1, 1, "saturated_primary_ring")]
+    [InlineData(65280, 256, 1, "suspected_saturated_primary_ring")]
+    [InlineData(65472, 64, 1, "suspected_saturated_primary_ring")]
+    [InlineData(65520, 1, 1, "suspected_saturated_primary_ring")]
+    [InlineData(65520, 16, 5, "suspected_saturated_primary_ring")]
+    [InlineData(65532, 4, 1, "suspected_saturated_primary_ring")]
+    [InlineData(65279, 1, 1, null)]
+    [InlineData(60000, 1, 1, null)]
+    [InlineData(16000, 16, 1, null)]
+    [InlineData(4095, 1, 1, null)]
+    public async Task RawPrimaryHeadroomIsCheckedBeforeSignalDecoding(int primaryDn, int quantizationStep,
+        double decodeExponent, string? expectedFailure)
+    {
+        // The power-of-two steps represent lower-bit-depth images stored left-aligned in Gray16.
+        using var image = RadialPattern(280, r => Math.Abs(r - 280) <= 6 ? primaryDn
+            : Math.Abs(r - 196) <= 6 ? 200 : Math.Abs(r - 126) <= 6 ? 100 : 0,
+            quantizationStep: quantizationStep);
+        using var result = await Run(image, decodeExponent: decodeExponent);
+        if (expectedFailure is null)
+        {
+            Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+            Assert.Equal(2, result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows.Count);
+        }
+        else
+        {
+            Assert.Equal(AlgorithmResultStatus.Failed, result.Status);
+            Assert.Contains(result.Failures, failure => failure.Code == expectedFailure);
+            Assert.Empty(result.Artifacts);
+        }
+    }
+
+    private static ValueTask<AlgorithmResult> Run(AlgorithmImageBuffer image,
+        RingGhostOrderMapping mapping = RingGhostOrderMapping.Unconfirmed, double decodeExponent = 1)
         => ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest
         {
-            Invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RingGhost, new RingGhostMeasurementParameters { OrderMapping = mapping }),
+            Invocation = AlgorithmInvocation.Create(DisplayMetrologyIds.RingGhost, new RingGhostMeasurementParameters { OrderMapping = mapping, DecodeExponent = decodeExponent }),
             Inputs = [new AlgorithmInput { Name = "source", Image = image, Ownership = AlgorithmInputOwnership.Borrowed, ColorSpace = "linear-device-values" }],
             RequiredCapabilities = AlgorithmHostCapabilities.Headless | AlgorithmHostCapabilities.Local,
         });
+
+    private static double Gaussian(double distance, double sigma) => Math.Exp(-distance * distance / (2 * sigma * sigma));
+
+    private static AlgorithmImageBuffer RadialPattern(int radius, Func<double, double> signal,
+        int quantizationStep = 1, double noiseAmplitudeDn = 0)
+    {
+        int width = radius * 4, height = radius * 4;
+        var data = new byte[width * height * 2];
+        var random = new Random(731);
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                double r = Math.Sqrt(Math.Pow(x - width / 2.0, 2) + Math.Pow(y - height / 2.0, 2));
+                double value = signal(r) + (random.NextDouble() * 2 - 1) * noiseAmplitudeDn;
+                ushort sample = (ushort)Math.Clamp(Math.Round(value / quantizationStep) * quantizationStep, 0, 65535);
+                BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan((y * width + x) * 2, 2), sample);
+            }
+        return new AlgorithmImageBuffer(width, height, width * 2, AlgorithmImageFormat.Gray16, data);
+    }
 
     private static AlgorithmImageBuffer Pattern(int radius, double exposure = 1, double aspect = 1, double rotation = 0,
         bool second = true, bool partial = false, string mode = "rings")

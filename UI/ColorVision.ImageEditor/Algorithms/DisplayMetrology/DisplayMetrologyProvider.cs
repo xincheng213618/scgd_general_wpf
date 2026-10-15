@@ -70,7 +70,7 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             {
                 float[] signal = ReadSignal(first, p.Channel, p.DecodeExponent, cancellationToken);
                 if (context.Descriptor.Id == DisplayMetrologyIds.Ghost) MeasureGhost(signal, first.Width, first.Height, (GhostMeasurementParameters)p, artifacts, cancellationToken);
-                else if (context.Descriptor.Id == DisplayMetrologyIds.RingGhost) MeasureRingGhost(signal, first.Width, first.Height, (RingGhostMeasurementParameters)p, artifacts, cancellationToken);
+                else if (context.Descriptor.Id == DisplayMetrologyIds.RingGhost) MeasureRingGhost(signal, first, (RingGhostMeasurementParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.Defects) MeasureDefects(signal, first.Width, first.Height, (DisplayDefectParameters)p, artifacts, cancellationToken);
                 else if (context.Descriptor.Id == DisplayMetrologyIds.FieldSfr) MeasureFieldSfr(signal, first.Width, first.Height, (FieldSfrParameters)p, artifacts, cancellationToken);
                 else throw new MeasurementException("unsupported_algorithm", "不支持的显示计量算法。");

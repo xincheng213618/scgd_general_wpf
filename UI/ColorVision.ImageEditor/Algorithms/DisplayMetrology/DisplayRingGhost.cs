@@ -15,9 +15,10 @@ public sealed partial class DisplayMetrologyProvider
     private sealed record RingReading(RingBand Band, double Mean, double Background, double Coverage);
 
     // Dedicated complete, approximately concentric annulus measurement. Generic blob Ghost remains unchanged.
-    private static void MeasureRingGhost(float[] signal, int width, int height, RingGhostMeasurementParameters p,
+    private static void MeasureRingGhost(float[] signal, AlgorithmImageBuffer image, RingGhostMeasurementParameters p,
         List<AlgorithmArtifact> artifacts, CancellationToken token)
     {
+        int width = image.Width, height = image.Height;
         RotatedRect ellipse = LocatePrimaryRing(signal, width, height, token);
         double radius = (ellipse.Size.Width + ellipse.Size.Height) / 4.0;
         double step = Math.Max(1, radius / 1600);
@@ -42,7 +43,7 @@ public sealed partial class DisplayMetrologyProvider
         if (primary.Mean <= 1e-8 || mainBand.Prominence <= 1e-8 || primary.Coverage < .9)
             throw new MeasurementException("primary_ring_incomplete", "主亮环不完整或对比不足，不能建立可靠亮度参考。");
         // Check original pixels, including isolated saturated pixels missed by polar resampling.
-        RejectSaturatedRing(signal, width, height, ellipse, mainBand, step, token);
+        RejectSaturatedRing(image, p.Channel, ellipse, mainBand, step, token);
 
         var differences = Enumerable.Range(1, Math.Max(2, (int)(main * .75)))
             .Select(i => Math.Abs(profile[i] - profile[i - 1])).ToArray();
@@ -50,22 +51,20 @@ public sealed partial class DisplayMetrologyProvider
         double requiredProminence = Math.Max(primary.Mean * .0001, 6 * noise);
         int start = Math.Max(3, (int)(main * .15));
         int end = Math.Min((int)(main * .9), mainBand.Left - Math.Max(window, mainBand.Right - mainBand.Left));
+        RingBand[] coarseBands = FindRingPeaks(coarseProfile, start, end)
+            .Select(peak => FindRingCandidateBand(coarseProfile, peak, start, end))
+            .Where(band => band.Prominence >= requiredProminence).ToArray();
         var found = new List<RingReading>();
-        for (int r = start; r < end; r++)
+        foreach (int r in FindRingPeaks(profile, start, end))
         {
             token.ThrowIfCancellationRequested();
-            if (profile[r] <= profile[r - 1] || profile[r] < profile[r + 1]) continue;
-            RingBand band = FindRingBand(profile, r, window);
+            RingBand band = FindRingCandidateBand(profile, r, start, end);
             if (band.Prominence < requiredProminence || band.Right - band.Left < 2
                 || band.Left <= start || band.Right >= end) continue;
-            // Quantized row noise can create tiny radial peaks. Require a matching peak after
-            // averaging over 1% of the primary radius as well; this is a resolution boundary.
-            int nearby = Math.Max(2, (int)(main * .03));
-            int coarsePeak = Enumerable.Range(Math.Max(start, r - nearby), Math.Min(end, r + nearby) - Math.Max(start, r - nearby) + 1)
-                .MaxBy(i => coarseProfile[i]);
-            if (coarsePeak <= start || coarsePeak >= end || coarseProfile[coarsePeak] <= coarseProfile[coarsePeak - 1]
-                || coarseProfile[coarsePeak] < coarseProfile[coarsePeak + 1]
-                || FindRingBand(coarseProfile, coarsePeak, window).Prominence < requiredProminence) continue;
+            // Quantized row noise can create tiny radial peaks. Require support after smoothing
+            // over 1% of the primary radius too. Match the bands, since a broad plateau's maximum
+            // can move far between scales even with tiny noise. Fine-scale valleys still separate rings.
+            if (!coarseBands.Any(coarse => coarse.Left <= band.Right && band.Left <= coarse.Right)) continue;
             var reading = ReadRingBand(polar, length, band, requiredProminence * .2);
             if (reading.Coverage >= 2.0 / 3 && reading.Mean > reading.Background) found.Add(reading);
         }
@@ -73,8 +72,7 @@ public sealed partial class DisplayMetrologyProvider
         var accepted = new List<RingReading>();
         foreach (var reading in found.OrderByDescending(v => v.Band.Prominence))
         {
-            if (accepted.Any(v => Math.Abs(v.Band.Peak - reading.Band.Peak) < main * .06
-                || v.Band.Left <= reading.Band.Right && reading.Band.Left <= v.Band.Right)) continue;
+            if (accepted.Any(v => v.Band.Left <= reading.Band.Right && reading.Band.Left <= v.Band.Right)) continue;
             accepted.Add(reading);
         }
         if (accepted.Count > 8) throw new MeasurementException("ring_candidates_ambiguous", "径向峰过多，图案或背景不符合圆环鬼影测量条件。");
@@ -219,6 +217,46 @@ public sealed partial class DisplayMetrologyProvider
         return new RingBand(peak, left, right, leftBase, rightBase, prominence);
     }
 
+    private static IEnumerable<int> FindRingPeaks(double[] profile, int start, int end)
+    {
+        // Polar interpolation can differ by round-off on a constant ring. Treat only numerical
+        // equality as a plateau, and require a descent on both sides rather than a shoulder.
+        const double roundoff = 1e-12;
+        for (int first = start; first < end;)
+        {
+            int last = first;
+            while (last + 1 < end && Math.Abs(profile[last + 1] - profile[first]) <= roundoff) last++;
+            if (profile[first] > profile[first - 1] + roundoff && profile[last] > profile[last + 1] + roundoff)
+                yield return (first + last) / 2;
+            first = last + 1;
+        }
+    }
+
+    private static RingBand FindRingCandidateBand(double[] profile, int peak, int start, int end)
+    {
+        // Follow the complete peak to its surrounding minima, stopping at a higher peak.
+        // A fixed local window can stop inside a broad plateau and incorrectly give it zero
+        // prominence. The half-prominence crossings still bound the actual measurement ring.
+        int leftBase = peak, rightBase = peak;
+        const double roundoff = 1e-12;
+        for (int i = peak - 1; i >= start; i--)
+        {
+            if (profile[i] > profile[peak] + roundoff) break;
+            if (profile[i] < profile[leftBase]) leftBase = i;
+        }
+        for (int i = peak + 1; i <= end; i++)
+        {
+            if (profile[i] > profile[peak] + roundoff) break;
+            if (profile[i] < profile[rightBase]) rightBase = i;
+        }
+        double baseline = Math.Max(profile[leftBase], profile[rightBase]);
+        double prominence = profile[peak] - baseline, half = baseline + prominence / 2;
+        int left = peak, right = peak;
+        while (left > leftBase && profile[left - 1] >= half) left--;
+        while (right < rightBase && profile[right + 1] >= half) right++;
+        return new RingBand(peak, left, right, leftBase, rightBase, prominence);
+    }
+
     private static RingReading ReadRingBand(double[] polar, int length, RingBand band, double minimumContrast)
     {
         double total = 0, totalBackground = 0, weights = 0;
@@ -276,24 +314,4 @@ public sealed partial class DisplayMetrologyProvider
         => shapes.Add(new AlgorithmGeometry(id, AlgorithmGeometryKind.Polyline,
             Enumerable.Range(0, 181).Select(i => RingPoint(ellipse, radius, i * 2 * Math.PI / 180)).ToArray()));
 
-    private static void RejectSaturatedRing(float[] signal, int width, int height, RotatedRect ellipse, RingBand band, double step, CancellationToken token)
-    {
-        double angle = ellipse.Angle * Math.PI / 180, cos = Math.Cos(angle), sin = Math.Sin(angle);
-        double reference = (ellipse.Size.Width + ellipse.Size.Height) / 4;
-        double halfWidth = ellipse.Size.Width / 2, halfHeight = ellipse.Size.Height / 2;
-        double extent = Math.Max(halfWidth, halfHeight) * band.Right * step / reference + 2;
-        for (int y = Math.Max(0, (int)(ellipse.Center.Y - extent)); y < Math.Min(height, ellipse.Center.Y + extent); y++)
-        {
-            token.ThrowIfCancellationRequested();
-            for (int x = Math.Max(0, (int)(ellipse.Center.X - extent)); x < Math.Min(width, ellipse.Center.X + extent); x++)
-            {
-                if (signal[y * width + x] < 1) continue;
-                double dx = x - ellipse.Center.X, dy = y - ellipse.Center.Y;
-                double u = (dx * cos + dy * sin) / halfWidth, v = (-dx * sin + dy * cos) / halfHeight;
-                double radial = Math.Sqrt(u * u + v * v) * reference;
-                if (radial >= band.Left * step && radial <= band.Right * step)
-                    throw new MeasurementException("saturated_primary_ring", "主像测量环存在满量程像素，亮度比无效，请降低曝光后重拍。");
-            }
-        }
-    }
 }
