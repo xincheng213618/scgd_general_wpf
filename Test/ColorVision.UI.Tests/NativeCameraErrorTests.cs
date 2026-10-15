@@ -1,6 +1,9 @@
 using cvColorVision;
 using ColorVision.Engine;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -65,13 +68,15 @@ public class NativeCameraErrorTests
     }
 
     [Fact]
-    public void EveryCameraImportExistsInTheDeliveredDll()
+    public void EveryCvCameraImportExistsInTheDeliveredDll()
     {
         string path = Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", "cvCamera.dll");
         IntPtr library = NativeLibrary.Load(path);
         try
         {
-            foreach (MethodInfo method in typeof(cvCameraCSLib).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            // The SV6100 delivery adds this export; an older DLL cannot provide the new controller.
+            Assert.True(NativeLibrary.TryGetExport(library, "CM_BuildSV6400Cmd", out _), "Missing SV6100 command-builder export.");
+            foreach (MethodInfo method in typeof(cvCameraCSLib).Assembly.GetTypes().SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)))
             {
                 var import = method.GetCustomAttribute<DllImportAttribute>();
                 if (import?.Value != "cvCamera.dll") continue;
@@ -79,6 +84,45 @@ public class NativeCameraErrorTests
             }
         }
         finally { NativeLibrary.Free(library); }
+    }
+
+    [Fact]
+    public void SmuBaudRateEntryPointRejectsInvalidRequestsWithoutOpeningHardware()
+    {
+        Assert.Equal(-1, PassSx.OpenNetDeviceEx(false, "unused", (Pss_Type)(-1), 115200));
+        Assert.Equal(-1, PassSx.OpenNetDeviceEx(false, "unused", Pss_Type.Keithley_2400, 0));
+    }
+
+    [Fact]
+    public void MotorInitializationWritesTheNativeHandleAndPreservesFailureCodes()
+    {
+        // An unsupported controller returns before serial-port creation; no hardware is accessed.
+        IntPtr handle = new(123);
+        int result = cvCameraCSLib.InitCom(ref handle, (FOCUS_COMMUN)(-1), "COM1", 9600);
+        Assert.Equal(-10061, result);
+        Assert.Equal(IntPtr.Zero, handle);
+    }
+
+    [Fact]
+    public void SynchronousFocusSamplingRejectsInvalidHandleWithoutStartingAWorker()
+    {
+        Assert.Equal(-10000, cvCameraCSLib.CM_EvaluateFocus(IntPtr.Zero, EvaFunc.Variance, out _));
+    }
+
+    [Theory]
+    [InlineData(FOCUS_COMMUN.VID_SERIAL, 0)]
+    [InlineData(FOCUS_COMMUN.CANON_SERIAL, 1)]
+    [InlineData(FOCUS_COMMUN.NED_SERIAL, 2)]
+    [InlineData(FOCUS_COMMUN.LONGFOOT_SERIAL, 3)]
+    [InlineData(FOCUS_COMMUN.TSM_SERIAL, 4)]
+    [InlineData(FOCUS_COMMUN.SV6100, 5)]
+    public void MotorControllerIdsMatchNativeAndPersistedConfigurations(FOCUS_COMMUN controller, int nativeId)
+    {
+        Assert.Equal(nativeId, (int)controller);
+        var config = new MotorConfig { eFOCUSCOMMUN = controller };
+        string json = JsonConvert.SerializeObject(config);
+        Assert.Equal(nativeId, JObject.Parse(json).Value<int>(nameof(config.eFOCUSCOMMUN)));
+        Assert.Equal(controller, JsonConvert.DeserializeObject<MotorConfig>(json)!.eFOCUSCOMMUN);
     }
 
     [Fact]

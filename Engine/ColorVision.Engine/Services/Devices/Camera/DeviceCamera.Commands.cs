@@ -2,11 +2,13 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates;
 using cvColorVision;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -69,6 +71,57 @@ namespace ColorVision.Engine.Services.Devices.Camera
             LocalCameraSession.Close(unregisterCallback: true);
             return null;
         });
+
+        internal MsgRecord RunLocalMotorCommand(string eventName, Func<LocalCameraMotorSession, int?> operation)
+            => RunLocalCommand(eventName, () => ExecuteLocalMotor(operation));
+
+        internal object? ExecuteLocalMotor(Func<LocalCameraMotorSession, int?> operation)
+        {
+            var result = LocalCameraSession.UseMotor(motor =>
+            {
+                int? position = operation(motor);
+                return position.HasValue ? new { nPosition = position.Value, VidPos = motor.ConvertVid(position.Value) } : null;
+            });
+            if (result != null) PublishLocalMotorPosition(result.nPosition, result.VidPos);
+            return result;
+        }
+
+        private void PublishLocalMotorPosition(int position, double? vidPosition)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (IsDisposed) return;
+                Config.MotorConfig.Position = position;
+                Config.MotorConfig.VIDPosition = vidPosition ?? 0;
+            });
+        }
+
+        internal MsgRecord AutoFocusLocally(AutoFocusParam template)
+        {
+            LocalAutoFocusSettings settings;
+            try { settings = LocalAutoFocusSettings.FromTemplate(template, PhyCamera?.Config.MotorConfig ?? Config.MotorConfig); }
+            catch (Exception ex) { return RunLocalCommand("AutoFocus", () => throw ex); }
+            float exposure = (float)(Config.IsExpThree ? DisplayConfig.ExpTimeR : DisplayConfig.ExpTime);
+            float gain = DisplayConfig.Gain;
+            return RunLocalCommand("AutoFocus", () =>
+            {
+                LocalAutoFocusResult result = ExecuteLocalAutoFocus(settings, exposure, gain);
+                LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
+                {
+                    Device = this, CameraParameters = BuildLocalCameraParameters(), SaveFiles = false, FlipMode = DisplayConfig.FlipMode
+                });
+                using (capture.Frame) PublishLocalPreview(capture.Frame, null, forceDisplay: true);
+                return new { result.Position, result.Score, result.Samples, result.TotalTime, result.VidPosition };
+            });
+        }
+
+        internal LocalAutoFocusResult ExecuteLocalAutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default)
+        {
+            LocalAutoFocusResult result = LocalCameraSession.AutoFocus(settings, exposure, gain, stop);
+            stop.ThrowIfCancellationRequested();
+            PublishLocalMotorPosition(result.Position, result.VidPosition);
+            return result;
+        }
 
         internal MsgRecord AutoExposeLocally(ParamBase template, CalibrationParam? calibration)
         {

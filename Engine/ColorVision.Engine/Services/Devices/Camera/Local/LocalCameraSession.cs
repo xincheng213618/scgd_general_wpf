@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -39,6 +40,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private Action? stopPreview;
         private bool disposed;
         private bool identitySavePending;
+        private readonly Func<MotorConfig> getMotorConfig;
+        private readonly LocalCameraMotorSession motor;
+        private readonly object focusSync = new();
+        private CancellationTokenSource? focusCancellation;
+        private bool closingRequested;
 
         public LocalCameraSession(DeviceCamera device)
         {
@@ -52,9 +58,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             getUseHikMvs = () => device.DisplayConfig.UseHikMvs;
             getHikBayerQuality = () => (int)device.DisplayConfig.HikBayerQuality;
             getHikOutputBgr = () => device.DisplayConfig.HikOutputBgr;
+            getMotorConfig = () => device.PhyCamera?.Config.MotorConfig ?? device.Config.MotorConfig;
+            motor = new LocalCameraMotorSession(new LocalCameraMotorNative());
         }
 
-        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null, Func<string, string>? resolveCameraId = null)
+        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null, Func<string, string>? resolveCameraId = null, ILocalCameraMotorNative? motorNative = null)
         {
             this.native = native;
             this.backend = backend;
@@ -67,6 +75,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             this.getUseHikMvs = getUseHikMvs ?? (() => true);
             this.getHikBayerQuality = getHikBayerQuality ?? (() => 3);
             this.getHikOutputBgr = getHikOutputBgr ?? (() => true);
+            getMotorConfig = () => cameraConfig.MotorConfig;
+            motor = new LocalCameraMotorSession(motorNative ?? new LocalCameraMotorNative());
         }
 
         internal object SyncRoot { get; } = new();
@@ -124,6 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     }
                     if (openedCameraId != cameraId || OpenedMode != takeImageMode || openedBpp != imageBpp)
                         throw new InvalidOperationException("本地会话已使用其它打开参数连接，请先关闭相机再修改 Camera ID、模式或位深。");
+                    motor.EnsureConfiguration(getMotorConfig());
                     return cvErrorDefine.CV_ERR_SUCCESS;
                 }
                 if (cameraId.Length == 0)
@@ -165,6 +176,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         openedBpp = imageBpp;
                         loadedCalibrationJson = null;
                         EnsureLicenseAvailable();
+                        if (result == cvErrorDefine.CV_ERR_SUCCESS)
+                        {
+                            try { motor.Open(getMotorConfig()); }
+                            catch (Exception error)
+                            {
+                                if (getMotorConfig().IsCameraLinkage)
+                                {
+                                    try { motor.Close(); native.Close(manager); }
+                                    catch (Exception cleanup) { throw new AggregateException(error, cleanup); }
+                                    throw;
+                                }
+                                log.Warn("本地电机连接失败；相机联动未启用，相机仍可取图。", error);
+                            }
+                        }
                     }
                     if (result == cvErrorDefine.CV_ERR_SUCCESS && (identitySavePending || !string.IsNullOrWhiteSpace(config.CameraCode)
                         || !string.Equals(configuredCameraId, cameraId, StringComparison.Ordinal)))
@@ -333,19 +358,56 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public void Close(bool unregisterCallback)
         {
+            RequestFocusStop();
             lock (SyncRoot)
             {
                 try
                 {
+                    motor.Close();
                     if (handle == IntPtr.Zero || !native.IsOpen(handle)) return;
                     if (unregisterCallback) DetachPreviewCore();
                     native.Close(handle);
                     if (native.IsOpen(handle)) throw new InvalidOperationException("本地相机关闭失败，会话仍然打开。");
                     loadedCalibrationJson = null;
                 }
-                finally { RefreshStatus(); }
+                finally
+                {
+                    lock (focusSync) closingRequested = false;
+                    RefreshStatus();
+                }
             }
         }
+
+        private void RequestFocusStop()
+        {
+            lock (focusSync)
+            {
+                closingRequested = true;
+                focusCancellation?.Cancel();
+            }
+        }
+
+        internal T UseMotor<T>(Func<LocalCameraMotorSession, T> operation) => UseOpened(_ =>
+        {
+            if (OpenedMode == TakeImageMode.Live) throw new InvalidOperationException("请先停止本地预览再操作电机。");
+            motor.EnsureConfiguration(getMotorConfig());
+            return operation(motor);
+        });
+
+        internal LocalAutoFocusResult AutoFocus(LocalAutoFocusSettings settings, float exposure, float gain, CancellationToken stop = default) => UseOpened(manager =>
+        {
+            stop.ThrowIfCancellationRequested();
+            if (OpenedMode == TakeImageMode.Live) throw new InvalidOperationException("请先停止本地预览再自动对焦。");
+            motor.EnsureConfiguration(getMotorConfig());
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(stop);
+            lock (focusSync)
+            {
+                if (closingRequested) throw new OperationCanceledException("本地相机正在关闭。");
+                focusCancellation = cancellation;
+            }
+            try { return motor.AutoFocus(manager, settings, exposure, gain, cancellation.Token); }
+            finally { lock (focusSync) focusCancellation = null; }
+        });
 
         public void DetachCallback()
         {
@@ -425,7 +487,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private void RefreshStatus()
         {
             bool isOpen = IsOpen;
-            if (!isOpen) RawBufferPool.Dispose();
+            if (!isOpen)
+            {
+                RawBufferPool.Dispose();
+                try { motor.Close(); }
+                catch (Exception error)
+                {
+                    // The camera may have closed during a failed mode switch while its
+                    // motor still owns a port. Keep Disconnect available for a retry.
+                    log.Warn("本地相机已关闭，但电机句柄尚未释放，请重试关闭。", error);
+                    backend.SetLocalStatus(DeviceStatusType.Opened);
+                    return;
+                }
+            }
             backend.SetLocalStatus(isOpen
                 ? (OpenedMode == TakeImageMode.Live ? DeviceStatusType.LiveOpened : DeviceStatusType.Opened)
                 : DeviceStatusType.Closed);
@@ -433,6 +507,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public void Dispose()
         {
+            RequestFocusStop();
             lock (SyncRoot)
             {
                 if (disposed) return;
@@ -442,6 +517,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 try
                 {
+                    motor.Close();
                     if (native.IsOpen(handle))
                     {
                         DetachPreviewCore();

@@ -6551,8 +6551,12 @@
       "knowledge_id": "operations.camera",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。",
+      "summary": "本地与服务相机控制、共享电机会话、自动曝光与自动对焦模板、无文件预览；明确占用、超时、结果完成及帧寿命。",
       "aliases": [
+        "CamMotorNode",
+        "本地电机",
+        "自动聚焦模板",
+        "相机联动",
         "BV/LV本地转发",
         "LVCameraNode",
         "使用本地相机",
@@ -6629,7 +6633,11 @@
         "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalFrameCalibrationService.cs",
         "UI/ColorVision.ImageEditor/Realtime/RealtimeFramePresenter.cs",
         "UI/ColorVision.ImageEditor/Presentation/ImageStreamPresentation.cs",
-        "Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics"
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Diagnostics",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraMotorSession.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalAutoFocusSearch.cs",
+        "Engine/ColorVision.Engine/Services/Devices/Camera/Local/LocalCameraMotorExecution.cs",
+        "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/Camera/CamMotorNode.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/CameraIdentityOpenPersistenceTests.cs",
@@ -6643,7 +6651,10 @@
         "Test/ColorVision.UI.Tests/VideoProcessorResilienceTests.cs",
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/LocalFrameMirrorTests.cs",
-        "Test/ColorVision.UI.Tests/HikCaptureBenchmarkTests.cs"
+        "Test/ColorVision.UI.Tests/HikCaptureBenchmarkTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraMotorTests.cs",
+        "Test/ColorVision.UI.Tests/LocalAutoFocusSearchTests.cs",
+        "Test/ColorVision.UI.Tests/LocalCameraMotorFlowTests.cs"
       ],
       "related": [
         "engine.devices",
@@ -6709,7 +6720,8 @@
         "Test/ColorVision.UI.Tests/LocalCameraSessionTests.cs",
         "Test/ColorVision.UI.Tests/CameraRunParamTests.cs",
         "Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs",
-        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"
+        "Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs",
+        "Test/ColorVision.UI.Tests/MotorConfigurationEditorTests.cs"
       ],
       "related": [
         "operations.camera",

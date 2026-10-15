@@ -1,17 +1,29 @@
 #nullable disable
 using System.ComponentModel;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using System.Drawing;
 using System.Reflection;
 using FlowEngineLib.Base;
+using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
 [STNode("传感器", CategoryOrder = 700)]
 [STNodeSerializationModel("FlowEngineLib.dll|FlowEngineLib.CamMotorNode")]
+[FlowNodeDocumentation(
+	"控制相机电机的焦距、光圈或执行自动对焦，跟随相机当前后端。",
+	Usage = "配置设备代码和命令；本地相机须在物理配置中启用电机，自动对焦须选择行程匹配的模板。",
+	Processing = "本地分支复用相机与电机会话，关闭且启用本地偏好时自动连接；服务分支沿用原请求。",
+	Notes = "本地执行失败不补发服务请求。预览期间须先停止预览。停止流程会阻止后续对焦采样，当前 SDK 调用返回前保留句柄；本地分支不使用节点最大超时。自动对焦只返回位置和评价结果，不生成测量记录或替换当前流程图像。")]
 public class CamMotorNode : CVBaseServerNode
 {
+	[Browsable(false), JsonIgnore]
+	public override bool RequiresRemoteService => !LocalCameraMotorExecution.UsesLocalCamera(DeviceCode);
+
+	protected override FlowLocalExecution CreateLocalExecution(CVMQTTRequest request) => LocalCameraMotorExecution.Create(request);
+
 	private CamMotorRunType _RunType;
 
 	private bool _bAbs;

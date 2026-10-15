@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     public class DisplayCameraConfig : IDisplayConfigBase
     {
         [Category("AcquisitionDisplay"), DisplayName("使用本地相机")]
-        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光和关闭始终使用当前已打开的相机。")]
+        [Description("默认关闭；下次打开相机时生效。修改此项不切换当前会话，取图、自动曝光、电机和关闭始终使用当前已打开的相机后端。")]
         public bool UseLocalCamera
         {
             get => _useLocalCamera;
@@ -1046,6 +1046,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (!ReferenceEquals(_panelOperation, sender)) return;
                 _panelOperation = null;
                 RefreshPanelState();
+                if (!IsDisposed && state == MsgRecordState.Fail && sender is MsgRecord failed
+                    && failed.MsgSend.EventName is "Move" or "MoveDiaphragm" or "GoHome" or "GetPosition" or "AutoFocus")
+                    MessageBox.Show(Application.Current.GetActiveWindow(), failed.MsgReturn.Message, "ColorVision");
             });
         }
 
@@ -1490,15 +1493,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
             MsgRecord msgRecord = DService.AutoFocus(param);
-            msgRecord.MsgRecordStateChanged += (s, e) =>
-            {
-                if (IsDisposed) return;
-
-                if (e == MsgRecordState.Fail)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                }
-            };
+            TrackPanelOperation(msgRecord);
             ServicesHelper.SendCommand(sender, msgRecord);
 
         }
@@ -1580,6 +1575,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (int.TryParse(Capture.TextPos.Text, out int pos))
                 {
                     var msgRecord = DService.Move(pos, Capture.CheckBoxIsAbs.IsChecked ?? true);
+                    TrackPanelOperation(msgRecord);
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
@@ -1588,19 +1584,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GoHome);
+            MsgRecord record = DService.GoHome();
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void GetPosition_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GetPosition);
+            MsgRecord record = DService.GetPosition();
+            TrackPanelOperation(record);
+            ServicesHelper.SendCommand(sender, record);
         }
 
         private void Move1_Click(object sender, RoutedEventArgs e)
         {
             if (double.TryParse(Capture.TextDiaphragm.Text, out double pos))
             {
-                ServicesHelper.SendCommandEx(sender, () => DService.MoveDiaphragm(pos));
+                MsgRecord record = DService.MoveDiaphragm(pos);
+                TrackPanelOperation(record);
+                ServicesHelper.SendCommand(sender, record);
             }
         }
 
