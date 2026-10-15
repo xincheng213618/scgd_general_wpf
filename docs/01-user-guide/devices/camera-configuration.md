@@ -2,7 +2,7 @@
 knowledge_id: "operations.camera-configuration"
 knowledge_type: "topic"
 status: "current"
-summary: "相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。"
+summary: "相机参数的编辑入口、同步覆盖与保存；切换物理相机同步CameraID，日常参数保存保留本地ID，路径移动失败或被拒绝不等于取消路径变更。"
 aliases: ["曝光","增益","相机参数","相机配置被覆盖","ROI","三通道曝光","ConfigCamera","ConfigPhyCamera","DisplayCameraConfig","CameraRunParam","ApplyTo","IsExpThree","LocalVideoRoi","includeCameraId","本地相机ID","应用设置","相机数据路径"]
 code_paths: ["Engine/ColorVision.Engine/Services/Devices/Camera/Configs/ConfigCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DeviceCamera.cs","Engine/ColorVision.Engine/Services/Devices/Camera/DisplayCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml","Engine/ColorVision.Engine/Services/Devices/Camera/EditCamera.xaml.cs","Engine/ColorVision.Engine/Services/Devices/Camera/Templates/CameraRunParam/CameraRunParam.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/ConfigPhyCamera.cs","Engine/ColorVision.Engine/Services/PhyCameras/Configs/PhyCameraCfg.cs","Engine/ColorVision.Engine/Services/PhyCameras/EditConfigPhyCamera.xaml.cs","Engine/ColorVision.Engine/Services/PhyCameras/InfoPhyCamera.xaml","Engine/ColorVision.Engine/Services/PhyCameras/PhyCamera.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalCameraNode.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/FlowNodeContextMenuService.cs","Engine/ColorVision.Engine/FlowProcessing/Editor/CameraNodeCreationDefaults.cs"]
 test_paths: ["Test/ColorVision.UI.Tests/CameraRunParamTests.cs","Test/ColorVision.UI.Tests/ConfigPhyCameraApplyTests.cs","Test/ColorVision.UI.Tests/CameraNodeCreationDefaultsTests.cs"]
@@ -32,14 +32,14 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 | 调用位置 | `CameraID` | `CameraType` |
 | --- | --- | --- |
-| 逻辑配置窗口选择物理相机或“应用设置” | 保留，显式传 `false` | 保留，显式传 `false` |
-| `DeviceCamera.Save()` | 保留，显式传 `false` | 从物理配置同步 |
+| 逻辑配置窗口选择物理相机或“应用设置” | 同步所选物理相机 ID，同时更新 `CameraCode` | 保留，显式传 `false` |
+| `DeviceCamera.Save()` | 物理绑定代码改变时同步；保存同一绑定时保留本地 ID | 从物理配置同步 |
 | 物理配置保存触发 `PhyCameraConfigChanged` | 保留，显式传 `false` | 从物理配置同步 |
 | 其它调用显式传 `includeCameraId: true` | 从物理配置同步 | 取决于 `includeCameraType` |
 
-因此“应用设置”不会替你复制物理相机的 `CameraID`；随后提交可能同步 `CameraType`，仍保留本地 ID。排查硬件 ID 不一致时要核对当前运行环境中的逻辑配置，不能假设保存物理配置就会把两个 ID 改成相同。
+选择另一台物理相机或点击“应用设置”会把该相机的 `CameraID` 带入编辑副本，随后提交保存。`DeviceCamera.Save()` 也按之前已关联的物理代码判断绑定是否改变，覆盖导入等不经过选择控件的保存入口，避免新绑定仍连接旧 ID；同一绑定的日常保存与物理参数保存回调继续保留本地运行环境的 ID。仅保存物理参数不等于重新选择硬件。
 
-提交按钮在 `EditCamera.xaml` 同时绑定 `Click` 和 `SaveCommand`：先把 `EditCamera` 的配置克隆复制回服务，再进入 `DeviceCamera.Save()`，按 `CameraCode` 重新关联并以表中规则同步，随后执行[数据库保存与服务重启](./configuration.md)。窗口选择列表仅包含尚未关联逻辑相机，或关联相机 `Name` 与当前设备相同的物理对象；这个界面过滤不能视为全局唯一绑定校验。
+提交按钮先检查是否允许切换物理绑定，再把 `EditCamera` 的配置克隆复制回服务，调用一次 `DeviceCamera.Save()`，按 `CameraCode` 重新关联并以表中规则同步，随后执行[数据库保存与服务重启](./configuration.md)。保存完成才关闭窗口；失败时显示原始错误并记录日志。当前相机仍由本地会话、视频或服务占用时，切换会明确提示先关闭相机，编辑副本不写回当前配置；保存同一物理绑定不受这项限制。窗口选择列表仅包含尚未关联逻辑相机，或关联相机 `Name` 与当前设备相同的物理对象；这个界面过滤不能视为全局唯一绑定校验。
 
 当物理相机执行 `SaveConfig()` 时，`ConfigChanged` 会触发绑定设备的 `DeviceCamera.PhyCameraConfigChanged`：再次 `ApplyTo`，将显示端 `Gain` 重置为 `GainDefault`，将 `ExpTime` 和 R/G/B 三项都重置为 `ExpDefalut`，然后 `Save()`。所以“刚调好的曝光被改回”应先检查物理配置保存和绑定事件，不应立即判成 UI 没保存。
 
@@ -77,4 +77,4 @@ related: ["operations.camera","operations.physical-camera","operations.device-co
 
 参数不一致时，按“当前入口 → 逻辑设备与物理绑定 → 本次读取的配置对象 → `ApplyTo`/回调覆盖 → 实际请求参数”核对；物理导入可能重置配置的独立风险见[物理相机管理](./camera-management.md)。
 
-`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认保留本地 `CameraID`、同步型号/位深及显式复制 ID；`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段；`CameraNodeCreationDefaultsTests` 覆盖右键新建初始化所用的参数映射与校正组增益。这些测试不覆盖右键界面操作、保存事件整链、数据库/服务重启、路径移动或硬件参数生效；后者需专门测试与授权环境验收，测试文件存在不代表已运行。
+`ConfigPhyCameraApplyTests` 覆盖 `ApplyTo` 默认保留本地 `CameraID`、同步型号/位深及显式复制 ID；`DeviceCameraAssociationTests` 覆盖切换物理绑定时同步硬件 ID，以及同一绑定重载后保留本地 ID；`CameraRunParamTests` 覆盖 `SetAllExposure` 和自定义编辑器一次更新全部曝光字段；`CameraNodeCreationDefaultsTests` 覆盖右键新建初始化所用的参数映射与校正组增益。这些测试不覆盖右键界面操作、保存事件整链、数据库/服务重启、路径移动或硬件参数生效；后者需专门测试与授权环境验收，测试文件存在不代表已运行。

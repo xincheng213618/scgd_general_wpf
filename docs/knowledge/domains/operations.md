@@ -24,7 +24,7 @@ next: false
   本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
 
 - [相机参数来源、同步与保存](../../01-user-guide/devices/camera-configuration.md) — `operations.camera-configuration`
-  相机参数的编辑入口、同步覆盖与保存；物理配置同步保留本地CameraID，路径移动失败或被拒绝不等于取消路径变更。
+  相机参数的编辑入口、同步覆盖与保存；切换物理相机同步CameraID，日常参数保存保留本地ID，路径移动失败或被拒绝不等于取消路径变更。
 
 - [设备资源配置、保存与重启](../../01-user-guide/devices/configuration.md) — `operations.device-configuration`
   终端与设备配置引用、创建、保存、重启和删除清理；保存不保证远端已应用配置，未保存的活对象改动可影响运行，删除不保证显示项和通信对象一并释放。

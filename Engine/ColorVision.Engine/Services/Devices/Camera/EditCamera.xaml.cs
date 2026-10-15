@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -66,8 +67,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            EditConfig.CopyTo(DeviceCamera.Config);
-            Close();
+            try
+            {
+                DeviceCamera.EnsurePhyCameraBindingCanChange(EditConfig.CameraCode);
+                EditConfig.CopyTo(DeviceCamera.Config);
+                DeviceCamera.Save();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MQTTServiceBase.log.Error("保存相机配置失败。", ex);
+                MessageBox1.Show(this, ex.Message, "ColorVision");
+            }
         }
 
         private void CameraPhyID_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -81,7 +92,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (CameraPhyID.SelectedItem is PhyCamera phyCamera)
             {
-                phyCamera.Config.ApplyTo(EditConfig, includeCameraId: false, includeCameraType: false);
+                EditConfig.CameraCode = phyCamera.Code;
+                phyCamera.Config.ApplyTo(EditConfig, includeCameraId: true, includeCameraType: false);
             }
         }
 

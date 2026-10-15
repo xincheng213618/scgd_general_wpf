@@ -51,7 +51,7 @@
             </Border>
         </ScrollViewer>
         <Border Grid.Row="1" Height="30" Grid.ColumnSpan="3">
-            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

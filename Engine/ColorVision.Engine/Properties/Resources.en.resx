@@ -7066,4 +7066,10 @@ Files on disk are kept. Active buffers follow each module’s completion or retu
     <value>Template not found: {0}</value>
   </data>
   <data name="内存缓存管理" xml:space="preserve"><value>Memory cache management</value></data>
+  <data name="Camera_LocalOpenFailure" xml:space="preserve"><value>Local camera connection failed. Requested ID: {0}; failed step: {1}</value></data>
+  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>No cameras of the configured model were detected after opening failed. Check the camera power, connection, driver, and model setting.</value></data>
+  <data name="Camera_LocalOpenIdMismatch" xml:space="preserve"><value>The requested camera ID {0} was not found when checked after opening failed. Detected IDs: {1}. Check the physical camera binding and CameraID.</value></data>
+  <data name="Camera_LocalOpenDetected" xml:space="preserve"><value>Camera {0} is still detected after opening failed. Use the native error below to check the connection and whether another program or service is using the camera.</value></data>
+  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>Camera detection after opening failed also failed: {0}. Continue investigating with the original error below.</value></data>
+  <data name="Camera_PhysicalBindingInUse" xml:space="preserve"><value>The current camera is still in use by a local session, video, or service. Close it before switching physical cameras.</value></data>
 </root>

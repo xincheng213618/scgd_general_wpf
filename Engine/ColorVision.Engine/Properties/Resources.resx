@@ -3166,4 +3166,10 @@
     <value>找不到模板：{0}</value>
   </data>
   <data name="内存缓存管理" xml:space="preserve"><value>内存缓存管理</value></data>
+  <data name="Camera_LocalOpenFailure" xml:space="preserve"><value>本地相机连接失败，目标 ID：{0}，失败步骤：{1}</value></data>
+  <data name="Camera_LocalOpenNoDevices" xml:space="preserve"><value>打开失败后重新检测，未发现当前型号的相机。请检查相机电源、连接、驱动和型号设置。</value></data>
+  <data name="Camera_LocalOpenIdMismatch" xml:space="preserve"><value>打开失败后重新检测，未找到指定相机 ID：{0}。当前检测到：{1}。请核对物理相机绑定和 CameraID。</value></data>
+  <data name="Camera_LocalOpenDetected" xml:space="preserve"><value>打开失败后仍可检测到相机 {0}。请根据下方底层错误检查连接及其他程序或服务的占用情况。</value></data>
+  <data name="Camera_LocalOpenDiscoveryFailed" xml:space="preserve"><value>打开失败后无法重新检测相机：{0}。请根据下方原始错误继续排查。</value></data>
+  <data name="Camera_PhysicalBindingInUse" xml:space="preserve"><value>当前相机仍由本地会话、视频或服务占用。请先关闭当前相机，再切换物理相机。</value></data>
 </root>

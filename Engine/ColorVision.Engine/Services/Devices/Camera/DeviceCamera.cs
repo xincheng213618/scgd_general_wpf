@@ -330,18 +330,33 @@ namespace ColorVision.Engine.Services.Devices.Camera
             PhyCameraManager.GetInstance().SearchCameraIds();
         }
 
+        internal void EnsurePhyCameraBindingCanChange(string? cameraCode)
+        {
+            if (string.Equals(_subscribedPhyCamera?.Code, cameraCode, StringComparison.OrdinalIgnoreCase)) return;
+            if (CameraBackend.LocalOwned || CameraBackend.VideoOwned || CameraBackend.ServiceMayOwnCamera)
+                throw new InvalidOperationException(EngineLocalization.Get("Camera_PhysicalBindingInUse"));
+        }
+
+        internal void UpdatePhyCameraBinding(PhyCamera? phyCamera)
+        {
+            EnsurePhyCameraBindingCanChange(phyCamera?.Code);
+            bool bindingChanged = !string.Equals(_subscribedPhyCamera?.Code, phyCamera?.Code, StringComparison.OrdinalIgnoreCase);
+            PhyCamera = phyCamera;
+            // A different physical camera must not inherit the previous camera's local ID.
+            phyCamera?.Config.ApplyTo(Config, includeCameraId: bindingChanged);
+        }
+
         public override void Save()
         {
             if (IsDisposed) return;
 
             PhyCamera? previousPhyCamera = _subscribedPhyCamera;
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
+            UpdatePhyCameraBinding(PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode));
             if (!ReferenceEquals(previousPhyCamera, PhyCamera))
                 previousPhyCamera?.ReleaseDeviceCamera();
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
-                PhyCamera.Config.ApplyTo(Config, includeCameraId: false);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }

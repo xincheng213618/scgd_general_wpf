@@ -1,4 +1,6 @@
 using cvColorVision;
+using ColorVision.Engine;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8,6 +10,51 @@ namespace ColorVision.UI.Tests;
 
 public class NativeCameraErrorTests
 {
+    [Theory]
+    [InlineData("", "Camera_LocalOpenNoDevices")]
+    [InlineData("other-camera", "Camera_LocalOpenIdMismatch")]
+    [InlineData("requested-camera", "Camera_LocalOpenDetected")]
+    public void OpenFailureExplainsRequestedAndDetectedCameraIdsWithoutReplacingTheNativeError(string detectedId, string detailKey)
+    {
+        int scans = 0;
+        var error = LocalCameraNative.CreateOpenException("CM_Open", "requested-camera", -10009, () =>
+        {
+            scans++;
+            return string.IsNullOrEmpty(detectedId) ? [] : [detectedId];
+        });
+
+        Assert.Contains(string.Format(EngineLocalization.Get(detailKey), "requested-camera", detectedId), error.Message);
+        Assert.Contains("requested-camera", error.Message);
+        Assert.Contains("CM_Open", error.Message);
+        Assert.Contains("-10009", error.Message);
+        Assert.Contains(GetMessage(-10009), error.Message);
+        Assert.Equal(1, scans);
+    }
+
+    [Fact]
+    public void FailedDiagnosticScanRetainsTheOriginalOpenError()
+    {
+        var error = LocalCameraNative.CreateOpenException("CM_Open", "requested-camera", -10009,
+            () => throw new InvalidOperationException("discovery unavailable"));
+
+        Assert.Contains("discovery unavailable", error.Message);
+        Assert.Contains("requested-camera", error.Message);
+        Assert.Contains("-10009", error.Message);
+        Assert.Contains(GetMessage(-10009), error.Message);
+    }
+
+    [Fact]
+    public void ConfigurationFailureIdentifiesItsStepAndOriginalSdkCode()
+    {
+        int code = unchecked((int)0x80000203u);
+        var error = LocalCameraNative.CreateOpenException("CM_SetCameraID", "requested-camera", code);
+
+        Assert.Contains("CM_SetCameraID", error.Message);
+        Assert.Contains("requested-camera", error.Message);
+        Assert.Contains("MV_E_ACCESS_DENIED", error.Message);
+        Assert.Contains("0x80000203", error.Message);
+    }
+
     [Fact]
     public void CameraIdMismatchAndDeviceOpenFailureHaveDistinctMessages()
     {
