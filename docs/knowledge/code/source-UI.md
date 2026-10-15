@@ -249,7 +249,7 @@ next: false
   图像编辑器算法结果绘制与叠加显示：区分本地中立 Geometry/Overlay、Engine 历史 handler 和客户业务导出；接收、查询、缺图回放与文档/revision 生命周期分别核对。
 
 - [相机服务、采集与结果视图](../../01-user-guide/devices/camera.md) — `operations.camera`
-  本地优先与服务兼容的相机控制、共享会话、无文件内存预览；明确后端占用、自动曝光边界、文件/数据库完成及帧寿命。
+  本地与服务相机控制、共享电机会话、自动曝光与自动对焦模板、无文件预览；明确占用、超时、结果完成及帧寿命。
 
 - [系统职责与跨模块边界](../../03-architecture/overview/system-overview.md) — `platform.system`
   宿主、UI、Engine、插件与项目的职责及调用边界：UI操作不必经过Engine，程序集依赖不是统一执行顺序，构建产物不等于交付制品。

@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
         [LocalizedDisplayName(nameof(Resources.CurrentStepSize)), LocalizedDescription(nameof(Resources.InitialStepSize))]
         public int CurStep { get => GetValue(_CurStep); set { SetProperty(ref _CurStep, value); } }
         private int _CurStep = 5000;
-        [LocalizedDisplayName(nameof(Resources.StopStepSize)), LocalizedDescription(nameof(Resources.Deprecated))]
+        [LocalizedDisplayName(nameof(Resources.StopStepSize))]
         public int StopStep { get => GetValue(_StopStep); set { SetProperty(ref _StopStep, value); } }
         private int _StopStep = 200;
 

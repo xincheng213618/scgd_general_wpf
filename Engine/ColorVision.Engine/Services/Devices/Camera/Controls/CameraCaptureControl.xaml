@@ -137,9 +137,9 @@
                     <TextBox Margin="5,0" BorderThickness="0,0,0,1" Text="{Binding Config.NDPort}"/>
                 </DockPanel>
             </StackPanel>
-            <StackPanel Visibility="{Binding ServiceControlsEnabled, Converter={StaticResource bool2VisibilityConverter}}">
+            <StackPanel>
                 <StackPanel x:Name="MotorPanel" Visibility="{Binding Config.MotorConfig.IsUseMotor, Converter={StaticResource bool2VisibilityConverter}}">
-                    <StackPanel Margin="0,5,0,0" IsEnabled="{Binding ServiceControlsEnabled}">
+                    <StackPanel Margin="0,5,0,0">
                         <DockPanel>
                             <Button Content="{x:Static properties:Resources.AutoFocus}" DockPanel.Dock="Right" x:Name="AutoFocusButton"/>
                             <Grid Width="20" Margin="5,0" HorizontalAlignment="Left" DockPanel.Dock="Right">
@@ -177,7 +177,7 @@
                             <Button Content="{x:Static properties:Resources.AcquirePosition}" DockPanel.Dock="Right" x:Name="ReadPositionButton"/>
                             <TextBlock Width="60" Text="{x:Static properties:Resources.CurrentPosition}"/>
                             <TextBox Width="60" Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}"/>
-                            <TextBox Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}"/>
+                            <TextBox Margin="5,0" Background="Transparent" BorderThickness="0,0,0,0" IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}" Visibility="{Binding Config.MotorConfig.VID.IsUseVID, Converter={StaticResource bool2VisibilityConverter}}"/>
                         </DockPanel>
                     </StackPanel>
                 </StackPanel>

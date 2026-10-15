@@ -21,6 +21,10 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL 及配置，不在本工程编译这些 native 实现。部分输入显式指定 `runtimes/win-x64/native` 包路径，其他设备 DLL 和配置按各自的 Pack/Copy 元数据处理，不能假设所有资产都位于同一目录。除 `cvCamera.dll` 外，CommLibrary、OpenCV 和设备 SDK 相关 DLL 也在清单中；具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
 
+电机控制器 `FOCUS_COMMUN` 与原生及已有配置的数值保持一致：`VID_SERIAL=0`、`CANON_SERIAL=1`、`NED_SERIAL=2`、`LONGFOOT_SERIAL=3`、`TSM_SERIAL=4`、`SV6100=5`。`InitCom` / `CM_InitComEx` 的首参对应原生 `HANDLE&`，C# 必须传 `ref IntPtr` 接收独立电机句柄，不能传相机管理器句柄，也不能把整数状态码当句柄。旧调用方需要按此签名重新编译；新增类型需要配套 DLL，选择项存在不证明串口通信已验收。本地相机会话通过 `CM_InitComEx` 创建电机、下发配置，通过 `CM_ShutDown` 释放；托管适配器串行进入原生电机注册表，避免不同相机对未加锁的原生句柄表并发访问。
+
+`CM_EvaluateFocus(HANDLE, EvaFunc, double&)` 是本地对焦使用的同步单帧评价入口，成功为 1，失败保留采集错误码或返回对应的平台错误；失败不写输出。它只采集 RAW 并调用既有原生清晰度算法，不移动电机、不创建异步线程、不保存图像、不保留回调或调用方缓冲。Live 模式、未打开的相机和未知评价类型会失败。移动、搜索范围、超时和句柄生命周期由 Engine 的本地相机会话管理，不通过遗留 `CM_CalcAutoFocus` / `CM_GetAutoFocus` 启动后台搜索；服务模式仍保留既有异步入口。
+
 当前内部版不包含本地 OLED/CUDA 链路：`cvCamera.dll` 不再导入 `cvOled.dll`，默认交付不含 `cvoled.dll`、`cudart64_12.dll`，C# 的 `CvOledDLL` 及其专用枚举也不再提供。原生导出 `CM_LedCalInit`、`CM_LedCalFind`、`CM_LedCalComBine`、`CM_LedCalFindHighDensity`、`CM_FindHighIndensityLed` 已删除；需要这些入口的旧插件不能直接使用此版本，按序号导入的外部二进制也需要重新核对。本地普通 LED 检测、远端 CVOLED 服务消息和流程节点不属于这条 DLL 依赖链。
 
 OLED/CUDA 备份位于仓库 `docs/_history/native-dependencies/oled-cuda/`，包含移除前的匹配 DLL、原生源码快照、C# 绑定、安装器配置与 SHA-256 清单；恢复步骤见其中的 `README.txt`。恢复须同时处理原生实现/链接输入、C# 声明、工程复制/打包项、共享清单与外部 AIP，不能只放回两个依赖 DLL。此功能裁剪不改变本页的许可证构建约定。
@@ -75,7 +79,7 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 平台错误 `CV_ERR_CAM_ID_MATCH=-10007` 明确表示 ID 与枚举设备不匹配；`CV_ERR_CAM_OPEN=-10009` 仅表示设备打开失败。旧 SCGDCamLayer 普通打开日志记录请求 ID、枚举 ID、型号、模式和失败步骤，其指针接口未提供底层 SDK 错误码时明确标记不可用，不推断为 ID 错误。MVS 打开日志记录序列号、传输类型、失败操作及 SDK 错误。
 
-`Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证所有相机导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
+`Test/ColorVision.UI.Tests/NativeCameraErrorTests.cs` 不连接设备，保护操作接口整数返回与状态查询的边界，验证当前程序集全部 `cvCamera.dll` 导入对应交付 DLL 的真实导出、跨 DLL 结构体大小/字段偏移、SDK 码跨线程解释、未知码回退、多个操作的无效句柄错误、取源图失败前不分配缓冲及消息缓冲边界；也检查电机类型数值、初始化句柄回写和源表波特率入口的无设备失败。原生 SDK 替身验证覆盖实际失败透传与后续成功调用，不代替现场 MVS 采集验收。
 
 接口混用 `int`、`bool`、`void`，成功值由具体入口决定。例如 `Spectrometer.GetErrorMessage` 把 `1` 作为成功而返回空字符串，不能套用“所有 native 调用返回 0 才成功”。绑定存在、构建成功或取得返回值，都不能单独证明采集、校准或输出已安全完成；验证设备动作仍需明确授权和真实状态证据。
 
