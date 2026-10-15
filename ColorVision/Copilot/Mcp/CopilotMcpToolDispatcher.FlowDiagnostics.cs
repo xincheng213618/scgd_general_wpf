@@ -25,7 +25,12 @@ namespace ColorVision.Copilot.Mcp
             var liveContext = _environment.LiveContextProvider();
             var templateJson = ExtractCurrentTemplateJson();
             var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
-            var evidence = BuildFailureEvidenceText(snapshot, matchedNode, logResult, liveContext, templateJson);
+            // These are excerpts selected by the flow host, not structured fault records.
+            var failureExcerpts = snapshot?.FailureEvidence.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray()
+                ?? Array.Empty<string>();
+            var reportedFailureText = failureExcerpts.Length > 0
+                ? string.Join(Environment.NewLine, failureExcerpts)
+                : snapshot?.RecentFailureSummary ?? string.Empty;
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision flow failure diagnosis");
@@ -34,10 +39,10 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine("Flow execution allowed: False");
             builder.AppendLine($"Requested node: {EmptyLabel(nodeQuery)}");
             builder.AppendLine($"Log query: {EmptyLabel(logQuery)}");
-            builder.AppendLine($"Inspected log lines: {maxLogLines}");
+            builder.AppendLine($"Requested maximum log lines: {maxLogLines}");
 
             builder.AppendLine();
-            builder.AppendLine("## Observed Symptoms");
+            builder.AppendLine("## Observed Flow State");
             if (snapshot == null)
             {
                 builder.AppendLine("- No active flow snapshot is available.");
@@ -50,11 +55,18 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine($"- Batch status: {EmptyLabel(snapshot.BatchStatus)}");
                 builder.AppendLine($"- Batch result: {EmptyLabel(snapshot.BatchResult)}");
                 builder.AppendLine($"- Last node: {EmptyLabel(snapshot.LastNodeSummary)}");
-                builder.AppendLine($"- Recent failure: {EmptyLabel(snapshot.RecentFailureSummary)}");
             }
 
             builder.AppendLine();
-            builder.AppendLine("## Related Node");
+            builder.AppendLine("## Flow Host Failure Excerpts");
+            builder.AppendLine("Source: active flow snapshot. These host-selected excerpts are clues, not verified failures or root causes.");
+            builder.AppendLine(string.IsNullOrWhiteSpace(reportedFailureText)
+                ? "- No failure excerpt was provided; this does not establish that the flow succeeded."
+                : RedactForDisplay(TrimLong(reportedFailureText, 4000)));
+
+            builder.AppendLine();
+            builder.AppendLine("## Related Node Configuration");
+            builder.AppendLine("Node names, parameter names and configured values do not establish a fault.");
             if (matchedNode == null)
             {
                 builder.AppendLine(string.IsNullOrWhiteSpace(nodeQuery)
@@ -74,7 +86,7 @@ namespace ColorVision.Copilot.Mcp
             }
 
             builder.AppendLine();
-            builder.AppendLine("## Template Context");
+            builder.AppendLine("## Template Configuration");
             if (string.IsNullOrWhiteSpace(templateJson))
             {
                 builder.AppendLine("- No active template JSON editor context is available.");
@@ -82,11 +94,13 @@ namespace ColorVision.Copilot.Mcp
             else
             {
                 builder.AppendLine($"- Active template source: {EmptyLabel(liveContext?.SourceId)}");
-                AppendTemplateFieldHints(builder, templateJson, evidence);
+                builder.AppendLine("These are configuration fields to inspect, not evidence that their values caused a failure.");
+                AppendTemplateFieldHints(builder, templateJson, reportedFailureText);
             }
 
             builder.AppendLine();
             builder.AppendLine("## Recent Log Clues");
+            builder.AppendLine("Source: recent application log search. These lines are not correlated to the current flow run, batch or node.");
             if (logResult.Success)
             {
                 builder.AppendLine(RedactForDisplay(TrimLong(string.Join(Environment.NewLine, new[] { logResult.Summary, logResult.Content }.Where(value => !string.IsNullOrWhiteSpace(value))), 5000)));
@@ -97,17 +111,17 @@ namespace ColorVision.Copilot.Mcp
             }
 
             builder.AppendLine();
-            builder.AppendLine("## Likely Causes");
-            foreach (var cause in BuildLikelyFailureCauses(evidence))
-                builder.AppendLine("- " + cause);
+            builder.AppendLine("## Diagnosis Limits and Next Checks");
+            builder.AppendLine("- No root cause has been established by this tool. Status text, configuration fields and search keywords are not failure evidence.");
+            builder.AppendLine("- The flow snapshot, selected node, template editor and application log are captured separately; they may describe different operations.");
+            builder.AppendLine("- Match the flow/batch, node and timestamps in the original execution records before attributing a log entry or proposing a parameter change.");
 
             builder.AppendLine();
             builder.AppendLine("## Suggested Next MCP Calls");
             if (matchedNode != null)
                 builder.AppendLine($"- preview_flow_action {{ \"action\": \"trace_recent_failure\", \"node_id\": \"{EscapeForInlineJson(matchedNode.NodeId)}\" }}");
             builder.AppendLine("- get_diagnostic_bundle { \"max_chars\": 12000 }");
-            builder.AppendLine("- suggest_template_patch { \"intent\": \"summarize the suspected parameter adjustment\", \"node_name\": \"" + EscapeForInlineJson(FirstNonEmpty(matchedNode?.Title ?? string.Empty, nodeQuery)) + "\" }");
-            builder.AppendLine("- preview_template_patch only after choosing explicit proposed_changes.");
+            builder.AppendLine("- Use suggest_template_patch only when the user requests an adjustment and the correlated evidence supports specific fields; then preview_template_patch with explicit proposed_changes.");
             builder.AppendLine("No flow was started, stopped, run, rerun, or modified.");
 
             return CopilotMcpToolCallResult.Ok(RedactForDiagnostics(builder.ToString().TrimEnd()));

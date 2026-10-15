@@ -147,16 +147,16 @@ netstat -ano | findstr :6666
 
 `QueryDatabaseSql` 是 Agent 模式的通用只读数据库工具，根据当前请求或续问中的数据库主题加入可用工具；同一句中的“解释 SQL”等说明措辞不会隐藏查询工具。工具可见不要求执行查询，纯概念解释无需访问数据库；是否需要查询、应生成哪条 SQL 由模型结合当前对话决定，宿主不会通过关键词把系统问题改写成数据库查询。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。`maxRows` 范围 1–500、默认 100；`timeoutSeconds` 范围 1–30、默认 15。两个 SQL 工具的 `sql` 输入上限均为 20,000 字符。
 
-查询返回 `rows_returned`、`truncated` 和 `data_tsv`，是有界结果，不能作为完整导出：
+查询返回读取／展示计数、截断原因和 `data_tsv`，是有界结果，不能作为完整导出。`rows_returned` 保持已缓冲行数含义，与 `rows_read` 相同，不包含探测是否超限时多读的一行；`rows_displayed` 是正文实际展示的完整 TSV 数据行数。摘要使用同一展示计数和截断状态：
 
 | 限制 | 返回含义 |
 | --- | --- |
-| 行与列 | 最多读取 `maxRows` 行、100 列；超过行或列限制时 `truncated: true` |
-| 单元格 | 文本换行和制表符被展平；超过 512 字符后加省略号，此项不改变 `truncated` |
-| 总输出 | 写入行内容前检查 32,000 字符预算；放不下时输出 `<output truncated at 32000 characters>`，但不回写先前的 `truncated` 或 `rows_returned` |
+| 行与列 | 最多缓冲 `maxRows` 行、100 列；超限分别记为 `row_limit`、`column_limit` |
+| 单元格 | 先脱敏，再展平换行和制表符；超过 512 字符时裁剪并添加省略号，总长仍不超过 512 字符，保留完整代理对。`cells_truncated` 统计缓冲结果中被裁剪的单元格，原因记为 `cell_limit` |
+| 总输出 | 32,000 字符预算包含元数据、表头及换行；只展示放得下的完整数据行，空间不足记为 `output_budget`，并更新 `rows_displayed` 和摘要 |
 | 脱敏 | 识别到敏感列名或 SQL 敏感标识符时显示 `<redacted>`，并对文本脱敏；任意 JSON、编码许可证或普通列名不因此保证安全 |
 
-因此 `rows_returned` 是缓冲区行数，可能大于最终显示行数；`truncated: false` 也不证明单元格或输出完整。需要总数时使用明确聚合，需要细节时缩小列和条件；不要仅凭有限列表推断全部记录。`txt_value`、许可证 `value` 等载荷应只提取已确认必需且非敏感的字段，不能通过别名绕过脱敏。
+`truncated` 汇总上述全部截断；`truncation_reasons` 列出具体原因，无截断时为 `none`。截断同时通过 `PartialResultMessage` 进入统一活动呈现和恢复记录，调用仍属于成功取得部分结果。兼容只提供 `IsTruncated` 的旧执行器时，无法细分的来源截断记为 `query_result`。这些字段说明本次查询结果的展示完整性，不证明 SQL 条件覆盖了业务所需的全部数据。需要总数时使用明确聚合，需要细节时缩小列和条件；不要仅凭有限列表推断全部记录。`txt_value`、许可证 `value` 等载荷应只提取已确认必需且非敏感的字段，不能通过别名绕过脱敏。`CopilotDatabaseSqlPolicyTests` 使用假执行器验证展示计数、各类截断、预算和脱敏的一致性。
 
 `ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`；`timeoutSeconds` 范围 1–60、默认 30。执行必须经过原生审批和 SQL 校验，不表示每次调用都会弹窗或执行。审批说明中的 SQL 预览经过脱敏，超过 1,000 字符后截断；需要完整审视时应先呈现不含秘密的完整语句和范围，不能把片段当成完整批准依据。无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会给出加强警告，警告本身不是一律拒绝规则。
 

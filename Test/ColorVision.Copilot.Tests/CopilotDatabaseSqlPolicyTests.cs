@@ -164,6 +164,143 @@ public sealed class CopilotDatabaseSqlPolicyTests
         Assert.Contains("Do not retry", result.ErrorMessage, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    public async Task CompleteQueryOutputReportsDisplayedRowsAndPreservesRedaction(int rowCount)
+    {
+        IReadOnlyList<string>[] rows = Enumerable.Range(0, rowCount)
+            .Select(index => (IReadOnlyList<string>)[index.ToString(), "first\nsecond\tlast", "must-not-be-disclosed"])
+            .ToArray();
+
+        var result = await QueryAsync(new CopilotDatabaseQueryResult(["id", "note", "password"], rows, false));
+
+        Assert.True(result.Success);
+        Assert.Contains($"read {rowCount} row(s), displayed {rowCount} row(s).", result.Summary, StringComparison.Ordinal);
+        Assert.Contains($"rows_returned: {rowCount}", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"rows_read: {rowCount}", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"rows_displayed: {rowCount}", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncated: false", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncation_reasons: none", result.Content, StringComparison.Ordinal);
+        Assert.Empty(result.PartialResultMessage);
+        Assert.DoesNotContain("must-not-be-disclosed", result.Content, StringComparison.Ordinal);
+        if (rowCount > 0)
+            Assert.Contains("first second last\t<redacted>", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task QueryOutputBudgetReportsOnlyCompleteDisplayedRowsInSummaryAndMetadata()
+    {
+        var cell = new string('x', 512);
+        IReadOnlyList<string>[] rows = Enumerable.Range(0, 100)
+            .Select(_ => (IReadOnlyList<string>)[cell])
+            .ToArray();
+
+        var result = await QueryAsync(new CopilotDatabaseQueryResult(["data"], rows, false));
+
+        var data = result.Content.Split("data_tsv:" + Environment.NewLine, StringSplitOptions.None)[1]
+            .Split(Environment.NewLine, StringSplitOptions.None).Skip(1).SkipLast(1).ToArray();
+        Assert.NotEmpty(data);
+        Assert.True(data.Length < rows.Length);
+        Assert.All(data, line => Assert.Equal(cell, line));
+        Assert.True(result.Content.Length <= 32_000);
+        Assert.Contains("rows_returned: 100", result.Content, StringComparison.Ordinal);
+        Assert.Contains("rows_read: 100", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"rows_displayed: {data.Length}", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncated: true", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncation_reasons: output_budget", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"read 100 row(s), displayed {data.Length} row(s) (truncated).", result.Summary, StringComparison.Ordinal);
+        Assert.NotEmpty(result.PartialResultMessage);
+        var captured = CopilotToolResultContract.Capture(result.ToolName, result);
+        Assert.True(captured.Success);
+        Assert.Equal(result.PartialResultMessage, CopilotToolObservation.FromResult(captured).PartialResultMessage);
+    }
+
+    [Theory]
+    [InlineData(512, false)]
+    [InlineData(513, true)]
+    public async Task QueryCellLimitIsReportedWithoutLosingTheDisplayedRow(int length, bool truncated)
+    {
+        var cell = new string('x', length);
+
+        var result = await QueryAsync(new CopilotDatabaseQueryResult(["data"], [[cell]], false));
+
+        Assert.Contains("rows_read: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains("rows_displayed: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"cells_truncated: {(truncated ? 1 : 0)}", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"truncated: {truncated.ToString().ToLowerInvariant()}", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"truncation_reasons: {(truncated ? "cell_limit" : "none")}", result.Content, StringComparison.Ordinal);
+        Assert.Equal(truncated ? new string('x', 511) + "…" : cell, result.Content.Split(Environment.NewLine)[^2]);
+        Assert.Equal(truncated, result.Summary.Contains("(truncated)", StringComparison.Ordinal));
+        Assert.Equal(truncated, !string.IsNullOrEmpty(result.PartialResultMessage));
+    }
+
+    [Fact]
+    public async Task QueryCellTruncationDoesNotSplitASurrogatePair()
+    {
+        var prefix = new string('x', 510);
+        var result = await QueryAsync(new CopilotDatabaseQueryResult(["data"], [[prefix + "😀z"]], false));
+
+        Assert.Equal(prefix + "…", result.Content.Split(Environment.NewLine)[^2]);
+        Assert.Contains("cells_truncated: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncation_reasons: cell_limit", result.Content, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(true, false, 0, "row_limit")]
+    [InlineData(false, true, 0, "column_limit")]
+    [InlineData(false, false, 1, "cell_limit")]
+    [InlineData(false, false, 0, "query_result")]
+    public async Task QueryOutputPreservesSourceTruncationReasons(bool rowsTruncated, bool columnsTruncated, int cellCount, string reason)
+    {
+        var cell = new string('x', 511) + "…";
+        var source = new CopilotDatabaseQueryResult(["data"], [[cell]], true)
+        {
+            RowsTruncated = rowsTruncated,
+            ColumnsTruncated = columnsTruncated,
+            TruncatedCellCount = cellCount,
+        };
+
+        var result = await QueryAsync(source);
+
+        Assert.Contains("rows_displayed: 1", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"cells_truncated: {cellCount}", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncated: true", result.Content, StringComparison.Ordinal);
+        Assert.Contains($"truncation_reasons: {reason}", result.Content, StringComparison.Ordinal);
+        Assert.Contains("read 1 row(s), displayed 1 row(s) (truncated).", result.Summary, StringComparison.Ordinal);
+        Assert.NotEmpty(result.PartialResultMessage);
+    }
+
+    [Fact]
+    public async Task QueryOutputBudgetIncludesMetadataAndColumnHeaders()
+    {
+        var result = await QueryAsync(new CopilotDatabaseQueryResult([new string('h', 31_900)], [], false));
+
+        Assert.True(result.Content.Length <= 32_000);
+        Assert.Contains("rows_displayed: 0", result.Content, StringComparison.Ordinal);
+        Assert.Contains("truncation_reasons: output_budget", result.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("data_tsv:", result.Content, StringComparison.Ordinal);
+        Assert.Contains("(truncated)", result.Summary, StringComparison.Ordinal);
+    }
+
+    private static Task<CopilotToolResult> QueryAsync(CopilotDatabaseQueryResult queryResult)
+    {
+        var service = new CopilotDatabaseSqlService(new QueryResultExecutor(queryResult));
+        return service.QueryAsync(new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?> { ["sql"] = "SELECT id FROM measurements" },
+        }, CancellationToken.None);
+    }
+
+    private sealed class QueryResultExecutor(CopilotDatabaseQueryResult result) : ICopilotDatabaseSqlExecutor
+    {
+        public bool IsAvailable => true;
+
+        public Task<CopilotDatabaseQueryResult> QueryAsync(string sql, int maxRows, int timeoutSeconds, CancellationToken cancellationToken) => Task.FromResult(result);
+
+        public Task<CopilotDatabaseMutationResult> ExecuteAsync(string sql, CopilotDatabaseSqlAnalysis analysis, int timeoutSeconds, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     private sealed class OutcomeUnknownExecutor : ICopilotDatabaseSqlExecutor
     {
         public bool IsAvailable => true;

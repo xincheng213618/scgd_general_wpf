@@ -148,11 +148,19 @@ namespace ColorVision.Copilot
 
         private static void ReduceToWeightBudget(List<CopilotRequestMessage> messages, int maximumWeight)
         {
-            while (SaturatingContentWeight(messages) > maximumWeight && TryRemoveOldestUnprotectedMessage(messages))
+            var weights = messages.Select(message => CopilotTokenEstimator.EstimateTextWeight(message.Content)).ToList();
+            // Each message is already bounded by the per-message int budget, so the
+            // weights of an int-sized list fit in a long without saturation.
+            var totalWeight = weights.Sum();
+            while (totalWeight > maximumWeight && TryGetOldestUnprotectedRange(messages, out var removeIndex, out var removeCount))
             {
+                for (var index = removeIndex; index < removeIndex + removeCount; index++)
+                    totalWeight -= weights[index];
+                messages.RemoveRange(removeIndex, removeCount);
+                weights.RemoveRange(removeIndex, removeCount);
             }
 
-            if (SaturatingContentWeight(messages) <= maximumWeight)
+            if (totalWeight <= maximumWeight)
                 return;
 
             var perMessageBudget = Math.Max(1, maximumWeight / messages.Count);
@@ -169,8 +177,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool TryRemoveOldestUnprotectedMessage(List<CopilotRequestMessage> messages)
+        private static bool TryGetOldestUnprotectedRange(List<CopilotRequestMessage> messages, out int removeIndex, out int removeCount)
         {
+            removeIndex = 0;
+            removeCount = 0;
             if (messages.Count <= 1)
                 return false;
 
@@ -178,24 +188,25 @@ namespace ColorVision.Copilot
                 string.Equals(message.Role, "user", StringComparison.Ordinal));
             if (lastUserIndex < 0)
             {
-                messages.RemoveAt(0);
+                removeCount = 1;
                 return true;
             }
 
             if (lastUserIndex > 1)
             {
-                var removeCount = lastUserIndex > 2
+                removeIndex = 1;
+                removeCount = lastUserIndex > 2
                     && string.Equals(messages[1].Role, "user", StringComparison.Ordinal)
                     && string.Equals(messages[2].Role, "assistant", StringComparison.Ordinal)
                         ? 2
                         : 1;
-                messages.RemoveRange(1, removeCount);
                 return true;
             }
 
             if (lastUserIndex == 0 && messages.Count > 2)
             {
-                messages.RemoveAt(1);
+                removeIndex = 1;
+                removeCount = 1;
                 return true;
             }
 
@@ -275,19 +286,6 @@ namespace ColorVision.Copilot
         {
             var count = messages.Sum(message => (long)message.Content.Length);
             return (int)Math.Min(int.MaxValue, count);
-        }
-
-        private static long SaturatingContentWeight(IEnumerable<CopilotRequestMessage> messages)
-        {
-            long weight = 0;
-            foreach (var message in messages)
-            {
-                var messageWeight = CopilotTokenEstimator.EstimateTextWeight(message.Content);
-                if (long.MaxValue - weight < messageWeight)
-                    return long.MaxValue;
-                weight += messageWeight;
-            }
-            return weight;
         }
     }
 }

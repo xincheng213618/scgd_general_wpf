@@ -39,6 +39,8 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 
 更换端口会重启监听器；同端口更换 token 会清除现有会话。关闭服务、重启应用或会话过期后，客户端需要重新初始化。`Regenerate` 先修改设置草稿，保存后才影响正在运行的服务。
 
+本地 MCP 的启动与 Chat 面板是否显示无关。服务关闭或缺少 token 时不创建请求处理器及其工具元数据；首次启用时先准备处理器，再开始监听。关闭或重启监听器会清理已创建处理器的会话，后续启用复用处理器，不依靠打开 Chat 才能接受外部请求。
+
 ## HTTP 协议与会话
 
 端点是 `http://127.0.0.1:<port>/mcp`。当前实现返回 JSON，使用 MCP 会话头；它不是完整的 Streamable HTTP 功能实现，不能据此假定支持 SSE、订阅或流恢复。
@@ -80,6 +82,8 @@ ColorVision 本地 MCP 让同一台计算机上的 MCP 客户端读取应用上�
 | 菜单与语言 | `execute_menu`、`set_language` | 菜单默认 dry-run，实际执行按匹配菜单的风险分类处理；语言修改需确认，可能触发现有重启提示，见下文 |
 | 执行批准 | `confirm_action` | 只消费相同会话、工作区和参数绑定的已批准动作 |
 | Agent 事件 | `get_agent_task_events` | 标准 HTTP 外部会话没有 Copilot conversation 绑定，返回 `agent_task_events_scope_required`；工具出现在列表中不代表可以读取进程级任务历史 |
+
+`diagnose_flow_failure` 分开呈现当前流程状态、Flow 宿主筛选出的失败相关摘录、节点／模板配置和最近应用日志，不通过关键词生成故障原因。`FailureEvidence` / `RecentFailureSummary` 也是宿主提供的文本线索，不等于结构化异常或已确认根因；`Running` 状态、`Timeout` 等配置字段及日志搜索词本身不构成故障证据。各来源独立采集，最近日志尚未按运行批次或节点关联，必须先对齐原始记录中的流程／批次、节点与时间，再提出参数调整。输出中的日志行数是请求上限；来源缺失或日志读取失败会明确报告，不能解释为流程成功。`CopilotFlowDiagnosisTests` 覆盖正常配置、真实错误摘录、旧摘要兼容和日志读取失败的区分。
 
 ### 只读资源
 
