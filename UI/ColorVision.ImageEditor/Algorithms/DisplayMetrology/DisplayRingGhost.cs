@@ -12,9 +12,9 @@ public sealed partial class DisplayMetrologyProvider
 {
     private const int RingAngles = 720;
     private sealed record RingBand(int Peak, int Left, int Right, int LeftBase, int RightBase, double Prominence);
-    private sealed record RingReading(RingBand Band, double Mean, double Background, double Coverage);
+    private sealed record RingReading(RingBand Band, double Mean, double Background, double Coverage, RotatedRect? Region = null);
 
-    // Dedicated complete, approximately concentric annulus measurement. Generic blob Ghost remains unchanged.
+    // Dedicated complete inner-annulus measurement, with independent ghost geometry refinement.
     private static void MeasureRingGhost(float[] signal, AlgorithmImageBuffer image, RingGhostMeasurementParameters p,
         List<AlgorithmArtifact> artifacts, CancellationToken token)
     {
@@ -51,26 +51,24 @@ public sealed partial class DisplayMetrologyProvider
         double requiredProminence = Math.Max(primary.Mean * .0001, 6 * noise);
         int start = Math.Max(3, (int)(main * .15));
         int end = Math.Min((int)(main * .9), mainBand.Left - Math.Max(window, mainBand.Right - mainBand.Left));
-        RingBand[] coarseBands = FindRingPeaks(coarseProfile, start, end)
-            .Select(peak => FindRingCandidateBand(coarseProfile, peak, start, end))
-            .Where(band => band.Prominence >= requiredProminence).ToArray();
         var found = new List<RingReading>();
-        foreach (int r in FindRingPeaks(profile, start, end))
+        // Displacement can spread a narrow ring across radii until the angular median loses its peak.
+        // The angular mean may propose it, but such a proposal must pass independent full-ring fitting.
+        var proposals = FindGhostSeeds(profile, coarseProfile, start, end, requiredProminence).Select(b => (Band: b, RequiresFit: false))
+            .Concat(FindGhostSeeds(SmoothRingProfile(mean, Math.Max(1, radius * .0025 / step)),
+                SmoothRingProfile(mean, Math.Max(2, radius * .01 / step)), start, end, requiredProminence)
+                .Select(b => (Band: b, RequiresFit: true)));
+        foreach (var proposal in proposals)
         {
             token.ThrowIfCancellationRequested();
-            RingBand band = FindRingCandidateBand(profile, r, start, end);
-            if (band.Prominence < requiredProminence || band.Right - band.Left < 2
-                || band.Left <= start || band.Right >= end) continue;
-            // Quantized row noise can create tiny radial peaks. Require support after smoothing
-            // over 1% of the primary radius too. Match the bands, since a broad plateau's maximum
-            // can move far between scales even with tiny noise. Fine-scale valleys still separate rings.
-            if (!coarseBands.Any(coarse => coarse.Left <= band.Right && band.Left <= coarse.Right)) continue;
-            var reading = ReadRingBand(polar, length, band, requiredProminence * .2);
+            var reading = RefineGhostRing(signal, width, height, ellipse, polar, length,
+                proposal.Band, start, end, step, requiredProminence, mainBand.Left * step, token);
+            if (proposal.RequiresFit && !reading.Region.HasValue) continue;
             if (reading.Coverage >= 2.0 / 3 && reading.Mean > reading.Background) found.Add(reading);
         }
         // Broad peaks may contain several local maxima. Keep one measurement for overlapping bands.
         var accepted = new List<RingReading>();
-        foreach (var reading in found.OrderByDescending(v => v.Band.Prominence))
+        foreach (var reading in found.OrderByDescending(v => v.Region.HasValue).ThenByDescending(v => v.Band.Prominence))
         {
             if (accepted.Any(v => v.Band.Left <= reading.Band.Right && reading.Band.Left <= v.Band.Right)) continue;
             accepted.Add(reading);
@@ -86,7 +84,7 @@ public sealed partial class DisplayMetrologyProvider
         {
             "亮度比为原图区域平均信号比；只有输入为经校正的线性亮度信号时，才可解释为亮度比。",
             "局部背景扣除值用于观察弱环对比，不替代客户 GMR 测量口径；未作瑞淀数值等效或产品合格判定。",
-            "只搜索主像内侧约 0.15～0.90 倍半径的近同心完整环；外侧、偏心或重叠鬼影需要另行评价。"
+            "从主像内侧约 0.15～0.90 倍半径搜索完整弱环，自动精修可跟踪的偏心椭圆；外侧、交叠或无法可靠跟踪的鬼影需要另行评价。"
         };
         if (!mapped) warnings.Add("物理阶次未确认或未恰好分离出两个候选，GMR1/GMR2 留空；候选编号按半径从外到内排列，不代表阶次。");
         if (accepted.Count < 2) warnings.Add("未可靠分离出两个鬼影环，弱环可能与背景或光晕混合。未检出不等于 0，也不能判定通过。");
@@ -99,13 +97,16 @@ public sealed partial class DisplayMetrologyProvider
             string label = order.HasValue ? $"{order}阶候选" : $"候选{(char)('A' + i)}";
             rows.Add(Row(("候选", label), ("阶次", order), ("平均信号比_%", ratio), ("扣局部背景对比_%", contrast),
                 ("环半径_px", v.Band.Peak * step), ("内边界_px", v.Band.Left * step), ("外边界_px", v.Band.Right * step),
-                ("环区平均信号", v.Mean), ("局部背景信号", v.Background), ("圆周支持率", v.Coverage)));
-            AddRingBoundary(shapes, label + "内边界", ellipse, v.Band.Left * step);
-            AddRingBoundary(shapes, label + "外边界", ellipse, v.Band.Right * step);
+                ("环区平均信号", v.Mean), ("局部背景信号", v.Background), ("圆周支持率", v.Coverage),
+                ("中心X_px", (v.Region ?? ellipse).Center.X), ("中心Y_px", (v.Region ?? ellipse).Center.Y),
+                ("轴宽_px", (v.Region ?? ellipse).Size.Width), ("轴高_px", (v.Region ?? ellipse).Size.Height),
+                ("旋转_deg", (v.Region ?? ellipse).Angle), ("独立椭圆精修", v.Region.HasValue)));
+            AddRingBoundary(shapes, label + "内边界", v.Region ?? ellipse, v.Band.Left * step);
+            AddRingBoundary(shapes, label + "外边界", v.Region ?? ellipse, v.Band.Right * step);
             if (order.HasValue) Metrics(artifacts, ($"GMR{order}_percent", ratio, "%"));
             Metrics(artifacts, ($"ring_candidate_{(char)('A' + i)}_percent", ratio, "%"));
         }
-        Table(artifacts, "ring-ghost-candidates", ["候选", "阶次", "平均信号比_%", "扣局部背景对比_%", "环半径_px", "内边界_px", "外边界_px", "环区平均信号", "局部背景信号", "圆周支持率"], rows);
+        Table(artifacts, "ring-ghost-candidates", ["候选", "阶次", "平均信号比_%", "扣局部背景对比_%", "环半径_px", "内边界_px", "外边界_px", "环区平均信号", "局部背景信号", "圆周支持率", "中心X_px", "中心Y_px", "轴宽_px", "轴高_px", "旋转_deg", "独立椭圆精修"], rows);
         Table(artifacts, "ring-ghost-quality", ["说明"], warnings.Select(w => (IReadOnlyDictionary<string, JsonElement>)Row(("说明", w))).ToList());
         Metrics(artifacts, ("ring_candidate_count", accepted.Count, "count"), ("ring_primary_radius", main * step, "px"),
             ("ring_primary_mean", primary.Mean, "relative-signal"), ("ring_detection_prominence", requiredProminence / primary.Mean * 100, "%"));
@@ -257,18 +258,28 @@ public sealed partial class DisplayMetrologyProvider
         return new RingBand(peak, left, right, leftBase, rightBase, prominence);
     }
 
-    private static RingReading ReadRingBand(double[] polar, int length, RingBand band, double minimumContrast)
+    private static RingReading ReadRingBand(double[] polar, int length, RingBand band, double minimumContrast, bool localBackground = false)
     {
         double total = 0, totalBackground = 0, weights = 0;
         var sectors = new double[24];
         for (int a = 0; a < RingAngles; a++)
         {
+            int leftBase = band.LeftBase, rightBase = band.RightBase;
+            if (localBackground)
+            {
+                // A displaced ring approaches the primary halo in only some directions.
+                // Locate the background valley independently along each ray.
+                for (int r = leftBase; r < band.Left; r++)
+                    if (polar[a * length + r] < polar[a * length + leftBase]) leftBase = r;
+                for (int r = band.Right + 1; r <= band.RightBase; r++)
+                    if (polar[a * length + r] < polar[a * length + rightBase]) rightBase = r;
+            }
             double sum = 0, background = 0, weight = 0;
             for (int r = band.Left; r <= band.Right; r++)
             {
-                double t = (double)(r - band.LeftBase) / Math.Max(1, band.RightBase - band.LeftBase);
+                double t = (double)(r - leftBase) / Math.Max(1, rightBase - leftBase);
                 // Integrate radius-weighted samples: equal-width annuli have different areas.
-                double b = polar[a * length + band.LeftBase] * (1 - t) + polar[a * length + band.RightBase] * t;
+                double b = polar[a * length + leftBase] * (1 - t) + polar[a * length + rightBase] * t;
                 sum += polar[a * length + r] * r; background += b * r; weight += r;
             }
             total += sum; totalBackground += background; weights += weight;

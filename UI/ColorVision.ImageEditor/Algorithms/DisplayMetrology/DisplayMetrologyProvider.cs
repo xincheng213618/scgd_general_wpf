@@ -16,7 +16,6 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
     public const int MaximumFramePixels = 8_388_608;
     public const int MaximumRgbCrossPixels = 67_108_864;
     public const int MaximumDustPixels = 134_217_728;
-    public const int MaximumRingGhostPixels = 33_554_432;
     public const long MaximumTotalPixels = 33_554_432;
     private const int MaximumComponents = 2048;
     public AlgorithmProviderMetadata Metadata { get; } = new("colorvision.display-metrology.cpu", "ColorVision Display Metrology",
@@ -44,15 +43,16 @@ public sealed partial class DisplayMetrologyProvider : IImageAlgorithmProvider, 
             var p = (DisplayMetrologyParameters)context.Parameters;
             if (!p.Validate().IsValid) throw new MeasurementException("invalid_parameters", "参数未通过校验。");
             var first = context.Inputs[0].Image;
+            if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32))
+                throw new MeasurementException("image_budget_exceeded", "图像最小为 32×32。");
             int frameBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
-                : context.Descriptor.Id == DisplayMetrologyIds.RingGhost ? MaximumRingGhostPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumFramePixels;
             long totalBudget = context.Descriptor.Id == DisplayMetrologyIds.Dust ? MaximumDustPixels
                 : context.Descriptor.Id == DisplayMetrologyIds.RgbCrossRegistration ? MaximumRgbCrossPixels : MaximumTotalPixels;
-            if (context.Inputs.Any(i => i.Image.Width < 32 || i.Image.Height < 32
-                || (long)i.Image.Width * i.Image.Height > frameBudget)
+            if (context.Descriptor.Id != DisplayMetrologyIds.RingGhost
+                && (context.Inputs.Any(i => (long)i.Image.Width * i.Image.Height > frameBudget)
                 || context.Inputs.Sum(i => (long)i.Image.Width * i.Image.Height) > totalBudget
-                || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024)
+                || context.Inputs.Sum(i => (long)i.Image.Stride * i.Image.Height) > 512L * 1024 * 1024))
                 throw new MeasurementException("image_budget_exceeded", $"图像最小为 32×32，单帧最多 {frameBudget} 像素，总计最多 {totalBudget} 像素 / 512 MiB。");
             if (context.Invocation.Roi != null && context.Descriptor.Id != DisplayMetrologyIds.RgbCrossRegistration) throw new MeasurementException("roi_unsupported", "请先裁到完整测试图案；本算法不隐式裁剪 ROI。");
             if (context.Inputs.Any(i => i.Image.Width != first.Width || i.Image.Height != first.Height || i.Image.Format != first.Format))

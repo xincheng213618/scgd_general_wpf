@@ -139,6 +139,87 @@ public sealed class RingGhostMeasurementTests
         }
     }
 
+    // Fixed pixel/byte budgets must not reject valid field images or their persisted results.
+    [Fact]
+    public async Task FullResolutionRingAboveFormerPixelAndByteBudgetsIsAccepted()
+    {
+        const int width = 10000, height = 10000, radius = 1000;
+        var data = new byte[width * height * 6];
+        for (int y = -radius - 16; y <= radius + 16; y++)
+            for (int x = -radius - 16; x <= radius + 16; x++)
+            {
+                int squared = x * x + y * y;
+                if (squared >= (radius - 16) * (radius - 16) && squared <= (radius + 16) * (radius + 16))
+                    for (int channel = 0; channel < 3; channel++)
+                        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(((y + height / 2) * width + x + width / 2) * 6 + channel * 2, 2), 40000);
+            }
+        using var image = new AlgorithmImageBuffer(width, height, width * 6, AlgorithmImageFormat.Bgr48, data);
+        using var result = await Run(image);
+        Assert.True(result.Status == AlgorithmResultStatus.Succeeded, string.Join(";", result.Failures.Select(f => f.Message)));
+        Assert.Empty(result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows);
+        // Persistence must accept the same image domain as the algorithm, including normal zero results.
+        new ColorVision.Engine.Templates.Jsons.RingGhost.LocalRingGhostResult
+        {
+            ImageWidth = width, ImageHeight = height, CandidateCount = 0,
+            OrderMapping = RingGhostOrderMapping.OuterIsFirst, MeasurementStatus = "NOT_DETECTED",
+            Regions = result.GetArtifact<AlgorithmGeometryArtifact>("display-regions")!.Geometries.ToArray(),
+        }.Validate();
+    }
+
+    // Independent ring geometry must follow real displaced optical paths, not the main-image centre.
+    [Theory]
+    [InlineData(20, 0, false)]
+    [InlineData(0, 25, false)]
+    [InlineData(25, 15, true)]
+    [InlineData(-30, -20, true)]
+    public async Task DisplacedGhostRingsUseTheirOwnMeasurementEllipses(int dx, int dy, bool second)
+    {
+        const int center = 560;
+        using var image = DisplacedPattern(dx, dy, second);
+        using var result = await Run(image, RingGhostOrderMapping.OuterIsFirst);
+        Assert.True(result.Status == AlgorithmResultStatus.Succeeded, string.Join(";", result.Failures.Select(f => f.Message)));
+        var rows = result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows;
+        Assert.Equal(second ? 2 : 1, rows.Count);
+        Assert.All(rows, row =>
+        {
+            Assert.True(row["独立椭圆精修"].GetBoolean());
+            Assert.InRange(row["中心X_px"].GetDouble(), center + dx - 4, center + dx + 4);
+            Assert.InRange(row["中心Y_px"].GetDouble(), center + dy - 4, center + dy + 4);
+            Assert.InRange(row["圆周支持率"].GetDouble(), 2.0 / 3, 1);
+        });
+        Assert.InRange(rows[0]["平均信号比_%"].GetDouble(), .72, .88);
+        if (second) Assert.InRange(rows[1]["平均信号比_%"].GetDouble(), .25, .35);
+    }
+
+    // Angular-mean proposals must not turn a bright partial arc into a complete ghost ring.
+    [Theory]
+    [InlineData(.25)]
+    [InlineData(.5)]
+    public async Task DisplacedPartialArcDoesNotManufactureACompleteGhost(double visibleFraction)
+    {
+        using var image = DisplacedPattern(20, 0, false, visibleFraction);
+        using var result = await Run(image);
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.Empty(result.GetArtifact<AlgorithmTableArtifact>("ring-ghost-candidates")!.Rows);
+    }
+
+    private static AlgorithmImageBuffer DisplacedPattern(int dx, int dy, bool second, double visibleFraction = 1)
+    {
+        const int size = 1120, center = size / 2;
+        var data = new byte[size * size * 2];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                double r = Math.Sqrt(Math.Pow(x - center, 2) + Math.Pow(y - center, 2));
+                double g = Math.Sqrt(Math.Pow(x - center - dx, 2) + Math.Pow(y - center - dy, 2));
+                bool visible = Math.Abs(Math.Atan2(y - center - dy, x - center - dx)) <= Math.PI * visibleFraction;
+                double value = .6 * Gaussian(r - 280, 12) + (visible ? .0048 * Gaussian(g - 196, 12)
+                    + (second ? .0018 * Gaussian(g - 110, 12) : 0) : 0) + .00003;
+                BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan((y * size + x) * 2, 2), (ushort)Math.Round(value * 65535));
+            }
+        return new AlgorithmImageBuffer(size, size, size * 2, AlgorithmImageFormat.Gray16, data);
+    }
+
     private static ValueTask<AlgorithmResult> Run(AlgorithmImageBuffer image,
         RingGhostOrderMapping mapping = RingGhostOrderMapping.Unconfirmed, double decodeExponent = 1)
         => ImageAlgorithmPlatform.Runner.RunAsync(new AlgorithmRunRequest

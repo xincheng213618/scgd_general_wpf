@@ -61,7 +61,7 @@ public sealed class LocalRingGhostResult
     public void Validate()
     {
         if (Schema != SchemaId || !double.IsFinite(GMR1) || !double.IsFinite(GMR2) || GMR1 < 0 || GMR2 < 0
-            || ImageWidth <= 0 || ImageHeight <= 0 || (long)ImageWidth * ImageHeight > 33_554_432
+            || ImageWidth <= 0 || ImageHeight <= 0
             || CandidateCount is < 0 or > 2 || OrderMapping is not RingGhostOrderMapping.OuterIsFirst and not RingGhostOrderMapping.InnerIsFirst)
             throw new InvalidDataException("圆环鬼影结果格式、阶次或数值无效。");
         string expectedStatus = CandidateCount == 0 ? "NOT_DETECTED" : CandidateCount == 1 ? "SECOND_NOT_DETECTED" : "MEASURED";
