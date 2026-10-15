@@ -25,6 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         private double fovDist = 9410;
         private double cameraDegrees = 74.2;
         private double minimumConfidence = 0.25;
+        private FovMeasurementMode measurementMode;
         private double luminanceBoundaryRatio = FovLuminousAreaDetector.DefaultBoundaryRatio;
 
         [Category("FOV")]
@@ -46,9 +47,18 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             set { cameraDegrees = value; OnPropertyChanged(); }
         }
 
+        [Category("FOV")]
+        [DisplayName("测量模式")]
+        [Description("默认四角模式保持原有计算；轮廓模式支持曲边、圆形、椭圆等完整填充轮廓，独立读图测量中心水平、垂直及斜向跨度，使用相同的相机角度参数。")]
+        public FovMeasurementMode MeasurementMode
+        {
+            get => measurementMode;
+            set { measurementMode = value; OnPropertyChanged(); }
+        }
+
         [Category("发光区定位")]
         [DisplayName("最低可信度")]
-        [Description("RobustV2 发光区定位结果低于此可信度时拒绝计算；范围 0 到 1。")]
+        [Description("所选模式的发光区定位结果低于此可信度时拒绝计算；范围 0 到 1。")]
         [Range(0d, 1d)]
         [PropertyEditorType(typeof(SliderPropertiesEditor))]
         public double MinimumConfidence
@@ -126,6 +136,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             double fovDist = options.FovDist;
             double cameraDegrees = options.CameraDegrees;
             double minimumConfidence = options.MinimumConfidence;
+            FovMeasurementMode mode = options.MeasurementMode;
             long revision = lease.Revision;
             _ = Task.Run(() =>
             {
@@ -141,6 +152,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                             roi,
                             fovDist,
                             cameraDegrees,
+                            mode,
                             minimumConfidence);
                     }
                     stopwatch.Stop();
@@ -196,15 +208,16 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                 $"VerticalFieldOfViewAngle: {measurement.DirectionalVerticalFovDegrees:F4}",
                 $"DiagonalFieldOfViewAngle: {measurement.DiagonalFovDegrees:F4}",
                 string.Empty,
-                $"H_Fov: {measurement.HorizontalFovDegrees:F4}",
-                $"V_FOV: {measurement.VerticalFovDegrees:F4}",
-                $"LB-RT: {measurement.LeftDownToRightUpDegrees:F4}",
-                $"LT-RB: {measurement.LeftUpToRightDownDegrees:F4}",
+                $"H_Fov{(measurement.Boundary == null ? "" : "（轮廓横向包络）")}: {measurement.HorizontalFovDegrees:F4}",
+                $"V_FOV{(measurement.Boundary == null ? "" : "（轮廓纵向包络）")}: {measurement.VerticalFovDegrees:F4}",
+                $"{(measurement.Boundary == null ? "LB-RT" : "中心斜向 /")}: {measurement.LeftDownToRightUpDegrees:F4}",
+                $"{(measurement.Boundary == null ? "LT-RB" : "中心斜向 \\")}: {measurement.LeftUpToRightDownDegrees:F4}",
                 string.Empty,
                 $"FovDist: {measurement.FovDist:G12}",
                 $"cameraDegrees: {measurement.CameraDegrees:G12}",
                 $"定位可信度: {result.Calculation!.Detection?.Confidence?.ToString("F3") ?? "N/A"}",
-                $"边界来源: {result.Calculation!.BoundaryMode}（几何四角）",
+                $"测量模式: {(measurement.Mode == FovMeasurementMode.CurvedBoundary ? "轮廓（实际中心边界，D 为两条中心斜向跨度均值）" : "四角")}",
+                $"边界来源: {result.Calculation!.BoundaryMode}",
                 $"耗时: {result.TotalTime} ms"
             ]);
         }

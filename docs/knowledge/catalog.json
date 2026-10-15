@@ -384,7 +384,7 @@
       "knowledge_id": "algorithms.fov-local",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。",
+      "summary": "本地 FOV V2 的默认四角与独立轮廓模式、相机角度参数、中心截线及包络口径、叠图和 FOV 2.0 结果兼容契约。",
       "aliases": [
         "本地FOV计算(V2)",
         "FOV 计算 (V2)",
@@ -398,6 +398,7 @@
       ],
       "code_paths": [
         "UI/ColorVision.Core/FovCalculation.cs",
+        "UI/ColorVision.Core/FovCurvedBoundaryDetection.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs",
         "Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs",
         "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
@@ -405,7 +406,8 @@
         "UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"
+        "Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs",
+        "Test/ColorVision.UI.Tests/FovCalculationTests.cs"
       ],
       "related": [
         "algorithms.find-light-area",

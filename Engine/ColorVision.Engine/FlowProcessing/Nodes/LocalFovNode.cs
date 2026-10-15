@@ -142,7 +142,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             RoiRect roi,
             double fovDist,
             double cameraDegrees,
-            IReadOnlyList<LuminousAreaPoint>? coarseCorners);
+            IReadOnlyList<LuminousAreaPoint>? coarseCorners,
+            FovMeasurementMode mode);
         LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request);
         void Publish(LocalFovPublishRequest request);
     }
@@ -184,12 +185,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             RoiRect roi,
             double fovDist,
             double cameraDegrees,
-            IReadOnlyList<LuminousAreaPoint>? coarseCorners) =>
+            IReadOnlyList<LuminousAreaPoint>? coarseCorners,
+            FovMeasurementMode mode) =>
             FovCalculator.DetectAndCalculate(
                 image,
                 roi,
                 fovDist,
                 cameraDegrees,
+                mode,
                 LocalFindLuminousAreaNode.DefaultMinimumConfidence,
                 coarseCorners: coarseCorners);
         public LocalFovPersistenceResult Persist(LocalFovPersistenceRequest request) => LocalFovResultPersistence.Save(request);
@@ -331,6 +334,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private readonly ILocalFovNodeServices services;
         private double fovDist = 9410;
         private double cameraDegrees = 74.2;
+        private FovMeasurementMode measurementMode;
         private double luminanceBoundaryRatio = FovLuminousAreaDetector.DefaultBoundaryRatio;
 
         [Category("FOV")]
@@ -348,6 +352,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             get => cameraDegrees;
             set { cameraDegrees = value; OnPropertyChanged(); }
+        }
+
+        [Category("FOV")]
+        [STNodeProperty("测量模式", "默认四角模式保持原有计算；轮廓模式独立读图，支持曲边及非四边形，测量中心水平、垂直与斜向跨度。相机角度参数不变。", true)]
+        public FovMeasurementMode MeasurementMode
+        {
+            get => measurementMode;
+            set { measurementMode = value; OnPropertyChanged(); }
         }
 
         // Kept for old serialized nodes; no longer a geometric FOV setting.
@@ -385,8 +397,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             ArgumentNullException.ThrowIfNull(action);
             double configuredFovDist = FovDist;
             double selectedCameraDegrees = CameraDegrees;
+            FovMeasurementMode selectedMode = MeasurementMode;
             FovCalculator.ValidateCalibration(configuredFovDist, selectedCameraDegrees);
-            LocalFovInputContext input = ResolveInput(action);
+            LocalFovInputContext input = ResolveInput(action, selectedMode);
             LocalFlowFrame? ownedFrame = null;
             LocalFlowFrameLease? lease = null;
             string? imageFile = null;
@@ -395,9 +408,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 string? frameCameraDeviceCode = null;
                 int frameMasterId = -1;
                 Guid? frameId = null;
-                if (input.Corners == null)
+                if (input.Corners == null || selectedMode == FovMeasurementMode.CurvedBoundary)
                 {
-                    LocalFlowFrame frame = ResolveFrame(action, input, out ownedFrame, out imageFile);
+                    LocalFlowFrame frame = ResolveFrame(action, input, out ownedFrame, out imageFile,
+                        requireSourceMatch: input.LightAreaMasterId != null);
                     lease = frame.Acquire();
                     if (!lease.IsFlipApplied)
                         throw new InvalidOperationException("当前图像的方向变换尚未完成，无法计算 FOV。");
@@ -429,7 +443,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         new RoiRect(),
                         selectedFovDist,
                         selectedCameraDegrees,
-                        input.Corners));
+                        input.Corners,
+                        selectedMode));
                     stopwatch.Stop();
                 }
                 catch (Exception calculationException) when (calculationException is InvalidOperationException or ArgumentException)
@@ -437,7 +452,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     stopwatch.Stop();
                     int failedTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                     int sourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
-                    object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, null, calculationException.Message);
+                    object failedParameters = BuildParameters(input, sourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, null, calculationException.Message);
                     LocalFovPersistenceResult failed = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                     {
                         BatchId = batch.Id,
@@ -460,7 +475,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 int successfulSourceMasterId = input.SourceMasterId > 0 ? input.SourceMasterId : frameMasterId;
-                object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, calculation, null);
+                object parameters = BuildParameters(input, successfulSourceMasterId, frameId, imageFile, calibration, selectedFovDist, selectedCameraDegrees, selectedMode, calculation, null);
                 LocalFovPersistenceResult persisted = FlowNodeTiming.Run("PersistResult", () => services.Persist(new LocalFovPersistenceRequest
                 {
                     BatchId = batch.Id,
@@ -514,10 +529,11 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             action.SerialNumber,
             FovDist,
             cameraDegrees = CameraDegrees,
-            Localization = "GeometricCorners"
+            MeasurementMode = MeasurementMode.ToString(),
+            Localization = MeasurementMode == FovMeasurementMode.CurvedBoundary ? "CurvedBoundary" : "GeometricCorners"
         });
 
-        private LocalFovInputContext ResolveInput(CVStartCFC action)
+        internal LocalFovInputContext ResolveInput(CVStartCFC action, FovMeasurementMode mode)
         {
             bool hasInput = TryGetInputMasterResult(action, 0, out int masterId, out int masterResultType, out _);
             if (!hasInput)
@@ -544,8 +560,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 AlgResultMasterModel areaResult = FlowNodeTiming.Run("ResolveAlgorithmResult", () => services.GetAlgorithmResult(masterId))
                     ?? throw new InvalidOperationException($"找不到 IN 发光区结果：MasterId={masterId}。");
-                IReadOnlyList<LuminousAreaPoint> corners = FlowNodeTiming.Run("LoadCorners", () => services.GetLightAreaCorners(masterId));
-                if (corners.Count != 4)
+                IReadOnlyList<LuminousAreaPoint>? corners = mode == FovMeasurementMode.CurvedBoundary
+                    ? null : FlowNodeTiming.Run("LoadCorners", () => services.GetLightAreaCorners(masterId));
+                if (corners != null && corners.Count != 4)
                     throw new InvalidOperationException($"IN 发光区结果必须包含 4 个角点，当前为 {corners.Count} 个。");
                 int sourceMasterId = ReadSourceMasterId(areaResult.Params);
                 MeasureResultImgModel? imageResult = sourceMasterId > 0
@@ -571,11 +588,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             CVStartCFC action,
             LocalFovInputContext input,
             out LocalFlowFrame? ownedFrame,
-            out string? imageFile)
+            out string? imageFile,
+            bool requireSourceMatch = false)
         {
             ownedFrame = null;
             imageFile = null;
-            if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null)
+            if (action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) && currentFrame != null
+                && (!requireSourceMatch || (input.SourceMasterId > 0
+                    ? currentFrame.MasterId == input.SourceMasterId
+                    : ResolveImageFile(input) is string sourcePath
+                        && string.Equals(sourcePath, currentFrame.ResolveResultImageFilePath(), StringComparison.OrdinalIgnoreCase))))
             {
                 FlowNodeTiming.Skip("OpenImage");
                 imageFile = currentFrame.ResolveResultImageFilePath();
@@ -613,6 +635,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             FovCameraCalibration calibration,
             double fovDist,
             double cameraDegrees,
+            FovMeasurementMode mode,
             FovCalculationResult? calculation,
             string? failureReason)
         {
@@ -622,7 +645,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 Formula = "2*atan((pixelDistance/FovDist)*tan(cameraDegrees/2))*180/PI",
                 FovDist = fovDist,
                 cameraDegrees,
-                BoundaryMode = calculation?.BoundaryMode ?? (input.Corners != null ? "UpstreamCorners" : "RobustV2"),
+                MeasurementMode = mode.ToString(),
+                BoundaryMode = calculation?.BoundaryMode ?? (mode == FovMeasurementMode.CurvedBoundary
+                    ? "CurvedBoundary" : input.Corners != null ? "UpstreamCorners" : "RobustV2"),
+                Boundary = calculation?.Measurement.Boundary,
                 CameraCalibration = new
                 {
                     calibration.CameraDeviceCode,

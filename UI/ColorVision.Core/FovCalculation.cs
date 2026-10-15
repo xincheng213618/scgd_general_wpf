@@ -1,12 +1,34 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace ColorVision.Core
 {
+    public enum FovMeasurementMode
+    {
+        [Description("四角（默认）")]
+        FourCorners = 0,
+
+        [Description("轮廓（曲边/非四边形）")]
+        CurvedBoundary = 1
+    }
+
+    public sealed record FovBoundaryGeometry
+    {
+        public required IReadOnlyList<LuminousAreaPoint> Contour { get; init; }
+        public required LuminousAreaPoint Center { get; init; }
+        public required LuminousAreaPoint Left { get; init; }
+        public required LuminousAreaPoint Right { get; init; }
+        public required LuminousAreaPoint Top { get; init; }
+        public required LuminousAreaPoint Bottom { get; init; }
+        /// <summary>NW, NE, SE, SW intersections of the two centre lines parallel to the contour bounding-box diagonals; these are not corners.</summary>
+        public required IReadOnlyList<LuminousAreaPoint> DiagonalPoints { get; init; }
+    }
+
     /// <summary>
-    /// Field-of-view values calculated from a luminous-area quadrilateral.
-    /// Corners always use the LT, RT, RB, LB order of <see cref="LuminousAreaDetectionResult"/>.
+    /// Field-of-view values from four corners or an independently detected contour.
+    /// Corners are empty in contour mode; its measurement endpoints are in Boundary.
     /// </summary>
     public sealed record FovMeasurement
     {
@@ -20,6 +42,8 @@ namespace ColorVision.Core
         public double LeftUpToRightDownDegrees { get; init; }
         public double FovDist { get; init; }
         public double CameraDegrees { get; init; }
+        public FovMeasurementMode Mode { get; init; }
+        public FovBoundaryGeometry? Boundary { get; init; }
     }
 
     public sealed record FovCalculationResult
@@ -29,7 +53,8 @@ namespace ColorVision.Core
         public LuminousAreaDetectionResult? CoarseDetection { get; init; }
         public bool UsedProvidedCorners { get; init; }
         public double LuminanceBoundaryRatio { get; init; }
-        public string BoundaryMode => UsedProvidedCorners ? "UpstreamCorners" : "RobustV2";
+        public string BoundaryMode => Measurement.Mode == FovMeasurementMode.CurvedBoundary
+            ? "CurvedBoundary" : UsedProvidedCorners ? "UpstreamCorners" : "RobustV2";
     }
 
     /// <summary>
@@ -37,6 +62,50 @@ namespace ColorVision.Core
     /// </summary>
     public static class FovCalculator
     {
+        public static FovCalculationResult DetectAndCalculate(
+            HImage image,
+            RoiRect roi,
+            double fovDist,
+            double cameraDegrees,
+            FovMeasurementMode mode,
+            double minimumConfidence = 0.25,
+            IReadOnlyList<LuminousAreaPoint>? coarseCorners = null)
+        {
+            ValidateCalibration(fovDist, cameraDegrees);
+            if (!double.IsFinite(minimumConfidence) || minimumConfidence < 0 || minimumConfidence > 1)
+                throw new ArgumentOutOfRangeException(nameof(minimumConfidence), "Minimum confidence must be between 0 and 1.");
+            if (mode == FovMeasurementMode.CurvedBoundary)
+            {
+                var boundary = FovCurvedBoundaryDetector.Detect(image, roi, minimumConfidence);
+                FovBoundaryGeometry geometry = boundary.Geometry;
+                double diagonal1 = PixelDistanceToDegrees(Distance(geometry.DiagonalPoints[3], geometry.DiagonalPoints[1]), fovDist, cameraDegrees);
+                double diagonal2 = PixelDistanceToDegrees(Distance(geometry.DiagonalPoints[0], geometry.DiagonalPoints[2]), fovDist, cameraDegrees);
+                return new FovCalculationResult
+                {
+                    Measurement = new FovMeasurement
+                    {
+                        Corners = Array.Empty<LuminousAreaPoint>(),
+                        Mode = mode,
+                        Boundary = geometry,
+                        FovDist = fovDist,
+                        CameraDegrees = cameraDegrees,
+                        HorizontalFovDegrees = PixelDistanceToDegrees(geometry.Contour.Max(point => point.X) - geometry.Contour.Min(point => point.X), fovDist, cameraDegrees),
+                        VerticalFovDegrees = PixelDistanceToDegrees(geometry.Contour.Max(point => point.Y) - geometry.Contour.Min(point => point.Y), fovDist, cameraDegrees),
+                        DirectionalHorizontalFovDegrees = PixelDistanceToDegrees(Distance(geometry.Left, geometry.Right), fovDist, cameraDegrees),
+                        DirectionalVerticalFovDegrees = PixelDistanceToDegrees(Distance(geometry.Top, geometry.Bottom), fovDist, cameraDegrees),
+                        DiagonalFovDegrees = (diagonal1 + diagonal2) / 2,
+                        LeftDownToRightUpDegrees = diagonal1,
+                        LeftUpToRightDownDegrees = diagonal2
+                    },
+                    Detection = boundary.Detection
+                };
+            }
+            if (mode != FovMeasurementMode.FourCorners)
+                throw new ArgumentOutOfRangeException(nameof(mode), "Unsupported FOV measurement mode.");
+            return DetectAndCalculate(image, roi, fovDist, cameraDegrees, minimumConfidence, coarseCorners: coarseCorners);
+        }
+
+        // Preserve the original public signature for already compiled callers.
         public static FovCalculationResult DetectAndCalculate(
             HImage image,
             RoiRect roi,

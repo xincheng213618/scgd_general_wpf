@@ -101,13 +101,13 @@ public sealed class LocalRingGhostNode : LocalFlowNodeBase
     private string imageFilePath = "", resultDirectory = "";
     private RingGhostOrderMapping orderMapping = RingGhostOrderMapping.OuterIsFirst;
 
-    [Category("鬼影"), STNodeProperty("一阶/二阶对应", "当前光波导方案默认外侧环为一阶、内侧环为二阶；一阶必有，单环归一阶，正常未检出输出 0。", true)]
+    [Category("鬼影"), STNodeProperty("一阶/二阶对应", "指定内外圈与一阶、二阶的对应关系；默认外圈一阶、内圈二阶。按当前一阶必有的方案，单环归一阶，正常未检出输出 0。", true)]
     public RingGhostOrderMapping OrderMapping { get => orderMapping; set { orderMapping = value; OnPropertyChanged(); } }
     [Category("输入"), PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
     [STNodeProperty("图像文件", "留空使用上游原位深内存帧或 IN 图像结果；填写仅作为无内存帧时的后备输入。", true)]
     public string ImageFilePath { get => imageFilePath; set { imageFilePath = value ?? ""; OnPropertyChanged(); } }
     [Category("保存"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
-    [STNodeProperty("结果目录", "留空保存到本机 ColorVision/Results/RingGhost。", true)]
+    [STNodeProperty("结果目录", "保存计算结果文件，供 ARVRPro 解析和历史回看。留空自动使用本机 LocalAppData 下的 ColorVision/Results/RingGhost，无需配置。", true)]
     public string ResultDirectory { get => resultDirectory; set { resultDirectory = value ?? ""; OnPropertyChanged(); } }
 
     public LocalRingGhostNode() : this(new LocalRingGhostNodeServices()) { }

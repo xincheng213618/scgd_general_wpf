@@ -6,11 +6,11 @@ namespace ColorVision.ImageEditor.Algorithms;
 
 public enum RingGhostOrderMapping
 {
-    [Description("未确认（只显示候选亮度比）")]
+    [Description("仅显示候选，不指定阶次")]
     Unconfirmed,
-    [Description("已确认：外侧候选为一阶，内侧为二阶")]
+    [Description("外圈一阶，内圈二阶")]
     OuterIsFirst,
-    [Description("已确认：内侧候选为一阶，外侧为二阶")]
+    [Description("内圈一阶，外圈二阶")]
     InnerIsFirst,
 }
 

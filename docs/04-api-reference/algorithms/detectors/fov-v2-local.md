@@ -2,22 +2,26 @@
 knowledge_id: "algorithms.fov-local"
 knowledge_type: "topic"
 status: "current"
-summary: "本地 FOV V2 的相机标定参数、角点复用与自动定位、视场角公式、ImageView 叠图和 FOV 2.0 结果兼容契约。"
+summary: "本地 FOV V2 的默认四角与独立轮廓模式、相机角度参数、中心截线及包络口径、叠图和 FOV 2.0 结果兼容契约。"
 aliases: ["本地FOV计算(V2)","FOV 计算 (V2)","FovDist","cameraDegrees","LocalFovNode","FovCalculator","FovImageViewRunner","HorizontalFieldOfViewAngle","DiagonalFieldOfViewAngle"]
-code_paths: ["UI/ColorVision.Core/FovCalculation.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs"]
+code_paths: ["UI/ColorVision.Core/FovCalculation.cs","UI/ColorVision.Core/FovCurvedBoundaryDetection.cs","Engine/ColorVision.Engine/FlowProcessing/Nodes/LocalFovNode.cs","Engine/ColorVision.Engine/PropertyEditor/CameraDegreesPropertiesEditor.cs","Engine/ColorVision.Engine/Templates/Jsons/FOV2","UI/ColorVision.ImageEditor/EditorTools/Algorithms/Calculate/AlgorithmResultOverlay.cs","UI/ColorVision.ImageEditor/Draw/FovOverlayRenderer.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/AlgorithmResultOverlayTests.cs","Test/ColorVision.UI.Tests/FovCalculationTests.cs"]
 related: ["algorithms.find-light-area","algorithms.roi-routes","engine.results","flow.node-extension"]
 ---
 
 # 本地 FOV V2
 
-本地 FOV V2 在 ColorVision 进程内完成发光区四角定位和水平、垂直、对角视场角计算，不依赖 `CV_algorithm.dll` 或远端算法服务。原有 FOV 2.0 模板和远端链路继续保留；本地流程节点以相同结果类型、版本和 JSON 字段写入现有结果链，供历史结果及 ProjectARVRPro 继续读取。
+本地 FOV V2 在 ColorVision 进程内完成发光区定位和水平、垂直、对角视场角计算，不依赖 `CV_algorithm.dll` 或远端算法服务。原有 FOV 2.0 模板和远端链路继续保留；本地流程节点以相同结果类型、版本和 JSON 字段写入现有结果链，供历史结果及 ProjectARVRPro 继续读取。
 
 ## 参数归属
 
 `FovDist` 和 `cameraDegrees` 都是与相机及镜头标定相关的 FOV 运行参数。Flow 和 ImageView 均直接展示并允许调整，默认值分别为 `9410` 和 `74.2`；不从物理相机配置隐式覆盖。
 
 本地 FOV 默认测量稳定发光区四角对应的几何视场。`LuminanceBoundaryRatio` 仅保留旧配置读取兼容，不显示为 FOV 参数，也不参与定位或计算。画面内部亮度下降不能自动改写几何边界；若产品规范要求亮度或对比度限定的有效视场，应另行确认参考量、阈值、扫描方向和测量条件，不能将任意等亮度线的四边拟合视为标准测量。
+
+Flow 与 ImageView 增加“测量模式”：`FourCorners`（四角，默认）保留上述行为，旧配置未保存该字段时仍取默认；`CurvedBoundary`（轮廓，曲边/非四边形）独立读取图像，支持单块、完整填充且从中心向外每个方向仅有一次外边界交点的发光轮廓，例如枕形、圆形、椭圆和多边形。轮廓模式不使用上游角点、不拟合四条直线，也不伪造 LT/RT/RB/LB；其 `Corners` 为空。它先以缩采样、Otsu 和最大亮连通区确定搜索种子，再在原始像素中寻找局部明暗梯度，不以中心亮度的某一比例定义边界。裁边、中心不发光、孔洞或同方向多段边界、低可信度时拒绝输出；环形图案和多块分离图案不能用这个模式声称测得完整 FOV。
+
+两种模式沿用相同的 `FovDist` / `cameraDegrees` 换算，不新增相机内参、畸变或眼位标定。轮廓模式属于可见外边界的几何估计，不是 IDMS 亮度/对比度有效 FOV 方法，也不声明 IEC 符合性。测量相机的畸变、光轴偏心及眼位仍需独立确认；不能把被测显示系统自身的畸变人为拉直后再声称测得实际覆盖范围。
 
 `cameraDegrees` 输入框右侧提供统一的计算入口，Flow 和 ImageView 使用同一个属性编辑器。计算窗口可输入传感器有效宽度、有效高度和镜头有效焦距，并按水平、垂直或对角方向选择回填值：
 
@@ -33,7 +37,7 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 
 ## Flow 使用
 
-在流程中加入 **本地FOV计算(V2)** 并接入图像或发光区结果：
+在流程中加入 **本地FOV计算(V2)** 并接入图像或发光区结果，默认四角模式如下：
 
 1. 上游是 `FindLightArea` 或 `LightArea` 且已有四条有效角点明细时，节点直接使用 LT、RT、RB、LB 计算，保留原始四角，不再读取像素重定位。
 2. 上游只有图像时，节点对当前内存帧运行与本地发光区相同的 `RobustV2`，直接使用成功结果的四角；没有内存帧时再读取上游结果对应的图像文件。
@@ -42,6 +46,8 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 5. 成功后写入现有 FOV 2.0 结果并将本次主结果传给后续节点。
 
 发光区明细只有有效数据库角点，没有可用内存帧或图像文件时仍可计算。需要自行定位但没有图像、`RobustV2` 拒绝结果、角点不是四个、顺序无效或 FOV 参数无效时拒绝执行。`MinimumConfidence` 只约束自动运行的 `RobustV2`，不会用图像中的亮度再次筛选有效上游角点。
+
+选择轮廓模式时应直接接取图/图像节点，始终重新定位。若接入发光区结果，只用主记录追溯对应图像，不读取四角明细，也不要求明细存在四角。优先复用匹配该源图记录的内存帧，否则读取对应图像文件；禁止借用其他图像的当前帧。只有角点、没有对应像素时失败，不回退到四角模式。
 
 ## ImageView 使用和绘制
 
@@ -54,7 +60,7 @@ cameraDegrees = 2\arctan\left(\frac{SensorLength}{2FocalLength}\right)
 
 FOV 标签圆的直径与当前结果文字字号一致；修改固定结果字号时圆和文字同步缩放，启用图层自动刷新时二者也随视图缩放保持一致。该规则只用于 FOV 结果标签，不改变普通测量圆的几何半径。
 
-ImageView 的 FOV 选项只包含 `FovDist`、`cameraDegrees` 和本地发光区定位的“最低可信度”。`RobustV2` 当前只向普通调用者开放最低可信度；矩形入口本身提供搜索区域。相机选择、流程批次和数据库结果不属于这个独立图像工具。
+ImageView 的 FOV 选项包含 `FovDist`、`cameraDegrees`、“测量模式”和“最低可信度”。最低可信度约束所选定位算法；矩形入口本身提供搜索区域。相机选择、流程批次和数据库结果不属于这个独立图像工具。轮廓模式绘制蓝色实测轮廓和橙/绿中心截线、紫色中心斜向截线，不显示四角标签；结果窗口注明包络和中心斜向口径。
 
 新的 FOV 运行会清除上一组 FOV 叠图，打开新图也会清除旧结果。ImageView 只计算、绘制并显示本次结果，不查询测量批次、不写数据库，也不发布流程结果。流程节点继续使用严格结果链；持久化失败会使节点失败，不能把只有内存数值的运行交给后续节点。
 
@@ -84,6 +90,10 @@ angle(L) = 2 * atan((L / FovDist) * tan(cameraDegrees / 2 * PI / 180)) * 180 / P
 
 后两个字段保留历史拼写和存储位置，但本地用对边中点，旧 DLL 另有中心方向边界定位，两者不能宣称数值或测量方法等价。ProjectARVRPro 的 W51 正是读取这两个字段及 `D_Fov`，经过 Recipe 修正后比较上下限；角度合格阈值不定义像素边界的亮度阈值。替换前应在固定曝光、测试图案和相机标定下用现场图集比较这三项及单独对角线，确认原 Recipe 的适用性；不能调整 `FovDist` 或放宽出厂限值吸收定位差异。
 
+轮廓模式的中心为实测轮廓外接框中心，水平/垂直方向固定为图像 X/Y，不从不存在的四边恢复旋转。`clolorVisionH_Fov` / `clolorVisionV_Fov` 使用通过此中心的真实左右/上下交点；`H_Fov` / `V_FOV` 使用整个实测轮廓的 X/Y 包络跨度。两个历史对角字段使用通过中心、平行于轮廓外接框两条对角方向的**真实轮廓交点**，`D_Fov` 仍为两项角度均值；这些交点不是角点，该均值也不是任意形状的最大跨度。圆形斜向跨度是圆的截线直径，不是外接正方形的对角线。轮廓模式的七个字段是明确约定的形状摘要，不能仅凭这七项等同整个二维角域；完整轮廓及截线端点保存在 `Boundary` 中。客户规格使用最大跨角、固体角或亮度/对比度有效视场时，应另定指标，不能默默套用上述中心斜向定义。
+
+非矩形视场需要适配其形状的描述，参见 [IEC TR 63145-1-1:2018 公开预览第 6.4.3 节](https://webstore.ansi.org/preview-pages/DS/preview_M323246CURES.pdf)。[IDMS 第 19.8 节目录](https://www.sid.org/Portals/sid/Files/ICDM/idms1p3_toc.html)区分基于亮度和 Michelson 对比度的 FOV；这两类规范方法不应与本地几何外沿混称。
+
 ## 结果兼容
 
 成功结果仍创建类型 `FOV`、版本 `2.0` 的主记录和一条 `DetailCommon` 明细。明细 JSON 的 `ResultFileName` 指向本地结果文件，文件的 `result` 对象保留以下字段及大小写：
@@ -93,16 +103,16 @@ D_Fov, H_Fov, V_FOV, clolorVisionH_Fov, clolorVisionV_Fov,
 leftDownToRightUp, leftUpToRightDown, message
 ```
 
-流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`BoundaryMode`（`UpstreamCorners` 或 `RobustV2`）及定位诊断保存在主记录参数中，便于追溯。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
+流程运行的七项测量值保存在结果文件中；角点、相机编码、`FovDist`、`cameraDegrees`、`MeasurementMode`、`BoundaryMode`（`UpstreamCorners`、`RobustV2` 或 `CurvedBoundary`）及定位诊断保存在主记录参数中，便于追溯。轮廓模式额外保存 `Boundary`（轮廓、中心及水平/垂直/斜向端点），角点为空。下游业务判定、导出和协议字段仍由原有结果处理器及客户项目负责。流程保存要求已有批次和可用数据库连接；ImageView 不进入这条持久化链。
 
 内存帧若直接来自普通图片且未经过校正或翻转，主记录 `ImgFile` 会保存该原始图片路径，结果列表的“文件”列可正常关联原图。若当前主缓冲区已校正或翻转，只使用与当前缓冲区严格对应的 `CvRawFilePath` / `CvCieFilePath`；没有这类已保存文件时保持为空，避免历史叠图错误加载变换前的源图。
 
 ## 验证边界
 
-当前托管自动化只保留 FOV 结果叠图的几何与标签契约，不再承担相机参数换算、原生定位或现场图像验收。最小相关检查为：
+托管回归覆盖默认四角兼容、轮廓独立读图、8/16 位及浮点/行跨度输入只读、非四边形截线、ROI 坐标与裁边/孔洞失败边界、Flow 上游角点绕过，以及叠图使用真实端点；不承担原生定位或现场精度验收。最小相关检查为：
 
 ```powershell
-dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~AlgorithmResultOverlayTests"
+dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~FovCalculationTests|FullyQualifiedName~AlgorithmResultOverlayTests"
 ```
 
 正式同位替换验收仍应在获授权环境覆盖旋转、暗角、漏光、低对比、饱和和裁边样本，比较四角、七项 FOV、重复性、耗时、出厂判定、结果落库与历史读取；文档检查和叠图单测不能代替这些证据。
