@@ -152,29 +152,6 @@ namespace WindowsServicePlugin.ServiceManager
             databaseSetting.MySqlConfig.UserPwd = appPassword;
             databaseSetting.MySqlConfig.Database = database;
 
-            if (!string.IsNullOrWhiteSpace(rootPassword))
-            {
-                MySqlConfig rootConfig = new()
-                {
-                    Name = MySqlServiceConfig.RootProfileName,
-                    Host = host,
-                    Port = port,
-                    UserName = "root",
-                    UserPwd = rootPassword,
-                    Database = database
-                };
-
-                MySqlConfig? oldRootConfig = databaseSetting.MySqlConfigs.FirstOrDefault(item =>
-                    string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(item.UserName, "root", StringComparison.OrdinalIgnoreCase));
-
-                if (oldRootConfig != null)
-                {
-                    databaseSetting.MySqlConfigs.Remove(oldRootConfig);
-                }
-
-                databaseSetting.MySqlConfigs.Add(rootConfig);
-            }
         }
 
         private static void SaveImportedConfigs()

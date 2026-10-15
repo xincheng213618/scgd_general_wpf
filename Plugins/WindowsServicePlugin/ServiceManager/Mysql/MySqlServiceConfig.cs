@@ -7,8 +7,6 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MySqlServiceConfig : ViewModelBase, IConfigSecure
     {
-        public const string RootProfileName = "RootPath";
-        public const string BusinessProfileName = "CVPath";
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "ColorVision";
 

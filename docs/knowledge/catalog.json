@@ -9994,13 +9994,16 @@
       "code_paths": [
         "UI/ColorVision.Database",
         "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs",
+        "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml",
+        "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml.cs",
         "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs",
         "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"
       ],
       "test_paths": [
         "Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs",
         "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs",
-        "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs"
+        "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs",
+        "Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs"
       ],
       "related": [
         "ui.database-query",

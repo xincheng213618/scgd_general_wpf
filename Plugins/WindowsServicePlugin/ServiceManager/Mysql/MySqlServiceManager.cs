@@ -784,16 +784,6 @@ namespace WindowsServicePlugin.ServiceManager
                 changed = true;
             }
 
-            var legacyRoot = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(item =>
-                string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(item.UserName, "root", StringComparison.OrdinalIgnoreCase));
-
-            if (string.IsNullOrWhiteSpace(Config.RootPassword) && legacyRoot != null && !string.IsNullOrWhiteSpace(legacyRoot.UserPwd))
-            {
-                Config.RootPassword = legacyRoot.UserPwd;
-                changed = true;
-            }
-
             if (changed)
             {
                 Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
@@ -915,41 +905,15 @@ namespace WindowsServicePlugin.ServiceManager
             string normalizedDatabase = database.Trim();
             Config.Database = normalizedDatabase;
 
-            MySqlSetting databaseSetting = MySqlSetting.Instance;
-            SynchronizeBusinessConnection(databaseSetting, Config, normalizedDatabase);
-            foreach (MySqlConfig item in databaseSetting.MySqlConfigs.Where(item =>
-                         string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)
-                         || string.Equals(item.UserName, "root", StringComparison.OrdinalIgnoreCase)))
-            {
-                item.Host = Config.Host;
-                item.Port = Config.Port;
-                item.Database = normalizedDatabase;
-            }
+            MySqlConfig connection = MySqlSetting.Instance.MySqlConfig;
+            connection.Host = Config.Host;
+            connection.Port = Config.Port;
+            connection.UserName = Config.AppUser;
+            connection.UserPwd = Config.AppPassword;
+            connection.Database = normalizedDatabase;
 
             SaveConfig();
             ConfigHandler.GetInstance().Save<MySqlSetting>();
-        }
-
-        private static void SynchronizeBusinessConnection(
-            MySqlSetting databaseSetting,
-            MySqlServiceConfig serviceConfig,
-            string database)
-        {
-            MySqlConfig? businessConfig = databaseSetting.MySqlConfigs.FirstOrDefault(item =>
-                string.Equals(item.Name, MySqlServiceConfig.BusinessProfileName, StringComparison.OrdinalIgnoreCase));
-            if (businessConfig == null)
-            {
-                businessConfig = new MySqlConfig { Name = MySqlServiceConfig.BusinessProfileName };
-                databaseSetting.MySqlConfigs.Add(businessConfig);
-            }
-
-            businessConfig.Name = MySqlServiceConfig.BusinessProfileName;
-            businessConfig.Host = serviceConfig.Host;
-            businessConfig.Port = serviceConfig.Port;
-            businessConfig.UserName = serviceConfig.AppUser;
-            businessConfig.UserPwd = serviceConfig.AppPassword;
-            businessConfig.Database = database;
-            databaseSetting.MySqlConfig = businessConfig;
         }
 
         private static void LogServiceHostFailure(ServiceHostResponse response, Action<string> logCallback)

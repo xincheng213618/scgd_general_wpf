@@ -4,8 +4,8 @@ knowledge_type: "topic"
 status: "current"
 summary: "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。"
 aliases: ["数据库操作", "数据库浏览器", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration", "ColorVision.Local.db", "POI 本地模板", "PoiTemplateStorage"]
-code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs", "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs", "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs", "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs", "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs"]
+code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml.cs", "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs", "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/BatchExecuteNonQueryTests.cs", "Test/ColorVision.UI.Tests/LegacyDatabaseBrowserRegistrationTests.cs", "Test/ColorVision.UI.Tests/LocalPoiTemplateStorageTests.cs", "Test/ColorVision.UI.Tests/ConfigTypeNamePersistenceTests.cs"]
 related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "operations.data", "ui.configuration", "ui.desktop", "flow.session"]
 ---
 
@@ -35,7 +35,7 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 ## MySQL 连接配置与副作用
 
-连接来源是 `MySqlSetting.Instance.MySqlConfig`（通过 `ConfigService` 管理），并保留配置集合。软件配置的保存与重载见[配置契约](./configuration.md)。修改配置不会自动重建所有业务模块已持有的连接，需核对各自的连接生命周期。
+连接来源是 `MySqlSetting.Instance.MySqlConfig`（通过 `ConfigService` 管理），只保留当前一份配置，主机、端口、账号、密码和数据库名均可编辑。旧配置中的 `MySqlConfigs` 列表不读取、不迁移，重新保存的当前设置不再包含该列表；当前连接及其加密密码继续保留。软件配置的保存与重载见[配置契约](./configuration.md)。修改配置不会自动重建所有业务模块已持有的连接，需核对各自的连接生命周期。
 
 `MySqlControl.GetConnectionString` 使用配置中的 Host/Port/UserName/UserPwd/Database，统一 `utf8mb4`，默认连接超时 1 秒，测试连接使用 2 秒；这不是查询执行超时。当前字符串明确 `SSL Mode=None`、开启连接池及本地 infile 选项，不能宣传成默认加密连接。配置保存使用 `IConfigSecure` 的密码加解密钩子，不是外部凭据保险库，连接字符串和配置导出仍应视为敏感数据。
 
@@ -45,7 +45,7 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 
 - `TestConnect(config)` 真实联网打开连接，再用参数化查询检查库是否存在；成功不验证全部表权限或业务读写，也不会调用全局 local_infile 修改。
 - `Connect()` 不只是探活：打开连接后查询 `@@global.local_infile`，为 0 时尝试 `SET GLOBAL local_infile = 1`；随后才设 IsConnect 并通知订阅者。它需要额外数据库权限，可能改变服务器全局设置并触发宿主后续装配，不应为文档或只读诊断随意调用。
-- `MySqlConnect` 窗口直接绑定共享配置；选择配置项会立即替换当前对象，确认会启动后台 Connect 然后关闭，并不等待连接完成，也没有直接调用配置服务落盘。“取消”仅把打开窗口时的备份复制进当前选择对象，普通关闭只执行清理；不要把这个多配置窗口当成完整事务式编辑会话。
+- `MySqlConnect` 窗口编辑当前配置的独立副本；测试连接使用草稿快照，取消或普通关窗不修改共享配置。确认将草稿复制到当前配置对象，启动后台 Connect 后关闭，不等待连接完成，也不直接调用配置服务落盘。服务管理器另外管理安装维护所需的 root 凭据，桌面端不再保存额外的 root 连接项。
 
 `IsConnect` 是一次 Connect 流程维护的状态，不是每条 SQL 的健康证明。业务 DAO 和直接创建的 client 仍须分别核对连接门禁。
 
@@ -62,6 +62,7 @@ POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持�
 - `LocalPoiTemplateStorageTests.cs` 在隔离临时 SQLite 文件验证离线读写、重启恢复、精度、导入导出、排序、存储隔离及 ImageView 编辑保存链；MySQL 故障通过禁止访问/抛错的 factory 模拟，不验证真实 MySQL 权限或硬件。
 - `BatchExecuteNonQueryTests.cs` 用 fake executor 核对事务阶段、失败诊断和清理语义，不连接真实 MySQL，也不证明 DDL 可以回滚。
 - `LegacyDatabaseBrowserRegistrationTests.cs` 按旧插件的精确类型、构造函数和方法签名反射绑定，再用禁止调用的路径/client factory 验证注册无数据库副作用；它不承诺旧浏览器的全部公开 API 继续可用。
+- `ConfigTypeNamePersistenceTests.cs` 在隔离配置文件覆盖旧设置读取、当前连接凭据加密保存和重载，以及旧连接列表被忽略的兼容边界；不连接真实 MySQL。
 - 数据库清理窗口的独立接口和窗口测试见[维护窗口契约](../engine-components/database-maintenance.md)。真实账号权限、连接生命周期、恢复和数据完整性仍由各业务 owner 验证。
 
 目标框架和依赖以 `ColorVision.Database.csproj` 为准：当前 WPF 多目标 `net8.0-windows7.0;net10.0-windows7.0`，依赖 SqlSugar、SQLite runtime、Newtonsoft.Json、log4net 和 ColorVision.UI。缺 DLL、连接失败、真实库结构不符以及业务结果未完成应分别定位；该模块本身不安装数据库服务。

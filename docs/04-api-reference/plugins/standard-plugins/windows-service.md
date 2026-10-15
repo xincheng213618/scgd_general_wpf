@@ -80,7 +80,7 @@ MySQL页的“ZIP全安装”和“注册服务”会在调用后台前检查运
 | 停止与替换 | 尝试停止受管理服务并关闭旧CVWinSMS进程；普通停止失败不一定阻止清理，归档服务卸载失败则阻止包更新 |
 | CommonDll与注册 | CommonDll存在时复制到已存在的三个服务目录再删源目录；不存在或复制异常只记日志。选中服务安装时，三个服务目录对应的exe均为必需项：缺exe、后台安装返回false或抛异常都会汇总；既有归档服务在替换包后使用当前 `ArchivedWindowsService.exe` 重新注册，失败也并入同一清单，全部尝试结束后统一使安装失败。ServiceHost仍兼容旧 `RegWindowsService.exe` |
 | SQL与业务账号 | 新装MySQL走初始化；其它勾选升级时由插件MySqlServiceManager委托Engine的MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync。同名源库和目标库都尚未创建时按新安装直接初始化，不尝试备份不存在的库；跨库更新缺少源库时仍停止，避免跳过旧数据。安装先要求找到color_vision_all.sql，数据库步骤成功后更新业务账号授权；明确失败中止后续配置/启动 |
-| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。业务连接会写入或更新CVPath、设为桌面端当前连接并持久化，root配置不会被改成业务账号。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
+| 配置与启动 | 数据库步骤后才ApplyDatabaseName、ApplyConfigAndRefreshAfterInstall。桌面端当前连接直接更新为业务账号并持久化，安装维护的root凭据由MySqlServiceConfig独立保存。有服务/MySQL/MQTT安装工作便自动调用启动，不存在独立可选启动开关；MySQL、MQTT和已安装的三个业务服务会分别尝试启动，返回false或抛异常均汇总，任一必需服务失败都使安装失败 |
 
 MySQL ZIP安装位置与服务根同级，默认业务用户cv。`MySqlServiceHelper` 将带UTF-8 BOM的SQL按UTF-8读取，其余先严格UTF-8解码、失败回退GB18030，再向mysql.exe传UTF-8。[Engine重置与资源保留](../../engine-components/mysql-recovery.md)负责保留表、字典依赖和SQL失败语义，不是整库或全部结果无损迁移。安装器要求SQL存在，而直接调用部分MySQL helper找不到SQL时会记录跳过并返回true，二者成功判据不同。
 
