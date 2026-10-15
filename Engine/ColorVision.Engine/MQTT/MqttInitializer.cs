@@ -12,57 +12,41 @@ namespace ColorVision.Engine.MQTT
         private const string MosquittoServiceName = "mosquitto";
         private static readonly ILog log = LogManager.GetLogger(typeof(MqttInitializer));
 
-        public MqttInitializer() { }
         public override string Name => nameof(MqttInitializer);
         public override int Order => 2;
         public System.Collections.Generic.IReadOnlyCollection<string> Dependencies => [];
         public override async Task InitializeAsync()
         {
-            bool isConnect = await MQTTControl.GetInstance().Connect();
-            if (isConnect) return;
+            MQTTControl mqtt = MQTTControl.GetInstance();
+            if (await mqtt.Connect()) return;
 
-            if (MQTTControl.Config.Host == "127.0.0.1" || MQTTControl.Config.Host == "localhost")
+            try
             {
-                log.Info("The MQTT endpoint is local; checking for the mosquitto Windows service.");
-                try
+                using ServiceController service = new(MosquittoServiceName);
+                ServiceControllerStatus status = service.Status;
+                log.Info($"Detected the mosquitto service with status {status}.");
+                if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                 {
-                    ServiceController serviceController = new ServiceController(MosquittoServiceName);
-                    try
+                    ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
+                        MosquittoServiceName,
+                        timeoutSeconds: 45,
+                        timeout: TimeSpan.FromSeconds(60));
+                    if (!response.Success)
                     {
-                        var status = serviceController.Status;
-                        log.Info($"Detected the mosquitto service with status {status}; attempting to start it if needed.");
-
-                        if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
-                        {
-                            ServiceHostResponse response = await ColorVisionServiceHostClient.Default.StartServiceAsync(
-                                MosquittoServiceName,
-                                timeoutSeconds: 45,
-                                timeout: TimeSpan.FromSeconds(60));
-
-                            if (!response.Success)
-                            {
-                                log.Info($"ColorVisionServiceHost failed to start the mosquitto service: {response.Message}");
-                                return;
-                            }
-                        }
-                        else if (status == ServiceControllerStatus.Running)
-                        {
-                            log.Info("The mosquitto service is already running.");
-                        }
-
-                        isConnect = await MQTTControl.GetInstance().Connect();
-                        if (isConnect) return;
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        log.Info("The mosquitto service was not found. Confirm that it is installed correctly.");
+                        log.Info($"ColorVisionServiceHost failed to start the mosquitto service: {response.Message}");
+                        return;
                     }
                 }
-                catch (Exception ex)
-                {
-                    log.Info(ex.Message);
-                }
+                await mqtt.Connect();
+            }
+            catch (InvalidOperationException)
+            {
+                log.Info("The mosquitto service was not found. Confirm that it is installed correctly.");
+            }
+            catch (Exception ex)
+            {
+                log.Info(ex.Message);
             }
         }
     }
-    }
+}

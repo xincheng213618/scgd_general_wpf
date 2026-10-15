@@ -4,7 +4,6 @@ using log4net;
 using MQTTnet;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -51,17 +50,18 @@ namespace ColorVision.Engine.MQTT
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
         private const int MaxMessageTraceCount = 200;
 
-        private static MQTTControl _instance;
-        private static readonly object _locker = new();
-        private static readonly SemaphoreSlim ConnectGate = new(1, 1);
-        public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
+        private static readonly Lazy<MQTTControl> Instance = new(() => new(new MqttClientFactory().CreateMqttClient()));
+        private readonly SemaphoreSlim _clientGate = new(1, 1);
+        private volatile bool _connectionWanted;
+        private int _reconnecting;
+        public static MQTTControl GetInstance() => Instance.Value;
 
-        public static MQTTConfig Config => MQTTSetting.Instance.MQTTConfig;
-        public static MQTTSetting Setting => MQTTSetting.Instance;
+        public const string Host = "127.0.0.1";
+        public const int Port = 1883;
 
-        public IMqttClient MQTTClient { get; set; }
+        public IMqttClient MQTTClient { get; }
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs()); OnPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; private set { if (_IsConnect == value) return; _IsConnect = value; MQTTConnectChanged?.Invoke(this, EventArgs.Empty); OnPropertyChanged(); } }
         private bool _IsConnect;
 
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
@@ -76,16 +76,19 @@ namespace ColorVision.Engine.MQTT
         private DateTimeOffset? _lastInboundActivityAt;
         private DateTimeOffset? _lastOutboundActivityAt;
 
-        private MQTTControl()
+        internal MQTTControl(IMqttClient mqttClient)
         {
-            MQTTClient = new MqttClientFactory().CreateMqttClient();
+            MQTTClient = mqttClient;
+            MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
+            MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
+            MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
         }
 
         public IReadOnlyList<string> GetSubscribeTopicSnapshot()
         {
             lock (_subscribeTopicLocker)
             {
-                return SubscribeTopic.ToList();
+                return _subscribedTopics.ToList();
             }
         }
 
@@ -104,15 +107,15 @@ namespace ColorVision.Engine.MQTT
             lock (_subscribeTopicLocker)
             {
                 registeredSubscriptionCount = _subscribeTopicCache.Count;
-                activeSubscriptionCount = SubscribeTopic.Count;
+                activeSubscriptionCount = _subscribedTopics.Count;
             }
 
             lock (_runtimeDiagnosticsLocker)
             {
                 return new MqttRuntimeDiagnostics
                 {
-                    Configured = !string.IsNullOrWhiteSpace(Config.Host) && Config.Port > 0,
-                    Connected = MQTTClient?.IsConnected == true,
+                    Configured = true,
+                    Connected = MQTTClient.IsConnected,
                     RegisteredSubscriptionCount = registeredSubscriptionCount,
                     ActiveSubscriptionCount = activeSubscriptionCount,
                     LastConnectedAt = _lastConnectedAt,
@@ -153,81 +156,49 @@ namespace ColorVision.Engine.MQTT
             return payload[..maxPayloadLength] + "...";
         }
 
-        private static string NormalizeHost(string host)
+        public async Task<bool> Connect(CancellationToken cancellationToken = default)
         {
-            return string.IsNullOrWhiteSpace(host) ? null : host.Trim();
-        }
-
-        private static MqttClientOptions BuildClientOptions(MQTTConfig mqttConfig)
-        {
-            var host = NormalizeHost(mqttConfig.Host);
-
-            return new MqttClientOptionsBuilder()
-                .WithTcpServer(host, mqttConfig.Port)
-                .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
-                .WithClientId(Guid.NewGuid().ToString("N"))
-                .Build();
-        }
-
-        public async Task<bool> Connect()=> await Connect(Config);
-        public async Task<bool> Connect(MQTTConfig mqttConfig)
-        {
-            await ConnectGate.WaitAsync();
+            await _clientGate.WaitAsync(cancellationToken);
             try
             {
-                return await ConnectCore(mqttConfig, CancellationToken.None);
+                _connectionWanted = true;
+                return await ConnectCore(cancellationToken);
             }
             finally
             {
-                ConnectGate.Release();
+                _clientGate.Release();
             }
         }
 
         public async Task<bool> RecoverConnectionAsync(CancellationToken cancellationToken = default)
         {
-            await ConnectGate.WaitAsync(cancellationToken);
-            try
-            {
-                if (IsConnectionReady())
-                    return true;
-
-                bool connected = await ConnectCore(Config, cancellationToken);
-                return connected && IsConnectionReady();
-            }
-            finally
-            {
-                ConnectGate.Release();
-            }
+            return await Connect(cancellationToken: cancellationToken) && IsConnectionReady();
         }
 
-        private async Task<bool> ConnectCore(MQTTConfig mqttConfig, CancellationToken cancellationToken)
+        private async Task<bool> ConnectCore(CancellationToken cancellationToken)
         {
-            log.Info($"Connecting to MQTT: {mqttConfig}");
-
-            IsConnect = false;
-
             try
             {
-                MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
-                MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
-                MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.DisconnectAsync(cancellationToken: cancellationToken);
-                MQTTClient?.Dispose();
-                MQTTClient = new MqttClientFactory().CreateMqttClient();
-
-                var options = BuildClientOptions(mqttConfig);
-
-                MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
-                MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
-                MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.ConnectAsync(options, cancellationToken);
-                IsConnect = true;
-                return true;
+                if (!MQTTClient.IsConnected)
+                {
+                    log.Info($"Connecting to MQTT: {Host}:{Port}");
+                    var options = new MqttClientOptionsBuilder()
+                        .WithTcpServer(Host, Port)
+                        .WithClientId(Guid.NewGuid().ToString("N"))
+                        .Build();
+                    await MQTTClient.ConnectAsync(options, cancellationToken);
+                }
+                await ResubscribeTopics(cancellationToken);
+                return MQTTClient.IsConnected;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                IsConnect = false;
+                IsConnect = MQTTClient.IsConnected;
                 return false;
             }
         }
@@ -236,26 +207,21 @@ namespace ColorVision.Engine.MQTT
         {
             lock (_subscribeTopicLocker)
             {
-                return MQTTClient?.IsConnected == true
-                    && SubscribeTopic.Count >= _subscribeTopicCache.Count;
+                return MQTTClient.IsConnected && _subscribedTopics.SetEquals(_subscribeTopicCache);
             }
         }
 
-        private async Task MQTTClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
+        private Task MQTTClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
         {
             lock (_subscribeTopicLocker)
             {
-                foreach (var topic in SubscribeTopic)
-                {
-                    AddSubscribeTopicCache(topic);
-                }
-                SubscribeTopic.Clear();
+                _subscribedTopics.Clear();
             }
 
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
             RecordRuntimeActivity(RuntimeActivity.Connected);
             IsConnect = true;
-            await ResubscribeTopics();
+            return Task.CompletedTask;
         }
 
         private async Task MQTTClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
@@ -264,7 +230,7 @@ namespace ColorVision.Engine.MQTT
             AddMessageTrace("RECV", e.ApplicationMessage.Topic, payload, e.ApplicationMessage.QualityOfServiceLevel.ToString(), e.ApplicationMessage.Retain);
             RecordRuntimeActivity(RuntimeActivity.Inbound);
 
-             if (log.IsDebugEnabled)
+            if (log.IsDebugEnabled)
             {
                 var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {payload}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
@@ -275,77 +241,88 @@ namespace ColorVision.Engine.MQTT
             }
         }
 
-        private async Task MQTTClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
+        private Task MQTTClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
         {
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
             RecordRuntimeActivity(RuntimeActivity.Disconnected);
+            lock (_subscribeTopicLocker)
+                _subscribedTopics.Clear();
             IsConnect = false;
-            await Task.Delay(3000);
-            _ = Connect();
+            ScheduleReconnect();
+            return Task.CompletedTask;
         }
 
-        public async Task<bool> TestConnect(MQTTConfig mqttConfig)
+        private void ScheduleReconnect()
         {
-            var mqttClient = new MqttClientFactory().CreateMqttClient();
-            bool isConnected = false;
+            if (_connectionWanted && !MQTTClient.IsConnected && Interlocked.CompareExchange(ref _reconnecting, 1, 0) == 0)
+                _ = Task.Run(ReconnectAsync);
+        }
 
+        private async Task ReconnectAsync()
+        {
             try
             {
-                var options = BuildClientOptions(mqttConfig);
-                await mqttClient.ConnectAsync(options);
-                isConnected = mqttClient.IsConnected;
+                while (_connectionWanted && !MQTTClient.IsConnected)
+                {
+                    // broker 停止时限制重试频率；重连不占用 MQTTnet 的断线回调。
+                    await Task.Delay(3000);
+                    await _clientGate.WaitAsync();
+                    try
+                    {
+                        if (_connectionWanted)
+                            await ConnectCore(CancellationToken.None);
+                    }
+                    finally
+                    {
+                        _clientGate.Release();
+                    }
+                }
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Warn(ex);
             }
             finally
             {
-                mqttClient.Dispose();
+                Interlocked.Exchange(ref _reconnecting, 0);
+                ScheduleReconnect();
             }
-
-            return isConnected;
         }
 
         private readonly object _subscribeTopicLocker = new();
-        private  List<string> _subscribeTopicCache = new();
+        private readonly HashSet<string> _subscribeTopicCache = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _subscribedTopics = new(StringComparer.Ordinal);
         public void SubscribeCache(string subscribeTopic)
         {
             if (string.IsNullOrEmpty(subscribeTopic)) return;
 
             lock (_subscribeTopicLocker)
             {
-                AddSubscribeTopicCache(subscribeTopic);
+                _subscribeTopicCache.Add(subscribeTopic);
             }
 
             if (IsConnect)
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await SubscribeAsyncClientAsync(subscribeTopic);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Warn(ex);
-                    }
-                });
+                _ = SubscribeAsyncClientAsync(subscribeTopic);
             }
         }
 
         public async Task DisconnectAsyncClient()
         {
-            if (MQTTClient?.IsConnected == true)
+            await _clientGate.WaitAsync();
+            try
             {
-                await MQTTClient.DisconnectAsync();
-                MQTTClient.Dispose();
+                _connectionWanted = false;
+                if (MQTTClient.IsConnected)
+                    await MQTTClient.DisconnectAsync();
+            }
+            finally
+            {
+                _clientGate.Release();
             }
         }
 
-        public ObservableCollection<string> SubscribeTopic { get; } = new ObservableCollection<string>();
-
-        private async Task ResubscribeTopics()
+        private async Task ResubscribeTopics(CancellationToken cancellationToken)
         {
             List<string> topics;
             lock (_subscribeTopicLocker)
@@ -355,35 +332,44 @@ namespace ColorVision.Engine.MQTT
 
             foreach (var topic in topics)
             {
-                await SubscribeAsyncClientAsync(topic);
+                await SubscribeCore(topic, cancellationToken);
             }
         }
         public async Task SubscribeAsyncClientAsync(string topic)
         {
             if (string.IsNullOrEmpty(topic)) return;
+            await _clientGate.WaitAsync();
+            try
+            {
+                lock (_subscribeTopicLocker)
+                    _subscribeTopicCache.Add(topic);
+                await SubscribeCore(topic, CancellationToken.None);
+            }
+            finally
+            {
+                _clientGate.Release();
+            }
+        }
+
+        private async Task SubscribeCore(string topic, CancellationToken cancellationToken)
+        {
+            lock (_subscribeTopicLocker)
+                if (!MQTTClient.IsConnected || _subscribedTopics.Contains(topic)) return;
 
             try
             {
-                bool isSubscribed;
-                lock (_subscribeTopicLocker)
+                var result = await MQTTClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic(topic).Build(), cancellationToken);
+                if (!result.Items.Any(item => item.ResultCode <= MqttClientSubscribeResultCode.GrantedQoS2))
                 {
-                    AddSubscribeTopicCache(topic);
-                    isSubscribed = SubscribeTopic.Contains(topic);
-                }
-
-                if (!IsConnect || isSubscribed)
+                    log.Warn($"MQTT subscription rejected: {topic}");
                     return;
-
-                var topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
-                await MQTTClient.SubscribeAsync(topicFilter);
-
-                lock (_subscribeTopicLocker)
-                {
-                    if (!SubscribeTopic.Contains(topic))
-                    {
-                        SubscribeTopic.Add(topic);
-                    }
                 }
+                lock (_subscribeTopicLocker)
+                    if (MQTTClient.IsConnected) _subscribedTopics.Add(topic);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -393,38 +379,29 @@ namespace ColorVision.Engine.MQTT
 
         public async Task UnsubscribeAsyncClientAsync(string topic)
         {
-            if (MQTTClient?.IsConnected == true)
+            await _clientGate.WaitAsync();
+            try
             {
-                try
+                lock (_subscribeTopicLocker)
                 {
+                    _subscribeTopicCache.Remove(topic);
+                    _subscribedTopics.Remove(topic);
+                }
+                if (MQTTClient.IsConnected)
                     await MQTTClient.UnsubscribeAsync(topic);
-                    lock (_subscribeTopicLocker)
-                    {
-                        SubscribeTopic.Remove(topic);
-                        _subscribeTopicCache.Remove(topic);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Warn(ex);
-                }
             }
-            else
+            catch (Exception ex)
             {
+                log.Warn(ex);
             }
-        }
-
-        private void AddSubscribeTopicCache(string topic)
-        {
-            if (!string.IsNullOrEmpty(topic) && !_subscribeTopicCache.Contains(topic))
+            finally
             {
-                _subscribeTopicCache.Add(topic);
+                _clientGate.Release();
             }
         }
 
         public async Task PublishAsyncClient(string topic, string msg, bool retained)
         {
-            if (MQTTClient == null) return;
             if (MQTTClient.IsConnected)
             {
                 var message = new MqttApplicationMessageBuilder()
@@ -438,7 +415,6 @@ namespace ColorVision.Engine.MQTT
                 RecordRuntimeActivity(RuntimeActivity.Outbound);
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
-            return;
         }
 
         private void RecordRuntimeActivity(RuntimeActivity activity)

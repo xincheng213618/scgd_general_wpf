@@ -4889,17 +4889,15 @@
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/MQTT/MQTTControl.cs",
-        "Engine/ColorVision.Engine/MQTT/MQTTSetting.cs",
-        "Engine/ColorVision.Engine/MQTT/MQTTConfig.cs",
         "Engine/ColorVision.Engine/MQTT/MqttInitializer.cs",
-        "Engine/ColorVision.Engine/MQTT/MQTTConnect.xaml.cs",
         "Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs",
         "Engine/FlowEngineLib/MQTTHelper.cs",
         "Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs",
         "Engine/FlowEngineLib/MQTTClientPool.cs"
       ],
       "test_paths": [
-        "Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs"
+        "Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs",
+        "Test/ColorVision.UI.Tests/MQTTControlTests.cs"
       ],
       "related": [
         "engine.index",

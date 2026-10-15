@@ -140,7 +140,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             MySqlManager.Initialize(Config.MySqlPort);
-            MqttManager.Initialize();
 
             RefreshAll();
         }

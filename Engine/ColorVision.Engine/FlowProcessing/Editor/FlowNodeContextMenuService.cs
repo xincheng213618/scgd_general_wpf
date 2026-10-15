@@ -445,8 +445,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             }
             else if (node is MQTTStartNode startNode)
             {
-                startNode.Server = MQTTControl.Config.Host;
-                startNode.Port = MQTTControl.Config.Port;
+                startNode.Server = MQTTControl.Host;
+                startNode.Port = MQTTControl.Port;
             }
 
             _nodeEditor.Nodes.Add(node);

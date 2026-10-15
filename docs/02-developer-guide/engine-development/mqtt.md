@@ -4,8 +4,8 @@ knowledge_type: "guide"
 status: "current"
 summary: "Engine MQTT 的连接与订阅、异步发送、请求状态、迟到回包和 MsgID 复用限制；区分 Flow 客户端池与设备命令链。"
 aliases: ["MQTT请求发出为什么没有结果","MQTTControl","MQTTServiceBase","MsgRecord","MsgID","MsgReturnReceived","MQTTClientPool","MQTT迟到回包","MQTT消息超时","SubscribeCache"]
-code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MQTTSetting.cs","Engine/ColorVision.Engine/MQTT/MQTTConfig.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs","Engine/ColorVision.Engine/MQTT/MQTTConnect.xaml.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/FlowEngineLib/MQTTHelper.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
-test_paths: ["Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs"]
+code_paths: ["Engine/ColorVision.Engine/MQTT/MQTTControl.cs","Engine/ColorVision.Engine/MQTT/MqttInitializer.cs","Engine/ColorVision.Engine/Services/Devices/MQTTDeviceService.cs","Engine/FlowEngineLib/MQTTHelper.cs","Engine/ColorVision.Engine/Services/Core/MQTTServiceBase.cs","Engine/FlowEngineLib/MQTTClientPool.cs"]
+test_paths: ["Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs","Test/ColorVision.UI.Tests/MQTTControlTests.cs"]
 related: ["engine.index","engine.devices","engine.rc-registration","flow.runtime"]
 ---
 
@@ -19,14 +19,15 @@ Engine 设备与注册中心通过 `MQTTControl` 共用 broker 连接；设备�
 
 | 层级 | 关键对象 | 职责 |
 | --- | --- | --- |
-| 全局连接 | `MQTTControl` | 创建 `IMqttClient`、连接 broker、断线重连、订阅缓存、发布消息、保存最近 200 条 trace |
-| 配置 | `MQTTSetting`、`MQTTConfig` | Host、Port、UserName、UserPwd；当前选中配置的 `UserPwd` 参与 `IConfigSecure` 加解密 |
-| 启动 | `MqttInitializer` | 先连接 broker；失败且地址为 `127.0.0.1` 或 `localhost` 时检查本机 `mosquitto` Windows 服务，按状态尝试启动后重连 |
+| 全局连接 | `MQTTControl` | 复用一个 `IMqttClient`，固定匿名连接 `127.0.0.1:1883`，负责断线重连、订阅缓存、发布消息和最近 200 条 trace |
+| 启动 | `MqttInitializer` | 先连接本机 broker；失败时检查 `mosquitto` Windows 服务，按状态尝试启动后重连 |
 | 设备命令 | `MQTTServiceBase` | 构造 `MsgRecord`，发送 `MsgSend`，按 `MsgID` 匹配 `MsgReturn`，处理超时 |
 | 设备配置绑定 | `MQTTDeviceService<T>` | 从设备 `Config` 读取 `SendTopic`、`SubscribeTopic` |
 | 消息类型 | `MsgSend`、`MsgReturn`、`MQTTMessageLib/*EventEnum` | EventName、DeviceCode、Token、参数和返回码 |
 | Flow 连接 | `MQTTHelper`、`MQTTClientPool` | 按连接身份复用客户端，管理引用、topic 订阅与重连；通过该 Helper 运行的节点沿此链排查 |
 | 旧 Flow MQTT 节点 | `FlowEngineLib/MQTT/`、`MQTTCustom*Node.cs` | 4 个旧节点已标记 `Obsolete`，保留旧流程加载兼容，见 [Flow 节点兼容](../../04-api-reference/engine-components/FlowEngineLib.md#弃用节点兼容) |
+
+Engine 不读取旧 MQTT 设置段，历史地址、端口和凭据不影响连接。服务管理器向现有 `MQTT.config` 同步相同的本机端点和空凭据，旧配置导入也不会恢复 MQTT 连接设置。Flow 的独立连接管理及旧流程序列化契约保持原样，Engine 创建的 Flow 起点使用相同固定端点。
 
 ## 命令执行链
 
@@ -56,7 +57,6 @@ Engine 设备与注册中心通过 `MQTTControl` 共用 broker 连接；设备�
 
 | 目标 | 主要文件 | 验收重点 |
 | --- | --- | --- |
-| 改 broker 配置 | `MQTTSetting.cs`、`MQTTConnect.xaml.cs` | 加密保存、测试连接、重启恢复 |
 | 改连接和重连 | `MQTTControl.cs`、`MqttInitializer.cs` | 断线后订阅恢复，trace 仍可读 |
 | 新增设备命令 | 对应 `Services/Devices/*/MQTT*.cs` | `EventName`、参数 JSON、超时、返回码 |
 | 改设备 topic | `DeviceServiceConfig`、设备配置 UI | `SendTopic` 和 `SubscribeTopic` 不要写反 |
@@ -87,7 +87,7 @@ public MsgRecord DoSomething(string value)
 
 | 现象 | 排查顺序 |
 | --- | --- |
-| 主程序显示未连接 | `MQTTSetting.MQTTConfig`、broker 地址、`MqttInitializer` 日志 |
+| 主程序显示未连接 | 本机 `1883` 端口的 broker 状态、`MqttInitializer` 日志 |
 | 命令发出但无返回 | `SendTopic`、设备服务是否在线、`SubscribeTopic` 是否订阅 |
 | 返回到了但界面不更新 | 原始 topic、DeviceCode、EventName、MsgID，以及具体设备回调的筛选与更新条件 |
 | 经常超时 | 先查 SEND trace，区分未连接/未发布、服务未响应和设备执行过久；再比较消息内设备超时与本地等待值 |
@@ -96,7 +96,9 @@ public MsgRecord DoSomething(string value)
 
 ## 连接与订阅确认
 
-`SubscribeCache()` 保存 topic，已连接时异步尝试订阅；连接事件将先前订阅加入缓存，再逐项恢复。订阅异常会记日志，缓存存在或连接成功不代表每个 topic 已完成订阅。按实际订阅列表、日志和测试消息核对恢复结果。
+`MQTTControl` 复用一个 `IMqttClient`，连接、订阅和退订操作串行执行。重复 `Connect()` 复用现有连接并补齐未成功的订阅；`RecoverConnectionAsync()` 还确认所需 topic 全部就绪。自动重连在断线回调之外执行，失败时每三秒重试；`DisconnectAsyncClient()` 停止自动重连，之后可显式 `Connect()` 恢复。
+
+`SubscribeCache()` 保存所需 topic，已连接时异步尝试订阅。断线立即清空已生效的订阅列表，连接后从所需集合恢复；只有 broker 接受的订阅才计为生效，异常或拒绝会记日志。离线退订也会移除恢复目标，避免下次重连重新订阅。缓存存在或连接成功不代表每个 topic 已完成订阅，按实际订阅列表、日志和测试消息核对恢复结果。
 
 `GetMessageTraceSnapshot()` 保留最近 200 条内存记录，可用于对照 SEND/RECV；设备 `MsgRecord` 的后台数据库记录是另一套追踪资料。查找一次请求时同时核对主题、设备、事件、消息 ID 和时间，避免只看状态文字。
 
@@ -109,8 +111,8 @@ public MsgRecord DoSomething(string value)
 
 ## 验证入口与缺口
 
-关联测试：`Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs`。
+关联测试：`Test/ColorVision.UI.Tests/MQTTControlTests.cs`、`Test/ColorVision.UI.Tests/MQTTClientPoolTests.cs`。
 
-`MQTTClientPoolTests` 使用模拟 `IMqttClient`，覆盖 Flow 池的引用与连接身份、重连串行化、订阅恢复及取消/释放边界；未验证真实 broker，也未覆盖 Engine 的 `MQTTControl` / 设备 `MsgRecord` 链。
+`MQTTControlTests` 使用模拟 `IMqttClient`，覆盖固定匿名端点、并发连接与订阅复用、订阅拒绝后的恢复、离线退订、恢复取消和显式断开后重连。保留这些回归是为了保护固定端点和连接/订阅生命周期边界。`MQTTClientPoolTests` 覆盖 Flow 池的引用与连接身份、重连串行化、订阅恢复及取消/释放边界；两者均未验证真实 broker、自动重连压力或设备 `MsgRecord` 链。
 
 在获准的测试 broker 与设备模拟环境，应分别验证配置恢复、发布失败、匹配/不匹配回包、超时后迟到消息和订阅恢复；机械运动或相机采集需按对应设备的现场验收条件执行。源码核对和文档构建不提供这些运行结果。

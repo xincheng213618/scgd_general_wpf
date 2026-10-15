@@ -1,5 +1,4 @@
 using ColorVision.Database;
-using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using Microsoft.Win32;
 using System.IO;
@@ -75,7 +74,6 @@ namespace WindowsServicePlugin.ServiceManager
 
                 ApplyServiceManagerConfig(settings);
                 ApplyMySqlConfig(settings);
-                ApplyMqttConfig(settings);
                 SaveImportedConfigs();
 
                 ServiceManagerViewModel.Instance.RefreshAll();
@@ -179,48 +177,13 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static void ApplyMqttConfig(IReadOnlyDictionary<string, string> settings)
-        {
-            MqttServiceConfig serviceConfig = MqttServiceConfig.Instance;
-            MQTTConfig mqttConfig = MQTTSetting.Instance.MQTTConfig;
-
-            string? host = GetSetting(settings, "MqttHost", "MQTTHost", "MQTT.Host");
-            if (!string.IsNullOrWhiteSpace(host))
-            {
-                serviceConfig.Host = host;
-                mqttConfig.Host = host;
-            }
-
-            if (TryGetPort(settings, out int port, "MqttPort", "MQTTPort", "MQTT.Port"))
-            {
-                serviceConfig.Port = port;
-                mqttConfig.Port = port;
-            }
-
-            string? user = GetSetting(settings, "MqttUser", "MQTTUser", "MqttUserName", "MQTTUserName", "MQTT.User");
-            if (user != null)
-            {
-                serviceConfig.UserName = user;
-                mqttConfig.UserName = user;
-            }
-
-            string? password = GetSetting(settings, "MqttPwd", "MQTTPwd", "MqttPassword", "MQTTPassword", "MQTT.Password");
-            if (password != null)
-            {
-                serviceConfig.Password = password;
-                mqttConfig.UserPwd = password;
-            }
-        }
-
         private static void SaveImportedConfigs()
         {
             ConfigHandler configHandler = ConfigHandler.GetInstance();
             configHandler.Save<CVWinSMSConfig>();
             configHandler.Save<ServiceManagerConfig>();
             configHandler.Save<MySqlServiceConfig>();
-            configHandler.Save<MqttServiceConfig>();
             configHandler.Save<MySqlSetting>();
-            configHandler.Save<MQTTSetting>();
         }
 
         private static string? GetSetting(IReadOnlyDictionary<string, string> settings, params string[] keys)

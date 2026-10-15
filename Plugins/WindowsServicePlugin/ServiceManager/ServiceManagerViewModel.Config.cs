@@ -264,17 +264,15 @@ namespace WindowsServicePlugin.ServiceManager
                 if (settings == null)
                     throw new InvalidDataException($"MQTT.config 缺少 appSettings: {configPath}");
 
-                var mqttConfig = MqttManager.Config;
                 foreach (var setting in settings)
                 {
                     var key = setting.Attribute("key")?.Value;
                     if (key == null) continue;
                     string? value = key switch
                     {
-                        "Host" => mqttConfig.Host,
-                        "Port" => mqttConfig.Port.ToString(),
-                        "User" => mqttConfig.UserName,
-                        "Password" => mqttConfig.Password,
+                        "Host" => ColorVision.Engine.MQTT.MQTTControl.Host,
+                        "Port" => ColorVision.Engine.MQTT.MQTTControl.Port.ToString(),
+                        "User" or "Password" => string.Empty,
                         _ => null
                     };
                     if (value != null)
