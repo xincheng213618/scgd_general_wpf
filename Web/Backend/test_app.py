@@ -377,7 +377,7 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(
             set(payload),
-            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs"},
+            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs", "download_assistant"},
         )
         self.assertNotIn("archive_recent", payload["app_info"])
         self.assertNotIn("archive_timeline_groups", payload["app_info"])

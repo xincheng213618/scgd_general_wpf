@@ -17,6 +17,7 @@ from routes.public_api import register_public_api
 from routes.public_pages import PublicPageContext, register_public_pages
 from routes.admin_api import AdminApiContext, register_admin_api_routes
 from services.api_key_service import create_api_key, revoke_api_key
+from services.artifact_delivery import ArtifactDeliveryService
 from services.auth_service import create_user
 from services.csrf_protection import register_csrf_protection
 from services.session_service import revoke_all_user_sessions
@@ -47,6 +48,7 @@ class FeedbackRouteTests(unittest.TestCase):
             db_path=lambda: self.root / "feedback-tests.db",
         ))
         app.config["TESTING"] = True
+        self.ctx.artifact_delivery = ArtifactDeliveryService()
         register_public_pages(app, PublicPageContext(
             cache=helpers["cache"],
             storage=self.storage,
@@ -152,6 +154,8 @@ class FeedbackRouteTests(unittest.TestCase):
         self.assertEqual(own_download.status_code, 200)
         self.assertEqual(own_download.data, b"diagnostics")
         self.assertIn(alice_id, own_download.headers["Content-Disposition"])
+        self.assertEqual(own_download.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(own_download.headers["X-Content-Type-Options"], "nosniff")
         own_download.close()
 
     def test_anonymous_revoked_and_read_only_credentials_have_distinct_access(self):
